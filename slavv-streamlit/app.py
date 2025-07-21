@@ -761,9 +761,9 @@ def show_analysis_page():
             ],
             "Value": [
                 stats["num_strands"], stats["num_bifurcations"], stats["num_endpoints"],
-                f"{stats["total_length"]:.1f}", f"{stats["mean_strand_length"]:.1f}", f"{stats["length_density"]:.3f}",
-                f"{stats["volume_fraction"]:.4f}", f"{stats["mean_radius"]:.2f}", f"{stats["radius_std"]:.2f}",
-                f"{stats["bifurcation_density"]:.2f}", f"{stats["surface_area"]:.1f}", f"{stats["mean_tortuosity"]:.3f}"
+                f'{stats["total_length"]:.1f}', f'{stats["mean_strand_length"]:.1f}', f'{stats["length_density"]:.3f}',
+                f'{stats["volume_fraction"]:.4f}', f'{stats["mean_radius"]:.2f}', f'{stats["radius_std"]:.2f}',
+                f'{stats["bifurcation_density"]:.2f}', f'{stats["surface_area"]:.1f}', f'{stats["mean_tortuosity"]:.3f}'
             ]
         })
         
