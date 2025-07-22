@@ -67,7 +67,7 @@ This Python implementation provides:
 - Integration with modern Python ML libraries (scikit-learn, TensorFlow)
 - Interactive web interface using Streamlit
 - Visualization using Plotly for 2D/3D plots
-For a detailed list of enhancements in this Python port, see [../IMPROVEMENTS_SUMMARY.md](../IMPROVEMENTS_SUMMARY.md).
+For a detailed list of enhancements in this Python port, see [../docs/PORTING_SUMMARY.md](../docs/PORTING_SUMMARY.md).
 
 ## Limitations
 

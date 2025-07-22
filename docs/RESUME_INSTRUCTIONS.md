@@ -10,7 +10,7 @@ The project is a Python/Streamlit implementation of the SLAVV algorithm. The cor
 
 1.  **Resolve `app.py` f-string syntax errors**: The primary remaining task is to fix the f-string syntax errors in the `show_analysis_page` function within `app.py`. This was the last active debugging point.
 2.  **Test and validate the updated application**: Once the syntax errors are resolved, thoroughly test the Streamlit application to ensure all functionalities (Image Processing, ML Curation, Visualization, Analysis) are working as expected.
-3.  **Deliver the improved application and comparison file to the user**: After successful testing, provide the user with the updated application and the `SOURCE_DIRECTORY_COMPARISON.md` file.
+3.  **Deliver the improved application and comparison file to the user**: After successful testing, provide the user with the updated application and the `PORTING_SUMMARY.md` file.
 
 ## How to Resume in a New Chat
 
@@ -53,7 +53,7 @@ Download the sample tiff image: https://web.corral.tacc.utexas.edu/NeuroVASCData
     ```
     You can then navigate to the provided URL in your browser to see the application.
 
-8.  **Refer to `SOURCE_DIRECTORY_COMPARISON.md` and `IMPROVEMENTS_SUMMARY.md`:** These files (also included in the zip) provide context on the changes made and the comparison with the original MATLAB repository.
+8.  **Refer to `PORTING_SUMMARY.md`:** This file (also included in the zip) provides context on the changes made and the comparison with the original MATLAB repository.
 
 By following these steps, you should be able to seamlessly pick up where we left off and complete the remaining tasks. Good luck!
 

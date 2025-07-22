@@ -7,9 +7,9 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 - **slavv-streamlit/** – Streamlit application containing the Python port of the algorithm
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
 - **slavv-matlab-docs/** – auto-generated reference documentation for the MATLAB code
-- **IMPROVEMENTS_SUMMARY.md** – overview of enhancements made during the port
-- **SOURCE_DIRECTORY_COMPARISON.md** – mapping between MATLAB and Python sources
-- **RESUME_INSTRUCTIONS.md** – notes on resuming work in a new environment
+- **docs/PORTING_SUMMARY.md** – combined improvements overview and source comparison
+- **docs/RESUME_INSTRUCTIONS.md** – notes on resuming work in a new environment
+- **AGENTS.md** – contributor guidelines for automated and human maintainers
 
 ## Getting started
 
