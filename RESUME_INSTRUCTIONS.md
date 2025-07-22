@@ -18,6 +18,9 @@ Follow these steps to set up the project in a new sandbox environment and contin
 
 1.  **Download the attached `slavv-streamlit-current-state.zip` file.** This zip file contains the entire project directory as it was at the end of the previous session.
 
+Download the sample tiff image: https://web.corral.tacc.utexas.edu/NeuroVASCData/2p/210827.tif
+
+
 2.  **Start a new chat session.**
 
 3.  **Upload the `slavv-streamlit-current-state.zip` file to the new sandbox environment.** You can typically do this by dragging and dropping the file into the chat interface or using an upload button if available.
