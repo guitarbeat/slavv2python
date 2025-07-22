@@ -18,11 +18,13 @@ https://github.com/UTFOIL/Vectorization-Public
 ## Installation
 
 1. Clone this repository
-2. Install dependencies:
+
+2. Create a virtual environment and install dependencies:
    ```bash
+   python -m venv .venv
+   source .venv/bin/activate
    pip install -r requirements.txt
    ```
-
 ## Usage
 
 1. Run the Streamlit app:
@@ -65,6 +67,7 @@ This Python implementation provides:
 - Integration with modern Python ML libraries (scikit-learn, TensorFlow)
 - Interactive web interface using Streamlit
 - Visualization using Plotly for 2D/3D plots
+For a detailed list of enhancements in this Python port, see [../IMPROVEMENTS_SUMMARY.md](../IMPROVEMENTS_SUMMARY.md).
 
 ## Limitations
 
