@@ -208,23 +208,25 @@ class SLAVVProcessor:
         vertex_energies = vertex_energies[sort_indices]
         
         # Volume exclusion: remove overlapping vertices
+        # This part needs to be optimized for performance for large datasets
         kept_indices = []
-        for i, (pos, scale, energy_val) in enumerate(zip(vertex_positions, vertex_scales, vertex_energies)):
-            radius = lumen_radius_pixels[scale] * length_dilation_ratio
+        for i in range(len(vertex_positions)):
+            current_pos = vertex_positions[i]
+            current_scale = vertex_scales[i]
+            current_radius = lumen_radius_pixels[current_scale] * length_dilation_ratio
             
-            # Check if this vertex overlaps with any previously kept vertex
-            overlaps = False
+            is_overlapping = False
             for j in kept_indices:
-                other_pos = vertex_positions[j]
-                other_scale = vertex_scales[j]
-                other_radius = lumen_radius_pixels[other_scale] * length_dilation_ratio
+                prev_pos = vertex_positions[j]
+                prev_scale = vertex_scales[j]
+                prev_radius = lumen_radius_pixels[prev_scale] * length_dilation_ratio
                 
-                distance = np.linalg.norm(pos - other_pos)
-                if distance < (radius + other_radius):
-                    overlaps = True
+                distance = np.linalg.norm(current_pos - prev_pos)
+                if distance < (current_radius + prev_radius):
+                    is_overlapping = True
                     break
             
-            if not overlaps:
+            if not is_overlapping:
                 kept_indices.append(i)
         
         # Keep only non-overlapping vertices
@@ -250,15 +252,15 @@ class SLAVVProcessor:
         """
         logger.info("Extracting edges")
         
-        energy = energy_data['energy']
-        vertex_positions = vertices['positions']
-        vertex_scales = vertices['scales']
-        lumen_radius_pixels = energy_data['lumen_radius_pixels']
+        energy = energy_data["energy"]
+        vertex_positions = vertices["positions"]
+        vertex_scales = vertices["scales"]
+        lumen_radius_pixels = energy_data["lumen_radius_pixels"]
         
         # Parameters
-        max_edges_per_vertex = params.get('number_of_edges_per_vertex', 4)
-        step_size_ratio = params.get('step_size_per_origin_radius', 1.0)
-        max_edge_energy = params.get('max_edge_energy', 0.0)
+        max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
+        step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
+        max_edge_energy = params.get("max_edge_energy", 0.0)
         
         edges = []
         edge_connections = []
@@ -273,25 +275,23 @@ class SLAVVProcessor:
             for direction in directions:
                 edge_trace = self._trace_edge(
                     energy, start_pos, direction, step_size, 
-                    max_edge_energy, vertex_positions, lumen_radius_pixels
-                )
-                
+                    max_edge_energy, vertex_positions, vertex_scales, lumen_radius_pixels
+                )                
                 if len(edge_trace) > 1:  # Valid edge found
                     edges.append(edge_trace)
                     
                     # Find terminal vertex if any
                     terminal_vertex = self._find_terminal_vertex(
-                        edge_trace[-1], vertex_positions, lumen_radius_pixels, vertex_scales
-                    )
-                    
+                        edge_trace[-1], vertex_positions, vertex_scales, lumen_radius_pixels
+                    )                    
                     edge_connections.append((vertex_idx, terminal_vertex))
         
         logger.info(f"Extracted {len(edges)} edges")
         
         return {
-            'traces': edges,
-            'connections': edge_connections,
-            'vertex_positions': vertex_positions
+            "traces": edges,
+            "connections": edge_connections,
+            "vertex_positions": vertex_positions
         }
 
     def construct_network(self, edges: Dict[str, Any], vertices: Dict[str, Any], 
@@ -303,18 +303,27 @@ class SLAVVProcessor:
         """
         logger.info("Constructing network")
         
-        edge_connections = edges['connections']
-        vertex_positions = vertices['positions']
+        edge_traces = edges["traces"]
+        edge_connections = edges["connections"]
+        vertex_positions = vertices["positions"]
         
-        # Build adjacency matrix
+        # Build adjacency matrix and edge list for graph
         n_vertices = len(vertex_positions)
         adjacency = np.zeros((n_vertices, n_vertices), dtype=bool)
         
-        for start_vertex, end_vertex in edge_connections:
-            if end_vertex is not None:
-                adjacency[start_vertex, end_vertex] = True
-                adjacency[end_vertex, start_vertex] = True
+        # Store actual edges (traces) in a dictionary for easy lookup
+        # Key: tuple (start_vertex_idx, end_vertex_idx), Value: edge_trace
+        graph_edges = {}
         
+        for i, (start_vertex, end_vertex) in enumerate(edge_connections):
+            if start_vertex is not None and end_vertex is not None:
+                adjacency[start_vertex, end_vertex] = True
+                adjacency[end_vertex, start_vertex] = True  # Assuming undirected graph for now
+                
+                # Store the edge trace. Ensure consistent key order.
+                key = tuple(sorted((start_vertex, end_vertex)))
+                graph_edges[key] = edge_traces[i]
+
         # Find connected components (strands)
         strands = []
         visited = np.zeros(n_vertices, dtype=bool)
@@ -332,40 +341,43 @@ class SLAVVProcessor:
         logger.info(f"Constructed network with {len(strands)} strands and {len(bifurcations)} bifurcations")
         
         return {
-            'strands': strands,
-            'bifurcations': bifurcations,
-            'adjacency': adjacency,
-            'vertex_degrees': vertex_degrees
+            "strands": strands,
+            "bifurcations": bifurcations,
+            "adjacency": adjacency,
+            "vertex_degrees": vertex_degrees,
+            "graph_edges": graph_edges # Add the actual edge traces to the network output
         }
 
     def _generate_edge_directions(self, n_directions: int) -> np.ndarray:
-        """Generate uniformly distributed directions for edge tracing"""
+        """Generate uniformly distributed directions for edge tracing using spherical Fibonacci spiral"""
         if n_directions == 1:
             return np.array([[0, 0, 1]])  # Single direction
         
-        # Generate directions on unit sphere
-        directions = []
-        for i in range(n_directions):
-            theta = 2 * np.pi * i / n_directions
-            phi = np.pi / 3  # 60 degrees from vertical
-            
-            x = np.sin(phi) * np.cos(theta)
-            y = np.sin(phi) * np.sin(theta)
-            z = np.cos(phi)
-            
-            directions.append([x, y, z])
+        # Generate directions on unit sphere using spherical Fibonacci spiral
+        points = []
+        phi = np.pi * (3. - np.sqrt(5.))  # golden angle in radians
         
-        return np.array(directions)
-
+        for i in range(n_directions):
+            y = 1 - (i / float(n_directions - 1)) * 2  # y goes from 1 to -1
+            radius = np.sqrt(1 - y * y)
+            
+            theta = phi * i
+            
+            x = np.cos(theta) * radius
+            z = np.sin(theta) * radius
+            
+            points.append([x, y, z])
+        
+        return np.array(points)
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
                    step_size: float, max_energy: float, vertex_positions: np.ndarray,
-                   radii: np.ndarray) -> List[np.ndarray]:
+                   radii: np.ndarray, vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
         """Trace an edge through the energy field"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
         current_dir = direction.copy()
         
-        max_steps = 100  # Prevent infinite loops
+        max_steps = 500  # Prevent infinite loops, increased from 100
         
         for step in range(max_steps):
             # Take step in current direction
@@ -377,28 +389,47 @@ class SLAVVProcessor:
             
             # Check energy threshold
             pos_int = np.round(next_pos).astype(int)
+            # Ensure pos_int is within bounds before accessing energy array
+            if not self._in_bounds(pos_int, energy.shape):
+                break
+            
             if energy[tuple(pos_int)] > max_energy:
                 break
             
             # Update position and direction based on local gradient
-            gradient = self._compute_gradient(energy, next_pos)
-            current_dir = -gradient / (np.linalg.norm(gradient) + 1e-10)
+            gradient = self._compute_gradient(energy, current_pos) # Use current_pos for gradient calculation
+            
+            # Normalize gradient and update direction
+            grad_norm = np.linalg.norm(gradient)
+            if grad_norm > 1e-10:
+                current_dir = -gradient / grad_norm
+            else:
+                # If gradient is zero, try to continue in the same direction or stop
+                # For now, just break to avoid infinite loop
+                break
+            
             current_pos = next_pos
             
             trace.append(current_pos.copy())
             
             # Check if we've reached another vertex
-            if self._near_vertex(current_pos, vertex_positions, radii):
-                break
-        
+            if self._near_vertex(current_pos, vertex_positions, vertex_scales, lumen_radius_pixels):
+                break       
         return trace
 
     def _find_terminal_vertex(self, end_pos: np.ndarray, vertex_positions: np.ndarray,
-                             radii: np.ndarray, scales: np.ndarray) -> Optional[int]:
+                             vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> Optional[int]:
         """Find if edge terminates at a vertex"""
-        for i, (vertex_pos, scale) in enumerate(zip(vertex_positions, scales)):
+        # Iterate through existing vertices to check for proximity
+        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+            # Calculate the radius of the vertex based on its scale
+            radius = lumen_radius_pixels[vertex_scale]
+            
+            # Calculate Euclidean distance between the end of the trace and the vertex
             distance = np.linalg.norm(end_pos - vertex_pos)
-            if distance < radii[scale]:
+            
+            # If the distance is less than the vertex's radius, consider it a terminal vertex
+            if distance < radius:
                 return i
         return None
 
@@ -429,9 +460,10 @@ class SLAVVProcessor:
         return all(0 <= p < s for p, s in zip(pos, shape))
 
     def _near_vertex(self, pos: np.ndarray, vertex_positions: np.ndarray, 
-                    radii: np.ndarray) -> bool:
+                    vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> bool:
         """Check if position is near any vertex"""
-        for vertex_pos, radius in zip(vertex_positions, radii):
+        for vertex_pos, vertex_scale in zip(vertex_positions, vertex_scales):
+            radius = lumen_radius_pixels[vertex_scale]
             if np.linalg.norm(pos - vertex_pos) < radius:
                 return True
         return False
