@@ -402,13 +402,15 @@ def show_processing_page():
                 with st.spinner("Processing image..."):
                     
                     # Load image (placeholder - would load actual TIFF)
+                    import tifffile
                     status_text.text("Loading image...")
                     progress_bar.progress(10)
-                    time.sleep(1)
-                    
-                    # Create dummy image for demonstration
-                    image = np.random.rand(100, 100, 50)
-                    
+                    try:
+                        image = tifffile.imread(uploaded_file)
+                        st.success(f"✅ Image loaded successfully with shape: {image.shape}")
+                    except Exception as e:
+                        st.error(f"❌ Error loading TIFF file: {e}")
+                        st.stop()
                     # Initialize processor
                     processor = SLAVVProcessor()
                     
@@ -478,86 +480,191 @@ def show_ml_curation_page():
         return
     
     st.markdown("""
-    Use machine learning algorithms to automatically curate and refine the detected vertices and edges.
+    Use machine learning algorithms or heuristic rules to automatically curate and refine the detected vertices and edges.
     This step helps improve the accuracy of the vectorization by removing false positives and enhancing
     true vascular structures. This functionality is based on `MLDeployment.py` and `MLLibrary.py` from the original MATLAB repository.
     """)
     
-    # Curation options
-    col1, col2 = st.columns(2)
+    results = st.session_state["processing_results"]
+    parameters = st.session_state["parameters"]
     
-    with col1:
-        st.markdown("### 🎯 Vertex Curation")
+    st.markdown("### 🎯 Curation Options")
+    curation_type = st.radio(
+        "Select Curation Type:",
+        ("Automatic (Rule-based)", "Machine Learning (Model-based)"),
+        help="Choose between rule-based automatic curation or machine learning model-based curation."
+    )
+
+    if curation_type == "Automatic (Rule-based)":
+        st.markdown("#### Automatic Curation Parameters")
+        col1, col2 = st.columns(2)
+        with col1:
+            vertex_energy_threshold = st.number_input(
+                "Vertex Energy Threshold", 
+                min_value=-10.0, max_value=0.0, value=-0.1, step=0.01,
+                help="Vertices with energy above this threshold will be removed."
+            )
+            min_vertex_radius = st.number_input(
+                "Minimum Vertex Radius (μm)", 
+                min_value=0.1, max_value=10.0, value=0.5, step=0.1,
+                help="Vertices with radius below this will be removed."
+            )
+        with col2:
+            boundary_margin = st.number_input(
+                "Boundary Margin (voxels)", 
+                min_value=0, max_value=20, value=5, step=1,
+                help="Vertices too close to image boundaries will be removed."
+            )
+            contrast_threshold = st.number_input(
+                "Local Contrast Threshold", 
+                min_value=0.0, max_value=1.0, value=0.1, step=0.01,
+                help="Vertices in low-contrast regions will be removed."
+            )
+            min_edge_length = st.number_input(
+                "Minimum Edge Length (μm)", 
+                min_value=0.1, max_value=20.0, value=2.0, step=0.1,
+                help="Edges shorter than this will be removed."
+            )
+            max_edge_tortuosity = st.number_input(
+                "Maximum Edge Tortuosity", 
+                min_value=1.0, max_value=10.0, value=3.0, step=0.1,
+                help="Edges with tortuosity above this will be removed."
+            )
+            max_connection_distance = st.number_input(
+                "Max Connection Distance (μm)", 
+                min_value=0.1, max_value=10.0, value=5.0, step=0.1,
+                help="Edges not properly connected to vertices within this distance will be removed."
+            )
+
+        auto_curation_params = {
+            "vertex_energy_threshold": vertex_energy_threshold,
+            "min_vertex_radius": min_vertex_radius,
+            "boundary_margin": boundary_margin,
+            "contrast_threshold": contrast_threshold,
+            "min_edge_length": min_edge_length,
+            "max_edge_tortuosity": max_edge_tortuosity,
+            "max_connection_distance": max_connection_distance,
+            "image_shape": st.session_state["image_shape"] # Pass image shape for boundary check
+        }
+
+        if st.button("🚀 Start Automatic Curation", type="primary"):
+            with st.spinner("Performing automatic curation..."):
+                curator = AutomaticCurator()
+                
+                # Curate vertices
+                curated_vertices = curator.curate_vertices_automatic(
+                    results["vertices"], results["energy_data"], auto_curation_params
+                )
+                
+                # Curate edges
+                curated_edges = curator.curate_edges_automatic(
+                    results["edges"], curated_vertices, auto_curation_params
+                )
+                
+                # Update session state with curated results
+                st.session_state["processing_results"]["vertices"] = curated_vertices
+                st.session_state["processing_results"]["edges"] = curated_edges
+                
+                st.success("✅ Automatic curation complete!")
+                
+                # Display results summary
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
+                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                with col2:
+                    st.metric("Original Edges", len(results["edges"]["traces"]))
+                    st.metric("Curated Edges", len(curated_edges["traces"]))
+
+    elif curation_type == "Machine Learning (Model-based)":
+        st.markdown("#### Machine Learning Curation Parameters")
+        st.warning("⚠️ Machine Learning Curation requires trained models. This functionality is under development and requires pre-trained models or a training dataset.")
         
-        vertex_curation_method = st.selectbox(
-            "Vertex curation method",
-            ["auto", "manual", "machine-auto", "machine-manual"],
-            help="Choose how to curate detected vertices. Corresponds to `VertexCuration` parameter in MATLAB."
-        )
+        col1, col2 = st.columns(2)
         
-        if vertex_curation_method in ["machine-auto", "machine-manual"]:
-            st.info("🤖 Machine learning curation will analyze vertex features and classify them automatically")
+        with col1:
+            vertex_curation_method = st.selectbox(
+                "Vertex curation method",
+                ["machine-auto"], # Only machine-auto for now
+                help="Choose how to curate detected vertices. Corresponds to `VertexCuration` parameter in MATLAB."
+            )
             
             vertex_confidence_threshold = st.slider(
-                "Confidence threshold",
+                "Vertex Confidence threshold",
                 min_value=0.0, max_value=1.0, value=0.5, step=0.05,
                 help="Minimum confidence score for keeping vertices"
             )
         
-        if st.button("🎯 Curate Vertices"):
-            with st.spinner("Curating vertices..."):
-                curator = MLCurator()
-                
-                # Simulate curation
-                time.sleep(2)
-                
-                # Update results
-                original_count = len(st.session_state["processing_results"]["vertices"]["positions"])
-                curated_count = int(original_count * 0.8)  # Simulate 20% reduction
-                
-                st.success(f"✅ Vertex curation complete: {original_count} → {curated_count} vertices")
-    
-    with col2:
-        st.markdown("### 🔗 Edge Curation")
-        
-        edge_curation_method = st.selectbox(
-            "Edge curation method",
-            ["auto", "manual", "machine-auto", "machine-manual"],
-            help="Choose how to curate detected edges. Corresponds to `EdgeCuration` parameter in MATLAB."
-        )
-        
-        if edge_curation_method in ["machine-auto", "machine-manual"]:
-            st.info("🤖 Machine learning curation will analyze edge features and classify them automatically")
+        with col2:
+            edge_curation_method = st.selectbox(
+                "Edge curation method",
+                ["machine-auto"], # Only machine-auto for now
+                help="Choose how to curate detected edges. Corresponds to `EdgeCuration` parameter in MATLAB."
+            )
             
             edge_confidence_threshold = st.slider(
-                "Edge confidence threshold",
+                "Edge Confidence threshold",
                 min_value=0.0, max_value=1.0, value=0.5, step=0.05,
                 help="Minimum confidence score for keeping edges"
             )
-        
-        if st.button("🔗 Curate Edges"):
-            with st.spinner("Curating edges..."):
+
+        if st.button("🤖 Start ML Curation", type="primary"):
+            with st.spinner("Performing ML curation..."):
                 curator = MLCurator()
                 
-                # Simulate curation
-                time.sleep(2)
+                # In a real scenario, you would load pre-trained models here
+                # curator.load_models("path/to/vertex_model.joblib", "path/to/edge_model.joblib")
                 
-                # Update results
-                original_count = len(st.session_state["processing_results"]["edges"]["traces"])
-                curated_count = int(original_count * 0.75)  # Simulate 25% reduction
+                if curator.vertex_classifier is None or curator.edge_classifier is None:
+                    st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
+                    st.stop()
+
+                # Curate vertices
+                curated_vertices = curator.curate_vertices(
+                    results["vertices"], results["energy_data"], st.session_state["image_shape"], vertex_confidence_threshold
+                )
                 
-                st.success(f"✅ Edge curation complete: {original_count} → {curated_count} edges")
-    
+                # Curate edges
+                curated_edges = curator.curate_edges(
+                    results["edges"], curated_vertices, results["energy_data"], edge_confidence_threshold
+                )
+                
+                # Update session state with curated results
+                st.session_state["processing_results"]["vertices"] = curated_vertices
+                st.session_state["processing_results"]["edges"] = curated_edges
+                
+                st.success("✅ ML curation complete!")
+                
+                # Display results summary
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
+                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                with col2:
+                    st.metric("Original Edges", len(results["edges"]["traces"]))
+                    st.metric("Curated Edges", len(curated_edges["traces"]))
+
     # Curation results
     if st.button("📊 Show Curation Statistics"):
         st.markdown("### 📈 Curation Results")
         
-        # Create sample curation statistics
+        # Get current curated counts
+        current_vertices = st.session_state["processing_results"]["vertices"]
+        current_edges = st.session_state["processing_results"]["edges"]
+        original_vertices_count = len(results["vertices"]["positions"])
+        original_edges_count = len(results["edges"]["traces"])
+        curated_vertices_count = len(current_vertices["positions"])
+        curated_edges_count = len(current_edges["traces"])
+        
+        # Calculate percentage removed
+        vertex_removed_percent = ((original_vertices_count - curated_vertices_count) / original_vertices_count * 100) if original_vertices_count > 0 else 0
+        edge_removed_percent = ((original_edges_count - curated_edges_count) / original_edges_count * 100) if original_edges_count > 0 else 0
+
         curation_stats = pd.DataFrame({
-            "Component": ["Vertices", "Edges", "Strands"],
-            "Original": [150, 200, 45],
-            "After Curation": [120, 150, 38],
-            "Removed (%)": [20, 25, 15.6]
+            "Component": ["Vertices", "Edges"],
+            "Original": [original_vertices_count, original_edges_count],
+            "After Curation": [curated_vertices_count, curated_edges_count],
+            "Removed (%)": [f"{vertex_removed_percent:.2f}", f"{edge_removed_percent:.2f}"]
         })
         
         st.dataframe(curation_stats, use_container_width=True)
@@ -571,7 +678,6 @@ def show_ml_curation_page():
             barmode="group"
         )
         st.plotly_chart(fig, use_container_width=True)
-
 def show_visualization_page():
     """Display the visualization page"""
     
@@ -617,35 +723,50 @@ def show_visualization_page():
                 help="3D viewing angle"
             )
     
+    visualizer = NetworkVisualizer()
+    
     with col1:
         st.markdown(f"### 📊 {viz_type}")
         
-        # Generate sample visualization based on type
+        # Generate actual visualization based on type
         if viz_type == "2D Network":
-            # Create sample 2D network plot
-            fig = create_sample_2d_network()
+            fig = visualizer.plot_2d_network(
+                results["vertices"], results["edges"], results["network"], parameters,
+                color_by=color_scheme.lower().replace(" ", "_"),
+                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+            )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "3D Network":
-            # Create sample 3D network plot
-            fig = create_sample_3d_network()
+            fig = visualizer.plot_3d_network(
+                results["vertices"], results["edges"], results["network"], parameters,
+                color_by=color_scheme.lower().replace(" ", "_"),
+                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+            )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Depth Projection":
-            # Create depth projection
-            fig = create_sample_depth_projection()
+            fig = visualizer.plot_depth_statistics(
+                results["vertices"], results["edges"], parameters
+            )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Strand Analysis":
-            # Create strand analysis plot
-            fig = create_sample_strand_analysis()
+            fig = visualizer.plot_strand_analysis(
+                results["network"], results["vertices"], parameters
+            )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Energy Field":
-            # Create energy field visualization
-            fig = create_sample_energy_field()
-            st.plotly_chart(fig, use_container_width=True)
-    
+            # For energy field, we need to pass the original image shape to the visualizer
+            # and potentially allow selecting a slice axis and index
+            st.info("Energy Field visualization is a 2D slice. Select slice axis and index in sidebar.")
+            slice_axis = st.sidebar.selectbox("Slice Axis", [0, 1, 2], format_func=lambda x: ["Y", "X", "Z"][x])
+            slice_index = st.sidebar.number_input("Slice Index", value=results["energy_data"]["energy"].shape[slice_axis] // 2)
+            fig = visualizer.plot_energy_field(
+                results["energy_data"], slice_axis=slice_axis, slice_index=slice_index
+            )
+            st.plotly_chart(fig, use_container_width=True)    
     # Export options
     st.markdown("### 💾 Export Options")
     
@@ -677,98 +798,107 @@ def show_analysis_page():
     Corresponds to `SpecialOutput` parameters like `histograms`, `depth-stats`, `original-stats` in MATLAB.
     """)
     
-    # Generate sample statistics
-    stats = generate_sample_statistics()
-    
+    results = st.session_state["processing_results"]
+    parameters = st.session_state["parameters"]
+
+    # Calculate actual statistics
+    stats = calculate_network_statistics(results["vertices"], results["edges"], results["network"], parameters)
+
     # Key metrics
     st.markdown("### 📊 Key Metrics")
-    
+
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Length", f'{stats["total_length"]:.1f} μm')  
+        st.metric("Total Length", f'{stats["total_length"]:.1f} μm')
     with col2:
         st.metric("Volume Fraction", f"{stats['volume_fraction']:.3f}")
-    
+
     with col3:
         st.metric("Bifurcation Density", f"{stats['bifurcation_density']:.2f} /mm³")
-    
+
     with col4:
-        st.metric("Mean Radius", f"{stats['mean_radius']:.2f} μm")    
+        st.metric("Mean Radius", f"{stats['mean_radius']:.2f} μm")
     # Detailed analysis
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"])
-    
+
+    visualizer = NetworkVisualizer()
+
     with tab1:
         st.markdown("#### Length and Radius Distributions")
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             # Length distribution
-            fig_length = create_length_distribution()
+            fig_length = visualizer.plot_strand_analysis(results["network"], results["vertices"], parameters)
             st.plotly_chart(fig_length, use_container_width=True)
-        
+
         with col2:
             # Radius distribution
-            fig_radius = create_radius_distribution()
+            fig_radius = visualizer.plot_radius_distribution(results["vertices"])
             st.plotly_chart(fig_radius, use_container_width=True)
-    
+
     with tab2:
         st.markdown("#### Network Topology")
-        
+
         col1, col2 = st.columns(2)
-        
+
         with col1:
             # Degree distribution
-            fig_degree = create_degree_distribution()
+            fig_degree = visualizer.plot_degree_distribution(results["network"])
             st.plotly_chart(fig_degree, use_container_width=True)
-        
+
         with col2:
             # Connectivity analysis
             connectivity_stats = pd.DataFrame({
                 "Metric": ["Connected Components", "Average Path Length", "Clustering Coefficient", "Network Diameter"],
-                "Value": [1, 12.5, 0.23, 25]
+                "Value": [stats['num_connected_components'], stats['avg_path_length'], stats['clustering_coefficient'], stats['network_diameter']]
             })
             st.dataframe(connectivity_stats, use_container_width=True)
-    
+
     with tab3:
         st.markdown("#### Morphometric Analysis")
-        
+
         # Depth-resolved statistics
-        fig_depth = create_depth_statistics()
+        fig_depth = visualizer.plot_depth_statistics(results["vertices"], results["edges"], parameters)
         st.plotly_chart(fig_depth, use_container_width=True)
-        
+
         # Tortuosity analysis
         col1, col2 = st.columns(2)
-        
+
         with col1:
-            st.metric("Mean Tortuosity", "1.15")
-            st.metric("Tortuosity Std", "0.08")
-        
+            st.metric("Mean Tortuosity", f"{stats['mean_tortuosity']:.2f}")
+            st.metric("Tortuosity Std", f"{stats['tortuosity_std']:.2f}")
+
         with col2:
-            st.metric("Fractal Dimension", "2.34")
-            st.metric("Lacunarity", "0.12")
-    
+            st.metric("Fractal Dimension", f'{stats["fractal_dimension"]:.2f}')
+            st.metric("Lacunarity", f'{stats["lacunarity"]:.2f}')
+
     with tab4:
         st.markdown("#### Complete Statistics Table")
-        
+
         # Comprehensive statistics table
         full_stats = pd.DataFrame({
             "Metric": [
                 "Number of Strands", "Number of Bifurcations", "Number of Endpoints",
                 "Total Length (μm)", "Mean Strand Length (μm)", "Length Density (μm/μm³)",
                 "Volume Fraction", "Mean Radius (μm)", "Radius Std (μm)",
-                "Bifurcation Density (/mm³)", "Surface Area (μm²)", "Mean Tortuosity"
+                "Bifurcation Density (/mm³)", "Surface Area (μm²)", "Mean Tortuosity",
+                "Number of Connected Components", "Average Path Length", "Clustering Coefficient", "Network Diameter",
+                "Fractal Dimension", "Lacunarity", "Tortuosity Std"
             ],
-            "Value": [
-                stats["num_strands"], stats["num_bifurcations"], stats["num_endpoints"],
-                f'{stats["total_length"]:.1f}', f'{stats["mean_strand_length"]:.1f}', f'{stats["length_density"]:.3f}',
-                f'{stats["volume_fraction"]:.4f}', f'{stats["mean_radius"]:.2f}', f'{stats["radius_std"]:.2f}',
-                f'{stats["bifurcation_density"]:.2f}', f'{stats["surface_area"]:.1f}', f'{stats["mean_tortuosity"]:.3f}'
-            ]
+                "Value": [
+                    stats["num_strands"], stats["num_bifurcations"], stats["num_endpoints"],
+                    f'{stats["total_length"]:.1f}', f'{stats["mean_strand_length"]:.1f}', f'{stats["length_density"]:.3f}',
+                    f'{stats["volume_fraction"]:.4f}', f'{stats["mean_radius"]:.2f}', f'{stats["radius_std"]:.2f}',
+                    f'{stats["bifurcation_density"]:.2f}', f'{stats["surface_area"]:.1f}', f'{stats["mean_tortuosity"]:.3f}',
+                    stats["num_connected_components"], f'{stats["avg_path_length"]:.2f}', f'{stats["clustering_coefficient"]:.2f}', f'{stats["network_diameter"]:.2f}',
+                    f'{stats["fractal_dimension"]:.2f}', f'{stats["lacunarity"]:.2f}', f'{stats["tortuosity_std"]:.2f}'
+                ]
         })
-        
+
         st.dataframe(full_stats, use_container_width=True)
-        
+
         # Download statistics
         csv = full_stats.to_csv(index=False)
         st.download_button(
@@ -777,325 +907,3 @@ def show_analysis_page():
             file_name="network_statistics.csv",
             mime="text/csv"
         )
-
-def show_about_page():
-    """Display the about page"""
-    
-    st.markdown("<h2 class=\"section-header\">About SLAVV</h2>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("""
-        ### 🔬 Algorithm Background
-        
-        SLAVV (Segmentation-Less, Automated, Vascular Vectorization) was originally developed by 
-        **Samuel Alexander Mihelic** as a MATLAB implementation for analyzing vascular networks 
-        in microscopy images.
-        
-        #### 📚 Key Publications
-        
-        - Mihelic, S.A., Sikora, W.A., Hassan, A.M., Williamson, M.R., Jones, T.A., & Dunn, A.K. (2021). 
-          **Segmentation-Less, Automated, Vascular Vectorization**. PLOS Computational Biology, 17(10), e1009451. 
-          [DOI: 10.1371/journal.pcbi.1009451](https://doi.org/10.1371/journal.pcbi.1009451)
-        - Original MATLAB implementation: [GitHub Repository](https://github.com/UTFOIL/Vectorization-Public)
-        
-        #### 🔄 Python Implementation
-        
-        This Streamlit application is a Python port of the original MATLAB code, featuring:
-        
-        - **Enhanced User Interface** - Modern web-based interface with interactive controls
-        - **Real-time Visualization** - Interactive 2D and 3D network rendering
-        - **Machine Learning Integration** - Automated curation using trained models
-        - **Multiple Export Formats** - VMV, CASX, CSV, JSON, and MAT file support
-        - **Comprehensive Analysis** - Extended statistical analysis and morphometry
-        
-        #### 🛠️ Technical Details
-        
-        **Core Algorithm Steps (as described in MATLAB `vectorize_V200.m` and the PLOS Comp. Bio. paper):**
-        
-        1. **Energy Image Formation**
-           - The input image is linearly (matched-)filtered at many scales to extract curvature (and gradient) information.
-           - The Hessian matrix is diagonalized to extract principle curvatures at all voxels (and scales) where the Laplacian is negative (local bright spot in original image).
-           - The energy function is an objective function to select for large negative principle curvatures while each curvature is separately weighted by a symmetry factor using the gradient.
-           - The 4D multi-scale energy image is projected across the scale coordinate using a minimum projection to select the most probable scale. The result is an enhancement of the vessel centerlines while simultaneously selecting the scale coordinate.
-           - Includes PSF correction using Zipfel et al. model and vesselness enhancement using Frangi-like measures.
-        
-        2. **Vertex Extraction**
-           - Vertices are extracted as local minima in the 4D energy image (with associated x, y, z, radius, and energy value).
-           - This part of the method was inspired by the first part of the SIFT algorithm (David Lowe, International Journal of Computer Vision, 2004).
-           - The vertex objects are points of high contrast and symmetry (bright spots or bifurcations) along the vessel segments.
-           - The labeling is sufficiently dense if there is at least one vertex per strand. Vertices are ordered by energy values to rank them from most likely to least likely.
-           - Includes volume exclusion for overlapping detections and energy-based ranking and selection.
-        
-        3. **Edge Extraction**
-           - Edges are extracted as voxel walks through the (3D) energy image. Edges are 1-Dimensional objects (list or trace), where each location along the trace is a spherical object with an energy value.
-           - Each edge walk starts at a vertex and seeks the lowest energy values under the constraint that it must move away from its origin.
-           - Trajectories between vertices are ordered by their maximum energy value attained to give a first estimate of which edges are likely to be true.
-           - Includes gradient descent tracing from vertices and multi-directional exploration.
-        
-        4. **Network Construction**
-           - The final network output is the minimal set of 1-Dimensional objects (strands) that connect all of the bifurcations/endpoints according to the adjacency matrix extracted from the edges and vertices.
-           - Strands are like edges, but generally longer and composed of multiple edges (at least 1). Each strand has at each location along its trace a 3-space position, radius, and an energy value.
-           - Network information allows for smoothing positions and sizes of extracted vectors along their strands and approximating local blood flow fields.
-           - Includes connected component analysis and strand assembly from edge traces.
-        """)
-    
-    with col2:
-        st.markdown("### 📊 System Information")
-        
-        # System info
-        st.code(f"""
-Python Version: 3.11+
-Streamlit Version: Latest
-NumPy Version: Latest
-SciPy Version: Latest
-Scikit-Image Version: Latest
-Plotly Version: Latest
-        """)
-        
-        st.markdown("### 🔗 Links")
-        st.markdown("""
-        - [Original MATLAB Code](https://github.com/UTFOIL/Vectorization-Public)
-        - [PLOS Computational Biology Publication](https://doi.org/10.1371/journal.pcbi.1009451)
-        - [Algorithm Documentation (MATLAB README)](https://github.com/UTFOIL/Vectorization-Public/blob/master_pullRQ/vectorize_V200.m)
-        """)
-        
-        st.markdown("### 📧 Contact")
-        st.markdown("""
-        For questions about this Python/Streamlit implementation:
-        - Create an issue on the GitHub repository for this project.
-        
-        For questions about the original algorithm or MATLAB implementation:
-        - Refer to the original publications.
-        - Contact Samuel Alexander Mihelic (see publication for author details).
-        """)
-        
-        st.markdown("### ⚖️ License")
-        st.markdown("""
-        This implementation is provided under the same license 
-        as the original MATLAB code. Please refer to the 
-        original repository for licensing details.
-        """)
-
-# Helper functions for creating sample visualizations
-def create_sample_2d_network():
-    """Create a sample 2D network visualization"""
-    np.random.seed(42)
-    
-    # Generate sample network data
-    n_points = 50
-    x = np.random.rand(n_points) * 100
-    y = np.random.rand(n_points) * 100
-    
-    fig = go.Figure()
-    
-    # Add edges (sample connections)
-    for i in range(0, n_points-1, 3):
-        fig.add_trace(go.Scatter(
-            x=[x[i], x[i+1]], y=[y[i], y[i+1]],
-            mode="lines",
-            line=dict(color="blue", width=2),
-            showlegend=False
-        ))
-    
-    # Add vertices
-    fig.add_trace(go.Scatter(
-        x=x, y=y,
-        mode="markers",
-        marker=dict(size=8, color="red"),
-        name="Vertices"
-    ))
-    
-    fig.update_layout(
-        title="2D Vascular Network",
-        xaxis_title="X (μm)",
-        yaxis_title="Y (μm)",
-        showlegend=True
-    )
-    
-    return fig
-
-def create_sample_3d_network():
-    """Create a sample 3D network visualization"""
-    np.random.seed(42)
-    
-    # Generate sample 3D network data
-    n_points = 30
-    x = np.random.rand(n_points) * 100
-    y = np.random.rand(n_points) * 100
-    z = np.random.rand(n_points) * 50
-    
-    fig = go.Figure()
-    
-    # Add 3D scatter plot
-    fig.add_trace(go.Scatter3d(
-        x=x, y=y, z=z,
-        mode="markers+lines",
-        marker=dict(size=5, color=z, colorscale="Viridis"),
-        line=dict(color="blue", width=3),
-        name="Network"
-    ))
-    
-    fig.update_layout(
-        title="3D Vascular Network",
-        scene=dict(
-            xaxis_title="X (μm)",
-            yaxis_title="Y (μm)",
-            zaxis_title="Z (μm)"
-        )
-    )
-    
-    return fig
-
-def create_sample_depth_projection():
-    """Create a sample depth projection"""
-    np.random.seed(42)
-    
-    # Generate sample depth data
-    z_bins = np.arange(0, 100, 5)
-    vessel_density = np.random.exponential(2, len(z_bins))
-    
-    fig = px.bar(
-        x=z_bins, y=vessel_density,
-        title="Vessel Density vs Depth",
-        labels={"x": "Depth (μm)", "y": "Vessel Density"}
-    )
-    
-    return fig
-
-def create_sample_strand_analysis():
-    """Create a sample strand analysis plot"""
-    np.random.seed(42)
-    
-    # Generate sample strand data
-    strand_lengths = np.random.lognormal(2, 0.5, 100)
-    
-    fig = px.histogram(
-        x=strand_lengths,
-        title="Strand Length Distribution",
-        labels={"x": "Length (μm)", "y": "Count"},
-        nbins=20
-    )
-    
-    return fig
-
-def create_sample_energy_field():
-    """Create a sample energy field visualization"""
-    np.random.seed(42)
-    
-    # Generate sample energy field
-    x = np.linspace(0, 100, 50)
-    y = np.linspace(0, 100, 50)
-    X, Y = np.meshgrid(x, y)
-    Z = -np.exp(-((X-50)**2 + (Y-50)**2)/500) + np.random.normal(0, 0.1, X.shape)
-    
-    fig = go.Figure(data=go.Heatmap(
-        x=x, y=y, z=Z,
-        colorscale="RdBu",
-        colorbar=dict(title="Energy")
-    ))
-    
-    fig.update_layout(
-        title="Energy Field (2D Slice)",
-        xaxis_title="X (μm)",
-        yaxis_title="Y (μm)"
-    )
-    
-    return fig
-
-def create_length_distribution():
-    """Create length distribution plot"""
-    np.random.seed(42)
-    lengths = np.random.lognormal(2.5, 0.8, 200)
-    
-    fig = px.histogram(
-        x=lengths,
-        title="Strand Length Distribution",
-        labels={"x": "Length (μm)", "y": "Count"},
-        nbins=25
-    )
-    
-    return fig
-
-def create_radius_distribution():
-    """Create radius distribution plot"""
-    np.random.seed(42)
-    radii = np.random.lognormal(1, 0.5, 200)
-    
-    fig = px.histogram(
-        x=radii,
-        title="Vessel Radius Distribution",
-        labels={"x": "Radius (μm)", "y": "Count"},
-        nbins=25
-    )
-    
-    return fig
-
-def create_degree_distribution():
-    """Create degree distribution plot"""
-    degrees = [1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 4, 5]
-    degree_counts = [degrees.count(i) for i in range(1, 6)]
-    
-    fig = px.bar(
-        x=list(range(1, 6)), y=degree_counts,
-        title="Vertex Degree Distribution",
-        labels={"x": "Degree", "y": "Count"}
-    )
-    
-    return fig
-
-def create_depth_statistics():
-    """Create depth-resolved statistics plot"""
-    np.random.seed(42)
-    
-    depths = np.arange(0, 100, 10)
-    length_density = np.random.exponential(0.5, len(depths))
-    volume_fraction = np.random.exponential(0.02, len(depths))
-    
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    fig.add_trace(
-        go.Scatter(x=depths, y=length_density, name="Length Density"),
-        secondary_y=False,
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=depths, y=volume_fraction, name="Volume Fraction"),
-        secondary_y=True,
-    )
-    
-    fig.update_xaxes(title_text="Depth (μm)")
-    fig.update_yaxes(title_text="Length Density", secondary_y=False)
-    fig.update_yaxes(title_text="Volume Fraction", secondary_y=True)
-    
-    fig.update_layout(title="Depth-Resolved Statistics")
-    
-    return fig
-
-def generate_sample_statistics():
-    """Generate sample network statistics"""
-    np.random.seed(42)
-    
-    return {
-        "num_strands": 45,
-        "num_bifurcations": 12,
-        "num_endpoints": 78,
-        "total_length": 2456.7,
-        "mean_strand_length": 54.6,
-        "length_density": 0.123,
-        "volume_fraction": 0.0456,
-        "mean_radius": 3.2,
-        "radius_std": 1.8,
-        "bifurcation_density": 0.67,
-        "surface_area": 1234.5,
-        "mean_tortuosity": 1.15
-    }
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-
