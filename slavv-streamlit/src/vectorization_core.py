@@ -275,8 +275,8 @@ class SLAVVProcessor:
             for direction in directions:
                 edge_trace = self._trace_edge(
                     energy, start_pos, direction, step_size, 
-                    max_edge_energy, vertex_positions, vertex_scales, lumen_radius_pixels
-                )                
+                    max_edge_energy, vertex_positions, lumen_radius_pixels
+                )
                 if len(edge_trace) > 1:  # Valid edge found
                     edges.append(edge_trace)
                     
@@ -371,7 +371,7 @@ class SLAVVProcessor:
         return np.array(points)
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
                    step_size: float, max_energy: float, vertex_positions: np.ndarray,
-                   radii: np.ndarray, vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
+                   lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
         """Trace an edge through the energy field"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
@@ -389,11 +389,57 @@ class SLAVVProcessor:
             
             # Check energy threshold
             pos_int = np.round(next_pos).astype(int)
+            
             # Ensure pos_int is within bounds before accessing energy array
-            if not self._in_bounds(pos_int, energy.shape):
+            if not (0 <= pos_int[0] < energy.shape[0] and
+                    0 <= pos_int[1] < energy.shape[1] and
+                    0 <= pos_int[2] < energy.shape[2]):
+                break
+
+            current_energy = energy[pos_int[0], pos_int[1], pos_int[2]]
+            if current_energy > max_energy:
                 break
             
-            if energy[tuple(pos_int)] > max_energy:
+            trace.append(next_pos.copy())
+            current_pos = next_pos.copy()
+            
+            # Update direction based on energy gradient (simplified for now)
+            # In MATLAB, this involves more complex gradient descent
+            # For now, we'll just continue in the same direction or a slightly perturbed one
+            # A more accurate implementation would calculate the gradient of the energy field
+            # and adjust the direction to move towards lower energy.
+            
+            # Check if near another vertex (terminal vertex)
+            terminal_vertex_idx = self._near_vertex(current_pos, vertex_positions, lumen_radius_pixels)
+            if terminal_vertex_idx is not None:
+                trace.append(vertex_positions[terminal_vertex_idx].copy())
+                break
+                
+        return trace
+
+    def _trace_strand(self, start_vertex_idx: int, adjacency: np.ndarray, visited: np.ndarray) -> List[int]:
+        """Recursively trace a strand (connected component) in the network"""
+        strand = []
+        stack = [start_vertex_idx]
+        visited[start_vertex_idx] = True
+        
+        while stack:
+            current_vertex = stack.pop()
+            strand.append(current_vertex)
+            
+            neighbors = np.where(adjacency[current_vertex])[0]
+            for neighbor in neighbors:
+                if not visited[neighbor]:
+                    visited[neighbor] = True
+                    stack.append(neighbor)
+        return strand
+
+    def _in_bounds(self, pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
+        """Check if a position is within image bounds"""
+        for i in range(len(pos)):
+            if not (0 <= pos[i] < shape[i]):
+                return False
+        return True
                 break
             
             # Update position and direction based on local gradient
