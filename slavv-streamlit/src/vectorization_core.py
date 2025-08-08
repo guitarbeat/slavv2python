@@ -123,8 +123,18 @@ class SLAVVProcessor:
         voxel_size_mean = float(np.mean(np.array(microns_per_voxel)))
         lumen_radius_pixels = lumen_radius_microns / voxel_size_mean
         
+        # Apply PSF pre-filtering (approximate) using anisotropic Gaussian if enabled
+        if approximating_PSF and np.any(pixels_per_sigma_PSF > 0):
+            try:
+                psf_sigma = tuple([float(s) for s in pixels_per_sigma_PSF])
+                image_prefiltered = gaussian_filter(image.astype(np.float32), sigma=psf_sigma)
+            except Exception:
+                image_prefiltered = image.astype(np.float32)
+        else:
+            image_prefiltered = image.astype(np.float32)
+
         # Multi-scale energy calculation
-        energy_4d = np.zeros((*image.shape, len(scale_factors)))
+        energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
         scale_indices = np.zeros(image.shape, dtype=np.int16)
         
         for scale_idx, radius_pixels in enumerate(lumen_radius_pixels):
@@ -132,7 +142,7 @@ class SLAVVProcessor:
             sigma = float(radius_pixels) / 2.0  # Approximate relationship (scalar)
             
             # Apply Gaussian smoothing
-            smoothed = gaussian_filter(image.astype(np.float32), sigma)
+            smoothed = gaussian_filter(image_prefiltered, sigma)
             
             # Calculate Hessian eigenvalues
             hessian = feature.hessian_matrix(smoothed, sigma=sigma)
@@ -145,22 +155,23 @@ class SLAVVProcessor:
             # Frangi-like vesselness measure
             vesselness = np.zeros_like(lambda1)
             
-            # Only consider voxels where lambda3 < 0 (bright structures)
-            mask = lambda3 < 0
+            # Only consider voxels where lambda2 and lambda3 < 0 (bright tubular structures in 3D)
+            mask = (lambda2 < 0) & (lambda3 < 0)
             
             if np.any(mask):
                 # Ratios for tubular structure detection
-                Ra = np.abs(lambda2[mask]) / np.abs(lambda3[mask])
-                Rb = np.abs(lambda1[mask]) / np.sqrt(np.abs(lambda2[mask] * lambda3[mask]))
+                Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
+                Rb = np.abs(lambda1[mask]) / (np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12)
                 S = np.sqrt(lambda1[mask]**2 + lambda2[mask]**2 + lambda3[mask]**2)
                 
-                # Vesselness response
+                # Vesselness response (Frangi-inspired)
+                alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
                 vesselness[mask] = (
-                    (1 - np.exp(-Ra**2 / (2 * 0.5**2))) *
-                    np.exp(-Rb**2 / (2 * 0.5**2)) *
-                    (1 - np.exp(-S**2 / (2 * np.max(S)**2)))
+                    (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2)))) *
+                    np.exp(-(Rb**2) / (2 * (beta**2))) *
+                    (1.0 - np.exp(-(S**2) / (2 * (c**2))))
                 )
-            
+             
             energy_4d[:, :, :, scale_idx] = -vesselness  # Negative for minima detection
         
         # Min projection across scales
@@ -173,7 +184,8 @@ class SLAVVProcessor:
             'lumen_radius_microns': lumen_radius_microns,
             'lumen_radius_pixels': lumen_radius_pixels,
             'pixels_per_sigma_PSF': pixels_per_sigma_PSF,
-            'energy_4d': energy_4d
+            'energy_4d': energy_4d,
+            'image_shape': image.shape
         }
 
     def extract_vertices(self, energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
