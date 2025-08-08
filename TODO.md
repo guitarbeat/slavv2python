@@ -12,6 +12,35 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Complete the implementation of `extract_edges` in `src/vectorization_core.py`.
 - [x] Complete the implementation of `construct_network` in `src/vectorization_core.py`.
 - [ ] Ensure all core functions in `src/vectorization_core.py` accurately reflect the MATLAB algorithm.
+  - [ ] `calculate_energy_field` parity with `get_energy_V202.m`
+    - [ ] Verify scale schedule: `scales_per_octave`, ordination, and min-projection across scales
+    - [ ] Match PSF handling and anisotropy; honor `gaussian_to_ideal_ratio` and `spherical_to_annular_ratio`
+    - [ ] Align vesselness/energy sign convention and threshold semantics
+    - [ ] Validate pixel↔micron conversions for radii and PSF sigmas
+  - [ ] `extract_vertices` parity with `get_vertices_V200.m`
+    - [ ] Local minima detection structuring element matches MATLAB behavior
+    - [ ] `energy_upper_bound`, `space_strel_apothem`, `length_dilation_ratio` semantics
+    - [ ] Volume-exclusion logic parity (ordering, tie-breaking, distance metric)
+  - [ ] `extract_edges` parity with `get_edges_V300.m`
+    - [ ] Implement proper gradient-descent ridge following (use energy gradients)
+    - [ ] Step size per origin radius and adaptive stepping termination
+    - [ ] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
+    - [ ] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
+    - [ ] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
+  - [ ] `construct_network` parity with `get_network_V190.m`
+    - [ ] Adjacency construction and symmetric connectivity
+    - [ ] Strand/connected component tracing and bifurcation detection
+    - [ ] Deduplicate edges; stable edge keying; retain edge traces
+  - [ ] Helper parity and units
+    - [ ] `_near_vertex` uses correct radius units (voxel vs micron); consistent with radii arrays
+    - [ ] `_compute_gradient` handles anisotropic voxels; central differences validated
+    - [ ] `_in_bounds` checks consistent with array indexing order
+  - [ ] I/O and outputs
+    - [ ] Confirm returned structures, dtypes, and shapes match expected consumers
+    - [ ] Document and test public API for stability
+  - [ ] Parity validation
+    - [ ] Add small-volume regression comparisons vs MATLAB outputs
+    - [ ] Record deviations and rationale where exact parity is not feasible
 - [x] Fix indentation and duplicate helper definitions in `src/vectorization_core.py` (syntax error around line ~443)
 - [x] Pass `vertex_scales` into `_trace_edge`; make `_near_vertex` return index; deduplicate `_trace_strand`/`_in_bounds`
 - [x] Standardize `lumen_radius_pixels` to scalar per-scale; correct Hessian `sigma` usage (scalar)
