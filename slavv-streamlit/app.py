@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 # Import our modules
 from src.vectorization_core import SLAVVProcessor, validate_parameters, calculate_network_statistics
-from src.ml_curator import MLCurator
+from src.ml_curator import MLCurator, AutomaticCurator
 from src.visualization import NetworkVisualizer
 
 # Page configuration
@@ -417,22 +417,22 @@ def show_processing_page():
                     # Step 1: Energy calculation
                     status_text.text("Calculating energy field...")
                     progress_bar.progress(25)
-                    time.sleep(1)
+                    time.sleep(0.2)
                     
                     # Step 2: Vertex extraction
                     status_text.text("Extracting vertices...")
                     progress_bar.progress(50)
-                    time.sleep(1)
+                    time.sleep(0.2)
                     
                     # Step 3: Edge extraction
                     status_text.text("Extracting edges...")
                     progress_bar.progress(75)
-                    time.sleep(1)
+                    time.sleep(0.2)
                     
                     # Step 4: Network construction
                     status_text.text("Constructing network...")
                     progress_bar.progress(90)
-                    time.sleep(1)
+                    time.sleep(0.2)
                     
                     # Complete processing
                     results = processor.process_image(image, validated_params)
@@ -443,6 +443,7 @@ def show_processing_page():
                 # Store results in session state
                 st.session_state["processing_results"] = results
                 st.session_state["parameters"] = validated_params
+                st.session_state["image_shape"] = image.shape
                 
                 # Display results summary
                 st.markdown("<div class=\"success-box\">", unsafe_allow_html=True)
@@ -731,7 +732,10 @@ def show_visualization_page():
         # Generate actual visualization based on type
         if viz_type == "2D Network":
             fig = visualizer.plot_2d_network(
-                results["vertices"], results["edges"], results["network"], parameters,
+                st.session_state["processing_results"]["vertices"],
+                st.session_state["processing_results"]["edges"],
+                st.session_state["processing_results"]["network"],
+                st.session_state["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
                 show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
             )
@@ -739,7 +743,10 @@ def show_visualization_page():
             
         elif viz_type == "3D Network":
             fig = visualizer.plot_3d_network(
-                results["vertices"], results["edges"], results["network"], parameters,
+                st.session_state["processing_results"]["vertices"],
+                st.session_state["processing_results"]["edges"],
+                st.session_state["processing_results"]["network"],
+                st.session_state["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
                 show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
             )
@@ -747,13 +754,17 @@ def show_visualization_page():
             
         elif viz_type == "Depth Projection":
             fig = visualizer.plot_depth_statistics(
-                results["vertices"], results["edges"], parameters
+                st.session_state["processing_results"]["vertices"],
+                st.session_state["processing_results"]["edges"],
+                st.session_state["parameters"]
             )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Strand Analysis":
             fig = visualizer.plot_strand_analysis(
-                results["network"], results["vertices"], parameters
+                st.session_state["processing_results"]["network"],
+                st.session_state["processing_results"]["vertices"],
+                st.session_state["parameters"]
             )
             st.plotly_chart(fig, use_container_width=True)
             
@@ -762,9 +773,10 @@ def show_visualization_page():
             # and potentially allow selecting a slice axis and index
             st.info("Energy Field visualization is a 2D slice. Select slice axis and index in sidebar.")
             slice_axis = st.sidebar.selectbox("Slice Axis", [0, 1, 2], format_func=lambda x: ["Y", "X", "Z"][x])
-            slice_index = st.sidebar.number_input("Slice Index", value=results["energy_data"]["energy"].shape[slice_axis] // 2)
+            energy = st.session_state["processing_results"]["energy_data"]["energy"]
+            slice_index = st.sidebar.number_input("Slice Index", value=int(energy.shape[slice_axis] // 2))
             fig = visualizer.plot_energy_field(
-                results["energy_data"], slice_axis=slice_axis, slice_index=slice_index
+                st.session_state["processing_results"]["energy_data"], slice_axis=slice_axis, slice_index=slice_index
             )
             st.plotly_chart(fig, use_container_width=True)    
     # Export options
@@ -801,8 +813,16 @@ def show_analysis_page():
     results = st.session_state["processing_results"]
     parameters = st.session_state["parameters"]
 
-    # Calculate actual statistics
-    stats = calculate_network_statistics(results["vertices"], results["edges"], results["network"], parameters)
+    # Calculate actual statistics using available data
+    from src.vectorization_core import calculate_network_statistics as _calc_stats
+    stats = _calc_stats(
+        results["network"]["strands"],
+        results["network"]["bifurcations"],
+        results["vertices"]["positions"],
+        results["vertices"]["radii"],
+        parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+        st.session_state.get("image_shape", (100, 100, 50))
+    )
 
     # Key metrics
     st.markdown("### 📊 Key Metrics")
@@ -814,10 +834,10 @@ def show_analysis_page():
         st.metric("Volume Fraction", f"{stats['volume_fraction']:.3f}")
 
     with col3:
-        st.metric("Bifurcation Density", f"{stats['bifurcation_density']:.2f} /mm³")
+        st.metric("Bifurcation Density", f"{stats.get('bifurcation_density', 0):.2f} /mm³")
 
     with col4:
-        st.metric("Mean Radius", f"{stats['mean_radius']:.2f} μm")
+        st.metric("Mean Radius", f"{stats.get('mean_radius', 0):.2f} μm")
     # Detailed analysis
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"])
 
@@ -852,7 +872,12 @@ def show_analysis_page():
             # Connectivity analysis
             connectivity_stats = pd.DataFrame({
                 "Metric": ["Connected Components", "Average Path Length", "Clustering Coefficient", "Network Diameter"],
-                "Value": [stats['num_connected_components'], stats['avg_path_length'], stats['clustering_coefficient'], stats['network_diameter']]
+                "Value": [
+                    stats.get('num_connected_components', 0),
+                    stats.get('avg_path_length', 0.0),
+                    stats.get('clustering_coefficient', 0.0),
+                    stats.get('network_diameter', 0.0)
+                ]
             })
             st.dataframe(connectivity_stats, use_container_width=True)
 
@@ -867,12 +892,12 @@ def show_analysis_page():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric("Mean Tortuosity", f"{stats['mean_tortuosity']:.2f}")
-            st.metric("Tortuosity Std", f"{stats['tortuosity_std']:.2f}")
+            st.metric("Mean Tortuosity", f"{stats.get('mean_tortuosity', 0):.2f}")
+            st.metric("Tortuosity Std", f"{stats.get('tortuosity_std', 0):.2f}")
 
         with col2:
-            st.metric("Fractal Dimension", f'{stats["fractal_dimension"]:.2f}')
-            st.metric("Lacunarity", f'{stats["lacunarity"]:.2f}')
+            st.metric("Fractal Dimension", f"{stats.get('fractal_dimension', 0):.2f}")
+            st.metric("Lacunarity", f"{stats.get('lacunarity', 0):.2f}")
 
     with tab4:
         st.markdown("#### Complete Statistics Table")
@@ -888,14 +913,14 @@ def show_analysis_page():
                 "Fractal Dimension", "Lacunarity", "Tortuosity Std"
             ],
                 "Value": [
-                    stats["num_strands"], stats["num_bifurcations"], stats["num_endpoints"],
-                    f'{stats["total_length"]:.1f}', f'{stats["mean_strand_length"]:.1f}', f'{stats["length_density"]:.3f}',
-                    f'{stats["volume_fraction"]:.4f}', f'{stats["mean_radius"]:.2f}', f'{stats["radius_std"]:.2f}',
-                    f'{stats["bifurcation_density"]:.2f}', f'{stats["surface_area"]:.1f}', f'{stats["mean_tortuosity"]:.3f}',
-                    stats["num_connected_components"], f'{stats["avg_path_length"]:.2f}', f'{stats["clustering_coefficient"]:.2f}', f'{stats["network_diameter"]:.2f}',
-                    f'{stats["fractal_dimension"]:.2f}', f'{stats["lacunarity"]:.2f}', f'{stats["tortuosity_std"]:.2f}'
+                    stats.get("num_strands", 0), stats.get("num_bifurcations", 0), stats.get("num_endpoints", 0),
+                    f'{stats.get("total_length", 0):.1f}', f'{stats.get("mean_strand_length", 0):.1f}', f'{stats.get("length_density", 0):.3f}',
+                    f'{stats.get("volume_fraction", 0):.4f}', f'{stats.get("mean_radius", 0):.2f}', f'{stats.get("radius_std", 0):.2f}',
+                    f'{stats.get("bifurcation_density", 0):.2f}', f'{stats.get("surface_area", 0):.1f}', f'{stats.get("mean_tortuosity", 0):.3f}',
+                    stats.get("num_connected_components", 0), f'{stats.get("avg_path_length", 0):.2f}', f'{stats.get("clustering_coefficient", 0):.2f}', f'{stats.get("network_diameter", 0):.2f}',
+                    f'{stats.get("fractal_dimension", 0):.2f}', f'{stats.get("lacunarity", 0):.2f}', f'{stats.get("tortuosity_std", 0):.2f}'
                 ]
-        })
+            })
 
         st.dataframe(full_stats, use_container_width=True)
 

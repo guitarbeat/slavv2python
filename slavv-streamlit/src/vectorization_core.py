@@ -119,7 +119,9 @@ class SLAVVProcessor:
         scale_ordinates = np.arange(-1, final_scale + 2)
         scale_factors = 2 ** (scale_ordinates / scales_per_octave / 3)
         lumen_radius_microns = radius_smallest * scale_factors
-        lumen_radius_pixels = lumen_radius_microns / np.array(microns_per_voxel)
+        # Convert to pixels using an average voxel size to produce scalar radii per scale
+        voxel_size_mean = float(np.mean(np.array(microns_per_voxel)))
+        lumen_radius_pixels = lumen_radius_microns / voxel_size_mean
         
         # Multi-scale energy calculation
         energy_4d = np.zeros((*image.shape, len(scale_factors)))
@@ -127,13 +129,13 @@ class SLAVVProcessor:
         
         for scale_idx, radius_pixels in enumerate(lumen_radius_pixels):
             # Calculate Hessian at this scale
-            sigma = radius_pixels / 2  # Approximate relationship
+            sigma = float(radius_pixels) / 2.0  # Approximate relationship (scalar)
             
             # Apply Gaussian smoothing
             smoothed = gaussian_filter(image.astype(np.float32), sigma)
             
             # Calculate Hessian eigenvalues
-            hessian = feature.hessian_matrix(smoothed, sigma=sigma[0])
+            hessian = feature.hessian_matrix(smoothed, sigma=sigma)
             eigenvals = feature.hessian_matrix_eigvals(hessian)
             
             # Energy function: enhance tubular structures
@@ -275,7 +277,7 @@ class SLAVVProcessor:
             for direction in directions:
                 edge_trace = self._trace_edge(
                     energy, start_pos, direction, step_size, 
-                    max_edge_energy, vertex_positions, lumen_radius_pixels
+                    max_edge_energy, vertex_positions, vertex_scales, lumen_radius_pixels
                 )
                 if len(edge_trace) > 1:  # Valid edge found
                     edges.append(edge_trace)
@@ -371,7 +373,7 @@ class SLAVVProcessor:
         return np.array(points)
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
                    step_size: float, max_energy: float, vertex_positions: np.ndarray,
-                   lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
+                   vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
         """Trace an edge through the energy field"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
@@ -404,13 +406,12 @@ class SLAVVProcessor:
             current_pos = next_pos.copy()
             
             # Update direction based on energy gradient (simplified for now)
-            # In MATLAB, this involves more complex gradient descent
-            # For now, we'll just continue in the same direction or a slightly perturbed one
             # A more accurate implementation would calculate the gradient of the energy field
             # and adjust the direction to move towards lower energy.
+            # For now, continue in the same direction.
             
             # Check if near another vertex (terminal vertex)
-            terminal_vertex_idx = self._near_vertex(current_pos, vertex_positions, lumen_radius_pixels)
+            terminal_vertex_idx = self._near_vertex(current_pos, vertex_positions, vertex_scales, lumen_radius_pixels)
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
                 break
@@ -435,84 +436,17 @@ class SLAVVProcessor:
         return strand
 
     def _in_bounds(self, pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
-        """Check if a position is within image bounds"""
-        for i in range(len(pos)):
-            if not (0 <= pos[i] < shape[i]):
-                return False
-        return True
-                break
-            
-            # Update position and direction based on local gradient
-            gradient = self._compute_gradient(energy, current_pos) # Use current_pos for gradient calculation
-            
-            # Normalize gradient and update direction
-            grad_norm = np.linalg.norm(gradient)
-            if grad_norm > 1e-10:
-                current_dir = -gradient / grad_norm
-            else:
-                # If gradient is zero, try to continue in the same direction or stop
-                # For now, just break to avoid infinite loop
-                break
-            
-            current_pos = next_pos
-            
-            trace.append(current_pos.copy())
-            
-            # Check if we've reached another vertex
-            if self._near_vertex(current_pos, vertex_positions, vertex_scales, lumen_radius_pixels):
-                break       
-        return trace
-
-    def _find_terminal_vertex(self, end_pos: np.ndarray, vertex_positions: np.ndarray,
-                             vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> Optional[int]:
-        """Find if edge terminates at a vertex"""
-        # Iterate through existing vertices to check for proximity
-        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-            # Calculate the radius of the vertex based on its scale
-            radius = lumen_radius_pixels[vertex_scale]
-            
-            # Calculate Euclidean distance between the end of the trace and the vertex
-            distance = np.linalg.norm(end_pos - vertex_pos)
-            
-            # If the distance is less than the vertex's radius, consider it a terminal vertex
-            if distance < radius:
-                return i
-        return None
-
-    def _trace_strand(self, start_vertex: int, adjacency: np.ndarray, 
-                     visited: np.ndarray) -> List[int]:
-        """Trace a connected strand of vertices"""
-        strand = []
-        queue = [start_vertex]
-        
-        while queue:
-            vertex = queue.pop(0)
-            if visited[vertex]:
-                continue
-                
-            visited[vertex] = True
-            strand.append(vertex)
-            
-            # Add connected vertices to queue
-            neighbors = np.where(adjacency[vertex])[0]
-            for neighbor in neighbors:
-                if not visited[neighbor]:
-                    queue.append(neighbor)
-        
-        return strand
-
-    def _in_bounds(self, pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
         """Check if position is within image bounds"""
         return all(0 <= p < s for p, s in zip(pos, shape))
 
     def _near_vertex(self, pos: np.ndarray, vertex_positions: np.ndarray, 
-                    vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> bool:
-        """Check if position is near any vertex"""
-        for vertex_pos, vertex_scale in zip(vertex_positions, vertex_scales):
+                    vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> Optional[int]:
+        """Return the index of a nearby vertex if within its radius; otherwise None"""
+        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
             radius = lumen_radius_pixels[vertex_scale]
             if np.linalg.norm(pos - vertex_pos) < radius:
-                return True
-        return False
+                return i
+        return None
 
     def _compute_gradient(self, energy: np.ndarray, pos: np.ndarray) -> np.ndarray:
         """Compute gradient at given position using finite differences"""
