@@ -1,5 +1,7 @@
 # SLAVV Python/Streamlit Implementation - Enhanced Version
 
+> Update (current): Fixed core syntax/logic issues in `vectorization_core.py`; standardized radii handling; corrected Hessian sigma usage; repaired Streamlit stats/visualization bindings; ensured energy field slice visualization. Parity gaps remain in energy kernel/PSF weighting, vertex volume exclusion, edge gradient descent, and network cleaning compared to MATLAB (`get_energy_V202.m`, `get_vertices_V200.m`, `get_edges_V300.m`).
+
 ## Overview
 
 This document summarizes the comprehensive improvements made to the SLAVV (Segmentation-Less, Automated, Vascular Vectorization) Python/Streamlit implementation based on your feedback regarding port completeness, parameter transparency, and user interface enhancements.
@@ -7,6 +9,8 @@ This document summarizes the comprehensive improvements made to the SLAVV (Segme
 ## Key Improvements Made
 
 ### 1. 🔍 Complete MATLAB Analysis and Port
+
+Note: Recent verification steps cross-checked behavior with original MATLAB functions (e.g., `get_energy_V202.m`, `get_vertices_V200.m`, `get_edges_V300.m`). The Python implementation remains a simplified, working port; exact numerical parity is not yet guaranteed for those components.
 
 **What was done:**
 - Thoroughly analyzed the original MATLAB `vectorize_V200.m` file
@@ -104,6 +108,8 @@ This document summarizes the comprehensive improvements made to the SLAVV (Segme
 
 ### 6. 💾 Enhanced Export and Data Management
 
+Note: VMV/CASX exports are minimal and intended for basic interchange; they are not yet spec-complete. MAT export is pending.
+
 **Multiple Export Formats:**
 - **VMV Format**: Vascular Modeling Visualization format
 - **CASX Format**: XML-based network description
@@ -169,11 +175,11 @@ app.py                 # Main application with enhanced UI
 ## Addressing Your Specific Concerns
 
 ### 1. Port Completeness
-✅ **Fully Addressed**: All major MATLAB functionality has been ported to Python
-- Complete 4-step SLAVV algorithm implementation
-- All parameter validation and processing options
-- ML curation capabilities from MLDeployment.py and MLLibrary.py
-- Statistical analysis and export functionality
+✅ **Largely Addressed**: All major pipeline stages exist and run end-to-end. Remaining items for stronger parity:
+- Energy kernel composition and PSF weighting details
+- Vertex volume exclusion geometry/performance
+- Gradient-descent ridge following and termination heuristics
+- Network cleaning (hairs/orphans/cycles)
 
 ### 2. Parameter Transparency
 ✅ **Fully Addressed**: All parameters now have clear explanations
