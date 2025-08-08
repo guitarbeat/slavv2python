@@ -19,6 +19,11 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Optimize vertex volume exclusion and geometry parity with `get_vertices_V200.m`
 - [ ] Implement proper gradient-descent ridge following for edges (closer to `get_edges_V300.m`)
 - [ ] Add network cleaning steps (hairs/orphans/cycles) per MATLAB scripts
+- [ ] Add preprocessing parity (intensity normalization, band fixes) inspired by `pre_processing.m` and `fix_intensity_bands.m`
+- [ ] Implement chunked/tiling processing using `get_chunking_lattice_V190.m` honoring `max_voxels_per_node_energy`
+- [ ] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
+- [ ] Add watershed-based edge alternative (`get_edges_by_watershed.m`) as a selectable method
+- [ ] Implement strand combining/sorting/mismatch fixes (`combine_strands.m`, `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m`)
 
 ## 2. ML Curation
 
@@ -26,6 +31,10 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Provide options for users to upload their own pre-trained models or training data.
 - [ ] Develop a clear workflow for training and deploying ML models within the Streamlit app.
 - [ ] Add training workflow and dataset ingestion in app; persist/load models
+- [ ] Port feature extraction parity from `vertex_feature_extractor.m` and `edge_info_extractor.m` (feature set alignment)
+- [ ] Align curator network behavior with `vertexCuratorNetwork_V*` and `edgeCuratorNetwork_V*`
+- [ ] Implement `choose_vertices_V200.m` and `choose_edges_V200.m` logic as additional heuristics
+- [ ] Add uncurated info extraction parity (`uncuratedInfoExtractor.m`) for QA datasets
 
 ## 3. Visualization Enhancements
 
@@ -33,6 +42,10 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Add more visualization options (e.g., coloring by other metrics, interactive slicing for 3D data).
 - [x] Implement visualization for the energy field with selectable axis and slice index.
 - [ ] Color edges by average energy/strand id with legends; improve 3D color/opacity mapping
+- [ ] Add depth coloring parity (`visualize_depth_via_color_V200.m`)
+- [ ] Add strand coloring in 3D parity (`visualize_strands_via_color_3D_V2/V3.m`)
+- [ ] Add animated strand visualization parity (`animate_strands_3D.m`)
+- [ ] Explore flow field rendering parity (`render_flow_field_V3/V4.m`)
 
 ## 4. Error Handling and Robustness
 
@@ -40,12 +53,16 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Fix statistics page to use available data and avoid KeyErrors; guard metrics with defaults
 - [ ] Enhance parameter validation with more specific error messages and suggestions.
 - [ ] Implement robust handling for edge cases in image processing and network construction.
+- [ ] Implement cropping helpers parity (`crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m`)
 
 ## 5. Performance Optimization
 
 - [ ] Profile the core SLAVV algorithm functions to identify performance bottlenecks.
 - [ ] Explore using Numba or Cython for computationally intensive parts of the code.
 - [ ] Optimize data structures and algorithms for better memory usage and speed.
+- [ ] Implement chunking lattice and on-the-fly tiling (parity with `get_chunking_lattice_V190.m`)
+- [ ] Evaluate memory mapping/HDF5 streaming for large volumes (parity with MATLAB I/O patterns)
+- [ ] Consider scikit-image Sato/Frangi optimized paths or custom vectorized kernels
 
 ## 6. Testing
 
@@ -53,12 +70,14 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
 - [ ] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
 - [ ] Set up a continuous integration (CI) pipeline for automated testing.
+- [ ] Add parity tests for statistics vs. MATLAB (`calculate_network_statistics.m`, `calculate_surface_area.m`)
 
 ## 7. Documentation
 
 - [ ] Add detailed docstrings to all functions and classes in the codebase.
 - [ ] Expand the `README.md` with more detailed setup instructions, usage examples, and troubleshooting tips.
 - [ ] Create a dedicated `docs` directory for comprehensive user and developer documentation.
+- [ ] Add a MATLAB→Python function mapping table with parity level (exact/approx/omitted)
 
 ## 8. User Experience (UX) Enhancements
 
@@ -71,6 +90,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 - [ ] Ensure full support for all export formats mentioned in the original MATLAB SLAVV documentation (VMV, CASX, MAT, CSV, JSON).
 - [ ] Complete VMV/CASX specs; add MAT export
+- [ ] Add import support for CASX/VMV/MAT (parity with `casx_mat2file.m`, `casX2mat.m`, `vmv_mat2file.m`, `strand2vmv.m`, `strand2casx.m`)
 
 ## Notes
 
