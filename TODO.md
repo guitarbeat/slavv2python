@@ -105,8 +105,8 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 - [ ] Add detailed docstrings to all functions and classes in the codebase.
 - [ ] Expand the `README.md` with more detailed setup instructions, usage examples, and troubleshooting tips.
-- [ ] Create a dedicated `docs` directory for comprehensive user and developer documentation.
-- [ ] Add a MATLAB→Python function mapping table with parity level (exact/approx/omitted)
+- [x] Create a dedicated `docs` directory for comprehensive user and developer documentation.
+- [x] Add a MATLAB→Python function mapping table with parity level (exact/approx/omitted) — see `docs/MATLAB_TO_PYTHON_MAPPING.md`.
 
 ## 8. User Experience (UX) Enhancements
 
