@@ -6,7 +6,7 @@
 - **Task**: Investigate and fix unexpected indent at line 443 in `slavv-streamlit/src/vectorization_core.py`
 - **Impact**: High - Syntax errors prevent code execution
 - **Effort**: Low (quick fix)
-- **Action**: Examine the break statement and correct indentation
+- **Status**: Completed — removed stray duplicated block, deduplicated helpers, recompiled successfully
 
 ### 1.2 Remove Unused Imports (High Confidence)
 - **Task**: Remove unused imports identified by vulture (90% confidence)
@@ -136,6 +136,15 @@
   - Are there memory usage implications?
   - Will shared utilities impact startup time?
 - **Action**: Measure and optimize performance
+
+## Priority 6: MATLAB Parity Follow-ups
+
+- **Energy Field Parity**: Align kernel construction and PSF weighting with `get_energy_V202.m`
+- **Vertex Extraction Parity**: Optimize volume exclusion and geometry to match `get_vertices_V200.m`
+- **Edge Tracing Parity**: Implement gradient-descent ridge following and termination heuristics akin to `get_edges_V300.m`
+- **Network Cleaning**: Add steps for hairs/orphans/cycles consistent with MATLAB scripts
+
+Note: These items come from recent source checks against the original MATLAB repository.
 
 ## Investigation Guidelines
 
