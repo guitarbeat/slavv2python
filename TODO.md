@@ -12,22 +12,32 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Complete the implementation of `extract_edges` in `src/vectorization_core.py`.
 - [x] Complete the implementation of `construct_network` in `src/vectorization_core.py`.
 - [ ] Ensure all core functions in `src/vectorization_core.py` accurately reflect the MATLAB algorithm.
+- [x] Fix indentation and duplicate helper definitions in `src/vectorization_core.py` (syntax error around line ~443)
+- [x] Pass `vertex_scales` into `_trace_edge`; make `_near_vertex` return index; deduplicate `_trace_strand`/`_in_bounds`
+- [x] Standardize `lumen_radius_pixels` to scalar per-scale; correct Hessian `sigma` usage (scalar)
+- [ ] Improve energy field to more closely match `get_energy_V202.m` filter kernels and PSF weighting
+- [ ] Optimize vertex volume exclusion and geometry parity with `get_vertices_V200.m`
+- [ ] Implement proper gradient-descent ridge following for edges (closer to `get_edges_V300.m`)
+- [ ] Add network cleaning steps (hairs/orphans/cycles) per MATLAB scripts
 
 ## 2. ML Curation
 
 - [ ] Integrate actual machine learning models for vertex and edge curation in `src/ml_curator.py`.
 - [ ] Provide options for users to upload their own pre-trained models or training data.
 - [ ] Develop a clear workflow for training and deploying ML models within the Streamlit app.
+- [ ] Add training workflow and dataset ingestion in app; persist/load models
 
 ## 3. Visualization Enhancements
 
 - [ ] Refine 2D and 3D network visualizations for better clarity and interactivity.
 - [ ] Add more visualization options (e.g., coloring by other metrics, interactive slicing for 3D data).
-- [ ] Implement visualization for the energy field, allowing users to select slices.
+- [x] Implement visualization for the energy field with selectable axis and slice index.
+- [ ] Color edges by average energy/strand id with legends; improve 3D color/opacity mapping
 
 ## 4. Error Handling and Robustness
 
 - [ ] Improve error handling for file uploads (e.g., non-TIFF files, corrupted TIFFs).
+- [x] Fix statistics page to use available data and avoid KeyErrors; guard metrics with defaults
 - [ ] Enhance parameter validation with more specific error messages and suggestions.
 - [ ] Implement robust handling for edge cases in image processing and network construction.
 
@@ -40,6 +50,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 ## 6. Testing
 
 - [ ] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
+- [ ] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
 - [ ] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
 - [ ] Set up a continuous integration (CI) pipeline for automated testing.
 
@@ -59,7 +70,11 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 ## 9. Export Formats
 
 - [ ] Ensure full support for all export formats mentioned in the original MATLAB SLAVV documentation (VMV, CASX, MAT, CSV, JSON).
-- [ ] Implement robust export functionalities for each format.
+- [ ] Complete VMV/CASX specs; add MAT export
+
+## Notes
+
+- Progress items were verified against original MATLAB references (e.g., `get_energy_V202.m`, `get_vertices_V200.m`, `get_edges_V300.m`) where applicable.
 
 
 
