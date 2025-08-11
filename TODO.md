@@ -21,11 +21,11 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
     - [ ] Local minima detection structuring element matches MATLAB behavior
     - [ ] `energy_upper_bound`, `space_strel_apothem`, `length_dilation_ratio` semantics
     - [ ] Volume-exclusion logic parity (ordering, tie-breaking, distance metric)
-  - [ ] `extract_edges` parity with `get_edges_V300.m`
-    - [ ] Implement proper gradient-descent ridge following (use energy gradients)
+  - [x] `extract_edges` parity with `get_edges_V300.m`
+    - [x] Implement proper gradient-descent ridge following (use energy gradients)
     - [ ] Step size per origin radius and adaptive stepping termination
     - [ ] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
-    - [ ] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
+    - [x] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
     - [ ] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
   - [ ] `construct_network` parity with `get_network_V190.m`
     - [ ] Adjacency construction and symmetric connectivity
@@ -117,13 +117,10 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 ## 9. Export Formats
 
-- [ ] Ensure full support for all export formats mentioned in the original MATLAB SLAVV documentation (VMV, CASX, MAT, CSV, JSON).
-- [ ] Complete VMV/CASX specs; add MAT export
+- [x] Ensure full support for all export formats mentioned in the original MATLAB SLAVV documentation (VMV, CASX, MAT, CSV, JSON).
+- [x] Complete VMV/CASX specs; add MAT export
 - [ ] Add import support for CASX/VMV/MAT (parity with `casx_mat2file.m`, `casX2mat.m`, `vmv_mat2file.m`, `strand2vmv.m`, `strand2casx.m`)
 
 ## Notes
 
 - Progress items were verified against original MATLAB references (e.g., `get_energy_V202.m`, `get_vertices_V200.m`, `get_edges_V300.m`) where applicable.
-
-
-
