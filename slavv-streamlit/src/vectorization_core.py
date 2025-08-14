@@ -417,17 +417,20 @@ class SLAVVProcessor:
             trace.append(next_pos.copy())
             current_pos = next_pos.copy()
             
-            # Update direction based on energy gradient (simplified for now)
-            # A more accurate implementation would calculate the gradient of the energy field
-            # and adjust the direction to move towards lower energy.
-            # For now, continue in the same direction.
+            # Update direction based on energy gradient (gradient-descent ridge following)
+            gradient = self._compute_gradient(energy, current_pos)
+            grad_norm = np.linalg.norm(gradient)
+            if grad_norm > 1e-12:
+                # Move toward decreasing energy
+                current_dir = (-gradient / grad_norm).astype(float)
+            # else keep previous direction
             
             # Check if near another vertex (terminal vertex)
             terminal_vertex_idx = self._near_vertex(current_pos, vertex_positions, vertex_scales, lumen_radius_pixels)
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
                 break
-                
+            
         return trace
 
     def _trace_strand(self, start_vertex_idx: int, adjacency: np.ndarray, visited: np.ndarray) -> List[int]:
@@ -459,6 +462,11 @@ class SLAVVProcessor:
             if np.linalg.norm(pos - vertex_pos) < radius:
                 return i
         return None
+
+    def _find_terminal_vertex(self, pos: np.ndarray, vertex_positions: np.ndarray,
+                              vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> Optional[int]:
+        """Find the index of a terminal vertex near a given position, if any."""
+        return self._near_vertex(pos, vertex_positions, vertex_scales, lumen_radius_pixels)
 
     def _compute_gradient(self, energy: np.ndarray, pos: np.ndarray) -> np.ndarray:
         """Compute gradient at given position using finite differences"""
