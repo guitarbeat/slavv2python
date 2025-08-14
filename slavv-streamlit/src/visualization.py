@@ -647,6 +647,8 @@ class NetworkVisualizer:
             return self._export_vmv(vertices, edges, network, parameters, output_path)
         elif format == 'casx':
             return self._export_casx(vertices, edges, network, parameters, output_path)
+        elif format == 'mat':
+            return self._export_mat(vertices, edges, network, parameters, output_path)
         else:
             raise ValueError(f"Unsupported export format: {format}")
     
@@ -778,5 +780,37 @@ class NetworkVisualizer:
             f.write("</CasX>\n")
         
         logger.info(f"CASX export complete: {output_path}")
+        return output_path
+
+    def _export_mat(self, vertices: Dict[str, Any], edges: Dict[str, Any],
+                    network: Dict[str, Any], parameters: Dict[str, Any],
+                    output_path: str) -> str:
+        """Export data to MATLAB .mat format using scipy.io.savemat"""
+        try:
+            from scipy.io import savemat
+        except ImportError as e:
+            raise ImportError("scipy is required for MAT export. Please install scipy.") from e
+
+        data = {
+            'vertices': {
+                'positions': np.asarray(vertices.get('positions', [])),
+                'energies': np.asarray(vertices.get('energies', [])),
+                'radii': np.asarray(vertices.get('radii', [])),
+                'scales': np.asarray(vertices.get('scales', [])),
+            },
+            'edges': {
+                'connections': np.asarray(edges.get('connections', []), dtype=object),
+                'traces': np.array([np.asarray(t) for t in edges.get('traces', [])], dtype=object),
+            },
+            'network': {
+                'strands': np.asarray(network.get('strands', []), dtype=object),
+                'bifurcations': np.asarray(network.get('bifurcations', [])),
+                'vertex_degrees': np.asarray(network.get('vertex_degrees', [])),
+            },
+            'parameters': parameters,
+        }
+
+        savemat(output_path, data, do_compression=True)
+        logger.info(f"MAT export complete: {output_path}")
         return output_path
 
