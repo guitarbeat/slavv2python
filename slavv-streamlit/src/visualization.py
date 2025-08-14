@@ -10,8 +10,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-import matplotlib.pyplot as plt
-import seaborn as sns
+
+
 from typing import Dict, List, Tuple, Optional, Any
 import logging
 from pathlib import Path
@@ -105,7 +105,7 @@ class NetworkVisualizer:
                     line=dict(color=color, width=2),
                     name=f'Edge {i}' if i < 10 else '',
                     showlegend=i < 10,
-                    hovertemplate=f'Edge {i}<br>Length: {self._calculate_path_length(trace):.1f} μm<extra></extra>'
+                    hovertemplate=f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
                 ))
         
         # Plot vertices
@@ -227,7 +227,7 @@ class NetworkVisualizer:
                     line=dict(color=color, width=4),
                     name=f'Edge {i}' if i < 10 else '',
                     showlegend=i < 10,
-                    hovertemplate=f'Edge {i}<br>Length: {self._calculate_path_length(trace):.1f} μm<extra></extra>'
+                    hovertemplate=f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
                 ))
         
         # Plot vertices
@@ -423,7 +423,7 @@ class NetworkVisualizer:
                 continue
             trace = np.array(trace)
             depth = np.mean(trace[:, 2]) * microns_per_voxel[2]
-            length = self._calculate_path_length(trace * microns_per_voxel)
+            length = calculate_path_length(trace * microns_per_voxel)
             edge_depths.append(depth)
             edge_lengths.append(length)
         
@@ -651,14 +651,7 @@ class NetworkVisualizer:
             return self._export_mat(vertices, edges, network, parameters, output_path)
         else:
             raise ValueError(f"Unsupported export format: {format}")
-    
-    def _calculate_path_length(self, path: np.ndarray) -> float:
-        """Calculate total length of a path"""
-        if len(path) < 2:
-            return 0.0
-        distances = np.linalg.norm(np.diff(path, axis=0), axis=1)
-        return np.sum(distances)
-    
+
     def _export_csv(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
                    network: Dict[str, Any], parameters: Dict[str, Any], 
                    output_path: str) -> str:
@@ -782,6 +775,7 @@ class NetworkVisualizer:
         logger.info(f"CASX export complete: {output_path}")
         return output_path
 
+<<<<<<< HEAD
     def _export_mat(self, vertices: Dict[str, Any], edges: Dict[str, Any],
                     network: Dict[str, Any], parameters: Dict[str, Any],
                     output_path: str) -> str:
@@ -813,4 +807,8 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
+=======
+
+from .utils import calculate_path_length
+>>>>>>> c6e597b (Fix syntax error, remove unused imports, and refactor path length calculation into a shared utility.)
 
