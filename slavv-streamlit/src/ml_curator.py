@@ -157,7 +157,7 @@ class MLCurator:
             start_vertex, end_vertex = connection
             
             # Basic geometric features
-            edge_length = self._calculate_path_length(trace)
+            edge_length = calculate_path_length(trace)
             euclidean_distance = np.linalg.norm(trace[-1] - trace[0])
             tortuosity = edge_length / (euclidean_distance + 1e-10)
             
@@ -539,13 +539,6 @@ class MLCurator:
         
         return gradient
     
-    def _calculate_path_length(self, path: np.ndarray) -> float:
-        """Calculate total length of a path"""
-        if len(path) < 2:
-            return 0.0
-        
-        distances = np.linalg.norm(np.diff(path, axis=0), axis=1)
-        return np.sum(distances)
     
     def _in_bounds(self, pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
         """Check if position is within bounds"""
@@ -668,7 +661,7 @@ class AutomaticCurator:
                 continue
                 
             trace = np.array(trace)
-            edge_length = self._calculate_path_length(trace)
+            edge_length = calculate_path_length(trace)
             
             if edge_length < min_length:
                 keep_mask[i] = False
@@ -681,7 +674,7 @@ class AutomaticCurator:
                 continue
                 
             trace = np.array(trace)
-            edge_length = self._calculate_path_length(trace)
+            edge_length = calculate_path_length(trace)
             euclidean_distance = np.linalg.norm(trace[-1] - trace[0])
             
             if euclidean_distance > 0:
@@ -728,11 +721,7 @@ class AutomaticCurator:
         
         return curated_edges
     
-    def _calculate_path_length(self, path: np.ndarray) -> float:
-        """Calculate total length of a path"""
-        if len(path) < 2:
-            return 0.0
-        
-        distances = np.linalg.norm(np.diff(path, axis=0), axis=1)
-        return np.sum(distances)
+
+
+from .utils import calculate_path_length
 
