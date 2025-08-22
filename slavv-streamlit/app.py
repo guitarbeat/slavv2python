@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 import json
-import time
 from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
@@ -113,7 +112,7 @@ def show_home_page():
     
     st.markdown("<h2 class=\"section-header\">Welcome to SLAVV</h2>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([2, 1], gap="large", vertical_alignment="top")
     
     with col1:
         st.markdown("""
@@ -149,28 +148,31 @@ def show_home_page():
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
-        st.markdown("### 📊 Quick Stats")
-        
-        # Sample statistics (would be replaced with actual data)
-        st.metric("Supported Image Types", "TIFF", help="3D grayscale TIFF images")
-        st.metric("Processing Steps", "4", help="Energy → Vertices → Edges → Network")
-        st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
-        
-        st.markdown("### 🔧 System Requirements")
-        st.markdown("""
-        - **Input**: 3D TIFF images
-        - **Memory**: Depends on image size
-        - **Processing**: Multi-threaded CPU
-        - **Output**: Vector networks + statistics
-        """)
-        
-        st.markdown("### 📚 Documentation")
-        st.markdown("""
-        - [Algorithm Overview](#)
-        - [Parameter Guide](#)
-        - [Export Formats](#)
-        - [Troubleshooting](#)
-        """)
+        with st.container(
+            height=400, gap="medium", horizontal_alignment="center"
+        ):
+            st.markdown("### 📊 Quick Stats")
+
+            # Sample statistics (would be replaced with actual data)
+            st.metric("Supported Image Types", "TIFF", help="3D grayscale TIFF images")
+            st.metric("Processing Steps", "4", help="Energy → Vertices → Edges → Network")
+            st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
+
+            st.markdown("### 🔧 System Requirements")
+            st.markdown("""
+            - **Input**: 3D TIFF images
+            - **Memory**: Depends on image size
+            - **Processing**: Multi-threaded CPU
+            - **Output**: Vector networks + statistics
+            """)
+
+            st.markdown("### 📚 Documentation")
+            st.markdown("""
+            - [Algorithm Overview](#)
+            - [Parameter Guide](#)
+            - [Export Formats](#)
+            - [Troubleshooting](#)
+            """)
 
 def show_processing_page():
     """Display the image processing page"""
@@ -210,7 +212,7 @@ def show_processing_page():
     with tab1:
         st.markdown("#### Microscopy Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             microns_per_voxel_y = st.number_input(
@@ -264,7 +266,7 @@ def show_processing_page():
     with tab2:
         st.markdown("#### Vessel Size Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             radius_smallest = st.number_input(
@@ -298,7 +300,7 @@ def show_processing_page():
     with tab3:
         st.markdown("#### Processing Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             energy_upper_bound = st.number_input(
@@ -335,7 +337,7 @@ def show_processing_page():
     with tab4:
         st.markdown("#### Advanced Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             gaussian_to_ideal_ratio = st.slider(
@@ -367,7 +369,7 @@ def show_processing_page():
     st.markdown("<h3 class=\"section-header\">Processing</h3>", unsafe_allow_html=True)
     
     if uploaded_file is not None:
-        if st.button("🚀 Start Processing", type="primary"):
+        if st.button("🚀 Start Processing", type="primary", width=250):
             
             # Collect parameters
             parameters = {
@@ -394,53 +396,87 @@ def show_processing_page():
                     "sample_index_of_refraction": sample_index_of_refraction
                 })
             
-            # Validate parameters
-            try:
-                validated_params = validate_parameters(parameters)
-                st.success("✅ Parameters validated successfully")
-                
-                # Show processing progress using Streamlit status element
-                with st.status("Processing image...", expanded=True) as status:
-                    progress_bar = st.progress(0)
+#             # Validate parameters
+#             try:
+#                 validated_params = validate_parameters(parameters)
+#                 st.success("✅ Parameters validated successfully")
+# <<<<<<< codex/update-to-latest-streamlit-version
 
-                    # Load image (placeholder - would load actual TIFF)
-                    import tifffile
-                    status.update(label="Loading image...", state="running")
-                    progress_bar.progress(10)
+#                 with st.status(
+#                     "Processing image...",
+#                     expanded=True,
+#                 ) as status:
+#                     progress = status.progress(0)
+#                     import tifffile
+
+#                     status.update(label="Loading image...", state="running")
+#                     progress.progress(10)
+# =======
+                
+#                 # Show processing progress using Streamlit status element
+#                 with st.status("Processing image...", expanded=True) as status:
+#                     progress_bar = st.progress(0)
+
+#                     # Load image (placeholder - would load actual TIFF)
+#                     import tifffile
+#                     status.update(label="Loading image...", state="running")
+#                     progress_bar.progress(10)
+# >>>>>>> main
                     try:
                         image = tifffile.imread(uploaded_file)
-                        st.success(f"✅ Image loaded successfully with shape: {image.shape}")
+                        st.success(
+                            f"✅ Image loaded successfully with shape: {image.shape}"
+                        )
                     except Exception as e:
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
-                    # Initialize processor
-                    processor = SLAVVProcessor()
+#                     processor = SLAVVProcessor()
 
-                    # Step 1: Energy calculation
-                    status.update(label="Calculating energy field...", state="running")
-                    progress_bar.progress(25)
-                    time.sleep(0.2)
+# <<<<<<< codex/update-to-latest-streamlit-version
+#                     status.update(
+#                         label="Calculating energy field...", state="running"
+#                     )
+#                     progress.progress(25)
 
-                    # Step 2: Vertex extraction
-                    status.update(label="Extracting vertices...", state="running")
-                    progress_bar.progress(50)
-                    time.sleep(0.2)
+#                     status.update(label="Extracting vertices...", state="running")
+#                     progress.progress(50)
 
-                    # Step 3: Edge extraction
-                    status.update(label="Extracting edges...", state="running")
-                    progress_bar.progress(75)
-                    time.sleep(0.2)
+#                     status.update(label="Extracting edges...", state="running")
+#                     progress.progress(75)
 
-                    # Step 4: Network construction
-                    status.update(label="Constructing network...", state="running")
-                    progress_bar.progress(90)
-                    time.sleep(0.2)
+#                     status.update(label="Constructing network...", state="running")
+#                     progress.progress(90)
 
-                    # Complete processing
-                    results = processor.process_image(image, validated_params)
+#                     results = processor.process_image(image, validated_params)
 
-                    progress_bar.progress(100)
-                    status.update(label="Processing complete!", state="complete")
+#                     progress.progress(100)
+# =======
+#                     # Step 1: Energy calculation
+#                     status.update(label="Calculating energy field...", state="running")
+#                     progress_bar.progress(25)
+#                     time.sleep(0.2)
+
+#                     # Step 2: Vertex extraction
+#                     status.update(label="Extracting vertices...", state="running")
+#                     progress_bar.progress(50)
+#                     time.sleep(0.2)
+
+#                     # Step 3: Edge extraction
+#                     status.update(label="Extracting edges...", state="running")
+#                     progress_bar.progress(75)
+#                     time.sleep(0.2)
+
+#                     # Step 4: Network construction
+#                     status.update(label="Constructing network...", state="running")
+#                     progress_bar.progress(90)
+#                     time.sleep(0.2)
+
+#                     # Complete processing
+#                     results = processor.process_image(image, validated_params)
+
+#                     progress_bar.progress(100)
+# >>>>>>> main
+#                     status.update(label="Processing complete!", state="complete")
                 
                 # Store results in session state
                 st.session_state["processing_results"] = results
@@ -453,7 +489,9 @@ def show_processing_page():
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 # Results summary
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4 = st.columns(
+                    4, gap="small", vertical_alignment="center"
+                )
                 
                 with col1:
                     st.metric("Vertices Found", len(results["vertices"]["positions"]))
@@ -500,7 +538,7 @@ def show_ml_curation_page():
 
     if curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         with col1:
             vertex_energy_threshold = st.number_input(
                 "Vertex Energy Threshold", 
@@ -550,40 +588,50 @@ def show_ml_curation_page():
             "image_shape": st.session_state["image_shape"] # Pass image shape for boundary check
         }
 
-        if st.button("🚀 Start Automatic Curation", type="primary"):
-            with st.spinner("Performing automatic curation..."):
+        if st.button("🚀 Start Automatic Curation", type="primary", width=250):
+            with st.status(
+                "Performing automatic curation...",
+                expanded=True,
+            ) as status:
                 curator = AutomaticCurator()
-                
-                # Curate vertices
+
                 curated_vertices = curator.curate_vertices_automatic(
                     results["vertices"], results["energy_data"], auto_curation_params
                 )
-                
-                # Curate edges
+
                 curated_edges = curator.curate_edges_automatic(
                     results["edges"], curated_vertices, auto_curation_params
                 )
-                
-                # Update session state with curated results
+
                 st.session_state["processing_results"]["vertices"] = curated_vertices
                 st.session_state["processing_results"]["edges"] = curated_edges
-                
+
                 st.success("✅ Automatic curation complete!")
-                
-                # Display results summary
-                col1, col2 = st.columns(2)
+                status.update(
+                    label="Automatic curation complete!", state="complete"
+                )
+
+                col1, col2 = st.columns(2, gap="small")
                 with col1:
-                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
-                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                    st.metric(
+                        "Original Vertices", len(results["vertices"]["positions"])
+                    )
+                    st.metric(
+                        "Curated Vertices", len(curated_vertices["positions"])
+                    )
                 with col2:
-                    st.metric("Original Edges", len(results["edges"]["traces"]))
-                    st.metric("Curated Edges", len(curated_edges["traces"]))
+                    st.metric(
+                        "Original Edges", len(results["edges"]["traces"])
+                    )
+                    st.metric(
+                        "Curated Edges", len(curated_edges["traces"])
+                    )
 
     elif curation_type == "Machine Learning (Model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
         st.warning("⚠️ Machine Learning Curation requires trained models. This functionality is under development and requires pre-trained models or a training dataset.")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             vertex_curation_method = st.selectbox(
@@ -611,44 +659,63 @@ def show_ml_curation_page():
                 help="Minimum confidence score for keeping edges"
             )
 
-        if st.button("🤖 Start ML Curation", type="primary"):
-            with st.spinner("Performing ML curation..."):
+        if st.button("🤖 Start ML Curation", type="primary", width=250):
+            with st.status(
+                "Performing ML curation...",
+                expanded=True,
+            ) as status:
                 curator = MLCurator()
-                
+
                 # In a real scenario, you would load pre-trained models here
-                # curator.load_models("path/to/vertex_model.joblib", "path/to/edge_model.joblib")
-                
+                # curator.load_models(
+                #     "path/to/vertex_model.joblib",
+                #     "path/to/edge_model.joblib",
+                # )
+
                 if curator.vertex_classifier is None or curator.edge_classifier is None:
-                    st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
+                    st.error(
+                        "❌ ML models not loaded or trained. Cannot perform ML curation."
+                    )
                     st.stop()
 
-                # Curate vertices
                 curated_vertices = curator.curate_vertices(
-                    results["vertices"], results["energy_data"], st.session_state["image_shape"], vertex_confidence_threshold
+                    results["vertices"],
+                    results["energy_data"],
+                    st.session_state["image_shape"],
+                    vertex_confidence_threshold,
                 )
-                
-                # Curate edges
+
                 curated_edges = curator.curate_edges(
-                    results["edges"], curated_vertices, results["energy_data"], edge_confidence_threshold
+                    results["edges"],
+                    curated_vertices,
+                    results["energy_data"],
+                    edge_confidence_threshold,
                 )
-                
-                # Update session state with curated results
+
                 st.session_state["processing_results"]["vertices"] = curated_vertices
                 st.session_state["processing_results"]["edges"] = curated_edges
-                
+
                 st.success("✅ ML curation complete!")
-                
-                # Display results summary
-                col1, col2 = st.columns(2)
+                status.update(label="ML curation complete!", state="complete")
+
+                col1, col2 = st.columns(2, gap="small")
                 with col1:
-                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
-                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                    st.metric(
+                        "Original Vertices", len(results["vertices"]["positions"])
+                    )
+                    st.metric(
+                        "Curated Vertices", len(curated_vertices["positions"])
+                    )
                 with col2:
-                    st.metric("Original Edges", len(results["edges"]["traces"]))
-                    st.metric("Curated Edges", len(curated_edges["traces"]))
+                    st.metric(
+                        "Original Edges", len(results["edges"]["traces"])
+                    )
+                    st.metric(
+                        "Curated Edges", len(curated_edges["traces"])
+                    )
 
     # Curation results
-    if st.button("📊 Show Curation Statistics"):
+    if st.button("📊 Show Curation Statistics", width=250):
         st.markdown("### 📈 Curation Results")
         
         # Get current curated counts
@@ -702,7 +769,7 @@ def show_visualization_page():
         help="Choose the type of visualization to display"
     )
     
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 1], gap="large")
     
     with col2:
         st.markdown("### 🎨 Display Options")
@@ -784,18 +851,18 @@ def show_visualization_page():
     # Export options
     st.markdown("### 💾 Export Options")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3, gap="medium")
     
     with col1:
-        if st.button("📄 Export VMV"):
+        if st.button("📄 Export VMV", width=150):
             st.success("✅ VMV file exported. (MATLAB: SpecialOutput=\'vmv\')")
     
     with col2:
-        if st.button("📄 Export CASX"):
+        if st.button("📄 Export CASX", width=150):
             st.success("✅ CASX file exported. (MATLAB: SpecialOutput=\'casX\')")
     
     with col3:
-        if st.button("📊 Export CSV"):
+        if st.button("📊 Export CSV", width=150):
             st.success("✅ CSV data exported. (Custom Python export)")
 
 def show_analysis_page():
@@ -829,7 +896,7 @@ def show_analysis_page():
     # Key metrics
     st.markdown("### 📊 Key Metrics")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
     with col1:
         st.metric("Total Length", f'{stats["total_length"]:.1f} μm')
     with col2:
@@ -848,7 +915,7 @@ def show_analysis_page():
     with tab1:
         st.markdown("#### Length and Radius Distributions")
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="large")
 
         with col1:
             # Length distribution
@@ -863,7 +930,7 @@ def show_analysis_page():
     with tab2:
         st.markdown("#### Network Topology")
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="large")
 
         with col1:
             # Degree distribution
@@ -891,7 +958,7 @@ def show_analysis_page():
         st.plotly_chart(fig_depth, use_container_width=True)
 
         # Tortuosity analysis
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="small")
 
         with col1:
             st.metric("Mean Tortuosity", f"{stats.get('mean_tortuosity', 0):.2f}")
