@@ -198,7 +198,12 @@ def show_processing_page():
     
     # Processing parameters
     st.markdown("<h3 class=\"section-header\">Processing Parameters</h3>", unsafe_allow_html=True)
-    
+    with st.popover("ℹ️ Parameter tips", width=300):
+        st.write(
+            "Use the tabs below to adjust microscopy, vessel size, processing, "
+            "and advanced options. Defaults are provided for typical datasets."
+        )
+
     # Create tabs for parameter categories
     tab1, tab2, tab3, tab4 = st.tabs(["🔬 Microscopy", "📏 Vessel Sizes", "⚙️ Processing", "🔬 Advanced"])
     
