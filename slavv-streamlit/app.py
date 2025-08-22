@@ -394,16 +394,13 @@ def show_processing_page():
                 validated_params = validate_parameters(parameters)
                 st.success("✅ Parameters validated successfully")
                 
-                # Show processing progress
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                # Simulate processing (replace with actual processing)
-                with st.spinner("Processing image..."):
-                    
+                # Show processing progress using Streamlit status element
+                with st.status("Processing image...", expanded=True) as status:
+                    progress_bar = st.progress(0)
+
                     # Load image (placeholder - would load actual TIFF)
                     import tifffile
-                    status_text.text("Loading image...")
+                    status.update(label="Loading image...", state="running")
                     progress_bar.progress(10)
                     try:
                         image = tifffile.imread(uploaded_file)
@@ -413,32 +410,32 @@ def show_processing_page():
                         st.stop()
                     # Initialize processor
                     processor = SLAVVProcessor()
-                    
+
                     # Step 1: Energy calculation
-                    status_text.text("Calculating energy field...")
+                    status.update(label="Calculating energy field...", state="running")
                     progress_bar.progress(25)
                     time.sleep(0.2)
-                    
+
                     # Step 2: Vertex extraction
-                    status_text.text("Extracting vertices...")
+                    status.update(label="Extracting vertices...", state="running")
                     progress_bar.progress(50)
                     time.sleep(0.2)
-                    
+
                     # Step 3: Edge extraction
-                    status_text.text("Extracting edges...")
+                    status.update(label="Extracting edges...", state="running")
                     progress_bar.progress(75)
                     time.sleep(0.2)
-                    
+
                     # Step 4: Network construction
-                    status_text.text("Constructing network...")
+                    status.update(label="Constructing network...", state="running")
                     progress_bar.progress(90)
                     time.sleep(0.2)
-                    
+
                     # Complete processing
                     results = processor.process_image(image, validated_params)
-                    
+
                     progress_bar.progress(100)
-                    status_text.text("Processing complete!")
+                    status.update(label="Processing complete!", state="complete")
                 
                 # Store results in session state
                 st.session_state["processing_results"] = results
@@ -922,7 +919,14 @@ def show_analysis_page():
                 ]
             })
 
-        st.dataframe(full_stats, use_container_width=True)
+        st.dataframe(
+            full_stats,
+            use_container_width=True,
+            column_config={
+                "Metric": st.column_config.TextColumn("Metric", help="Statistic name"),
+                "Value": st.column_config.TextColumn("Value", help="Computed value"),
+            },
+        )
 
         # Download statistics
         csv = full_stats.to_csv(index=False)
