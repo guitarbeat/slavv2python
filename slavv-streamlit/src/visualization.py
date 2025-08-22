@@ -19,6 +19,8 @@ from .utils import calculate_path_length
 
 from .utils import calculate_path_length
 
+from .utils import calculate_path_length
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -676,10 +678,12 @@ class NetworkVisualizer:
         
         # Export edges
         edge_data = []
-        for i, (trace, connection) in enumerate(zip(edges['traces'], edges['connections'])):
+        for i, (trace, connection) in enumerate(
+            zip(edges['traces'], edges['connections'])
+        ):
             start_vertex, end_vertex = connection
             trace = np.array(trace)
-            length = self._calculate_path_length(trace)
+            length = calculate_path_length(trace)
             
             edge_data.append({
                 'edge_id': i,
