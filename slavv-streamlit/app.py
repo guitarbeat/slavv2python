@@ -396,16 +396,15 @@ def show_processing_page():
                 validated_params = validate_parameters(parameters)
                 st.success("✅ Parameters validated successfully")
 
-                progress_bar = st.progress(0)
-
                 with st.status(
                     "Processing image...",
                     expanded=True,
                 ) as status:
+                    progress = status.progress(0)
                     import tifffile
 
                     status.update(label="Loading image...", state="running")
-                    progress_bar.progress(10)
+                    progress.progress(10)
                     try:
                         image = tifffile.imread(uploaded_file)
                         st.success(
@@ -419,20 +418,20 @@ def show_processing_page():
                     status.update(
                         label="Calculating energy field...", state="running"
                     )
-                    progress_bar.progress(25)
+                    progress.progress(25)
 
                     status.update(label="Extracting vertices...", state="running")
-                    progress_bar.progress(50)
+                    progress.progress(50)
 
                     status.update(label="Extracting edges...", state="running")
-                    progress_bar.progress(75)
+                    progress.progress(75)
 
                     status.update(label="Constructing network...", state="running")
-                    progress_bar.progress(90)
+                    progress.progress(90)
 
                     results = processor.process_image(image, validated_params)
 
-                    progress_bar.progress(100)
+                    progress.progress(100)
                     status.update(label="Processing complete!", state="complete")
                 
                 # Store results in session state
