@@ -149,28 +149,29 @@ def show_home_page():
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
-        st.markdown("### 📊 Quick Stats")
-        
-        # Sample statistics (would be replaced with actual data)
-        st.metric("Supported Image Types", "TIFF", help="3D grayscale TIFF images")
-        st.metric("Processing Steps", "4", help="Energy → Vertices → Edges → Network")
-        st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
-        
-        st.markdown("### 🔧 System Requirements")
-        st.markdown("""
-        - **Input**: 3D TIFF images
-        - **Memory**: Depends on image size
-        - **Processing**: Multi-threaded CPU
-        - **Output**: Vector networks + statistics
-        """)
-        
-        st.markdown("### 📚 Documentation")
-        st.markdown("""
-        - [Algorithm Overview](#)
-        - [Parameter Guide](#)
-        - [Export Formats](#)
-        - [Troubleshooting](#)
-        """)
+        with st.container(height=400):
+            st.markdown("### 📊 Quick Stats")
+
+            # Sample statistics (would be replaced with actual data)
+            st.metric("Supported Image Types", "TIFF", help="3D grayscale TIFF images")
+            st.metric("Processing Steps", "4", help="Energy → Vertices → Edges → Network")
+            st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
+
+            st.markdown("### 🔧 System Requirements")
+            st.markdown("""
+            - **Input**: 3D TIFF images
+            - **Memory**: Depends on image size
+            - **Processing**: Multi-threaded CPU
+            - **Output**: Vector networks + statistics
+            """)
+
+            st.markdown("### 📚 Documentation")
+            st.markdown("""
+            - [Algorithm Overview](#)
+            - [Parameter Guide](#)
+            - [Export Formats](#)
+            - [Troubleshooting](#)
+            """)
 
 def show_processing_page():
     """Display the image processing page"""
@@ -362,7 +363,7 @@ def show_processing_page():
     st.markdown("<h3 class=\"section-header\">Processing</h3>", unsafe_allow_html=True)
     
     if uploaded_file is not None:
-        if st.button("🚀 Start Processing", type="primary"):
+        if st.button("🚀 Start Processing", type="primary", width=250):
             
             # Collect parameters
             parameters = {
@@ -545,7 +546,7 @@ def show_ml_curation_page():
             "image_shape": st.session_state["image_shape"] # Pass image shape for boundary check
         }
 
-        if st.button("🚀 Start Automatic Curation", type="primary"):
+        if st.button("🚀 Start Automatic Curation", type="primary", width=250):
             with st.status(
                 "Performing automatic curation...",
                 expanded=True,
@@ -616,7 +617,7 @@ def show_ml_curation_page():
                 help="Minimum confidence score for keeping edges"
             )
 
-        if st.button("🤖 Start ML Curation", type="primary"):
+        if st.button("🤖 Start ML Curation", type="primary", width=250):
             with st.status(
                 "Performing ML curation...",
                 expanded=True,
@@ -672,7 +673,7 @@ def show_ml_curation_page():
                     )
 
     # Curation results
-    if st.button("📊 Show Curation Statistics"):
+    if st.button("📊 Show Curation Statistics", width=250):
         st.markdown("### 📈 Curation Results")
         
         # Get current curated counts
@@ -811,15 +812,15 @@ def show_visualization_page():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📄 Export VMV"):
+        if st.button("📄 Export VMV", width=150):
             st.success("✅ VMV file exported. (MATLAB: SpecialOutput=\'vmv\')")
     
     with col2:
-        if st.button("📄 Export CASX"):
+        if st.button("📄 Export CASX", width=150):
             st.success("✅ CASX file exported. (MATLAB: SpecialOutput=\'casX\')")
     
     with col3:
-        if st.button("📊 Export CSV"):
+        if st.button("📊 Export CSV", width=150):
             st.success("✅ CSV data exported. (Custom Python export)")
 
 def show_analysis_page():
