@@ -393,52 +393,49 @@ def show_processing_page():
             try:
                 validated_params = validate_parameters(parameters)
                 st.success("✅ Parameters validated successfully")
-                
-                # Show processing progress
+
                 progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                # Simulate processing (replace with actual processing)
-                with st.spinner("Processing image..."):
-                    
-                    # Load image (placeholder - would load actual TIFF)
+
+                with st.status(
+                    "Processing image...",
+                    expanded=True,
+                ) as status:
                     import tifffile
-                    status_text.text("Loading image...")
+
+                    status.update(label="Loading image...", state="running")
                     progress_bar.progress(10)
                     try:
                         image = tifffile.imread(uploaded_file)
-                        st.success(f"✅ Image loaded successfully with shape: {image.shape}")
+                        st.success(
+                            f"✅ Image loaded successfully with shape: {image.shape}"
+                        )
                     except Exception as e:
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
-                    # Initialize processor
                     processor = SLAVVProcessor()
-                    
-                    # Step 1: Energy calculation
-                    status_text.text("Calculating energy field...")
+
+                    status.update(
+                        label="Calculating energy field...", state="running"
+                    )
                     progress_bar.progress(25)
                     time.sleep(0.2)
-                    
-                    # Step 2: Vertex extraction
-                    status_text.text("Extracting vertices...")
+
+                    status.update(label="Extracting vertices...", state="running")
                     progress_bar.progress(50)
                     time.sleep(0.2)
-                    
-                    # Step 3: Edge extraction
-                    status_text.text("Extracting edges...")
+
+                    status.update(label="Extracting edges...", state="running")
                     progress_bar.progress(75)
                     time.sleep(0.2)
-                    
-                    # Step 4: Network construction
-                    status_text.text("Constructing network...")
+
+                    status.update(label="Constructing network...", state="running")
                     progress_bar.progress(90)
                     time.sleep(0.2)
-                    
-                    # Complete processing
+
                     results = processor.process_image(image, validated_params)
-                    
+
                     progress_bar.progress(100)
-                    status_text.text("Processing complete!")
+                    status.update(label="Processing complete!", state="complete")
                 
                 # Store results in session state
                 st.session_state["processing_results"] = results
@@ -549,33 +546,43 @@ def show_ml_curation_page():
         }
 
         if st.button("🚀 Start Automatic Curation", type="primary"):
-            with st.spinner("Performing automatic curation..."):
+            with st.status(
+                "Performing automatic curation...",
+                expanded=True,
+            ) as status:
                 curator = AutomaticCurator()
-                
-                # Curate vertices
+
                 curated_vertices = curator.curate_vertices_automatic(
                     results["vertices"], results["energy_data"], auto_curation_params
                 )
-                
-                # Curate edges
+
                 curated_edges = curator.curate_edges_automatic(
                     results["edges"], curated_vertices, auto_curation_params
                 )
-                
-                # Update session state with curated results
+
                 st.session_state["processing_results"]["vertices"] = curated_vertices
                 st.session_state["processing_results"]["edges"] = curated_edges
-                
+
                 st.success("✅ Automatic curation complete!")
-                
-                # Display results summary
+                status.update(
+                    label="Automatic curation complete!", state="complete"
+                )
+
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
-                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                    st.metric(
+                        "Original Vertices", len(results["vertices"]["positions"])
+                    )
+                    st.metric(
+                        "Curated Vertices", len(curated_vertices["positions"])
+                    )
                 with col2:
-                    st.metric("Original Edges", len(results["edges"]["traces"]))
-                    st.metric("Curated Edges", len(curated_edges["traces"]))
+                    st.metric(
+                        "Original Edges", len(results["edges"]["traces"])
+                    )
+                    st.metric(
+                        "Curated Edges", len(curated_edges["traces"])
+                    )
 
     elif curation_type == "Machine Learning (Model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
@@ -610,40 +617,59 @@ def show_ml_curation_page():
             )
 
         if st.button("🤖 Start ML Curation", type="primary"):
-            with st.spinner("Performing ML curation..."):
+            with st.status(
+                "Performing ML curation...",
+                expanded=True,
+            ) as status:
                 curator = MLCurator()
-                
+
                 # In a real scenario, you would load pre-trained models here
-                # curator.load_models("path/to/vertex_model.joblib", "path/to/edge_model.joblib")
-                
+                # curator.load_models(
+                #     "path/to/vertex_model.joblib",
+                #     "path/to/edge_model.joblib",
+                # )
+
                 if curator.vertex_classifier is None or curator.edge_classifier is None:
-                    st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
+                    st.error(
+                        "❌ ML models not loaded or trained. Cannot perform ML curation."
+                    )
                     st.stop()
 
-                # Curate vertices
                 curated_vertices = curator.curate_vertices(
-                    results["vertices"], results["energy_data"], st.session_state["image_shape"], vertex_confidence_threshold
+                    results["vertices"],
+                    results["energy_data"],
+                    st.session_state["image_shape"],
+                    vertex_confidence_threshold,
                 )
-                
-                # Curate edges
+
                 curated_edges = curator.curate_edges(
-                    results["edges"], curated_vertices, results["energy_data"], edge_confidence_threshold
+                    results["edges"],
+                    curated_vertices,
+                    results["energy_data"],
+                    edge_confidence_threshold,
                 )
-                
-                # Update session state with curated results
+
                 st.session_state["processing_results"]["vertices"] = curated_vertices
                 st.session_state["processing_results"]["edges"] = curated_edges
-                
+
                 st.success("✅ ML curation complete!")
-                
-                # Display results summary
+                status.update(label="ML curation complete!", state="complete")
+
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric("Original Vertices", len(results["vertices"]["positions"]))
-                    st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                    st.metric(
+                        "Original Vertices", len(results["vertices"]["positions"])
+                    )
+                    st.metric(
+                        "Curated Vertices", len(curated_vertices["positions"])
+                    )
                 with col2:
-                    st.metric("Original Edges", len(results["edges"]["traces"]))
-                    st.metric("Curated Edges", len(curated_edges["traces"]))
+                    st.metric(
+                        "Original Edges", len(results["edges"]["traces"])
+                    )
+                    st.metric(
+                        "Curated Edges", len(curated_edges["traces"])
+                    )
 
     # Curation results
     if st.button("📊 Show Curation Statistics"):

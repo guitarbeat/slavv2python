@@ -16,6 +16,8 @@ from typing import Dict, List, Tuple, Optional, Any
 import logging
 from pathlib import Path
 
+from .utils import calculate_path_length
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -673,10 +675,12 @@ class NetworkVisualizer:
         
         # Export edges
         edge_data = []
-        for i, (trace, connection) in enumerate(zip(edges['traces'], edges['connections'])):
+        for i, (trace, connection) in enumerate(
+            zip(edges['traces'], edges['connections'])
+        ):
             start_vertex, end_vertex = connection
             trace = np.array(trace)
-            length = self._calculate_path_length(trace)
+            length = calculate_path_length(trace)
             
             edge_data.append({
                 'edge_id': i,
@@ -775,7 +779,6 @@ class NetworkVisualizer:
         logger.info(f"CASX export complete: {output_path}")
         return output_path
 
-<<<<<<< HEAD
     def _export_mat(self, vertices: Dict[str, Any], edges: Dict[str, Any],
                     network: Dict[str, Any], parameters: Dict[str, Any],
                     output_path: str) -> str:
@@ -807,8 +810,4 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
-=======
-
-from .utils import calculate_path_length
->>>>>>> c6e597b (Fix syntax error, remove unused imports, and refactor path length calculation into a shared utility.)
 
