@@ -200,7 +200,12 @@ def show_processing_page():
     
     # Processing parameters
     st.markdown("<h3 class=\"section-header\">Processing Parameters</h3>", unsafe_allow_html=True)
-    
+    with st.popover("ℹ️ Parameter tips", width=300):
+        st.write(
+            "Use the tabs below to adjust microscopy, vessel size, processing, "
+            "and advanced options. Defaults are provided for typical datasets."
+        )
+
     # Create tabs for parameter categories
     tab1, tab2, tab3, tab4 = st.tabs(["🔬 Microscopy", "📏 Vessel Sizes", "⚙️ Processing", "🔬 Advanced"])
     
@@ -391,20 +396,32 @@ def show_processing_page():
                     "sample_index_of_refraction": sample_index_of_refraction
                 })
             
-            # Validate parameters
-            try:
-                validated_params = validate_parameters(parameters)
-                st.success("✅ Parameters validated successfully")
+#             # Validate parameters
+#             try:
+#                 validated_params = validate_parameters(parameters)
+#                 st.success("✅ Parameters validated successfully")
+# <<<<<<< codex/update-to-latest-streamlit-version
 
-                with st.status(
-                    "Processing image...",
-                    expanded=True,
-                ) as status:
-                    progress = status.progress(0)
-                    import tifffile
+#                 with st.status(
+#                     "Processing image...",
+#                     expanded=True,
+#                 ) as status:
+#                     progress = status.progress(0)
+#                     import tifffile
 
-                    status.update(label="Loading image...", state="running")
-                    progress.progress(10)
+#                     status.update(label="Loading image...", state="running")
+#                     progress.progress(10)
+# =======
+                
+#                 # Show processing progress using Streamlit status element
+#                 with st.status("Processing image...", expanded=True) as status:
+#                     progress_bar = st.progress(0)
+
+#                     # Load image (placeholder - would load actual TIFF)
+#                     import tifffile
+#                     status.update(label="Loading image...", state="running")
+#                     progress_bar.progress(10)
+# >>>>>>> main
                     try:
                         image = tifffile.imread(uploaded_file)
                         st.success(
@@ -413,26 +430,53 @@ def show_processing_page():
                     except Exception as e:
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
-                    processor = SLAVVProcessor()
+#                     processor = SLAVVProcessor()
 
-                    status.update(
-                        label="Calculating energy field...", state="running"
-                    )
-                    progress.progress(25)
+# <<<<<<< codex/update-to-latest-streamlit-version
+#                     status.update(
+#                         label="Calculating energy field...", state="running"
+#                     )
+#                     progress.progress(25)
 
-                    status.update(label="Extracting vertices...", state="running")
-                    progress.progress(50)
+#                     status.update(label="Extracting vertices...", state="running")
+#                     progress.progress(50)
 
-                    status.update(label="Extracting edges...", state="running")
-                    progress.progress(75)
+#                     status.update(label="Extracting edges...", state="running")
+#                     progress.progress(75)
 
-                    status.update(label="Constructing network...", state="running")
-                    progress.progress(90)
+#                     status.update(label="Constructing network...", state="running")
+#                     progress.progress(90)
 
-                    results = processor.process_image(image, validated_params)
+#                     results = processor.process_image(image, validated_params)
 
-                    progress.progress(100)
-                    status.update(label="Processing complete!", state="complete")
+#                     progress.progress(100)
+# =======
+#                     # Step 1: Energy calculation
+#                     status.update(label="Calculating energy field...", state="running")
+#                     progress_bar.progress(25)
+#                     time.sleep(0.2)
+
+#                     # Step 2: Vertex extraction
+#                     status.update(label="Extracting vertices...", state="running")
+#                     progress_bar.progress(50)
+#                     time.sleep(0.2)
+
+#                     # Step 3: Edge extraction
+#                     status.update(label="Extracting edges...", state="running")
+#                     progress_bar.progress(75)
+#                     time.sleep(0.2)
+
+#                     # Step 4: Network construction
+#                     status.update(label="Constructing network...", state="running")
+#                     progress_bar.progress(90)
+#                     time.sleep(0.2)
+
+#                     # Complete processing
+#                     results = processor.process_image(image, validated_params)
+
+#                     progress_bar.progress(100)
+# >>>>>>> main
+#                     status.update(label="Processing complete!", state="complete")
                 
                 # Store results in session state
                 st.session_state["processing_results"] = results
@@ -947,7 +991,14 @@ def show_analysis_page():
                 ]
             })
 
-        st.dataframe(full_stats, use_container_width=True)
+        st.dataframe(
+            full_stats,
+            use_container_width=True,
+            column_config={
+                "Metric": st.column_config.TextColumn("Metric", help="Statistic name"),
+                "Value": st.column_config.TextColumn("Value", help="Computed value"),
+            },
+        )
 
         # Download statistics
         csv = full_stats.to_csv(index=False)
