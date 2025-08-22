@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 import json
-import time
 from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
@@ -113,7 +112,7 @@ def show_home_page():
     
     st.markdown("<h2 class=\"section-header\">Welcome to SLAVV</h2>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns([2, 1], gap="large", vertical_alignment="top")
     
     with col1:
         st.markdown("""
@@ -149,7 +148,9 @@ def show_home_page():
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
-        with st.container(height=400):
+        with st.container(
+            height=400, gap="medium", horizontal_alignment="center"
+        ):
             st.markdown("### 📊 Quick Stats")
 
             # Sample statistics (would be replaced with actual data)
@@ -206,7 +207,7 @@ def show_processing_page():
     with tab1:
         st.markdown("#### Microscopy Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             microns_per_voxel_y = st.number_input(
@@ -260,7 +261,7 @@ def show_processing_page():
     with tab2:
         st.markdown("#### Vessel Size Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             radius_smallest = st.number_input(
@@ -294,7 +295,7 @@ def show_processing_page():
     with tab3:
         st.markdown("#### Processing Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             energy_upper_bound = st.number_input(
@@ -331,7 +332,7 @@ def show_processing_page():
     with tab4:
         st.markdown("#### Advanced Parameters")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             gaussian_to_ideal_ratio = st.slider(
@@ -419,19 +420,15 @@ def show_processing_page():
                         label="Calculating energy field...", state="running"
                     )
                     progress_bar.progress(25)
-                    time.sleep(0.2)
 
                     status.update(label="Extracting vertices...", state="running")
                     progress_bar.progress(50)
-                    time.sleep(0.2)
 
                     status.update(label="Extracting edges...", state="running")
                     progress_bar.progress(75)
-                    time.sleep(0.2)
 
                     status.update(label="Constructing network...", state="running")
                     progress_bar.progress(90)
-                    time.sleep(0.2)
 
                     results = processor.process_image(image, validated_params)
 
@@ -449,7 +446,9 @@ def show_processing_page():
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 # Results summary
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4 = st.columns(
+                    4, gap="small", vertical_alignment="center"
+                )
                 
                 with col1:
                     st.metric("Vertices Found", len(results["vertices"]["positions"]))
@@ -496,7 +495,7 @@ def show_ml_curation_page():
 
     if curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         with col1:
             vertex_energy_threshold = st.number_input(
                 "Vertex Energy Threshold", 
@@ -569,7 +568,7 @@ def show_ml_curation_page():
                     label="Automatic curation complete!", state="complete"
                 )
 
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
                         "Original Vertices", len(results["vertices"]["positions"])
@@ -589,7 +588,7 @@ def show_ml_curation_page():
         st.markdown("#### Machine Learning Curation Parameters")
         st.warning("⚠️ Machine Learning Curation requires trained models. This functionality is under development and requires pre-trained models or a training dataset.")
         
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="medium")
         
         with col1:
             vertex_curation_method = st.selectbox(
@@ -656,7 +655,7 @@ def show_ml_curation_page():
                 st.success("✅ ML curation complete!")
                 status.update(label="ML curation complete!", state="complete")
 
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
                         "Original Vertices", len(results["vertices"]["positions"])
@@ -727,7 +726,7 @@ def show_visualization_page():
         help="Choose the type of visualization to display"
     )
     
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 1], gap="large")
     
     with col2:
         st.markdown("### 🎨 Display Options")
@@ -809,7 +808,7 @@ def show_visualization_page():
     # Export options
     st.markdown("### 💾 Export Options")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3, gap="medium")
     
     with col1:
         if st.button("📄 Export VMV", width=150):
@@ -854,7 +853,7 @@ def show_analysis_page():
     # Key metrics
     st.markdown("### 📊 Key Metrics")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
     with col1:
         st.metric("Total Length", f'{stats["total_length"]:.1f} μm')
     with col2:
@@ -873,7 +872,7 @@ def show_analysis_page():
     with tab1:
         st.markdown("#### Length and Radius Distributions")
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="large")
 
         with col1:
             # Length distribution
@@ -888,7 +887,7 @@ def show_analysis_page():
     with tab2:
         st.markdown("#### Network Topology")
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="large")
 
         with col1:
             # Degree distribution
@@ -916,7 +915,7 @@ def show_analysis_page():
         st.plotly_chart(fig_depth, use_container_width=True)
 
         # Tortuosity analysis
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2, gap="small")
 
         with col1:
             st.metric("Mean Tortuosity", f"{stats.get('mean_tortuosity', 0):.2f}")
