@@ -395,33 +395,19 @@ def show_processing_page():
                     "excitation_wavelength_in_microns": excitation_wavelength,
                     "sample_index_of_refraction": sample_index_of_refraction
                 })
-            
-#             # Validate parameters
-#             try:
-#                 validated_params = validate_parameters(parameters)
-#                 st.success("✅ Parameters validated successfully")
-# <<<<<<< codex/update-to-latest-streamlit-version
 
-#                 with st.status(
-#                     "Processing image...",
-#                     expanded=True,
-#                 ) as status:
-#                     progress = status.progress(0)
-#                     import tifffile
+            # Validate parameters and process image
+            try:
+                validated_params = validate_parameters(parameters)
+                st.success("✅ Parameters validated successfully")
 
-#                     status.update(label="Loading image...", state="running")
-#                     progress.progress(10)
-# =======
-                
-#                 # Show processing progress using Streamlit status element
-#                 with st.status("Processing image...", expanded=True) as status:
-#                     progress_bar = st.progress(0)
+                with st.status("Processing image...", expanded=True) as status:
+                    progress_bar = status.progress(0)
+                    import tifffile
 
-#                     # Load image (placeholder - would load actual TIFF)
-#                     import tifffile
-#                     status.update(label="Loading image...", state="running")
-#                     progress_bar.progress(10)
-# >>>>>>> main
+                    status.update(label="Loading image...", state="running")
+                    progress_bar.progress(10)
+
                     try:
                         image = tifffile.imread(uploaded_file)
                         st.success(
@@ -430,54 +416,26 @@ def show_processing_page():
                     except Exception as e:
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
-#                     processor = SLAVVProcessor()
 
-# <<<<<<< codex/update-to-latest-streamlit-version
-#                     status.update(
-#                         label="Calculating energy field...", state="running"
-#                     )
-#                     progress.progress(25)
+                    processor = SLAVVProcessor()
 
-#                     status.update(label="Extracting vertices...", state="running")
-#                     progress.progress(50)
+                    status.update(label="Calculating energy field...", state="running")
+                    progress_bar.progress(25)
 
-#                     status.update(label="Extracting edges...", state="running")
-#                     progress.progress(75)
+                    status.update(label="Extracting vertices...", state="running")
+                    progress_bar.progress(50)
 
-#                     status.update(label="Constructing network...", state="running")
-#                     progress.progress(90)
+                    status.update(label="Extracting edges...", state="running")
+                    progress_bar.progress(75)
 
-#                     results = processor.process_image(image, validated_params)
+                    status.update(label="Constructing network...", state="running")
+                    progress_bar.progress(90)
 
-#                     progress.progress(100)
-# =======
-#                     # Step 1: Energy calculation
-#                     status.update(label="Calculating energy field...", state="running")
-#                     progress_bar.progress(25)
-#                     time.sleep(0.2)
+                    results = processor.process_image(image, validated_params)
 
-#                     # Step 2: Vertex extraction
-#                     status.update(label="Extracting vertices...", state="running")
-#                     progress_bar.progress(50)
-#                     time.sleep(0.2)
+                    progress_bar.progress(100)
+                    status.update(label="Processing complete!", state="complete")
 
-#                     # Step 3: Edge extraction
-#                     status.update(label="Extracting edges...", state="running")
-#                     progress_bar.progress(75)
-#                     time.sleep(0.2)
-
-#                     # Step 4: Network construction
-#                     status.update(label="Constructing network...", state="running")
-#                     progress_bar.progress(90)
-#                     time.sleep(0.2)
-
-#                     # Complete processing
-#                     results = processor.process_image(image, validated_params)
-
-#                     progress_bar.progress(100)
-# >>>>>>> main
-#                     status.update(label="Processing complete!", state="complete")
-                
                 # Store results in session state
                 st.session_state["processing_results"] = results
                 st.session_state["parameters"] = validated_params
