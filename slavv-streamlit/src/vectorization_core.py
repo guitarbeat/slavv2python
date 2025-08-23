@@ -30,6 +30,9 @@ __all__ = [
     "validate_parameters",
     "get_chunking_lattice",
     "calculate_network_statistics",
+    "crop_vertices",
+    "crop_edges",
+    "crop_vertices_by_mask",
 ]
 
 class SLAVVProcessor:
@@ -1073,6 +1076,73 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     # Density measures
     stats['length_density'] = stats.get('total_length', 0) / image_volume if image_volume > 0 else 0
     stats['bifurcation_density'] = len(bifurcations) / image_volume if image_volume > 0 else 0
-    
+
     return stats
+
+
+def crop_vertices(vertex_positions: np.ndarray,
+                  bounds: Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]) -> Tuple[np.ndarray, np.ndarray]:
+    """Crop vertices to an axis-aligned bounding box.
+
+    Args:
+        vertex_positions: ``(N, 3)`` array of vertex positions in ``y, x, z`` pixel coordinates.
+        bounds: Sequence of ``(min, max)`` pairs for ``y``, ``x`` and ``z`` axes.
+
+    Returns:
+        ``(cropped_positions, mask)`` where ``mask`` is a boolean array marking vertices inside ``bounds``.
+    """
+    vertex_positions = np.asarray(vertex_positions)
+    bounds = np.asarray(bounds, dtype=float)
+
+    mask = (
+        (vertex_positions[:, 0] >= bounds[0, 0]) & (vertex_positions[:, 0] <= bounds[0, 1]) &
+        (vertex_positions[:, 1] >= bounds[1, 0]) & (vertex_positions[:, 1] <= bounds[1, 1]) &
+        (vertex_positions[:, 2] >= bounds[2, 0]) & (vertex_positions[:, 2] <= bounds[2, 1])
+    )
+    return vertex_positions[mask], mask
+
+
+def crop_edges(edge_indices: np.ndarray, vertex_mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Remove edges whose endpoints are not both retained in ``vertex_mask``.
+
+    Args:
+        edge_indices: ``(M, 2)`` array of vertex index pairs.
+        vertex_mask: Boolean mask for vertices to keep (typically from :func:`crop_vertices`).
+
+    Returns:
+        ``(cropped_edges, mask)`` where ``mask`` marks edges connecting retained vertices.
+    """
+    vertex_mask = np.asarray(vertex_mask, dtype=bool)
+    keep = vertex_mask[edge_indices[:, 0]] & vertex_mask[edge_indices[:, 1]]
+    return edge_indices[keep], keep
+
+
+def crop_vertices_by_mask(vertex_positions: np.ndarray, mask_volume: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Crop vertices by a 3D binary mask.
+
+    The mask is indexed using floored vertex coordinates. Vertices outside the
+    mask bounds or where the mask is ``False`` are removed.
+
+    Args:
+        vertex_positions: ``(N, 3)`` array of vertex positions in ``y, x, z`` pixel coordinates.
+        mask_volume: ``(Y, X, Z)`` boolean mask array.
+
+    Returns:
+        ``(cropped_positions, mask)`` where ``mask`` marks vertices inside the mask.
+    """
+    vertex_positions = np.asarray(vertex_positions)
+    mask_volume = np.asarray(mask_volume, dtype=bool)
+
+    coords = np.floor(vertex_positions).astype(int)
+    in_bounds = (
+        (coords[:, 0] >= 0) & (coords[:, 0] < mask_volume.shape[0]) &
+        (coords[:, 1] >= 0) & (coords[:, 1] < mask_volume.shape[1]) &
+        (coords[:, 2] >= 0) & (coords[:, 2] < mask_volume.shape[2])
+    )
+
+    mask = np.zeros(len(vertex_positions), dtype=bool)
+    valid_indices = np.where(in_bounds)[0]
+    valid_coords = coords[in_bounds]
+    mask[valid_indices] = mask_volume[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
+    return vertex_positions[mask], mask
 

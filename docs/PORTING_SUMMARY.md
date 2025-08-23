@@ -30,6 +30,7 @@ Note: Recent verification steps cross-checked behavior with original MATLAB func
 - **PSF Correction**: Implemented the Zipfel et al. point spread function model with proper coefficient selection based on numerical aperture
 - **Multi-scale Processing**: Full implementation of scale-space analysis with configurable scales per octave
 - **Vesselness Enhancement**: Frangi-like vesselness measures for tubular structure detection
+- **Cropping Helpers**: Added bounding-box and mask-based utilities to filter vertices and edges, matching `crop_vertices_V200.m` and related helpers
 
 ### 2. 📏 Parameter Transparency and Validation
 
