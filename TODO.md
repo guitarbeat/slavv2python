@@ -85,7 +85,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Fix statistics page to use available data and avoid KeyErrors; guard metrics with defaults
 - [ ] Enhance parameter validation with more specific error messages and suggestions.
 - [ ] Implement robust handling for edge cases in image processing and network construction.
-- [ ] Implement cropping helpers parity (`crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m`)
+- [x] Implement cropping helpers parity (`crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m`)
 
 ## 5. Performance Optimization
 

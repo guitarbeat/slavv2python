@@ -17,5 +17,8 @@ This document outlines the stable entry points exposed by the Python port of SLA
 - [`validate_parameters`](../slavv-streamlit/src/vectorization_core.py): populate defaults and sanity‑check processing parameters.
 - [`get_chunking_lattice`](../slavv-streamlit/src/vectorization_core.py): generate overlapping tile slices for chunked energy-field processing.
 - [`calculate_network_statistics`](../slavv-streamlit/src/vectorization_core.py): compute strand counts, lengths, and other network metrics.
+- [`crop_vertices`](../slavv-streamlit/src/vectorization_core.py): filter vertices within an axis-aligned bounding box.
+- [`crop_edges`](../slavv-streamlit/src/vectorization_core.py): drop edges whose endpoints fall outside a vertex mask.
+- [`crop_vertices_by_mask`](../slavv-streamlit/src/vectorization_core.py): retain vertices located inside a binary mask volume.
 
 These APIs are considered stable and will be maintained for external consumers.
