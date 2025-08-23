@@ -12,11 +12,8 @@ Based on the MATLAB implementation by Samuel Alexander Mihelic
 
 import numpy as np
 import scipy.ndimage as ndi
-from scipy import ndimage
 from scipy.ndimage import gaussian_filter
-from skimage import filters, feature, morphology
-from skimage.measure import label, regionprops
-import h5py
+from skimage import feature
 import warnings
 from typing import Tuple, List, Optional, Dict, Any
 import logging
@@ -275,30 +272,55 @@ class SLAVVProcessor:
         max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
         step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
         max_edge_energy = params.get("max_edge_energy", 0.0)
+        length_ratio = params.get("length_dilation_ratio", 1.0)
         
         edges = []
         edge_connections = []
-        
+        edges_per_vertex = np.zeros(len(vertex_positions), dtype=int)
+        existing_pairs = set()
+
         for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+            if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
+                continue
             start_radius = lumen_radius_pixels[start_scale]
             step_size = start_radius * step_size_ratio
-            
-            # Try multiple directions from this vertex
-            directions = self._generate_edge_directions(max_edges_per_vertex)
+            max_length = start_radius * length_ratio
+            max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+
+            # Estimate likely vessel directions from local Hessian analysis
+            directions = self._estimate_vessel_directions(energy, start_pos, start_radius)
+            if directions.shape[0] < max_edges_per_vertex:
+                extra = self._generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                directions = np.vstack([directions, extra])
+            else:
+                directions = directions[:max_edges_per_vertex]
             
             for direction in directions:
+                if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
+                    break
                 edge_trace = self._trace_edge(
-                    energy, start_pos, direction, step_size, 
-                    max_edge_energy, vertex_positions, vertex_scales, lumen_radius_pixels
+                    energy, start_pos, direction, step_size,
+                    max_edge_energy, vertex_positions, vertex_scales,
+                    lumen_radius_pixels, max_steps
                 )
                 if len(edge_trace) > 1:  # Valid edge found
-                    edges.append(edge_trace)
-                    
-                    # Find terminal vertex if any
                     terminal_vertex = self._find_terminal_vertex(
                         edge_trace[-1], vertex_positions, vertex_scales, lumen_radius_pixels
-                    )                    
+                    )
+                    if terminal_vertex == vertex_idx:
+                        continue
+                    if terminal_vertex is not None:
+                        if edges_per_vertex[terminal_vertex] >= max_edges_per_vertex:
+                            continue
+                        pair = tuple(sorted((vertex_idx, terminal_vertex)))
+                        if pair in existing_pairs:
+                            continue
+                    edges.append(edge_trace)
                     edge_connections.append((vertex_idx, terminal_vertex))
+                    edges_per_vertex[vertex_idx] += 1
+                    if terminal_vertex is not None:
+                        edges_per_vertex[terminal_vertex] += 1
+                        existing_pairs.add(pair)
         
         logger.info(f"Extracted {len(edges)} edges")
         
@@ -353,7 +375,7 @@ class SLAVVProcessor:
         bifurcations = np.where(vertex_degrees > 2)[0]
         
         logger.info(f"Constructed network with {len(strands)} strands and {len(bifurcations)} bifurcations")
-        
+
         return {
             "strands": strands,
             "bifurcations": bifurcations,
@@ -361,6 +383,61 @@ class SLAVVProcessor:
             "vertex_degrees": vertex_degrees,
             "graph_edges": graph_edges # Add the actual edge traces to the network output
         }
+
+    def _estimate_vessel_directions(self, energy: np.ndarray, pos: np.ndarray, radius: float) -> np.ndarray:
+        """Estimate vessel directions at a vertex via local Hessian analysis.
+
+        Parameters
+        ----------
+        energy : np.ndarray
+            3D energy field.
+        pos : np.ndarray
+            Vertex position in pixel coordinates.
+        radius : float
+            Estimated vessel radius in pixels.
+
+        Returns
+        -------
+        np.ndarray
+            Opposing unit direction vectors of shape ``(2, 3)``. Falls back to
+            uniformly distributed directions if the neighborhood is ill-conditioned
+            or undersized.
+        """
+        # Determine a small neighborhood around the vertex
+        sigma = max(radius / 2.0, 1.0)
+        center = np.round(pos).astype(int)
+        r = int(max(1, np.ceil(sigma)))
+        slices = tuple(
+            slice(max(c - r, 0), min(c + r + 1, s))
+            for c, s in zip(center, energy.shape)
+        )
+        patch = energy[slices]
+        # Fallback to uniform directions if patch is too small
+        if patch.ndim != 3 or min(patch.shape) < 3:
+            return self._generate_edge_directions(2)
+
+        # Compute Hessian in the local patch and extract center values
+        hessian_elems = [h * (radius ** 2) for h in feature.hessian_matrix(patch, sigma=sigma)]
+        patch_center = tuple(np.array(patch.shape) // 2)
+        Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
+        H = np.array([
+            [Hxx, Hxy, Hxz],
+            [Hxy, Hyy, Hyz],
+            [Hxz, Hyz, Hzz],
+        ])
+        # Eigen decomposition to find principal axis
+        try:
+            w, v = np.linalg.eigh(H)
+        except np.linalg.LinAlgError:
+            return self._generate_edge_directions(2)
+        if not np.all(np.isfinite(w)):
+            return self._generate_edge_directions(2)
+        direction = v[:, np.argmin(np.abs(w))]
+        norm = np.linalg.norm(direction)
+        if norm == 0 or not np.isfinite(norm):
+            return self._generate_edge_directions(2)
+        direction = direction / norm
+        return np.stack((direction, -direction))
 
     def _generate_edge_directions(self, n_directions: int) -> np.ndarray:
         """Generate uniformly distributed directions for edge tracing using spherical Fibonacci spiral"""
@@ -383,54 +460,55 @@ class SLAVVProcessor:
             points.append([x, y, z])
         
         return np.array(points)
+
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
-                   step_size: float, max_energy: float, vertex_positions: np.ndarray,
-                   vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray) -> List[np.ndarray]:
-        """Trace an edge through the energy field"""
+                    step_size: float, max_energy: float, vertex_positions: np.ndarray,
+                    vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray,
+                    max_steps: int) -> List[np.ndarray]:
+        """Trace an edge through the energy field with adaptive step sizing"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
         current_dir = direction.copy()
-        
-        max_steps = 500  # Prevent infinite loops, increased from 100
-        
-        for step in range(max_steps):
-            # Take step in current direction
-            next_pos = current_pos + current_dir * step_size
-            
-            # Check bounds
-            if not self._in_bounds(next_pos, energy.shape):
-                break
-            
-            # Check energy threshold
-            pos_int = np.round(next_pos).astype(int)
-            
-            # Ensure pos_int is within bounds before accessing energy array
-            if not (0 <= pos_int[0] < energy.shape[0] and
-                    0 <= pos_int[1] < energy.shape[1] and
-                    0 <= pos_int[2] < energy.shape[2]):
+        prev_energy = energy[tuple(np.round(current_pos).astype(int))]
+
+        for _ in range(max_steps):
+            attempt = 0
+            while attempt < 10:
+                next_pos = current_pos + current_dir * step_size
+                if not self._in_bounds(next_pos, energy.shape):
+                    return trace
+                pos_int = np.round(next_pos).astype(int)
+                if not (0 <= pos_int[0] < energy.shape[0] and
+                        0 <= pos_int[1] < energy.shape[1] and
+                        0 <= pos_int[2] < energy.shape[2]):
+                    return trace
+                current_energy = energy[pos_int[0], pos_int[1], pos_int[2]]
+                if current_energy > max_energy:
+                    return trace
+                if current_energy > prev_energy:
+                    step_size *= 0.5
+                    if step_size < 0.5:
+                        return trace
+                    attempt += 1
+                    continue
                 break
 
-            current_energy = energy[pos_int[0], pos_int[1], pos_int[2]]
-            if current_energy > max_energy:
-                break
-            
             trace.append(next_pos.copy())
             current_pos = next_pos.copy()
-            
-            # Update direction based on energy gradient (gradient-descent ridge following)
+            prev_energy = current_energy
+
             gradient = self._compute_gradient(energy, current_pos)
             grad_norm = np.linalg.norm(gradient)
             if grad_norm > 1e-12:
-                # Move toward decreasing energy
                 current_dir = (-gradient / grad_norm).astype(float)
-            # else keep previous direction
-            
-            # Check if near another vertex (terminal vertex)
-            terminal_vertex_idx = self._near_vertex(current_pos, vertex_positions, vertex_scales, lumen_radius_pixels)
+
+            terminal_vertex_idx = self._near_vertex(
+                current_pos, vertex_positions, vertex_scales, lumen_radius_pixels
+            )
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
                 break
-            
+
         return trace
 
     def _trace_strand(self, start_vertex_idx: int, adjacency: np.ndarray, visited: np.ndarray) -> List[int]:
