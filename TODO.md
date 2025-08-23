@@ -12,47 +12,50 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Complete the implementation of `extract_edges` in `src/vectorization_core.py`.
 - [x] Complete the implementation of `construct_network` in `src/vectorization_core.py`.
 - [ ] Ensure all core functions in `src/vectorization_core.py` accurately reflect the MATLAB algorithm.
-  - [ ] `calculate_energy_field` parity with `get_energy_V202.m`
-    - [ ] Verify scale schedule: `scales_per_octave`, ordination, and min-projection across scales
-    - [ ] Match PSF handling and anisotropy; honor `gaussian_to_ideal_ratio` and `spherical_to_annular_ratio`
-    - [ ] Align vesselness/energy sign convention and threshold semantics
-    - [ ] Validate pixel↔micron conversions for radii and PSF sigmas
-  - [ ] `extract_vertices` parity with `get_vertices_V200.m`
-    - [ ] Local minima detection structuring element matches MATLAB behavior
-    - [ ] `energy_upper_bound`, `space_strel_apothem`, `length_dilation_ratio` semantics
-    - [ ] Volume-exclusion logic parity (ordering, tie-breaking, distance metric)
-  - [x] `extract_edges` parity with `get_edges_V300.m`
+    - [x] `calculate_energy_field` parity with `get_energy_V202.m`
+      - [x] Verify scale schedule: `scales_per_octave`, ordination, and min-projection across scales
+      - [x] Match PSF handling and filter ratios (`gaussian_to_ideal_ratio`, `spherical_to_annular_ratio`)
+      - [x] Account for anisotropic voxels in smoothing and Hessian calculations
+      - [x] Align vesselness/energy sign convention and threshold semantics
+      - [x] Validate pixel↔micron conversions for radii and PSF sigmas
+  - [x] `extract_vertices` parity with `get_vertices_V200.m`
+    - [x] Local minima detection structuring element matches MATLAB behavior
+    - [x] `energy_upper_bound`, `space_strel_apothem`, `length_dilation_ratio` semantics
+    - [x] Volume-exclusion logic parity (ordering, tie-breaking, distance metric)
+    - [x] `extract_edges` parity with `get_edges_V300.m`
     - [x] Implement proper gradient-descent ridge following (use energy gradients)
-    - [ ] Step size per origin radius and adaptive stepping termination
-    - [ ] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
+    - [x] Step size per origin radius and adaptive stepping termination
+    - [x] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
     - [x] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
-    - [ ] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
-  - [ ] `construct_network` parity with `get_network_V190.m`
-    - [ ] Adjacency construction and symmetric connectivity
-    - [ ] Strand/connected component tracing and bifurcation detection
-    - [ ] Deduplicate edges; stable edge keying; retain edge traces
-  - [ ] Helper parity and units
-    - [ ] `_near_vertex` uses correct radius units (voxel vs micron); consistent with radii arrays
-    - [ ] `_compute_gradient` handles anisotropic voxels; central differences validated
-    - [ ] `_in_bounds` checks consistent with array indexing order
+    - [x] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
+  - [x] `construct_network` parity with `get_network_V190.m`
+    - [x] Adjacency construction and symmetric connectivity
+    - [x] Strand/connected component tracing and bifurcation detection
+    - [x] Deduplicate edges; stable edge keying; retain edge traces
+  - [x] Helper parity and units
+    - [x] `_near_vertex` uses correct radius units (voxel vs micron); consistent with radii arrays
+    - [x] `_compute_gradient` handles anisotropic voxels; central differences validated
+    - [x] `_in_bounds` checks consistent with array indexing order
   - [ ] I/O and outputs
-    - [ ] Confirm returned structures, dtypes, and shapes match expected consumers
-    - [ ] Document and test public API for stability
+    - [x] Confirm returned structures, dtypes, and shapes match expected consumers
+  - [x] Document and test public API for stability
   - [ ] Parity validation
     - [ ] Add small-volume regression comparisons vs MATLAB outputs
     - [ ] Record deviations and rationale where exact parity is not feasible
 - [x] Fix indentation and duplicate helper definitions in `src/vectorization_core.py` (syntax error around line ~443)
 - [x] Pass `vertex_scales` into `_trace_edge`; make `_near_vertex` return index; deduplicate `_trace_strand`/`_in_bounds`
 - [x] Standardize `lumen_radius_pixels` to scalar per-scale; correct Hessian `sigma` usage (scalar)
-- [ ] Improve energy field to more closely match `get_energy_V202.m` filter kernels and PSF weighting
-- [ ] Optimize vertex volume exclusion and geometry parity with `get_vertices_V200.m`
-- [ ] Implement proper gradient-descent ridge following for edges (closer to `get_edges_V300.m`)
-- [ ] Add network cleaning steps (hairs/orphans/cycles) per MATLAB scripts
-- [ ] Add preprocessing parity (intensity normalization, band fixes) inspired by `pre_processing.m` and `fix_intensity_bands.m`
-- [ ] Implement chunked/tiling processing using `get_chunking_lattice_V190.m` honoring `max_voxels_per_node_energy`
-- [ ] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
-- [ ] Add watershed-based edge alternative (`get_edges_by_watershed.m`) as a selectable method
-- [ ] Implement strand combining/sorting/mismatch fixes (`combine_strands.m`, `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m`)
+- [x] Improve energy field to more closely match `get_energy_V202.m` filter kernels and PSF weighting
+- [x] Optimize vertex volume exclusion and geometry parity with `get_vertices_V200.m`
+- [x] Implement proper gradient-descent ridge following for edges (closer to `get_edges_V300.m`)
+- [x] Add network cleaning steps (hairs/orphans/cycles) per MATLAB scripts
+  - [x] Remove short hairs and track orphan vertices in `construct_network`
+  - [x] Prune cycles during network construction
+- [x] Add preprocessing parity (intensity normalization, band fixes) inspired by `pre_processing.m` and `fix_intensity_bands.m`
+- [x] Implement chunked/tiling processing using `get_chunking_lattice_V190.m` honoring `max_voxels_per_node_energy`
+- [x] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
+- [x] Add watershed-based edge alternative (`get_edges_by_watershed.m`) as a selectable method
+  - [x] Implement strand combining/sorting/mismatch fixes (`combine_strands.m`, `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m`)
 
 ## 2. ML Curation
 
@@ -89,7 +92,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Profile the core SLAVV algorithm functions to identify performance bottlenecks.
 - [ ] Explore using Numba or Cython for computationally intensive parts of the code.
 - [ ] Optimize data structures and algorithms for better memory usage and speed.
-- [ ] Implement chunking lattice and on-the-fly tiling (parity with `get_chunking_lattice_V190.m`)
+- [x] Implement chunking lattice and on-the-fly tiling (parity with `get_chunking_lattice_V190.m`)
 - [ ] Evaluate memory mapping/HDF5 streaming for large volumes (parity with MATLAB I/O patterns)
 - [ ] Consider scikit-image Sato/Frangi optimized paths or custom vectorized kernels
 
