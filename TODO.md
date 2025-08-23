@@ -23,10 +23,10 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
     - [ ] Volume-exclusion logic parity (ordering, tie-breaking, distance metric)
   - [x] `extract_edges` parity with `get_edges_V300.m`
     - [x] Implement proper gradient-descent ridge following (use energy gradients)
-    - [ ] Step size per origin radius and adaptive stepping termination
+    - [x] Step size per origin radius and adaptive stepping termination
     - [ ] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
     - [x] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
-    - [ ] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
+    - [x] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
   - [ ] `construct_network` parity with `get_network_V190.m`
     - [ ] Adjacency construction and symmetric connectivity
     - [ ] Strand/connected component tracing and bifurcation detection
@@ -50,7 +50,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Add network cleaning steps (hairs/orphans/cycles) per MATLAB scripts
 - [ ] Add preprocessing parity (intensity normalization, band fixes) inspired by `pre_processing.m` and `fix_intensity_bands.m`
 - [ ] Implement chunked/tiling processing using `get_chunking_lattice_V190.m` honoring `max_voxels_per_node_energy`
-- [ ] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
+- [x] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
 - [ ] Add watershed-based edge alternative (`get_edges_by_watershed.m`) as a selectable method
 - [ ] Implement strand combining/sorting/mismatch fixes (`combine_strands.m`, `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m`)
 
