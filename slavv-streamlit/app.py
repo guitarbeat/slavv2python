@@ -846,7 +846,7 @@ def show_analysis_page():
         results["network"]["strands"],
         results["network"]["bifurcations"],
         results["vertices"]["positions"],
-        results["vertices"]["radii"],
+        results["vertices"].get("radii_microns", results["vertices"].get("radii", [])),
         parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
         st.session_state.get("image_shape", (100, 100, 50))
     )
