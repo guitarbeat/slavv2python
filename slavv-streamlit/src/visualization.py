@@ -11,14 +11,9 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-
 from typing import Dict, List, Tuple, Optional, Any
 import logging
 from pathlib import Path
-from .utils import calculate_path_length
-
-from .utils import calculate_path_length
-
 from .utils import calculate_path_length
 
 # Configure logging
@@ -64,7 +59,7 @@ class NetworkVisualizer:
         
         vertex_positions = vertices['positions']
         vertex_energies = vertices['energies']
-        vertex_radii = vertices['radii']
+        vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
         edge_traces = edges['traces']
         bifurcations = network.get('bifurcations', [])
         
@@ -192,10 +187,10 @@ class NetworkVisualizer:
         logger.info(f"Creating 3D network plot with {color_by} coloring")
         
         fig = go.Figure()
-        
+
         vertex_positions = vertices['positions']
         vertex_energies = vertices['energies']
-        vertex_radii = vertices['radii']
+        vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
         edge_traces = edges['traces']
         bifurcations = network.get('bifurcations', [])
         
@@ -485,7 +480,7 @@ class NetworkVisualizer:
         """
         logger.info("Creating radius distribution plot")
         
-        radii = vertices['radii']
+        radii = vertices.get('radii_microns', vertices.get('radii', []))
         
         fig = go.Figure(data=go.Histogram(
             x=radii,
@@ -597,7 +592,7 @@ class NetworkVisualizer:
             )
         
         # Radius distribution
-        radii = vertices['radii']
+        radii = vertices.get('radii_microns', vertices.get('radii', []))
         if len(radii) > 0:
             fig.add_trace(
                 go.Histogram(x=radii, nbinsx=15, name='Radii'),
@@ -670,7 +665,8 @@ class NetworkVisualizer:
             'x_position': vertices['positions'][:, 1],
             'z_position': vertices['positions'][:, 2],
             'energy': vertices['energies'],
-            'radius': vertices['radii'],
+            'radius_microns': vertices.get('radii_microns', vertices.get('radii', [])),
+            'radius_pixels': vertices.get('radii_pixels', vertices.get('radii', [])),
             'scale': vertices['scales']
         })
         vertex_path = f"{base_path}_vertices.csv"
@@ -739,10 +735,13 @@ class NetworkVisualizer:
             f.write(f"# Edges: {len(edges['traces'])}\n")
             f.write("\n[VERTICES]\n")
             
-            for i, (pos, energy, radius) in enumerate(zip(
-                vertices['positions'], vertices['energies'], vertices['radii']
-            )):
-                f.write(f"{i} {pos[0]:.3f} {pos[1]:.3f} {pos[2]:.3f} {radius:.3f} {energy:.6f}\n")
+            radii = vertices.get('radii_microns', vertices.get('radii', []))
+            for i, (pos, energy, radius) in enumerate(
+                zip(vertices['positions'], vertices['energies'], radii)
+            ):
+                f.write(
+                    f"{i} {pos[0]:.3f} {pos[1]:.3f} {pos[2]:.3f} {radius:.3f} {energy:.6f}\n"
+                )
             
             f.write("\n[EDGES]\n")
             for i, (trace, connection) in enumerate(zip(edges['traces'], edges['connections'])):
@@ -764,8 +763,11 @@ class NetworkVisualizer:
             
             # Write vertices
             f.write("    <Vertices>\n")
-            for i, (pos, radius) in enumerate(zip(vertices['positions'], vertices['radii'])):
-                f.write(f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n")
+            radii = vertices.get('radii_microns', vertices.get('radii', []))
+            for i, (pos, radius) in enumerate(zip(vertices['positions'], radii)):
+                f.write(
+                    f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
+                )
             f.write("    </Vertices>\n")
             
             # Write edges
@@ -795,7 +797,8 @@ class NetworkVisualizer:
             'vertices': {
                 'positions': np.asarray(vertices.get('positions', [])),
                 'energies': np.asarray(vertices.get('energies', [])),
-                'radii': np.asarray(vertices.get('radii', [])),
+                'radii_microns': np.asarray(vertices.get('radii_microns', vertices.get('radii', []))),
+                'radii_pixels': np.asarray(vertices.get('radii_pixels', vertices.get('radii', []))),
                 'scales': np.asarray(vertices.get('scales', [])),
             },
             'edges': {

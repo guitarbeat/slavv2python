@@ -9,25 +9,28 @@ This document maps key MATLAB SLAVV functions/scripts to their Python counterpar
 
 | MATLAB | Python | Parity | Notes |
 |---|---|---|---|
-| `get_energy_V202.m` | `slavv-streamlit/src/vectorization_core.py:calculate_energy_field` | Approximate | Multi-scale Hessian energy with min-projection implemented; PSF weighting and kernel details not fully matched to MATLAB.
-| `get_vertices_V200.m` | `slavv-streamlit/src/vectorization_core.py:extract_vertices` | Approximate | Local minima and volume exclusion implemented; structuring element geometry/tie-breaking may differ.
-| `get_edges_V300.m` | `slavv-streamlit/src/vectorization_core.py:extract_edges` | Approximate | Edge tracing uses radius-scaled steps with energy-rise termination, deduplicates self/duplicate edges; gradient-descent heuristics simplified. |
-| `get_network_V190.m` | `slavv-streamlit/src/vectorization_core.py:construct_network` | Approximate | Builds adjacency/strands; cleaning/dedup and stable keying simplified.
+| `get_energy_V202.m` | `slavv-streamlit/src/vectorization_core.py:calculate_energy_field` | Approximate | Multi-scale Hessian energy with per-scale PSF-weighted smoothing, configurable Gaussian/annular ratios, sign-aware vesselness, and validated pixel↔micron conversions for radii/PSF; scale schedule and anisotropic voxels verified though kernel details remain simplified. |
+| `get_vertices_V200.m` | `slavv-streamlit/src/vectorization_core.py:extract_vertices` | Approximate | Uses spherical structuring element and radius-aware volume exclusion with anisotropic voxel scaling, returning radii in pixel and micron units.
+| `get_edges_V300.m` | `slavv-streamlit/src/vectorization_core.py:extract_edges` | Approximate | Edge tracing uses radius-scaled steps with full terminal detection (near-vertex, energy rise, bounds via floor-based `_in_bounds`, max steps), deduplicates self/duplicate edges, and follows ridges via perpendicular-gradient steering with voxel-size-aware central differences and physical-distance vertex checks. Outputs standardized to NumPy arrays for traces and vertex connections. |
+| `get_edges_by_watershed.m` | `slavv-streamlit/src/vectorization_core.py:extract_edges_watershed` | Approximate | Watershed segmentation seeded at vertices grows regions and records boundary voxels where regions meet as edge traces; selectable alternative to gradient-based tracing. |
+| `get_network_V190.m` | `slavv-streamlit/src/vectorization_core.py:construct_network` | Approximate | Builds symmetric adjacency and strands, deduplicates edges with stable keying, removes short hairs, prunes cycles, tracks orphans, and retains dangling-edge traces. |
+
 
 ### Helpers and Subroutines
 
 | MATLAB | Python | Parity | Notes |
 |---|---|---|---|
-| `energy_filter_V200.m`, `get_filter_kernel.m` | Integrated in `calculate_energy_field` | Approximate | Kernel construction simplified; PSF handling partially implemented.
+| `energy_filter_V200.m`, `get_filter_kernel.m` | Integrated in `calculate_energy_field` | Approximate | Kernel construction simplified; PSF handling partially implemented and anisotropic smoothing applied. |
 | `construct_structuring_element*.m` | Integrated in vertex extraction | Approximate | Structuring element approximated; anisotropy handling may differ.
 | `get_vessel_directions_V2/V3/V5.m` | `slavv-streamlit/src/vectorization_core.py:_estimate_vessel_directions` | Approximate | Radius-aware local Hessian eigenvectors seed edges; falls back to uniform directions if ill-conditioned. |
-| `get_chunking_lattice_V190.m` | (not present) | Omitted | Planned tiling/chunking for large volumes.
-| `pre_processing.m`, `fix_intensity_bands.m` | (not present) | Omitted | Basic normalization only; full preprocessing parity planned.
-| `combine_strands.m` | Integrated in `construct_network` | Approximate | Strand combining simplified.
-| `sort_network_V180.m` | (not present) | Omitted | Sorting/mismatch fixers planned.
-| `clean_edges*.m` (hairs/orphans/cycles) | (not present) | Omitted | Network cleaning steps planned.
-| `get_edges_by_watershed*.m` | (not present) | Omitted | Alternative watershed method planned.
-| Cropping: `crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m` | (not present) | Omitted | Cropping helpers planned.
+
+| `get_chunking_lattice_V190.m` | `slavv-streamlit/src/vectorization_core.py:get_chunking_lattice` | Approximate | Generates overlapping z-axis chunks when volumes exceed `max_voxels_per_node_energy`.
+| `pre_processing.m`, `fix_intensity_bands.m` | `slavv-streamlit/src/vectorization_core.py:preprocess_image` | Approximate | Intensity normalization with optional axial band correction via Gaussian smoothing.
+| `combine_strands.m` | Integrated in `construct_network` | Approximate | Strand combining simplified. |
+| `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m` | Integrated in `construct_network` | Approximate | Strands sorted and mismatches flagged. |
+| `clean_edges*.m` (hairs/orphans/cycles) | Integrated in `construct_network` | Approximate | Removes short hairs, identifies orphans, and prunes cycles. |
+| Cropping: `crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m` | `slavv-streamlit/src/vectorization_core.py:crop_vertices`, `crop_edges`, `crop_vertices_by_mask` | Approximate | Bounding-box and mask-based vertex/edge cropping helpers.
+
 
 ### Machine Learning Curation
 
@@ -59,7 +62,7 @@ This document maps key MATLAB SLAVV functions/scripts to their Python counterpar
 
 | MATLAB | Python | Parity | Notes |
 |---|---|---|---|
-| `calculate_network_statistics.m`, `calculate_surface_area.m` | (basic stats in app) | Approximate | Basic metrics available; full parity tests planned.
+| `calculate_network_statistics.m` | `slavv-streamlit/src/vectorization_core.py:calculate_network_statistics` | Approximate | Computes counts, strand lengths, radii statistics, and volume/length densities; surface-area parity (`calculate_surface_area.m`) pending. |
 
 ### Notes
 
