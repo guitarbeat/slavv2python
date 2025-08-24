@@ -52,7 +52,7 @@ class MLCurator:
         positions = vertices['positions']
         energies = vertices['energies']
         scales = vertices['scales']
-        radii = vertices['radii']
+        radii = vertices.get('radii_pixels', vertices.get('radii', []))
         energy_field = energy_data['energy']
         
         n_vertices = len(positions)
@@ -394,12 +394,14 @@ class MLCurator:
         
         # Filter vertices based on predictions
         kept_indices = np.where(predictions)[0]
-        
+
         curated_vertices = {
             'positions': vertices['positions'][kept_indices],
             'scales': vertices['scales'][kept_indices],
             'energies': vertices['energies'][kept_indices],
-            'radii': vertices['radii'][kept_indices],
+            'radii_pixels': vertices.get('radii_pixels', vertices.get('radii', []))[kept_indices],
+            'radii_microns': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
+            'radii': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
             'confidence_scores': probabilities[kept_indices],
             'original_indices': kept_indices
         }
@@ -574,7 +576,7 @@ class AutomaticCurator:
         positions = vertices['positions']
         energies = vertices['energies']
         scales = vertices['scales']
-        radii = vertices['radii']
+        radii = vertices.get('radii_pixels', vertices.get('radii', []))
         
         # Rule-based filtering
         keep_mask = np.ones(len(positions), dtype=bool)
@@ -632,7 +634,9 @@ class AutomaticCurator:
             'positions': positions[kept_indices],
             'scales': scales[kept_indices],
             'energies': energies[kept_indices],
-            'radii': radii[kept_indices],
+            'radii_pixels': radii[kept_indices],
+            'radii_microns': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
+            'radii': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
             'original_indices': kept_indices
         }
         
