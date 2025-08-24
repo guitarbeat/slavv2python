@@ -59,7 +59,7 @@ This document maps key MATLAB SLAVV functions/scripts to their Python counterpar
 
 | MATLAB | Python | Parity | Notes |
 |---|---|---|---|
-| `calculate_network_statistics.m`, `calculate_surface_area.m` | (basic stats in app) | Approximate | Basic metrics available; full parity tests planned.
+| `calculate_network_statistics.m` | `slavv-streamlit/src/vectorization_core.py:calculate_network_statistics` | Approximate | Computes counts, strand lengths, radii statistics, and volume/length densities; surface-area parity (`calculate_surface_area.m`) pending. |
 
 ### Notes
 
