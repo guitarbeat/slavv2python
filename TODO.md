@@ -102,7 +102,8 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [ ] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
 - [ ] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
 - [ ] Set up a continuous integration (CI) pipeline for automated testing.
-- [ ] Add parity tests for statistics vs. MATLAB (`calculate_network_statistics.m`, `calculate_surface_area.m`)
+- [x] Add basic tests for network statistics helper (`calculate_network_statistics.m`)
+- [ ] Add parity tests for surface area (`calculate_surface_area.m`)
 
 ## 7. Documentation
 
