@@ -25,6 +25,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
     - [x] `extract_edges` parity with `get_edges_V300.m`
     - [x] Implement proper gradient-descent ridge following (use energy gradients)
     - [x] Step size per origin radius and adaptive stepping termination
+
     - [x] Terminal detection: near-vertex, energy rise, out-of-bounds, max steps
     - [x] Implement/restore `_find_terminal_vertex` or remove call if redundant with `_near_vertex`
     - [x] Avoid duplicate/self edges; limit `number_of_edges_per_vertex`
@@ -36,6 +37,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
     - [x] `_near_vertex` uses correct radius units (voxel vs micron); consistent with radii arrays
     - [x] `_compute_gradient` handles anisotropic voxels; central differences validated
     - [x] `_in_bounds` checks consistent with array indexing order
+
   - [ ] I/O and outputs
     - [x] Confirm returned structures, dtypes, and shapes match expected consumers
   - [x] Document and test public API for stability
@@ -45,6 +47,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Fix indentation and duplicate helper definitions in `src/vectorization_core.py` (syntax error around line ~443)
 - [x] Pass `vertex_scales` into `_trace_edge`; make `_near_vertex` return index; deduplicate `_trace_strand`/`_in_bounds`
 - [x] Standardize `lumen_radius_pixels` to scalar per-scale; correct Hessian `sigma` usage (scalar)
+
 - [x] Improve energy field to more closely match `get_energy_V202.m` filter kernels and PSF weighting
 - [x] Optimize vertex volume exclusion and geometry parity with `get_vertices_V200.m`
 - [x] Implement proper gradient-descent ridge following for edges (closer to `get_edges_V300.m`)
@@ -56,6 +59,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Implement vessel direction estimation parity (`get_vessel_directions_V2/V3/V5.m`) for better initial edge directions
 - [x] Add watershed-based edge alternative (`get_edges_by_watershed.m`) as a selectable method
   - [x] Implement strand combining/sorting/mismatch fixes (`combine_strands.m`, `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m`)
+
 
 ## 2. ML Curation
 
