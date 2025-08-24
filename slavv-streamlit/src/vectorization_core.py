@@ -226,7 +226,9 @@ class SLAVVProcessor:
                 smoothed = smoothed_object
 
             # Calculate Hessian eigenvalues with PSF-weighted sigma
-            hessian = feature.hessian_matrix(smoothed, sigma=tuple(sigma_object))
+            hessian = feature.hessian_matrix(
+                smoothed, sigma=tuple(sigma_object), use_gaussian_derivatives=False
+            )
             eigenvals = feature.hessian_matrix_eigvals(hessian)
             
             # Energy function: enhance tubular structures
@@ -666,7 +668,12 @@ class SLAVVProcessor:
             return self._generate_edge_directions(2)
 
         # Compute Hessian in the local patch and extract center values
-        hessian_elems = [h * (radius ** 2) for h in feature.hessian_matrix(patch, sigma=sigma)]
+        hessian_elems = [
+            h * (radius ** 2)
+            for h in feature.hessian_matrix(
+                patch, sigma=sigma, use_gaussian_derivatives=False
+            )
+        ]
         patch_center = tuple(np.array(patch.shape) // 2)
         Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
         H = np.array([
