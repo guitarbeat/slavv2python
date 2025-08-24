@@ -16,6 +16,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial import cKDTree
 from skimage import feature
 from skimage.segmentation import watershed
+
 import warnings
 from typing import Tuple, List, Optional, Dict, Any
 import logging
@@ -396,7 +397,9 @@ class SLAVVProcessor:
         step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
         max_edge_energy = params.get("max_edge_energy", 0.0)
         length_ratio = params.get("length_dilation_ratio", 1.0)
+
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+
         
         edges = []
         edge_connections = []
@@ -425,6 +428,7 @@ class SLAVVProcessor:
                 edge_trace = self._trace_edge(
                     energy, start_pos, direction, step_size,
                     max_edge_energy, vertex_positions, vertex_scales,
+
                     lumen_radius_pixels, lumen_radius_microns,
                     max_steps, microns_per_voxel, energy_sign
                 )
@@ -432,6 +436,7 @@ class SLAVVProcessor:
                     terminal_vertex = self._find_terminal_vertex(
                         edge_trace[-1], vertex_positions, vertex_scales,
                         lumen_radius_microns, microns_per_voxel
+
                     )
                     if terminal_vertex == vertex_idx:
                         continue
@@ -446,6 +451,7 @@ class SLAVVProcessor:
                         vertex_idx,
                         terminal_vertex if terminal_vertex is not None else -1,
                     ])
+
                     edges_per_vertex[vertex_idx] += 1
                     if terminal_vertex is not None:
                         edges_per_vertex[terminal_vertex] += 1
@@ -623,6 +629,7 @@ class SLAVVProcessor:
             len(mismatched),
         )
 
+
         return {
             "strands": strands,
             "bifurcations": bifurcations,
@@ -668,12 +675,14 @@ class SLAVVProcessor:
             return self._generate_edge_directions(2)
 
         # Compute Hessian in the local patch and extract center values
+
         hessian_elems = [
             h * (radius ** 2)
             for h in feature.hessian_matrix(
                 patch, sigma=sigma, use_gaussian_derivatives=False
             )
         ]
+
         patch_center = tuple(np.array(patch.shape) // 2)
         Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
         H = np.array([
@@ -720,13 +729,21 @@ class SLAVVProcessor:
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
                     step_size: float, max_energy: float, vertex_positions: np.ndarray,
                     vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray,
+
                     lumen_radius_microns: np.ndarray, max_steps: int,
                     microns_per_voxel: np.ndarray, energy_sign: float) -> List[np.ndarray]:
+
+                    max_steps: int) -> List[np.ndarray]:
+
         """Trace an edge through the energy field with adaptive step sizing"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
         current_dir = direction.copy()
+
         prev_energy = energy[tuple(np.floor(current_pos).astype(int))]
+
+        prev_energy = energy[tuple(np.round(current_pos).astype(int))]
+
 
         for _ in range(max_steps):
             attempt = 0
@@ -743,6 +760,7 @@ class SLAVVProcessor:
                 if (energy_sign < 0 and current_energy > prev_energy) or (
                     energy_sign > 0 and current_energy < prev_energy
                 ):
+
                     step_size *= 0.5
                     if step_size < 0.5:
                         return trace
@@ -768,6 +786,7 @@ class SLAVVProcessor:
             terminal_vertex_idx = self._near_vertex(
                 current_pos, vertex_positions, vertex_scales,
                 lumen_radius_microns, microns_per_voxel
+
             )
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
