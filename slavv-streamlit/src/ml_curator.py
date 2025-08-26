@@ -21,6 +21,10 @@ from typing import Dict, List, Tuple, Optional, Any
 import logging
 import warnings
 warnings.filterwarnings('ignore')
+try:
+    from .utils import calculate_path_length
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from utils import calculate_path_length
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -722,10 +726,100 @@ class AutomaticCurator:
         }
         
         logger.info(f"Automatic edge curation: {len(edge_traces)} → {len(kept_indices)} edges")
-        
+
         return curated_edges
-    
 
 
-from .utils import calculate_path_length
+def choose_vertices(vertices: Dict[str, Any], min_energy: float = 0.0,
+                    min_radius: float = 0.0, energy_sign: float = -1.0) -> np.ndarray:
+    """Select vertex indices meeting energy and radius thresholds.
 
+    Parameters
+    ----------
+    vertices:
+        Dictionary containing vertex ``energies`` and either ``radii_microns``
+        or ``radii_pixels``.
+    min_energy:
+        Minimum energy magnitude after applying ``energy_sign``. Higher values
+        are retained.
+    min_radius:
+        Minimum allowed vertex radius in microns.
+    energy_sign:
+        Sign convention for vessel energy; default ``-1`` treats energy minima
+        as positive confidence.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of vertices passing the heuristics.
+    """
+
+    energies = vertices['energies'] * energy_sign
+    radii = vertices.get('radii_microns', vertices.get('radii_pixels'))
+    radii = np.asarray(radii, dtype=float)
+    mask = (energies >= min_energy) & (radii >= min_radius)
+    return np.flatnonzero(mask)
+
+
+def choose_edges(edges: Dict[str, Any], min_energy: float = 0.0,
+                 min_length: float = 0.0, energy_sign: float = -1.0) -> np.ndarray:
+    """Select edge indices meeting energy and length thresholds.
+
+    Parameters
+    ----------
+    edges:
+        Dictionary containing ``traces`` for each edge and ``energies`` giving
+        the mean energy along each trace.
+    min_energy:
+        Minimum mean edge energy after applying ``energy_sign``.
+    min_length:
+        Minimum physical length of the edge trace (in voxel units).
+    energy_sign:
+        Sign convention for vessel energy; default ``-1`` treats energy minima
+        as positive confidence.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of edges passing the heuristics.
+    """
+
+    energies = edges['energies'] * energy_sign
+    lengths = np.array([calculate_path_length(trace) for trace in edges['traces']])
+    mask = (energies >= min_energy) & (lengths >= min_length)
+    return np.flatnonzero(mask)
+
+
+def extract_uncurated_info(
+    vertices: Dict[str, Any],
+    edges: Dict[str, Any],
+    energy_data: Dict[str, Any],
+    image_shape: Tuple[int, ...],
+) -> Dict[str, np.ndarray]:
+    """Extract vertex and edge feature arrays without classification.
+
+    Mirrors MATLAB's ``uncuratedInfoExtractor.m`` by deriving feature sets for
+    quality-assurance datasets before any ML-based curation.
+
+    Parameters
+    ----------
+    vertices:
+        Dictionary containing vertex ``positions``, ``energies``, ``scales``, and
+        optional ``radii_pixels``.
+    edges:
+        Dictionary with edge ``traces`` and ``connections``.
+    energy_data:
+        Dictionary providing the ``energy`` field used for feature extraction.
+    image_shape:
+        Shape of the original image volume, used for normalized coordinates.
+
+    Returns
+    -------
+    dict
+        ``{"vertex_features": ..., "edge_features": ...}`` feature arrays.
+    """
+
+    curator = MLCurator()
+    vertex_features = curator.extract_vertex_features(vertices, energy_data, image_shape)
+    edge_features = curator.extract_edge_features(edges, vertices, energy_data)
+    return {"vertex_features": vertex_features, "edge_features": edge_features}
