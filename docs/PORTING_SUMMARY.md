@@ -1,6 +1,6 @@
 # SLAVV Python/Streamlit Implementation - Enhanced Version
 
-> Update (current): Fixed core syntax/logic issues in `vectorization_core.py`; standardized radii handling; corrected Hessian sigma usage; repaired Streamlit stats/visualization bindings; ensured energy field slice visualization. Parity gaps remain in energy kernel/PSF weighting, vertex volume exclusion, edge gradient descent, and network cleaning compared to MATLAB (`get_energy_V202.m`, `get_vertices_V200.m`, `get_edges_V300.m`).
+> Update (current): Fixed core syntax/logic issues in `vectorization_core.py`; standardized radii handling; corrected Hessian sigma usage; repaired Streamlit stats/visualization bindings; ensured energy field slice visualization; added surface area statistics; seeded edge tracing with local Hessian-based vessel directions, added CASX and VMV network import helpers to finalize I/O parity, expanded edge visualizations with radius coloring, depth-based opacity, and edge-length coloring alongside existing depth, energy, and strand options, introduced cross-sectional slice visualization for interactive inspection, **added animated strand playback for sequential 3D visualization and flow-field rendering of edge orientations**, documented known deviations in [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md), introduced a regression fixture for synthetic edge tracing, added robust TIFF upload handling with descriptive errors for invalid or corrupted files, introduced uncurated info extraction for QA datasets, provided tooltips across Streamlit parameters and metrics for improved guidance, and strengthened parameter validation with explicit range checks. Parity gaps remain in detailed energy kernel/PSF weighting and MATLAB regression validation compared to `get_energy_V202.m`, `get_vertices_V200.m`, and `get_edges_V300.m`.
 
 ## Overview
 
@@ -30,6 +30,7 @@ Note: Recent verification steps cross-checked behavior with original MATLAB func
 - **PSF Correction**: Implemented the Zipfel et al. point spread function model with proper coefficient selection based on numerical aperture
 - **Multi-scale Processing**: Full implementation of scale-space analysis with configurable scales per octave
 - **Vesselness Enhancement**: Frangi-like vesselness measures for tubular structure detection
+- **Cropping Helpers**: Added bounding-box and mask-based utilities to filter vertices and edges, matching `crop_vertices_V200.m` and related helpers
 
 ### 2. 📏 Parameter Transparency and Validation
 
@@ -49,6 +50,7 @@ Note: Recent verification steps cross-checked behavior with original MATLAB func
 - **Real-time Validation**: Parameters are validated with immediate feedback
 - **Contextual Help**: Each parameter includes detailed tooltips explaining its purpose
 - **Dynamic Calculations**: Shows computed values (e.g., number of scales) based on parameter settings
+- **Descriptive Errors**: Out-of-range values raise clear messages with suggested ranges
 
 ### 3. 🎨 Comprehensive User Interface Enhancement
 
@@ -69,7 +71,8 @@ Note: Recent verification steps cross-checked behavior with original MATLAB func
 
 **Advanced Visualization:**
 - **Interactive Plots**: Plotly-based 2D and 3D network visualizations
-- **Multiple Color Schemes**: Energy, depth, strand ID, radius-based coloring
+- **Multiple Color Schemes**: Energy, depth, strand ID, radius-based coloring across both 2D and 3D views
+- **Slice Views**: Cross-sectional network visualization with adjustable thickness
 - **Statistical Dashboards**: Comprehensive network analysis with multiple chart types
 - **Export Capabilities**: Multiple format support (VMV, CASX, CSV, JSON)
 
@@ -108,7 +111,7 @@ Note: Recent verification steps cross-checked behavior with original MATLAB func
 
 ### 6. 💾 Enhanced Export and Data Management
 
-Note: VMV/CASX exports are minimal and intended for basic interchange; they are not yet spec-complete. MAT export is pending.
+Note: VMV/CASX exports are minimal and intended for basic interchange; they are not yet spec-complete. MAT export is pending, and basic MAT network import is available via `load_network_from_mat`.
 
 **Multiple Export Formats:**
 - **VMV Format**: Vascular Modeling Visualization format
@@ -472,6 +475,7 @@ This module is responsible for the machine learning-assisted curation of vertice
 *   `MLLibrary.py`: Contains the feature extraction methods and classification algorithms used for both vertex and edge curation.
 *   `MLTraining.py`: While not directly part of the runtime `src` directory, the concepts for training data generation and model persistence from `MLTraining.py` are considered in the design of the `MLCurator` for future training capabilities.
 *   Related MATLAB curation scripts like `choose_edges_V200.m`, `choose_vertices_V200.m`, `edgeCuratorNetwork_V*.m`, `vertexCuratorNetwork_V*.m`, `edge_curator.m`, `vertex_curator.m`, `vertex_feature_extractor.m`, `edge_info_extractor.m`, and `uncuratedInfoExtractor.m` have their core logic and concepts integrated into `ml_curator.py` to provide a unified ML curation interface.
+*   Introduces `choose_vertices` and `choose_edges` helpers for threshold-based selection, mirroring MATLAB's `choose_vertices_V200.m` and `choose_edges_V200.m` heuristics.
 
 ### `visualization.py`
 This module handles all aspects of visualizing the vectorized network. It consolidates the functionality from various MATLAB visualization scripts:
