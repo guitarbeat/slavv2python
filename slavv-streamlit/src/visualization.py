@@ -31,8 +31,39 @@ class NetworkVisualizer:
             'depth': 'Viridis',
             'strand_id': 'Set3',
             'radius': 'Plasma',
+            'length': 'Cividis',
             'random': 'Set1'
         }
+
+    @staticmethod
+    def _map_values_to_colors(values: np.ndarray, colorscale: str) -> List[str]:
+        """Map numeric values to colors using a Plotly colorscale.
+
+        Parameters
+        ----------
+        values : np.ndarray
+            Array of values to map to colors.
+        colorscale : str
+            Name of the Plotly colorscale to use.
+
+        Returns
+        -------
+        List[str]
+            List of color strings in hex format corresponding to the input
+            values. If ``values`` is empty or constant, the first color in the
+            colorscale is returned for all entries.
+        """
+        if len(values) == 0:
+            return []
+
+        vmin = np.nanmin(values)
+        vmax = np.nanmax(values)
+        if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax == vmin:
+            normalized = np.zeros_like(values, dtype=float)
+        else:
+            normalized = (values - vmin) / (vmax - vmin)
+
+        return [px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized]
     
     def plot_2d_network(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
                        network: Dict[str, Any], parameters: Dict[str, Any],
@@ -47,7 +78,7 @@ class NetworkVisualizer:
             edges: Edge data  
             network: Network data
             parameters: Processing parameters
-            color_by: Coloring scheme ('energy', 'depth', 'strand_id', 'radius')
+            color_by: Coloring scheme ('energy', 'depth', 'strand_id', 'radius', 'length')
             projection_axis: Axis to project along (0=Y, 1=X, 2=Z)
             show_vertices: Whether to show vertices
             show_edges: Whether to show edges
@@ -74,39 +105,100 @@ class NetworkVisualizer:
         
         # Convert to physical units
         microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-        
+
         # Plot edges
         if show_edges and edge_traces:
-            for i, trace in enumerate(edge_traces):
-                if len(trace) < 2:
-                    continue
-                    
-                trace = np.array(trace)
+            valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
+            edge_colors: List[str] = []
+            strand_ids: List[int] = []
+            strand_legend: Dict[int, bool] = {}
+            if color_by == 'depth':
+                depths = [
+                    np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
+                    for t in valid_traces
+                ]
+                edge_colors = self._map_values_to_colors(
+                    np.array(depths), self.color_schemes['depth']
+                )
+            elif color_by == 'energy':
+                energies = edges.get('energies', [])
+                if len(energies) == len(valid_traces):
+                    edge_colors = self._map_values_to_colors(
+                        np.asarray(energies), self.color_schemes['energy']
+                    )
+                else:
+                    edge_colors = ['blue'] * len(valid_traces)
+            elif color_by == 'radius':
+                connections = edges.get('connections', [])
+                if len(connections) == len(valid_traces) and len(vertex_radii) > 0:
+                    radii = []
+                    for (v0, v1) in connections:
+                        r0 = vertex_radii[int(v0)] if int(v0) >= 0 else 0
+                        r1 = (
+                            vertex_radii[int(v1)]
+                            if int(v1) >= 0 and int(v1) < len(vertex_radii)
+                            else r0
+                        )
+                        radii.append((r0 + r1) / 2.0)
+                    edge_colors = self._map_values_to_colors(
+                        np.asarray(radii), self.color_schemes['radius']
+                    )
+                else:
+                    edge_colors = ['blue'] * len(valid_traces)
+            elif color_by == 'length':
+                lengths = [
+                    calculate_path_length(trace * microns_per_voxel)
+                    for trace in valid_traces
+                ]
+                edge_colors = self._map_values_to_colors(
+                    np.asarray(lengths), self.color_schemes['length']
+                )
+            elif color_by == 'strand_id':
+                connections = edges.get('connections', [])
+                pair_to_index = {
+                    tuple(sorted(map(int, conn))): idx
+                    for idx, conn in enumerate(connections)
+                }
+                strand_ids = [-1] * len(valid_traces)
+                for sid, strand in enumerate(network.get('strands', [])):
+                    for v0, v1 in zip(strand[:-1], strand[1:]):
+                        idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                        if idx is not None:
+                            strand_ids[idx] = sid
+                colors = px.colors.qualitative.Set3
+                edge_colors = [
+                    colors[sid % len(colors)] if sid >= 0 else 'blue'
+                    for sid in strand_ids
+                ]
+            else:
+                edge_colors = ['blue'] * len(valid_traces)
+
+            for i, trace in enumerate(valid_traces):
                 x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
                 y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
-                
-                # Color by specified scheme
-                if color_by == 'energy':
-                    # Use average energy along trace (simplified)
-                    color = 'blue'
-                elif color_by == 'depth':
-                    depth = np.mean(trace[:, projection_axis]) * microns_per_voxel[projection_axis]
-                    color = f'rgba(0, 0, 255, {0.3 + 0.7 * depth / 100})'
-                elif color_by == 'strand_id':
-                    color_idx = i % 10
-                    colors = px.colors.qualitative.Set3
-                    color = colors[color_idx]
+
+                if color_by == 'strand_id':
+                    sid = strand_ids[i]
+                    name = f'Strand {sid}' if sid not in strand_legend else ''
+                    showlegend = sid not in strand_legend
+                    strand_legend[sid] = True
                 else:
-                    color = 'blue'
-                
-                fig.add_trace(go.Scatter(
-                    x=x_coords, y=y_coords,
-                    mode='lines',
-                    line=dict(color=color, width=2),
-                    name=f'Edge {i}' if i < 10 else '',
-                    showlegend=i < 10,
-                    hovertemplate=f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                ))
+                    name = f'Edge {i}' if i < 10 else ''
+                    showlegend = i < 10
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=edge_colors[i], width=2),
+                        name=name,
+                        showlegend=showlegend,
+                        hovertemplate=(
+                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                        ),
+                    )
+                )
         
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
@@ -123,6 +215,9 @@ class NetworkVisualizer:
             elif color_by == 'radius':
                 colors = vertex_radii
                 colorscale = 'Plasma'
+            elif color_by == 'length':
+                colors = 'red'
+                colorscale = None
             else:
                 colors = 'red'
                 colorscale = None
@@ -174,17 +269,250 @@ class NetworkVisualizer:
             width=800,
             height=600
         )
-        
+
         return fig
-    
-    def plot_3d_network(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
-                       network: Dict[str, Any], parameters: Dict[str, Any],
-                       color_by: str = 'energy', show_vertices: bool = True, 
-                       show_edges: bool = True, show_bifurcations: bool = True) -> go.Figure:
+
+    def plot_network_slice(
+        self,
+        vertices: Dict[str, Any],
+        edges: Dict[str, Any],
+        network: Dict[str, Any],
+        parameters: Dict[str, Any],
+        axis: int = 2,
+        center_in_microns: float = 0.0,
+        thickness_in_microns: float = 1.0,
+        color_by: str = 'energy',
+        show_vertices: bool = True,
+        show_edges: bool = True,
+    ) -> go.Figure:
+        """Create a 2D cross-sectional slice of the network.
+
+        Parameters
+        ----------
+        vertices : Dict[str, Any]
+            Vertex data.
+        edges : Dict[str, Any]
+            Edge data.
+        network : Dict[str, Any]
+            Network data (used for strand coloring).
+        parameters : Dict[str, Any]
+            Processing parameters containing voxel size.
+        axis : int, optional
+            Axis along which to take the slice (0=Y, 1=X, 2=Z), by default 2.
+        center_in_microns : float, optional
+            Center of the slice in microns along the chosen axis, by default 0.0.
+        thickness_in_microns : float, optional
+            Thickness of the slice in microns, by default 1.0.
+        color_by : str, optional
+            Coloring scheme ("energy", "depth", "strand_id", "radius", "length"), by default "energy".
+        show_vertices : bool, optional
+            Whether to show vertices, by default True.
+        show_edges : bool, optional
+            Whether to show edges, by default True.
+
+        Returns
+        -------
+        go.Figure
+            2D Plotly figure showing network elements within the slice.
         """
-        Create 3D network visualization
+
+        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        slice_min = center_in_microns - thickness_in_microns / 2.0
+        slice_max = center_in_microns + thickness_in_microns / 2.0
+
+        axes = [0, 1, 2]
+        axes.remove(axis)
+        x_axis, y_axis = axes
+        axis_names = ['Y', 'X', 'Z']
+        x_label = f"{axis_names[x_axis]} (μm)"
+        y_label = f"{axis_names[y_axis]} (μm)"
+
+        fig = go.Figure()
+
+        edge_traces = edges.get('traces', [])
+
+        # Pre-compute strand IDs if needed
+        strand_ids: List[int] = []
+        strand_legend: Dict[int, bool] = {}
+        if color_by == 'strand_id':
+            connections = edges.get('connections', [])
+            pair_to_index = {
+                tuple(sorted(map(int, conn))): idx
+                for idx, conn in enumerate(connections)
+            }
+            strand_ids = [-1] * len(edge_traces)
+            for sid, strand in enumerate(network.get('strands', [])):
+                for v0, v1 in zip(strand[:-1], strand[1:]):
+                    idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                    if idx is not None:
+                        strand_ids[idx] = sid
+
+        if show_edges and edge_traces:
+            for i, trace in enumerate(edge_traces):
+                arr = np.asarray(trace) * microns_per_voxel
+                mask = (arr[:, axis] >= slice_min) & (arr[:, axis] <= slice_max)
+                if np.count_nonzero(mask) < 2:
+                    continue
+
+                x_coords = arr[mask, x_axis]
+                y_coords = arr[mask, y_axis]
+
+                # Determine color
+                if color_by == 'depth':
+                    depth = float(np.mean(arr[:, axis]))
+                    color = self._map_values_to_colors(
+                        np.array([depth]), self.color_schemes['depth']
+                    )[0]
+                elif color_by == 'energy':
+                    energies = edges.get('energies', [])
+                    if len(energies) == len(edge_traces):
+                        color = self._map_values_to_colors(
+                            np.array([energies[i]]), self.color_schemes['energy']
+                        )[0]
+                    else:
+                        color = 'blue'
+                elif color_by == 'radius':
+                    connections = edges.get('connections', [])
+                    radii = vertices.get('radii_microns', vertices.get('radii', []))
+                    if (
+                        len(connections) == len(edge_traces)
+                        and len(radii) > 0
+                    ):
+                        v0, v1 = connections[i]
+                        r0 = radii[int(v0)] if int(v0) >= 0 else 0
+                        r1 = (
+                            radii[int(v1)]
+                            if int(v1) >= 0 and int(v1) < len(radii)
+                            else r0
+                        )
+                        color = self._map_values_to_colors(
+                            np.array([(r0 + r1) / 2.0]),
+                            self.color_schemes['radius'],
+                        )[0]
+                    else:
+                        color = 'blue'
+                elif color_by == 'strand_id':
+                    sid = strand_ids[i] if strand_ids else -1
+                    colors = px.colors.qualitative.Set3
+                    color = colors[sid % len(colors)] if sid >= 0 else 'blue'
+                else:
+                    color = 'blue'
+
+                name = f'Edge {i}' if i < 10 else ''
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='lines',
+                        line=dict(color=color, width=2),
+                        name=name,
+                        showlegend=i < 10,
+                        hovertemplate=(
+                            f'Edge {i}<br>Length: {calculate_path_length(arr[mask]):.1f} μm<extra></extra>'
+                        ),
+                    )
+                )
+
+        if show_vertices and len(vertices.get('positions', [])) > 0:
+            positions = vertices['positions'] * microns_per_voxel
+            mask = (positions[:, axis] >= slice_min) & (positions[:, axis] <= slice_max)
+            if np.any(mask):
+                x_coords = positions[mask, x_axis]
+                y_coords = positions[mask, y_axis]
+                vertex_energies = vertices['energies'][mask]
+                vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
+                vertex_radii = vertex_radii[mask] if len(vertex_radii) > 0 else []
+
+                if color_by == 'energy':
+                    colors = self._map_values_to_colors(
+                        vertex_energies, self.color_schemes['energy']
+                    )
+                elif color_by == 'depth':
+                    depths = positions[mask, axis]
+                    colors = self._map_values_to_colors(
+                        depths, self.color_schemes['depth']
+                    )
+                elif color_by == 'radius' and len(vertex_radii) > 0:
+                    colors = self._map_values_to_colors(
+                        vertex_radii, self.color_schemes['radius']
+                    )
+                else:
+                    colors = ['red'] * len(x_coords)
+
+                marker_dict = dict(
+                    size=8,
+                    color=colors,
+                    line=dict(width=1, color='black'),
+                )
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_coords,
+                        y=y_coords,
+                        mode='markers',
+                        marker=marker_dict,
+                        name='Vertices',
+                    )
+                )
+
+        fig.update_layout(
+            title=(
+                f"Network Slice at {center_in_microns:.1f} μm along {axis_names[axis]}"
+            ),
+            xaxis_title=x_label,
+            yaxis_title=y_label,
+            showlegend=True,
+            hovermode='closest',
+            width=800,
+            height=600,
+        )
+
+        return fig
+
+    def plot_3d_network(
+        self,
+        vertices: Dict[str, Any],
+        edges: Dict[str, Any],
+        network: Dict[str, Any],
+        parameters: Dict[str, Any],
+        color_by: str = 'energy',
+        show_vertices: bool = True,
+        show_edges: bool = True,
+        show_bifurcations: bool = True,
+        opacity_by: Optional[str] = None,
+    ) -> go.Figure:
+        """Create 3D network visualization.
+
+        Parameters
+        ----------
+        vertices : Dict[str, Any]
+            Vertex data.
+        edges : Dict[str, Any]
+            Edge data.
+        network : Dict[str, Any]
+            Network data.
+        parameters : Dict[str, Any]
+            Processing parameters.
+        color_by : str, optional
+            Coloring scheme ("energy", "depth", "strand_id", "radius", "length"), by default "energy".
+        show_vertices : bool, optional
+            Whether to show vertices, by default True.
+        show_edges : bool, optional
+            Whether to show edges, by default True.
+        show_bifurcations : bool, optional
+            Whether to highlight bifurcations, by default True.
+        opacity_by : Optional[str], optional
+            Attribute controlling edge opacity (currently supports "depth"), by default ``None``.
+
+        Returns
+        -------
+        go.Figure
+            3D Plotly figure of the vascular network.
         """
-        logger.info(f"Creating 3D network plot with {color_by} coloring")
+        logger.info(
+            f"Creating 3D network plot with {color_by} coloring" +
+            (f" and {opacity_by} opacity" if opacity_by else "")
+        )
         
         fig = go.Figure()
 
@@ -196,39 +524,118 @@ class NetworkVisualizer:
         
         # Convert to physical units
         microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-        
+
         # Plot edges as 3D lines
         if show_edges and edge_traces:
-            for i, trace in enumerate(edge_traces):
-                if len(trace) < 2:
-                    continue
-                    
-                trace = np.array(trace)
+            valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
+            edge_colors: List[str] = []
+            edge_opacities: List[float] = []
+            strand_ids: List[int] = []
+            strand_legend: Dict[int, bool] = {}
+            depths: List[float] = []
+            if color_by == 'depth':
+                depths = [
+                    np.mean(t[:, 2] * microns_per_voxel[2])
+                    for t in valid_traces
+                ]
+                edge_colors = self._map_values_to_colors(
+                    np.array(depths), self.color_schemes['depth']
+                )
+            elif color_by == 'energy':
+                energies = edges.get('energies', [])
+                if len(energies) == len(valid_traces):
+                    edge_colors = self._map_values_to_colors(
+                        np.asarray(energies), self.color_schemes['energy']
+                    )
+                else:
+                    edge_colors = ['blue'] * len(valid_traces)
+            elif color_by == 'radius':
+                connections = edges.get('connections', [])
+                if len(connections) == len(valid_traces) and len(vertices.get('radii_microns', vertices.get('radii', []))) > 0:
+                    vr = vertices.get('radii_microns', vertices.get('radii', []))
+                    radii = []
+                    for (v0, v1) in connections:
+                        r0 = vr[int(v0)] if int(v0) >= 0 else 0
+                        r1 = vr[int(v1)] if int(v1) >= 0 and int(v1) < len(vr) else r0
+                        radii.append((r0 + r1) / 2.0)
+                    edge_colors = self._map_values_to_colors(
+                        np.asarray(radii), self.color_schemes['radius']
+                    )
+                else:
+                    edge_colors = ['blue'] * len(valid_traces)
+            elif color_by == 'length':
+                lengths = [
+                    calculate_path_length(trace * microns_per_voxel)
+                    for trace in valid_traces
+                ]
+                edge_colors = self._map_values_to_colors(
+                    np.asarray(lengths), self.color_schemes['length']
+                )
+            elif color_by == 'strand_id':
+                connections = edges.get('connections', [])
+                pair_to_index = {
+                    tuple(sorted(map(int, conn))): idx
+                    for idx, conn in enumerate(connections)
+                }
+                strand_ids = [-1] * len(valid_traces)
+                for sid, strand in enumerate(network.get('strands', [])):
+                    for v0, v1 in zip(strand[:-1], strand[1:]):
+                        idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                        if idx is not None:
+                            strand_ids[idx] = sid
+                colors = px.colors.qualitative.Set3
+                edge_colors = [
+                    colors[sid % len(colors)] if sid >= 0 else 'blue'
+                    for sid in strand_ids
+                ]
+            else:
+                edge_colors = ['blue'] * len(valid_traces)
+
+            if opacity_by == 'depth':
+                if not depths:
+                    depths = [
+                        np.mean(t[:, 2] * microns_per_voxel[2])
+                        for t in valid_traces
+                    ]
+                dmin = float(np.min(depths))
+                dmax = float(np.max(depths))
+                if dmax == dmin:
+                    edge_opacities = [1.0 for _ in depths]
+                else:
+                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
+                    edge_opacities = [1.0 - 0.8 * n for n in norm]
+            else:
+                edge_opacities = [1.0] * len(valid_traces)
+
+            for i, trace in enumerate(valid_traces):
                 x_coords = trace[:, 1] * microns_per_voxel[1]  # X
                 y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
                 z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
-                
-                # Color by specified scheme
-                if color_by == 'energy':
-                    color = 'blue'
-                elif color_by == 'depth':
-                    depth = np.mean(z_coords)
-                    color = f'rgba(0, 0, 255, {0.3 + 0.7 * depth / 100})'
-                elif color_by == 'strand_id':
-                    color_idx = i % 10
-                    colors = px.colors.qualitative.Set3
-                    color = colors[color_idx]
+
+                if color_by == 'strand_id':
+                    sid = strand_ids[i]
+                    name = f'Strand {sid}' if sid not in strand_legend else ''
+                    showlegend = sid not in strand_legend
+                    strand_legend[sid] = True
                 else:
-                    color = 'blue'
-                
-                fig.add_trace(go.Scatter3d(
-                    x=x_coords, y=y_coords, z=z_coords,
-                    mode='lines',
-                    line=dict(color=color, width=4),
-                    name=f'Edge {i}' if i < 10 else '',
-                    showlegend=i < 10,
-                    hovertemplate=f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                ))
+                    name = f'Edge {i}' if i < 10 else ''
+                    showlegend = i < 10
+
+                fig.add_trace(
+                    go.Scatter3d(
+                        x=x_coords,
+                        y=y_coords,
+                        z=z_coords,
+                        mode='lines',
+                        line=dict(color=edge_colors[i], width=4),
+                        name=name,
+                        showlegend=showlegend,
+                        hovertemplate=(
+                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                        ),
+                        opacity=edge_opacities[i],
+                    )
+                )
         
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
@@ -246,6 +653,9 @@ class NetworkVisualizer:
             elif color_by == 'radius':
                 colors = vertex_radii
                 colorscale = 'Plasma'
+            elif color_by == 'length':
+                colors = 'red'
+                colorscale = None
             else:
                 colors = 'red'
                 colorscale = None
@@ -303,8 +713,171 @@ class NetworkVisualizer:
         )
         
         return fig
-    
-    def plot_energy_field(self, energy_data: Dict[str, Any], slice_axis: int = 2, 
+
+    def animate_strands_3d(
+        self,
+        vertices: Dict[str, Any],
+        edges: Dict[str, Any],
+        network: Dict[str, Any],
+        parameters: Dict[str, Any],
+    ) -> go.Figure:
+        """Animate strands sequentially in 3D.
+
+        Parameters
+        ----------
+        vertices, edges, network, parameters : dict
+            Standard SLAVV network outputs and processing parameters. The
+            animation iterates over ``network['strands']`` and renders each
+            strand's edges in turn.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with animation frames for each strand.
+        """
+        logger.info("Creating 3D strand animation")
+
+        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        vertex_positions = vertices.get('positions', np.empty((0, 3)))
+
+        # Base figure with all vertices shown as reference
+        x = vertex_positions[:, 1] * microns_per_voxel[1]
+        y = vertex_positions[:, 0] * microns_per_voxel[0]
+        z = vertex_positions[:, 2] * microns_per_voxel[2]
+        vertex_scatter = go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode='markers',
+            marker=dict(size=4, color='lightgray'),
+            name='Vertices',
+        )
+
+        connections = edges.get('connections', [])
+        traces = edges.get('traces', [])
+        pair_to_index = {
+            tuple(sorted(map(int, conn))): idx
+            for idx, conn in enumerate(connections)
+        }
+
+        colors = px.colors.qualitative.Set3
+        frames: List[go.Frame] = []
+        for sid, strand in enumerate(network.get('strands', [])):
+            edge_traces = []
+            color = colors[sid % len(colors)]
+            for v0, v1 in zip(strand[:-1], strand[1:]):
+                idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                if idx is None:
+                    continue
+                trace = np.asarray(traces[idx])
+                edge_traces.append(
+                    go.Scatter3d(
+                        x=trace[:, 1] * microns_per_voxel[1],
+                        y=trace[:, 0] * microns_per_voxel[0],
+                        z=trace[:, 2] * microns_per_voxel[2],
+                        mode='lines',
+                        line=dict(color=color, width=4),
+                        name=f'Strand {sid}',
+                    )
+                )
+            frames.append(go.Frame(data=[vertex_scatter, *edge_traces], name=str(sid)))
+
+        fig = go.Figure(
+            data=frames[0].data if frames else [vertex_scatter],
+            frames=frames,
+        )
+
+        steps = [
+            dict(
+                label=str(i),
+                method='animate',
+                args=[[str(i)], {"frame": {"duration": 500, "redraw": True}, "mode": "immediate"}],
+            )
+            for i in range(len(frames))
+        ]
+
+        fig.update_layout(
+            title="Animated 3D Strands",
+            scene=dict(
+                xaxis_title="X (μm)",
+                yaxis_title="Y (μm)",
+                zaxis_title="Z (μm)",
+                aspectmode='data',
+            ),
+            showlegend=False,
+            updatemenus=[
+                dict(
+                    type='buttons',
+                    showactive=False,
+                    buttons=[dict(label='Play', method='animate', args=[None])],
+                )
+            ],
+            sliders=[dict(active=0, steps=steps, currentvalue={"prefix": "Strand: "})],
+            width=800,
+            height=600,
+        )
+
+        return fig
+
+    def plot_flow_field(
+        self,
+        edges: Dict[str, Any],
+        parameters: Dict[str, Any],
+    ) -> go.Figure:
+        """Render edge directions as a 3D flow field.
+
+        Parameters
+        ----------
+        edges : dict
+            Edge data containing ``traces`` where each trace is an array of
+            voxel coordinates in ``(y, x, z)`` order.
+        parameters : dict
+            Processing parameters with ``microns_per_voxel`` for unit
+            conversion.
+
+        Returns
+        -------
+        go.Figure
+            Plotly figure with cones indicating edge orientations.
+        """
+        logger.info("Creating flow field visualization")
+
+        traces = edges.get('traces', [])
+        if not traces:
+            return go.Figure()
+
+        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+
+        x, y, z, u, v, w = [], [], [], [], [], []
+        for trace in traces:
+            arr = np.asarray(trace)
+            if len(arr) < 2:
+                continue
+            start = arr[0]
+            end = arr[-1]
+            mid = (start + end) / 2.0
+            direction = end - start
+            y.append(mid[0] * microns_per_voxel[0])
+            x.append(mid[1] * microns_per_voxel[1])
+            z.append(mid[2] * microns_per_voxel[2])
+            v.append(direction[0] * microns_per_voxel[0])
+            u.append(direction[1] * microns_per_voxel[1])
+            w.append(direction[2] * microns_per_voxel[2])
+
+        cone = go.Cone(x=x, y=y, z=z, u=u, v=v, w=w, colorscale='Blues', showscale=False)
+        fig = go.Figure(data=[cone])
+        fig.update_layout(
+            title="Edge Flow Field",
+            scene=dict(
+                xaxis_title="X (μm)",
+                yaxis_title="Y (μm)",
+                zaxis_title="Z (μm)",
+                aspectmode='data',
+            ),
+        )
+        return fig
+
+    def plot_energy_field(self, energy_data: Dict[str, Any], slice_axis: int = 2,
                          slice_index: Optional[int] = None) -> go.Figure:
         """
         Visualize energy field as 2D slice

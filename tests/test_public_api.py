@@ -2,6 +2,7 @@ import pathlib
 import sys
 
 import numpy as np
+import pytest
 
 # Add source path for imports
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
@@ -42,3 +43,13 @@ def test_process_image_output_types():
 
     assert network['adjacency'].dtype == bool
     assert network['vertex_degrees'].dtype == np.int32
+
+
+def test_validate_parameters_invalid_scales():
+    with pytest.raises(ValueError):
+        validate_parameters({'scales_per_octave': 0})
+
+
+def test_validate_parameters_negative_bandpass():
+    with pytest.raises(ValueError):
+        validate_parameters({'bandpass_window': -1})
