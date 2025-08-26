@@ -16,7 +16,6 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial import cKDTree
 from skimage import feature
 from skimage.segmentation import watershed
-
 import warnings
 from typing import Tuple, List, Optional, Dict, Any
 import logging
@@ -31,6 +30,7 @@ __all__ = [
     "validate_parameters",
     "get_chunking_lattice",
     "calculate_network_statistics",
+    "calculate_surface_area",
     "crop_vertices",
     "crop_edges",
     "crop_vertices_by_mask",
@@ -397,12 +397,11 @@ class SLAVVProcessor:
         step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
         max_edge_energy = params.get("max_edge_energy", 0.0)
         length_ratio = params.get("length_dilation_ratio", 1.0)
-
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-
         
         edges = []
         edge_connections = []
+        edge_energies: List[float] = []
         edges_per_vertex = np.zeros(len(vertex_positions), dtype=int)
         existing_pairs = set()
 
@@ -428,7 +427,6 @@ class SLAVVProcessor:
                 edge_trace = self._trace_edge(
                     energy, start_pos, direction, step_size,
                     max_edge_energy, vertex_positions, vertex_scales,
-
                     lumen_radius_pixels, lumen_radius_microns,
                     max_steps, microns_per_voxel, energy_sign
                 )
@@ -436,7 +434,6 @@ class SLAVVProcessor:
                     terminal_vertex = self._find_terminal_vertex(
                         edge_trace[-1], vertex_positions, vertex_scales,
                         lumen_radius_microns, microns_per_voxel
-
                     )
                     if terminal_vertex == vertex_idx:
                         continue
@@ -446,12 +443,15 @@ class SLAVVProcessor:
                         pair = tuple(sorted((vertex_idx, terminal_vertex)))
                         if pair in existing_pairs:
                             continue
-                    edges.append(np.asarray(edge_trace, dtype=np.float32))
+                    edge_arr = np.asarray(edge_trace, dtype=np.float32)
+                    edges.append(edge_arr)
+                    idx = np.floor(edge_arr).astype(int)
+                    energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
+                    edge_energies.append(float(np.mean(energies)))
                     edge_connections.append([
                         vertex_idx,
                         terminal_vertex if terminal_vertex is not None else -1,
                     ])
-
                     edges_per_vertex[vertex_idx] += 1
                     if terminal_vertex is not None:
                         edges_per_vertex[terminal_vertex] += 1
@@ -464,6 +464,7 @@ class SLAVVProcessor:
         return {
             "traces": edges,
             "connections": edge_connections,
+            "energies": np.asarray(edge_energies, dtype=np.float32),
             "vertex_positions": vertex_positions.astype(np.float32)
         }
 
@@ -491,6 +492,7 @@ class SLAVVProcessor:
 
         edges = []
         connections = []
+        edge_energies: List[float] = []
         seen = set()
 
         for label in range(1, len(vertex_positions) + 1):
@@ -511,7 +513,11 @@ class SLAVVProcessor:
                 coords = np.argwhere(boundary)
                 if coords.size == 0:
                     continue
-                edges.append(coords.astype(np.float32))
+                coords = coords.astype(np.float32)
+                edges.append(coords)
+                idx = np.floor(coords).astype(int)
+                energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
+                edge_energies.append(float(np.mean(energies)))
                 connections.append([label - 1, neighbor - 1])
                 seen.add(pair)
 
@@ -520,6 +526,7 @@ class SLAVVProcessor:
         return {
             "traces": edges,
             "connections": np.asarray(connections, dtype=np.int32),
+            "energies": np.asarray(edge_energies, dtype=np.float32),
             "vertex_positions": vertex_positions.astype(np.float32),
         }
 
@@ -629,7 +636,6 @@ class SLAVVProcessor:
             len(mismatched),
         )
 
-
         return {
             "strands": strands,
             "bifurcations": bifurcations,
@@ -675,14 +681,12 @@ class SLAVVProcessor:
             return self._generate_edge_directions(2)
 
         # Compute Hessian in the local patch and extract center values
-
         hessian_elems = [
             h * (radius ** 2)
             for h in feature.hessian_matrix(
                 patch, sigma=sigma, use_gaussian_derivatives=False
             )
         ]
-
         patch_center = tuple(np.array(patch.shape) // 2)
         Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
         H = np.array([
@@ -729,21 +733,13 @@ class SLAVVProcessor:
     def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
                     step_size: float, max_energy: float, vertex_positions: np.ndarray,
                     vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray,
-
                     lumen_radius_microns: np.ndarray, max_steps: int,
                     microns_per_voxel: np.ndarray, energy_sign: float) -> List[np.ndarray]:
-
-                    max_steps: int) -> List[np.ndarray]:
-
         """Trace an edge through the energy field with adaptive step sizing"""
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
         current_dir = direction.copy()
-
         prev_energy = energy[tuple(np.floor(current_pos).astype(int))]
-
-        prev_energy = energy[tuple(np.round(current_pos).astype(int))]
-
 
         for _ in range(max_steps):
             attempt = 0
@@ -760,7 +756,6 @@ class SLAVVProcessor:
                 if (energy_sign < 0 and current_energy > prev_energy) or (
                     energy_sign > 0 and current_energy < prev_energy
                 ):
-
                     step_size *= 0.5
                     if step_size < 0.5:
                         return trace
@@ -786,7 +781,6 @@ class SLAVVProcessor:
             terminal_vertex_idx = self._near_vertex(
                 current_pos, vertex_positions, vertex_scales,
                 lumen_radius_microns, microns_per_voxel
-
             )
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
@@ -974,6 +968,18 @@ def validate_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
     validated['energy_sign'] = params.get('energy_sign', -1.0)
     if validated['energy_sign'] not in (-1, 1):
         raise ValueError('energy_sign must be -1 or 1')
+    if validated['scales_per_octave'] <= 0:
+        raise ValueError(
+            'scales_per_octave must be positive (e.g., 1.5)'
+        )
+    if validated['gaussian_to_ideal_ratio'] <= 0:
+        raise ValueError(
+            'gaussian_to_ideal_ratio must be positive; try 1.0 to disable prefiltering'
+        )
+    if validated['spherical_to_annular_ratio'] <= 0:
+        raise ValueError(
+            'spherical_to_annular_ratio must be positive; use 1.0 to skip annular subtraction'
+        )
     
     # Processing parameters
     validated['max_voxels_per_node_energy'] = params.get('max_voxels_per_node_energy', 1e5)
@@ -988,6 +994,22 @@ def validate_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
     validated['edge_method'] = params.get('edge_method', 'tracing')
     if validated['edge_method'] not in ('tracing', 'watershed'):
         raise ValueError("edge_method must be 'tracing' or 'watershed'")
+    if validated['max_voxels_per_node_energy'] <= 0:
+        raise ValueError(
+            'max_voxels_per_node_energy must be positive; increase to process larger volumes'
+        )
+    if validated['length_dilation_ratio'] <= 0:
+        raise ValueError('length_dilation_ratio must be positive')
+    if validated['number_of_edges_per_vertex'] < 1:
+        raise ValueError('number_of_edges_per_vertex must be at least 1')
+    if validated['step_size_per_origin_radius'] <= 0:
+        raise ValueError(
+            'step_size_per_origin_radius must be positive; try 0.5 for finer tracing'
+        )
+    if validated['min_hair_length_in_microns'] < 0:
+        raise ValueError('min_hair_length_in_microns cannot be negative')
+    if validated['bandpass_window'] < 0:
+        raise ValueError('bandpass_window must be non-negative; set 0 to disable')
 
     return validated
 
@@ -1054,6 +1076,45 @@ def get_chunking_lattice(
 
     return slices
 
+
+def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarray,
+                           radii: np.ndarray, microns_per_voxel: List[float]) -> float:
+    """Compute total vessel surface area.
+
+    Approximates each edge segment as a cylinder whose radius is the mean of
+    its endpoint radii and whose length is the Euclidean distance between the
+    vertices in physical units.
+
+    Args:
+        strands: Lists of vertex indices describing connected components.
+        vertex_positions: ``(N, 3)`` array of vertex positions in ``y, x, z``
+            pixel coordinates.
+        radii: Array of vertex radii in microns.
+        microns_per_voxel: Physical size of a voxel along ``y, x, z`` axes.
+
+    Returns:
+        Total surface area in square microns.
+    """
+
+    vertex_positions = np.asarray(vertex_positions, dtype=float)
+    radii = np.asarray(radii, dtype=float)
+    scale = np.asarray(microns_per_voxel, dtype=float)
+    total_area = 0.0
+
+    for strand in strands:
+        if len(strand) < 2:
+            continue
+        for i in range(len(strand) - 1):
+            v1 = strand[i]
+            v2 = strand[i + 1]
+            pos1 = vertex_positions[v1] * scale
+            pos2 = vertex_positions[v2] * scale
+            length = np.linalg.norm(pos2 - pos1)
+            radius = 0.5 * (radii[v1] + radii[v2])
+            total_area += 2 * np.pi * radius * length
+
+    return float(total_area)
+
 def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndarray,
                                vertex_positions: np.ndarray, radii: np.ndarray,
                                microns_per_voxel: List[float], image_shape: Tuple[int, ...]) -> Dict[str, Any]:
@@ -1098,6 +1159,11 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     image_volume = np.prod(image_shape) * np.prod(microns_per_voxel)
     vessel_volume = np.sum(np.pi * radii**2) * stats.get('total_length', 0)
     stats['volume_fraction'] = vessel_volume / image_volume if image_volume > 0 else 0
+
+    # Surface area
+    total_surface_area = calculate_surface_area(strands, vertex_positions, radii, microns_per_voxel)
+    stats['total_surface_area'] = total_surface_area
+    stats['surface_area_density'] = total_surface_area / image_volume if image_volume > 0 else 0
     
     # Density measures
     stats['length_density'] = stats.get('total_length', 0) / image_volume if image_volume > 0 else 0

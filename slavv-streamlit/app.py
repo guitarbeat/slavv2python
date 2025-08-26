@@ -11,9 +11,14 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Import our modules
-from src.vectorization_core import SLAVVProcessor, validate_parameters, calculate_network_statistics
+from src.vectorization_core import (
+    SLAVVProcessor,
+    validate_parameters,
+    calculate_network_statistics,
+)
 from src.ml_curator import MLCurator, AutomaticCurator
 from src.visualization import NetworkVisualizer
+from src.io_utils import load_tiff_volume
 
 # Page configuration
 st.set_page_config(
@@ -403,17 +408,16 @@ def show_processing_page():
 
                 with st.status("Processing image...", expanded=True) as status:
                     progress_bar = status.progress(0)
-                    import tifffile
 
                     status.update(label="Loading image...", state="running")
                     progress_bar.progress(10)
 
                     try:
-                        image = tifffile.imread(uploaded_file)
+                        image = load_tiff_volume(uploaded_file)
                         st.success(
                             f"✅ Image loaded successfully with shape: {image.shape}"
                         )
-                    except Exception as e:
+                    except ValueError as e:
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
 
@@ -452,16 +456,32 @@ def show_processing_page():
                 )
                 
                 with col1:
-                    st.metric("Vertices Found", len(results["vertices"]["positions"]))
-                
+                    st.metric(
+                        "Vertices Found",
+                        len(results["vertices"]["positions"]),
+                        help="Total vertices detected in the volume",
+                    )
+
                 with col2:
-                    st.metric("Edges Extracted", len(results["edges"]["traces"]))
-                
+                    st.metric(
+                        "Edges Extracted",
+                        len(results["edges"]["traces"]),
+                        help="Number of vessel segments traced",
+                    )
+
                 with col3:
-                    st.metric("Network Strands", len(results["network"]["strands"]))
-                
+                    st.metric(
+                        "Network Strands",
+                        len(results["network"]["strands"]),
+                        help="Connected components in the network",
+                    )
+
                 with col4:
-                    st.metric("Bifurcations", len(results["network"]["bifurcations"]))
+                    st.metric(
+                        "Bifurcations",
+                        len(results["network"]["bifurcations"]),
+                        help="Detected branching points",
+                    )
                 
             except Exception as e:
                 st.error(f"❌ Parameter validation failed: {str(e)}")
@@ -572,17 +592,25 @@ def show_ml_curation_page():
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
-                        "Original Vertices", len(results["vertices"]["positions"])
+                        "Original Vertices",
+                        len(results["vertices"]["positions"]),
+                        help="Vertex count before curation",
                     )
                     st.metric(
-                        "Curated Vertices", len(curated_vertices["positions"])
+                        "Curated Vertices",
+                        len(curated_vertices["positions"]),
+                        help="Remaining vertices after automatic curation",
                     )
                 with col2:
                     st.metric(
-                        "Original Edges", len(results["edges"]["traces"])
+                        "Original Edges",
+                        len(results["edges"]["traces"]),
+                        help="Edge count before curation",
                     )
                     st.metric(
-                        "Curated Edges", len(curated_edges["traces"])
+                        "Curated Edges",
+                        len(curated_edges["traces"]),
+                        help="Remaining edges after automatic curation",
                     )
 
     elif curation_type == "Machine Learning (Model-based)":
@@ -659,17 +687,25 @@ def show_ml_curation_page():
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
-                        "Original Vertices", len(results["vertices"]["positions"])
+                        "Original Vertices",
+                        len(results["vertices"]["positions"]),
+                        help="Vertex count before curation",
                     )
                     st.metric(
-                        "Curated Vertices", len(curated_vertices["positions"])
+                        "Curated Vertices",
+                        len(curated_vertices["positions"]),
+                        help="Remaining vertices after ML curation",
                     )
                 with col2:
                     st.metric(
-                        "Original Edges", len(results["edges"]["traces"])
+                        "Original Edges",
+                        len(results["edges"]["traces"]),
+                        help="Edge count before curation",
                     )
                     st.metric(
-                        "Curated Edges", len(curated_edges["traces"])
+                        "Curated Edges",
+                        len(curated_edges["traces"]),
+                        help="Remaining edges after ML curation",
                     )
 
     # Curation results
@@ -732,17 +768,29 @@ def show_visualization_page():
     with col2:
         st.markdown("### 🎨 Display Options")
         
-        show_vertices = st.checkbox("Show vertices", value=True)
-        show_edges = st.checkbox("Show edges", value=True)
-        show_bifurcations = st.checkbox("Show bifurcations", value=True)
+        show_vertices = st.checkbox(
+            "Show vertices", value=True,
+            help="Display detected vertex markers"
+        )
+        show_edges = st.checkbox(
+            "Show edges", value=True,
+            help="Display traced vessel segments"
+        )
+        show_bifurcations = st.checkbox(
+            "Show bifurcations", value=True,
+            help="Highlight branching points in the network"
+        )
         
         color_scheme = st.selectbox(
             "Color scheme",
-            ["Energy", "Depth", "Strand ID", "Radius", "Random"],
+            ["Energy", "Depth", "Strand ID", "Radius", "Length", "Random"],
             help="How to color the network components"
         )
         
-        opacity = st.slider("Opacity", 0.1, 1.0, 0.8, 0.1)
+        opacity = st.slider(
+            "Opacity", 0.1, 1.0, 0.8, 0.1,
+            help="Adjust transparency of network rendering"
+        )
         
         if viz_type == "3D Network":
             camera_angle = st.selectbox(
@@ -856,15 +904,31 @@ def show_analysis_page():
 
     col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
     with col1:
-        st.metric("Total Length", f'{stats["total_length"]:.1f} μm')
+        st.metric(
+            "Total Length",
+            f'{stats["total_length"]:.1f} μm',
+            help="Sum of all edge lengths",
+        )
     with col2:
-        st.metric("Volume Fraction", f"{stats['volume_fraction']:.3f}")
+        st.metric(
+            "Volume Fraction",
+            f"{stats['volume_fraction']:.3f}",
+            help="Fraction of volume occupied by vessels",
+        )
 
     with col3:
-        st.metric("Bifurcation Density", f"{stats.get('bifurcation_density', 0):.2f} /mm³")
+        st.metric(
+            "Bifurcation Density",
+            f"{stats.get('bifurcation_density', 0):.2f} /mm³",
+            help="Bifurcations per cubic millimeter",
+        )
 
     with col4:
-        st.metric("Mean Radius", f"{stats.get('mean_radius', 0):.2f} μm")
+        st.metric(
+            "Mean Radius",
+            f"{stats.get('mean_radius', 0):.2f} μm",
+            help="Average vessel radius",
+        )
     # Detailed analysis
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"])
 
@@ -919,12 +983,28 @@ def show_analysis_page():
         col1, col2 = st.columns(2, gap="small")
 
         with col1:
-            st.metric("Mean Tortuosity", f"{stats.get('mean_tortuosity', 0):.2f}")
-            st.metric("Tortuosity Std", f"{stats.get('tortuosity_std', 0):.2f}")
+            st.metric(
+                "Mean Tortuosity",
+                f"{stats.get('mean_tortuosity', 0):.2f}",
+                help="Average path tortuosity",
+            )
+            st.metric(
+                "Tortuosity Std",
+                f"{stats.get('tortuosity_std', 0):.2f}",
+                help="Standard deviation of tortuosity",
+            )
 
         with col2:
-            st.metric("Fractal Dimension", f"{stats.get('fractal_dimension', 0):.2f}")
-            st.metric("Lacunarity", f"{stats.get('lacunarity', 0):.2f}")
+            st.metric(
+                "Fractal Dimension",
+                f"{stats.get('fractal_dimension', 0):.2f}",
+                help="Complexity of network structure",
+            )
+            st.metric(
+                "Lacunarity",
+                f"{stats.get('lacunarity', 0):.2f}",
+                help="Spatial heterogeneity of the network",
+            )
 
     with tab4:
         st.markdown("#### Complete Statistics Table")
