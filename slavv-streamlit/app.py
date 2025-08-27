@@ -410,8 +410,6 @@ def show_processing_page():
                     progress_bar = status.progress(0)
 
                     status.update(label="Loading image...", state="running")
-                    progress_bar.progress(10)
-
                     try:
                         image = load_tiff_volume(uploaded_file)
                         st.success(
@@ -423,22 +421,26 @@ def show_processing_page():
 
                     processor = SLAVVProcessor()
 
-                    status.update(label="Calculating energy field...", state="running")
-                    progress_bar.progress(25)
+                    stage_labels = {
+                        "start": "Starting pipeline...",
+                        "preprocess": "Preprocessing image...",
+                        "energy": "Calculating energy field...",
+                        "vertices": "Extracting vertices...",
+                        "edges": "Extracting edges...",
+                        "network": "Constructing network...",
+                    }
 
-                    status.update(label="Extracting vertices...", state="running")
-                    progress_bar.progress(50)
+                    def progress_cb(fraction: float, stage: str) -> None:
+                        label = stage_labels.get(stage, stage)
+                        state = "running" if fraction < 1.0 else "complete"
+                        if fraction >= 1.0:
+                            label = "Processing complete!"
+                        status.update(label=label, state=state)
+                        progress_bar.progress(int(fraction * 100))
 
-                    status.update(label="Extracting edges...", state="running")
-                    progress_bar.progress(75)
-
-                    status.update(label="Constructing network...", state="running")
-                    progress_bar.progress(90)
-
-                    results = processor.process_image(image, validated_params)
-
-                    progress_bar.progress(100)
-                    status.update(label="Processing complete!", state="complete")
+                    results = processor.process_image(
+                        image, validated_params, progress_callback=progress_cb
+                    )
 
                 # Store results in session state
                 st.session_state["processing_results"] = results
@@ -615,7 +617,7 @@ def show_ml_curation_page():
 
     elif curation_type == "Machine Learning (Model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
-        st.warning("⚠️ Machine Learning Curation requires trained models. This functionality is under development and requires pre-trained models or a training dataset.")
+        st.info("Upload pre-trained models or provide CSV training data to train new classifiers.")
         
         col1, col2 = st.columns(2, gap="medium")
         
@@ -626,6 +628,18 @@ def show_ml_curation_page():
                 help="Choose how to curate detected vertices. Corresponds to `VertexCuration` parameter in MATLAB."
             )
             
+            vertex_model_file = st.file_uploader(
+                "Vertex model (.joblib)",
+                type=["joblib", "pkl"],
+                help="Upload a pre-trained vertex classifier",
+            )
+
+            vertex_training_data = st.file_uploader(
+                "Vertex training data (.csv)",
+                type=["csv"],
+                help="CSV with vertex features and a 'label' column",
+            )
+
             vertex_confidence_threshold = st.slider(
                 "Vertex Confidence threshold",
                 min_value=0.0, max_value=1.0, value=0.5, step=0.05,
@@ -639,24 +653,55 @@ def show_ml_curation_page():
                 help="Choose how to curate detected edges. Corresponds to `EdgeCuration` parameter in MATLAB."
             )
             
+            edge_model_file = st.file_uploader(
+                "Edge model (.joblib)",
+                type=["joblib", "pkl"],
+                help="Upload a pre-trained edge classifier",
+            )
+
+            edge_training_data = st.file_uploader(
+                "Edge training data (.csv)",
+                type=["csv"],
+                help="CSV with edge features and a 'label' column",
+            )
+
             edge_confidence_threshold = st.slider(
                 "Edge Confidence threshold",
                 min_value=0.0, max_value=1.0, value=0.5, step=0.05,
                 help="Minimum confidence score for keeping edges"
             )
 
+        if st.button("📚 Train Models", type="secondary", width=250):
+            if vertex_training_data is None and edge_training_data is None:
+                st.error("Please upload training data for vertices, edges, or both.")
+            else:
+                with st.status("Training ML models...", expanded=True) as status:
+                    curator = MLCurator()
+                    if vertex_training_data is not None:
+                        df_v = pd.read_csv(vertex_training_data)
+                        X_v = df_v.drop(columns=["label"]).values
+                        y_v = df_v["label"].values
+                        res_v = curator.train_vertex_classifier(X_v, y_v)
+                        st.write(f"Vertex test accuracy: {res_v['test_accuracy']:.3f}")
+                    if edge_training_data is not None:
+                        df_e = pd.read_csv(edge_training_data)
+                        X_e = df_e.drop(columns=["label"]).values
+                        y_e = df_e["label"].values
+                        res_e = curator.train_edge_classifier(X_e, y_e)
+                        st.write(f"Edge test accuracy: {res_e['test_accuracy']:.3f}")
+                    st.session_state["ml_curator"] = curator
+                    status.update(label="Training complete!", state="complete")
+                    st.success("✅ Models trained!")
+
         if st.button("🤖 Start ML Curation", type="primary", width=250):
             with st.status(
                 "Performing ML curation...",
                 expanded=True,
             ) as status:
-                curator = MLCurator()
-
-                # In a real scenario, you would load pre-trained models here
-                # curator.load_models(
-                #     "path/to/vertex_model.joblib",
-                #     "path/to/edge_model.joblib",
-                # )
+                curator = st.session_state.get("ml_curator")
+                if curator is None:
+                    curator = MLCurator()
+                    curator.load_models(vertex_model_file, edge_model_file)
 
                 if curator.vertex_classifier is None or curator.edge_classifier is None:
                     st.error(
