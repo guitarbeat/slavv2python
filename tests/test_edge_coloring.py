@@ -229,3 +229,44 @@ def test_3d_depth_opacity():
     # Shallower edge should be more opaque
     assert fig.data[0].opacity > fig.data[1].opacity
 
+<<<<<<< HEAD
+=======
+
+def test_3d_length_colorbar():
+    vis = NetworkVisualizer()
+    vertices = {
+        'positions': np.zeros((0, 3), dtype=float),
+        'energies': np.array([], dtype=float),
+        'radii': np.array([], dtype=float),
+    }
+    edges = {
+        'traces': [
+            np.array([[0, 0, 0], [1, 0, 0]], dtype=float),
+            np.array([[0, 0, 0], [2, 0, 0]], dtype=float),
+        ],
+        'connections': [],
+        'energies': np.zeros(2, dtype=float),
+    }
+    params = {'microns_per_voxel': [1.0, 1.0, 1.0]}
+    network = {'bifurcations': []}
+
+    fig = vis.plot_3d_network(
+        vertices,
+        edges,
+        network,
+        params,
+        color_by='length',
+        show_vertices=False,
+        show_edges=True,
+        show_bifurcations=False,
+    )
+
+    colorbar_traces = [
+        trace
+        for trace in fig.data
+        if hasattr(getattr(trace, 'marker', None), 'showscale') and trace.marker.showscale
+    ]
+    assert colorbar_traces, 'Expected a colorbar trace for edge length coloring'
+    assert colorbar_traces[0].marker.colorbar.title.text.lower() == 'length'
+
+>>>>>>> codex/continue-migration-of-matlab-to-python-80defa

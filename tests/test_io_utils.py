@@ -33,3 +33,12 @@ def test_load_tiff_volume_wrong_dim():
     buf.seek(0)
     with pytest.raises(ValueError, match="3D volume"):
         load_tiff_volume(buf)
+
+
+def test_load_tiff_volume_memmap(tmp_path):
+    arr = np.zeros((2, 2, 2), dtype=np.uint8)
+    path = tmp_path / 'vol.tif'
+    tifffile.imwrite(path, arr)
+    vol = load_tiff_volume(path, memory_map=True)
+    assert vol.shape == (2, 2, 2)
+    assert isinstance(vol, np.memmap)

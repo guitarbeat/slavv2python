@@ -4,8 +4,8 @@ This document outlines the stable entry points exposed by the Python port of SLA
 
 ## [SLAVVProcessor](../slavv-streamlit/src/vectorization_core.py)
 
-- `process_image(image, parameters)`: run the full SLAVV pipeline and return energy, vertex, edge, and network data.
-- `calculate_energy_field(image, params)`: compute the multi-scale energy field.
+- `process_image(image, parameters)`: run the full SLAVV pipeline on a 3D volume and return energy, vertex, edge, and network data; raises `ValueError` for non-3D inputs and returns empty structures when no features are detected.
+- `calculate_energy_field(image, params)`: compute the multi-scale energy field; set `return_all_scales=True` in `params` to retain the full per-scale volume instead of only the extrema projection, and set `energy_method='frangi'` or `'sato'` to use scikit-image's Frangi or Sato filters.
 - `extract_vertices(energy_data, params)`: detect vessel vertices as local extrema.
 - `extract_edges(energy_data, vertices, params)`: trace edges between vertices using gradient descent.
 - `extract_edges_watershed(energy_data, vertices, params)`: alternative edge extraction via watershed regions.
@@ -24,7 +24,11 @@ This document outlines the stable entry points exposed by the Python port of SLA
 - [`load_network_from_mat`](../slavv-streamlit/src/io_utils.py): read vertices, edges, and radii from MATLAB `.mat` files.
 - [`load_network_from_casx`](../slavv-streamlit/src/io_utils.py): read network data from CASX XML files.
 - [`load_network_from_vmv`](../slavv-streamlit/src/io_utils.py): read network data from VMV text files.
-- [`load_tiff_volume`](../slavv-streamlit/src/io_utils.py): read a 3D grayscale TIFF volume with validation.
+- [`load_tiff_volume`](../slavv-streamlit/src/io_utils.py): read a 3D grayscale TIFF volume with validation; set `memory_map=True` to avoid loading the entire volume into RAM.
+- [`NetworkVisualizer.export_network_data`](../slavv-streamlit/src/visualization.py): export vertices, edges, and network results to CSV, JSON, VMV, CASX, or MAT formats.
 - [`extract_uncurated_info`](../slavv-streamlit/src/ml_curator.py): derive vertex and edge feature arrays without curation.
+- [`MLCurator.save_models`](../slavv-streamlit/src/ml_curator.py): persist trained vertex and edge classifiers.
+- [`MLCurator.load_models`](../slavv-streamlit/src/ml_curator.py): restore classifiers, enabling user-supplied models.
+- [`profile_process_image`](../slavv-streamlit/src/profiling.py): profile the SLAVV pipeline and return `pstats.Stats`.
 
 These APIs are considered stable and will be maintained for external consumers.

@@ -64,6 +64,70 @@ class NetworkVisualizer:
             normalized = (values - vmin) / (vmax - vmin)
 
         return [px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized]
+
+    @staticmethod
+    def _add_colorbar(
+        fig: go.Figure,
+        values: np.ndarray,
+        colorscale: str,
+        title: str,
+        is_3d: bool = False,
+    ) -> None:
+        """Add a colorbar representing the range of ``values``.
+
+        Parameters
+        ----------
+        fig : go.Figure
+            Figure to which the colorbar trace is added.
+        values : np.ndarray
+            Numeric values used for coloring edges.
+        colorscale : str
+            Plotly colorscale name.
+        title : str
+            Title for the colorbar.
+        is_3d : bool, optional
+            Whether to add a 3D scatter for the colorbar, by default False.
+        """
+        if values is None or len(values) == 0:
+            return
+
+        vmin = float(np.nanmin(values))
+        vmax = float(np.nanmax(values))
+        if vmin == vmax:
+            vmax = vmin + 1.0
+
+        marker = dict(
+            colorscale=colorscale,
+            cmin=vmin,
+            cmax=vmax,
+            color=[vmin],
+            showscale=True,
+            colorbar=dict(title=title),
+        )
+
+        if is_3d:
+            fig.add_trace(
+                go.Scatter3d(
+                    x=[None],
+                    y=[None],
+                    z=[None],
+                    mode="markers",
+                    marker=marker,
+                    showlegend=False,
+                    hoverinfo="none",
+                )
+            )
+        else:
+            fig.add_trace(
+                go.Scatter(
+                    x=[None],
+                    y=[None],
+                    mode="markers",
+                    marker=marker,
+                    showlegend=False,
+                    hoverinfo="none",
+                )
+            )
     
     def plot_2d_network(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
                        network: Dict[str, Any], parameters: Dict[str, Any],
@@ -112,19 +176,22 @@ class NetworkVisualizer:
             edge_colors: List[str] = []
             strand_ids: List[int] = []
             strand_legend: Dict[int, bool] = {}
+            values: Optional[np.ndarray] = None
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
                     for t in valid_traces
                 ]
+                values = np.array(depths)
                 edge_colors = self._map_values_to_colors(
-                    np.array(depths), self.color_schemes['depth']
+                    values, self.color_schemes['depth']
                 )
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
+                    values = np.asarray(energies)
                     edge_colors = self._map_values_to_colors(
-                        np.asarray(energies), self.color_schemes['energy']
+                        values, self.color_schemes['energy']
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
@@ -140,8 +207,9 @@ class NetworkVisualizer:
                             else r0
                         )
                         radii.append((r0 + r1) / 2.0)
+                    values = np.asarray(radii)
                     edge_colors = self._map_values_to_colors(
-                        np.asarray(radii), self.color_schemes['radius']
+                        values, self.color_schemes['radius']
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
@@ -150,8 +218,9 @@ class NetworkVisualizer:
                     calculate_path_length(trace * microns_per_voxel)
                     for trace in valid_traces
                 ]
+                values = np.asarray(lengths)
                 edge_colors = self._map_values_to_colors(
-                    np.asarray(lengths), self.color_schemes['length']
+                    values, self.color_schemes['length']
                 )
             elif color_by == 'strand_id':
                 connections = edges.get('connections', [])
@@ -199,7 +268,16 @@ class NetworkVisualizer:
                         ),
                     )
                 )
-        
+
+            if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                self._add_colorbar(
+                    fig,
+                    values,
+                    self.color_schemes[color_by],
+                    color_by.title(),
+                    is_3d=False,
+                )
+
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
             x_coords = vertex_positions[:, x_axis] * microns_per_voxel[x_axis]
@@ -222,12 +300,15 @@ class NetworkVisualizer:
                 colors = 'red'
                 colorscale = None
             
+            edge_colorbar = show_edges and edge_traces and color_by in {'depth', 'energy', 'radius', 'length'}
             marker_dict = dict(
                 size=8,
                 color=colors,
                 colorscale=colorscale,
-                showscale=True if colorscale else False,
-                colorbar=dict(title=color_by.title()) if colorscale else None,
+                showscale=True if colorscale and not edge_colorbar else False,
+                colorbar=(
+                    dict(title=color_by.title()) if colorscale and not edge_colorbar else None
+                ),
                 line=dict(width=1, color='black')
             )
             
@@ -269,6 +350,8 @@ class NetworkVisualizer:
             width=800,
             height=600
         )
+        # Ensure equal scaling so physical units are preserved
+        fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
         return fig
 
@@ -466,6 +549,8 @@ class NetworkVisualizer:
             width=800,
             height=600,
         )
+        # Ensure equal scaling between axes to avoid distortion
+        fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
         return fig
 
@@ -533,19 +618,22 @@ class NetworkVisualizer:
             strand_ids: List[int] = []
             strand_legend: Dict[int, bool] = {}
             depths: List[float] = []
+            values: Optional[np.ndarray] = None
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, 2] * microns_per_voxel[2])
                     for t in valid_traces
                 ]
+                values = np.array(depths)
                 edge_colors = self._map_values_to_colors(
-                    np.array(depths), self.color_schemes['depth']
+                    values, self.color_schemes['depth']
                 )
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
+                    values = np.asarray(energies)
                     edge_colors = self._map_values_to_colors(
-                        np.asarray(energies), self.color_schemes['energy']
+                        values, self.color_schemes['energy']
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
@@ -558,8 +646,9 @@ class NetworkVisualizer:
                         r0 = vr[int(v0)] if int(v0) >= 0 else 0
                         r1 = vr[int(v1)] if int(v1) >= 0 and int(v1) < len(vr) else r0
                         radii.append((r0 + r1) / 2.0)
+                    values = np.asarray(radii)
                     edge_colors = self._map_values_to_colors(
-                        np.asarray(radii), self.color_schemes['radius']
+                        values, self.color_schemes['radius']
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
@@ -568,8 +657,9 @@ class NetworkVisualizer:
                     calculate_path_length(trace * microns_per_voxel)
                     for trace in valid_traces
                 ]
+                values = np.asarray(lengths)
                 edge_colors = self._map_values_to_colors(
-                    np.asarray(lengths), self.color_schemes['length']
+                    values, self.color_schemes['length']
                 )
             elif color_by == 'strand_id':
                 connections = edges.get('connections', [])
@@ -636,6 +726,15 @@ class NetworkVisualizer:
                         opacity=edge_opacities[i],
                     )
                 )
+
+            if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                self._add_colorbar(
+                    fig,
+                    values,
+                    self.color_schemes[color_by],
+                    color_by.title(),
+                    is_3d=True,
+                )
         
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
@@ -660,12 +759,15 @@ class NetworkVisualizer:
                 colors = 'red'
                 colorscale = None
             
+            edge_colorbar = show_edges and edge_traces and color_by in {'depth', 'energy', 'radius', 'length'}
             marker_dict = dict(
                 size=6,
                 color=colors,
                 colorscale=colorscale,
-                showscale=True if colorscale else False,
-                colorbar=dict(title=color_by.title()) if colorscale else None,
+                showscale=True if colorscale and not edge_colorbar else False,
+                colorbar=(
+                    dict(title=color_by.title()) if colorscale and not edge_colorbar else None
+                ),
                 line=dict(width=1, color='black')
             )
             

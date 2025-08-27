@@ -18,7 +18,6 @@ import xml.etree.ElementTree as ET
 @dataclass
 class Network:
     """Container for basic network data."""
-
     vertices: np.ndarray
     edges: np.ndarray
     radii: np.ndarray | None = None
@@ -28,18 +27,25 @@ class Network:
 MatNetwork = Network
 
 
-def load_tiff_volume(file: str | Path | IO[bytes]) -> np.ndarray:
+def load_tiff_volume(
+    file: str | Path | IO[bytes], *, memory_map: bool = False
+) -> np.ndarray:
     """Load a 3D grayscale TIFF volume with validation.
 
     Parameters
     ----------
     file:
         Path or binary file-like object containing TIFF data.
+    memory_map:
+        If ``True``, return a memory-mapped array instead of reading the
+        entire volume into memory. This requires ``file`` to be a path-like
+        object.
 
     Returns
     -------
     np.ndarray
-        The loaded 3D volume.
+        The loaded 3D volume. When ``memory_map`` is ``True`` a
+        :class:`numpy.memmap` is returned.
 
     Raises
     ------
@@ -50,14 +56,17 @@ def load_tiff_volume(file: str | Path | IO[bytes]) -> np.ndarray:
     import tifffile
 
     try:
-        volume = tifffile.imread(file)
+        if memory_map:
+            volume = tifffile.memmap(file)
+        else:
+            volume = tifffile.imread(file)
     except Exception as exc:  # pragma: no cover - pass through value error
         raise ValueError(f"Failed to read TIFF volume: {exc}") from exc
     if volume.ndim != 3:
         raise ValueError("Expected a 3D volume")
     if np.iscomplexobj(volume):
         raise ValueError("Expected a real-valued grayscale TIFF volume")
-    return np.asarray(volume)
+    return np.asarray(volume) if not memory_map else volume
 
 
 def load_network_from_mat(path: str | Path) -> Network:
@@ -76,10 +85,29 @@ def load_network_from_mat(path: str | Path) -> Network:
         Dataclass containing the ``vertices`` and ``edges`` arrays loaded
         from the file. Missing arrays default to empty arrays.
     """
-    data: Dict[str, Any] = loadmat(Path(path), squeeze_me=True)
-    vertices = np.asarray(data.get("vertices", []), dtype=float)
-    edges = np.atleast_2d(np.asarray(data.get("edges", []), dtype=int))
-    radii = np.asarray(data.get("radii", []), dtype=float)
+    data: Dict[str, Any] = loadmat(
+        Path(path), squeeze_me=True, struct_as_record=False
+    )
+
+    v_struct = data.get("vertices")
+    if hasattr(v_struct, "positions"):
+        vertices = np.asarray(getattr(v_struct, "positions", []), dtype=float)
+        radii = np.asarray(
+            getattr(v_struct, "radii_microns", getattr(v_struct, "radii", [])),
+            dtype=float,
+        )
+    else:
+        vertices = np.asarray(v_struct if v_struct is not None else [], dtype=float)
+        radii = np.asarray(data.get("radii", []), dtype=float)
+
+    e_struct = data.get("edges")
+    if hasattr(e_struct, "connections"):
+        edges = np.atleast_2d(np.asarray(e_struct.connections, dtype=int))
+    else:
+        edges = np.atleast_2d(
+            np.asarray(e_struct if e_struct is not None else [], dtype=int)
+        )
+
     if radii.size == 0:
         radii = None
     return Network(vertices=vertices, edges=edges, radii=radii)
