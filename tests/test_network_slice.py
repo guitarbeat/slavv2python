@@ -34,4 +34,7 @@ def test_plot_network_slice_filters_edges_and_vertices():
     assert len(marker_traces) == 1
     # Two vertices fall within the slice
     assert len(marker_traces[0].x) == 2
+    # Axes should share scale to preserve physical aspect ratio
+    assert fig.layout.yaxis.scaleanchor == "x"
+    assert fig.layout.yaxis.scaleratio == 1
 

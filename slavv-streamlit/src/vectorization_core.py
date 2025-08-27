@@ -15,10 +15,17 @@ import scipy.ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import cKDTree
 from skimage import feature
+from skimage.filters import frangi, sato
 from skimage.segmentation import watershed
 import warnings
-from typing import Tuple, List, Optional, Dict, Any
+from typing import Tuple, List, Optional, Dict, Any, Callable
 import logging
+try:  # Optional Numba acceleration
+    from numba import njit
+    _NUMBA_AVAILABLE = True
+except Exception:  # pragma: no cover - Numba may not be installed
+    njit = None
+    _NUMBA_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,6 +43,40 @@ __all__ = [
     "crop_vertices_by_mask",
 ]
 
+
+if _NUMBA_AVAILABLE:
+
+    @njit(cache=True)
+    def _compute_gradient_impl(energy, pos_int, microns_per_voxel):
+        gradient = np.zeros(3, dtype=np.float64)
+        for i in range(3):
+            if 0 < pos_int[i] < energy.shape[i] - 1:
+                pos_plus = pos_int.copy()
+                pos_minus = pos_int.copy()
+                pos_plus[i] += 1
+                pos_minus[i] -= 1
+                diff = (
+                    energy[pos_plus[0], pos_plus[1], pos_plus[2]]
+                    - energy[pos_minus[0], pos_minus[1], pos_minus[2]]
+                )
+                gradient[i] = diff / (2.0 * microns_per_voxel[i])
+        return gradient
+
+else:
+
+    def _compute_gradient_impl(energy, pos_int, microns_per_voxel):
+        gradient = np.zeros(3, dtype=float)
+        for i in range(3):
+            if 0 < pos_int[i] < energy.shape[i] - 1:
+                pos_plus = pos_int.copy()
+                pos_minus = pos_int.copy()
+                pos_plus[i] += 1
+                pos_minus[i] -= 1
+                diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
+                gradient[i] = diff / (2.0 * microns_per_voxel[i])
+        return gradient
+
+
 class SLAVVProcessor:
     """Main class for SLAVV vectorization processing"""
     
@@ -45,40 +86,61 @@ class SLAVVProcessor:
         self.edges = None
         self.network = None
         
-    def process_image(self, image: np.ndarray, parameters: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Complete SLAVV processing pipeline
-        
+    def process_image(
+        self,
+        image: np.ndarray,
+        parameters: Dict[str, Any],
+        progress_callback: Optional[Callable[[float, str], None]] = None,
+    ) -> Dict[str, Any]:
+        """Complete SLAVV processing pipeline.
+
         Args:
             image: 3D input image array (y, x, z)
             parameters: Dictionary of processing parameters
-            
+            progress_callback: Optional callable receiving ``(fraction, stage)``
+                updates as the pipeline advances from 0.0 to 1.0.
+
         Returns:
             Dictionary containing all processing results
         """
+        if image.ndim != 3 or 0 in image.shape:
+            raise ValueError("Input image must be a non-empty 3D array")
+
         logger.info("Starting SLAVV processing pipeline")
+        if progress_callback:
+            progress_callback(0.0, "start")
 
         # Validate and populate default parameters
         parameters = validate_parameters(parameters)
 
         # Step 0: Image preprocessing
         image = preprocess_image(image, parameters)
+        if progress_callback:
+            progress_callback(0.2, "preprocess")
 
         # Step 1: Energy image formation
         energy_data = self.calculate_energy_field(image, parameters)
-        
+        if progress_callback:
+            progress_callback(0.4, "energy")
+
         # Step 2: Vertex extraction
         vertices = self.extract_vertices(energy_data, parameters)
-        
+        if progress_callback:
+            progress_callback(0.6, "vertices")
+
         # Step 3: Edge extraction
         edge_method = parameters.get('edge_method', 'tracing')
         if edge_method == 'watershed':
             edges = self.extract_edges_watershed(energy_data, vertices, parameters)
         else:
             edges = self.extract_edges(energy_data, vertices, parameters)
-        
+        if progress_callback:
+            progress_callback(0.8, "edges")
+
         # Step 4: Network construction
         network = self.construct_network(edges, vertices, parameters)
+        if progress_callback:
+            progress_callback(1.0, "network")
         
         results = {
             'energy_data': energy_data,
@@ -93,13 +155,16 @@ class SLAVVProcessor:
 
     def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Calculate multi-scale energy field using Hessian-based filtering
+        Calculate multi-scale energy field using Hessian-based filtering.
 
-        This implements the energy calculation from get_energy_V202 in MATLAB,
-        including PSF prefiltering and configurable Gaussian/annular ratios.
+        This implements the energy calculation from ``get_energy_V202`` in
+        MATLAB, including PSF prefiltering and configurable Gaussian/annular
+        ratios. Set ``energy_method='frangi'`` or ``'sato'`` in ``params`` to use
+        scikit-image's :func:`~skimage.filters.frangi` or
+        :func:`~skimage.filters.sato` vesselness filters as alternative backends.
         """
         logger.info("Calculating energy field")
-        
+
         # Extract parameters with defaults from MATLAB
         microns_per_voxel = params.get('microns_per_voxel', [1.0, 1.0, 1.0])
         radius_smallest = params.get('radius_of_smallest_vessel_in_microns', 1.5)
@@ -109,6 +174,8 @@ class SLAVVProcessor:
         spherical_to_annular_ratio = params.get('spherical_to_annular_ratio', 1.0)
         approximating_PSF = params.get('approximating_PSF', True)
         energy_sign = params.get('energy_sign', -1.0)  # -1 for bright vessels
+        return_all_scales = params.get('return_all_scales', False)
+        energy_method = params.get('energy_method', 'hessian')
 
         # Cache voxel spacing for anisotropy handling
         voxel_size = np.array(microns_per_voxel, dtype=float)
@@ -166,21 +233,43 @@ class SLAVVProcessor:
                 max_sigma = np.sqrt(max_sigma**2 + pixels_per_sigma_PSF**2)
             margin = int(np.ceil(np.max(max_sigma)))
             lattice = get_chunking_lattice(image.shape, max_voxels, margin)
-            energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            if return_all_scales:
+                energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            else:
+                energy_3d = np.empty(image.shape, dtype=np.float32)
+                scale_indices = np.empty(image.shape, dtype=np.int16)
             for chunk_slice, out_slice, inner_slice in lattice:
                 chunk_img = image[chunk_slice]
                 sub_params = params.copy()
                 sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
+                sub_params["return_all_scales"] = return_all_scales
                 chunk_data = self.calculate_energy_field(chunk_img, sub_params)
-                energy_4d[out_slice + (slice(None),)] = chunk_data["energy_4d"][
-                    inner_slice + (slice(None),)
-                ]
-            if energy_sign < 0:
-                energy_3d = np.min(energy_4d, axis=3)
-                scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
-            else:
-                energy_3d = np.max(energy_4d, axis=3)
-                scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
+                if return_all_scales:
+                    energy_4d[out_slice + (slice(None),)] = chunk_data["energy_4d"][
+                        inner_slice + (slice(None),)
+                    ]
+                else:
+                    energy_3d[out_slice] = chunk_data["energy"][inner_slice]
+                    scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
+            if return_all_scales:
+                if energy_sign < 0:
+                    energy_3d = np.min(energy_4d, axis=3)
+                    scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
+                else:
+                    energy_3d = np.max(energy_4d, axis=3)
+                    scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
+                return {
+                    "energy": energy_3d,
+                    "scale_indices": scale_indices,
+                    "lumen_radius_microns": lumen_radius_microns,
+                    "lumen_radius_pixels": lumen_radius_pixels,
+                    "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
+                    "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
+                    "microns_per_sigma_PSF": microns_per_sigma_PSF,
+                    "energy_sign": energy_sign,
+                    "energy_4d": energy_4d,
+                    "image_shape": image.shape,
+                }
             return {
                 "energy": energy_3d,
                 "scale_indices": scale_indices,
@@ -190,83 +279,117 @@ class SLAVVProcessor:
                 "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
                 "microns_per_sigma_PSF": microns_per_sigma_PSF,
                 "energy_sign": energy_sign,
-                "energy_4d": energy_4d,
                 "image_shape": image.shape,
             }
 
-        # Multi-scale energy calculation with per-scale PSF weighting
-        energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
-
-        for scale_idx, _ in enumerate(lumen_radius_pixels):
-            # Calculate Gaussian sigmas at this scale using physical voxel spacing
-            radius_microns = lumen_radius_microns[scale_idx]
-            sigma_scale = (
-                (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
-            )
-            sigma_scale = np.asarray(sigma_scale, dtype=float)
-
-            if approximating_PSF:
-                sigma_object = np.sqrt(sigma_scale**2 + pixels_per_sigma_PSF**2)
+        if energy_method in ('frangi', 'sato'):
+            if return_all_scales:
+                energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            if energy_sign < 0:
+                energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
             else:
-                sigma_object = sigma_scale
+                energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
+            scale_indices = np.zeros(image.shape, dtype=np.int16)
 
-            smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
-            if spherical_to_annular_ratio > 0:
-                annular_scale = sigma_scale * spherical_to_annular_ratio
-                if approximating_PSF:
-                    sigma_background = np.sqrt(
-                        annular_scale**2 + pixels_per_sigma_PSF**2
+            for scale_idx, sigma in enumerate(lumen_radius_pixels):
+                if energy_method == 'frangi':
+                    vesselness = frangi(
+                        image,
+                        sigmas=[sigma],
+                        black_ridges=(energy_sign > 0),
                     )
                 else:
-                    sigma_background = annular_scale
-                smoothed_background = gaussian_filter(
-                    image, sigma=tuple(sigma_background)
-                )
-                smoothed = smoothed_object - smoothed_background
-            else:
-                smoothed = smoothed_object
-
-            # Calculate Hessian eigenvalues with PSF-weighted sigma
-            hessian = feature.hessian_matrix(
-                smoothed, sigma=tuple(sigma_object), use_gaussian_derivatives=False
-            )
-            eigenvals = feature.hessian_matrix_eigvals(hessian)
-            
-            # Energy function: enhance tubular structures
-            # Negative eigenvalues indicate bright ridges
-            lambda1, lambda2, lambda3 = eigenvals
-            
-            # Frangi-like vesselness measure
-            vesselness = np.zeros_like(lambda1)
-            
-            # Only consider voxels where lambda2 and lambda3 < 0 (bright tubular structures in 3D)
-            mask = (lambda2 < 0) & (lambda3 < 0)
-            
-            if np.any(mask):
-                # Ratios for tubular structure detection
-                Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
-                Rb = np.abs(lambda1[mask]) / (np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12)
-                S = np.sqrt(lambda1[mask]**2 + lambda2[mask]**2 + lambda3[mask]**2)
-                
-                # Vesselness response (Frangi-inspired)
-                alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
-                vesselness[mask] = (
-                    (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2)))) *
-                    np.exp(-(Rb**2) / (2 * (beta**2))) *
-                    (1.0 - np.exp(-(S**2) / (2 * (c**2))))
-                )
-             
-            energy_4d[:, :, :, scale_idx] = energy_sign * vesselness
-        
-        # Projection across scales uses sign-aware extremum
-        if energy_sign < 0:
-            energy_3d = np.min(energy_4d, axis=3)
-            scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
+                    vesselness = sato(
+                        image,
+                        sigmas=[sigma],
+                        black_ridges=(energy_sign > 0),
+                    )
+                energy_scale = energy_sign * vesselness.astype(np.float32)
+                if return_all_scales:
+                    energy_4d[..., scale_idx] = energy_scale
+                mask = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
+                energy_3d[mask] = energy_scale[mask]
+                scale_indices[mask] = scale_idx
         else:
-            energy_3d = np.max(energy_4d, axis=3)
-            scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
-        
-        return {
+            # Multi-scale energy calculation with per-scale PSF weighting
+            if return_all_scales:
+                energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            if energy_sign < 0:
+                energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
+            else:
+                energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
+            scale_indices = np.zeros(image.shape, dtype=np.int16)
+
+            for scale_idx, _ in enumerate(lumen_radius_pixels):
+                # Calculate Gaussian sigmas at this scale using physical voxel spacing
+                radius_microns = lumen_radius_microns[scale_idx]
+                sigma_scale = (
+                    (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
+                )
+                sigma_scale = np.asarray(sigma_scale, dtype=float)
+
+                if approximating_PSF:
+                    sigma_object = np.sqrt(sigma_scale**2 + pixels_per_sigma_PSF**2)
+                else:
+                    sigma_object = sigma_scale
+
+                smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
+                if spherical_to_annular_ratio > 0:
+                    annular_scale = sigma_scale * spherical_to_annular_ratio
+                    if approximating_PSF:
+                        sigma_background = np.sqrt(
+                            annular_scale**2 + pixels_per_sigma_PSF**2
+                        )
+                    else:
+                        sigma_background = annular_scale
+                    smoothed_background = gaussian_filter(
+                        image, sigma=tuple(sigma_background)
+                    )
+                    smoothed = smoothed_object - smoothed_background
+                else:
+                    smoothed = smoothed_object
+
+                # Calculate Hessian eigenvalues with PSF-weighted sigma
+                hessian = feature.hessian_matrix(
+                    smoothed, sigma=tuple(sigma_object), use_gaussian_derivatives=False
+                )
+                eigenvals = feature.hessian_matrix_eigvals(hessian)
+
+                # Energy function: enhance tubular structures
+                # Negative eigenvalues indicate bright ridges
+                lambda1, lambda2, lambda3 = eigenvals
+
+                # Frangi-like vesselness measure
+                vesselness = np.zeros_like(lambda1)
+
+                # Only consider voxels where lambda2 and lambda3 < 0 (bright tubular structures in 3D)
+                mask = (lambda2 < 0) & (lambda3 < 0)
+
+                if np.any(mask):
+                    # Ratios for tubular structure detection
+                    Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
+                    Rb = np.abs(lambda1[mask]) / (np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12)
+                    S = np.sqrt(lambda1[mask]**2 + lambda2[mask]**2 + lambda3[mask]**2)
+
+                    # Vesselness response (Frangi-inspired)
+                    alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
+                    vesselness[mask] = (
+                        (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2)))) *
+                        np.exp(-(Rb**2) / (2 * (beta**2))) *
+                        (1.0 - np.exp(-(S**2) / (2 * (c**2))))
+                    )
+
+                energy_scale = energy_sign * vesselness
+                if return_all_scales:
+                    energy_4d[:, :, :, scale_idx] = energy_scale
+                if energy_sign < 0:
+                    mask = energy_scale < energy_3d
+                else:
+                    mask = energy_scale > energy_3d
+                energy_3d[mask] = energy_scale[mask]
+                scale_indices[mask] = scale_idx
+
+        result = {
             'energy': energy_3d,
             'scale_indices': scale_indices,
             'lumen_radius_microns': lumen_radius_microns,
@@ -275,9 +398,19 @@ class SLAVVProcessor:
             'pixels_per_sigma_PSF': pixels_per_sigma_PSF,
             'microns_per_sigma_PSF': microns_per_sigma_PSF,
             'energy_sign': energy_sign,
-            'energy_4d': energy_4d,
             'image_shape': image.shape
         }
+        if return_all_scales:
+            result['energy_4d'] = energy_4d
+        return result
+
+    @staticmethod
+    def _spherical_structuring_element(radius: int) -> np.ndarray:
+        """Create a 3D spherical structuring element with the given radius."""
+        radius = int(radius)
+        ax = np.arange(-radius, radius + 1)
+        xx, yy, zz = np.meshgrid(ax, ax, ax, indexing="ij")
+        return (xx**2 + yy**2 + zz**2) <= radius**2
 
     @staticmethod
     def _spherical_structuring_element(radius: int) -> np.ndarray:
@@ -333,6 +466,17 @@ class SLAVVProcessor:
         vertex_positions = vertex_positions[sort_indices]
         vertex_scales = vertex_scales[sort_indices]
         vertex_energies = vertex_energies[sort_indices]
+
+        if len(vertex_positions) == 0:
+            logger.info("Extracted 0 vertices")
+            return {
+                'positions': np.empty((0, 3), dtype=np.float32),
+                'scales': np.empty((0,), dtype=np.int16),
+                'energies': np.empty((0,), dtype=np.float32),
+                'radii_pixels': np.empty((0,), dtype=np.float32),
+                'radii_microns': np.empty((0,), dtype=np.float32),
+                'radii': np.empty((0,), dtype=np.float32),
+            }
 
         # Volume exclusion: remove overlapping vertices using energy-ordered cKDTree
         lumen_radius_microns = energy_data['lumen_radius_microns']
@@ -398,12 +542,21 @@ class SLAVVProcessor:
         max_edge_energy = params.get("max_edge_energy", 0.0)
         length_ratio = params.get("length_dilation_ratio", 1.0)
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-        
+
         edges = []
         edge_connections = []
         edge_energies: List[float] = []
         edges_per_vertex = np.zeros(len(vertex_positions), dtype=int)
         existing_pairs = set()
+
+        if len(vertex_positions) == 0:
+            logger.info("Extracted 0 edges")
+            return {
+                "traces": [],
+                "connections": np.zeros((0, 2), dtype=np.int32),
+                "energies": np.zeros((0,), dtype=np.float32),
+                "vertex_positions": vertex_positions.astype(np.float32),
+            }
 
         for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
             if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
@@ -459,7 +612,7 @@ class SLAVVProcessor:
         
         logger.info(f"Extracted {len(edges)} edges")
 
-        edge_connections = np.asarray(edge_connections, dtype=np.int32)
+        edge_connections = np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2)
 
         return {
             "traces": edges,
@@ -473,13 +626,36 @@ class SLAVVProcessor:
                                 params: Dict[str, Any]) -> Dict[str, Any]:
         """Extract edges using watershed segmentation seeded at vertices.
 
-        This provides an alternative to gradient-based tracing and approximates
-        the MATLAB ``get_edges_by_watershed.m`` behavior by growing regions from
-        vertices and capturing boundaries where regions touch.
+        Parameters
+        ----------
+        energy_data : Dict[str, Any]
+            Dictionary containing the energy volume and its ``energy_sign``. The
+            sign determines whether vessels correspond to energy minima
+            (negative sign) or maxima (positive sign).
+        vertices : Dict[str, Any]
+            Vertex dictionary with at least a ``positions`` key specifying seed
+            coordinates in ``(y, x, z)`` order.
+        params : Dict[str, Any]
+            Unused placeholder for API compatibility.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Mapping with ``traces`` (lists of boundary coordinates),
+            ``connections`` (``[start, end]`` vertex indices), ``energies``
+            (mean energy along each trace) and ``vertex_positions``.
+
+        Notes
+        -----
+        Approximates MATLAB's ``get_edges_by_watershed.m`` by growing watershed
+        regions from vertices and capturing the boundaries where regions touch.
+        The energy sign is respected so the method works for both bright and
+        dark vessels.
         """
         logger.info("Extracting edges via watershed")
 
         energy = energy_data["energy"]
+        energy_sign = float(energy_data.get("energy_sign", -1.0))
         vertex_positions = vertices["positions"]
 
         markers = np.zeros_like(energy, dtype=np.int32)
@@ -487,7 +663,7 @@ class SLAVVProcessor:
         idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
         markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
 
-        labels = watershed(-energy, markers)
+        labels = watershed(-energy_sign * energy, markers)
         structure = ndi.generate_binary_structure(3, 1)
 
         edges = []
@@ -553,6 +729,26 @@ class SLAVVProcessor:
         # Build adjacency matrix and edge list for graph
         n_vertices = len(vertex_positions)
         adjacency = np.zeros((n_vertices, n_vertices), dtype=bool)
+
+        # Early return if there are no edges
+        if len(edge_traces) == 0:
+            vertex_degrees = np.zeros(n_vertices, dtype=np.int32)
+            orphans = np.arange(n_vertices, dtype=np.int32)
+            logger.info(
+                "Constructed network with 0 strands, 0 bifurcations, %d orphans, removed 0 cycles, and 0 mismatched strands",
+                len(orphans),
+            )
+            return {
+                "strands": [],
+                "bifurcations": np.array([], dtype=np.int32),
+                "orphans": orphans,
+                "cycles": [],
+                "mismatched_strands": [],
+                "adjacency": adjacency,
+                "vertex_degrees": vertex_degrees,
+                "graph_edges": {},
+                "dangling_edges": [],
+            }
 
         # Store actual edges in a dictionary keyed by sorted vertex index pairs
         graph_edges: Dict[Tuple[int, int], np.ndarray] = {}
@@ -872,22 +1068,16 @@ class SLAVVProcessor:
         return self._near_vertex(pos, vertex_positions, vertex_scales,
                                  lumen_radius_microns, microns_per_voxel)
 
-    def _compute_gradient(self, energy: np.ndarray, pos: np.ndarray,
-                          microns_per_voxel: np.ndarray) -> np.ndarray:
-        """Compute gradient at position using central differences with voxel size scaling"""
-        pos_int = np.round(pos).astype(int)
-        gradient = np.zeros(3, dtype=float)
+    def _compute_gradient(
+        self, energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray
+    ) -> np.ndarray:
+        """Compute gradient at ``pos`` using central differences.
 
-        for i in range(3):
-            if 0 < pos_int[i] < energy.shape[i] - 1:
-                pos_plus = pos_int.copy()
-                pos_minus = pos_int.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-                diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
-                gradient[i] = diff / (2.0 * microns_per_voxel[i])
-
-        return gradient
+        A Numba-accelerated implementation is used when available to speed up
+        repeated gradient evaluations during edge tracing.
+        """
+        pos_int = np.round(pos).astype(np.int64)
+        return _compute_gradient_impl(energy, pos_int, microns_per_voxel)
 
 
 def preprocess_image(image: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
@@ -994,6 +1184,10 @@ def validate_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
     validated['edge_method'] = params.get('edge_method', 'tracing')
     if validated['edge_method'] not in ('tracing', 'watershed'):
         raise ValueError("edge_method must be 'tracing' or 'watershed'")
+    validated['energy_method'] = params.get('energy_method', 'hessian')
+    if validated['energy_method'] not in ('hessian', 'frangi', 'sato'):
+        raise ValueError("energy_method must be 'hessian', 'frangi', or 'sato'")
+    validated['return_all_scales'] = params.get('return_all_scales', False)
     if validated['max_voxels_per_node_energy'] <= 0:
         raise ValueError(
             'max_voxels_per_node_energy must be positive; increase to process larger volumes'
@@ -1128,17 +1322,24 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     stats['num_bifurcations'] = len(bifurcations)
     stats['num_vertices'] = len(vertex_positions)
     
-    # Strand lengths
-    strand_lengths = []
+    # Strand lengths and tortuosities
+    strand_lengths: List[float] = []
+    tortuosities: List[float] = []
     for strand in strands:
         if len(strand) > 1:
-            length = 0
+            length = 0.0
             for i in range(len(strand) - 1):
                 pos1 = vertex_positions[strand[i]] * microns_per_voxel
-                pos2 = vertex_positions[strand[i+1]] * microns_per_voxel
+                pos2 = vertex_positions[strand[i + 1]] * microns_per_voxel
                 length += np.linalg.norm(pos2 - pos1)
             strand_lengths.append(length)
-    
+
+            start = vertex_positions[strand[0]] * microns_per_voxel
+            end = vertex_positions[strand[-1]] * microns_per_voxel
+            euclidean = np.linalg.norm(end - start)
+            if euclidean > 0:
+                tortuosities.append(length / euclidean)
+
     if strand_lengths:
         stats['mean_strand_length'] = np.mean(strand_lengths)
         stats['total_length'] = np.sum(strand_lengths)
@@ -1147,6 +1348,13 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
         stats['mean_strand_length'] = 0
         stats['total_length'] = 0
         stats['strand_length_std'] = 0
+
+    if tortuosities:
+        stats['mean_tortuosity'] = np.mean(tortuosities)
+        stats['tortuosity_std'] = np.std(tortuosities)
+    else:
+        stats['mean_tortuosity'] = 0
+        stats['tortuosity_std'] = 0
     
     # Vessel radii statistics
     if len(radii) > 0:

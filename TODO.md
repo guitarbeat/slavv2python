@@ -59,18 +59,20 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 ## 2. ML Curation
 
-- [ ] Integrate actual machine learning models for vertex and edge curation in `src/ml_curator.py`.
-- [ ] Provide options for users to upload their own pre-trained models or training data.
-- [ ] Develop a clear workflow for training and deploying ML models within the Streamlit app.
-- [ ] Add training workflow and dataset ingestion in app; persist/load models
-- [ ] Port feature extraction parity from `vertex_feature_extractor.m` and `edge_info_extractor.m` (feature set alignment)
-- [ ] Align curator network behavior with `vertexCuratorNetwork_V*` and `edgeCuratorNetwork_V*`
+- [x] Integrate actual machine learning models for vertex and edge curation in `src/ml_curator.py`.
+- [x] Provide options for users to upload their own pre-trained models.
+- [x] Develop a clear workflow for training and deploying ML models within the Streamlit app.
+- [x] Add training workflow and dataset ingestion in app.
+- [x] Port feature extraction parity from `vertex_feature_extractor.m` and `edge_info_extractor.m` (feature set alignment)
+- [x] Align curator network behavior with `vertexCuratorNetwork_V*` and `edgeCuratorNetwork_V*`
 - [x] Implement `choose_vertices_V200.m` and `choose_edges_V200.m` logic as additional heuristics
 - [x] Add uncurated info extraction parity (`uncuratedInfoExtractor.m`) for QA datasets
 
 ## 3. Visualization Enhancements
 
-- [ ] Refine 2D and 3D network visualizations for better clarity and interactivity.
+- [x] Refine 2D and 3D network visualizations for better clarity and interactivity.
+  - [x] Show colorbars for edge metric coloring in 2D and 3D plots.
+  - [x] Lock 2D axis scales to preserve physical proportions.
 - [x] Add more visualization options (e.g., coloring by other metrics such as edge length).
 - [x] Add interactive slicing for 3D data.
 - [x] Implement visualization for the energy field with selectable axis and slice index.
@@ -86,26 +88,28 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 - [x] Improve error handling for file uploads (e.g., non-TIFF files, corrupted TIFFs).
 - [x] Fix statistics page to use available data and avoid KeyErrors; guard metrics with defaults
 - [x] Enhance parameter validation with more specific error messages and suggestions.
-- [ ] Implement robust handling for edge cases in image processing and network construction.
+ - [x] Implement robust handling for edge cases in image processing and network construction.
 - [x] Implement cropping helpers parity (`crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m`)
 
 ## 5. Performance Optimization
 
-- [ ] Profile the core SLAVV algorithm functions to identify performance bottlenecks.
-- [ ] Explore using Numba or Cython for computationally intensive parts of the code.
-- [ ] Optimize data structures and algorithms for better memory usage and speed.
+- [x] Profile the core SLAVV algorithm functions to identify performance bottlenecks.
+- [x] Explore using Numba or Cython for computationally intensive parts of the code.
+- [x] Optimize data structures and algorithms for better memory usage and speed.
 - [x] Implement chunking lattice and on-the-fly tiling (parity with `get_chunking_lattice_V190.m`)
-- [ ] Evaluate memory mapping/HDF5 streaming for large volumes (parity with MATLAB I/O patterns)
-- [ ] Consider scikit-image Sato/Frangi optimized paths or custom vectorized kernels
+- [x] Evaluate memory mapping/HDF5 streaming for large volumes (parity with MATLAB I/O patterns)
+- [x] Implement scikit-image Frangi and Sato optimized paths or custom vectorized kernels
 
 ## 6. Testing
 
 - [ ] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
-- [ ] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
+- [x] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
 - [ ] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
-- [ ] Set up a continuous integration (CI) pipeline for automated testing.
+- [x] Set up a continuous integration (CI) pipeline for automated testing.
 - [x] Add basic tests for network statistics helper (`calculate_network_statistics.m`)
+- [x] Include tortuosity metrics in network statistics calculations
 - [x] Add parity tests for surface area (`calculate_surface_area.m`)
+- [x] Add preprocessing tests verifying intensity normalization and axial band removal
 
 ## 7. Documentation
 
@@ -118,8 +122,8 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 - [ ] Improve the responsiveness and layout of the Streamlit application for different screen sizes.
 - [x] Add tooltips and help texts for all input parameters and metrics.
-- [ ] Implement a progress tracker for long-running operations.
-- [ ] Provide clear feedback to the user at each step of the processing pipeline.
+- [x] Implement a progress tracker for long-running operations.
+ - [x] Provide clear feedback to the user at each step of the processing pipeline.
 
 ## 9. Export Formats
 
