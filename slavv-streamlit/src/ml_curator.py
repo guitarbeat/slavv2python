@@ -21,6 +21,10 @@ from typing import Dict, List, Tuple, Optional, Any
 import logging
 import warnings
 warnings.filterwarnings('ignore')
+try:
+    from .utils import calculate_path_length
+except ImportError:  # pragma: no cover - fallback for direct execution
+    from utils import calculate_path_length
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +40,9 @@ class MLCurator:
         self.edge_classifier = None
         self.vertex_scaler = StandardScaler()
         self.edge_scaler = StandardScaler()
-        self.is_trained = False
+        # Track whether classifiers have been trained
+        self.vertex_trained = False
+        self.edge_trained = False
         
     def extract_vertex_features(self, vertices: Dict[str, Any], energy_data: Dict[str, Any], 
                                image_shape: Tuple[int, ...]) -> np.ndarray:
@@ -52,7 +58,7 @@ class MLCurator:
         positions = vertices['positions']
         energies = vertices['energies']
         scales = vertices['scales']
-        radii = vertices['radii']
+        radii = vertices.get('radii_pixels', vertices.get('radii', []))
         energy_field = energy_data['energy']
         
         n_vertices = len(positions)
@@ -69,6 +75,7 @@ class MLCurator:
                 energy,  # Primary energy value
                 scale,   # Scale index
                 radius,  # Estimated radius
+                radius / (scale + 1e-10),  # Radius-to-scale ratio
             ]
             
             # Spatial features (normalized by image dimensions)
@@ -99,19 +106,26 @@ class MLCurator:
                 local_energy = energy_field[y_min:y_max, x_min:x_max, z_min:z_max]
                 
                 if local_energy.size > 0:
+                    local_mean = np.mean(local_energy)
+                    local_std = np.std(local_energy)
+                    local_min = np.min(local_energy)
+                    local_max = np.max(local_energy)
+                    local_median = np.median(local_energy)
+                    energy_ratio = energy / (local_mean + 1e-10)
                     vertex_features.extend([
-                        np.mean(local_energy),
-                        np.std(local_energy),
-                        np.min(local_energy),
-                        np.max(local_energy),
-                        np.median(local_energy)
+                        local_mean,
+                        local_std,
+                        local_min,
+                        local_max,
+                        local_median,
+                        energy_ratio,
                     ])
                 else:
-                    vertex_features.extend([energy, 0, energy, energy, energy])
-                    
+                    vertex_features.extend([energy, 0, energy, energy, energy, 1.0])
+
             except (IndexError, ValueError):
                 # Fallback if neighborhood extraction fails
-                vertex_features.extend([energy, 0, energy, energy, energy])
+                vertex_features.extend([energy, 0, energy, energy, energy, 1.0])
             
             # Energy gradient features
             try:
@@ -145,6 +159,7 @@ class MLCurator:
         edge_connections = edges['connections']
         vertex_positions = vertices['positions']
         vertex_energies = vertices['energies']
+        vertex_radii = vertices.get('radii_pixels', vertices.get('radii', []))
         energy_field = energy_data['energy']
         
         features = []
@@ -192,15 +207,34 @@ class MLCurator:
             # Vertex connection features
             if start_vertex is not None:
                 start_energy = vertex_energies[start_vertex]
-                edge_features.append(start_energy)
+                start_radius = (
+                    vertex_radii[start_vertex] if len(vertex_radii) > start_vertex else 0
+                )
             else:
-                edge_features.append(0)
-                
+                start_energy = 0
+                start_radius = 0
             if end_vertex is not None:
                 end_energy = vertex_energies[end_vertex]
-                edge_features.append(end_energy)
+                end_radius = (
+                    vertex_radii[end_vertex] if len(vertex_radii) > end_vertex else 0
+                )
             else:
-                edge_features.append(0)
+                end_energy = 0
+                end_radius = 0
+
+            avg_radius = (start_radius + end_radius) / 2
+            length_radius_ratio = edge_length / (avg_radius + 1e-10)
+            energy_diff = start_energy - end_energy
+
+            edge_features.extend([
+                start_energy,
+                end_energy,
+                start_radius,
+                end_radius,
+                avg_radius,
+                length_radius_ratio,
+                energy_diff,
+            ])
             
             # Directional consistency
             if len(trace) > 2:
@@ -228,16 +262,17 @@ class MLCurator:
         
         return np.array(features)
     
-    def train_vertex_classifier(self, features: np.ndarray, labels: np.ndarray, 
-                               method: str = 'random_forest') -> Dict[str, Any]:
-        """
-        Train vertex classifier using provided features and labels
-        
+    def train_vertex_classifier(
+        self, features: np.ndarray, labels: np.ndarray, method: str = 'matlab_nn'
+    ) -> Dict[str, Any]:
+        """Train vertex classifier using provided features and labels.
+
         Args:
-            features: Feature matrix (n_samples, n_features)
+            features: Feature matrix (``n_samples``, ``n_features``)
             labels: Binary labels (1 for true vertex, 0 for false positive)
-            method: Classification method ('random_forest', 'svm', 'neural_network', 'gradient_boosting')
-        
+            method: Classification method ('random_forest', 'svm', 'neural_network',
+                'gradient_boosting', 'matlab_nn')
+
         Returns:
             Training results and performance metrics
         """
@@ -263,6 +298,15 @@ class MLCurator:
         elif method == 'neural_network':
             self.vertex_classifier = MLPClassifier(
                 hidden_layer_sizes=(100, 50), random_state=42, max_iter=1000
+            )
+        elif method == 'matlab_nn':
+            # Mimic MATLAB vertexCuratorNetwork architecture: single hidden layer
+            self.vertex_classifier = MLPClassifier(
+                hidden_layer_sizes=(16,),
+                activation='logistic',
+                solver='lbfgs',
+                max_iter=500,
+                random_state=42,
             )
         elif method == 'gradient_boosting':
             self.vertex_classifier = GradientBoostingClassifier(
@@ -297,14 +341,24 @@ class MLCurator:
             'n_features': features.shape[1],
             'n_samples': features.shape[0]
         }
-        
+
         logger.info(f"Vertex classifier trained. Test accuracy: {test_score:.3f}")
+        self.vertex_trained = True
         return results
     
-    def train_edge_classifier(self, features: np.ndarray, labels: np.ndarray, 
-                             method: str = 'random_forest') -> Dict[str, Any]:
-        """
-        Train edge classifier using provided features and labels
+    def train_edge_classifier(
+        self, features: np.ndarray, labels: np.ndarray, method: str = 'matlab_nn'
+    ) -> Dict[str, Any]:
+        """Train edge classifier using provided features and labels.
+
+        Args:
+            features: Feature matrix (``n_samples``, ``n_features``)
+            labels: Binary labels (1 for true edge, 0 for false positive)
+            method: Classification method ('random_forest', 'svm', 'neural_network',
+                'gradient_boosting', 'matlab_nn')
+
+        Returns:
+            Training results and performance metrics
         """
         logger.info(f"Training edge classifier using {method}")
         
@@ -328,6 +382,15 @@ class MLCurator:
         elif method == 'neural_network':
             self.edge_classifier = MLPClassifier(
                 hidden_layer_sizes=(100, 50), random_state=42, max_iter=1000
+            )
+        elif method == 'matlab_nn':
+            # Approximate MATLAB edgeCuratorNetwork: logistic single hidden layer
+            self.edge_classifier = MLPClassifier(
+                hidden_layer_sizes=(32,),
+                activation='logistic',
+                solver='lbfgs',
+                max_iter=500,
+                random_state=42,
             )
         elif method == 'gradient_boosting':
             self.edge_classifier = GradientBoostingClassifier(
@@ -361,8 +424,9 @@ class MLCurator:
             'n_features': features.shape[1],
             'n_samples': features.shape[0]
         }
-        
+
         logger.info(f"Edge classifier trained. Test accuracy: {test_score:.3f}")
+        self.edge_trained = True
         return results
     
     def curate_vertices(self, vertices: Dict[str, Any], energy_data: Dict[str, Any], 
@@ -394,12 +458,14 @@ class MLCurator:
         
         # Filter vertices based on predictions
         kept_indices = np.where(predictions)[0]
-        
+
         curated_vertices = {
             'positions': vertices['positions'][kept_indices],
             'scales': vertices['scales'][kept_indices],
             'energies': vertices['energies'][kept_indices],
-            'radii': vertices['radii'][kept_indices],
+            'radii_pixels': vertices.get('radii_pixels', vertices.get('radii', []))[kept_indices],
+            'radii_microns': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
+            'radii': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
             'confidence_scores': probabilities[kept_indices],
             'original_indices': kept_indices
         }
@@ -441,39 +507,51 @@ class MLCurator:
         
         return curated_edges
     
-    def save_models(self, vertex_path: str, edge_path: str):
-        """Save trained models to disk"""
-        if self.vertex_classifier is not None:
-            joblib.dump({
-                'classifier': self.vertex_classifier,
-                'scaler': self.vertex_scaler
-            }, vertex_path)
+    def save_models(self, vertex_path: Optional[Any] = None, edge_path: Optional[Any] = None) -> None:
+        """Save trained models and scalers.
+
+        Parameters:
+            vertex_path: Destination for the vertex classifier (file path or file-like object).
+            edge_path: Destination for the edge classifier (file path or file-like object).
+        """
+        if vertex_path and self.vertex_classifier is not None:
+            joblib.dump(
+                {"classifier": self.vertex_classifier, "scaler": self.vertex_scaler},
+                vertex_path,
+            )
             logger.info(f"Vertex model saved to {vertex_path}")
-        
-        if self.edge_classifier is not None:
-            joblib.dump({
-                'classifier': self.edge_classifier,
-                'scaler': self.edge_scaler
-            }, edge_path)
+
+        if edge_path and self.edge_classifier is not None:
+            joblib.dump(
+                {"classifier": self.edge_classifier, "scaler": self.edge_scaler},
+                edge_path,
+            )
             logger.info(f"Edge model saved to {edge_path}")
-    
-    def load_models(self, vertex_path: str, edge_path: str):
-        """Load trained models from disk"""
-        try:
-            vertex_data = joblib.load(vertex_path)
-            self.vertex_classifier = vertex_data['classifier']
-            self.vertex_scaler = vertex_data['scaler']
-            logger.info(f"Vertex model loaded from {vertex_path}")
-        except FileNotFoundError:
-            logger.warning(f"Vertex model not found at {vertex_path}")
-        
-        try:
-            edge_data = joblib.load(edge_path)
-            self.edge_classifier = edge_data['classifier']
-            self.edge_scaler = edge_data['scaler']
-            logger.info(f"Edge model loaded from {edge_path}")
-        except FileNotFoundError:
-            logger.warning(f"Edge model not found at {edge_path}")
+
+    def load_models(self, vertex_path: Optional[Any] = None, edge_path: Optional[Any] = None) -> None:
+        """Load trained models and scalers.
+
+        Parameters:
+            vertex_path: Source for the vertex classifier (file path or file-like object).
+            edge_path: Source for the edge classifier (file path or file-like object).
+        """
+        if vertex_path:
+            try:
+                vertex_data = joblib.load(vertex_path)
+                self.vertex_classifier = vertex_data["classifier"]
+                self.vertex_scaler = vertex_data["scaler"]
+                logger.info(f"Vertex model loaded from {vertex_path}")
+            except FileNotFoundError:
+                logger.warning(f"Vertex model not found at {vertex_path}")
+
+        if edge_path:
+            try:
+                edge_data = joblib.load(edge_path)
+                self.edge_classifier = edge_data["classifier"]
+                self.edge_scaler = edge_data["scaler"]
+                logger.info(f"Edge model loaded from {edge_path}")
+            except FileNotFoundError:
+                logger.warning(f"Edge model not found at {edge_path}")
     
     def generate_training_data(self, processing_results: List[Dict[str, Any]], 
                               manual_annotations: List[Dict[str, Any]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -574,7 +652,7 @@ class AutomaticCurator:
         positions = vertices['positions']
         energies = vertices['energies']
         scales = vertices['scales']
-        radii = vertices['radii']
+        radii = vertices.get('radii_pixels', vertices.get('radii', []))
         
         # Rule-based filtering
         keep_mask = np.ones(len(positions), dtype=bool)
@@ -632,7 +710,9 @@ class AutomaticCurator:
             'positions': positions[kept_indices],
             'scales': scales[kept_indices],
             'energies': energies[kept_indices],
-            'radii': radii[kept_indices],
+            'radii_pixels': radii[kept_indices],
+            'radii_microns': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
+            'radii': vertices.get('radii_microns', vertices.get('radii', []))[kept_indices],
             'original_indices': kept_indices
         }
         
@@ -718,10 +798,100 @@ class AutomaticCurator:
         }
         
         logger.info(f"Automatic edge curation: {len(edge_traces)} → {len(kept_indices)} edges")
-        
+
         return curated_edges
-    
 
 
-from .utils import calculate_path_length
+def choose_vertices(vertices: Dict[str, Any], min_energy: float = 0.0,
+                    min_radius: float = 0.0, energy_sign: float = -1.0) -> np.ndarray:
+    """Select vertex indices meeting energy and radius thresholds.
 
+    Parameters
+    ----------
+    vertices:
+        Dictionary containing vertex ``energies`` and either ``radii_microns``
+        or ``radii_pixels``.
+    min_energy:
+        Minimum energy magnitude after applying ``energy_sign``. Higher values
+        are retained.
+    min_radius:
+        Minimum allowed vertex radius in microns.
+    energy_sign:
+        Sign convention for vessel energy; default ``-1`` treats energy minima
+        as positive confidence.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of vertices passing the heuristics.
+    """
+
+    energies = vertices['energies'] * energy_sign
+    radii = vertices.get('radii_microns', vertices.get('radii_pixels'))
+    radii = np.asarray(radii, dtype=float)
+    mask = (energies >= min_energy) & (radii >= min_radius)
+    return np.flatnonzero(mask)
+
+
+def choose_edges(edges: Dict[str, Any], min_energy: float = 0.0,
+                 min_length: float = 0.0, energy_sign: float = -1.0) -> np.ndarray:
+    """Select edge indices meeting energy and length thresholds.
+
+    Parameters
+    ----------
+    edges:
+        Dictionary containing ``traces`` for each edge and ``energies`` giving
+        the mean energy along each trace.
+    min_energy:
+        Minimum mean edge energy after applying ``energy_sign``.
+    min_length:
+        Minimum physical length of the edge trace (in voxel units).
+    energy_sign:
+        Sign convention for vessel energy; default ``-1`` treats energy minima
+        as positive confidence.
+
+    Returns
+    -------
+    numpy.ndarray
+        Indices of edges passing the heuristics.
+    """
+
+    energies = edges['energies'] * energy_sign
+    lengths = np.array([calculate_path_length(trace) for trace in edges['traces']])
+    mask = (energies >= min_energy) & (lengths >= min_length)
+    return np.flatnonzero(mask)
+
+
+def extract_uncurated_info(
+    vertices: Dict[str, Any],
+    edges: Dict[str, Any],
+    energy_data: Dict[str, Any],
+    image_shape: Tuple[int, ...],
+) -> Dict[str, np.ndarray]:
+    """Extract vertex and edge feature arrays without classification.
+
+    Mirrors MATLAB's ``uncuratedInfoExtractor.m`` by deriving feature sets for
+    quality-assurance datasets before any ML-based curation.
+
+    Parameters
+    ----------
+    vertices:
+        Dictionary containing vertex ``positions``, ``energies``, ``scales``, and
+        optional ``radii_pixels``.
+    edges:
+        Dictionary with edge ``traces`` and ``connections``.
+    energy_data:
+        Dictionary providing the ``energy`` field used for feature extraction.
+    image_shape:
+        Shape of the original image volume, used for normalized coordinates.
+
+    Returns
+    -------
+    dict
+        ``{"vertex_features": ..., "edge_features": ...}`` feature arrays.
+    """
+
+    curator = MLCurator()
+    vertex_features = curator.extract_vertex_features(vertices, energy_data, image_shape)
+    edge_features = curator.extract_edge_features(edges, vertices, energy_data)
+    return {"vertex_features": vertex_features, "edge_features": edge_features}
