@@ -987,25 +987,39 @@ class SLAVVProcessor:
         return np.stack((direction, -direction))
 
     def _generate_edge_directions(self, n_directions: int) -> np.ndarray:
-        """Generate uniformly distributed directions for edge tracing using spherical Fibonacci spiral"""
+        """Generate uniformly distributed unit vectors on the sphere.
+
+        Parameters
+        ----------
+        n_directions : int
+            Number of direction vectors to produce.
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape ``(n_directions, 3)`` containing unit direction
+            vectors evenly distributed on the sphere. When ``n_directions`` is
+            ``1``, returns the positive z-axis.
+        """
+
         if n_directions == 1:
             return np.array([[0, 0, 1]])  # Single direction
-        
+
         # Generate directions on unit sphere using spherical Fibonacci spiral
         points = []
-        phi = np.pi * (3. - np.sqrt(5.))  # golden angle in radians
-        
+        phi = np.pi * (3.0 - np.sqrt(5.0))  # golden angle in radians
+
         for i in range(n_directions):
             y = 1 - (i / float(n_directions - 1)) * 2  # y goes from 1 to -1
             radius = np.sqrt(1 - y * y)
-            
+
             theta = phi * i
-            
+
             x = np.cos(theta) * radius
             z = np.sin(theta) * radius
-            
+
             points.append([x, y, z])
-        
+
         return np.array(points)
 
     def _trace_edge(
