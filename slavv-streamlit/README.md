@@ -64,7 +64,7 @@ This Python implementation provides:
 
 - Core vectorization functionality translated from MATLAB
 - Simplified but functional versions of the main algorithms
-- Integration with modern Python ML libraries (scikit-learn, TensorFlow)
+- Integration with scikit-learn for curation workflows
 - Interactive web interface using Streamlit
 - Visualization using Plotly for 2D/3D plots
 For a detailed list of enhancements in this Python port, see [../docs/PORTING_SUMMARY.md](../docs/PORTING_SUMMARY.md).
@@ -77,6 +77,18 @@ This is a simplified implementation of the full MATLAB version. Some advanced fe
 - All original visualization options
 - Full parameter optimization
 - Complete file format support
+
+## Programmatic usage
+
+If you want to import the core module directly in Python, add the source directory to `PYTHONPATH`:
+
+```bash
+export PYTHONPATH=slavv-streamlit/src
+python - << 'PY'
+from vectorization_core import SLAVVProcessor
+print(SLAVVProcessor)
+PY
+```
 
 ## Citation
 
@@ -98,4 +110,3 @@ If you use this software, please cite the original SLAVV methodology paper:
 ## License
 
 This implementation follows the same GNU GPL-3.0 license as the original repository.
-

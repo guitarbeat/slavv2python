@@ -24,15 +24,20 @@ See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable di
 |---|---|---|---|
 | `energy_filter_V200.m`, `get_filter_kernel.m` | Integrated in `calculate_energy_field` | Approximate | Kernel construction simplified; PSF handling partially implemented and anisotropic smoothing applied. |
 | `construct_structuring_element*.m` | Integrated in vertex extraction | Exact | Voxel-spacing-aware ellipsoidal structuring element matches MATLAB behavior.
+| `calculate_linear_strel.m`, `calculate_linear_strel_range.m` | Integrated in vertex extraction | Approximate | Linear/spherical structuring variants handled via spacing-aware footprints. |
 | `get_vessel_directions_V2/V3/V5.m` | `slavv-streamlit/src/vectorization_core.py:_estimate_vessel_directions` | Approximate | Radius-aware local Hessian eigenvectors seed edges while respecting voxel spacing; falls back to uniform directions if ill-conditioned. |
+| `get_edge_vectors.m`, `get_edge_vectors_V300.m` | `slavv-streamlit/src/vectorization_core.py:_generate_edge_directions`, `_estimate_vessel_directions` | Approximate | Uniform spherical directions (Fibonacci) and Hessian-based directions cover seeding strategies. |
 | `get_chunking_lattice_V190.m` | `slavv-streamlit/src/vectorization_core.py:get_chunking_lattice` | Approximate | Generates overlapping z-axis chunks when volumes exceed `max_voxels_per_node_energy`.
 | `pre_processing.m`, `fix_intensity_bands.m` | `slavv-streamlit/src/vectorization_core.py:preprocess_image` | Approximate | Intensity normalization with optional axial band correction via Gaussian smoothing.
 | `vectorize_V200.m` parameter defaults | `slavv-streamlit/src/vectorization_core.py:validate_parameters` | Approximate | Applies MATLAB defaults and validates ranges with descriptive error messages.
 | `combine_strands.m` | Integrated in `construct_network` | Approximate | Strand combining simplified. |
 | `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m` | Integrated in `construct_network` | Approximate | Strands sorted and mismatches flagged. |
-| `clean_edges*.m` (hairs/orphans/cycles) | Integrated in `construct_network` | Approximate | Removes short hairs, identifies orphans, and prunes cycles. |
+| `clean_edges*.m` (hairs/orphans/cycles/vertex_degree_excess), `clean_edge_pairs.m` | Integrated in `construct_network` | Approximate | Removes short hairs, identifies orphans, prunes cycles, and resolves small edge inconsistencies. |
+| `sort_edges.m` | Integrated in `construct_network` | Approximate | Edge reordering/deduplication handled via stable keying and adjacency checks. |
 | Cropping: `crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m` | `slavv-streamlit/src/vectorization_core.py:crop_vertices`, `crop_edges`, `crop_vertices_by_mask` | Approximate | Bounding-box and mask-based vertex/edge cropping helpers. |
 | `weighted_KStest2.m` | `slavv-streamlit/src/utils.py:weighted_ks_test` | Exact | Weighted two-sample Kolmogorov–Smirnov statistic. |
+| `gaussian_blur.m`, `gaussian_blur_in_chunks.m` | `slavv-streamlit/src/vectorization_core.py:preprocess_image` | Approximate | Uses `scipy.ndimage.gaussian_filter` with optional chunking via the energy lattice when large volumes are present. |
+| `flow_field_subroutine.m` | `slavv-streamlit/src/visualization.py:plot_flow_field` | Approximate | Renders edge orientations as 3D cones centered on midpoints of traces. |
 
 ### Machine Learning Curation
 
