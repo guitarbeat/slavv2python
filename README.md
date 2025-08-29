@@ -7,12 +7,8 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 - **slavv-streamlit/** – Streamlit application containing the Python port of the algorithm
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
 - **slavv-matlab-docs/** – auto-generated reference documentation for the MATLAB code
-- **docs/index.md** – documentation index (User, Developer, Mapping, Coverage)
-- **docs/PORTING_SUMMARY.md** – combined improvements overview and source comparison
-- **docs/MATLAB_TO_PYTHON_MAPPING.md** – MATLAB→Python function mapping with parity levels
-- **docs/MATLAB_COVERAGE_REPORT.md** – inventory of MATLAB files and coverage status
-- **docs/TESTING.md** – how to run compile checks and tests
-- **CONTRIBUTING.md** – contributor guidelines for automated and human maintainers
+- **docs/MATLAB_TO_PYTHON_MAPPING.md** – canonical MATLAB→Python mapping (includes coverage + deviations)
+- **CONTRIBUTING.md** – contributing and testing
 
 ## Getting started
 
@@ -68,7 +64,7 @@ pytest -q
 - **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 
-For additional details on algorithm features and usage see [slavv-streamlit/README.md](slavv-streamlit/README.md). The original MATLAB documentation is available in [slavv-matlab-docs/docs/index.md](slavv-matlab-docs/docs/index.md). See the MATLAB→Python parity mapping in [docs/MATLAB_TO_PYTHON_MAPPING.md](docs/MATLAB_TO_PYTHON_MAPPING.md) and the coverage report in [docs/MATLAB_COVERAGE_REPORT.md](docs/MATLAB_COVERAGE_REPORT.md).
+For details on the app, see [slavv-streamlit/README.md](slavv-streamlit/README.md). For the canonical port status, see [docs/MATLAB_TO_PYTHON_MAPPING.md](docs/MATLAB_TO_PYTHON_MAPPING.md).
 
 ## License
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, IO, List
+from typing import Any, Dict, IO, List, Optional, Union
 
 import json
 import numpy as np
@@ -177,6 +177,144 @@ def load_network_from_vmv(path: str | Path) -> Network:
     edges = np.atleast_2d(np.asarray(edges_list, dtype=int))
     radii_arr = np.asarray(radii, dtype=float) if radii else None
     return Network(vertices=vertices, edges=edges, radii=radii_arr)
+
+
+def dicom_to_tiff(
+    input_path: Union[str, Path],
+    output_path: Optional[Union[str, Path]] = None,
+    *,
+    sort_by: str = "instance",
+    rescale: bool = True,
+    dtype: str = "uint16",
+) -> Union[np.ndarray, Path]:
+    """Load DICOM (single file, multi-frame, or series) and optionally write TIFF.
+
+    Parameters
+    ----------
+    input_path:
+        Path to a DICOM file or a directory containing a DICOM series.
+    output_path:
+        If provided, write a TIFF volume to this path and return the path.
+        If omitted, return the loaded 3D volume as a NumPy array.
+    sort_by:
+        Sorting key for series: one of ``'instance'`` (InstanceNumber),
+        ``'position'`` (ImagePositionPatient), or ``'location'`` (SliceLocation).
+    rescale:
+        Apply ``RescaleSlope``/``RescaleIntercept`` if present.
+    dtype:
+        Output dtype when writing TIFF or returning the array. Typical values:
+        ``'uint16'`` (default), ``'float32'``.
+
+    Returns
+    -------
+    np.ndarray or Path
+        The loaded volume if ``output_path`` is ``None``; otherwise the path to
+        the written TIFF file.
+
+    Notes
+    -----
+    - Requires ``pydicom`` and ``tifffile``.
+    - For series directories, files are sorted according to ``sort_by`` with
+      graceful fallbacks when tags are missing.
+    """
+    try:
+        import pydicom  # type: ignore
+        import tifffile
+    except Exception as exc:  # pragma: no cover - environment dependent
+        raise RuntimeError(
+            "dicom_to_tiff requires 'pydicom' and 'tifffile' to be installed"
+        ) from exc
+
+    in_path = Path(input_path)
+
+    def _get_slice_sort_key(ds) -> float:
+        if sort_by == "position":
+            ipp = getattr(ds, "ImagePositionPatient", None)
+            if ipp is not None and len(ipp) == 3:
+                return float(ipp[2])
+        if sort_by == "location":
+            loc = getattr(ds, "SliceLocation", None)
+            if loc is not None:
+                return float(loc)
+        # default: instance number
+        inst = getattr(ds, "InstanceNumber", None)
+        try:
+            return float(inst)
+        except Exception:
+            return 0.0
+
+    def _apply_rescale(arr: np.ndarray, ds) -> np.ndarray:
+        if not rescale:
+            return arr
+        slope = getattr(ds, "RescaleSlope", 1.0) or 1.0
+        intercept = getattr(ds, "RescaleIntercept", 0.0) or 0.0
+        out = arr.astype(np.float32) * float(slope) + float(intercept)
+        return out
+
+    def _normalize_dtype(vol: np.ndarray, out_dtype: np.dtype) -> np.ndarray:
+        if np.issubdtype(out_dtype, np.floating):
+            # Scale to 0..1 range
+            vmin = np.nanmin(vol)
+            vmax = np.nanmax(vol)
+            if vmax > vmin:
+                vol = (vol - vmin) / (vmax - vmin)
+            return vol.astype(out_dtype, copy=False)
+        # Unsigned integer: scale to full range
+        info = np.iinfo(out_dtype)
+        vmin = np.nanmin(vol)
+        vmax = np.nanmax(vol)
+        if vmax > vmin:
+            vol = (vol - vmin) / (vmax - vmin)
+            vol = vol * info.max
+        return vol.astype(out_dtype)
+
+    # Load dataset(s)
+    if in_path.is_dir():
+        # Series of 2D slices
+        files = sorted([p for p in in_path.iterdir() if p.is_file()])
+        datasets = []
+        for p in files:
+            try:
+                ds = pydicom.dcmread(str(p), stop_before_pixels=False)
+                if hasattr(ds, "pixel_array"):
+                    datasets.append(ds)
+            except Exception:
+                continue
+        if not datasets:
+            raise ValueError("No readable DICOM slices found in directory")
+        datasets.sort(key=_get_slice_sort_key)
+        slices = []
+        for ds in datasets:
+            arr = ds.pixel_array
+            arr = _apply_rescale(arr, ds)
+            slices.append(np.asarray(arr))
+        volume = np.stack(slices, axis=0)
+    else:
+        # Single file (2D, 3D multi-frame, or series container)
+        ds = pydicom.dcmread(str(in_path), stop_before_pixels=False)
+        arr = ds.pixel_array
+        arr = _apply_rescale(arr, ds)
+        if arr.ndim == 2:
+            volume = arr[np.newaxis, :, :]
+        elif arr.ndim == 3:
+            volume = arr  # assume (frames, rows, cols)
+        else:
+            raise ValueError("Unsupported DICOM pixel array dimensionality")
+
+    # Normalize dtype
+    out_dtype = np.dtype(dtype)
+    volume = np.asarray(volume)
+    if rescale:
+        volume = _normalize_dtype(volume, out_dtype)
+    else:
+        volume = volume.astype(out_dtype, copy=False)
+
+    if output_path is not None:
+        outp = Path(output_path)
+        outp.parent.mkdir(parents=True, exist_ok=True)
+        tifffile.imwrite(str(outp), volume)
+        return outp
+    return volume
 
 
 def load_network_from_csv(path: str | Path) -> Network:

@@ -67,7 +67,7 @@ This Python implementation provides:
 - Integration with scikit-learn for curation workflows
 - Interactive web interface using Streamlit
 - Visualization using Plotly for 2D/3D plots
-For a detailed list of enhancements in this Python port, see [../docs/PORTING_SUMMARY.md](../docs/PORTING_SUMMARY.md).
+For port status and parity notes, see [../docs/MATLAB_TO_PYTHON_MAPPING.md](../docs/MATLAB_TO_PYTHON_MAPPING.md).
 
 ## Limitations
 
