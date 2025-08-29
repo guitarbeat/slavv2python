@@ -7,7 +7,7 @@ This document records known differences between the Python port and the original
 - **Filter ratios**: Gaussian-to-ideal and spherical-to-annular ratios are exposed as parameters but default to values that approximate rather than exactly replicate MATLAB behavior.
 
 ## Vertex and Edge Extraction
-- **Gradient descent**: Edge tracing relies on floating point updates and NumPy interpolation. MATLAB uses discrete voxel steps, so paths may diverge slightly.
+- **Gradient descent**: Edge tracing uses floating point updates by default but can snap to voxel centers via the `discrete_tracing` option. MATLAB always steps on integer voxels, so minor path differences may remain.
 - **Direction estimation**: Hessian-based vessel directions fall back to uniform orientations when eigenanalysis is unstable, unlike MATLAB's more aggressive smoothing.
 
 ## Visualization
