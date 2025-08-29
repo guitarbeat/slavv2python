@@ -638,9 +638,26 @@ class AutomaticCurator:
     """
     Automatic curation using heuristic rules (no ML training required)
     """
-    
-    def __init__(self):
-        pass
+
+    def __init__(
+        self,
+        vertex_parameters: Optional[Dict[str, Any]] = None,
+        edge_parameters: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Store default heuristic parameters for vertex and edge curation.
+
+        Parameters
+        ----------
+        vertex_parameters:
+            Default thresholds for vertex curation. Supplied values are merged
+            with parameters passed to :meth:`curate_vertices_automatic`.
+        edge_parameters:
+            Default thresholds for edge curation. Supplied values are merged
+            with parameters passed to :meth:`curate_edges_automatic`.
+        """
+
+        self.vertex_parameters = vertex_parameters or {}
+        self.edge_parameters = edge_parameters or {}
     
     def curate_vertices_automatic(self, vertices: Dict[str, Any], energy_data: Dict[str, Any], 
                                  parameters: Dict[str, Any]) -> Dict[str, Any]:
@@ -653,21 +670,23 @@ class AutomaticCurator:
         energies = vertices['energies']
         scales = vertices['scales']
         radii = vertices.get('radii_pixels', vertices.get('radii', []))
+
+        params = {**self.vertex_parameters, **(parameters or {})}
         
         # Rule-based filtering
         keep_mask = np.ones(len(positions), dtype=bool)
         
         # Rule 1: Energy threshold
-        energy_threshold = parameters.get('vertex_energy_threshold', -0.1)
+        energy_threshold = params.get('vertex_energy_threshold', -0.1)
         keep_mask &= (energies < energy_threshold)
         
         # Rule 2: Minimum radius
-        min_radius = parameters.get('min_vertex_radius', 0.5)
+        min_radius = params.get('min_vertex_radius', 0.5)
         keep_mask &= (radii > min_radius)
         
         # Rule 3: Distance from image boundaries
         image_shape = energy_data.get('image_shape', (100, 100, 50))
-        boundary_margin = parameters.get('boundary_margin', 5)
+        boundary_margin = params.get('boundary_margin', 5)
         
         for dim in range(3):
             keep_mask &= (positions[:, dim] > boundary_margin)
@@ -675,7 +694,7 @@ class AutomaticCurator:
         
         # Rule 4: Local energy contrast
         energy_field = energy_data['energy']
-        contrast_threshold = parameters.get('contrast_threshold', 0.1)
+        contrast_threshold = params.get('contrast_threshold', 0.1)
         
         for i, pos in enumerate(positions):
             if not keep_mask[i]:
@@ -720,7 +739,7 @@ class AutomaticCurator:
         
         return curated_vertices
     
-    def curate_edges_automatic(self, edges: Dict[str, Any], vertices: Dict[str, Any], 
+    def curate_edges_automatic(self, edges: Dict[str, Any], vertices: Dict[str, Any],
                               parameters: Dict[str, Any]) -> Dict[str, Any]:
         """
         Automatic edge curation using heuristic rules
@@ -729,11 +748,13 @@ class AutomaticCurator:
         
         edge_traces = edges['traces']
         edge_connections = edges['connections']
+
+        params = {**self.edge_parameters, **(parameters or {})}
         
         keep_mask = np.ones(len(edge_traces), dtype=bool)
         
         # Rule 1: Minimum edge length
-        min_length = parameters.get('min_edge_length', 2.0)
+        min_length = params.get('min_edge_length', 2.0)
         
         for i, trace in enumerate(edge_traces):
             if len(trace) < 2:
@@ -747,7 +768,7 @@ class AutomaticCurator:
                 keep_mask[i] = False
         
         # Rule 2: Maximum tortuosity
-        max_tortuosity = parameters.get('max_edge_tortuosity', 3.0)
+        max_tortuosity = params.get('max_edge_tortuosity', 3.0)
         
         for i, trace in enumerate(edge_traces):
             if not keep_mask[i] or len(trace) < 2:
@@ -764,7 +785,7 @@ class AutomaticCurator:
         
         # Rule 3: Valid connections
         vertex_positions = vertices['positions']
-        max_connection_distance = parameters.get('max_connection_distance', 5.0)
+        max_connection_distance = params.get('max_connection_distance', 5.0)
         
         for i, (trace, connection) in enumerate(zip(edge_traces, edge_connections)):
             if not keep_mask[i]:

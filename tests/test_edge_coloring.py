@@ -229,8 +229,6 @@ def test_3d_depth_opacity():
     # Shallower edge should be more opaque
     assert fig.data[0].opacity > fig.data[1].opacity
 
-<<<<<<< HEAD
-=======
 
 def test_3d_length_colorbar():
     vis = NetworkVisualizer()
@@ -269,4 +267,3 @@ def test_3d_length_colorbar():
     assert colorbar_traces, 'Expected a colorbar trace for edge length coloring'
     assert colorbar_traces[0].marker.colorbar.title.text.lower() == 'length'
 
->>>>>>> codex/continue-migration-of-matlab-to-python-80defa
