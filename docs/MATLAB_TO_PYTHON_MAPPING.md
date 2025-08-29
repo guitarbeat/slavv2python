@@ -44,6 +44,8 @@ This document also summarizes coverage and known parity deviations to keep docs 
 | `smooth_edges.m`, `smooth_edges_V2.m` | `slavv-streamlit/src/vectorization_core.py:smooth_edge_traces` | Approximate | 1D Gaussian smoothing along each coordinate sequence. |
 | `transform_vector_set.m` | `slavv-streamlit/src/vectorization_core.py:transform_vector_set` | Approximate | Applies 4x4 homogeneous or scale/rotate/translate transforms to positions. |
 | `subsample_vectors.m` | `slavv-streamlit/src/vectorization_core.py:subsample_vectors` | Exact | Keeps every Nth point, preserving endpoints. |
+| `register_vector_sets.m` | `slavv-streamlit/src/vectorization_core.py:register_vector_sets` | Approximate | Rigid (Kabsch, optional scale) and affine least‑squares 3D registration; returns 4x4 transform and optional RMS error. |
+| `register_strands.m` | `slavv-streamlit/src/vectorization_core.py:register_strands` | Approximate | Rigid (ICP) or affine alignment of two networks with vertex merge by distance; returns merged network and transform. |
 
 ### Machine Learning Curation
 
@@ -63,7 +65,7 @@ This document also summarizes coverage and known parity deviations to keep docs 
 | `visualize_vertices_V200.m`, `visualize_edges_V180.m`, `visualize_strands*.m` | `slavv-streamlit/src/visualization.py` | Approximate | 2D/3D Plotly visualizations implemented; styling/options differ.
 | `visualize_depth_via_color_V200.m` | `slavv-streamlit/src/visualization.py:plot_2d_network`, `plot_3d_network` | Approximate | Edges colored by depth, energy, strand ID, radius, or length using Plotly colormaps with optional depth-based opacity, legends, and colorbars; 2D projections maintain equal axis scaling.
 | `visualize_strands_via_color_3D_V2/V3.m` | `slavv-streamlit/src/visualization.py:plot_3d_network` | Approximate | Strand coloring supported in 3D using Plotly `Set3` palette; colors differ from MATLAB.
-| `visualize_network_slice.m` | `slavv-streamlit/src/visualization.py:plot_network_slice` | Approximate | 2D slice along arbitrary axis with thickness filter and equal axis scaling.
+| *(no direct MATLAB equivalent)* | `slavv-streamlit/src/visualization.py:plot_network_slice` | Approximate | 2D slice along arbitrary axis with thickness filter and equal axis scaling.
 | `animate_strands_3D.m` | `slavv-streamlit/src/visualization.py:animate_strands_3d` | Approximate | Animates strands sequentially with Plotly frames.
 | `render_flow_field_V3/V4.m` | `slavv-streamlit/src/visualization.py:plot_flow_field` | Approximate | Renders edge orientations as 3D cones.
 
@@ -74,12 +76,22 @@ This document also summarizes coverage and known parity deviations to keep docs 
 | `vmv_mat2file.m`, `strand2vmv.m` | `slavv-streamlit/src/visualization.py:_export_vmv` | Approximate | Simplified VMV writer; not spec-complete.
 | `strand2casx.m`, `casx_mat2file.m` | `slavv-streamlit/src/visualization.py:_export_casx` | Approximate | Minimal CASX XML writer.
 | `casx_file2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_casx` | Approximate | Basic CASX network import.
-| `vmv_file2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_vmv` | Approximate | Basic VMV network import.
+| *(no direct MATLAB equivalent)* | `slavv-streamlit/src/io_utils.py:load_network_from_vmv` | Approximate | Basic VMV network import.
 | `casX2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_mat` | Approximate | Basic MAT network import.
 | `dicom2tif.m` | `slavv-streamlit/src/io_utils.py:dicom_to_tiff` | Approximate | Reads single/multi-frame DICOM or series, optional TIFF export with sorting and rescale.
 | *(no direct MATLAB equivalent)* | `slavv-streamlit/src/io_utils.py:load_network_from_csv`, `load_network_from_json`, `save_network_to_csv`, `save_network_to_json` | Approximate | Load or save network data using CSV or JSON files.
 | MATLAB `save`/custom MAT writers | `slavv-streamlit/src/visualization.py:_export_mat` | Approximate | Export network data to MATLAB `.mat` files via `scipy.io.savemat`.
 | `mat2tif.m`, `tif2mat.m`, `h52mat.m`, `mat2h5.m` | Python libs (`tifffile`, `h5py`) | Approximate | Standard Python I/O replaces MATLAB utilities; not 1:1.
+
+#### Conversion Workflows (Compositions)
+
+Replicate MATLAB conversion scripts by composing loaders and exporters:
+- CASX → VMV: `io_utils.load_network_from_casx` → `visualization._export_vmv`
+- CASX → MAT: `io_utils.load_network_from_casx` → `visualization._export_mat`
+- VMV → CASX: `io_utils.load_network_from_vmv` → `visualization._export_casx`
+- VMV → MAT: `io_utils.load_network_from_vmv` → `visualization._export_mat`
+- MAT → CASX/VMV: `io_utils.load_network_from_mat` → `visualization._export_casx` / `visualization._export_vmv`
+- Any → CSV/JSON: `io_utils.save_network_to_csv` / `io_utils.save_network_to_json`
 
 ### Statistics and Analysis
 
@@ -90,8 +102,8 @@ This document also summarizes coverage and known parity deviations to keep docs 
 ### Coverage Summary
 
 - Total MATLAB `.m` files scanned: 152
-- Mapped by this document (explicit or family): ~65
-- Unmapped (by doc): ~87 — largely example/study scripts and peripheral helpers
+- Mapped by this document (explicit or family): 109
+- Unmapped (by doc): 43 — largely example/study scripts and peripheral helpers
 
 Unmapped categories (representative examples):
 - Scripts/Examples: `vectorization_script_*`, `*_script*.m`, `noise_sensitivity_*`, `test_*` (intentionally not ported).
