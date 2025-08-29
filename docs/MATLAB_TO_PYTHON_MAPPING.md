@@ -51,6 +51,7 @@ See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable di
 |---|---|---|---|
 | `visualize_vertices_V200.m`, `visualize_edges_V180.m`, `visualize_strands*.m` | `slavv-streamlit/src/visualization.py` | Approximate | 2D/3D Plotly visualizations implemented; styling/options differ.
 | `visualize_depth_via_color_V200.m` | `slavv-streamlit/src/visualization.py:plot_2d_network`, `plot_3d_network` | Approximate | Edges colored by depth, energy, strand ID, radius, or length using Plotly colormaps with optional depth-based opacity, legends, and colorbars; 2D projections maintain equal axis scaling.
+| `visualize_strands_via_color_3D_V2/V3.m` | `slavv-streamlit/src/visualization.py:plot_3d_network` | Approximate | Strand coloring supported in 3D using Plotly `Set3` palette; colors differ from MATLAB.
 | `visualize_network_slice.m` | `slavv-streamlit/src/visualization.py:plot_network_slice` | Approximate | 2D slice along arbitrary axis with thickness filter and equal axis scaling.
 | `animate_strands_3D.m` | `slavv-streamlit/src/visualization.py:animate_strands_3d` | Approximate | Animates strands sequentially with Plotly frames.
 | `render_flow_field_V3/V4.m` | `slavv-streamlit/src/visualization.py:plot_flow_field` | Approximate | Renders edge orientations as 3D cones.

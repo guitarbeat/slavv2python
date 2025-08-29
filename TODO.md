@@ -102,21 +102,21 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 ## 6. Testing
 
-- [x] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
-- [x] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
-- [x] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
-- [x] Set up a continuous integration (CI) pipeline for automated testing.
-- [x] Add basic tests for network statistics helper (`calculate_network_statistics.m`)
-- [x] Include tortuosity metrics in network statistics calculations
-- [x] Include edge-energy metrics in network statistics calculations
-- [x] Include edge-length metrics in network statistics calculations
-- [x] Include vertex-degree metrics in network statistics calculations
-- [x] Include vertex/edge density metrics in network statistics calculations
-- [x] Include betweenness centrality and graph density metrics in network statistics calculations
-- [x] Include closeness centrality metrics in network statistics calculations
-- [x] Include eigenvector centrality metrics in network statistics calculations
-- [x] Add parity tests for surface area (`calculate_surface_area.m`)
-- [x] Add preprocessing tests verifying intensity normalization and axial band removal
+ - [x] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
+ - [x] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
+ - [x] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
+ - [x] Set up a continuous integration (CI) pipeline for automated testing.
+ - [x] Add basic tests for network statistics helper (`calculate_network_statistics.m`)
+ - [x] Include tortuosity metrics in network statistics calculations
+ - [x] Include edge-energy metrics in network statistics calculations
+ - [x] Include edge-length metrics in network statistics calculations
+ - [x] Include vertex-degree metrics in network statistics calculations
+ - [x] Include vertex/edge density metrics in network statistics calculations
+ - [x] Include betweenness centrality and graph density metrics in network statistics calculations
+ - [x] Include closeness centrality metrics in network statistics calculations
+ - [x] Include eigenvector centrality metrics in network statistics calculations
+ - [x] Add parity tests for surface area (`calculate_surface_area.m`)
+ - [x] Add preprocessing tests verifying intensity normalization and axial band removal
 
 ## 7. Documentation
 
