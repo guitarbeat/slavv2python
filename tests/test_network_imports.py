@@ -1,3 +1,4 @@
+import json
 import pathlib
 import sys
 import numpy as np
@@ -5,7 +6,12 @@ from pathlib import Path
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
 
-from io_utils import load_network_from_casx, load_network_from_vmv
+from io_utils import (
+    load_network_from_casx,
+    load_network_from_vmv,
+    load_network_from_csv,
+    load_network_from_json,
+)
 
 
 def test_load_network_from_casx(tmp_path: Path) -> None:
@@ -24,6 +30,52 @@ def test_load_network_from_casx(tmp_path: Path) -> None:
     network = load_network_from_casx(casx_path)
 
     expected_vertices = np.array([[2.0, 1.0, 3.0], [5.0, 4.0, 6.0]], dtype=float)
+    expected_edges = np.array([[0, 1]], dtype=int)
+    expected_radii = np.array([4.0, 7.0], dtype=float)
+
+    assert np.allclose(network.vertices, expected_vertices)
+    assert np.array_equal(network.edges, expected_edges)
+    assert np.allclose(network.radii, expected_radii)
+
+
+def test_load_network_from_csv(tmp_path: Path) -> None:
+    prefix = tmp_path / "net"
+    vertex_csv = prefix.with_name("net_vertices.csv")
+    edge_csv = prefix.with_name("net_edges.csv")
+    vertex_csv.write_text(
+        "vertex_id,y_position,x_position,z_position,energy,radius_microns,scale\n"
+        "0,1.0,2.0,3.0,0.1,4.0,1.0\n"
+        "1,4.0,5.0,6.0,0.2,7.0,1.0\n"
+    )
+    edge_csv.write_text(
+        "edge_id,start_vertex,end_vertex,length,n_points\n0,0,1,1.0,2\n"
+    )
+
+    network = load_network_from_csv(prefix)
+
+    expected_vertices = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float)
+    expected_edges = np.array([[0, 1]], dtype=int)
+    expected_radii = np.array([4.0, 7.0], dtype=float)
+
+    assert np.allclose(network.vertices, expected_vertices)
+    assert np.array_equal(network.edges, expected_edges)
+    assert np.allclose(network.radii, expected_radii)
+
+
+def test_load_network_from_json(tmp_path: Path) -> None:
+    data = {
+        "vertices": {
+            "positions": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
+            "radii_microns": [4.0, 7.0],
+        },
+        "edges": {"connections": [[0, 1]]},
+    }
+    json_path = tmp_path / "net.json"
+    json_path.write_text(json.dumps(data))
+
+    network = load_network_from_json(json_path)
+
+    expected_vertices = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float)
     expected_edges = np.array([[0, 1]], dtype=int)
     expected_radii = np.array([4.0, 7.0], dtype=float)
 

@@ -20,6 +20,7 @@ from skimage.segmentation import watershed
 import warnings
 from typing import Tuple, List, Optional, Dict, Any, Callable
 import logging
+import networkx as nx
 try:  # Optional Numba acceleration
     from numba import njit
     _NUMBA_AVAILABLE = True
@@ -36,8 +37,10 @@ __all__ = [
     "preprocess_image",
     "validate_parameters",
     "get_chunking_lattice",
+    "calculate_branching_angles",
     "calculate_network_statistics",
     "calculate_surface_area",
+    "calculate_vessel_volume",
     "crop_vertices",
     "crop_edges",
     "crop_vertices_by_mask",
@@ -48,6 +51,22 @@ if _NUMBA_AVAILABLE:
 
     @njit(cache=True)
     def _compute_gradient_impl(energy, pos_int, microns_per_voxel):
+        """Compute local energy gradient via central differences.
+
+        Parameters
+        ----------
+        energy : np.ndarray
+            Energy volume with shape ``(Y, X, Z)``.
+        pos_int : np.ndarray
+            Integer index ``[y, x, z]`` into ``energy``.
+        microns_per_voxel : np.ndarray
+            Physical voxel size along ``y, x, z`` axes.
+
+        Returns
+        -------
+        np.ndarray
+            Gradient vector in physical units.
+        """
         gradient = np.zeros(3, dtype=np.float64)
         for i in range(3):
             if 0 < pos_int[i] < energy.shape[i] - 1:
@@ -65,6 +84,22 @@ if _NUMBA_AVAILABLE:
 else:
 
     def _compute_gradient_impl(energy, pos_int, microns_per_voxel):
+        """Compute local energy gradient via central differences.
+
+        Parameters
+        ----------
+        energy : np.ndarray
+            Energy volume with shape ``(Y, X, Z)``.
+        pos_int : np.ndarray
+            Integer index ``[y, x, z]`` into ``energy``.
+        microns_per_voxel : np.ndarray
+            Physical voxel size along ``y, x, z`` axes.
+
+        Returns
+        -------
+        np.ndarray
+            Gradient vector in physical units.
+        """
         gradient = np.zeros(3, dtype=float)
         for i in range(3):
             if 0 < pos_int[i] < energy.shape[i] - 1:
@@ -75,7 +110,6 @@ else:
                 diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
                 gradient[i] = diff / (2.0 * microns_per_voxel[i])
         return gradient
-
 
 class SLAVVProcessor:
     """Main class for SLAVV vectorization processing"""
@@ -405,20 +439,30 @@ class SLAVVProcessor:
         return result
 
     @staticmethod
-    def _spherical_structuring_element(radius: int) -> np.ndarray:
-        """Create a 3D spherical structuring element with the given radius."""
-        radius = int(radius)
-        ax = np.arange(-radius, radius + 1)
-        xx, yy, zz = np.meshgrid(ax, ax, ax, indexing="ij")
-        return (xx**2 + yy**2 + zz**2) <= radius**2
+    def _spherical_structuring_element(
+        radius: int, microns_per_voxel: np.ndarray
+    ) -> np.ndarray:
+        """
+        Create a 3D spherical structuring element accounting for voxel spacing.
 
-    @staticmethod
-    def _spherical_structuring_element(radius: int) -> np.ndarray:
-        """Create a 3D spherical structuring element with the given radius."""
-        radius = int(radius)
-        ax = np.arange(-radius, radius + 1)
-        xx, yy, zz = np.meshgrid(ax, ax, ax, indexing="ij")
-        return (xx**2 + yy**2 + zz**2) <= radius**2
+        The ``radius`` is interpreted in voxel units along the smallest physical
+        dimension.  For anisotropic data the resulting footprint becomes an
+        ellipsoid so that voxels within ``radius`` microns of the origin are
+        included regardless of spacing differences along ``y, x, z``.
+        """
+        microns_per_voxel = np.asarray(microns_per_voxel, dtype=float)
+        r_phys = float(radius) * microns_per_voxel.min()
+        ranges = [
+            np.arange(-int(np.ceil(r_phys / s)), int(np.ceil(r_phys / s)) + 1)
+            for s in microns_per_voxel
+        ]
+        yy, xx, zz = np.meshgrid(*ranges, indexing="ij")
+        dist2 = (
+            (yy * microns_per_voxel[0]) ** 2
+            + (xx * microns_per_voxel[1]) ** 2
+            + (zz * microns_per_voxel[2]) ** 2
+        )
+        return dist2 <= r_phys**2
 
     def extract_vertices(self, energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -442,9 +486,10 @@ class SLAVVProcessor:
         energy_upper_bound = params.get('energy_upper_bound', 0.0)
         space_strel_apothem = params.get('space_strel_apothem', 1)
         length_dilation_ratio = params.get('length_dilation_ratio', 1.0)
+        voxel_size = np.array(params.get('microns_per_voxel', [1.0, 1.0, 1.0]), dtype=float)
 
-        # Find local extrema using a spherical structuring element
-        strel = self._spherical_structuring_element(space_strel_apothem)
+        # Find local extrema using a spacing-aware structuring element
+        strel = self._spherical_structuring_element(space_strel_apothem, voxel_size)
         if energy_sign < 0:
             filt = ndi.minimum_filter(energy, footprint=strel, mode="nearest")
             extrema = (energy <= filt) & (energy < energy_upper_bound)
@@ -542,6 +587,8 @@ class SLAVVProcessor:
         max_edge_energy = params.get("max_edge_energy", 0.0)
         length_ratio = params.get("length_dilation_ratio", 1.0)
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+        discrete_tracing = params.get("discrete_tracing", False)
+        direction_method = params.get("direction_method", "hessian")
 
         edges = []
         edge_connections = []
@@ -566,22 +613,37 @@ class SLAVVProcessor:
             max_length = start_radius * length_ratio
             max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
 
-            # Estimate likely vessel directions from local Hessian analysis
-            directions = self._estimate_vessel_directions(energy, start_pos, start_radius)
-            if directions.shape[0] < max_edges_per_vertex:
-                extra = self._generate_edge_directions(max_edges_per_vertex - directions.shape[0])
-                directions = np.vstack([directions, extra])
+            if direction_method == "hessian":
+                directions = self._estimate_vessel_directions(
+                    energy, start_pos, start_radius, microns_per_voxel
+                )
+                if directions.shape[0] < max_edges_per_vertex:
+                    extra = self._generate_edge_directions(
+                        max_edges_per_vertex - directions.shape[0]
+                    )
+                    directions = np.vstack([directions, extra])
+                else:
+                    directions = directions[:max_edges_per_vertex]
             else:
-                directions = directions[:max_edges_per_vertex]
+                directions = self._generate_edge_directions(max_edges_per_vertex)
             
             for direction in directions:
                 if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
                     break
                 edge_trace = self._trace_edge(
-                    energy, start_pos, direction, step_size,
-                    max_edge_energy, vertex_positions, vertex_scales,
-                    lumen_radius_pixels, lumen_radius_microns,
-                    max_steps, microns_per_voxel, energy_sign
+                    energy,
+                    start_pos,
+                    direction,
+                    step_size,
+                    max_edge_energy,
+                    vertex_positions,
+                    vertex_scales,
+                    lumen_radius_pixels,
+                    lumen_radius_microns,
+                    max_steps,
+                    microns_per_voxel,
+                    energy_sign,
+                    discrete_steps=discrete_tracing,
                 )
                 if len(edge_trace) > 1:  # Valid edge found
                     terminal_vertex = self._find_terminal_vertex(
@@ -844,7 +906,13 @@ class SLAVVProcessor:
             "dangling_edges": dangling_edges,
         }
 
-    def _estimate_vessel_directions(self, energy: np.ndarray, pos: np.ndarray, radius: float) -> np.ndarray:
+    def _estimate_vessel_directions(
+        self,
+        energy: np.ndarray,
+        pos: np.ndarray,
+        radius: float,
+        microns_per_voxel: np.ndarray,
+    ) -> np.ndarray:
         """Estimate vessel directions at a vertex via local Hessian analysis.
 
         Parameters
@@ -855,13 +923,15 @@ class SLAVVProcessor:
             Vertex position in pixel coordinates.
         radius : float
             Estimated vessel radius in pixels.
+        microns_per_voxel : np.ndarray
+            Physical size of a voxel along ``y, x, z`` axes.
 
         Returns
         -------
         np.ndarray
             Opposing unit direction vectors of shape ``(2, 3)``. Falls back to
-            uniformly distributed directions if the neighborhood is ill-conditioned
-            or undersized.
+            uniformly distributed directions if the neighborhood is ill-conditioned,
+            isotropic, or undersized.
         """
         # Determine a small neighborhood around the vertex
         sigma = max(radius / 2.0, 1.0)
@@ -875,6 +945,11 @@ class SLAVVProcessor:
         # Fallback to uniform directions if patch is too small
         if patch.ndim != 3 or min(patch.shape) < 3:
             return self._generate_edge_directions(2)
+
+        # Rescale patch to account for anisotropic voxel spacing
+        scale = microns_per_voxel / microns_per_voxel.min()
+        if not np.allclose(scale, 1):
+            patch = ndi.zoom(patch, scale, order=1, mode="nearest")
 
         # Compute Hessian in the local patch and extract center values
         hessian_elems = [
@@ -897,6 +972,13 @@ class SLAVVProcessor:
             return self._generate_edge_directions(2)
         if not np.all(np.isfinite(w)):
             return self._generate_edge_directions(2)
+
+        # Fallback if eigenvalues are nearly isotropic or all zero
+        w_abs = np.sort(np.abs(w))
+        max_eig = w_abs[-1]
+        if max_eig == 0 or (w_abs[1] - w_abs[0]) < 1e-6 * max_eig:
+            return self._generate_edge_directions(2)
+
         direction = v[:, np.argmin(np.abs(w))]
         norm = np.linalg.norm(direction)
         if norm == 0 or not np.isfinite(norm):
@@ -905,33 +987,95 @@ class SLAVVProcessor:
         return np.stack((direction, -direction))
 
     def _generate_edge_directions(self, n_directions: int) -> np.ndarray:
-        """Generate uniformly distributed directions for edge tracing using spherical Fibonacci spiral"""
+        """Generate uniformly distributed unit vectors on the sphere.
+
+        Parameters
+        ----------
+        n_directions : int
+            Number of direction vectors to produce.
+
+        Returns
+        -------
+        np.ndarray
+            Array of shape ``(n_directions, 3)`` containing unit direction
+            vectors evenly distributed on the sphere. When ``n_directions`` is
+            ``1``, returns the positive z-axis.
+        """
+
         if n_directions == 1:
             return np.array([[0, 0, 1]])  # Single direction
-        
+
         # Generate directions on unit sphere using spherical Fibonacci spiral
         points = []
-        phi = np.pi * (3. - np.sqrt(5.))  # golden angle in radians
-        
+        phi = np.pi * (3.0 - np.sqrt(5.0))  # golden angle in radians
+
         for i in range(n_directions):
             y = 1 - (i / float(n_directions - 1)) * 2  # y goes from 1 to -1
             radius = np.sqrt(1 - y * y)
-            
+
             theta = phi * i
-            
+
             x = np.cos(theta) * radius
             z = np.sin(theta) * radius
-            
+
             points.append([x, y, z])
-        
+
         return np.array(points)
 
-    def _trace_edge(self, energy: np.ndarray, start_pos: np.ndarray, direction: np.ndarray,
-                    step_size: float, max_energy: float, vertex_positions: np.ndarray,
-                    vertex_scales: np.ndarray, lumen_radius_pixels: np.ndarray,
-                    lumen_radius_microns: np.ndarray, max_steps: int,
-                    microns_per_voxel: np.ndarray, energy_sign: float) -> List[np.ndarray]:
-        """Trace an edge through the energy field with adaptive step sizing"""
+    def _trace_edge(
+        self,
+        energy: np.ndarray,
+        start_pos: np.ndarray,
+        direction: np.ndarray,
+        step_size: float,
+        max_energy: float,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_pixels: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        max_steps: int,
+        microns_per_voxel: np.ndarray,
+        energy_sign: float,
+        discrete_steps: bool = False,
+    ) -> List[np.ndarray]:
+        """Trace an edge through the energy field with adaptive step sizing.
+
+        Parameters
+        ----------
+        energy : np.ndarray
+            Energy volume.
+        start_pos : np.ndarray
+            Starting position (y, x, z).
+        direction : np.ndarray
+            Initial unit direction.
+        step_size : float
+            Initial step size in pixels.
+        max_energy : float
+            Upper bound on energy; tracing stops when exceeded (for bright
+            vessels) or undershot (for dark vessels).
+        vertex_positions : np.ndarray
+            Existing vertex coordinates.
+        vertex_scales : np.ndarray
+            Vertex scale indices.
+        lumen_radius_pixels : np.ndarray
+            Lumen radii per scale in pixels.
+        lumen_radius_microns : np.ndarray
+            Lumen radii per scale in microns.
+        max_steps : int
+            Maximum number of tracing iterations.
+        microns_per_voxel : np.ndarray
+            Physical voxel size.
+        energy_sign : float
+            Sign of vessel energy (negative for bright vessels).
+        discrete_steps : bool, optional
+            If ``True``, snap each step to the nearest voxel center to mimic
+            MATLAB's integer-valued tracing. Defaults to ``False``.
+
+        Returns
+        -------
+        List[np.ndarray]
+            Sequence of traced positions.
+        """
         trace = [start_pos.copy()]
         current_pos = start_pos.copy()
         current_dir = direction.copy()
@@ -941,6 +1085,10 @@ class SLAVVProcessor:
             attempt = 0
             while attempt < 10:
                 next_pos = current_pos + current_dir * step_size
+                if discrete_steps:
+                    next_pos = np.round(next_pos)
+                    if np.array_equal(next_pos, current_pos):
+                        return trace
                 if not self._in_bounds(next_pos, energy.shape):
                     return trace
                 pos_int = np.floor(next_pos).astype(int)
@@ -1187,6 +1335,9 @@ def validate_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
     validated['energy_method'] = params.get('energy_method', 'hessian')
     if validated['energy_method'] not in ('hessian', 'frangi', 'sato'):
         raise ValueError("energy_method must be 'hessian', 'frangi', or 'sato'")
+    validated['direction_method'] = params.get('direction_method', 'hessian')
+    if validated['direction_method'] not in ('hessian', 'uniform'):
+        raise ValueError("direction_method must be 'hessian' or 'uniform'")
     validated['return_all_scales'] = params.get('return_all_scales', False)
     if validated['max_voxels_per_node_energy'] <= 0:
         raise ValueError(
@@ -1204,6 +1355,7 @@ def validate_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError('min_hair_length_in_microns cannot be negative')
     if validated['bandpass_window'] < 0:
         raise ValueError('bandpass_window must be non-negative; set 0 to disable')
+    validated['discrete_tracing'] = params.get('discrete_tracing', False)
 
     return validated
 
@@ -1271,6 +1423,69 @@ def get_chunking_lattice(
     return slices
 
 
+def calculate_branching_angles(
+    strands: List[List[int]],
+    vertex_positions: np.ndarray,
+    microns_per_voxel: List[float],
+    bifurcations: np.ndarray,
+) -> List[float]:
+    """Compute pairwise angles at each bifurcation.
+
+    Parameters
+    ----------
+    strands : List[List[int]]
+        Connected vertex index sequences describing each strand.
+    vertex_positions : np.ndarray
+        ``(N, 3)`` array of vertex coordinates in pixel units ``(y, x, z)``.
+    microns_per_voxel : List[float]
+        Physical voxel size along ``y, x, z`` axes.
+    bifurcations : np.ndarray
+        Indices of vertices with degree >= 3.
+
+    Returns
+    -------
+    List[float]
+        All pairwise branch angles in degrees.
+    """
+
+    vertex_positions = np.asarray(vertex_positions, dtype=float)
+    scale = np.asarray(microns_per_voxel, dtype=float)
+    bifurcations = set(int(b) for b in np.asarray(bifurcations, dtype=int))
+    directions: Dict[int, List[np.ndarray]] = {}
+
+    for strand in strands:
+        if len(strand) < 2:
+            continue
+        start, next_idx = strand[0], strand[1]
+        end, prev_idx = strand[-1], strand[-2]
+
+        vec_start = (vertex_positions[next_idx] - vertex_positions[start]) * scale
+        vec_end = (vertex_positions[prev_idx] - vertex_positions[end]) * scale
+
+        if start in bifurcations:
+            directions.setdefault(start, []).append(vec_start)
+        if end in bifurcations:
+            directions.setdefault(end, []).append(vec_end)
+
+    angles: List[float] = []
+    for v in directions:
+        vecs = [vec for vec in directions[v] if np.linalg.norm(vec) > 0]
+        if len(vecs) < 2:
+            continue
+        for i in range(len(vecs)):
+            for j in range(i + 1, len(vecs)):
+                u = vecs[i]
+                w = vecs[j]
+                nu = np.linalg.norm(u)
+                nw = np.linalg.norm(w)
+                if nu == 0 or nw == 0:
+                    continue
+                cosang = np.clip(np.dot(u, w) / (nu * nw), -1.0, 1.0)
+                angles.append(float(np.degrees(np.arccos(cosang))))
+
+    return angles
+
+
 def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarray,
                            radii: np.ndarray, microns_per_voxel: List[float]) -> float:
     """Compute total vessel surface area.
@@ -1309,11 +1524,87 @@ def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarra
 
     return float(total_area)
 
-def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndarray,
-                               vertex_positions: np.ndarray, radii: np.ndarray,
-                               microns_per_voxel: List[float], image_shape: Tuple[int, ...]) -> Dict[str, Any]:
+
+def calculate_vessel_volume(strands: List[List[int]], vertex_positions: np.ndarray,
+                            radii: np.ndarray, microns_per_voxel: List[float]) -> float:
+    """Compute total vessel volume.
+
+    Approximates each edge segment as a cylinder with radius equal to the
+    mean of its endpoint radii and length equal to the Euclidean distance
+    between the vertices in physical units.
+
+    Args:
+        strands: Lists of vertex indices describing connected components.
+        vertex_positions: ``(N, 3)`` array of vertex positions in ``y, x, z``
+            pixel coordinates.
+        radii: Array of vertex radii in microns.
+        microns_per_voxel: Physical size of a voxel along ``y, x, z`` axes.
+
+    Returns:
+        Total vessel volume in cubic microns.
     """
-    Calculate comprehensive network statistics
+
+    vertex_positions = np.asarray(vertex_positions, dtype=float)
+    radii = np.asarray(radii, dtype=float)
+    scale = np.asarray(microns_per_voxel, dtype=float)
+    total_volume = 0.0
+
+    for strand in strands:
+        if len(strand) < 2:
+            continue
+        for i in range(len(strand) - 1):
+            v1 = strand[i]
+            v2 = strand[i + 1]
+            pos1 = vertex_positions[v1] * scale
+            pos2 = vertex_positions[v2] * scale
+            length = np.linalg.norm(pos2 - pos1)
+            radius = 0.5 * (radii[v1] + radii[v2])
+            total_volume += np.pi * radius**2 * length
+
+    return float(total_volume)
+
+def calculate_network_statistics(
+    strands: List[List[int]],
+    bifurcations: np.ndarray,
+    vertex_positions: np.ndarray,
+    radii: np.ndarray,
+    microns_per_voxel: List[float],
+    image_shape: Tuple[int, ...],
+    edge_energies: Optional[np.ndarray] = None,
+) -> Dict[str, Any]:
+    """Calculate aggregate metrics for a traced vascular network.
+
+    Parameters
+    ----------
+    strands : List[List[int]]
+        Connected vertex index sequences describing each strand.
+    bifurcations : np.ndarray
+        Indices of vertices with degree >= 3.
+    vertex_positions : np.ndarray
+        ``(N, 3)`` array of vertex coordinates in pixel units ``(y, x, z)``.
+    radii : np.ndarray
+        Vertex radii in microns.
+    microns_per_voxel : List[float]
+        Physical voxel size along ``y, x, z`` axes.
+    image_shape : Tuple[int, ...]
+        Shape of the source image volume ``(Y, X, Z)``.
+    edge_energies : np.ndarray, optional
+        Mean energy for each edge trace. When provided, the returned
+        statistics will include the mean and standard deviation of these
+        energies.
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary of network statistics including length, tortuosity,
+        branching angle distributions, radius extrema, edge energy,
+        edge length, and edge radius statistics, total/density
+        measures for length, surface area, volume, bifurcations,
+        vertices, and edges,
+        plus graph connectivity metrics (connected components,
+        endpoints, average path length, clustering coefficient,
+        network diameter, betweenness centrality, closeness centrality,
+        eigenvector centrality, and graph density).
     """
     stats = {}
     
@@ -1321,9 +1612,12 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     stats['num_strands'] = len(strands)
     stats['num_bifurcations'] = len(bifurcations)
     stats['num_vertices'] = len(vertex_positions)
-    
-    # Strand lengths and tortuosities
+    # Build graph and accumulate geometric measures
+    G = nx.Graph()
+    G.add_nodes_from(range(len(vertex_positions)))
     strand_lengths: List[float] = []
+    edge_lengths: List[float] = []
+    edge_radii: List[float] = []
     tortuosities: List[float] = []
     for strand in strands:
         if len(strand) > 1:
@@ -1331,7 +1625,11 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
             for i in range(len(strand) - 1):
                 pos1 = vertex_positions[strand[i]] * microns_per_voxel
                 pos2 = vertex_positions[strand[i + 1]] * microns_per_voxel
-                length += np.linalg.norm(pos2 - pos1)
+                seg_length = np.linalg.norm(pos2 - pos1)
+                length += seg_length
+                edge_lengths.append(seg_length)
+                edge_radii.append((radii[strand[i]] + radii[strand[i + 1]]) / 2.0)
+                G.add_edge(strand[i], strand[i + 1], weight=seg_length)
             strand_lengths.append(length)
 
             start = vertex_positions[strand[0]] * microns_per_voxel
@@ -1355,6 +1653,98 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     else:
         stats['mean_tortuosity'] = 0
         stats['tortuosity_std'] = 0
+
+    # Edge and degree statistics
+    stats['num_edges'] = G.number_of_edges()
+    degrees = [d for _, d in G.degree()]
+    if degrees:
+        stats['mean_degree'] = float(np.mean(degrees))
+        stats['degree_std'] = float(np.std(degrees))
+    else:
+        stats['mean_degree'] = 0.0
+        stats['degree_std'] = 0.0
+
+    # Graph connectivity metrics
+    stats['num_connected_components'] = nx.number_connected_components(G)
+    stats['num_endpoints'] = sum(1 for _, d in G.degree() if d == 1)
+    pairwise_lengths: List[float] = []
+    for comp in nx.connected_components(G):
+        sub = G.subgraph(comp)
+        if sub.number_of_nodes() < 2:
+            continue
+        for u, dist_map in nx.all_pairs_dijkstra_path_length(sub, weight='weight'):
+            for v, dist in dist_map.items():
+                if u < v:
+                    pairwise_lengths.append(dist)
+    if pairwise_lengths:
+        stats['avg_path_length'] = float(np.mean(pairwise_lengths))
+        stats['network_diameter'] = float(np.max(pairwise_lengths))
+    else:
+        stats['avg_path_length'] = 0.0
+        stats['network_diameter'] = 0.0
+    stats['clustering_coefficient'] = (
+        float(nx.average_clustering(G, weight='weight'))
+        if G.number_of_nodes() > 1
+        else 0.0
+    )
+
+    betweenness = nx.betweenness_centrality(G, weight='weight')
+    if betweenness:
+        vals = np.fromiter(betweenness.values(), dtype=float)
+        stats['betweenness_mean'] = float(np.mean(vals))
+        stats['betweenness_std'] = float(np.std(vals))
+    else:
+        stats['betweenness_mean'] = 0.0
+        stats['betweenness_std'] = 0.0
+
+    closeness = nx.closeness_centrality(G, distance='weight')
+    if closeness:
+        cvals = np.fromiter(closeness.values(), dtype=float)
+        stats['closeness_mean'] = float(np.mean(cvals))
+        stats['closeness_std'] = float(np.std(cvals))
+    else:
+        stats['closeness_mean'] = 0.0
+        stats['closeness_std'] = 0.0
+
+    eigen = (
+        nx.eigenvector_centrality(G, weight='weight', max_iter=1000)
+        if G.number_of_nodes() > 0
+        else {}
+    )
+    if eigen:
+        evals = np.fromiter(eigen.values(), dtype=float)
+        stats['eigenvector_mean'] = float(np.mean(evals))
+        stats['eigenvector_std'] = float(np.std(evals))
+    else:
+        stats['eigenvector_mean'] = 0.0
+        stats['eigenvector_std'] = 0.0
+
+    stats['graph_density'] = float(nx.density(G))
+
+    # Edge length statistics
+    if edge_lengths:
+        stats['mean_edge_length'] = float(np.mean(edge_lengths))
+        stats['edge_length_std'] = float(np.std(edge_lengths))
+    else:
+        stats['mean_edge_length'] = 0.0
+        stats['edge_length_std'] = 0.0
+
+    # Edge radius statistics
+    if edge_radii:
+        stats['mean_edge_radius'] = float(np.mean(edge_radii))
+        stats['edge_radius_std'] = float(np.std(edge_radii))
+    else:
+        stats['mean_edge_radius'] = 0.0
+        stats['edge_radius_std'] = 0.0
+
+    # Branching angles
+    angles = calculate_branching_angles(strands, vertex_positions, microns_per_voxel, bifurcations)
+    if angles:
+        stats['mean_branch_angle'] = float(np.mean(angles))
+        stats['branch_angle_std'] = float(np.std(angles))
+    else:
+        stats['mean_branch_angle'] = 0.0
+        stats['branch_angle_std'] = 0.0
     
     # Vessel radii statistics
     if len(radii) > 0:
@@ -1362,13 +1752,21 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
         stats['radius_std'] = np.std(radii)
         stats['min_radius'] = np.min(radii)
         stats['max_radius'] = np.max(radii)
-    
-    # Volume fraction
-    image_volume = np.prod(image_shape) * np.prod(microns_per_voxel)
-    vessel_volume = np.sum(np.pi * radii**2) * stats.get('total_length', 0)
-    stats['volume_fraction'] = vessel_volume / image_volume if image_volume > 0 else 0
 
-    # Surface area
+    # Edge energy statistics
+    if edge_energies is not None and len(edge_energies) > 0:
+        stats['mean_edge_energy'] = float(np.mean(edge_energies))
+        stats['edge_energy_std'] = float(np.std(edge_energies))
+    else:
+        stats['mean_edge_energy'] = 0.0
+        stats['edge_energy_std'] = 0.0
+
+    # Volume and surface area
+    total_volume = calculate_vessel_volume(strands, vertex_positions, radii, microns_per_voxel)
+    image_volume = np.prod(image_shape) * np.prod(microns_per_voxel)
+    stats['total_volume'] = total_volume
+    stats['volume_fraction'] = total_volume / image_volume if image_volume > 0 else 0
+
     total_surface_area = calculate_surface_area(strands, vertex_positions, radii, microns_per_voxel)
     stats['total_surface_area'] = total_surface_area
     stats['surface_area_density'] = total_surface_area / image_volume if image_volume > 0 else 0
@@ -1376,6 +1774,8 @@ def calculate_network_statistics(strands: List[List[int]], bifurcations: np.ndar
     # Density measures
     stats['length_density'] = stats.get('total_length', 0) / image_volume if image_volume > 0 else 0
     stats['bifurcation_density'] = len(bifurcations) / image_volume if image_volume > 0 else 0
+    stats['vertex_density'] = stats['num_vertices'] / image_volume if image_volume > 0 else 0
+    stats['edge_density'] = stats['num_edges'] / image_volume if image_volume > 0 else 0
 
     return stats
 

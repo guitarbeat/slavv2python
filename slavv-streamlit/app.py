@@ -75,6 +75,17 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         margin: 0.5rem 0;
     }
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 2rem;
+        }
+        .section-header {
+            font-size: 1.25rem;
+        }
+        .metric-card {
+            padding: 1rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -941,7 +952,8 @@ def show_analysis_page():
         results["vertices"]["positions"],
         results["vertices"].get("radii_microns", results["vertices"].get("radii", [])),
         parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-        st.session_state.get("image_shape", (100, 100, 50))
+        st.session_state.get("image_shape", (100, 100, 50)),
+        edge_energies=results["edges"].get("energies"),
     )
 
     # Key metrics

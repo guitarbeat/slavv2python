@@ -102,25 +102,32 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
 
 ## 6. Testing
 
-- [ ] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
+- [x] Develop comprehensive unit tests for all functions in `src/vectorization_core.py`, `src/ml_curator.py`, and `src/visualization.py`.
 - [x] Add regression tests comparing against small MATLAB-ground-truth outputs where feasible
-- [ ] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
+- [x] Implement integration tests for the Streamlit application to ensure end-to-end functionality.
 - [x] Set up a continuous integration (CI) pipeline for automated testing.
 - [x] Add basic tests for network statistics helper (`calculate_network_statistics.m`)
 - [x] Include tortuosity metrics in network statistics calculations
+- [x] Include edge-energy metrics in network statistics calculations
+- [x] Include edge-length metrics in network statistics calculations
+- [x] Include vertex-degree metrics in network statistics calculations
+- [x] Include vertex/edge density metrics in network statistics calculations
+- [x] Include betweenness centrality and graph density metrics in network statistics calculations
+- [x] Include closeness centrality metrics in network statistics calculations
+- [x] Include eigenvector centrality metrics in network statistics calculations
 - [x] Add parity tests for surface area (`calculate_surface_area.m`)
 - [x] Add preprocessing tests verifying intensity normalization and axial band removal
 
 ## 7. Documentation
 
-- [ ] Add detailed docstrings to all functions and classes in the codebase.
-- [ ] Expand the `README.md` with more detailed setup instructions, usage examples, and troubleshooting tips.
+ - [x] Add detailed docstrings to all functions and classes in the codebase.
+- [x] Expand the `README.md` with more detailed setup instructions, usage examples, and troubleshooting tips.
 - [x] Create a dedicated `docs` directory for comprehensive user and developer documentation.
 - [x] Add a MATLAB→Python function mapping table with parity level (exact/approx/omitted) — see `docs/MATLAB_TO_PYTHON_MAPPING.md`.
 
 ## 8. User Experience (UX) Enhancements
 
-- [ ] Improve the responsiveness and layout of the Streamlit application for different screen sizes.
+- [x] Improve the responsiveness and layout of the Streamlit application for different screen sizes.
 - [x] Add tooltips and help texts for all input parameters and metrics.
 - [x] Implement a progress tracker for long-running operations.
  - [x] Provide clear feedback to the user at each step of the processing pipeline.
@@ -133,6 +140,7 @@ This document outlines planned improvements and added features for the SLAVV2Pyt
     - [x] Basic MAT network import
     - [x] Basic CASX network import
     - [x] Basic VMV network import
+    - [x] Basic CSV/JSON network import
 
 ## Notes
 
