@@ -5,7 +5,7 @@ This document maps key MATLAB SLAVV functions/scripts to their Python counterpar
 - Approximate: Implemented and functional but not numerically identical or missing some heuristics/options
 - Omitted: Not implemented yet (planned)
 
-See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable differences.
+This document also summarizes coverage and known parity deviations to keep docs minimal.
 
 ### Core Algorithm
 
@@ -38,6 +38,12 @@ See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable di
 | `weighted_KStest2.m` | `slavv-streamlit/src/utils.py:weighted_ks_test` | Exact | Weighted two-sample Kolmogorov–Smirnov statistic. |
 | `gaussian_blur.m`, `gaussian_blur_in_chunks.m` | `slavv-streamlit/src/vectorization_core.py:preprocess_image` | Approximate | Uses `scipy.ndimage.gaussian_filter` with optional chunking via the energy lattice when large volumes are present. |
 | `flow_field_subroutine.m` | `slavv-streamlit/src/visualization.py:plot_flow_field` | Approximate | Renders edge orientations as 3D cones centered on midpoints of traces. |
+| `get_edges_for_vertex.m` | `slavv-streamlit/src/vectorization_core.py:get_edges_for_vertex` | Exact | Returns indices of incident edges given an adjacency list of connections. |
+| `get_edge_metric.m` | `slavv-streamlit/src/vectorization_core.py:get_edge_metric` | Approximate | Supports length and energy-based aggregates (mean/min/max/median). |
+| `resample_vectors.m` | `slavv-streamlit/src/vectorization_core.py:resample_vectors` | Approximate | Resamples a polyline to near-uniform spacing by arc length. |
+| `smooth_edges.m`, `smooth_edges_V2.m` | `slavv-streamlit/src/vectorization_core.py:smooth_edge_traces` | Approximate | 1D Gaussian smoothing along each coordinate sequence. |
+| `transform_vector_set.m` | `slavv-streamlit/src/vectorization_core.py:transform_vector_set` | Approximate | Applies 4x4 homogeneous or scale/rotate/translate transforms to positions. |
+| `subsample_vectors.m` | `slavv-streamlit/src/vectorization_core.py:subsample_vectors` | Exact | Keeps every Nth point, preserving endpoints. |
 
 ### Machine Learning Curation
 
@@ -70,6 +76,7 @@ See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable di
 | `casx_file2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_casx` | Approximate | Basic CASX network import.
 | `vmv_file2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_vmv` | Approximate | Basic VMV network import.
 | `casX2mat.m` | `slavv-streamlit/src/io_utils.py:load_network_from_mat` | Approximate | Basic MAT network import.
+| `dicom2tif.m` | `slavv-streamlit/src/io_utils.py:dicom_to_tiff` | Approximate | Reads single/multi-frame DICOM or series, optional TIFF export with sorting and rescale.
 | *(no direct MATLAB equivalent)* | `slavv-streamlit/src/io_utils.py:load_network_from_csv`, `load_network_from_json`, `save_network_to_csv`, `save_network_to_json` | Approximate | Load or save network data using CSV or JSON files.
 | MATLAB `save`/custom MAT writers | `slavv-streamlit/src/visualization.py:_export_mat` | Approximate | Export network data to MATLAB `.mat` files via `scipy.io.savemat`.
 | `mat2tif.m`, `tif2mat.m`, `h52mat.m`, `mat2h5.m` | Python libs (`tifffile`, `h5py`) | Approximate | Standard Python I/O replaces MATLAB utilities; not 1:1.
@@ -80,7 +87,44 @@ See [PARITY_DEVIATIONS.md](PARITY_DEVIATIONS.md) for rationale behind notable di
 |---|---|---|---|
 | `calculate_network_statistics.m` | `slavv-streamlit/src/vectorization_core.py:calculate_network_statistics` | Approximate | Computes counts, strand and edge lengths, radii statistics, tortuosity, branching angles, edge-energy and edge-radius means/std, volume/length/surface-area/vertex/edge densities via `calculate_surface_area` and `calculate_vessel_volume`, vertex-degree statistics, and graph connectivity metrics (components, endpoints, average path length, clustering coefficient, diameter, betweenness centrality, closeness centrality, eigenvector centrality, graph density). |
 
+### Coverage Summary
+
+- Total MATLAB `.m` files scanned: 152
+- Mapped by this document (explicit or family): ~65
+- Unmapped (by doc): ~87 — largely example/study scripts and peripheral helpers
+
+Unmapped categories (representative examples):
+- Scripts/Examples: `vectorization_script_*`, `*_script*.m`, `noise_sensitivity_*`, `test_*` (intentionally not ported).
+- Visualization/Plotting: `*_histogram_plotter.m`, `visualize_edges_annuli.m`, `paint_vertex_image.m`.
+- I/O & Formats: `dicom2tif.m`, `casx2*.m`, `partition_casx_by_xy_bins.m`, `registration_txt2mat.m`.
+- ML/Curation: `edge_curator_Drews.m`, `getTrainingArray.m`, `simpleFeatureArray.m`.
+- Core/Helpers: `get_edges_for_vertex.m`, `get_edge_metric.m`, `resample_vectors.m`, `smooth_edges*.m`, `transform_vector_set.m`, `register_strands.m`.
+
+Notes:
+- Many helpers are integrated into Python modules (e.g., cleaning/sorting/cropping/structuring). When in doubt, search this document for the family name.
+
+### Parity Deviations (Rationale)
+
+- Energy Field:
+  - PSF weighting uses a simplified Gaussian approximation; MATLAB kernels are more detailed.
+  - Filter ratios (Gaussian/annular) approximate defaults rather than exact numeric parity.
+- Vertex and Edge Extraction:
+  - Tracing uses floating-point updates by default; enable `discrete_tracing=True` for voxel-snapped steps.
+  - Direction estimation falls back to uniform orientations when eigenanalysis is unstable.
+- Visualization:
+  - Plotly replaces MATLAB graphics; colormaps and camera controls differ.
+  - Strand coloring uses Plotly palettes instead of MATLAB’s hardcoded tables.
+
 ### Notes
 
-- Parity levels reflect current implementation state; see `docs/PORTING_SUMMARY.md` and `TODO.md` for planned improvements.
+- Parity levels reflect current implementation state; for priorities see the repository issue tracker.
+
+### FAQ / Glossary
+
+- Axis order: Arrays use `(y, x, z)` indexing throughout. When converting to physical units, multiply by `microns_per_voxel = [µm_y, µm_x, µm_z]` element‑wise.
+- Radii units: `radii_pixels` are scale-derived pixel radii; `radii_microns` are physical radii. Public APIs return both where relevant.
+- Energy sign: Bright vessels default to negative energy (`energy_sign = -1.0`), so lower values are more vessel‑like. Flip the sign for dark vessels.
+- Discrete tracing: Set `discrete_tracing=True` to snap edge steps to voxel centers (closer to MATLAB integer stepping). Default uses floating‑point steps for smoother paths.
+- Direction seeding: `direction_method='hessian'` uses local Hessian eigenvectors; `'uniform'` uses evenly distributed unit vectors.
+- Voxel anisotropy: All neighborhood and gradient ops account for anisotropic voxels via `microns_per_voxel`.
 - File/function names reference their locations exactly: Python paths like `slavv-streamlit/src/vectorization_core.py` and MATLAB functions as in `Vectorization-Public/source/`.

@@ -12,7 +12,7 @@ Based on the MATLAB implementation by Samuel Alexander Mihelic
 
 import numpy as np
 import scipy.ndimage as ndi
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, gaussian_filter1d
 from scipy.spatial import cKDTree
 from skimage import feature
 from skimage.filters import frangi, sato
@@ -44,6 +44,12 @@ __all__ = [
     "crop_vertices",
     "crop_edges",
     "crop_vertices_by_mask",
+    "get_edges_for_vertex",
+    "get_edge_metric",
+    "resample_vectors",
+    "smooth_edge_traces",
+    "transform_vector_set",
+    "subsample_vectors",
 ]
 
 
@@ -1563,6 +1569,173 @@ def calculate_vessel_volume(strands: List[List[int]], vertex_positions: np.ndarr
 
     return float(total_volume)
 
+
+def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarray:
+    """Return indices of edges incident to a given vertex.
+
+    Parameters
+    ----------
+    connections : np.ndarray
+        ``(E, 2)`` integer array of edge endpoint vertex indices.
+    vertex_index : int
+        Vertex index to query.
+
+    Returns
+    -------
+    np.ndarray
+        1D array of edge indices where ``vertex_index`` appears in
+        ``connections``.
+    """
+    connections = np.asarray(connections)
+    if connections.size == 0:
+        return np.empty((0,), dtype=int)
+    mask = (connections[:, 0] == vertex_index) | (connections[:, 1] == vertex_index)
+    return np.flatnonzero(mask)
+
+
+def get_edge_metric(
+    trace: np.ndarray,
+    energy: Optional[np.ndarray] = None,
+    method: str = "mean_energy",
+) -> float:
+    """Compute a simple metric for a single edge trace.
+
+    Supported methods:
+    - "length": total polyline length in input units (voxels if raw positions).
+    - "mean_energy" (default), "min_energy", "max_energy", "median_energy":
+      sample the energy field at floored voxel coordinates along the trace
+      and aggregate.
+    """
+    arr = np.asarray(trace)
+    if arr.ndim != 2 or arr.shape[0] < 2:
+        return 0.0
+    if method == "length" or energy is None:
+        diffs = np.diff(arr, axis=0)
+        return float(np.sum(np.linalg.norm(diffs, axis=1)))
+    # Energy-based metrics
+    coords = np.floor(arr).astype(int)
+    coords[:, 0] = np.clip(coords[:, 0], 0, energy.shape[0] - 1)
+    coords[:, 1] = np.clip(coords[:, 1], 0, energy.shape[1] - 1)
+    coords[:, 2] = np.clip(coords[:, 2], 0, energy.shape[2] - 1)
+    samples = energy[coords[:, 0], coords[:, 1], coords[:, 2]]
+    if method == "mean_energy":
+        return float(np.mean(samples))
+    if method == "min_energy":
+        return float(np.min(samples))
+    if method == "max_energy":
+        return float(np.max(samples))
+    if method == "median_energy":
+        return float(np.median(samples))
+    # Fallback
+    return float(np.mean(samples))
+
+
+def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
+    """Resample a polyline trace at approximately uniform arc-length spacing.
+
+    Parameters
+    ----------
+    trace : np.ndarray
+        ``(N, D)`` array of points (typically ``D=3`` in ``y, x, z`` order).
+    step : float
+        Desired spacing between successive resampled points in input units.
+
+    Returns
+    -------
+    np.ndarray
+        Resampled polyline with first/last points preserved when feasible.
+    """
+    pts = np.asarray(trace, dtype=float)
+    if pts.ndim != 2 or pts.shape[0] < 2 or step <= 0:
+        return pts.copy()
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    arclen = np.concatenate([[0.0], np.cumsum(seg)])
+    total = arclen[-1]
+    if total == 0:
+        return pts[[0]].copy()
+    num = max(2, int(np.floor(total / step)) + 1)
+    targets = np.linspace(0.0, total, num)
+    # Interpolate each coordinate independently over arc-length
+    out = np.empty((len(targets), pts.shape[1]), dtype=float)
+    for d in range(pts.shape[1]):
+        out[:, d] = np.interp(targets, arclen, pts[:, d])
+    return out
+
+
+def smooth_edge_traces(traces: List[np.ndarray], sigma: float = 1.0) -> List[np.ndarray]:
+    """Smooth each polyline trace with a 1D Gaussian along its path.
+
+    Coordinates are smoothed independently along the vertex index dimension
+    using ``scipy.ndimage.gaussian_filter1d``.
+    """
+    smoothed: List[np.ndarray] = []
+    for t in traces:
+        arr = np.asarray(t, dtype=float)
+        if arr.ndim != 2 or arr.shape[0] < 3:
+            smoothed.append(arr.copy())
+            continue
+        out = np.empty_like(arr)
+        for d in range(arr.shape[1]):
+            out[:, d] = gaussian_filter1d(arr[:, d], sigma=sigma, mode="nearest")
+        smoothed.append(out)
+    return smoothed
+
+
+def transform_vector_set(
+    positions: np.ndarray,
+    *,
+    matrix: Optional[np.ndarray] = None,
+    scale: Optional[List[float]] = None,
+    rotation: Optional[np.ndarray] = None,
+    translate: Optional[List[float]] = None,
+) -> np.ndarray:
+    """Apply geometric transforms to a set of positions.
+
+    Use either a homogeneous 4x4 ``matrix`` or provide any combination of
+    ``scale`` (3,), ``rotation`` (3x3), and ``translate`` (3,).
+    """
+    pts = np.asarray(positions, dtype=float)
+    if pts.ndim != 2 or pts.shape[1] != 3:
+        raise ValueError("positions must have shape (N, 3)")
+    if matrix is not None:
+        M = np.asarray(matrix, dtype=float)
+        if M.shape != (4, 4):
+            raise ValueError("matrix must be 4x4")
+        homo = np.c_[pts, np.ones((pts.shape[0], 1))]
+        out = homo @ M.T
+        return out[:, :3]
+    out = pts.copy()
+    if scale is not None:
+        s = np.asarray(scale, dtype=float)
+        if s.shape != (3,):
+            raise ValueError("scale must be length-3")
+        out = out * s
+    if rotation is not None:
+        R = np.asarray(rotation, dtype=float)
+        if R.shape != (3, 3):
+            raise ValueError("rotation must be 3x3")
+        out = out @ R.T
+    if translate is not None:
+        t = np.asarray(translate, dtype=float)
+        if t.shape != (3,):
+            raise ValueError("translate must be length-3")
+        out = out + t
+    return out
+
+
+def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
+    """Subsample a polyline by keeping every ``step``-th point.
+
+    The first and last points are preserved when possible.
+    """
+    arr = np.asarray(trace)
+    if arr.ndim != 2 or step <= 1:
+        return arr.copy()
+    idx = np.arange(0, arr.shape[0], step, dtype=int)
+    if idx[-1] != arr.shape[0] - 1:
+        idx = np.r_[idx, arr.shape[0] - 1]
+    return arr[idx]
+
 def calculate_network_statistics(
     strands: List[List[int]],
     bifurcations: np.ndarray,
@@ -1845,4 +2018,3 @@ def crop_vertices_by_mask(vertex_positions: np.ndarray, mask_volume: np.ndarray)
     valid_coords = coords[in_bounds]
     mask[valid_indices] = mask_volume[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
     return vertex_positions[mask], mask
-
