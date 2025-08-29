@@ -50,6 +50,8 @@ __all__ = [
     "smooth_edge_traces",
     "transform_vector_set",
     "subsample_vectors",
+    "register_vector_sets",
+    "register_strands",
 ]
 
 
@@ -1735,6 +1737,255 @@ def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
     if idx[-1] != arr.shape[0] - 1:
         idx = np.r_[idx, arr.shape[0] - 1]
     return arr[idx]
+
+
+def register_vector_sets(
+    source: np.ndarray,
+    target: np.ndarray,
+    *,
+    method: str = "rigid",
+    with_scale: bool = False,
+    return_error: bool = False,
+) -> Any:
+    """Register ``source`` points to ``target`` points and return a 4x4 transform.
+
+    Parameters
+    ----------
+    source, target : np.ndarray
+        ``(N, 3)`` arrays of corresponding points. ``N >= 3`` recommended
+        for rigid registration; ``N >= 4`` for affine.
+    method : {"rigid", "affine"}
+        Registration model. Rigid uses the Kabsch algorithm; affine uses
+        least-squares fit for a 3x4 transform.
+    with_scale : bool
+        When ``True`` and ``method='rigid'``, estimate a global uniform scale.
+    return_error : bool
+        When ``True``, also return RMS alignment error.
+
+    Returns
+    -------
+    np.ndarray or Tuple[np.ndarray, float]
+        4x4 homogeneous transform matrix mapping ``source`` to ``target``, and
+        optionally the RMS error after applying the transform.
+    """
+    X = np.asarray(source, dtype=float)
+    Y = np.asarray(target, dtype=float)
+    if X.shape != Y.shape or X.ndim != 2 or X.shape[1] != 3:
+        raise ValueError("source and target must have shape (N, 3)")
+    n = X.shape[0]
+    if method not in {"rigid", "affine"}:
+        raise ValueError("method must be 'rigid' or 'affine'")
+
+    if method == "affine":
+        if n < 4:
+            raise ValueError("affine registration requires at least 4 points")
+        Xh = np.c_[X, np.ones((n, 1))]  # (N,4)
+        # Solve Xh @ A = Y for A (4x3)
+        A, *_ = np.linalg.lstsq(Xh, Y, rcond=None)
+        T = np.eye(4)
+        T[:3, :3] = A[:3, :].T
+        T[:3, 3] = A[3, :]
+        Xp = (Xh @ A)
+        err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
+        return (T, err) if return_error else T
+
+    # Rigid (Kabsch), with optional scale
+    if n < 3:
+        raise ValueError("rigid registration requires at least 3 points")
+    muX = X.mean(axis=0)
+    muY = Y.mean(axis=0)
+    Xc = X - muX
+    Yc = Y - muY
+    H = Xc.T @ Yc
+    U, S, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+    if np.linalg.det(R) < 0:
+        Vt[-1, :] *= -1
+        R = Vt.T @ U.T
+    s = 1.0
+    if with_scale:
+        # Global scale from ratio of variances under optimal rotation
+        denom = np.sum(Xc ** 2)
+        if denom > 0:
+            s = float(np.sum(S) / denom)
+    t = muY - s * (R @ muX)
+    T = np.eye(4)
+    T[:3, :3] = s * R
+    T[:3, 3] = t
+    Xp = (np.c_[X, np.ones((n, 1))] @ T.T)[:, :3]
+    err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
+    return (T, err) if return_error else T
+
+
+def _icp_register_rigid(
+    source: np.ndarray,
+    target: np.ndarray,
+    *,
+    with_scale: bool = False,
+    max_iters: int = 50,
+    tol: float = 1e-6,
+) -> Tuple[np.ndarray, float]:
+    """Iterative closest point (rigid) registration using Kabsch per iteration.
+
+    Returns a 4x4 transform matrix and RMS error.
+    """
+    X = np.asarray(source, dtype=float)
+    Y = np.asarray(target, dtype=float)
+    if X.ndim != 2 or Y.ndim != 2 or X.shape[1] != 3 or Y.shape[1] != 3:
+        raise ValueError("source and target must be (N,3) arrays")
+    if len(X) == 0 or len(Y) == 0:
+        return np.eye(4), 0.0
+
+    # Initial transform: align centroids
+    muX = X.mean(axis=0)
+    muY = Y.mean(axis=0)
+    s = 1.0
+    R = np.eye(3)
+    t = muY - muX
+
+    tree = cKDTree(Y)
+    prev_err = np.inf
+
+    for _ in range(max_iters):
+        Xp = (X @ R.T) * s + t
+        dists, idx = tree.query(Xp, k=1)
+        Ymatch = Y[idx]
+
+        # Compute Kabsch on matched pairs
+        Xm = X
+        Ym = Ymatch
+        Xc = Xm - Xm.mean(axis=0)
+        Yc = Ym - Ym.mean(axis=0)
+        H = Xc.T @ Yc
+        U, Svals, Vt = np.linalg.svd(H)
+        Rk = Vt.T @ U.T
+        if np.linalg.det(Rk) < 0:
+            Vt[-1, :] *= -1
+            Rk = Vt.T @ U.T
+        sk = 1.0
+        if with_scale:
+            denom = np.sum(Xc ** 2)
+            if denom > 0:
+                sk = float(np.sum(Svals) / denom)
+        tk = Ym.mean(axis=0) - sk * (Rk @ Xm.mean(axis=0))
+
+        # Compose transforms: new R,t,s on top of current
+        R = Rk @ R
+        s = sk * s
+        t = Rk @ t + tk
+
+        Xp = (X @ R.T) * s + t
+        err = float(np.sqrt(np.mean(np.sum((Xp - Ymatch) ** 2, axis=1))))
+        if abs(prev_err - err) < tol:
+            prev_err = err
+            break
+        prev_err = err
+
+    T = np.eye(4)
+    T[:3, :3] = s * R
+    T[:3, 3] = t
+    return T, prev_err
+
+
+def register_strands(
+    vertices_a: np.ndarray,
+    edges_a: np.ndarray,
+    vertices_b: np.ndarray,
+    edges_b: np.ndarray,
+    *,
+    method: str = "rigid",
+    with_scale: bool = False,
+    match_threshold: float = 2.0,
+    max_iters: int = 50,
+) -> Dict[str, Any]:
+    """Register and merge two networks (A onto B) and return the merged result.
+
+    Parameters
+    ----------
+    vertices_a, edges_a : arrays
+        Network A vertices ``(Na,3)`` and edges ``(Ea,2)``.
+    vertices_b, edges_b : arrays
+        Network B vertices ``(Nb,3)`` and edges ``(Eb,2)``.
+    method : {"rigid", "affine"}
+        Registration model for aligning A to B. Rigid uses ICP; affine uses
+        a single least-squares fit on rough nearest-neighbor matches.
+    with_scale : bool
+        Include uniform scaling for rigid ICP.
+    match_threshold : float
+        Maximum distance to consider vertices equal during merging (in pixels).
+    max_iters : int
+        Maximum ICP iterations for rigid registration.
+
+    Returns
+    -------
+    dict
+        {"vertices": merged_vertices, "edges": merged_edges, "transform": T, "rms": rms}
+    """
+    Va = np.asarray(vertices_a, dtype=float)
+    Vb = np.asarray(vertices_b, dtype=float)
+    Ea = np.atleast_2d(np.asarray(edges_a, dtype=int))
+    Eb = np.atleast_2d(np.asarray(edges_b, dtype=int))
+
+    if Va.size == 0:
+        return {"vertices": Vb.copy(), "edges": Eb.copy(), "transform": np.eye(4), "rms": 0.0}
+    if Vb.size == 0:
+        return {"vertices": Va.copy(), "edges": Ea.copy(), "transform": np.eye(4), "rms": 0.0}
+
+    # Estimate transform A->B
+    if method == "rigid":
+        T, rms = _icp_register_rigid(Va, Vb, with_scale=with_scale, max_iters=max_iters)
+    elif method == "affine":
+        # One-shot nearest neighbor to get provisional correspondences
+        tree = cKDTree(Vb)
+        _, idx = tree.query(Va, k=1)
+        Ta, rms = register_vector_sets(Va, Vb[idx], method="affine", return_error=True)
+        T = Ta
+    else:
+        raise ValueError("method must be 'rigid' or 'affine'")
+
+    # Transform A vertices into B space
+    Va_h = np.c_[Va, np.ones((Va.shape[0], 1))]
+    Va_t = (Va_h @ T.T)[:, :3]
+
+    # Merge vertices: map A->B within threshold, else append
+    tree = cKDTree(Vb)
+    dists, idx = tree.query(Va_t, k=1)
+    merged_vertices = Vb.tolist()
+    a_to_merged = np.empty((Va.shape[0],), dtype=int)
+    for i, (d, j) in enumerate(zip(dists, idx)):
+        if np.isfinite(d) and d <= match_threshold:
+            a_to_merged[i] = int(j)
+        else:
+            a_to_merged[i] = len(merged_vertices)
+            merged_vertices.append(Va_t[i].tolist())
+
+    merged_vertices_arr = np.asarray(merged_vertices, dtype=float)
+
+    # Remap edges: B edges keep indices; A edges map via a_to_merged
+    edges_a_mapped = np.vstack([
+        np.minimum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
+        np.maximum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
+    ]).T
+
+    edges_b_norm = np.vstack([
+        np.minimum(Eb[:, 0], Eb[:, 1]),
+        np.maximum(Eb[:, 0], Eb[:, 1]),
+    ]).T
+
+    # Concatenate and deduplicate, drop self-loops
+    all_edges = np.vstack([edges_b_norm, edges_a_mapped])
+    mask = all_edges[:, 0] != all_edges[:, 1]
+    all_edges = all_edges[mask]
+    # Unique rows
+    # Use structured array trick for speed
+    if all_edges.size:
+        view = np.ascontiguousarray(all_edges).view([("a", all_edges.dtype), ("b", all_edges.dtype)])
+        _, idx_unique = np.unique(view, return_index=True)
+        merged_edges = all_edges[np.sort(idx_unique)]
+    else:
+        merged_edges = all_edges
+
+    return {"vertices": merged_vertices_arr, "edges": merged_edges.astype(int), "transform": T, "rms": rms}
 
 def calculate_network_statistics(
     strands: List[List[int]],
