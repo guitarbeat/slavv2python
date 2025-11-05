@@ -8,7 +8,14 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streaml
 from vectorization_core import SLAVVProcessor
 
 
-def test_extract_edges_regression():
+from unittest.mock import patch
+
+
+@patch(
+    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
+)
+def test_extract_edges_regression(mock_generate_directions):
     expected_connections = np.array([[0, -1], [0, -1]], dtype=int)
     expected_traces = np.array(
         [
