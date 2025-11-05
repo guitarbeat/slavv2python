@@ -11,7 +11,14 @@ sys.path.append(
 from vectorization_core import SLAVVProcessor
 
 
-def test_extract_edges_seeds_directions_with_hessian():
+from unittest.mock import patch
+
+
+@patch(
+    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
+)
+def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
     processor = SLAVVProcessor()
 
     size = 21

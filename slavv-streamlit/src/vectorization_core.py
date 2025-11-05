@@ -996,12 +996,10 @@ class SLAVVProcessor:
 
     def _generate_edge_directions(self, n_directions: int) -> np.ndarray:
         """Generate uniformly distributed unit vectors on the sphere.
-
         Parameters
         ----------
         n_directions : int
             Number of direction vectors to produce.
-
         Returns
         -------
         np.ndarray
@@ -1009,26 +1007,21 @@ class SLAVVProcessor:
             vectors evenly distributed on the sphere. When ``n_directions`` is
             ``1``, returns the positive z-axis.
         """
+        if n_directions <= 0:
+            return np.empty((0, 3))
 
         if n_directions == 1:
-            return np.array([[0, 0, 1]])  # Single direction
+            return np.array([[0, 0, 1]], dtype=float)
 
-        # Generate directions on unit sphere using spherical Fibonacci spiral
-        points = []
-        phi = np.pi * (3.0 - np.sqrt(5.0))  # golden angle in radians
+        # Generate random points from a 3D standard normal distribution
+        points = np.random.randn(n_directions, 3)
 
-        for i in range(n_directions):
-            y = 1 - (i / float(n_directions - 1)) * 2  # y goes from 1 to -1
-            radius = np.sqrt(1 - y * y)
+        # Normalize to unit vectors
+        norms = np.linalg.norm(points, axis=1, keepdims=True)
+        # Handle cases where norm is zero to avoid division by zero
+        norms[norms == 0] = 1.0
 
-            theta = phi * i
-
-            x = np.cos(theta) * radius
-            z = np.sin(theta) * radius
-
-            points.append([x, y, z])
-
-        return np.array(points)
+        return points / norms
 
     def _trace_edge(
         self,
