@@ -25,7 +25,14 @@ def test_estimate_vessel_directions_axis_aligned():
     assert np.allclose(np.abs(dirs[0]), np.array([0, 1, 0]), atol=0.2)
 
 
-def test_estimate_vessel_directions_fallback():
+from unittest.mock import patch
+
+
+@patch(
+    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
+)
+def test_estimate_vessel_directions_fallback(mock_generate_directions):
     processor = SLAVVProcessor()
     energy = np.zeros((2, 2, 2), dtype=float)
     pos = np.zeros(3)
@@ -51,7 +58,11 @@ def test_estimate_vessel_directions_anisotropic_spacing():
     assert np.allclose(dirs[0], -dirs[1])
 
 
-def test_estimate_vessel_directions_isotropic_hessian():
+@patch(
+    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
+)
+def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):
     processor = SLAVVProcessor()
     energy = np.ones((21, 21, 21), dtype=float)
     pos = np.array([10, 10, 10], dtype=float)
