@@ -786,6 +786,16 @@ class AutomaticCurator:
         # Rule 3: Valid connections
         vertex_positions = vertices['positions']
         max_connection_distance = params.get('max_connection_distance', 5.0)
+
+        # Create a mapping from original vertex indices to curated vertex indices
+        original_indices = vertices.get("original_indices")
+        if original_indices is None:
+            # If not provided, assume a 1-to-1 mapping
+            original_indices = np.arange(len(vertices["positions"]))
+
+        original_to_curated_idx = {
+            orig_idx: i for i, orig_idx in enumerate(original_indices)
+        }
         
         for i, (trace, connection) in enumerate(zip(edge_traces, edge_connections)):
             if not keep_mask[i]:
@@ -795,7 +805,11 @@ class AutomaticCurator:
             
             # Check start connection
             if start_vertex is not None:
-                start_pos = vertex_positions[start_vertex]
+                if start_vertex not in original_to_curated_idx:
+                    keep_mask[i] = False
+                    continue
+                curated_start_idx = original_to_curated_idx[start_vertex]
+                start_pos = vertex_positions[curated_start_idx]
                 trace_start = np.array(trace[0])
                 if np.linalg.norm(start_pos - trace_start) > max_connection_distance:
                     keep_mask[i] = False
@@ -803,7 +817,11 @@ class AutomaticCurator:
             
             # Check end connection
             if end_vertex is not None:
-                end_pos = vertex_positions[end_vertex]
+                if end_vertex not in original_to_curated_idx:
+                    keep_mask[i] = False
+                    continue
+                curated_end_idx = original_to_curated_idx[end_vertex]
+                end_pos = vertex_positions[curated_end_idx]
                 trace_end = np.array(trace[-1])
                 if np.linalg.norm(end_pos - trace_end) > max_connection_distance:
                     keep_mask[i] = False
