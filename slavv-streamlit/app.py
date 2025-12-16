@@ -89,6 +89,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
+@st.cache_data(show_spinner=False)
+def cached_process_image(image, params, _progress_callback=None):
+    """Cached wrapper for SLAVVProcessor.process_image.
+
+    _progress_callback is excluded from hashing so we can pass a callback
+    without invalidating the cache. Note that if the result is cached,
+    the callback will not be executed, so the caller must handle UI updates.
+    """
+    processor = SLAVVProcessor()
+    return processor.process_image(image, params, progress_callback=_progress_callback)
+
+
+@st.cache_data(show_spinner=False)
+def cached_load_tiff_volume(file):
+    """Cached wrapper for load_tiff_volume."""
+    return load_tiff_volume(file)
+
+
 def main():
     """Main application function"""
     
@@ -422,7 +441,7 @@ def show_processing_page():
 
                     status.update(label="Loading image...", state="running")
                     try:
-                        image = load_tiff_volume(uploaded_file)
+                        image = cached_load_tiff_volume(uploaded_file)
                         st.success(
                             f"✅ Image loaded successfully with shape: {image.shape}"
                         )
@@ -449,9 +468,13 @@ def show_processing_page():
                         status.update(label=label, state=state)
                         progress_bar.progress(int(fraction * 100))
 
-                    results = processor.process_image(
-                        image, validated_params, progress_callback=progress_cb
+                    results = cached_process_image(
+                        image, validated_params, _progress_callback=progress_cb
                     )
+
+                    # Ensure progress indicates completion even if cached
+                    status.update(label="Processing complete!", state="complete")
+                    progress_bar.progress(100)
 
                 # Store results in session state
                 st.session_state["processing_results"] = results
