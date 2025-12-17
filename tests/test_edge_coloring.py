@@ -227,7 +227,26 @@ def test_3d_depth_opacity():
     )
 
     # Shallower edge should be more opaque
-    assert fig.data[0].opacity > fig.data[1].opacity
+    # With optimization, edges are merged into a single trace (data[0]).
+    # We check the colors array for RGBA values.
+    # The first edge has 2 points + 1 None = 3 entries.
+    # The second edge has 2 points + 1 None = 3 entries.
+
+    colors = fig.data[0].line.color
+    assert len(colors) == 6
+
+    def get_alpha(rgba_str):
+        # Format: rgba(r,g,b,a)
+        import re
+        match = re.search(r'rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d\.]+)\)', rgba_str)
+        if match:
+            return float(match.group(1))
+        return 1.0
+
+    alpha1 = get_alpha(colors[0]) # First edge
+    alpha2 = get_alpha(colors[3]) # Second edge
+
+    assert alpha1 > alpha2
 
 
 def test_3d_length_colorbar():

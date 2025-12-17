@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+import re
 
 from typing import Dict, List, Tuple, Optional, Any
 import logging
@@ -613,54 +614,42 @@ class NetworkVisualizer:
         # Plot edges as 3D lines
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
-            edge_colors: List[str] = []
-            edge_opacities: List[float] = []
-            strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
-            depths: List[float] = []
+
+            # Prepare data for single trace optimization
+            all_x, all_y, all_z = [], [], []
+            all_colors = []
+
+            # Determine values for coloring
             values: Optional[np.ndarray] = None
             if color_by == 'depth':
-                depths = [
+                values = np.array([
                     np.mean(t[:, 2] * microns_per_voxel[2])
                     for t in valid_traces
-                ]
-                values = np.array(depths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['depth']
-                )
+                ])
+                colorscale = self.color_schemes['depth']
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
                     values = np.asarray(energies)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['energy']
-                    )
-                else:
-                    edge_colors = ['blue'] * len(valid_traces)
+                colorscale = self.color_schemes['energy']
             elif color_by == 'radius':
                 connections = edges.get('connections', [])
-                if len(connections) == len(valid_traces) and len(vertices.get('radii_microns', vertices.get('radii', []))) > 0:
-                    vr = vertices.get('radii_microns', vertices.get('radii', []))
+                vr = vertices.get('radii_microns', vertices.get('radii', []))
+                if len(connections) == len(valid_traces) and len(vr) > 0:
                     radii = []
                     for (v0, v1) in connections:
                         r0 = vr[int(v0)] if int(v0) >= 0 else 0
                         r1 = vr[int(v1)] if int(v1) >= 0 and int(v1) < len(vr) else r0
                         radii.append((r0 + r1) / 2.0)
                     values = np.asarray(radii)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['radius']
-                    )
-                else:
-                    edge_colors = ['blue'] * len(valid_traces)
+                colorscale = self.color_schemes['radius']
             elif color_by == 'length':
                 lengths = [
                     calculate_path_length(trace * microns_per_voxel)
                     for trace in valid_traces
                 ]
                 values = np.asarray(lengths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['length']
-                )
+                colorscale = self.color_schemes['length']
             elif color_by == 'strand_id':
                 connections = edges.get('connections', [])
                 pair_to_index = {
@@ -673,60 +662,156 @@ class NetworkVisualizer:
                         idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
                         if idx is not None:
                             strand_ids[idx] = sid
-                colors = px.colors.qualitative.Set3
-                edge_colors = [
-                    colors[sid % len(colors)] if sid >= 0 else 'blue'
-                    for sid in strand_ids
-                ]
+                values = np.asarray(strand_ids)
+                colorscale = None # Handled specifically
             else:
-                edge_colors = ['blue'] * len(valid_traces)
+                colorscale = None
 
+            # Build single trace arrays
+            for i, trace in enumerate(valid_traces):
+                x_coords = trace[:, 1] * microns_per_voxel[1]
+                y_coords = trace[:, 0] * microns_per_voxel[0]
+                z_coords = trace[:, 2] * microns_per_voxel[2]
+
+                all_x.extend(x_coords)
+                all_x.append(None)
+                all_y.extend(y_coords)
+                all_y.append(None)
+                all_z.extend(z_coords)
+                all_z.append(None)
+
+            # Determine opacity if needed
             if opacity_by == 'depth':
-                if not depths:
-                    depths = [
-                        np.mean(t[:, 2] * microns_per_voxel[2])
-                        for t in valid_traces
-                    ]
-                dmin = float(np.min(depths))
-                dmax = float(np.max(depths))
-                if dmax == dmin:
-                    edge_opacities = [1.0 for _ in depths]
-                else:
-                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
-                    edge_opacities = [1.0 - 0.8 * n for n in norm]
+                # Calculate depth for each edge
+                edge_depths = [
+                    np.mean(t[:, 2] * microns_per_voxel[2])
+                    for t in valid_traces
+                ]
+                dmin = float(np.min(edge_depths)) if edge_depths else 0
+                dmax = float(np.max(edge_depths)) if edge_depths else 1
+
+                # Calculate opacity per edge
+                edge_opacities = []
+                for d in edge_depths:
+                    if dmax == dmin:
+                        edge_opacities.append(1.0)
+                    else:
+                        norm_d = (d - dmin) / (dmax - dmin)
+                        edge_opacities.append(1.0 - 0.8 * norm_d)
             else:
                 edge_opacities = [1.0] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+            # Prepare data for metadata (Edge ID, Length) to support hover
+            all_edge_ids = []
+            all_lengths = []
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+            # If we need variable opacity, we must use RGBA colors because Scatter3d line.opacity is scalar.
+            # So we resolve colors to RGBA strings.
 
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
-                    )
+            final_colors = []
+
+            if values is not None and colorscale is not None:
+                # Map values to hex colors first
+                hex_colors = self._map_values_to_colors(values, colorscale)
+
+                # Now convert hex to rgba with opacity
+                for i, hex_c in enumerate(hex_colors):
+                    # Convert hex to rgb
+                    if hex_c.startswith('#'):
+                        hex_c = hex_c.lstrip('#')
+                        rgb = tuple(int(hex_c[j:j+2], 16) for j in (0, 2, 4))
+                    elif hex_c.startswith('rgb'):
+                         rgb = tuple(map(int, re.findall(r'\d+', hex_c)))
+                    else:
+                         rgb = (0, 0, 255) # Fallback
+
+                    alpha = edge_opacities[i]
+                    rgba = f'rgba({rgb[0]},{rgb[1]},{rgb[2]},{alpha})'
+
+                    # Add to final colors and metadata for every point in this edge
+                    trace_len = len(valid_traces[i])
+                    final_colors.extend([rgba] * trace_len)
+                    final_colors.append(rgba) # For None point
+
+                    edge_len = calculate_path_length(valid_traces[i] * microns_per_voxel)
+                    all_edge_ids.extend([i] * trace_len)
+                    all_edge_ids.append(None)
+                    all_lengths.extend([edge_len] * trace_len)
+                    all_lengths.append(None)
+            elif color_by == 'strand_id':
+                # Re-implement discrete strand coloring using 'values' (which contains strand_ids)
+                # We need to map these IDs to the Set3 colors manually to ensure consistency
+
+                colors = px.colors.qualitative.Set3
+                # values contains strand_ids
+
+                for i, sid in enumerate(values): # values is numpy array of strand IDs
+                    sid = int(sid)
+                    hex_c = colors[sid % len(colors)] if sid >= 0 else 'blue'
+
+                    # Convert to RGBA
+                    if hex_c.startswith('#'):
+                        hex_c = hex_c.lstrip('#')
+                        rgb = tuple(int(hex_c[j:j+2], 16) for j in (0, 2, 4))
+                    else: # Handle named colors like 'blue' or others if they appear
+                         # Simple fallback for 'blue'
+                         if hex_c == 'blue': rgb = (0, 0, 255)
+                         else: rgb = (0, 0, 0) # Fallback
+
+                    alpha = edge_opacities[i]
+                    rgba = f'rgba({rgb[0]},{rgb[1]},{rgb[2]},{alpha})'
+
+                    trace_len = len(valid_traces[i])
+                    final_colors.extend([rgba] * trace_len)
+                    final_colors.append(rgba)
+
+                    edge_len = calculate_path_length(valid_traces[i] * microns_per_voxel)
+                    all_edge_ids.extend([i] * trace_len)
+                    all_edge_ids.append(None)
+                    all_lengths.extend([edge_len] * trace_len)
+                    all_lengths.append(None)
+
+            else:
+                # Fixed color (blue) but maybe variable opacity
+                for i, op in enumerate(edge_opacities):
+                    rgba = f'rgba(0,0,255,{op})'
+                    trace_len = len(valid_traces[i])
+                    final_colors.extend([rgba] * trace_len)
+                    final_colors.append(rgba)
+
+                    edge_len = calculate_path_length(valid_traces[i] * microns_per_voxel)
+                    all_edge_ids.extend([i] * trace_len)
+                    all_edge_ids.append(None)
+                    all_lengths.extend([edge_len] * trace_len)
+                    all_lengths.append(None)
+
+            # Create the main single trace
+            line_dict = dict(width=4)
+            if final_colors:
+                 line_dict['color'] = final_colors
+            else:
+                 line_dict['color'] = 'blue'
+
+            # Construct customdata for hover
+            # customdata needs to be same length as x, y, z
+            # We pack Edge ID and Length
+            customdata = np.column_stack((all_edge_ids, all_lengths))
+
+            fig.add_trace(
+                go.Scatter3d(
+                    x=all_x,
+                    y=all_y,
+                    z=all_z,
+                    mode='lines',
+                    line=line_dict,
+                    name='Edges',
+                    showlegend=True,
+                    customdata=customdata,
+                    hovertemplate='Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>'
                 )
+            )
 
+            # Add colorbar if needed (and we used values)
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
                     fig,
