@@ -242,32 +242,89 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
+            # Performance optimization: Merge all traces into a single trace
+            all_x, all_y = [], []
+            all_colors = []
+            all_customdata_idx = []
+            all_customdata_len = []
+
             for i, trace in enumerate(valid_traces):
                 x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
                 y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                all_x.extend(x_coords)
+                all_x.append(np.nan)
+                all_y.extend(y_coords)
+                all_y.append(np.nan)
 
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=2),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                    )
+                # Extend colors for each point (go.Scatter supports line.color array, but per-segment coloring needs careful handling)
+                # For 2D Scatter, 'color' array colors markers. For lines, it colors segments based on start point usually.
+                # Just filling the array per point works.
+                n_points = len(x_coords)
+                all_colors.extend([edge_colors[i]] * n_points)
+                all_colors.append(edge_colors[i]) # Placeholder
+
+                # Custom data
+                length = calculate_path_length(trace)
+                all_customdata_idx.extend([i] * n_points)
+                all_customdata_idx.append(i)
+                all_customdata_len.extend([length] * n_points)
+                all_customdata_len.append(length)
+
+            # Note on 2D Optimization:
+            # Plotly's `go.Scatter` (SVG) and `go.Scattergl` (WebGL) do not support varying colors per line segment
+            # within a single trace (unlike `go.Scatter3d`).
+            # To optimize 2D rendering while preserving color information, we use a two-trace approach:
+            # 1. A neutral-colored 'lines' trace to show the network connectivity structure.
+            # 2. A multi-colored 'markers' trace to show the data values (energy, radius, etc.) on top.
+            # This trade-off significantly improves performance by reducing trace count from N (thousands) to 2.
+
+            fig.add_trace(
+                go.Scattergl(
+                    x=all_x,
+                    y=all_y,
+                    mode='lines',
+                    line=dict(color='rgba(150,150,150,0.5)', width=1),
+                    name='Network Structure',
+                    showlegend=True,
+                    hoverinfo='skip'
                 )
+            )
+
+            fig.add_trace(
+                go.Scattergl(
+                    x=all_x,
+                    y=all_y,
+                    mode='markers',
+                    marker=dict(color=all_colors, size=4),
+                    name='Edge Data',
+                    showlegend=False,
+                    hovertemplate=(
+                        'Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>'
+                    ),
+                    customdata=np.stack((all_customdata_idx, all_customdata_len), axis=-1),
+                )
+            )
+
+            # Note: I need to update the test to expect 2 traces (or filter).
+
+            # Also need to re-add the dummy legend logic if I want to support strand_id legend.
+            if color_by == 'strand_id':
+                colors = px.colors.qualitative.Set3
+                seen_strands = set()
+                count = 0
+                for sid in strand_ids:
+                    if sid not in seen_strands and sid != -1 and count < 10:
+                        seen_strands.add(sid)
+                        c = colors[sid % len(colors)]
+                        fig.add_trace(go.Scatter(
+                            x=[None], y=[None],
+                            mode='markers',
+                            marker=dict(color=c, size=5),
+                            name=f'Strand {sid}',
+                            showlegend=True
+                        ))
+                        count += 1
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
@@ -697,35 +754,88 @@ class NetworkVisualizer:
             else:
                 edge_opacities = [1.0] * len(valid_traces)
 
+            # Performance optimization: Merge all traces into a single trace
+            all_x, all_y, all_z = [], [], []
+            all_colors = []
+            all_customdata_idx = []
+            all_customdata_len = []
+
+            # Helper to parse rgb string to rgba if opacity < 1
+            def to_rgba(color_str, alpha):
+                if alpha >= 1.0:
+                    return color_str
+                if color_str.startswith('rgb('):
+                    return color_str.replace('rgb', 'rgba').replace(')', f', {alpha})')
+                elif color_str.startswith('#'):
+                    # Convert hex to rgba
+                    h = color_str.lstrip('#')
+                    rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                    return f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {alpha})'
+                return color_str
+
+            # Pre-calculate RGBA colors if needed
+            final_colors = []
+            for i, c in enumerate(edge_colors):
+                final_colors.append(to_rgba(c, edge_opacities[i]))
+
             for i, trace in enumerate(valid_traces):
                 x_coords = trace[:, 1] * microns_per_voxel[1]  # X
                 y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
                 z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                all_x.extend(x_coords)
+                all_x.append(np.nan)
+                all_y.extend(y_coords)
+                all_y.append(np.nan)
+                all_z.extend(z_coords)
+                all_z.append(np.nan)
 
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
-                    )
+                # Extend colors for each point
+                n_points = len(x_coords)
+                all_colors.extend([final_colors[i]] * n_points)
+                all_colors.append(final_colors[i]) # Placeholder for NaN
+
+                # Custom data
+                length = calculate_path_length(trace)
+                all_customdata_idx.extend([i] * n_points)
+                all_customdata_idx.append(i)
+                all_customdata_len.extend([length] * n_points)
+                all_customdata_len.append(length)
+
+            fig.add_trace(
+                go.Scatter3d(
+                    x=all_x,
+                    y=all_y,
+                    z=all_z,
+                    mode='lines',
+                    line=dict(color=all_colors, width=4),
+                    name='Edges',
+                    showlegend=True,
+                    hovertemplate=(
+                        'Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>'
+                    ),
+                    customdata=np.stack((all_customdata_idx, all_customdata_len), axis=-1),
                 )
+            )
+
+            # Add dummy traces for legend if needed (optional, for strand_id)
+            if color_by == 'strand_id':
+                colors = px.colors.qualitative.Set3
+                # Just add top few strands to legend to avoid clutter
+                seen_strands = set()
+                count = 0
+                for sid in strand_ids:
+                    if sid not in seen_strands and sid != -1 and count < 10:
+                        seen_strands.add(sid)
+                        c = colors[sid % len(colors)]
+                        fig.add_trace(go.Scatter3d(
+                            x=[None], y=[None], z=[None],
+                            mode='lines',
+                            line=dict(color=c, width=4),
+                            name=f'Strand {sid}',
+                            showlegend=True
+                        ))
+                        count += 1
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
