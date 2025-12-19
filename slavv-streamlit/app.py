@@ -108,6 +108,42 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
+@st.cache_data(show_spinner=False)
+def cached_plot_2d_network(
+    vertices, edges, network, parameters, color_by, show_vertices, show_edges, show_bifurcations
+):
+    """Cached wrapper for NetworkVisualizer.plot_2d_network."""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_2d_network(
+        vertices,
+        edges,
+        network,
+        parameters,
+        color_by=color_by,
+        show_vertices=show_vertices,
+        show_edges=show_edges,
+        show_bifurcations=show_bifurcations,
+    )
+
+
+@st.cache_data(show_spinner=False)
+def cached_plot_3d_network(
+    vertices, edges, network, parameters, color_by, show_vertices, show_edges, show_bifurcations
+):
+    """Cached wrapper for NetworkVisualizer.plot_3d_network."""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_3d_network(
+        vertices,
+        edges,
+        network,
+        parameters,
+        color_by=color_by,
+        show_vertices=show_vertices,
+        show_edges=show_edges,
+        show_bifurcations=show_bifurcations,
+    )
+
+
 def main():
     """Main application function"""
     
@@ -885,24 +921,28 @@ def show_visualization_page():
         
         # Generate actual visualization based on type
         if viz_type == "2D Network":
-            fig = visualizer.plot_2d_network(
+            fig = cached_plot_2d_network(
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
                 st.session_state["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+                show_vertices=show_vertices,
+                show_edges=show_edges,
+                show_bifurcations=show_bifurcations,
             )
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "3D Network":
-            fig = visualizer.plot_3d_network(
+            fig = cached_plot_3d_network(
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
                 st.session_state["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+                show_vertices=show_vertices,
+                show_edges=show_edges,
+                show_bifurcations=show_bifurcations,
             )
             st.plotly_chart(fig, use_container_width=True)
             
