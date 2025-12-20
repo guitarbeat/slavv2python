@@ -108,6 +108,47 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
+@st.cache_data(show_spinner=False)
+def cached_generate_network_figure(viz_type, vertices, edges, network, parameters, color_by, show_vertices, show_edges, show_bifurcations):
+    """Cached wrapper for network visualizations (2D/3D)"""
+    visualizer = NetworkVisualizer()
+    if viz_type == "2D Network":
+        return visualizer.plot_2d_network(
+            vertices, edges, network, parameters,
+            color_by=color_by,
+            show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+        )
+    elif viz_type == "3D Network":
+        return visualizer.plot_3d_network(
+            vertices, edges, network, parameters,
+            color_by=color_by,
+            show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+        )
+    return go.Figure()
+
+
+@st.cache_data(show_spinner=False)
+def cached_generate_stats_figure(viz_type, vertices, edges, network, parameters):
+    """Cached wrapper for statistical visualizations"""
+    visualizer = NetworkVisualizer()
+    if viz_type == "Depth Projection":
+        return visualizer.plot_depth_statistics(vertices, edges, parameters)
+    elif viz_type == "Strand Analysis":
+        return visualizer.plot_strand_analysis(network, vertices, parameters)
+    return go.Figure()
+
+
+@st.cache_data(show_spinner=False)
+def cached_generate_distribution_figure(dist_type, data):
+    """Cached wrapper for distribution plots"""
+    visualizer = NetworkVisualizer()
+    if dist_type == "Radius":
+        return visualizer.plot_radius_distribution(data)
+    elif dist_type == "Degree":
+        return visualizer.plot_degree_distribution(data)
+    return go.Figure()
+
+
 def main():
     """Main application function"""
     
@@ -884,40 +925,26 @@ def show_visualization_page():
         st.markdown(f"### 📊 {viz_type}")
         
         # Generate actual visualization based on type
-        if viz_type == "2D Network":
-            fig = visualizer.plot_2d_network(
+        if viz_type in ["2D Network", "3D Network"]:
+            fig = cached_generate_network_figure(
+                viz_type,
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
                 st.session_state["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
+                show_vertices=show_vertices,
+                show_edges=show_edges,
+                show_bifurcations=show_bifurcations
             )
             st.plotly_chart(fig, use_container_width=True)
             
-        elif viz_type == "3D Network":
-            fig = visualizer.plot_3d_network(
+        elif viz_type in ["Depth Projection", "Strand Analysis"]:
+            fig = cached_generate_stats_figure(
+                viz_type,
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
-                st.session_state["parameters"],
-                color_by=color_scheme.lower().replace(" ", "_"),
-                show_vertices=show_vertices, show_edges=show_edges, show_bifurcations=show_bifurcations
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-        elif viz_type == "Depth Projection":
-            fig = visualizer.plot_depth_statistics(
-                st.session_state["processing_results"]["vertices"],
-                st.session_state["processing_results"]["edges"],
-                st.session_state["parameters"]
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-        elif viz_type == "Strand Analysis":
-            fig = visualizer.plot_strand_analysis(
-                st.session_state["processing_results"]["network"],
-                st.session_state["processing_results"]["vertices"],
                 st.session_state["parameters"]
             )
             st.plotly_chart(fig, use_container_width=True)
@@ -1021,12 +1048,18 @@ def show_analysis_page():
 
         with col1:
             # Length distribution
-            fig_length = visualizer.plot_strand_analysis(results["network"], results["vertices"], parameters)
+            fig_length = cached_generate_stats_figure(
+                "Strand Analysis",
+                results["vertices"],
+                results["edges"],
+                results["network"],
+                parameters
+            )
             st.plotly_chart(fig_length, use_container_width=True)
 
         with col2:
             # Radius distribution
-            fig_radius = visualizer.plot_radius_distribution(results["vertices"])
+            fig_radius = cached_generate_distribution_figure("Radius", results["vertices"])
             st.plotly_chart(fig_radius, use_container_width=True)
 
     with tab2:
@@ -1036,7 +1069,7 @@ def show_analysis_page():
 
         with col1:
             # Degree distribution
-            fig_degree = visualizer.plot_degree_distribution(results["network"])
+            fig_degree = cached_generate_distribution_figure("Degree", results["network"])
             st.plotly_chart(fig_degree, use_container_width=True)
 
         with col2:
@@ -1056,7 +1089,13 @@ def show_analysis_page():
         st.markdown("#### Morphometric Analysis")
 
         # Depth-resolved statistics
-        fig_depth = visualizer.plot_depth_statistics(results["vertices"], results["edges"], parameters)
+        fig_depth = cached_generate_stats_figure(
+            "Depth Projection",
+            results["vertices"],
+            results["edges"],
+            results["network"],
+            parameters
+        )
         st.plotly_chart(fig_depth, use_container_width=True)
 
         # Tortuosity analysis
