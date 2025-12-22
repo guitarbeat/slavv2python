@@ -65,6 +65,41 @@ class NetworkVisualizer:
 
         return [px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized]
 
+    def _quantize_and_map_colors(
+        self, values: np.ndarray, colorscale: str, n_bins: int = 64
+    ) -> List[str]:
+        """Quantize continuous values and map to colors to reduce unique trace count.
+
+        Parameters
+        ----------
+        values : np.ndarray
+            Continuous values to color by.
+        colorscale : str
+            Plotly colorscale name.
+        n_bins : int, optional
+            Number of bins for quantization, by default 64.
+
+        Returns
+        -------
+        List[str]
+            List of colors corresponding to quantized values.
+        """
+        if len(values) == 0:
+            return []
+
+        vmin, vmax = np.nanmin(values), np.nanmax(values)
+
+        # If range is zero or invalid, or no binning needed
+        if vmax <= vmin or not np.isfinite(vmin) or not np.isfinite(vmax):
+             return self._map_values_to_colors(values, colorscale)
+
+        # Quantize
+        bins = np.linspace(vmin, vmax, n_bins)
+        digitized = np.digitize(values, bins)
+        quantized_values = bins[np.clip(digitized - 1, 0, len(bins) - 1)]
+
+        return self._map_values_to_colors(quantized_values, colorscale)
+
     @staticmethod
     def _add_colorbar(
         fig: go.Figure,
@@ -173,28 +208,36 @@ class NetworkVisualizer:
         # Plot edges
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
+
+            # Map edge colors
             edge_colors: List[str] = []
             strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
+
             values: Optional[np.ndarray] = None
+
+            # For continuous values, we quantize to limit the number of traces
+            n_bins = 64
+
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
                     for t in valid_traces
                 ]
                 values = np.array(depths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['depth']
+                edge_colors = self._quantize_and_map_colors(
+                    values, self.color_schemes['depth'], n_bins
                 )
+
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
                     values = np.asarray(energies)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['energy']
+                    edge_colors = self._quantize_and_map_colors(
+                        values, self.color_schemes['energy'], n_bins
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
+
             elif color_by == 'radius':
                 connections = edges.get('connections', [])
                 if len(connections) == len(valid_traces) and len(vertex_radii) > 0:
@@ -208,20 +251,22 @@ class NetworkVisualizer:
                         )
                         radii.append((r0 + r1) / 2.0)
                     values = np.asarray(radii)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['radius']
+                    edge_colors = self._quantize_and_map_colors(
+                        values, self.color_schemes['radius'], n_bins
                     )
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
+
             elif color_by == 'length':
                 lengths = [
                     calculate_path_length(trace * microns_per_voxel)
                     for trace in valid_traces
                 ]
                 values = np.asarray(lengths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['length']
+                edge_colors = self._quantize_and_map_colors(
+                    values, self.color_schemes['length'], n_bins
                 )
+
             elif color_by == 'strand_id':
                 connections = edges.get('connections', [])
                 pair_to_index = {
@@ -242,30 +287,58 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
+            # Group edges by color to reduce trace count
+            grouped_traces: Dict[str, Dict[str, List]] = {}
+
+            # Determine if we should show legend
+            # We show legend only for strand_id (where each strand is named)
+            # or for other modes we disable it to avoid spam (colorbar handles it)
+            # or show only the first one if we want a generic "Edges" label?
+            # The original code showed "Edge i" for first 10.
+            # Here we have "Edges (ColorBy)" for continuous.
+            # If we show all 64 bins in legend, it's bad.
+            # So for continuous, we disable legend (showlegend=False).
+            # For strand_id, we enable it.
+
+            show_legend_for_group = color_by == 'strand_id'
+
             for i, trace in enumerate(valid_traces):
+                color = edge_colors[i]
+
+                # For strand_id, we group by strand ID to maintain legend interactivity per strand
+                group_key = f"strand_{strand_ids[i]}" if color_by == 'strand_id' and strand_ids else color
+
+                if group_key not in grouped_traces:
+                    name = f'Strand {strand_ids[i]}' if color_by == 'strand_id' and strand_ids else (f'Edges ({color_by})' if color_by != 'random' else 'Edges')
+                    grouped_traces[group_key] = {
+                        'x': [], 'y': [], 'customdata': [], 'color': color, 'name': name
+                    }
+
                 x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
                 y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+                length = calculate_path_length(trace * microns_per_voxel) # Calculate actual length
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                grouped_traces[group_key]['x'].extend(x_coords)
+                grouped_traces[group_key]['x'].append(None)
+                grouped_traces[group_key]['y'].extend(y_coords)
+                grouped_traces[group_key]['y'].append(None)
 
+                # Extend customdata for hover info
+                grouped_traces[group_key]['customdata'].extend([[i, length]] * len(x_coords))
+                grouped_traces[group_key]['customdata'].append([None, None])
+
+            # Add grouped traces
+            for key, data in grouped_traces.items():
                 fig.add_trace(
-                    go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
+                    go.Scattergl(
+                        x=data['x'],
+                        y=data['y'],
                         mode='lines',
-                        line=dict(color=edge_colors[i], width=2),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
+                        line=dict(color=data['color'], width=2),
+                        name=data['name'],
+                        customdata=data['customdata'],
+                        hovertemplate='Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>',
+                        showlegend=show_legend_for_group
                     )
                 )
 
