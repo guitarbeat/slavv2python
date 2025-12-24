@@ -242,32 +242,144 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
-                y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+            # Optimization: Use Scattergl and merge traces for better performance
+            # Only use this optimization if we have many edges (>100)
+            if len(valid_traces) > 100:
+                # Group traces by color/bin
+                trace_groups = {}  # key -> (x_list, y_list, customdata_list)
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
+                # If continuous values, bin them
+                if values is not None and color_by in ['energy', 'depth', 'radius', 'length']:
+                    n_bins = 64
+                    vmin, vmax = np.nanmin(values), np.nanmax(values)
+                    if vmin == vmax:
+                        bins = np.zeros(len(values), dtype=int)
+                    else:
+                        bins = np.clip(np.floor((values - vmin) / (vmax - vmin) * (n_bins - 1)), 0, n_bins-1).astype(int)
+
+                    for i, trace in enumerate(valid_traces):
+                        bin_idx = bins[i]
+                        # Use the bin index as key
+                        key = bin_idx
+
+                        if key not in trace_groups:
+                            # Calculate color for this bin
+                            val = vmin + (key / (n_bins - 1)) * (vmax - vmin) if n_bins > 1 else vmin
+                            color = self._map_values_to_colors(np.array([val]), self.color_schemes[color_by])[0]
+                            trace_groups[key] = {'x': [], 'y': [], 'customdata': [], 'color': color, 'name': f'{color_by} group'}
+
+                        x = trace[:, x_axis] * microns_per_voxel[x_axis]
+                        y = trace[:, y_axis] * microns_per_voxel[y_axis]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+
+                        # Add customdata for each point (for tooltip)
+                        # We repeat the metadata for each point in the trace
+                        # customdata: [edge_index, length]
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
+                elif color_by == 'strand_id':
+                    # Group by strand ID directly
+                    # If too many strands, we might still have many traces, but fewer than edges
+                    # We group by color instead of strand ID to limit traces
+                    # Since we use Set3 (12 colors), we can group by strand_id % 12
+
+                    unique_colors = sorted(list(set(edge_colors)))
+                    color_to_group = {c: i for i, c in enumerate(unique_colors)}
+
+                    for i, trace in enumerate(valid_traces):
+                        color = edge_colors[i]
+                        key = color # Group by color string
+
+                        if key not in trace_groups:
+                             trace_groups[key] = {'x': [], 'y': [], 'customdata': [], 'color': color, 'name': 'Strands'}
+
+                        x = trace[:, x_axis] * microns_per_voxel[x_axis]
+                        y = trace[:, y_axis] * microns_per_voxel[y_axis]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
                 else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                    # Fallback: group by color directly (e.g. all blue)
+                    for i, trace in enumerate(valid_traces):
+                        color = edge_colors[i]
+                        key = color
 
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=2),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
+                        if key not in trace_groups:
+                             trace_groups[key] = {'x': [], 'y': [], 'customdata': [], 'color': color, 'name': 'Edges'}
+
+                        x = trace[:, x_axis] * microns_per_voxel[x_axis]
+                        y = trace[:, y_axis] * microns_per_voxel[y_axis]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
+                # Create traces from groups
+                for key, data in trace_groups.items():
+                    fig.add_trace(
+                        go.Scattergl(
+                            x=data['x'],
+                            y=data['y'],
+                            mode='lines',
+                            line=dict(color=data['color'], width=2),
+                            name=data['name'],
+                            showlegend=False, # Disable legend for merged traces as it's cluttered
+                            customdata=data['customdata'],
+                            hovertemplate=(
+                                'Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>'
+                            ),
+                        )
                     )
-                )
+
+            else:
+                # Standard unoptimized rendering for small networks
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
+                    y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=x_coords,
+                            y=y_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=2),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                        )
+                    )
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
@@ -697,35 +809,141 @@ class NetworkVisualizer:
             else:
                 edge_opacities = [1.0] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+            # Optimization: Merge traces for 3D performance
+            if len(valid_traces) > 100:
+                trace_groups = {}
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
+                # If continuous values, bin them
+                if values is not None and color_by in ['energy', 'depth', 'radius', 'length']:
+                    n_bins = 64
+                    vmin, vmax = np.nanmin(values), np.nanmax(values)
+                    if vmin == vmax:
+                        bins = np.zeros(len(values), dtype=int)
+                    else:
+                        bins = np.clip(np.floor((values - vmin) / (vmax - vmin) * (n_bins - 1)), 0, n_bins-1).astype(int)
+
+                    for i, trace in enumerate(valid_traces):
+                        bin_idx = bins[i]
+                        key = bin_idx
+
+                        if key not in trace_groups:
+                            val = vmin + (key / (n_bins - 1)) * (vmax - vmin) if n_bins > 1 else vmin
+                            color = self._map_values_to_colors(np.array([val]), self.color_schemes[color_by])[0]
+                            trace_groups[key] = {'x': [], 'y': [], 'z': [], 'customdata': [], 'color': color, 'name': f'{color_by} group', 'opacity': 1.0}
+
+                        x = trace[:, 1] * microns_per_voxel[1]
+                        y = trace[:, 0] * microns_per_voxel[0]
+                        z = trace[:, 2] * microns_per_voxel[2]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+                        trace_groups[key]['z'].extend(z)
+                        trace_groups[key]['z'].append(None)
+
+                        trace_groups[key]['opacity'] = edge_opacities[i] # Warning: merged trace has single opacity
+
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
+                elif color_by == 'strand_id':
+                     unique_colors = sorted(list(set(edge_colors)))
+                     for i, trace in enumerate(valid_traces):
+                        color = edge_colors[i]
+                        key = color
+                        if key not in trace_groups:
+                             trace_groups[key] = {'x': [], 'y': [], 'z': [], 'customdata': [], 'color': color, 'name': 'Strands', 'opacity': 1.0}
+
+                        x = trace[:, 1] * microns_per_voxel[1]
+                        y = trace[:, 0] * microns_per_voxel[0]
+                        z = trace[:, 2] * microns_per_voxel[2]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+                        trace_groups[key]['z'].extend(z)
+                        trace_groups[key]['z'].append(None)
+
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
                 else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                    for i, trace in enumerate(valid_traces):
+                        color = edge_colors[i]
+                        key = color
+                        if key not in trace_groups:
+                             trace_groups[key] = {'x': [], 'y': [], 'z': [], 'customdata': [], 'color': color, 'name': 'Edges', 'opacity': 1.0}
 
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
+                        x = trace[:, 1] * microns_per_voxel[1]
+                        y = trace[:, 0] * microns_per_voxel[0]
+                        z = trace[:, 2] * microns_per_voxel[2]
+                        length = calculate_path_length(trace)
+
+                        trace_groups[key]['x'].extend(x)
+                        trace_groups[key]['x'].append(None)
+                        trace_groups[key]['y'].extend(y)
+                        trace_groups[key]['y'].append(None)
+                        trace_groups[key]['z'].extend(z)
+                        trace_groups[key]['z'].append(None)
+
+                        metadata = [i, length]
+                        trace_groups[key]['customdata'].extend([metadata] * len(x))
+                        trace_groups[key]['customdata'].append([None, None])
+
+                for key, data in trace_groups.items():
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=data['x'],
+                            y=data['y'],
+                            z=data['z'],
+                            mode='lines',
+                            line=dict(color=data['color'], width=4),
+                            name=data['name'],
+                            showlegend=False,
+                            hovertemplate=(
+                                'Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>'
+                            ),
+                            customdata=data['customdata'],
+                            opacity=data['opacity'],
+                        )
                     )
-                )
+
+            else:
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, 1] * microns_per_voxel[1]  # X
+                    y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
+                    z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x_coords,
+                            y=y_coords,
+                            z=z_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=4),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                            opacity=edge_opacities[i],
+                        )
+                    )
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
