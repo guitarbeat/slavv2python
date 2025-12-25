@@ -242,32 +242,39 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
-                y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
-
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=2),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                    )
+            # Optimized plotting for large number of edges
+            if len(valid_traces) > 100:
+                self._plot_edges_optimized_2d(
+                    fig, valid_traces, edge_colors, x_axis, y_axis,
+                    microns_per_voxel, color_by, strand_ids, values
                 )
+            else:
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
+                    y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=x_coords,
+                            y=y_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=2),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                        )
+                    )
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
@@ -354,6 +361,63 @@ class NetworkVisualizer:
         fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
         return fig
+
+    def _plot_edges_optimized_2d(self, fig, traces, colors, x_axis, y_axis,
+                               microns_per_voxel, color_by, strand_ids, values):
+        """Helper to plot many edges efficiently using merged traces."""
+
+        # Group traces by color
+        # Since colors are already computed as hex strings, we can group by them.
+        # For continuous values, this might result in many groups, but typically
+        # we quantize or if we use the exact color mapping, we might have many unique colors.
+        # To make this efficient for continuous variables, we should really rely on
+        # colorbar-based coloring if possible, but go.Scatter lines don't support
+        # array-based coloring easily without splitting.
+        # However, we can group by the *quantized* color string.
+
+        # Create a dictionary to hold merged arrays for each unique color
+        grouped_traces = {}
+
+        # Also need to handle legend/names.
+        # With merged traces, we lose individual edge interactivity in the legend,
+        # but we can still have tooltips.
+
+        for i, (trace, color) in enumerate(zip(traces, colors)):
+            if color not in grouped_traces:
+                grouped_traces[color] = {
+                    'x': [], 'y': [], 'customdata': [], 'names': []
+                }
+
+            x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
+            y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+
+            # Append data with None separator
+            grouped_traces[color]['x'].extend(x_coords)
+            grouped_traces[color]['x'].append(None)
+            grouped_traces[color]['y'].extend(y_coords)
+            grouped_traces[color]['y'].append(None)
+
+            # Prepare customdata for tooltip (length)
+            length = calculate_path_length(trace)
+            # Repeat metadata for each point in the trace
+            # +1 for the None point (metadata doesn't matter for None but needed for alignment)
+            cd = [length] * (len(x_coords) + 1)
+            grouped_traces[color]['customdata'].extend(cd)
+
+        # Plot each group
+        for i, (color, data) in enumerate(grouped_traces.items()):
+            # Use go.Scattergl for performance
+            fig.add_trace(
+                go.Scattergl(
+                    x=data['x'],
+                    y=data['y'],
+                    mode='lines',
+                    line=dict(color=color, width=2),
+                    showlegend=False, # Disable legend for merged traces to avoid clutter
+                    hovertemplate='Length: %{customdata:.1f} μm<extra></extra>',
+                    customdata=data['customdata']
+                )
+            )
 
     def plot_network_slice(
         self,
@@ -697,35 +761,42 @@ class NetworkVisualizer:
             else:
                 edge_opacities = [1.0] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
-
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
-
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
-                    )
+            # Optimized plotting for 3D
+            if len(valid_traces) > 100:
+                self._plot_edges_optimized_3d(
+                    fig, valid_traces, edge_colors, edge_opacities,
+                    microns_per_voxel, color_by, strand_ids, values
                 )
+            else:
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, 1] * microns_per_voxel[1]  # X
+                    y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
+                    z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x_coords,
+                            y=y_coords,
+                            z=z_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=4),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                            opacity=edge_opacities[i],
+                        )
+                    )
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
                 self._add_colorbar(
@@ -815,6 +886,78 @@ class NetworkVisualizer:
         )
         
         return fig
+
+    def _plot_edges_optimized_3d(self, fig, traces, colors, opacities,
+                               microns_per_voxel, color_by, strand_ids, values):
+        """Helper to plot many edges efficiently using a single merged trace."""
+
+        # go.Scatter3d supports array for line.color.
+        # We merge all traces into one with None separators.
+        # We must replicate color for each point in the segment.
+
+        all_x = []
+        all_y = []
+        all_z = []
+        all_colors = []
+        all_customdata = []
+
+        # Opacity is tricky in merged trace because line.opacity is scalar in Plotly?
+        # Check: go.Scatter3d line.color handles rgba string for opacity?
+        # If opacity varies per edge, we might need to convert hex to rgba.
+
+        # Helper to convert hex+opacity to rgba
+        def to_rgba(hex_color, opacity):
+            if hex_color.startswith('#'):
+                hex_color = hex_color.lstrip('#')
+                if len(hex_color) == 6:
+                    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+                    return f'rgba({r},{g},{b},{opacity})'
+            return hex_color # Fallback
+
+        for i, trace in enumerate(traces):
+            x_coords = trace[:, 1] * microns_per_voxel[1] # X
+            y_coords = trace[:, 0] * microns_per_voxel[0] # Y
+            z_coords = trace[:, 2] * microns_per_voxel[2] # Z
+
+            all_x.extend(x_coords)
+            all_x.append(None)
+            all_y.extend(y_coords)
+            all_y.append(None)
+            all_z.extend(z_coords)
+            all_z.append(None)
+
+            # Color processing
+            color = colors[i]
+            opacity = opacities[i]
+            if opacity < 1.0:
+                color = to_rgba(color, opacity)
+
+            # Replicate color for points + None
+            # Note: For line color array, points determine color.
+            # We add color for 'None' separator too to keep alignment (though it's invisible)
+            segment_colors = [color] * (len(x_coords) + 1)
+            all_colors.extend(segment_colors)
+
+            # Metadata
+            length = calculate_path_length(trace)
+            segment_data = [length] * (len(x_coords) + 1)
+            all_customdata.extend(segment_data)
+
+        # Create single trace
+        fig.add_trace(
+            go.Scatter3d(
+                x=all_x,
+                y=all_y,
+                z=all_z,
+                mode='lines',
+                line=dict(color=all_colors, width=4),
+                showlegend=False,
+                hovertemplate='Length: %{customdata:.1f} μm<extra></extra>',
+                customdata=all_customdata,
+                # Note: 'opacity' prop on Scatter3d applies to whole trace usually.
+                # We handle per-edge opacity via rgba colors.
+            )
+        )
 
     def animate_strands_3d(
         self,
