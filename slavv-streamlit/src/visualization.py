@@ -613,12 +613,13 @@ class NetworkVisualizer:
         # Plot edges as 3D lines
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
+
+            # Prepare data for coloring
             edge_colors: List[str] = []
-            edge_opacities: List[float] = []
             strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
-            depths: List[float] = []
             values: Optional[np.ndarray] = None
+            depths: List[float] = [] # Initialize here to be available for opacity calculation
+
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, 2] * microns_per_voxel[2])
@@ -681,50 +682,15 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            if opacity_by == 'depth':
-                if not depths:
-                    depths = [
-                        np.mean(t[:, 2] * microns_per_voxel[2])
-                        for t in valid_traces
-                    ]
-                dmin = float(np.min(depths))
-                dmax = float(np.max(depths))
-                if dmax == dmin:
-                    edge_opacities = [1.0 for _ in depths]
-                else:
-                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
-                    edge_opacities = [1.0 - 0.8 * n for n in norm]
+            # Optimization: Use merged trace for large networks
+            # Threshold chosen to balance interactive legend vs rendering speed
+            if len(valid_traces) > 100:
+                self._plot_3d_edges_optimized(
+                    fig, valid_traces, edge_colors, microns_per_voxel, color_by, strand_ids, opacity_by
+                )
             else:
-                edge_opacities = [1.0] * len(valid_traces)
-
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
-
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
-
-                fig.add_trace(
-                    go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
-                        mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
-                    )
+                self._plot_3d_edges_standard(
+                     fig, valid_traces, edge_colors, microns_per_voxel, color_by, strand_ids, opacity_by
                 )
 
             if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
@@ -815,6 +781,150 @@ class NetworkVisualizer:
         )
         
         return fig
+
+    def _plot_3d_edges_standard(self, fig, valid_traces, edge_colors, microns_per_voxel, color_by, strand_ids, opacity_by):
+        """Standard plotting method creating one trace per edge."""
+        strand_legend = {}
+
+        # Calculate opacities if needed
+        edge_opacities = [1.0] * len(valid_traces)
+        if opacity_by == 'depth':
+             depths = [np.mean(t[:, 2] * microns_per_voxel[2]) for t in valid_traces]
+             dmin, dmax = float(np.min(depths)), float(np.max(depths))
+             if dmax > dmin:
+                 norm = [(d - dmin) / (dmax - dmin) for d in depths]
+                 edge_opacities = [1.0 - 0.8 * n for n in norm]
+
+        for i, trace in enumerate(valid_traces):
+            x_coords = trace[:, 1] * microns_per_voxel[1]
+            y_coords = trace[:, 0] * microns_per_voxel[0]
+            z_coords = trace[:, 2] * microns_per_voxel[2]
+
+            name = f'Edge {i}'
+            showlegend = False
+
+            if color_by == 'strand_id':
+                sid = strand_ids[i]
+                name = f'Strand {sid}' if sid not in strand_legend else ''
+                showlegend = sid not in strand_legend
+                strand_legend[sid] = True
+            elif i < 10:
+                showlegend = True
+
+            fig.add_trace(
+                go.Scatter3d(
+                    x=x_coords,
+                    y=y_coords,
+                    z=z_coords,
+                    mode='lines',
+                    line=dict(color=edge_colors[i], width=4),
+                    name=name,
+                    showlegend=showlegend,
+                    hovertemplate=(
+                        f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                    ),
+                    opacity=edge_opacities[i],
+                )
+            )
+
+    def _plot_3d_edges_optimized(self, fig, valid_traces, edge_colors, microns_per_voxel, color_by, strand_ids, opacity_by):
+        """Optimized plotting method merging all edges into a single trace."""
+        logger.info(f"Using optimized 3D edge rendering for {len(valid_traces)} edges")
+
+        # Pre-allocate arrays
+        total_points = sum(len(t) for t in valid_traces)
+        total_len = total_points + len(valid_traces) # +1 None per trace
+
+        x_all = np.empty(total_len, dtype=float)
+        y_all = np.empty(total_len, dtype=float)
+        z_all = np.empty(total_len, dtype=float)
+
+        # Colors need to be per-point for Scatter3d lines with array color
+        # Since edge_colors is a list of hex strings, we need to repeat them
+        # Plotly accepts array of colors for lines.
+        # We'll build a list or array of colors.
+        color_all = [None] * total_len
+
+        # Custom data for hover
+        customdata = []
+
+        # Prepare opacities if needed
+        edge_opacities = [1.0] * len(valid_traces)
+        if opacity_by == 'depth':
+             depths = [np.mean(t[:, 2] * microns_per_voxel[2]) for t in valid_traces]
+             dmin, dmax = float(np.min(depths)), float(np.max(depths))
+             if dmax > dmin:
+                 norm = [(d - dmin) / (dmax - dmin) for d in depths]
+                 edge_opacities = [1.0 - 0.8 * n for n in norm]
+
+        idx = 0
+        for i, trace in enumerate(valid_traces):
+            n_points = len(trace)
+
+            # Coordinates
+            x_coords = trace[:, 1] * microns_per_voxel[1]
+            y_coords = trace[:, 0] * microns_per_voxel[0]
+            z_coords = trace[:, 2] * microns_per_voxel[2]
+
+            x_all[idx:idx+n_points] = x_coords
+            y_all[idx:idx+n_points] = y_coords
+            z_all[idx:idx+n_points] = z_coords
+
+            # Insert None separator
+            x_all[idx+n_points] = np.nan
+            y_all[idx+n_points] = np.nan
+            z_all[idx+n_points] = np.nan
+
+            # Colors
+            c = edge_colors[i]
+            # Convert hex to rgba if opacity is used, otherwise just repeat color
+            if opacity_by:
+                # Basic hex to rgb conversion if needed, but Plotly handles opacity separately usually?
+                # Actually Scatter3d line.color array + opacity scalar works for whole trace.
+                # But here we merged traces, so we need per-point opacity or rgba colors.
+                # Plotly Scatter3d line.color supports array, but line.opacity is scalar.
+                # So we MUST use rgba colors to support per-edge opacity in a merged trace.
+                if c.startswith('#'):
+                    # Parse hex
+                    h = c.lstrip('#')
+                    rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+                    c = f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {edge_opacities[i]})'
+                elif c.startswith('rgb('):
+                     c = c.replace('rgb(', 'rgba(').replace(')', f', {edge_opacities[i]})')
+
+            # Assign color to all points in this segment
+            # Slice assignment for list is slow? allocating numpy array for strings/objects might be better but list is flexible
+            # Let's stick to list assignment for colors
+            for k in range(n_points):
+                color_all[idx+k] = c
+            color_all[idx+n_points] = c # Color for None point doesn't matter much
+
+            # Hover data: index, length
+            length = calculate_path_length(trace)
+            hover_txt = f'Edge {i}<br>Length: {length:.1f} μm'
+            if color_by == 'strand_id':
+                sid = strand_ids[i] if i < len(strand_ids) else -1
+                hover_txt = f'Strand {sid}<br>' + hover_txt
+
+            for k in range(n_points):
+                customdata.append([hover_txt])
+            customdata.append([""]) # Spacer
+
+            idx += n_points + 1
+
+        fig.add_trace(
+            go.Scatter3d(
+                x=x_all,
+                y=y_all,
+                z=z_all,
+                mode='lines',
+                line=dict(color=color_all, width=4),
+                name='Network',
+                showlegend=True, # Single legend item for the whole network
+                hovertemplate='%{customdata[0]}<extra></extra>',
+                customdata=customdata
+            )
+        )
 
     def animate_strands_3d(
         self,
