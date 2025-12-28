@@ -1,5 +1,3 @@
-# Bolt's Journal
-
-## 2024-05-22 - [Streamlit Caching]
-**Learning:** Streamlit apps often re-run heavy computations on every interaction. `st.cache_data` or `st.cache_resource` are critical for performance.
-**Action:** Always check for expensive function calls in `app.py` or core logic and verify if they are cached.
+## 2024-05-20 - Plotly 3D Trace Merging
+**Learning:** Plotly's `go.Scatter3d` allows merging disjoint lines using `None` separators, but line coloring requires a numerical array and a valid named `colorscale`. Passing a list of hex strings or a qualitative colorscale name like 'Set3' causes a `ValueError` for the `colorscale` property, unlike in `px` or other contexts.
+**Action:** When merging 3D traces with categorical coloring, map categories to integers and use a high-contrast sequential/cyclic colorscale like 'Turbo' or 'Rainbow' if the specific qualitative palette cannot be manually constructed as a valid colorscale object.
