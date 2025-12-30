@@ -175,26 +175,56 @@ class NetworkVisualizer:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
             edge_colors: List[str] = []
             strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
             values: Optional[np.ndarray] = None
+
+            # Determine values for coloring
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
                     for t in valid_traces
                 ]
                 values = np.array(depths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['depth']
-                )
+                # Bin values to limit number of traces
+                n_bins = 50
+                if len(values) > n_bins:
+                    vmin, vmax = np.nanmin(values), np.nanmax(values)
+                    if vmax > vmin:
+                        bins = np.linspace(vmin, vmax, n_bins + 1)
+                        centers = (bins[:-1] + bins[1:]) / 2
+                        inds = np.digitize(values, bins) - 1
+                        inds = np.clip(inds, 0, n_bins - 1)
+                        values_for_coloring = centers[inds]
+                        edge_colors = self._map_values_to_colors(
+                            values_for_coloring, self.color_schemes['depth']
+                        )
+                    else:
+                        edge_colors = self._map_values_to_colors(values, self.color_schemes['depth'])
+                else:
+                    edge_colors = self._map_values_to_colors(values, self.color_schemes['depth'])
+
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
                     values = np.asarray(energies)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['energy']
-                    )
+                    n_bins = 50
+                    if len(values) > n_bins:
+                        vmin, vmax = np.nanmin(values), np.nanmax(values)
+                        if vmax > vmin:
+                            bins = np.linspace(vmin, vmax, n_bins + 1)
+                            centers = (bins[:-1] + bins[1:]) / 2
+                            inds = np.digitize(values, bins) - 1
+                            inds = np.clip(inds, 0, n_bins - 1)
+                            values_for_coloring = centers[inds]
+                            edge_colors = self._map_values_to_colors(
+                                values_for_coloring, self.color_schemes['energy']
+                            )
+                        else:
+                            edge_colors = self._map_values_to_colors(values, self.color_schemes['energy'])
+                    else:
+                        edge_colors = self._map_values_to_colors(values, self.color_schemes['energy'])
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
+
             elif color_by == 'radius':
                 connections = edges.get('connections', [])
                 if len(connections) == len(valid_traces) and len(vertex_radii) > 0:
@@ -208,20 +238,50 @@ class NetworkVisualizer:
                         )
                         radii.append((r0 + r1) / 2.0)
                     values = np.asarray(radii)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['radius']
-                    )
+
+                    n_bins = 50
+                    if len(values) > n_bins:
+                        vmin, vmax = np.nanmin(values), np.nanmax(values)
+                        if vmax > vmin:
+                            bins = np.linspace(vmin, vmax, n_bins + 1)
+                            centers = (bins[:-1] + bins[1:]) / 2
+                            inds = np.digitize(values, bins) - 1
+                            inds = np.clip(inds, 0, n_bins - 1)
+                            values_for_coloring = centers[inds]
+                            edge_colors = self._map_values_to_colors(
+                                values_for_coloring, self.color_schemes['radius']
+                            )
+                        else:
+                            edge_colors = self._map_values_to_colors(values, self.color_schemes['radius'])
+                    else:
+                        edge_colors = self._map_values_to_colors(values, self.color_schemes['radius'])
                 else:
                     edge_colors = ['blue'] * len(valid_traces)
+
             elif color_by == 'length':
                 lengths = [
                     calculate_path_length(trace * microns_per_voxel)
                     for trace in valid_traces
                 ]
                 values = np.asarray(lengths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['length']
-                )
+
+                n_bins = 50
+                if len(values) > n_bins:
+                    vmin, vmax = np.nanmin(values), np.nanmax(values)
+                    if vmax > vmin:
+                        bins = np.linspace(vmin, vmax, n_bins + 1)
+                        centers = (bins[:-1] + bins[1:]) / 2
+                        inds = np.digitize(values, bins) - 1
+                        inds = np.clip(inds, 0, n_bins - 1)
+                        values_for_coloring = centers[inds]
+                        edge_colors = self._map_values_to_colors(
+                            values_for_coloring, self.color_schemes['length']
+                        )
+                    else:
+                        edge_colors = self._map_values_to_colors(values, self.color_schemes['length'])
+                else:
+                    edge_colors = self._map_values_to_colors(values, self.color_schemes['length'])
+
             elif color_by == 'strand_id':
                 connections = edges.get('connections', [])
                 pair_to_index = {
@@ -242,30 +302,47 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, x_axis] * microns_per_voxel[x_axis]
-                y_coords = trace[:, y_axis] * microns_per_voxel[y_axis]
+            # Group edges by color to optimize rendering (reduce number of traces)
+            traces_by_color = {}
+            for i, color in enumerate(edge_colors):
+                if color not in traces_by_color:
+                    traces_by_color[color] = []
+                traces_by_color[color].append(i)
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+            # Create one trace per color group
+            for color, indices in traces_by_color.items():
+                x_merged = []
+                y_merged = []
+                text_list = []
 
+                for i in indices:
+                    trace = valid_traces[i]
+                    x_c = trace[:, x_axis] * microns_per_voxel[x_axis]
+                    y_c = trace[:, y_axis] * microns_per_voxel[y_axis]
+                    length = calculate_path_length(trace * microns_per_voxel)
+
+                    x_merged.extend(x_c)
+                    x_merged.append(np.nan)
+
+                    y_merged.extend(y_c)
+                    y_merged.append(np.nan)
+
+                    # Tooltip info
+                    tooltip = f'Edge {i}<br>Length: {length:.1f} μm'
+                    text_list.extend([tooltip] * len(x_c))
+                    text_list.append(None)
+
+                # Add merged trace
                 fig.add_trace(
                     go.Scatter(
-                        x=x_coords,
-                        y=y_coords,
+                        x=x_merged,
+                        y=y_merged,
                         mode='lines',
-                        line=dict(color=edge_colors[i], width=2),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
+                        line=dict(color=color, width=2),
+                        text=text_list,
+                        hovertemplate='%{text}<extra></extra>',
+                        showlegend=False, # Disable legend for merged traces to avoid clutter
+                        name='Edges'
                     )
                 )
 
@@ -1491,4 +1568,3 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
-
