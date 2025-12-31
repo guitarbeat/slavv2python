@@ -108,6 +108,60 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
+@st.cache_data(show_spinner="Generating 2D Network Plot...")
+def cached_plot_2d_network(vertices, edges, network, parameters, color_by, show_vertices, show_edges, show_bifurcations):
+    """Cached wrapper for NetworkVisualizer.plot_2d_network"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_2d_network(
+        vertices, edges, network, parameters,
+        color_by=color_by,
+        show_vertices=show_vertices,
+        show_edges=show_edges,
+        show_bifurcations=show_bifurcations
+    )
+
+
+@st.cache_data(show_spinner="Generating 3D Network Plot...")
+def cached_plot_3d_network(vertices, edges, network, parameters, color_by, show_vertices, show_edges, show_bifurcations):
+    """Cached wrapper for NetworkVisualizer.plot_3d_network"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_3d_network(
+        vertices, edges, network, parameters,
+        color_by=color_by,
+        show_vertices=show_vertices,
+        show_edges=show_edges,
+        show_bifurcations=show_bifurcations
+    )
+
+
+@st.cache_data(show_spinner="Generating Depth Statistics Plot...")
+def cached_plot_depth_statistics(vertices, edges, parameters):
+    """Cached wrapper for NetworkVisualizer.plot_depth_statistics"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_depth_statistics(vertices, edges, parameters)
+
+
+@st.cache_data(show_spinner="Generating Strand Analysis Plot...")
+def cached_plot_strand_analysis(network, vertices, parameters):
+    """Cached wrapper for NetworkVisualizer.plot_strand_analysis"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_strand_analysis(network, vertices, parameters)
+
+
+@st.cache_data(show_spinner="Generating Radius Distribution Plot...")
+def cached_plot_radius_distribution(vertices):
+    """Cached wrapper for NetworkVisualizer.plot_radius_distribution"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_radius_distribution(vertices)
+
+
+@st.cache_data(show_spinner="Generating Degree Distribution Plot...")
+def cached_plot_degree_distribution(network):
+    """Cached wrapper for NetworkVisualizer.plot_degree_distribution"""
+    visualizer = NetworkVisualizer()
+    return visualizer.plot_degree_distribution(network)
+
+
 def main():
     """Main application function"""
     
@@ -885,7 +939,7 @@ def show_visualization_page():
         
         # Generate actual visualization based on type
         if viz_type == "2D Network":
-            fig = visualizer.plot_2d_network(
+            fig = cached_plot_2d_network(
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
@@ -896,7 +950,7 @@ def show_visualization_page():
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "3D Network":
-            fig = visualizer.plot_3d_network(
+            fig = cached_plot_3d_network(
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["processing_results"]["network"],
@@ -907,7 +961,7 @@ def show_visualization_page():
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Depth Projection":
-            fig = visualizer.plot_depth_statistics(
+            fig = cached_plot_depth_statistics(
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["processing_results"]["edges"],
                 st.session_state["parameters"]
@@ -915,7 +969,7 @@ def show_visualization_page():
             st.plotly_chart(fig, use_container_width=True)
             
         elif viz_type == "Strand Analysis":
-            fig = visualizer.plot_strand_analysis(
+            fig = cached_plot_strand_analysis(
                 st.session_state["processing_results"]["network"],
                 st.session_state["processing_results"]["vertices"],
                 st.session_state["parameters"]
@@ -1012,8 +1066,6 @@ def show_analysis_page():
     # Detailed analysis
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"])
 
-    visualizer = NetworkVisualizer()
-
     with tab1:
         st.markdown("#### Length and Radius Distributions")
 
@@ -1021,12 +1073,12 @@ def show_analysis_page():
 
         with col1:
             # Length distribution
-            fig_length = visualizer.plot_strand_analysis(results["network"], results["vertices"], parameters)
+            fig_length = cached_plot_strand_analysis(results["network"], results["vertices"], parameters)
             st.plotly_chart(fig_length, use_container_width=True)
 
         with col2:
             # Radius distribution
-            fig_radius = visualizer.plot_radius_distribution(results["vertices"])
+            fig_radius = cached_plot_radius_distribution(results["vertices"])
             st.plotly_chart(fig_radius, use_container_width=True)
 
     with tab2:
@@ -1036,7 +1088,7 @@ def show_analysis_page():
 
         with col1:
             # Degree distribution
-            fig_degree = visualizer.plot_degree_distribution(results["network"])
+            fig_degree = cached_plot_degree_distribution(results["network"])
             st.plotly_chart(fig_degree, use_container_width=True)
 
         with col2:
@@ -1056,7 +1108,7 @@ def show_analysis_page():
         st.markdown("#### Morphometric Analysis")
 
         # Depth-resolved statistics
-        fig_depth = visualizer.plot_depth_statistics(results["vertices"], results["edges"], parameters)
+        fig_depth = cached_plot_depth_statistics(results["vertices"], results["edges"], parameters)
         st.plotly_chart(fig_depth, use_container_width=True)
 
         # Tortuosity analysis
