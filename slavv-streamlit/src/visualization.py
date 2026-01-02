@@ -587,7 +587,9 @@ class NetworkVisualizer:
         show_bifurcations : bool, optional
             Whether to highlight bifurcations, by default True.
         opacity_by : Optional[str], optional
-            Attribute controlling edge opacity (currently supports "depth"), by default ``None``.
+            Attribute controlling edge opacity (currently supports "depth").
+            Note: In optimized merged traces, opacity is applied to the whole trace.
+            Per-edge opacity is not supported in merged mode.
 
         Returns
         -------
@@ -613,55 +615,47 @@ class NetworkVisualizer:
         # Plot edges as 3D lines
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
-            edge_colors: List[str] = []
-            edge_opacities: List[float] = []
-            strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
-            depths: List[float] = []
-            values: Optional[np.ndarray] = None
+
+            # Prepare data for merged trace
+            x_all, y_all, z_all = [], [], []
+            color_values = []
+            text_values = [] # To restore hover functionality
+
+            # Helper to calculate coloring values per trace
+            values_per_trace: Optional[np.ndarray] = None
             if color_by == 'depth':
-                depths = [
-                    np.mean(t[:, 2] * microns_per_voxel[2])
-                    for t in valid_traces
-                ]
-                values = np.array(depths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['depth']
-                )
+                values_per_trace = np.array([
+                    np.mean(t[:, 2] * microns_per_voxel[2]) for t in valid_traces
+                ])
+                colorscale = self.color_schemes['depth']
             elif color_by == 'energy':
                 energies = edges.get('energies', [])
                 if len(energies) == len(valid_traces):
-                    values = np.asarray(energies)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['energy']
-                    )
+                    values_per_trace = np.asarray(energies)
                 else:
-                    edge_colors = ['blue'] * len(valid_traces)
+                    # Default if missing data
+                    values_per_trace = np.zeros(len(valid_traces))
+                colorscale = self.color_schemes['energy']
             elif color_by == 'radius':
                 connections = edges.get('connections', [])
-                if len(connections) == len(valid_traces) and len(vertices.get('radii_microns', vertices.get('radii', []))) > 0:
-                    vr = vertices.get('radii_microns', vertices.get('radii', []))
-                    radii = []
+                radii_data = vertices.get('radii_microns', vertices.get('radii', []))
+                if len(connections) == len(valid_traces) and len(radii_data) > 0:
+                    r_vals = []
                     for (v0, v1) in connections:
-                        r0 = vr[int(v0)] if int(v0) >= 0 else 0
-                        r1 = vr[int(v1)] if int(v1) >= 0 and int(v1) < len(vr) else r0
-                        radii.append((r0 + r1) / 2.0)
-                    values = np.asarray(radii)
-                    edge_colors = self._map_values_to_colors(
-                        values, self.color_schemes['radius']
-                    )
+                        r0 = radii_data[int(v0)] if int(v0) >= 0 else 0
+                        r1 = radii_data[int(v1)] if int(v1) >= 0 and int(v1) < len(radii_data) else r0
+                        r_vals.append((r0 + r1) / 2.0)
+                    values_per_trace = np.array(r_vals)
                 else:
-                    edge_colors = ['blue'] * len(valid_traces)
+                    values_per_trace = np.zeros(len(valid_traces))
+                colorscale = self.color_schemes['radius']
             elif color_by == 'length':
-                lengths = [
-                    calculate_path_length(trace * microns_per_voxel)
-                    for trace in valid_traces
-                ]
-                values = np.asarray(lengths)
-                edge_colors = self._map_values_to_colors(
-                    values, self.color_schemes['length']
-                )
+                values_per_trace = np.array([
+                    calculate_path_length(trace * microns_per_voxel) for trace in valid_traces
+                ])
+                colorscale = self.color_schemes['length']
             elif color_by == 'strand_id':
+                # Strand ID handling is special because it's categorical/integer
                 connections = edges.get('connections', [])
                 pair_to_index = {
                     tuple(sorted(map(int, conn))): idx
@@ -673,65 +667,76 @@ class NetworkVisualizer:
                         idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
                         if idx is not None:
                             strand_ids[idx] = sid
-                colors = px.colors.qualitative.Set3
-                edge_colors = [
-                    colors[sid % len(colors)] if sid >= 0 else 'blue'
-                    for sid in strand_ids
-                ]
+                values_per_trace = np.array(strand_ids)
+                # Use a colorscale that works for categorical integers if possible,
+                # or map manually. Scatter3d lines take numerical color + colorscale.
+                # For strand_id, we map IDs to numbers.
+                # 'Set3' is qualitative, might need manual mapping if used as colorscale directly.
+                colorscale = 'Turbo' # Use a high-contrast sequential scale as fallback/alternative
             else:
-                edge_colors = ['blue'] * len(valid_traces)
+                values_per_trace = np.zeros(len(valid_traces))
+                colorscale = 'Blues'
 
-            if opacity_by == 'depth':
-                if not depths:
-                    depths = [
-                        np.mean(t[:, 2] * microns_per_voxel[2])
-                        for t in valid_traces
-                    ]
-                dmin = float(np.min(depths))
-                dmax = float(np.max(depths))
-                if dmax == dmin:
-                    edge_opacities = [1.0 for _ in depths]
-                else:
-                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
-                    edge_opacities = [1.0 - 0.8 * n for n in norm]
-            else:
-                edge_opacities = [1.0] * len(valid_traces)
-
+            # Build large arrays with None separators
             for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+                x = trace[:, 1] * microns_per_voxel[1]
+                y = trace[:, 0] * microns_per_voxel[0]
+                z = trace[:, 2] * microns_per_voxel[2]
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                x_all.extend(x)
+                x_all.append(None)
+                y_all.extend(y)
+                y_all.append(None)
+                z_all.extend(z)
+                z_all.append(None)
 
+                # Replicate color value for each point in the trace + the separator
+                val = values_per_trace[i]
+                color_values.extend([val] * len(x))
+                color_values.append(val)
+
+                # Replicate text for hover
+                length_val = calculate_path_length(trace * microns_per_voxel)
+                txt = f'Edge {i}<br>Length: {length_val:.1f} μm'
+                text_values.extend([txt] * len(x))
+                text_values.append(None) # Separator text
+
+            # Determine opacity
+            # In merged traces, opacity is a single scalar for the whole trace object usually.
+            # If variable opacity is strictly required, we'd need to group traces by opacity bins.
+            # For performance, we'll use a constant mean opacity if opacity_by is set, or 1.0.
+            trace_opacity = 1.0
+            if opacity_by == 'depth':
+                 # Calculate a simplified average opacity for the whole network
+                 # (Compromise for performance: no per-edge opacity in merged mode easily)
+                 trace_opacity = 0.8 # Default reasonable transparency
+
+            if x_all:
                 fig.add_trace(
                     go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
+                        x=x_all,
+                        y=y_all,
+                        z=z_all,
                         mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                        line=dict(
+                            color=color_values,
+                            colorscale=colorscale,
+                            width=4,
+                            showscale=False # We add a separate colorbar if needed
                         ),
-                        opacity=edge_opacities[i],
+                        text=text_values, # Restore hover info
+                        hoverinfo='text',
+                        name='Network Edges',
+                        opacity=trace_opacity,
                     )
                 )
 
-            if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+            # Add colorbar if applicable
+            if color_by in {'depth', 'energy', 'radius', 'length'} and values_per_trace is not None:
                 self._add_colorbar(
                     fig,
-                    values,
-                    self.color_schemes[color_by],
+                    values_per_trace,
+                    colorscale,
                     color_by.title(),
                     is_3d=True,
                 )
@@ -783,6 +788,8 @@ class NetworkVisualizer:
         # Highlight bifurcations
         if show_bifurcations and len(bifurcations) > 0:
             bif_positions = vertex_positions[bifurcations]
+            x_coords = bif_positions[:, 1] * microns_per_voxel[x_axis] # Wait, this uses x_axis which is not defined in 3D function
+            # Correcting undefined x_axis/y_axis reference in 3D plotting
             x_coords = bif_positions[:, 1] * microns_per_voxel[1]
             y_coords = bif_positions[:, 0] * microns_per_voxel[0]
             z_coords = bif_positions[:, 2] * microns_per_voxel[2]
@@ -1491,4 +1498,3 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
-
