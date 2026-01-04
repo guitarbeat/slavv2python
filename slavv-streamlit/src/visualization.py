@@ -613,12 +613,13 @@ class NetworkVisualizer:
         # Plot edges as 3D lines
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
+
+            # --- COLOR PREPARATION ---
             edge_colors: List[str] = []
-            edge_opacities: List[float] = []
             strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
             depths: List[float] = []
             values: Optional[np.ndarray] = None
+
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, 2] * microns_per_voxel[2])
@@ -639,8 +640,8 @@ class NetworkVisualizer:
                     edge_colors = ['blue'] * len(valid_traces)
             elif color_by == 'radius':
                 connections = edges.get('connections', [])
-                if len(connections) == len(valid_traces) and len(vertices.get('radii_microns', vertices.get('radii', []))) > 0:
-                    vr = vertices.get('radii_microns', vertices.get('radii', []))
+                vr = vertices.get('radii_microns', vertices.get('radii', []))
+                if len(connections) == len(valid_traces) and len(vr) > 0:
                     radii = []
                     for (v0, v1) in connections:
                         r0 = vr[int(v0)] if int(v0) >= 0 else 0
@@ -681,60 +682,142 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            if opacity_by == 'depth':
-                if not depths:
-                    depths = [
-                        np.mean(t[:, 2] * microns_per_voxel[2])
-                        for t in valid_traces
-                    ]
-                dmin = float(np.min(depths))
-                dmax = float(np.max(depths))
-                if dmax == dmin:
-                    edge_opacities = [1.0 for _ in depths]
-                else:
-                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
-                    edge_opacities = [1.0 - 0.8 * n for n in norm]
-            else:
-                edge_opacities = [1.0] * len(valid_traces)
+            # Determine whether to use merged traces optimization
+            # Use merged traces if we have > 100 edges, regardless of opacity requirements
+            # because rendering 5000+ individual traces is a browser killer.
+            # If opacity_by is set, we lose the per-edge opacity feature in merged mode
+            # unless we implement complex RGBA mapping, but performance is priority here.
+            use_merged = len(valid_traces) > 100
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+            if use_merged:
+                # Accumulate coordinates and colors
+                all_x = []
+                all_y = []
+                all_z = []
+                all_colors = []
+                all_text = []
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
-                else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                # Setup coloring for merged trace
+                # go.Scatter3d line color array expects numerical values and a colorscale
+                # OR an array of color strings.
+                # Since we already computed edge_colors as strings (from _map_values_to_colors),
+                # we can use them directly. Plotly supports array of strings for line color.
+
+                for i, trace in enumerate(valid_traces):
+                    x = trace[:, 1] * microns_per_voxel[1]
+                    y = trace[:, 0] * microns_per_voxel[0]
+                    z = trace[:, 2] * microns_per_voxel[2]
+
+                    all_x.extend(x)
+                    all_x.append(None)
+                    all_y.extend(y)
+                    all_y.append(None)
+                    all_z.extend(z)
+                    all_z.append(None)
+
+                    # Color duplication for each point + None
+                    # Use string colors (e.g. from edge_colors list)
+
+                    c_str = edge_colors[i]
+                    all_colors.extend([c_str] * len(x))
+                    all_colors.append(c_str)
+
+                    # Tooltip text
+                    length = calculate_path_length(trace * microns_per_voxel)
+                    txt = f'Edge {i}<br>Length: {length:.1f} μm<extra></extra>'
+                    all_text.extend([txt] * len(x))
+                    all_text.append(None)
+
+                # For strand_id, we want to use the Set3 colorscale logic which we did manually above.
+                # So passing the list of colors is the most universal way here.
 
                 fig.add_trace(
                     go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
+                        x=all_x,
+                        y=all_y,
+                        z=all_z,
                         mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                        line=dict(
+                            color=all_colors, # Array of color strings
+                            width=4
                         ),
-                        opacity=edge_opacities[i],
+                        hovertext=all_text,
+                        hoverinfo='text',
+                        name='Network',
+                        showlegend=True,
+                        opacity=1.0 # Uniform opacity for merged trace
                     )
                 )
 
-            if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
-                self._add_colorbar(
-                    fig,
-                    values,
-                    self.color_schemes[color_by],
-                    color_by.title(),
-                    is_3d=True,
-                )
+                # Add colorbar if applicable (using invisible markers)
+                if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                    self._add_colorbar(
+                        fig,
+                        values,
+                        self.color_schemes[color_by],
+                        color_by.title(),
+                        is_3d=True,
+                    )
+
+            else:
+                # --- LEGACY INDIVIDUAL TRACE RENDERING ---
+                # Used for small datasets to preserve features like variable opacity
+                strand_legend: Dict[int, bool] = {} # Re-init local scope var just in case
+
+                if opacity_by == 'depth':
+                    if not depths:
+                        depths = [
+                            np.mean(t[:, 2] * microns_per_voxel[2])
+                            for t in valid_traces
+                        ]
+                    dmin = float(np.min(depths))
+                    dmax = float(np.max(depths))
+                    if dmax == dmin:
+                        edge_opacities = [1.0 for _ in depths]
+                    else:
+                        norm = [(d - dmin) / (dmax - dmin) for d in depths]
+                        edge_opacities = [1.0 - 0.8 * n for n in norm]
+                else:
+                    edge_opacities = [1.0] * len(valid_traces)
+
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, 1] * microns_per_voxel[1]  # X
+                    y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
+                    z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x_coords,
+                            y=y_coords,
+                            z=z_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=4),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                            opacity=edge_opacities[i],
+                        )
+                    )
+
+                if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                    self._add_colorbar(
+                        fig,
+                        values,
+                        self.color_schemes[color_by],
+                        color_by.title(),
+                        is_3d=True,
+                    )
         
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
@@ -783,6 +866,7 @@ class NetworkVisualizer:
         # Highlight bifurcations
         if show_bifurcations and len(bifurcations) > 0:
             bif_positions = vertex_positions[bifurcations]
+            # Use fixed indices for 3D coordinates, consistent with other parts of this function
             x_coords = bif_positions[:, 1] * microns_per_voxel[1]
             y_coords = bif_positions[:, 0] * microns_per_voxel[0]
             z_coords = bif_positions[:, 2] * microns_per_voxel[2]
@@ -1491,4 +1575,3 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
-
