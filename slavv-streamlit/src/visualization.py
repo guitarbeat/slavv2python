@@ -613,12 +613,14 @@ class NetworkVisualizer:
         # Plot edges as 3D lines
         if show_edges and edge_traces:
             valid_traces = [np.array(t) for t in edge_traces if len(t) >= 2]
-            edge_colors: List[str] = []
-            edge_opacities: List[float] = []
+
+            # Prepare data for coloring
+            edge_colors: List[Any] = []
             strand_ids: List[int] = []
-            strand_legend: Dict[int, bool] = {}
-            depths: List[float] = []
             values: Optional[np.ndarray] = None
+            strand_legend: Dict[int, bool] = {}
+
+            # Calculate coloring values
             if color_by == 'depth':
                 depths = [
                     np.mean(t[:, 2] * microns_per_voxel[2])
@@ -674,6 +676,9 @@ class NetworkVisualizer:
                         if idx is not None:
                             strand_ids[idx] = sid
                 colors = px.colors.qualitative.Set3
+                # For strand ID, we can't map to a continuous scale easily for merged traces
+                # unless we use a categorical color scale, but Scatter3d is finicky with array colors.
+                # We'll use individual colors for now.
                 edge_colors = [
                     colors[sid % len(colors)] if sid >= 0 else 'blue'
                     for sid in strand_ids
@@ -681,60 +686,173 @@ class NetworkVisualizer:
             else:
                 edge_colors = ['blue'] * len(valid_traces)
 
-            if opacity_by == 'depth':
-                if not depths:
-                    depths = [
-                        np.mean(t[:, 2] * microns_per_voxel[2])
-                        for t in valid_traces
-                    ]
-                dmin = float(np.min(depths))
-                dmax = float(np.max(depths))
-                if dmax == dmin:
-                    edge_opacities = [1.0 for _ in depths]
-                else:
-                    norm = [(d - dmin) / (dmax - dmin) for d in depths]
-                    edge_opacities = [1.0 - 0.8 * n for n in norm]
-            else:
-                edge_opacities = [1.0] * len(valid_traces)
+            # Optimization: If opacity is uniform (opacity_by is None) and we have many edges,
+            # merge them into a single trace using None separators.
+            # This dramatically improves rendering performance.
+            if opacity_by is None and len(valid_traces) > 100:
+                logger.info("Using optimized merged trace rendering for 3D network")
 
-            for i, trace in enumerate(valid_traces):
-                x_coords = trace[:, 1] * microns_per_voxel[1]  # X
-                y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
-                z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+                # Pre-allocate arrays
+                total_points = sum(len(t) for t in valid_traces) + len(valid_traces)  # points + separators
+                all_x = np.empty(total_points)
+                all_y = np.empty(total_points)
+                all_z = np.empty(total_points)
 
-                if color_by == 'strand_id':
-                    sid = strand_ids[i]
-                    name = f'Strand {sid}' if sid not in strand_legend else ''
-                    showlegend = sid not in strand_legend
-                    strand_legend[sid] = True
+                # If using numerical coloring, we need to map colors to points
+                # Scatter3d line color array maps to vertices.
+                all_colors = []
+
+                current_idx = 0
+
+                # Prepare colorscale if needed
+                use_colorscale = False
+                colorscale_name = None
+                cmin = None
+                cmax = None
+
+                if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                    use_colorscale = True
+                    colorscale_name = self.color_schemes[color_by]
+                    cmin = float(np.min(values))
+                    cmax = float(np.max(values))
+                    # For merged trace with numerical values, we assign the value to each point in the segment
+                    all_cvalues = np.empty(total_points)
+                    all_cvalues[:] = np.nan
+
+                elif color_by == 'strand_id':
+                     # For strand ID, we can try to use a colorscale mapping strand IDs
+                     # But 'Set3' is qualitative. We'll fallback to RGB colors if possible.
+                     # Scatter3d line color supports array of strings (colors).
+                     all_cvalues = [None] * total_points
                 else:
-                    name = f'Edge {i}' if i < 10 else ''
-                    showlegend = i < 10
+                     all_cvalues = [None] * total_points
+
+                for i, trace in enumerate(valid_traces):
+                    n_points = len(trace)
+
+                    # Coordinates
+                    x_pts = trace[:, 1] * microns_per_voxel[1]
+                    y_pts = trace[:, 0] * microns_per_voxel[0]
+                    z_pts = trace[:, 2] * microns_per_voxel[2]
+
+                    all_x[current_idx:current_idx+n_points] = x_pts
+                    all_y[current_idx:current_idx+n_points] = y_pts
+                    all_z[current_idx:current_idx+n_points] = z_pts
+
+                    # Set separator to None/NaN
+                    all_x[current_idx+n_points] = np.nan
+                    all_y[current_idx+n_points] = np.nan
+                    all_z[current_idx+n_points] = np.nan
+
+                    # Colors
+                    if use_colorscale:
+                        val = values[i]
+                        all_cvalues[current_idx:current_idx+n_points] = val
+                        # Separator value doesn't matter much as line breaks
+                    else:
+                        # Direct color mapping (RGB strings)
+                        col = edge_colors[i]
+                        for k in range(n_points):
+                            all_cvalues[current_idx+k] = col
+                        all_cvalues[current_idx+n_points] = col
+
+                    current_idx += n_points + 1
+
+                # Create the merged trace
+                line_dict = dict(width=4)
+
+                if use_colorscale:
+                    line_dict.update(dict(
+                        color=all_cvalues,
+                        colorscale=colorscale_name,
+                        cmin=cmin,
+                        cmax=cmax,
+                        colorbar=dict(title=color_by.title())
+                    ))
+                else:
+                    # For direct colors (like strand_id or default blue)
+                    # We need to make sure 'color' argument accepts the list of color strings
+                    # Plotly Scatter3d accepts array of colors
+
+                    # If strand_id, we need to be careful with 'Set3'. Scatter3d needs
+                    # numerical array + colorscale OR array of color strings.
+                    # Since we have qualitative colors, array of strings is best.
+                    line_dict.update(dict(color=all_cvalues))
 
                 fig.add_trace(
                     go.Scatter3d(
-                        x=x_coords,
-                        y=y_coords,
-                        z=z_coords,
+                        x=all_x,
+                        y=all_y,
+                        z=all_z,
                         mode='lines',
-                        line=dict(color=edge_colors[i], width=4),
-                        name=name,
-                        showlegend=showlegend,
-                        hovertemplate=(
-                            f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
-                        ),
-                        opacity=edge_opacities[i],
+                        line=line_dict,
+                        name='Network',
+                        # Tooltip is tricky with merged trace. We can try to map hovertext.
+                        # But for now, we accept less detailed per-edge hover for massive speedup.
+                        hoverinfo='skip'
                     )
                 )
 
-            if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
-                self._add_colorbar(
-                    fig,
-                    values,
-                    self.color_schemes[color_by],
-                    color_by.title(),
-                    is_3d=True,
-                )
+            else:
+                # Fallback to slow individual traces for:
+                # 1. Low edge count (where overhead is negligible)
+                # 2. Variable opacity (opacity_by='depth') which requires individual traces
+
+                if opacity_by == 'depth':
+                    # Recalculate depths if not already done
+                    if not 'depths' in locals() or not depths:
+                        depths = [
+                            np.mean(t[:, 2] * microns_per_voxel[2])
+                            for t in valid_traces
+                        ]
+                    dmin = float(np.min(depths))
+                    dmax = float(np.max(depths))
+                    if dmax == dmin:
+                        edge_opacities = [1.0 for _ in depths]
+                    else:
+                        norm = [(d - dmin) / (dmax - dmin) for d in depths]
+                        edge_opacities = [1.0 - 0.8 * n for n in norm]
+                else:
+                    edge_opacities = [1.0] * len(valid_traces)
+
+                for i, trace in enumerate(valid_traces):
+                    x_coords = trace[:, 1] * microns_per_voxel[1]  # X
+                    y_coords = trace[:, 0] * microns_per_voxel[0]  # Y
+                    z_coords = trace[:, 2] * microns_per_voxel[2]  # Z
+
+                    if color_by == 'strand_id':
+                        sid = strand_ids[i]
+                        name = f'Strand {sid}' if sid not in strand_legend else ''
+                        showlegend = sid not in strand_legend
+                        strand_legend[sid] = True
+                    else:
+                        name = f'Edge {i}' if i < 10 else ''
+                        showlegend = i < 10
+
+                    fig.add_trace(
+                        go.Scatter3d(
+                            x=x_coords,
+                            y=y_coords,
+                            z=z_coords,
+                            mode='lines',
+                            line=dict(color=edge_colors[i], width=4),
+                            name=name,
+                            showlegend=showlegend,
+                            hovertemplate=(
+                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                            ),
+                            opacity=edge_opacities[i],
+                        )
+                    )
+
+                if color_by in {'depth', 'energy', 'radius', 'length'} and values is not None:
+                    self._add_colorbar(
+                        fig,
+                        values,
+                        self.color_schemes[color_by],
+                        color_by.title(),
+                        is_3d=True,
+                    )
         
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
