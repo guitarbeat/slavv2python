@@ -463,11 +463,36 @@ class SLAVVProcessor:
                 hessian = feature.hessian_matrix(
                     smoothed, sigma=tuple(sigma_object)
                 )
-                eigenvals = feature.hessian_matrix_eigvals(hessian)
-
-                # Energy function: enhance tubular structures
-                # Negative eigenvalues indicate bright ridges
-                lambda1, lambda2, lambda3 = eigenvals
+                
+                # Memory-efficient eigenvalue computation: compute directly without 
+                # storing all three eigenvalue arrays at full precision
+                # Extract Hessian elements (6 components for symmetric 3x3)
+                Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = hessian
+                
+                # Compute eigenvalues in batches by z-slice to reduce peak memory
+                shape_3d = smoothed.shape
+                lambda1 = np.empty(shape_3d, dtype=np.float32)
+                lambda2 = np.empty(shape_3d, dtype=np.float32)
+                lambda3 = np.empty(shape_3d, dtype=np.float32)
+                
+                for z_idx in range(shape_3d[0]):
+                    # Build 3x3 Hessian matrices for this z-slice
+                    H = np.array([
+                        [Hxx[z_idx], Hxy[z_idx], Hxz[z_idx]],
+                        [Hxy[z_idx], Hyy[z_idx], Hyz[z_idx]],
+                        [Hxz[z_idx], Hyz[z_idx], Hzz[z_idx]]
+                    ])  # Shape: (3, 3, Y, X)
+                    # Transpose to (Y, X, 3, 3) for eigvalsh
+                    H = np.moveaxis(H, [0, 1], [-2, -1])
+                    # Compute eigenvalues for this slice
+                    eigs = np.linalg.eigvalsh(H)  # Shape: (Y, X, 3), sorted ascending
+                    # Store in descending order (largest first) like skimage
+                    lambda1[z_idx] = eigs[..., 2]
+                    lambda2[z_idx] = eigs[..., 1]
+                    lambda3[z_idx] = eigs[..., 0]
+                
+                # Free Hessian memory
+                del Hxx, Hxy, Hxz, Hyy, Hyz, Hzz, hessian
 
                 # Frangi-like vesselness measure
                 vesselness = np.zeros_like(lambda1)
