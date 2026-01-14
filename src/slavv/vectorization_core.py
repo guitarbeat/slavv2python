@@ -136,6 +136,8 @@ class SLAVVProcessor:
     ) -> Dict[str, Any]:
         """Complete SLAVV processing pipeline.
 
+        MATLAB Equivalent: `vectorize_V200.m`
+
         Args:
             image: 3D input image array (y, x, z)
             parameters: Dictionary of processing parameters
@@ -474,7 +476,9 @@ class SLAVVProcessor:
 
     def extract_vertices(self, energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract vertices as local extrema in the energy field
+        Extract vertices as local extrema in the energy field.
+        
+        MATLAB Equivalent: `get_vertices_V200.m`
 
         Minima correspond to bright vessels (default energy_sign < 0) and
         maxima to dark vessels when ``energy_sign`` is positive. This mirrors
@@ -576,7 +580,9 @@ class SLAVVProcessor:
     def extract_edges(self, energy_data: Dict[str, Any], vertices: Dict[str, Any], 
                      params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Extract edges by tracing from vertices through energy field
+        Extract edges by tracing from vertices through energy field.
+        
+        MATLAB Equivalent: `get_edges_V300.m`
         
         This implements edge extraction from get_edges_V300 in MATLAB
         """
@@ -788,7 +794,9 @@ class SLAVVProcessor:
     def construct_network(self, edges: Dict[str, Any], vertices: Dict[str, Any],
                          params: Dict[str, Any]) -> Dict[str, Any]:
         """Construct network from traced edges and detected vertices.
-
+        
+        MATLAB Equivalent: `get_network_V190.m`
+        
         Deduplicates edges, preserves their traces, and tracks dangling edges
         lacking terminal vertices. Optionally removes short hair-like edges and
         cyclic connections, reporting orphan vertices. This approximates network
