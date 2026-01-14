@@ -1,14 +1,15 @@
-# SLAVV Python Translation
+# SLAVV Python Port
 
 This repository hosts a Python and Streamlit based reimplementation of the SLAVV (Segmentation-Less, Automated, Vascular Vectorization) algorithm along with documentation of the original MATLAB project.
 
 ## Repository structure
 
-- **slavv-streamlit/** – Streamlit application containing the Python port of the algorithm
+- **src/slavv/** – Main Python package containing the algorithm core, I/O, and visualization tools
+- **app.py** – Streamlit application entry point
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
-- **slavv-matlab-docs/** – auto-generated reference documentation for the MATLAB code
 - **docs/MATLAB_TO_PYTHON_MAPPING.md** – canonical MATLAB→Python mapping (includes coverage + deviations)
-- **CONTRIBUTING.md** – contributing and testing
+- **CONTRIBUTING.md** – contributing and testing guidelines
+- **tests/** – Comprehensive test suite and benchmarks
 
 ## Getting started
 
@@ -16,55 +17,52 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 2. Create and activate a virtual environment:
    ```bash
    python -m venv .venv
-   source .venv/bin/activate
+   source .venv/bin/activate  # or .venv\Scripts\activate on Windows
    ```
 3. Install dependencies:
    ```bash
-   cd slavv-streamlit
    pip install -r requirements.txt
    ```
 4. Launch the Streamlit application:
    ```bash
    streamlit run app.py
    ```
-5. Open the provided URL in your browser and follow the on-screen instructions to process images.
+5. Open the provided URL in your browser and follow the instructions to process images.
 
 ## Usage
 
-Run the pipeline programmatically with `SLAVVProcessor`:
+Run the pipeline programmatically using the `slavv` package:
 
 ```python
-import sys, numpy as np
+import numpy as np
+from src.slavv import SLAVVProcessor
 
-# Ensure the source path is importable
-sys.path.append('slavv-streamlit/src')  # or: export PYTHONPATH=slavv-streamlit/src
-
-from vectorization_core import SLAVVProcessor
-
+# Create a dummy volume
 volume = np.random.rand(16, 16, 16).astype(np.float32)
 params = {"microns_per_voxel": [1.0, 1.0, 1.0]}
+
 processor = SLAVVProcessor()
 results = processor.process_image(volume, params)
 
-print(len(results['vertices']['positions']), len(results['edges']['traces']))
+print(f"Vertices: {len(results['vertices']['positions'])}")
+print(f"Edges: {len(results['edges']['traces'])}")
 ```
 
 ## Testing
 
-Verify that the environment is configured correctly by running the compile and test suite:
+Verify that the environment is configured correctly by running the test suite:
 
 ```bash
-python -m py_compile $(git ls-files '*.py')
-pytest -q
+pytest
 ```
 
 ## Troubleshooting
 
-- **ImportError for `vectorization_core`** – ensure `slavv-streamlit/src` is on `PYTHONPATH` (see example above).
+- **ImportError for `src.slavv`** – Ensure you are running Python from the repository root.
 - **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 
-For details on the app, see [slavv-streamlit/README.md](slavv-streamlit/README.md). For the canonical port status, see [docs/MATLAB_TO_PYTHON_MAPPING.md](docs/MATLAB_TO_PYTHON_MAPPING.md).
+For the canonical port status, see [docs/MATLAB_TO_PYTHON_MAPPING.md](docs/MATLAB_TO_PYTHON_MAPPING.md).
 
 ## License
 
