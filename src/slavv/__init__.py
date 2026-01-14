@@ -28,7 +28,13 @@ from .vectorization_core import (
 )
 
 from .ml_curator import MLCurator, AutomaticCurator
-from .visualization import NetworkVisualizer
+try:
+    from .visualization import NetworkVisualizer
+except ImportError:
+    import logging
+    logging.getLogger(__name__).warning("Visualization module unavailable (missing dependencies, likely plotly).")
+    NetworkVisualizer = None
+
 from .io_utils import (
     load_tiff_volume,
     load_network_from_mat,

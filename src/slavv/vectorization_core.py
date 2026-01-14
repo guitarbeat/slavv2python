@@ -15,7 +15,15 @@ import scipy.ndimage as ndi
 from scipy.ndimage import gaussian_filter, gaussian_filter1d
 from scipy.spatial import cKDTree
 from skimage import feature
-from skimage.filters import frangi, sato
+try:
+    from skimage.filters import frangi, sato
+except ImportError:
+    try:
+        from skimage.filters import frangi
+        sato = None
+    except ImportError:
+        frangi = None
+        sato = None
 from skimage.segmentation import watershed
 import warnings
 from typing import Tuple, List, Optional, Dict, Any, Callable
@@ -326,6 +334,14 @@ class SLAVVProcessor:
                 "image_shape": image.shape,
             }
 
+        if energy_method == 'sato' and sato is None:
+            logger.warning("Sato filter unavailable (requires scikit-image>=0.19). Falling back to Hessian.")
+            energy_method = 'hessian'
+
+        if energy_method == 'frangi' and frangi is None:
+            logger.warning("Frangi filter unavailable. Falling back to Hessian.")
+            energy_method = 'hessian'
+
         if energy_method in ('frangi', 'sato'):
             if return_all_scales:
                 energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
@@ -394,8 +410,9 @@ class SLAVVProcessor:
                     smoothed = smoothed_object
 
                 # Calculate Hessian eigenvalues with PSF-weighted sigma
+                # Note: use_gaussian_derivatives=False removed for compatibility with older skimage
                 hessian = feature.hessian_matrix(
-                    smoothed, sigma=tuple(sigma_object), use_gaussian_derivatives=False
+                    smoothed, sigma=tuple(sigma_object)
                 )
                 eigenvals = feature.hessian_matrix_eigvals(hessian)
 
