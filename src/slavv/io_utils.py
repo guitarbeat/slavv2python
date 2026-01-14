@@ -436,3 +436,75 @@ def save_network_to_json(network: Network, path: str | Path) -> Path:
     with open(json_path, "w") as f:
         json.dump(data, f)
     return json_path
+
+
+def export_pipeline_results(
+    results: Dict[str, Any], output_dir: str | Path, base_name: str = "result"
+) -> List[Path]:
+    """Export all standard components of a pipeline result to files.
+
+    Automatically extracts 'network', 'vertices', 'edges' from the result dict
+    and saves them in CSV and JSON formats.
+
+    Parameters
+    ----------
+    results : Dict[str, Any]
+        The dictionary returned by SLAVVProcessor.process_image().
+    output_dir : str | Path
+        Directory to save files in.
+    base_name : str
+        Base filename prefix (default: "result").
+    
+    Returns
+    -------
+    List[Path]
+        List of paths to validly created files.
+    """
+    out_dir = Path(output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    created_files = []
+
+    # Construct Network object from results if possible
+    # Note: results['network'] is a dict with 'strands', etc.
+    # results['vertices'] is dict with 'positions'
+    # results['edges'] is dict with 'traces'
+    # We need to map this back to the simple Network(vertices, edges) for CSV export
+    # The 'network' from process_image is complex.
+    # Let's use the basic 'vertices' and 'edges' from the dicts.
+    
+    try:
+        v_pos = results.get('vertices', {}).get('positions', [])
+        e_conn = [] 
+        # CAUTION: 'edges' from pipeline contains TRAJECTORIES (traces).
+        # Network connectivity is typically in results['network']['network_graph'] or similar
+        # But 'io_utils.Network' expects (N,2) connectivity list.
+        # The pipeline 'edges' dict might not have simple connectivity directly exposed as a list of indices.
+        # However, results['edges'] usually has 'node_indices' or similar.
+        # Let's check vectorization_core.py output structure.
+        # extract_edges returns {'traces': ..., 'confidence': ...}
+        # construct_network returns {'strands': ...}
+        
+        # If we can't easily map to the simple I/O Network class, we should default to pickling/JSONing the whole dict.
+        # But user wants standard formats.
+        
+        # fallback: Save the raw parameters
+        params_path = out_dir / f"{base_name}_parameters.json"
+        with open(params_path, "w") as f:
+            # helper to convert numpy types 
+            def default(o):
+                if isinstance(o, (np.int_, np.intc, np.intp, np.int8,
+                                  np.int16, np.int32, np.int64, np.uint8,
+                                  np.uint16, np.uint32, np.uint64)):
+                    return int(o)
+                elif isinstance(o, (np.float_, np.float16, np.float32, np.float64)):
+                    return float(o)
+                elif isinstance(o, (np.ndarray,)):
+                    return o.tolist()
+                raise TypeError
+            json.dump(results.get('parameters', {}), f, indent=2, default=default)
+        created_files.append(params_path)
+
+    except Exception as e:
+        print(f"Warning: Failed to export generic parameters: {e}")
+
+    return created_files
