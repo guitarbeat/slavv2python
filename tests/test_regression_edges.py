@@ -3,16 +3,16 @@ import sys
 import numpy as np
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 
 from unittest.mock import patch
 
 
 @patch(
-    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    'src.slavv.vectorization_core.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):
