@@ -29,12 +29,13 @@ import warnings
 from typing import Tuple, List, Optional, Dict, Any, Callable
 import logging
 import networkx as nx
-try:  # Optional Numba acceleration
+# Optional Numba acceleration - disabled due to dtype compatibility issues
+# TODO: Re-enable once dtype handling is fixed
+_NUMBA_AVAILABLE = False
+try:
     from numba import njit
-    _NUMBA_AVAILABLE = True
 except Exception:  # pragma: no cover - Numba may not be installed
     njit = None
-    _NUMBA_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -117,10 +118,13 @@ else:
             Gradient vector in physical units.
         """
         gradient = np.zeros(3, dtype=float)
+        # Clamp position to valid bounds to prevent out-of-bounds access
+        pos_clamped = np.clip(pos_int, [1, 1, 1], 
+                              [s - 2 for s in energy.shape])
         for i in range(3):
-            if 0 < pos_int[i] < energy.shape[i] - 1:
-                pos_plus = pos_int.copy()
-                pos_minus = pos_int.copy()
+            if 0 < pos_clamped[i] < energy.shape[i] - 1:
+                pos_plus = pos_clamped.copy()
+                pos_minus = pos_clamped.copy()
                 pos_plus[i] += 1
                 pos_minus[i] -= 1
                 diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
@@ -1358,7 +1362,10 @@ class SLAVVProcessor:
         repeated gradient evaluations during edge tracing.
         """
         pos_int = np.round(pos).astype(np.int64)
-        return _compute_gradient_impl(energy, pos_int, microns_per_voxel)
+        # Ensure proper dtypes for Numba compatibility
+        energy_arr = np.ascontiguousarray(energy, dtype=np.float64)
+        mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
+        return _compute_gradient_impl(energy_arr, pos_int, mpv_arr)
 
 
 def preprocess_image(image: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
