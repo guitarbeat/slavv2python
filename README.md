@@ -31,19 +31,22 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 
 ## Usage
 
-Run the pipeline programmatically using the `slavv` package:
+### Programmatic Usage (Headless/Batch)
+For integration into other pipelines or running on a cluster without the UI, use the `SLAVVProcessor` class.
+See **`examples/run_headless_demo.py`** for a complete example.
 
 ```python
-import numpy as np
-from src.slavv import SLAVVProcessor
+from slavv.vectorization_core import SLAVVProcessor
 
-# Create a dummy volume
-volume = np.random.rand(16, 16, 16).astype(np.float32)
-params = {"microns_per_voxel": [1.0, 1.0, 1.0]}
-
+# Initialize
 processor = SLAVVProcessor()
-results = processor.process_image(volume, params)
 
+# Run
+results = processor.process_image(image_data, params)
+```
+
+### Tutorials
+See **`examples/run_tutorial.py`** for a script that reproduces the steps from the original MATLAB tutorial (requires external data).
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
