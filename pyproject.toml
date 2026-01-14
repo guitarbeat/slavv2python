@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slavv"
+version = "0.1.0"
+description = "Segmentation-Less, Automated, Vascular Vectorization - Python port"
+readme = "README.md"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "UTFOIL Lab"},
+]
+keywords = ["vascular", "vectorization", "microscopy", "3D", "image-processing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "scikit-image>=0.18.0",
+    "scikit-learn>=1.0.0",
+    "h5py>=3.0.0",
+    "tifffile>=2021.0.0",
+    "plotly>=5.0.0",
+    "pandas>=1.3.0",
+    "pillow>=8.0.0",
+    "joblib>=1.0.0",
+]
+
+[project.optional-dependencies]
+app = [
+    "streamlit>=1.20.0",
+]
+ml = [
+    "tensorflow>=2.10.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+all = [
+    "streamlit>=1.20.0",
+    "tensorflow>=2.10.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/UTFOIL/slavv2python"
+Repository = "https://github.com/UTFOIL/slavv2python"
+"Original MATLAB" = "https://github.com/UTFOIL/Vectorization-Public"
+
+[project.scripts]
+slavv-app = "app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

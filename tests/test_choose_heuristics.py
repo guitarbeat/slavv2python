@@ -2,9 +2,9 @@ import sys
 import pathlib
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.ml_curator import choose_vertices, choose_edges
+from src.slavv.ml_curator import choose_vertices, choose_edges
 
 
 def test_choose_vertices_thresholds():
