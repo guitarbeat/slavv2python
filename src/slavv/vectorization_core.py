@@ -141,16 +141,20 @@ class SLAVVProcessor:
         image: np.ndarray,
         parameters: Dict[str, Any],
         progress_callback: Optional[Callable[[float, str], None]] = None,
+        checkpoint_dir: Optional[str] = None
     ) -> Dict[str, Any]:
         """Complete SLAVV processing pipeline.
 
-        MATLAB Equivalent: `vectorize_V200.m`
+        MATLAB Equivalent: `vectorize_V200.m` (with resume capability)
 
         Args:
             image: 3D input image array (y, x, z)
             parameters: Dictionary of processing parameters
             progress_callback: Optional callable receiving ``(fraction, stage)``
                 updates as the pipeline advances from 0.0 to 1.0.
+            checkpoint_dir: Optional directory path. If provided, intermediate steps
+                (Energy, Vertices, Edges, Network) will be saved/loaded from this directory.
+                Enables resuming crashed runs or inspecting intermediate results.
 
         Returns:
             Dictionary containing all processing results
@@ -159,38 +163,83 @@ class SLAVVProcessor:
             raise ValueError("Input image must be a non-empty 3D array")
 
         logger.info("Starting SLAVV processing pipeline")
+        
+        # Imports for checkpointing
+        if checkpoint_dir:
+            import os
+            import joblib
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            paths = {
+                'energy': os.path.join(checkpoint_dir, 'checkpoint_energy.pkl'),
+                'vertices': os.path.join(checkpoint_dir, 'checkpoint_vertices.pkl'),
+                'edges': os.path.join(checkpoint_dir, 'checkpoint_edges.pkl'),
+                'network': os.path.join(checkpoint_dir, 'checkpoint_network.pkl'),
+            }
+        
         if progress_callback:
             progress_callback(0.0, "start")
 
         # Validate and populate default parameters
         parameters = validate_parameters(parameters)
 
-        # Step 0: Image preprocessing
+        # Step 0: Image preprocessing (fast, typically not cached)
         image = preprocess_image(image, parameters)
         if progress_callback:
             progress_callback(0.2, "preprocess")
 
         # Step 1: Energy image formation
-        energy_data = self.calculate_energy_field(image, parameters)
+        if checkpoint_dir and os.path.exists(paths['energy']):
+            logger.info(f"Loading cached Energy Field from {paths['energy']}")
+            energy_data = joblib.load(paths['energy'])
+        else:
+            energy_data = self.calculate_energy_field(image, parameters)
+            if checkpoint_dir:
+                logger.info(f"Saving Energy Field to {paths['energy']}")
+                joblib.dump(energy_data, paths['energy'])
+                
         if progress_callback:
             progress_callback(0.4, "energy")
 
         # Step 2: Vertex extraction
-        vertices = self.extract_vertices(energy_data, parameters)
+        if checkpoint_dir and os.path.exists(paths['vertices']):
+            logger.info(f"Loading cached Vertices from {paths['vertices']}")
+            vertices = joblib.load(paths['vertices'])
+        else:
+            vertices = self.extract_vertices(energy_data, parameters)
+            if checkpoint_dir:
+                logger.info(f"Saving Vertices to {paths['vertices']}")
+                joblib.dump(vertices, paths['vertices'])
+                
         if progress_callback:
             progress_callback(0.6, "vertices")
 
         # Step 3: Edge extraction
-        edge_method = parameters.get('edge_method', 'tracing')
-        if edge_method == 'watershed':
-            edges = self.extract_edges_watershed(energy_data, vertices, parameters)
+        if checkpoint_dir and os.path.exists(paths['edges']):
+            logger.info(f"Loading cached Edges from {paths['edges']}")
+            edges = joblib.load(paths['edges'])
         else:
-            edges = self.extract_edges(energy_data, vertices, parameters)
+            edge_method = parameters.get('edge_method', 'tracing')
+            if edge_method == 'watershed':
+                edges = self.extract_edges_watershed(energy_data, vertices, parameters)
+            else:
+                edges = self.extract_edges(energy_data, vertices, parameters)
+            if checkpoint_dir:
+                logger.info(f"Saving Edges to {paths['edges']}")
+                joblib.dump(edges, paths['edges'])
+                
         if progress_callback:
             progress_callback(0.8, "edges")
 
         # Step 4: Network construction
-        network = self.construct_network(edges, vertices, parameters)
+        if checkpoint_dir and os.path.exists(paths['network']):
+            logger.info(f"Loading cached Network from {paths['network']}")
+            network = joblib.load(paths['network'])
+        else:
+            network = self.construct_network(vertices, edges, parameters)
+            if checkpoint_dir:
+                logger.info(f"Saving Network to {paths['network']}")
+                joblib.dump(network, paths['network'])
+                
         if progress_callback:
             progress_callback(1.0, "network")
         
