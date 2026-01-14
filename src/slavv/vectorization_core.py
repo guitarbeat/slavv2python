@@ -997,7 +997,7 @@ class SLAVVProcessor:
         hessian_elems = [
             h * (radius ** 2)
             for h in feature.hessian_matrix(
-                patch, sigma=sigma, use_gaussian_derivatives=False
+                patch, sigma=sigma
             )
         ]
         patch_center = tuple(np.array(patch.shape) // 2)
