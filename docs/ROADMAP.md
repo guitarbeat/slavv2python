@@ -20,10 +20,17 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 
 ### 1.1 Numba JIT for Edge Tracing
 - **File:** `vectorization_core.py` → `_trace_edge()`
+- **Status:** ⚠️ Temporarily disabled due to dtype issues with Python 3.7
 - **Impact:** ~100x speedup for tracing loops
-- **Effort:** Medium (rewrite inner loop as pure numeric)
+- **Effort:** Medium (requires Numba version/dtype fix)
 
-### 1.2 FFT Convolution for Large σ
+### 1.2 Memory-Efficient Eigenvalue Computation ✅
+- **File:** `vectorization_core.py` → `calculate_energy_field()`
+- **Status:** ✅ **COMPLETE** - Z-slice batched eigenvalue computation
+- **Impact:** Reduced peak memory from 1.3GB to ~6MB per slice
+- **Effort:** Done!
+
+### 1.3 FFT Convolution for Large σ
 - **File:** `vectorization_core.py` → `calculate_energy_field()`
 - **Rule:** If σ ≥ 10, use `scipy.signal.fftconvolve`
 - **Impact:** ~10x speedup for multi-scale energy
