@@ -613,6 +613,12 @@ class SLAVVProcessor:
                 "vertex_positions": vertex_positions.astype(np.float32),
             }
 
+        # Build cKDTree for optimized spatial queries
+        # Convert positions to physical units for correct distance calculation
+        vertex_positions_microns = vertex_positions * microns_per_voxel
+        tree = cKDTree(vertex_positions_microns)
+        max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
+
         for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
             if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
                 continue
@@ -652,11 +658,14 @@ class SLAVVProcessor:
                     microns_per_voxel,
                     energy_sign,
                     discrete_steps=discrete_tracing,
+                    tree=tree,
+                    max_search_radius=max_vertex_radius,
                 )
                 if len(edge_trace) > 1:  # Valid edge found
                     terminal_vertex = self._find_terminal_vertex(
                         edge_trace[-1], vertex_positions, vertex_scales,
-                        lumen_radius_microns, microns_per_voxel
+                        lumen_radius_microns, microns_per_voxel,
+                        tree=tree, max_search_radius=max_vertex_radius
                     )
                     if terminal_vertex == vertex_idx:
                         continue
@@ -1038,6 +1047,8 @@ class SLAVVProcessor:
         microns_per_voxel: np.ndarray,
         energy_sign: float,
         discrete_steps: bool = False,
+        tree: Optional[cKDTree] = None,
+        max_search_radius: float = 0.0,
     ) -> List[np.ndarray]:
         """Trace an edge through the energy field with adaptive step sizing.
 
@@ -1125,7 +1136,8 @@ class SLAVVProcessor:
 
             terminal_vertex_idx = self._near_vertex(
                 current_pos, vertex_positions, vertex_scales,
-                lumen_radius_microns, microns_per_voxel
+                lumen_radius_microns, microns_per_voxel,
+                tree=tree, max_search_radius=max_search_radius
             )
             if terminal_vertex_idx is not None:
                 trace.append(vertex_positions[terminal_vertex_idx].copy())
@@ -1201,21 +1213,42 @@ class SLAVVProcessor:
 
     def _near_vertex(self, pos: np.ndarray, vertex_positions: np.ndarray,
                     vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
-                    microns_per_voxel: np.ndarray) -> Optional[int]:
+                    microns_per_voxel: np.ndarray,
+                    tree: Optional[cKDTree] = None,
+                    max_search_radius: float = 0.0) -> Optional[int]:
         """Return the index of a nearby vertex if within its physical radius; otherwise None"""
-        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-            radius = lumen_radius_microns[vertex_scale]
-            diff = (pos - vertex_pos) * microns_per_voxel
-            if np.linalg.norm(diff) < radius:
-                return i
-        return None
+        if tree is not None:
+            # Optimized spatial query
+            pos_microns = pos * microns_per_voxel
+            # Query candidates within max possible radius
+            candidates = tree.query_ball_point(pos_microns, max_search_radius)
+            for i in candidates:
+                # Check specific radius for this candidate
+                vertex_pos = vertex_positions[i]
+                vertex_scale = vertex_scales[i]
+                radius = lumen_radius_microns[vertex_scale]
+                diff = pos_microns - (vertex_pos * microns_per_voxel)
+                if np.linalg.norm(diff) < radius:
+                    return i
+            return None
+        else:
+            # Fallback linear scan
+            for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+                radius = lumen_radius_microns[vertex_scale]
+                diff = (pos - vertex_pos) * microns_per_voxel
+                if np.linalg.norm(diff) < radius:
+                    return i
+            return None
 
     def _find_terminal_vertex(self, pos: np.ndarray, vertex_positions: np.ndarray,
                               vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
-                              microns_per_voxel: np.ndarray) -> Optional[int]:
+                              microns_per_voxel: np.ndarray,
+                              tree: Optional[cKDTree] = None,
+                              max_search_radius: float = 0.0) -> Optional[int]:
         """Find the index of a terminal vertex near a given position, if any."""
         return self._near_vertex(pos, vertex_positions, vertex_scales,
-                                 lumen_radius_microns, microns_per_voxel)
+                                 lumen_radius_microns, microns_per_voxel,
+                                 tree=tree, max_search_radius=max_search_radius)
 
     def _compute_gradient(
         self, energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray
