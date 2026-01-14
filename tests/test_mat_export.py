@@ -3,10 +3,10 @@ import sys
 import numpy as np
 from pathlib import Path
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.visualization import NetworkVisualizer
-from src.io_utils import load_network_from_mat
+from src.slavv.visualization import NetworkVisualizer
+from src.slavv.io_utils import load_network_from_mat
 
 
 def test_export_and_load_mat(tmp_path: Path) -> None:

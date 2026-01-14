@@ -3,8 +3,8 @@ import sys
 
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
-from src.ml_curator import AutomaticCurator
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+from src.slavv.ml_curator import AutomaticCurator
 
 
 def test_automatic_vertex_curation_filters_low_energy_vertices():

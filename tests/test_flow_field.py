@@ -3,8 +3,8 @@ import pathlib
 import numpy as np
 import plotly.graph_objects as go
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
-from src.visualization import NetworkVisualizer
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+from src.slavv.visualization import NetworkVisualizer
 
 
 def test_plot_flow_field_returns_cone():

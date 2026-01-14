@@ -2,9 +2,9 @@ import sys
 import pathlib
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
-from src.ml_curator import MLCurator
-from src.utils import calculate_path_length
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+from src.slavv.ml_curator import MLCurator
+from src.slavv.utils import calculate_path_length
 
 
 def test_vertex_edge_feature_enrichment():
