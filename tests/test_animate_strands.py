@@ -2,8 +2,8 @@ import pathlib
 import sys
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
-from src.visualization import NetworkVisualizer
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+from src.slavv.visualization import NetworkVisualizer
 
 
 def build_sample_network():

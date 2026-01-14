@@ -4,9 +4,9 @@ import numpy as np
 import plotly.express as px
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit'))
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.visualization import NetworkVisualizer
+from src.slavv.visualization import NetworkVisualizer
 
 
 def test_edge_depth_coloring():

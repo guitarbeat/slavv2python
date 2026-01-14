@@ -1,7 +1,7 @@
 
 import numpy as np
 import pytest
-from src.vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 processor = SLAVVProcessor()
 
