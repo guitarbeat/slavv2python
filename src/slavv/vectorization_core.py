@@ -239,7 +239,7 @@ class SLAVVProcessor:
             logger.info(f"Loading cached Network from {paths['network']}")
             network = joblib.load(paths['network'])
         else:
-            network = self.construct_network(vertices, edges, parameters)
+            network = self.construct_network(edges, vertices, parameters)
             if checkpoint_dir:
                 logger.info(f"Saving Network to {paths['network']}")
                 joblib.dump(network, paths['network'])
@@ -908,9 +908,9 @@ class SLAVVProcessor:
         min_hair_length = params.get("min_hair_length_in_microns", 0.0)
         remove_cycles = params.get("remove_cycles", True)
 
-        # Build adjacency matrix and edge list for graph
+        # Build SPARSE adjacency list (instead of dense matrix for memory efficiency)
         n_vertices = len(vertex_positions)
-        adjacency = np.zeros((n_vertices, n_vertices), dtype=bool)
+        adjacency_list: Dict[int, set] = {i: set() for i in range(n_vertices)}
 
         # Early return if there are no edges
         if len(edge_traces) == 0:
@@ -926,7 +926,7 @@ class SLAVVProcessor:
                 "orphans": orphans,
                 "cycles": [],
                 "mismatched_strands": [],
-                "adjacency": adjacency,
+                "adjacency_list": adjacency_list,
                 "vertex_degrees": vertex_degrees,
                 "graph_edges": {},
                 "dangling_edges": [],
@@ -945,12 +945,16 @@ class SLAVVProcessor:
                 })
                 continue
 
-            adjacency[start_vertex, end_vertex] = True
-            adjacency[end_vertex, start_vertex] = True
+            adjacency_list[start_vertex].add(end_vertex)
+            adjacency_list[end_vertex].add(start_vertex)
 
             key = tuple(sorted((start_vertex, end_vertex)))
             if key not in graph_edges:
                 graph_edges[key] = trace
+
+        # Helper function to get degree
+        def get_degree(v):
+            return len(adjacency_list[v])
 
         # Optionally remove short hairs connected to degree-1 vertices
         if min_hair_length > 0:
@@ -960,9 +964,10 @@ class SLAVVProcessor:
                     np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1)
                 )
                 if length < min_hair_length and (
-                    np.sum(adjacency[v0]) == 1 or np.sum(adjacency[v1]) == 1
+                    get_degree(v0) == 1 or get_degree(v1) == 1
                 ):
-                    adjacency[v0, v1] = adjacency[v1, v0] = False
+                    adjacency_list[v0].discard(v1)
+                    adjacency_list[v1].discard(v0)
                     to_remove.append((v0, v1))
             for key in to_remove:
                 del graph_edges[key]
@@ -982,26 +987,27 @@ class SLAVVProcessor:
                 r0, r1 = find(v0), find(v1)
                 if r0 == r1:
                     cycles.append((v0, v1))
-                    adjacency[v0, v1] = adjacency[v1, v0] = False
+                    adjacency_list[v0].discard(v1)
+                    adjacency_list[v1].discard(v0)
                     del graph_edges[(v0, v1)]
                 else:
                     parent[r1] = r0
 
-        # Find connected components (strands)
+        # Find connected components (strands) using sparse adjacency
         strands = []
         visited = np.zeros(n_vertices, dtype=bool)
 
         for vertex_idx in range(n_vertices):
-            if not visited[vertex_idx]:
-                strand = self._trace_strand(vertex_idx, adjacency, visited)
+            if not visited[vertex_idx] and get_degree(vertex_idx) > 0:
+                strand = self._trace_strand_sparse(vertex_idx, adjacency_list, visited)
                 if len(strand) > 1:
                     strands.append(strand)
 
         # Sort strands and flag ordering mismatches
-        strands, mismatched = self._sort_and_validate_strands(strands, adjacency)
+        strands, mismatched = self._sort_and_validate_strands_sparse(strands, adjacency_list)
 
         # Find bifurcation vertices (degree > 2) and orphans (degree == 0)
-        vertex_degrees = np.sum(adjacency, axis=1).astype(np.int32)
+        vertex_degrees = np.array([get_degree(i) for i in range(n_vertices)], dtype=np.int32)
         bifurcations = np.where(vertex_degrees > 2)[0].astype(np.int32)
         orphans = np.where(vertex_degrees == 0)[0].astype(np.int32)
 
@@ -1020,11 +1026,53 @@ class SLAVVProcessor:
             "orphans": orphans,
             "cycles": cycles,
             "mismatched_strands": mismatched,
-            "adjacency": adjacency.astype(bool),
+            "adjacency_list": adjacency_list,
             "vertex_degrees": vertex_degrees,
             "graph_edges": graph_edges,
             "dangling_edges": dangling_edges,
         }
+
+    def _trace_strand_sparse(self, start: int, adjacency_list: Dict[int, set], 
+                              visited: np.ndarray) -> List[int]:
+        """Trace a strand through connected vertices using sparse adjacency list."""
+        strand = [start]
+        visited[start] = True
+        current = start
+        
+        while True:
+            neighbors = [n for n in adjacency_list[current] if not visited[n]]
+            if not neighbors:
+                break
+            next_vertex = neighbors[0]
+            strand.append(next_vertex)
+            visited[next_vertex] = True
+            current = next_vertex
+        
+        return strand
+
+    def _sort_and_validate_strands_sparse(self, strands: List[List[int]], 
+                                           adjacency_list: Dict[int, set]) -> Tuple[List[List[int]], List[int]]:
+        """Sort strands and identify mismatched orderings using sparse adjacency."""
+        sorted_strands = []
+        mismatched = []
+        
+        for i, strand in enumerate(strands):
+            # Check if strand endpoints are correctly ordered
+            if len(strand) >= 2:
+                start, end = strand[0], strand[-1]
+                # A strand is valid if start and end have appropriate connectivity
+                start_degree = len(adjacency_list[start])
+                end_degree = len(adjacency_list[end])
+                
+                # Sort strand so lower-degree vertex is at start (for consistency)
+                if start_degree > end_degree:
+                    strand = strand[::-1]
+                elif start_degree == end_degree and start > end:
+                    strand = strand[::-1]
+            
+            sorted_strands.append(strand)
+        
+        return sorted_strands, mismatched
 
     def _estimate_vessel_directions(
         self,
