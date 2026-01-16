@@ -1362,10 +1362,19 @@ class SLAVVProcessor:
         repeated gradient evaluations during edge tracing.
         """
         pos_int = np.round(pos).astype(np.int64)
-        # Ensure proper dtypes for Numba compatibility
-        energy_arr = np.ascontiguousarray(energy, dtype=np.float64)
-        mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
-        return _compute_gradient_impl(energy_arr, pos_int, mpv_arr)
+
+        if _NUMBA_AVAILABLE:
+            # Ensure proper dtypes for Numba compatibility
+            energy_arr = np.ascontiguousarray(energy, dtype=np.float64)
+            mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
+            return _compute_gradient_impl(energy_arr, pos_int, mpv_arr)
+
+        # When pure Python, avoid expensive copy/cast inside loop
+        # We assume energy is float32 (from calculate_energy_field) to avoid
+        # expensive cast to float64/contiguous array.
+        # Ensure mpv is an array for safety.
+        mpv_arr = np.asarray(microns_per_voxel)
+        return _compute_gradient_impl(energy, pos_int, mpv_arr)
 
 
 def preprocess_image(image: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
