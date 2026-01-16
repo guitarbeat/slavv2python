@@ -1,3 +1,6 @@
 [submodule "Vectorization-Public"]
 	path = Vectorization-Public
 	url = https://github.com/UTFOIL/Vectorization-Public.git
+[submodule "VessMorphoVis"]
+	path = VessMorphoVis
+	url = https://github.com/BlueBrain/VessMorphoVis.git
