@@ -1,4 +1,4 @@
-# SLAVV Accuracy and Performance Improvements
+# Benchmarks and Performance Improvements
 
 This document outlines potential improvements for the Python port of SLAVV, comparing the current implementation with the original MATLAB approach and suggesting optimizations for speed and accuracy.
 
@@ -15,10 +15,10 @@ This document outlines potential improvements for the Python port of SLAVV, comp
 
 ---
 
-## Detailed Recommendations based on `MATLAB_TO_PYTHON_MAPPING.md`
+## Detailed Recommendations based on `MIGRATION_GUIDE.md`
 
 ### verification of Mapping Claims
-The mapping document (`docs/MATLAB_TO_PYTHON_MAPPING.md`) confirms that the Python port prioritizes **feature parity** and **accuracy** (e.g., "Continuous" tracing by default) over raw speed parity with MATLAB's JIT.
+The mapping document (`docs/MIGRATION_GUIDE.md`) confirms that the Python port prioritizes **feature parity** and **accuracy** (e.g., "Continuous" tracing by default) over raw speed parity with MATLAB's JIT.
 
 ### 1. Energy Calculation: FFT vs. Spatial Convolution
 

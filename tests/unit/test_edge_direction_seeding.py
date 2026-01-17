@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 
 @patch(
-    'src.slavv.pipeline.SLAVVProcessor._generate_edge_directions',
+    'src.slavv.tracing.estimate_vessel_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
