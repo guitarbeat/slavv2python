@@ -200,15 +200,12 @@ class SLAVVProcessor:
     
     @staticmethod
     def _trace_strand(*args, **kwargs):
-        # Legacy: mapping to sparse if possible, or assume dense if that's what caller wants?
-        # graph.py does not export dense _trace_strand anymore.
-        # If legacy code calls this, it might break. 
-        # But `vectorization_core.py` (legacy) might be used.
-        # Let's map to sparse trace if arguments match, but dense vs list signatures differ.
-        # Since we removed dense logic, we raise NotImplemented or try to adapt.
-        # For now, let's assume internal calls are updated to use graph module functions directly 
-        # via `construct_network`.
-        raise NotImplementedError("Legacy dense matrix tracing is removed. Use sparse implementation.")
+        """Legacy method - delegates to sparse implementation.
+        
+        Note: Signature differs from original dense implementation.
+        Use graph.trace_strand_sparse directly for new code.
+        """
+        return graph.trace_strand_sparse(*args, **kwargs)
 
     @staticmethod
     def _trace_strand_sparse(*args, **kwargs):

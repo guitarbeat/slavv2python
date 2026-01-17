@@ -40,7 +40,7 @@ Continuous tracing is numerically strictly superior (smoother vessels) but compu
 Users needing speed should set `discrete_tracing=True` in their parameters. This aligns closer to MATLAB's `get_edges_V300.m` numerical behavior and is faster to compute.
 
 **Improvement 2 (Implementation):**
-Use **Numba** to compile the `_trace_edge` loop. Since this function is purely mathematical, it is a perfect candidate for `@njit`.
+Use **Numba** to compile the `trace_edge` loop in `tracing.py`. Since this function is purely mathematical, it is a perfect candidate for `@njit`.
 
 ### 3. Alternative: Watershed Segmentation
 

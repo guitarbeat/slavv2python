@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():

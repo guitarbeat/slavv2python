@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 
 
 def test_process_image_reports_progress():

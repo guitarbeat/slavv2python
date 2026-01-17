@@ -10,7 +10,7 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 | I/O (`io_utils.py`) | **Complete** | MAT, CASX, VMV, CSV, JSON, DICOM, TIFF |
 | Visualization (`visualization.py`) | **Complete** | 2D/3D Plotly, animations, export |
 | ML Curation (`ml_curator.py`) | **Functional** | Logistic/RF classifiers, feature extraction |
-| Test Suite | **41 tests** | Covers core pipeline, I/O, visualization |
+| Test Suite | **81 tests** | Covers core pipeline, I/O, visualization |
 | Documentation | **Complete** | Mapping, Innovations, Performance docs |
 | Checkpointing | **Built-in** | `checkpoint_dir` argument for resume |
 
@@ -97,7 +97,7 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 ## Phase 4: Testing & CI (Priority: Low) 🧪
 
 ### 4.1 Expand Test Coverage
-- **Current:** 41 test files, mostly unit tests
+- **Current:** 38 test files, 81 tests
 - **Gap:** No integration tests with real data
 - **Action:** Add MATLAB output comparison tests
 

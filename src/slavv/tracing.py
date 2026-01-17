@@ -30,15 +30,24 @@ def compute_gradient(energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.
     mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
     return compute_gradient_impl(energy_arr, pos_int, mpv_arr)
 
-def generate_edge_directions(n_directions: int) -> np.ndarray:
-    """Generate uniformly distributed unit vectors on the sphere."""
+def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> np.ndarray:
+    """Generate uniformly distributed unit vectors on the sphere.
+    
+    Parameters
+    ----------
+    n_directions : int
+        Number of direction vectors to generate.
+    seed : int, optional
+        Random seed for reproducibility. If None, uses unseeded RNG.
+    """
     if n_directions <= 0:
         return np.empty((0, 3))
     if n_directions == 1:
         return np.array([[0, 0, 1]], dtype=float)
 
     # Generate random points from a 3D standard normal distribution
-    points = np.random.randn(n_directions, 3)
+    rng = np.random.default_rng(seed)
+    points = rng.standard_normal((n_directions, 3))
     # Normalize to unit vectors
     norms = np.linalg.norm(points, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
