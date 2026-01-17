@@ -29,12 +29,12 @@ import warnings
 from typing import Tuple, List, Optional, Dict, Any, Callable
 import logging
 import networkx as nx
-# Optional Numba acceleration - disabled due to dtype compatibility issues
-# TODO: Re-enable once dtype handling is fixed
+# Optional Numba acceleration - disabled due to version mismatch (Numba 0.43.1 vs NumPy 1.21.6)
+# triggers "TypeError: expected dtype object, got 'numpy.dtype[float64]'"
 _NUMBA_AVAILABLE = False
 try:
     from numba import njit
-except Exception:  # pragma: no cover - Numba may not be installed
+except ImportError:
     njit = None
 
 # Configure logging
@@ -66,37 +66,33 @@ __all__ = [
 
 if _NUMBA_AVAILABLE:
 
-    @njit(cache=True)
-    def _compute_gradient_impl(energy, pos_int, microns_per_voxel):
-        """Compute local energy gradient via central differences.
-
-        Parameters
-        ----------
-        energy : np.ndarray
-            Energy volume with shape ``(Y, X, Z)``.
-        pos_int : np.ndarray
-            Integer index ``[y, x, z]`` into ``energy``.
-        microns_per_voxel : np.ndarray
-            Physical voxel size along ``y, x, z`` axes.
-
-        Returns
-        -------
-        np.ndarray
-            Gradient vector in physical units.
-        """
-        gradient = np.zeros(3, dtype=np.float64)
-        for i in range(3):
-            if 0 < pos_int[i] < energy.shape[i] - 1:
-                pos_plus = pos_int.copy()
-                pos_minus = pos_int.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-                diff = (
-                    energy[pos_plus[0], pos_plus[1], pos_plus[2]]
-                    - energy[pos_minus[0], pos_minus[1], pos_minus[2]]
-                )
-                gradient[i] = diff / (2.0 * microns_per_voxel[i])
-        return gradient
+    @njit
+    def _compute_gradient_impl(energy, pos_int, mpv):
+        """Compute local energy gradient via central differences (Numba accelerated)."""
+        ny = energy.shape[0]
+        nx = energy.shape[1]
+        nz = energy.shape[2]
+        
+        # Manual clamping to [1, shape-2]
+        py = int(pos_int[0])
+        if py < 1: py = 1
+        elif py > ny - 2: py = ny - 2
+        
+        px = int(pos_int[1])
+        if px < 1: px = 1
+        elif px > nx - 2: px = nx - 2
+        
+        pz = int(pos_int[2])
+        if pz < 1: pz = 1
+        elif pz > nz - 2: pz = nz - 2
+        
+        grad = np.zeros(3, dtype=np.float64)
+        # Use explicit indexing for speed and clarity
+        grad[0] = (energy[py+1, px, pz] - energy[py-1, px, pz]) / (2.0 * mpv[0])
+        grad[1] = (energy[py, px+1, pz] - energy[py, px-1, pz]) / (2.0 * mpv[1])
+        grad[2] = (energy[py, px, pz+1] - energy[py, px, pz-1]) / (2.0 * mpv[2])
+        
+        return grad
 
 else:
 

@@ -8,7 +8,7 @@ sys.path.append(
     str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src')
 )
 
-from vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 
 def test_estimate_vessel_directions_axis_aligned():
@@ -29,7 +29,7 @@ from unittest.mock import patch
 
 
 @patch(
-    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    'src.slavv.vectorization_core.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_fallback(mock_generate_directions):
@@ -59,7 +59,7 @@ def test_estimate_vessel_directions_anisotropic_spacing():
 
 
 @patch(
-    'vectorization_core.SLAVVProcessor._generate_edge_directions',
+    'src.slavv.vectorization_core.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):

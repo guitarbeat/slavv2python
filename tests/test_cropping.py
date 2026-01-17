@@ -3,9 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import crop_vertices, crop_edges, crop_vertices_by_mask
+from src.slavv.vectorization_core import crop_vertices, crop_edges, crop_vertices_by_mask
 
 
 def test_crop_vertices_and_edges():

@@ -3,9 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import SLAVVProcessor, validate_parameters
+from src.slavv.vectorization_core import SLAVVProcessor, validate_parameters
 
 
 def test_energy_field_no_full_storage():

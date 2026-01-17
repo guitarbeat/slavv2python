@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from vectorization_core import SLAVVProcessor
+from .vectorization_core import SLAVVProcessor
 
 
 def profile_process_image(image: np.ndarray, parameters: Optional[Dict[str, Any]] = None) -> pstats.Stats:

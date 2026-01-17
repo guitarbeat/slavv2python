@@ -3,9 +3,7 @@ import sys
 import numpy as np
 
 # add src path
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from ml_curator import extract_uncurated_info
+from src.slavv.ml_curator import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:

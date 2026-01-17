@@ -5,9 +5,7 @@ import numpy as np
 from pstats import Stats
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from profiling import profile_process_image
+from src.slavv.profiling import profile_process_image
 
 
 def test_profile_process_image_returns_stats():
