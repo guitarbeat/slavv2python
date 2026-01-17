@@ -69,6 +69,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["blender_resources", "Vectorization-Public"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 filterwarnings = [

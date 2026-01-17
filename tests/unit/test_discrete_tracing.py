@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 
 
 def test_discrete_tracing_steps_snap_to_voxels():
@@ -18,7 +18,7 @@ def test_discrete_tracing_steps_snap_to_voxels():
         start_pos,
         direction,
         step_size=1.0,
-        max_energy=0.0,
+        max_edge_energy=0.0,
         vertex_positions=np.empty((0, 3)),
         vertex_scales=np.empty((0,), dtype=int),
         lumen_radius_pixels=np.array([1.0]),

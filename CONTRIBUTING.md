@@ -8,21 +8,30 @@ Thanks for your interest in contributing! This document outlines conventions for
 
 ## Code Style
 - Follow basic PEP 8 formatting for Python code.
+- **Type Hinting**: All public functions in `src/` must have Python type hints (e.g., `def func(x: int) -> float:`).
+- **Docstrings**: Use reStructuredText (RST) or Google-style docstrings for all exported members.
+- **Logging**: Use the standard `logging` module.
+  - Do NOT use `print()` in library code (`src/`).
+  - For scripts (`examples/`), use a consistent prefix for `print` messages (e.g., `[MyScript]: Message`).
 
 ## Programmatic Checks & Testing
 - Compile check for all Python files:
   ```bash
-  python -m py_compile $(git ls-files '*.py')
+  python -m compileall src/ tests/
   ```
-- Run tests from the repo root (ensure source path on `PYTHONPATH`):
+- Run tests from the repo root (the `src` layout is automatically handled by `pyproject.toml` editable installs, or manual path setting):
   ```bash
-  export PYTHONPATH=slavv-streamlit/src
+  # Option 1: Install in editable mode (Recommended)
+  pip install -e .
+  pytest -q
+
+  # Option 2: Manual PYTHONPATH
+  export PYTHONPATH=$PYTHONPATH:$(pwd)/src
   pytest -q
   ```
   To run one test module:
   ```bash
-  export PYTHONPATH=slavv-streamlit/src
-  pytest -q tests/test_public_api.py
+  pytest -q tests/unit/test_energy.py
   ```
 
 ## Commit Messages
@@ -43,9 +52,9 @@ Thanks for your interest in contributing! This document outlines conventions for
 ### Before Pushing Any Core Changes
 Run the regression workflow:
 ```bash
-pytest tests/test_regression_edges.py -v  # Critical regression test
+pytest tests/unit/test_regression.py -v    # Critical regression test
 pytest tests/ -v                           # Full suite
-python examples/run_headless_demo.py       # Quick integration check
+python examples/run_tutorial.py            # Quick integration check
 ```
 
 Or invoke: `/regression-check`

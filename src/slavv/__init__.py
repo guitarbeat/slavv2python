@@ -5,11 +5,13 @@ A Python implementation of the SLAVV algorithm for extracting and analyzing
 vascular networks from 3D microscopy images.
 """
 
-from .vectorization_core import (
-    SLAVVProcessor,
+from .pipeline import SLAVVProcessor
+from .utils import (
     preprocess_image,
     validate_parameters,
     get_chunking_lattice,
+)
+from .geometry import (
     calculate_branching_angles,
     calculate_network_statistics,
     calculate_surface_area,
