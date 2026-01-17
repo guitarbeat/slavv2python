@@ -1,11 +1,12 @@
 import pathlib
 import sys
-import streamlit as st
+import pytest
+st = pytest.importorskip("streamlit")
 
 
 def test_app_sets_wide_layout(monkeypatch):
     repo_root = pathlib.Path(__file__).resolve().parents[1]
-    sys.path.append(str(repo_root / 'slavv-streamlit'))
+    sys.path.append(str(repo_root))
 
     called = {}
 

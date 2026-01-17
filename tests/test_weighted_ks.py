@@ -3,9 +3,7 @@ import numpy as np
 import sys
 import pathlib
 
-# Add the slavv-streamlit directory to the path
-repo_root = pathlib.Path(__file__).resolve().parents[1]
-sys.path.append(str(repo_root / 'slavv-streamlit'))
+
 
 from src.slavv.utils import weighted_ks_test
 

@@ -4,11 +4,7 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-sys.path.append(
-    str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src')
-)
-
-from vectorization_core import SLAVVProcessor, validate_parameters
+from src.slavv.vectorization_core import SLAVVProcessor, validate_parameters
 
 
 def test_validate_parameters_direction_method():

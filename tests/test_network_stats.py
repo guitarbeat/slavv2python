@@ -4,9 +4,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import (
+from src.slavv.vectorization_core import (
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,

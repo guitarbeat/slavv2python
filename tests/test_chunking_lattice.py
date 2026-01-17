@@ -3,9 +3,7 @@ import pathlib
 import numpy as np
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import get_chunking_lattice
+from src.slavv.vectorization_core import get_chunking_lattice
 
 
 def test_chunking_lattice_reconstructs_volume():

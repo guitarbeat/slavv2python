@@ -5,9 +5,7 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 
 def test_extract_handles_no_vertices():
@@ -27,7 +25,7 @@ def test_extract_handles_no_vertices():
     assert edges['connections'].shape == (0, 2)
 
     network = processor.construct_network(edges, vertices, {})
-    assert network['adjacency'].shape == (0, 0)
+    assert len(network['adjacency_list']) == 0
     assert network['orphans'].size == 0
 
 

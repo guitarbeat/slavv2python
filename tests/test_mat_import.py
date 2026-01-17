@@ -4,9 +4,7 @@ import numpy as np
 from pathlib import Path
 from scipy.io import savemat
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from io_utils import load_network_from_mat
+from src.slavv.io_utils import load_network_from_mat
 
 
 def test_load_network_from_mat(tmp_path: Path) -> None:

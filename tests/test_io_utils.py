@@ -6,9 +6,7 @@ import numpy as np
 import pytest
 import tifffile
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from io_utils import load_tiff_volume
+from src.slavv.io_utils import load_tiff_volume
 
 
 def test_load_tiff_volume_valid():

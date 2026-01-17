@@ -4,9 +4,7 @@ import sys
 import numpy as np
 from pathlib import Path
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from io_utils import (
+from src.slavv.io_utils import (
     load_network_from_casx,
     load_network_from_vmv,
     load_network_from_csv,
