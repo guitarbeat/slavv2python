@@ -46,7 +46,7 @@ def benchmark_plot_2d_network():
     visualizer = NetworkVisualizer()
     vertices, edges, network, parameters = generate_large_network(n_edges=5000)
 
-    print(f"Benchmarking plot_2d_network with {len(edges['traces'])} edges...")
+    print(f"[Benchmark]: Benchmarking plot_2d_network with {len(edges['traces'])} edges...")
 
     start_time = time.time()
     fig = visualizer.plot_2d_network(
@@ -58,8 +58,8 @@ def benchmark_plot_2d_network():
     )
     end_time = time.time()
 
-    print(f"Time taken: {end_time - start_time:.4f} seconds")
-    print(f"Number of traces: {len(fig.data)}")
+    print(f"[Benchmark]: Time taken: {end_time - start_time:.4f} seconds")
+    print(f"[Benchmark]: Number of traces: {len(fig.data)}")
 
     # Verify trace count. Current implementation adds 1 trace per edge.
     # So we expect ~5000 traces.

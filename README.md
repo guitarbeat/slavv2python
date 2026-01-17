@@ -7,9 +7,10 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 - **src/slavv/** – Main Python package containing the algorithm core, I/O, and visualization tools
 - **app.py** – Streamlit application entry point
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
-- **docs/MATLAB_TO_PYTHON_MAPPING.md** – canonical MATLAB→Python mapping (includes coverage + deviations)
-- **CONTRIBUTING.md** – contributing and testing guidelines
-- **tests/** – Comprehensive test suite and benchmarks
+- **docs/ARCHITECTURE.md** – System architecture and data flow diagrams.
+- **docs/MATLAB_TO_PYTHON_MAPPING.md** – Canonical MATLAB→Python mapping.
+- **CONTRIBUTING.md** – Guidelines, coding standards, and testing commands.
+- **tests/** – Comprehensive test suite.
 
 ## Getting started
 
@@ -19,21 +20,21 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
    python -m venv .venv
    source .venv/bin/activate  # or .venv\Scripts\activate on Windows
    ```
-3. Install dependencies:
+3. Install the package in editable mode (installs dependencies):
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 4. Launch the Streamlit application:
    ```bash
    streamlit run app.py
    ```
-5. Open the provided URL in your browser and follow the instructions to process images.
+5. Open the provided URL in your browser.
 
 ## Usage
 
 ### Programmatic Usage (Headless/Batch)
 For integration into other pipelines or running on a cluster without the UI, use the `SLAVVProcessor` class.
-See **`examples/run_headless_demo.py`** for a complete example.
+See **`examples/run_tutorial.py`** or the docstrings for details.
 
 ```python
 from slavv.vectorization_core import SLAVVProcessor

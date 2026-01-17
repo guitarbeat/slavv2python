@@ -505,6 +505,6 @@ def export_pipeline_results(
         created_files.append(params_path)
 
     except Exception as e:
-        print(f"Warning: Failed to export generic parameters: {e}")
+        logger.warning(f"Failed to export generic parameters: {e}")
 
     return created_files

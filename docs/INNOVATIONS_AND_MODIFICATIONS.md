@@ -7,8 +7,8 @@ This document outlines the architectural and algorithmic innovations introduced 
 ### 1.1 Decoupling of Logic and Interface
 **Innovation:** Separation of Concerns (SoC).
 - **Original MATLAB:** The core logic (`vectorize_V200.m`) was tightly coupled with CLI prompts and the `vectorization_script_*.m` wrappers. The Graphical Curator Interface (GCI) was embedded in the processing loop.
-- **Python Port:** The core logic is encapsulated in the `SLAVVProcessor` class (in `src/slavv/vectorization_core.py`). This strictly separates **Processing** from **Presentation**.
-  - **Result:** The same core engine drives the interactive Streamlit Web App (`app.py`), the headless batch processor (`examples/run_demo_headless.py`), and automated testing suites.
+- **Python Port:** The core logic is encapsulated in the `SLAVVProcessor` class (in `src/slavv/pipeline.py`). This strictly separates **Processing** from **Presentation**.
+  - **Result:** The same core engine drives the interactive Streamlit Web App (`app.py`), the headless tutorial script (`examples/run_tutorial.py`), and automated testing suites.
   - **Impact:** Enables deployment on High-Performance Computing (HPC) clusters or Cloud environments (AWS/GCP) where no GUI is available.
 
 ### 1.2 Modular Package Design

@@ -12,32 +12,32 @@ from src.slavv.io_utils import load_tiff_volume, export_pipeline_results
 
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    print("--- SLAVV Tutorial Reproduction Script ---")
+    print("[Tutorial]: --- SLAVV Tutorial Reproduction Script ---")
     
     # 1. Ask for Input File
     if len(sys.argv) > 1:
         input_path = sys.argv[1]
     else:
-        print("\nNote: The tutorial data is not included in the repository due to size.")
-        print("Please download 'Image A' (20170809_txRed_chronic_tiled.tif) from the Google Drive linked in Vectorization-Public/README.md")
+        print("\n[Tutorial]: Note: The tutorial data is not included in the repository due to size.")
+        print("[Tutorial]: Please download 'Image A' (20170809_txRed_chronic_tiled.tif) from the Google Drive linked in Vectorization-Public/README.md")
         input_path = input("Enter path to the .tif file (or press Enter to exit): ").strip()
         
     if not input_path:
-        print("No file provided. Exiting.")
+        print("[Tutorial]: No file provided. Exiting.")
         return
 
     if not os.path.exists(input_path):
-        print(f"Error: File not found at {input_path}")
+        print(f"[Tutorial]: Error: File not found at {input_path}")
         return
 
-    print(f"Loading {input_path}...")
+    print(f"[Tutorial]: Loading {input_path}...")
     try:
         image = load_tiff_volume(input_path)
     except Exception as e:
-        print(f"Failed to load image: {e}")
+        print(f"[Tutorial]: Failed to load image: {e}")
         return
 
-    print(f"Image shape: {image.shape}, Data type: {image.dtype}")
+    print(f"[Tutorial]: Image shape: {image.shape}, Data type: {image.dtype}")
 
     # 2. Define Parameters (from vectorization_script_2017MMDD_TxRed_chronic.m)
     # Original MATLAB values:
@@ -51,7 +51,7 @@ def main():
     # scales_per_octave = 3
     # max_voxels_per_node_energy = 1e6
 
-    print("Configuring parameters from tutorial...")
+    print("[Tutorial]: Configuring parameters from tutorial...")
     params = {
         'microns_per_voxel': np.array([1.07, 1.07, 5.0]), # Anisotropic!
         'radius_of_smallest_vessel_in_microns': 1.5,
@@ -68,14 +68,14 @@ def main():
     }
 
     # 3. Run Pipeline
-    print("Initializing Processor...")
+    print("[Tutorial]: Initializing Processor...")
     processor = SLAVVProcessor()
-    print("Running Pipeline (Energy -> Vertices -> Edges -> Network)...")
+    print("[Tutorial]: Running Pipeline (Energy -> Vertices -> Edges -> Network)...")
     def progress_callback(frac, stage):
-        print(f"Progress: {frac*100:.0f}% - {stage}")
+        print(f"[Tutorial]: Progress: {frac*100:.0f}% - {stage}")
 
     # Use built-in checkpointing to resume if interrupted
-    print(f"Resume enabled: Checkpointing to 'tutorial_output/'")
+    print(f"[Tutorial]: Resume enabled: Checkpointing to 'tutorial_output/'")
     
     try:
         results = processor.process_image(
@@ -90,13 +90,13 @@ def main():
         edges = results['edges']['traces']
         network_strands = results['network']['strands']
         
-        print("\n--- Tutorial Reproduction Successful ---")
-        print(f"Vertices found: {len(vertices)}")
-        print(f"Edges traced: {len(edges)}")
-        print(f"Network strands: {len(network_strands)}")
+        print("\n[Tutorial]: --- Tutorial Reproduction Successful ---")
+        print(f"[Tutorial]: Vertices found: {len(vertices)}")
+        print(f"[Tutorial]: Edges traced: {len(edges)}")
+        print(f"[Tutorial]: Network strands: {len(network_strands)}")
 
         # 5. Export Standard Results
-        print("Exporting results...")
+        print("[Tutorial]: Exporting results...")
         export_pipeline_results(results, "tutorial_output", base_name="tutorial")
         
         # 6. Export VMV for VessMorphoVis/Blender visualization
@@ -110,7 +110,7 @@ def main():
                 "tutorial_output/network.vmv", 
                 format='vmv'
             )
-            print(f"VMV export for VessMorphoVis: {vmv_path}")
+            print(f"[Tutorial]: VMV export for VessMorphoVis: {vmv_path}")
             
             # Export to CASX format
             casx_path = visualizer.export_network_data(
@@ -118,14 +118,14 @@ def main():
                 "tutorial_output/network.casx", 
                 format='casx'
             )
-            print(f"CASX export: {casx_path}")
+            print(f"[Tutorial]: CASX export: {casx_path}")
         except Exception as e:
-            print(f"Note: Visualization export skipped: {e}")
+            print(f"[Tutorial]: Note: Visualization export skipped: {e}")
         
-        print("Done! Results saved to tutorial_output/")
+        print("[Tutorial]: Done! Results saved to tutorial_output/")
         
     except Exception as e:
-        print(f"\nProcessing failed: {e}")
+        print(f"\n[Tutorial]: Processing failed: {e}")
         import traceback
         traceback.print_exc()
 
