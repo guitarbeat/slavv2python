@@ -6,6 +6,7 @@ TIFF image volumes.
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, IO, List, Optional, Union
@@ -15,6 +16,8 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 import xml.etree.ElementTree as ET
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -7,7 +7,7 @@ import logging
 # Add project root to path to allow importing src.slavv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 from src.slavv.io_utils import load_tiff_volume, export_pipeline_results
 
 def main():

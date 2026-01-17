@@ -20,8 +20,9 @@ except ImportError:
         frangi = None
         sato = None
 
-# Optional Numba acceleration - disabled due to version mismatch (Numba 0.43.1 vs NumPy 1.21.6)
-# triggers "TypeError: expected dtype object, got 'numpy.dtype[float64]'"
+# Optional Numba acceleration
+# Currently disabled: Numba 0.43.1 is incompatible with NumPy 1.21.6+
+# To enable, upgrade Numba to 0.50+ or set _NUMBA_AVAILABLE = True after verifying compatibility
 _NUMBA_AVAILABLE = False
 try:
     from numba import njit

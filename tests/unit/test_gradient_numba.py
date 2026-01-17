@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 
 def test_compute_gradient_linear_field():
     proc = SLAVVProcessor()

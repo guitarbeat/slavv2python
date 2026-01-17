@@ -137,7 +137,7 @@ class MLCurator:
                     gradient[1],  # X gradient
                     gradient[2],  # Z gradient
                 ])
-            except:
+            except Exception:
                 vertex_features.extend([0, 0, 0, 0])
             
             features.append(vertex_features)
@@ -201,7 +201,7 @@ class MLCurator:
                     ])
                 else:
                     edge_features.extend([0, 0, 0, 0, 0])
-            except:
+            except Exception:
                 edge_features.extend([0, 0, 0, 0, 0])
             
             # Vertex connection features

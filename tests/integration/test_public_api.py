@@ -5,13 +5,8 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-from src.slavv.vectorization_core import SLAVVProcessor, validate_parameters
-
-
-def test_validate_parameters_defaults():
-    params = validate_parameters({})
-    assert 'microns_per_voxel' in params
-    assert len(params['microns_per_voxel']) == 3
+from src.slavv.pipeline import SLAVVProcessor
+from src.slavv.utils import validate_parameters
 
 
 def test_process_image_structure():

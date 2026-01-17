@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-from src.slavv.vectorization_core import SLAVVProcessor, validate_parameters
+from src.slavv.pipeline import SLAVVProcessor
+from src.slavv.utils import validate_parameters
 
 
 def test_validate_parameters_direction_method():

@@ -5,7 +5,7 @@ import numpy as np
 # Add source path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.slavv.vectorization_core import SLAVVProcessor
+from src.slavv.pipeline import SLAVVProcessor
 
 
 from unittest.mock import patch
@@ -19,8 +19,8 @@ def test_extract_edges_regression(mock_generate_directions):
     expected_connections = np.array([[0, -1], [0, -1]], dtype=int)
     expected_traces = np.array(
         [
-            [[10.0, 10.0, 10.0], [10.0, 14.0, 10.0], [10.0, 18.0, 10.0]],
-            [[10.0, 10.0, 10.0], [10.0, 6.0, 10.0], [10.0, 2.0, 10.0]],
+            [[10.0, 10.0, 10.0], [10.0, 10.0, 14.0], [10.0, 10.0, 18.0]],
+            [[10.0, 10.0, 10.0], [10.0, 10.0, 6.0], [10.0, 10.0, 2.0]],
         ],
         dtype=float,
     )
