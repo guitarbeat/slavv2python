@@ -1,11 +1,11 @@
-## MATLAB → Python Mapping (Parity Levels)
+# MATLAB to Python Migration Guide
 
 This document maps key MATLAB SLAVV functions/scripts to their Python counterparts in this repository, and indicates the current parity level:
 - Exact: Equivalent behavior intended and validated
 - Approximate: Implemented and functional but not numerically identical or missing some heuristics/options
 - Omitted: Not implemented yet (planned)
 
-This document also summarizes coverage and known parity deviations to keep docs minimal.
+This document also summarizes coverage and known parity deviations to keep docs minimal. Performance benchmarks are in `BENCHMARKS.md`.
 
 ### Core Algorithm
 

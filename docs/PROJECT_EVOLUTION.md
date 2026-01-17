@@ -1,4 +1,4 @@
-# SLAVV 2.0: Innovations and Modifications Report
+# SLAVV 2.0: Project Evolution and Innovations
 
 This document outlines the architectural and algorithmic innovations introduced in the Python port of **Segmentation-Less, Automated, Vascular Vectorization (SLAVV)**. It serves as a reference for publications describing the transition from the legacy MATLAB research code to a production-grade Python scientific package.
 
@@ -52,7 +52,7 @@ This document outlines the architectural and algorithmic innovations introduced 
 
 ### 4.1 Automated Parity Verification
 **Innovation:** Regression Testing Framework.
-- **New:** We introduced a "Parity Mapping" (`docs/MATLAB_TO_PYTHON_MAPPING.md`) and regression tests that verify the Python output matches expected topological properties, ensuring the port is scientifically valid while being architecturally superior.
+- **New:** We introduced a "Parity Mapping" (`docs/MIGRATION_GUIDE.md`) and regression tests that verify the Python output matches expected topological properties, ensuring the port is scientifically valid while being architecturally superior.
 
 ### 4.2 Future-Proofing for ML
 **Innovation:** `scikit-learn` Integration.

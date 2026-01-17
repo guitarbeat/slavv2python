@@ -8,7 +8,7 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 - **app.py** – Streamlit application entry point
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
 - **docs/ARCHITECTURE.md** – System architecture and data flow diagrams.
-- **docs/MATLAB_TO_PYTHON_MAPPING.md** – Canonical MATLAB→Python mapping.
+- **docs/MIGRATION_GUIDE.md** – Canonical MATLAB→Python mapping.
 - **CONTRIBUTING.md** – Guidelines, coding standards, and testing commands.
 - **tests/** – Comprehensive test suite.
 
@@ -66,7 +66,7 @@ pytest
 - **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 
-For the canonical port status, see [docs/MATLAB_TO_PYTHON_MAPPING.md](docs/MATLAB_TO_PYTHON_MAPPING.md).
+For the canonical port status, see [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md).
 
 ## License
 
