@@ -2,8 +2,7 @@ import pathlib
 import sys
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-from vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 def test_frangi_energy_method():
     image = np.zeros((9, 9, 9), dtype=np.float32)

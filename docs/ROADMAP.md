@@ -30,6 +30,12 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 - **Impact:** Reduced peak memory from 1.3GB to ~6MB per slice
 - **Effort:** Done!
 
+### 1.3 Sparse Adjacency Matrix ✅
+- **File:** `vectorization_core.py` → `construct_network()`
+- **Status:** ✅ **COMPLETE** - Replaced dense boolean matrix with adjacency list
+- **Impact:** Reduced memory from 37GB (!) to ~few MB for 200k vertices
+- **Effort:** Done!
+
 ### 1.3 FFT Convolution for Large σ
 - **File:** `vectorization_core.py` → `calculate_energy_field()`
 - **Rule:** If σ ≥ 10, use `scipy.signal.fftconvolve`

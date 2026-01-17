@@ -3,9 +3,7 @@ import pathlib
 import numpy as np
 
 # Ensure module path
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-
-from vectorization_core import preprocess_image
+from src.slavv.vectorization_core import preprocess_image
 
 
 def test_preprocess_normalizes_to_unit_range():

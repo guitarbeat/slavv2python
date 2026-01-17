@@ -71,3 +71,11 @@ where = ["src"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning:sklearn.*",
+    "ignore::DeprecationWarning:pandas.*",
+    "ignore::DeprecationWarning:numba.*",
+    "ignore:.*invalid escape sequence.*:DeprecationWarning",
+    "ignore:.*np.bool.*:DeprecationWarning",
+    "ignore:.*np.float.*:DeprecationWarning",
+]

@@ -3,8 +3,7 @@ import sys
 
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src'))
-from vectorization_core import SLAVVProcessor
+from src.slavv.vectorization_core import SLAVVProcessor
 
 def test_compute_gradient_linear_field():
     proc = SLAVVProcessor()
