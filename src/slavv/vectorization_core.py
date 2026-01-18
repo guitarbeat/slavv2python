@@ -114,17 +114,35 @@ else:
             Gradient vector in physical units.
         """
         gradient = np.zeros(3, dtype=float)
-        # Clamp position to valid bounds to prevent out-of-bounds access
-        pos_clamped = np.clip(pos_int, [1, 1, 1], 
-                              [s - 2 for s in energy.shape])
-        for i in range(3):
-            if 0 < pos_clamped[i] < energy.shape[i] - 1:
-                pos_plus = pos_clamped.copy()
-                pos_minus = pos_clamped.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-                diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
-                gradient[i] = diff / (2.0 * microns_per_voxel[i])
+
+        # Use explicit indexing to avoid array copying overhead
+        py = int(pos_int[0])
+        px = int(pos_int[1])
+        pz = int(pos_int[2])
+
+        ny, nx, nz = energy.shape
+
+        # Clamp to [1, size-2] to allow +/- 1 neighbors
+        if py < 1: py = 1
+        elif py > ny - 2: py = ny - 2
+
+        if px < 1: px = 1
+        elif px > nx - 2: px = nx - 2
+
+        if pz < 1: pz = 1
+        elif pz > nz - 2: pz = nz - 2
+
+        # Compute central differences directly
+        # Only compute if volume is large enough (at least 3 pixels in dimension)
+        if ny >= 3:
+            gradient[0] = (energy[py+1, px, pz] - energy[py-1, px, pz]) / (2.0 * microns_per_voxel[0])
+
+        if nx >= 3:
+            gradient[1] = (energy[py, px+1, pz] - energy[py, px-1, pz]) / (2.0 * microns_per_voxel[1])
+
+        if nz >= 3:
+            gradient[2] = (energy[py, px, pz+1] - energy[py, px, pz-1]) / (2.0 * microns_per_voxel[2])
+
         return gradient
 
 class SLAVVProcessor:
