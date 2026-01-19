@@ -7,10 +7,11 @@ This repository hosts a Python and Streamlit based reimplementation of the SLAVV
 - **src/slavv/** – Main Python package containing the algorithm core, I/O, and visualization tools
 - **app.py** – Streamlit application entry point
 - **Vectorization-Public/** – snapshot of the original MATLAB source code
-- **docs/ARCHITECTURE.md** – System architecture and data flow diagrams.
-- **docs/MIGRATION_GUIDE.md** – Canonical MATLAB→Python mapping.
-- **CONTRIBUTING.md** – Guidelines, coding standards, and testing commands.
-- **tests/** – Comprehensive test suite.
+- **docs/ARCHITECTURE.md** – System architecture and data flow diagrams
+- **docs/DEVELOPMENT.md** – Status, features, performance, roadmap
+- **docs/MIGRATION_GUIDE.md** – Canonical MATLAB→Python mapping
+- **CONTRIBUTING.md** – Guidelines, coding standards, and testing commands
+- **tests/** – Comprehensive test suite
 
 ## Getting started
 
