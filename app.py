@@ -11,11 +11,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Import our modules
-from src.slavv.vectorization_core import (
-    SLAVVProcessor,
-    validate_parameters,
-    calculate_network_statistics,
-)
+from src.slavv.pipeline import SLAVVProcessor
+from src.slavv.utils import validate_parameters
+from src.slavv.geometry import calculate_network_statistics
 from src.slavv.ml_curator import MLCurator, AutomaticCurator
 from src.slavv.visualization import NetworkVisualizer
 from src.slavv.io_utils import load_tiff_volume
@@ -968,7 +966,7 @@ def show_analysis_page():
     parameters = st.session_state["parameters"]
 
     # Calculate actual statistics using available data
-    from src.vectorization_core import calculate_network_statistics as _calc_stats
+    from src.slavv.geometry import calculate_network_statistics as _calc_stats
     stats = _calc_stats(
         results["network"]["strands"],
         results["network"]["bifurcations"],

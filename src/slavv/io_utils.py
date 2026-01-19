@@ -483,7 +483,7 @@ def export_pipeline_results(
         # But 'io_utils.Network' expects (N,2) connectivity list.
         # The pipeline 'edges' dict might not have simple connectivity directly exposed as a list of indices.
         # However, results['edges'] usually has 'node_indices' or similar.
-        # Let's check vectorization_core.py output structure.
+        # Let's check pipeline.py output structure.
         # extract_edges returns {'traces': ..., 'confidence': ...}
         # construct_network returns {'strands': ...}
         
