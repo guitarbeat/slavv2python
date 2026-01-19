@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.vectorization_core import (
+from src.slavv.geometry import (
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,

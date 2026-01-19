@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 
 @patch(
-    'src.slavv.vectorization_core.SLAVVProcessor._generate_edge_directions',
+    'src.slavv.pipeline.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):

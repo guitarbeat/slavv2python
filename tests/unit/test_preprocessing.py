@@ -3,7 +3,7 @@ import pathlib
 import numpy as np
 
 # Ensure module path
-from src.slavv.vectorization_core import preprocess_image
+from src.slavv.utils import preprocess_image
 
 
 def test_preprocess_normalizes_to_unit_range():

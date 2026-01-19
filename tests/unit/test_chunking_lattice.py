@@ -3,7 +3,7 @@ import pathlib
 import numpy as np
 
 # Add source path for imports
-from src.slavv.vectorization_core import get_chunking_lattice
+from src.slavv.utils import get_chunking_lattice
 
 
 def test_chunking_lattice_reconstructs_volume():
