@@ -113,18 +113,27 @@ else:
         np.ndarray
             Gradient vector in physical units.
         """
+        # Manual clamping and direct indexing for performance
+        ny, nx, nz = energy.shape
+
+        py = int(pos_int[0])
+        px = int(pos_int[1])
+        pz = int(pos_int[2])
+
+        if py < 1: py = 1
+        elif py > ny - 2: py = ny - 2
+
+        if px < 1: px = 1
+        elif px > nx - 2: px = nx - 2
+
+        if pz < 1: pz = 1
+        elif pz > nz - 2: pz = nz - 2
+
         gradient = np.zeros(3, dtype=float)
-        # Clamp position to valid bounds to prevent out-of-bounds access
-        pos_clamped = np.clip(pos_int, [1, 1, 1], 
-                              [s - 2 for s in energy.shape])
-        for i in range(3):
-            if 0 < pos_clamped[i] < energy.shape[i] - 1:
-                pos_plus = pos_clamped.copy()
-                pos_minus = pos_clamped.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-                diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
-                gradient[i] = diff / (2.0 * microns_per_voxel[i])
+        gradient[0] = (energy[py+1, px, pz] - energy[py-1, px, pz]) / (2.0 * microns_per_voxel[0])
+        gradient[1] = (energy[py, px+1, pz] - energy[py, px-1, pz]) / (2.0 * microns_per_voxel[1])
+        gradient[2] = (energy[py, px, pz+1] - energy[py, px, pz-1]) / (2.0 * microns_per_voxel[2])
+
         return gradient
 
 class SLAVVProcessor:
