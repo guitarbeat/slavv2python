@@ -37,27 +37,26 @@ For integration into other pipelines or running on a cluster without the UI, use
 See **`examples/run_tutorial.py`** or the docstrings for details.
 
 ```python
-from slavv.vectorization_core import SLAVVProcessor
+from slavv import SLAVVProcessor
 
 # Initialize
 processor = SLAVVProcessor()
 
 # Run
 results = processor.process_image(image_data, params)
-```
 
-### Tutorials
-See **`examples/run_tutorial.py`** for a script that reproduces the steps from the original MATLAB tutorial (requires external data).
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
+
+
 
 ## Testing
 
 Verify that the environment is configured correctly by running the test suite:
 
 ```bash
-pytest
+python -m pytest tests/
 ```
 
 ## Troubleshooting

@@ -6,7 +6,7 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 
 | Component | Status | Notes |
 |---|---|---|
-| Core Pipeline (`vectorization_core.py`) | **Functional** | Energy → Vertices → Edges → Network complete |
+| Core Pipeline (`pipeline.py`) | **Functional** | Energy → Vertices → Edges → Network complete |
 | I/O (`io_utils.py`) | **Complete** | MAT, CASX, VMV, CSV, JSON, DICOM, TIFF |
 | Visualization (`visualization.py`) | **Complete** | 2D/3D Plotly, animations, export |
 | ML Curation (`ml_curator.py`) | **Functional** | Logistic/RF classifiers, feature extraction |
@@ -19,31 +19,31 @@ This document outlines the remaining work to bring `slavv2python` to full produc
 ## Phase 1: Performance (Priority: High) 🚀
 
 ### 1.1 Numba JIT for Edge Tracing
-- **File:** `vectorization_core.py` → `_trace_edge()`
+- **File:** `tracing.py` → `trace_edge()`
 - **Status:** ⚠️ Temporarily disabled due to dtype issues with Python 3.7
 - **Impact:** ~100x speedup for tracing loops
 - **Effort:** Medium (requires Numba version/dtype fix)
 
 ### 1.2 Memory-Efficient Eigenvalue Computation ✅
-- **File:** `vectorization_core.py` → `calculate_energy_field()`
+- **File:** `energy.py` → `calculate_energy_field()`
 - **Status:** ✅ **COMPLETE** - Z-slice batched eigenvalue computation
 - **Impact:** Reduced peak memory from 1.3GB to ~6MB per slice
 - **Effort:** Done!
 
 ### 1.3 Sparse Adjacency Matrix ✅
-- **File:** `vectorization_core.py` → `construct_network()`
+- **File:** `graph.py` → `construct_network()`
 - **Status:** ✅ **COMPLETE** - Replaced dense boolean matrix with adjacency list
 - **Impact:** Reduced memory from 37GB (!) to ~few MB for 200k vertices
 - **Effort:** Done!
 
 ### 1.3 FFT Convolution for Large σ
-- **File:** `vectorization_core.py` → `calculate_energy_field()`
+- **File:** `energy.py` → `calculate_energy_field()`
 - **Rule:** If σ ≥ 10, use `scipy.signal.fftconvolve`
 - **Impact:** ~10x speedup for multi-scale energy
 - **Effort:** Low
 
 ### 1.3 Parallel Chunk Processing
-- **File:** `vectorization_core.py` → `get_chunking_lattice()`
+- **File:** `utils.py` → `get_chunking_lattice()`
 - **Tool:** `joblib.Parallel` for CPU parallelization
 - **Impact:** Linear speedup with cores
 - **Effort:** Low
