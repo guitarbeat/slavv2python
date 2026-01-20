@@ -791,12 +791,14 @@ class NetworkVisualizer:
             # Collect values for colorbar later
             edge_values_for_cbar = []
 
-            # Prepare value for each edge first
-            edge_val_map = {}
+            # Loop to build arrays and determine values (merged loops for performance)
+            for idx in valid_traces_indices:
+                # Cache the array conversion
+                trace = np.array(edge_traces[idx])
 
-            # Determine values for coloring
-            for i in valid_traces_indices:
-                trace = np.array(edge_traces[i])
+                # Pre-calculate trace in physical units for length and rendering
+                trace_physical = trace * microns_per_voxel
+                length = calculate_path_length(trace_physical)
 
                 # Value calculation
                 val = 0.0
@@ -804,31 +806,28 @@ class NetworkVisualizer:
                     val = np.mean(trace[:, 2] * microns_per_voxel[2])
                 elif color_by == 'energy':
                     energies = edges.get('energies', [])
-                    val = energies[i] if i < len(energies) else 0.0
+                    val = energies[idx] if idx < len(energies) else 0.0
                 elif color_by == 'radius':
                     connections = edges.get('connections', [])
-                    if i < len(connections):
-                         v0, v1 = connections[i]
+                    if idx < len(connections):
+                         v0, v1 = connections[idx]
                          r0 = vertex_radii[int(v0)] if int(v0) >= 0 else 0
                          r1 = vertex_radii[int(v1)] if int(v1) >= 0 and int(v1) < len(vertex_radii) else r0
                          val = (r0 + r1) / 2.0
                 elif color_by == 'length':
-                    val = calculate_path_length(trace * microns_per_voxel)
+                    val = length
                 elif color_by == 'strand_id':
-                    val = strand_ids_map.get(i, -1)
+                    val = strand_ids_map.get(idx, -1)
 
-                edge_val_map[i] = val
                 edge_values_for_cbar.append(val)
 
-            # Note: opacity_by='depth' is disabled in optimized merged trace mode
-            # as per-segment opacity is not supported efficiently in a single go.Scatter3d trace.
-
-            # Loop to build arrays
-            for idx in valid_traces_indices:
-                trace = np.array(edge_traces[idx])
-                x = trace[:, 1] * microns_per_voxel[1]
-                y = trace[:, 0] * microns_per_voxel[0]
-                z = trace[:, 2] * microns_per_voxel[2]
+                # Extract coordinates (Plotly uses X, Y, Z; trace is Y, X, Z)
+                # trace_physical is contiguous (N, 3), but slicing columns gives strided views
+                # which can be slow to iterate/extend.
+                # Converting to list explicitly avoids this overhead in extend()
+                x = trace_physical[:, 1].tolist()
+                y = trace_physical[:, 0].tolist()
+                z = trace_physical[:, 2].tolist()
 
                 x_all.extend(x)
                 y_all.extend(y)
@@ -837,9 +836,6 @@ class NetworkVisualizer:
                 x_all.append(None)
                 y_all.append(None)
                 z_all.append(None)
-
-                val = edge_val_map[idx]
-                length = calculate_path_length(trace * microns_per_voxel)
 
                 # Repeat value for all points + None
                 color_values.extend([val] * (len(x) + 1))

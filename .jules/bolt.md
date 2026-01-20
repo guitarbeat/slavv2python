@@ -1,0 +1,3 @@
+## 2024-03-24 - Efficient List Extension with NumPy Arrays
+**Learning:** When building a list by extending it with data from a NumPy array (e.g., `list.extend(array)`), the operation can be significantly slower if the array is a strided view (e.g., `array[:, 1]`) compared to a contiguous array. This is because iterating over a strided view in Python is slower.
+**Action:** Explicitly convert the array view to a list using `.tolist()` before extending (e.g., `list.extend(view.tolist())`) if the target is a standard Python list. This moves the iteration to C level inside `tolist()` and can yield measurable speedups (e.g., ~10% in plotting code).
