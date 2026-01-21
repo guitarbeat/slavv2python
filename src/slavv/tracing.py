@@ -25,10 +25,8 @@ def in_bounds(pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
 def compute_gradient(energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray) -> np.ndarray:
     """Compute gradient at ``pos`` using central differences (wrapper for implementation)."""
     pos_int = np.round(pos).astype(np.int64)
-    # Ensure proper dtypes for Numba compatibility (if enabled in impl)
-    energy_arr = np.ascontiguousarray(energy, dtype=np.float64)
-    mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
-    return compute_gradient_impl(energy_arr, pos_int, mpv_arr)
+    # Avoid redundant copies/conversions for pure Python implementation
+    return compute_gradient_impl(energy, pos_int, microns_per_voxel)
 
 def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> np.ndarray:
     """Generate uniformly distributed unit vectors on the sphere.
@@ -152,40 +150,55 @@ def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
                 vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
                 microns_per_voxel: np.ndarray,
                 tree: Optional[cKDTree] = None,
-                max_search_radius: float = 0.0) -> Optional[int]:
+                max_search_radius: float = 0.0,
+                vertex_positions_microns: Optional[np.ndarray] = None) -> Optional[int]:
     """Return the index of a nearby vertex if within its physical radius; otherwise None"""
+    pos_microns = pos * microns_per_voxel
     if tree is not None:
         # Optimized spatial query
-        pos_microns = pos * microns_per_voxel
         # Query candidates within max possible radius
         candidates = tree.query_ball_point(pos_microns, max_search_radius)
         for i in candidates:
             # Check specific radius for this candidate
-            vertex_pos = vertex_positions[i]
             vertex_scale = vertex_scales[i]
             radius = lumen_radius_microns[vertex_scale]
-            diff = pos_microns - (vertex_pos * microns_per_voxel)
+
+            if vertex_positions_microns is not None:
+                diff = pos_microns - vertex_positions_microns[i]
+            else:
+                vertex_pos = vertex_positions[i]
+                diff = pos_microns - (vertex_pos * microns_per_voxel)
+
             if np.linalg.norm(diff) < radius:
                 return i
         return None
     else:
         # Fallback linear scan
-        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-            radius = lumen_radius_microns[vertex_scale]
-            diff = (pos - vertex_pos) * microns_per_voxel
-            if np.linalg.norm(diff) < radius:
-                return i
+        if vertex_positions_microns is not None:
+            for i, (vertex_pos_mic, vertex_scale) in enumerate(zip(vertex_positions_microns, vertex_scales)):
+                radius = lumen_radius_microns[vertex_scale]
+                diff = pos_microns - vertex_pos_mic
+                if np.linalg.norm(diff) < radius:
+                    return i
+        else:
+            for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+                radius = lumen_radius_microns[vertex_scale]
+                diff = (pos - vertex_pos) * microns_per_voxel
+                if np.linalg.norm(diff) < radius:
+                    return i
         return None
 
 def find_terminal_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
                          vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
                          microns_per_voxel: np.ndarray,
                          tree: Optional[cKDTree] = None,
-                         max_search_radius: float = 0.0) -> Optional[int]:
+                         max_search_radius: float = 0.0,
+                         vertex_positions_microns: Optional[np.ndarray] = None) -> Optional[int]:
     """Find the index of a terminal vertex near a given position, if any."""
     return near_vertex(pos, vertex_positions, vertex_scales,
                        lumen_radius_microns, microns_per_voxel,
-                       tree=tree, max_search_radius=max_search_radius)
+                       tree=tree, max_search_radius=max_search_radius,
+                       vertex_positions_microns=vertex_positions_microns)
 
 
 
@@ -271,6 +284,7 @@ def trace_edge(
     discrete_steps: bool = False,
     tree: Optional[cKDTree] = None,
     max_search_radius: float = 0.0,
+    vertex_positions_microns: Optional[np.ndarray] = None,
 ) -> List[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""
     trace = [start_pos.copy()]
@@ -322,7 +336,8 @@ def trace_edge(
         terminal_vertex_idx = near_vertex(
             current_pos, vertex_positions, vertex_scales,
             lumen_radius_microns, microns_per_voxel,
-            tree=tree, max_search_radius=max_search_radius
+            tree=tree, max_search_radius=max_search_radius,
+            vertex_positions_microns=vertex_positions_microns
         )
         if terminal_vertex_idx is not None:
             trace.append(vertex_positions[terminal_vertex_idx].copy())
@@ -372,6 +387,8 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
     # Build cKDTree for optimized spatial queries
     vertex_positions_microns = vertex_positions * microns_per_voxel
     tree = cKDTree(vertex_positions_microns)
+    # Hoist energy array preparation to avoid repeated checks/copies in the loop
+    energy = np.ascontiguousarray(energy)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
 
     for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
@@ -415,12 +432,14 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 discrete_steps=discrete_tracing,
                 tree=tree,
                 max_search_radius=max_vertex_radius,
+                vertex_positions_microns=vertex_positions_microns,
             )
             if len(edge_trace) > 1:  # Valid edge found
                 terminal_vertex = find_terminal_vertex(
                     edge_trace[-1], vertex_positions, vertex_scales,
                     lumen_radius_microns, microns_per_voxel,
-                    tree=tree, max_search_radius=max_vertex_radius
+                    tree=tree, max_search_radius=max_vertex_radius,
+                    vertex_positions_microns=vertex_positions_microns
                 )
                 if terminal_vertex == vertex_idx:
                     continue
