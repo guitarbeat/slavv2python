@@ -308,7 +308,9 @@ def trace_edge(
         current_pos = next_pos.copy()
         prev_energy = current_energy
 
-        gradient = compute_gradient(energy, current_pos, microns_per_voxel)
+        # Directly call implementation to avoid checking/casting overhead in tight loop
+        gradient = compute_gradient_impl(energy, np.round(current_pos).astype(np.int64), microns_per_voxel)
+
         grad_norm = np.linalg.norm(gradient)
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
@@ -353,6 +355,15 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
+
+    # Optimization: Prepare arrays once for efficient access in tight loops
+    # If Numba is enabled (implied by compute_gradient implementation choice), it expects float64 contiguous
+    # If not, float64 provides better precision for gradients.
+    # Casting to float64 here prevents repetitive casting in compute_gradient (if using wrapper)
+    # or ensures consistency when calling compute_gradient_impl directly.
+    # We use contiguous array for better cache locality.
+    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
+    microns_per_voxel_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
 
     edges = []
     edge_connections = []
@@ -400,7 +411,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
             if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
                 break
             edge_trace = trace_edge(
-                energy,
+                energy_prepared, # Use prepared array
                 start_pos,
                 direction,
                 step_size,
@@ -410,7 +421,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 lumen_radius_pixels,
                 lumen_radius_microns,
                 max_steps,
-                microns_per_voxel,
+                microns_per_voxel_prepared, # Use prepared array
                 energy_sign,
                 discrete_steps=discrete_tracing,
                 tree=tree,
