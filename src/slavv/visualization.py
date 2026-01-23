@@ -1539,27 +1539,142 @@ class NetworkVisualizer:
                    network: Dict[str, Any], parameters: Dict[str, Any], 
                    output_path: str) -> str:
         """Export in VMV (Vascular Modeling Visualization) format"""
-        # Simplified VMV export - would need full specification for complete implementation
+        # Prepare parameters
+        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        vertex_positions = vertices['positions']
+        # Prioritize radii in microns, fall back to radii (which might be in pixels or microns depending on context,
+        # usually radii_microns is explicit)
+        vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
+        if len(vertex_radii) == 0 and len(vertex_positions) > 0:
+             vertex_radii = np.ones(len(vertex_positions))
+
+        # Build edge lookup map: (start, end) -> edge_index
+        connection_to_edge_idx = {}
+        for idx, conn in enumerate(edges['connections']):
+            if conn is not None and len(conn) >= 2:
+                u, v = conn[0], conn[1]
+                if u is not None and v is not None:
+                    connection_to_edge_idx[(int(u), int(v))] = idx
+                    connection_to_edge_idx[(int(v), int(u))] = idx
+
+        # Data structures for VMV
+        # VMV expects a list of vertices (coordinates + attributes)
+        # and a list of strands (sequences of vertex indices).
+        # We will collect all unique points from the traces that make up the strands.
+
+        vmv_points = []
+        point_to_idx = {} # (x_um, y_um, z_um) -> 1-based index
+
+        def get_or_add_point(pos_um, radius_um):
+            # pos_um is (x, y, z)
+            # Use rounding to handle float precision issues when merging points
+            key = tuple(np.round(pos_um, 5))
+            if key in point_to_idx:
+                return point_to_idx[key]
+            else:
+                idx = len(vmv_points) + 1 # 1-based indexing for VMV
+                vmv_points.append(list(pos_um) + [radius_um])
+                point_to_idx[key] = idx
+                return idx
+
+        vmv_strands = []
+
+        # Process strands
+        for strand in network['strands']:
+            strand_point_indices = []
+            if len(strand) < 2:
+                continue
+
+            for i in range(len(strand) - 1):
+                u, v = int(strand[i]), int(strand[i+1])
+
+                # Find edge connecting these vertices
+                edge_idx = connection_to_edge_idx.get((u, v))
+                if edge_idx is None:
+                    continue
+
+                trace = edges['traces'][edge_idx]
+                if trace is None or len(trace) == 0:
+                     continue
+
+                trace_arr = np.array(trace)
+
+                # Check direction: trace usually corresponds to connection[0]->connection[1]
+                # but we need to know if u->v matches that or is reversed.
+                # Use distance check to robustly determine direction.
+                pos_u = vertex_positions[u]
+
+                d_start = np.linalg.norm(trace_arr[0] - pos_u)
+                d_end = np.linalg.norm(trace_arr[-1] - pos_u)
+
+                if d_end < d_start:
+                    # Trace is reversed relative to u->v (i.e. trace starts near v)
+                    trace_arr = trace_arr[::-1]
+
+                # Radii interpolation along the edge
+                r_u = vertex_radii[u] if u < len(vertex_radii) else 1.0
+                r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
+
+                # Calculate cumulative length for interpolation
+                # SLAVV coords are (y, x, z)
+                diffs = np.diff(trace_arr, axis=0)
+                # Convert diffs to physical units for distance
+                diffs_phys = diffs * microns_per_voxel
+                seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
+                cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
+                total_len = cum_lens[-1]
+
+                if total_len > 1e-6:
+                    r_interp = r_u + (r_v - r_u) * (cum_lens / total_len)
+                else:
+                    r_interp = np.full(len(trace_arr), r_u)
+
+                # Add points to VMV structure
+                # For the first segment in a strand, add all points.
+                # For subsequent segments, skip the first point (it matches the last point of the previous segment).
+                start_k = 0 if i == 0 else 1
+
+                for k in range(start_k, len(trace_arr)):
+                    pos_vox = trace_arr[k]
+                    # Convert to physical units (X, Y, Z)
+                    # SLAVV internal: (y, x, z)
+                    # Output: (x, y, z)
+                    pos_um = np.array([
+                        pos_vox[1] * microns_per_voxel[1], # X
+                        pos_vox[0] * microns_per_voxel[0], # Y
+                        pos_vox[2] * microns_per_voxel[2]  # Z
+                    ])
+
+                    pidx = get_or_add_point(pos_um, r_interp[k])
+                    strand_point_indices.append(pidx)
+
+            if len(strand_point_indices) > 1:
+                vmv_strands.append(strand_point_indices)
+
+        # Write to file
         with open(output_path, 'w') as f:
-            f.write("# VMV Format Export\n")
-            f.write(f"# Generated by SLAVV Python Implementation\n")
-            f.write(f"# Vertices: {len(vertices['positions'])}\n")
-            f.write(f"# Edges: {len(edges['traces'])}\n")
-            f.write("\n[VERTICES]\n")
+            # Header
+            f.write("$PARAM_BEGIN\n")
+            f.write(f"NUM_VERTS\t{len(vmv_points)}\n")
+            f.write(f"NUM_STRANDS\t{len(vmv_strands)}\n")
+            f.write(f"NUM_ATTRIB_PER_VERT\t4\n") # X, Y, Z, Radius
+            f.write("$PARAM_END\n\n")
             
-            radii = vertices.get('radii_microns', vertices.get('radii', []))
-            for i, (pos, energy, radius) in enumerate(
-                zip(vertices['positions'], vertices['energies'], radii)
-            ):
-                f.write(
-                    f"{i} {pos[0]:.3f} {pos[1]:.3f} {pos[2]:.3f} {radius:.3f} {energy:.6f}\n"
-                )
+            # Vertices
+            f.write("$VERT_LIST_BEGIN\n")
+            for i, pt in enumerate(vmv_points):
+                # Format: index x y z r
+                f.write(f"{i+1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n")
+            f.write("$VERT_LIST_END\n\n")
             
-            f.write("\n[EDGES]\n")
-            for i, (trace, connection) in enumerate(zip(edges['traces'], edges['connections'])):
-                start_vertex, end_vertex = connection
-                f.write(f"{i} {start_vertex} {end_vertex}\n")
-        
+            # Strands
+            f.write("$STRANDS_LIST_BEGIN\n")
+            for i, s in enumerate(vmv_strands):
+                # Format: strand_idx pt1 pt2 ...
+                pts_str = "\t".join(map(str, s))
+                f.write(f"{i+1}\t{pts_str}\n")
+            f.write("$STRANDS_LIST_END") # No newline at end to match some MATLAB writers, or newline is fine.
+
         logger.info(f"VMV export complete: {output_path}")
         return output_path
     
