@@ -15,6 +15,7 @@ from typing import Dict, List, Tuple, Optional, Any
 import logging
 from pathlib import Path
 from .utils import calculate_path_length
+import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -1566,32 +1567,184 @@ class NetworkVisualizer:
     def _export_casx(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
                     network: Dict[str, Any], parameters: Dict[str, Any], 
                     output_path: str) -> str:
-        """Export in CASX format"""
-        # Simplified CASX export - would need full specification for complete implementation
+        """Export in CASX format (custom text format defined in MATLAB code).
+
+        This mimics Vectorization-Public/source/strand2casx.m and casx_mat2file.m
+        """
+        import datetime
+
+        # Helper to find edge trace between two vertices
+        # Build map for fast lookup: (v1, v2) -> (trace_index, reversed)
+        edge_map = {}
+        connections = edges.get('connections', [])
+        for i, (u, v) in enumerate(connections):
+            u, v = int(u), int(v)
+            edge_map[(u, v)] = (i, False)
+            edge_map[(v, u)] = (i, True)
+
+        edge_traces = edges.get('traces', [])
+        vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
+        vertex_positions = vertices['positions']
+        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+
+        # Gather all points from strands
+
+        # Find terminal vertices (start and end of each strand)
+        strands = network.get('strands', [])
+        terminal_vertex_indices = set()
+        for strand in strands:
+            if len(strand) > 0:
+                terminal_vertex_indices.add(strand[0])
+                terminal_vertex_indices.add(strand[-1])
+
+        # Create map: original_vertex_id -> new_point_index (0-based)
+        sorted_terminals = sorted(list(terminal_vertex_indices))
+        vertex_to_point_idx = {}
+        point_coordinates = [] # List of [y, x, z] in microns (initially, then transform)
+
+        for i, v_idx in enumerate(sorted_terminals):
+            vertex_to_point_idx[v_idx] = i
+            pos = vertex_positions[v_idx] * microns_per_voxel
+            point_coordinates.append(pos)
+
+        arc_connectivity = [] # List of [p1_idx, p2_idx] (0-based)
+        arc_diameters = []
+
+        for strand in strands:
+            if len(strand) < 2:
+                continue
+
+            # Start of strand
+            current_point_idx = vertex_to_point_idx[strand[0]]
+            # Initial radius from start vertex
+            current_radius = vertex_radii[strand[0]] if strand[0] < len(vertex_radii) else 0.0
+
+            # Iterate segments
+            for i in range(len(strand) - 1):
+                u, v = strand[i], strand[i+1]
+
+                # Check if this segment corresponds to an edge
+                trace_info = edge_map.get((u, v))
+
+                points_to_add = []
+                r_start = vertex_radii[u] if u < len(vertex_radii) else 0.0
+                r_end = vertex_radii[v] if v < len(vertex_radii) else 0.0
+
+                if trace_info:
+                    trace_idx, is_reversed = trace_info
+                    if trace_idx < len(edge_traces):
+                        trace = edge_traces[trace_idx]
+                        if is_reversed:
+                            trace = trace[::-1]
+
+                        if len(trace) > 2:
+                            # Add intermediate points
+                            points_to_add = trace[1:-1]
+
+                # Calculate cumulative distance for radius interpolation
+                total_dist = 1.0
+                cum_dist = []
+                if len(points_to_add) > 0:
+                     # Calculate distance along the full path (u -> points -> v)
+                     # We need u pos and v pos
+                     u_pos = vertex_positions[u]
+                     v_pos = vertex_positions[v]
+
+                     full_path = np.vstack([u_pos, points_to_add, v_pos]) * microns_per_voxel
+                     dists = np.linalg.norm(np.diff(full_path, axis=0), axis=1)
+                     cum_dist = np.insert(np.cumsum(dists), 0, 0.0)
+                     total_dist = cum_dist[-1]
+                     if total_dist == 0: total_dist = 1.0
+
+                # Add intermediate points
+                for k, pt in enumerate(points_to_add):
+                    # idx in full_path is k+1
+                    dist_frac = cum_dist[k+1] / total_dist
+                    r = r_start + (r_end - r_start) * dist_frac
+
+                    pos = pt * microns_per_voxel
+                    point_coordinates.append(pos)
+                    new_idx = len(point_coordinates) - 1
+
+                    # Add arc from current_point_idx to new_idx
+                    arc_connectivity.append([current_point_idx, new_idx])
+                    # Diameter = 2 * average radius of arc
+                    avg_r = (current_radius + r) / 2.0
+                    arc_diameters.append(2.0 * avg_r)
+
+                    current_point_idx = new_idx
+                    current_radius = r
+
+                # Connect to v
+                if v in vertex_to_point_idx:
+                    next_idx = vertex_to_point_idx[v]
+                else:
+                    # This should theoretically not happen if v is terminal
+                    # But if v is intermediate node in strand, we treat it as new point?
+                    # BUT strand logic in SLAVV usually means v is a node in the graph.
+                    # If it's degree 2, it is internal to the strand but still a node in graph.
+                    # strand2casx logic adds "interior points".
+                    # If v is not terminal, it is effectively an interior point of the "strand" entity
+                    # formed by multiple graph edges.
+                    # So we add it.
+                    pos = vertex_positions[v] * microns_per_voxel
+                    point_coordinates.append(pos)
+                    next_idx = len(point_coordinates) - 1
+                    # Note: we don't cache it in vertex_to_point_idx because in CASX structure
+                    # strands are expanded. A vertex used in multiple strands (bifurcation) is shared.
+                    # A vertex internal to a strand (degree 2) is used only in that strand.
+                    # But wait, if graph has vertex v with degree 2 connecting u-v-w.
+                    # And network['strands'] has [u, v, w].
+                    # u and w are terminals. v is internal.
+                    # strand2casx logic treats v as an interior point.
+
+                arc_connectivity.append([current_point_idx, next_idx])
+                avg_r = (current_radius + r_end) / 2.0
+                arc_diameters.append(2.0 * avg_r)
+
+                current_point_idx = next_idx
+                current_radius = r_end
+
+        # Transform coordinates
+        # Python input: [y, x, z] (0, 1, 2)
+        # Target: [x, -y, -z]
+
+        point_coordinates = np.array(point_coordinates)
+        if len(point_coordinates) > 0:
+            x = point_coordinates[:, 1]
+            y = -point_coordinates[:, 0]
+            z = -point_coordinates[:, 2]
+            point_coordinates = np.column_stack([x, y, z])
+
+        # Write file
         with open(output_path, 'w') as f:
-            f.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            f.write("<CasX>\n")
-            f.write("  <Network>\n")
+            # Header
+            date_str = datetime.datetime.now().strftime("%m/%d/%Y")
+            f.write(f'//"3d vascular network generation" author="A.Linninger" date="2007-2011"\n')
+            f.write(f'//File format designed by GHartung and ALinninger 10/9/2018\n')
+            f.write(f'//This file was created by SLAVV_Python in Sandbox on: {date_str}\n')
             
-            # Write vertices
-            f.write("    <Vertices>\n")
-            radii = vertices.get('radii_microns', vertices.get('radii', []))
-            for i, (pos, radius) in enumerate(zip(vertices['positions'], radii)):
-                f.write(
-                    f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
-                )
-            f.write("    </Vertices>\n")
+            # Points
+            n_points = len(point_coordinates)
+            f.write(f'\n//point coordinates;   nPoints={n_points}\n')
+            for pt in point_coordinates:
+                # Custom scientific notation: %.9E
+                f.write(f"\t{pt[0]:.9E}\t{pt[1]:.9E}\t{pt[2]:.9E}\n")
+            f.write('//end point coordinates\n')
             
-            # Write edges
-            f.write("    <Edges>\n")
-            for i, connection in enumerate(edges['connections']):
-                start_vertex, end_vertex = connection
-                if start_vertex is not None and end_vertex is not None:
-                    f.write(f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n")
-            f.write("    </Edges>\n")
+            # Connectivity
+            n_arcs = len(arc_connectivity)
+            f.write(f'\n//arc connectivity matrix;   nArcs={n_arcs}\n')
+            for conn in arc_connectivity:
+                # 1-based HEX
+                f.write(f"{conn[0]+1:x}\t{conn[1]+1:x}\t\n")
+            f.write('//end arc connectivity matrix\n')
             
-            f.write("  </Network>\n")
-            f.write("</CasX>\n")
+            # Diameters
+            f.write(f'\n//diameter: vector on arc;   nArcs={n_arcs}\n')
+            for d in arc_diameters:
+                f.write(f"{d:g}\n")
+            f.write('//end diameter\n')
         
         logger.info(f"CASX export complete: {output_path}")
         return output_path

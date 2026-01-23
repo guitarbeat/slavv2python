@@ -15,7 +15,6 @@ import json
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
-import xml.etree.ElementTree as ET
 
 logger = logging.getLogger(__name__)
 
@@ -119,30 +118,132 @@ def load_network_from_mat(path: str | Path) -> Network:
 
 
 def load_network_from_casx(path: str | Path) -> Network:
-    """Load network data from a CASX XML file."""
+    """Load network data from a CASX text file (custom format)."""
 
-    root = ET.parse(Path(path)).getroot()
-    vert_list: List[List[float]] = []
-    radii_list: List[float] = []
-    for v in root.findall(".//Vertex"):
-        x = float(v.attrib.get("x", 0.0))
-        y = float(v.attrib.get("y", 0.0))
-        z = float(v.attrib.get("z", 0.0))
-        radius = float(v.attrib.get("radius", 0.0))
-        vert_list.append([y, x, z])
-        radii_list.append(radius)
+    path = Path(path)
+    with open(path, 'r') as f:
+        lines = f.readlines()
 
-    edge_list: List[List[int]] = []
-    for e in root.findall(".//Edge"):
-        start = e.attrib.get("start")
-        end = e.attrib.get("end")
-        if start is None or end is None:
+    def find_section_start(lines, literal):
+        for i, line in enumerate(lines):
+            if literal in line:
+                return i
+        return -1
+
+    def parse_value_after(line, literal):
+        if literal in line:
+            return line.split(literal)[-1].strip()
+        return None
+
+    # Parse points
+    start_idx = find_section_start(lines, "point coordinates")
+    if start_idx == -1:
+         # Check for legacy XML
+         if len(lines) > 0 and (lines[0].strip().startswith("<?xml") or "<CasX>" in lines[0] or (len(lines) > 1 and "<CasX>" in lines[1])):
+             raise ValueError("Legacy CASX XML format not supported. File must be in CASX text format.")
+         raise ValueError("Could not find point coordinates section in CASX file")
+
+    # nPoints=...
+    n_points_str = parse_value_after(lines[start_idx], "nPoints=")
+    n_points = int(n_points_str) if n_points_str else 0
+
+    vert_list = []
+    # Points start after start_idx
+    curr = start_idx + 1
+    while curr < len(lines):
+        line = lines[curr].strip()
+        if line.startswith("//end"):
+            break
+        if not line or line.startswith("//"):
+            curr += 1
             continue
-        edge_list.append([int(start), int(end)])
+
+        parts = line.split()
+        if len(parts) >= 3:
+            # Parse scientific notation
+            try:
+                x = float(parts[0])
+                y = float(parts[1])
+                z = float(parts[2])
+
+                # Transform back:
+                # Written: [x, -y, -z] (where input was [y, x, z])
+                # Output: [y_orig, x_orig, z_orig] = [-y_read, x_read, -z_read]
+
+                vert_list.append([-y, x, -z])
+            except ValueError:
+                pass
+
+        curr += 1
+
+    # Parse connectivity
+    start_idx = find_section_start(lines, "arc connectivity matrix")
+    edge_list = []
+    if start_idx != -1:
+        curr = start_idx + 1
+        while curr < len(lines):
+            line = lines[curr].strip()
+            if line.startswith("//end"):
+                break
+            if not line or line.startswith("//"):
+                curr += 1
+                continue
+
+            parts = line.split()
+            if len(parts) >= 2:
+                # Hex indices, 1-based
+                try:
+                    s = int(parts[0], 16) - 1
+                    e = int(parts[1], 16) - 1
+                    edge_list.append([s, e])
+                except ValueError:
+                    pass
+            curr += 1
+
+    # Parse diameters
+    start_idx = find_section_start(lines, "diameter: vector on arc")
+
+    arc_diameters = []
+    if start_idx != -1:
+        curr = start_idx + 1
+        while curr < len(lines):
+            line = lines[curr].strip()
+            if line.startswith("//end"):
+                break
+            if not line or line.startswith("//"):
+                curr += 1
+                continue
+
+            try:
+                d = float(line)
+                arc_diameters.append(d)
+            except ValueError:
+                pass
+            curr += 1
+
+    # Estimate vertex radii
+    if len(vert_list) > 0 and len(edge_list) == len(arc_diameters):
+        v_radii_accum = {} # index -> [sum, count]
+        for i, (s, e) in enumerate(edge_list):
+            r = arc_diameters[i] / 2.0
+            if s not in v_radii_accum: v_radii_accum[s] = [0.0, 0]
+            if e not in v_radii_accum: v_radii_accum[e] = [0.0, 0]
+
+            v_radii_accum[s][0] += r
+            v_radii_accum[s][1] += 1
+            v_radii_accum[e][0] += r
+            v_radii_accum[e][1] += 1
+
+        radii = np.zeros(len(vert_list))
+        for idx, (s, c) in v_radii_accum.items():
+            if idx < len(radii):
+                radii[idx] = s / c
+    else:
+        radii = None
 
     vertices = np.asarray(vert_list, dtype=float)
     edges = np.atleast_2d(np.asarray(edge_list, dtype=int))
-    radii = np.asarray(radii_list, dtype=float) if radii_list else None
+
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
