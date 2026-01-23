@@ -67,19 +67,28 @@ else:
 
     def compute_gradient_impl(energy, pos_int, microns_per_voxel):
         """Compute local energy gradient via central differences."""
-        gradient = np.zeros(3, dtype=float)
-        # Clamp position to valid bounds to prevent out-of-bounds access
-        pos_clamped = np.clip(pos_int, [1, 1, 1], 
-                              [s - 2 for s in energy.shape])
-        for i in range(3):
-            if 0 < pos_clamped[i] < energy.shape[i] - 1:
-                pos_plus = pos_clamped.copy()
-                pos_minus = pos_clamped.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-                diff = energy[tuple(pos_plus)] - energy[tuple(pos_minus)]
-                gradient[i] = diff / (2.0 * microns_per_voxel[i])
-        return gradient
+        grad = np.zeros(3, dtype=float)
+
+        # Unpack position and shape
+        p0, p1, p2 = pos_int
+        s0, s1, s2 = energy.shape
+
+        # Manual clamping to [1, shape-2] to prevent out-of-bounds access
+        if p0 < 1: p0 = 1
+        elif p0 > s0 - 2: p0 = s0 - 2
+
+        if p1 < 1: p1 = 1
+        elif p1 > s1 - 2: p1 = s1 - 2
+
+        if p2 < 1: p2 = 1
+        elif p2 > s2 - 2: p2 = s2 - 2
+
+        # Direct indexing for speed (avoids allocations and tuple overhead)
+        grad[0] = (energy[p0+1, p1, p2] - energy[p0-1, p1, p2]) / (2.0 * microns_per_voxel[0])
+        grad[1] = (energy[p0, p1+1, p2] - energy[p0, p1-1, p2]) / (2.0 * microns_per_voxel[1])
+        grad[2] = (energy[p0, p1, p2+1] - energy[p0, p1, p2-1]) / (2.0 * microns_per_voxel[2])
+
+        return grad
 
 # --- Helper Functions ---
 

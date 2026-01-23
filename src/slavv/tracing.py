@@ -308,7 +308,10 @@ def trace_edge(
         current_pos = next_pos.copy()
         prev_energy = current_energy
 
-        gradient = compute_gradient(energy, current_pos, microns_per_voxel)
+        # Optimized gradient computation:
+        # Avoids wrapper overhead by calling implementation directly.
+        pos_int = np.round(current_pos).astype(np.int64)
+        gradient = compute_gradient_impl(energy, pos_int, microns_per_voxel)
         grad_norm = np.linalg.norm(gradient)
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
@@ -374,6 +377,10 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
     tree = cKDTree(vertex_positions_microns)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
 
+    # Prepare arrays once for performance (avoiding overhead in trace_edge)
+    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
+    mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
+
     for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
             continue
@@ -400,7 +407,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
             if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
                 break
             edge_trace = trace_edge(
-                energy,
+                energy_prepared,
                 start_pos,
                 direction,
                 step_size,
@@ -410,7 +417,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 lumen_radius_pixels,
                 lumen_radius_microns,
                 max_steps,
-                microns_per_voxel,
+                mpv_prepared,
                 energy_sign,
                 discrete_steps=discrete_tracing,
                 tree=tree,
