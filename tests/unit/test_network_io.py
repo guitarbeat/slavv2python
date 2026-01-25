@@ -55,25 +55,41 @@ class TestNetworkImport:
     """Test loading networks from various formats."""
     
     def test_load_from_casx(self, tmp_path: Path) -> None:
-        """Test loading network from CASX XML format."""
-        xml = (
-            "<?xml version='1.0' encoding='UTF-8'?>\n"
-            "<CasX><Network><Vertices>"
-            "<Vertex id='0' x='1.0' y='2.0' z='3.0' radius='4.0'/>"
-            "<Vertex id='1' x='4.0' y='5.0' z='6.0' radius='7.0'/>"
-            "</Vertices><Edges>"
-            "<Edge id='0' start='0' end='1'/>"
-            "</Edges></Network></CasX>"
+        """Test loading network from CASX text format."""
+        # Expected vertices (y, x, z): [[2.0, 1.0, 3.0], [5.0, 4.0, 6.0]]
+        # Written as (x, -y, -z):
+        # v0: 1.0, -2.0, -3.0
+        # v1: 4.0, -5.0, -6.0
+
+        casx_content = (
+            "//Header\n"
+            "//point coordinates;   nPoints=2\n"
+            "\t1.000000000E+00\t-2.000000000E+00\t-3.000000000E+00\n"
+            "\t4.000000000E+00\t-5.000000000E+00\t-6.000000000E+00\n"
+            "//end point coordinates\n"
+            "\n"
+            "//arc connectivity matrix;   nArcs=1\n"
+            "1\t2\t\n"
+            "//end arc connectivity matrix\n"
+            "\n"
+            "//diameter: vector on arc;   nArcs=1\n"
+            "11.0\n"
+            "//end diameter\n"
         )
+
         casx_path = tmp_path / "network.casx"
-        casx_path.write_text(xml)
+        casx_path.write_text(casx_content)
 
         network = load_network_from_casx(casx_path)
 
         expected_vertices = np.array([[2.0, 1.0, 3.0], [5.0, 4.0, 6.0]], dtype=float)
         assert np.allclose(network.vertices, expected_vertices)
         assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
-        assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
+
+        # Radii are estimated from arc diameters.
+        # Diameter 11.0 => Radius 5.5 for arc.
+        # Both vertices connected to this arc get radius 5.5.
+        assert np.allclose(network.radii, np.array([5.5, 5.5], dtype=float))
 
     def test_load_from_vmv(self, tmp_path: Path) -> None:
         """Test loading network from VMV text format."""
@@ -113,6 +129,100 @@ class TestNetworkImport:
         assert np.allclose(network.vertices, expected_vertices)
         assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
         assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
+
+    def test_casx_roundtrip(self, tmp_path: Path) -> None:
+        """Test full roundtrip export -> import for CASX."""
+        from src.slavv.visualization import NetworkVisualizer
+
+        viz = NetworkVisualizer()
+
+        # Setup data
+        # Vertices (y, x, z) in voxels
+        vertices = {
+            'positions': np.array([[10.0, 20.0, 30.0], [40.0, 50.0, 60.0]]),
+            'energies': np.array([0.1, 0.2]),
+            'radii': np.array([1.5, 2.5]),
+            'scales': np.array([1, 1])
+        }
+        # Edges (trace points in voxels)
+        edges = {
+            'connections': [[0, 1]],
+            'traces': [np.array([[10.0, 20.0, 30.0], [25.0, 35.0, 45.0], [40.0, 50.0, 60.0]])],
+            'energies': [0.15]
+        }
+        network = {
+            'strands': [[0, 1]],
+            'bifurcations': []
+        }
+        # Voxel size
+        microns_per_voxel = [0.5, 0.5, 2.0]
+        parameters = {
+            'microns_per_voxel': microns_per_voxel
+        }
+
+        out_path = str(tmp_path / "roundtrip.casx")
+        viz._export_casx(vertices, edges, network, parameters, out_path)
+
+        # Load back
+        loaded = load_network_from_casx(out_path)
+
+        # Verify vertices
+        # Original (y, x, z) in voxels -> * microns -> (y_um, x_um, z_um)
+        # v0: (5.0, 10.0, 60.0)
+        # v1: (20.0, 25.0, 120.0)
+        # Intermediate: (12.5, 17.5, 90.0)
+
+        # Loader returns ALL points (terminals + intermediates)
+        # We expect 3 points.
+        assert len(loaded.vertices) == 3
+
+        # Implementation adds all terminal vertices first, then intermediate points.
+        # Terminals: v0, v1. (Sorted by index).
+        # v0 -> index 0.
+        # v1 -> index 1.
+        # Intermediate -> index 2.
+
+        # Point 0: v0
+        expected_v0 = np.array([5.0, 10.0, 60.0])
+        assert np.allclose(loaded.vertices[0], expected_v0)
+
+        # Point 1: v1
+        expected_v1 = np.array([20.0, 25.0, 120.0])
+        assert np.allclose(loaded.vertices[1], expected_v1)
+
+        # Point 2: Intermediate
+        expected_mid = np.array([12.5, 17.5, 90.0])
+        assert np.allclose(loaded.vertices[2], expected_mid)
+
+        # Connectivity: 0-2, 2-1 (based on indices: v0->mid, mid->v1)
+        # 0->2
+        # 2->1
+        # Edges might be loaded in order of arcs in file.
+        # File arcs: v0->mid, mid->v1.
+        # So edges[0]: [0, 2]
+        # edges[1]: [2, 1]
+        assert len(loaded.edges) == 2
+        assert np.array_equal(loaded.edges[0], [0, 2])
+        assert np.array_equal(loaded.edges[1], [2, 1])
+
+        # Radii (estimated)
+        # Trace radii interpolation.
+        # r0 = 1.5, r1 = 2.5.
+        # mid point dist?
+        # dists:
+        # v0->mid: dy=7.5, dx=7.5, dz=30. norm = sqrt(7.5^2+7.5^2+30^2)
+        # mid->v1: same.
+        # So mid is exactly half way.
+        # r_mid = (1.5 + 2.5)/2 = 2.0.
+        # Arc 1 (v0-mid): avg radius (1.5+2.0)/2 = 1.75.
+        # Arc 2 (mid-v1): avg radius (2.0+2.5)/2 = 2.25.
+
+        # Estimated vertex radii:
+        # v0 (idx 0): connected to arc 1. Radius = 1.75.
+        # v1 (idx 1): connected to arc 2. Radius = 2.25.
+        # mid (idx 2): connected to arc 1 (1.75) and arc 2 (2.25). Avg = 2.0.
+
+        assert np.allclose(loaded.radii, np.array([1.75, 2.25, 2.0]), atol=0.01)
 
     def test_load_from_csv_files(self, tmp_path: Path) -> None:
         """Test loading network from CSV format."""
