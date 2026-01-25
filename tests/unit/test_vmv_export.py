@@ -91,21 +91,21 @@ def test_vmv_export():
         idx += 1
 
     assert len(points) == params['NUM_VERTS']
-    # Check coordinates swap (y,x,z) -> (x,y,z)
-    # Node 0 was (10, 20, 30) -> should be (20, 10, 30)
-    # But wait, trace had midpoint (12.5, 22.5, 32.5) -> (22.5, 12.5, 32.5)
+    # Check coordinates swap (y,x,z) -> (x, -y, -z) matching MATLAB spec
+    # Node 0 was (10, 20, 30) -> should be (20, -10, -30)
+    # But wait, trace had midpoint (12.5, 22.5, 32.5) -> (22.5, -12.5, -32.5)
     # We should have at least:
-    # (20, 10, 30)
-    # (22.5, 12.5, 32.5)
-    # (25, 15, 35)
-    # (30, 20, 40)
+    # (20, -10, -30)
+    # (22.5, -12.5, -32.5)
+    # (25, -15, -35)
+    # (30, -20, -40)
 
     # Let's verify presence
     found_start = False
     for p in points:
-        if np.allclose(p[:3], [20.0, 10.0, 30.0], atol=1e-5):
+        if np.allclose(p[:3], [20.0, -10.0, -30.0], atol=1e-5):
             found_start = True
-    assert found_start, "Start point (20, 10, 30) not found in VMV output"
+    assert found_start, "Start point (20, -10, -30) not found in VMV output"
 
     idx += 1 # skip $VERT_LIST_END
     while idx < len(lines) and not lines[idx].strip(): idx += 1
