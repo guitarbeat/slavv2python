@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 
 def in_bounds(pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
     """Check if the floored position lies within array bounds."""
+    # Optimization for 3D case which is the bottleneck in tracing
+    if len(shape) == 3:
+        return (0 <= pos[0] < shape[0] and
+                0 <= pos[1] < shape[1] and
+                0 <= pos[2] < shape[2])
+
     pos_int = np.floor(pos).astype(int)
     return np.all((pos_int >= 0) & (pos_int < np.array(shape)))
 
