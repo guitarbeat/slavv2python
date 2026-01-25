@@ -1682,16 +1682,24 @@ class NetworkVisualizer:
                     network: Dict[str, Any], parameters: Dict[str, Any], 
                     output_path: str) -> str:
         """Export in CASX format"""
-        # Simplified CASX export - would need full specification for complete implementation
         with open(output_path, 'w') as f:
             f.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
             f.write("<CasX>\n")
+
+            # Write parameters
+            microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+            mpv_str = " ".join(map(str, microns_per_voxel))
+            f.write("  <Parameters>\n")
+            f.write(f"    <Parameter name=\"microns_per_voxel\" value=\"{mpv_str}\"/>\n")
+            f.write("  </Parameters>\n")
+
             f.write("  <Network>\n")
             
             # Write vertices
             f.write("    <Vertices>\n")
             radii = vertices.get('radii_microns', vertices.get('radii', []))
             for i, (pos, radius) in enumerate(zip(vertices['positions'], radii)):
+                # Note: Coordinate swap x=pos[1], y=pos[0] to match legacy format
                 f.write(
                     f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
                 )
@@ -1704,6 +1712,15 @@ class NetworkVisualizer:
                 if start_vertex is not None and end_vertex is not None:
                     f.write(f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n")
             f.write("    </Edges>\n")
+
+            # Write strands
+            f.write("    <Strands>\n")
+            for i, strand in enumerate(network.get('strands', [])):
+                if len(strand) > 0:
+                    # Convert list of indices to space-separated string
+                    strand_str = " ".join(map(str, strand))
+                    f.write(f"      <Strand id=\"{i}\">{strand_str}</Strand>\n")
+            f.write("    </Strands>\n")
             
             f.write("  </Network>\n")
             f.write("</CasX>\n")
