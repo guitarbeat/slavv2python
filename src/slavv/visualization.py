@@ -1640,9 +1640,9 @@ class NetworkVisualizer:
                     # SLAVV internal: (y, x, z)
                     # Output: (x, y, z)
                     pos_um = np.array([
-                        pos_vox[1] * microns_per_voxel[1], # X
-                        pos_vox[0] * microns_per_voxel[0], # Y
-                        pos_vox[2] * microns_per_voxel[2]  # Z
+                        pos_vox[1] * microns_per_voxel[1],      # X
+                        -pos_vox[0] * microns_per_voxel[0],     # -Y
+                        -pos_vox[2] * microns_per_voxel[2]      # -Z
                     ])
 
                     pidx = get_or_add_point(pos_um, r_interp[k])
