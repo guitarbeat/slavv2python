@@ -274,29 +274,36 @@ class NetworkVisualizer:
 
                 # Render merged traces
                 for gid, indices in groups.items():
-                    x_all, y_all = [], []
-                    custom_data = [] # Store per-point custom data for hover
+                    xs, ys = [], []
+                    cd_chunks = []
 
                     for idx in indices:
                         trace = valid_traces[idx]
                         x_trace = trace[:, x_axis] * microns_per_voxel[x_axis]
                         y_trace = trace[:, y_axis] * microns_per_voxel[y_axis]
 
-                        x_all.extend(x_trace)
-                        y_all.extend(y_trace)
-                        x_all.append(None)
-                        y_all.append(None)
+                        xs.append(np.pad(x_trace, (0, 1), constant_values=np.nan))
+                        ys.append(np.pad(y_trace, (0, 1), constant_values=np.nan))
 
                         # Prepare hover info
                         length = calculate_path_length(trace * microns_per_voxel)
-                        # Format: [Edge Index, Length] repeated for each point + None
-                        # We only need to store it once per point.
-                        # Note: customdata in 2D scatter must match length of x/y
-                        cd = [[idx, length]] * (len(x_trace) + 1)
-                        custom_data.extend(cd)
+                        N_plus_1 = len(x_trace) + 1
+
+                        cd_chunk = np.empty((N_plus_1, 2))
+                        cd_chunk[:] = [idx, length]
+                        cd_chunks.append(cd_chunk)
 
                     name = f'Strand {gid}' if color_by == 'strand_id' else 'Edges'
                     showlegend = (color_by == 'strand_id')
+
+                    if xs:
+                        x_all = np.concatenate(xs)
+                        y_all = np.concatenate(ys)
+                        custom_data = np.concatenate(cd_chunks)
+                    else:
+                        x_all = np.array([])
+                        y_all = np.array([])
+                        custom_data = np.array([])
 
                     fig.add_trace(go.Scatter(
                         x=x_all,
@@ -781,13 +788,6 @@ class NetworkVisualizer:
                         if idx is not None:
                             strand_ids_map[idx] = sid
 
-            # Arrays to hold merged data
-            x_all = []
-            y_all = []
-            z_all = []
-            color_values = []
-            custom_data = [] # [edge_index, length]
-
             # Collect values for colorbar later
             edge_values_for_cbar = []
 
@@ -820,35 +820,53 @@ class NetworkVisualizer:
                 edge_val_map[i] = val
                 edge_values_for_cbar.append(val)
 
+            # Arrays to hold merged data (NumPy optimized)
+            xs, ys, zs = [], [], []
+            color_chunks = []
+            cd_chunks = []
+
             # Note: opacity_by='depth' is disabled in optimized merged trace mode
             # as per-segment opacity is not supported efficiently in a single go.Scatter3d trace.
 
             # Loop to build arrays
             for idx in valid_traces_indices:
                 trace = np.array(edge_traces[idx])
-                x = trace[:, 1] * microns_per_voxel[1]
-                y = trace[:, 0] * microns_per_voxel[0]
-                z = trace[:, 2] * microns_per_voxel[2]
+                x_vals = trace[:, 1] * microns_per_voxel[1]
+                y_vals = trace[:, 0] * microns_per_voxel[0]
+                z_vals = trace[:, 2] * microns_per_voxel[2]
 
-                x_all.extend(x)
-                y_all.extend(y)
-                z_all.extend(z)
-
-                x_all.append(None)
-                y_all.append(None)
-                z_all.append(None)
+                # Pad with NaN for line breaks
+                xs.append(np.pad(x_vals, (0, 1), constant_values=np.nan))
+                ys.append(np.pad(y_vals, (0, 1), constant_values=np.nan))
+                zs.append(np.pad(z_vals, (0, 1), constant_values=np.nan))
 
                 val = edge_val_map[idx]
                 length = calculate_path_length(trace * microns_per_voxel)
 
-                # Repeat value for all points + None
-                color_values.extend([val] * (len(x) + 1))
+                N_plus_1 = len(x_vals) + 1
 
-                # Custom data
-                # We can store [edge_index, length]
-                # Repeat for all points + None
-                cd = [[idx, length]] * (len(x) + 1)
-                custom_data.extend(cd)
+                # Repeat value for all points + NaN
+                color_chunks.append(np.full(N_plus_1, val))
+
+                # Custom data: [edge_index, length] repeated
+                # Using empty + fill is slightly faster than tile/repeat for 2D
+                cd_chunk = np.empty((N_plus_1, 2))
+                cd_chunk[:] = [idx, length]
+                cd_chunks.append(cd_chunk)
+
+            # Concatenate all chunks
+            if xs:
+                x_all = np.concatenate(xs)
+                y_all = np.concatenate(ys)
+                z_all = np.concatenate(zs)
+                color_values = np.concatenate(color_chunks)
+                custom_data = np.concatenate(cd_chunks)
+            else:
+                x_all = np.array([])
+                y_all = np.array([])
+                z_all = np.array([])
+                color_values = np.array([])
+                custom_data = np.array([])
 
             # Colorscale selection
             colorscale = self.color_schemes.get(color_by, 'Viridis')
