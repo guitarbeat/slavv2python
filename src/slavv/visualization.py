@@ -282,8 +282,8 @@ class NetworkVisualizer:
                         x_trace = trace[:, x_axis] * microns_per_voxel[x_axis]
                         y_trace = trace[:, y_axis] * microns_per_voxel[y_axis]
 
-                        x_all.extend(x_trace)
-                        y_all.extend(y_trace)
+                        x_all.extend(x_trace.tolist())
+                        y_all.extend(y_trace.tolist())
                         x_all.append(None)
                         y_all.append(None)
 
@@ -830,9 +830,10 @@ class NetworkVisualizer:
                 y = trace[:, 0] * microns_per_voxel[0]
                 z = trace[:, 2] * microns_per_voxel[2]
 
-                x_all.extend(x)
-                y_all.extend(y)
-                z_all.extend(z)
+                # Optimization: .tolist() converts to native python list faster than iterating over numpy array
+                x_all.extend(x.tolist())
+                y_all.extend(y.tolist())
+                z_all.extend(z.tolist())
 
                 x_all.append(None)
                 y_all.append(None)
