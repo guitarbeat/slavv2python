@@ -308,9 +308,16 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             else:
                 sigma_object = sigma_scale
 
+            # Spherical (Gaussian) component
             smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
-            if spherical_to_annular_ratio > 0:
-                annular_scale = sigma_scale * spherical_to_annular_ratio
+            
+            # Annular (Difference of Gaussians) component
+            # When spherical_to_annular_ratio=1: 100% Gaussian, 0% DoG
+            # When spherical_to_annular_ratio=0: 0% Gaussian, 100% DoG
+            if spherical_to_annular_ratio < 1.0:
+                # Need to compute DoG component
+                # Use a larger sigma for the background (annular means larger scale)
+                annular_scale = sigma_scale * 1.5  # MATLAB uses a factor > 1 for annular
                 if approximating_PSF:
                     sigma_background = np.sqrt(
                         annular_scale**2 + pixels_per_sigma_PSF**2
@@ -320,8 +327,12 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
                 smoothed_background = gaussian_filter(
                     image, sigma=tuple(sigma_background)
                 )
-                smoothed = smoothed_object - smoothed_background
+                dog = smoothed_object - smoothed_background
+                
+                # Linear combination: (1-ratio)*DoG + ratio*Gaussian
+                smoothed = (1.0 - spherical_to_annular_ratio) * dog + spherical_to_annular_ratio * smoothed_object
             else:
+                # Pure Gaussian (no DoG component)
                 smoothed = smoothed_object
 
             # Calculate Hessian eigenvalues with PSF-weighted sigma
@@ -363,8 +374,23 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             # Frangi-like vesselness measure
             vesselness = np.zeros_like(lambda1)
 
-            # Only consider voxels where lambda2 and lambda3 < 0 (bright tubular structures in 3D)
-            mask = (lambda2 < 0) & (lambda3 < 0)
+            # Diagnostic logging for eigenvalue distributions
+            if scale_idx == 0:  # Log only for first scale to avoid spam
+                logger.debug(f"Scale {scale_idx}: radius={radius_microns:.2f}µm")
+                logger.debug(f"  lambda1 range: [{lambda1.min():.6f}, {lambda1.max():.6f}]")
+                logger.debug(f"  lambda2 range: [{lambda2.min():.6f}, {lambda2.max():.6f}]")
+                logger.debug(f"  lambda3 range: [{lambda3.min():.6f}, {lambda3.max():.6f}]")
+                logger.debug(f"  lambda2 < 0: {(lambda2 < 0).sum():,} voxels")
+                logger.debug(f"  lambda3 < 0: {(lambda3 < 0).sum():,} voxels")
+                logger.debug(f"  Both < 0: {((lambda2 < 0) & (lambda3 < 0)).sum():,} voxels")
+
+            # For bright vessels (energy_sign < 0): we want tubular structures with 
+            # at least one negative eigenvalue in the cross-section (lambda2 or lambda3)
+            # The original condition was too strict requiring BOTH to be negative
+            if energy_sign < 0:
+                mask = (lambda2 < 0) | (lambda3 < 0)  # At least one negative (more permissive)
+            else:
+                mask = (lambda2 > 0) | (lambda3 > 0)  # At least one positive for dark vessels
 
             if np.any(mask):
                 # Ratios for tubular structure detection

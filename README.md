@@ -1,17 +1,20 @@
 # SLAVV Python Port
 
-This repository hosts a Python and Streamlit based reimplementation of the SLAVV (Segmentation-Less, Automated, Vascular Vectorization) algorithm along with documentation of the original MATLAB project.
+Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network vectorization from microscopy volumes. This repository includes the core library, a web UI, and tooling to compare results with the original MATLAB implementation.
 
 ## Repository structure
 
-- **src/slavv/** – Main Python package containing the algorithm core, I/O, and visualization tools
-- **app.py** – Streamlit application entry point
-- **Vectorization-Public/** – snapshot of the original MATLAB source code
-- **docs/ARCHITECTURE.md** – System architecture and data flow diagrams
-- **docs/DEVELOPMENT.md** – Status, features, performance, roadmap
-- **docs/MIGRATION_GUIDE.md** – Canonical MATLAB→Python mapping
-- **CONTRIBUTING.md** – Guidelines, coding standards, and testing commands
-- **tests/** – Comprehensive test suite
+| Path | Description |
+|------|-------------|
+| **src/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
+| **app.py** | Streamlit web application entry point |
+| **examples/** | Example scripts (e.g. `run_tutorial.py`) |
+| **scripts/** | CLI tools (MATLAB comparison, validation, visualization) |
+| **tests/** | Unit, integration, and UI tests |
+| **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
+| **Vectorization-Public/** | Snapshot of the original MATLAB source (submodule or reference) |
+| **CONTRIBUTING.md** | Contribution guidelines and testing |
+| **pyproject.toml** | Package metadata and dependencies |
 
 ## Getting started
 
@@ -70,4 +73,4 @@ For the canonical port status, see [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUID
 
 ## License
 
-This project is distributed under the terms of the GNU GPL‑3.0 license, consistent with the upstream SLAVV repository.
+This project is licensed under the [GNU GPL-3.0](LICENSE) license, consistent with the upstream SLAVV (Vectorization-Public) repository.

@@ -141,7 +141,8 @@ class SLAVVProcessor:
 
     def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
-        return energy.calculate_energy_field(image, params)
+        from . import utils
+        return energy.calculate_energy_field(image, params, utils.get_chunking_lattice)
 
     def extract_vertices(self, energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         """Extract vertices as local extrema. Delegates to ``tracing`` module."""

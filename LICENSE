@@ -1,0 +1,10 @@
+SLAVV Python Port
+Copyright (C) UTFOIL Lab
+
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
+You may copy, distribute and modify the software under the terms of the
+GPL-3.0 license. See https://www.gnu.org/licenses/gpl-3.0.html for the
+full license text.
+
+The original MATLAB implementation (Vectorization-Public) is also licensed
+under GPL-3.0.

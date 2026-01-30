@@ -38,8 +38,8 @@ Thanks for your interest in contributing! This document outlines conventions for
 - Provide concise summaries of the changes made.
 
 ## Where to Start
-- See `docs/MATLAB_TO_PYTHON_MAPPING.md` for canonical porting status (includes coverage and deviations).
-- See `docs/ROADMAP.md` for planned work.
+- See [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for MATLAB→Python port status and mapping.
+- See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for current status and roadmap.
 
 ## Regression Prevention (Critical)
 
@@ -52,7 +52,7 @@ Thanks for your interest in contributing! This document outlines conventions for
 ### Before Pushing Any Core Changes
 Run the regression workflow:
 ```bash
-pytest tests/unit/test_regression.py -v    # Critical regression test
+pytest tests/ -v -x                        # Full suite, stop on first failure
 pytest tests/ -v                           # Full suite
 python examples/run_tutorial.py            # Quick integration check
 ```
