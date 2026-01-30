@@ -34,6 +34,7 @@ sys.path.insert(0, str(project_root))
 
 from src.slavv.pipeline import SLAVVProcessor
 from src.slavv.io_utils import load_tiff_volume, export_pipeline_results
+from src.slavv.visualization import NetworkVisualizer
 
 # Import MATLAB parser
 sys.path.insert(0, str(Path(__file__).parent))
@@ -227,6 +228,38 @@ def run_python_vectorization(
         # Export results
         print("Exporting results...")
         export_pipeline_results(results, output_dir, base_name="python_comparison")
+        
+        # Export VMV and CASX formats for visualization
+        print("Exporting VMV and CASX formats...")
+        try:
+            visualizer = NetworkVisualizer()
+            vmv_path = os.path.join(output_dir, "network.vmv")
+            casx_path = os.path.join(output_dir, "network.casx")
+            csv_base = os.path.join(output_dir, "network")
+            json_path = os.path.join(output_dir, "network.json")
+            
+            visualizer.export_network_data(results, vmv_path, format='vmv')
+            print(f"  VMV export: {vmv_path}")
+            
+            visualizer.export_network_data(results, casx_path, format='casx')
+            print(f"  CASX export: {casx_path}")
+            
+            visualizer.export_network_data(results, csv_base, format='csv')
+            print(f"  CSV export: {csv_base}_vertices.csv, {csv_base}_edges.csv")
+            
+            visualizer.export_network_data(results, json_path, format='json')
+            print(f"  JSON export: {json_path}")
+            
+            python_results['exports'] = {
+                'vmv': vmv_path,
+                'casx': casx_path,
+                'csv': csv_base,
+                'json': json_path
+            }
+        except Exception as e:
+            print(f"  Warning: Export failed: {e}")
+            import traceback
+            traceback.print_exc()
         
         return python_results
         
@@ -732,14 +765,23 @@ def main():
         
         print(f"\nComparison report saved to: {report_file}")
         
-        # Generate summary.txt automatically
-        try:
-            sys.path.insert(0, str(Path(__file__).parent))
-            from generate_summary import generate_summary
-            summary_file = output_dir / 'summary.txt'
-            generate_summary(output_dir, summary_file)
-        except Exception as e:
-            print(f"Note: Could not auto-generate summary: {e}")
+    # Generate summary.txt automatically
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from generate_summary import generate_summary
+        summary_file = output_dir / 'summary.txt'
+        generate_summary(output_dir, summary_file)
+    except Exception as e:
+        print(f"Note: Could not auto-generate summary: {e}")
+    
+    # Generate manifest automatically
+    try:
+        from generate_comparison_manifest import generate_manifest
+        manifest_file = output_dir / 'MANIFEST.md'
+        generate_manifest(output_dir, manifest_file)
+        print(f"Manifest generated: {manifest_file}")
+    except Exception as e:
+        print(f"Note: Could not auto-generate manifest: {e}")
     
     print("\n" + "="*70)
     print(" "*25 + "COMPARISON COMPLETE")

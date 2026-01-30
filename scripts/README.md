@@ -44,9 +44,13 @@ python scripts/compare_matlab_python.py \
 ```
 
 Results are saved in timestamped directories under `comparisons/` with:
+- `MANIFEST.md` - **File inventory and viewing instructions**
 - `comparison_report.json` - Full results
 - `summary.txt` - Human-readable summary  
-- Auto-generated visualizations
+- **`matlab_results/*.vmv`** - **VMV files for 3D visualization**
+- **`python_results/network.vmv`** - **Python VMV export**
+- **`python_results/network.casx`** - **Python CASX export**
+- `visualizations/*.png` - Auto-generated comparison plots
 
 ### Step 3: View Results
 
@@ -208,6 +212,48 @@ python scripts/validate_setup.py ...
 python scripts/compare_matlab_python.py ...
 python scripts/visualize_comparison.py ...
 python scripts/statistical_analysis.py ...
+```
+
+## 3D Visualization with VessMorphoVis
+
+Both MATLAB and Python now automatically export **VMV and CASX** files for viewing vascular networks in 3D!
+
+### What Gets Exported
+
+After running a comparison, you'll find:
+- **Python**: `python_results/network.vmv` and `network.casx`
+- **MATLAB**: `matlab_results/batch_*/vectors/network_*.vmv` and `*.casx`
+
+### Viewing in Blender
+
+1. Install [Blender](https://www.blender.org/download/) and [VessMorphoVis plugin](https://github.com/BlueBrain/VessMorphoVis)
+2. Enable VessMorphoVis in Blender > Edit > Preferences > Add-ons
+3. Open VessMorphoVis panel, click "Load Morphology"
+4. Browse to your `.vmv` file and render
+
+See each comparison's `MANIFEST.md` for complete instructions.
+
+## Output Management
+
+### List and View Comparisons
+
+```bash
+# List all comparison runs with summaries
+python scripts/list_comparisons.py
+
+# View specific run details
+cat comparisons/YYYYMMDD_HHMMSS/MANIFEST.md
+cat comparisons/YYYYMMDD_HHMMSS/summary.txt
+```
+
+### Clean Up
+
+```bash
+# Analyze disk usage
+python scripts/cleanup_comparisons.py --analyze
+
+# Remove checkpoints to save space
+python scripts/cleanup_comparisons.py --remove-checkpoints
 ```
 
 ## Troubleshooting
