@@ -3,8 +3,19 @@ import numpy as np
 from pathlib import Path
 from scipy.io import savemat
 
+try:
+
+
+from slavv.io_utils import load_network_from_mat
+
+except ImportError:
+
+
 from src.slavv.io_utils import load_network_from_mat
-from src.slavv.visualization import NetworkVisualizer
+try:
+    from slavv.visualization import NetworkVisualizer
+except ImportError:
+    from src.slavv.visualization import NetworkVisualizer
 
 
 def test_mat_roundtrip(tmp_path: Path) -> None:

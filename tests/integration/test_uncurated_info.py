@@ -3,7 +3,10 @@ import sys
 import numpy as np
 
 # add src path
-from src.slavv.ml_curator import extract_uncurated_info
+try:
+    from slavv.ml_curator import extract_uncurated_info
+except ImportError:
+    from src.slavv.ml_curator import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:

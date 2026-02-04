@@ -4,7 +4,10 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from src.slavv.ml_curator import MLCurator
+try:
+    from slavv.ml_curator import MLCurator
+except ImportError:
+    from src.slavv.ml_curator import MLCurator
 
 
 def test_train_classifiers():

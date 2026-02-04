@@ -5,6 +5,24 @@ import pathlib
 
 
 
+try:
+
+
+
+
+
+
+from slavv.utils import weighted_ks_test
+
+
+
+except ImportError:
+
+
+
+
+
+
 from src.slavv.utils import weighted_ks_test
 
 def test_weighted_ks_unweighted():

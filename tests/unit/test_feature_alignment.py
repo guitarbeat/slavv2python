@@ -3,8 +3,14 @@ import pathlib
 import numpy as np
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from src.slavv.ml_curator import MLCurator
-from src.slavv.utils import calculate_path_length
+try:
+    from slavv.ml_curator import MLCurator
+except ImportError:
+    from src.slavv.ml_curator import MLCurator
+try:
+    from slavv.utils import calculate_path_length
+except ImportError:
+    from src.slavv.utils import calculate_path_length
 
 
 def test_vertex_edge_feature_enrichment():
