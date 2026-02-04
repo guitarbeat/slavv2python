@@ -23,11 +23,11 @@ python -m venv .venv
 # Activate it
 .\.venv\Scripts\Activate.ps1
 
-# Install the package in editable mode with all dependencies
+# Install the package in editable mode with core dependencies
 pip install -e .
 
-# Install Jupyter support
-pip install jupyter ipykernel
+# Install notebook support (includes jupyter, ipykernel, and notebook)
+pip install -e ".[notebooks]"
 
 # Register this environment as a Jupyter kernel
 python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAVV)"
@@ -45,11 +45,11 @@ conda create -n slavv-env python=3.10 -y
 # Activate it
 conda activate slavv-env
 
-# Install the package in editable mode with all dependencies
+# Install the package in editable mode with core dependencies
 pip install -e .
 
-# Install Jupyter support
-conda install jupyter ipykernel -y
+# Install notebook support (includes jupyter, ipykernel, and notebook)
+pip install -e ".[notebooks]"
 
 # Register this environment as a Jupyter kernel
 python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAVV)"
@@ -123,12 +123,16 @@ This tells Python to find `source.slavv.*` modules from your current directory.
 
 ### Issue: "No module named 'matplotlib'" (or other dependency)
 
-**Solution**: Reinstall dependencies:
+**Cause**: Matplotlib is a **core dependency** and should be installed automatically with `pip install -e .`
+
+**Solution**: Reinstall the package to ensure all dependencies are installed:
 ```powershell
 pip install -e .
 # Or force reinstall
 pip install --force-reinstall -e .
 ```
+
+**Note**: If you still see this error after reinstalling, make sure you're using the correct Python kernel in Jupyter (see below).
 
 ### Issue: Jupyter notebook uses wrong kernel
 
@@ -172,3 +176,28 @@ After setting up your environment:
 1. Run `scripts/0_Setup_and_Validation.ipynb` to verify everything works
 2. Make sure to select the **Python (SLAVV)** kernel in the notebook
 3. All validation checks should pass ✅
+
+## Quick Reference: Installation Options
+
+```powershell
+# Core dependencies only (includes matplotlib, numpy, scipy, etc.)
+pip install -e .
+
+# With notebook support (adds jupyter, ipykernel, notebook)
+pip install -e ".[notebooks]"
+
+# With web app support (adds streamlit)
+pip install -e ".[app]"
+
+# With machine learning support (adds tensorflow)
+pip install -e ".[ml]"
+
+# With development tools (adds pytest, pytest-cov)
+pip install -e ".[dev]"
+
+# Everything (all optional dependencies)
+pip install -e ".[all]"
+
+# Multiple options at once
+pip install -e ".[notebooks,dev]"
+```

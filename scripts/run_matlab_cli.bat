@@ -52,7 +52,7 @@ REM Get project root (parent of scripts directory)
 for %%P in ("%SCRIPT_DIR%\..") do set PROJECT_ROOT=%%~fP
 
 REM Change to Vectorization-Public directory for MATLAB
-set VECTORIZATION_DIR=%PROJECT_ROOT%\legacy\Vectorization-Public
+set VECTORIZATION_DIR=%PROJECT_ROOT%\external\Vectorization-Public
 
 REM Create log file
 set LOG_FILE=%OUTPUT_DIR_ABS%\matlab_run.log

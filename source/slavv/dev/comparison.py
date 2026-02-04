@@ -63,7 +63,7 @@ def run_matlab_vectorization(
     print("="*60)
     
     # Define the path to the MATLAB repository
-    MATLAB_REPO_PATH = project_root / 'legacy' / 'Vectorization-Public'
+    MATLAB_REPO_PATH = project_root / 'external' / 'Vectorization-Public'
     
     if batch_script is None:
         batch_script = str(project_root / 'scripts' / 'run_matlab_cli.bat')
