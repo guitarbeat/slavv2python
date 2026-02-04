@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, IO, List, Optional, Union
+from typing import Any, Dict, IO, List, Optional, Tuple, Union
 
 import json
 import numpy as np
@@ -25,7 +25,7 @@ class Network:
     """Container for basic network data."""
     vertices: np.ndarray
     edges: np.ndarray
-    radii: np.ndarray | None = None
+    radii: Optional[np.ndarray] = None
 
 
 # Backwards-compatible alias
@@ -33,7 +33,7 @@ MatNetwork = Network
 
 
 def load_tiff_volume(
-    file: str | Path | IO[bytes], *, memory_map: bool = False
+    file: Union[str, Path, IO[bytes]], *, memory_map: bool = False
 ) -> np.ndarray:
     """Load a 3D grayscale TIFF volume with validation.
 
@@ -74,7 +74,7 @@ def load_tiff_volume(
     return np.asarray(volume) if not memory_map else volume
 
 
-def load_network_from_mat(path: str | Path) -> Network:
+def load_network_from_mat(path: Union[str, Path]) -> Network:
     """Load network data stored in a MATLAB ``.mat`` file.
 
     Parameters
@@ -118,7 +118,7 @@ def load_network_from_mat(path: str | Path) -> Network:
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
-def load_network_from_casx(path: str | Path) -> Network:
+def load_network_from_casx(path: Union[str, Path]) -> Network:
     """Load network data from a CASX XML file."""
 
     root = ET.parse(Path(path)).getroot()
@@ -146,7 +146,7 @@ def load_network_from_casx(path: str | Path) -> Network:
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
-def load_network_from_vmv(path: str | Path) -> Network:
+def load_network_from_vmv(path: Union[str, Path]) -> Network:
     """Load network data from a VMV text file."""
 
     positions: List[List[float]] = []
@@ -320,7 +320,7 @@ def dicom_to_tiff(
     return volume
 
 
-def load_network_from_csv(path: str | Path) -> Network:
+def load_network_from_csv(path: Union[str, Path]) -> Network:
     """Load network data from paired CSV files.
 
     Parameters
@@ -360,7 +360,7 @@ def load_network_from_csv(path: str | Path) -> Network:
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
-def load_network_from_json(path: str | Path) -> Network:
+def load_network_from_json(path: Union[str, Path]) -> Network:
     """Load network data from a JSON export."""
 
     with open(Path(path), "r") as f:
@@ -384,8 +384,8 @@ def load_network_from_json(path: str | Path) -> Network:
 
 
 def save_network_to_csv(
-    network: Network, base_path: str | Path
-) -> tuple[Path, Path]:
+    network: Network, base_path: Union[str, Path]
+) -> Tuple[Path, Path]:
     """Save network data to paired CSV files.
 
     Parameters
@@ -423,7 +423,7 @@ def save_network_to_csv(
     return vertex_path, edge_path
 
 
-def save_network_to_json(network: Network, path: str | Path) -> Path:
+def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a JSON file."""
 
     data: Dict[str, Any] = {
@@ -442,7 +442,7 @@ def save_network_to_json(network: Network, path: str | Path) -> Path:
 
 
 def export_pipeline_results(
-    results: Dict[str, Any], output_dir: str | Path, base_name: str = "result"
+    results: Dict[str, Any], output_dir: Union[str, Path], base_name: str = "result"
 ) -> List[Path]:
     """Export all standard components of a pipeline result to files.
 

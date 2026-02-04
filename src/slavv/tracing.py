@@ -11,6 +11,7 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage import feature  # Needed for Hessian
 from skimage.segmentation import watershed
+from skimage.draw import ellipsoid
 
 # Imports from sibling modules
 from .energy import compute_gradient_impl, spherical_structuring_element
@@ -52,6 +53,80 @@ def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> n
     norms = np.linalg.norm(points, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return points / norms
+
+
+def paint_vertex_image(
+    vertex_positions: np.ndarray,  # Shape: (N, 3) - [y, x, z] positions
+    vertex_scales: np.ndarray,     # Shape: (N,) - scale indices  
+    lumen_radius_pixels: np.ndarray,  # Shape: (M, 3) - [ry, rx, rz] per scale
+    image_shape: Tuple[int, int, int]  # (height, width, depth)
+) -> np.ndarray:
+    """
+    Create a volume where each voxel is labeled with its vertex membership (1-indexed, 0=background).
+    
+    This matches MATLAB's approach for fast O(1) vertex detection during edge tracing.
+    Paints ellipsoidal regions around each vertex with the vertex index.
+    
+    Parameters
+    ----------
+    vertex_positions : np.ndarray
+        Vertex positions as (y, x, z) coordinates
+    vertex_scales : np.ndarray
+        Scale index for each vertex
+    lumen_radius_pixels : np.ndarray
+        Radii for each scale in pixels [ry, rx, rz]
+    image_shape : tuple
+        Shape of the output volume (height, width, depth)
+        
+    Returns
+    -------
+    vertex_image : np.ndarray
+        Volume where each voxel contains vertex index (1-indexed) or 0 for background
+    """
+    vertex_image = np.zeros(image_shape, dtype=np.uint16)  # Supports up to 65k vertices
+    
+    for i, (pos, scale) in enumerate(zip(vertex_positions, vertex_scales)):
+        # Get ellipsoid radii for this vertex's scale
+        radii = lumen_radius_pixels[scale]  # [ry, rx, rz]
+        
+        # Generate ellipsoid mask using skimage
+        try:
+            # ellipsoid returns a 3D boolean array
+            ellipsoid_mask = ellipsoid(radii[0], radii[1], radii[2], spacing=(1.0, 1.0, 1.0))
+            # Get coordinates of True voxels (centered at origin of mask array)
+            coords = np.where(ellipsoid_mask)
+            # Center the ellipsoid coordinates (they're currently offset from origin)
+            center = np.array(ellipsoid_mask.shape) // 2
+            rr = coords[0] - center[0]
+            cc = coords[1] - center[1]
+            dd = coords[2] - center[2]
+            
+            # Offset to vertex position (convert to int)
+            y_coords = rr + int(np.round(pos[0]))
+            x_coords = cc + int(np.round(pos[1]))
+            z_coords = dd + int(np.round(pos[2]))
+            
+            # Clip to image bounds
+            valid_mask = (
+                (y_coords >= 0) & (y_coords < image_shape[0]) &
+                (x_coords >= 0) & (x_coords < image_shape[1]) &
+                (z_coords >= 0) & (z_coords < image_shape[2])
+            )
+            
+            y_coords = y_coords[valid_mask]
+            x_coords = x_coords[valid_mask]
+            z_coords = z_coords[valid_mask]
+            
+            # Paint vertex index (1-indexed, so i+1)
+            vertex_image[y_coords, x_coords, z_coords] = i + 1
+            
+        except Exception as e:
+            logger.warning(f"Failed to paint vertex {i} at {pos} with scale {scale}: {e}")
+            continue
+    
+    logger.info(f"Painted {len(vertex_positions)} vertices into volume image")
+    return vertex_image
+
 
 def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -148,12 +223,47 @@ def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dic
         'radii': radii_microns,
     }
 
+def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> Optional[int]:
+    """
+    Fast O(1) vertex lookup using pre-computed vertex volume image.
+    
+    Parameters
+    ----------
+    pos : np.ndarray
+        Position in voxel coordinates [y, x, z]
+    vertex_image : np.ndarray
+        Volume where each voxel contains vertex index (1-indexed) or 0
+        
+    Returns
+    -------
+    vertex_idx : Optional[int]
+        Vertex index (0-indexed) if position is within a vertex region, None otherwise
+    """
+    pos_int = np.floor(pos).astype(int)
+    
+    # Check bounds
+    if not np.all((pos_int >= 0) & (pos_int < np.array(vertex_image.shape))):
+        return None
+    
+    vertex_id = vertex_image[pos_int[0], pos_int[1], pos_int[2]]
+    
+    if vertex_id > 0:
+        return int(vertex_id - 1)  # Convert from 1-indexed to 0-indexed
+    return None
+
+
 def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
                 vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
                 microns_per_voxel: np.ndarray,
                 tree: Optional[cKDTree] = None,
                 max_search_radius: float = 0.0) -> Optional[int]:
-    """Return the index of a nearby vertex if within its physical radius; otherwise None"""
+    """Return the index of a nearby vertex if within its physical radius; otherwise None
+    
+    Uses a tolerance of 0.5 voxels to account for traces ending near but not exactly at vertices.
+    """
+    # Tolerance: 0.5 voxels in physical units (use average voxel size)
+    tolerance_microns = 0.5 * np.mean(microns_per_voxel)
+    
     if tree is not None:
         # Optimized spatial query
         pos_microns = pos * microns_per_voxel
@@ -165,7 +275,7 @@ def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
             vertex_scale = vertex_scales[i]
             radius = lumen_radius_microns[vertex_scale]
             diff = pos_microns - (vertex_pos * microns_per_voxel)
-            if np.linalg.norm(diff) < radius:
+            if np.linalg.norm(diff) <= radius + tolerance_microns:
                 return i
         return None
     else:
@@ -173,7 +283,7 @@ def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
         for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
             radius = lumen_radius_microns[vertex_scale]
             diff = (pos - vertex_pos) * microns_per_voxel
-            if np.linalg.norm(diff) < radius:
+            if np.linalg.norm(diff) <= radius + tolerance_microns:
                 return i
         return None
 
@@ -269,6 +379,7 @@ def trace_edge(
     microns_per_voxel: np.ndarray,
     energy_sign: float,
     discrete_steps: bool = False,
+    vertex_image: Optional[np.ndarray] = None,
     tree: Optional[cKDTree] = None,
     max_search_radius: float = 0.0,
 ) -> List[np.ndarray]:
@@ -322,11 +433,15 @@ def trace_edge(
             if norm > 1e-12:
                 current_dir = (current_dir / norm).astype(float)
 
-        terminal_vertex_idx = near_vertex(
-            current_pos, vertex_positions, vertex_scales,
-            lumen_radius_microns, microns_per_voxel,
-            tree=tree, max_search_radius=max_search_radius
-        )
+        # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
+        if vertex_image is not None:
+            terminal_vertex_idx = vertex_at_position(current_pos, vertex_image)
+        else:
+            terminal_vertex_idx = near_vertex(
+                current_pos, vertex_positions, vertex_scales,
+                lumen_radius_microns, microns_per_voxel,
+                tree=tree, max_search_radius=max_search_radius
+            )
         if terminal_vertex_idx is not None:
             trace.append(vertex_positions[terminal_vertex_idx].copy())
             break
@@ -372,10 +487,19 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
             "vertex_positions": vertex_positions.astype(np.float32),
         }
 
-    # Build cKDTree for optimized spatial queries
+    # Build vertex volume image for O(1) vertex detection (matching MATLAB approach)
+    logger.info("Creating vertex volume image...")
+    lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
+    vertex_image = paint_vertex_image(
+        vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape
+    )
+    logger.info("Vertex volume image created")
+    
+    # Also build cKDTree as fallback for out-of-volume queries
     vertex_positions_microns = vertex_positions * microns_per_voxel
     tree = cKDTree(vertex_positions_microns)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
+    max_search_radius = max_vertex_radius * 5.0
 
     # Prepare arrays once for performance (avoiding overhead in trace_edge)
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
@@ -420,15 +544,24 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 mpv_prepared,
                 energy_sign,
                 discrete_steps=discrete_tracing,
+                vertex_image=vertex_image,
                 tree=tree,
-                max_search_radius=max_vertex_radius,
+                max_search_radius=max_search_radius,
             )
             if len(edge_trace) > 1:  # Valid edge found
-                terminal_vertex = find_terminal_vertex(
-                    edge_trace[-1], vertex_positions, vertex_scales,
-                    lumen_radius_microns, microns_per_voxel,
-                    tree=tree, max_search_radius=max_vertex_radius
-                )
+                # Use vertex image for fast O(1) lookup at endpoint
+                terminal_vertex = vertex_at_position(edge_trace[-1], vertex_image)
+                
+                # If endpoint check failed and trace is short, check earlier points
+                if terminal_vertex is None and len(edge_trace) <= 5:
+                    for point in reversed(edge_trace[-len(edge_trace):-1]):
+                        terminal_vertex = vertex_at_position(point, vertex_image)
+                        if terminal_vertex is not None and terminal_vertex != vertex_idx:
+                            break
+                        elif terminal_vertex == vertex_idx:
+                            terminal_vertex = None
+                            
+                # Skip self-connections
                 if terminal_vertex == vertex_idx:
                     continue
                 if terminal_vertex is not None:
@@ -477,15 +610,22 @@ def extract_edges_watershed(energy_data: Dict[str, Any],
     idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
     markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
 
+    logger.info("Running watershed on volume (this may take several minutes)...")
     labels = watershed(-energy_sign * energy, markers)
+    logger.info("Watershed complete, extracting edges between regions...")
     structure = ndi.generate_binary_structure(3, 1)
 
     edges = []
     connections = []
     edge_energies: List[float] = []
     seen = set()
+    n_vertices = len(vertex_positions)
+    log_interval = max(1, n_vertices // 20)  # Log ~20 times over the loop
 
-    for label in range(1, len(vertex_positions) + 1):
+    for label in range(1, n_vertices + 1):
+        if label % log_interval == 0 or label == n_vertices:
+            logger.info("Watershed progress: vertex %d / %d, edges so far: %d",
+                        label, n_vertices, len(edges))
         region = labels == label
         dilated = ndi.binary_dilation(region, structure)
         neighbors = np.unique(labels[dilated & (labels != label)])

@@ -25,27 +25,27 @@ This document also summarizes coverage and known parity deviations to keep docs 
 | `energy_filter_V200.m`, `get_filter_kernel.m` | Integrated in `calculate_energy_field` | Approximate | Kernel construction simplified; PSF handling partially implemented and anisotropic smoothing applied. |
 | `construct_structuring_element*.m` | Integrated in vertex extraction | Exact | Voxel-spacing-aware ellipsoidal structuring element matches MATLAB behavior.
 | `calculate_linear_strel.m`, `calculate_linear_strel_range.m` | Integrated in vertex extraction | Approximate | Linear/spherical structuring variants handled via spacing-aware footprints. |
-| `get_vessel_directions_V2/V3/V5.m` | `src/slavv/vectorization_core.py:_estimate_vessel_directions` | Approximate | Radius-aware local Hessian eigenvectors seed edges while respecting voxel spacing; falls back to uniform directions if ill-conditioned. |
-| `get_edge_vectors.m`, `get_edge_vectors_V300.m` | `src/slavv/vectorization_core.py:_generate_edge_directions`, `_estimate_vessel_directions` | Approximate | Uniform spherical directions (Fibonacci) and Hessian-based directions cover seeding strategies. |
-| `get_chunking_lattice_V190.m` | `src/slavv/vectorization_core.py:get_chunking_lattice` | Approximate | Generates overlapping z-axis chunks when volumes exceed `max_voxels_per_node_energy`.
-| `pre_processing.m`, `fix_intensity_bands.m` | `src/slavv/vectorization_core.py:preprocess_image` | Approximate | Intensity normalization with optional axial band correction via Gaussian smoothing.
-| `vectorize_V200.m` parameter defaults | `src/slavv/vectorization_core.py:validate_parameters` | Approximate | Applies MATLAB defaults and validates ranges with descriptive error messages.
+| `get_vessel_directions_V2/V3/V5.m` | `src/slavv/tracing.py:estimate_vessel_directions` | Approximate | Radius-aware local Hessian eigenvectors seed edges while respecting voxel spacing; falls back to uniform directions if ill-conditioned. |
+| `get_edge_vectors.m`, `get_edge_vectors_V300.m` | `src/slavv/tracing.py:generate_edge_directions`, `estimate_vessel_directions` | Approximate | Uniform spherical directions (Fibonacci) and Hessian-based directions cover seeding strategies. |
+| `get_chunking_lattice_V190.m` | `src/slavv/utils.py:get_chunking_lattice` | Approximate | Generates overlapping z-axis chunks when volumes exceed `max_voxels_per_node_energy`.
+| `pre_processing.m`, `fix_intensity_bands.m` | `src/slavv/utils.py:preprocess_image` | Approximate | Intensity normalization with optional axial band correction via Gaussian smoothing.
+| `vectorize_V200.m` parameter defaults | `src/slavv/utils.py:validate_parameters` | Exact | Applies MATLAB defaults and validates ranges with descriptive error messages.
 | `combine_strands.m` | Integrated in `construct_network` | Approximate | Strand combining simplified. |
 | `sort_network_V180.m`, `fix_strand_vertex_mismatch*.m` | Integrated in `construct_network` | Approximate | Strands sorted and mismatches flagged. |
 | `clean_edges*.m` (hairs/orphans/cycles/vertex_degree_excess), `clean_edge_pairs.m` | Integrated in `construct_network` | Approximate | Removes short hairs, identifies orphans, prunes cycles, and resolves small edge inconsistencies. |
 | `sort_edges.m` | Integrated in `construct_network` | Approximate | Edge reordering/deduplication handled via stable keying and adjacency checks. |
-| Cropping: `crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m` | `src/slavv/vectorization_core.py:crop_vertices`, `crop_edges`, `crop_vertices_by_mask` | Approximate | Bounding-box and mask-based vertex/edge cropping helpers. |
+| Cropping: `crop_vertices_V200.m`, `crop_edges_V200.m`, `crop_vertices_by_mask.m` | `src/slavv/geometry.py:crop_vertices`, `crop_edges`, `crop_vertices_by_mask` | Exact | Bounding-box and mask-based vertex/edge cropping helpers. |
 | `weighted_KStest2.m` | `src/slavv/utils.py:weighted_ks_test` | Exact | Weighted two-sample Kolmogorov–Smirnov statistic. |
-| `gaussian_blur.m`, `gaussian_blur_in_chunks.m` | `src/slavv/vectorization_core.py:preprocess_image` | Approximate | Uses `scipy.ndimage.gaussian_filter` with optional chunking via the energy lattice when large volumes are present. |
-| `flow_field_subroutine.m` | `src/slavv/visualization.py:plot_flow_field` | Approximate | Renders edge orientations as 3D cones centered on midpoints of traces. |
-| `get_edges_for_vertex.m` | `src/slavv/vectorization_core.py:get_edges_for_vertex` | Exact | Returns indices of incident edges given an adjacency list of connections. |
-| `get_edge_metric.m` | `src/slavv/vectorization_core.py:get_edge_metric` | Approximate | Supports length and energy-based aggregates (mean/min/max/median). |
-| `resample_vectors.m` | `src/slavv/vectorization_core.py:resample_vectors` | Approximate | Resamples a polyline to near-uniform spacing by arc length. |
-| `smooth_edges.m`, `smooth_edges_V2.m` | `src/slavv/vectorization_core.py:smooth_edge_traces` | Approximate | 1D Gaussian smoothing along each coordinate sequence. |
-| `transform_vector_set.m` | `src/slavv/vectorization_core.py:transform_vector_set` | Approximate | Applies 4x4 homogeneous or scale/rotate/translate transforms to positions. |
-| `subsample_vectors.m` | `src/slavv/vectorization_core.py:subsample_vectors` | Exact | Keeps every Nth point, preserving endpoints. |
-| `register_vector_sets.m` | `src/slavv/vectorization_core.py:register_vector_sets` | Approximate | Rigid (Kabsch, optional scale) and affine least‑squares 3D registration; returns 4x4 transform and optional RMS error. |
-| `register_strands.m` | `src/slavv/vectorization_core.py:register_strands` | Approximate | Rigid (ICP) or affine alignment of two networks with vertex merge by distance; returns merged network and transform. |
+| `gaussian_blur.m`, `gaussian_blur_in_chunks.m` | `src/slavv/utils.py:preprocess_image`, `energy.py` | Approximate | Uses `scipy.ndimage.gaussian_filter` with optional chunking via the energy lattice when large volumes are present. |
+| `flow_field_subroutine.m` | `src/slavv/visualization.py:plot_flow_field` (Note: not fully ported) | Approximate | Visualization helper (omitted from core API). |
+| `get_edges_for_vertex.m` | `src/slavv/geometry.py:get_edges_for_vertex` | Exact | Returns indices of incident edges given an adjacency list of connections. |
+| `get_edge_metric.m` | `src/slavv/geometry.py:get_edge_metric` | Approximate | Supports length and energy-based aggregates (mean/min/max/median). |
+| `resample_vectors.m` | `src/slavv/geometry.py:resample_vectors` | Exact | Resamples a polyline to near-uniform spacing by arc length. |
+| `smooth_edges.m`, `smooth_edges_V2.m` | `src/slavv/geometry.py:smooth_edge_traces` | Approximate | 1D Gaussian smoothing along each coordinate sequence. |
+| `transform_vector_set.m` | `src/slavv/geometry.py:transform_vector_set` | Exact | Applies 4x4 homogeneous or scale/rotate/translate transforms to positions. |
+| `subsample_vectors.m` | `src/slavv/geometry.py:subsample_vectors` | Exact | Keeps every Nth point, preserving endpoints. |
+| `register_vector_sets.m` | `src/slavv/geometry.py:register_vector_sets` | Exact | Rigid (Kabsch, optional scale) and affine least-squares 3D registration; returns 4x4 transform and optional RMS error. |
+| `register_strands.m` | `src/slavv/geometry.py:register_strands` | Exact | Rigid (ICP) or affine alignment of two networks with vertex merge by distance; returns merged network and transform. |
 
 ### Machine Learning Curation
 
@@ -97,7 +97,7 @@ Replicate MATLAB conversion scripts by composing loaders and exporters:
 
 | MATLAB | Python | Parity | Notes |
 |---|---|---|---|
-| `calculate_network_statistics.m` | `src/slavv/vectorization_core.py:calculate_network_statistics` | Approximate | Computes counts, strand and edge lengths, radii statistics, tortuosity, branching angles, edge-energy and edge-radius means/std, volume/length/surface-area/vertex/edge densities via `calculate_surface_area` and `calculate_vessel_volume`, vertex-degree statistics, and graph connectivity metrics (components, endpoints, average path length, clustering coefficient, diameter, betweenness centrality, closeness centrality, eigenvector centrality, graph density). |
+| `calculate_network_statistics.m` | `src/slavv/geometry.py:calculate_network_statistics` | Approximate | Computes counts, strand and edge lengths, radii statistics, tortuosity, branching angles, edge-energy and edge-radius means/std, volume/length/surface-area/vertex/edge densities via `calculate_surface_area` and `calculate_vessel_volume`, vertex-degree statistics, and graph connectivity metrics (components, endpoints, average path length, clustering coefficient, diameter, betweenness centrality, closeness centrality, eigenvector centrality, graph density). |
 
 ### Coverage Summary
 

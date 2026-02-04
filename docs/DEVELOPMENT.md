@@ -67,6 +67,13 @@
 - [ ] Coordinate system validation
 - [ ] Kernel fidelity improvements
 
+### Visualization & Export Enhancements (Recommended)
+Building on work with VessMorphoVis/Blender exports:
+- [ ] **Pre-render 3D views automatically**: Generate PNG snapshots from multiple angles during the pipeline run.
+- [ ] **Add interactive 3D viewer**: Create a web-based viewer (e.g., using three.js or pyvista) so Blender isn't strictly required.
+- [ ] **Generate animated rotations**: Create MP4/GIFs of the rotating network.
+- [ ] **Create comparison gallery**: Side-by-side renders of MATLAB vs Python outputs.
+
 ### Low Priority
 - [ ] API reference (Sphinx/MkDocs)
 - [ ] Jupyter tutorial notebooks
