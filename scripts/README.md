@@ -9,6 +9,7 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 - **`notebooks/1_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
 - **`notebooks/2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
 - **`notebooks/3_Data_Management.ipynb`** - Manage output data and checkpoints
+- **`notebooks/4_Run_Comparison.ipynb`** - Interactive runner for the comparison pipeline
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
