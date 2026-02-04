@@ -26,7 +26,7 @@ SLAVV automatically exports networks in multiple formats for interoperability:
 ### How to View a Network
 1.  Run the SLAVV pipeline (e.g., via `compare_matlab_python.py`).
 2.  Locate the `.vmv` file in the results directory (e.g., `comparisons/YYYYMMDD.../python_results/network.vmv`).
-3.  In Blender, open the **VessMorphoVis panel** (usually in the right sidebar, press `N` to toggle).
+3.   - Copy the folder `external/blender_resources/VessMorphoVis/vessmorphovis` to the Blender addons folder.bar, press `N` to toggle).
 4.  Click **Load Morphology**.
 5.  Select your `network.vmv` file.
 6.  The network will load as a 3D object. You can now:

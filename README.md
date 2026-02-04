@@ -7,12 +7,13 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | Path | Description |
 |------|-------------|
 | **src/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
-| **app.py** | Streamlit web application entry point |
+| **src/slavv/apps/** | Web applications (`web_app.py`) |
 | **examples/** | Example scripts (e.g. `run_tutorial.py`) |
-| **scripts/** | CLI tools (MATLAB comparison, validation, visualization) |
+| **legacy/scripts/** | Developer tools for MATLAB comparison and validation |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
-| **Vectorization-Public/** | Snapshot of the original MATLAB source (submodule or reference) |
+| **legacy/** | Original MATLAB source (`Vectorization-Public`) and scripts |
+| **external/** | Large binary dependencies (e.g. `blender_resources`) |
 | **CONTRIBUTING.md** | Contribution guidelines and testing |
 | **pyproject.toml** | Package metadata and dependencies |
 
@@ -30,7 +31,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
    ```
 4. Launch the Streamlit application:
    ```bash
-   streamlit run app.py
+   streamlit run src/slavv/apps/web_app.py
    ```
 5. Open the provided URL in your browser.
 

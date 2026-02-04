@@ -80,6 +80,10 @@ def run_matlab_vectorization(
     print("Running MATLAB Implementation")
     print("="*60)
     
+    # Define the path to the MATLAB repository
+    # This assumes the 'legacy' folder is at the project root level
+    MATLAB_REPO_PATH = project_root / 'legacy' / 'Vectorization-Public'
+    
     if batch_script is None:
         batch_script = os.path.join(
             os.path.dirname(__file__),

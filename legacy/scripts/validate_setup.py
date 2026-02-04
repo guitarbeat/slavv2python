@@ -230,12 +230,12 @@ class Validator:
     
     def check_vectorization_public(self) -> bool:
         """Check Vectorization-Public directory and vectorize_V200.m."""
-        vec_dir = project_root / "Vectorization-Public"
+        matlab_repo_path = project_root / 'legacy' / 'Vectorization-Public'
         
-        if not self.check_directory_exists(vec_dir, "Vectorization-Public directory"):
+        if not self.check_directory_exists(matlab_repo_path, "Vectorization-Public directory"):
             return False
         
-        vectorize_file = vec_dir / "vectorize_V200.m"
+        vectorize_file = matlab_repo_path / "vectorize_V200.m"
         if not self.check_file_exists(vectorize_file, "vectorize_V200.m"):
             return False
         

@@ -53,12 +53,12 @@ def test_setup():
             errors.append(f"  [ERROR] {script} not found")
     
     # Check Vectorization-Public
-    vectorization_dir = project_root / "Vectorization-Public"
-    if vectorization_dir.exists():
-        print(f"\n[OK] Vectorization-Public directory found: {vectorization_dir}")
+    matlab_repo_path = project_root / 'legacy' / 'Vectorization-Public'
+    if matlab_repo_path.exists():
+        print(f"\n[OK] Vectorization-Public directory found: {matlab_repo_path}")
         
         # Check for vectorize_V200.m
-        vectorize_file = vectorization_dir / "vectorize_V200.m"
+        vectorize_file = matlab_repo_path / "vectorize_V200.m"
         if vectorize_file.exists():
             print(f"  [OK] vectorize_V200.m found")
         else:
