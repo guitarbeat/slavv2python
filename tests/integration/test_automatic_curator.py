@@ -7,7 +7,7 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 try:
     from slavv.ml_curator import AutomaticCurator
 except ImportError:
-    from src.slavv.ml_curator import AutomaticCurator
+    from source.slavv.ml_curator import AutomaticCurator
 
 
 def test_automatic_vertex_curation_filters_low_energy_vertices():

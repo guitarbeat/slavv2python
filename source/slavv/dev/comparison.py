@@ -14,13 +14,13 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import numpy as np
 
-from src.slavv.pipeline import SLAVVProcessor
-from src.slavv.io_utils import load_tiff_volume, export_pipeline_results
-from src.slavv.visualization import NetworkVisualizer
-from src.slavv.dev.matlab_parser import load_matlab_batch_results
-from src.slavv.dev.metrics import compare_results
-from src.slavv.dev.reporting import generate_summary
-from src.slavv.dev.management import generate_manifest
+from source.slavv.pipeline import SLAVVProcessor
+from source.slavv.io_utils import load_tiff_volume, export_pipeline_results
+from source.slavv.visualization import NetworkVisualizer
+from source.slavv.dev.matlab_parser import load_matlab_batch_results
+from source.slavv.dev.metrics import compare_results
+from source.slavv.dev.reporting import generate_summary
+from source.slavv.dev.management import generate_manifest
 
 def load_parameters(params_file: Optional[str] = None) -> Dict[str, Any]:
     """Load parameters from JSON file or use defaults."""

@@ -6,9 +6,9 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 
 | Path | Description |
 |------|-------------|
-| **src/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
-| **src/slavv/apps/** | Web applications (`web_app.py`) |
-| **examples/** | Example scripts (e.g. `run_tutorial.py`) |
+| **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
+| **source/slavv/apps/** | Web applications (`web_app.py`) |
+
 | **scripts/** | Developer tools for MATLAB comparison and validation |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
@@ -31,7 +31,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
    ```
 4. Launch the Streamlit application:
    ```bash
-   streamlit run src/slavv/apps/web_app.py
+   streamlit run source/slavv/apps/web_app.py
    ```
 5. Open the provided URL in your browser.
 
@@ -66,7 +66,7 @@ python -m pytest tests/
 
 ## Troubleshooting
 
-- **ImportError for `src.slavv`** – Ensure you are running Python from the repository root.
+- **ImportError for `source.slavv`** – Ensure you are running Python from the repository root.
 - **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 

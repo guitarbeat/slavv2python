@@ -8,18 +8,18 @@ Thanks for your interest in contributing! This document outlines conventions for
 
 ## Code Style
 - Follow basic PEP 8 formatting for Python code.
-- **Type Hinting**: All public functions in `src/` must have Python type hints (e.g., `def func(x: int) -> float:`).
+- **Type Hinting**: All public functions in `source/` must have Python type hints (e.g., `def func(x: int) -> float:`).
 - **Docstrings**: Use reStructuredText (RST) or Google-style docstrings for all exported members.
 - **Logging**: Use the standard `logging` module.
-  - Do NOT use `print()` in library code (`src/`).
+  - Do NOT use `print()` in library code (`source/`).
   - For scripts (`examples/`), use a consistent prefix for `print` messages (e.g., `[MyScript]: Message`).
 
 ## Programmatic Checks & Testing
 - Compile check for all Python files:
   ```bash
-  python -m compileall src/ tests/
+  python -m compileall source/ tests/
   ```
-- Run tests from the repo root (the `src` layout is automatically handled by `pyproject.toml` editable installs, or manual path setting):
+- Run tests from the repo root (the `source` layout is automatically handled by `pyproject.toml` editable installs, or manual path setting):
   ```bash
   # Option 1: Install in editable mode (Recommended)
   pip install -e .

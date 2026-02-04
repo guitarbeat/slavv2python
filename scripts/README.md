@@ -10,12 +10,13 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 - **`2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
 - **`3_Data_Management.ipynb`** - Manage output data and checkpoints
 - **`4_Run_Comparison.ipynb`** - Interactive runner for the comparison pipeline
+- **`5_Tutorial.ipynb`** - General tutorial and usage examples
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
 - **`run_matlab_vectorization.m`** - MATLAB runner
 
-### Shared Library (`src/slavv/dev/`)
+### Shared Library (`source/slavv/dev/`)
 - **`validation.py`** - Environment validation logic
 - **`management.py`** - Data management logic
 - **`matlab_parser.py`** - MATLAB output parsing logic

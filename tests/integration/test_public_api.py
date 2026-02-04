@@ -9,8 +9,8 @@ try:
     from slavv.pipeline import SLAVVProcessor
     from slavv.utils import validate_parameters
 except ImportError:
-    from src.slavv.pipeline import SLAVVProcessor
-    from src.slavv.utils import validate_parameters
+    from source.slavv.pipeline import SLAVVProcessor
+    from source.slavv.utils import validate_parameters
 
 
 def test_process_image_structure():

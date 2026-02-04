@@ -10,8 +10,8 @@ Files never imported or referenced by other project files:
 
 | File | Status | Notes |
 |------|--------|-------|
-| `src/slavv/synthetic.py` | Orphan | Never imported by any file |
-| `src/slavv/profiling.py` | Orphan + Broken | Never imported; contains broken import to deleted `vectorization_core.py` |
+| `source/slavv/synthetic.py` | Orphan | Never imported by any file |
+| `source/slavv/profiling.py` | Orphan + Broken | Never imported; contains broken import to deleted `vectorization_core.py` |
 | `examples/run_tutorial.py` | Standalone | Entry point script (expected) |
 
 ---
@@ -22,9 +22,9 @@ Files with large blocks (>5 lines) of commented-out code:
 
 | File | Lines | % Dead Code | Notes |
 |------|-------|-------------|-------|
-| `src/slavv/energy.py` | 23-25 | ~1% | Numba compatibility comment block |
-| `src/slavv/ml_curator.py` | N/A | 0% | Clean - no commented code blocks |
-| `src/slavv/visualization.py` | N/A | 0% | Clean |
+| `source/slavv/energy.py` | 23-25 | ~1% | Numba compatibility comment block |
+| `source/slavv/ml_curator.py` | N/A | 0% | Clean - no commented code blocks |
+| `source/slavv/visualization.py` | N/A | 0% | Clean |
 
 **Summary**: No significant commented-out code detected.
 

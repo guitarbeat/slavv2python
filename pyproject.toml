@@ -65,7 +65,7 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 slavv-app = "slavv.apps.web_app:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["source"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

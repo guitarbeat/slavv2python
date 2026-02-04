@@ -29,7 +29,7 @@ from unittest.mock import patch
 
 
 @patch(
-    'src.slavv.tracing.generate_edge_directions',
+    'source.slavv.tracing.generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_fallback(mock_generate_directions):
@@ -59,7 +59,7 @@ def test_estimate_vessel_directions_anisotropic_spacing():
 
 
 @patch(
-    'src.slavv.tracing.generate_edge_directions',
+    'source.slavv.tracing.generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):

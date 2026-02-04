@@ -13,7 +13,7 @@ graph TD
         Jupyter[Jupyter Notebooks]
     end
     
-    subgraph "Core Library (src/slavv)"
+    subgraph "Core Library (source/slavv)"
         API[SLAVVProcessor]
         IO[IO Utils]
         Algo[Vectorization Logic]
@@ -86,8 +86,8 @@ As data moves through the pipeline, its representation changes:
 ## 4. Design Principles
 
 ### A. Separation of Concerns
--   **Core Logic (`src/slavv`)**: Pure Python, few dependencies, no UI code.
--   **Visualization (`src/slavv/apps/web_app.py`, `external/blender_resources`)**: Handles rendering and user interaction.
+-   **Core Logic (`source/slavv`)**: Pure Python, few dependencies, no UI code.
+-   **Visualization (`source/slavv/apps/web_app.py`, `external/blender_resources`)**: Handles rendering and user interaction.
 -   This allows the core to run on headless HPC nodes without X11 forwarding.
 
 ### B. Stateless Processing

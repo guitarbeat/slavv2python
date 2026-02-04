@@ -8,14 +8,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 try:
     from slavv.pipeline import SLAVVProcessor
 except ImportError:
-    from src.slavv.pipeline import SLAVVProcessor
+    from source.slavv.pipeline import SLAVVProcessor
 
 
 from unittest.mock import patch
 
 
 @patch(
-    'src.slavv.pipeline.SLAVVProcessor._generate_edge_directions',
+    'source.slavv.pipeline.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):

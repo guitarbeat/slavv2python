@@ -11,7 +11,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 
 # Add project root to path if needed for imports
-# (Assuming this module is importable as src.slavv.dev.validation)
+# (Assuming this module is importable as source.slavv.dev.validation)
 
 
 class ValidationError:
@@ -80,14 +80,14 @@ class Validator:
         
         # Check custom modules
         try:
-            from src.slavv.pipeline import SLAVVProcessor
+            from source.slavv.pipeline import SLAVVProcessor
             self.add_pass("SLAVVProcessor can be imported")
         except ImportError as e:
             self.add_error(f"Cannot import SLAVVProcessor: {e}")
             all_ok = False
             
         try:
-            from src.slavv.io_utils import load_tiff_volume
+            from source.slavv.io_utils import load_tiff_volume
             self.add_pass("load_tiff_volume can be imported")
         except ImportError as e:
             self.add_error(f"Cannot import load_tiff_volume: {e}")
@@ -155,7 +155,7 @@ class Validator:
         self.add_pass(f"Test data file exists: {data_path}")
         
         try:
-            from src.slavv.io_utils import load_tiff_volume
+            from source.slavv.io_utils import load_tiff_volume
             volume = load_tiff_volume(str(data_path))
             self.add_pass(f"Test data loaded successfully: shape={volume.shape}, dtype={volume.dtype}")
             
