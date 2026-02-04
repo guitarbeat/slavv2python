@@ -6,6 +6,7 @@ Handles vertex extraction (local maxima/minima) and edge tracing through the ene
 import logging
 from typing import Dict, Any, List, Optional, Tuple, Set
 
+import math
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
@@ -387,7 +388,14 @@ def trace_edge(
     trace = [start_pos.copy()]
     current_pos = start_pos.copy()
     current_dir = direction.copy()
-    prev_energy = energy[tuple(np.floor(current_pos).astype(int))]
+
+    # Precompute for optimized gradient calc
+    inv_mpv_2x = 1.0 / (2.0 * microns_per_voxel)
+
+    p0 = int(math.floor(current_pos[0]))
+    p1 = int(math.floor(current_pos[1]))
+    p2 = int(math.floor(current_pos[2]))
+    prev_energy = energy[p0, p1, p2]
 
     for _ in range(max_steps):
         attempt = 0
@@ -397,10 +405,19 @@ def trace_edge(
                 next_pos = np.round(next_pos)
                 if np.array_equal(next_pos, current_pos):
                     return trace
-            if not in_bounds(next_pos, energy.shape):
+
+            # Inline bounds check for speed
+            # Use scalar checks to avoid array allocation in in_bounds
+            if (next_pos[0] < 0 or next_pos[0] >= energy.shape[0] or
+                next_pos[1] < 0 or next_pos[1] >= energy.shape[1] or
+                next_pos[2] < 0 or next_pos[2] >= energy.shape[2]):
                 return trace
-            pos_int = np.floor(next_pos).astype(int)
-            current_energy = energy[pos_int[0], pos_int[1], pos_int[2]]
+
+            p0 = int(math.floor(next_pos[0]))
+            p1 = int(math.floor(next_pos[1]))
+            p2 = int(math.floor(next_pos[2]))
+            current_energy = energy[p0, p1, p2]
+
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
                 energy_sign > 0 and current_energy < max_edge_energy
             ):
@@ -421,17 +438,53 @@ def trace_edge(
 
         # Optimized gradient computation:
         # Avoids wrapper overhead by calling implementation directly.
-        pos_int = np.round(current_pos).astype(np.int64)
-        gradient = compute_gradient_impl(energy, pos_int, microns_per_voxel)
-        grad_norm = np.linalg.norm(gradient)
+        # Use scalar args to avoid allocating arrays
+        p0 = int(round(current_pos[0]))
+        p1 = int(round(current_pos[1]))
+        p2 = int(round(current_pos[2]))
+
+        # Inline gradient computation to avoid function call and allocation
+        # Manual clamping
+        gp0 = p0
+        if gp0 < 1: gp0 = 1
+        elif gp0 > energy.shape[0] - 2: gp0 = energy.shape[0] - 2
+
+        gp1 = p1
+        if gp1 < 1: gp1 = 1
+        elif gp1 > energy.shape[1] - 2: gp1 = energy.shape[1] - 2
+
+        gp2 = p2
+        if gp2 < 1: gp2 = 1
+        elif gp2 > energy.shape[2] - 2: gp2 = energy.shape[2] - 2
+
+        # Compute gradient components
+        g0 = (energy[gp0+1, gp1, gp2] - energy[gp0-1, gp1, gp2]) * inv_mpv_2x[0]
+        g1 = (energy[gp0, gp1+1, gp2] - energy[gp0, gp1-1, gp2]) * inv_mpv_2x[1]
+        g2 = (energy[gp0, gp1, gp2+1] - energy[gp0, gp1, gp2-1]) * inv_mpv_2x[2]
+
+        # Manual norm
+        grad_norm = math.sqrt(g0**2 + g1**2 + g2**2)
+
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
-            perp_grad = gradient - current_dir * np.dot(gradient, current_dir)
+            dot_prod = g0*current_dir[0] + g1*current_dir[1] + g2*current_dir[2]
+
+            perp_grad0 = g0 - current_dir[0] * dot_prod
+            perp_grad1 = g1 - current_dir[1] * dot_prod
+            perp_grad2 = g2 - current_dir[2] * dot_prod
+
             # Steer along ridge by opposing gradient direction
-            current_dir = current_dir - np.sign(energy_sign) * perp_grad
-            norm = np.linalg.norm(current_dir)
+            sign = 1.0 if energy_sign >= 0 else -1.0
+            current_dir[0] = current_dir[0] - sign * perp_grad0
+            current_dir[1] = current_dir[1] - sign * perp_grad1
+            current_dir[2] = current_dir[2] - sign * perp_grad2
+
+            norm = math.sqrt(current_dir[0]**2 + current_dir[1]**2 + current_dir[2]**2)
             if norm > 1e-12:
-                current_dir = (current_dir / norm).astype(float)
+                inv_norm = 1.0 / norm
+                current_dir[0] *= inv_norm
+                current_dir[1] *= inv_norm
+                current_dir[2] *= inv_norm
 
         # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
         if vertex_image is not None:

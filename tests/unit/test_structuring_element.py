@@ -4,7 +4,10 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.pipeline import SLAVVProcessor
+try:
+    from slavv.pipeline import SLAVVProcessor
+except ImportError:
+    from src.slavv.pipeline import SLAVVProcessor
 
 
 def test_anisotropic_structuring_element():

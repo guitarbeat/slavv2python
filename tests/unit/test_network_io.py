@@ -4,6 +4,14 @@ import numpy as np
 import pytest
 from pathlib import Path
 
+try:
+
+
+from slavv.io_utils import (
+
+except ImportError:
+
+
 from src.slavv.io_utils import (
     Network,
     load_network_from_casx,

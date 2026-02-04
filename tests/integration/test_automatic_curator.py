@@ -4,7 +4,10 @@ import sys
 import numpy as np
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from src.slavv.ml_curator import AutomaticCurator
+try:
+    from slavv.ml_curator import AutomaticCurator
+except ImportError:
+    from src.slavv.ml_curator import AutomaticCurator
 
 
 def test_automatic_vertex_curation_filters_low_energy_vertices():

@@ -6,7 +6,10 @@ import plotly.express as px
 # Add source path for imports
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.slavv.visualization import NetworkVisualizer
+try:
+    from slavv.visualization import NetworkVisualizer
+except ImportError:
+    from src.slavv.visualization import NetworkVisualizer
 
 
 def test_edge_depth_coloring():

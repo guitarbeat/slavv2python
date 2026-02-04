@@ -1,7 +1,10 @@
 
 import pytest
 import numpy as np
-from src.slavv.utils import (
+try:
+    from slavv.utils import (
+except ImportError:
+    from src.slavv.utils import (
     calculate_path_length,
     validate_parameters,
     get_chunking_lattice,

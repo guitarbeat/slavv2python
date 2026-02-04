@@ -5,8 +5,12 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-from src.slavv.pipeline import SLAVVProcessor
-from src.slavv.utils import validate_parameters
+try:
+    from slavv.pipeline import SLAVVProcessor
+    from slavv.utils import validate_parameters
+except ImportError:
+    from src.slavv.pipeline import SLAVVProcessor
+    from src.slavv.utils import validate_parameters
 
 
 def test_process_image_structure():

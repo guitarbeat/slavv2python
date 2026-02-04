@@ -1,7 +1,10 @@
 
 import os
 import numpy as np
-from src.slavv.visualization import NetworkVisualizer
+try:
+    from slavv.visualization import NetworkVisualizer
+except ImportError:
+    from src.slavv.visualization import NetworkVisualizer
 import logging
 
 def test_vmv_export():

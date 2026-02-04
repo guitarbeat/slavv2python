@@ -431,8 +431,35 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
         result['energy_4d'] = energy_4d
     return result
 
+def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
+    """
+    Optimized gradient computation avoiding array allocations for position.
+    inv_mpv_2x should be 1.0 / (2.0 * microns_per_voxel)
+    """
+    s0, s1, s2 = energy.shape
+
+    # Manual clamping to [1, shape-2] to prevent out-of-bounds access
+    if p0 < 1: p0 = 1
+    elif p0 > s0 - 2: p0 = s0 - 2
+
+    if p1 < 1: p1 = 1
+    elif p1 > s1 - 2: p1 = s1 - 2
+
+    if p2 < 1: p2 = 1
+    elif p2 > s2 - 2: p2 = s2 - 2
+
+    # We still allocate grad, but we avoid pos_int allocation and unpacking
+    grad = np.empty(3, dtype=float)
+    grad[0] = (energy[p0+1, p1, p2] - energy[p0-1, p1, p2]) * inv_mpv_2x[0]
+    grad[1] = (energy[p0, p1+1, p2] - energy[p0, p1-1, p2]) * inv_mpv_2x[1]
+    grad[2] = (energy[p0, p1, p2+1] - energy[p0, p1, p2-1]) * inv_mpv_2x[2]
+
+    return grad
+
+
 __all__ = [
     "calculate_energy_field",
     "spherical_structuring_element",
     "compute_gradient_impl",
+    "compute_gradient_fast",
 ]

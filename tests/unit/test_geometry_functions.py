@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
-from src.slavv.geometry import (
+try:
+    from slavv.geometry import (
+except ImportError:
+    from src.slavv.geometry import (
     resample_vectors,
     smooth_edge_traces,
     transform_vector_set,

@@ -3,6 +3,14 @@ import sys
 
 import numpy as np
 
+try:
+
+
+from slavv.pipeline import SLAVVProcessor
+
+except ImportError:
+
+
 from src.slavv.pipeline import SLAVVProcessor
 
 def test_compute_gradient_linear_field():

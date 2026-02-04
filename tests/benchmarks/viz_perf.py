@@ -2,7 +2,10 @@
 import time
 import numpy as np
 import plotly.graph_objects as go
-from src.slavv.visualization import NetworkVisualizer
+try:
+    from slavv.visualization import NetworkVisualizer
+except ImportError:
+    from src.slavv.visualization import NetworkVisualizer
 
 def generate_large_network(n_edges=5000):
     """Generates a large synthetic network."""

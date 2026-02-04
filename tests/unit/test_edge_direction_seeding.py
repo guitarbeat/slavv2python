@@ -4,7 +4,13 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from src.slavv.pipeline import SLAVVProcessor
+try:
+    from slavv.pipeline import SLAVVProcessor
+except ImportError:
+    try:
+            from slavv.pipeline import SLAVVProcessor
+    except ImportError:
+            from src.slavv.pipeline import SLAVVProcessor
 
 
 from unittest.mock import patch
@@ -29,6 +35,7 @@ def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
         "energy": energy,
         "lumen_radius_pixels": np.array([2.0], dtype=float),
         "lumen_radius_microns": np.array([2.0], dtype=float),
+        "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
         "energy_sign": -1.0,
     }
     vertices = {"positions": vertex_pos, "scales": vertex_scales}
