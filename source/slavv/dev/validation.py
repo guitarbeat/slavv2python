@@ -74,8 +74,8 @@ class Validator:
             try:
                 __import__(module_name)
                 self.add_pass(f"Python package {display_name} is installed")
-            except ImportError:
-                self.add_error(f"Python package {display_name} is not installed")
+            except ImportError as e:
+                self.add_error(f"Python package {display_name} failed to import: {e}")
                 all_ok = False
         
         # Check custom modules
@@ -119,7 +119,7 @@ class Validator:
                 [self.matlab_path, '-batch', 'version; exit'],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=60
             )
             
             if result.returncode == 0:
@@ -209,3 +209,63 @@ class Validator:
             self.add_pass("Vectorization-Public/source directory found")
             
         return True
+
+    def check_matlab_functional(self) -> bool:
+        """Run a functional test by executing a temporary MATLAB script."""
+        if not self.matlab_path:
+            return False
+            
+        # Determine expected path for vectorization script
+        matlab_repo_path = self.project_root / 'legacy' / 'Vectorization-Public'
+        external_repo_path = self.project_root / 'external' / 'Vectorization-Public'
+        repo_path = external_repo_path if external_repo_path.exists() else matlab_repo_path
+        vec_script = repo_path / "vectorize_V200.m"
+        
+        vec_script_str = str(vec_script).replace("\\", "\\\\").replace("'", "''")
+        
+        script_name = "slavv_val_temp"
+        script_filename = f"{script_name}.m"
+        # Write in current directory to ensure MATLAB sees it easily
+        script_path = Path.cwd() / script_filename
+        
+        matlab_code = f"""
+        try
+            fprintf('MATLAB Functional Test Running...\\n');
+            target = '{vec_script_str}';
+            if exist(target, 'file') == 2
+                fprintf('SUCCESS: Found %s\\n', target);
+            else
+                error('Could not find %s', target);
+            end
+        catch ME
+            fprintf('ERROR: %s\\n', ME.message);
+            exit(1);
+        end
+        exit(0);
+        """
+        
+        try:
+            with open(script_path, 'w') as f:
+                f.write(matlab_code)
+                
+            result = subprocess.run(
+                [self.matlab_path, "-batch", script_name],
+                capture_output=True, text=True, timeout=60
+            )
+            
+            if result.returncode == 0:
+                self.add_pass(f"MATLAB functional test passed. Found vectorization script.")
+                return True
+            else:
+                self.add_error(f"MATLAB functional test failed (Code {result.returncode}). Output: {result.stdout}")
+                return False
+                
+        except Exception as e:
+            self.add_error(f"Failed to run MATLAB functional test: {e}")
+            return False
+        finally:
+            if script_path.exists():
+                try:
+                    script_path.unlink()
+                except:
+                    pass

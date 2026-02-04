@@ -19,21 +19,65 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 
 ## Getting started
 
-1. Clone this repository.
-2. Create and activate a virtual environment:
+### Quick Setup (Windows)
+
+Run the automated setup script:
+```powershell
+.\setup_env.ps1
+```
+
+This will:
+- Create a virtual environment (venv or conda)
+- Install all dependencies from `pyproject.toml`
+- Register a Jupyter kernel for notebooks
+- Guide you through the next steps
+
+### Manual Setup
+
+1. **Clone this repository**:
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+   git clone https://github.com/UTFOIL/slavv2python.git
+   cd slavv2python
    ```
-3. Install the package in editable mode (installs dependencies):
+
+2. **Create and activate a virtual environment**:
+   ```bash
+   # Option A: venv (built-in)
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1  # Windows
+   source .venv/bin/activate      # Linux/Mac
+   
+   # Option B: conda
+   conda create -n slavv-env python=3.10
+   conda activate slavv-env
+   ```
+
+3. **Install the package in editable mode**:
    ```bash
    pip install -e .
    ```
-4. Launch the Streamlit application:
+   This installs all dependencies from `pyproject.toml` including matplotlib, numpy, scipy, etc.
+
+4. **For notebook usage, install Jupyter**:
+   ```bash
+   pip install jupyter ipykernel
+   python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAVV)"
+   ```
+
+5. **Validate your setup**:
+   ```bash
+   jupyter notebook scripts/0_Setup_and_Validation.ipynb
+   # Select kernel: "Python (SLAVV)"
+   ```
+
+📘 **Detailed setup guide**: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
+
+### Launch the Web Application
+
    ```bash
    streamlit run source/slavv/apps/web_app.py
    ```
-5. Open the provided URL in your browser.
+   Open the provided URL in your browser.
 
 ## Usage
 
