@@ -4,16 +4,22 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 
 ## Files
 
-### Core Scripts
-- **`run_matlab_vectorization.m`** - Non-interactive MATLAB script wrapper for `vectorize_V200`
-- **`run_matlab_cli.bat`** - Windows batch script to invoke MATLAB from command line
-- **`compare_matlab_python.py`** - Main comparison script that runs both implementations with detailed analysis
-- **`comparison_params.json`** - Shared parameter configuration file
 
-### Analysis Tools
+### Interactive Notebooks (Recommended)
+- **`notebooks/1_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
+- **`notebooks/2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
+
+### Core Scripts (CLI)
+- **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
+- **`run_matlab_vectorization.m`** - MATLAB runner
+
+### Shared Library (`src/slavv/dev/`)
+- **`matlab_parser.py`** - MATLAB output parsing logic
+- **`metrics.py`** - Comparison mathematics
+- **`viz.py`** - Shared visualization functions
+
+### Legacy Analysis Tools
 - **`matlab_output_parser.py`** - Parser for MATLAB .mat output files (extracts vertices, edges, network stats)
-- **`visualize_comparison.py`** - Generate plots and charts comparing results
-- **`statistical_analysis.py`** - Perform rigorous statistical tests on comparison results
 - **`validate_setup.py`** - Pre-flight validation to check system configuration
 
 ### Testing and Debugging

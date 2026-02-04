@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
-"""Generate summary.txt files for comparison runs."""
+"""
+Reporting tools for SLAVV comparison.
 
-import argparse
+This module generates summary files and reports for comparison runs.
+"""
+
 import json
-import sys
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
@@ -149,43 +150,3 @@ def generate_summary(run_dir: Path, output_file: Path):
         f.write('\n'.join(lines))
     
     print(f"Generated summary: {output_file}")
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description='Generate summary.txt files for comparison runs'
-    )
-    parser.add_argument(
-        'run_dir',
-        nargs='?',
-        help='Comparison run directory (or scan comparisons/)'
-    )
-    
-    args = parser.parse_args()
-    
-    if args.run_dir:
-        # Generate for specific run
-        run_dir = Path(args.run_dir)
-        if not run_dir.exists():
-            print(f"ERROR: Directory not found: {run_dir}")
-            return 1
-        
-        output_file = run_dir / 'summary.txt'
-        generate_summary(run_dir, output_file)
-    else:
-        # Scan comparisons/ directory
-        comparisons_root = Path('comparisons')
-        if not comparisons_root.exists():
-            print("No comparisons/ directory found.")
-            return 0
-        
-        for run_dir in sorted(comparisons_root.glob('2026*')):
-            if run_dir.is_dir():
-                output_file = run_dir / 'summary.txt'
-                generate_summary(run_dir, output_file)
-    
-    return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main())
