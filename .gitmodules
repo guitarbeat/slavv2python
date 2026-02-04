@@ -1,6 +1,6 @@
 
-[submodule "legacy/Vectorization-Public"]
-	path = legacy/Vectorization-Public
+[submodule "external/Vectorization-Public"]
+	path = external/Vectorization-Public
 	url = https://github.com/UTFOIL/Vectorization-Public.git
 [submodule "external/blender_resources/VessMorphoVis"]
 	path = external/blender_resources/VessMorphoVis

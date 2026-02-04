@@ -69,7 +69,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["external/blender_resources", "legacy/Vectorization-Public"]
+norecursedirs = ["external/blender_resources", "external/Vectorization-Public"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 filterwarnings = [
