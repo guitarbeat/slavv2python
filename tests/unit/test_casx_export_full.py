@@ -2,10 +2,7 @@ import os
 import numpy as np
 import pytest
 import xml.etree.ElementTree as ET
-try:
-    from slavv.visualization import NetworkVisualizer
-except ImportError:
-    from src.slavv.visualization import NetworkVisualizer
+from slavv.visualization import NetworkVisualizer
 
 def test_casx_export_full(tmp_path):
     viz = NetworkVisualizer()

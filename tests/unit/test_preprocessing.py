@@ -3,10 +3,7 @@ import pathlib
 import numpy as np
 
 # Ensure module path
-try:
-    from slavv.utils import preprocess_image
-except ImportError:
-    from src.slavv.utils import preprocess_image
+from slavv.utils import preprocess_image
 
 
 def test_preprocess_normalizes_to_unit_range():

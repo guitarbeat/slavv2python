@@ -87,7 +87,7 @@ As data moves through the pipeline, its representation changes:
 
 ### A. Separation of Concerns
 -   **Core Logic (`src/slavv`)**: Pure Python, few dependencies, no UI code.
--   **Visualization (`app.py`, `blender_resources`)**: Handles rendering and user interaction.
+-   **Visualization (`src/slavv/apps/web_app.py`, `external/blender_resources`)**: Handles rendering and user interaction.
 -   This allows the core to run on headless HPC nodes without X11 forwarding.
 
 ### B. Stateless Processing

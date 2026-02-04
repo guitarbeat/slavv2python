@@ -7,10 +7,7 @@ import numpy as np
 try:
     from slavv.pipeline import SLAVVProcessor
 except ImportError:
-    try:
-            from slavv.pipeline import SLAVVProcessor
-    except ImportError:
-            from src.slavv.pipeline import SLAVVProcessor
+    from slavv.pipeline import SLAVVProcessor
 
 
 from unittest.mock import patch

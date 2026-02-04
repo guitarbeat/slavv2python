@@ -3,10 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-try:
-    from slavv.pipeline import SLAVVProcessor
-except ImportError:
-    from src.slavv.pipeline import SLAVVProcessor
+from slavv.pipeline import SLAVVProcessor
 
 
 def test_process_image_reports_progress():

@@ -156,3 +156,6 @@ comparisons/
 
 # Generated assets
 assets/
+
+# Pip metadata
+pip-wheel-metadata/

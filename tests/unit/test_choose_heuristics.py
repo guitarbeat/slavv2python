@@ -4,15 +4,7 @@ import numpy as np
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-try:
-
-
 from slavv.ml_curator import choose_vertices, choose_edges
-
-except ImportError:
-
-
-from src.slavv.ml_curator import choose_vertices, choose_edges
 
 
 def test_choose_vertices_thresholds():

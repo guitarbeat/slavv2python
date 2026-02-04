@@ -8,15 +8,7 @@ sys.path.append(
     str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src')
 )
 
-try:
-
-
 from slavv.pipeline import SLAVVProcessor
-
-except ImportError:
-
-
-from src.slavv.pipeline import SLAVVProcessor
 
 
 def test_estimate_vessel_directions_axis_aligned():

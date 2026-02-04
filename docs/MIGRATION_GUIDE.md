@@ -139,4 +139,4 @@ Notes:
 - Discrete tracing: Set `discrete_tracing=True` to snap edge steps to voxel centers (closer to MATLAB integer stepping). Default uses floating‑point steps for smoother paths.
 - Direction seeding: `direction_method='hessian'` uses local Hessian eigenvectors; `'uniform'` uses evenly distributed unit vectors.
 - Voxel anisotropy: All neighborhood and gradient ops account for anisotropic voxels via `microns_per_voxel`.
-- File/function names reference their locations exactly: Python paths like `src/slavv/vectorization_core.py` and MATLAB functions as in `Vectorization-Public/source/`.
+- File/function names reference their locations exactly: Python paths like `src/slavv/vectorization_core.py` and MATLAB functions as in `legacy/Vectorization-Public/source/`.

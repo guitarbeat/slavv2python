@@ -6,15 +6,7 @@ import numpy as np
 import pytest
 import tifffile
 
-try:
-
-
 from slavv.io_utils import load_tiff_volume
-
-except ImportError:
-
-
-from src.slavv.io_utils import load_tiff_volume
 
 
 def test_load_tiff_volume_valid():

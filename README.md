@@ -9,7 +9,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | **src/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **src/slavv/apps/** | Web applications (`web_app.py`) |
 | **examples/** | Example scripts (e.g. `run_tutorial.py`) |
-| **legacy/scripts/** | Developer tools for MATLAB comparison and validation |
+| **scripts/** | Developer tools for MATLAB comparison and validation |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
 | **legacy/** | Original MATLAB source (`Vectorization-Public`) and scripts |

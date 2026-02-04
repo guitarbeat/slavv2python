@@ -8,14 +8,8 @@ try:
     from slavv.pipeline import SLAVVProcessor
     from slavv.utils import validate_parameters
 except ImportError:
-    try:
-            from slavv.pipeline import SLAVVProcessor
-    except ImportError:
-            from src.slavv.pipeline import SLAVVProcessor
-    try:
-            from slavv.utils import validate_parameters
-    except ImportError:
-            from src.slavv.utils import validate_parameters
+    from slavv.pipeline import SLAVVProcessor
+    from slavv.utils import validate_parameters
 
 
 def test_validate_parameters_direction_method():

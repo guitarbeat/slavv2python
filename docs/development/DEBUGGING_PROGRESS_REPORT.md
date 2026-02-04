@@ -10,7 +10,7 @@
 ### Issue #1: MATLAB - Missing `tif2mat` function ✅ FIXED
 **Error:** `Undefined function 'tif2mat' for input arguments of type 'char'.`
 
-**Root Cause:** `vectorize_V200` requires helper functions from `Vectorization-Public/source/` directory, which wasn't added to MATLAB's path.
+**Root Cause:** `vectorize_V200` requires helper functions from `legacy/Vectorization-Public/source/` directory, which wasn't added to MATLAB's path.
 
 **Fix:** Modified [`scripts/run_matlab_vectorization.m`](scripts/run_matlab_vectorization.m) to add source directory:
 ```matlab
@@ -153,7 +153,7 @@ Update [`scripts/comparison_params.json`](scripts/comparison_params.json) to inc
 ### Step 2: Locate MATLAB Output Files ⏳
 Investigate where `vectorize_V200` saves final `.mat` output files:
 - Check MATLAB source code for save locations
-- Verify expected folder structure in `Vectorization-Public`
+- Verify expected folder structure in `legacy/Vectorization-Public`
 - Update parser if necessary
 
 ### Step 3: Run Full Comparison Test ⏳

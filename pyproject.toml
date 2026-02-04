@@ -62,14 +62,14 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 "Original MATLAB" = "https://github.com/UTFOIL/Vectorization-Public"
 
 [project.scripts]
-slavv-app = "app:main"
+slavv-app = "slavv.apps.web_app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["blender_resources", "Vectorization-Public"]
+norecursedirs = ["external/blender_resources", "legacy/Vectorization-Public"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
 filterwarnings = [
