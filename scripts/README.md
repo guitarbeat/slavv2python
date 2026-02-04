@@ -21,6 +21,9 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 - **`metrics.py`** - Comparison mathematics
 - **`viz.py`** - Shared visualization functions
 
+### Testing and Debugging
+- **`test_comparison_setup.py`** - Test Python environment and file paths
+
 ## Quick Start
 
 ### Step 1: Validate Setup
