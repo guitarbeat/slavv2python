@@ -4,8 +4,12 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-from src.slavv.pipeline import SLAVVProcessor
-from src.slavv.utils import validate_parameters
+try:
+    from slavv.pipeline import SLAVVProcessor
+    from slavv.utils import validate_parameters
+except ImportError:
+    from src.slavv.pipeline import SLAVVProcessor
+    from src.slavv.utils import validate_parameters
 
 
 def test_validate_parameters_direction_method():
@@ -34,6 +38,7 @@ def test_extract_edges_uniform_direction_method_skips_hessian():
         'energy': energy,
         'lumen_radius_pixels': np.array([2.0], dtype=float),
         'lumen_radius_microns': np.array([2.0], dtype=float),
+        'lumen_radius_pixels_axes': np.array([[2.0, 2.0, 2.0]], dtype=float),
         'energy_sign': -1.0,
     }
     vertices = {'positions': vertex_pos, 'scales': vertex_scales}

@@ -5,7 +5,10 @@ import numpy as np
 # Add source path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from src.slavv.pipeline import SLAVVProcessor
+try:
+    from slavv.pipeline import SLAVVProcessor
+except ImportError:
+    from src.slavv.pipeline import SLAVVProcessor
 
 
 from unittest.mock import patch
@@ -35,6 +38,7 @@ def test_extract_edges_regression(mock_generate_directions):
         'energy': energy,
         'lumen_radius_pixels': np.array([2.0], dtype=float),
         'lumen_radius_microns': np.array([2.0], dtype=float),
+        'lumen_radius_pixels_axes': np.array([[2.0, 2.0, 2.0]], dtype=float),
         'energy_sign': -1.0,
     }
     vertices = {'positions': np.array([[10.0, 10.0, 10.0]], dtype=float), 'scales': np.array([0], dtype=int)}
