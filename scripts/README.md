@@ -4,12 +4,12 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 
 ## Files
 
-### Interactive Notebooks (Recommended)
-- **`notebooks/0_Setup_and_Validation.ipynb`** - Validate system setup and dependencies 
-- **`notebooks/1_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
-- **`notebooks/2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
-- **`notebooks/3_Data_Management.ipynb`** - Manage output data and checkpoints
-- **`notebooks/4_Run_Comparison.ipynb`** - Interactive runner for the comparison pipeline
+### Interactive Notebooks (Preferred)
+- **`0_Setup_and_Validation.ipynb`** - Validate system setup and dependencies 
+- **`1_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
+- **`2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
+- **`3_Data_Management.ipynb`** - Manage output data and checkpoints
+- **`4_Run_Comparison.ipynb`** - Interactive runner for the comparison pipeline
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
@@ -28,7 +28,7 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 ## Quick Start
 
 ### Step 1: Validate Setup
-Open and run **`notebooks/0_Setup_and_Validation.ipynb`**. This will check:
+Open and run **`scripts/0_Setup_and_Validation.ipynb`**. This will check:
 - MATLAB installation and version
 - Python dependencies
 - Test data integrity
@@ -47,9 +47,9 @@ python scripts/compare_matlab_python.py \
 ### Step 3: Analyze Results (Notebooks)
 Once the run is complete, use the notebooks for analysis:
 
-1. **Dashboard**: Open `notebooks/1_Comparison_Dashboard.ipynb` to interactively explore visualizations and metrics.
-2. **Stats**: Open `notebooks/2_Statistical_Analysis.ipynb` for rigorous statistical testing.
-3. **Manage**: Open `notebooks/3_Data_Management.ipynb` to list runs, generate manifests, and clean up disk space.
+1. **Dashboard**: Open `scripts/1_Comparison_Dashboard.ipynb` to interactively explore visualizations and metrics.
+2. **Stats**: Open `scripts/2_Statistical_Analysis.ipynb` for rigorous statistical testing.
+3. **Manage**: Open `scripts/3_Data_Management.ipynb` to list runs, generate manifests, and clean up disk space.
 
 ## Output Structure
 
