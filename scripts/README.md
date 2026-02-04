@@ -6,21 +6,25 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 
 
 ### Interactive Notebooks (Recommended)
+- **`notebooks/0_Setup_and_Validation.ipynb`** - Validate system setup and dependencies 
 - **`notebooks/1_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
 - **`notebooks/2_Statistical_Analysis.ipynb`** - Detailed statistical reporting
+- **`notebooks/3_Data_Management.ipynb`** - Manage output data and checkpoints
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
 - **`run_matlab_vectorization.m`** - MATLAB runner
 
 ### Shared Library (`src/slavv/dev/`)
+- **`validation.py`** - Environment validation logic
+- **`management.py`** - Data management logic
 - **`matlab_parser.py`** - MATLAB output parsing logic
 - **`metrics.py`** - Comparison mathematics
 - **`viz.py`** - Shared visualization functions
 
 ### Legacy Analysis Tools
 - **`matlab_output_parser.py`** - Parser for MATLAB .mat output files (extracts vertices, edges, network stats)
-- **`validate_setup.py`** - Pre-flight validation to check system configuration
+
 
 ### Testing and Debugging
 - **`test_matlab_setup.m`** - Simple test script to verify MATLAB environment
