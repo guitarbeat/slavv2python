@@ -5,7 +5,7 @@ This module contains functions to compare vertices, edges, and network statistic
 between MATLAB and Python implementations.
 """
 
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 import numpy as np
 from scipy import stats
 from scipy.spatial import cKDTree
@@ -180,4 +180,81 @@ def compare_networks(matlab_stats: Dict[str, Any], python_network: Dict[str, Any
         if avg_count > 0:
             comparison['strand_count_percent_difference'] = (comparison['strand_count_difference'] / avg_count) * 100.0
     
+    return comparison
+
+
+def compare_results(
+    matlab_results: Dict[str, Any],
+    python_results: Dict[str, Any],
+    matlab_parsed: Optional[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Aggregate comparison results from MATLAB and Python executions.
+
+    Parameters
+    ----------
+    matlab_results : Dict[str, Any]
+        Metadata about MATLAB execution (success, timing, output paths).
+    python_results : Dict[str, Any]
+        Metadata about Python execution and the 'results' dictionary containing actual data.
+    matlab_parsed : Optional[Dict[str, Any]]
+        Parsed MATLAB data loaded from .mat files (vertices, edges, stats).
+
+    Returns
+    -------
+    Dict[str, Any]
+        Nested dictionary containing comparative metrics.
+    """
+    comparison = {
+        'matlab': {
+            'success': matlab_results.get('success', False),
+            'elapsed_time': matlab_results.get('elapsed_time', 0.0),
+        },
+        'python': {
+            'success': python_results.get('success', False),
+            'elapsed_time': python_results.get('elapsed_time', 0.0),
+        },
+        'performance': {},
+        'vertices': {},
+        'edges': {},
+        'network': {}
+    }
+
+    # Performance comparison
+    m_time = comparison['matlab']['elapsed_time']
+    p_time = comparison['python']['elapsed_time']
+    comparison['performance'] = {
+        'matlab_time': m_time,
+        'python_time': p_time,
+        'speedup': m_time / p_time if p_time > 0 else 0.0
+    }
+
+    if not matlab_parsed or 'results' not in python_results:
+        return comparison
+
+    python_data = python_results['results']
+
+    # Vertex comparison
+    # Adapt Python data to match what compare_vertices expects
+    py_verts = python_data.get('vertices', {}).copy()
+    if 'radii_microns' in py_verts:
+        py_verts['radii'] = py_verts['radii_microns']
+    if 'positions' in py_verts:
+        py_verts['count'] = len(py_verts['positions'])
+
+    comparison['vertices'] = compare_vertices(matlab_parsed.get('vertices', {}), py_verts)
+
+    # Edge comparison
+    py_edges = python_data.get('edges', {}).copy()
+    if 'traces' in py_edges:
+        py_edges['count'] = len(py_edges['traces'])
+
+    comparison['edges'] = compare_edges(matlab_parsed.get('edges', {}), py_edges)
+
+    # Network comparison
+    comparison['network'] = compare_networks(
+        matlab_parsed.get('network_stats', {}),
+        python_data.get('network', {})
+    )
+
     return comparison

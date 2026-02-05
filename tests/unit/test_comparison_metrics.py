@@ -13,11 +13,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-# Add scripts directory to path
-scripts_dir = Path(__file__).parent.parent.parent / "scripts"
-sys.path.insert(0, str(scripts_dir))
-
-from compare_matlab_python import (
+from slavv.dev.metrics import (
     match_vertices,
     compare_vertices,
     compare_edges,
