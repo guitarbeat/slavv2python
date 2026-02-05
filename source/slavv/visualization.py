@@ -1512,7 +1512,7 @@ class NetworkVisualizer:
         """Export complete results as JSON"""
         import json
         
-        # Convert numpy arrays to lists for JSON serialization
+        # Convert numpy arrays and other non-JSON-serializable types
         def convert_numpy(obj):
             if isinstance(obj, np.ndarray):
                 return obj.tolist()
@@ -1520,8 +1520,12 @@ class NetworkVisualizer:
                 return int(obj)
             elif isinstance(obj, np.floating):
                 return float(obj)
+            elif isinstance(obj, set):
+                return list(obj)  # Sets are not JSON serializable
+            elif isinstance(obj, tuple):
+                return list(obj)  # Tuples become lists in JSON
             elif isinstance(obj, dict):
-                return {key: convert_numpy(value) for key, value in obj.items()}
+                return {str(key): convert_numpy(value) for key, value in obj.items()}
             elif isinstance(obj, list):
                 return [convert_numpy(item) for item in obj]
             else:
