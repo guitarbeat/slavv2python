@@ -94,5 +94,5 @@ Building on work with VessMorphoVis/Blender exports:
 ---
 
 ## See Also
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design diagrams
-- [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - MATLAB→Python mapping
+- [ARCHITECTURE.md](../reference/ARCHITECTURE.md) - System design diagrams
+- [MIGRATION_GUIDE.md](../reference/MIGRATION_GUIDE.md) - MATLAB→Python mapping
