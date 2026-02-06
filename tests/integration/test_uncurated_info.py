@@ -6,7 +6,7 @@ import numpy as np
 try:
     from slavv.ml_curator import extract_uncurated_info
 except ImportError:
-    from source.slavv.ml_curator import extract_uncurated_info
+    from source.slavv.analysis import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:

@@ -12,6 +12,15 @@
 
 ---
 
+## Comparison Workflow
+The comparison workflow has been decoupled to allow flexible execution:
+1. **Run MATLAB**: `scripts/01_Run_Matlab.ipynb` (or CLI) $\rightarrow$ `comparisons/XX_matlab_run/`
+2. **Run Python**: `scripts/02_Run_Python.ipynb` $\rightarrow$ `comparisons/XX_python_run/`
+3. **Compare**: `scripts/03_Compare_Results.ipynb` $\rightarrow$ `comparisons/XX_comparison_report/`
+
+
+---
+
 ## Key Features
 
 ### Modular Architecture
@@ -76,7 +85,8 @@ Building on work with VessMorphoVis/Blender exports:
 
 ### Low Priority
 - [ ] API reference (Sphinx/MkDocs)
-- [ ] Jupyter tutorial notebooks
+- [x] Jupyter naming convention (`00_`, `01_`, etc.)
+- [ ] Jupyter tutorial notebooks (`07_Tutorial.ipynb`)
 - [ ] Full `mypy` compliance
 
 ---

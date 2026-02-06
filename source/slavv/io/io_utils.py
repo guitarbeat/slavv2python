@@ -60,13 +60,29 @@ def load_tiff_volume(
     """
     import tifffile
 
+    # Suppress verbose metadata warnings from tifffile (e.g. ImageJ vs OME metadata mismatches)
+    tif_logger = logging.getLogger("tifffile")
+    original_level = tif_logger.level
+    tif_logger.setLevel(logging.ERROR)
+
     try:
         if memory_map:
             volume = tifffile.memmap(file)
         else:
             volume = tifffile.imread(file)
+        
+        # Additional shape validation locally
+        if hasattr(volume, 'shape'):
+             # Sometimes extra dimensions are read (e.g. T,Z,Y,X), squeeze if needed
+             # For now, just ensure we return the array, validation happens next
+             pass
+
     except Exception as exc:  # pragma: no cover - pass through value error
         raise ValueError(f"Failed to read TIFF volume: {exc}") from exc
+    finally:
+        # Restore logger level
+        tif_logger.setLevel(original_level)
+
     if volume.ndim != 3:
         raise ValueError("Expected a 3D volume")
     if np.iscomplexobj(volume):

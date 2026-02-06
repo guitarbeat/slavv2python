@@ -92,7 +92,7 @@ else:
 
 # --- Helper Functions ---
 
-from .utils import get_chunking_lattice
+from ..utils import get_chunking_lattice
 
 def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) -> np.ndarray:
     """

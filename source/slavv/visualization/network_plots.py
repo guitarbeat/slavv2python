@@ -14,7 +14,7 @@ from plotly.subplots import make_subplots
 from typing import Dict, List, Tuple, Optional, Any
 import logging
 from pathlib import Path
-from .utils import calculate_path_length
+from ..utils import calculate_path_length
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

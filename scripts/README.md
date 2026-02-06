@@ -5,12 +5,14 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 ## Files
 
 ### Interactive Notebooks (Preferred)
-- **`0_Setup_and_Validation.ipynb`** - Validate system setup and dependencies 
-- **`1_Run_Comparison.ipynb`** - Interactive runner for the comparison pipeline
-- **`2_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
-- **`3_Statistical_Analysis.ipynb`** - Detailed statistical reporting
-- **`4_Data_Management.ipynb`** - Manage output data and checkpoints
-- **`5_Tutorial.ipynb`** - General tutorial and usage examples
+- **`00_Setup_and_Validation.ipynb`** - Validate system setup and dependencies 
+- **`01_Run_Matlab.ipynb`** - Interactive runner for MATLAB-only pipeline
+- **`02_Run_Python.ipynb`** - Interactive runner for Python-only pipeline
+- **`03_Compare_Results.ipynb`** - Combine and compare results from MATLAB and Python runs
+- **`04_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
+- **`05_Statistical_Analysis.ipynb`** - Detailed statistical reporting
+- **`06_Data_Management.ipynb`** - Manage output data and checkpoints
+- **`07_Tutorial.ipynb`** - General tutorial and usage examples
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
@@ -29,7 +31,7 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 ## Quick Start
 
 ### Step 1: Validate Setup
-Open and run **`scripts/0_Setup_and_Validation.ipynb`**. This will check:
+Open and run **`scripts/00_Setup_and_Validation.ipynb`**. This will check:
 - MATLAB installation and version
 - Python dependencies
 - Test data integrity
@@ -38,8 +40,10 @@ Open and run **`scripts/0_Setup_and_Validation.ipynb`**. This will check:
 ### Step 2: Run Comparison (CLI or Notebook)
 The comparison is best run from the command line due to long execution times, or use the interactive notebook:
 
-**Option A: Notebook (Recommended for first run)**
-Open **`scripts/1_Run_Comparison.ipynb`**.
+**Option A: Step-by-Step (Recommended)**
+1. Open **`01_Run_Matlab.ipynb`** to run the MATLAB vectorization.
+2. Open **`02_Run_Python.ipynb`** to run the Python vectorization.
+3. Open **`03_Compare_Results.ipynb`** to select the completed runs and generate the comparison report.
 
 **Option B: CLI**
 ```bash
@@ -52,9 +56,9 @@ python scripts/compare_matlab_python.py \
 ### Step 3: Analyze Results (Notebooks)
 Once the run is complete, use the notebooks for analysis:
 
-1. **Dashboard**: Open `scripts/2_Comparison_Dashboard.ipynb` to interactively explore visualizations and metrics.
-2. **Stats**: Open `scripts/3_Statistical_Analysis.ipynb` for rigorous statistical testing.
-3. **Manage**: Open `scripts/4_Data_Management.ipynb` to list runs, generate manifests, and clean up disk space.
+1. **Dashboard**: Open `scripts/04_Comparison_Dashboard.ipynb` to interactively explore visualizations and metrics.
+2. **Stats**: Open `scripts/05_Statistical_Analysis.ipynb` for rigorous statistical testing.
+3. **Manage**: Open `scripts/06_Data_Management.ipynb` to list runs, generate manifests, and clean up disk space.
 
 ## Output Structure
 
@@ -80,7 +84,7 @@ comparison_output/
 
 | Issue | Quick Fix |
 |-------|-----------|
-| "MATLAB executable not found" | Check path in `0_Setup_and_Validation.ipynb` |
+| "MATLAB executable not found" | Check path in `00_Setup_and_Validation.ipynb` |
 | "ModuleNotFoundError" | `pip install -r requirements.txt` |
 | "vectorize_V200 not found" | Check `external/Vectorization-Public` exists |
 | "Permission denied" | Close files/folders open in other apps |
@@ -90,7 +94,7 @@ comparison_output/
 #### MATLAB Issues
 
 **MATLAB Not Found**
-- Verify path in `notebooks/0_Setup_and_Validation.ipynb`.
+- Verify path in `notebooks/00_Setup_and_Validation.ipynb`.
 - Ensure you point to the executable (e.g., `.../bin/matlab.exe`), not just the directory.
 
 **`-batch` Flag Not Supported**

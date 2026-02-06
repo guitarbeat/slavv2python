@@ -5,13 +5,13 @@ A Python implementation of the SLAVV algorithm for extracting and analyzing
 vascular networks from 3D microscopy images.
 """
 
-from .pipeline import SLAVVProcessor
+from .core import SLAVVProcessor
 from .utils import (
     preprocess_image,
     validate_parameters,
     get_chunking_lattice,
 )
-from .geometry import (
+from .analysis import (
     calculate_branching_angles,
     calculate_network_statistics,
     calculate_surface_area,
@@ -29,7 +29,7 @@ from .geometry import (
     register_strands,
 )
 
-from .ml_curator import MLCurator, AutomaticCurator
+from .analysis import MLCurator, AutomaticCurator
 try:
     from .visualization import NetworkVisualizer
 except ImportError:
@@ -37,7 +37,7 @@ except ImportError:
     logging.getLogger(__name__).warning("Visualization module unavailable (missing dependencies, likely plotly).")
     NetworkVisualizer = None
 
-from .io_utils import (
+from .io import (
     load_tiff_volume,
     load_network_from_mat,
     load_network_from_casx,

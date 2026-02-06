@@ -4,10 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-try:
-    from slavv.visualization import NetworkVisualizer
-except ImportError:
-    from source.slavv.visualization import NetworkVisualizer
+from source.slavv.visualization import NetworkVisualizer
 
 
 def test_plot_flow_field_returns_cone():

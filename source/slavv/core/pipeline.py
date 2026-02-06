@@ -9,7 +9,8 @@ import numpy as np
 import logging
 from typing import Dict, Any, Callable, Optional, List
 
-from . import energy, tracing, graph, utils
+from . import energy, tracing, graph
+from .. import utils
 
 logger = logging.getLogger(__name__)
 
@@ -141,8 +142,8 @@ class SLAVVProcessor:
 
     def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
-        from . import utils
-        return energy.calculate_energy_field(image, params, utils.get_chunking_lattice)
+        from .. import utils as utils_module
+        return energy.calculate_energy_field(image, params, utils_module.get_chunking_lattice)
 
     def extract_vertices(self, energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
         """Extract vertices as local extrema. Delegates to ``tracing`` module."""
