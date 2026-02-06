@@ -80,14 +80,14 @@ class Validator:
         
         # Check custom modules
         try:
-            from source.slavv.core import SLAVVProcessor
+            from slavv.core import SLAVVProcessor
             self.add_pass("SLAVVProcessor can be imported")
         except ImportError as e:
             self.add_error(f"Cannot import SLAVVProcessor: {e}")
             all_ok = False
             
         try:
-            from source.slavv.io import load_tiff_volume
+            from slavv.io import load_tiff_volume
             self.add_pass("load_tiff_volume can be imported")
         except ImportError as e:
             self.add_error(f"Cannot import load_tiff_volume: {e}")
@@ -155,7 +155,7 @@ class Validator:
         self.add_pass(f"Test data file exists: {data_path}")
         
         try:
-            from source.slavv.io import load_tiff_volume
+            from slavv.io import load_tiff_volume
             volume = load_tiff_volume(str(data_path))
             self.add_pass(f"Test data loaded successfully: shape={volume.shape}, dtype={volume.dtype}")
             

@@ -81,7 +81,7 @@ Write-Host "`n==================================" -ForegroundColor Cyan
 Write-Host "Next Steps:" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "1. Open Jupyter: jupyter lab (or jupyter notebook)"
-Write-Host "2. Open: scripts/0_Setup_and_Validation.ipynb"
+Write-Host "2. Open: scripts/00_Setup_and_Validation.ipynb"
 Write-Host "3. Select kernel: 'Python (SLAVV)'"
 Write-Host "4. Run all cells to validate your setup"
 Write-Host ""
