@@ -2,8 +2,7 @@ import sys
 import pathlib
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from slavv.ml_curator import MLCurator
+from slavv.analysis.ml_curator import MLCurator
 from slavv.utils import calculate_path_length
 
 
