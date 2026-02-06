@@ -21,6 +21,7 @@ from source.slavv.dev.matlab_parser import load_matlab_batch_results
 from source.slavv.dev.metrics import compare_results
 from source.slavv.dev.reporting import generate_summary
 from source.slavv.dev.management import generate_manifest
+from source.slavv.utils import get_system_info, get_matlab_info
 
 def load_parameters(params_file: Optional[str] = None) -> Dict[str, Any]:
     """Load parameters from JSON file or use defaults."""
@@ -83,6 +84,11 @@ def run_matlab_vectorization(
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
     
+    # Capture system info
+    system_info = get_system_info()
+    matlab_info = get_matlab_info(matlab_path)
+    system_info['matlab'] = matlab_info
+    
     start_time = time.time()
     
     try:
@@ -109,7 +115,8 @@ def run_matlab_vectorization(
             'elapsed_time': elapsed_time,
             'output_dir': output_dir,
             'stdout': result.stdout,
-            'stderr': result.stderr
+            'stderr': result.stderr,
+            'system_info': system_info
         }
         
         # Look for batch folder in output directory
@@ -152,7 +159,8 @@ def run_matlab_vectorization(
             'elapsed_time': elapsed_time,
             'error': str(e),
             'stdout': e.stdout,
-            'stderr': e.stderr
+            'stderr': e.stderr,
+            'system_info': system_info
         }
 
 
@@ -168,6 +176,9 @@ def run_python_vectorization(
     
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
+    
+    # Capture system info
+    system_info = get_system_info()
     
     # Load image
     print("Loading image...")
@@ -204,7 +215,8 @@ def run_python_vectorization(
             'vertices_count': len(results['vertices']['positions']) if 'vertices' in results else 0,
             'edges_count': len(results['edges']['traces']) if 'edges' in results else 0,
             'network_strands_count': len(results['network']['strands']) if 'network' in results else 0,
-            'results': results
+            'results': results,
+            'system_info': system_info
         }
         
         # Export results
@@ -254,7 +266,8 @@ def run_python_vectorization(
         return {
             'success': False,
             'elapsed_time': elapsed_time,
-            'error': str(e)
+            'error': str(e),
+            'system_info': system_info
         }
 
 def orchestrate_comparison(

@@ -11,6 +11,7 @@ from .math import calculate_path_length, weighted_ks_test
 from .preprocessing import preprocess_image
 from .validation import validate_parameters
 from .chunking import get_chunking_lattice
+from .system_info import get_system_info, get_matlab_info
 
 __all__ = [
     "calculate_path_length",
@@ -18,5 +19,7 @@ __all__ = [
     "preprocess_image",
     "validate_parameters",
     "get_chunking_lattice",
+    "get_system_info",
+    "get_matlab_info",
 ]
 
