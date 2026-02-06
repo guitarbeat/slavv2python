@@ -18,6 +18,8 @@ The comparison workflow has been decoupled to allow flexible execution:
 2. **Run Python**: `scripts/02_Run_Python.ipynb` $\rightarrow$ `comparisons/XX_python_run/`
 3. **Compare**: `scripts/03_Compare_Results.ipynb` $\rightarrow$ `comparisons/XX_comparison_report/`
 
+**System Information Capture**: Each run automatically logs CPU, RAM, GPU, OS, and software versions for performance tracking across different machines.
+
 
 ---
 
