@@ -104,7 +104,7 @@ try:
     import scipy
     import matplotlib
     import tifffile
-    from source.slavv.pipeline import SLAVVProcessor
+    from slavv.pipeline import SLAVVProcessor
     print("✅ All packages imported successfully!")
 except ImportError as e:
     print(f"❌ Import failed: {e}")
@@ -119,7 +119,7 @@ except ImportError as e:
 pip install -e .
 ```
 
-This tells Python to find `source.slavv.*` modules from your current directory.
+This tells Python to find `slavv.*` modules from your current directory.
 
 ### Issue: "No module named 'matplotlib'" (or other dependency)
 
