@@ -1531,7 +1531,12 @@ class NetworkVisualizer:
             else:
                 return obj
         
-        json_data = convert_numpy(processing_results)
+        # Filter data to export only core network structures
+        # Use whitelist to avoid massive volume data (like 'energy_data')
+        whitelist = {'vertices', 'edges', 'network', 'parameters'}
+        data_to_export = {k: v for k, v in processing_results.items() if k in whitelist}
+        
+        json_data = convert_numpy(data_to_export)
         
         with open(output_path, 'w') as f:
             json.dump(json_data, f, indent=2)

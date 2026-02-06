@@ -284,12 +284,13 @@ def orchestrate_comparison(
     matlab_output = output_dir / 'matlab_results'
     python_output = output_dir / 'python_results'
     
-    os.makedirs(matlab_output, exist_ok=True)
-    os.makedirs(python_output, exist_ok=True)
+    matlab_output = output_dir / 'matlab_results'
+    python_output = output_dir / 'python_results'
     
     # Run MATLAB
     matlab_results = None
     if not skip_matlab:
+        os.makedirs(matlab_output, exist_ok=True)
         matlab_results = run_matlab_vectorization(
             input_file,
             str(matlab_output),
@@ -302,6 +303,7 @@ def orchestrate_comparison(
     # Run Python
     python_results = None
     if not skip_python:
+        os.makedirs(python_output, exist_ok=True)
         python_results = run_python_vectorization(
             input_file,
             str(python_output),
@@ -481,8 +483,54 @@ def run_standalone_comparison(
             print(f"Error loading Python JSON: {e}")
             python_results['success'] = False
     else:
-        print("Warning: No python_comparison_*.json found.")
-        python_results['success'] = False
+        # Fallback: Check for network.json
+        print("Warning: No python_comparison_*.json found. Checking for network.json...")
+        network_json_paths = glob.glob(str(python_dir / "python_results" / "network.json"))
+        if not network_json_paths:
+             network_json_paths = glob.glob(str(python_dir / "network.json"))
+             
+        if network_json_paths:
+            network_json = network_json_paths[0]
+            print(f"Loading Python results from fallback: {network_json}")
+            try:
+                with open(network_json, 'r') as f:
+                    net_data = json.load(f)
+                
+                # network.json structure: {vertices: {positions: ...}, edges: {connections: ...}}
+                # Adapt to structure expected by compare_results
+                loaded_data = {
+                    'vertices': net_data.get('vertices', {}),
+                    'edges': net_data.get('edges', {}),
+                    'network': net_data.get('network', {})
+                }
+                
+                # Restore arrays
+                if 'positions' in loaded_data['vertices']:
+                    loaded_data['vertices']['positions'] = np.array(loaded_data['vertices']['positions'])
+                
+                # Note: network.json usually has 'connections' (N,2) ints, not 'traces'.
+                # We map connections to traces as best effort if traces missing
+                if 'connections' in loaded_data['edges']:
+                     # Just create dummy traces from connections for count purposes if needed?
+                     # Actually compare_results metrics might depend on traces. 
+                     # But for basic counts, we can use connections length.
+                     pass
+
+                python_results['results'] = loaded_data
+                python_results['vertices_count'] = len(loaded_data.get('vertices', {}).get('positions', []))
+                
+                # Count from connections if traces missing
+                if 'connections' in loaded_data.get('edges', {}):
+                     python_results['edges_count'] = len(loaded_data['edges']['connections'])
+                else:
+                     python_results['edges_count'] = len(loaded_data.get('edges', {}).get('traces', []))
+                     
+            except Exception as e:
+                 print(f"Error loading network.json: {e}")
+                 python_results['success'] = False
+        else:
+            print("Error: No result files found.")
+            python_results['success'] = False
 
     # 3. Compare
     # Try to load parsed MATLAB data

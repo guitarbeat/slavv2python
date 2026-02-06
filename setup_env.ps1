@@ -16,6 +16,10 @@ if (-not (Test-Path "pyproject.toml")) {
 Write-Host "✅ Project root detected" -ForegroundColor Green
 Write-Host ""
 
+# Clean up potential build artifacts that cause install errors
+Write-Host "Cleaning up build artifacts..." -ForegroundColor Cyan
+Remove-Item -Recurse -Force "pip-wheel-metadata", "*.egg-info", "build", "dist" -ErrorAction SilentlyContinue
+
 # Ask user which method they prefer
 Write-Host "Choose your virtual environment method:" -ForegroundColor Yellow
 Write-Host "  1) venv (built-in Python, recommended)"
@@ -46,7 +50,8 @@ if ($choice -eq "1") {
     Write-Host "`nTo activate this environment in the future, run:" -ForegroundColor Yellow
     Write-Host "  .\.venv\Scripts\Activate.ps1" -ForegroundColor White
     
-} elseif ($choice -eq "2") {
+}
+elseif ($choice -eq "2") {
     Write-Host "`nCreating conda environment..." -ForegroundColor Cyan
     conda create -n slavv-env python=3.10 -y
     
@@ -66,7 +71,8 @@ if ($choice -eq "1") {
     Write-Host "`nTo activate this environment in the future, run:" -ForegroundColor Yellow
     Write-Host "  conda activate slavv-env" -ForegroundColor White
     
-} else {
+}
+else {
     Write-Host "❌ Invalid choice. Exiting." -ForegroundColor Red
     exit 1
 }
@@ -79,4 +85,4 @@ Write-Host "2. Open: scripts/0_Setup_and_Validation.ipynb"
 Write-Host "3. Select kernel: 'Python (SLAVV)'"
 Write-Host "4. Run all cells to validate your setup"
 Write-Host ""
-Write-Host "For more help, see: docs/ENVIRONMENT_SETUP.md" -ForegroundColor Yellow
+Write-Host "For more help, see: docs/guides/SETUP.md" -ForegroundColor Yellow

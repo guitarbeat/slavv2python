@@ -118,8 +118,11 @@ def generate_summary(run_dir: Path, output_file: Path):
     lines.append("")
     
     # Status/notes
-    has_matlab = (run_dir / 'matlab_results').exists()
-    has_python = (run_dir / 'python_results').exists()
+    matlab_dir = run_dir / 'matlab_results'
+    python_dir = run_dir / 'python_results'
+    
+    has_matlab = matlab_dir.exists() and any(matlab_dir.iterdir())
+    has_python = python_dir.exists() and any(python_dir.iterdir())
     has_plots = (run_dir / 'visualizations').exists()
     
     lines.append("Status")

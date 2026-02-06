@@ -21,11 +21,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
-
-from source.slavv.dev.comparison import load_parameters, orchestrate_comparison
+from slavv.dev.comparison import load_parameters, orchestrate_comparison
 
 def main():
     parser = argparse.ArgumentParser(

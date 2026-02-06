@@ -10,9 +10,8 @@ This directory contains scripts to run and compare the MATLAB and Python impleme
 - **`02_Run_Python.ipynb`** - Interactive runner for Python-only pipeline
 - **`03_Compare_Results.ipynb`** - Combine and compare results from MATLAB and Python runs
 - **`04_Comparison_Dashboard.ipynb`** - Interactive dashboard for exploring comparison results
-- **`05_Statistical_Analysis.ipynb`** - Detailed statistical reporting
-- **`06_Data_Management.ipynb`** - Manage output data and checkpoints
-- **`07_Tutorial.ipynb`** - General tutorial and usage examples
+- **`05_Data_Management.ipynb`** - Manage output data and checkpoints
+- **`06_Tutorial.ipynb`** - General tutorial and usage examples
 
 ### Core Scripts (CLI)
 - **`compare_matlab_python.py`** - Main CLI tool to run and compare implementations
