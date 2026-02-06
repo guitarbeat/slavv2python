@@ -159,9 +159,13 @@ class NetworkVisualizer:
         bifurcations = network.get('bifurcations', [])
         
         # Determine projection axes
-        axes = [0, 1, 2]
-        axes.remove(projection_axis)
-        x_axis, y_axis = axes
+        if projection_axis == 2:
+             # Match 3D plot convention: X->col 1, Y->col 0
+             x_axis, y_axis = 1, 0
+        else:
+             axes = [0, 1, 2]
+             axes.remove(projection_axis)
+             x_axis, y_axis = axes
         
         axis_names = ['Y', 'X', 'Z']
         x_label = f"{axis_names[x_axis]} (μm)"
@@ -325,7 +329,8 @@ class NetworkVisualizer:
                 edge_colors: List[str] = []
                 strand_ids: List[int] = []
                 strand_legend: Dict[int, bool] = {}
-                values: Optional[np.ndarray] = None
+                # values is already initialized to None in outer scope but good to be explicit or leave it
+                values = None
 
                 # (... Reusing previous logic for small counts ...)
                 if color_by == 'depth':
@@ -415,7 +420,7 @@ class NetworkVisualizer:
                             name=name,
                             showlegend=showlegend,
                             hovertemplate=(
-                                f'Edge {i}<br>Length: {calculate_path_length(trace):.1f} μm<extra></extra>'
+                                f'Edge {i}<br>Length: {calculate_path_length(trace * microns_per_voxel):.1f} μm<extra></extra>'
                             ),
                         )
                     )
@@ -580,6 +585,8 @@ class NetworkVisualizer:
                     idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
                     if idx is not None:
                         strand_ids[idx] = sid
+        else:
+            strand_ids = []
 
         if show_edges and edge_traces:
             for i, trace in enumerate(edge_traces):
@@ -592,17 +599,47 @@ class NetworkVisualizer:
                 y_coords = arr[mask, y_axis]
 
                 # Determine color
+                # Determine color
                 if color_by == 'depth':
-                    depth = float(np.mean(arr[:, axis]))
-                    color = self._map_values_to_colors(
-                        np.array([depth]), self.color_schemes['depth']
-                    )[0]
+                     # Compute global range if not already done
+                     if 'depth' not in self.color_schemes:
+                         # Should not happen as schemes are initialized in __init__
+                         pass
+                     
+                     # To properly map a single value, we need min/max of the whole set.
+                     # However, calculating it per edge is inefficient and technically valid if we assume
+                     # the user wants relative coloring. But with single element, it fails in _map_values_to_colors.
+                     # Better approach: map value using fixed range if we had one, or handle single value case.
+                     # Here we'll just fix the single-value mapping issue by checking vmin/vmax logic in _map.
+                     # But _map_values_to_colors takes an array. 
+                     # Let's use a workaround: pass [val, val] or fix _map...
+                     # The issue description says: "Collect all values... then map".
+                     # That requires two passes. 
+                     # Let's do a simple fix: use the slice bounds for depth? No, that's too narrow.
+                     # Let's use the whole network depth range.
+                     all_depths = vertices['positions'][:, axis] * microns_per_voxel[axis]
+                     vmin, vmax = np.min(all_depths), np.max(all_depths)
+                     depth = float(np.mean(arr[:, axis]))
+                     
+                     # Normalize manually
+                     if vmax > vmin:
+                         norm = (depth - vmin) / (vmax - vmin)
+                     else:
+                         norm = 0.5
+                     color = px.colors.sample_colorscale(self.color_schemes['depth'], norm)[0]
+
                 elif color_by == 'energy':
                     energies = edges.get('energies', [])
                     if len(energies) == len(edge_traces):
-                        color = self._map_values_to_colors(
-                            np.array([energies[i]]), self.color_schemes['energy']
-                        )[0]
+                         # Get global range
+                         all_energies = np.array(energies)
+                         vmin, vmax = np.nanmin(all_energies), np.nanmax(all_energies)
+                         val = energies[i]
+                         if vmax > vmin:
+                             norm = (val - vmin) / (vmax - vmin)
+                         else:
+                             norm = 0.5
+                         color = px.colors.sample_colorscale(self.color_schemes['energy'], norm)[0]
                     else:
                         color = 'blue'
                 elif color_by == 'radius':
@@ -619,10 +656,15 @@ class NetworkVisualizer:
                             if int(v1) >= 0 and int(v1) < len(radii)
                             else r0
                         )
-                        color = self._map_values_to_colors(
-                            np.array([(r0 + r1) / 2.0]),
-                            self.color_schemes['radius'],
-                        )[0]
+                        val = (r0 + r1) / 2.0
+                        
+                        # Global range for radius
+                        vmin, vmax = np.nanmin(radii), np.nanmax(radii)
+                        if vmax > vmin:
+                             norm = (val - vmin) / (vmax - vmin)
+                        else:
+                             norm = 0.5
+                        color = px.colors.sample_colorscale(self.color_schemes['radius'], norm)[0]
                     else:
                         color = 'blue'
                 elif color_by == 'strand_id':
@@ -1491,7 +1533,7 @@ class NetworkVisualizer:
         ):
             start_vertex, end_vertex = connection
             trace = np.array(trace)
-            length = calculate_path_length(trace)
+            length = calculate_path_length(trace * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0]))
             
             edge_data.append({
                 'edge_id': i,
@@ -1650,8 +1692,8 @@ class NetworkVisualizer:
                     # Output: (x, y, z)
                     pos_um = np.array([
                         pos_vox[1] * microns_per_voxel[1],      # X
-                        -pos_vox[0] * microns_per_voxel[0],     # -Y
-                        -pos_vox[2] * microns_per_voxel[2]      # -Z
+                        pos_vox[0] * microns_per_voxel[0],      # Y
+                        pos_vox[2] * microns_per_voxel[2]       # Z
                     ])
 
                     pidx = get_or_add_point(pos_um, r_interp[k])
@@ -1737,6 +1779,26 @@ class NetworkVisualizer:
         logger.info(f"CASX export complete: {output_path}")
         return output_path
 
+    def _sanitize_for_matlab(self, data: Any) -> Any:
+        """
+        Sanitize data structures for MATLAB export.
+        
+        Recursively converts None to empty strings and ensures dictionaries
+        have string keys.
+        """
+        if data is None:
+            return []
+        elif isinstance(data, dict):
+            return {str(k): self._sanitize_for_matlab(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._sanitize_for_matlab(v) for v in data]
+        elif isinstance(data, tuple):
+            return tuple(self._sanitize_for_matlab(v) for v in data)
+        elif isinstance(data, set):
+            return list(data)
+        else:
+            return data
+
     def _export_mat(self, vertices: Dict[str, Any], edges: Dict[str, Any],
                     network: Dict[str, Any], parameters: Dict[str, Any],
                     output_path: str) -> str:
@@ -1763,7 +1825,7 @@ class NetworkVisualizer:
                 'bifurcations': np.asarray(network.get('bifurcations', [])),
                 'vertex_degrees': np.asarray(network.get('vertex_degrees', [])),
             },
-            'parameters': parameters,
+            'parameters': self._sanitize_for_matlab(parameters),
         }
 
         savemat(output_path, data, do_compression=True)

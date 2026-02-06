@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from scipy.io import savemat
 
-from slavv.io_utils import load_network_from_mat
+from slavv.io import load_network_from_mat
 from slavv.visualization import NetworkVisualizer
 
 
@@ -54,3 +54,35 @@ def test_mat_export_via_visualizer(tmp_path: Path) -> None:
     assert np.array_equal(loaded.vertices, vertices['positions'])
     assert np.array_equal(loaded.edges, edges['connections'])
     assert np.array_equal(loaded.radii, vertices['radii_microns'])
+
+
+def test_mat_export_complex_params(tmp_path: Path) -> None:
+    """Test exporting parameters with mixed types (Bug 13)."""
+    vertices = {'positions': [], 'energies': [], 'scales': []}
+    edges = {'connections': [], 'traces': []}
+    network = {}
+    
+    # Complex parameters that would fail without sanitization
+    parameters = {
+        'voxel_spacing': [1.0, 1.0, 1.0],
+        'metadata': {
+            'date': '2023-01-01',
+            'ignore_this': None,
+            'settings': {'threshold': 0.5}
+        },
+        'flags': {True, False}, # Set (not JSON/MAT serializable usually)
+        'none_value': None,
+    }
+    
+    processing_results = {
+        'vertices': vertices,
+        'edges': edges,
+        'network': network,
+        'parameters': parameters,
+    }
+
+    out_path = tmp_path / 'complex.mat'
+    # Should not raise error
+    NetworkVisualizer().export_network_data(processing_results, out_path, format='mat')
+    
+    assert out_path.exists()
