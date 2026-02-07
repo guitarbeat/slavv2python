@@ -69,13 +69,13 @@ def test_setup():
     # Check Python imports
     print(f"\nChecking Python imports:")
     try:
-        from source.slavv.core import SLAVVProcessor
+        from slavv.core import SLAVVProcessor
         print("  [OK] SLAVVProcessor imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import SLAVVProcessor: {e}")
     
     try:
-        from source.slavv.io import load_tiff_volume
+        from slavv.io import load_tiff_volume
         print("  [OK] load_tiff_volume imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import load_tiff_volume: {e}")

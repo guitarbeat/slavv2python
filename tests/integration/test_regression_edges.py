@@ -5,14 +5,14 @@ import numpy as np
 # Add source path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from source.slavv.core import SLAVVProcessor
+from slavv.core import SLAVVProcessor
 
 
 from unittest.mock import patch
 
 
 @patch(
-    'source.slavv.core.pipeline.SLAVVProcessor._generate_edge_directions',
+    'slavv.core.pipeline.SLAVVProcessor._generate_edge_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):
