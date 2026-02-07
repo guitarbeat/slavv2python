@@ -16,14 +16,14 @@ import glob
 import copy
 import numpy as np
 
-from source.slavv.core import SLAVVProcessor
-from source.slavv.io import load_tiff_volume, export_pipeline_results
-from source.slavv.visualization import NetworkVisualizer
-from source.slavv.dev.matlab_parser import load_matlab_batch_results
-from source.slavv.dev.metrics import compare_results
-from source.slavv.dev.reporting import generate_summary
-from source.slavv.dev.management import generate_manifest
-from source.slavv.utils import get_system_info, get_matlab_info
+from slavv.core import SLAVVProcessor
+from slavv.io import load_tiff_volume, export_pipeline_results
+from slavv.visualization import NetworkVisualizer
+from slavv.dev.matlab_parser import load_matlab_batch_results
+from slavv.dev.metrics import compare_results
+from slavv.dev.reporting import generate_summary
+from slavv.dev.management import generate_manifest
+from slavv.utils import get_system_info, get_matlab_info
 
 def load_parameters(params_file: Optional[str] = None) -> Dict[str, Any]:
     """Load parameters from JSON file or use defaults."""
