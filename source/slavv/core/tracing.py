@@ -386,36 +386,65 @@ def trace_edge(
 ) -> List[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""
     trace = [start_pos.copy()]
-    current_pos = start_pos.copy()
-    current_dir = direction.copy()
+
+    # Scalarize state variables to avoid numpy array overhead in tight loop
+    cx = float(start_pos[0])
+    cy = float(start_pos[1])
+    cz = float(start_pos[2])
+
+    dx = float(direction[0])
+    dy = float(direction[1])
+    dz = float(direction[2])
 
     # Precompute for optimized gradient calc
-    inv_mpv_2x = 1.0 / (2.0 * microns_per_voxel)
+    # Convert to scalar floats to avoid numpy scalar access overhead
+    inv_mpv_2x_0 = 1.0 / (2.0 * float(microns_per_voxel[0]))
+    inv_mpv_2x_1 = 1.0 / (2.0 * float(microns_per_voxel[1]))
+    inv_mpv_2x_2 = 1.0 / (2.0 * float(microns_per_voxel[2]))
 
-    p0 = int(math.floor(current_pos[0]))
-    p1 = int(math.floor(current_pos[1]))
-    p2 = int(math.floor(current_pos[2]))
+    energy_shape_0 = energy.shape[0]
+    energy_shape_1 = energy.shape[1]
+    energy_shape_2 = energy.shape[2]
+
+    p0 = int(math.floor(cx))
+    p1 = int(math.floor(cy))
+    p2 = int(math.floor(cz))
+
+    # Bounds check initial position
+    if (p0 < 0 or p0 >= energy_shape_0 or
+        p1 < 0 or p1 >= energy_shape_1 or
+        p2 < 0 or p2 >= energy_shape_2):
+        return trace
+
     prev_energy = energy[p0, p1, p2]
 
     for _ in range(max_steps):
         attempt = 0
+        valid_step = False
+        nx, ny, nz = 0.0, 0.0, 0.0
+        current_energy = 0.0
+
         while attempt < 10:
-            next_pos = current_pos + current_dir * step_size
+            nx = cx + dx * step_size
+            ny = cy + dy * step_size
+            nz = cz + dz * step_size
+
             if discrete_steps:
-                next_pos = np.round(next_pos)
-                if np.array_equal(next_pos, current_pos):
+                nx = round(nx)
+                ny = round(ny)
+                nz = round(nz)
+                if nx == cx and ny == cy and nz == cz:
                     return trace
 
             # Inline bounds check for speed
-            # Use scalar checks to avoid array allocation in in_bounds
-            if (next_pos[0] < 0 or next_pos[0] >= energy.shape[0] or
-                next_pos[1] < 0 or next_pos[1] >= energy.shape[1] or
-                next_pos[2] < 0 or next_pos[2] >= energy.shape[2]):
+            if (nx < 0 or nx >= energy_shape_0 or
+                ny < 0 or ny >= energy_shape_1 or
+                nz < 0 or nz >= energy_shape_2):
                 return trace
 
-            p0 = int(math.floor(next_pos[0]))
-            p1 = int(math.floor(next_pos[1]))
-            p2 = int(math.floor(next_pos[2]))
+            p0 = int(math.floor(nx))
+            p1 = int(math.floor(ny))
+            p2 = int(math.floor(nz))
             current_energy = energy[p0, p1, p2]
 
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
@@ -430,71 +459,93 @@ def trace_edge(
                     return trace
                 attempt += 1
                 continue
+            valid_step = True
             break
 
-        trace.append(next_pos.copy())
-        current_pos = next_pos.copy()
+        if not valid_step:
+            break
+
+        # Append new position (requires numpy array)
+        trace.append(np.array([nx, ny, nz], dtype=np.float32))
+
+        # Update current position
+        cx, cy, cz = nx, ny, nz
         prev_energy = current_energy
 
         # Optimized gradient computation:
         # Avoids wrapper overhead by calling implementation directly.
         # Use scalar args to avoid allocating arrays
-        p0 = int(round(current_pos[0]))
-        p1 = int(round(current_pos[1]))
-        p2 = int(round(current_pos[2]))
+        p0 = int(round(cx))
+        p1 = int(round(cy))
+        p2 = int(round(cz))
 
         # Inline gradient computation to avoid function call and allocation
         # Manual clamping
         gp0 = p0
         if gp0 < 1: gp0 = 1
-        elif gp0 > energy.shape[0] - 2: gp0 = energy.shape[0] - 2
+        elif gp0 > energy_shape_0 - 2: gp0 = energy_shape_0 - 2
 
         gp1 = p1
         if gp1 < 1: gp1 = 1
-        elif gp1 > energy.shape[1] - 2: gp1 = energy.shape[1] - 2
+        elif gp1 > energy_shape_1 - 2: gp1 = energy_shape_1 - 2
 
         gp2 = p2
         if gp2 < 1: gp2 = 1
-        elif gp2 > energy.shape[2] - 2: gp2 = energy.shape[2] - 2
+        elif gp2 > energy_shape_2 - 2: gp2 = energy_shape_2 - 2
 
         # Compute gradient components
-        g0 = (energy[gp0+1, gp1, gp2] - energy[gp0-1, gp1, gp2]) * inv_mpv_2x[0]
-        g1 = (energy[gp0, gp1+1, gp2] - energy[gp0, gp1-1, gp2]) * inv_mpv_2x[1]
-        g2 = (energy[gp0, gp1, gp2+1] - energy[gp0, gp1, gp2-1]) * inv_mpv_2x[2]
+        g0 = (energy[gp0+1, gp1, gp2] - energy[gp0-1, gp1, gp2]) * inv_mpv_2x_0
+        g1 = (energy[gp0, gp1+1, gp2] - energy[gp0, gp1-1, gp2]) * inv_mpv_2x_1
+        g2 = (energy[gp0, gp1, gp2+1] - energy[gp0, gp1, gp2-1]) * inv_mpv_2x_2
 
         # Manual norm
         grad_norm = math.sqrt(g0**2 + g1**2 + g2**2)
 
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
-            dot_prod = g0*current_dir[0] + g1*current_dir[1] + g2*current_dir[2]
+            dot_prod = g0*dx + g1*dy + g2*dz
 
-            perp_grad0 = g0 - current_dir[0] * dot_prod
-            perp_grad1 = g1 - current_dir[1] * dot_prod
-            perp_grad2 = g2 - current_dir[2] * dot_prod
+            perp_grad0 = g0 - dx * dot_prod
+            perp_grad1 = g1 - dy * dot_prod
+            perp_grad2 = g2 - dz * dot_prod
 
             # Steer along ridge by opposing gradient direction
             sign = 1.0 if energy_sign >= 0 else -1.0
-            current_dir[0] = current_dir[0] - sign * perp_grad0
-            current_dir[1] = current_dir[1] - sign * perp_grad1
-            current_dir[2] = current_dir[2] - sign * perp_grad2
+            dx = dx - sign * perp_grad0
+            dy = dy - sign * perp_grad1
+            dz = dz - sign * perp_grad2
 
-            norm = math.sqrt(current_dir[0]**2 + current_dir[1]**2 + current_dir[2]**2)
+            norm = math.sqrt(dx**2 + dy**2 + dz**2)
             if norm > 1e-12:
                 inv_norm = 1.0 / norm
-                current_dir[0] *= inv_norm
-                current_dir[1] *= inv_norm
-                current_dir[2] *= inv_norm
+                dx *= inv_norm
+                dy *= inv_norm
+                dz *= inv_norm
 
-        # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
+        # Check if we've reached a vertex
+        terminal_vertex_idx = None
         if vertex_image is not None:
-            terminal_vertex_idx = vertex_at_position(current_pos, vertex_image)
+            # Inline vertex_at_position for O(1) lookup
+            # using scalar coordinates
+            f_cx = int(math.floor(cx))
+            f_cy = int(math.floor(cy))
+            f_cz = int(math.floor(cz))
+
+            if (f_cx >= 0 and f_cx < energy_shape_0 and
+                f_cy >= 0 and f_cy < energy_shape_1 and
+                f_cz >= 0 and f_cz < energy_shape_2):
+                vertex_id = vertex_image[f_cx, f_cy, f_cz]
+                if vertex_id > 0:
+                    terminal_vertex_idx = int(vertex_id - 1)
         else:
+            # Fallback uses numpy array
+            current_pos_arr = np.array([cx, cy, cz], dtype=np.float64)
             terminal_vertex_idx = near_vertex(
-                current_pos, vertex_positions, vertex_scales,
+                current_pos_arr, vertex_positions, vertex_scales,
                 lumen_radius_microns, microns_per_voxel,
                 tree=tree, max_search_radius=max_search_radius
             )
+
         if terminal_vertex_idx is not None:
             trace.append(vertex_positions[terminal_vertex_idx].copy())
             break
