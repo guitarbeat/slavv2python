@@ -1636,68 +1636,102 @@ class NetworkVisualizer:
             if len(strand) < 2:
                 continue
 
-            for i in range(len(strand) - 1):
-                u, v = int(strand[i]), int(strand[i+1])
+            # Check if strand is coordinate-based (float array) or index-based (int list/array)
+            is_coord = False
+            if isinstance(strand, np.ndarray):
+                if strand.ndim == 2 and strand.shape[1] >= 3:
+                     is_coord = True
+                elif strand.ndim == 1 and strand.dtype.kind == 'f' and len(strand) >= 3:
+                     # Handle single point or flattened coordinate array
+                     is_coord = True
+                     strand = strand.reshape(1, -1)
 
-                # Find edge connecting these vertices
-                edge_idx = connection_to_edge_idx.get((u, v))
-                if edge_idx is None:
-                    continue
-
-                trace = edges['traces'][edge_idx]
-                if trace is None or len(trace) == 0:
-                     continue
-
-                trace_arr = np.array(trace)
-
-                # Check direction: trace usually corresponds to connection[0]->connection[1]
-                # but we need to know if u->v matches that or is reversed.
-                # Use distance check to robustly determine direction.
-                pos_u = vertex_positions[u]
-
-                d_start = np.linalg.norm(trace_arr[0] - pos_u)
-                d_end = np.linalg.norm(trace_arr[-1] - pos_u)
-
-                if d_end < d_start:
-                    # Trace is reversed relative to u->v (i.e. trace starts near v)
-                    trace_arr = trace_arr[::-1]
-
-                # Radii interpolation along the edge
-                r_u = vertex_radii[u] if u < len(vertex_radii) else 1.0
-                r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
-
-                # Calculate cumulative length for interpolation
-                # SLAVV coords are (y, x, z)
-                diffs = np.diff(trace_arr, axis=0)
-                # Convert diffs to physical units for distance
-                diffs_phys = diffs * microns_per_voxel
-                seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
-                cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
-                total_len = cum_lens[-1]
-
-                if total_len > 1e-6:
-                    r_interp = r_u + (r_v - r_u) * (cum_lens / total_len)
-                else:
-                    r_interp = np.full(len(trace_arr), r_u)
-
-                # Add points to VMV structure
-                # For the first segment in a strand, add all points.
-                # For subsequent segments, skip the first point (it matches the last point of the previous segment).
-                start_k = 0 if i == 0 else 1
-
-                for k in range(start_k, len(trace_arr)):
-                    pos_vox = trace_arr[k]
-                    # Convert to physical units (X, Y, Z)
-                    # SLAVV internal: (y, x, z)
-                    # Output: (x, y, z)
+            if is_coord:
+                # Handle coordinate strands [y, x, z, r]
+                for k in range(len(strand)):
+                    pt = strand[k]
+                    # Ensure pt is indexable (handles case where reshape failed or other weirdness)
+                    if not isinstance(pt, (np.ndarray, list, tuple)):
+                        continue
+                        
+                    # Assume [y, x, z, r] layout based on inspection
+                    pos_vox = pt[:3]
+                    radius = pt[3] if len(pt) > 3 else 1.0
+                    
+                    # Convert to physical units (X, Y, Z) for VMV
+                    # SLAVV/MATLAB internal: (y, x, z)
                     pos_um = np.array([
                         pos_vox[1] * microns_per_voxel[1],      # X
                         pos_vox[0] * microns_per_voxel[0],      # Y
                         pos_vox[2] * microns_per_voxel[2]       # Z
                     ])
-
-                    pidx = get_or_add_point(pos_um, r_interp[k])
+                    
+                    pidx = get_or_add_point(pos_um, radius)
                     strand_point_indices.append(pidx)
+            else:
+                # Handle index-based strands (list of vertex indices)
+                for i in range(len(strand) - 1):
+                    u, v = int(strand[i]), int(strand[i+1])
+    
+                    # Find edge connecting these vertices
+                    edge_idx = connection_to_edge_idx.get((u, v))
+                    if edge_idx is None:
+                        continue
+    
+                    trace = edges['traces'][edge_idx]
+                    if trace is None or len(trace) == 0:
+                         continue
+    
+                    trace_arr = np.array(trace)
+    
+                    # Check direction: trace usually corresponds to connection[0]->connection[1]
+                    # but we need to know if u->v matches that or is reversed.
+                    # Use distance check to robustly determine direction.
+                    pos_u = vertex_positions[u]
+    
+                    d_start = np.linalg.norm(trace_arr[0] - pos_u)
+                    d_end = np.linalg.norm(trace_arr[-1] - pos_u)
+    
+                    if d_end < d_start:
+                        # Trace is reversed relative to u->v (i.e. trace starts near v)
+                        trace_arr = trace_arr[::-1]
+    
+                    # Radii interpolation along the edge
+                    r_u = vertex_radii[u] if u < len(vertex_radii) else 1.0
+                    r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
+    
+                    # Calculate cumulative length for interpolation
+                    # SLAVV coords are (y, x, z)
+                    diffs = np.diff(trace_arr, axis=0)
+                    # Convert diffs to physical units for distance
+                    diffs_phys = diffs * microns_per_voxel
+                    seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
+                    cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
+                    total_len = cum_lens[-1]
+    
+                    if total_len > 1e-6:
+                        r_interp = r_u + (r_v - r_u) * (cum_lens / total_len)
+                    else:
+                        r_interp = np.full(len(trace_arr), r_u)
+    
+                    # Add points to VMV structure
+                    # For the first segment in a strand, add all points.
+                    # For subsequent segments, skip the first point (it matches the last point of the previous segment).
+                    start_k = 0 if i == 0 else 1
+    
+                    for k in range(start_k, len(trace_arr)):
+                        pos_vox = trace_arr[k]
+                        # Convert to physical units (X, Y, Z)
+                        # SLAVV internal: (y, x, z)
+                        # Output: (x, y, z)
+                        pos_um = np.array([
+                            pos_vox[1] * microns_per_voxel[1],      # X
+                            pos_vox[0] * microns_per_voxel[0],      # Y
+                            pos_vox[2] * microns_per_voxel[2]       # Z
+                        ])
+    
+                        pidx = get_or_add_point(pos_um, r_interp[k])
+                        strand_point_indices.append(pidx)
 
             if len(strand_point_indices) > 1:
                 vmv_strands.append(strand_point_indices)

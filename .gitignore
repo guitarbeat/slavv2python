@@ -154,6 +154,17 @@ comparison_output_*/
 comparisons/
 !comparisons/README.md
 
+# Allow specific comparison run artifacts (but exclude large data)
+!comparisons/20260206_173559_matlab_run/
+comparisons/20260206_173559_matlab_run/*
+!comparisons/20260206_173559_matlab_run/02_Output/
+comparisons/20260206_173559_matlab_run/02_Output/*
+!comparisons/20260206_173559_matlab_run/02_Output/matlab_network.vmv
+!comparisons/20260206_173559_matlab_run/02_Output/matlab_network.casx
+!comparisons/20260206_173559_matlab_run/03_Analysis/
+!comparisons/20260206_173559_matlab_run/03_Analysis/comparison_report.json
+
+
 # Generated assets
 assets/
 
