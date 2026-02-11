@@ -156,24 +156,6 @@ comparisons/*
 
 
 
-# Whitelist Manual Run 2026-02-10
-!comparisons/20260210_101213_manual_run/
-!comparisons/20260210_101213_manual_run/run_this_in_matlab.m
-!comparisons/20260210_101213_manual_run/03_Analysis/
-
-# Allow MATLAB results (excluding large temp files)
-!comparisons/20260210_101213_manual_run/01_Input/
-!comparisons/20260210_101213_manual_run/01_Input/matlab_results/
-!comparisons/20260210_101213_manual_run/01_Input/matlab_results/batch_*/
-comparisons/20260210_101213_manual_run/01_Input/matlab_results/batch_*/data/
-!comparisons/20260210_101213_manual_run/01_Input/matlab_results/batch_*/vectors/
-!comparisons/20260210_101213_manual_run/01_Input/matlab_results/batch_*/timings.json
-
-# Allow Python results (excluding large energy checkpoint)
-!comparisons/20260210_101213_manual_run/02_Output/
-!comparisons/20260210_101213_manual_run/02_Output/python_results/
-!comparisons/20260210_101213_manual_run/02_Output/python_results/checkpoints/
-comparisons/20260210_101213_manual_run/02_Output/python_results/checkpoints/checkpoint_energy.pkl
 
 
 # Generated assets
