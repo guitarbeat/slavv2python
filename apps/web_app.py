@@ -11,12 +11,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Import our modules
-from source.slavv.core import SLAVVProcessor
-from source.slavv.utils import validate_parameters
-from source.slavv.analysis import calculate_network_statistics
-from source.slavv.analysis import MLCurator, AutomaticCurator
-from source.slavv.visualization import NetworkVisualizer
-from source.slavv.io import load_tiff_volume
+from slavv.core import SLAVVProcessor
+from slavv.utils import validate_parameters
+from slavv.analysis import calculate_network_statistics
+from slavv.analysis import MLCurator, AutomaticCurator
+from slavv.visualization import NetworkVisualizer
+from slavv.io import load_tiff_volume
 
 # Page configuration
 st.set_page_config(

@@ -8,8 +8,9 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 |------|-------------|
 | **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **source/slavv/apps/** | Web applications (`web_app.py`) |
-
-| **scripts/** | Developer tools for MATLAB comparison and validation |
+| **source/slavv/scripts/** | CLI wrappers and MATLAB scripts |
+| **notebooks/** | Interactive notebooks for analysis and development |
+| **experiments/** | Output directory for runs and comparisons |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
 | **legacy/** | Original MATLAB source (`Vectorization-Public`) and scripts |
@@ -66,7 +67,7 @@ This will:
 
 5. **Validate your setup**:
    ```bash
-   jupyter notebook scripts/0_Setup_and_Validation.ipynb
+   jupyter notebook notebooks/00_Setup_and_Validation.ipynb
    # Select kernel: "Python (SLAVV)"
    ```
 

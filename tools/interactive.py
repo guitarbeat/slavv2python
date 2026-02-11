@@ -61,7 +61,7 @@ class BaseRunnerWidget:
     
     def __init__(self, project_root: Optional[Path] = None):
         self.project_root = project_root or Path.cwd().parent
-        if self.project_root.name == 'scripts': # Handle if running from scripts dir
+        if self.project_root.name in ['scripts', 'notebooks']: # Handle if running from scripts or notebooks dir
             self.project_root = self.project_root.parent
             
         self.available_files = find_available_files(self.project_root)
@@ -101,8 +101,8 @@ class MatlabRunnerWidget(BaseRunnerWidget):
         super().__init__(project_root)
         
         # specific defaults
-        self.default_output = str(self.project_root / "comparisons" / f"{self.timestamp}_matlab_run")
-        self.default_matlab = shutil.which('matlab') or "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe"
+        self.default_output = str(self.project_root / "experiments" / f"{self.timestamp}_matlab_run")
+        self.default_matlab = shutil.which('matlab') or ""
         
         # Widgets
         self.matlab_widget = widgets.Text(
@@ -151,7 +151,7 @@ class MatlabRunnerWidget(BaseRunnerWidget):
         matlab_path = self.matlab_widget.value
         
         # Load params (could arguably be another widget, but keeping simple for now)
-        params_file = self.project_root / "scripts" / "comparison_params.json"
+        params_file = self.project_root / "notebooks" / "comparison_params.json"
         params = load_parameters(str(params_file) if params_file.exists() else None)
 
         self.run_button.disabled = True
@@ -206,7 +206,7 @@ class PythonRunnerWidget(BaseRunnerWidget):
         super().__init__(project_root)
         
         # specific defaults
-        self.default_output = str(self.project_root / "comparisons" / f"{self.timestamp}_python_run")
+        self.default_output = str(self.project_root / "experiments" / f"{self.timestamp}_python_run")
         
         # Widgets
         self.output_widget = widgets.Text(
@@ -245,7 +245,7 @@ class PythonRunnerWidget(BaseRunnerWidget):
         input_file = self.input_widget.value
         output_dir = Path(self.output_widget.value)
         
-        params_file = self.project_root / "scripts" / "comparison_params.json"
+        params_file = self.project_root / "notebooks" / "comparison_params.json"
         params = load_parameters(str(params_file) if params_file.exists() else None)
 
         self.run_button.disabled = True
@@ -298,10 +298,10 @@ class ComparisonDashboardWidget:
     
     def __init__(self, project_root: Optional[Path] = None):
         self.project_root = project_root or Path.cwd().parent
-        if self.project_root.name == 'scripts':
+        if self.project_root.name in ['scripts', 'notebooks']:
             self.project_root = self.project_root.parent
             
-        self.comparisons_dir = self.project_root / "comparisons"
+        self.comparisons_dir = self.project_root / "experiments"
         if not self.comparisons_dir.exists():
             self.comparisons_dir.mkdir(parents=True, exist_ok=True)
             
@@ -428,10 +428,10 @@ def show_comparison_plots(report_path: Optional[Path] = None):
     if report_path is None:
         # Try to find latest report in comparisons dir
         project_root = Path.cwd().parent
-        if project_root.name == 'scripts':
+        if project_root.name in ['scripts', 'notebooks']:
              project_root = project_root.parent
              
-        comparisons_dir = project_root / "comparisons"
+        comparisons_dir = project_root / "experiments"
         if not comparisons_dir.exists():
             print("No comparisons found.")
             return

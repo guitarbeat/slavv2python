@@ -26,7 +26,7 @@ function time_stamp = run_matlab_vectorization(input_file, output_directory)
     %% Add source directory to MATLAB path
     % Find source relative to this script location
     script_path = fileparts(mfilename('fullpath'));
-    repo_root = fileparts(script_path);
+    repo_root = fileparts(fileparts(script_path)); % scripts -> slavv -> root
     source_dir = fullfile(repo_root, 'external', 'Vectorization-Public', 'source');
     
     if exist(source_dir, 'dir')

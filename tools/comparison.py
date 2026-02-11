@@ -19,10 +19,10 @@ import numpy as np
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume, export_pipeline_results
 from slavv.visualization import NetworkVisualizer
-from slavv.dev.matlab_parser import load_matlab_batch_results
-from slavv.dev.metrics import compare_results
-from slavv.dev.reporting import generate_summary
-from slavv.dev.management import generate_manifest
+from .matlab_parser import load_matlab_batch_results
+from .metrics import compare_results
+from .reporting import generate_summary
+from .management import generate_manifest
 from slavv.utils import get_system_info, get_matlab_info
 
 def load_parameters(params_file: Optional[str] = None) -> Dict[str, Any]:
@@ -69,7 +69,10 @@ def run_matlab_vectorization(
     MATLAB_REPO_PATH = project_root / 'external' / 'Vectorization-Public'
     
     if batch_script is None:
-        batch_script = str(project_root / 'scripts' / 'run_matlab_cli.bat')
+        if os.name == 'nt':
+            batch_script = str(project_root / 'slavv' / 'scripts' / 'run_matlab_cli.bat')
+        else:
+            batch_script = str(project_root / 'slavv' / 'scripts' / 'run_matlab_cli.sh')
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)

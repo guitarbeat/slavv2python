@@ -173,7 +173,7 @@ pip install --force-reinstall -e .
 ## Next Steps
 
 After setting up your environment:
-1. Run `scripts/00_Setup_and_Validation.ipynb` to verify everything works
+1. Run `notebooks/00_Setup_and_Validation.ipynb` to verify everything works
 2. Make sure to select the **Python (SLAVV)** kernel in the notebook
 3. All validation checks should pass ✅
 

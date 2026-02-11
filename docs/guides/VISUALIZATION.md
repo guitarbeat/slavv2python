@@ -43,7 +43,7 @@ Each comparison run generates a `MANIFEST.md` file in its output directory. This
 
 To list all available comparison runs:
 ```bash
-python scripts/list_comparisons.py
+The `notebooks/04_Comparison_Dashboard.ipynb` notebook provides an interactive dashboard:
 ```
 
 ## Export Formats
