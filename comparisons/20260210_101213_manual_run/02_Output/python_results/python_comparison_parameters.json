@@ -1,0 +1,31 @@
+{
+  "microns_per_voxel": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "radius_of_smallest_vessel_in_microns": 1.5,
+  "radius_of_largest_vessel_in_microns": 50.0,
+  "approximating_PSF": true,
+  "numerical_aperture": 0.95,
+  "excitation_wavelength_in_microns": 1.3,
+  "sample_index_of_refraction": 1.33,
+  "scales_per_octave": 1.5,
+  "gaussian_to_ideal_ratio": 1.0,
+  "spherical_to_annular_ratio": 1.0,
+  "energy_sign": -1.0,
+  "max_voxels_per_node_energy": 100000.0,
+  "energy_upper_bound": 0.0,
+  "space_strel_apothem": 1,
+  "length_dilation_ratio": 1.0,
+  "number_of_edges_per_vertex": 4,
+  "step_size_per_origin_radius": 1.0,
+  "max_edge_energy": 0.0,
+  "min_hair_length_in_microns": 0.0,
+  "bandpass_window": 0.0,
+  "edge_method": "tracing",
+  "energy_method": "hessian",
+  "direction_method": "hessian",
+  "return_all_scales": false,
+  "discrete_tracing": false
+}

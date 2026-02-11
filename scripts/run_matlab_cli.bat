@@ -65,17 +65,25 @@ echo Start time: %DATE% %TIME% >> "%LOG_FILE%"
 echo. >> "%LOG_FILE%"
 
 REM Build MATLAB command
-REM Note: R2019a+ uses -batch flag, older versions may need -r
-REM Convert Windows paths to MATLAB-friendly format (forward slashes or escaped backslashes)
-set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ABS:\=/%', '%OUTPUT_DIR_ABS:\=/%'); exit
+REM Use -nodesktop -nosplash -wait -r instead of -batch to avoid Java issues
+REM We wrap in try-catch to ensure exit code is propagated
+set MATLAB_SCRIPT=try, cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ABS:\=/%', '%OUTPUT_DIR_ABS:\=/%'); exit(0); catch e, disp(getReport(e)); exit(1); end
+
+REM Get MATLAB dir
+for %%F in ("%MATLAB_PATH%") do set MATLAB_ROOT=%%~dpF
+
+REM Change to MATLAB bin directory to avoid classpath.txt issues
+pushd "%MATLAB_ROOT%"
 
 echo Running MATLAB vectorization...
-echo Command: "%MATLAB_PATH%" -batch "%MATLAB_SCRIPT%"
+echo Command: matlab.exe -nodesktop -nosplash -wait -logfile "%LOG_FILE%" -r "%MATLAB_SCRIPT%"
 echo.
 
-REM Run MATLAB and capture output
-"%MATLAB_PATH%" -batch "%MATLAB_SCRIPT%" >> "%LOG_FILE%" 2>&1
+REM Run MATLAB
+matlab.exe -nodesktop -nosplash -wait -logfile "%LOG_FILE%" -r "%MATLAB_SCRIPT%"
 set MATLAB_EXIT_CODE=%ERRORLEVEL%
+
+popd
 
 echo.
 echo MATLAB execution completed with exit code: %MATLAB_EXIT_CODE%

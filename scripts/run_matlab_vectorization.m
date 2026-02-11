@@ -24,9 +24,11 @@ function time_stamp = run_matlab_vectorization(input_file, output_directory)
     end
     
     %% Add source directory to MATLAB path
-    % This is critical - vectorize_V200 needs functions from the source directory
-    current_dir = pwd;
-    source_dir = fullfile(current_dir, 'source');
+    % Find source relative to this script location
+    script_path = fileparts(mfilename('fullpath'));
+    repo_root = fileparts(script_path);
+    source_dir = fullfile(repo_root, 'external', 'Vectorization-Public', 'source');
+    
     if exist(source_dir, 'dir')
         addpath(source_dir);
         fprintf('Added to path: %s\n', source_dir);
@@ -74,7 +76,7 @@ function time_stamp = run_matlab_vectorization(input_file, output_directory)
         'StartWorkflow',                     'energy', ...
         'FinalWorkflow',                     'network', ...
         'Visual',                            'none', ...  % Skip visuals for faster comparison
-        'SpecialOutput',                     'all', ...  % Export all formats for visualization
+        'SpecialOutput',                     {'vmv', 'casX', 'strands'}, ...  % Export only necessary formats to avoid 'original-stats' errors
         'NewBatch',                          'yes', ...
         'Presumptive',                       true, ...  % Skip prompts
         'VertexCuration',                    'auto', ...  % Skip GUI curation
