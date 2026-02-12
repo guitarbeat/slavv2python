@@ -79,7 +79,9 @@ class TestMainEntryPoint:
 
     def test_no_args_shows_help(self, capsys):
         """Calling with no arguments prints help and exits 0."""
-        main([])
+        with pytest.raises(SystemExit) as exc:
+            main([])
+        assert exc.value.code == 0
         captured = capsys.readouterr()
         assert "SLAVV" in captured.out or "usage" in captured.out.lower()
 
