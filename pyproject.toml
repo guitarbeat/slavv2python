@@ -75,6 +75,7 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
 slavv-app = "apps.web_app:main"
+slavv = "slavv.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
