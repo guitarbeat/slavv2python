@@ -143,8 +143,11 @@ def extract_vertices(mat_data: Dict[str, Any]) -> Dict[str, np.ndarray]:
         if 'lumen_radius_in_microns_range' in mat_data:
             radii_range = np.array(mat_data['lumen_radius_in_microns_range'])
             if scale_indices.size > 0:
-                # Map scale indices to radii
-                vertices_info['radii'] = radii_range[scale_indices.astype(int)]
+                # Matlab indices are typically 1-based; convert to 0-based if needed
+                int_indices = scale_indices.astype(int)
+                if np.min(int_indices) >= 1:
+                    int_indices = int_indices - 1
+                vertices_info['radii'] = radii_range[int_indices]
         elif hasattr(vertex_struct, 'radii'):
             vertices_info['radii'] = np.array(vertex_struct.radii)
     elif hasattr(vertex_struct, 'radii'):
