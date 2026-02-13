@@ -66,8 +66,8 @@ Once the run is complete, use the notebooks for analysis:
 comparison_output/
 ├── matlab_results/
 │   ├── batch_YYMMDD-HHmmss/     # MATLAB batch output folder
-│   │   ├── vectors/              # Network vectors (.mat files)
-│   │   └── matlab_run.log        # MATLAB execution log
+│   │   └── vectors/              # Network vectors (.mat files)
+│   └── matlab_run.log            # MATLAB execution log
 ├── python_results/
 │   ├── checkpoints/              # Python checkpoint files
 │   ├── python_comparison_*.json  # Exported results
