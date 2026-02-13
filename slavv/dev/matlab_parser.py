@@ -124,11 +124,25 @@ def extract_vertices(mat_data: Dict[str, Any]) -> Dict[str, np.ndarray]:
     if hasattr(vertex_struct, 'space_subscripts'):
         positions = np.array(vertex_struct.space_subscripts)
         if positions.ndim == 1 and positions.size > 0:
-            positions = positions.reshape(-1, 1)
+            # Normalize 1D inputs (e.g., a single vertex) to a single row with 4 columns
+            positions = positions.reshape(1, -1)
+        if positions.ndim == 2 and positions.shape[1] != 4:
+            logger.warning(
+                "Vertex positions from 'space_subscripts' have unexpected shape %s; "
+                "expected Nx4.", positions.shape
+            )
         vertices_info['positions'] = positions
         vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
     elif hasattr(vertex_struct, 'positions'):
         positions = np.array(vertex_struct.positions)
+        if positions.ndim == 1 and positions.size > 0:
+            # Normalize 1D inputs (e.g., a single vertex) to a single row with 4 columns
+            positions = positions.reshape(1, -1)
+        if positions.ndim == 2 and positions.shape[1] != 4:
+            logger.warning(
+                "Vertex positions from 'positions' field have unexpected shape %s; "
+                "expected Nx4.", positions.shape
+            )
         vertices_info['positions'] = positions
         vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
 
