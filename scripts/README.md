@@ -85,7 +85,7 @@ comparison_output/
 | Issue | Quick Fix |
 |-------|-----------|
 | "MATLAB executable not found" | Check path in `00_Setup_and_Validation.ipynb` |
-| "ModuleNotFoundError" | `pip install -r requirements.txt` |
+| "ModuleNotFoundError" | From the repository root: `pip install -e .` |
 | "vectorize_V200 not found" | Check `external/Vectorization-Public` exists |
 | "Permission denied" | Close files/folders open in other apps |
 
