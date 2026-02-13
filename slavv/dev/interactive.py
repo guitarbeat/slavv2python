@@ -52,8 +52,8 @@ def find_available_files(project_root: Path) -> List[str]:
     available_files = []
     for p in search_paths:
         if p.exists():
-            available_files.extend([str(f) for f in p.glob("*.tif")])
-            available_files.extend([str(f) for f in p.glob("*.tiff")])
+            # Use single glob pattern with multiple extensions for better performance
+            available_files.extend(str(f) for f in p.glob("*.tif*"))
     return sorted(available_files)
 
 class BaseRunnerWidget:

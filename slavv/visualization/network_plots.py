@@ -1738,27 +1738,34 @@ class NetworkVisualizer:
 
         # Write to file
         with open(output_path, 'w') as f:
-            # Header
-            f.write("$PARAM_BEGIN\n")
-            f.write(f"NUM_VERTS\t{len(vmv_points)}\n")
-            f.write(f"NUM_STRANDS\t{len(vmv_strands)}\n")
-            f.write(f"NUM_ATTRIB_PER_VERT\t4\n") # X, Y, Z, Radius
-            f.write("$PARAM_END\n\n")
+            # Build entire output as list for efficient writing
+            lines = []
             
-            # Vertices
-            f.write("$VERT_LIST_BEGIN\n")
-            for i, pt in enumerate(vmv_points):
-                # Format: index x y z r
-                f.write(f"{i+1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n")
-            f.write("$VERT_LIST_END\n\n")
+            # Header
+            lines.append("$PARAM_BEGIN\n")
+            lines.append(f"NUM_VERTS\t{len(vmv_points)}\n")
+            lines.append(f"NUM_STRANDS\t{len(vmv_strands)}\n")
+            lines.append(f"NUM_ATTRIB_PER_VERT\t4\n")  # X, Y, Z, Radius
+            lines.append("$PARAM_END\n\n")
+            
+            # Vertices - build list comprehension for better performance
+            lines.append("$VERT_LIST_BEGIN\n")
+            lines.extend(
+                f"{i+1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n"
+                for i, pt in enumerate(vmv_points)
+            )
+            lines.append("$VERT_LIST_END\n\n")
             
             # Strands
-            f.write("$STRANDS_LIST_BEGIN\n")
-            for i, s in enumerate(vmv_strands):
-                # Format: strand_idx pt1 pt2 ...
-                pts_str = "\t".join(map(str, s))
-                f.write(f"{i+1}\t{pts_str}\n")
-            f.write("$STRANDS_LIST_END") # No newline at end to match some MATLAB writers, or newline is fine.
+            lines.append("$STRANDS_LIST_BEGIN\n")
+            lines.extend(
+                f"{i+1}\t{'\t'.join(map(str, s))}\n"
+                for i, s in enumerate(vmv_strands)
+            )
+            lines.append("$STRANDS_LIST_END")  # No newline at end to match some MATLAB writers, or newline is fine.
+            
+            # Write all at once
+            f.write(''.join(lines))
 
         logger.info(f"VMV export complete: {output_path}")
         return output_path
@@ -1768,47 +1775,53 @@ class NetworkVisualizer:
                     output_path: str) -> str:
         """Export in CASX format"""
         with open(output_path, 'w') as f:
-            f.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            f.write("<CasX>\n")
+            # Build entire output as list for efficient writing
+            lines = []
+            
+            lines.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+            lines.append("<CasX>\n")
 
             # Write parameters
             microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
             mpv_str = " ".join(map(str, microns_per_voxel))
-            f.write("  <Parameters>\n")
-            f.write(f"    <Parameter name=\"microns_per_voxel\" value=\"{mpv_str}\"/>\n")
-            f.write("  </Parameters>\n")
+            lines.append("  <Parameters>\n")
+            lines.append(f"    <Parameter name=\"microns_per_voxel\" value=\"{mpv_str}\"/>\n")
+            lines.append("  </Parameters>\n")
 
-            f.write("  <Network>\n")
+            lines.append("  <Network>\n")
             
             # Write vertices
-            f.write("    <Vertices>\n")
+            lines.append("    <Vertices>\n")
             radii = vertices.get('radii_microns', vertices.get('radii', []))
-            for i, (pos, radius) in enumerate(zip(vertices['positions'], radii)):
-                # Note: Coordinate swap x=pos[1], y=pos[0] to match legacy format
-                f.write(
-                    f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
-                )
-            f.write("    </Vertices>\n")
+            lines.extend(
+                f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
+                for i, (pos, radius) in enumerate(zip(vertices['positions'], radii))
+            )
+            lines.append("    </Vertices>\n")
             
             # Write edges
-            f.write("    <Edges>\n")
-            for i, connection in enumerate(edges['connections']):
-                start_vertex, end_vertex = connection
-                if start_vertex is not None and end_vertex is not None:
-                    f.write(f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n")
-            f.write("    </Edges>\n")
+            lines.append("    <Edges>\n")
+            lines.extend(
+                f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n"
+                for i, (start_vertex, end_vertex) in enumerate(edges['connections'])
+                if start_vertex is not None and end_vertex is not None
+            )
+            lines.append("    </Edges>\n")
 
             # Write strands
-            f.write("    <Strands>\n")
-            for i, strand in enumerate(network.get('strands', [])):
-                if len(strand) > 0:
-                    # Convert list of indices to space-separated string
-                    strand_str = " ".join(map(str, strand))
-                    f.write(f"      <Strand id=\"{i}\">{strand_str}</Strand>\n")
-            f.write("    </Strands>\n")
+            lines.append("    <Strands>\n")
+            lines.extend(
+                f"      <Strand id=\"{i}\">{' '.join(map(str, strand))}</Strand>\n"
+                for i, strand in enumerate(network.get('strands', []))
+                if len(strand) > 0
+            )
+            lines.append("    </Strands>\n")
             
-            f.write("  </Network>\n")
-            f.write("</CasX>\n")
+            lines.append("  </Network>\n")
+            lines.append("</CasX>\n")
+            
+            # Write all at once
+            f.write(''.join(lines))
         
         logger.info(f"CASX export complete: {output_path}")
         return output_path
