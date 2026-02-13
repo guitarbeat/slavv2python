@@ -5,16 +5,16 @@ import numpy as np
 
 # Add source path for imports
 try:
-    from slavv.pipeline import SLAVVProcessor
+    from slavv.core import SLAVVProcessor
 except ImportError:
-    from slavv.pipeline import SLAVVProcessor
+    from slavv.core import SLAVVProcessor
 
 
 from unittest.mock import patch
 
 
 @patch(
-    'source.slavv.tracing.estimate_vessel_directions',
+    'slavv.core.tracing.estimate_vessel_directions',
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):

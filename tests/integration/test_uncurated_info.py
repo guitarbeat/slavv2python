@@ -2,11 +2,7 @@ import pathlib
 import sys
 import numpy as np
 
-# add src path
-try:
-    from slavv.ml_curator import extract_uncurated_info
-except ImportError:
-    from source.slavv.analysis import extract_uncurated_info
+from slavv.analysis import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:

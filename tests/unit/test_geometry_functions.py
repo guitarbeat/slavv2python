@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from slavv.geometry import (
+from slavv.analysis import (
     resample_vectors,
     smooth_edge_traces,
     transform_vector_set,

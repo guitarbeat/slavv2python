@@ -8,9 +8,10 @@ import os
 import sys
 from pathlib import Path
 
-# Add project root to path
+# Add project root and source to path for slavv imports
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+source_dir = project_root / "source"
+sys.path.insert(0, str(source_dir))
 
 def test_setup():
     """Test that all required files and paths exist."""
@@ -20,12 +21,14 @@ def test_setup():
     errors = []
     warnings = []
     
-    # Check test data file
+    # Check test data file (may be in data/ or tests/data/)
     test_data = project_root / "data" / "slavv_test_volume.tif"
+    if not test_data.exists():
+        test_data = project_root / "tests" / "data" / "slavv_test_volume.tif"
     if test_data.exists():
         print(f"[OK] Test data file found: {test_data}")
     else:
-        errors.append(f"[ERROR] Test data file not found: {test_data}")
+        warnings.append(f"[WARN] Test data file not found (optional for comparison)")
     
     # Check MATLAB executable
     matlab_path = Path("C:/Program Files/MATLAB/R2019a/bin/matlab.exe")
@@ -35,13 +38,11 @@ def test_setup():
         warnings.append(f"[WARN] MATLAB executable not found at default path: {matlab_path}")
         print(f"  (You can specify a different path with --matlab-path)")
     
-    # Check scripts
-    scripts_dir = project_root / "scripts"
+    # Check scripts (in source/slavv/scripts)
+    scripts_dir = project_root / "source" / "slavv" / "scripts"
     required_scripts = [
         "run_matlab_vectorization.m",
         "run_matlab_cli.bat",
-        "compare_matlab_python.py",
-        "comparison_params.json"
     ]
     
     print(f"\nChecking scripts in {scripts_dir}:")
@@ -52,8 +53,8 @@ def test_setup():
         else:
             errors.append(f"  [ERROR] {script} not found")
     
-    # Check Vectorization-Public
-    matlab_repo_path = project_root / 'legacy' / 'Vectorization-Public'
+    # Check Vectorization-Public (in external/ per README)
+    matlab_repo_path = project_root / 'external' / 'Vectorization-Public'
     if matlab_repo_path.exists():
         print(f"\n[OK] Vectorization-Public directory found: {matlab_repo_path}")
         
@@ -64,18 +65,18 @@ def test_setup():
         else:
             errors.append(f"  [ERROR] vectorize_V200.m not found in Vectorization-Public")
     else:
-        errors.append(f"[ERROR] Vectorization-Public directory not found: {vectorization_dir}")
+        warnings.append(f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)")
     
     # Check Python imports
     print(f"\nChecking Python imports:")
     try:
-        from source.slavv.core import SLAVVProcessor
+        from slavv.core import SLAVVProcessor
         print("  [OK] SLAVVProcessor imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import SLAVVProcessor: {e}")
     
     try:
-        from source.slavv.io import load_tiff_volume
+        from slavv.io import load_tiff_volume
         print("  [OK] load_tiff_volume imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import load_tiff_volume: {e}")

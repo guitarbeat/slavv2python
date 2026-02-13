@@ -1,23 +1,17 @@
 """
 Unit tests for comparison metrics.
 
-Tests the comparison functions from scripts/compare_matlab_python.py
+Tests the comparison functions from slavv.dev.metrics
 for computing differences between MATLAB and Python results.
 """
 
-import sys
-from pathlib import Path
 from unittest.mock import Mock
 
 import numpy as np
 import pytest
 from scipy import stats
 
-# Add scripts directory to path
-scripts_dir = Path(__file__).parent.parent.parent / "scripts"
-sys.path.insert(0, str(scripts_dir))
-
-from compare_matlab_python import (
+from slavv.dev.metrics import (
     match_vertices,
     compare_vertices,
     compare_edges,

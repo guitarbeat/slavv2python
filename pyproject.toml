@@ -17,19 +17,21 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
-    "numpy>=1.20.0",
-    "scipy>=1.7.0",
-    "scikit-image>=0.18.0",
-    "scikit-learn>=1.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "scikit-image>=0.21.0",
+    "scikit-learn>=1.2.0",
+    "networkx>=2.6.0",
     "h5py>=3.0.0",
     "tifffile>=2021.0.0",
     "matplotlib>=3.3.0",
@@ -47,25 +49,35 @@ app = [
     "streamlit>=1.20.0",
 ]
 ml = [
-    "tensorflow>=2.10.0",
+    "tensorflow>=2.14.0",
 ]
 notebooks = [
     "jupyter>=1.0.0",
     "ipykernel>=6.0.0",
     "notebook>=6.4.0",
+    "ipywidgets>=8.0.0",
+]
+dicom = [
+    "pydicom>=2.0.0",
+]
+accel = [
+    "numba>=0.58.0",
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
 ]
 all = [
     "streamlit>=1.20.0",
-    "tensorflow>=2.10.0",
+    "tensorflow>=2.14.0",
     "jupyter>=1.0.0",
     "ipykernel>=6.0.0",
     "notebook>=6.4.0",
+    "ipywidgets>=8.0.0",
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "ruff>=0.4.0",
 ]
 
 [project.urls]
@@ -74,17 +86,18 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 "Original MATLAB" = "https://github.com/UTFOIL/Vectorization-Public"
 
 [project.scripts]
-slavv-app = "apps.web_app:main"
+slavv-app = "slavv.apps.web_app:main"
 slavv = "slavv.cli:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["source"]
+include = ["slavv*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 norecursedirs = ["external/blender_resources", "external/Vectorization-Public", "experiments"]
 python_files = ["test_*.py"]
-addopts = "-v --tb=short"
+addopts = "-v --tb=short -p no:cacheprovider"
 filterwarnings = [
     "ignore::DeprecationWarning:sklearn.*",
     "ignore::DeprecationWarning:pandas.*",

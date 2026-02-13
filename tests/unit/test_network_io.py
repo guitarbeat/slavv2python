@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from slavv.io_utils import (
+from slavv.io import (
     Network,
     load_network_from_casx,
     load_network_from_vmv,

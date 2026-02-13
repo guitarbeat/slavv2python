@@ -1,12 +1,11 @@
 """
 Unit tests for MATLAB output parser.
 
-Tests the functionality of scripts/matlab_output_parser.py for loading
+Tests the functionality of slavv.dev.matlab_parser for loading
 and parsing MATLAB vectorization output files.
 """
 
 import json
-import sys
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import tempfile
@@ -14,11 +13,7 @@ import tempfile
 import numpy as np
 import pytest
 
-# Add scripts directory to path
-scripts_dir = Path(__file__).parent.parent.parent / "scripts"
-sys.path.insert(0, str(scripts_dir))
-
-from matlab_output_parser import (
+from slavv.dev.matlab_parser import (
     find_batch_folder,
     load_mat_file_safe,
     extract_vertices,
@@ -159,9 +154,9 @@ class TestExtractNetworkStats:
     
     def test_extract_network_stats_with_strands(self):
         """Test with strand data."""
-        # Mock strand data
-        strands = np.array([Mock(), Mock(), Mock()])
-        mat_data = {'strand': strands}
+        # Mock strand data (strand_subscripts is the key used by matlab_parser)
+        strands = np.array([Mock(), Mock(), Mock()], dtype=object)
+        mat_data = {'strand_subscripts': strands}
         
         result = extract_network_stats(mat_data)
         assert result['strand_count'] == 3
@@ -176,7 +171,7 @@ class TestLoadMatFileSafe:
         result = load_mat_file_safe(nonexistent)
         assert result is None
     
-    @patch('matlab_output_parser.loadmat')
+    @patch('slavv.dev.matlab_parser.loadmat')
     def test_load_mat_file_success(self, mock_loadmat, tmp_path):
         """Test successful loading."""
         test_file = tmp_path / "test.mat"
@@ -188,7 +183,7 @@ class TestLoadMatFileSafe:
         assert result == {'data': 'test'}
         mock_loadmat.assert_called_once()
     
-    @patch('matlab_output_parser.loadmat')
+    @patch('slavv.dev.matlab_parser.loadmat')
     def test_load_mat_file_error(self, mock_loadmat, tmp_path):
         """Test handling of loading error."""
         test_file = tmp_path / "test.mat"

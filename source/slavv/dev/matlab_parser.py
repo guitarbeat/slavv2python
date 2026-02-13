@@ -210,6 +210,11 @@ def extract_network_data(mat_data: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 # Single array or different format
                 network_data['strands'] = [strands]
+    elif 'strand' in mat_data:
+        # Alternative key used by some MATLAB outputs
+        s = mat_data['strand']
+        if isinstance(s, np.ndarray) and s.size > 0:
+            network_data['strands'] = [np.array(x) for x in s] if s.dtype == object else [s]
                   
     # Extract statistics
     if 'network_statistics' in mat_data:
@@ -236,6 +241,18 @@ def extract_network_data(mat_data: Dict[str, Any]) -> Dict[str, Any]:
              network_data['stats']['mean_radius_microns'] = float(np.mean(mr)) if mr.size > 0 else 0.0
              
     return network_data
+
+
+def extract_network_stats(mat_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract network statistics from MATLAB data. Returns a flat stats dict."""
+    net = extract_network_data(mat_data)
+    stats = net.get('stats', {})
+    # Ensure expected keys with defaults
+    return {
+        'strand_count': stats.get('strand_count', len(net.get('strands', []))),
+        'total_length_microns': stats.get('total_length_microns', 0.0),
+        'mean_radius_microns': stats.get('mean_radius_microns', 0.0),
+    }
 
 
 def load_matlab_batch_results(batch_folder: Union[str, Path]) -> Dict[str, Any]:

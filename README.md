@@ -9,6 +9,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **source/slavv/apps/** | Web applications (`web_app.py`) |
 | **source/slavv/scripts/** | CLI wrappers and MATLAB scripts |
+| **examples/** | Programmatic usage examples (`run_tutorial.py`) |
 | **notebooks/** | Interactive notebooks for analysis and development |
 | **experiments/** | Output directory for runs and comparisons |
 | **tests/** | Unit, integration, and UI tests |
@@ -71,12 +72,13 @@ This will:
    # Select kernel: "Python (SLAVV)"
    ```
 
-📘 **Detailed setup guide**: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
+📘 **Detailed setup guide**: See [docs/guides/SETUP.md](docs/guides/SETUP.md) for troubleshooting and best practices.
 
 ### Launch the Web Application
 
    ```bash
    streamlit run source/slavv/apps/web_app.py
+   # Or use the entry point: slavv-app
    ```
    Open the provided URL in your browser.
 
@@ -111,7 +113,7 @@ python -m pytest tests/
 
 ## Troubleshooting
 
-- **ImportError for `source.slavv`** – Ensure you are running Python from the repository root.
+- **ImportError for `slavv`** – Ensure you are running Python from the repository root and have run `pip install -e .`.
 - **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 
