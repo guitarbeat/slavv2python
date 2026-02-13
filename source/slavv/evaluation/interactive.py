@@ -18,12 +18,12 @@ from IPython.display import display, clear_output, HTML
 import matplotlib.pyplot as plt
 
 # Import core logic
-from slavv.dev.comparison import (
+from slavv.evaluation.comparison import (
     load_parameters, 
     orchestrate_comparison, 
     run_standalone_comparison
 )
-from slavv.dev.viz import (
+from slavv.evaluation.viz import (
     set_plot_style,
     plot_count_comparison,
     plot_radius_distributions

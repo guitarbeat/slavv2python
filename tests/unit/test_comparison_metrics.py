@@ -5,13 +5,14 @@ Tests the comparison functions from slavv.dev.metrics
 for computing differences between MATLAB and Python results.
 """
 
+
 from unittest.mock import Mock
 
 import numpy as np
 import pytest
 from scipy import stats
 
-from slavv.dev.metrics import (
+from slavv.evaluation.metrics import (
     match_vertices,
     compare_vertices,
     compare_edges,

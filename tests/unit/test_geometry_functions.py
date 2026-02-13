@@ -1,6 +1,10 @@
 import numpy as np
 import pytest
+<<<<<<< HEAD
 from slavv.analysis import (
+=======
+from slavv.analysis.geometry import (
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
     resample_vectors,
     smooth_edge_traces,
     transform_vector_set,

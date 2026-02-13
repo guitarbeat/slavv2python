@@ -1,11 +1,13 @@
-import sys
-import pathlib
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
+<<<<<<< HEAD
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from slavv.analysis import MLCurator
+=======
+from slavv.analysis.ml_curator import MLCurator
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 def test_save_and_load_models(tmp_path):

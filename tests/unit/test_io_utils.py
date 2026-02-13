@@ -6,7 +6,11 @@ import numpy as np
 import pytest
 import tifffile
 
+<<<<<<< HEAD
 from slavv.io import load_tiff_volume
+=======
+from slavv.io.io_utils import load_tiff_volume
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 def test_load_tiff_volume_valid():

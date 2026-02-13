@@ -1,7 +1,5 @@
-import pathlib
-import sys
-
 import numpy as np
+<<<<<<< HEAD
 
 # Add source path for imports
 sys.path.append(
@@ -9,6 +7,10 @@ sys.path.append(
 )
 
 from slavv.core import SLAVVProcessor
+=======
+from slavv.core.pipeline import SLAVVProcessor
+from unittest.mock import patch
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 def test_estimate_vessel_directions_axis_aligned():
@@ -23,9 +25,6 @@ def test_estimate_vessel_directions_axis_aligned():
     )
     assert dirs.shape == (2, 3)
     assert np.allclose(np.abs(dirs[0]), np.array([0, 1, 0]), atol=0.2)
-
-
-from unittest.mock import patch
 
 
 @patch(

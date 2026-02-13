@@ -1,6 +1,5 @@
-import pathlib
-import sys
 import numpy as np
+<<<<<<< HEAD
 
 # Add source path for imports
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
@@ -8,6 +7,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from slavv.core import SLAVVProcessor
 
 
+=======
+from slavv.core import SLAVVProcessor
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 from unittest.mock import patch
 
 

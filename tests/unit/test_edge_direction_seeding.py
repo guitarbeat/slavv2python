@@ -1,7 +1,5 @@
-import pathlib
-import sys
-
 import numpy as np
+<<<<<<< HEAD
 
 # Add source path for imports
 try:
@@ -10,6 +8,9 @@ except ImportError:
     from slavv.core import SLAVVProcessor
 
 
+=======
+from slavv.core.pipeline import SLAVVProcessor
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 from unittest.mock import patch
 
 

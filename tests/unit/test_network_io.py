@@ -4,7 +4,11 @@ import numpy as np
 import pytest
 from pathlib import Path
 
+<<<<<<< HEAD
 from slavv.io import (
+=======
+from slavv.io.io_utils import (
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
     Network,
     load_network_from_casx,
     load_network_from_vmv,

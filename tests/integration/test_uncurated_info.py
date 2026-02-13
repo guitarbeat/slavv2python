@@ -1,8 +1,10 @@
-import pathlib
-import sys
 import numpy as np
 
+<<<<<<< HEAD
 from slavv.analysis import extract_uncurated_info
+=======
+from slavv.analysis.ml_curator import extract_uncurated_info
+>>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 def test_extract_uncurated_info_shapes() -> None:
