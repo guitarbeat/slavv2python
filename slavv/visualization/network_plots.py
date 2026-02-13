@@ -1639,11 +1639,14 @@ class NetworkVisualizer:
 
         logger.info(f"JSON export complete: {output_path}")
         return output_path
+    
+    def _export_vmv(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
+                   network: Dict[str, Any], parameters: Dict[str, Any], 
+                   output_path: str) -> str:
+        """Export in VMV (Vascular Modeling Visualization) format.
 
-    def _export_vmv(self, vertices: Dict[str, Any], edges: Dict[str, Any],
-                    network: Dict[str, Any], parameters: Dict[str, Any],
-                    output_path: str) -> str:
-        """Export in VMV (Vascular Modeling Visualization) format"""
+        Note: Coordinates are transformed to (X, -Y, -Z) to match VessMorphoVis requirements.
+        """
         # Prepare parameters
         microns_per_voxel = parameters.get(
             'microns_per_voxel', [1.0, 1.0, 1.0])
@@ -1712,13 +1715,13 @@ class NetworkVisualizer:
                     # Assume [y, x, z, r] layout based on inspection
                     pos_vox = pt[:3]
                     radius = pt[3] if len(pt) > 3 else 1.0
-
-                    # Convert to physical units (X, Y, Z) for VMV
+                    
+                    # Convert to physical units (X, -Y, -Z) for VMV
                     # SLAVV/MATLAB internal: (y, x, z)
                     pos_um = np.array([
                         pos_vox[1] * microns_per_voxel[1],      # X
-                        pos_vox[0] * microns_per_voxel[0],      # Y
-                        pos_vox[2] * microns_per_voxel[2]       # Z
+                        -pos_vox[0] * microns_per_voxel[0],     # -Y
+                        -pos_vox[2] * microns_per_voxel[2]      # -Z
                     ])
 
                     pidx = get_or_add_point(pos_um, radius)
@@ -1776,13 +1779,13 @@ class NetworkVisualizer:
 
                     for k in range(start_k, len(trace_arr)):
                         pos_vox = trace_arr[k]
-                        # Convert to physical units (X, Y, Z)
+                        # Convert to physical units (X, -Y, -Z)
                         # SLAVV internal: (y, x, z)
-                        # Output: (x, y, z)
+                        # Output: (x, -y, -z) matching MATLAB spec
                         pos_um = np.array([
                             pos_vox[1] * microns_per_voxel[1],      # X
-                            pos_vox[0] * microns_per_voxel[0],      # Y
-                            pos_vox[2] * microns_per_voxel[2]       # Z
+                            -pos_vox[0] * microns_per_voxel[0],     # -Y
+                            -pos_vox[2] * microns_per_voxel[2]      # -Z
                         ])
 
                         pidx = get_or_add_point(pos_um, r_interp[k])
