@@ -41,9 +41,9 @@ Each comparison run generates a `MANIFEST.md` file in its output directory. This
 *   **Summary Stats**: Quick look at vertices, edges, and performance.
 *   **Instructions**: Copy-pasteable commands for viewing that specific run's results.
 
-To list all available comparison runs:
+To list all available comparison runs (each run typically lives in its own subdirectory under `comparisons/`), you can use standard shell tools. For example:
 ```bash
-python scripts/list_comparisons.py
+ls -d comparisons/*/
 ```
 
 ## Export Formats
