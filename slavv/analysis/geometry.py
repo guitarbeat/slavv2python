@@ -45,13 +45,13 @@ def calculate_branching_angles(
             continue
         for i in range(len(vecs)):
             for j in range(i + 1, len(vecs)):
-                u = vecs[i]
-                w = vecs[j]
-                nu = np.linalg.norm(u)
-                nw = np.linalg.norm(w)
-                if nu == 0 or nw == 0:
+                direction_vec_a = vecs[i]
+                direction_vec_b = vecs[j]
+                norm_a = np.linalg.norm(direction_vec_a)
+                norm_b = np.linalg.norm(direction_vec_b)
+                if norm_a == 0 or norm_b == 0:
                     continue
-                cosang = np.clip(np.dot(u, w) / (nu * nw), -1.0, 1.0)
+                cosang = np.clip(np.dot(direction_vec_a, direction_vec_b) / (norm_a * norm_b), -1.0, 1.0)
                 angles.append(float(np.degrees(np.arccos(cosang))))
 
     return angles
@@ -291,14 +291,14 @@ def register_vector_sets(
     Y = np.asarray(target, dtype=float)
     if X.shape != Y.shape or X.ndim != 2 or X.shape[1] != 3:
         raise ValueError("source and target must have shape (N, 3)")
-    n = X.shape[0]
+    num_points = X.shape[0]
     if method not in {"rigid", "affine"}:
         raise ValueError("method must be 'rigid' or 'affine'")
 
     if method == "affine":
-        if n < 4:
+        if num_points < 4:
             raise ValueError("affine registration requires at least 4 points")
-        Xh = np.c_[X, np.ones((n, 1))]
+        Xh = np.c_[X, np.ones((num_points, 1))]
         A, *_ = np.linalg.lstsq(Xh, Y, rcond=None)
         T = np.eye(4)
         T[:3, :3] = A[:3, :].T
@@ -307,7 +307,7 @@ def register_vector_sets(
         err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
         return (T, err) if return_error else T
 
-    if n < 3:
+    if num_points < 3:
         raise ValueError("rigid registration requires at least 3 points")
     muX = X.mean(axis=0)
     muY = Y.mean(axis=0)
@@ -328,7 +328,7 @@ def register_vector_sets(
     T = np.eye(4)
     T[:3, :3] = s * R
     T[:3, 3] = t
-    Xp = (np.c_[X, np.ones((n, 1))] @ T.T)[:, :3]
+    Xp = (np.c_[X, np.ones((num_points, 1))] @ T.T)[:, :3]
     err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
     return (T, err) if return_error else T
 
