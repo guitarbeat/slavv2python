@@ -966,7 +966,7 @@ def show_analysis_page():
     parameters = st.session_state["parameters"]
 
     # Calculate actual statistics using available data
-    from source.slavv.analysis import calculate_network_statistics as _calc_stats
+    from slavv.analysis import calculate_network_statistics as _calc_stats
     stats = _calc_stats(
         results["network"]["strands"],
         results["network"]["bifurcations"],

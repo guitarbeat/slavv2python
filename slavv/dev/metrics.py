@@ -248,9 +248,9 @@ def compare_results(
             )
         
         # Compare networks
-        if 'network' in matlab_parsed and 'network' in python_data:
+        if 'network_stats' in matlab_parsed and 'network' in python_data:
             comparison['network'] = compare_networks(
-                matlab_parsed['network'],
+                matlab_parsed['network_stats'],
                 python_data['network']
             )
     

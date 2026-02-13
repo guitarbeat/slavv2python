@@ -24,7 +24,7 @@ warnings.filterwarnings('ignore')
 try:
     from ..utils import calculate_path_length
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from source.slavv.utils import calculate_path_length
+    from slavv.utils import calculate_path_length
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

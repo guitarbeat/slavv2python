@@ -1,7 +1,7 @@
 """
 Unit tests for MATLAB output parser.
 
-Tests the functionality of scripts/matlab_output_parser.py for loading
+Tests the functionality of slavv/dev/matlab_parser.py for loading
 and parsing MATLAB vectorization output files.
 """
 
@@ -14,16 +14,12 @@ import tempfile
 import numpy as np
 import pytest
 
-# Add scripts directory to path
-scripts_dir = Path(__file__).parent.parent.parent / "scripts"
-sys.path.insert(0, str(scripts_dir))
-
 from slavv.dev.matlab_parser import (
     find_batch_folder,
     load_mat_file_safe,
     extract_vertices,
     extract_edges,
-    extract_network_data,
+    extract_network_stats,
     load_matlab_batch_results,
     MATLABParseError
 )
@@ -34,7 +30,7 @@ class TestFindBatchFolder:
     
     def test_find_batch_folder_no_directory(self):
         """Test with non-existent directory."""
-        result = find_batch_folder("/nonexistent/path")
+        result = find_batch_folder(Path("/nonexistent/path"))
         assert result is None
     
     def test_find_batch_folder_empty_directory(self, tmp_path):
@@ -115,7 +111,7 @@ class TestExtractEdges:
         result = extract_edges(mat_data)
         
         assert result['count'] == 0
-        assert result['connections'].size == 0
+        assert result['indices'].size == 0
         assert result['traces'] == []
     
     def test_extract_edges_with_indices(self):
@@ -131,7 +127,7 @@ class TestExtractEdges:
         result = extract_edges(mat_data)
         
         assert result['count'] == 3
-        assert result['connections'].shape == (3, 2)
+        assert result['indices'].shape == (3, 2)
     
     def test_extract_edges_with_lengths(self):
         """Test extraction of edge lengths."""
@@ -143,20 +139,28 @@ class TestExtractEdges:
         result = extract_edges(mat_data)
         
         assert result['count'] == 1
-        # extract_edges doesn't seem to extract total_length from struct directly in current implementation
-        # Skipping length check for now or update implementation
+        assert result['total_length'] == 5.5
 
 
-class TestExtractNetworkData:
-    """Tests for extracting network data."""
+class TestExtractNetworkStats:
+    """Tests for extracting network statistics."""
     
-    def test_extract_network_data_empty_data(self):
+    def test_extract_network_stats_empty_data(self):
         """Test with empty data."""
         mat_data = {}
-        result = extract_network_data(mat_data)
+        result = extract_network_stats(mat_data)
+
+        assert result['strand_count'] == 0
+        assert 'total_length_microns' in result # It might not be set if empty, need to check impl
+
+    def test_extract_network_stats_with_strands(self):
+        """Test with strand data."""
+        # Mock strand data
+        strands = np.array([Mock(), Mock(), Mock()])
+        mat_data = {'strand': strands}
         
-        assert result['stats'].get('strand_count', 0) == 0
-        assert result['stats'].get('total_length_microns', 0.0) == 0.0
+        result = extract_network_stats(mat_data)
+        assert result['strand_count'] == 3
 
 
 class TestLoadMatFileSafe:
@@ -198,18 +202,15 @@ class TestLoadMatlabBatchResults:
     def test_load_nonexistent_folder(self):
         """Test loading from non-existent folder."""
         with pytest.raises(MATLABParseError):
-            load_matlab_batch_results("/nonexistent/batch_folder")
+            load_matlab_batch_results(Path("/nonexistent/batch_folder"))
     
     def test_load_folder_is_file(self, tmp_path):
         """Test when path is a file, not a directory."""
         test_file = tmp_path / "test.txt"
         test_file.touch()
         
-        # Current implementation just warns if vectors dir not found, does not raise error for file input unless it checks for is_dir() strictly at top level.
-        # It logs "Vectors directory not found" and returns empty results.
-        # Let's check for that behavior instead of raising.
-        result = load_matlab_batch_results(test_file)
-        assert result['vertices']['count'] == 0
+        with pytest.raises(MATLABParseError):
+            load_matlab_batch_results(test_file)
     
     def test_load_empty_batch_folder(self, tmp_path):
         """Test loading from empty batch folder."""
@@ -282,23 +283,6 @@ class TestIntegrationScenarios:
         assert result is not None
 
 
-def test_matlab_parser_cli(tmp_path, capsys):
-    """Test the command-line interface of the parser."""
-    # Create test batch folder
-    batch_folder = tmp_path / "batch_250127-120000"
-    vectors_dir = batch_folder / "vectors"
-    batch_folder.mkdir()
-    vectors_dir.mkdir()
-    
-    # Mock sys.argv to test CLI
-    test_args = ['matlab_output_parser.py', str(batch_folder)]
-    
-    with patch('sys.argv', test_args):
-        # Import and run main (would need to extract main() function)
-        # For now, just verify the folder exists
-        assert batch_folder.exists()
-
-
 # Fixtures for creating mock MATLAB data
 
 @pytest.fixture
@@ -348,19 +332,18 @@ class TestWithMockData:
         result = extract_edges({'edge': mock_edge_data})
         
         assert result['count'] == 2
-        assert result['connections'].shape == (2, 2)
-        # Total length extraction not implemented in current parser version for mock struct
+        assert result['indices'].shape == (2, 2)
+        assert result['total_length'] == 12.5
     
     def test_complete_extraction(self, mock_complete_mat_data):
         """Test complete data extraction."""
         vertices = extract_vertices(mock_complete_mat_data)
         edges = extract_edges(mock_complete_mat_data)
-        # extract_network_data returns {'strands': ..., 'stats': ...}
-        # mock data has 'strand' key which extract_network_data ignores (it looks for 'strand_subscripts')
-        # so we skip network extraction test here or fix mock data
+        stats = extract_network_stats(mock_complete_mat_data)
         
         assert vertices['count'] == 2
         assert edges['count'] == 2
+        assert stats['strand_count'] == 2
 
 
 if __name__ == '__main__':

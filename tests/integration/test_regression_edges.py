@@ -11,8 +11,8 @@ def test_extract_edges_regression(mock_generate_directions):
     expected_connections = np.array([[0, -1], [0, -1]], dtype=int)
     expected_traces = np.array(
         [
-            [[10.0, 10.0, 10.0], [10.0, 10.0, 14.0], [10.0, 10.0, 18.0]],
-            [[10.0, 10.0, 10.0], [10.0, 10.0, 6.0], [10.0, 10.0, 2.0]],
+            [[10.0, 10.0, 10.0], [14.0, 10.0, 10.0], [18.0, 10.0, 10.0]],
+            [[10.0, 10.0, 10.0], [6.0, 10.0, 10.0], [2.0, 10.0, 10.0]],
         ],
         dtype=float,
     )

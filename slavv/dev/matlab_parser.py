@@ -85,227 +85,330 @@ def load_mat_file_safe(file_path: Path) -> Optional[Dict[str, Any]]:
         return None
 
 
-
 def extract_vertices(mat_data: Dict[str, Any]) -> Dict[str, np.ndarray]:
-    """Extract vertex information from MATLAB network data."""
+    """Extract vertex information from MATLAB network data.
+
+    Parameters
+    ----------
+    mat_data : Dict[str, Any]
+        Dictionary loaded from MATLAB .mat file
+
+    Returns
+    -------
+    Dict[str, np.ndarray]
+        Dictionary containing:
+        - 'positions': Nx4 array (x, y, z, scale_index)
+        - 'radii': Nx1 array of vessel radii
+        - 'count': number of vertices
+    """
     vertices_info = {
         'positions': np.array([]),
         'radii': np.array([]),
         'count': 0
     }
     
-    # Check for root-level arrays (common in this dataset)
-    if 'vertex_space_subscripts' in mat_data:
-        positions = np.array(mat_data['vertex_space_subscripts'])
+    # Try to find vertex structure in various possible locations
+    vertex_struct = None
+
+    # Common locations in MATLAB output
+    if 'vertex' in mat_data:
+        vertex_struct = mat_data['vertex']
+    elif 'vertices' in mat_data:
+        vertex_struct = mat_data['vertices']
+
+    if vertex_struct is None:
+        logger.warning("No vertex structure found in MATLAB data")
+        return vertices_info
+
+    # Extract positions
+    if hasattr(vertex_struct, 'space_subscripts'):
+        positions = np.array(vertex_struct.space_subscripts)
         if positions.ndim == 1 and positions.size > 0:
             positions = positions.reshape(-1, 1)
         vertices_info['positions'] = positions
         vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
-        
-        # Handle scales/radii
-        if 'vertex_scale_subscripts' in mat_data:
-            scale_indices = np.array(mat_data['vertex_scale_subscripts'])
-            vertices_info['scale_indices'] = scale_indices
-            
-            # Try to map to radii if range is available
-            if 'lumen_radius_in_microns_range' in mat_data:
-                 radii_range = np.array(mat_data['lumen_radius_in_microns_range'])
-                 if scale_indices.size > 0:
-                     # Matlab indices are 1-based usually, check min
-                     # If they are from Matlab, they might be 1-based.
-                     # But scipy.io might load them as is. 
-                     # Let's assume 1-based if coming from Matlab.
-                     # Actually, let's check min value.
-                     if np.min(scale_indices) >= 1:
-                         vertices_info['radii'] = radii_range[scale_indices.astype(int) - 1]
-                     else:
-                         vertices_info['radii'] = radii_range[scale_indices.astype(int)]
-    
-    # Fallback to struct-based extraction
-    elif 'vertex' in mat_data or 'vertices' in mat_data:
-        vertex_struct = mat_data.get('vertex', mat_data.get('vertices'))
-        if hasattr(vertex_struct, 'space_subscripts'):
-            positions = np.array(vertex_struct.space_subscripts)
-            vertices_info['positions'] = positions
-            vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
-        elif hasattr(vertex_struct, 'positions'):
-            positions = np.array(vertex_struct.positions)
-            vertices_info['positions'] = positions
-            vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
-            
-        if hasattr(vertex_struct, 'radii'):
-             vertices_info['radii'] = np.array(vertex_struct.radii)
+    elif hasattr(vertex_struct, 'positions'):
+        positions = np.array(vertex_struct.positions)
+        vertices_info['positions'] = positions
+        vertices_info['count'] = positions.shape[0] if positions.size > 0 else 0
 
-    logger.info(f"Extracted {vertices_info['count']} vertices")
+    # Extract radii (scale values converted to microns)
+    if hasattr(vertex_struct, 'scale_subscripts'):
+        # scale_subscripts are indices into a scale array
+        # We may need to convert these to actual radii
+        scale_indices = np.array(vertex_struct.scale_subscripts)
+        vertices_info['scale_indices'] = scale_indices
+        
+        # Try to find the scale array to convert to actual radii
+        if 'lumen_radius_in_microns_range' in mat_data:
+            radii_range = np.array(mat_data['lumen_radius_in_microns_range'])
+            if scale_indices.size > 0:
+                # Map scale indices to radii
+                vertices_info['radii'] = radii_range[scale_indices.astype(int)]
+        elif hasattr(vertex_struct, 'radii'):
+            vertices_info['radii'] = np.array(vertex_struct.radii)
+    elif hasattr(vertex_struct, 'radii'):
+        vertices_info['radii'] = np.array(vertex_struct.radii)
+    
+    logger.info(f"Extracted {vertices_info['count']} vertices from MATLAB data")
     return vertices_info
 
 
-
 def extract_edges(mat_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract edge information from MATLAB network data."""
+    """Extract edge information from MATLAB network data.
+
+    Parameters
+    ----------
+    mat_data : Dict[str, Any]
+        Dictionary loaded from MATLAB .mat file
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing:
+        - 'indices': Mx2 array of vertex connectivity
+        - 'traces': List of edge trajectories (if available)
+        - 'count': number of edges
+        - 'total_length': total network length in microns (if available)
+    """
     edges_info = {
-        'connections': np.array([]),
+        'indices': np.array([]),
         'traces': [],
         'count': 0,
         'total_length': 0.0
     }
     
-    # Check for root-level arrays
-    if 'edges2vertices' in mat_data:
-        indices = np.array(mat_data['edges2vertices'])
-        # Matlab indices are 1-based, convert to 0-based
-        if indices.size > 0 and np.min(indices) >= 1:
-            indices = indices - 1
-        edges_info['connections'] = indices
-        edges_info['count'] = indices.shape[0] if indices.size > 0 else 0
+    # Try to find edge structure
+    edge_struct = None
+    if 'edge' in mat_data:
+        edge_struct = mat_data['edge']
+    elif 'edges' in mat_data:
+        edge_struct = mat_data['edges']
+    elif 'edge_indices' in mat_data:
+        edges_info['indices'] = np.array(mat_data['edge_indices'])
+        edges_info['count'] = edges_info['indices'].shape[0] if edges_info['indices'].size > 0 else 0
     
-    if 'edge_space_subscripts' in mat_data:
-        space_subs = mat_data['edge_space_subscripts']
-        if isinstance(space_subs, np.ndarray):
-            if space_subs.dtype == object:
-                 edges_info['traces'] = [np.array(t) if t is not None else np.array([]) for t in space_subs]
-            else:
-                 edges_info['traces'] = [space_subs] # Single edge?
-    
-    # Fallback to struct-based
-    if edges_info['count'] == 0:
-        edge_struct = mat_data.get('edge', mat_data.get('edges'))
-        if edge_struct is not None:
-             if hasattr(edge_struct, 'vertices'):
-                indices = np.array(edge_struct.vertices)
-                # Check for 1-based indexing heuristic
-                if indices.size > 0 and np.min(indices) >= 1:
-                     indices = indices - 1
-                edges_info['connections'] = indices
-                edges_info['count'] = indices.shape[0]
-             
-             if hasattr(edge_struct, 'space_subscripts'):
-                 space_subs = edge_struct.space_subscripts
-                 if isinstance(space_subs, np.ndarray) and space_subs.dtype == object:
-                      edges_info['traces'] = [np.array(t) for t in space_subs if t is not None]
+    if edge_struct is not None:
+        # Extract connectivity
+        if hasattr(edge_struct, 'vertices'):
+            edges_info['indices'] = np.array(edge_struct.vertices)
+            edges_info['count'] = edges_info['indices'].shape[0] if edges_info['indices'].size > 0 else 0
 
-    logger.info(f"Extracted {edges_info['count']} edges")
+        # Extract edge traces (space subscripts)
+        if hasattr(edge_struct, 'space_subscripts'):
+            space_subs = edge_struct.space_subscripts
+            # This is typically a cell array in MATLAB
+            if isinstance(space_subs, np.ndarray):
+                if space_subs.dtype == object:
+                    # Array of arrays
+                    edges_info['traces'] = [np.array(trace) for trace in space_subs if trace is not None]
+                else:
+                    edges_info['traces'] = [space_subs]
+
+        # Extract edge lengths
+        if hasattr(edge_struct, 'lengths'):
+            lengths = np.array(edge_struct.lengths)
+            edges_info['lengths'] = lengths
+            edges_info['total_length'] = np.sum(lengths)
+    
+    logger.info(f"Extracted {edges_info['count']} edges from MATLAB data")
     return edges_info
 
 
+def extract_network_stats(mat_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract network statistics from MATLAB data.
 
-def extract_network_data(mat_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Extract network topology and statistics."""
-    network_data = {
-        'strands': [],
-        'stats': {}
+    Parameters
+    ----------
+    mat_data : Dict[str, Any]
+        Dictionary loaded from MATLAB .mat file
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing network statistics
+    """
+    stats = {
+        'strand_count': 0,
+        'total_length_microns': 0.0,
+        'mean_radius_microns': 0.0,
+        'network_volume_microns3': 0.0
     }
     
-    # Extract strands (topology)
-    if 'strand_subscripts' in mat_data:
-        strands = mat_data['strand_subscripts']
-        if isinstance(strands, np.ndarray):
-            # Handle object array (cell array)
-            if strands.dtype == object:
-                # Filter out None and empty arrays
-                # Do NOT flatten coordinate arrays (N, 4) -> keep them as is
-                network_data['strands'] = [np.array(s) if s is not None and s.size > 0 else np.array([]) for s in strands]
-                # Filter out empty entries
-                network_data['strands'] = [s for s in network_data['strands'] if s.size > 0]
-            else:
-                # Single array or different format
-                network_data['strands'] = [strands]
-                  
-    # Extract statistics
-    if 'network_statistics' in mat_data:
-        ns = mat_data['network_statistics']
-        # Helper to extract scalar or array
-        def get_val(obj, name):
-            if hasattr(obj, name):
-                val = getattr(obj, name)
-                if isinstance(val, np.ndarray) and val.size == 1:
-                    return val.item()
-                # Handle 0-d arrays
-                if isinstance(val, np.ndarray) and val.ndim == 0:
-                    return val.item()
-                return val
-            return None
+    # Look for network or strand information
+    if 'network' in mat_data:
+        network = mat_data['network']
+        if hasattr(network, 'strand'):
+            strands = network.strand
+            if isinstance(strands, np.ndarray):
+                stats['strand_count'] = len(strands)
 
-        network_data['stats']['strand_count'] = get_val(ns, 'num_strands') or 0
-        network_data['stats']['total_length_microns'] = get_val(ns, 'length') or 0.0
-        network_data['stats']['mean_radius_microns'] = get_val(ns, 'strand_ave_radii')
+    if 'strand' in mat_data:
+        strands = mat_data['strand']
+        if isinstance(strands, np.ndarray):
+            stats['strand_count'] = len(strands)
+
+    # Extract aggregate statistics if available
+    vertices_info = extract_vertices(mat_data)
+    if vertices_info['radii'].size > 0:
+        stats['mean_radius_microns'] = float(np.mean(vertices_info['radii']))
+
+    edges_info = extract_edges(mat_data)
+    if edges_info['total_length'] > 0:
+        stats['total_length_microns'] = float(edges_info['total_length'])
+
+    logger.info(f"Extracted network statistics: {stats['strand_count']} strands")
+    return stats
+
+
+def extract_stage_timings(batch_folder: Path) -> Dict[str, float]:
+    """Extract pipeline stage timing information from MATLAB log or settings.
+
+    Parameters
+    ----------
+    batch_folder : Path
+        Path to the MATLAB batch output folder
         
-        # Handle mean radius being an array
-        mr = network_data['stats']['mean_radius_microns']
-        if isinstance(mr, np.ndarray):
-             network_data['stats']['mean_radius_microns'] = float(np.mean(mr)) if mr.size > 0 else 0.0
-             
-    return network_data
+    Returns
+    -------
+    Dict[str, float]
+        Dictionary mapping stage names to elapsed time in seconds
+    """
+    timings = {
+        'energy': 0.0,
+        'vertices': 0.0,
+        'edges': 0.0,
+        'network': 0.0,
+        'total': 0.0
+    }
+
+    # Try to find timing information in settings folder
+    settings_dir = batch_folder / 'settings'
+    if settings_dir.exists():
+        workflow_files = list(settings_dir.glob('workflow_*.mat'))
+        if workflow_files:
+            # Load the most recent workflow file
+            workflow_data = load_mat_file_safe(workflow_files[-1])
+            if workflow_data:
+                # Look for timing fields
+                if 'time_stamps' in workflow_data:
+                    time_stamps = workflow_data['time_stamps']
+                    # Parse timing structure if available
+                    # This is highly dependent on MATLAB output format
+                    pass
+
+    # Try to parse log file if available
+    log_file = batch_folder.parent / 'matlab_run.log'
+    if log_file.exists():
+        try:
+            with open(log_file, 'r') as f:
+                log_content = f.read()
+
+            # Look for timing patterns in log
+            # Pattern: "Elapsed time: XX.XX seconds"
+            elapsed_match = re.search(r'Elapsed time:\s*([\d.]+)\s*seconds', log_content)
+            if elapsed_match:
+                timings['total'] = float(elapsed_match.group(1))
+        except Exception as e:
+            logger.warning(f"Failed to parse log file: {e}")
+
+    return timings
 
 
 def load_matlab_batch_results(batch_folder: Union[str, Path]) -> Dict[str, Any]:
-    """Load and aggregate results from a MATLAB batch output folder."""
+    """Load all results from a MATLAB batch output folder.
+
+    This is the main entry point for loading MATLAB results.
+
+    Parameters
+    ----------
+    batch_folder : str | Path
+        Path to the MATLAB batch output folder (batch_YYMMDD-HHmmss)
+
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing:
+        - 'vertices': vertex information
+        - 'edges': edge information
+        - 'network_stats': network statistics
+        - 'timings': stage timing information
+        - 'batch_folder': path to batch folder
+        - 'files': list of loaded file paths
+
+    Raises
+    ------
+    MATLABParseError
+        If the batch folder structure is invalid or files cannot be loaded
+    """
     batch_path = Path(batch_folder)
+
     if not batch_path.exists():
-        raise MATLABParseError(f"Batch folder not found: {batch_folder}")
-        
+        raise MATLABParseError(f"Batch folder does not exist: {batch_folder}")
+
+    if not batch_path.is_dir():
+        raise MATLABParseError(f"Batch folder is not a directory: {batch_folder}")
+
     logger.info(f"Loading MATLAB results from: {batch_path}")
     
     results = {
         'vertices': {'count': 0, 'positions': np.array([]), 'radii': np.array([])},
         'edges': {'count': 0, 'indices': np.array([]), 'traces': [], 'total_length': 0.0},
-        'network': {'strands': []},
-        'network_stats': {},
+        'network_stats': {'strand_count': 0},
         'timings': {},
         'batch_folder': str(batch_path),
         'files': []
     }
     
+    # Look for network file in vectors directory
     vectors_dir = batch_path / 'vectors'
-    if not vectors_dir.exists():
+    if vectors_dir.exists():
+        # Find network .mat file
+        network_files = list(vectors_dir.glob('network_*.mat'))
+        if network_files:
+            network_file = network_files[-1]  # Most recent
+            logger.info(f"Loading network file: {network_file}")
+
+            mat_data = load_mat_file_safe(network_file)
+            if mat_data:
+                results['vertices'] = extract_vertices(mat_data)
+                results['edges'] = extract_edges(mat_data)
+                results['network_stats'] = extract_network_stats(mat_data)
+                results['files'].append(str(network_file))
+            else:
+                logger.warning(f"Failed to load network file: {network_file}")
+        else:
+            logger.warning(f"No network files found in {vectors_dir}")
+
+            # Try to load vertices and edges separately
+            vertices_files = list(vectors_dir.glob('vertices_*.mat'))
+            edges_files = list(vectors_dir.glob('edges_*.mat'))
+            
+            if vertices_files:
+                vertices_file = vertices_files[-1]
+                logger.info(f"Loading vertices file: {vertices_file}")
+                mat_data = load_mat_file_safe(vertices_file)
+                if mat_data:
+                    results['vertices'] = extract_vertices(mat_data)
+                    results['files'].append(str(vertices_file))
+            
+            if edges_files:
+                edges_file = edges_files[-1]
+                logger.info(f"Loading edges file: {edges_file}")
+                mat_data = load_mat_file_safe(edges_file)
+                if mat_data:
+                    results['edges'] = extract_edges(mat_data)
+                    results['files'].append(str(edges_file))
+    else:
         logger.warning(f"Vectors directory not found: {vectors_dir}")
-        return results
 
-    # Helper to merge dicts
-    def merge_info(target, source):
-        for k, v in source.items():
-            if isinstance(v, np.ndarray):
-                if v.size > 0: target[k] = v
-            elif isinstance(v, list):
-                if v: target[k] = v
-            elif v:
-                target[k] = v
+    # Extract timing information
+    results['timings'] = extract_stage_timings(batch_path)
 
-    # 1. Load Vertices
-    v_files = list(vectors_dir.glob('vertices_*.mat'))
-    if v_files:
-        f = v_files[-1]
-        logger.info(f"Loading vertices: {f.name}")
-        data = load_mat_file_safe(f)
-        if data:
-            v_info = extract_vertices(data)
-            merge_info(results['vertices'], v_info)
-            results['files'].append(str(f))
+    # Validate that we loaded something useful
+    if results['vertices'].get('count', 0) == 0 and results['edges'].get('count', 0) == 0:
+        logger.warning("No vertices or edges were extracted from MATLAB data")
 
-    # 2. Load Edges
-    e_files = list(vectors_dir.glob('edges_*.mat'))
-    if e_files:
-        f = e_files[-1]
-        logger.info(f"Loading edges: {f.name}")
-        data = load_mat_file_safe(f)
-        if data:
-            e_info = extract_edges(data)
-            merge_info(results['edges'], e_info)
-            results['files'].append(str(f))
-            
-    # 3. Load Network (for stats and topology)
-    n_files = list(vectors_dir.glob('network_*.mat'))
-    if n_files:
-        f = n_files[-1]
-        logger.info(f"Loading network: {f.name}")
-        data = load_mat_file_safe(f)
-        if data:
-            net_data = extract_network_data(data)
-            if net_data.get('strands'):
-                results['network']['strands'] = net_data['strands']
-            results['network_stats'].update(net_data.get('stats', {}))
-            results['files'].append(str(f))
-            
     return results
 
 

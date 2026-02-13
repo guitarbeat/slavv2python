@@ -1,6 +1,7 @@
 import pathlib
 import sys
 import pytest
+import importlib
 st = pytest.importorskip("streamlit")
 
 
@@ -11,7 +12,6 @@ def test_app_sets_wide_layout(monkeypatch):
         called.update(kwargs)
 
     monkeypatch.setattr(st, "set_page_config", fake_config)
-    if 'app' in sys.modules:
-        del sys.modules['app']
-    import app  # noqa: F401
+    from apps import web_app as app
+    importlib.reload(app)
     assert called.get("layout") == "wide"
