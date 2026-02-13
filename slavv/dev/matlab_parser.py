@@ -292,7 +292,10 @@ def extract_stage_timings(batch_folder: Path) -> Dict[str, float]:
             if workflow_data:
                 # Look for timing fields
                 if 'time_stamps' in workflow_data:
-                    time_stamps = workflow_data['time_stamps']
+                    logger.debug(
+                        "Found 'time_stamps' in workflow data, but parsing is not implemented; raw value: %r",
+                        workflow_data['time_stamps'],
+                    )
                     # Parse timing structure if available
                     # This is highly dependent on MATLAB output format
                     pass
