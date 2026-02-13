@@ -30,7 +30,17 @@ $choice = Read-Host "Enter choice (1 or 2)"
 if ($choice -eq "1") {
     Write-Host "`nCreating venv environment..." -ForegroundColor Cyan
     python -m venv .venv
-    
+
+    # Reduce temp files: disable Python bytecode cache (__pycache__)
+    $activateScript = ".\.venv\Scripts\Activate.ps1"
+    $bytecodeDisable = @"
+
+# SLAVV: Reduce temp files - disable __pycache__
+`$env:PYTHONDONTWRITEBYTECODE = "1"
+"@
+    Add-Content -Path $activateScript -Value $bytecodeDisable
+    Write-Host "Configured venv to skip __pycache__ (PYTHONDONTWRITEBYTECODE=1)" -ForegroundColor Cyan
+
     Write-Host "Activating environment..." -ForegroundColor Cyan
     & .\.venv\Scripts\Activate.ps1
     
@@ -54,9 +64,13 @@ if ($choice -eq "1") {
 elseif ($choice -eq "2") {
     Write-Host "`nCreating conda environment..." -ForegroundColor Cyan
     conda create -n slavv-env python=3.10 -y
-    
+
     Write-Host "Activating environment..." -ForegroundColor Cyan
     conda activate slavv-env
+
+    # Reduce temp files: disable Python bytecode cache (__pycache__)
+    conda env config vars set PYTHONDONTWRITEBYTECODE=1
+    Write-Host "Configured conda env to skip __pycache__ (PYTHONDONTWRITEBYTECODE=1)" -ForegroundColor Cyan
     
     Write-Host "Installing SLAVV package and dependencies..." -ForegroundColor Cyan
     pip install -e .

@@ -26,7 +26,7 @@ Thanks for your interest in contributing! This document outlines conventions for
   pytest -q
 
   # Option 2: Manual PYTHONPATH
-  export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+  export PYTHONPATH=$PYTHONPATH:$(pwd)/source
   pytest -q
   ```
   To run one test module:
@@ -37,9 +37,19 @@ Thanks for your interest in contributing! This document outlines conventions for
 ## Commit Messages
 - Provide concise summaries of the changes made.
 
+## Reducing Temp Files
+The project is configured to minimize temp files when running:
+- **Pytest**: Cache disabled (`-p no:cacheprovider`) — no `.pytest_cache/`
+- **Python bytecode**: `setup_env.ps1` configures `PYTHONDONTWRITEBYTECODE=1` in venv/conda — no `__pycache__/`
+- **Jupyter**: Optional config in `.jupyter/` stores checkpoints in system temp instead of each notebook dir. Use:
+  ```powershell
+  $env:JUPYTER_CONFIG_DIR = ".\.jupyter"; jupyter notebook
+  ```
+  Or for manual setup: `$env:PYTHONDONTWRITEBYTECODE = "1"` before running Python.
+
 ## Where to Start
 - See [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for MATLAB→Python port status and mapping.
-- See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for current status and roadmap.
+- See [docs/guides/DEVELOPMENT.md](docs/guides/DEVELOPMENT.md) for current status and roadmap.
 
 ## Regression Prevention (Critical)
 

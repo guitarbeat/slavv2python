@@ -38,28 +38,28 @@ if _NUMBA_AVAILABLE:
     @njit
     def compute_gradient_impl(energy, pos_int, mpv):
         """Compute local energy gradient via central differences (Numba accelerated)."""
-        ny = energy.shape[0]
-        nx = energy.shape[1]
-        nz = energy.shape[2]
+        dim_y = energy.shape[0]
+        dim_x = energy.shape[1]
+        dim_z = energy.shape[2]
         
         # Manual clamping to [1, shape-2]
-        py = int(pos_int[0])
-        if py < 1: py = 1
-        elif py > ny - 2: py = ny - 2
+        pos_y = int(pos_int[0])
+        if pos_y < 1: pos_y = 1
+        elif pos_y > dim_y - 2: pos_y = dim_y - 2
         
-        px = int(pos_int[1])
-        if px < 1: px = 1
-        elif px > nx - 2: px = nx - 2
+        pos_x = int(pos_int[1])
+        if pos_x < 1: pos_x = 1
+        elif pos_x > dim_x - 2: pos_x = dim_x - 2
         
-        pz = int(pos_int[2])
-        if pz < 1: pz = 1
-        elif pz > nz - 2: pz = nz - 2
+        pos_z = int(pos_int[2])
+        if pos_z < 1: pos_z = 1
+        elif pos_z > dim_z - 2: pos_z = dim_z - 2
         
         grad = np.zeros(3, dtype=np.float64)
         # Use explicit indexing for speed and clarity
-        grad[0] = (energy[py+1, px, pz] - energy[py-1, px, pz]) / (2.0 * mpv[0])
-        grad[1] = (energy[py, px+1, pz] - energy[py, px-1, pz]) / (2.0 * mpv[1])
-        grad[2] = (energy[py, px, pz+1] - energy[py, px, pz-1]) / (2.0 * mpv[2])
+        grad[0] = (energy[pos_y+1, pos_x, pos_z] - energy[pos_y-1, pos_x, pos_z]) / (2.0 * mpv[0])
+        grad[1] = (energy[pos_y, pos_x+1, pos_z] - energy[pos_y, pos_x-1, pos_z]) / (2.0 * mpv[1])
+        grad[2] = (energy[pos_y, pos_x, pos_z+1] - energy[pos_y, pos_x, pos_z-1]) / (2.0 * mpv[2])
         
         return grad
 
@@ -70,23 +70,23 @@ else:
         grad = np.zeros(3, dtype=float)
 
         # Unpack position and shape
-        p0, p1, p2 = pos_int
-        s0, s1, s2 = energy.shape
+        pos_y, pos_x, pos_z = pos_int
+        shape_y, shape_x, shape_z = energy.shape
 
         # Manual clamping to [1, shape-2] to prevent out-of-bounds access
-        if p0 < 1: p0 = 1
-        elif p0 > s0 - 2: p0 = s0 - 2
+        if pos_y < 1: pos_y = 1
+        elif pos_y > shape_y - 2: pos_y = shape_y - 2
 
-        if p1 < 1: p1 = 1
-        elif p1 > s1 - 2: p1 = s1 - 2
+        if pos_x < 1: pos_x = 1
+        elif pos_x > shape_x - 2: pos_x = shape_x - 2
 
-        if p2 < 1: p2 = 1
-        elif p2 > s2 - 2: p2 = s2 - 2
+        if pos_z < 1: pos_z = 1
+        elif pos_z > shape_z - 2: pos_z = shape_z - 2
 
         # Direct indexing for speed (avoids allocations and tuple overhead)
-        grad[0] = (energy[p0+1, p1, p2] - energy[p0-1, p1, p2]) / (2.0 * microns_per_voxel[0])
-        grad[1] = (energy[p0, p1+1, p2] - energy[p0, p1-1, p2]) / (2.0 * microns_per_voxel[1])
-        grad[2] = (energy[p0, p1, p2+1] - energy[p0, p1, p2-1]) / (2.0 * microns_per_voxel[2])
+        grad[0] = (energy[pos_y+1, pos_x, pos_z] - energy[pos_y-1, pos_x, pos_z]) / (2.0 * microns_per_voxel[0])
+        grad[1] = (energy[pos_y, pos_x+1, pos_z] - energy[pos_y, pos_x-1, pos_z]) / (2.0 * microns_per_voxel[1])
+        grad[2] = (energy[pos_y, pos_x, pos_z+1] - energy[pos_y, pos_x, pos_z-1]) / (2.0 * microns_per_voxel[2])
 
         return grad
 

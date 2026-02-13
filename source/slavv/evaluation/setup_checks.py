@@ -11,7 +11,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 
 # Add project root to path if needed for imports
-# (Assuming this module is importable as source.slavv.dev.validation)
+# (Assuming this module is importable as slavv.dev.validation)
 
 
 class ValidationError:
