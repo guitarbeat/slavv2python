@@ -140,6 +140,83 @@ class TestExtractEdges:
         
         assert result['count'] == 1
         assert result['total_length'] == 5.5
+    
+    def test_extract_edges_single_edge_1d(self):
+        """Test extraction of a single edge with 1D array (2,) shape."""
+        edge_struct = Mock()
+        # Single edge as 1D array - common MATLAB behavior
+        edge_struct.vertices = np.array([0, 1])
+        
+        mat_data = {'edge': edge_struct}
+        result = extract_edges(mat_data)
+        
+        # Should be normalized to (1, 2) shape
+        assert result['count'] == 1
+        assert result['indices'].shape == (1, 2)
+        assert np.array_equal(result['indices'], np.array([[0, 1]]))
+    
+    def test_extract_edges_1based_indexing(self):
+        """Test conversion from 1-based to 0-based indexing."""
+        edge_struct = Mock()
+        # MATLAB typically uses 1-based indexing
+        edge_struct.vertices = np.array([
+            [1, 2],  # Should become [0, 1]
+            [2, 3],  # Should become [1, 2]
+            [3, 4]   # Should become [2, 3]
+        ])
+        
+        mat_data = {'edge': edge_struct}
+        result = extract_edges(mat_data)
+        
+        assert result['count'] == 3
+        assert result['indices'].shape == (3, 2)
+        # Verify conversion to 0-based
+        assert np.array_equal(result['indices'], np.array([[0, 1], [1, 2], [2, 3]]))
+    
+    def test_extract_edges_single_edge_1based(self):
+        """Test single edge with 1-based indexing in 1D array."""
+        edge_struct = Mock()
+        # Single edge, 1-based, 1D array - most problematic case
+        edge_struct.vertices = np.array([1, 2])
+        
+        mat_data = {'edge': edge_struct}
+        result = extract_edges(mat_data)
+        
+        # Should be normalized to (1, 2) and converted to 0-based
+        assert result['count'] == 1
+        assert result['indices'].shape == (1, 2)
+        assert np.array_equal(result['indices'], np.array([[0, 1]]))
+    
+    def test_extract_edges_from_edge_indices_field(self):
+        """Test extraction from edge_indices field with 1-based indexing."""
+        # Direct edge_indices field (not edge struct)
+        mat_data = {'edge_indices': np.array([
+            [1, 2],
+            [2, 3]
+        ])}
+        
+        result = extract_edges(mat_data)
+        
+        assert result['count'] == 2
+        assert result['indices'].shape == (2, 2)
+        # Should be converted to 0-based
+        assert np.array_equal(result['indices'], np.array([[0, 1], [1, 2]]))
+    
+    def test_extract_edges_0based_already(self):
+        """Test that 0-based indices are not incorrectly converted."""
+        edge_struct = Mock()
+        # Already 0-based (contains 0)
+        edge_struct.vertices = np.array([
+            [0, 1],
+            [1, 2]
+        ])
+        
+        mat_data = {'edge': edge_struct}
+        result = extract_edges(mat_data)
+        
+        assert result['count'] == 2
+        # Should remain unchanged since min is 0
+        assert np.array_equal(result['indices'], np.array([[0, 1], [1, 2]]))
 
 
 class TestExtractNetworkStats:

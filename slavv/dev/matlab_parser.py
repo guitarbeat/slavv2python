@@ -171,6 +171,46 @@ def extract_vertices(mat_data: Dict[str, Any]) -> Dict[str, np.ndarray]:
     return vertices_info
 
 
+def _normalize_edge_indices(indices: np.ndarray) -> np.ndarray:
+    """Normalize edge indices to (M, 2) shape and convert from 1-based to 0-based.
+    
+    Parameters
+    ----------
+    indices : np.ndarray
+        Raw edge indices from MATLAB, possibly 1D for single edge and 1-based
+        
+    Returns
+    -------
+    np.ndarray
+        Normalized edge indices as (M, 2) array with 0-based indexing
+    """
+    if indices.size == 0:
+        return indices
+    
+    # Normalize shape: single edge (2,) -> (1, 2)
+    if indices.ndim == 1 and indices.size == 2:
+        indices = indices.reshape(1, 2)
+    elif indices.ndim == 1:
+        # Unexpected 1D shape that's not a single edge
+        logger.warning(
+            "Edge indices have unexpected 1D shape %s; expected (2,) for single edge or (M, 2) for multiple edges",
+            indices.shape
+        )
+    
+    # Validate shape
+    if indices.ndim == 2 and indices.shape[1] != 2:
+        logger.warning(
+            "Edge indices have unexpected shape %s; expected (M, 2) for edge connectivity",
+            indices.shape
+        )
+    
+    # Convert from 1-based to 0-based indexing if needed
+    if indices.size > 0 and np.min(indices) >= 1:
+        indices = indices - 1
+    
+    return indices
+
+
 def extract_edges(mat_data: Dict[str, Any]) -> Dict[str, Any]:
     """Extract edge information from MATLAB network data.
 
@@ -183,7 +223,7 @@ def extract_edges(mat_data: Dict[str, Any]) -> Dict[str, Any]:
     -------
     Dict[str, Any]
         Dictionary containing:
-        - 'indices': Mx2 array of vertex connectivity
+        - 'indices': Mx2 array of vertex connectivity (0-based indexing)
         - 'traces': List of edge trajectories (if available)
         - 'count': number of edges
         - 'total_length': total network length in microns (if available)
@@ -202,13 +242,15 @@ def extract_edges(mat_data: Dict[str, Any]) -> Dict[str, Any]:
     elif 'edges' in mat_data:
         edge_struct = mat_data['edges']
     elif 'edge_indices' in mat_data:
-        edges_info['indices'] = np.array(mat_data['edge_indices'])
+        raw_indices = np.array(mat_data['edge_indices'])
+        edges_info['indices'] = _normalize_edge_indices(raw_indices)
         edges_info['count'] = edges_info['indices'].shape[0] if edges_info['indices'].size > 0 else 0
     
     if edge_struct is not None:
         # Extract connectivity
         if hasattr(edge_struct, 'vertices'):
-            edges_info['indices'] = np.array(edge_struct.vertices)
+            raw_indices = np.array(edge_struct.vertices)
+            edges_info['indices'] = _normalize_edge_indices(raw_indices)
             edges_info['count'] = edges_info['indices'].shape[0] if edges_info['indices'].size > 0 else 0
 
         # Extract edge traces (space subscripts)
