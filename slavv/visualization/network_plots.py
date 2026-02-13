@@ -20,11 +20,12 @@ from ..utils import calculate_path_length
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class NetworkVisualizer:
     """
     Comprehensive visualization class for SLAVV results
     """
-    
+
     def __init__(self):
         self.color_schemes = {
             'energy': 'RdBu_r',
@@ -128,15 +129,15 @@ class NetworkVisualizer:
                     hoverinfo="none",
                 )
             )
-    
-    def plot_2d_network(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
-                       network: Dict[str, Any], parameters: Dict[str, Any],
-                       color_by: str = 'energy', projection_axis: int = 2,
-                       show_vertices: bool = True, show_edges: bool = True,
-                       show_bifurcations: bool = True) -> go.Figure:
+
+    def plot_2d_network(self, vertices: Dict[str, Any], edges: Dict[str, Any],
+                        network: Dict[str, Any], parameters: Dict[str, Any],
+                        color_by: str = 'energy', projection_axis: int = 2,
+                        show_vertices: bool = True, show_edges: bool = True,
+                        show_bifurcations: bool = True) -> go.Figure:
         """
         Create 2D network visualization with projection
-        
+
         Args:
             vertices: Vertex data
             edges: Edge data  
@@ -149,30 +150,31 @@ class NetworkVisualizer:
             show_bifurcations: Whether to highlight bifurcations
         """
         logger.info(f"Creating 2D network plot with {color_by} coloring")
-        
+
         fig = go.Figure()
-        
+
         vertex_positions = vertices['positions']
         vertex_energies = vertices['energies']
         vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
         edge_traces = edges['traces']
         bifurcations = network.get('bifurcations', [])
-        
+
         # Determine projection axes
         if projection_axis == 2:
-             # Match 3D plot convention: X->col 1, Y->col 0
-             x_axis, y_axis = 1, 0
+            # Match 3D plot convention: X->col 1, Y->col 0
+            x_axis, y_axis = 1, 0
         else:
-             axes = [0, 1, 2]
-             axes.remove(projection_axis)
-             x_axis, y_axis = axes
-        
+            axes = [0, 1, 2]
+            axes.remove(projection_axis)
+            x_axis, y_axis = axes
+
         axis_names = ['Y', 'X', 'Z']
         x_label = f"{axis_names[x_axis]} (μm)"
         y_label = f"{axis_names[y_axis]} (μm)"
-        
+
         # Convert to physical units
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
 
         # Plot edges
         if show_edges and edge_traces:
@@ -182,14 +184,16 @@ class NetworkVisualizer:
             if len(valid_traces) > 100:
                 # Prepare data for binning/grouping
                 values: Optional[np.ndarray] = None
-                groups: Dict[int, List[int]] = {}  # group_id -> list of trace indices
+                # group_id -> list of trace indices
+                groups: Dict[int, List[int]] = {}
                 group_colors: Dict[int, str] = {}
                 colorscale = self.color_schemes.get(color_by, 'Viridis')
 
                 # Calculate values for coloring
                 if color_by == 'depth':
                     depths = [
-                        np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
+                        np.mean(t[:, projection_axis]) *
+                        microns_per_voxel[projection_axis]
                         for t in valid_traces
                     ]
                     values = np.array(depths)
@@ -229,7 +233,8 @@ class NetworkVisualizer:
                     for sid, strand in enumerate(network.get('strands', [])):
                         color = colors[sid % len(colors)]
                         for v0, v1 in zip(strand[:-1], strand[1:]):
-                            idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                            idx = pair_to_index.get(
+                                tuple(sorted((int(v0), int(v1)))))
                             if idx is not None and idx < len(valid_traces):
                                 if sid not in groups:
                                     groups[sid] = []
@@ -242,7 +247,7 @@ class NetworkVisualizer:
                     if vmin == vmax:
                         n_bins = 1
                     else:
-                        n_bins = 50 # Number of color bins
+                        n_bins = 50  # Number of color bins
 
                     # Compute color for each bin
                     # We group traces into bins
@@ -269,7 +274,8 @@ class NetworkVisualizer:
                                 normalized = (center - vmin) / (vmax - vmin)
                             else:
                                 normalized = 0.5
-                            group_colors[bin_idx] = px.colors.sample_colorscale(colorscale, normalized)[0]
+                            group_colors[bin_idx] = px.colors.sample_colorscale(
+                                colorscale, normalized)[0]
                         groups[bin_idx].append(i)
                 else:
                     # Default / Fallback (e.g. single color)
@@ -279,7 +285,7 @@ class NetworkVisualizer:
                 # Render merged traces
                 for gid, indices in groups.items():
                     x_all, y_all = [], []
-                    custom_data = [] # Store per-point custom data for hover
+                    custom_data = []  # Store per-point custom data for hover
 
                     for idx in indices:
                         trace = valid_traces[idx]
@@ -292,7 +298,8 @@ class NetworkVisualizer:
                         y_all.append(None)
 
                         # Prepare hover info
-                        length = calculate_path_length(trace * microns_per_voxel)
+                        length = calculate_path_length(
+                            trace * microns_per_voxel)
                         # Format: [Edge Index, Length] repeated for each point + None
                         # We only need to store it once per point.
                         # Note: customdata in 2D scatter must match length of x/y
@@ -311,7 +318,8 @@ class NetworkVisualizer:
                         showlegend=showlegend,
                         customdata=custom_data,
                         hovertemplate='Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>',
-                        legendgroup=str(gid) if color_by == 'strand_id' else None
+                        legendgroup=str(
+                            gid) if color_by == 'strand_id' else None
                     ))
 
                 # Add colorbar if applicable
@@ -335,7 +343,8 @@ class NetworkVisualizer:
                 # (... Reusing previous logic for small counts ...)
                 if color_by == 'depth':
                     depths = [
-                        np.mean(t[:, projection_axis]) * microns_per_voxel[projection_axis]
+                        np.mean(t[:, projection_axis]) *
+                        microns_per_voxel[projection_axis]
                         for t in valid_traces
                     ]
                     values = np.array(depths)
@@ -387,7 +396,8 @@ class NetworkVisualizer:
                     strand_ids = [-1] * len(valid_traces)
                     for sid, strand in enumerate(network.get('strands', [])):
                         for v0, v1 in zip(strand[:-1], strand[1:]):
-                            idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                            idx = pair_to_index.get(
+                                tuple(sorted((int(v0), int(v1)))))
                             if idx is not None:
                                 strand_ids[idx] = sid
                     colors = px.colors.qualitative.Set3
@@ -438,13 +448,14 @@ class NetworkVisualizer:
         if show_vertices and len(vertex_positions) > 0:
             x_coords = vertex_positions[:, x_axis] * microns_per_voxel[x_axis]
             y_coords = vertex_positions[:, y_axis] * microns_per_voxel[y_axis]
-            
+
             # Color vertices
             if color_by == 'energy':
                 colors = vertex_energies
                 colorscale = 'RdBu_r'
             elif color_by == 'depth':
-                colors = vertex_positions[:, projection_axis] * microns_per_voxel[projection_axis]
+                colors = vertex_positions[:, projection_axis] * \
+                    microns_per_voxel[projection_axis]
                 colorscale = 'Viridis'
             elif color_by == 'radius':
                 colors = vertex_radii
@@ -455,19 +466,21 @@ class NetworkVisualizer:
             else:
                 colors = 'red'
                 colorscale = None
-            
-            edge_colorbar = show_edges and edge_traces and color_by in {'depth', 'energy', 'radius', 'length'}
+
+            edge_colorbar = show_edges and edge_traces and color_by in {
+                'depth', 'energy', 'radius', 'length'}
             marker_dict = dict(
                 size=8,
                 color=colors,
                 colorscale=colorscale,
                 showscale=True if colorscale and not edge_colorbar else False,
                 colorbar=(
-                    dict(title=color_by.title()) if colorscale and not edge_colorbar else None
+                    dict(title=color_by.title()
+                         ) if colorscale and not edge_colorbar else None
                 ),
                 line=dict(width=1, color='black')
             )
-            
+
             fig.add_trace(go.Scatter(
                 x=x_coords, y=y_coords,
                 mode='markers',
@@ -476,13 +489,13 @@ class NetworkVisualizer:
                 hovertemplate='Vertex<br>Energy: %{customdata[0]:.3f}<br>Radius: %{customdata[1]:.2f} μm<extra></extra>',
                 customdata=np.column_stack([vertex_energies, vertex_radii])
             ))
-        
+
         # Highlight bifurcations
         if show_bifurcations and len(bifurcations) > 0:
             bif_positions = vertex_positions[bifurcations]
             x_coords = bif_positions[:, x_axis] * microns_per_voxel[x_axis]
             y_coords = bif_positions[:, y_axis] * microns_per_voxel[y_axis]
-            
+
             fig.add_trace(go.Scatter(
                 x=x_coords, y=y_coords,
                 mode='markers',
@@ -495,7 +508,7 @@ class NetworkVisualizer:
                 name='Bifurcations',
                 hovertemplate='Bifurcation<extra></extra>'
             ))
-        
+
         # Update layout
         fig.update_layout(
             title=f"2D Vascular Network (Projection along {axis_names[projection_axis]})",
@@ -555,7 +568,8 @@ class NetworkVisualizer:
             2D Plotly figure showing network elements within the slice.
         """
 
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
         slice_min = center_in_microns - thickness_in_microns / 2.0
         slice_max = center_in_microns + thickness_in_microns / 2.0
 
@@ -591,7 +605,8 @@ class NetworkVisualizer:
         if show_edges and edge_traces:
             for i, trace in enumerate(edge_traces):
                 arr = np.asarray(trace) * microns_per_voxel
-                mask = (arr[:, axis] >= slice_min) & (arr[:, axis] <= slice_max)
+                mask = (arr[:, axis] >= slice_min) & (
+                    arr[:, axis] <= slice_max)
                 if np.count_nonzero(mask) < 2:
                     continue
 
@@ -601,50 +616,55 @@ class NetworkVisualizer:
                 # Determine color
                 # Determine color
                 if color_by == 'depth':
-                     # Compute global range if not already done
-                     if 'depth' not in self.color_schemes:
-                         # Should not happen as schemes are initialized in __init__
-                         pass
-                     
-                     # To properly map a single value, we need min/max of the whole set.
-                     # However, calculating it per edge is inefficient and technically valid if we assume
-                     # the user wants relative coloring. But with single element, it fails in _map_values_to_colors.
-                     # Better approach: map value using fixed range if we had one, or handle single value case.
-                     # Here we'll just fix the single-value mapping issue by checking vmin/vmax logic in _map.
-                     # But _map_values_to_colors takes an array. 
-                     # Let's use a workaround: pass [val, val] or fix _map...
-                     # The issue description says: "Collect all values... then map".
-                     # That requires two passes. 
-                     # Let's do a simple fix: use the slice bounds for depth? No, that's too narrow.
-                     # Let's use the whole network depth range.
-                     all_depths = vertices['positions'][:, axis] * microns_per_voxel[axis]
-                     vmin, vmax = np.min(all_depths), np.max(all_depths)
-                     depth = float(np.mean(arr[:, axis]))
-                     
-                     # Normalize manually
-                     if vmax > vmin:
-                         norm = (depth - vmin) / (vmax - vmin)
-                     else:
-                         norm = 0.5
-                     color = px.colors.sample_colorscale(self.color_schemes['depth'], norm)[0]
+                    # Compute global range if not already done
+                    if 'depth' not in self.color_schemes:
+                        # Should not happen as schemes are initialized in __init__
+                        pass
+
+                    # To properly map a single value, we need min/max of the whole set.
+                    # However, calculating it per edge is inefficient and technically valid if we assume
+                    # the user wants relative coloring. But with single element, it fails in _map_values_to_colors.
+                    # Better approach: map value using fixed range if we had one, or handle single value case.
+                    # Here we'll just fix the single-value mapping issue by checking vmin/vmax logic in _map.
+                    # But _map_values_to_colors takes an array.
+                    # Let's use a workaround: pass [val, val] or fix _map...
+                    # The issue description says: "Collect all values... then map".
+                    # That requires two passes.
+                    # Let's do a simple fix: use the slice bounds for depth? No, that's too narrow.
+                    # Let's use the whole network depth range.
+                    all_depths = vertices['positions'][:,
+                                                       axis] * microns_per_voxel[axis]
+                    vmin, vmax = np.min(all_depths), np.max(all_depths)
+                    depth = float(np.mean(arr[:, axis]))
+
+                    # Normalize manually
+                    if vmax > vmin:
+                        norm = (depth - vmin) / (vmax - vmin)
+                    else:
+                        norm = 0.5
+                    color = px.colors.sample_colorscale(
+                        self.color_schemes['depth'], norm)[0]
 
                 elif color_by == 'energy':
                     energies = edges.get('energies', [])
                     if len(energies) == len(edge_traces):
-                         # Get global range
-                         all_energies = np.array(energies)
-                         vmin, vmax = np.nanmin(all_energies), np.nanmax(all_energies)
-                         val = energies[i]
-                         if vmax > vmin:
-                             norm = (val - vmin) / (vmax - vmin)
-                         else:
-                             norm = 0.5
-                         color = px.colors.sample_colorscale(self.color_schemes['energy'], norm)[0]
+                        # Get global range
+                        all_energies = np.array(energies)
+                        vmin, vmax = np.nanmin(
+                            all_energies), np.nanmax(all_energies)
+                        val = energies[i]
+                        if vmax > vmin:
+                            norm = (val - vmin) / (vmax - vmin)
+                        else:
+                            norm = 0.5
+                        color = px.colors.sample_colorscale(
+                            self.color_schemes['energy'], norm)[0]
                     else:
                         color = 'blue'
                 elif color_by == 'radius':
                     connections = edges.get('connections', [])
-                    radii = vertices.get('radii_microns', vertices.get('radii', []))
+                    radii = vertices.get(
+                        'radii_microns', vertices.get('radii', []))
                     if (
                         len(connections) == len(edge_traces)
                         and len(radii) > 0
@@ -657,14 +677,15 @@ class NetworkVisualizer:
                             else r0
                         )
                         val = (r0 + r1) / 2.0
-                        
+
                         # Global range for radius
                         vmin, vmax = np.nanmin(radii), np.nanmax(radii)
                         if vmax > vmin:
-                             norm = (val - vmin) / (vmax - vmin)
+                            norm = (val - vmin) / (vmax - vmin)
                         else:
-                             norm = 0.5
-                        color = px.colors.sample_colorscale(self.color_schemes['radius'], norm)[0]
+                            norm = 0.5
+                        color = px.colors.sample_colorscale(
+                            self.color_schemes['radius'], norm)[0]
                     else:
                         color = 'blue'
                 elif color_by == 'strand_id':
@@ -691,13 +712,16 @@ class NetworkVisualizer:
 
         if show_vertices and len(vertices.get('positions', [])) > 0:
             positions = vertices['positions'] * microns_per_voxel
-            mask = (positions[:, axis] >= slice_min) & (positions[:, axis] <= slice_max)
+            mask = (positions[:, axis] >= slice_min) & (
+                positions[:, axis] <= slice_max)
             if np.any(mask):
                 x_coords = positions[mask, x_axis]
                 y_coords = positions[mask, y_axis]
                 vertex_energies = vertices['energies'][mask]
-                vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
-                vertex_radii = vertex_radii[mask] if len(vertex_radii) > 0 else []
+                vertex_radii = vertices.get(
+                    'radii_microns', vertices.get('radii', []))
+                vertex_radii = vertex_radii[mask] if len(
+                    vertex_radii) > 0 else []
 
                 if color_by == 'energy':
                     colors = self._map_values_to_colors(
@@ -793,7 +817,7 @@ class NetworkVisualizer:
             f"Creating 3D network plot with {color_by} coloring" +
             (f" and {opacity_by} opacity" if opacity_by else "")
         )
-        
+
         fig = go.Figure()
 
         vertex_positions = vertices['positions']
@@ -801,13 +825,15 @@ class NetworkVisualizer:
         vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
         edge_traces = edges['traces']
         bifurcations = network.get('bifurcations', [])
-        
+
         # Convert to physical units
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
 
         # Plot edges as 3D lines
         if show_edges and edge_traces:
-            valid_traces_indices = [i for i, t in enumerate(edge_traces) if len(t) >= 2]
+            valid_traces_indices = [
+                i for i, t in enumerate(edge_traces) if len(t) >= 2]
 
             # Pre-calculate strand IDs if needed
             strand_ids_map = {}
@@ -819,7 +845,8 @@ class NetworkVisualizer:
                 }
                 for sid, strand in enumerate(network.get('strands', [])):
                     for v0, v1 in zip(strand[:-1], strand[1:]):
-                        idx = pair_to_index.get(tuple(sorted((int(v0), int(v1)))))
+                        idx = pair_to_index.get(
+                            tuple(sorted((int(v0), int(v1)))))
                         if idx is not None:
                             strand_ids_map[idx] = sid
 
@@ -828,7 +855,7 @@ class NetworkVisualizer:
             y_all = []
             z_all = []
             color_values = []
-            custom_data = [] # [edge_index, length]
+            custom_data = []  # [edge_index, length]
 
             # Collect values for colorbar later
             edge_values_for_cbar = []
@@ -850,10 +877,11 @@ class NetworkVisualizer:
                 elif color_by == 'radius':
                     connections = edges.get('connections', [])
                     if i < len(connections):
-                         v0, v1 = connections[i]
-                         r0 = vertex_radii[int(v0)] if int(v0) >= 0 else 0
-                         r1 = vertex_radii[int(v1)] if int(v1) >= 0 and int(v1) < len(vertex_radii) else r0
-                         val = (r0 + r1) / 2.0
+                        v0, v1 = connections[i]
+                        r0 = vertex_radii[int(v0)] if int(v0) >= 0 else 0
+                        r1 = vertex_radii[int(v1)] if int(v1) >= 0 and int(
+                            v1) < len(vertex_radii) else r0
+                        val = (r0 + r1) / 2.0
                 elif color_by == 'length':
                     val = calculate_path_length(trace * microns_per_voxel)
                 elif color_by == 'strand_id':
@@ -895,7 +923,7 @@ class NetworkVisualizer:
             # Colorscale selection
             colorscale = self.color_schemes.get(color_by, 'Viridis')
             if color_by == 'strand_id':
-                 colorscale = 'Turbo'
+                colorscale = 'Turbo'
 
             fig.add_trace(go.Scatter3d(
                 x=x_all, y=y_all, z=z_all,
@@ -908,19 +936,20 @@ class NetworkVisualizer:
                 name='Edges',
                 customdata=custom_data,
                 hovertemplate='Edge %{customdata[0]}<br>Length: %{customdata[1]:.1f} μm<extra></extra>',
-                opacity=1.0 # Uniform opacity as merged trace doesn't support per-segment opacity easily
+                opacity=1.0  # Uniform opacity as merged trace doesn't support per-segment opacity easily
             ))
 
             # Add colorbar
             if color_by in {'depth', 'energy', 'radius', 'length'}:
-                 self._add_colorbar(fig, np.array(edge_values_for_cbar), colorscale, color_by.title(), is_3d=True)
-        
+                self._add_colorbar(fig, np.array(
+                    edge_values_for_cbar), colorscale, color_by.title(), is_3d=True)
+
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
             x_coords = vertex_positions[:, 1] * microns_per_voxel[1]  # X
             y_coords = vertex_positions[:, 0] * microns_per_voxel[0]  # Y
             z_coords = vertex_positions[:, 2] * microns_per_voxel[2]  # Z
-            
+
             # Color vertices
             if color_by == 'energy':
                 colors = vertex_energies
@@ -937,19 +966,21 @@ class NetworkVisualizer:
             else:
                 colors = 'red'
                 colorscale = None
-            
-            edge_colorbar = show_edges and edge_traces and color_by in {'depth', 'energy', 'radius', 'length'}
+
+            edge_colorbar = show_edges and edge_traces and color_by in {
+                'depth', 'energy', 'radius', 'length'}
             marker_dict = dict(
                 size=6,
                 color=colors,
                 colorscale=colorscale,
                 showscale=True if colorscale and not edge_colorbar else False,
                 colorbar=(
-                    dict(title=color_by.title()) if colorscale and not edge_colorbar else None
+                    dict(title=color_by.title()
+                         ) if colorscale and not edge_colorbar else None
                 ),
                 line=dict(width=1, color='black')
             )
-            
+
             fig.add_trace(go.Scatter3d(
                 x=x_coords, y=y_coords, z=z_coords,
                 mode='markers',
@@ -958,14 +989,14 @@ class NetworkVisualizer:
                 hovertemplate='Vertex<br>Energy: %{customdata[0]:.3f}<br>Radius: %{customdata[1]:.2f} μm<extra></extra>',
                 customdata=np.column_stack([vertex_energies, vertex_radii])
             ))
-        
+
         # Highlight bifurcations
         if show_bifurcations and len(bifurcations) > 0:
             bif_positions = vertex_positions[bifurcations]
             x_coords = bif_positions[:, 1] * microns_per_voxel[1]
             y_coords = bif_positions[:, 0] * microns_per_voxel[0]
             z_coords = bif_positions[:, 2] * microns_per_voxel[2]
-            
+
             fig.add_trace(go.Scatter3d(
                 x=x_coords, y=y_coords, z=z_coords,
                 mode='markers',
@@ -978,7 +1009,7 @@ class NetworkVisualizer:
                 name='Bifurcations',
                 hovertemplate='Bifurcation<extra></extra>'
             ))
-        
+
         # Update layout
         fig.update_layout(
             title="3D Vascular Network",
@@ -992,7 +1023,7 @@ class NetworkVisualizer:
             width=800,
             height=600
         )
-        
+
         return fig
 
     def animate_strands_3d(
@@ -1018,7 +1049,8 @@ class NetworkVisualizer:
         """
         logger.info("Creating 3D strand animation")
 
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
         vertex_positions = vertices.get('positions', np.empty((0, 3)))
 
         # Base figure with all vertices shown as reference
@@ -1061,7 +1093,8 @@ class NetworkVisualizer:
                         name=f'Strand {sid}',
                     )
                 )
-            frames.append(go.Frame(data=[vertex_scatter, *edge_traces], name=str(sid)))
+            frames.append(
+                go.Frame(data=[vertex_scatter, *edge_traces], name=str(sid)))
 
         fig = go.Figure(
             data=frames[0].data if frames else [vertex_scatter],
@@ -1072,7 +1105,8 @@ class NetworkVisualizer:
             dict(
                 label=str(i),
                 method='animate',
-                args=[[str(i)], {"frame": {"duration": 500, "redraw": True}, "mode": "immediate"}],
+                args=[[str(i)], {"frame": {"duration": 500,
+                                           "redraw": True}, "mode": "immediate"}],
             )
             for i in range(len(frames))
         ]
@@ -1090,10 +1124,12 @@ class NetworkVisualizer:
                 dict(
                     type='buttons',
                     showactive=False,
-                    buttons=[dict(label='Play', method='animate', args=[None])],
+                    buttons=[
+                        dict(label='Play', method='animate', args=[None])],
                 )
             ],
-            sliders=[dict(active=0, steps=steps, currentvalue={"prefix": "Strand: "})],
+            sliders=[dict(active=0, steps=steps, currentvalue={
+                          "prefix": "Strand: "})],
             width=800,
             height=600,
         )
@@ -1127,7 +1163,8 @@ class NetworkVisualizer:
         if not traces:
             return go.Figure()
 
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
 
         x, y, z, u, v, w = [], [], [], [], [], []
         for trace in traces:
@@ -1145,7 +1182,8 @@ class NetworkVisualizer:
             u.append(direction[1] * microns_per_voxel[1])
             w.append(direction[2] * microns_per_voxel[2])
 
-        cone = go.Cone(x=x, y=y, z=z, u=u, v=v, w=w, colorscale='Blues', showscale=False)
+        cone = go.Cone(x=x, y=y, z=z, u=u, v=v, w=w,
+                       colorscale='Blues', showscale=False)
         fig = go.Figure(data=[cone])
         fig.update_layout(
             title="Edge Flow Field",
@@ -1159,17 +1197,17 @@ class NetworkVisualizer:
         return fig
 
     def plot_energy_field(self, energy_data: Dict[str, Any], slice_axis: int = 2,
-                         slice_index: Optional[int] = None) -> go.Figure:
+                          slice_index: Optional[int] = None) -> go.Figure:
         """
         Visualize energy field as 2D slice
         """
         logger.info("Creating energy field visualization")
-        
+
         energy = energy_data['energy']
-        
+
         if slice_index is None:
             slice_index = energy.shape[slice_axis] // 2
-        
+
         # Extract slice
         if slice_axis == 0:  # Y slice
             energy_slice = energy[slice_index, :, :]
@@ -1180,14 +1218,14 @@ class NetworkVisualizer:
         else:  # Z slice
             energy_slice = energy[:, :, slice_index]
             x_label, y_label = "Y", "X"
-        
+
         fig = go.Figure(data=go.Heatmap(
             z=energy_slice,
             colorscale='RdBu_r',
             colorbar=dict(title="Energy"),
             hovertemplate=f'{x_label}: %{{x}}<br>{y_label}: %{{y}}<br>Energy: %{{z:.3f}}<extra></extra>'
         ))
-        
+
         fig.update_layout(
             title=f"Energy Field ({['Y', 'X', 'Z'][slice_axis]} slice at index {slice_index})",
             xaxis_title=f"{x_label} (voxels)",
@@ -1195,20 +1233,21 @@ class NetworkVisualizer:
             width=600,
             height=500
         )
-        
+
         return fig
-    
+
     def plot_strand_analysis(self, network: Dict[str, Any], vertices: Dict[str, Any],
-                           parameters: Dict[str, Any]) -> go.Figure:
+                             parameters: Dict[str, Any]) -> go.Figure:
         """
         Create strand length and connectivity analysis
         """
         logger.info("Creating strand analysis plot")
-        
+
         strands = network['strands']
         vertex_positions = vertices['positions']
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-        
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
+
         # Calculate strand lengths
         strand_lengths = []
         for strand in strands:
@@ -1219,13 +1258,14 @@ class NetworkVisualizer:
                     pos2 = vertex_positions[strand[i+1]] * microns_per_voxel
                     length += np.linalg.norm(pos2 - pos1)
                 strand_lengths.append(length)
-        
+
         if not strand_lengths:
             # Return empty plot if no strands
             fig = go.Figure()
-            fig.add_annotation(text="No strands found", x=0.5, y=0.5, showarrow=False)
+            fig.add_annotation(text="No strands found",
+                               x=0.5, y=0.5, showarrow=False)
             return fig
-        
+
         # Create histogram
         fig = go.Figure(data=go.Histogram(
             x=strand_lengths,
@@ -1233,16 +1273,16 @@ class NetworkVisualizer:
             name='Strand Lengths',
             hovertemplate='Length: %{x:.1f} μm<br>Count: %{y}<extra></extra>'
         ))
-        
+
         # Add statistics
         mean_length = np.mean(strand_lengths)
         median_length = np.median(strand_lengths)
-        
-        fig.add_vline(x=mean_length, line_dash="dash", line_color="red", 
-                     annotation_text=f"Mean: {mean_length:.1f} μm")
+
+        fig.add_vline(x=mean_length, line_dash="dash", line_color="red",
+                      annotation_text=f"Mean: {mean_length:.1f} μm")
         fig.add_vline(x=median_length, line_dash="dot", line_color="green",
-                     annotation_text=f"Median: {median_length:.1f} μm")
-        
+                      annotation_text=f"Median: {median_length:.1f} μm")
+
         fig.update_layout(
             title="Strand Length Distribution",
             xaxis_title="Length (μm)",
@@ -1251,27 +1291,28 @@ class NetworkVisualizer:
             width=600,
             height=400
         )
-        
+
         return fig
-    
+
     def plot_depth_statistics(self, vertices: Dict[str, Any], edges: Dict[str, Any],
-                            parameters: Dict[str, Any], n_bins: int = 10) -> go.Figure:
+                              parameters: Dict[str, Any], n_bins: int = 10) -> go.Figure:
         """
         Create depth-resolved statistics
         """
         logger.info("Creating depth statistics plot")
-        
+
         vertex_positions = vertices['positions']
         edge_traces = edges['traces']
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-        
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
+
         # Get Z coordinates (depth)
         vertex_depths = vertex_positions[:, 2] * microns_per_voxel[2]
-        
+
         # Calculate edge lengths per depth bin
         edge_depths = []
         edge_lengths = []
-        
+
         for trace in edge_traces:
             if len(trace) < 2:
                 continue
@@ -1280,78 +1321,81 @@ class NetworkVisualizer:
             length = calculate_path_length(trace * microns_per_voxel)
             edge_depths.append(depth)
             edge_lengths.append(length)
-        
+
         if not edge_depths:
             fig = go.Figure()
-            fig.add_annotation(text="No edges found", x=0.5, y=0.5, showarrow=False)
+            fig.add_annotation(text="No edges found", x=0.5,
+                               y=0.5, showarrow=False)
             return fig
-        
+
         # Create depth bins
         min_depth = min(min(vertex_depths), min(edge_depths))
         max_depth = max(max(vertex_depths), max(edge_depths))
         depth_bins = np.linspace(min_depth, max_depth, n_bins + 1)
         bin_centers = (depth_bins[:-1] + depth_bins[1:]) / 2
-        
+
         # Bin vertices
         vertex_counts, _ = np.histogram(vertex_depths, bins=depth_bins)
-        
+
         # Bin edge lengths
-        length_sums, _ = np.histogram(edge_depths, bins=depth_bins, weights=edge_lengths)
-        
+        length_sums, _ = np.histogram(
+            edge_depths, bins=depth_bins, weights=edge_lengths)
+
         # Create subplot
         fig = make_subplots(specs=[[{"secondary_y": True}]])
-        
+
         # Add vertex count
         fig.add_trace(
-            go.Bar(x=bin_centers, y=vertex_counts, name="Vertex Count", opacity=0.7),
+            go.Bar(x=bin_centers, y=vertex_counts,
+                   name="Vertex Count", opacity=0.7),
             secondary_y=False,
         )
-        
+
         # Add total length
         fig.add_trace(
-            go.Scatter(x=bin_centers, y=length_sums, name="Total Length", 
-                      mode='lines+markers', line=dict(color='red')),
+            go.Scatter(x=bin_centers, y=length_sums, name="Total Length",
+                       mode='lines+markers', line=dict(color='red')),
             secondary_y=True,
         )
-        
+
         # Update axes
         fig.update_xaxes(title_text="Depth (μm)")
         fig.update_yaxes(title_text="Vertex Count", secondary_y=False)
         fig.update_yaxes(title_text="Total Length (μm)", secondary_y=True)
-        
+
         fig.update_layout(
             title="Depth-Resolved Network Statistics",
             showlegend=True,
             width=700,
             height=400
         )
-        
+
         return fig
-    
+
     def plot_radius_distribution(self, vertices: Dict[str, Any]) -> go.Figure:
         """
         Create vessel radius distribution plot
         """
         logger.info("Creating radius distribution plot")
-        
+
         radii = vertices.get('radii_microns', vertices.get('radii', []))
-        
+
         fig = go.Figure(data=go.Histogram(
             x=radii,
             nbinsx=min(25, len(radii)),
             name='Vessel Radii',
             hovertemplate='Radius: %{x:.2f} μm<br>Count: %{y}<extra></extra>'
         ))
-        
+
         # Add statistics
         mean_radius = np.mean(radii)
         median_radius = np.median(radii)
-        
+
         fig.add_vline(x=mean_radius, line_dash="dash", line_color="red",
-                     annotation_text=f"Mean: {mean_radius:.2f} μm")
+                      annotation_text=f"Mean: {mean_radius:.2f} μm")
         fig.add_vline(x=median_radius, line_dash="dot", line_color="green",
-                     annotation_text=f"Median: {median_radius:.2f} μm")
-        
+                      annotation_text=f"Median: {median_radius:.2f} μm")
+
         fig.update_layout(
             title="Vessel Radius Distribution",
             xaxis_title="Radius (μm)",
@@ -1359,32 +1403,33 @@ class NetworkVisualizer:
             width=600,
             height=400
         )
-        
+
         return fig
-    
+
     def plot_degree_distribution(self, network: Dict[str, Any]) -> go.Figure:
         """
         Create vertex degree distribution plot
         """
         logger.info("Creating degree distribution plot")
-        
+
         vertex_degrees = network.get('vertex_degrees', [])
-        
+
         if len(vertex_degrees) == 0:
             fig = go.Figure()
-            fig.add_annotation(text="No degree data available", x=0.5, y=0.5, showarrow=False)
+            fig.add_annotation(text="No degree data available",
+                               x=0.5, y=0.5, showarrow=False)
             return fig
-        
+
         # Count degrees
         unique_degrees, counts = np.unique(vertex_degrees, return_counts=True)
-        
+
         fig = go.Figure(data=go.Bar(
             x=unique_degrees,
             y=counts,
             name='Degree Distribution',
             hovertemplate='Degree: %{x}<br>Count: %{y}<extra></extra>'
         ))
-        
+
         fig.update_layout(
             title="Vertex Degree Distribution",
             xaxis_title="Degree",
@@ -1392,41 +1437,43 @@ class NetworkVisualizer:
             width=500,
             height=400
         )
-        
+
         return fig
-    
+
     def create_summary_dashboard(self, processing_results: Dict[str, Any]) -> go.Figure:
         """
         Create comprehensive summary dashboard
         """
         logger.info("Creating summary dashboard")
-        
+
         vertices = processing_results['vertices']
         edges = processing_results['edges']
         network = processing_results['network']
         parameters = processing_results['parameters']
-        
+
         # Create subplots
         fig = make_subplots(
             rows=2, cols=2,
-            subplot_titles=('Network Overview', 'Strand Lengths', 'Radius Distribution', 'Depth Statistics'),
+            subplot_titles=('Network Overview', 'Strand Lengths',
+                            'Radius Distribution', 'Depth Statistics'),
             specs=[[{"type": "scatter"}, {"type": "histogram"}],
                    [{"type": "histogram"}, {"secondary_y": True}]]
         )
-        
+
         # Network overview (2D projection)
         vertex_positions = vertices['positions']
         if len(vertex_positions) > 0:
-            microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+            microns_per_voxel = parameters.get(
+                'microns_per_voxel', [1.0, 1.0, 1.0])
             x_coords = vertex_positions[:, 1] * microns_per_voxel[1]
             y_coords = vertex_positions[:, 0] * microns_per_voxel[0]
-            
+
             fig.add_trace(
                 go.Scatter(x=x_coords, y=y_coords, mode='markers',
-                          marker=dict(size=4, color='red'), name='Vertices'),
+                           marker=dict(size=4, color='red'), name='Vertices'),
                 row=1, col=1
             )
-        
+
         # Strand lengths
         strands = network['strands']
         strand_lengths = []
@@ -1434,17 +1481,20 @@ class NetworkVisualizer:
             if len(strand) > 1:
                 length = 0
                 for i in range(len(strand) - 1):
-                    pos1 = vertex_positions[strand[i]] * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-                    pos2 = vertex_positions[strand[i+1]] * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+                    pos1 = vertex_positions[strand[i]] * \
+                        parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+                    pos2 = vertex_positions[strand[i+1]] * \
+                        parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
                     length += np.linalg.norm(pos2 - pos1)
                 strand_lengths.append(length)
-        
+
         if strand_lengths:
             fig.add_trace(
-                go.Histogram(x=strand_lengths, nbinsx=15, name='Strand Lengths'),
+                go.Histogram(x=strand_lengths, nbinsx=15,
+                             name='Strand Lengths'),
                 row=1, col=2
             )
-        
+
         # Radius distribution
         radii = vertices.get('radii_microns', vertices.get('radii', []))
         if len(radii) > 0:
@@ -1452,47 +1502,49 @@ class NetworkVisualizer:
                 go.Histogram(x=radii, nbinsx=15, name='Radii'),
                 row=2, col=1
             )
-        
+
         # Depth statistics (simplified)
         if len(vertex_positions) > 0:
-            depths = vertex_positions[:, 2] * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])[2]
+            depths = vertex_positions[:, 2] * \
+                parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])[2]
             depth_counts, depth_bins = np.histogram(depths, bins=10)
             bin_centers = (depth_bins[:-1] + depth_bins[1:]) / 2
-            
+
             fig.add_trace(
-                go.Bar(x=bin_centers, y=depth_counts, name='Vertex Count by Depth'),
+                go.Bar(x=bin_centers, y=depth_counts,
+                       name='Vertex Count by Depth'),
                 row=2, col=2
             )
-        
+
         fig.update_layout(
             title="SLAVV Processing Summary Dashboard",
             showlegend=False,
             height=600,
             width=1000
         )
-        
+
         return fig
-    
-    def export_network_data(self, processing_results: Dict[str, Any], 
-                           output_path: str, format: str = 'csv') -> str:
+
+    def export_network_data(self, processing_results: Dict[str, Any],
+                            output_path: str, format: str = 'csv') -> str:
         """
         Export network data in various formats
-        
+
         Args:
             processing_results: Complete SLAVV processing results
             output_path: Output file path
             format: Export format ('csv', 'json', 'vmv', 'casx')
-        
+
         Returns:
             Path to exported file
         """
         logger.info(f"Exporting network data in {format} format")
-        
+
         vertices = processing_results['vertices']
         edges = processing_results['edges']
         network = processing_results['network']
         parameters = processing_results['parameters']
-        
+
         if format == 'csv':
             return self._export_csv(vertices, edges, network, parameters, output_path)
         elif format == 'json':
@@ -1506,12 +1558,12 @@ class NetworkVisualizer:
         else:
             raise ValueError(f"Unsupported export format: {format}")
 
-    def _export_csv(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
-                   network: Dict[str, Any], parameters: Dict[str, Any], 
-                   output_path: str) -> str:
+    def _export_csv(self, vertices: Dict[str, Any], edges: Dict[str, Any],
+                    network: Dict[str, Any], parameters: Dict[str, Any],
+                    output_path: str) -> str:
         """Export data as CSV files"""
         base_path = Path(output_path).with_suffix('')
-        
+
         # Export vertices
         vertex_df = pd.DataFrame({
             'vertex_id': range(len(vertices['positions'])),
@@ -1525,7 +1577,7 @@ class NetworkVisualizer:
         })
         vertex_path = f"{base_path}_vertices.csv"
         vertex_df.to_csv(vertex_path, index=False)
-        
+
         # Export edges
         edge_data = []
         for i, (trace, connection) in enumerate(
@@ -1533,8 +1585,9 @@ class NetworkVisualizer:
         ):
             start_vertex, end_vertex = connection
             trace = np.array(trace)
-            length = calculate_path_length(trace * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0]))
-            
+            length = calculate_path_length(
+                trace * parameters.get('microns_per_voxel', [1.0, 1.0, 1.0]))
+
             edge_data.append({
                 'edge_id': i,
                 'start_vertex': start_vertex,
@@ -1542,18 +1595,18 @@ class NetworkVisualizer:
                 'length': length,
                 'n_points': len(trace)
             })
-        
+
         edge_df = pd.DataFrame(edge_data)
         edge_path = f"{base_path}_edges.csv"
         edge_df.to_csv(edge_path, index=False)
-        
+
         logger.info(f"CSV export complete: {vertex_path}, {edge_path}")
         return vertex_path
-    
+
     def _export_json(self, processing_results: Dict[str, Any], output_path: str) -> str:
         """Export complete results as JSON"""
         import json
-        
+
         # Convert numpy arrays and other non-JSON-serializable types
         def convert_numpy(obj):
             if isinstance(obj, np.ndarray):
@@ -1572,17 +1625,18 @@ class NetworkVisualizer:
                 return [convert_numpy(item) for item in obj]
             else:
                 return obj
-        
+
         # Filter data to export only core network structures
         # Use whitelist to avoid massive volume data (like 'energy_data')
         whitelist = {'vertices', 'edges', 'network', 'parameters'}
-        data_to_export = {k: v for k, v in processing_results.items() if k in whitelist}
-        
+        data_to_export = {k: v for k,
+                          v in processing_results.items() if k in whitelist}
+
         json_data = convert_numpy(data_to_export)
-        
+
         with open(output_path, 'w') as f:
             json.dump(json_data, f, indent=2)
-        
+
         logger.info(f"JSON export complete: {output_path}")
         return output_path
     
@@ -1594,13 +1648,14 @@ class NetworkVisualizer:
         Note: Coordinates are transformed to (X, -Y, -Z) to match VessMorphoVis requirements.
         """
         # Prepare parameters
-        microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
+        microns_per_voxel = parameters.get(
+            'microns_per_voxel', [1.0, 1.0, 1.0])
         vertex_positions = vertices['positions']
         # Prioritize radii in microns, fall back to radii (which might be in pixels or microns depending on context,
         # usually radii_microns is explicit)
         vertex_radii = vertices.get('radii_microns', vertices.get('radii', []))
         if len(vertex_radii) == 0 and len(vertex_positions) > 0:
-             vertex_radii = np.ones(len(vertex_positions))
+            vertex_radii = np.ones(len(vertex_positions))
 
         # Build edge lookup map: (start, end) -> edge_index
         connection_to_edge_idx = {}
@@ -1617,7 +1672,7 @@ class NetworkVisualizer:
         # We will collect all unique points from the traces that make up the strands.
 
         vmv_points = []
-        point_to_idx = {} # (x_um, y_um, z_um) -> 1-based index
+        point_to_idx = {}  # (x_um, y_um, z_um) -> 1-based index
 
         def get_or_add_point(pos_um, radius_um):
             # pos_um is (x, y, z)
@@ -1626,7 +1681,7 @@ class NetworkVisualizer:
             if key in point_to_idx:
                 return point_to_idx[key]
             else:
-                idx = len(vmv_points) + 1 # 1-based indexing for VMV
+                idx = len(vmv_points) + 1  # 1-based indexing for VMV
                 vmv_points.append(list(pos_um) + [radius_um])
                 point_to_idx[key] = idx
                 return idx
@@ -1643,11 +1698,11 @@ class NetworkVisualizer:
             is_coord = False
             if isinstance(strand, np.ndarray):
                 if strand.ndim == 2 and strand.shape[1] >= 3:
-                     is_coord = True
+                    is_coord = True
                 elif strand.ndim == 1 and strand.dtype.kind == 'f' and len(strand) >= 3:
-                     # Handle single point or flattened coordinate array
-                     is_coord = True
-                     strand = strand.reshape(1, -1)
+                    # Handle single point or flattened coordinate array
+                    is_coord = True
+                    strand = strand.reshape(1, -1)
 
             if is_coord:
                 # Handle coordinate strands [y, x, z, r]
@@ -1656,7 +1711,7 @@ class NetworkVisualizer:
                     # Ensure pt is indexable (handles case where reshape failed or other weirdness)
                     if not isinstance(pt, (np.ndarray, list, tuple)):
                         continue
-                        
+
                     # Assume [y, x, z, r] layout based on inspection
                     pos_vox = pt[:3]
                     radius = pt[3] if len(pt) > 3 else 1.0
@@ -1668,41 +1723,41 @@ class NetworkVisualizer:
                         -pos_vox[0] * microns_per_voxel[0],     # -Y
                         -pos_vox[2] * microns_per_voxel[2]      # -Z
                     ])
-                    
+
                     pidx = get_or_add_point(pos_um, radius)
                     strand_point_indices.append(pidx)
             else:
                 # Handle index-based strands (list of vertex indices)
                 for i in range(len(strand) - 1):
                     u, v = int(strand[i]), int(strand[i+1])
-    
+
                     # Find edge connecting these vertices
                     edge_idx = connection_to_edge_idx.get((u, v))
                     if edge_idx is None:
                         continue
-    
+
                     trace = edges['traces'][edge_idx]
                     if trace is None or len(trace) == 0:
-                         continue
-    
+                        continue
+
                     trace_arr = np.array(trace)
-    
+
                     # Check direction: trace usually corresponds to connection[0]->connection[1]
                     # but we need to know if u->v matches that or is reversed.
                     # Use distance check to robustly determine direction.
                     pos_u = vertex_positions[u]
-    
+
                     d_start = np.linalg.norm(trace_arr[0] - pos_u)
                     d_end = np.linalg.norm(trace_arr[-1] - pos_u)
-    
+
                     if d_end < d_start:
                         # Trace is reversed relative to u->v (i.e. trace starts near v)
                         trace_arr = trace_arr[::-1]
-    
+
                     # Radii interpolation along the edge
                     r_u = vertex_radii[u] if u < len(vertex_radii) else 1.0
                     r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
-    
+
                     # Calculate cumulative length for interpolation
                     # SLAVV coords are (y, x, z)
                     diffs = np.diff(trace_arr, axis=0)
@@ -1711,17 +1766,17 @@ class NetworkVisualizer:
                     seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
                     cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
                     total_len = cum_lens[-1]
-    
+
                     if total_len > 1e-6:
                         r_interp = r_u + (r_v - r_u) * (cum_lens / total_len)
                     else:
                         r_interp = np.full(len(trace_arr), r_u)
-    
+
                     # Add points to VMV structure
                     # For the first segment in a strand, add all points.
                     # For subsequent segments, skip the first point (it matches the last point of the previous segment).
                     start_k = 0 if i == 0 else 1
-    
+
                     for k in range(start_k, len(trace_arr)):
                         pos_vox = trace_arr[k]
                         # Convert to physical units (X, -Y, -Z)
@@ -1732,7 +1787,7 @@ class NetworkVisualizer:
                             -pos_vox[0] * microns_per_voxel[0],     # -Y
                             -pos_vox[2] * microns_per_voxel[2]      # -Z
                         ])
-    
+
                         pidx = get_or_add_point(pos_um, r_interp[k])
                         strand_point_indices.append(pidx)
 
@@ -1745,60 +1800,82 @@ class NetworkVisualizer:
             f.write("$PARAM_BEGIN\n")
             f.write(f"NUM_VERTS\t{len(vmv_points)}\n")
             f.write(f"NUM_STRANDS\t{len(vmv_strands)}\n")
-            f.write(f"NUM_ATTRIB_PER_VERT\t4\n") # X, Y, Z, Radius
+            f.write(f"NUM_ATTRIB_PER_VERT\t4\n")  # X, Y, Z, Radius
             f.write("$PARAM_END\n\n")
-            
+
             # Vertices
             f.write("$VERT_LIST_BEGIN\n")
             for i, pt in enumerate(vmv_points):
                 # Format: index x y z r
-                f.write(f"{i+1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n")
+                f.write(
+                    f"{i+1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n")
             f.write("$VERT_LIST_END\n\n")
-            
+
             # Strands
             f.write("$STRANDS_LIST_BEGIN\n")
             for i, s in enumerate(vmv_strands):
                 # Format: strand_idx pt1 pt2 ...
                 pts_str = "\t".join(map(str, s))
                 f.write(f"{i+1}\t{pts_str}\n")
-            f.write("$STRANDS_LIST_END") # No newline at end to match some MATLAB writers, or newline is fine.
+            # No newline at end to match some MATLAB writers, or newline is fine.
+            f.write("$STRANDS_LIST_END")
 
         logger.info(f"VMV export complete: {output_path}")
         return output_path
-    
-    def _export_casx(self, vertices: Dict[str, Any], edges: Dict[str, Any], 
-                    network: Dict[str, Any], parameters: Dict[str, Any], 
-                    output_path: str) -> str:
+
+    def _export_casx(self, vertices: Dict[str, Any], edges: Dict[str, Any],
+                     network: Dict[str, Any], parameters: Dict[str, Any],
+                     output_path: str) -> str:
         """Export in CASX format"""
         with open(output_path, 'w') as f:
             f.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
             f.write("<CasX>\n")
 
             # Write parameters
-            microns_per_voxel = parameters.get('microns_per_voxel', [1.0, 1.0, 1.0])
-            mpv_str = " ".join(map(str, microns_per_voxel))
             f.write("  <Parameters>\n")
-            f.write(f"    <Parameter name=\"microns_per_voxel\" value=\"{mpv_str}\"/>\n")
+            for k, v in parameters.items():
+                if isinstance(v, (list, tuple, np.ndarray)):
+                    val_str = " ".join(map(str, v))
+                else:
+                    val_str = str(v)
+                f.write(f"    <Parameter name=\"{k}\" value=\"{val_str}\"/>\n")
+
+            # Ensure microns_per_voxel is written if not present
+            if 'microns_per_voxel' not in parameters:
+                microns_per_voxel = [1.0, 1.0, 1.0]
+                mpv_str = " ".join(map(str, microns_per_voxel))
+                f.write(
+                    f"    <Parameter name=\"microns_per_voxel\" value=\"{mpv_str}\"/>\n")
             f.write("  </Parameters>\n")
 
             f.write("  <Network>\n")
-            
+
             # Write vertices
             f.write("    <Vertices>\n")
             radii = vertices.get('radii_microns', vertices.get('radii', []))
+            energies = vertices.get('energies')
+            scales = vertices.get('scales')
+
             for i, (pos, radius) in enumerate(zip(vertices['positions'], radii)):
                 # Note: Coordinate swap x=pos[1], y=pos[0] to match legacy format
-                f.write(
-                    f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\"/>\n"
-                )
+                line = f"      <Vertex id=\"{i}\" x=\"{pos[1]:.3f}\" y=\"{pos[0]:.3f}\" z=\"{pos[2]:.3f}\" radius=\"{radius:.3f}\""
+
+                if energies is not None and i < len(energies):
+                    line += f" energy=\"{energies[i]:.3f}\""
+                if scales is not None and i < len(scales):
+                    line += f" scale=\"{scales[i]:.3f}\""
+
+                line += "/>\n"
+                f.write(line)
             f.write("    </Vertices>\n")
-            
+
             # Write edges
             f.write("    <Edges>\n")
             for i, connection in enumerate(edges['connections']):
                 start_vertex, end_vertex = connection
                 if start_vertex is not None and end_vertex is not None:
-                    f.write(f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n")
+                    f.write(
+                        f"      <Edge id=\"{i}\" start=\"{start_vertex}\" end=\"{end_vertex}\"/>\n")
             f.write("    </Edges>\n")
 
             # Write strands
@@ -1807,19 +1884,28 @@ class NetworkVisualizer:
                 if len(strand) > 0:
                     # Convert list of indices to space-separated string
                     strand_str = " ".join(map(str, strand))
-                    f.write(f"      <Strand id=\"{i}\">{strand_str}</Strand>\n")
+                    f.write(
+                        f"      <Strand id=\"{i}\">{strand_str}</Strand>\n")
             f.write("    </Strands>\n")
-            
+
+            # Write bifurcations
+            if 'bifurcations' in network and len(network['bifurcations']) > 0:
+                f.write("    <Bifurcations>\n")
+                for i, bif in enumerate(network['bifurcations']):
+                    f.write(
+                        f"      <Bifurcation id=\"{i}\" vertex_id=\"{bif}\"/>\n")
+                f.write("    </Bifurcations>\n")
+
             f.write("  </Network>\n")
             f.write("</CasX>\n")
-        
+
         logger.info(f"CASX export complete: {output_path}")
         return output_path
 
     def _sanitize_for_matlab(self, data: Any) -> Any:
         """
         Sanitize data structures for MATLAB export.
-        
+
         Recursively converts None to empty strings and ensures dictionaries
         have string keys.
         """
@@ -1843,7 +1929,8 @@ class NetworkVisualizer:
         try:
             from scipy.io import savemat
         except ImportError as e:
-            raise ImportError("scipy is required for MAT export. Please install scipy.") from e
+            raise ImportError(
+                "scipy is required for MAT export. Please install scipy.") from e
 
         data = {
             'vertices': {
