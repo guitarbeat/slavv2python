@@ -54,7 +54,11 @@ for %%P in ("%SCRIPT_DIR%\..") do set PROJECT_ROOT=%%~fP
 REM Change to Vectorization-Public directory for MATLAB
 set VECTORIZATION_DIR=%PROJECT_ROOT%\external\Vectorization-Public
 
-REM Create log file
+REM Ensure output directory exists before creating log file
+if not exist "%OUTPUT_DIR_ABS%" (
+    mkdir "%OUTPUT_DIR_ABS%"
+)
+
 set LOG_FILE=%OUTPUT_DIR_ABS%\matlab_run.log
 echo MATLAB CLI Run Log > "%LOG_FILE%"
 echo =================== >> "%LOG_FILE%"
