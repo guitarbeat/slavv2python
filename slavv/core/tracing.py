@@ -390,12 +390,12 @@ def trace_edge(
     current_dir = direction.copy()
 
     # Precompute for optimized gradient calc
-    inv_mpv_2x = 1.0 / (2.0 * microns_per_voxel)
+    inverse_microns_per_voxel_2x = 1.0 / (2.0 * microns_per_voxel)
 
-    p0 = int(math.floor(current_pos[0]))
-    p1 = int(math.floor(current_pos[1]))
-    p2 = int(math.floor(current_pos[2]))
-    prev_energy = energy[p0, p1, p2]
+    pos_y = int(math.floor(current_pos[0]))
+    pos_x = int(math.floor(current_pos[1]))
+    pos_z = int(math.floor(current_pos[2]))
+    prev_energy = energy[pos_y, pos_x, pos_z]
 
     for _ in range(max_steps):
         attempt = 0
@@ -413,10 +413,10 @@ def trace_edge(
                 next_pos[2] < 0 or next_pos[2] >= energy.shape[2]):
                 return trace
 
-            p0 = int(math.floor(next_pos[0]))
-            p1 = int(math.floor(next_pos[1]))
-            p2 = int(math.floor(next_pos[2]))
-            current_energy = energy[p0, p1, p2]
+            pos_y = int(math.floor(next_pos[0]))
+            pos_x = int(math.floor(next_pos[1]))
+            pos_z = int(math.floor(next_pos[2]))
+            current_energy = energy[pos_y, pos_x, pos_z]
 
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
                 energy_sign > 0 and current_energy < max_edge_energy
@@ -439,45 +439,45 @@ def trace_edge(
         # Optimized gradient computation:
         # Avoids wrapper overhead by calling implementation directly.
         # Use scalar args to avoid allocating arrays
-        p0 = int(round(current_pos[0]))
-        p1 = int(round(current_pos[1]))
-        p2 = int(round(current_pos[2]))
+        pos_y = int(round(current_pos[0]))
+        pos_x = int(round(current_pos[1]))
+        pos_z = int(round(current_pos[2]))
 
         # Inline gradient computation to avoid function call and allocation
         # Manual clamping
-        gp0 = p0
-        if gp0 < 1: gp0 = 1
-        elif gp0 > energy.shape[0] - 2: gp0 = energy.shape[0] - 2
+        grad_pos_y = pos_y
+        if grad_pos_y < 1: grad_pos_y = 1
+        elif grad_pos_y > energy.shape[0] - 2: grad_pos_y = energy.shape[0] - 2
 
-        gp1 = p1
-        if gp1 < 1: gp1 = 1
-        elif gp1 > energy.shape[1] - 2: gp1 = energy.shape[1] - 2
+        grad_pos_x = pos_x
+        if grad_pos_x < 1: grad_pos_x = 1
+        elif grad_pos_x > energy.shape[1] - 2: grad_pos_x = energy.shape[1] - 2
 
-        gp2 = p2
-        if gp2 < 1: gp2 = 1
-        elif gp2 > energy.shape[2] - 2: gp2 = energy.shape[2] - 2
+        grad_pos_z = pos_z
+        if grad_pos_z < 1: grad_pos_z = 1
+        elif grad_pos_z > energy.shape[2] - 2: grad_pos_z = energy.shape[2] - 2
 
         # Compute gradient components
-        g0 = (energy[gp0+1, gp1, gp2] - energy[gp0-1, gp1, gp2]) * inv_mpv_2x[0]
-        g1 = (energy[gp0, gp1+1, gp2] - energy[gp0, gp1-1, gp2]) * inv_mpv_2x[1]
-        g2 = (energy[gp0, gp1, gp2+1] - energy[gp0, gp1, gp2-1]) * inv_mpv_2x[2]
+        grad_y = (energy[grad_pos_y+1, grad_pos_x, grad_pos_z] - energy[grad_pos_y-1, grad_pos_x, grad_pos_z]) * inverse_microns_per_voxel_2x[0]
+        grad_x = (energy[grad_pos_y, grad_pos_x+1, grad_pos_z] - energy[grad_pos_y, grad_pos_x-1, grad_pos_z]) * inverse_microns_per_voxel_2x[1]
+        grad_z = (energy[grad_pos_y, grad_pos_x, grad_pos_z+1] - energy[grad_pos_y, grad_pos_x, grad_pos_z-1]) * inverse_microns_per_voxel_2x[2]
 
         # Manual norm
-        grad_norm = math.sqrt(g0**2 + g1**2 + g2**2)
+        grad_norm = math.sqrt(grad_y**2 + grad_x**2 + grad_z**2)
 
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
-            dot_prod = g0*current_dir[0] + g1*current_dir[1] + g2*current_dir[2]
+            dot_prod = grad_y*current_dir[0] + grad_x*current_dir[1] + grad_z*current_dir[2]
 
-            perp_grad0 = g0 - current_dir[0] * dot_prod
-            perp_grad1 = g1 - current_dir[1] * dot_prod
-            perp_grad2 = g2 - current_dir[2] * dot_prod
+            perp_grad_y = grad_y - current_dir[0] * dot_prod
+            perp_grad_x = grad_x - current_dir[1] * dot_prod
+            perp_grad_z = grad_z - current_dir[2] * dot_prod
 
             # Steer along ridge by opposing gradient direction
             sign = 1.0 if energy_sign >= 0 else -1.0
-            current_dir[0] = current_dir[0] - sign * perp_grad0
-            current_dir[1] = current_dir[1] - sign * perp_grad1
-            current_dir[2] = current_dir[2] - sign * perp_grad2
+            current_dir[0] = current_dir[0] - sign * perp_grad_y
+            current_dir[1] = current_dir[1] - sign * perp_grad_x
+            current_dir[2] = current_dir[2] - sign * perp_grad_z
 
             norm = math.sqrt(current_dir[0]**2 + current_dir[1]**2 + current_dir[2]**2)
             if norm > 1e-12:

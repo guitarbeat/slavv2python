@@ -106,11 +106,11 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
         Dataclass containing the ``vertices`` and ``edges`` arrays loaded
         from the file. Missing arrays default to empty arrays.
     """
-    data: Dict[str, Any] = loadmat(
+    matlab_data_dict: Dict[str, Any] = loadmat(
         Path(path), squeeze_me=True, struct_as_record=False
     )
 
-    v_struct = data.get("vertices")
+    v_struct = matlab_data_dict.get("vertices")
     if hasattr(v_struct, "positions"):
         vertices = np.asarray(getattr(v_struct, "positions", []), dtype=float)
         radii = np.asarray(
@@ -119,9 +119,9 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
         )
     else:
         vertices = np.asarray(v_struct if v_struct is not None else [], dtype=float)
-        radii = np.asarray(data.get("radii", []), dtype=float)
+        radii = np.asarray(matlab_data_dict.get("radii", []), dtype=float)
 
-    e_struct = data.get("edges")
+    e_struct = matlab_data_dict.get("edges")
     if hasattr(e_struct, "connections"):
         edges = np.atleast_2d(np.asarray(e_struct.connections, dtype=int))
     else:
