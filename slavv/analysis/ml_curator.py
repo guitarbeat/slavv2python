@@ -55,14 +55,19 @@ class MLCurator:
         - Local neighborhood properties
         - Spatial position features
         """
-        positions = vertices['positions']
-        energies = vertices['energies']
-        scales = vertices['scales']
-        radii = vertices.get('radii_pixels', vertices.get('radii', []))
+        positions = np.asarray(vertices['positions'])
+        energies = np.asarray(vertices['energies'])
+        scales = np.asarray(vertices['scales'])
+        radii = np.asarray(vertices.get('radii_pixels', vertices.get('radii', [])))
         energy_field = energy_data['energy']
         
         n_vertices = len(positions)
         features = []
+        
+        # Pre-compute center and normalization constants (cache for all vertices)
+        center = np.array(image_shape) / 2
+        center_norm = np.linalg.norm(center)
+        image_shape_arr = np.array(image_shape)
         
         for i in range(n_vertices):
             pos = positions[i]
@@ -80,14 +85,13 @@ class MLCurator:
             
             # Spatial features (normalized by image dimensions)
             vertex_features.extend([
-                pos[0] / image_shape[0],  # Normalized Y position
-                pos[1] / image_shape[1],  # Normalized X position
-                pos[2] / image_shape[2],  # Normalized Z position
+                pos[0] / image_shape_arr[0],  # Normalized Y position
+                pos[1] / image_shape_arr[1],  # Normalized X position
+                pos[2] / image_shape_arr[2],  # Normalized Z position
             ])
             
-            # Distance from image center
-            center = np.array(image_shape) / 2
-            dist_from_center = np.linalg.norm(pos - center) / np.linalg.norm(center)
+            # Distance from image center (use pre-computed center and norm)
+            dist_from_center = np.linalg.norm(pos - center) / center_norm
             vertex_features.append(dist_from_center)
             
             # Local energy statistics
@@ -183,15 +187,23 @@ class MLCurator:
                 len(trace),  # Number of points in trace
             ]
             
-            # Energy statistics along edge
+            # Energy statistics along edge (vectorized)
             try:
-                edge_energies = []
-                for point in trace:
-                    pos = point.astype(int)
-                    if self._in_bounds(pos, energy_field.shape):
-                        edge_energies.append(energy_field[tuple(pos)])
+                # Convert trace to integer coordinates all at once
+                trace_int = trace.astype(int)
                 
-                if edge_energies:
+                # Create mask for valid indices
+                valid_mask = (
+                    (trace_int[:, 0] >= 0) & (trace_int[:, 0] < energy_field.shape[0]) &
+                    (trace_int[:, 1] >= 0) & (trace_int[:, 1] < energy_field.shape[1]) &
+                    (trace_int[:, 2] >= 0) & (trace_int[:, 2] < energy_field.shape[2])
+                )
+                
+                if np.any(valid_mask):
+                    # Vectorized energy sampling using advanced indexing
+                    valid_coords = trace_int[valid_mask]
+                    edge_energies = energy_field[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
+                    
                     edge_features.extend([
                         np.mean(edge_energies),
                         np.std(edge_energies),

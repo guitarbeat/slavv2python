@@ -385,9 +385,11 @@ def trace_edge(
     max_search_radius: float = 0.0,
 ) -> List[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""
-    trace = [start_pos.copy()]
+    # Build trace as a list, we'll convert to array once if needed
+    # Start with copy since we need to preserve the original start_pos
     current_pos = start_pos.copy()
     current_dir = direction.copy()
+    trace = [current_pos.copy()]  # Only copy for the initial position
 
     # Precompute for optimized gradient calc
     inv_mpv_2x = 1.0 / (2.0 * microns_per_voxel)
@@ -432,8 +434,9 @@ def trace_edge(
                 continue
             break
 
+        # Store position - copy to avoid aliasing issues with current_pos updates
         trace.append(next_pos.copy())
-        current_pos = next_pos.copy()
+        current_pos = next_pos  # Reuse next_pos instead of copying
         prev_energy = current_energy
 
         # Optimized gradient computation:

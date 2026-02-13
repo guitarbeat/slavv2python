@@ -43,14 +43,26 @@ def calculate_branching_angles(
         vecs = [vec for vec in directions[v] if np.linalg.norm(vec) > 0]
         if len(vecs) < 2:
             continue
-        for i in range(len(vecs)):
-            for j in range(i + 1, len(vecs)):
-                u = vecs[i]
-                w = vecs[j]
-                nu = np.linalg.norm(u)
-                nw = np.linalg.norm(w)
-                if nu == 0 or nw == 0:
-                    continue
+        
+        # Pre-compute all norms for this vertex's vectors (vectorized)
+        vecs_array = np.array(vecs)
+        norms = np.linalg.norm(vecs_array, axis=1)
+        
+        # Filter out zero-norm vectors
+        valid_mask = norms > 0
+        vecs_array = vecs_array[valid_mask]
+        norms = norms[valid_mask]
+        
+        if len(vecs_array) < 2:
+            continue
+        
+        # Compute pairwise angles using vectorized operations
+        for i in range(len(vecs_array)):
+            for j in range(i + 1, len(vecs_array)):
+                u = vecs_array[i]
+                w = vecs_array[j]
+                nu = norms[i]
+                nw = norms[j]
                 cosang = np.clip(np.dot(u, w) / (nu * nw), -1.0, 1.0)
                 angles.append(float(np.degrees(np.arccos(cosang))))
 
@@ -67,14 +79,23 @@ def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarra
     for strand in strands:
         if len(strand) < 2:
             continue
-        for i in range(len(strand) - 1):
-            v1 = strand[i]
-            v2 = strand[i + 1]
-            pos1 = vertex_positions[v1] * scale
-            pos2 = vertex_positions[v2] * scale
-            length = np.linalg.norm(pos2 - pos1)
-            radius = 0.5 * (radii[v1] + radii[v2])
-            total_area += 2 * np.pi * radius * length
+        
+        # Vectorize the inner loop - process all edges in strand at once
+        strand_arr = np.array(strand)
+        v1_indices = strand_arr[:-1]
+        v2_indices = strand_arr[1:]
+        
+        # Get all positions and radii at once using advanced indexing
+        pos1 = vertex_positions[v1_indices] * scale
+        pos2 = vertex_positions[v2_indices] * scale
+        r1 = radii[v1_indices]
+        r2 = radii[v2_indices]
+        
+        # Vectorized length and area calculations
+        lengths = np.linalg.norm(pos2 - pos1, axis=1)
+        avg_radii = 0.5 * (r1 + r2)
+        strand_area = np.sum(2 * np.pi * avg_radii * lengths)
+        total_area += strand_area
 
     return float(total_area)
 
@@ -89,14 +110,23 @@ def calculate_vessel_volume(strands: List[List[int]], vertex_positions: np.ndarr
     for strand in strands:
         if len(strand) < 2:
             continue
-        for i in range(len(strand) - 1):
-            v1 = strand[i]
-            v2 = strand[i + 1]
-            pos1 = vertex_positions[v1] * scale
-            pos2 = vertex_positions[v2] * scale
-            length = np.linalg.norm(pos2 - pos1)
-            radius = 0.5 * (radii[v1] + radii[v2])
-            total_volume += np.pi * radius**2 * length
+        
+        # Vectorize the inner loop - process all edges in strand at once
+        strand_arr = np.array(strand)
+        v1_indices = strand_arr[:-1]
+        v2_indices = strand_arr[1:]
+        
+        # Get all positions and radii at once using advanced indexing
+        pos1 = vertex_positions[v1_indices] * scale
+        pos2 = vertex_positions[v2_indices] * scale
+        r1 = radii[v1_indices]
+        r2 = radii[v2_indices]
+        
+        # Vectorized length and volume calculations
+        lengths = np.linalg.norm(pos2 - pos1, axis=1)
+        avg_radii = 0.5 * (r1 + r2)
+        strand_volume = np.sum(np.pi * avg_radii**2 * lengths)
+        total_volume += strand_volume
 
     return float(total_volume)
 
