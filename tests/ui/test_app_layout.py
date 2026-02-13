@@ -5,9 +5,6 @@ st = pytest.importorskip("streamlit")
 
 
 def test_app_sets_wide_layout(monkeypatch):
-    repo_root = pathlib.Path(__file__).resolve().parents[1]
-    sys.path.append(str(repo_root))
-
     called = {}
 
     def fake_config(**kwargs):

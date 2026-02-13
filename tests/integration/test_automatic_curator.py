@@ -1,13 +1,6 @@
-import pathlib
-import sys
-
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-try:
-    from slavv.ml_curator import AutomaticCurator
-except ImportError:
-    from source.slavv.analysis import AutomaticCurator
+from slavv.analysis.ml_curator import AutomaticCurator
 
 
 def test_automatic_vertex_curation_filters_low_energy_vertices():

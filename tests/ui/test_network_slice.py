@@ -1,9 +1,6 @@
-import pathlib
-import sys
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-from source.slavv.visualization import NetworkVisualizer
+from slavv.visualization import NetworkVisualizer
 
 
 def test_plot_network_slice_filters_edges_and_vertices():

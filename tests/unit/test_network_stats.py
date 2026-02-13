@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-from slavv.geometry import (
+from slavv.analysis.geometry import (
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,

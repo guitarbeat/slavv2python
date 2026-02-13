@@ -1,12 +1,6 @@
-import pathlib
-import sys
 import numpy as np
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-try:
-    from slavv.visualization import NetworkVisualizer
-except ImportError:
-    from source.slavv.visualization import NetworkVisualizer
+from slavv.visualization import NetworkVisualizer
 
 
 def build_sample_network():
