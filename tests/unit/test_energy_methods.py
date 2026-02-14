@@ -1,11 +1,7 @@
 """Consolidated tests for alternative energy methods (Frangi/Sato)."""
 import numpy as np
 import pytest
-<<<<<<< HEAD
-from slavv.core import SLAVVProcessor
-=======
 from slavv.core.pipeline import SLAVVProcessor
->>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 @pytest.mark.parametrize("method", ["frangi", "sato"])
