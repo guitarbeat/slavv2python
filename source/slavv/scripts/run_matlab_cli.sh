@@ -1,6 +1,7 @@
 #!/bin/bash
-INPUT_FILE="$1"
-OUTPUT_DIR="$2"
+# Escape single quotes to prevent MATLAB command injection
+INPUT_FILE="${1//\'/\'\'}"
+OUTPUT_DIR="${2//\'/\'\'}"
 MATLAB_EXE="$3"
 
 echo "Running MATLAB..."
