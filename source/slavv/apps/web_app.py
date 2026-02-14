@@ -10,6 +10,9 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
 
+import tempfile
+import os
+
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
@@ -104,6 +107,45 @@ def cached_process_image(image, params, _progress_callback=None):
 def cached_load_tiff_volume(file):
     """Cached wrapper for load_tiff_volume."""
     return load_tiff_volume(file)
+
+
+@st.cache_data(show_spinner="Preparing download...")
+def get_export_data(_visualizer, results, format_type):
+    """Cached wrapper for export_network_data."""
+    if format_type == 'csv':
+        import zipfile
+        # Create a temp directory for CSV generation
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_path = os.path.join(tmp_dir, "network")
+            # This generates network_vertices.csv and network_edges.csv
+            _visualizer.export_network_data(results, f"{base_path}.csv", format='csv')
+
+            # Create a zip file containing the CSVs
+            zip_path = os.path.join(tmp_dir, "network_csv.zip")
+            with zipfile.ZipFile(zip_path, 'w') as zf:
+                for f in os.listdir(tmp_dir):
+                    if f.endswith('.csv'):
+                        zf.write(os.path.join(tmp_dir, f), arcname=f)
+
+            with open(zip_path, "rb") as f:
+                return f.read()
+    else:
+        # Create a temporary file to store the export
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{format_type}") as tmp:
+            tmp_path = tmp.name
+
+        try:
+            # Generate the export file
+            path = _visualizer.export_network_data(results, tmp_path, format=format_type)
+
+            # Read the file content
+            with open(path, "rb") as f:
+                data = f.read()
+            return data
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
 
 
 def main():
@@ -936,17 +978,40 @@ def show_visualization_page():
     
     col1, col2, col3 = st.columns(3, gap="medium")
     
+    results = st.session_state.get("processing_results")
+
     with col1:
-        if st.button("📄 Export VMV", width=150):
-            st.success("✅ VMV file exported. (MATLAB: SpecialOutput=\'vmv\')")
+        if results:
+            vmv_data = get_export_data(visualizer, results, 'vmv')
+            st.download_button(
+                label="📄 Download VMV",
+                data=vmv_data,
+                file_name="network.vmv",
+                mime="text/plain",
+                help="Download network in VMV format (MATLAB: SpecialOutput='vmv')"
+            )
     
     with col2:
-        if st.button("📄 Export CASX", width=150):
-            st.success("✅ CASX file exported. (MATLAB: SpecialOutput=\'casX\')")
+        if results:
+            casx_data = get_export_data(visualizer, results, 'casx')
+            st.download_button(
+                label="📄 Download CASX",
+                data=casx_data,
+                file_name="network.casx",
+                mime="application/xml",
+                help="Download network in CASX format (MATLAB: SpecialOutput='casX')"
+            )
     
     with col3:
-        if st.button("📊 Export CSV", width=150):
-            st.success("✅ CSV data exported. (Custom Python export)")
+        if results:
+            csv_data = get_export_data(visualizer, results, 'csv')
+            st.download_button(
+                label="📊 Download CSV (Zip)",
+                data=csv_data,
+                file_name="network_csv.zip",
+                mime="application/zip",
+                help="Download network data as zipped CSV files"
+            )
 
 def show_analysis_page():
     """Display the analysis page"""
