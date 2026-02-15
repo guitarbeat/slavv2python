@@ -508,7 +508,21 @@ def trace_edge(
 
         # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
         if vertex_image is not None:
-            terminal_vertex_idx = vertex_at_position(current_pos_arr, vertex_image)
+            # OPTIMIZATION: Inlined vertex_at_position to avoid function call and numpy overhead
+            # vertex_at_position uses np.floor, so we use math.floor here to match logic
+            vi_y = int(math.floor(current_pos_y))
+            vi_x = int(math.floor(current_pos_x))
+            vi_z = int(math.floor(current_pos_z))
+
+            # Bounds check is implicitly handled because (current_pos_y, x, z) are
+            # constrained to be within energy.shape, and vertex_image has the same shape.
+            # See loop bounds check above.
+
+            v_id = vertex_image[vi_y, vi_x, vi_z]
+            if v_id > 0:
+                terminal_vertex_idx = int(v_id - 1)
+            else:
+                terminal_vertex_idx = None
         else:
             terminal_vertex_idx = near_vertex(
                 current_pos_arr, vertex_positions, vertex_scales,
