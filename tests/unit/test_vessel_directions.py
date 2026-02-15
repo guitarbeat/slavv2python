@@ -1,16 +1,6 @@
 import numpy as np
-<<<<<<< HEAD
-
-# Add source path for imports
-sys.path.append(
-    str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src')
-)
-
-from slavv.core import SLAVVProcessor
-=======
 from slavv.core.pipeline import SLAVVProcessor
 from unittest.mock import patch
->>>>>>> 02551966425602193b36f418552db1552ddb39ea
 
 
 def test_estimate_vessel_directions_axis_aligned():

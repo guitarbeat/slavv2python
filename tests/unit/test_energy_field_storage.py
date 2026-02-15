@@ -3,11 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-<<<<<<< HEAD
-from slavv.core import SLAVVProcessor
-=======
 from slavv.core.pipeline import SLAVVProcessor
->>>>>>> 02551966425602193b36f418552db1552ddb39ea
 from slavv.utils import validate_parameters
 
 
