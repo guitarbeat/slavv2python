@@ -3,6 +3,11 @@ INPUT_FILE="$1"
 OUTPUT_DIR="$2"
 MATLAB_EXE="$3"
 
+# Escape single quotes for MATLAB strings
+# Replaces ' with '' to prevent code injection
+INPUT_FILE="${INPUT_FILE//\'/\'\'}"
+OUTPUT_DIR="${OUTPUT_DIR//\'/\'\'}"
+
 echo "Running MATLAB..."
 echo "Input: $INPUT_FILE"
 echo "Output: $OUTPUT_DIR"
