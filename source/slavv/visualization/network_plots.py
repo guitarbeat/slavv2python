@@ -851,74 +851,78 @@ class NetworkVisualizer:
                             strand_ids_map[idx] = sid
 
             # Arrays to hold merged data
-            x_all = []
-            y_all = []
-            z_all = []
-            color_values = []
-            custom_data = []  # [edge_index, length]
+            # Use lists of arrays for efficient concatenation
+            traces_xyz_list = []
+            color_values_list = []
+            custom_data_list = []
 
             # Collect values for colorbar later
             edge_values_for_cbar = []
 
-            # Prepare value for each edge first
-            edge_val_map = {}
+            # Loop to build arrays and determine values
+            for idx in valid_traces_indices:
+                trace = np.array(edge_traces[idx])
 
-            # Determine values for coloring
-            for i in valid_traces_indices:
-                trace = np.array(edge_traces[i])
+                # Optimized scaling: (y, x, z) -> (x, y, z) in microns
+                scaled_trace = trace * microns_per_voxel
+                xyz_trace = scaled_trace[:, [1, 0, 2]]
+
+                # Calculate length once
+                length = calculate_path_length(scaled_trace)
 
                 # Value calculation
                 val = 0.0
                 if color_by == 'depth':
-                    val = np.mean(trace[:, 2] * microns_per_voxel[2])
+                    val = np.mean(scaled_trace[:, 2])
                 elif color_by == 'energy':
                     energies = edges.get('energies', [])
-                    val = energies[i] if i < len(energies) else 0.0
+                    val = energies[idx] if idx < len(energies) else 0.0
                 elif color_by == 'radius':
                     connections = edges.get('connections', [])
-                    if i < len(connections):
-                        v0, v1 = connections[i]
+                    if idx < len(connections):
+                        v0, v1 = connections[idx]
                         r0 = vertex_radii[int(v0)] if int(v0) >= 0 else 0
                         r1 = vertex_radii[int(v1)] if int(v1) >= 0 and int(
                             v1) < len(vertex_radii) else r0
                         val = (r0 + r1) / 2.0
                 elif color_by == 'length':
-                    val = calculate_path_length(trace * microns_per_voxel)
+                    val = length
                 elif color_by == 'strand_id':
-                    val = strand_ids_map.get(i, -1)
+                    val = strand_ids_map.get(idx, -1)
 
-                edge_val_map[i] = val
                 edge_values_for_cbar.append(val)
 
-            # Note: opacity_by='depth' is disabled in optimized merged trace mode
-            # as per-segment opacity is not supported efficiently in a single go.Scatter3d trace.
+                # Append NaN separator to trace
+                # Create (N+1, 3) array
+                trace_with_nan = np.empty((len(xyz_trace) + 1, 3))
+                trace_with_nan[:-1] = xyz_trace
+                trace_with_nan[-1] = np.nan
+                traces_xyz_list.append(trace_with_nan)
 
-            # Loop to build arrays
-            for idx in valid_traces_indices:
-                trace = np.array(edge_traces[idx])
-                x = trace[:, 1] * microns_per_voxel[1]
-                y = trace[:, 0] * microns_per_voxel[0]
-                z = trace[:, 2] * microns_per_voxel[2]
+                # Color values
+                # Create (N+1,) array
+                vals = np.full(len(xyz_trace) + 1, val)
+                color_values_list.append(vals)
 
-                x_all.extend(x)
-                y_all.extend(y)
-                z_all.extend(z)
+                # Custom data [edge_index, length]
+                # Create (N+1, 2) array
+                cd = np.empty((len(xyz_trace) + 1, 2))
+                cd[:] = [idx, length]
+                custom_data_list.append(cd)
 
-                x_all.append(None)
-                y_all.append(None)
-                z_all.append(None)
+            # Concatenate all
+            if traces_xyz_list:
+                all_xyz = np.concatenate(traces_xyz_list)
+                x_all = all_xyz[:, 0]
+                y_all = all_xyz[:, 1]
+                z_all = all_xyz[:, 2]
 
-                val = edge_val_map[idx]
-                length = calculate_path_length(trace * microns_per_voxel)
-
-                # Repeat value for all points + None
-                color_values.extend([val] * (len(x) + 1))
-
-                # Custom data
-                # We can store [edge_index, length]
-                # Repeat for all points + None
-                cd = [[idx, length]] * (len(x) + 1)
-                custom_data.extend(cd)
+                color_values = np.concatenate(color_values_list)
+                custom_data = np.concatenate(custom_data_list)
+            else:
+                x_all, y_all, z_all = [], [], []
+                color_values = []
+                custom_data = []
 
             # Colorscale selection
             colorscale = self.color_schemes.get(color_by, 'Viridis')
