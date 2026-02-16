@@ -106,6 +106,26 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
+def navigate_to_processing():
+    """Navigate to the processing page"""
+    st.session_state["current_page"] = "⚙️ Image Processing"
+
+
+def render_empty_state(title="No Results Yet", message="Process an image to see results here."):
+    """Render a consistent empty state with call to action"""
+    st.markdown(f"""
+    <div style="text-align: center; padding: 3rem; background-color: #f8f9fa; border-radius: 0.5rem; margin: 2rem 0;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🎨</div>
+        <h3 style="color: #2c3e50; margin-bottom: 1rem;">{title}</h3>
+        <p style="color: #6c757d; font-size: 1.1rem; margin-bottom: 2rem;">{message}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.button("🚀 Go to Image Processing", on_click=navigate_to_processing, use_container_width=True)
+
+
 def main():
     """Main application function"""
     
@@ -123,7 +143,8 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Choose a page:",
-        ["🏠 Home", "⚙️ Image Processing", "🤖 ML Curation", "📊 Visualization", "📈 Analysis", "ℹ️ About"]
+        ["🏠 Home", "⚙️ Image Processing", "🤖 ML Curation", "📊 Visualization", "📈 Analysis", "ℹ️ About"],
+        key="current_page"
     )
     
     # Route to appropriate page
@@ -529,7 +550,7 @@ def show_ml_curation_page():
     st.markdown("<h2 class=\"section-header\">Machine Learning Curation</h2>", unsafe_allow_html=True)
     
     if "processing_results" not in st.session_state:
-        st.warning("⚠️ No processing results found. Please process an image first.")
+        render_empty_state()
         return
     
     st.markdown("""
@@ -825,7 +846,7 @@ def show_visualization_page():
     st.markdown("<h2 class=\"section-header\">Network Visualization</h2>", unsafe_allow_html=True)
     
     if "processing_results" not in st.session_state:
-        st.warning("⚠️ No processing results found. Please process an image first.")
+        render_empty_state()
         return
     
     st.markdown("""
@@ -954,7 +975,7 @@ def show_analysis_page():
     st.markdown("<h2 class=\"section-header\">Network Analysis</h2>", unsafe_allow_html=True)
     
     if "processing_results" not in st.session_state:
-        st.warning("⚠️ No processing results found. Please process an image first.")
+        render_empty_state()
         return
     
     st.markdown("""
@@ -1124,3 +1145,13 @@ def show_analysis_page():
             file_name="network_statistics.csv",
             mime="text/csv"
         )
+
+
+def show_about_page():
+    """Display the about page"""
+    st.markdown("<h2 class=\"section-header\">About SLAVV</h2>", unsafe_allow_html=True)
+    st.info("ℹ️ About page content is under development.")
+
+
+if __name__ == "__main__":
+    main()
