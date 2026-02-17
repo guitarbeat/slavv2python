@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from slavv.analysis import (
     resample_vectors,
     smooth_edge_traces,

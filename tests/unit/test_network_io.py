@@ -1,7 +1,6 @@
 """Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
 import json
 import numpy as np
-import pytest
 from pathlib import Path
 
 from slavv.io import (

@@ -281,9 +281,11 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> Dict[str, Any]:
     def merge_info(target, source):
         for k, v in source.items():
             if isinstance(v, np.ndarray):
-                if v.size > 0: target[k] = v
+                if v.size > 0:
+                    target[k] = v
             elif isinstance(v, list):
-                if v: target[k] = v
+                if v:
+                    target[k] = v
             elif v:
                 target[k] = v
 

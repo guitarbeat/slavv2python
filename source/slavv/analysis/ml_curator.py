@@ -157,7 +157,7 @@ class MLCurator:
         """
         edge_traces = edges['traces']
         edge_connections = edges['connections']
-        vertex_positions = vertices['positions']
+        vertices['positions']
         vertex_energies = vertices['energies']
         vertex_radii = vertices.get('radii_pixels', vertices.get('radii', []))
         energy_field = energy_data['energy']
@@ -327,7 +327,7 @@ class MLCurator:
         
         # Predictions for detailed metrics
         y_pred = self.vertex_classifier.predict(X_test)
-        y_pred_proba = self.vertex_classifier.predict_proba(X_test)[:, 1]
+        self.vertex_classifier.predict_proba(X_test)[:, 1]
         
         results = {
             'method': method,
@@ -657,8 +657,6 @@ class MLCurator:
         # we assume files contain the feature dicts or arrays directly.
         
         
-        all_v_feats = []
-        all_v_labels = []
         
         # Implementation depends on how `generate_training_data` saves its output.
         # Assuming we have saved .npz or .json files with 'vertex_features', etc.

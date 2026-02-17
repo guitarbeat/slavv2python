@@ -5,10 +5,7 @@ Tests the functionality of slavv.evaluation.matlab_parser for loading
 and parsing MATLAB vectorization output files.
 """
 
-import json
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-import tempfile
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
@@ -19,7 +16,6 @@ from slavv.evaluation.matlab_parser import (
     load_mat_file_safe,
     extract_vertices,
     extract_edges,
-    extract_network_data,
     extract_network_stats,
     load_matlab_batch_results,
     MATLABParseError

@@ -48,7 +48,7 @@ def load_run_info(run_dir: Path) -> Dict[str, Any]:
                 info['matlab_vertices'] = report.get('matlab', {}).get('vertices_count', 0)
                 info['python_vertices'] = report.get('python', {}).get('vertices_count', 0)
                 info['speedup'] = report.get('performance', {}).get('speedup', 0)
-        except:
+        except Exception:
             pass
     
     return info
@@ -157,7 +157,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path = None) -> str:
         try:
             with open(report_file, 'r') as f:
                 report = json.load(f)
-        except:
+        except Exception:
             pass
     
     # Get file inventory

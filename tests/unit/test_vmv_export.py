@@ -2,7 +2,6 @@
 import os
 import numpy as np
 from slavv.visualization import NetworkVisualizer
-import logging
 
 def test_vmv_export():
     viz = NetworkVisualizer()
@@ -75,7 +74,8 @@ def test_vmv_export():
     assert params['NUM_ATTRIB_PER_VERT'] == 4
 
     idx += 1 # skip $PARAM_END
-    while idx < len(lines) and not lines[idx].strip(): idx += 1 # skip empty lines
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1 # skip empty lines
 
     # Check Vertices
     assert lines[idx] == "$VERT_LIST_BEGIN"
@@ -85,7 +85,7 @@ def test_vmv_export():
     while lines[idx] != "$VERT_LIST_END":
         parts = lines[idx].split('\t')
         # Index, x, y, z, r
-        pid = int(parts[0])
+        int(parts[0])
         x, y, z, r = map(float, parts[1:])
         points.append((x, y, z, r))
         idx += 1
@@ -108,7 +108,8 @@ def test_vmv_export():
     assert found_start, "Start point (20, -10, -30) not found in VMV output"
 
     idx += 1 # skip $VERT_LIST_END
-    while idx < len(lines) and not lines[idx].strip(): idx += 1
+    while idx < len(lines) and not lines[idx].strip():
+        idx += 1
 
     # Check Strands
     assert lines[idx] == "$STRANDS_LIST_BEGIN"
@@ -117,7 +118,7 @@ def test_vmv_export():
     strands = []
     while idx < len(lines) and lines[idx] != "$STRANDS_LIST_END":
         parts = lines[idx].split('\t')
-        sid = int(parts[0])
+        int(parts[0])
         pt_indices = list(map(int, parts[1:]))
         strands.append(pt_indices)
         idx += 1

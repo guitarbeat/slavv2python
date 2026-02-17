@@ -1,6 +1,4 @@
-import os
 import numpy as np
-import pytest
 import xml.etree.ElementTree as ET
 from slavv.visualization import NetworkVisualizer
 

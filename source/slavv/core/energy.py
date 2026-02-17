@@ -43,16 +43,22 @@ if _NUMBA_AVAILABLE:
         
         # Manual clamping to [1, shape-2]
         pos_y = int(pos_int[0])
-        if pos_y < 1: pos_y = 1
-        elif pos_y > dim_y - 2: pos_y = dim_y - 2
+        if pos_y < 1:
+            pos_y = 1
+        elif pos_y > dim_y - 2:
+            pos_y = dim_y - 2
         
         pos_x = int(pos_int[1])
-        if pos_x < 1: pos_x = 1
-        elif pos_x > dim_x - 2: pos_x = dim_x - 2
+        if pos_x < 1:
+            pos_x = 1
+        elif pos_x > dim_x - 2:
+            pos_x = dim_x - 2
         
         pos_z = int(pos_int[2])
-        if pos_z < 1: pos_z = 1
-        elif pos_z > dim_z - 2: pos_z = dim_z - 2
+        if pos_z < 1:
+            pos_z = 1
+        elif pos_z > dim_z - 2:
+            pos_z = dim_z - 2
         
         grad = np.zeros(3, dtype=np.float64)
         # Use explicit indexing for speed and clarity
@@ -73,14 +79,20 @@ else:
         shape_y, shape_x, shape_z = energy.shape
 
         # Manual clamping to [1, shape-2] to prevent out-of-bounds access
-        if pos_y < 1: pos_y = 1
-        elif pos_y > shape_y - 2: pos_y = shape_y - 2
+        if pos_y < 1:
+            pos_y = 1
+        elif pos_y > shape_y - 2:
+            pos_y = shape_y - 2
 
-        if pos_x < 1: pos_x = 1
-        elif pos_x > shape_x - 2: pos_x = shape_x - 2
+        if pos_x < 1:
+            pos_x = 1
+        elif pos_x > shape_x - 2:
+            pos_x = shape_x - 2
 
-        if pos_z < 1: pos_z = 1
-        elif pos_z > shape_z - 2: pos_z = shape_z - 2
+        if pos_z < 1:
+            pos_z = 1
+        elif pos_z > shape_z - 2:
+            pos_z = shape_z - 2
 
         # Direct indexing for speed (avoids allocations and tuple overhead)
         grad[0] = (energy[pos_y+1, pos_x, pos_z] - energy[pos_y-1, pos_x, pos_z]) / (2.0 * microns_per_voxel[0])
@@ -437,14 +449,20 @@ def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
     s0, s1, s2 = energy.shape
 
     # Manual clamping to [1, shape-2] to prevent out-of-bounds access
-    if p0 < 1: p0 = 1
-    elif p0 > s0 - 2: p0 = s0 - 2
+    if p0 < 1:
+        p0 = 1
+    elif p0 > s0 - 2:
+        p0 = s0 - 2
 
-    if p1 < 1: p1 = 1
-    elif p1 > s1 - 2: p1 = s1 - 2
+    if p1 < 1:
+        p1 = 1
+    elif p1 > s1 - 2:
+        p1 = s1 - 2
 
-    if p2 < 1: p2 = 1
-    elif p2 > s2 - 2: p2 = s2 - 2
+    if p2 < 1:
+        p2 = 1
+    elif p2 > s2 - 2:
+        p2 = s2 - 2
 
     # We still allocate grad, but we avoid pos_int allocation and unpacking
     grad = np.empty(3, dtype=float)

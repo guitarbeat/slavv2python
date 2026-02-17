@@ -1,6 +1,4 @@
 import io
-import pathlib
-import sys
 
 import numpy as np
 import pytest

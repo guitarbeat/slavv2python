@@ -265,7 +265,7 @@ class NetworkVisualizer:
                         if bin_idx not in groups:
                             groups[bin_idx] = []
                             # Approximate value for color calculation
-                            val = values[i]
+                            values[i]
                             # Better: use bin center or just the value itself if n_bins is large
                             # But since we merge, all lines in group share color.
                             # We pick color based on bin center
@@ -586,7 +586,6 @@ class NetworkVisualizer:
 
         # Pre-compute strand IDs if needed
         strand_ids: List[int] = []
-        strand_legend: Dict[int, bool] = {}
         if color_by == 'strand_id':
             connections = edges.get('connections', [])
             pair_to_index = {
@@ -1447,7 +1446,7 @@ class NetworkVisualizer:
         logger.info("Creating summary dashboard")
 
         vertices = processing_results['vertices']
-        edges = processing_results['edges']
+        processing_results['edges']
         network = processing_results['network']
         parameters = processing_results['parameters']
 

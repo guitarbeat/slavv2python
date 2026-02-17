@@ -374,7 +374,8 @@ class ComparisonDashboardWidget:
         output_name = self.output_widget.value
         
         if not matlab_folder or not python_folder:
-            with self.output_area: print("Error: Please select both runs.")
+            with self.output_area:
+                print("Error: Please select both runs.")
             return
             
         matlab_path = self.comparisons_dir / matlab_folder

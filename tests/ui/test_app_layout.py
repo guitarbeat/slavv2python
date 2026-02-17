@@ -1,5 +1,3 @@
-import pathlib
-import sys
 import pytest
 import importlib
 st = pytest.importorskip("streamlit")

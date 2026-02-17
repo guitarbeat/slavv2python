@@ -4,7 +4,6 @@ Quick test to verify comparison setup is correct.
 This doesn't run the full vectorization, just checks that files exist and paths are correct.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -28,7 +27,7 @@ def test_setup():
     if test_data.exists():
         print(f"[OK] Test data file found: {test_data}")
     else:
-        warnings.append(f"[WARN] Test data file not found (optional for comparison)")
+        warnings.append("[WARN] Test data file not found (optional for comparison)")
     
     # Check MATLAB executable
     matlab_path = Path("C:/Program Files/MATLAB/R2019a/bin/matlab.exe")
@@ -36,7 +35,7 @@ def test_setup():
         print(f"[OK] MATLAB executable found: {matlab_path}")
     else:
         warnings.append(f"[WARN] MATLAB executable not found at default path: {matlab_path}")
-        print(f"  (You can specify a different path with --matlab-path)")
+        print("  (You can specify a different path with --matlab-path)")
     
     # Check scripts (in scripts/cli)
     scripts_dir = project_root / "scripts" / "cli"
@@ -61,22 +60,22 @@ def test_setup():
         # Check for vectorize_V200.m
         vectorize_file = matlab_repo_path / "vectorize_V200.m"
         if vectorize_file.exists():
-            print(f"  [OK] vectorize_V200.m found")
+            print("  [OK] vectorize_V200.m found")
         else:
-            errors.append(f"  [ERROR] vectorize_V200.m not found in Vectorization-Public")
+            errors.append("  [ERROR] vectorize_V200.m not found in Vectorization-Public")
     else:
         warnings.append(f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)")
     
     # Check Python imports
-    print(f"\nChecking Python imports:")
+    print("\nChecking Python imports:")
     try:
-        from slavv.core import SLAVVProcessor
+        from slavv.core import SLAVVProcessor  # noqa: F401
         print("  [OK] SLAVVProcessor imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import SLAVVProcessor: {e}")
     
     try:
-        from slavv.io import load_tiff_volume
+        from slavv.io import load_tiff_volume  # noqa: F401
         print("  [OK] load_tiff_volume imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import load_tiff_volume: {e}")
@@ -96,10 +95,10 @@ def test_setup():
             for warning in warnings:
                 print(f"  {warning}")
         print("\nSetup is ready. You can now run:")
-        print(f'  python scripts/cli/compare_matlab_python.py \\')
-        print(f'      --input "data/slavv_test_volume.tif" \\')
-        print(f'      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
-        print(f'      --output-dir "comparison_output"')
+        print('  python scripts/cli/compare_matlab_python.py \\')
+        print('      --input "data/slavv_test_volume.tif" \\')
+        print('      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
+        print('      --output-dir "comparison_output"')
         return True
 
 if __name__ == "__main__":

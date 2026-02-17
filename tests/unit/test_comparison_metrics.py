@@ -10,7 +10,6 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-from scipy import stats
 
 from slavv.evaluation.metrics import (
     match_vertices,

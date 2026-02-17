@@ -493,8 +493,7 @@ def export_pipeline_results(
     # Let's use the basic 'vertices' and 'edges' from the dicts.
     
     try:
-        v_pos = results.get('vertices', {}).get('positions', [])
-        e_conn = [] 
+        results.get('vertices', {}).get('positions', [])
         # CAUTION: 'edges' from pipeline contains TRAJECTORIES (traces).
         # Network connectivity is typically in results['network']['network_graph'] or similar
         # But 'io_utils.Network' expects (N,2) connectivity list.
@@ -610,7 +609,7 @@ def partition_network(
             partitions[(y_i, x_i)] = sub_net
             
             if output_dir:
-                out_path = Path(output_dir) / f"tile_{x_i}_{y_i}.casx" # MATLAB naming tile_X_Y
+                Path(output_dir) / f"tile_{x_i}_{y_i}.casx" # MATLAB naming tile_X_Y
                 # save_network_to_casx... (Need to implement or use generic export)
                 # Since we don't have a CASX writer in io_utils yet (only Reader), we'll skip saving or raise warning
                 # Implementing simple CASX writer here for completeness of port?

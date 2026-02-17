@@ -147,7 +147,6 @@ def paint_edges_to_volume(
     else:
         constant_fill = 1.0
 
-    count = 0 
     for i, trace in enumerate(traces):
         if len(trace) == 0:
             continue

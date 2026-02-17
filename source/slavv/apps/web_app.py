@@ -7,14 +7,14 @@ import tempfile
 import zipfile
 import os
 import warnings
-warnings.filterwarnings("ignore")
-
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 from slavv.analysis import MLCurator, AutomaticCurator
 from slavv.visualization import NetworkVisualizer
 from slavv.io import load_tiff_volume
+
+warnings.filterwarnings("ignore")
 
 # Page configuration
 st.set_page_config(
@@ -488,7 +488,7 @@ def show_processing_page():
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
 
-                    processor = SLAVVProcessor()
+                    SLAVVProcessor()
 
                     stage_labels = {
                         "start": "Starting pipeline...",
@@ -580,7 +580,7 @@ def show_ml_curation_page():
     """)
     
     results = st.session_state["processing_results"]
-    parameters = st.session_state["parameters"]
+    st.session_state["parameters"]
     
     st.markdown("### 🎯 Curation Options")
     curation_type = st.radio(
@@ -695,7 +695,7 @@ def show_ml_curation_page():
         col1, col2 = st.columns(2, gap="medium")
         
         with col1:
-            vertex_curation_method = st.selectbox(
+            st.selectbox(
                 "Vertex curation method",
                 ["machine-auto"], # Only machine-auto for now
                 help="Choose how to curate detected vertices. Corresponds to `VertexCuration` parameter in MATLAB."
@@ -720,7 +720,7 @@ def show_ml_curation_page():
             )
         
         with col2:
-            edge_curation_method = st.selectbox(
+            st.selectbox(
                 "Edge curation method",
                 ["machine-auto"], # Only machine-auto for now
                 help="Choose how to curate detected edges. Corresponds to `EdgeCuration` parameter in MATLAB."
@@ -905,13 +905,13 @@ def show_visualization_page():
             help="How to color the network components"
         )
         
-        opacity = st.slider(
+        st.slider(
             "Opacity", 0.1, 1.0, 0.8, 0.1,
             help="Adjust transparency of network rendering"
         )
         
         if viz_type == "3D Network":
-            camera_angle = st.selectbox(
+            st.selectbox(
                 "Camera angle",
                 ["Isometric", "Top", "Side", "Front"],
                 help="3D viewing angle"
@@ -1198,3 +1198,35 @@ def show_analysis_page():
             file_name="network_statistics.csv",
             mime="text/csv"
         )
+
+def show_about_page():
+    """Display the about page with detailed information about SLAVV."""
+    st.markdown("<h2 class=\"section-header\">About SLAVV</h2>", unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 🔬 Scientific Background
+    
+    SLAVV (Segmentation-Less, Automated, Vascular Vectorization) was developed to address the 
+    challenges of extracting vascular networks from large-scale microscopy volumes without 
+    requiring manual or error-prone segmentation steps.
+    
+    The algorithm uses a **multi-scale energy field** approach, where vessel centerlines are 
+    detected as local energy minima. This allows it to handle varying vessel diameters and 
+    low-contrast regions more robustly than threshold-based methods.
+    
+    ### 👨‍💻 Implementation Details
+    
+    This system is a modern Python implementation of the original SLAVV algorithm. Key improvements include:
+    - **Performance**: Numba acceleration and multi-threaded processing.
+    - **Scalability**: Chunk-based processing for large volumes.
+    - **Modern UI**: Interactive Streamlit interface for parameter tuning and visualization.
+    - **ML Integration**: Machine learning models for automatic quality control.
+    
+    ### 📜 Credits and License
+    
+    - **Original Algorithm**: Samuel Alexander Mihelic
+    - **Python Port**: Developed for modern high-throughput analysis.
+    - **License**: Provided as open-source for scientific research.
+    
+    For more information or to cite this work, please refer to the project documentation.
+    """)

@@ -40,7 +40,7 @@ def generate_summary(run_dir: Path, output_file: Path):
             date_part = run_name.split('_')[0]
             date_obj = datetime.strptime(date_part, '%Y%m%d')
             date_str = date_obj.strftime('%Y-%m-%d')
-        except:
+        except Exception:
             pass
     
     # Build summary

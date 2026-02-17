@@ -466,16 +466,22 @@ def trace_edge(
         # Inline gradient computation to avoid function call and allocation
         # Manual clamping
         grad_pos_y = pos_y
-        if grad_pos_y < 1: grad_pos_y = 1
-        elif grad_pos_y > dim_y_minus_2: grad_pos_y = dim_y_minus_2
+        if grad_pos_y < 1:
+            grad_pos_y = 1
+        elif grad_pos_y > dim_y_minus_2:
+            grad_pos_y = dim_y_minus_2
 
         grad_pos_x = pos_x
-        if grad_pos_x < 1: grad_pos_x = 1
-        elif grad_pos_x > dim_x_minus_2: grad_pos_x = dim_x_minus_2
+        if grad_pos_x < 1:
+            grad_pos_x = 1
+        elif grad_pos_x > dim_x_minus_2:
+            grad_pos_x = dim_x_minus_2
 
         grad_pos_z = pos_z
-        if grad_pos_z < 1: grad_pos_z = 1
-        elif grad_pos_z > dim_z_minus_2: grad_pos_z = dim_z_minus_2
+        if grad_pos_z < 1:
+            grad_pos_z = 1
+        elif grad_pos_z > dim_z_minus_2:
+            grad_pos_z = dim_z_minus_2
 
         # Compute gradient components
         grad_y = (energy[grad_pos_y+1, grad_pos_x, grad_pos_z] - energy[grad_pos_y-1, grad_pos_x, grad_pos_z]) * inv_mpv_2x_y
