@@ -5,11 +5,7 @@ import numpy as np
 import pytest
 
 # Add source path for imports
-<<<<<<< HEAD
-from slavv.core import SLAVVProcessor
-=======
 from slavv.core.pipeline import SLAVVProcessor
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 def test_extract_handles_no_vertices():

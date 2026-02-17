@@ -622,7 +622,17 @@ class MLCurator:
     def _in_bounds(self, pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
         """Check if position is within bounds"""
         return all(0 <= p < s for p, s in zip(pos, shape))
-    
+
+    def _get_feature_importance(self) -> Optional[np.ndarray]:
+        """Get feature importance from vertex classifier if available."""
+        if hasattr(self.vertex_classifier, 'feature_importances_'):
+            return self.vertex_classifier.feature_importances_
+        return None
+
+    def _get_edge_feature_importance(self) -> Optional[np.ndarray]:
+        """Get feature importance from edge classifier if available."""
+        if hasattr(self.edge_classifier, 'feature_importances_'):
+            return self.edge_classifier.feature_importances_
         return None
 
     def aggregate_training_data(
