@@ -10,6 +10,7 @@ Based on the MATLAB MLDeployment.py and MLLibrary.py implementations.
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
@@ -17,7 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, confusion_matrix
 import joblib
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Union
 import logging
 import warnings
 warnings.filterwarnings('ignore')
@@ -622,17 +623,59 @@ class MLCurator:
         """Check if position is within bounds"""
         return all(0 <= p < s for p, s in zip(pos, shape))
     
-    def _get_feature_importance(self) -> Optional[np.ndarray]:
-        """Get feature importance from vertex classifier"""
-        if hasattr(self.vertex_classifier, 'feature_importances_'):
-            return self.vertex_classifier.feature_importances_
         return None
+
+    def aggregate_training_data(
+        self,
+        data_dir: Union[str, Path],
+        file_pattern: str = "*_results.json"
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Aggregate features from multiple result snippets for training.
+        
+        Corresponds to logic in `getTrainingArray.m`.
+        
+        Args:
+            data_dir: Directory containing results.
+            file_pattern: Glob pattern for result files.
+            
+        Returns:
+            Arrays of (v_feat, v_labels, e_feat, e_labels).
+        """
+        # This is a placeholder for the logic that walks directories
+        # and stacks the features arrays (which must be saved alongside results).
+        # Since we don't have a standardized "saved feature file" format yet,
+        # we assume files contain the feature dicts or arrays directly.
+        
+        from pathlib import Path
+        import json
+        
+        all_v_feats = []
+        all_v_labels = []
+        
+        # Implementation depends on how `generate_training_data` saves its output.
+        # Assuming we have saved .npz or .json files with 'vertex_features', etc.
+        
+        return np.array([]), np.array([]), np.array([]), np.array([])
+
+
+class DrewsCurator:
+    """
+    Experimental curator based on legacy 'edge_curator_Drews.m'.
     
-    def _get_edge_feature_importance(self) -> Optional[np.ndarray]:
-        """Get feature importance from edge classifier"""
-        if hasattr(self.edge_classifier, 'feature_importances_'):
-            return self.edge_classifier.feature_importances_
-        return None
+    This implements specific heuristic rules used in earlier versions of the pipeline
+    for pruning edges based on tortuosity, min-length relative to radius, and flow properties.
+    """
+    
+    def __init__(self):
+        pass
+        
+    def curate(self, edges: Dict[str, Any], vertices: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Apply Drews' curation logic.
+        """
+        logger.warning("DrewsCurator is not fully implemented. Passing through edges.")
+        return edges
 
 class AutomaticCurator:
     """

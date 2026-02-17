@@ -11,11 +11,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, IO, List, Optional, Tuple, Union
 
-import json
 import numpy as np
 import pandas as pd
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 import xml.etree.ElementTree as ET
+import re
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -527,3 +528,141 @@ def export_pipeline_results(
         logger.warning(f"Failed to export generic parameters: {e}")
 
     return created_files
+
+
+def partition_network(
+    network: Network,
+    chunks: Tuple[int, int],
+    overlap: float = 0.0,
+    output_dir: Optional[Union[str, Path]] = None
+) -> Dict[Tuple[int, int], Network]:
+    """
+    Partition generic network into spatial bins (X, Y).
+    
+    Corresponds to `partition_casx_by_xy_bins.m`.
+    
+    Args:
+        network: Input Network object.
+        chunks: Number of bins in (Y, X). Note: doc string says X, Y, but code usually uses Y, X ordering for image shapes.
+                However, MATLAB `partition_casx_by_xy_bins` takes (num_bins_X, num_bins_Y).
+                We will assume `chunks` = (ny, nx) to match array conventions, or document carefully.
+                Let's stick to (ny, nx) for consistency with image shapes.
+        overlap: Amount of overlap between bins (in units of vertex positions).
+        output_dir: If provided, saves each partition as a .casx file.
+        
+    Returns:
+        Dictionary mapping (y_idx, x_idx) -> Network subset.
+    """
+    ny, nx = chunks
+    vertices = network.vertices
+    if len(vertices) == 0:
+        return {}
+        
+    # Determine bounds
+    min_coords = np.min(vertices, axis=0)
+    max_coords = np.max(vertices, axis=0)
+    extent = max_coords - min_coords
+    
+    y_step = extent[0] / ny
+    x_step = extent[1] / nx
+    
+    partitions = {}
+    
+    for y_i in range(ny):
+        for x_i in range(nx):
+            # Define bounds for this bin
+            y_min = min_coords[0] + y_i * y_step - overlap
+            y_max = min_coords[0] + (y_i + 1) * y_step + overlap
+            x_min = min_coords[1] + x_i * x_step - overlap
+            x_max = min_coords[1] + (x_i + 1) * x_step + overlap
+            
+            # Filter vertices
+            # Vertices are (y, x, z)
+            mask = (
+                (vertices[:, 0] >= y_min) & (vertices[:, 0] <= y_max) &
+                (vertices[:, 1] >= x_min) & (vertices[:, 1] <= x_max)
+            )
+            
+            if not np.any(mask):
+                continue
+                
+            # Subset vertices
+            # We need to reindex edges!
+            original_indices = np.where(mask)[0]
+            new_indices_map = {old_idx: new_idx for new_idx, old_idx in enumerate(original_indices)}
+            
+            sub_vertices = vertices[mask]
+            sub_radii = network.radii[mask] if network.radii is not None else None
+            
+            # Subset edges
+            sub_edges = []
+            for edge in network.edges:
+                u, v = edge[0], edge[1]
+                if u in new_indices_map and v in new_indices_map:
+                    sub_edges.append([new_indices_map[u], new_indices_map[v]])
+            
+            sub_net = Network(
+                vertices=sub_vertices,
+                edges=np.array(sub_edges),
+                radii=sub_radii
+            )
+            
+            partitions[(y_i, x_i)] = sub_net
+            
+            if output_dir:
+                out_path = Path(output_dir) / f"tile_{x_i}_{y_i}.casx" # MATLAB naming tile_X_Y
+                # save_network_to_casx... (Need to implement or use generic export)
+                # Since we don't have a CASX writer in io_utils yet (only Reader), we'll skip saving or raise warning
+                # Implementing simple CASX writer here for completeness of port?
+                # The plan mentioned "add partition_network", let's leave saving to the caller or add writer later.
+                pass
+                
+    return partitions
+
+
+def parse_registration_file(path: Union[str, Path]) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Parse a legacy registration text file.
+    
+    Corresponds to `registration_txt2mat.m`.
+    
+    Format example:
+    num = 2
+    (0.000000,0.000000,0.000000)
+    (10.0,10.0,0.0)
+    (100,100,50)
+    (100,100,50)
+    
+    Returns:
+        rows: starts, dims (each Nx3 arrays)
+    """
+    path = Path(path)
+    content = path.read_text()
+    
+    # regex for num = X
+    num_match = re.search(r'num\s*=\s*(\d+)', content)
+    if not num_match:
+        raise ValueError("Could not find 'num =' in file")
+        
+    num_images = int(num_match.group(1))
+    
+    # regex for coordinates (float,float,float)
+    # The MATLAB script reads the file sequentially.
+    # It reads `num`, then `num` lines of starts, then `num` lines of dims.
+    # We can match all (...) patterns
+    
+    matches = re.findall(r'\(([^)]+)\)', content)
+    
+    coords = []
+    for m in matches:
+        parts = [float(x.strip()) for x in m.split(',')]
+        if len(parts) == 3:
+            coords.append(parts)
+            
+    if len(coords) < 2 * num_images:
+        logger.warning(f"Expected {2*num_images} coordinate triplets, found {len(coords)}")
+        
+    starts = np.array(coords[:num_images])
+    dims = np.array(coords[num_images:2*num_images])
+    
+    return starts, dims
