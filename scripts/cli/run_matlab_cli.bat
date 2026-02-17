@@ -48,8 +48,8 @@ REM Get script directory (where this batch file is located)
 set SCRIPT_DIR=%~dp0
 set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
-REM Get project root (parent of scripts directory)
-for %%P in ("%SCRIPT_DIR%\..") do set PROJECT_ROOT=%%~fP
+REM Get project root (parent of parent of this directory)
+for %%P in ("%SCRIPT_DIR%\..\..") do set PROJECT_ROOT=%%~fP
 
 REM Change to Vectorization-Public directory for MATLAB
 set VECTORIZATION_DIR=%PROJECT_ROOT%\external\Vectorization-Public

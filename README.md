@@ -8,7 +8,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 |------|-------------|
 | **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **source/slavv/apps/** | Web applications (`web_app.py`) |
-| **source/slavv/scripts/** | CLI wrappers and MATLAB scripts |
+| **scripts/** | Setup, CLI wrappers, and MATLAB integration |
 | **examples/** | Programmatic usage examples (`run_tutorial.py`) |
 | **notebooks/** | Interactive notebooks for analysis and development |
 | **experiments/** | Output directory for runs and comparisons |
@@ -25,7 +25,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 
 Run the automated setup script:
 ```powershell
-.\setup_env.ps1
+.\scripts\setup\setup_env.ps1
 ```
 
 This will:
@@ -72,7 +72,7 @@ This will:
    # Select kernel: "Python (SLAVV)"
    ```
 
-📘 **Detailed setup guide**: See [docs/guides/SETUP.md](docs/guides/SETUP.md) for troubleshooting and best practices.
+📘 **Detailed setup guide**: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
 
 ### Launch the Web Application
 

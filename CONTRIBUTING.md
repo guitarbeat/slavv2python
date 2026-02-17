@@ -40,7 +40,7 @@ Thanks for your interest in contributing! This document outlines conventions for
 ## Reducing Temp Files
 The project is configured to minimize temp files when running:
 - **Pytest**: Cache disabled (`-p no:cacheprovider`) — no `.pytest_cache/`
-- **Python bytecode**: `setup_env.ps1` configures `PYTHONDONTWRITEBYTECODE=1` in venv/conda — no `__pycache__/`
+- **Python bytecode**: `scripts/setup/setup_env.ps1` configures `PYTHONDONTWRITEBYTECODE=1` in venv/conda — no `__pycache__/`
 - **Jupyter**: Optional config in `.jupyter/` stores checkpoints in system temp instead of each notebook dir. Use:
   ```powershell
   $env:JUPYTER_CONFIG_DIR = ".\.jupyter"; jupyter notebook
@@ -49,7 +49,7 @@ The project is configured to minimize temp files when running:
 
 ## Where to Start
 - See [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) for MATLAB→Python port status and mapping.
-- See [docs/guides/DEVELOPMENT.md](docs/guides/DEVELOPMENT.md) for current status and roadmap.
+- See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for current status and roadmap.
 
 ## Regression Prevention (Critical)
 

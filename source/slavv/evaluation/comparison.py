@@ -70,9 +70,9 @@ def run_matlab_vectorization(
     
     if batch_script is None:
         if os.name == 'nt':
-            batch_script = str(project_root / 'slavv' / 'scripts' / 'run_matlab_cli.bat')
+            batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.bat')
         else:
-            batch_script = str(project_root / 'slavv' / 'scripts' / 'run_matlab_cli.sh')
+            batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.sh')
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)

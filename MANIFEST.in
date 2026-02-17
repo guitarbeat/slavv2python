@@ -1,7 +1,0 @@
-include README.md
-include LICENSE
-include pyproject.toml
-recursive-include docs *
-recursive-include slavv *
-recursive-include apps *
-recursive-include tools *
