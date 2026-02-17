@@ -3,14 +3,7 @@ import sys
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
-<<<<<<< HEAD
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-
-from slavv.analysis import MLCurator
-=======
 from slavv.analysis.ml_curator import MLCurator
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
-
 
 def test_save_and_load_models(tmp_path):
     curator = MLCurator()
@@ -37,6 +30,10 @@ def test_save_and_load_models(tmp_path):
     loaded.load_models(vertex_path, edge_path)
 
     X_test_v = np.random.rand(5, 3)
+    # The saved model used the fitted scaler, so we must use the original scaler (or fit a new one identical)
+    # But here the test logic is flawed in original: `curator.vertex_scaler` was fitted. `loaded.vertex_scaler` is loaded from file.
+    # So `loaded.vertex_scaler` should be identical to `curator.vertex_scaler`.
+
     orig_v = curator.vertex_classifier.predict(curator.vertex_scaler.transform(X_test_v))
     new_v = loaded.vertex_classifier.predict(loaded.vertex_scaler.transform(X_test_v))
     assert np.array_equal(orig_v, new_v)

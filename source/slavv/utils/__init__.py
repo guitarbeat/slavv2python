@@ -12,6 +12,7 @@ from .preprocessing import preprocess_image
 from .validation import validate_parameters
 from .chunking import get_chunking_lattice
 from .system_info import get_system_info, get_matlab_info
+from .safe_unpickle import safe_load
 
 __all__ = [
     "calculate_path_length",
@@ -21,5 +22,6 @@ __all__ = [
     "get_chunking_lattice",
     "get_system_info",
     "get_matlab_info",
+    "safe_load",
 ]
 
