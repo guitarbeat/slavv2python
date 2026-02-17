@@ -1,10 +1,6 @@
 import numpy as np
 
-<<<<<<< HEAD
 from slavv.analysis import extract_uncurated_info
-=======
-from slavv.analysis.ml_curator import extract_uncurated_info
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 def test_extract_uncurated_info_shapes() -> None:

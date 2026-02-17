@@ -5,7 +5,7 @@ import numpy as np
 from pstats import Stats
 
 # Add source path for imports
-from slavv.profiling import profile_process_image
+from slavv.utils.profiling import profile_process_image
 
 
 def test_profile_process_image_returns_stats():

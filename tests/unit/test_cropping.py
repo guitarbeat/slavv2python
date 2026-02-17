@@ -3,11 +3,7 @@ import sys
 import numpy as np
 
 # Add source path for imports
-<<<<<<< HEAD
 from slavv.analysis import crop_vertices, crop_edges, crop_vertices_by_mask
-=======
-from slavv.analysis.geometry import crop_vertices, crop_edges, crop_vertices_by_mask
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 def test_crop_vertices_and_edges():

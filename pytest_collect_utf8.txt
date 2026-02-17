@@ -1,0 +1,537 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.7.3, pytest-4.3.1, py-1.8.0, pluggy-0.9.0 -- C:\ProgramData\Anaconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python, inifile: pytest.ini
+plugins: remotedata-0.3.1, openfiles-0.3.2, doctestplus-0.3.0, arraydiff-0.3
+collecting ... collected 99 items / 13 errors / 86 selected
+<Module tests/unit/test_casx_export.py>
+  <Function test_casx_export>
+<Module tests/unit/test_casx_export_full.py>
+  <Function test_casx_export_full>
+<Module tests/unit/test_chunking_lattice.py>
+  <Function test_chunking_lattice_reconstructs_volume>
+<Module tests/unit/test_cli.py>
+  Tests for the SLAVV CLI entry point (slavv.cli).
+  <Class TestBuildParser>
+    Parser construction and basic argument parsing.
+      <Function test_help_flag>
+      <Function test_version_flag>
+      <Function test_run_subcommand_requires_input>
+      <Function test_run_subcommand_defaults>
+      <Function test_run_subcommand_full_options>
+      <Function test_info_subcommand>
+  <Class TestArgsToParameters>
+    Verify CLI args convert correctly to SLAVV parameter dicts.
+      <Function test_default_conversion>
+  <Class TestMainEntryPoint>
+    Integration-level tests of the main() function.
+      <Function test_no_args_shows_help>
+        Calling with no arguments prints help and exits 0.
+      <Function test_version_prints>
+      <Function test_info_prints_version>
+      <Function test_run_missing_file_exits>
+<Module tests/unit/test_comparison_metrics.py>
+  Unit tests for comparison metrics.
+  
+  Tests the comparison functions from slavv.dev.metrics
+  for computing differences between MATLAB and Python results.
+  <Class TestMatchVertices>
+    Tests for vertex matching algorithm.
+      <Function test_match_empty_arrays>
+        Test matching with empty arrays.
+      <Function test_match_identical_positions>
+        Test matching identical vertex positions.
+      <Function test_match_with_noise>
+        Test matching with small position differences.
+      <Function test_match_with_threshold>
+        Test matching with distance threshold.
+      <Function test_match_more_matlab_than_python>
+        Test matching when MATLAB has more vertices.
+  <Class TestCompareVertices>
+    Tests for vertex comparison function.
+      <Function test_compare_empty_vertices>
+        Test comparing empty vertex data.
+      <Function test_compare_count_difference>
+        Test count difference calculation.
+      <Function test_compare_with_positions>
+        Test comparison including position matching.
+      <Function test_compare_with_radii>
+        Test comparison including radius correlation.
+      <Function test_compare_unmatched_vertices>
+        Test comparison with unmatched vertices.
+  <Class TestCompareEdges>
+    Tests for edge comparison function.
+      <Function test_compare_empty_edges>
+        Test comparing empty edge data.
+      <Function test_compare_edge_counts>
+        Test edge count comparison.
+      <Function test_compare_edge_lengths>
+        Test edge length comparison.
+  <Class TestCompareNetworks>
+    Tests for network comparison function.
+      <Function test_compare_empty_networks>
+        Test comparing empty network data.
+      <Function test_compare_strand_counts>
+        Test strand count comparison.
+  <Class TestEdgeCases>
+    Tests for edge cases and error conditions.
+      <Function test_match_vertices_single_point>
+        Test matching with single vertex.
+      <Function test_compare_vertices_no_matches>
+        Test comparison when no vertices match.
+      <Function test_compare_with_nan_values>
+        Test handling of NaN values in data.
+  <Class TestStatisticalMeasures>
+    Tests for statistical measures in comparisons.
+      <Function test_position_error_statistics>
+        Test computation of position error statistics.
+      <Function test_radius_correlation_perfect>
+        Test radius correlation with perfect correlation.
+  <Class TestWithFixtures>
+    Tests using fixtures for sample data.
+      <Function test_compare_sample_vertices>
+        Test comparison with sample data.
+      <Function test_compare_reproducibility>
+        Test that comparison results are reproducible.
+<Module tests/unit/test_energy_methods.py>
+  Consolidated tests for alternative energy methods (Frangi/Sato).
+  <Function test_alternative_energy_methods[frangi]>
+    Test that Frangi and Sato energy methods produce valid output.
+  <Function test_alternative_energy_methods[sato]>
+    Test that Frangi and Sato energy methods produce valid output.
+<Module tests/unit/test_mat_io.py>
+  Consolidated tests for MAT file I/O.
+  <Function test_mat_roundtrip>
+    Test loading a MAT file with network data.
+  <Function test_mat_export_via_visualizer>
+    Test exporting network via NetworkVisualizer and reloading.
+  <Function test_mat_export_complex_params>
+    Test exporting parameters with mixed types (Bug 13).
+<Module tests/unit/test_matlab_parser.py>
+  Unit tests for MATLAB output parser.
+  
+  Tests the functionality of slavv.evaluation.matlab_parser for loading
+  and parsing MATLAB vectorization output files.
+  <Class TestFindBatchFolder>
+    Tests for finding MATLAB batch folders.
+      <Function test_find_batch_folder_no_directory>
+        Test with non-existent directory.
+      <Function test_find_batch_folder_empty_directory>
+        Test with empty directory.
+      <Function test_find_batch_folder_single_batch>
+        Test with single batch folder.
+      <Function test_find_batch_folder_multiple_batches>
+        Test with multiple batch folders - should return most recent.
+  <Class TestExtractVertices>
+    Tests for extracting vertex information from MATLAB data.
+      <Function test_extract_vertices_empty_data>
+        Test with empty data dictionary.
+      <Function test_extract_vertices_with_positions>
+        Test extraction of vertex positions.
+      <Function test_extract_vertices_with_radii>
+        Test extraction of vertex radii.
+  <Class TestExtractEdges>
+    Tests for extracting edge information from MATLAB data.
+      <Function test_extract_edges_empty_data>
+        Test with empty data dictionary.
+      <Function test_extract_edges_with_indices>
+        Test extraction of edge connectivity.
+      <Function test_extract_edges_with_lengths>
+        Test extraction of edge lengths.
+  <Class TestExtractNetworkData>
+    Tests for extracting network data.
+      <Function test_extract_network_data_empty_data>
+        Test with empty data.
+      <Function test_extract_network_stats_with_strands>
+        Test with strand data.
+  <Class TestLoadMatFileSafe>
+    Tests for safe MAT file loading.
+      <Function test_load_mat_file_nonexistent>
+        Test loading non-existent file.
+      <Function test_load_mat_file_success>
+        Test successful loading.
+      <Function test_load_mat_file_error>
+        Test handling of loading error.
+  <Class TestLoadMatlabBatchResults>
+    Tests for loading complete MATLAB batch results.
+      <Function test_load_nonexistent_folder>
+        Test loading from non-existent folder.
+      <Function test_load_folder_is_file>
+        Test when path is a file, not a directory.
+      <Function test_load_empty_batch_folder>
+        Test loading from empty batch folder.
+      <Function test_load_batch_folder_structure>
+        Test loading with proper folder structure.
+  <Class TestIntegrationScenarios>
+    Integration tests for common usage scenarios.
+      <Function test_parse_minimal_output>
+        Test parsing minimal MATLAB output structure.
+      <Function test_find_and_load_batch>
+        Test finding and loading batch folder in workflow.
+  <Function test_matlab_parser_cli>
+    Test the command-line interface of the parser.
+  <Class TestWithMockData>
+    Tests using mock data fixtures.
+      <Function test_extract_vertices_mock>
+        Test vertex extraction with mock data.
+      <Function test_extract_edges_mock>
+        Test edge extraction with mock data.
+      <Function test_complete_extraction>
+        Test complete data extraction.
+<Module tests/unit/test_ml_training.py>
+  <Function test_train_classifiers>
+<Module tests/unit/test_network_cycles.py>
+  <Function test_construct_network_prunes_cycles_and_detects_mismatched>
+<Module tests/unit/test_network_io.py>
+  Consolidated tests for network I/O (CSV, JSON, CASX, VMV).
+  <Class TestNetworkRoundtrip>
+    Test save/load roundtrip for network formats.
+      <Function test_csv_roundtrip>
+        Test CSV save and load preserves data.
+      <Function test_json_roundtrip>
+        Test JSON save and load preserves data.
+  <Class TestNetworkImport>
+    Test loading networks from various formats.
+      <Function test_load_from_casx>
+        Test loading network from CASX XML format.
+      <Function test_load_from_vmv>
+        Test loading network from VMV text format.
+      <Function test_load_from_json_file>
+        Test loading network from JSON format.
+      <Function test_load_from_csv_files>
+        Test loading network from CSV format.
+<Module tests/unit/test_network_stats.py>
+  <Function test_calculate_network_statistics_basic>
+  <Function test_calculate_surface_area_direct>
+  <Function test_calculate_vessel_volume_direct>
+  <Function test_edge_radius_stats_varying>
+  <Function test_calculate_network_statistics_tortuosity>
+  <Function test_calculate_branching_angles>
+<Module tests/unit/test_preprocessing.py>
+  <Function test_preprocess_normalizes_to_unit_range>
+  <Function test_preprocess_bandpass_removes_axial_gradient>
+<Module tests/unit/test_profiling.py>
+  <Function test_profile_process_image_returns_stats>
+<Module tests/unit/test_progress_callback.py>
+  <Function test_process_image_reports_progress>
+<Module tests/unit/test_structuring_element.py>
+  <Function test_anisotropic_structuring_element>
+<Module tests/unit/test_utils.py>
+  <Function test_calculate_path_length>
+  <Function test_validate_parameters_defaults>
+  <Function test_validate_parameters_invalid>
+  <Function test_get_chunking_lattice_small_volume>
+  <Function test_get_chunking_lattice_splitting>
+  <Function test_preprocess_image>
+<Module tests/unit/test_vessel_directions.py>
+  <Function test_estimate_vessel_directions_axis_aligned>
+  <Function test_estimate_vessel_directions_fallback>
+  <Function test_estimate_vessel_directions_anisotropic_spacing>
+  <Function test_estimate_vessel_directions_isotropic_hessian>
+<Module tests/unit/test_vmv_export.py>
+  <Function test_vmv_export>
+<Module tests/unit/test_watershed_edges.py>
+  <Function test_extract_edges_watershed_two_vertices>
+<Module tests/unit/test_weighted_ks.py>
+  <Function test_weighted_ks_unweighted>
+  <Function test_weighted_ks_with_weights>
+
+=================================== ERRORS ====================================
+____________ ERROR collecting tests/unit/test_choose_heuristics.py ____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_choose_heuristics.py", line 5
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+________________ ERROR collecting tests/unit/test_cropping.py _________________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_cropping.py", line 6
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+____________ ERROR collecting tests/unit/test_direction_method.py _____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_direction_method.py", line 8
+E       <<<<<<< HEAD
+E        ^
+E   IndentationError: expected an indented block
+____________ ERROR collecting tests/unit/test_discrete_tracing.py _____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_discrete_tracing.py", line 7
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+_______________ ERROR collecting tests/unit/test_edge_cases.py ________________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_edge_cases.py", line 8
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+_________ ERROR collecting tests/unit/test_edge_direction_seeding.py __________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_edge_direction_seeding.py", line 2
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+_____________ ERROR collecting tests/unit/test_edge_directions.py _____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_edge_directions.py", line 4
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+__________ ERROR collecting tests/unit/test_energy_field_storage.py ___________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_energy_field_storage.py", line 6
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+____________ ERROR collecting tests/unit/test_feature_alignment.py ____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_feature_alignment.py", line 5
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+___________ ERROR collecting tests/unit/test_geometry_functions.py ____________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_geometry_functions.py", line 3
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+_____________ ERROR collecting tests/unit/test_gradient_numba.py ______________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_gradient_numba.py", line 6
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+________________ ERROR collecting tests/unit/test_io_utils.py _________________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_io_utils.py", line 9
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+_______________ ERROR collecting tests/unit/test_ml_model_io.py _______________
+C:\ProgramData\Anaconda3\lib\site-packages\_pytest\python.py:499: in _importtestmodule
+    mod = self.fspath.pyimport(ensuresyspath=importmode)
+C:\ProgramData\Anaconda3\lib\site-packages\py\_path\local.py:701: in pyimport
+    __import__(modname)
+E     File "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\test_ml_model_io.py", line 6
+E       <<<<<<< HEAD
+E        ^
+E   SyntaxError: invalid syntax
+============================== warnings summary ===============================
+C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:320
+  C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:320: DeprecationWarning: invalid escape sequence \w
+    if re.compile('^([\w., ]+=)?\s*[\w\.]+\(.*\)$').match(summary_str):
+
+C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:392
+  C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:392: DeprecationWarning: invalid escape sequence \*
+    return [self['Signature'].replace('*', '\*')] + ['']
+
+C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:524
+  C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:524: DeprecationWarning: invalid escape sequence \*
+    signature = '%s%s' % (func_name, signature.replace('*', '\*'))
+
+C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:541
+  C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:541: DeprecationWarning: invalid escape sequence \*
+    signature = self['Signature'].replace('*', '\*')
+
+C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:109
+  C:\ProgramData\Anaconda3\lib\site-packages\numpydoc\docscrape.py:109: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated, and in 3.8 it will stop working
+    class NumpyDocString(collections.Mapping):
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\ir.py:27
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\ir.py:27: DeprecationWarning: invalid escape sequence \s
+    _defmatcher = re.compile('def\s+(\w+)\(.*')
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\types\__init__.py:109
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\types\__init__.py:109: DeprecationWarning: `np.long` is a deprecated alias for `np.compat.long`. To silence this warning, use `np.compat.long` by itself. In the likely event your code does not need to work on Python 2 you can use the builtin `int` for which `np.compat.long` is itself an alias. Doing this will not modify any behaviour and is safe. When replacing `np.long`, you may wish to use e.g. `np.int64` or `np.int32` to specify the precision. If you wish to review your current use, check the release note link for additional information.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    long_ = _make_signed(np.long)
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\types\__init__.py:110
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\types\__init__.py:110: DeprecationWarning: `np.long` is a deprecated alias for `np.compat.long`. To silence this warning, use `np.compat.long` by itself. In the likely event your code does not need to work on Python 2 you can use the builtin `int` for which `np.compat.long` is itself an alias. Doing this will not modify any behaviour and is safe. When replacing `np.long`, you may wish to use e.g. `np.int64` or `np.int32` to specify the precision. If you wish to review your current use, check the release note link for additional information.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    ulong = _make_unsigned(np.long)
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\annotations\type_annotations.py:282
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\annotations\type_annotations.py:282: DeprecationWarning: invalid escape sequence \s
+    re_longest_white_prefix = re.compile('^\s*')
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\appdirs.py:130
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\appdirs.py:130: DeprecationWarning: invalid escape sequence \D
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\numba\appdirs.py:235
+  C:\ProgramData\Anaconda3\lib\site-packages\numba\appdirs.py:235: DeprecationWarning: invalid escape sequence \P
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\classes\reportviews.py:95
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\classes\reportviews.py:95
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\classes\reportviews.py:95: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated, and in 3.8 it will stop working
+    from collections import Mapping, Set, Iterable
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\expanders.py:70
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\expanders.py:70: DeprecationWarning: invalid escape sequence \s
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\geometric.py:275
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\geometric.py:275: DeprecationWarning: invalid escape sequence \l
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\geometric.py:764
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\geometric.py:764: DeprecationWarning: invalid escape sequence \l
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\centrality\current_flow_betweenness.py:325
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\centrality\current_flow_betweenness.py:325: DeprecationWarning: invalid escape sequence \l
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\cluster.py:537
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\cluster.py:537: DeprecationWarning: invalid escape sequence \m
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\reciprocity.py:47
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\reciprocity.py:47: DeprecationWarning: invalid escape sequence \i
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\shortest_paths\weighted.py:1996
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\shortest_paths\weighted.py:1996: DeprecationWarning: invalid escape sequence \p
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\connectivity\connectivity.py:302
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\connectivity\connectivity.py:302: DeprecationWarning: invalid escape sequence \d
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\flow\preflowpush.py:426
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\flow\preflowpush.py:426: DeprecationWarning: invalid escape sequence \s
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\flow\shortestaugmentingpath.py:298
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\flow\shortestaugmentingpath.py:298: DeprecationWarning: invalid escape sequence \m
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\connectivity\stoerwagner.py:94
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\algorithms\connectivity\stoerwagner.py:94: DeprecationWarning: invalid escape sequence \l
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\lattice.py:226
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\lattice.py:226: DeprecationWarning: invalid escape sequence \s
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\line.py:113
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\generators\line.py:113: DeprecationWarning: invalid escape sequence \{
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\readwrite\graphml.py:346
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\readwrite\graphml.py:346: DeprecationWarning: `np.int` is a deprecated alias for the builtin `int`. To silence this warning, use `int` by itself. Doing this will not modify any behavior and is safe. When replacing `np.int`, you may wish to use e.g. `np.int64` or `np.int32` to specify the precision. If you wish to review your current use, check the release note link for additional information.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    (np.int, "int"), (np.int8, "int"),
+
+C:\ProgramData\Anaconda3\lib\site-packages\networkx\linalg\modularitymatrix.py:74
+  C:\ProgramData\Anaconda3\lib\site-packages\networkx\linalg\modularitymatrix.py:74: DeprecationWarning: invalid escape sequence \o
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\pandas\util\testing.py:20
+  C:\ProgramData\Anaconda3\lib\site-packages\pandas\util\testing.py:20: DeprecationWarning: `np.bool` is a deprecated alias for the builtin `bool`. To silence this warning, use `bool` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.bool_` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    from pandas._libs import testing as _testing
+
+C:\ProgramData\Anaconda3\lib\site-packages\nose\config.py:178
+  C:\ProgramData\Anaconda3\lib\site-packages\nose\config.py:178: DeprecationWarning: invalid escape sequence \.
+    """
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\ensemble\gradient_boosting.py:34
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\ensemble\gradient_boosting.py:34
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\ensemble\gradient_boosting.py:34: DeprecationWarning: `np.bool` is a deprecated alias for the builtin `bool`. To silence this warning, use `bool` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.bool_` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    from ._gradient_boosting import predict_stages
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:35
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:35: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:597
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:597: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps, copy_X=True, fit_path=True,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:836
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:836: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps, copy_X=True, fit_path=True,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:862
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:862: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps, positive=False):
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1097
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1097: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    max_n_alphas=1000, n_jobs=None, eps=np.finfo(np.float).eps,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1344
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1344: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    max_n_alphas=1000, n_jobs=None, eps=np.finfo(np.float).eps,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1480
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\least_angle.py:1480: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps, copy_X=True, positive=False):
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:152
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:152: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    precompute=False, eps=np.finfo(np.float).eps,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:320
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:320: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=np.finfo(np.float).eps, random_state=None,
+
+C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:580
+  C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\randomized_l1.py:580: DeprecationWarning: `np.float` is a deprecated alias for the builtin `float`. To silence this warning, use `float` by itself. Doing this will not modify any behavior and is safe. If you specifically wanted the numpy scalar type, use `np.float64` here.
+  Deprecated in NumPy 1.20; for more details and guidance: https://numpy.org/devdocs/release/1.20.0-notes.html#deprecations
+    eps=4 * np.finfo(np.float).eps, n_jobs=None,
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+!!!!!!!!!!!!!!!!!! Interrupted: 13 errors during collection !!!!!!!!!!!!!!!!!!!
+=================== 42 warnings, 13 error in 11.10 seconds ====================

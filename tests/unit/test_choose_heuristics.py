@@ -2,13 +2,9 @@ import pathlib
 import sys
 import numpy as np
 
-<<<<<<< HEAD
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from slavv.analysis import choose_vertices, choose_edges
-=======
-from slavv.analysis.ml_curator import choose_vertices, choose_edges
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 def test_choose_vertices_thresholds():

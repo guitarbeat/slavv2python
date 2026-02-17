@@ -1,8 +1,9 @@
-"""Synthetic data generation for testing and demos."""
+from __future__ import annotations
 import numpy as np
+from typing import Tuple
 
 def generate_synthetic_vessel_volume(
-    shape: tuple[int, int, int] = (64, 64, 64),
+    shape: Tuple[int, int, int] = (64, 64, 64),
     vessel_radius: float = 5.0,
     background_val: float = 0.0,
     vessel_val: float = 1.0

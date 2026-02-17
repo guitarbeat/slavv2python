@@ -11,11 +11,10 @@ Or after pip install -e .:
 import numpy as np
 
 from slavv import SLAVVProcessor
-from slavv.utils import validate_parameters
+from slavv.utils import validate_parameters, generate_synthetic_vessel_volume
 
-# Use a small synthetic volume for the demo (simple 3D array)
-image_data = np.zeros((32, 32, 32), dtype=np.float32)
-image_data[8:24, 8:24, :] = 1.0  # Simple vessel-like structure
+# Use a synthetic volume for the demo
+image_data = generate_synthetic_vessel_volume(shape=(32, 32, 32))
 
 # Default parameters (validated)
 params = validate_parameters({})

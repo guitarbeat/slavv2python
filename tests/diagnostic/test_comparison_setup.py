@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 # Add project root and source to path for slavv imports
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 

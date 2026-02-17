@@ -1,5 +1,4 @@
 import numpy as np
-<<<<<<< HEAD
 
 # Add source path for imports
 try:
@@ -8,9 +7,6 @@ except ImportError:
     from slavv.core import SLAVVProcessor
 
 
-=======
-from slavv.core.pipeline import SLAVVProcessor
->>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 from unittest.mock import patch
 
 

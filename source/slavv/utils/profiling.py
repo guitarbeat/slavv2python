@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from .core import SLAVVProcessor
+# from ..core import SLAVVProcessor  # Moved inside to avoid circular dependency
 
 
 def profile_process_image(image: np.ndarray, parameters: Optional[Dict[str, Any]] = None) -> pstats.Stats:
@@ -26,6 +26,7 @@ def profile_process_image(image: np.ndarray, parameters: Optional[Dict[str, Any]
     if parameters is None:
         parameters = {}
 
+    from ..core import SLAVVProcessor
     profiler = cProfile.Profile()
     processor = SLAVVProcessor()
     profiler.runcall(processor.process_image, image, parameters)
