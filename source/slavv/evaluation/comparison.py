@@ -6,7 +6,6 @@ This module handles the execution of MATLAB and Python vectorization pipelines
 for comparison purposes.
 """
 import os
-import sys
 import time
 import json
 import subprocess
@@ -361,7 +360,6 @@ def orchestrate_comparison(
         print(f"Note: Could not auto-generate manifest: {e}")
     
     # Print final summary status
-    # Print final summary status
     if matlab_results and python_results:
         success = matlab_results.get('success') and python_results.get('success')
         return 0 if success else 1
@@ -501,11 +499,9 @@ def run_standalone_comparison(
                 
                 # Note: network.json usually has 'connections' (N,2) ints, not 'traces'.
                 # We map connections to traces as best effort if traces missing
+                # Count from connections if traces missing
                 if 'connections' in loaded_data['edges']:
-                     # Just create dummy traces from connections for count purposes if needed?
-                     # Actually compare_results metrics might depend on traces. 
-                     # But for basic counts, we can use connections length.
-                     pass
+                     python_results['edges_count'] = len(loaded_data['edges']['connections'])
 
                 python_results['results'] = loaded_data
                 python_results['vertices_count'] = len(loaded_data.get('vertices', {}).get('positions', []))

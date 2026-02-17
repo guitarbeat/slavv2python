@@ -4,9 +4,14 @@ Management utilities for SLAVV comparison data.
 
 import shutil
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
+
+from slavv.utils import format_size, format_time
+
+logger = logging.getLogger(__name__)
 
 
 def get_directory_size(path: Path) -> int:
@@ -20,22 +25,6 @@ def get_directory_size(path: Path) -> int:
         pass
     return total
 
-def format_size(bytes_size: int) -> str:
-    """Format bytes to human-readable size."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if bytes_size < 1024.0:
-            return f"{bytes_size:.2f} {unit}"
-        bytes_size /= 1024.0
-    return f"{bytes_size:.2f} TB"
-
-def format_time(seconds: float) -> str:
-    """Format seconds to human-readable time."""
-    if seconds < 60:
-        return f"{seconds:.1f}s"
-    elif seconds < 3600:
-        return f"{int(seconds//60)}m {int(seconds%60)}s"
-    else:
-        return f"{int(seconds//3600)}h {int((seconds%3600)//60)}m"
 
 def load_run_info(run_dir: Path) -> Dict[str, Any]:
     """Load information about a comparison run."""

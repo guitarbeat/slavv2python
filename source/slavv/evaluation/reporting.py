@@ -5,32 +5,16 @@ This module generates summary files and reports for comparison runs.
 """
 
 import json
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+from slavv.utils import format_size, format_time
 
-def format_size(bytes_size: int) -> str:
-    """Format bytes to human-readable size."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if bytes_size < 1024.0:
-            return f"{bytes_size:.2f} {unit}"
-        bytes_size /= 1024.0
-    return f"{bytes_size:.2f} TB"
+logger = logging.getLogger(__name__)
 
 
-def format_time(seconds: float) -> str:
-    """Format seconds to human-readable time."""
-    if seconds < 60:
-        return f"{seconds:.1f}s"
-    elif seconds < 3600:
-        mins = int(seconds // 60)
-        secs = seconds % 60
-        return f"{mins}m {secs:.1f}s"
-    else:
-        hours = int(seconds // 3600)
-        mins = int((seconds % 3600) // 60)
-        return f"{hours}h {mins}m"
 
 
 def generate_summary(run_dir: Path, output_file: Path):
@@ -40,8 +24,11 @@ def generate_summary(run_dir: Path, output_file: Path):
     report_path = run_dir / 'comparison_report.json'
     report = {}
     if report_path.exists():
-        with open(report_path, 'r') as f:
-            report = json.load(f)
+        try:
+            with open(report_path, 'r') as f:
+                report = json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load comparison report {report_path}: {e}")
     
     # Extract metadata
     run_name = run_dir.name

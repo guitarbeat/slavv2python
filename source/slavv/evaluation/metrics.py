@@ -225,8 +225,8 @@ def compare_results(
         comparison['performance'] = {
             'matlab_time_seconds': matlab_time,
             'python_time_seconds': python_time,
-            'speedup_factor': speedup,
-            'python_faster': speedup > 1.0
+            'speedup': speedup,
+            'faster': "Python" if speedup > 1.0 else "MATLAB"
         }
     
     # Detailed comparison if parsed MATLAB data is available
