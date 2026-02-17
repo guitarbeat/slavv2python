@@ -12,11 +12,11 @@
 
 ---
 
-## Comparison Workflow
-The comparison workflow has been decoupled to allow flexible execution:
-1. **Run MATLAB**: `scripts/01_Run_Matlab.ipynb` (or CLI) $\rightarrow$ `comparisons/XX_matlab_run/`
-2. **Run Python**: `scripts/02_Run_Python.ipynb` $\rightarrow$ `comparisons/XX_python_run/`
-3. **Compare**: `scripts/03_Compare_Results.ipynb` $\rightarrow$ `comparisons/XX_comparison_report/`
+## Experiment Workflow
+The experiment workflow has been decoupled to allow flexible execution:
+1. **Run MATLAB**: `notebooks/01_Run_Matlab.ipynb` (or CLI) $\rightarrow$ `experiments/XX_matlab_run/`
+2. **Run Python**: `notebooks/01_Run_Python.ipynb` $\rightarrow$ `experiments/XX_python_run/`
+3. **Compare**: `notebooks/01_End_to_End_Comparison.ipynb` $\rightarrow$ `experiments/XX_comparison_report/`
 
 **System Information Capture**: Each run automatically logs CPU, RAM, GPU, OS, and software versions for performance tracking across different machines.
 
@@ -71,7 +71,7 @@ The comparison workflow has been decoupled to allow flexible execution:
 ### High Priority
 - [ ] Numba JIT for edge tracing (~100x speedup)
 - [ ] Parallel chunk processing with `joblib`
-- [ ] CLI tool via `pyproject.toml` entry points
+- [x] CLI tool via `pyproject.toml` entry points
 
 ### Medium Priority
 - [ ] Interactive curation GUI in Streamlit
@@ -94,5 +94,5 @@ Building on work with VessMorphoVis/Blender exports:
 ---
 
 ## See Also
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design diagrams
-- [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - MATLAB→Python mapping
+- [ARCHITECTURE.md](../reference/ARCHITECTURE.md) - System design diagrams
+- [MIGRATION_GUIDE.md](../reference/MIGRATION_GUIDE.md) - MATLAB→Python mapping

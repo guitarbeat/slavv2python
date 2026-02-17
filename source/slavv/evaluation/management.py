@@ -65,19 +65,38 @@ def load_run_info(run_dir: Path) -> Dict[str, Any]:
     
     return info
 
-def list_runs(comparisons_dir: Path) -> List[Dict[str, Any]]:
-    """List all comparison runs in the directory."""
-    if not comparisons_dir.exists():
+def create_experiment_path(base_dir: Path, label: str = "run") -> Path:
+    """Create a hierarchical, timestamped experiment path."""
+    now = datetime.now()
+    year = now.strftime('%Y')
+    month_val = now.strftime('%m')
+    month_name = now.strftime('%B')
+    month_folder = f"{month_val}-{month_name}"
+    day_time = now.strftime('%d_%H%M%S')
+    
+    # Sanitize label
+    safe_label = "".join([c if c.isalnum() or c in ("-", "_") else "-" for c in label])
+    
+    return base_dir / year / month_folder / f"{day_time}_{safe_label}"
+
+def list_runs(experiment_dir: Path) -> List[Dict[str, Any]]:
+    """List all comparison runs in the directory hierarchy."""
+    if not experiment_dir.exists():
         return []
     
     runs = []
-    # Look for both dated folders and any folder starting with 'comparison_output'
-    candidates = sorted(list(comparisons_dir.glob('2026*')) + list(comparisons_dir.glob('comparison_output*')))
-    
-    for run_dir in candidates:
-        if run_dir.is_dir():
-            runs.append(load_run_info(run_dir))
-    return runs
+    # Find all directories that contain a manifestation of a run (e.g., comparison_report.json or results.json)
+    # We look for folders that have 'matlab_results' or 'python_results' subdirs
+    for report in experiment_dir.rglob('comparison_report.json'):
+        runs.append(load_run_info(report.parent))
+        
+    # Also find standalone python runs if they don't have a report yet
+    for results in experiment_dir.rglob('python_results'):
+        parent = results.parent
+        if not (parent / 'comparison_report.json').exists():
+             runs.append(load_run_info(parent))
+
+    return sorted(runs, key=lambda x: x['name'], reverse=True)
 
 def analyze_checkpoints(comparisons_dir: Path) -> List[Dict[str, Any]]:
     """Analyze checkpoint files usage."""

@@ -41,9 +41,9 @@ Each comparison run generates a `MANIFEST.md` file in its output directory. This
 *   **Summary Stats**: Quick look at vertices, edges, and performance.
 *   **Instructions**: Copy-pasteable commands for viewing that specific run's results.
 
-To list all available comparison runs (each run typically lives in its own subdirectory under `comparisons/`), you can use standard shell tools. For example:
+To list all available comparison runs:
 ```bash
-ls -d comparisons/*/
+The `notebooks/04_Comparison_Dashboard.ipynb` notebook provides an interactive dashboard:
 ```
 
 ## Export Formats

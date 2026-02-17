@@ -1,28 +1,22 @@
-# Documentation
+# Documentation Index
 
-## Guides
-| Document | Description |
-|----------|-------------|
-| [SETUP](guides/SETUP.md) | Environment setup and installation |
-| [DEVELOPMENT](guides/DEVELOPMENT.md) | Development guide, status, and roadmap |
-| [VISUALIZATION](guides/VISUALIZATION.md) | 3D visualization and file exports |
+Welcome to the SLAVV documentation.
 
-## Reference
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE](reference/ARCHITECTURE.md) | System architecture and data flow |
-| [MIGRATION_GUIDE](reference/MIGRATION_GUIDE.md) | MATLAB to Python port mapping |
+## Getting Started
+- [Environment Setup](ENVIRONMENT_SETUP.md) - How to install and configure the environment.
+- [Development Guide](DEVELOPMENT.md) - Architecture, algorithms, and roadmap.
+- [Migration Guide](MIGRATION_GUIDE.md) - Mapping MATLAB concepts to Python.
 
-## Architecture
-| Document | Description |
-|----------|-------------|
-| [Decisions (ADRs)](architecture/decisions/) | Architecture Decision Records |
+## Usage & Specialized Topics
+- [Visualization](VISUALIZATION.md) - 3D rendering and file exports.
+- [System Architecture](ARCHITECTURE.md) - Technical diagrams and data flow.
+- [Experiment Structure](../experiments/README.md) - How experiment folders are organized.
 
-## Archive
-| Document | Description |
-|----------|-------------|
-| [Archive Index](archive/) | Historical debugging and status reports |
+## Architecture Decisions
+- [ADRs](architecture/decisions/README.md) - Record of architectural decisions.
+
+## History & Reports
+- [Archive](archive/README.md) - Historical debugging reports and status updates.
 
 ---
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines and testing.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
