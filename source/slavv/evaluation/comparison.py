@@ -526,7 +526,7 @@ def run_standalone_comparison(
         print("\nLoading MATLAB output data...")
         try:
             matlab_parsed = load_matlab_batch_results(matlab_results['batch_folder'])
-            print(f"Successfully loaded MATLAB data")
+            print("Successfully loaded MATLAB data")
         except Exception as e:
             print(f"Warning: Could not load MATLAB output data: {e}")
     

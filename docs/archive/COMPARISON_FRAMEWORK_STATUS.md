@@ -41,6 +41,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 ## Key Features Implemented
 
 ### Detailed Result Comparison
+
 - ✅ Vertex position matching using KD-tree nearest-neighbor search
 - ✅ Radius correlation analysis (Pearson & Spearman)
 - ✅ Edge count and length comparisons
@@ -49,6 +50,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 - ✅ Unmatched vertex detection
 
 ### Statistical Analysis
+
 - ✅ Kolmogorov-Smirnov test for distribution similarity
 - ✅ T-tests for mean differences
 - ✅ Effect size calculations (Cohen's d, Hedge's g)
@@ -56,6 +58,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 - ✅ Comprehensive text report generation
 
 ### Visualization
+
 - ✅ Count comparison bar charts
 - ✅ Radius distribution histograms
 - ✅ Timing breakdown charts
@@ -63,6 +66,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 - ✅ Publication-quality plots (150 DPI PNG)
 
 ### Validation & Testing
+
 - ✅ Pre-flight setup validation
 - ✅ MATLAB version compatibility check
 - ✅ Python dependency verification
@@ -70,6 +74,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 - ✅ Comprehensive unit test suite
 
 ### Performance Tracking
+
 - ✅ Stage-by-stage timing export (MATLAB)
 - ✅ Total elapsed time tracking
 - ✅ Speedup calculations
@@ -78,6 +83,7 @@ A comprehensive framework for comparing MATLAB and Python implementations of SLA
 ## Test Results
 
 ### MATLAB Parser Tests
+
 ```
 ========================= test session starts ==========================
 tests/unit/test_matlab_parser.py::TestFindBatchFolder ... PASSED
@@ -93,6 +99,7 @@ Result: 24 passed, 1 failed, 25 total (96% pass rate)
 ```
 
 ### Comparison Metrics Tests
+
 ```
 ========================= test session starts ==========================
 tests/unit/test_comparison_metrics.py::TestMatchVertices ... PASSED
@@ -109,6 +116,7 @@ Result: 22 passed, 0 failed, 22 total (100% pass rate)
 ## Usage Examples
 
 ### Basic Comparison
+
 ```bash
 # Step 1: Validate setup
 python scripts/validate_setup.py \
@@ -132,6 +140,7 @@ python scripts/statistical_analysis.py \
 ```
 
 ### Testing Individual Components
+
 ```bash
 # Test Python only
 python scripts/compare_matlab_python.py --skip-matlab ...
@@ -174,11 +183,13 @@ comparison_output/
 ## Known Issues
 
 ### Minor Issues
+
 1. **Empty batch folder test:** One test fails when loading completely empty batch folders (cosmetic issue, doesn't affect functionality)
 2. **Python pipeline configuration:** Python-only test revealed a configuration issue with `get_chunking_lattice_func` (separate from comparison framework)
 3. **MATLAB startup time:** MATLAB R2019a takes 5+ minutes to initialize on first run
 
 ### Resolved Issues
+
 1. ✅ **Type hint compatibility:** Fixed `str | Path` syntax for Python 3.7 compatibility
 2. ✅ **Import paths:** Added proper path handling for script imports
 3. ✅ **scipy dependency:** Properly handled in imports
@@ -186,18 +197,21 @@ comparison_output/
 ## Technical Highlights
 
 ### Vertex Matching Algorithm
+
 - Uses scipy's cKDTree for O(N log N) nearest-neighbor search
 - Configurable distance threshold (default: 3.0 voxels)
 - Handles unmatched vertices on both sides
 - Computes position RMSE for matched pairs
 
 ### Statistical Rigor
+
 - Multiple correlation metrics (Pearson, Spearman)
 - Distribution similarity tests (Kolmogorov-Smirnov)
 - Effect size calculations for practical significance
 - Handles edge cases (NaN values, empty datasets)
 
 ### Code Quality
+
 - Comprehensive type hints (Python 3.7+ compatible)
 - Extensive docstrings
 - Error handling with informative messages
@@ -216,6 +230,7 @@ comparison_output/
 ## Conclusion
 
 The MATLAB-Python comparison framework is **production-ready** with:
+
 - ✅ 8/8 planned components completed
 - ✅ 46/47 unit tests passing (98%)
 - ✅ Comprehensive documentation
@@ -223,6 +238,7 @@ The MATLAB-Python comparison framework is **production-ready** with:
 - ✅ Working validation and visualization tools
 
 The framework successfully demonstrates:
+
 1. Loading and parsing MATLAB output files
 2. Computing detailed comparison metrics
 3. Generating publication-quality visualizations

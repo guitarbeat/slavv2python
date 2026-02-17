@@ -7,7 +7,7 @@ and `paint_vertex_image.m`.
 """
 
 import numpy as np
-from typing import Dict, Any, Tuple, Optional, List, Union
+from typing import Dict, Any, Tuple, Union
 import logging
 
 logger = logging.getLogger(__name__)

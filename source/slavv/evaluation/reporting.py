@@ -8,9 +8,8 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional
 
-from slavv.utils import format_size, format_time
+from slavv.utils import format_time
 
 logger = logging.getLogger(__name__)
 

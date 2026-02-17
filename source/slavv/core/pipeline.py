@@ -7,7 +7,7 @@ import os
 import joblib
 import numpy as np
 import logging
-from typing import Dict, Any, Callable, Optional, List
+from typing import Dict, Any, Callable, Optional
 
 from . import energy, tracing, graph
 from .. import utils

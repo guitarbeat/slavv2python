@@ -8,11 +8,13 @@
 ## 🎯 Original Issues
 
 ### Issue #1: MATLAB - Missing `tif2mat` function ✅ FIXED
+
 **Error:** `Undefined function 'tif2mat' for input arguments of type 'char'.`
 
 **Root Cause:** `vectorize_V200` requires helper functions from `legacy/Vectorization-Public/source/` directory, which wasn't added to MATLAB's path.
 
 **Fix:** Modified [`scripts/run_matlab_vectorization.m`](scripts/run_matlab_vectorization.m) to add source directory:
+
 ```matlab
 source_dir = fullfile(current_dir, 'source');
 if exist(source_dir, 'dir')
@@ -21,11 +23,13 @@ end
 ```
 
 ### Issue #2: Python - Missing chunking lattice function ✅ FIXED
+
 **Error:** `TypeError: 'NoneType' object is not callable` at `energy.py:202`
 
 **Root Cause:** `calculate_energy_field()` expects a `get_chunking_lattice_func` parameter for processing large images in chunks, but `pipeline.py` wasn't passing it.
 
 **Fix:** Modified [`src/slavv/pipeline.py`](src/slavv/pipeline.py) line 144:
+
 ```python
 def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
     from . import utils
@@ -37,6 +41,7 @@ def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> D
 ## 📊 Test Results
 
 ### Test #1: MATLAB R2019a (Fixed)
+
 ```
 Status: ✅ COMPLETED SUCCESSFULLY
 Runtime: 3,772 seconds (62.9 minutes)
@@ -57,6 +62,7 @@ Parameters Used:
 ```
 
 ### Test #2: Python Implementation (Fixed)
+
 ```
 Status: ✅ COMPLETED SUCCESSFULLY
 Runtime: 495 seconds (8.3 minutes)
@@ -76,25 +82,31 @@ Issue: Extracted 0 vertices/edges
 ## ⚠️ New Issue Discovered: Parameter Mismatch
 
 ### Problem
+
 Python implementation ran without errors but extracted **0 vertices**, while MATLAB successfully extracted vessels. This indicates parameter mismatch between implementations.
 
 ### Root Cause
+
 The parameters file [`scripts/comparison_params.json`](scripts/comparison_params.json) is missing critical vertex extraction parameters:
 
 **Missing Parameters:**
+
 - `energy_upper_bound` (MATLAB uses 0)
 - `max_voxels_per_node` (MATLAB uses 6000)
 
 **Impact:** Python's vertex extraction step can't properly detect vessel candidates from the energy field without these thresholds.
 
 ### MATLAB Output Location Investigation
+
 MATLAB completed all workflows but output files are not in expected location:
+
 - **Expected:** `.mat` files in `vectors/` subfolder
 - **Found:** HDF5 files in `data/` subfolder:
   - `energy_260127-153430_slavv_test_volume` (HDF5)
   - `original_slavv_test_volume` (HDF5)
 
 The MATLAB parser in [`scripts/matlab_output_parser.py`](scripts/matlab_output_parser.py) expects:
+
 - `{batch_folder}/vectors/network_*.mat`
 - `{batch_folder}/vectors/vertices_*.mat`
 - `{batch_folder}/vectors/edges_*.mat`
@@ -117,6 +129,7 @@ The MATLAB parser in [`scripts/matlab_output_parser.py`](scripts/matlab_output_p
 ## 🔧 Required Next Steps
 
 ### Step 1: Fix Parameter Mismatch ⏳
+
 Update [`scripts/comparison_params.json`](scripts/comparison_params.json) to include all MATLAB parameters:
 
 ```json
@@ -151,13 +164,17 @@ Update [`scripts/comparison_params.json`](scripts/comparison_params.json) to inc
 ```
 
 ### Step 2: Locate MATLAB Output Files ⏳
+
 Investigate where `vectorize_V200` saves final `.mat` output files:
+
 - Check MATLAB source code for save locations
 - Verify expected folder structure in `legacy/Vectorization-Public`
 - Update parser if necessary
 
 ### Step 3: Run Full Comparison Test ⏳
+
 Once parameters are fixed and outputs located:
+
 ```bash
 python scripts/compare_matlab_python.py \
     --input "data/slavv_test_volume.tif" \
@@ -178,6 +195,7 @@ python scripts/compare_matlab_python.py \
 | **Network** | 7 sec | ~5 sec | 1.4x faster (Python) |
 
 **Notes:**
+
 - Python significantly faster (~8x overall speedup)
 - MATLAB used 4 parallel workers (`parpool`)
 - Python used default single-threaded execution

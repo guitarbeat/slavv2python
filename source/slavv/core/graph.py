@@ -5,7 +5,7 @@ Handles the conversion of traced edges into a connected graph (strands, bifurcat
 """
 import numpy as np
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional
+from typing import Dict, Any, List, Tuple, Set
 
 logger = logging.getLogger(__name__)
 

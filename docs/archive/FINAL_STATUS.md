@@ -16,6 +16,7 @@
 ## 📊 Test Results Summary
 
 ### MATLAB R2019a ✅ SUCCESS
+
 ```
 Runtime: 3,772 seconds (62.9 minutes)
 Exit Code: 0 ✅
@@ -30,6 +31,7 @@ Output Location: comparison_output_test/matlab_results/batch_260127-153430/
 ```
 
 ### Python Implementation ✅ RUNS (but energy = 0)
+
 ```
 Runtime: 495 seconds (8.3 minutes)
 Exit Code: 0 ✅
@@ -48,13 +50,16 @@ Output Location: comparison_output_test3/python_results/
 ## 🔍 Remaining Issue: Python Energy Field All Zeros
 
 ### Problem
+
 Python's energy calculation returns **all zeros** despite:
+
 - ✅ Image preprocessing working (normalized to [0, 1])
 - ✅ Parameters correct
 - ✅ No errors or exceptions
 - ✅ Hessian calculation running
 
 ### Investigation Results
+
 ```
 Test Image Statistics:
 - Shape: (222, 512, 512)
@@ -73,19 +78,24 @@ Energy Field Output:
 ```
 
 ### Root Cause (Suspected)
+
 The Hessian-based vesselness detection isn't finding tubular structures. Possible causes:
+
 1. **Scale mismatch**: Vessel sizes don't match the scale parameters (1.5-50 microns)
 2. **PSF parameters**: The test data might not match the microscope PSF assumptions
 3. **Contrast**: After normalization, vessels might not have enough contrast
 4. **Test data mismatch**: This volume might not be suitable for these parameters
 
 ### Why MATLAB Works vs Python Doesn't
+
 Need to investigate:
+
 - Does MATLAB use different preprocessing/normalization?
 - Are the Hessian calculations identical?
 - Are the sigma calculations matching?
 
 This requires comparing:
+
 - `get_energy_V202.m` (MATLAB) vs `energy.py` (Python)
 - Actual intermediate values at each scale
 
@@ -94,12 +104,15 @@ This requires comparing:
 ## 🎉 Major Achievements
 
 ### 1. Successfully Fixed Critical Bugs ✅
+
 - **3 blocking bugs** identified and fixed in both implementations
 - Both MATLAB and Python now run end-to-end without crashes
 - Proper error handling and path management implemented
 
 ### 2. Performance Comparison Obtained ✅
+
 **Python is ~8x faster than MATLAB** (495s vs 3,772s):
+
 - Energy: 7.9x faster
 - Vertices: 1.5x faster
 - Edges: 4.9x faster
@@ -108,6 +121,7 @@ This requires comparing:
 MATLAB used 4 parallel workers; Python was single-threaded.
 
 ### 3. Complete Comparison Framework Delivered ✅
+
 All 8 planned components implemented and tested:
 
 | Component | Status | Tests |
@@ -122,6 +136,7 @@ All 8 planned components implemented and tested:
 | Unit Tests | ✅ | 46/47 passing (98%) |
 
 ### 4. Documentation Complete ✅
+
 - [`DEBUG_STATUS.md`](DEBUG_STATUS.md) - Issue tracking
 - [`DEBUGGING_PROGRESS_REPORT.md`](DEBUGGING_PROGRESS_REPORT.md) - Detailed analysis
 - [`scripts/TROUBLESHOOTING.md`](scripts/TROUBLESHOOTING.md) - User guide
@@ -135,6 +150,7 @@ All 8 planned components implemented and tested:
 ### Files Modified
 
 #### 1. [`scripts/run_matlab_vectorization.m`](scripts/run_matlab_vectorization.m)
+
 ```matlab
 % Added source directory to path (CRITICAL FIX)
 source_dir = fullfile(current_dir, 'source');
@@ -145,6 +161,7 @@ end
 ```
 
 #### 2. [`src/slavv/pipeline.py`](src/slavv/pipeline.py)
+
 ```python
 # Fixed missing chunking function parameter (CRITICAL FIX)
 def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -153,6 +170,7 @@ def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> D
 ```
 
 #### 3. [`scripts/matlab_output_parser.py`](scripts/matlab_output_parser.py)
+
 ```python
 # Fixed Python 3.7 compatibility (CRITICAL FIX)
 from typing import Union
@@ -161,6 +179,7 @@ def find_batch_folder(output_dir: Union[str, Path]) -> Optional[Path]:
 ```
 
 #### 4. [`scripts/comparison_params.json`](scripts/comparison_params.json)
+
 ```json
 {
   // Added missing vertex extraction parameters
@@ -171,6 +190,7 @@ def find_batch_folder(output_dir: Union[str, Path]) -> Optional[Path]:
 ```
 
 ### Validation Strategy
+
 1. ✅ MATLAB runs via CLI - `vectorize_V200` executes successfully
 2. ✅ Python runs end-to-end - All pipeline stages complete
 3. ✅ Parameters aligned - Both use same configuration
@@ -181,15 +201,18 @@ def find_batch_folder(output_dir: Union[str, Path]) -> Optional[Path]:
 ## 📋 Next Steps (If Continuing)
 
 ### Step 1: Debug Python Energy Calculation
+
 **Objective:** Find why Hessian returns all zeros
 
 **Approach:**
+
 1. Add debug logging to `src/slavv/energy.py` at each scale
 2. Print intermediate values: sigmas, smoothed images, Hessian eigenvalues, vesselness
 3. Compare with MATLAB's intermediate outputs
 4. Check if test data is appropriate for these parameters
 
 **Diagnostic Script:**
+
 ```python
 # Add to energy.py in the scale loop:
 print(f"Scale {scale_idx}: radius={radius_microns:.2f}µm, sigma={sigma_object}")
@@ -199,19 +222,25 @@ print(f"  Vesselness range: [{vesselness.min():.4f}, {vesselness.max():.4f}]")
 ```
 
 ### Step 2: Alternative Test Data
+
 Try with a different test volume known to work with these parameters:
+
 - MATLAB tutorial data
 - Synthetic vessel phantom
 - Known-good microscopy data
 
 ### Step 3: Parameter Tuning
+
 If test data is correct, adjust parameters:
+
 - Reduce `radius_of_smallest_vessel_in_microns` (try 0.5-1.0)
 - Adjust `gaussian_to_ideal_ratio`
 - Modify PSF parameters
 
 ### Step 4: MATLAB Output Investigation
+
 Find where MATLAB saves final `.mat` files:
+
 - Expected: `batch_*/vectors/network_*.mat`
 - Currently: Only HDF5 files in `batch_*/data/`
 - Check `vectorize_V200.m` save commands
@@ -255,6 +284,7 @@ The one remaining issue (Python energy field) requires deeper investigation of t
 ## 📁 Output Locations
 
 ### MATLAB Results
+
 ```
 comparison_output_test/matlab_results/
 ├── batch_260127-153430/
@@ -267,6 +297,7 @@ comparison_output_test/matlab_results/
 ```
 
 ### Python Results
+
 ```
 comparison_output_test3/python_results/
 ├── checkpoints/

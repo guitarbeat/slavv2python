@@ -13,17 +13,20 @@
 #### Issue #1: MATLAB - Missing Source Directory in Path ✅ FIXED
 
 **Error:**
+
 ```
 Error message: Undefined function 'tif2mat' for input arguments of type 'char'.
 ```
 
 **Root Cause:**
+
 - `vectorize_V200` needs the `tif2mat` function from `Vectorization-Public/source/`
 - The batch script wasn't adding the `source/` directory to MATLAB's path
 - MATLAB couldn't find helper functions like `tif2mat`, `h52mat`, `mat2tif`, etc.
 
 **Fix Applied:**
 Modified `scripts/run_matlab_vectorization.m` to add the source directory:
+
 ```matlab
 %% Add source directory to MATLAB path
 current_dir = pwd;
@@ -37,6 +40,7 @@ end
 #### Issue #2: Python - Missing Chunking Lattice Function ✅ FIXED
 
 **Error:**
+
 ```
 TypeError: 'NoneType' object is not callable
 File ".\src\slavv\energy.py", line 202, in calculate_energy_field
@@ -44,11 +48,13 @@ File ".\src\slavv\energy.py", line 202, in calculate_energy_field
 ```
 
 **Root Cause:**
+
 - `calculate_energy_field` expects a `get_chunking_lattice_func` parameter for large images
 - `pipeline.py` was calling `energy.calculate_energy_field(image, params)` without passing the function
 
 **Fix Applied:**
 Modified `src/slavv/pipeline.py` line 144:
+
 ```python
 def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
     from . import utils
@@ -58,6 +64,7 @@ def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> D
 #### Issue #3: Python Type Hints for Python 3.7 ✅ FIXED
 
 **Error:**
+
 ```
 TypeError: unsupported operand type(s) for |: 'type' and 'type'
 ```
@@ -84,6 +91,7 @@ TypeError: unsupported operand type(s) for |: 'type' and 'type'
 | Python | ✅ Complete | 8.3 min | Energy=0 issue discovered |
 
 ### MATLAB Workflow Breakdown
+
 | Stage | Time | Notes |
 |-------|------|-------|
 | Energy | 3,552 sec (59 min) | 605 chunks |
@@ -93,6 +101,7 @@ TypeError: unsupported operand type(s) for |: 'type' and 'type'
 | **Total** | **3,772 sec** | |
 
 ### Unit Test Status
+
 - **MATLAB Parser:** 24/25 passing (96%)
 - **Comparison Metrics:** 22/22 passing (100%)
 - **Overall:** 46/47 passing (98%)

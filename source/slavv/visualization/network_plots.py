@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Optional, Any
 import logging
 from pathlib import Path
 from ..utils import calculate_path_length
@@ -1808,7 +1808,7 @@ class NetworkVisualizer:
             f.write("$PARAM_BEGIN\n")
             f.write(f"NUM_VERTS\t{len(vmv_points)}\n")
             f.write(f"NUM_STRANDS\t{len(vmv_strands)}\n")
-            f.write(f"NUM_ATTRIB_PER_VERT\t4\n")  # X, Y, Z, Radius
+            f.write("NUM_ATTRIB_PER_VERT\t4\n")  # X, Y, Z, Radius
             f.write("$PARAM_END\n\n")
 
             # Vertices

@@ -7,9 +7,7 @@ This module provides plotting functions for comparing MATLAB and Python results.
 from typing import Dict, Any, Optional
 from pathlib import Path
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 
 def set_plot_style():
     """Set consistent matplotlib style for all plots."""

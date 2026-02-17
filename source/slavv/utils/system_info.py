@@ -1,9 +1,8 @@
 """System information utilities for performance benchmarking."""
 
 import platform
-import sys
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 
 def get_system_info() -> Dict[str, Any]:

@@ -2,11 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-import json
-from pathlib import Path
 import tempfile
 import zipfile
 import os
@@ -16,7 +12,6 @@ warnings.filterwarnings("ignore")
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
-from slavv.analysis import calculate_network_statistics
 from slavv.analysis import MLCurator, AutomaticCurator
 from slavv.visualization import NetworkVisualizer
 from slavv.io import load_tiff_volume

@@ -6,12 +6,11 @@ to control the vectorization pipelines and visualize results.
 """
 
 import os
-import sys
 import json
 import shutil
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 import ipywidgets as widgets
 from IPython.display import display, clear_output, HTML
@@ -25,8 +24,7 @@ from slavv.evaluation.comparison import (
 )
 from slavv.evaluation.viz import (
     set_plot_style,
-    plot_count_comparison,
-    plot_radius_distributions
+    plot_count_comparison
 )
 
 # Common styles

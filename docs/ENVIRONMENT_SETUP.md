@@ -5,6 +5,7 @@ This guide helps you set up a proper Python virtual environment for SLAVV develo
 ## Why Do I Need a Virtual Environment?
 
 A virtual environment ensures:
+
 - **Isolated dependencies**: Your SLAVV packages won't conflict with system packages
 - **Reproducible setup**: Same environment across different machines
 - **Clean testing**: Easy to reset if something goes wrong
@@ -15,7 +16,7 @@ A virtual environment ensures:
 
 ```powershell
 # Navigate to project root
-cd "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python"
+cd /path/to/slavv2python
 
 # Create virtual environment
 python -m venv .venv
@@ -37,7 +38,7 @@ python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAV
 
 ```powershell
 # Navigate to project root
-cd "C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python"
+cd /path/to/slavv2python
 
 # Create conda environment
 conda create -n slavv-env python=3.10 -y
@@ -60,6 +61,7 @@ python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAV
 ### In Jupyter Notebooks
 
 1. **Open Jupyter Lab or Notebook**:
+
    ```powershell
    jupyter lab
    # or
@@ -71,6 +73,7 @@ python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAV
    - Or use the kernel selector in the top-right corner
 
 3. **Verify the environment**:
+
    ```python
    import sys
    print(sys.executable)  # Should point to your .venv or conda env
@@ -115,6 +118,7 @@ except ImportError as e:
 ### Issue: "No module named 'source'"
 
 **Solution**: Install the package in editable mode:
+
 ```powershell
 pip install -e .
 ```
@@ -126,6 +130,7 @@ This tells Python to find `slavv.*` modules from your current directory.
 **Cause**: Matplotlib is a **core dependency** and should be installed automatically with `pip install -e .`
 
 **Solution**: Reinstall the package to ensure all dependencies are installed:
+
 ```powershell
 pip install -e .
 # Or force reinstall
@@ -136,18 +141,22 @@ pip install --force-reinstall -e .
 
 ### Issue: Jupyter notebook uses wrong kernel
 
-**Solution**: 
+**Solution**:
+
 1. List available kernels:
+
    ```powershell
    jupyter kernelspec list
    ```
 
 2. Remove old kernels if needed:
+
    ```powershell
    jupyter kernelspec remove old-kernel-name
    ```
 
 3. Re-register your environment:
+
    ```powershell
    # Activate your environment first!
    python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAVV)"
@@ -156,6 +165,7 @@ pip install --force-reinstall -e .
 ### Issue: `pip install -e .` fails
 
 **Possible causes**:
+
 - **Old pip**: Update it with `python -m pip install --upgrade pip setuptools wheel`
 - **Permission errors**: Don't use `sudo` or admin mode; use a virtual environment instead
 - **Path issues**: Make sure you're in the project root (where `pyproject.toml` is)
@@ -165,14 +175,17 @@ pip install --force-reinstall -e .
 1. **Always activate** your environment before running scripts or notebooks
 2. **Use the same environment** for development and testing
 3. **Update dependencies** when `pyproject.toml` changes:
+
    ```powershell
    pip install --upgrade -e .
    ```
+
 4. **Restart Jupyter kernel** after installing new packages
 
 ## Next Steps
 
 After setting up your environment:
+
 1. Run `notebooks/00_Setup_and_Validation.ipynb` to verify everything works
 2. Make sure to select the **Python (SLAVV)** kernel in the notebook
 3. All validation checks should pass ✅

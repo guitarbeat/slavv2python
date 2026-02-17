@@ -4,7 +4,7 @@ Vertex and Edge tracing logic for SLAVV.
 Handles vertex extraction (local maxima/minima) and edge tracing through the energy field.
 """
 import logging
-from typing import Dict, Any, List, Optional, Tuple, Set
+from typing import Dict, Any, List, Optional, Tuple
 
 import math
 import numpy as np

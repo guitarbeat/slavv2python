@@ -2,13 +2,9 @@
 Validation utilities for SLAVV comparison setup.
 """
 
-import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
-import numpy as np
 
 # Add project root to path if needed for imports
 # (Assuming this module is importable as slavv.dev.validation)
@@ -204,7 +200,7 @@ class Validator:
             
         source_dir = repo_path / "source"
         if not source_dir.exists():
-            self.add_warning(f"'source' directory not found in Vectorization-Public. MATLAB may fail.")
+            self.add_warning("'source' directory not found in Vectorization-Public. MATLAB may fail.")
         else:
             self.add_pass("Vectorization-Public/source directory found")
             
@@ -254,7 +250,7 @@ class Validator:
             )
             
             if result.returncode == 0:
-                self.add_pass(f"MATLAB functional test passed. Found vectorization script.")
+                self.add_pass("MATLAB functional test passed. Found vectorization script.")
                 return True
             else:
                 self.add_error(f"MATLAB functional test failed (Code {result.returncode}). Output: {result.stdout}")

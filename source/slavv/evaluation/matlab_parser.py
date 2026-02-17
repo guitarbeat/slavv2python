@@ -9,9 +9,8 @@ extract vertices, edges, network statistics, and timing information.
 
 import json
 import logging
-import re
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple, Union
+from typing import Dict, Any, Optional, Union
 
 import numpy as np
 from scipy.io import loadmat

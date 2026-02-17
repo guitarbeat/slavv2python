@@ -1,6 +1,7 @@
 # System Architecture
 
 ## 1. High-Level Context
+
 The SLAVV2Python system is designed as a modular library (`slavv`) consumed by various interfaces (CLI, Web App, Scripts).
 
 ```mermaid
@@ -38,6 +39,7 @@ graph TD
 ```
 
 ## 2. Vectorization Pipeline Data Flow
+
 The core transformation turns a raster volume (voxels) into a topological graph (nodes/edges).
 
 ```mermaid
@@ -63,38 +65,42 @@ flowchart LR
 ```
 
 ## 3. Data Structure Evolution
+
 As data moves through the pipeline, its representation changes:
 
-1.  **Raster Phase (`image`, `energy`)**:
-    -   Type: `numpy.ndarray` (float32)
-    -   Shape: `(Y, X, Z)`
-    -   Memory: High (GBs)
+1. **Raster Phase (`image`, `energy`)**:
+    - Type: `numpy.ndarray` (float32)
+    - Shape: `(Y, X, Z)`
+    - Memory: High (GBs)
 
-2.  **Point Phase (`vertices`)**:
-    -   Type: `dict` of Arrays
-    -   `positions`: `(N, 3)` coordinates
-    -   `scales`: `(N,)` radii indices
+2. **Point Phase (`vertices`)**:
+    - Type: `dict` of Arrays
+    - `positions`: `(N, 3)` coordinates
+    - `scales`: `(N,)` radii indices
 
-3.  **Trace Phase (`edges`)**:
-    -   Type: `list[numpy.ndarray]`
-    -   Each element is a `(M, 3)` polyline
+3. **Trace Phase (`edges`)**:
+    - Type: `list[numpy.ndarray]`
+    - Each element is a `(M, 3)` polyline
 
-4.  **Graph Phase (`network`)**:
-    -   Type: Abstract Graph (Adjacency List + Node Attributes)
-    -   Serialized as: `.h5` (MorphIO), `.vmv` (VessMorphoVis), or `.mat` (Legacy)
+4. **Graph Phase (`network`)**:
+    - Type: Abstract Graph (Adjacency List + Node Attributes)
+    - Serialized as: `.h5` (MorphIO), `.vmv` (VessMorphoVis), or `.mat` (Legacy)
 
 ## 4. Design Principles
 
 ### A. Separation of Concerns
--   **Core Logic (`source/slavv`)**: Pure Python, few dependencies, no UI code.
--   **Visualization (`source/slavv/apps/web_app.py`, `external/blender_resources`)**: Handles rendering and user interaction.
--   This allows the core to run on headless HPC nodes without X11 forwarding.
+
+- **Core Logic (`source/slavv`)**: Pure Python, few dependencies, no UI code.
+- **Visualization (`source/slavv/apps/web_app.py`, `external/blender_resources`)**: Handles rendering and user interaction.
+- This allows the core to run on headless HPC nodes without X11 forwarding.
 
 ### B. Stateless Processing
--   The `SLAVVProcessor` is designed to be largely stateless.
--   Pipeline stages (`process_image`) pass data dictionaries explicitly.
--   Checkpointing (optional) is the only state persistence mechanism.
+
+- The `SLAVVProcessor` is designed to be largely stateless.
+- Pipeline stages (`process_image`) pass data dictionaries explicitly.
+- Checkpointing (optional) is the only state persistence mechanism.
 
 ### C. Explicit Configuration
--   No hidden globals. All physical parameters (`microns_per_voxel`, `scales`) must be passed in the `params` dictionary.
--   Defaults are handled in `utils.validate_parameters` but can always be overridden.
+
+- No hidden globals. All physical parameters (`microns_per_voxel`, `scales`) must be passed in the `params` dictionary.
+- Defaults are handled in `utils.validate_parameters` but can always be overridden.

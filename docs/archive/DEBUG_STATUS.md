@@ -8,17 +8,20 @@
 ### Issue #1: MATLAB - Missing Source Directory in Path ✅ FIXED
 
 **Error:**
+
 ```
 Error message: Undefined function 'tif2mat' for input arguments of type 'char'.
 ```
 
 **Root Cause:**
+
 - `vectorize_V200` needs the `tif2mat` function from `Vectorization-Public/source/`
 - The batch script wasn't adding the `source/` directory to MATLAB's path
 - MATLAB couldn't find helper functions like `tif2mat`, `h52mat`, `mat2tif`, etc.
 
 **Fix Applied:**
 Modified `scripts/run_matlab_vectorization.m` to add the source directory:
+
 ```matlab
 %% Add source directory to MATLAB path
 current_dir = pwd;
@@ -32,6 +35,7 @@ end
 ### Issue #2: Python - Missing Chunking Lattice Function ✅ FIXED
 
 **Error:**
+
 ```
 TypeError: 'NoneType' object is not callable
 File ".\src\slavv\energy.py", line 202, in calculate_energy_field
@@ -39,12 +43,14 @@ File ".\src\slavv\energy.py", line 202, in calculate_energy_field
 ```
 
 **Root Cause:**
+
 - `calculate_energy_field` expects a `get_chunking_lattice_func` parameter for large images
 - `pipeline.py` was calling `energy.calculate_energy_field(image, params)` without passing the function
 - The function exists in `utils.get_chunking_lattice` but wasn't being passed
 
 **Fix Applied:**
 Modified `src/slavv/pipeline.py` line 144:
+
 ```python
 def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
@@ -55,32 +61,39 @@ def calculate_energy_field(self, image: np.ndarray, params: Dict[str, Any]) -> D
 ### Issue #3: Python Type Hints for Python 3.7 ✅ FIXED
 
 **Error:**
+
 ```
 TypeError: unsupported operand type(s) for |: 'type' and 'type'
 ```
 
 **Root Cause:**
+
 - Python 3.7 doesn't support `str | Path` syntax (PEP 604)
 - This syntax was introduced in Python 3.10
 
 **Fix Applied:**
 Changed all type hints from `str | Path` to `Union[str, Path]` in:
+
 - `scripts/matlab_output_parser.py`
 
 ## 📊 Current Test Status
 
 ### Test Run #1: Python Implementation
+
 **Status:** 🏃 Running (4+ minutes)
 **Command:** `--skip-matlab` (Python only)
 **Progress:**
+
 ```
 INFO:src.slavv.pipeline:Starting SLAVV processing pipeline
 INFO:src.slavv.energy:Calculating energy field
 INFO:src.slavv.energy:Calculating energy field
 ```
+
 **Analysis:** Energy calculation is in progress. This is a compute-intensive step and may take several minutes for a 222x512x512 volume.
 
 ### Test Run #2: MATLAB Implementation
+
 **Status:** 🏃 Running (4+ minutes)
 **Command:** `--skip-python` (MATLAB only)
 **Progress:** No output yet (MATLAB initialization phase)
@@ -95,6 +108,7 @@ INFO:src.slavv.energy:Calculating energy field
 ## ⏱️ Expected Timings
 
 Based on the test volume (222x512x512 ≈ 58M voxels):
+
 - **MATLAB:** Unknown (first run on this system)
   - Startup: 2-5 minutes
   - Processing: Unknown
@@ -109,6 +123,7 @@ Based on the test volume (222x512x512 ≈ 58M voxels):
 Once both complete successfully:
 
 1. Run full comparison with both implementations:
+
    ```bash
    python scripts/compare_matlab_python.py \
        --input "data/slavv_test_volume.tif" \
@@ -117,6 +132,7 @@ Once both complete successfully:
    ```
 
 2. Generate visualizations:
+
    ```bash
    python scripts/visualize_comparison.py \
        --comparison-report comparison_output/comparison_report.json \
@@ -124,6 +140,7 @@ Once both complete successfully:
    ```
 
 3. Perform statistical analysis:
+
    ```bash
    python scripts/statistical_analysis.py \
        --comparison-report comparison_output/comparison_report.json \
@@ -133,11 +150,13 @@ Once both complete successfully:
 ## 🧪 Test Results Summary
 
 ### Unit Tests
+
 - ✅ **MATLAB Parser:** 24/25 tests passing (96%)
 - ✅ **Comparison Metrics:** 22/22 tests passing (100%)
 - ✅ **Overall:** 46/47 tests passing (98%)
 
 ### Integration Tests
+
 - 🏃 **Python Pipeline:** Running...
 - 🏃 **MATLAB Pipeline:** Running...
 - ⏳ **Full Comparison:** Pending both completions
@@ -145,11 +164,13 @@ Once both complete successfully:
 ## 🔧 Debugging Tools Available
 
 1. **Validation Tool:**
+
    ```bash
    python scripts/validate_setup.py --matlab-path "..." --test-data "..."
    ```
 
 2. **MATLAB Parser (test independently):**
+
    ```bash
    python scripts/matlab_output_parser.py path/to/batch_folder
    ```
@@ -164,6 +185,7 @@ Once both complete successfully:
 ## 📦 Deliverables Status
 
 All 8 planned components completed:
+
 - ✅ MATLAB output parser
 - ✅ Enhanced comparison script with detailed metrics
 - ✅ Pre-flight validation tool

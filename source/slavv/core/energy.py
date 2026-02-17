@@ -4,10 +4,9 @@ Energy field calculations for SLAVV.
 Includes Hessian-based vessel enhancement (Frangi/Sato) and Numba-accelerated gradient computation.
 """
 import logging
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any
 
 import numpy as np
-import scipy.ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from skimage import feature
 try:
@@ -92,7 +91,6 @@ else:
 
 # --- Helper Functions ---
 
-from ..utils import get_chunking_lattice
 
 def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) -> np.ndarray:
     """

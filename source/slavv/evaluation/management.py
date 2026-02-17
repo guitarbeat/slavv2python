@@ -2,14 +2,13 @@
 Management utilities for SLAVV comparison data.
 """
 
-import shutil
 import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Any
 from datetime import datetime
 
-from slavv.utils import format_size, format_time
+from slavv.utils import format_size
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,6 @@ Based on the MATLAB MLDeployment.py and MLLibrary.py implementations.
 """
 
 import numpy as np
-import pandas as pd
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
@@ -657,8 +656,6 @@ class MLCurator:
         # Since we don't have a standardized "saved feature file" format yet,
         # we assume files contain the feature dicts or arrays directly.
         
-        from pathlib import Path
-        import json
         
         all_v_feats = []
         all_v_labels = []

@@ -9,6 +9,7 @@ An ADR captures a significant architectural decision, including the context, dec
 ## Format
 
 Each ADR follows this structure:
+
 - **Status:** Proposed | Accepted | Deprecated | Superseded
 - **Date:** When the decision was made
 - **Context:** The circumstances and constraints
