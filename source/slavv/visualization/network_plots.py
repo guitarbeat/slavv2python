@@ -1565,15 +1565,23 @@ class NetworkVisualizer:
         base_path = Path(output_path).with_suffix('')
 
         # Export vertices
+        n_vertices = len(vertices['positions'])
+
+        # Helper to ensure array length matches n_vertices
+        def _ensure_len(arr):
+            if arr is None or len(arr) != n_vertices:
+                return np.full(n_vertices, np.nan)
+            return arr
+
         vertex_df = pd.DataFrame({
-            'vertex_id': range(len(vertices['positions'])),
+            'vertex_id': range(n_vertices),
             'y_position': vertices['positions'][:, 0],
             'x_position': vertices['positions'][:, 1],
             'z_position': vertices['positions'][:, 2],
-            'energy': vertices['energies'],
-            'radius_microns': vertices.get('radii_microns', vertices.get('radii', [])),
-            'radius_pixels': vertices.get('radii_pixels', vertices.get('radii', [])),
-            'scale': vertices['scales']
+            'energy': _ensure_len(vertices.get('energies')),
+            'radius_microns': _ensure_len(vertices.get('radii_microns', vertices.get('radii', []))),
+            'radius_pixels': _ensure_len(vertices.get('radii_pixels', vertices.get('radii', []))),
+            'scale': _ensure_len(vertices.get('scales'))
         })
         vertex_path = f"{base_path}_vertices.csv"
         vertex_df.to_csv(vertex_path, index=False)

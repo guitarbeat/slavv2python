@@ -7,6 +7,9 @@ from plotly.subplots import make_subplots
 
 import json
 from pathlib import Path
+import tempfile
+import zipfile
+import os
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -104,6 +107,49 @@ def cached_process_image(image, params, _progress_callback=None):
 def cached_load_tiff_volume(file):
     """Cached wrapper for load_tiff_volume."""
     return load_tiff_volume(file)
+
+
+@st.cache_data(show_spinner=False)
+def generate_export_data(vertices, edges, network, parameters, format_type):
+    """Generate export data and return as bytes."""
+    # Reconstruct a minimal results dict for the visualizer
+    results = {
+        'vertices': vertices,
+        'edges': edges,
+        'network': network,
+        'parameters': parameters
+    }
+    visualizer = NetworkVisualizer()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base_path = os.path.join(temp_dir, "export")
+
+        if format_type == "csv":
+            visualizer.export_network_data(results, base_path, format="csv")
+            v_path = base_path + "_vertices.csv"
+            e_path = base_path + "_edges.csv"
+
+            zip_path = os.path.join(temp_dir, "network_csv.zip")
+            with zipfile.ZipFile(zip_path, 'w') as zf:
+                if os.path.exists(v_path):
+                    zf.write(v_path, "vertices.csv")
+                if os.path.exists(e_path):
+                    zf.write(e_path, "edges.csv")
+
+            if os.path.exists(zip_path):
+                with open(zip_path, 'rb') as f:
+                    return f.read()
+            return None
+
+        else:  # vmv, casx
+            # Add extension to base_path
+            file_path = base_path + "." + format_type
+            visualizer.export_network_data(results, file_path, format=format_type)
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    return f.read()
+            return None
 
 
 def main():
@@ -936,17 +982,50 @@ def show_visualization_page():
     
     col1, col2, col3 = st.columns(3, gap="medium")
     
+    # Prepare data for export if available
+    vertices = st.session_state["processing_results"]['vertices']
+    edges = st.session_state["processing_results"]['edges']
+    network = st.session_state["processing_results"]['network']
+    parameters = st.session_state["processing_results"]['parameters']
+
     with col1:
-        if st.button("📄 Export VMV", width=150):
-            st.success("✅ VMV file exported. (MATLAB: SpecialOutput=\'vmv\')")
+        vmv_data = generate_export_data(vertices, edges, network, parameters, "vmv")
+        if vmv_data:
+            st.download_button(
+                label="📄 Download VMV",
+                data=vmv_data,
+                file_name="network.vmv",
+                mime="text/plain",
+                help="Export network in VessMorphoVis (VMV) format"
+            )
+        else:
+            st.button("📄 Export VMV", disabled=True, help="Export generation failed")
     
     with col2:
-        if st.button("📄 Export CASX", width=150):
-            st.success("✅ CASX file exported. (MATLAB: SpecialOutput=\'casX\')")
+        casx_data = generate_export_data(vertices, edges, network, parameters, "casx")
+        if casx_data:
+            st.download_button(
+                label="📄 Download CASX",
+                data=casx_data,
+                file_name="network.casx",
+                mime="application/xml",
+                help="Export network in CASX XML format"
+            )
+        else:
+            st.button("📄 Export CASX", disabled=True, help="Export generation failed")
     
     with col3:
-        if st.button("📊 Export CSV", width=150):
-            st.success("✅ CSV data exported. (Custom Python export)")
+        csv_data = generate_export_data(vertices, edges, network, parameters, "csv")
+        if csv_data:
+            st.download_button(
+                label="📊 Download CSV (Zip)",
+                data=csv_data,
+                file_name="network_csv.zip",
+                mime="application/zip",
+                help="Export network data as Zipped CSVs (vertices & edges)"
+            )
+        else:
+            st.button("📊 Export CSV", disabled=True, help="Export generation failed")
 
 def show_analysis_page():
     """Display the analysis page"""
