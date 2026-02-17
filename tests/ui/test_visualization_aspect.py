@@ -2,7 +2,11 @@ import sys
 import pathlib
 import numpy as np
 
+<<<<<<< HEAD
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+=======
+
+>>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 from slavv.visualization import NetworkVisualizer
 
 

@@ -5,10 +5,17 @@ import pytest
 
 # Add source path for imports
 try:
+<<<<<<< HEAD
     from slavv.core import SLAVVProcessor
     from slavv.utils import validate_parameters
 except ImportError:
     from slavv.core import SLAVVProcessor
+=======
+    from slavv.core.pipeline import SLAVVProcessor
+    from slavv.utils import validate_parameters
+except ImportError:
+    from slavv.core.pipeline import SLAVVProcessor
+>>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
     from slavv.utils import validate_parameters
 
 

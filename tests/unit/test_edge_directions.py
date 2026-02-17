@@ -1,7 +1,11 @@
 """Consolidated tests for generate_edge_directions function."""
 import numpy as np
 import pytest
+<<<<<<< HEAD
 from slavv.core import generate_edge_directions
+=======
+from slavv.core.tracing import generate_edge_directions
+>>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 @pytest.mark.parametrize("n_directions,expected_shape", [

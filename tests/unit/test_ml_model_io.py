@@ -3,9 +3,13 @@ import sys
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
+<<<<<<< HEAD
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from slavv.analysis import MLCurator
+=======
+from slavv.analysis.ml_curator import MLCurator
+>>>>>>> 3e500a60f45114343cdca16b13c837e3d0f1d578
 
 
 def test_save_and_load_models(tmp_path):
