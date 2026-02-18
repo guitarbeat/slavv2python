@@ -335,7 +335,7 @@ def estimate_vessel_directions(energy: np.ndarray, pos: np.ndarray, radius: floa
     hessian_elems = [
         h * (radius ** 2)
         for h in feature.hessian_matrix(
-            patch, sigma=sigma, mode='nearest', order='rc'
+            patch, sigma=sigma, mode='nearest', order='rc', use_gaussian_derivatives=False
         )
     ]
     patch_center = tuple(np.array(patch.shape) // 2)

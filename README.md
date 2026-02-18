@@ -103,12 +103,33 @@ print(f"Edges: {len(results['edges']['traces'])}")
 
 
 
-## Testing
+## Development
 
-Verify that the environment is configured correctly by running the test suite:
+### Running Tests
+
+This project uses `pytest` for testing. To verify the environment and run the test suite:
 
 ```bash
+# Install development dependencies if not already installed
+pip install -e .[dev]
+
+# Run all tests
 python -m pytest tests/
+
+# Run tests with coverage report
+pytest --cov=slavv tests/
+```
+
+### Code Quality
+
+We use `ruff` for linting and formatting.
+
+```bash
+# Check for issues
+ruff check .
+
+# Fix auto-fixable issues
+ruff check --fix .
 ```
 
 ## Troubleshooting

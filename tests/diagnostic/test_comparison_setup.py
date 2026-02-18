@@ -12,7 +12,7 @@ project_root = Path(__file__).parent.parent.parent
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 
-def test_setup():
+def run_setup_check():
     """Test that all required files and paths exist."""
     print("Testing comparison setup...")
     print("=" * 60)
@@ -101,6 +101,10 @@ def test_setup():
         print('      --output-dir "comparison_output"')
         return True
 
+def test_setup_check():
+    """Wrapper for pytest to assert success."""
+    assert run_setup_check() is True
+
 if __name__ == "__main__":
-    success = test_setup()
+    success = run_setup_check()
     sys.exit(0 if success else 1)
