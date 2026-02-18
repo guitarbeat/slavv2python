@@ -22,9 +22,9 @@ import logging
 import warnings
 warnings.filterwarnings('ignore')
 try:
-    from ..utils import calculate_path_length
+    from ..utils import calculate_path_length, safe_load
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from slavv.utils import calculate_path_length
+    from slavv.utils import calculate_path_length, safe_load
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -537,7 +537,7 @@ class MLCurator:
         """
         if vertex_path:
             try:
-                vertex_data = joblib.load(vertex_path)
+                vertex_data = safe_load(vertex_path)
                 self.vertex_classifier = vertex_data["classifier"]
                 self.vertex_scaler = vertex_data["scaler"]
                 logger.info(f"Vertex model loaded from {vertex_path}")
@@ -546,7 +546,7 @@ class MLCurator:
 
         if edge_path:
             try:
-                edge_data = joblib.load(edge_path)
+                edge_data = safe_load(edge_path)
                 self.edge_classifier = edge_data["classifier"]
                 self.edge_scaler = edge_data["scaler"]
                 logger.info(f"Edge model loaded from {edge_path}")
