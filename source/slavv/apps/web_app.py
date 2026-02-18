@@ -147,6 +147,14 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
             return None
 
 
+def safe_rerun():
+    """Rerun the script, handling Streamlit version differences."""
+    if hasattr(st, "rerun"):
+        st.rerun()
+    else:
+        st.experimental_rerun()
+
+
 def main():
     """Main application function"""
     
@@ -162,9 +170,13 @@ def main():
     
     # Sidebar navigation
     st.sidebar.title("Navigation")
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "🏠 Home"
+
     page = st.sidebar.selectbox(
         "Choose a page:",
-        ["🏠 Home", "⚙️ Image Processing", "🤖 ML Curation", "📊 Visualization", "📈 Analysis", "ℹ️ About"]
+        ["🏠 Home", "⚙️ Image Processing", "🤖 ML Curation", "📊 Visualization", "📈 Analysis", "ℹ️ About"],
+        key="current_page"
     )
     
     # Route to appropriate page
@@ -571,6 +583,9 @@ def show_ml_curation_page():
     
     if "processing_results" not in st.session_state:
         st.warning("⚠️ No processing results found. Please process an image first.")
+        if st.button("🚀 Go to Image Processing", key="ml_redirect"):
+            st.session_state["current_page"] = "⚙️ Image Processing"
+            safe_rerun()
         return
     
     st.markdown("""
@@ -867,6 +882,9 @@ def show_visualization_page():
     
     if "processing_results" not in st.session_state:
         st.warning("⚠️ No processing results found. Please process an image first.")
+        if st.button("🚀 Go to Image Processing", key="viz_redirect"):
+            st.session_state["current_page"] = "⚙️ Image Processing"
+            safe_rerun()
         return
     
     st.markdown("""
@@ -1029,6 +1047,9 @@ def show_analysis_page():
     
     if "processing_results" not in st.session_state:
         st.warning("⚠️ No processing results found. Please process an image first.")
+        if st.button("🚀 Go to Image Processing", key="analysis_redirect"):
+            st.session_state["current_page"] = "⚙️ Image Processing"
+            safe_rerun()
         return
     
     st.markdown("""
