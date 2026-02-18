@@ -348,7 +348,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             # Calculate Hessian eigenvalues with PSF-weighted sigma
             # Note: use_gaussian_derivatives=False removed for compatibility with older skimage
             hessian = feature.hessian_matrix(
-                smoothed, sigma=tuple(sigma_object)
+                smoothed, sigma=tuple(sigma_object), use_gaussian_derivatives=False
             )
             
             # Memory-efficient eigenvalue computation: compute directly without 

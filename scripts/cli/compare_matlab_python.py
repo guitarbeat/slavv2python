@@ -25,7 +25,7 @@ from datetime import datetime
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from slavv.dev.comparison import load_parameters, orchestrate_comparison
+from slavv.dev.comparison import load_parameters, orchestrate_comparison  # noqa: E402
 
 def main():
     parser = argparse.ArgumentParser(
