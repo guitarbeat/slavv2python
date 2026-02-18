@@ -62,7 +62,8 @@ def run_setup_check():
         if vectorize_file.exists():
             print("  [OK] vectorize_V200.m found")
         else:
-            errors.append("  [ERROR] vectorize_V200.m not found in Vectorization-Public")
+            # Downgrade to warning for CI/uninitialized submodules
+            warnings.append("  [WARN] vectorize_V200.m not found in Vectorization-Public (submodule may be empty)")
     else:
         warnings.append(f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)")
     
