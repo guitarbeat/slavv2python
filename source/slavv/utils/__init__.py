@@ -15,6 +15,7 @@ from .system_info import get_system_info, get_matlab_info
 from .synthetic import generate_synthetic_vessel_volume
 from .profiling import profile_process_image
 from .formatting import format_size, format_time
+from .safe_unpickle import safe_load
 
 __all__ = [
     "calculate_path_length",
@@ -28,5 +29,6 @@ __all__ = [
     "profile_process_image",
     "format_size",
     "format_time",
+    "safe_load",
 ]
 
