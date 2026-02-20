@@ -101,7 +101,8 @@ def run_matlab_vectorization(
             capture_output=True,
             text=True,
             check=True,
-            cwd=project_root
+            cwd=project_root,
+            timeout=3600  # 1 hour timeout to prevent hanging
         )
         elapsed_time = time.time() - start_time
         
@@ -148,6 +149,26 @@ def run_matlab_vectorization(
                     matlab_results['network_mat'] = os.path.join(vectors_dir, mat_files[0])
         
         return matlab_results
+
+    except subprocess.TimeoutExpired as e:
+        elapsed_time = time.time() - start_time
+        print(f"\nMATLAB execution timed out after {elapsed_time:.2f} seconds")
+        # Note: subprocess.run kills the process on timeout automatically on POSIX,
+        # but on Windows it might need specific handling if it spawns children.
+        # Python 3.7+ handles this reasonably well.
+        print("STDOUT:")
+        print(e.stdout)
+        print("STDERR:")
+        print(e.stderr)
+
+        return {
+            'success': False,
+            'elapsed_time': elapsed_time,
+            'error': f"TimeoutExpired: {e}",
+            'stdout': e.stdout,
+            'stderr': e.stderr,
+            'system_info': system_info
+        }
         
     except subprocess.CalledProcessError as e:
         elapsed_time = time.time() - start_time

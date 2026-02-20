@@ -20,11 +20,14 @@ import joblib
 from typing import Dict, List, Tuple, Optional, Any, Union
 import logging
 import warnings
+import pickle
 warnings.filterwarnings('ignore')
 try:
     from ..utils import calculate_path_length
+    from ..utils.safe_unpickle import safe_load
 except ImportError:  # pragma: no cover - fallback for direct execution
     from slavv.utils import calculate_path_length
+    from slavv.utils.safe_unpickle import safe_load
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -532,26 +535,35 @@ class MLCurator:
         """Load trained models and scalers.
 
         Parameters:
-            vertex_path: Source for the vertex classifier (file path or file-like object).
-            edge_path: Source for the edge classifier (file path or file-like object).
+            vertex_path: Source for the vertex classifier (file path).
+            edge_path: Source for the edge classifier (file path).
         """
         if vertex_path:
             try:
-                vertex_data = joblib.load(vertex_path)
+                vertex_data = safe_load(vertex_path)
                 self.vertex_classifier = vertex_data["classifier"]
                 self.vertex_scaler = vertex_data["scaler"]
                 logger.info(f"Vertex model loaded from {vertex_path}")
             except FileNotFoundError:
                 logger.warning(f"Vertex model not found at {vertex_path}")
+            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+                logger.error(f"Failed to load vertex model from {vertex_path}: {e}")
+                # Don't crash, just log error, effectively leaving classifier as None
+            except Exception as e:
+                logger.error(f"Unexpected error loading vertex model from {vertex_path}: {e}")
 
         if edge_path:
             try:
-                edge_data = joblib.load(edge_path)
+                edge_data = safe_load(edge_path)
                 self.edge_classifier = edge_data["classifier"]
                 self.edge_scaler = edge_data["scaler"]
                 logger.info(f"Edge model loaded from {edge_path}")
             except FileNotFoundError:
                 logger.warning(f"Edge model not found at {edge_path}")
+            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+                logger.error(f"Failed to load edge model from {edge_path}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error loading edge model from {edge_path}: {e}")
     
     def generate_training_data(self, processing_results: List[Dict[str, Any]], 
                               manual_annotations: List[Dict[str, Any]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

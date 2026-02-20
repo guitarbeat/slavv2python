@@ -26,6 +26,12 @@ if "%~2"=="" (
 set INPUT_FILE=%~1
 set OUTPUT_DIR=%~2
 
+REM Validate input file exists
+if not exist "%INPUT_FILE%" (
+    echo ERROR: Input file not found: %INPUT_FILE%
+    exit /b 1
+)
+
 REM Default MATLAB path if not provided
 if "%~3"=="" (
     set MATLAB_PATH=C:\Program Files\MATLAB\R2019a\bin\matlab.exe
