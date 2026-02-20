@@ -64,25 +64,37 @@ def run_matlab_vectorization(
     print("Running MATLAB Implementation")
     print("="*60)
     
-    # Define the path to the MATLAB repository
-    project_root / 'external' / 'Vectorization-Public'
-    
+    # Validate input file path
+    if not os.path.exists(input_file):
+        raise FileNotFoundError(f"Input file not found: {input_file}")
+    input_file = os.path.abspath(input_file)
+    output_dir = os.path.abspath(output_dir)
+
+    # Define script paths with absolute resolution
     if batch_script is None:
         if os.name == 'nt':
-            batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.bat')
+            batch_script = str((project_root / 'scripts' / 'cli' / 'run_matlab_cli.bat').resolve())
         else:
-            batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.sh')
+            batch_script = str((project_root / 'scripts' / 'cli' / 'run_matlab_cli.sh').resolve())
+    else:
+        # Use provided script directly, but validate existence first
+        if not os.path.exists(batch_script):
+            raise FileNotFoundError(f"Custom batch script not found: {batch_script}")
+        batch_script = os.path.abspath(batch_script)
     
+    # Ensure executable permissions on POSIX
+    if os.name != 'nt' and not os.access(batch_script, os.X_OK):
+        try:
+            current_permissions = os.stat(batch_script).st_mode
+            os.chmod(batch_script, current_permissions | 0o111)
+        except Exception as e:
+            print(f"Warning: Could not set executable permission on {batch_script}: {e}")
+
+    # Build command list
+    cmd = [batch_script, input_file, output_dir, matlab_path]
+
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Run MATLAB via batch script
-    cmd = [
-        batch_script,
-        input_file,
-        output_dir,
-        matlab_path
-    ]
     
     print(f"Command: {' '.join(cmd)}")
     print(f"Input file: {input_file}")
@@ -101,7 +113,8 @@ def run_matlab_vectorization(
             capture_output=True,
             text=True,
             check=True,
-            cwd=project_root
+            cwd=project_root,
+            timeout=3600  # 1 hour timeout to prevent hanging
         )
         elapsed_time = time.time() - start_time
         
@@ -148,6 +161,26 @@ def run_matlab_vectorization(
                     matlab_results['network_mat'] = os.path.join(vectors_dir, mat_files[0])
         
         return matlab_results
+
+    except subprocess.TimeoutExpired as e:
+        elapsed_time = time.time() - start_time
+        print(f"\nMATLAB execution timed out after {elapsed_time:.2f} seconds")
+        # Note: subprocess.run kills the process on timeout automatically on POSIX,
+        # but on Windows it might need specific handling if it spawns children.
+        # Python 3.7+ handles this reasonably well.
+        print("STDOUT:")
+        print(e.stdout)
+        print("STDERR:")
+        print(e.stderr)
+
+        return {
+            'success': False,
+            'elapsed_time': elapsed_time,
+            'error': f"TimeoutExpired: {e}",
+            'stdout': e.stdout,
+            'stderr': e.stderr,
+            'system_info': system_info
+        }
         
     except subprocess.CalledProcessError as e:
         elapsed_time = time.time() - start_time
