@@ -80,7 +80,12 @@ def run_matlab_vectorization(
         # Use provided script directly, but validate existence first
         if not os.path.exists(batch_script):
             raise FileNotFoundError(f"Custom batch script not found: {batch_script}")
-        cmd = [batch_script, input_file, output_dir, matlab_path]
+
+        # Explicitly use shell interpreters for safety
+        if os.name == 'nt':
+            cmd = ["cmd", "/c", batch_script, input_file, output_dir, matlab_path]
+        else:
+            cmd = ["/bin/bash", batch_script, input_file, output_dir, matlab_path]
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
