@@ -70,19 +70,20 @@ def run_matlab_vectorization(
     if batch_script is None:
         if os.name == 'nt':
             batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.bat')
+            # Explicitly use cmd /c on Windows for safety and reliability
+            cmd = ["cmd", "/c", batch_script, input_file, output_dir, matlab_path]
         else:
             batch_script = str(project_root / 'scripts' / 'cli' / 'run_matlab_cli.sh')
+            # Explicitly use /bin/bash on Linux/Unix for safety
+            cmd = ["/bin/bash", batch_script, input_file, output_dir, matlab_path]
+    else:
+        # Use provided script directly, but validate existence first
+        if not os.path.exists(batch_script):
+            raise FileNotFoundError(f"Custom batch script not found: {batch_script}")
+        cmd = [batch_script, input_file, output_dir, matlab_path]
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Run MATLAB via batch script
-    cmd = [
-        batch_script,
-        input_file,
-        output_dir,
-        matlab_path
-    ]
     
     print(f"Command: {' '.join(cmd)}")
     print(f"Input file: {input_file}")
