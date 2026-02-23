@@ -4,44 +4,40 @@ description: Workflow to verify no regressions before pushing changes
 
 # Regression Check Workflow
 
-Use this workflow before pushing any significant changes to ensure no regressions are introduced.
+Use this workflow before pushing any significant changes to ensure no regressions are introduced in the SLAVV project.
 
 ## Steps
 
 // turbo
-1. **Run the full test suite:**
+1. **Run Code Formatters and Linters:**
+   ```bash
+   ruff check .
+   biome check .
+   ```
+   All checks must pass. If tools report fixable errors, proactively run `ruff check . --fix` and `biome check --write .` to resolve them automatically. Re-run the checks to confirm.
+
+// turbo
+2. **Run the Full Test Suite:**
    ```bash
    pytest tests/ -v
    ```
-   All tests must pass. If any fail, fix them before proceeding.
+   All tests must pass. Find any failures or tracebacks and fix the underlying code before proceeding.
 
 // turbo
-2. **Run the regression test specifically:**
+3. **Run Demonstration Scripts:**
    ```bash
-   pytest tests/test_regression_edges.py -v
+   python examples/run_tutorial.py
    ```
-   This test locks the expected output of edge tracing on synthetic data.
+   Verify the script completes without raising any `Exception` or `RuntimeError`. This ensures the public-facing API is stable.
 
-3. **If modifying core algorithms, run the tutorial on synthetic data:**
+// turbo
+4. **Check for New Deprecation Warnings:**
    ```bash
-   python examples/run_headless_demo.py
+   python -W error::DeprecationWarning examples/run_tutorial.py
    ```
-   Verify it completes without errors.
+   If any deprecation warnings are thrown, resolve them by updating the deprecated API usage in the `source/slavv` directories.
 
-4. **Check for new deprecation warnings:**
-   ```bash
-   python -W error::DeprecationWarning examples/run_headless_demo.py
-   ```
-
-## When to Use
-
-- Before any PR that touches `vectorization_core.py`
-- Before any PR that touches `ml_curator.py`
-- After upgrading dependencies (numpy, scipy, scikit-image)
-
-## Adding New Regression Tests
-
-When adding a new feature:
-1. Create a test in `tests/` that captures the expected output
-2. Use `np.allclose()` for floating-point comparisons
-3. Consider adding a fixture file for complex expected outputs
+## When to Use This Workflow
+- Before creating a Pull Request or pushing to `main`.
+- After modifying core algorithms inside the `source/slavv` package.
+- After upgrading key mathematical or processing dependencies (such as NumPy, SciPy, scikit-image, or Numba).
