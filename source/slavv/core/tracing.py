@@ -401,6 +401,9 @@ def trace_edge(
     dim_x_minus_2 = dim_x - 2
     dim_z_minus_2 = dim_z - 2
 
+    if dim_y < 3 or dim_x < 3 or dim_z < 3:
+        return trace
+
     pos_y = int(math.floor(current_pos_y))
     pos_x = int(math.floor(current_pos_x))
     pos_z = int(math.floor(current_pos_z))
