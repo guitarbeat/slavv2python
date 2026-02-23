@@ -1,13 +1,12 @@
 # GPL # "author": "Buerbaum Martin (Pontiac)"
 
-import bpy, bmesh
+import bpy
 from math import sin, cos, tan, pi, radians
 from bpy.types import Operator
 from bpy.props import (
         FloatProperty,
         IntProperty,
         BoolProperty,
-        StringProperty,
         )
 from bpy_extras import object_utils
 

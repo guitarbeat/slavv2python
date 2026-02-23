@@ -23,11 +23,8 @@ from blenderkit import utils, paths, tasks_queue, rerequests
 from bpy.props import (
     IntProperty,
     FloatProperty,
-    FloatVectorProperty,
     StringProperty,
     EnumProperty,
-    BoolProperty,
-    PointerProperty,
 )
 
 import threading

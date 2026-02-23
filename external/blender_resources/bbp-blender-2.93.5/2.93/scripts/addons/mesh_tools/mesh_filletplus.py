@@ -247,7 +247,7 @@ def do_filletplus(self, pair):
                 for f in v1.link_faces:
                     if v2 in f.verts and v3 in f.verts:
                         for v in f.verts:
-                            if not(v in vertset):
+                            if v not in vertset:
                                 vertlist.append(v)
                             if (v in vertset and v.link_loops[0].link_loop_prev.vert in vertset and
                                v.link_loops[0].link_loop_next.vert in vertset):

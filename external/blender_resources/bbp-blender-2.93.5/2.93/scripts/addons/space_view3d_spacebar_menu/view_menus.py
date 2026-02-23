@@ -23,10 +23,6 @@ from bpy.types import (
         Operator,
         Menu,
         )
-from bpy.props import (
-        BoolProperty,
-        StringProperty,
-        )
 
 from . edit_mesh import *
 

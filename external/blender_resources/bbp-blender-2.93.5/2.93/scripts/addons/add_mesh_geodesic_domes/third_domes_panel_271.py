@@ -1,9 +1,7 @@
 import bpy
-import os
 from . import vefm_271
 from . import forms_271
 from . import geodesic_classes_271
-from . import add_shape_geodesic
 
 from bpy.types import Operator
 from bpy.props import (
@@ -12,13 +10,8 @@ from bpy.props import (
         FloatProperty,
         StringProperty,
         BoolProperty,
-        FloatVectorProperty,
         )
 from math import pi
-from mathutils import (
-        Vector,
-        Matrix,
-        )
 from bpy_extras import object_utils
 
 # global #

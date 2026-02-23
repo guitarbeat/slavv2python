@@ -23,15 +23,13 @@ import subprocess
 import os
 import sys
 import time
-from math import atan, pi, degrees, sqrt, cos, sin
+from math import atan, pi, degrees, sqrt
 ####################
 ## Faster mesh export
 import numpy as np
 ####################
 import re
 import random
-import platform  #
-import subprocess  #
 import tempfile  # generate temporary files with random names
 from bpy.types import Operator
 from imghdr import what  # imghdr is a python lib to identify image file types
@@ -39,8 +37,6 @@ from bpy.utils import register_class
 
 from . import df3  # for smoke rendering
 from . import shading  # for BI POV shaders emulation
-from . import primitives  # for import and export of POV specific primitives
-from . import nodes  # for POV specific nodes
 
 ##############################SF###########################
 ##############find image texture
@@ -2047,7 +2043,7 @@ def write_pov(filename, scene=None, info_callback=None):
         meta_elems = {}
         for ob in metas:
             prefix = ob.name.split(".")[0]
-            if not prefix in meta_group:
+            if prefix not in meta_group:
                 meta_group[prefix] = ob  # .data.threshold
             elems = [
                 (elem, ob)
@@ -4519,7 +4515,7 @@ def write_pov(filename, scene=None, info_callback=None):
                             _dupname = eachduplicate.object.name
                             _dupobj = bpy.data.objects[_dupname]
                             # BEGIN introspection for troubleshooting purposes
-                            if not "name" in dir(_dupobj.data):
+                            if "name" not in dir(_dupobj.data):
                                 if _dupname not in _dupnames_seen:
                                     print(
                                         "WARNING: bpy.data.objects[%s].data (of type %s) has no 'name' attribute"

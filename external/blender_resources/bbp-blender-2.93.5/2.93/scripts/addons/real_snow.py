@@ -32,9 +32,7 @@ bl_info = {
 
 # Libraries
 import math
-import os
 import random
-import time
 
 import bpy
 import bmesh
@@ -214,7 +212,7 @@ def delete_faces(vertices, bm_copy, snow_object: bpy.types.Object):
     mesh = bmesh.from_edit_mesh(snow_object.data)
     for face in mesh.faces:
         if vertices:
-            if not face.index in selected_faces:
+            if face.index not in selected_faces:
                 face.select = True
         if face.index in down_faces:
             face.select = True

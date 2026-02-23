@@ -16,7 +16,6 @@
 # ##### END GPL LICENSE BLOCK #####
 import gpu
 import bmesh
-from mathutils import Matrix
 
 def load_shader(shadername):
     from os import path
@@ -147,7 +146,6 @@ class _Mesh_Arrays():
 
                 del bm
             else:
-                import bpy
                 self.verts_co = get_mesh_vert_co_array(me)
 
                 if create_tris:

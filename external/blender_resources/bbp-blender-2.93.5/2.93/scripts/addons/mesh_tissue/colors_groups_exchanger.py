@@ -33,27 +33,24 @@
 #                                                                              #
 ################################################################################
 
-import bpy, bmesh
+import bpy
+import bmesh
 import numpy as np
-import math, timeit, time
+import timeit
+import time
 from math import *#pi, sin
 from statistics import mean, stdev
-from mathutils import Vector
 from numpy import *
 try: from .numba_functions import numba_reaction_diffusion
 except: pass
 
 from bpy.types import (
-        Operator,
         Panel,
         PropertyGroup,
         )
 
 from bpy.props import (
     BoolProperty,
-    EnumProperty,
-    FloatProperty,
-    IntProperty,
     StringProperty,
     FloatVectorProperty,
     IntVectorProperty

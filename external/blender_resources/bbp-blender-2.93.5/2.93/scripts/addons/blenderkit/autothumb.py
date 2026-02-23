@@ -16,9 +16,12 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-from blenderkit import paths, utils, bg_blender, ui_panels, icons, tasks_queue, download
+from blenderkit import paths, utils, bg_blender, tasks_queue
 
-import tempfile, os, subprocess, json, sys
+import tempfile
+import os
+import subprocess
+import json
 
 import bpy
 from bpy.props import (
@@ -26,7 +29,6 @@ from bpy.props import (
     IntProperty,
     EnumProperty,
     BoolProperty,
-    StringProperty,
 )
 
 BLENDERKIT_EXPORT_DATA_FILE = "data.json"
@@ -85,7 +87,7 @@ def check_thumbnail(props, imgpath):
     if img is None or img.size[0] == 0 or img.filepath.find('thumbnail_notready.jpg') > -1:
         output += 'No thumbnail or wrong file path\n'
     else:
-        pass;
+        pass
         # this is causing problems on some platforms, don't know why..
         # if img.size[0] != img.size[1]:
         #     output += 'image not a square\n'

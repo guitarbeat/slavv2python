@@ -27,7 +27,6 @@ from .pdt_msg_strings import (
     PDT_LAB_ABS,
     PDT_LAB_AD2D,
     PDT_LAB_AD3D,
-    PDT_LAB_ALLACTIVE,
     PDT_LAB_ANGLEVALUE,
     PDT_LAB_ARCCENTRE,
     PDT_LAB_BISECT,
@@ -47,7 +46,6 @@ from .pdt_msg_strings import (
     PDT_LAB_OPERATION,
     PDT_LAB_ORDER,
     PDT_LAB_ORIGINCURSOR,
-    PDT_LAB_PERCENT,
     PDT_LAB_PERCENTS,
     PDT_LAB_PIVOTALPHA,
     PDT_LAB_PIVOTLOC,
@@ -62,7 +60,6 @@ from .pdt_msg_strings import (
     PDT_LAB_TAPERAXES,
     PDT_LAB_TOOLS,
     PDT_LAB_USEVERTS,
-    PDT_LAB_VARIABLES,
     PDT_LAB_VIEW
 )
 
@@ -126,7 +123,7 @@ class PDT_PT_PanelDesign(Panel):
         # (a) Set Coordinates box
         row = box_1.row()
         box_1a = row.box()
-        box_1a.label(text=f"(a) Either Set Coordinates + [Place »]")
+        box_1a.label(text="(a) Either Set Coordinates + [Place »]")
         # ^ was PDT_LAB_VARIABLES
         #
         # cartesian input coordinates in a box
@@ -175,9 +172,9 @@ class PDT_PT_PanelDesign(Panel):
         # percentage row
         row = box_1b.row()
         box = row.box()
-        box.label(text=f"Do (1) at % between selected points")
+        box.label(text="Do (1) at % between selected points")
         row = box.row()
-        row.operator("pdt.percent", text=f"|2| % »")
+        row.operator("pdt.percent", text="|2| % »")
         row.prop(pdt_pg, "percent", text=PDT_LAB_PERCENTS)
         if ui_width() < ui_cutoff:
             row = box.row()

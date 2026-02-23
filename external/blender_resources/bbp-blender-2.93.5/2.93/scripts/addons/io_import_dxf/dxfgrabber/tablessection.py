@@ -5,7 +5,7 @@
 from __future__ import unicode_literals
 __author__ = "mozman <mozman@gmx.at>"
 
-from .defaultchunk import iterchunks, DefaultChunk
+from .defaultchunk import iterchunks
 from .layers import LayerTable
 from .styles import StyleTable
 from .linetypes import LinetypeTable

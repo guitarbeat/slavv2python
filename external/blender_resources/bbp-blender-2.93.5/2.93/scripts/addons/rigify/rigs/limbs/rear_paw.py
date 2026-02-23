@@ -18,7 +18,6 @@
 
 # <pep8 compliant>
 
-import bpy
 
 from ...utils.bones import align_bone_roll
 from ...utils.naming import make_derived_name

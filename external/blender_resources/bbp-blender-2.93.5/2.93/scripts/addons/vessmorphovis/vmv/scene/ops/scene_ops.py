@@ -99,7 +99,7 @@ def is_object_deleted(scene_object):
         True if the object is deleted, otherwise False.
     """
 
-    return not (scene_object.name in bpy.data.objects)
+    return scene_object.name not in bpy.data.objects
 
 
 ####################################################################################################

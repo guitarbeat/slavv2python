@@ -17,13 +17,7 @@ from mathutils.geometry import (
     intersect_line_plane,
 )
 
-from math import (
-    sin,
-    cos,
-    pi,
-    )
 
-import bpy_extras
 
 from bpy_extras import view3d_utils
 from bpy_extras.view3d_utils import (

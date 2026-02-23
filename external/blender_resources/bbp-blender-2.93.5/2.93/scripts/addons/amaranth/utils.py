@@ -37,7 +37,7 @@ def cycles_is_emission(context, ob):
             continue
         if ma.material.node_tree and ma.material.node_tree.nodes:
             for no in ma.material.node_tree.nodes:
-                if not no.type in ("EMISSION", "GROUP"):
+                if no.type not in ("EMISSION", "GROUP"):
                     continue
                 for ou in no.outputs:
                     if not ou.links:

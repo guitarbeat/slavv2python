@@ -4,14 +4,12 @@ import bpy
 import math
 import mathutils
 from bpy_extras.view3d_utils import location_3d_to_region_2d
-from bpy.props import BoolProperty, EnumProperty
 from time import time
 ## draw utils
 import gpu
 import bgl
 import blf
 from gpu_extras.batch import batch_for_shader
-from gpu_extras.presets import draw_circle_2d
 
 def step_value(value, step):
     '''return the step closer to the passed value'''

@@ -16,7 +16,9 @@
 #
 #  ***** GPL LICENSE BLOCK *****
 
-import bpy, math, cmath
+import bpy
+import math
+import cmath
 from mathutils import Vector, Matrix
 from collections import namedtuple
 

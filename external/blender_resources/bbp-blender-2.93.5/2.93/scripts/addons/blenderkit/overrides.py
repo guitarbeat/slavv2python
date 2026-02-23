@@ -19,7 +19,8 @@
 
 from blenderkit import utils
 
-import bpy, mathutils
+import bpy
+import mathutils
 from bpy.types import (
     Operator)
 

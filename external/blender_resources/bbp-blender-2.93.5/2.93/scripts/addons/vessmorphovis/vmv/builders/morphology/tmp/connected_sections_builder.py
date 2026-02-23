@@ -17,11 +17,8 @@
 
 
 # System imports
-import random, copy
 
 # Blender imports
-import bpy
-from mathutils import Vector
 
 # Internal imports
 import vmv

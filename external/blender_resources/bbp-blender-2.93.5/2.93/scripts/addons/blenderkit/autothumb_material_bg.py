@@ -20,7 +20,9 @@
 
 from blenderkit import utils, append_link, bg_blender, upload_bg, download
 
-import sys, json, math, os
+import sys
+import json
+import os
 import bpy
 from pathlib import Path
 

@@ -19,7 +19,10 @@
 
 from blenderkit import paths
 
-import requests, os, json, threading
+import requests
+import os
+import json
+import threading
 
 
 def get_addon_version():

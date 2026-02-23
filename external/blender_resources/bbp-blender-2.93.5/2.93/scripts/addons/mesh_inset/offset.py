@@ -23,11 +23,9 @@
 __author__ = "howard.trickey@gmail.com"
 
 import math
-from . import triquad
 from . import geom
 from .triquad import Sub2, Add2, Angle, Ccw, Normalized2, Perp2, Length2, \
                     LinInterp2, TOL
-from .geom import Points
 
 AREATOL = 1e-4
 

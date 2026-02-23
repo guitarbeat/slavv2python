@@ -16,8 +16,6 @@
 ####################################################################################################
 
 # System imports
-import sys
-import copy
 
 # Blender imports
 import bpy

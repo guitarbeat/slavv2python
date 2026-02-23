@@ -17,7 +17,7 @@
 
 # Blender imports
 import bpy
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
 # Internal imports
 import vmv

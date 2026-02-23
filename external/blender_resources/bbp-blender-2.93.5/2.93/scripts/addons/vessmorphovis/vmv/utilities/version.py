@@ -16,7 +16,6 @@
 ####################################################################################################
 
 # System imports
-import sys
 import os
 
 # Blender imports
@@ -33,7 +32,6 @@ def get_blender_version():
         A list of the version of the running Blender.
     """
 
-    import bpy
     return bpy.app.version
 
 

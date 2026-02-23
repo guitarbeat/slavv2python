@@ -4,7 +4,6 @@ import bpy
 import bmesh
 from math import acos, pi, sin, cos, atan, tan
 from mathutils import Vector
-from bpy_extras.object_utils import AddObjectHelper
 
 # PKHG>DBG change the DBG_info and use extra_DBG_info
 DBG_info = {"MeshInfo": False, "StrutMesh": False, "HubMesh": False}

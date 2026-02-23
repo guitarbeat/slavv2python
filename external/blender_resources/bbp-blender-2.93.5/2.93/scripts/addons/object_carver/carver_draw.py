@@ -3,19 +3,7 @@ import bgl
 import blf
 import bpy_extras
 import numpy as np
-import gpu
-from gpu_extras.batch import batch_for_shader
-from math import(
-    cos,
-    sin,
-    ceil,
-    floor,
-    )
 
-from bpy_extras.view3d_utils import (
-    region_2d_to_location_3d,
-    location_3d_to_region_2d,
-)
 
 from .carver_utils import (
     draw_circle,
@@ -25,10 +13,8 @@ from .carver_utils import (
     )
 
 from mathutils import (
-    Color,
     Euler,
     Vector,
-    Quaternion,
 )
 
 def get_text_info(self, context, help_txt):

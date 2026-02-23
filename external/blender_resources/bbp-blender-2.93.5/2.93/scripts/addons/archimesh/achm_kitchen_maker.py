@@ -527,7 +527,7 @@ class ARCHIMESH_OT_Kitchen(Operator):
                     add_cabinet(self, box, idx + 1, self.cabinets[idx])
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
         else:

@@ -20,7 +20,8 @@
 from blenderkit import utils
 
 import bpy
-import sys, threading, os
+import sys
+import threading
 import re
 
 from bpy.props import (

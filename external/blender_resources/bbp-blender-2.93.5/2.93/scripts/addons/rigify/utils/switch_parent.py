@@ -1,20 +1,15 @@
-import bpy
 
-import re
-import itertools
-import bisect
 import json
 
-from .errors import MetarigError
 from .naming import strip_prefix, make_derived_name
 from .mechanism import MechanismUtilityMixin
-from .misc import map_list, map_apply, force_lazy
+from .misc import force_lazy
 
 from ..base_rig import *
 from ..base_generate import GeneratorPlugin
 
 from collections import defaultdict
-from itertools import count, repeat, chain
+from itertools import chain
 
 
 def _rig_is_child(rig, parent):

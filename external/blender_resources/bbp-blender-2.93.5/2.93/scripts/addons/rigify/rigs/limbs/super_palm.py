@@ -22,7 +22,7 @@ import bpy
 import re
 
 from math import cos, pi
-from itertools import count, repeat
+from itertools import count
 
 from rigify.utils.rig import is_rig_base_bone
 from rigify.utils.naming import strip_org, make_derived_name, choose_derived_bone

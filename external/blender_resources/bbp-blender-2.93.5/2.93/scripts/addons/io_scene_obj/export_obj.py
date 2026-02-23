@@ -21,7 +21,7 @@
 import os
 
 import bpy
-from mathutils import Matrix, Vector, Color
+from mathutils import Matrix, Vector
 from bpy_extras import io_utils, node_shader_utils
 
 from bpy_extras.wm_utils.progress_report import (

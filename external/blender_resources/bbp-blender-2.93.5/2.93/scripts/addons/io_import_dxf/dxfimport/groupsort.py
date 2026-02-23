@@ -20,7 +20,6 @@
 
 import itertools
 from . import is_
-from mathutils import Vector
 
 
 def map_dxf_to_blender_type(TYPE):

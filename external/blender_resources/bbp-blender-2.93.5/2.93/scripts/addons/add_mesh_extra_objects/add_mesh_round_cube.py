@@ -14,7 +14,6 @@ from bpy.props import (
         FloatProperty,
         FloatVectorProperty,
         IntProperty,
-        StringProperty,
         )
 
 

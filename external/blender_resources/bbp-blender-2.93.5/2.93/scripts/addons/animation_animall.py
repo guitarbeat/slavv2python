@@ -43,7 +43,6 @@ from bpy.props import (
         BoolProperty,
         StringProperty,
         )
-from bpy.app.handlers import persistent
 
 
 # Property Definitions

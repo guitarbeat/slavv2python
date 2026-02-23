@@ -1,4 +1,3 @@
-import bpy
 
 
 mu_override_type_enums = [

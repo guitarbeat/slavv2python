@@ -21,7 +21,6 @@
 from .prefs import get_addon_prefs
 
 import numpy as np
-from time import time
 import bpy
 import gpu
 import bgl
@@ -30,10 +29,8 @@ from gpu_extras.batch import batch_for_shader
 
 from bpy.props import (BoolProperty,
                        StringProperty,
-                       IntProperty,
                        FloatVectorProperty,
                        IntProperty,
-                       PointerProperty,
                        EnumProperty)
 
 

@@ -6,7 +6,6 @@ from math import sin, cos, pi
 from bpy.props import (
         BoolProperty,
         IntProperty,
-        StringProperty,
         )
 from bpy_extras import object_utils
 

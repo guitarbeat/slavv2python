@@ -29,7 +29,6 @@ from bpy.types import (
 
 from bpy.props import (
     StringProperty,
-    IntProperty,
 )
 
 move_triggered = False
@@ -372,7 +371,7 @@ def update_col_name(self, context):
                 if cm_list_item.name != layer_collection.name:
                     # update expanded
                     if cm_list_item.last_name in orig_expanded:
-                        if not cm_list_item.last_name in layer_collections:
+                        if cm_list_item.last_name not in layer_collections:
                             expanded.remove(cm_list_item.name)
 
                         expanded.add(layer_collection.name)
@@ -384,7 +383,7 @@ def update_col_name(self, context):
 
                     # update qcd_overrides
                     if cm_list_item.name in qcd_slots.overrides:
-                        if not cm_list_item.name in layer_collections:
+                        if cm_list_item.name not in layer_collections:
                             qcd_slots.overrides.remove(cm_list_item.name)
 
                         qcd_slots.overrides.add(layer_collection.name)

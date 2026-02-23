@@ -18,11 +18,12 @@
 
 
 from blenderkit import paths, ratings, utils, search, upload, ui_bgl, download, bg_blender, colors, tasks_queue, \
-    ui_panels, icons, ratings_utils
+    ui_panels, ratings_utils
 
 import bpy
 
-import math, random
+import math
+import random
 
 from bpy.props import (
     BoolProperty,
@@ -128,8 +129,8 @@ class Report():
                 global reports
                 try:
                     reports.remove(self)
-                except Exception as e:
-                    pass;
+                except Exception:
+                    pass
 
     def draw(self, x, y):
         if bpy.context.area.as_pointer() == active_area_pointer:
@@ -278,7 +279,7 @@ def draw_tooltip(x, y, name='', author='', quality='-', img=None, gravatar=None)
     t = time.time()
 
     if not img or max(img.size[0], img.size[1]) == 0:
-        return;
+        return
 
     x += 20
     y -= 20
@@ -1175,7 +1176,7 @@ class AssetBarOperator(bpy.types.Operator):
             bpy.types.SpaceView3D.draw_handler_remove(self._handle_2d, 'WINDOW')
             bpy.types.SpaceView3D.draw_handler_remove(self._handle_3d, 'WINDOW')
         except:
-            pass;
+            pass
         ui_props = bpy.context.scene.blenderkitUI
 
         ui_props.dragging = False

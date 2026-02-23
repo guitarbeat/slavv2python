@@ -1,6 +1,6 @@
 import bpy
 from bpy.props import BoolProperty
-from bpy.types import Operator, Panel
+from bpy.types import Operator
 from . import surfaces
 from . import curves
 from . import util

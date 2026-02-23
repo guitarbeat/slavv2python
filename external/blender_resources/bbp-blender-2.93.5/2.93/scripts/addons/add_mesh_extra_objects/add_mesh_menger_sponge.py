@@ -11,9 +11,7 @@ from bpy_extras.object_utils import (
 
 from bpy.props import (
         IntProperty,
-        BoolProperty,
         BoolVectorProperty,
-        FloatVectorProperty,
         FloatProperty,
         )
 

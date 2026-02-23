@@ -17,8 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from blenderkit import paths, ratings, ratings_utils, utils, download, categories, icons, search, resolutions, ui, \
-    tasks_queue, \
+from blenderkit import paths, ratings, ratings_utils, utils, download, categories, icons, search, ui, \
     autothumb, upload
 
 from bpy.types import (
@@ -26,12 +25,6 @@ from bpy.types import (
 )
 from bpy.props import (
     IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    PointerProperty,
 )
 
 import bpy
@@ -49,7 +42,7 @@ def draw_ratings(layout, context, asset):
     # the following shouldn't happen at all in an optimal case,
     # this function should run only when asset was already checked to be existing
     if asset == None:
-        return;
+        return
 
     col = layout.column()
     bkit_ratings = asset.bkit_ratings
@@ -492,7 +485,7 @@ def draw_rating_asset(self, context, asset):
         if image.filepath == tpath:
             # split = row.split(factor=1.0, align=False)
             col.template_icon(icon_value=image.preview.icon_id, scale=6.0)
-            break;
+            break
         # layout.label(text = '', icon_value=image.preview.icon_id, scale = 10)
     col.label(text=asset.name)
     draw_ratings(col, context, asset=asset)
@@ -1069,7 +1062,7 @@ class VIEW3D_PT_blenderkit_unified(Panel):
                 rtext = 'Only Cycles and EEVEE render engines are currently supported. ' \
                         'Please use Cycles for all assets you upload to BlenderKit.'
                 utils.label_multiline(layout, rtext, icon='ERROR', width=w)
-                return;
+                return
 
             if ui_props.asset_type == 'MODEL':
                 # utils.label_multiline(layout, "Uploaded models won't be available in b2.79", icon='ERROR')
@@ -1775,7 +1768,7 @@ class AssetPopupCard(bpy.types.Operator, ratings_utils.RatingsProperties):
 
         if rcount <= show_rating_prompt_threshold:
             box_thumbnail.alert = True
-            box_thumbnail.label(text=f"")
+            box_thumbnail.label(text="")
             box_thumbnail.label(text=f"This asset has only {rcount} rating{'' if rcount == 1 else 's'}, please rate.")
             # box_thumbnail.label(text=f"Please rate this asset.")
 
@@ -2129,7 +2122,7 @@ def header_search_draw(self, context):
     '''Top bar menu in 3D view'''
 
     if not utils.guard_from_crash():
-        return;
+        return
 
     preferences = bpy.context.preferences.addons['blenderkit'].preferences
     if preferences.search_in_header:

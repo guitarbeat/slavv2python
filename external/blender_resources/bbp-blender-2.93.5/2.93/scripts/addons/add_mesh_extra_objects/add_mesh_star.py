@@ -9,7 +9,6 @@ from math import pi
 from bpy.props import (
         IntProperty,
         FloatProperty,
-        StringProperty,
         BoolProperty,
         )
 from bpy_extras import object_utils

@@ -18,7 +18,6 @@
 #python tip: from-imports don't save memory.
 #They execute and cache the entire module just like a regular import.
 
-import bpy
 import bmesh
 
 from mathutils import Vector
@@ -28,7 +27,6 @@ from mathutils.geometry import (
         intersect_ray_tri,
         )
 
-from .snap_context_l import SnapContext
 
 
 def get_units_info(scale, unit_system, separate_units):

@@ -16,7 +16,7 @@
 ####################################################################################################
 
 # System imports
-import sys, os
+import os
 
 # Internal imports
 import vmv

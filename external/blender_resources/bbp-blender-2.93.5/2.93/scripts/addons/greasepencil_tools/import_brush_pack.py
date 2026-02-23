@@ -1,5 +1,4 @@
 import bpy
-import re
 import ssl
 import urllib.request
 import urllib.parse
@@ -45,9 +44,9 @@ def get_brushes(blend_fp):
     cur_brushes = [b.name for b in bpy.data.brushes]
     with bpy.data.libraries.load(str(blend_fp), link=False) as (data_from, data_to):
         # load brushes starting with 'tex' prefix if there are not already there
-        data_to.brushes = [b for b in data_from.brushes if b.startswith('tex_') and not b in cur_brushes]
+        data_to.brushes = [b for b in data_from.brushes if b.startswith('tex_') and b not in cur_brushes]
         # Add holdout
-        if 'z_holdout' in data_from.brushes and not 'z_holdout' in cur_brushes:
+        if 'z_holdout' in data_from.brushes and 'z_holdout' not in cur_brushes:
             data_to.brushes.append('z_holdout')
 
     ## force fake user for the brushes

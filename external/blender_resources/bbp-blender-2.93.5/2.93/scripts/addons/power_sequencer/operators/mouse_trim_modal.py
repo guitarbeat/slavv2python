@@ -31,9 +31,7 @@ from .utils.draw import (
     draw_line,
     draw_rectangle,
     draw_triangle_equilateral,
-    draw_arrow_head,
     get_color_gizmo_primary,
-    get_color_gizmo_secondary,
 )
 from .utils.doc import doc_name, doc_idname, doc_brief, doc_description
 

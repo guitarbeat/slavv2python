@@ -34,7 +34,7 @@ import bmesh
 from bpy_extras import object_utils
 
 import operator
-from mathutils import Matrix, Vector
+from mathutils import Vector
 from mathutils.geometry import (
         intersect_line_line,
         intersect_point_line,
@@ -51,7 +51,6 @@ from bpy.props import (
         StringProperty,
         PointerProperty,
         EnumProperty,
-        FloatVectorProperty,
         )
 from bpy.types import (
         Operator,
@@ -639,10 +638,10 @@ class MESH_OT_SURFSK_add_surface(Operator):
 
                 original_sel_edges_count += 1
 
-                if not ed.vertices[0] in all_selected_verts:
+                if ed.vertices[0] not in all_selected_verts:
                     all_selected_verts.append(ed.vertices[0])
 
-                if not ed.vertices[1] in all_selected_verts:
+                if ed.vertices[1] not in all_selected_verts:
                     all_selected_verts.append(ed.vertices[1])
 
         tuple(all_selected_verts)
@@ -660,14 +659,14 @@ class MESH_OT_SURFSK_add_surface(Operator):
             include_edge = False
 
             if ed.vertices[0] in all_selected_verts:
-                if not ed.vertices[0] in edges_connected_to_sel_verts:
+                if ed.vertices[0] not in edges_connected_to_sel_verts:
                     edges_connected_to_sel_verts[ed.vertices[0]] = []
 
                 edges_connected_to_sel_verts[ed.vertices[0]].append(ed_idx)
                 include_edge = True
 
             if ed.vertices[1] in all_selected_verts:
-                if not ed.vertices[1] in edges_connected_to_sel_verts:
+                if ed.vertices[1] not in edges_connected_to_sel_verts:
                     edges_connected_to_sel_verts[ed.vertices[1]] = []
 
                 edges_connected_to_sel_verts[ed.vertices[1]].append(ed_idx)
@@ -677,10 +676,10 @@ class MESH_OT_SURFSK_add_surface(Operator):
                 all_edges_around_sel_verts.append(ed_idx)
 
             # Get all connected verts to each vert
-            if not ed.vertices[0] in verts_connected_to_every_vert:
+            if ed.vertices[0] not in verts_connected_to_every_vert:
                 verts_connected_to_every_vert[ed.vertices[0]] = []
 
-            if not ed.vertices[1] in verts_connected_to_every_vert:
+            if ed.vertices[1] not in verts_connected_to_every_vert:
                 verts_connected_to_every_vert[ed.vertices[1]] = []
 
             verts_connected_to_every_vert[ed.vertices[0]].append(ed.vertices[1])
@@ -700,10 +699,10 @@ class MESH_OT_SURFSK_add_surface(Operator):
             if all_edges_faces_count[ed_idx] > 0:
                 ed = object.data.edges[ed_idx]
 
-                if not ed.vertices[0] in selected_verts_with_faces:
+                if ed.vertices[0] not in selected_verts_with_faces:
                     selected_verts_with_faces.append(ed.vertices[0])
 
-                if not ed.vertices[1] in selected_verts_with_faces:
+                if ed.vertices[1] not in selected_verts_with_faces:
                     selected_verts_with_faces.append(ed.vertices[1])
 
                 all_verts_part_of_faces.append(ed.vertices[0])
@@ -886,10 +885,10 @@ class MESH_OT_SURFSK_add_surface(Operator):
                 selected_edges.append(ed.index)
 
                 # Save all the edges that belong to each vertex.
-                if not ed.vertices[0] in edges_per_vert:
+                if ed.vertices[0] not in edges_per_vert:
                     edges_per_vert[ed.vertices[0]] = []
 
-                if not ed.vertices[1] in edges_per_vert:
+                if ed.vertices[1] not in edges_per_vert:
                     edges_per_vert[ed.vertices[1]] = []
 
                 edges_per_vert[ed.vertices[0]].append(ed.index)
@@ -943,17 +942,17 @@ class MESH_OT_SURFSK_add_surface(Operator):
             ed = object.data.edges[ed_idx]
 
             if not verts_surrounded_by_faces[ed.vertices[0]]:
-                if not ed.vertices[0] in related_key_verts:
+                if ed.vertices[0] not in related_key_verts:
                     related_key_verts[ed.vertices[0]] = []
 
-                if not ed.vertices[1] in related_key_verts[ed.vertices[0]]:
+                if ed.vertices[1] not in related_key_verts[ed.vertices[0]]:
                     related_key_verts[ed.vertices[0]].append(ed.vertices[1])
 
             if not verts_surrounded_by_faces[ed.vertices[1]]:
-                if not ed.vertices[1] in related_key_verts:
+                if ed.vertices[1] not in related_key_verts:
                     related_key_verts[ed.vertices[1]] = []
 
-                if not ed.vertices[0] in related_key_verts[ed.vertices[1]]:
+                if ed.vertices[0] not in related_key_verts[ed.vertices[1]]:
                     related_key_verts[ed.vertices[1]].append(ed.vertices[0])
 
         # Get groups of verts forming each face
@@ -1391,7 +1390,7 @@ class MESH_OT_SURFSK_add_surface(Operator):
 
                 self.crosshatch_strokes_coords = {}
                 for i in range(len(all_intersections)):
-                    if not all_intersections[i][0] in self.crosshatch_strokes_coords:
+                    if all_intersections[i][0] not in self.crosshatch_strokes_coords:
                         self.crosshatch_strokes_coords[all_intersections[i][0]] = []
 
                     self.crosshatch_strokes_coords[all_intersections[i][0]].append(
@@ -1501,16 +1500,16 @@ class MESH_OT_SURFSK_add_surface(Operator):
         # Make a dictionary with the verts related to each vert
         related_key_verts = {}
         for ed in final_points_ob.data.edges:
-            if not ed.vertices[0] in related_key_verts:
+            if ed.vertices[0] not in related_key_verts:
                 related_key_verts[ed.vertices[0]] = []
 
-            if not ed.vertices[1] in related_key_verts:
+            if ed.vertices[1] not in related_key_verts:
                 related_key_verts[ed.vertices[1]] = []
 
-            if not ed.vertices[1] in related_key_verts[ed.vertices[0]]:
+            if ed.vertices[1] not in related_key_verts[ed.vertices[0]]:
                 related_key_verts[ed.vertices[0]].append(ed.vertices[1])
 
-            if not ed.vertices[0] in related_key_verts[ed.vertices[1]]:
+            if ed.vertices[0] not in related_key_verts[ed.vertices[1]]:
                 related_key_verts[ed.vertices[1]].append(ed.vertices[0])
 
         # Get groups of verts forming each face
@@ -1648,7 +1647,7 @@ class MESH_OT_SURFSK_add_surface(Operator):
         # Make dictionary with all the verts connected to each vert, on the new surface object.
         surface_connected_verts = {}
         for ed in ob_surface.data.edges:
-            if not ed.vertices[0] in surface_connected_verts:
+            if ed.vertices[0] not in surface_connected_verts:
                 surface_connected_verts[ed.vertices[0]] = []
 
             surface_connected_verts[ed.vertices[0]].append(ed.vertices[1])
@@ -1799,9 +1798,9 @@ class MESH_OT_SURFSK_add_surface(Operator):
                 all_selected_edges_idx.append(ed.index)
 
                 # Selected vertices
-                if not ed.vertices[0] in all_selected_verts:
+                if ed.vertices[0] not in all_selected_verts:
                     all_selected_verts.append(self.main_object.data.vertices[ed.vertices[0]])
-                if not ed.vertices[1] in all_selected_verts:
+                if ed.vertices[1] not in all_selected_verts:
                     all_selected_verts.append(self.main_object.data.vertices[ed.vertices[1]])
 
                 # All verts (both from each edge) to determine later

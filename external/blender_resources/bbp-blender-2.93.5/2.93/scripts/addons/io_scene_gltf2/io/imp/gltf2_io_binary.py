@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import struct
 import numpy as np
 
 from ..com.gltf2_io import Accessor

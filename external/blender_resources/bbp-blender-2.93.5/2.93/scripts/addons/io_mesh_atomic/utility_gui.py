@@ -20,8 +20,7 @@ import bpy
 from bpy.types import Operator, Panel
 from bpy.props import (StringProperty,
                        EnumProperty,
-                       FloatProperty,
-                       BoolProperty)
+                       FloatProperty)
 
 from io_mesh_atomic.utility_panel import choose_objects
 from io_mesh_atomic.utility_panel import custom_datafile

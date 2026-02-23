@@ -27,7 +27,6 @@ from bpy.props import (
         FloatProperty,
         IntProperty,
         StringProperty,
-        FloatVectorProperty,
         )
 
 from .ant_functions import (

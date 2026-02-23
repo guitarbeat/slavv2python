@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 __author__ = "mozman <mozman@gmx.at>"
 
 from itertools import islice
-from .tags import TagGroups, DXFStructureError, Tags, binary_encoded_data_to_bytes
+from .tags import TagGroups, Tags, binary_encoded_data_to_bytes
 
 
 class AcDsDataSection(object):

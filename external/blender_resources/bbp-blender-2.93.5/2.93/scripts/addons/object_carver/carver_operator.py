@@ -1,23 +1,13 @@
 import bpy
-import bpy_extras
 import sys
 from bpy.props import (
     BoolProperty,
     IntProperty,
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     )
 from mathutils import (
     Vector,
     )
 
-from bpy_extras.view3d_utils import (
-    region_2d_to_vector_3d,
-    region_2d_to_origin_3d,
-    region_2d_to_location_3d,
-    location_3d_to_region_2d,
-)
 from .carver_profils import (
     Profils
     )
@@ -1335,13 +1325,11 @@ class CarverProperties(bpy.types.PropertyGroup):
 
 
 def register():
-    from bpy.utils import register_class
     bpy.utils.register_class(CARVER_OT_operator)
     bpy.utils.register_class(CarverProperties)
     bpy.types.Scene.mesh_carver = bpy.props.PointerProperty(type=CarverProperties)
 
 def unregister():
-    from bpy.utils import unregister_class
     bpy.utils.unregister_class(CarverProperties)
     bpy.utils.unregister_class(CARVER_OT_operator)
     del bpy.types.Scene.mesh_carver

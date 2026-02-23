@@ -24,7 +24,6 @@ from bpy.props import (
         FloatVectorProperty
         )
 from mathutils import (
-        Vector,
         Matrix,
         )
 from math import (

@@ -44,15 +44,6 @@ from .Blocks import (
         stepSpecs,
         createWall,
         radialized,
-        slope,
-        openingSpecs,
-        bigBlock,
-        shelfExt,
-        stepMod,
-        stepLeft,
-        shelfBack,
-        stepOnly,
-        stepBack,
         )
 from bpy_extras import object_utils
 

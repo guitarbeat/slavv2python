@@ -675,7 +675,7 @@ class VIEW3D_GGT_vr_viewer_pose(GizmoGroup):
 
     @staticmethod
     def _get_viewer_pose_matrix(context):
-        from mathutils import Matrix, Quaternion
+        from mathutils import Matrix
 
         wm = context.window_manager
 

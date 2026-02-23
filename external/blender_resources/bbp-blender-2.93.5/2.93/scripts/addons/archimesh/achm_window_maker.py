@@ -26,7 +26,7 @@
 import bpy
 from math import pi, radians
 from bpy.types import Operator, PropertyGroup, Object, Panel
-from bpy.props import StringProperty, FloatProperty, BoolProperty, IntProperty, FloatVectorProperty, \
+from bpy.props import FloatProperty, BoolProperty, IntProperty, FloatVectorProperty, \
     CollectionProperty, EnumProperty
 from .achm_tools import *
 
@@ -514,7 +514,7 @@ class ARCHIMESH_PT_WindowObjectgenerator(Panel):
                         row.prop(myobjdat, 'blind_back')
 
                 box = layout.box()
-                if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+                if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                     box.enabled = False
                 box.prop(myobjdat, 'crt_mat')
             else:

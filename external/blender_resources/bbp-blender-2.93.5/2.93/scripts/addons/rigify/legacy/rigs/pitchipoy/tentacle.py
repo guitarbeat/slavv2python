@@ -5,7 +5,6 @@ from ...utils    import make_mechanism_name, put_bone, create_sphere_widget
 from ...utils    import create_widget, create_circle_widget
 from ...utils    import MetarigError
 
-from ....utils.mechanism import make_property
 
 script = """
 controls    = [%s]

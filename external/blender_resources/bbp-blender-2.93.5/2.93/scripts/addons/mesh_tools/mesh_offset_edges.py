@@ -31,10 +31,8 @@ bl_info = {
     "category": "Mesh",
 }
 
-import math
-from math import sin, cos, pi, copysign, radians
+from math import sin, cos, pi, radians
 import bpy
-from bpy_extras import view3d_utils
 import bmesh
 from mathutils import Vector
 from time import perf_counter

@@ -33,7 +33,6 @@ bl_info = {
 import bpy
 from bpy.types import (
         Operator,
-        Panel,
         )
 from bpy.props import (
         BoolProperty,

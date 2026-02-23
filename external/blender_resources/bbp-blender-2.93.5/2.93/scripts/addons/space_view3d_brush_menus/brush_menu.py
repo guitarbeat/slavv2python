@@ -8,7 +8,6 @@ from bpy.types import (
 from bpy.props import BoolProperty
 from . import utils_core
 from . import brushes
-from bl_ui.properties_paint_common import UnifiedPaintPanel
 
 class BrushOptionsMenu(Menu):
     bl_label = "Brush Options"

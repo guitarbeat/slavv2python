@@ -15,7 +15,6 @@ from bpy.props import (
                 BoolProperty,
                 IntProperty,
                 FloatProperty,
-                StringProperty,
                 )
 
 # ################### Globals #################### #

@@ -1,4 +1,5 @@
-import bpy, re
+import bpy
+import re
 from   mathutils      import Vector
 from   ...utils       import copy_bone, flip_bone
 from   ...utils       import org, strip_org, make_deformer_name, connected_children_names, make_mechanism_name

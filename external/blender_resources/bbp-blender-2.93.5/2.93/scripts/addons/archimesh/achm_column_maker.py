@@ -26,7 +26,7 @@
 # noinspection PyUnresolvedReferences
 import bpy
 from math import cos, sin, radians, atan, sqrt
-from bpy.props import BoolProperty, IntProperty, FloatProperty, FloatVectorProperty
+from bpy.props import BoolProperty, IntProperty, FloatProperty
 from .achm_tools import *
 
 
@@ -323,7 +323,7 @@ class ARCHIMESH_OT_Column(bpy.types.Operator):
                     row.prop(self, 'ramp')
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
         else:

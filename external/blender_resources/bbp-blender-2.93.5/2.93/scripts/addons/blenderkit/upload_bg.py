@@ -18,11 +18,13 @@
 
 
 
-from blenderkit import paths, append_link, bg_blender, utils, rerequests, tasks_queue, ui
+from blenderkit import paths, append_link, utils, rerequests, tasks_queue, ui
 
-import sys, json, os, time
+import sys
+import json
+import os
+import time
 import requests
-import logging
 
 import bpy
 

@@ -25,7 +25,7 @@ from time import time
 import unittest
 import sys
 import os
-from random import random as rand, shuffle
+from random import random as rand
 import numpy as np
 
 numexpr_available = False

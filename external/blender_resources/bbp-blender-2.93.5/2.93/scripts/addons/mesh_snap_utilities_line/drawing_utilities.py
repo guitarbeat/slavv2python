@@ -15,7 +15,6 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 import gpu
-from mathutils import Vector
 
 
 class SnapDrawn():

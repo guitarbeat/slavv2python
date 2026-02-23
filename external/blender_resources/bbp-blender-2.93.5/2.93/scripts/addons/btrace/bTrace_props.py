@@ -16,9 +16,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy
 from bpy.types import (
-        Panel,
         PropertyGroup,
         )
 from bpy.props import (

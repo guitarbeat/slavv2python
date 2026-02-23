@@ -16,7 +16,11 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bpy, os, sys, tempfile, shutil
+import bpy
+import os
+import sys
+import tempfile
+import shutil
 from blenderkit import tasks_queue, ui, utils
 
 _presets = os.path.join(bpy.utils.user_resource('SCRIPTS'), "presets")
@@ -168,7 +172,7 @@ def slugify(slug):
     Normalizes string, converts to lowercase, removes non-alpha characters,
     and converts spaces to hyphens.
     """
-    import unicodedata, re
+    import re
     slug = slug.lower()
 
     characters = '<>:"/\\|?*., ()#'
@@ -342,7 +346,7 @@ def delete_asset_debug(asset_data):
             except:
                 e = sys.exc_info()[0]
                 print(e)
-                pass;
+                pass
 
 
 def get_clean_filepath():

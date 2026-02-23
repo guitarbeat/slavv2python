@@ -117,7 +117,7 @@ def decode_primitive(gltf, prim):
 
         accessor = gltf.data.accessors[prim.attributes[attr]]
         if dll.decoderGetVertexCount(decoder) != accessor.count:
-            print_console('WARNING', 'Draco Decoder: Vertex count of accessor and decoded vertex count does not match for attribute {}. Updating accessor.'.format(attr, name))
+            print_console('WARNING', 'Draco Decoder: Vertex count of accessor and decoded vertex count does not match for attribute {}. Updating accessor.'.format(attr, ))
             accessor.count = dll.decoderGetVertexCount(decoder)
         if not dll.decoderReadAttribute(decoder, dracoId, accessor.component_type, accessor.type.encode()):
             print_console('ERROR', 'Draco Decoder: Could not decode attribute {}. Skipping primitive {}.'.format(attr, name))

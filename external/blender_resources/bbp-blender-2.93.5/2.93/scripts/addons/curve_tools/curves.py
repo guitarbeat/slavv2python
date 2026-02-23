@@ -1,6 +1,5 @@
 from . import mathematics
 
-import bpy
 
 
 class BezierPoint:
@@ -137,7 +136,7 @@ class BezierSpline:
 
 
     def __init__(self, blenderBezierSpline):
-        if not blenderBezierSpline is None:
+        if blenderBezierSpline is not None:
             if blenderBezierSpline.type != 'BEZIER':
                 print("## ERROR:", "blenderBezierSpline.type != 'BEZIER'")
                 raise Exception("blenderBezierSpline.type != 'BEZIER'")
@@ -150,7 +149,7 @@ class BezierSpline:
 
         self.resolution = 12
         self.isCyclic = False
-        if not self.bezierSpline is None:
+        if self.bezierSpline is not None:
             self.resolution = self.bezierSpline.resolution_u
             self.isCyclic = self.bezierSpline.use_cyclic_u
 
@@ -249,7 +248,7 @@ class BezierSpline:
 
 
     def CalcDivideResolution(self, segment, parameter):
-        if not segment in self.segments:
+        if segment not in self.segments:
             print("### WARNING: InsertPoint(): not segment in self.segments")
             return None
 
@@ -300,7 +299,7 @@ class BezierSpline:
 
 
     def InsertPoint(self, segment, parameter):
-        if not segment in self.segments:
+        if segment not in self.segments:
             print("### WARNING: InsertPoint(): not segment in self.segments")
             return
         iSeg = self.segments.index(segment)
@@ -328,7 +327,7 @@ class BezierSpline:
 
 
     def Split(self, segment, parameter):
-        if not segment in self.segments:
+        if segment not in self.segments:
             print("### WARNING: InsertPoint(): not segment in self.segments")
             return None
         iSeg = self.segments.index(segment)

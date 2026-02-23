@@ -31,7 +31,7 @@ from freestyle.shaders import (
     ConstantThicknessShader,
     SamplingShader,
 )
-from freestyle.types import IntegrationType, Operators, Stroke
+from freestyle.types import IntegrationType, Operators
 
 
 Operators.select(QuantitativeInvisibilityUP1D(0))

@@ -30,7 +30,7 @@
 import bpy
 import bmesh
 from bpy.types import Operator
-from bpy.props import (BoolProperty, StringProperty, FloatProperty)
+from bpy.props import (BoolProperty, FloatProperty)
 from mathutils import Vector
 
 from .utils import *

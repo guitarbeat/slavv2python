@@ -227,7 +227,6 @@ from bpy.props import (
     FloatProperty,
     EnumProperty,
     CollectionProperty,
-    BoolVectorProperty,
     FloatVectorProperty,
 )
 

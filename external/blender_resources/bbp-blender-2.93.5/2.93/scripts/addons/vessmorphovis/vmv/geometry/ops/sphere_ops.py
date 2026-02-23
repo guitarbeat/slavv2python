@@ -17,10 +17,11 @@
 ####################################################################################################
 
 # System imports
-import math, random
+import math
+import random
 
 # Blender imports
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
 import vmv
 import vmv.geometry

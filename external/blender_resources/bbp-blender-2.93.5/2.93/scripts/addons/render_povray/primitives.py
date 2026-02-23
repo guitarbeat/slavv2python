@@ -25,7 +25,7 @@ import os.path
 from bpy_extras.io_utils import ImportHelper
 from bpy_extras import object_utils
 from bpy.utils import register_class
-from math import atan, pi, degrees, sqrt, cos, sin
+from math import pi, sqrt, cos, sin
 from bpy.types import Operator
 
 from bpy.props import (
@@ -35,7 +35,6 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     EnumProperty,
-    PointerProperty,
     CollectionProperty,
 )
 

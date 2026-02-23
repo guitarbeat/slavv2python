@@ -24,7 +24,6 @@ from .utils.functions import convert_duration_to_frames
 from .utils.doc import doc_brief, doc_description, doc_idname, doc_name
 from ..addon_preferences import get_preferences
 from .utils.global_settings import (
-    Extensions,
     EXTENSIONS_ALL,
     EXTENSIONS_AUDIO,
     EXTENSIONS_IMG,

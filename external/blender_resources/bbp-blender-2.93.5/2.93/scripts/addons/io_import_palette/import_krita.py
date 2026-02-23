@@ -28,7 +28,6 @@ Run this script from "File->Import" menu and then load the desired KPL file.
 
 import bpy
 import os
-import struct
 
 
 def load(context, filepath):

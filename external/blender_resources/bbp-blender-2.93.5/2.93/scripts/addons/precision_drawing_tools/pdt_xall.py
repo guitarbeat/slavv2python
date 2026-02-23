@@ -280,5 +280,5 @@ class PDT_OT_IntersectAllEdges(bpy.types.Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"intall"
+        pg.command = "intall"
         return {"FINISHED"}

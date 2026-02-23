@@ -20,12 +20,11 @@
 
 import bpy
 
-from ...utils.naming import strip_org, strip_prefix, choose_derived_bone, is_control_bone
+from ...utils.naming import choose_derived_bone, is_control_bone
 from ...utils.mechanism import copy_custom_properties_with_ui, move_all_constraints
 from ...utils.widgets import layout_widget_dropdown, create_registered_widget
 
 from ...base_rig import BaseRig
-from ...base_generate import SubstitutionRig
 
 from itertools import repeat
 

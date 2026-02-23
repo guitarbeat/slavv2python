@@ -26,8 +26,7 @@ import sys
 from rna_prop_ui import rna_idprop_ui_prop_get
 
 from .utils import MetarigError, new_bone, get_rig_type
-from .utils import ORG_PREFIX, MCH_PREFIX, DEF_PREFIX, WGT_PREFIX, ROOT_NAME, make_original_name
-from .utils import RIG_DIR
+from .utils import MCH_PREFIX, DEF_PREFIX, WGT_PREFIX, ROOT_NAME, make_original_name
 from .utils import create_root_widget, ensure_widget_collection
 from .utils import random_id
 from .utils import copy_attributes

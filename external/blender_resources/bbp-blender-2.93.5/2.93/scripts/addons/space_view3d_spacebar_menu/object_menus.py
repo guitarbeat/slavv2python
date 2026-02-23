@@ -24,11 +24,9 @@ from bpy.types import (
         Menu,
         )
 from bpy.props import (
-        BoolProperty,
         StringProperty,
         )
 
-from bl_ui.properties_paint_common import UnifiedPaintPanel
 
 from . edit_mesh import *
 from . view_menus import *

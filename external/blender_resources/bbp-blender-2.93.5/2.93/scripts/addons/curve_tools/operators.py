@@ -1,13 +1,10 @@
-import time
-import threading
 
 import bpy
 from bpy.props import *
-from bpy_extras import object_utils, view3d_utils
+from bpy_extras import object_utils
 from mathutils import  *
 from math import  *
 
-from . import properties
 from . import curves
 from . import intersections
 from . import util

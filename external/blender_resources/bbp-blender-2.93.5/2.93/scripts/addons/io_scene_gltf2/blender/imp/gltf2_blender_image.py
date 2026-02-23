@@ -15,7 +15,7 @@
 import bpy
 import os
 import tempfile
-from os.path import dirname, join, isfile, basename, normpath
+from os.path import dirname, join, basename, normpath
 import urllib.parse
 import re
 

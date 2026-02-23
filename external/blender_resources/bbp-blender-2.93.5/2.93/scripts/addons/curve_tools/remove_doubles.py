@@ -1,4 +1,4 @@
-import bpy, mathutils
+import bpy
 from . import util
 
 bl_info = {
@@ -31,8 +31,8 @@ def main(context, distance = 0.01):
                         else:
                             ii = i - 1
 
-                        dot = spline.bezier_points[i];
-                        dot1 = spline.bezier_points[ii];
+                        dot = spline.bezier_points[i]
+                        dot1 = spline.bezier_points[ii]
 
                         while dot1 in bezier_dellist and i != ii:
                             ii -= 1
@@ -65,8 +65,8 @@ def main(context, distance = 0.01):
                         else:
                             ii = i - 1
 
-                        dot = spline.points[i];
-                        dot1 = spline.points[ii];
+                        dot = spline.points[i]
+                        dot1 = spline.points[ii]
 
                         while dot1 in dellist and i != ii:
                             ii -= 1

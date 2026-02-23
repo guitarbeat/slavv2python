@@ -139,7 +139,7 @@ class MESH_OT_InsetStraightSkeleton(bpy.types.Operator):
 
     def calc_initial_length(self, event, mode_changed):
         mdiff = self.center - Vector((event.mouse_region_x, event.mouse_region_y))
-        mlen = mdiff.length;
+        mlen = mdiff.length
         vmode = self.value_mode
         if mode_changed or self.initial_length[vmode] == -1:
             if vmode == INSET_VALUE:

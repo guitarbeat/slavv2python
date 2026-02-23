@@ -5,7 +5,6 @@ import bmesh
 from bpy.props import (
         FloatProperty,
         IntProperty,
-        StringProperty,
         BoolProperty,
         )
 from math import pi

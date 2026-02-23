@@ -18,7 +18,6 @@
 
 
 import bpy
-from mathutils import Matrix
 from bpy.types import Operator
 from bpy_extras.object_utils import AddObjectHelper
 from bpy.props import (
@@ -26,8 +25,6 @@ from bpy.props import (
         EnumProperty,
         FloatProperty,
         IntProperty,
-        FloatVectorProperty,
-        StringProperty,
         )
 from . import createMesh
 from bpy_extras import object_utils

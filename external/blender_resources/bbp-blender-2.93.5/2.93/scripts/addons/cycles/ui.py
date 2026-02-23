@@ -2217,7 +2217,6 @@ def draw_device(self, context):
         col.active = show_device_active(context)
         col.prop(cscene, "device")
 
-        from . import engine
         if engine.with_osl() and use_cpu(context):
             col.prop(cscene, "shading_system")
 

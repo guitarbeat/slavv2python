@@ -16,7 +16,8 @@
 ####################################################################################################
 
 # Blender imports
-import bpy, bmesh
+import bpy
+import bmesh
 
 # Internal imports
 import vmv

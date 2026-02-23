@@ -16,7 +16,6 @@
 ####################################################################################################
 
 # System imports
-import sys
 
 # Internal imports
 import vmv.geometry

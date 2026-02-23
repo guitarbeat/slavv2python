@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from ctypes import *
-from pathlib import Path
 
 from io_scene_gltf2.io.exp.gltf2_io_binary_data import BinaryData
 from ...io.com.gltf2_io_debug import print_console

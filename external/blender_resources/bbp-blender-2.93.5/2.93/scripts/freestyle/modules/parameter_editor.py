@@ -28,11 +28,8 @@ from freestyle.types import (
     Nature,
     Noise,
     Operators,
-    StrokeAttribute,
     UnaryPredicate0D,
     UnaryPredicate1D,
-    TVertex,
-    Material,
     ViewEdge,
 )
 from freestyle.chainingiterators import (
@@ -43,7 +40,6 @@ from freestyle.chainingiterators import (
 )
 from freestyle.functions import (
     Curvature2DAngleF0D,
-    Normal2DF0D,
     QuantitativeInvisibilityF1D,
     VertexOrientation2DF0D,
     CurveMaterialF0D,
@@ -84,7 +80,6 @@ from freestyle.shaders import (
     SquareCapShader,
     StrokeShader,
     StrokeTextureStepShader,
-    ThicknessNoiseShader as thickness_noise,
     TipRemoverShader,
 )
 from freestyle.utils import (
@@ -99,7 +94,6 @@ from freestyle.utils import (
     iter_distance_from_object,
     iter_material_value,
     iter_t2d_along_stroke,
-    normal_at_I0D,
     pairwise,
     simplify,
     stroke_normal,
@@ -107,16 +101,13 @@ from freestyle.utils import (
 from _freestyle import (
     blendRamp,
     evaluateColorRamp,
-    evaluateCurveMappingF,
 )
 
 import time
-import bpy
-import random
 
 from mathutils import Vector
-from math import pi, sin, cos, acos, radians, atan2
-from itertools import cycle, tee
+from math import pi, sin, cos, acos, radians
+from itertools import cycle
 
 # WARNING: highly experimental, not a stable API
 # lists of callback functions

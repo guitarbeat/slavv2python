@@ -10,10 +10,11 @@
 # License: GPL-3.0 (https://github.com/Shriinivas/assignshapekey/blob/master/LICENSE)
 #
 
-import bpy, bmesh, bgl, gpu
+import bpy
+import bgl
+import gpu
 from gpu_extras.batch import batch_for_shader
 from bpy.props import BoolProperty, EnumProperty, StringProperty
-from collections import OrderedDict
 from mathutils import Vector
 from math import sqrt, floor
 from functools import cmp_to_key

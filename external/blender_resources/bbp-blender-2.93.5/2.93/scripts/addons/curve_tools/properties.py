@@ -53,7 +53,7 @@ class curvetoolsSelectedObject(bpy.types.PropertyGroup):
             if name in selectedBlenderObjectNames: newSelectedObjectNames.append(name)
 
         for name in selectedBlenderObjectNames:
-            if not (name in selectedObjectNames): newSelectedObjectNames.append(name)
+            if name not in selectedObjectNames: newSelectedObjectNames.append(name)
 
         # sometimes it still complains about the context
         try:

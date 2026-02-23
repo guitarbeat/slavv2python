@@ -31,9 +31,7 @@ bl_info = {
 import bpy
 from bpy.types import (
         Menu,
-        Operator,
         )
-import os
 
 
 # Pie Save/Open

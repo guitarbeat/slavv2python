@@ -16,11 +16,8 @@
 ####################################################################################################
 
 # System imports
-import copy
-import math 
 
 # Blender imports
-from mathutils import Vector
 
 import vmv
 import vmv.geometry

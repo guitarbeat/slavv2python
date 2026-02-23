@@ -7,7 +7,7 @@ __author__ = "mozman <mozman@gmx.at>"
 
 from itertools import islice
 
-from .tags import TagGroups, DXFStructureError
+from .tags import TagGroups
 from .tags import Tags
 from .dxfentities import entity_factory
 

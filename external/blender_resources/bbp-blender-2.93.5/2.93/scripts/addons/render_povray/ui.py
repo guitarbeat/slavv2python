@@ -22,8 +22,6 @@
 import bpy
 import sys  # really import here and in render.py?
 import os  # really import here and in render.py?
-import addon_utils
-from time import sleep
 from os.path import isfile
 from bpy.app.handlers import persistent
 from bl_operators.presets import AddPresetBase
@@ -97,8 +95,6 @@ del properties_world
 
 # Example of wrapping every class 'as is'
 from bl_ui import properties_texture
-from bl_ui.properties_texture import context_tex_datablock
-from bl_ui.properties_texture import texture_filter_common
 
 for member in dir(properties_texture):
     subclass = getattr(properties_texture, member)
@@ -4694,7 +4690,7 @@ def register():
     # addon_utils.enable("add_mesh_extra_objects", default_set=False, persistent=True)
     # bpy.types.TEXTURE_PT_context_texture.prepend(TEXTURE_PT_POV_type)
 
-    if not povCentricWorkspace in bpy.app.handlers.load_post:
+    if povCentricWorkspace not in bpy.app.handlers.load_post:
         # print("Adding POV wentric workspace on load handlers list")
         bpy.app.handlers.load_post.append(povCentricWorkspace)
 

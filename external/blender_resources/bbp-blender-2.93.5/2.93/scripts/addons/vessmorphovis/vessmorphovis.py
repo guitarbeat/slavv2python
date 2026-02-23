@@ -175,7 +175,6 @@ def run_local_vessmorphovis(arguments):
                 create_shell_commands_for_local_execution(arguments, arguments_string))
 
         # Parallel execution
-        from joblib import Parallel, delayed
         #import multiprocessing
         #Parallel(n_jobs=6)(
         #    delayed(execute_shell_command)(command) for command in shell_commands)

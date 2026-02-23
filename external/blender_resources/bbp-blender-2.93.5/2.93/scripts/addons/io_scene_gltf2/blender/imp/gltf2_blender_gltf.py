@@ -27,7 +27,9 @@ class BlenderGlTF():
         """Create glTF main method, with optional profiling"""
         profile = bpy.app.debug_value == 102
         if profile:
-            import cProfile, pstats, io
+            import cProfile
+            import pstats
+            import io
             from pstats import SortKey
             pr = cProfile.Profile()
             pr.enable()

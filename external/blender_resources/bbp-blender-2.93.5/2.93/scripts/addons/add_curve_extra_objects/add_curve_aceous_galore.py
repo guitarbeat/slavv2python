@@ -36,10 +36,9 @@ from bpy.props import (
         BoolProperty,
         EnumProperty,
         FloatProperty,
-        IntProperty,
-        FloatVectorProperty
+        IntProperty
         )
-from mathutils import Matrix, Vector
+from mathutils import Vector
 from bpy.types import Operator
 from math import (
         sin, cos, pi

@@ -35,14 +35,9 @@ else:
     from bl_i18n_utils import utils as utils_i18n
     from bl_i18n_utils import bl_extract_messages
 
-from bpy.app.translations import pgettext_iface as iface_
 import addon_utils
 
-import io
 import os
-import shutil
-import subprocess
-import tempfile
 
 
 # Helpers ###################################################################

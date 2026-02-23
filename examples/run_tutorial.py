@@ -8,7 +8,6 @@ Run from the repository root:
 Or after pip install -e .:
     python -m examples.run_tutorial
 """
-import numpy as np
 
 from slavv import SLAVVProcessor
 from slavv.utils import validate_parameters, generate_synthetic_vessel_volume

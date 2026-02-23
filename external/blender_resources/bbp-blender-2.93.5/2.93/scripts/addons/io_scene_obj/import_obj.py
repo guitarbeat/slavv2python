@@ -33,7 +33,6 @@ http://wiki.blender.org/index.php/Scripts/Manual/Import/wavefront_obj
 
 import array
 import os
-import time
 import bpy
 import mathutils
 
@@ -116,11 +115,11 @@ def obj_image_load(img_data, context_imagepath_map, line, DIR, recursive, relpat
                 context_imagepath_map[imagepath] = image
                 del img_data[i:]
                 img_data.append(imagepath)
-                break;
+                break
         else:
             del img_data[i:]
             img_data.append(imagepath)
-            break;
+            break
 
     if image is None:
         imagepath = os.fsdecode(filepath_parts[-1])

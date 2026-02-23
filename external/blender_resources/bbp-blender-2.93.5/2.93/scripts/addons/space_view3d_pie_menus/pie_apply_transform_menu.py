@@ -35,7 +35,6 @@ from bpy.types import (
         Menu,
         Operator,
         )
-from bpy.props import EnumProperty
 
 
 # Pie Apply Transforms - Ctrl + A

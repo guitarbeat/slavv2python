@@ -16,9 +16,9 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-import bgl, blf
+import bgl
+import blf
 
-import bpy, blf
 import gpu
 from gpu_extras.batch import batch_for_shader
 
@@ -78,7 +78,7 @@ def draw_rect_3d(coords, color):
 def draw_image(x, y, width, height, image, transparency, crop=(0, 0, 1, 1)):
     # draw_rect(x,y, width, height, (.5,0,0,.5))
     if not image:
-        return;
+        return
 
     coords = [
         (x, y), (x + width, y),

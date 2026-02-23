@@ -19,7 +19,6 @@
 import bpy
 from bpy.types import Operator, Menu
 from bl_operators.presets import AddPresetBase
-import os
 
 from .sun_calc import (format_lat_long, format_time, format_hms, sun)
 

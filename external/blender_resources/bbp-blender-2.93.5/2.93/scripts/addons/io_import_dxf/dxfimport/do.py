@@ -521,7 +521,7 @@ class Do:
                         if _is_on_edge(ii[0]):
                             try:
                                 bm.faces.remove(face)
-                            except Exception as e:
+                            except Exception:
                                 pass
                             iv = bm.verts.new(ii[0])
                             bm.faces.new((verts[i], iv, verts[(i + 3) % 4]))

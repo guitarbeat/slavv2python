@@ -1,5 +1,5 @@
 import bpy
-from math import radians, degrees
+from math import degrees
 
 # -----------------------------------------------------------------------------
 # utility functions
@@ -86,7 +86,7 @@ def mu_assign_material(self, material_name = "Default", override_type = 'APPEND_
 
     edit_mode = False
     all_polygons = True
-    if (not active_object is None) and active_object.mode == 'EDIT':
+    if (active_object is not None) and active_object.mode == 'EDIT':
         edit_mode = True
         all_polygons = False
         bpy.ops.object.mode_set()
@@ -109,7 +109,7 @@ def mu_assign_material(self, material_name = "Default", override_type = 'APPEND_
 
     for obj in objects:
         # Apparently selected_editable_objects includes objects as cameras etc
-        if not obj.type in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+        if obj.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
             continue
 
         # set the active object to our object
@@ -197,7 +197,7 @@ def mu_assign_material(self, material_name = "Default", override_type = 'APPEND_
             mu_assign_to_data(obj, target, index, edit_mode, all_polygons)
 
     # We shouldn't risk unsetting the active object
-    if not active_object is None:
+    if active_object is not None:
         # restore the active object
         bpy.context.view_layer.objects.active = active_object
 
@@ -231,7 +231,7 @@ def mu_select_by_material_name(self, find_material_name, extend_selection = Fals
 
     active_object = bpy.context.active_object
 
-    if (not active_object is None) and (active_object.mode == 'EDIT'):
+    if (active_object is not None) and (active_object.mode == 'EDIT'):
         edit_mode = True
 
     if not edit_mode:
@@ -580,7 +580,7 @@ def mu_set_fake_user(self, fake_user, materials):
     if fake_user == 'TOGGLE':
         done_mats = []
         for mat in mats:
-            if  not mat.name in done_mats:
+            if  mat.name not in done_mats:
                 mat.use_fake_user = not mat.use_fake_user
             done_mats.append(mat.name)
     else:

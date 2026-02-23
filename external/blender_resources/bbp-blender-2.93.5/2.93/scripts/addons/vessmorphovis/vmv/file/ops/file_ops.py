@@ -16,7 +16,9 @@
 ####################################################################################################
 
 # System imports
-import sys, os, shutil
+import sys
+import os
+import shutil
 
 # Internal imports
 sys.path.append('%s/../../consts' % os.path.dirname(os.path.realpath(__file__)))

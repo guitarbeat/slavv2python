@@ -20,15 +20,9 @@
 
 import bpy
 from bpy.types import (
-        Operator,
         Menu,
         )
-from bpy.props import (
-        BoolProperty,
-        StringProperty,
-        )
 
-from bl_ui.properties_paint_common import UnifiedPaintPanel
 
 
 

@@ -19,7 +19,6 @@
 # <pep8 compliant>
 
 
-from . import geom
 import math
 import random
 from math import sqrt, hypot

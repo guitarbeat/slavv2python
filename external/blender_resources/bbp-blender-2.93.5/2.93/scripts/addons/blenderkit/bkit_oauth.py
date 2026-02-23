@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from blenderkit import tasks_queue, utils, paths, search, categories, oauth, ui, ui_panels
+from blenderkit import tasks_queue, utils, paths, search, categories, oauth, ui
 
 import bpy
 

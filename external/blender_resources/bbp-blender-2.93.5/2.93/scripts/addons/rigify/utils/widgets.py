@@ -290,7 +290,7 @@ def write_widget(obj, name='thing', use_size=True):
     """
     script = ""
     script += "@widget_generator\n"
-    script += "def create_"+name+"_widget(geom";
+    script += "def create_"+name+"_widget(geom"
     if use_size:
         script += ", *, size=1.0"
     script += "):\n"

@@ -21,7 +21,7 @@
 
 import bmesh
 
-from mathutils import Vector, geometry
+from mathutils import Vector
 from mathutils.geometry import intersect_line_line as LineIntersect
 from mathutils.geometry import intersect_point_line as PtLineIntersect
 

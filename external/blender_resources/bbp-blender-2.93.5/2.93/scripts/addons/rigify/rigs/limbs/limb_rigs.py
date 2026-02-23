@@ -38,7 +38,7 @@ from ..widgets import create_gear_widget, create_ikarrow_widget
 from ...rig_ui_template import UTILITIES_FUNC_COMMON_IKFK
 
 from math import pi
-from itertools import count, chain
+from itertools import count
 from mathutils import Vector
 from collections import namedtuple
 

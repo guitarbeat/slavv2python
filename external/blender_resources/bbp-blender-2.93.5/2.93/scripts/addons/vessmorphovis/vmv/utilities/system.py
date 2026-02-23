@@ -35,6 +35,6 @@ def command_exists(name):
     try:
         devnull = open(os.devnull)
         subprocess.Popen([name], stdout=devnull, stderr=devnull).communicate()
-    except OSError as e:
+    except OSError:
         return False
     return True

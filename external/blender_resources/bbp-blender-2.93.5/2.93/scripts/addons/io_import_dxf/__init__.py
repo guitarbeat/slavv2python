@@ -475,7 +475,7 @@ class IMPORT_OT_dxf(bpy.types.Operator):
         if self.proj_scene == 'USER':
             try:
                 Proj(init=self.epsg_scene_user)
-            except Exception as e:
+            except Exception:
                 col.alert = True
             col.prop(self, "epsg_scene_user")
             col.alert = False

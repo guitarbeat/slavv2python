@@ -35,9 +35,6 @@ import bpy
 from bpy_extras import object_utils
 from bpy.types import (
         Operator,
-        Menu,
-        Panel,
-        PropertyGroup,
         )
 from bpy.props import (
         BoolProperty,
@@ -46,11 +43,9 @@ from bpy.props import (
         FloatVectorProperty,
         IntProperty,
         StringProperty,
-        PointerProperty,
         )
 from mathutils import (
         Vector,
-        Matrix,
         )
 from math import (
         sin, asin, sqrt,

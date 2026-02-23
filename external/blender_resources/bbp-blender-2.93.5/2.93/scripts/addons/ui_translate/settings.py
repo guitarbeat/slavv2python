@@ -24,7 +24,6 @@ if "bpy" in locals():
     import importlib
     importlib.reload(settings_i18n)
 else:
-    import bpy
     from bpy.types import (
         Operator,
         AddonPreferences,

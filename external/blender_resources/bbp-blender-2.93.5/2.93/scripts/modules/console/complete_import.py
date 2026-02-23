@@ -60,7 +60,7 @@ def get_root_modules():
     """
     global ROOT_MODULES
     modules = []
-    if not(ROOT_MODULES is None):
+    if ROOT_MODULES is not None:
         return ROOT_MODULES
     from time import time
     t = time()

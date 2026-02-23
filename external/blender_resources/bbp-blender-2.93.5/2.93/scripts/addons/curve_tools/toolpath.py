@@ -16,7 +16,9 @@
 #
 #  ***** GPL LICENSE BLOCK *****
 
-import bpy, math, bmesh
+import bpy
+import math
+import bmesh
 from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
 from . import internal

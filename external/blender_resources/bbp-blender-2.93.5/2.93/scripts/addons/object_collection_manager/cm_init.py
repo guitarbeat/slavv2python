@@ -29,7 +29,6 @@ if "bpy" in locals():
 
 else:
     from . import internals
-    from . import operator_utils
     from . import operators
     from . import ui
     from . import preferences
@@ -39,7 +38,6 @@ from bpy.app.handlers import persistent
 from bpy.types import PropertyGroup
 from bpy.props import (
     CollectionProperty,
-    EnumProperty,
     IntProperty,
     BoolProperty,
     StringProperty,

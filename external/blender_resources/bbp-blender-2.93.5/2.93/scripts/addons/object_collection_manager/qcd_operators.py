@@ -26,8 +26,7 @@ from bpy.types import (
 
 from bpy.props import (
     BoolProperty,
-    StringProperty,
-    IntProperty
+    StringProperty
 )
 
 # For VARS
@@ -36,7 +35,6 @@ from . import internals
 # For FUNCTIONS
 from .internals import (
     update_property_group,
-    generate_state,
     get_modifiers,
     get_move_selection,
     get_move_active,
@@ -95,7 +93,7 @@ class QCDAllBase():
         cls.view_layer = context.view_layer.name
         cls.orig_active_object = context.view_layer.objects.active
 
-        if not cls.view_layer in internals.qcd_history:
+        if cls.view_layer not in internals.qcd_history:
             internals.qcd_history[cls.view_layer] = []
 
         cls.history = internals.qcd_history[cls.view_layer]
@@ -572,7 +570,7 @@ class MoveToQCDSlot(Operator):
             if not active_object:
                 active_object = tuple(selected_objects)[0]
 
-            if not active_object.name in qcd_laycol.collection.objects:
+            if active_object.name not in qcd_laycol.collection.objects:
                 for obj in selected_objects:
                     if obj.name not in qcd_laycol.collection.objects:
                         qcd_laycol.collection.objects.link(obj)

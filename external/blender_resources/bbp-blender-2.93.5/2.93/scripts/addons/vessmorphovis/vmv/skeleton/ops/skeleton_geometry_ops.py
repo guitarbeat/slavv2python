@@ -17,9 +17,7 @@
 ####################################################################################################
 
 # System imports
-import random
 import math
-from mathutils import Vector
 
 # Internal imports
 import vmv

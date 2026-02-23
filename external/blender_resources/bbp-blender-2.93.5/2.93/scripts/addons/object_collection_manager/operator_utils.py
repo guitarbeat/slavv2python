@@ -542,7 +542,7 @@ def link_child_collections_to_parent(laycol, collection, parent_collection):
 
     # link any subcollections of the to be deleted collection to it's parent
     for subcollection in collection.children:
-        if not subcollection.name in parent_collection.children:
+        if subcollection.name not in parent_collection.children:
             parent_collection.children.link(subcollection)
 
     # apply the stored view layer RTOs to the newly linked collections and their

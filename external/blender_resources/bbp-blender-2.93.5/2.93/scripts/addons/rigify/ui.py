@@ -42,7 +42,6 @@ from .utils.animation import RIGIFY_OT_get_frame_range
 from .utils.animation import register as animation_register
 from .utils.animation import unregister as animation_unregister
 
-from . import base_rig
 from . import rig_lists
 from . import generate
 from . import rot_mode
@@ -126,7 +125,7 @@ class DATA_PT_rigify_buttons(bpy.types.Panel):
             # Rig type field
 
             col = layout.column(align=True)
-            col.active = (not 'rig_id' in C.object.data)
+            col.active = ('rig_id' not in C.object.data)
 
             col.separator()
             row = col.row()

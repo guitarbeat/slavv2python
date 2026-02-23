@@ -18,7 +18,6 @@
 
 # System imports
 import random
-from mathutils import Vector
 
 # Internal imports
 import vmv

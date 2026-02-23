@@ -174,7 +174,7 @@ class ARCHIMESH_OT_Shelves(Operator):
                     add_shelves(self, box, idx + 1, self.shelves[idx])
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
         else:

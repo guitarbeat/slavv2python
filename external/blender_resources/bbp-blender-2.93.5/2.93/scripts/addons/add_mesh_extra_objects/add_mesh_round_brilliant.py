@@ -14,7 +14,6 @@ from bpy.props import (
         IntProperty,
         FloatProperty,
         BoolProperty,
-        StringProperty,
         )
 from bpy_extras import object_utils
 

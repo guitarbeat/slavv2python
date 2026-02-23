@@ -19,7 +19,6 @@
 import copy
 
 # Internal imports
-from vmv.analysis import items
 
 
 ####################################################################################################

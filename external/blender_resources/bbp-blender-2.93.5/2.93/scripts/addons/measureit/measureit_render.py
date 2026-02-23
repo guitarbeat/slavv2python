@@ -28,15 +28,11 @@ import bpy
 import gpu
 import bgl
 # noinspection PyUnresolvedReferences
-import blf
-from os import path, remove
+from os import path
 from sys import exc_info
 # noinspection PyUnresolvedReferences
-import bpy_extras.image_utils as img_utils
 # noinspection PyUnresolvedReferences
-import bpy_extras.object_utils as object_utils
 # noinspection PyUnresolvedReferences
-from bpy_extras import view3d_utils
 from math import ceil
 from .measureit_geometry import *
 
@@ -129,7 +125,7 @@ def render_main(self, context, animation=False):
     # Create image
     # -----------------------------
     image_name = "measureit_output"
-    if not image_name in bpy.data.images:
+    if image_name not in bpy.data.images:
         bpy.data.images.new(image_name, width, height)
 
     image = bpy.data.images[image_name]

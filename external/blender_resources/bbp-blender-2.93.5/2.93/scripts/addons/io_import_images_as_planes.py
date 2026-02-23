@@ -32,7 +32,6 @@ bl_info = {
     "category": "Import-Export",
 }
 
-import os
 import warnings
 import re
 from itertools import count, repeat

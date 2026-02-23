@@ -26,7 +26,6 @@
 # noinspection PyUnresolvedReferences
 import bpy
 # noinspection PyUnresolvedReferences
-import bgl
 from bpy.types import Operator, Panel, SpaceView3D
 from math import sqrt, fabs, pi, asin
 from .achm_tools import *

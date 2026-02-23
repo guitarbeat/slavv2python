@@ -17,18 +17,13 @@
 
 
 # System imports
-import math
 
 # Blender imports
 import bmesh
-from mathutils import Vector, Matrix
 
 # Internal modules
 #import intersection
 
-import vmv
-import vmv.consts
-import vmv.geometry
 
 
 ####################################################################################################

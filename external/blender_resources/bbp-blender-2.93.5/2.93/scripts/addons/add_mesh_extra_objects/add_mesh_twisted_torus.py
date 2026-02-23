@@ -7,7 +7,6 @@ from bpy.props import (
         FloatProperty,
         IntProperty,
         BoolProperty,
-        StringProperty,
         )
 from bpy_extras import object_utils
 

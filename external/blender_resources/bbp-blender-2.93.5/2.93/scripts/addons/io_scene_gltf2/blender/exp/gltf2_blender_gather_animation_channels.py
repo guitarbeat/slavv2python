@@ -301,7 +301,7 @@ def __get_channel_groups(blender_action: bpy.types.Action, blender_object: bpy.t
                     if shape_key.mute is True:
                         continue
                     target = blender_object.data.shape_keys
-            except ValueError as e:
+            except ValueError:
                 # if the object is a mesh and the action target path can not be resolved, we know that this is a morph
                 # animation.
                 if blender_object.type == "MESH":

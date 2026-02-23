@@ -28,7 +28,6 @@ else:
     from bpy.types import Operator
     from bpy.props import (
         BoolProperty,
-        EnumProperty,
     )
     from . import settings
     from bl_i18n_utils import utils as utils_i18n
@@ -39,7 +38,6 @@ import io
 import os
 import shutil
 import subprocess
-import tempfile
 
 
 # Operators ###################################################################

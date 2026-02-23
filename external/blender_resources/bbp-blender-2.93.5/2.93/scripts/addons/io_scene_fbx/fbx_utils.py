@@ -26,14 +26,11 @@ import time
 
 from collections import namedtuple
 from collections.abc import Iterable
-from itertools import zip_longest, chain
 
-import bpy
-import bpy_extras
-from bpy.types import Object, Bone, PoseBone, DepsgraphObjectInstance
+from bpy.types import Object, PoseBone, DepsgraphObjectInstance
 from mathutils import Vector, Matrix
 
-from . import encode_bin, data_types
+from . import encode_bin
 
 
 # "Constants"

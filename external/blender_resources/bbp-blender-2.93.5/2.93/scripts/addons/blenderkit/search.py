@@ -19,27 +19,19 @@
 from blenderkit import paths, utils, categories, ui, colors, bkit_oauth, version_checker, tasks_queue, rerequests, \
     resolutions, image_utils, ratings_utils
 
-import blenderkit
 from bpy.app.handlers import persistent
 
 from bpy.props import (  # TODO only keep the ones actually used when cleaning
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
     StringProperty,
-    EnumProperty,
     BoolProperty,
-    PointerProperty,
 )
 from bpy.types import (
-    Operator,
-    Panel,
-    AddonPreferences,
-    PropertyGroup,
-    UIList
+    Operator
 )
 
-import requests, os, random
+import requests
+import os
+import random
 import time
 import threading
 import platform
@@ -48,7 +40,6 @@ import copy
 import json
 import math
 import unicodedata
-import urllib
 import queue
 import logging
 
@@ -109,7 +100,7 @@ def update_ad(ad):
             ad['author'] = {}
             ad['author']['id'] = ad['author_id']  # this should stay ONLY for compatibility with older scenes
             ad['canDownload'] = ad['can_download']  # this should stay ONLY for compatibility with older scenes
-        except Exception as e:
+        except Exception:
             bk_logger.error('BlenderKit failed to update older asset data')
     return ad
 
@@ -139,7 +130,7 @@ def update_assets_data():  # updates assets data on scene load.
 
             d = s.get(bkdict)
             if not d:
-                continue;
+                continue
 
             for asset_id in d.keys():
                 update_ad(d[asset_id])
@@ -699,7 +690,7 @@ def fetch_gravatar(adata):
         avatar_path = paths.get_temp_dir(subdir='bkit_g/') + adata['id']+ '.jpg'
         if os.path.exists(avatar_path):
             tasks_queue.add_task((write_gravatar, (adata['id'], avatar_path)))
-            return;
+            return
 
         url= paths.get_bkit_url() + adata['avatar128']
         r = rerequests.get(url, stream=False)
@@ -721,7 +712,7 @@ def fetch_gravatar(adata):
 
         if os.path.exists(gravatar_path):
             tasks_queue.add_task((write_gravatar, (adata['id'], gravatar_path)))
-            return;
+            return
 
         url = "https://www.gravatar.com/avatar/" + adata['gravatarHash'] + '?d=404'
         r = rerequests.get(url, stream=False)
@@ -1313,38 +1304,38 @@ def search(category='', get_next=False, author_id=''):
 
     if ui_props.asset_type == 'MODEL':
         if not hasattr(scene, 'blenderkit'):
-            return;
+            return
         props = scene.blenderkit_models
         query = build_query_model()
 
     if ui_props.asset_type == 'SCENE':
         if not hasattr(scene, 'blenderkit_scene'):
-            return;
+            return
         props = scene.blenderkit_scene
         query = build_query_scene()
 
     if ui_props.asset_type == 'HDR':
         if not hasattr(scene, 'blenderkit_HDR'):
-            return;
+            return
         props = scene.blenderkit_HDR
         query = build_query_HDR()
 
     if ui_props.asset_type == 'MATERIAL':
         if not hasattr(scene, 'blenderkit_mat'):
-            return;
+            return
 
         props = scene.blenderkit_mat
         query = build_query_material()
 
     if ui_props.asset_type == 'TEXTURE':
         if not hasattr(scene, 'blenderkit_tex'):
-            return;
+            return
         # props = scene.blenderkit_tex
         # query = build_query_texture()
 
     if ui_props.asset_type == 'BRUSH':
         if not hasattr(scene, 'blenderkit_brush'):
-            return;
+            return
         props = scene.blenderkit_brush
         query = build_query_brush()
 
@@ -1359,7 +1350,7 @@ def search(category='', get_next=False, author_id=''):
 
     # it's possible get_net was requested more than once.
     if props.is_searching and get_next == True:
-        return;
+        return
 
     if category != '':
         if utils.profile_is_validator() and user_preferences.categories_fix:

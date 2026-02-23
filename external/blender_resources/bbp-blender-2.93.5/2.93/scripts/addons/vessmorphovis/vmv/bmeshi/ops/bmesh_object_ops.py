@@ -10,7 +10,8 @@ __email__       = "marwan.abdellah@epfl.ch"
 __status__      = "Production"
 
 # Blender modules
-import bpy, bmesh
+import bpy
+import bmesh
 
 
 ####################################################################################################

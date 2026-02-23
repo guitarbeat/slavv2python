@@ -29,8 +29,6 @@ bl_info = {
     'category': 'Curve',
 }
 
-import time
-import threading
 
 import gpu
 import bgl
@@ -38,7 +36,7 @@ from gpu_extras.batch import batch_for_shader
 
 import bpy
 from bpy.props import *
-from bpy_extras import object_utils, view3d_utils
+from bpy_extras import view3d_utils
 from mathutils import  *
 from math import  *
 

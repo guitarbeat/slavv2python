@@ -1,8 +1,6 @@
 import bpy
 from bpy.props import (
     BoolProperty,
-    IntProperty,
-    PointerProperty,
     StringProperty,
 )
 

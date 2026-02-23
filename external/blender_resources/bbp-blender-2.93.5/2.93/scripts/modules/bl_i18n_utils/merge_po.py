@@ -31,11 +31,9 @@
 import sys
 
 if __package__ is None:
-    import settings
     import utils
 else:
     from . import (
-        settings,
         utils,
     )
 

@@ -1,11 +1,10 @@
-import bpy
 
 from .naming import make_derived_name
 from .bones import put_bone, copy_bone_position, align_bone_orientation
 from .widgets_basic import create_pivot_widget
 from .misc import force_lazy
 
-from ..base_rig import RigComponent, stage
+from ..base_rig import RigComponent
 
 
 class CustomPivotControl(RigComponent):

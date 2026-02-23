@@ -20,7 +20,7 @@
 
 import bpy
 
-from ...utils.bones import align_bone_roll, put_bone, copy_bone_position, flip_bone
+from ...utils.bones import align_bone_roll, put_bone, copy_bone_position
 from ...utils.naming import make_derived_name
 from ...utils.misc import map_list
 

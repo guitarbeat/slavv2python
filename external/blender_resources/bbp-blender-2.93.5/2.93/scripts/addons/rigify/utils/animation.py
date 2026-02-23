@@ -18,12 +18,9 @@
 
 # <pep8 compliant>
 
-import bpy
 
-import math
 import json
 
-from mathutils import Matrix, Vector
 
 rig_id = None
 

@@ -20,7 +20,6 @@
 import math
 
 # Blender imports
-from mathutils import Vector, Matrix
 
 
 ####################################################################################################

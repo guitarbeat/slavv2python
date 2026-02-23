@@ -12,7 +12,7 @@ from array import array
 
 from io import StringIO
 from collections import namedtuple
-from itertools import chain, islice
+from itertools import chain
 from . import tostr
 
 

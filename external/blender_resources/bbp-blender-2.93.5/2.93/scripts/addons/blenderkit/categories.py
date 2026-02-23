@@ -19,7 +19,6 @@
 
 from blenderkit import paths, utils, tasks_queue, rerequests, ui, colors
 
-import requests
 import json
 import os
 import bpy
@@ -121,7 +120,7 @@ def get_category(categories, cat_path=()):
                 categories = c['children']
                 if category == cat_path[-1]:
                     return (c)
-                break;
+                break
 
 
 # def get_upload_asset_type(self):

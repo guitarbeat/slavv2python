@@ -43,7 +43,7 @@ import bpy_extras
 from bpy_extras import node_shader_utils
 from mathutils import Vector, Matrix
 
-from . import encode_bin, data_types, fbx_utils
+from . import encode_bin, data_types
 from .fbx_utils import (
     # Constants.
     FBX_VERSION, FBX_HEADER_VERSION, FBX_SCENEINFO_VERSION, FBX_TEMPLATES_VERSION,
@@ -73,15 +73,14 @@ from .fbx_utils import (
     get_blender_mesh_shape_key, get_blender_mesh_shape_channel_key,
     get_blender_empty_key, get_blender_bone_key,
     get_blender_bindpose_key, get_blender_armature_skin_key, get_blender_bone_cluster_key,
-    get_blender_anim_id_base, get_blender_anim_stack_key, get_blender_anim_layer_key,
-    get_blender_anim_curve_node_key, get_blender_anim_curve_key,
+    get_blender_anim_stack_key, get_blender_anim_layer_key,
     get_blender_nodetexture_key,
     # FBX element data.
     elem_empty,
-    elem_data_single_bool, elem_data_single_int16, elem_data_single_int32, elem_data_single_int64,
-    elem_data_single_float32, elem_data_single_float64,
+    elem_data_single_bool, elem_data_single_int32, elem_data_single_int64,
+    elem_data_single_float64,
     elem_data_single_bytes, elem_data_single_string, elem_data_single_string_unicode,
-    elem_data_single_bool_array, elem_data_single_int32_array, elem_data_single_int64_array,
+    elem_data_single_int32_array, elem_data_single_int64_array,
     elem_data_single_float32_array, elem_data_single_float64_array, elem_data_vec_float64,
     # FBX element properties.
     elem_properties, elem_props_set, elem_props_compound,

@@ -25,7 +25,7 @@ class VIEW3D_MT_materialutilities_assign_material(bpy.types.Menu):
         obj = context.object
         mu_prefs = materialutilities_get_preferences(context)
 
-        if (not obj is None) and obj.mode == 'EDIT':
+        if (obj is not None) and obj.mode == 'EDIT':
             bl_id = VIEW3D_OT_materialutilities_assign_material_edit.bl_idname
             edit_mode = True
 

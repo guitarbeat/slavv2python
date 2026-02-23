@@ -178,7 +178,7 @@ class ARCHIMESH_OT_Stairs(Operator):
                 row.prop(self, 'side_gap')
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
         else:

@@ -23,7 +23,6 @@ import bpy
 from bpy.utils import register_class
 from bpy.types import (
         Node,
-        ShaderNodeTree,
         CompositorNodeTree,
         TextureNodeTree,
         #NodeSocket,
@@ -34,7 +33,6 @@ from bpy.props import (
         BoolProperty,
         IntProperty,
         FloatProperty,
-        FloatVectorProperty,
         EnumProperty,
         #PointerProperty,
         #CollectionProperty,

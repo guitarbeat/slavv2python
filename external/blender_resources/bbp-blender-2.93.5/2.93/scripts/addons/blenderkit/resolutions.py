@@ -17,15 +17,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from blenderkit import paths, append_link, bg_blender, utils, download, search, rerequests, upload_bg, image_utils
+from blenderkit import paths, bg_blender, utils, download, search, rerequests, upload_bg, image_utils
 
-import sys, json, os, time
+import sys
+import json
+import os
+import time
 import subprocess
 import tempfile
 import bpy
 import requests
-import math
-import threading
 
 resolutions = {
     'resolution_0_5K': 512,
@@ -550,7 +551,7 @@ def generate_resolution_thread(asset_data, api_key):
     if fpath:
         if asset_data['assetType'] != 'hdr':
             print('send to bg ', fpath)
-            proc = send_to_bg(asset_data, fpath, command='generate_resolutions', wait=True);
+            proc = send_to_bg(asset_data, fpath, command='generate_resolutions', wait=True)
         else:
             generate_lower_resolutions_hdr(asset_data, fpath)
         # send_to_bg by now waits for end of the process.
@@ -641,7 +642,7 @@ def send_to_bg(asset_data, fpath, command='generate_resolutions', wait=True):
 
 def write_data_back(asset_data):
     '''ensures that the data in the resolution file is the same as in the database.'''
-    pass;
+    pass
 
 
 def run_bg(datafile):

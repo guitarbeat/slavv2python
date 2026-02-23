@@ -464,17 +464,17 @@ class PDT_OT_PlacementNormal(Operator):
         pg = context.scene.pdt_pg
         operation = pg.operation
         if operation == "CU":
-            pg.command = f"cnml"
+            pg.command = "cnml"
         elif operation == "PP":
-            pg.command = f"pnml"
+            pg.command = "pnml"
         elif operation == "MV":
-            pg.command = f"gnml"
+            pg.command = "gnml"
         elif operation == "EV":
-            pg.command = f"vnml"
+            pg.command = "vnml"
         elif operation == "SE":
-            pg.command = f"snml"
+            pg.command = "snml"
         elif operation == "NV":
-            pg.command = f"nnml"
+            pg.command = "nnml"
         else:
             error_message = f"{operation} {PDT_ERR_NON_VALID} {PDT_LAB_INTERSECT}"
             self.report({"ERROR"}, error_message)
@@ -511,15 +511,15 @@ class PDT_OT_PlacementCen(Operator):
         pg = context.scene.pdt_pg
         operation = pg.operation
         if operation == "CU":
-            pg.command = f"ccen"
+            pg.command = "ccen"
         elif operation == "PP":
-            pg.command = f"pcen"
+            pg.command = "pcen"
         elif operation == "MV":
-            pg.command = f"gcen"
+            pg.command = "gcen"
         elif operation == "EV":
-            pg.command = f"vcen"
+            pg.command = "vcen"
         elif operation == "NV":
-            pg.command = f"ncen"
+            pg.command = "ncen"
         else:
             error_message = f"{operation} {PDT_ERR_NON_VALID} {PDT_LAB_INTERSECT}"
             self.report({"ERROR"}, error_message)
@@ -557,15 +557,15 @@ class PDT_OT_PlacementInt(Operator):
         pg = context.scene.pdt_pg
         operation = pg.operation
         if operation == "CU":
-            pg.command = f"cint"
+            pg.command = "cint"
         elif operation == "PP":
-            pg.command = f"pint"
+            pg.command = "pint"
         elif operation == "MV":
-            pg.command = f"gint"
+            pg.command = "gint"
         elif operation == "EV":
-            pg.command = f"vint"
+            pg.command = "vint"
         elif operation == "NV":
-            pg.command = f"nint"
+            pg.command = "nint"
         else:
             error_message = f"{operation} {PDT_ERR_NON_VALID} {PDT_LAB_INTERSECT}"
             self.report({"ERROR"}, error_message)
@@ -602,7 +602,7 @@ class PDT_OT_JoinVerts(Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"j2v"
+        pg.command = "j2v"
         return {"FINISHED"}
 
 
@@ -685,7 +685,7 @@ class PDT_OT_Angle2(Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"ad2"
+        pg.command = "ad2"
         return {"FINISHED"}
 
 
@@ -712,7 +712,7 @@ class PDT_OT_Angle3(Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"ad3"
+        pg.command = "ad3"
         return {"FINISHED"}
 
 
@@ -739,7 +739,7 @@ class PDT_OT_Origin(Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"otc"
+        pg.command = "otc"
         return {"FINISHED"}
 
 
@@ -777,7 +777,7 @@ class PDT_OT_Taper(Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"tap"
+        pg.command = "tap"
         return {"FINISHED"}
 
 #class PDT_Extrude_Modal(Operator):

@@ -19,7 +19,6 @@
 
 import bpy
 import os
-import re
 import json
 
 def find_index(objekti):

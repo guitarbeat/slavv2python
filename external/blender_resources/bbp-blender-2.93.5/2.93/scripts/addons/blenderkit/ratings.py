@@ -19,22 +19,13 @@
 from blenderkit import paths, utils, rerequests, tasks_queue, ratings_utils, icons
 
 import bpy
-import requests, threading
+import threading
 import logging
 
 bk_logger = logging.getLogger('blenderkit')
 
-from bpy.props import (
-    IntProperty,
-    FloatProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    PointerProperty,
-)
 from bpy.types import (
     Operator,
-    Panel,
 )
 
 
@@ -233,7 +224,7 @@ class FastRateMenu(Operator, ratings_utils.RatingsProperties):
     def poll(cls, context):
         scene = bpy.context.scene
         ui_props = scene.blenderkitUI
-        return True;
+        return True
 
     def draw(self, context):
         layout = self.layout
@@ -290,7 +281,7 @@ def register_ratings():
 
 
 def unregister_ratings():
-    pass;
+    pass
     # bpy.utils.unregister_class(StarRatingOperator)
     bpy.utils.unregister_class(UploadRatingOperator)
     bpy.utils.unregister_class(FastRateMenu)

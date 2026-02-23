@@ -30,7 +30,6 @@ from bpy.props import (
         StringProperty,
         EnumProperty,
         IntProperty,
-        PointerProperty,
         )
 from math import (
         sin, cos, pi,
@@ -752,11 +751,9 @@ def store_properties(operator, ob):
 # "name": "ErosionR"
 # "author": "Michel Anders, Ian Huish"
 
-from random import random as rand
 from math import tan, radians
 from .eroder import Grid
 from .stats import Stats
-from .utils import numexpr_available
 
 
 def availableVertexGroupsOrNone(self, context):

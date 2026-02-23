@@ -27,7 +27,6 @@ import sys
 import shutil
 import logging
 import traceback
-import inspect
 
 bk_logger = logging.getLogger('blenderkit')
 
@@ -153,34 +152,34 @@ def get_selected_replace_adepts():
 def get_search_props():
     scene = bpy.context.scene
     if scene is None:
-        return;
+        return
     uiprops = scene.blenderkitUI
     props = None
     if uiprops.asset_type == 'MODEL':
         if not hasattr(scene, 'blenderkit_models'):
-            return;
+            return
         props = scene.blenderkit_models
     if uiprops.asset_type == 'SCENE':
         if not hasattr(scene, 'blenderkit_scene'):
-            return;
+            return
         props = scene.blenderkit_scene
     if uiprops.asset_type == 'HDR':
         if not hasattr(scene, 'blenderkit_HDR'):
-            return;
+            return
         props = scene.blenderkit_HDR
     if uiprops.asset_type == 'MATERIAL':
         if not hasattr(scene, 'blenderkit_mat'):
-            return;
+            return
         props = scene.blenderkit_mat
 
     if uiprops.asset_type == 'TEXTURE':
         if not hasattr(scene, 'blenderkit_tex'):
-            return;
+            return
         # props = scene.blenderkit_tex
 
     if uiprops.asset_type == 'BRUSH':
         if not hasattr(scene, 'blenderkit_brush'):
-            return;
+            return
         props = scene.blenderkit_brush
     return props
 
@@ -345,7 +344,7 @@ def img_to_preview(img, copy_original = False):
     if bpy.app.version[0]>=3:
         img.preview_ensure()
     if not copy_original:
-        return;
+        return
     if img.preview.image_size != img.size:
         img.preview.image_size = (img.size[0], img.size[1])
         img.preview.image_pixels_float = img.pixels[:]
@@ -810,9 +809,9 @@ def guard_from_crash():
      so these don't run during unregistration.
      '''
     if bpy.context.preferences.addons.get('blenderkit') is None:
-        return False;
+        return False
     if bpy.context.preferences.addons['blenderkit'].preferences is None:
-        return False;
+        return False
     return True
 
 
@@ -902,9 +901,9 @@ def label_multiline(layout, text='', icon='NONE', width=-1, max_lines = 10):
             l = l[i:].lstrip()
             li += 1
             if li > max_lines:
-                break;
+                break
         if li > max_lines:
-            break;
+            break
         layout.label(text=l, icon=icon)
         icon = 'NONE'
     if li>max_lines:

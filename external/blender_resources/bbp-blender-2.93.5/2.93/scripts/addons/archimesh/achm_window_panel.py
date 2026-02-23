@@ -31,7 +31,7 @@ import bpy
 from math import cos, sin, radians, sqrt, pi
 from mathutils import Vector
 from bpy.types import Operator, PropertyGroup, Object, Panel
-from bpy.props import StringProperty, FloatProperty, BoolProperty, IntProperty, FloatVectorProperty, \
+from bpy.props import FloatProperty, BoolProperty, IntProperty, FloatVectorProperty, \
     CollectionProperty, EnumProperty
 from .achm_tools import *
 

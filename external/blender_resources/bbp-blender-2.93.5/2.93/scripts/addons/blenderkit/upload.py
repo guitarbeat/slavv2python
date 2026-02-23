@@ -17,10 +17,14 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from blenderkit import asset_inspector, paths, utils, bg_blender, autothumb, version_checker, search, ui_panels, ui, \
-    overrides, colors, rerequests, categories, upload_bg, tasks_queue, image_utils
+from blenderkit import asset_inspector, paths, utils, autothumb, version_checker, search, ui_panels, ui, \
+    overrides, rerequests, categories, upload_bg, tasks_queue, image_utils
 
-import tempfile, os, subprocess, json, re
+import tempfile
+import os
+import subprocess
+import json
+import re
 
 import bpy
 import requests
@@ -35,11 +39,7 @@ from bpy.props import (  # TODO only keep the ones actually used when cleaning
     StringProperty,
 )
 from bpy.types import (
-    Operator,
-    Panel,
-    AddonPreferences,
-    PropertyGroup,
-    UIList
+    Operator
 )
 
 licenses = (
@@ -131,7 +131,7 @@ def check_missing_data(asset_type, props):
                                f'It has to be in English and \n'
                                f'can not be  longer than 40 letters.\n')
     if len(props.name) > 40:
-        write_to_report(props, f'The name is too long. maximum is 40 letters')
+        write_to_report(props, 'The name is too long. maximum is 40 letters')
 
     if props.is_private == 'PUBLIC':
 
@@ -1271,7 +1271,7 @@ class AssetDebugPrint(Operator):
 
         if not bpy.context.window_manager['search results']:
             print('no search results found')
-            return {'CANCELLED'};
+            return {'CANCELLED'}
         # update status in search results for validator's clarity
         sr = bpy.context.window_manager['search results']
         sro = bpy.context.window_manager['search results orig']['results']
@@ -1326,7 +1326,7 @@ class AssetVerificationStatusChange(Operator):
         preferences = bpy.context.preferences.addons['blenderkit'].preferences
 
         if not bpy.context.window_manager['search results']:
-            return {'CANCELLED'};
+            return {'CANCELLED'}
         # update status in search results for validator's clarity
         sr = bpy.context.window_manager['search results']
         sro = bpy.context.window_manager['search results orig']['results']

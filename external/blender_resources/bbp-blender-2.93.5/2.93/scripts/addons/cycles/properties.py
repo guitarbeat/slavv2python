@@ -20,7 +20,6 @@ from __future__ import annotations
 import bpy
 from bpy.props import (
     BoolProperty,
-    CollectionProperty,
     EnumProperty,
     FloatProperty,
     IntProperty,
@@ -32,7 +31,6 @@ from math import pi
 
 # enums
 
-from . import engine
 
 enum_devices = (
     ('CPU', "CPU", "Use CPU for rendering"),
@@ -1509,7 +1507,7 @@ class CyclesPreferences(bpy.types.AddonPreferences):
 
     def update_device_entries(self, device_list):
         for device in device_list:
-            if not device[1] in {'CUDA', 'OPTIX', 'OPENCL', 'CPU'}:
+            if device[1] not in {'CUDA', 'OPTIX', 'OPENCL', 'CPU'}:
                 continue
             # Try to find existing Device entry
             entry = self.find_existing_device_entry(device)

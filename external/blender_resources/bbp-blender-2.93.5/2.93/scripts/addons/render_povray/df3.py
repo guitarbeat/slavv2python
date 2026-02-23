@@ -48,7 +48,6 @@ import struct
 import os
 import stat
 import array
-import sys
 
 # -+-+-+- Start df3 Class -+-+-+-
 
@@ -198,7 +197,7 @@ class df3:
         fdz = (fz-1)/2
         flen = fx*fy*fz
 
-        newV = self.__create__(self.sizeX(), self.sizeY(), self.sizeZ());
+        newV = self.__create__(self.sizeX(), self.sizeY(), self.sizeZ())
 
         for x in range(self.sizeX()):
             for y in range(self.sizeY()):
@@ -221,12 +220,12 @@ class df3:
         z = self.sizeZ()
 
         try:
-            f = open(file, 'wb');
+            f = open(file, 'wb')
         except:
-            print("Could not open " + file + " for write");
+            print("Could not open " + file + " for write")
             return
 
-        f.write(struct.pack(self.__struct2byte3__, x, y, z));
+        f.write(struct.pack(self.__struct2byte3__, x, y, z))
 
         tmp = self.__toInteger__(pow(2,depth)-1, rescale)
 
@@ -242,11 +241,11 @@ class df3:
 
     def importDF3(self, file, scale=1):
         try:
-            f = open(file, 'rb');
+            f = open(file, 'rb')
             size = os.stat(file)[stat.ST_SIZE]
 
         except:
-            print("Could not open " + file + " for read");
+            print("Could not open " + file + " for read")
             return []
 
         (x, y, z) = struct.unpack(self.__struct2byte3__, f.read(6) )

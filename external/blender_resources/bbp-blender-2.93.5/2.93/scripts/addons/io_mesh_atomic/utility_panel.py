@@ -20,8 +20,6 @@ import os
 import bpy
 import bmesh
 from mathutils import Vector
-from math import sqrt
-from copy import copy
 
 # -----------------------------------------------------------------------------
 #                                                         Atom and element data

@@ -19,9 +19,7 @@
 # <pep8 compliant>
 
 import bpy
-import math
 
-from .errors import MetarigError
 
 
 #=============================================

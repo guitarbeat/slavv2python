@@ -22,15 +22,8 @@ bl_info = {
 import bpy
 from mathutils import Vector
 
-import bmesh
-import bpy
-import collections
-import mathutils
-import math
-from bpy_extras import view3d_utils
 from bpy.types import (
         Operator,
-        Menu,
         Panel,
         AddonPreferences,
         PropertyGroup,
@@ -39,7 +32,6 @@ from bpy.props import (
         BoolProperty,
         EnumProperty,
         FloatProperty,
-        IntProperty,
         PointerProperty,
         StringProperty,
         )

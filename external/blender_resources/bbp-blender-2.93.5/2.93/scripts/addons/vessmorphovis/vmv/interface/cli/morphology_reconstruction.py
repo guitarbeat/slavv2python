@@ -19,7 +19,6 @@
 import sys
 
 # Blender imports
-import bpy
 
 import os
 

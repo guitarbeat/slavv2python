@@ -47,7 +47,8 @@ from bpy.props import (
 from mathutils import Vector
 import numpy as np
 from math import sqrt
-import random, time
+import random
+import time
 import bmesh
 from .utils import *
 
@@ -2232,7 +2233,7 @@ class tessellate(Operator):
             count_name = 1
             while True:
                 test_name = self.object_name + '.{:03d}'.format(count_name)
-                if not (test_name in names):
+                if test_name not in names:
                     self.object_name = test_name
                     break
                 count_name += 1
@@ -2593,7 +2594,7 @@ class update_tessellate(Operator):
         # copy vertex group
         if bool_vertex_group:
             for vg in new_ob.vertex_groups:
-                if not vg.name in ob.vertex_groups.keys():
+                if vg.name not in ob.vertex_groups.keys():
                     ob.vertex_groups.new(name=vg.name)
                 new_vg = ob.vertex_groups[vg.name]
                 for i in range(len(ob.data.vertices)):

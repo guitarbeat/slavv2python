@@ -18,7 +18,6 @@
 
 # <pep8 compliant>
 
-import bpy
 
 from .. import limb_common
 

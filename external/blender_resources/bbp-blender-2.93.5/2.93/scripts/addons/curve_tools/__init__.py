@@ -34,7 +34,10 @@ bl_info = {
 }
 
 
-import os, bpy, importlib, math
+import os
+import bpy
+import importlib
+import math
 from bpy.types import (
         Operator,
         Panel,

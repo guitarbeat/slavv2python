@@ -23,7 +23,7 @@
 #
 import bpy
 import bmesh
-from math import sqrt, floor, asin, sin, cos, pi
+from math import sqrt, floor
 from mathutils import Vector
 from bpy.types import Operator
 
@@ -42,7 +42,6 @@ from .pdt_msg_strings import (
     PDT_ERR_SEL_1_VERT,
     PDT_ERR_BADDISTANCE,
     PDT_ERR_MATHSERROR,
-    PDT_ERR_SAMERADII,
     PDT_ERR_VERT_MODE,
 )
 

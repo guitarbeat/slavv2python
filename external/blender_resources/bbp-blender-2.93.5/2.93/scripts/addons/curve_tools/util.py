@@ -143,7 +143,7 @@ class Intersection:
         rvList = []
 
         for ip in listIP:
-            if not (ip.spline in rvList): rvList.append(ip.spline)
+            if ip.spline not in rvList: rvList.append(ip.spline)
 
         return rvList
 
@@ -155,10 +155,10 @@ class Intersection:
         rvList = []
 
         for ip in listIP:
-            if not ip.spline is spline: continue
+            if ip.spline is not spline: continue
 
             segIP = ip.bezierSegmentIntersectionPoint
-            if not (segIP.segment in rvList): rvList.append(segIP.segment)
+            if segIP.segment not in rvList: rvList.append(segIP.segment)
 
         return rvList
 
@@ -171,7 +171,7 @@ class Intersection:
 
         for ip in listIP:
             segIP = ip.bezierSegmentIntersectionPoint
-            if not segIP.segment is segment: continue
+            if segIP.segment is not segment: continue
 
             rvList.append(segIP.parameter)
 

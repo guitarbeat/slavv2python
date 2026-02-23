@@ -364,7 +364,7 @@ class ARCHIMESH_PT_Lamp(Operator):
                 row.prop(self, 'tr03')
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
             if self.crt_mat:

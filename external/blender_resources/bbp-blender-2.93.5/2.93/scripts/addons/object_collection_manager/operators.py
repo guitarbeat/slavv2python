@@ -301,7 +301,7 @@ class CMSetCollectionOperator(Operator):
                 active_object = tuple(selected_objects)[0]
 
             # check if in collection
-            if not active_object.name in target_collection.objects:
+            if active_object.name not in target_collection.objects:
                 # add to collection
                 for obj in selected_objects:
                     if obj.name not in target_collection.objects:
@@ -397,7 +397,7 @@ class CMExcludeOperator(Operator):
         orig_active_object = context.view_layer.objects.active
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["exclude"]:
+        if view_layer not in internals.rto_history["exclude"]:
             internals.rto_history["exclude"][view_layer] = {"target": "", "history": []}
 
         if modifiers == {"alt"}:
@@ -460,7 +460,7 @@ class CMUnExcludeAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["exclude_all"]:
+        if view_layer not in internals.rto_history["exclude_all"]:
             internals.rto_history["exclude_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -529,7 +529,7 @@ class CMRestrictSelectOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["select"]:
+        if view_layer not in internals.rto_history["select"]:
             internals.rto_history["select"][view_layer] = {"target": "", "history": []}
 
         if modifiers == {"alt"}:
@@ -583,7 +583,7 @@ class CMUnRestrictSelectAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["select_all"]:
+        if view_layer not in internals.rto_history["select_all"]:
             internals.rto_history["select_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -644,7 +644,7 @@ class CMHideOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["hide"]:
+        if view_layer not in internals.rto_history["hide"]:
             internals.rto_history["hide"][view_layer] = {"target": "", "history": []}
 
         if modifiers == {"alt"}:
@@ -698,7 +698,7 @@ class CMUnHideAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["hide_all"]:
+        if view_layer not in internals.rto_history["hide_all"]:
             internals.rto_history["hide_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -759,7 +759,7 @@ class CMDisableViewportOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["disable"]:
+        if view_layer not in internals.rto_history["disable"]:
             internals.rto_history["disable"][view_layer] = {"target": "", "history": []}
 
         if modifiers == {"alt"}:
@@ -813,7 +813,7 @@ class CMUnDisableViewportAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["disable_all"]:
+        if view_layer not in internals.rto_history["disable_all"]:
             internals.rto_history["disable_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -874,7 +874,7 @@ class CMDisableRenderOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["render"]:
+        if view_layer not in internals.rto_history["render"]:
             internals.rto_history["render"][view_layer] = {"target": "", "history": []}
 
 
@@ -929,7 +929,7 @@ class CMUnDisableRenderAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["render_all"]:
+        if view_layer not in internals.rto_history["render_all"]:
             internals.rto_history["render_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -990,7 +990,7 @@ class CMHoldoutOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["holdout"]:
+        if view_layer not in internals.rto_history["holdout"]:
             internals.rto_history["holdout"][view_layer] = {"target": "", "history": []}
 
         if modifiers == {"alt"}:
@@ -1044,7 +1044,7 @@ class CMUnHoldoutAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["holdout_all"]:
+        if view_layer not in internals.rto_history["holdout_all"]:
             internals.rto_history["holdout_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -1105,7 +1105,7 @@ class CMIndirectOnlyOperator(Operator):
         view_layer = context.view_layer.name
         laycol_ptr = internals.layer_collections[self.name]["ptr"]
 
-        if not view_layer in internals.rto_history["indirect"]:
+        if view_layer not in internals.rto_history["indirect"]:
             internals.rto_history["indirect"][view_layer] = {"target": "", "history": []}
 
 
@@ -1160,7 +1160,7 @@ class CMUnIndirectOnlyAllOperator(Operator):
         view_layer = context.view_layer.name
         modifiers = get_modifiers(event)
 
-        if not view_layer in internals.rto_history["indirect_all"]:
+        if view_layer not in internals.rto_history["indirect_all"]:
             internals.rto_history["indirect_all"][view_layer] = []
 
         if modifiers == {"alt"}:
@@ -1486,7 +1486,7 @@ class CMDisableUnSelectedObjectsOperator(Operator):
 
     def execute(self, context):
         for obj in bpy.data.objects:
-            if obj in context.visible_objects and not obj in context.selected_objects:
+            if obj in context.visible_objects and obj not in context.selected_objects:
                 obj.hide_viewport = True
 
         return {'FINISHED'}

@@ -17,7 +17,6 @@
 
 # System imports
 import copy
-import math 
 
 # Blender imports
 from mathutils import Vector

@@ -17,10 +17,8 @@
 
 
 # System imports
-import copy
 
 # Blender imports
-import bpy
 from mathutils import Vector
 
 # Internal modules

@@ -17,7 +17,8 @@
 #======================= END GPL LICENSE BLOCK ========================
 
 # <pep8 compliant>
-import bpy, math
+import bpy
+import math
 from ....utils       import connected_children_names, create_circle_widget
 from ....utils       import copy_bone, flip_bone, put_bone
 from rna_prop_ui     import rna_idprop_ui_prop_get

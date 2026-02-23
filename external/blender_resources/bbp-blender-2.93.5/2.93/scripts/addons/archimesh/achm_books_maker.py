@@ -137,7 +137,7 @@ class ARCHIMESH_OT_Books(Operator):
             row.prop(self, 'afn', slider=True)
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
             if self.crt_mat:

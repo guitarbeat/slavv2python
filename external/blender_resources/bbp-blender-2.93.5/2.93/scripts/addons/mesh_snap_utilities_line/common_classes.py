@@ -20,7 +20,6 @@ from mathutils import (
     Vector,
     Matrix,
     )
-from mathutils.geometry import intersect_point_line
 from .drawing_utilities import SnapDrawn
 from .common_utilities import (
     convert_distance,

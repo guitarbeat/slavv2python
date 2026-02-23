@@ -18,7 +18,6 @@
 # System import
 import time
 import math
-import copy
 
 # Blender imports
 import bpy

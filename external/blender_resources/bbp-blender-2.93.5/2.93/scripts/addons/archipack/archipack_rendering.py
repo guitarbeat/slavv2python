@@ -29,14 +29,11 @@
 # noinspection PyUnresolvedReferences
 import bpy
 # noinspection PyUnresolvedReferences
-import bgl
 from shutil import copyfile
 from os import path, listdir
 import subprocess
 # noinspection PyUnresolvedReferences
-import bpy_extras.image_utils as img_utils
 # noinspection PyUnresolvedReferences
-from math import ceil
 from bpy.types import Operator
 # from bl_ui import properties_render
 

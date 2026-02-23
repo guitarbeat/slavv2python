@@ -159,5 +159,5 @@ class PDT_OT_EdgeToFace(bpy.types.Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"etf"
+        pg.command = "etf"
         return {"FINISHED"}

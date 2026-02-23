@@ -1,6 +1,5 @@
 import bpy
 
-from bpy.types import Operator
 
 from blenderkit.bl_ui_widgets.bl_ui_label import *
 from blenderkit.bl_ui_widgets.bl_ui_button import *
@@ -10,14 +9,12 @@ from blenderkit.bl_ui_widgets.bl_ui_button import *
 from blenderkit.bl_ui_widgets.bl_ui_drag_panel import *
 from blenderkit.bl_ui_widgets.bl_ui_draw_op import *
 # from blenderkit.bl_ui_widgets.bl_ui_textbox import *
-import random
 import math
 
 import blenderkit
 from blenderkit import ui, paths, utils, search
 
 from bpy.props import (
-    IntProperty,
     BoolProperty,
     StringProperty
 )
@@ -316,7 +313,7 @@ class BlenderKitAssetBarOperator(BL_UI_OT_draw_operator):
             self.reports_x = self.bar_x
 
     def update_layout(self, context):
-        pass;
+        pass
 
     def __init__(self):
         super().__init__()

@@ -523,7 +523,7 @@ class BUILTIN_KSI_WholeCharacter(KeyingSetInfo):
                 prop_path = '["%s"]' % bpy.utils.escape_identifier(prop)
                 try:
                     rna_property = bone.path_resolve(prop_path, False)
-                except ValueError as ex:
+                except ValueError:
                     # This happens when a custom property is set to None. In that case it cannot
                     # be converted to an FCurve-compatible value, so we can't keyframe it anyway.
                     continue

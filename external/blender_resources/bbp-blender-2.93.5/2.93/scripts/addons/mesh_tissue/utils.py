@@ -20,7 +20,7 @@ import bpy
 import threading
 import numpy as np
 import multiprocessing
-from multiprocessing import Process, Pool
+from multiprocessing import Pool
 
 weight = []
 n_threads = multiprocessing.cpu_count()

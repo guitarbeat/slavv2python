@@ -28,11 +28,9 @@ from bpy.props import (
         FloatProperty,
         IntProperty,
         StringProperty,
-        FloatVectorProperty,
         )
 from .ant_functions import (
         draw_ant_refresh,
-        draw_ant_main,
         draw_ant_noise,
         draw_ant_displace,
         )

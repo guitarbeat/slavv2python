@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-from blenderkit import utils, ui
+from blenderkit import utils
 
 import bpy
 import uuid
@@ -52,7 +52,7 @@ def append_material(file_name, matname=None, link=False, fake_user=True):
                     # print(m, type(m))
                     matname = m
                     found = True
-                    break;
+                    break
 
             #not found yet? probably some name inconsistency then.
             if not found and len(data_from.materials)>0:
@@ -69,7 +69,7 @@ def append_material(file_name, matname=None, link=False, fake_user=True):
     for m in bpy.data.materials:
         if m not in mats_before:
             mat = m
-            break;
+            break
     #still not found?
     if mat is None:
         mat = bpy.data.materials.get(matname)
@@ -166,7 +166,7 @@ def load_HDR(file_name, name):
         if i.filepath == file_name:
             hdr = i
             already_linked = True
-            break;
+            break
 
     if not already_linked:
         hdr = bpy.data.images.load(file_name)
@@ -204,7 +204,7 @@ def link_collection(file_name, obnames=[], location=(0, 0, 0), link=False, paren
             fp1 = bpy.path.abspath(file_name)
             if fp == fp1:
                 main_object.instance_collection = col
-                break;
+                break
 
     #sometimes, the lib might already  be without the actual link.
     if not main_object.instance_collection and kwargs['name']:

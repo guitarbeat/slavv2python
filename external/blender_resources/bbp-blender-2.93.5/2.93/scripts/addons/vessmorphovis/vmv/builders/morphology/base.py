@@ -16,12 +16,9 @@
 ####################################################################################################
 
 # System imports
-import sys
-import copy
 
 # Blender imports
 import bpy
-from mathutils import Vector
 
 # Internal imports
 import vmv

@@ -41,7 +41,6 @@ import xml.etree.cElementTree as et
 from bpy.app.handlers import persistent
 from collections import OrderedDict
 from functools import partial
-from mathutils import Vector
 
 from freestyle.types import (
         StrokeShader,
@@ -55,29 +54,23 @@ from freestyle.utils import (
     BoundingBox,
     is_poly_clockwise,
     StrokeCollector,
-    material_from_fedge,
     get_object_name,
     )
 from freestyle.functions import (
-    GetShapeF1D,
     CurveMaterialF0D,
     )
 from freestyle.predicates import (
         AndBP1D,
         AndUP1D,
-        ContourUP1D,
         ExternalContourUP1D,
         MaterialBP1D,
         NotBP1D,
-        NotUP1D,
         OrBP1D,
         OrUP1D,
         pyNatureUP1D,
-        pyZBP1D,
         pyZDiscontinuityBP1D,
         QuantitativeInvisibilityUP1D,
         SameShapeIdBP1D,
-        TrueBP1D,
         TrueUP1D,
         )
 from freestyle.chainingiterators import ChainPredicateIterator

@@ -32,7 +32,6 @@ else:
     from . import qcd_move_widget
     from . import qcd_operators
     from . import ui
-    from . import preferences
 
 import os
 import bpy

@@ -22,7 +22,8 @@ from blenderkit import paths, append_link, utils, ui, colors, tasks_queue, rereq
 import threading
 import time
 import requests
-import shutil, sys, os
+import shutil
+import os
 import uuid
 import copy
 import logging
@@ -32,12 +33,10 @@ bk_logger = logging.getLogger('blenderkit')
 import bpy
 from bpy.props import (
     IntProperty,
-    FloatProperty,
     FloatVectorProperty,
     StringProperty,
     EnumProperty,
     BoolProperty,
-    PointerProperty,
 )
 from bpy.app.handlers import persistent
 
@@ -75,7 +74,7 @@ def check_missing():
 def check_unused():
     '''find assets that have been deleted from scene but their library is still present.'''
     # this is obviously broken. Blender should take care of the extra data automaticlaly
-    return;
+    return
     used_libs = []
     for ob in bpy.data.objects:
         if ob.instance_collection is not None and ob.instance_collection.library is not None:
@@ -234,7 +233,7 @@ def report_usages():
 
     if new_assets_count == 0:
         bk_logger.debug('no new assets were added')
-        return;
+        return
     usage_report = {
         'scene': sid,
         'reportType': 'save',
@@ -283,7 +282,7 @@ def udpate_asset_data_in_dicts(asset_data):
     scene['assets rated'][id] = scene['assets rated'].get(id, False)
     sr = bpy.context.window_manager['search results']
     if not sr:
-        return;
+        return
     for i, r in enumerate(sr):
         if r['assetBaseId'] == asset_data['assetBaseId']:
             for f in asset_data['files']:
@@ -444,7 +443,7 @@ def append_asset(asset_data, **kwargs):  # downloaders=[], location=None,
             if b.blenderkit.id == asset_data['id']:
                 inscene = True
                 brush = b
-                break;
+                break
         if not inscene:
             brush = append_link.append_brush(file_names[-1], link=False, fake_user=False)
 
@@ -474,7 +473,7 @@ def append_asset(asset_data, **kwargs):  # downloaders=[], location=None,
             if m.blenderkit.id == asset_data['id']:
                 inscene = True
                 material = m
-                break;
+                break
         if not inscene:
             link = sprops.append_method == 'LINK'
             material = append_link.append_material(file_names[-1], link=link, fake_user=False)
@@ -507,15 +506,15 @@ def replace_resolution_linked(file_paths, asset_data):
 
     for l in bpy.data.libraries:
         if not l.get('asset_data'):
-            continue;
+            continue
         if not l['asset_data']['assetBaseId'] == asset_data['assetBaseId']:
-            continue;
+            continue
 
         bk_logger.debug('try to re-link library')
 
         if not os.path.isfile(file_paths[-1]):
             bk_logger.debug('library file doesnt exist')
-            break;
+            break
         l.filepath = os.path.join(os.path.dirname(l.filepath), file_name)
         l.name = file_name
         udpate_asset_data_in_dicts(asset_data)
@@ -606,7 +605,7 @@ def download_timer():
             if len(file_paths) == 0:
                 bk_logger.debug('library names not found in asset data after download')
                 download_threads.remove(threaddata)
-                break;
+                break
 
             wm = bpy.context.window_manager
 
@@ -771,7 +770,7 @@ class Downloader(threading.Thread):
         if not has_url:
             tasks_queue.add_task(
                 (ui.add_report, ('Failed to obtain download URL for %s.' % asset_data['name'], 5, colors.RED)))
-            return;
+            return
         if tcom.error:
             return
         # only now we can check if the file already exists. This should have 2 levels, for materials and for brushes
@@ -836,7 +835,7 @@ class Downloader(threading.Thread):
             return
         # unpack the file immediately after download
 
-        tcom.report = f'Unpacking files'
+        tcom.report = 'Unpacking files'
         self.asset_data['resolution'] = self.resolution
         resolutions.send_to_bg(self.asset_data, file_name, command='unpack')
         # utils.p('end downloader thread')
@@ -954,7 +953,7 @@ def try_finished_append(asset_data, **kwargs):  # location=None, material_target
                     except Exception as e:
                         # e = sys.exc_info()[0]
                         print(e)
-                        pass;
+                        pass
                 return done
 
     return done
@@ -1347,7 +1346,7 @@ class BlenderkitDownloadOperator(bpy.types.Operator):
                             (ob['asset_data']['assetBaseId'] == self.asset_base_id and ob['asset_data'][
                                 'resolution'] == resolution):
                         # print('skipping this one')
-                        continue;
+                        continue
                 parent = ob.parent
                 if parent:
                     parent = ob.parent.name  # after this, parent is either name or None.

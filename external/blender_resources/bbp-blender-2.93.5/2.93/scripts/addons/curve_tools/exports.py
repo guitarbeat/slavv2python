@@ -16,8 +16,9 @@
 #
 #  ***** GPL LICENSE BLOCK *****
 
-import bpy, math
-from mathutils import Vector, Matrix
+import bpy
+import math
+from mathutils import Vector
 from bpy_extras.io_utils import ExportHelper
 from . import internal
 

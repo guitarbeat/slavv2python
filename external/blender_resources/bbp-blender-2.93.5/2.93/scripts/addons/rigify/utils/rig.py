@@ -21,7 +21,6 @@
 import bpy
 import importlib
 import importlib.util
-import os
 import re
 
 from itertools import count

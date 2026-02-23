@@ -23,7 +23,6 @@ DEBUG = False
 # This should work without a blender at all
 import os
 import shlex
-import math
 from math import sin, cos, pi
 from itertools import chain
 
@@ -1924,7 +1923,7 @@ def importMesh_IndexedFaceSet(geom, ancestry):
             face = []
         else:
             if cull is not None:
-                if not(i in cull):
+                if i not in cull:
                     culled_points.append(points[i])
                     cull[i] = new_index
                     uncull.append(i)

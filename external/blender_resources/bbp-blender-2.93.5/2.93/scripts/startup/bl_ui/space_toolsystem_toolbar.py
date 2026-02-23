@@ -2472,7 +2472,7 @@ class IMAGE_PT_tools_active(ToolSelectPanelHelper, Panel):
                 mode = context.space_data.mode
         for tools in (cls._tools[None], cls._tools.get(mode, ())):
             for item in tools:
-                if not (type(item) is ToolDef) and callable(item):
+                if type(item) is not ToolDef and callable(item):
                     yield from item(context)
                 else:
                     yield item
@@ -2563,7 +2563,7 @@ class NODE_PT_tools_active(ToolSelectPanelHelper, Panel):
                 mode = context.space_data.tree_type
         for tools in (cls._tools[None], cls._tools.get(mode, ())):
             for item in tools:
-                if not (type(item) is ToolDef) and callable(item):
+                if type(item) is not ToolDef and callable(item):
                     yield from item(context)
                 else:
                     yield item
@@ -2619,7 +2619,7 @@ class VIEW3D_PT_tools_active(ToolSelectPanelHelper, Panel):
             mode = context.mode
         for tools in (cls._tools[None], cls._tools.get(mode, ())):
             for item in tools:
-                if not (type(item) is ToolDef) and callable(item):
+                if type(item) is not ToolDef and callable(item):
                     yield from item(context)
                 else:
                     yield item
@@ -2984,7 +2984,7 @@ class SEQUENCER_PT_tools_active(ToolSelectPanelHelper, Panel):
                 mode = context.space_data.view_type
         for tools in (cls._tools[None], cls._tools.get(mode, ())):
             for item in tools:
-                if not (type(item) is ToolDef) and callable(item):
+                if type(item) is not ToolDef and callable(item):
                     yield from item(context)
                 else:
                     yield item

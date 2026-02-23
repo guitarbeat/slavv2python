@@ -1,6 +1,5 @@
 
 
-from functools import reduce 
 
 def compute_section_average_radius(section):
 

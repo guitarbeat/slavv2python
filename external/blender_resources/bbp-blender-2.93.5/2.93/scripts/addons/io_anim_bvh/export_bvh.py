@@ -21,7 +21,6 @@
 # Script copyright (C) Campbell Barton
 # fixes from Andrea Rugliancich
 
-import bpy
 
 
 def write_armature(

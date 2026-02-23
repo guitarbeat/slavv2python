@@ -23,10 +23,6 @@ from bpy.types import (
         Operator,
         Menu,
         )
-from bpy.props import (
-        BoolProperty,
-        StringProperty,
-        )
 
 from .object_menus import *
 from .snap_origin_cursor import *

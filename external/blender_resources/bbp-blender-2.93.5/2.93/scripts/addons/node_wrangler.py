@@ -28,7 +28,8 @@ bl_info = {
     "category": "Node",
 }
 
-import bpy, blf, bgl
+import bpy
+import bgl
 import gpu
 from bpy.types import Operator, Panel, Menu
 from bpy.props import (
@@ -2792,7 +2793,7 @@ class NWBatchChangeNodes(Operator, NWBase):
         operation = self.operation
         for node in context.selected_nodes:
             if node.type == 'MIX_RGB' or node.bl_idname == 'GeometryNodeAttributeMix':
-                if not blend_type in [nav[0] for nav in navs]:
+                if blend_type not in [nav[0] for nav in navs]:
                     node.blend_type = blend_type
                 else:
                     if blend_type == 'NEXT':
@@ -2811,7 +2812,7 @@ class NWBatchChangeNodes(Operator, NWBase):
                             node.blend_type = blend_types[index - 1][0]
 
             if node.type == 'MATH' or node.bl_idname == 'GeometryNodeAttributeMath':
-                if not operation in [nav[0] for nav in navs]:
+                if operation not in [nav[0] for nav in navs]:
                     node.operation = operation
                 else:
                     if operation == 'NEXT':
@@ -3357,7 +3358,7 @@ class NWAddPrincipledSetup(Operator, NWBase, ImportHelper):
                     link = links.new(active_node.inputs[sname[0]], texture_node.outputs[0])
 
                 # Use non-color for all but 'Base Color' Textures
-                if not sname[0] in ['Base Color'] and texture_node.image:
+                if sname[0] not in ['Base Color'] and texture_node.image:
                     texture_node.image.colorspace_settings.is_data = True
 
             else:
@@ -4020,7 +4021,7 @@ class NWViewerFocus(bpy.types.Operator):
             mlocy = event.mouse_region_y
             select_node = bpy.ops.node.select(mouse_x=mlocx, mouse_y=mlocy, extend=False)
 
-            if not 'FINISHED' in select_node:  # only run if we're not clicking on a node
+            if 'FINISHED' not in select_node:  # only run if we're not clicking on a node
                 region_x = context.region.width
                 region_y = context.region.height
 

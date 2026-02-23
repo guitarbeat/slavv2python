@@ -21,12 +21,9 @@
 import bpy
 
 import bgl
-import blf
 import gpu
 from gpu_extras.batch import batch_for_shader
 
-import math
-import mathutils
 from mathutils import Vector
 
 from bpy.props import (

@@ -24,10 +24,9 @@ from mathutils import (
         )
 from math import (
         sin, cos,
-        tan, radians,atan,degrees
+        tan, radians,atan
         )
 from random import triangular
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 NARROW_UI = 180
 MAX_INPUT_NUMBER = 50

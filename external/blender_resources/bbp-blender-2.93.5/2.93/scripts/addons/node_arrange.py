@@ -30,12 +30,9 @@ bl_info = {
 }
 
 
-import sys
 import bpy
 from collections import OrderedDict
 from itertools import repeat
-import pprint
-import pdb
 from bpy.types import Operator, Panel
 from bpy.props import (
     IntProperty,

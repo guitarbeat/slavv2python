@@ -79,7 +79,6 @@ from bpy_extras.io_utils import (
 import blf
 
 import hashlib
-import bpy
 
 
 # Utility function get preferences setting for exporters
@@ -601,15 +600,12 @@ class VIEW3D_OT_stored_views_initialize(Operator):
 
 from bpy.types import PropertyGroup
 from bpy.props import (
-        BoolProperty,
         BoolVectorProperty,
         CollectionProperty,
         FloatProperty,
         FloatVectorProperty,
         EnumProperty,
-        IntProperty,
         IntVectorProperty,
-        PointerProperty,
         StringProperty,
         )
 

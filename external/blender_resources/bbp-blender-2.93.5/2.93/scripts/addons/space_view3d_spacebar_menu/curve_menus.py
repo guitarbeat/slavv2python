@@ -20,12 +20,7 @@
 
 import bpy
 from bpy.types import (
-        Operator,
         Menu,
-        )
-from bpy.props import (
-        BoolProperty,
-        StringProperty,
         )
 
 from .object_menus import *

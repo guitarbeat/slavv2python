@@ -21,7 +21,7 @@
 import bpy
 import gpu
 import bgl
-from mathutils import Vector, Matrix
+from mathutils import Matrix
 from mathutils.geometry import tessellate_polygon
 from gpu_extras.batch import batch_for_shader
 

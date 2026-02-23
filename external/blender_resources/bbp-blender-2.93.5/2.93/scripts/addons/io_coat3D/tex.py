@@ -19,7 +19,6 @@
 
 import bpy
 import os
-import re
 import json
 from io_coat3D import updateimage
 

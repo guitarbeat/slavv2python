@@ -1,10 +1,9 @@
-import bpy, re
+import bpy
 from   .arm            import create_arm
 from   .leg            import create_leg
 from   .paw            import create_paw
 from   .ui             import create_script
 from   .limb_utils     import orient_bone, make_constraint, get_bone_name
-from   mathutils       import Vector
 from   ....utils       import copy_bone, put_bone, strip_org
 from   ....utils       import create_circle_widget, create_sphere_widget
 from   ....utils       import create_limb_widget, connected_children_names

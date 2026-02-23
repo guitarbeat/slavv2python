@@ -150,7 +150,7 @@ def complete(word, namespace, private=True):
         matches = complete_indices(word, namespace,
                                    base=re_incomplete_index.group(1))
 
-    elif not('[' in word):
+    elif '[' not in word:
         matches = complete_names(word, namespace)
 
     elif word[-1] == ']':
@@ -200,7 +200,7 @@ def complete(word, namespace, private=True):
             matches = [word + '.']
 
     # separate public from private
-    public_matches = [match for match in matches if not('._' in match)]
+    public_matches = [match for match in matches if '._' not in match]
     if private:
         private_matches = [match for match in matches if '._' in match]
         return public_matches + private_matches

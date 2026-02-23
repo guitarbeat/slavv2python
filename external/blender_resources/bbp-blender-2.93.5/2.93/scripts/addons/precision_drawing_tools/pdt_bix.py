@@ -147,5 +147,5 @@ class PDT_OT_LineOnBisection(bpy.types.Operator):
         """
 
         pg = context.scene.pdt_pg
-        pg.command = f"bis"
+        pg.command = "bis"
         return {"FINISHED"}

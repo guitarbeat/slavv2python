@@ -21,8 +21,8 @@
 import itertools
 from . import is_
 from .fake_entities import ArcEntity
-from mathutils import Vector, Matrix, Euler, Color
-from math import pi, radians, floor, ceil, degrees
+from mathutils import Vector, Matrix
+from math import pi
 from copy import deepcopy
 
 

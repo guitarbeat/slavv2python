@@ -34,7 +34,6 @@ bl_info = {
 # * enumerate faces uniquely within all islands of the same name (requires a check that both label and abbr. equals)
 
 import bpy
-import bl_operators
 import bmesh
 import mathutils as M
 from re import compile as re_compile

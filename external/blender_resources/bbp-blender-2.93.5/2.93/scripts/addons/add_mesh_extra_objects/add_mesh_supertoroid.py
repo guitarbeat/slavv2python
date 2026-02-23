@@ -5,7 +5,6 @@ from bpy.props import (
         FloatProperty,
         BoolProperty,
         IntProperty,
-        StringProperty,
         )
 from math import pi, cos, sin
 from mathutils import Vector

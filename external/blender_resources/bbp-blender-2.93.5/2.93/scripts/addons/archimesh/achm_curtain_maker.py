@@ -135,7 +135,7 @@ class ARCHIMESH_OT_Japan(Operator):
                 row.prop(self, 'open05', slider=True)
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
             if self.crt_mat:
@@ -221,7 +221,7 @@ class ARCHIMESH_OT_Roller(Operator):
             row.prop(self, 'height')
 
             box = layout.box()
-            if not context.scene.render.engine in {'CYCLES', 'BLENDER_EEVEE'}:
+            if context.scene.render.engine not in {'CYCLES', 'BLENDER_EEVEE'}:
                 box.enabled = False
             box.prop(self, 'crt_mat')
             if self.crt_mat:

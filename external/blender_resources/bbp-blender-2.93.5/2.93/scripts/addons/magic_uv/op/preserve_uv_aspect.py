@@ -215,7 +215,7 @@ class MUV_OT_PreserveUVAspect(bpy.types.Operator):
                 else:
                     tex_layer = bm.faces.layers.tex.verify()
                     for f in sel_faces:
-                        if not f[tex_layer].image in info.keys():
+                        if f[tex_layer].image not in info.keys():
                             info[f[tex_layer].image] = {}
                             info[f[tex_layer].image]['faces'] = []
                         info[f[tex_layer].image]['faces'].append(f)

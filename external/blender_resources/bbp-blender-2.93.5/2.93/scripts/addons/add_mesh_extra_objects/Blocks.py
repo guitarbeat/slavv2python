@@ -16,7 +16,6 @@
 # if block width variance is 0, and edging is on, right edge blocks create a "vertical seam"
 
 
-import bpy
 from random import random
 from math import (
         fmod, sqrt,

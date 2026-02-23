@@ -233,7 +233,6 @@ def cell_fracture_objects(context, collection, obj,
 
             bm_vert = bm.verts.new(co)
 
-        import mathutils
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.005)
         try:
             bmesh.ops.convex_hull(bm, input=bm.verts)

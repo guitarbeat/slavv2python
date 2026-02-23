@@ -9,10 +9,7 @@ from math import (
 from bpy.props import (
         IntProperty,
         BoolProperty,
-        BoolVectorProperty,
         FloatProperty,
-        FloatVectorProperty,
-        StringProperty,
         )
 
 

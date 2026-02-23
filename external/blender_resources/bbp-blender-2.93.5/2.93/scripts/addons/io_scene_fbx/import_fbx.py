@@ -48,7 +48,6 @@ from .fbx_utils import (
     units_blender_to_fbx_factor,
     units_convertor_iter,
     array_to_matrix4,
-    similar_values,
     similar_values_iter,
     FBXImportSettings,
 )
@@ -438,7 +437,7 @@ def blen_read_object_transform_do(transform_data):
     # scale
     lcl_scale = Matrix()
     lcl_scale[0][0], lcl_scale[1][1], lcl_scale[2][2] = transform_data.sca
-    geom_scale = Matrix();
+    geom_scale = Matrix()
     geom_scale[0][0], geom_scale[1][1], geom_scale[2][2] = transform_data.geom_sca
 
     base_mat = (
@@ -568,7 +567,7 @@ def blen_read_animations_action_item(action, item, cnodes, fps, anim_offset):
     'Bake' loc/rot/scale into the action,
     taking any pre_ and post_ matrix into account to transform from fbx into blender space.
     """
-    from bpy.types import Object, PoseBone, ShapeKey, Material, Camera
+    from bpy.types import ShapeKey, Material, Camera
     from itertools import chain
 
     fbx_curves = []
@@ -2372,7 +2371,6 @@ def load(operator, context, filepath="",
     import time
     from bpy_extras.io_utils import axis_conversion
 
-    from . import parse_fbx
     from .fbx_utils import RIGHT_HAND_AXES, FBX_FRAMERATES
 
     start_time_proc = time.process_time()
