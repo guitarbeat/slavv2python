@@ -9,8 +9,8 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **source/slavv/apps/** | Web applications (`web_app.py`) |
 | **scripts/** | Setup, CLI wrappers, and MATLAB integration |
-| **examples/** | Programmatic usage examples (`run_tutorial.py`) |
-| **notebooks/** | Interactive notebooks for analysis and development |
+| **workspace/examples/** | Programmatic usage examples (`run_tutorial.py`) |
+| **workspace/notebooks/** | Interactive Jupyter workflows and comparison dashboards |development |
 | **experiments/** | Output directory for runs and comparisons |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
@@ -86,7 +86,7 @@ This will:
 
 ### Programmatic Usage (Headless/Batch)
 For integration into other pipelines or running on a cluster without the UI, use the `SLAVVProcessor` class.
-See **`examples/run_tutorial.py`** or the docstrings for details.
+See **`workspace/examples/run_tutorial.py`** or the docstrings for details.
 
 ```python
 from slavv import SLAVVProcessor

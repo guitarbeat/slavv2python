@@ -26,14 +26,14 @@ Use this workflow before pushing any significant changes to ensure no regression
 // turbo
 3. **Run Demonstration Scripts:**
    ```bash
-   python examples/run_tutorial.py
+   python workspace/examples/run_tutorial.py
    ```
    Verify the script completes without raising any `Exception` or `RuntimeError`. This ensures the public-facing API is stable.
 
 // turbo
 4. **Check for New Deprecation Warnings:**
    ```bash
-   python -W error::DeprecationWarning examples/run_tutorial.py
+   python -W error::DeprecationWarning workspace/examples/run_tutorial.py
    ```
    If any deprecation warnings are thrown, resolve them by updating the deprecated API usage in the `source/slavv` directories.
 
