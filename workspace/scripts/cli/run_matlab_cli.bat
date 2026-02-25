@@ -71,7 +71,10 @@ echo. >> "%LOG_FILE%"
 REM Build MATLAB command
 REM Note: R2019a+ uses -batch flag, older versions may need -r
 REM Convert Windows paths to MATLAB-friendly format (forward slashes or escaped backslashes)
-set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ABS:\=/%', '%OUTPUT_DIR_ABS:\=/%'); exit
+REM Also escape single quotes for MATLAB string literals
+set INPUT_FILE_ESC=%INPUT_FILE_ABS:'=''%
+set OUTPUT_DIR_ESC=%OUTPUT_DIR_ABS:'=''%
+set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ESC:\=/%', '%OUTPUT_DIR_ESC:\=/%'); exit
 
 echo Running MATLAB vectorization...
 echo Command: "%MATLAB_PATH%" -batch "%MATLAB_SCRIPT%"
