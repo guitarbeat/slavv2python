@@ -40,6 +40,9 @@ if _NUMBA_AVAILABLE:
         dim_y = energy.shape[0]
         dim_x = energy.shape[1]
         dim_z = energy.shape[2]
+
+        if dim_y < 3 or dim_x < 3 or dim_z < 3:
+            return np.zeros(3, dtype=np.float64)
         
         # Manual clamping to [1, shape-2]
         pos_y = int(pos_int[0])
@@ -77,6 +80,10 @@ else:
         # Unpack position and shape
         pos_y, pos_x, pos_z = pos_int
         shape_y, shape_x, shape_z = energy.shape
+
+        # Check for small volume
+        if shape_y < 3 or shape_x < 3 or shape_z < 3:
+            return np.zeros(3, dtype=float)
 
         # Manual clamping to [1, shape-2] to prevent out-of-bounds access
         if pos_y < 1:
@@ -346,7 +353,6 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
                 smoothed = smoothed_object
 
             # Calculate Hessian eigenvalues with PSF-weighted sigma
-            # Note: use_gaussian_derivatives=False removed for compatibility with older skimage
             hessian = feature.hessian_matrix(
                 smoothed, sigma=tuple(sigma_object)
             )
@@ -447,6 +453,9 @@ def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
     inv_mpv_2x should be 1.0 / (2.0 * microns_per_voxel)
     """
     s0, s1, s2 = energy.shape
+
+    if s0 < 3 or s1 < 3 or s2 < 3:
+        return np.zeros(3, dtype=float)
 
     # Manual clamping to [1, shape-2] to prevent out-of-bounds access
     if p0 < 1:

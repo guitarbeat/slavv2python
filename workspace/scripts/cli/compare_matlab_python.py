@@ -22,10 +22,10 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(project_root / 'source'))
 
-from slavv.dev.comparison import load_parameters, orchestrate_comparison
+from slavv.evaluation.comparison import load_parameters, orchestrate_comparison
 
 def main():
     parser = argparse.ArgumentParser(
@@ -73,6 +73,11 @@ def main():
         os.path.dirname(__file__),
         'comparison_params.json'
     )
+
+    if not os.path.exists(params_file):
+        print(f"ERROR: Parameters file not found: {params_file}")
+        return 1
+
     params = load_parameters(params_file)
 
     # Create output directories with timestamp if not specified
