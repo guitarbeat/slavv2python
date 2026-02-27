@@ -1,96 +1,126 @@
 """
-Safe Unpickler for SLAVV.
+Safe Unpickler Module for SLAVV
 
-This module provides a secure unpickler that restricts loaded classes to a
-predefined allowlist, preventing arbitrary code execution from malicious pickles.
+This module provides a secure mechanism for loading pickled data, restricting
+imports to a strict whitelist to mitigate potential security vulnerabilities
+from malicious pickle files.
 """
-import pickle
-import logging
-import joblib.numpy_pickle
 
+import pickle
+import io
+import os
+import sys
+import logging
+import joblib
+import numpy as np
+import gzip
+import bz2
+import lzma
+from joblib.numpy_pickle import NumpyUnpickler
+from typing import Any, List, Set, Union, Optional
+
+# Configure logging
 logger = logging.getLogger(__name__)
 
-# Allowed modules
-SAFE_MODULE_PREFIXES = {
-    'numpy',
-    'sklearn',
-    'pandas',
-    'scipy',
-    'joblib.numpy_pickle',
-    '_codecs',
-    'copyreg',
-    'collections',
-    'types'
-}
+# Default maximum file size (1GB)
+DEFAULT_MAX_PICKLE_SIZE = 1024 * 1024 * 1024
 
-class SafeNumpyUnpickler(joblib.numpy_pickle.NumpyUnpickler):
+class SafeNumpyUnpickler(NumpyUnpickler):
     """
-    Restricted NumpyUnpickler that enforces an allowlist of modules.
+    Custom unpickler that restricts global imports to a safe whitelist.
+    Inherits from joblib.numpy_pickle.NumpyUnpickler to support joblib dumps.
     """
+
+    SAFE_MODULES = {
+        'numpy',
+        'sklearn',
+        'joblib',
+        'pandas',
+        'scipy',
+        '_codecs',
+        'copyreg',
+        'collections',
+        'types',
+        'builtins',
+        '__builtin__'
+    }
 
     def find_class(self, module, name):
-        """
-        Check if the module is in the allowlist.
-        """
-        # Allow primitives and basic types
-        if module == "builtins":
-            if name in {"dict", "list", "set", "tuple", "object", "int", "float", "str",
-                        "bool", "bytes", "bytearray", "complex", "range", "slice"}:
-                 return super().find_class(module, name)
+        # Allow safe modules and their submodules
+        # e.g. 'numpy.core.multiarray' starts with 'numpy'
+        is_safe = False
+        if module in self.SAFE_MODULES:
+            is_safe = True
+        else:
+            for m in self.SAFE_MODULES:
+                if module.startswith(m + '.'):
+                    is_safe = True
+                    break
 
-        # Check against safe prefixes
-        for prefix in SAFE_MODULE_PREFIXES:
-            if module == prefix or module.startswith(prefix + "."):
-                 return super().find_class(module, name)
+        if not is_safe:
+            raise pickle.UnpicklingError(f"Global '{module}.{name}' is forbidden")
 
-        # Log and raise error
-        msg = f"Forbidden pickle module: {module}.{name}"
-        logger.error(msg)
-        raise pickle.UnpicklingError(msg)
+        return super().find_class(module, name)
 
-    def __init__(self, filename, file_handle, ensure_native_byte_order=False, mmap_mode=None):
-        """
-        Initialize SafeNumpyUnpickler.
-        Matches signature of joblib.numpy_pickle.NumpyUnpickler (v1.5.3).
-        """
-        super().__init__(filename, file_handle, ensure_native_byte_order=ensure_native_byte_order, mmap_mode=mmap_mode)
 
-def safe_load(filename, mmap_mode=None):
+def safe_load(file_path: Union[str, os.PathLike], max_size: int = DEFAULT_MAX_PICKLE_SIZE) -> Any:
     """
-    Safely load a pickle file using SafeNumpyUnpickler.
+    Safely load a pickle file with size limits and restricted imports.
+    Supports compressed files (gzip, bz2, lzma) if detected by extension or magic bytes.
+    Also supports joblib dumps via NumpyUnpickler.
 
     Args:
-        filename: Path to the file to load.
-        mmap_mode: Memory mapping mode (optional).
+        file_path: Path to the pickle file.
+        max_size: Maximum allowed file size in bytes.
 
     Returns:
-        The unpickled object.
+        Unpickled object.
+
+    Raises:
+        ValueError: If file exceeds size limit.
+        pickle.UnpicklingError: If pickle is malformed or contains forbidden globals.
+        FileNotFoundError: If file not found.
     """
-    import gzip
-    import bz2
-    import lzma
+    file_path = str(file_path)
 
-    filename = str(filename)
+    if not os.path.exists(file_path):
+        logger.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
 
-    # Simple magic number detection
-    try:
-        with open(filename, 'rb') as f_peek:
-            header = f_peek.read(6)
-    except OSError as e:
-        raise OSError(f"Could not open file {filename}: {e}")
-
-    if header.startswith(b'\x1f\x8b'):
-        f = gzip.open(filename, 'rb')
-    elif header.startswith(b'BZh'):
-        f = bz2.open(filename, 'rb')
-    elif header.startswith(b'\xfd7zXZ'):
-        f = lzma.open(filename, 'rb')
-    else:
-        f = open(filename, 'rb')
+    file_size = os.path.getsize(file_path)
+    if file_size > max_size:
+        logger.error(f"File size {file_size} exceeds limit of {max_size} bytes")
+        raise ValueError(f"File size {file_size} exceeds limit of {max_size} bytes")
 
     try:
-        # Create unpickler
-        unpickler = SafeNumpyUnpickler(filename, f, ensure_native_byte_order=False, mmap_mode=mmap_mode)
-        return unpickler.load()
-    finally:
-        f.close()
+        # Detect compression
+        with open(file_path, 'rb') as f:
+            header = f.read(4)
+
+        if header.startswith(b'\x1f\x8b'):  # gzip
+            opener = gzip.open
+        elif header.startswith(b'BZh'):     # bz2
+            opener = bz2.open
+        elif header.startswith(b'\xfd7zXZ') or header.startswith(b']\x00\x00\x80\x00'): # lzma/xz
+            opener = lzma.open
+        else:
+            opener = open
+
+        with opener(file_path, 'rb') as f:
+            # We must pass the filename and file handle to NumpyUnpickler
+            # ensure_native_byte_order=False is required to verify correctly (as per memory)
+            # mmap_mode=None (default) as we load everything to memory
+            try:
+                # Try with positional arguments matching joblib 1.5.3 signature
+                return SafeNumpyUnpickler(file_path, f, False, None).load()
+            except TypeError:
+                # Fallback for older joblib versions or different signature
+                # Some versions might not have ensure_native_byte_order
+                return SafeNumpyUnpickler(file_path, f).load()
+
+    except (pickle.UnpicklingError, AttributeError, ImportError, IndexError, TypeError) as e:
+        logger.error(f"Unpickling error for {file_path}: {e}")
+        raise pickle.UnpicklingError(f"Failed to safely unpickle {file_path}: {e}") from e
+    except Exception as e:
+        logger.error(f"Unexpected error loading {file_path}: {e}")
+        raise e

@@ -20,6 +20,7 @@ import joblib
 from typing import Dict, List, Tuple, Optional, Any, Union
 import logging
 import warnings
+import pickle
 warnings.filterwarnings('ignore')
 try:
     from ..utils import calculate_path_length
@@ -534,8 +535,8 @@ class MLCurator:
         """Load trained models and scalers.
 
         Parameters:
-            vertex_path: Source for the vertex classifier (file path or file-like object).
-            edge_path: Source for the edge classifier (file path or file-like object).
+            vertex_path: Source for the vertex classifier (file path).
+            edge_path: Source for the edge classifier (file path).
         """
         if vertex_path:
             try:
@@ -545,6 +546,11 @@ class MLCurator:
                 logger.info(f"Vertex model loaded from {vertex_path}")
             except FileNotFoundError:
                 logger.warning(f"Vertex model not found at {vertex_path}")
+            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+                logger.error(f"Failed to load vertex model from {vertex_path}: {e}")
+                # Don't crash, just log error, effectively leaving classifier as None
+            except Exception as e:
+                logger.error(f"Unexpected error loading vertex model from {vertex_path}: {e}")
 
         if edge_path:
             try:
@@ -554,6 +560,10 @@ class MLCurator:
                 logger.info(f"Edge model loaded from {edge_path}")
             except FileNotFoundError:
                 logger.warning(f"Edge model not found at {edge_path}")
+            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+                logger.error(f"Failed to load edge model from {edge_path}: {e}")
+            except Exception as e:
+                logger.error(f"Unexpected error loading edge model from {edge_path}: {e}")
     
     def generate_training_data(self, processing_results: List[Dict[str, Any]], 
                               manual_annotations: List[Dict[str, Any]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
