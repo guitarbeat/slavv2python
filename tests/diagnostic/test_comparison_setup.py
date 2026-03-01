@@ -12,8 +12,8 @@ project_root = Path(__file__).parent.parent.parent
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 
-def test_setup():
-    """Test that all required files and paths exist."""
+def _run_setup_checks() -> tuple[list[str], list[str]]:
+    """Run setup checks and return (errors, warnings)."""
     print("Testing comparison setup...")
     print("=" * 60)
     
@@ -87,7 +87,6 @@ def test_setup():
         for error in errors:
             print(f"  {error}")
         print("\nPlease fix these errors before running the comparison.")
-        return False
     else:
         print("[OK] All checks passed!")
         if warnings:
@@ -99,8 +98,14 @@ def test_setup():
         print('      --input "data/slavv_test_volume.tif" \\')
         print('      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
         print('      --output-dir "comparison_output"')
-        return True
+    return errors, warnings
+
+
+def test_setup():
+    """Test that all required files and paths exist."""
+    errors, _warnings = _run_setup_checks()
+    assert not errors, "Setup diagnostic found errors:\n" + "\n".join(errors)
 
 if __name__ == "__main__":
-    success = test_setup()
-    sys.exit(0 if success else 1)
+    errors, _warnings = _run_setup_checks()
+    sys.exit(0 if not errors else 1)
