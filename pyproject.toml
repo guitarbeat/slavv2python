@@ -98,6 +98,14 @@ testpaths = ["tests"]
 norecursedirs = ["external/blender_resources", "external/Vectorization-Public", "experiments"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short -p no:cacheprovider"
+markers = [
+    "unit: fast unit tests",
+    "integration: integration tests across components",
+    "ui: Streamlit/visualization UI-facing tests",
+    "diagnostic: environment and setup diagnostics",
+    "slow: long-running tests",
+    "regression: regression-focused behavior tests",
+]
 filterwarnings = [
     "ignore::DeprecationWarning:sklearn.*",
     "ignore::DeprecationWarning:pandas.*",

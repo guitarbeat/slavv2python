@@ -6,6 +6,7 @@ Welcome to the SLAVV documentation.
 
 - [Environment Setup](ENVIRONMENT_SETUP.md) - How to install and configure the environment.
 - [Development Guide](DEVELOPMENT.md) - Architecture, algorithms, and roadmap.
+- [Test Roadmap](TEST_ROADMAP.md) - Plan to improve test quality, speed, and reliability.
 - [Migration Guide](MIGRATION_GUIDE.md) - Mapping MATLAB concepts to Python.
 
 ## Usage & Specialized Topics

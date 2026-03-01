@@ -72,3 +72,4 @@ Each run captures system information (CPU, RAM, GPU, OS, and software versions) 
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System design diagrams
 - [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - MATLAB to Python mapping
+- [TEST_ROADMAP.md](TEST_ROADMAP.md) - Testing quality, speed, and reliability plan
