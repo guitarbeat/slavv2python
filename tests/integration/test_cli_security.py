@@ -4,9 +4,9 @@ import pytest
 from pathlib import Path
 import sys
 
-# Assume script is at <repo_root>/scripts/cli/run_matlab_cli.sh
+# Assume script is at <repo_root>/workspace/scripts/cli/run_matlab_cli.sh
 REPO_ROOT = Path(__file__).parent.parent.parent
-SCRIPT_DIR = REPO_ROOT / "scripts" / "cli"
+SCRIPT_DIR = REPO_ROOT / "workspace" / "scripts" / "cli"
 
 @pytest.mark.skipif(sys.platform == 'win32', reason="Shell script only runs on Linux/Unix")
 def test_run_matlab_cli_injection_sh(tmp_path):

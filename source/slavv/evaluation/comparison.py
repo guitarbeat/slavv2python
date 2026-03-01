@@ -70,12 +70,22 @@ def run_matlab_vectorization(
     input_file = os.path.abspath(input_file)
     output_dir = os.path.abspath(output_dir)
 
-    # Define script paths with absolute resolution
+    # Define script paths with absolute resolution.
+    # Prefer workspace/scripts (current layout), fallback to scripts (legacy layout).
     if batch_script is None:
-        if os.name == 'nt':
-            batch_script = str((project_root / 'scripts' / 'cli' / 'run_matlab_cli.bat').resolve())
-        else:
-            batch_script = str((project_root / 'scripts' / 'cli' / 'run_matlab_cli.sh').resolve())
+        script_name = 'run_matlab_cli.bat' if os.name == 'nt' else 'run_matlab_cli.sh'
+        candidates = [
+            (project_root / 'workspace' / 'scripts' / 'cli' / script_name).resolve(),
+            (project_root / 'scripts' / 'cli' / script_name).resolve(),
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                batch_script = str(candidate)
+                break
+        if batch_script is None:
+            raise FileNotFoundError(
+                f"Could not find MATLAB CLI script '{script_name}' in any known location: {candidates}"
+            )
     else:
         # Use provided script directly, but validate existence first
         if not os.path.exists(batch_script):

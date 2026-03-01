@@ -4,25 +4,21 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Core Pipeline (`pipeline.py`) | ✅ Complete | Energy → Vertices → Edges → Network |
-| I/O (`io_utils.py`) | ✅ Complete | MAT, CASX, VMV, CSV, JSON, DICOM, TIFF |
-| Visualization (`visualization.py`) | ✅ Complete | 2D/3D Plotly, animations |
-| ML Curation (`ml_curator.py`) | ✅ Functional | Logistic/RF classifiers |
-| Test Suite | ✅ 81 tests | 38 files, unit + integration |
-
----
+| Core Pipeline (`pipeline.py`) | Complete | Energy -> Vertices -> Edges -> Network |
+| I/O (`io_utils.py`) | Complete | MAT, CASX, VMV, CSV, JSON, DICOM, TIFF |
+| Visualization (`visualization.py`) | Complete | 2D/3D Plotly, animations |
+| ML Curation (`ml_curator.py`) | Functional | Logistic/RF classifiers |
+| Test Suite | Active | Unit + integration coverage |
 
 ## Experiment Workflow
 
 The experiment workflow has been decoupled to allow flexible execution:
 
-1. **Run MATLAB**: `notebooks/01_Run_Matlab.ipynb` (or CLI) $\rightarrow$ `experiments/XX_matlab_run/`
-2. **Run Python**: `notebooks/01_Run_Python.ipynb` $\rightarrow$ `experiments/XX_python_run/`
-3. **Compare**: `notebooks/01_End_to_End_Comparison.ipynb` $\rightarrow$ `experiments/XX_comparison_report/`
+1. **Run MATLAB**: `workspace/notebooks/01_Run_Matlab.ipynb` (or CLI) -> `workspace/experiments/...`
+2. **Run Python**: `workspace/notebooks/02_Run_Python.ipynb` -> `workspace/experiments/...`
+3. **Compare**: `workspace/notebooks/01_End_to_End_Comparison.ipynb` -> `workspace/experiments/...`
 
-**System Information Capture**: Each run automatically logs CPU, RAM, GPU, OS, and software versions for performance tracking across different machines.
-
----
+Each run captures system information (CPU, RAM, GPU, OS, and software versions) for reproducible performance tracking.
 
 ## Key Features
 
@@ -38,9 +34,9 @@ The experiment workflow has been decoupled to allow flexible execution:
 
 ### Memory Optimizations
 
-- **Sparse adjacency**: 37GB → ~1MB for 200k vertices
-- **Z-slice eigenvalues**: 200x peak memory reduction
-- **Chunking**: Large volumes via `get_chunking_lattice()`
+- Sparse adjacency for large-vertex graphs
+- Z-slice eigenvalue strategies to reduce peak memory
+- Chunking support via `get_chunking_lattice()`
 
 ### Algorithm Options
 
@@ -49,33 +45,13 @@ The experiment workflow has been decoupled to allow flexible execution:
 | `energy_method` | `hessian` (default), `frangi`, `sato` |
 | `direction_method` | `hessian`, `uniform` |
 | `discrete_tracing` | `False` (continuous), `True` (voxel-snapped) |
-| `edge_method` | `tracing` (default), `watershed` (20x faster) |
-
----
-
-## Performance Guide
-
-### Quick Wins
-
-| Optimization | Impact | How |
-|--------------|--------|-----|
-| GPU acceleration | 10-100x | `use_gpu=True` (requires CuPy) |
-| Discrete tracing | 2x | `discrete_tracing=True` |
-| Watershed edges | 20x | `edge_method='watershed'` |
-| FFT convolution | 10x | Auto for σ ≥ 10 |
-
-### Memory Tips
-
-- Enable `memory_map=True` in `load_tiff_volume()`
-- Reduce `max_voxels_per_node_energy` for large volumes
-
----
+| `edge_method` | `tracing` (default), `watershed` |
 
 ## Future Work
 
 ### High Priority
 
-- [ ] Numba JIT for edge tracing (~100x speedup)
+- [ ] Numba JIT for edge tracing
 - [ ] Parallel chunk processing with `joblib`
 - [x] CLI tool via `pyproject.toml` entry points
 
@@ -85,15 +61,6 @@ The experiment workflow has been decoupled to allow flexible execution:
 - [ ] Coordinate system validation
 - [ ] Kernel fidelity improvements
 
-### Visualization & Export Enhancements (Recommended)
-
-Building on work with VessMorphoVis/Blender exports:
-
-- [ ] **Pre-render 3D views automatically**: Generate PNG snapshots from multiple angles during the pipeline run.
-- [ ] **Add interactive 3D viewer**: Create a web-based viewer (e.g., using three.js or pyvista) so Blender isn't strictly required.
-- [ ] **Generate animated rotations**: Create MP4/GIFs of the rotating network.
-- [ ] **Create comparison gallery**: Side-by-side renders of MATLAB vs Python outputs.
-
 ### Low Priority
 
 - [ ] API reference (Sphinx/MkDocs)
@@ -101,9 +68,7 @@ Building on work with VessMorphoVis/Blender exports:
 - [ ] Jupyter tutorial notebooks (`07_Tutorial.ipynb`)
 - [ ] Full `mypy` compliance
 
----
-
 ## See Also
 
-- [ARCHITECTURE.md](../reference/ARCHITECTURE.md) - System design diagrams
-- [MIGRATION_GUIDE.md](../reference/MIGRATION_GUIDE.md) - MATLAB→Python mapping
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design diagrams
+- [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) - MATLAB to Python mapping

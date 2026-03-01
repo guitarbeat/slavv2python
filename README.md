@@ -8,14 +8,14 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 |------|-------------|
 | **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
 | **source/slavv/apps/** | Web applications (`web_app.py`) |
-| **scripts/** | Setup, CLI wrappers, and MATLAB integration |
+| **workspace/scripts/** | Setup, CLI wrappers, and MATLAB integration |
 | **workspace/examples/** | Programmatic usage examples (`run_tutorial.py`) |
-| **workspace/notebooks/** | Interactive Jupyter workflows and comparison dashboards |development |
-| **experiments/** | Output directory for runs and comparisons |
+| **workspace/notebooks/** | Interactive Jupyter workflows and comparison dashboards |
+| **workspace/experiments/** | Output directory for runs and comparisons |
 | **tests/** | Unit, integration, and UI tests |
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
-| **legacy/** | Original MATLAB source (`Vectorization-Public`) and scripts |
-| **external/** | Large binary dependencies (e.g. `blender_resources`) |
+| **external/Vectorization-Public/** | Original MATLAB source |
+| **external/** | Large binary dependencies (e.g., `blender_resources`) |
 | **CONTRIBUTING.md** | Contribution guidelines and testing |
 | **pyproject.toml** | Package metadata and dependencies |
 
@@ -25,7 +25,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 
 Run the automated setup script:
 ```powershell
-.\scripts\setup\setup_env.ps1
+.\workspace\scripts\setup\setup_env.ps1
 ```
 
 This will:
@@ -48,7 +48,7 @@ This will:
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1  # Windows
    source .venv/bin/activate      # Linux/Mac
-   
+
    # Option B: conda
    conda create -n slavv-env python=3.10
    conda activate slavv-env
@@ -68,19 +68,19 @@ This will:
 
 5. **Validate your setup**:
    ```bash
-   jupyter notebook notebooks/00_Setup_and_Validation.ipynb
+   jupyter notebook workspace/notebooks/00_Setup_and_Validation.ipynb
    # Select kernel: "Python (SLAVV)"
    ```
 
-📘 **Detailed setup guide**: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
+Detailed setup guide: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
 
 ### Launch the Web Application
 
-   ```bash
-   streamlit run source/slavv/apps/web_app.py
-   # Or use the entry point: slavv-app
-   ```
-   Open the provided URL in your browser.
+```bash
+streamlit run source/slavv/apps/web_app.py
+# Or use the entry point: slavv-app
+```
+Open the provided URL in your browser.
 
 ## Usage
 
@@ -101,8 +101,6 @@ print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
 
-
-
 ## Testing
 
 Verify that the environment is configured correctly by running the test suite:
@@ -113,9 +111,9 @@ python -m pytest tests/
 
 ## Troubleshooting
 
-- **ImportError for `slavv`** – Ensure you are running Python from the repository root and have run `pip install -e .`.
-- **ValueError: expected 3D TIFF** – `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
-- **High memory usage** – enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
+- **ImportError for `slavv`** - Ensure you are running Python from the repository root and have run `pip install -e .`.
+- **ValueError: expected 3D TIFF** - `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
+- **High memory usage** - enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 
 For the canonical port status, see [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md).
 

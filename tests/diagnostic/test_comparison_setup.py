@@ -37,8 +37,8 @@ def test_setup():
         warnings.append(f"[WARN] MATLAB executable not found at default path: {matlab_path}")
         print("  (You can specify a different path with --matlab-path)")
     
-    # Check scripts (in scripts/cli)
-    scripts_dir = project_root / "scripts" / "cli"
+    # Check scripts (in workspace/scripts/cli)
+    scripts_dir = project_root / "workspace" / "scripts" / "cli"
     required_scripts = [
         "run_matlab_vectorization.m",
         "run_matlab_cli.bat",
@@ -95,7 +95,7 @@ def test_setup():
             for warning in warnings:
                 print(f"  {warning}")
         print("\nSetup is ready. You can now run:")
-        print('  python scripts/cli/compare_matlab_python.py \\')
+        print('  python workspace/scripts/cli/compare_matlab_python.py \\')
         print('      --input "data/slavv_test_volume.tif" \\')
         print('      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
         print('      --output-dir "comparison_output"')

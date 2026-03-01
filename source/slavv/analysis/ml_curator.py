@@ -9,6 +9,7 @@ Based on the MATLAB MLDeployment.py and MLLibrary.py implementations.
 """
 
 import numpy as np
+import json
 from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
@@ -546,9 +547,11 @@ class MLCurator:
                 logger.info(f"Vertex model loaded from {vertex_path}")
             except FileNotFoundError:
                 logger.warning(f"Vertex model not found at {vertex_path}")
-            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+            except pickle.UnpicklingError as e:
                 logger.error(f"Failed to load vertex model from {vertex_path}: {e}")
-                # Don't crash, just log error, effectively leaving classifier as None
+                raise
+            except (ValueError, EOFError) as e:
+                logger.error(f"Failed to load vertex model from {vertex_path}: {e}")
             except Exception as e:
                 logger.error(f"Unexpected error loading vertex model from {vertex_path}: {e}")
 
@@ -560,7 +563,10 @@ class MLCurator:
                 logger.info(f"Edge model loaded from {edge_path}")
             except FileNotFoundError:
                 logger.warning(f"Edge model not found at {edge_path}")
-            except (pickle.UnpicklingError, ValueError, EOFError) as e:
+            except pickle.UnpicklingError as e:
+                logger.error(f"Failed to load edge model from {edge_path}: {e}")
+                raise
+            except (ValueError, EOFError) as e:
                 logger.error(f"Failed to load edge model from {edge_path}: {e}")
             except Exception as e:
                 logger.error(f"Unexpected error loading edge model from {edge_path}: {e}")
@@ -663,17 +669,102 @@ class MLCurator:
         Returns:
             Arrays of (v_feat, v_labels, e_feat, e_labels).
         """
-        # This is a placeholder for the logic that walks directories
-        # and stacks the features arrays (which must be saved alongside results).
-        # Since we don't have a standardized "saved feature file" format yet,
-        # we assume files contain the feature dicts or arrays directly.
-        
-        
-        
-        # Implementation depends on how `generate_training_data` saves its output.
-        # Assuming we have saved .npz or .json files with 'vertex_features', etc.
-        
-        return np.array([]), np.array([]), np.array([]), np.array([])
+        def _to_2d_array(value: Any, dtype: Any = float) -> Optional[np.ndarray]:
+            if value is None:
+                return None
+            arr = np.asarray(value, dtype=dtype)
+            if arr.size == 0:
+                return np.empty((0, 0), dtype=dtype)
+            if arr.ndim == 1:
+                arr = arr.reshape(-1, 1)
+            return arr
+
+        def _to_1d_array(value: Any, dtype: Any = int) -> Optional[np.ndarray]:
+            if value is None:
+                return None
+            arr = np.asarray(value, dtype=dtype).reshape(-1)
+            return arr
+
+        def _pick(data: Dict[str, Any], keys: List[str]) -> Any:
+            for key in keys:
+                if key in data:
+                    return data[key]
+            return None
+
+        data_dir = Path(data_dir)
+        if not data_dir.exists():
+            logger.warning(f"Training data directory does not exist: {data_dir}")
+            return np.array([]), np.array([]), np.array([]), np.array([])
+
+        files = sorted(data_dir.rglob(file_pattern))
+        if not files:
+            logger.warning(f"No training data files matched pattern '{file_pattern}' in {data_dir}")
+            return np.array([]), np.array([]), np.array([]), np.array([])
+
+        vertex_feature_chunks: List[np.ndarray] = []
+        vertex_label_chunks: List[np.ndarray] = []
+        edge_feature_chunks: List[np.ndarray] = []
+        edge_label_chunks: List[np.ndarray] = []
+
+        for file_path in files:
+            loaded: Optional[Dict[str, Any]] = None
+            suffix = file_path.suffix.lower()
+            try:
+                if suffix == ".npz":
+                    with np.load(file_path, allow_pickle=False) as npz:
+                        loaded = {k: npz[k] for k in npz.files}
+                elif suffix == ".json":
+                    with open(file_path, "r", encoding="utf-8-sig") as f:
+                        loaded = json.load(f)
+                elif suffix in {".pkl", ".pickle"}:
+                    maybe = safe_load(file_path)
+                    if isinstance(maybe, dict):
+                        loaded = maybe
+                else:
+                    logger.debug(f"Skipping unsupported training data file: {file_path}")
+                    continue
+            except Exception as exc:
+                logger.warning(f"Skipping unreadable training data file {file_path}: {exc}")
+                continue
+
+            if not isinstance(loaded, dict):
+                logger.warning(f"Skipping non-dictionary training payload in {file_path}")
+                continue
+
+            v_feat = _to_2d_array(_pick(loaded, ["vertex_features", "v_features", "v_feat"]), float)
+            v_lab = _to_1d_array(_pick(loaded, ["vertex_labels", "v_labels"]), int)
+            e_feat = _to_2d_array(_pick(loaded, ["edge_features", "e_features", "e_feat"]), float)
+            e_lab = _to_1d_array(_pick(loaded, ["edge_labels", "e_labels"]), int)
+
+            if v_feat is not None and v_lab is not None:
+                if len(v_feat) == len(v_lab):
+                    vertex_feature_chunks.append(v_feat)
+                    vertex_label_chunks.append(v_lab)
+                else:
+                    logger.warning(
+                        f"Skipping mismatched vertex arrays in {file_path}: "
+                        f"{len(v_feat)} features vs {len(v_lab)} labels"
+                    )
+
+            if e_feat is not None and e_lab is not None:
+                if len(e_feat) == len(e_lab):
+                    edge_feature_chunks.append(e_feat)
+                    edge_label_chunks.append(e_lab)
+                else:
+                    logger.warning(
+                        f"Skipping mismatched edge arrays in {file_path}: "
+                        f"{len(e_feat)} features vs {len(e_lab)} labels"
+                    )
+
+        v_feat = np.vstack(vertex_feature_chunks) if vertex_feature_chunks else np.array([])
+        v_lab = np.hstack(vertex_label_chunks) if vertex_label_chunks else np.array([])
+        e_feat = np.vstack(edge_feature_chunks) if edge_feature_chunks else np.array([])
+        e_lab = np.hstack(edge_label_chunks) if edge_label_chunks else np.array([])
+        logger.info(
+            f"Aggregated training data from {len(files)} files: "
+            f"{len(v_lab)} vertex labels, {len(e_lab)} edge labels"
+        )
+        return v_feat, v_lab, e_feat, e_lab
 
 
 class DrewsCurator:
@@ -684,15 +775,102 @@ class DrewsCurator:
     for pruning edges based on tortuosity, min-length relative to radius, and flow properties.
     """
     
-    def __init__(self):
-        pass
-        
-    def curate(self, edges: Dict[str, Any], vertices: Dict[str, Any]) -> Dict[str, Any]:
+    def __init__(
+        self,
+        min_length_radius_ratio: float = 2.0,
+        max_tortuosity: float = 3.5,
+        max_endpoint_gap: float = 5.0,
+    ):
+        self.min_length_radius_ratio = float(min_length_radius_ratio)
+        self.max_tortuosity = float(max_tortuosity)
+        self.max_endpoint_gap = float(max_endpoint_gap)
+
+    def curate(
+        self,
+        edges: Dict[str, Any],
+        vertices: Dict[str, Any],
+        parameters: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Apply Drews' curation logic.
         """
-        logger.warning("DrewsCurator is not fully implemented. Passing through edges.")
-        return edges
+        traces = edges.get("traces", [])
+        connections = edges.get("connections", [])
+        n_edges = len(traces)
+        if n_edges == 0:
+            return edges
+
+        params = parameters or {}
+        min_length_radius_ratio = float(
+            params.get("min_length_radius_ratio", self.min_length_radius_ratio)
+        )
+        max_tortuosity = float(params.get("max_tortuosity", self.max_tortuosity))
+        max_endpoint_gap = float(params.get("max_endpoint_gap", self.max_endpoint_gap))
+
+        vertex_positions = np.asarray(vertices.get("positions", []), dtype=float)
+        vertex_radii = np.asarray(
+            vertices.get("radii_microns", vertices.get("radii_pixels", vertices.get("radii", []))),
+            dtype=float,
+        )
+
+        keep_mask = np.ones(n_edges, dtype=bool)
+        for i, trace in enumerate(traces):
+            trace_arr = np.asarray(trace, dtype=float)
+            if trace_arr.ndim != 2 or len(trace_arr) < 2:
+                keep_mask[i] = False
+                continue
+
+            edge_length = calculate_path_length(trace_arr)
+            euclidean = float(np.linalg.norm(trace_arr[-1] - trace_arr[0]))
+            tortuosity = edge_length / (euclidean + 1e-10)
+            if tortuosity > max_tortuosity:
+                keep_mask[i] = False
+                continue
+
+            avg_radius = 0.0
+            if i < len(connections):
+                start_idx, end_idx = connections[i]
+                endpoint_radii: List[float] = []
+                for vidx in (start_idx, end_idx):
+                    if isinstance(vidx, (int, np.integer)) and 0 <= int(vidx) < len(vertex_radii):
+                        endpoint_radii.append(float(vertex_radii[int(vidx)]))
+                if endpoint_radii:
+                    avg_radius = float(np.mean(endpoint_radii))
+            if avg_radius <= 0:
+                avg_radius = 1.0
+
+            length_radius_ratio = edge_length / (avg_radius + 1e-10)
+            if length_radius_ratio < min_length_radius_ratio:
+                keep_mask[i] = False
+                continue
+
+            if i < len(connections) and len(vertex_positions) > 0:
+                start_idx, end_idx = connections[i]
+                if isinstance(start_idx, (int, np.integer)) and 0 <= int(start_idx) < len(vertex_positions):
+                    if np.linalg.norm(trace_arr[0] - vertex_positions[int(start_idx)]) > max_endpoint_gap:
+                        keep_mask[i] = False
+                        continue
+                if isinstance(end_idx, (int, np.integer)) and 0 <= int(end_idx) < len(vertex_positions):
+                    if np.linalg.norm(trace_arr[-1] - vertex_positions[int(end_idx)]) > max_endpoint_gap:
+                        keep_mask[i] = False
+                        continue
+
+        keep_indices = np.flatnonzero(keep_mask)
+        curated: Dict[str, Any] = {}
+        for key, value in edges.items():
+            if key == "traces":
+                curated[key] = [traces[idx] for idx in keep_indices]
+            elif key == "connections":
+                curated[key] = [connections[idx] for idx in keep_indices]
+            elif isinstance(value, np.ndarray) and value.shape[:1] == (n_edges,):
+                curated[key] = value[keep_indices]
+            elif isinstance(value, list) and len(value) == n_edges:
+                curated[key] = [value[idx] for idx in keep_indices]
+            else:
+                curated[key] = value
+        curated["original_indices"] = keep_indices
+        logger.info(f"Drews curation: {n_edges} -> {len(keep_indices)} edges")
+        return curated
 
 class AutomaticCurator:
     """

@@ -1,70 +1,59 @@
 # 3D Visualization and Export
 
-This guide explains how to view vascular networks exported by SLAVV in 3D visualization tools like [Blender](https://www.blender.org) via [VessMorphoVis](https://github.com/BlueBrain/VessMorphoVis).
+This guide explains how to view SLAVV vascular network exports in Blender/VessMorphoVis.
 
 ## Overview
 
-SLAVV automatically exports networks in multiple formats for interoperability:
+SLAVV exports multiple formats:
 
-* **VMV (`.vmv`)**: For VessMorphoVis/Blender (3D visualization, rendering).
-* **CASX (`.casx`)**: XML-based vascular network format (Linninger Lab).
-* **CSV**: Vertex and edge data for pandas/R dataframes.
-* **JSON**: Complete hierarchical results.
+- **VMV (`.vmv`)**: For VessMorphoVis/Blender rendering.
+- **CASX (`.casx`)**: XML-based vascular network format.
+- **CSV**: Vertex/edge tabular output.
+- **JSON**: Full hierarchical run output.
 
-## Viewing in 3D (Blender/VessMorphoVis)
+## Viewing in Blender (VessMorphoVis)
 
 ### Prerequisites
 
-1. **[Blender](https://www.blender.org/download/)** (Free, Open Source 3D Suite)
-2. **[VessMorphoVis Plugin](https://github.com/BlueBrain/VessMorphoVis)**
+1. [Blender](https://www.blender.org/download/)
+2. [VessMorphoVis plugin](https://github.com/BlueBrain/VessMorphoVis)
 
 ### Setup
 
 1. Install Blender.
-2. Download the VessMorphoVis plugin (ZIP file) from GitHub.
-3. Open Blender, go to **Edit > Preferences > Add-ons**.
-4. Click **Install...** and select the VessMorphoVis ZIP.
-5. Check the box to **Enable** the plugin.
+2. Download VessMorphoVis ZIP.
+3. In Blender, open **Edit > Preferences > Add-ons**.
+4. Click **Install...** and select the ZIP.
+5. Enable the plugin.
 
-### How to View a Network
+### Load a Network
 
-1. Run the SLAVV pipeline (e.g., via `compare_matlab_python.py`).
-2. Locate the `.vmv` file in the results directory (e.g., `comparisons/YYYYMMDD.../python_results/network.vmv`).
-3. * Copy the folder `external/blender_resources/VessMorphoVis/vessmorphovis` to the Blender addons folder.bar, press `N` to toggle).
-4. Click **Load Morphology**.
-5. Select your `network.vmv` file.
-6. The network will load as a 3D object. You can now:
-    * Change visualization mode (Radius, Strand ID).
-    * Adjust material settings.
-    * render high-resolution images or animations.
+1. Run the SLAVV pipeline (for example via `workspace/scripts/cli/compare_matlab_python.py`).
+2. Locate a generated VMV file (for example `comparisons/.../python_results/network.vmv`).
+3. In Blender, open the VessMorphoVis panel and click **Load Morphology**.
+4. Select your `network.vmv` file.
 
 ## Comparison Manifests
 
-Each comparison run generates a `MANIFEST.md` file in its output directory. This file contains:
+Each comparison run includes a `MANIFEST.md` file with:
 
-* **File Inventory**: List of all generated files with paths and sizes.
-* **Summary Stats**: Quick look at vertices, edges, and performance.
-* **Instructions**: Copy-pasteable commands for viewing that specific run's results.
+- File inventory (paths and sizes)
+- Summary statistics
+- Run-specific viewing instructions
 
-To list all available comparison runs:
-
-```bash
-The `notebooks/04_Comparison_Dashboard.ipynb` notebook provides an interactive dashboard:
-```
+For interactive inspection, use `workspace/notebooks/04_Comparison_Dashboard.ipynb`.
 
 ## Export Formats
 
-### VMV Format
+### VMV
 
-ASCII text file with sections for parameters, vertices (x, y, z, radius), and strands (sequences of indices).
+ASCII text with parameters, vertices (`x, y, z, radius`), and strands (vertex index sequences).
 
-### CASX Format
+### CASX
 
-XML file structured as `<Network><Vertices>...</Vertices><Edges>...</Edges></Network>`.
+XML structured as `<Network><Vertices>...</Vertices><Edges>...</Edges></Network>`.
 
-### CSV Export
+### CSV
 
-Two files are generated:
-
-* `*_vertices.csv`: `y_position`, `x_position`, `z_position`, `radius_microns`.
-* `*_edges.csv`: `start_vertex`, `end_vertex` (indices).
+- `*_vertices.csv`: `y_position`, `x_position`, `z_position`, `radius_microns`
+- `*_edges.csv`: `start_vertex`, `end_vertex`

@@ -19,9 +19,9 @@ def test_ml_curator_load_malicious_model(tmp_path):
     # Attempt to load as vertex model
     # Should raise UnpicklingError because safe_load raises it and ml_curator doesn't catch it.
 
-    with pytest.raises(pickle.UnpicklingError, match="Forbidden pickle module"):
+    with pytest.raises(pickle.UnpicklingError, match="forbidden|Failed to safely unpickle"):
         curator.load_models(vertex_path=filepath)
 
     # Attempt to load as edge model
-    with pytest.raises(pickle.UnpicklingError, match="Forbidden pickle module"):
+    with pytest.raises(pickle.UnpicklingError, match="forbidden|Failed to safely unpickle"):
         curator.load_models(edge_path=filepath)

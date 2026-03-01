@@ -34,10 +34,10 @@ def generate_summary(run_dir: Path, output_file: Path):
     
     # Try to infer date from directory name or file modification times
     date_str = "Unknown"
-    if run_name.startswith('2026'):
-        # Parse YYYYMMDD from name
+    # Parse YYYYMMDD prefix if present (e.g., 20260228_153045_label)
+    date_part = run_name.split('_')[0]
+    if len(date_part) == 8 and date_part.isdigit():
         try:
-            date_part = run_name.split('_')[0]
             date_obj = datetime.strptime(date_part, '%Y%m%d')
             date_str = date_obj.strftime('%Y-%m-%d')
         except Exception:

@@ -9,7 +9,7 @@ This script runs both implementations with identical parameters and compares:
 - Network statistics
 
 Usage:
-    python scripts/compare_matlab_python.py \
+    python workspace/scripts/cli/compare_matlab_python.py \
         --input "data/slavv_test_volume.tif" \
         --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \
         --output-dir "comparison_output"
@@ -48,7 +48,7 @@ def main():
     )
     parser.add_argument(
         '--params',
-        help='JSON file with parameters (default: scripts/comparison_params.json)'
+        help='JSON file with parameters (default: workspace/scripts/cli/comparison_params.json)'
     )
     parser.add_argument(
         '--skip-matlab',

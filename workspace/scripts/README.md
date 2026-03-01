@@ -13,4 +13,4 @@ Internal scripts for system setup, CLI execution, and MATLAB integration.
   - `verify_imports.py`: Dependency verification tool.
 
 ## Interactive Analysis
-For interactive work and tutorials, please use the **[notebooks/](../notebooks/)** directory in the repository root.
+For interactive work and tutorials, use **[workspace/notebooks/](../notebooks/)**.
