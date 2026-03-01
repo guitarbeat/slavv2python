@@ -119,8 +119,15 @@ def test_edge_strand_coloring():
         show_bifurcations=False,
     )
 
-    assert fig.data[0].line.color == fig.data[1].line.color
-    assert fig.data[0].line.color != fig.data[2].line.color
+    # With batched rendering, edges with the same color are merged into a single trace.
+    # Edges 0 and 1 belong to Strand 0 -> Same Color -> One Trace
+    # Edge 2 belongs to Strand 1 -> Different Color -> Second Trace
+    # So we expect 2 traces total (since show_vertices=False)
+
+    assert len(fig.data) == 2
+
+    # The traces should have different colors
+    assert fig.data[0].line.color != fig.data[1].line.color
 
 
 def test_edge_radius_coloring():
