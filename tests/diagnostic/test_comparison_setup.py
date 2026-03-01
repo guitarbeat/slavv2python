@@ -6,13 +6,14 @@ This doesn't run the full vectorization, just checks that files exist and paths 
 
 import sys
 from pathlib import Path
+from typing import Tuple, List
 
 # Add project root and source to path for slavv imports
 project_root = Path(__file__).parent.parent.parent
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 
-def _run_setup_checks() -> tuple[list[str], list[str]]:
+def _run_setup_checks() -> Tuple[List[str], List[str]]:
     """Run setup checks and return (errors, warnings)."""
     print("Testing comparison setup...")
     print("=" * 60)

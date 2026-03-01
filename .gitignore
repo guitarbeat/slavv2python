@@ -168,3 +168,10 @@ pip-wheel-metadata/
 *_report*.txt
 *_errors.json
 pytest_collect*.txt
+# Temporary directories
+.piptmp/
+.smoketmp/
+.tmp/
+.ruff_cache/
+.agent/
+.jules/

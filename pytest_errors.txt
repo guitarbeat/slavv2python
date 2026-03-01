@@ -1,0 +1,13 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.7.3, pytest-4.3.1, py-1.8.0, pluggy-0.9.0
+rootdir: C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python, inifile:
+plugins: remotedata-0.3.1, openfiles-0.3.2, doctestplus-0.3.0, arraydiff-0.3
+collected 160 items / 1 errors / 1 skipped / 158 selected
+
+=================================== ERRORS ====================================
+_________ ERROR collecting tests/diagnostic/test_comparison_setup.py __________
+tests\diagnostic\test_comparison_setup.py:15: in <module>
+    def _run_setup_checks() -> tuple[list[str], list[str]]:
+E   TypeError: 'type' object is not subscriptable
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 errors during collection !!!!!!!!!!!!!!!!!!!
+===================== 1 skipped, 1 error in 6.71 seconds ======================
