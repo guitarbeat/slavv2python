@@ -5,9 +5,7 @@ Welcome to the SLAVV documentation.
 ## Getting Started
 
 - [Environment Setup](ENVIRONMENT_SETUP.md) - How to install and configure the environment.
-- [Development Guide](DEVELOPMENT.md) - Architecture, algorithms, and roadmap.
-- [Repository Organization](REPO_ORGANIZATION.md) - Folder conventions and artifact placement.
-- [Test Roadmap](TEST_ROADMAP.md) - Plan to improve test quality, speed, and reliability.
+- [Development Guide](DEVELOPMENT.md) - Architecture, repository organization, and test roadmap.
 - [Migration Guide](MIGRATION_GUIDE.md) - Mapping MATLAB concepts to Python.
 
 ## Usage & Specialized Topics
@@ -25,4 +23,4 @@ Welcome to the SLAVV documentation.
 - [Archive](archive/README.md) - Historical debugging reports and status updates.
 
 ---
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
+See [README.md](../README.md#contributing) for contribution guidelines.

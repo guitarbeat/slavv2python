@@ -16,7 +16,6 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
 | **external/Vectorization-Public/** | Original MATLAB source |
 | **external/** | Large binary dependencies (e.g., `blender_resources`) |
-| **CONTRIBUTING.md** | Contribution guidelines and testing |
 | **pyproject.toml** | Package metadata and dependencies |
 
 ## Getting started
@@ -114,6 +113,35 @@ Fast lane (used by CI for quick feedback):
 ```bash
 python -m pytest -m "unit or integration"
 ```
+
+## Contributing
+
+### Code and docs
+- Place package code under `source/slavv/`.
+- Place tests under `tests/` by category (`unit`, `integration`, `ui`, `diagnostic`).
+- Place supplementary docs under `docs/`.
+- Use relative links between repo documents.
+
+### Style
+- Follow PEP 8.
+- Public functions in `source/` should use type hints.
+- Use docstrings for exported members.
+- Use `logging` in library code (avoid `print()` in `source/`).
+
+### Checks before opening a PR
+```bash
+python -m compileall source/ tests/
+python -m pytest -m "unit or integration"
+python -m pytest tests/ -v
+```
+
+### Regression guardrails
+- Do not break existing tests.
+- Preserve MATLAB parity for core algorithms.
+- Prefer behavior-level tests with deterministic fixtures.
+- For float expectations, use `np.allclose(..., atol=1e-6)`.
+
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for testing and repository structure policy.
 
 ## Troubleshooting
 
