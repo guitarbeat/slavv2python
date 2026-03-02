@@ -95,7 +95,13 @@ include = ["slavv*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-norecursedirs = ["external/blender_resources", "external/Vectorization-Public", "experiments"]
+norecursedirs = [
+    "external/blender_resources",
+    "external/Vectorization-Public",
+    "experiments",
+    ".pytest_tmp",
+    "tmp_fixture",
+]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short -p no:cacheprovider"
 markers = [

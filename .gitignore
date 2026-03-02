@@ -172,6 +172,10 @@ pytest_collect*.txt
 .piptmp/
 .smoketmp/
 .tmp/
+.pytest_tmp/
+tests/.pytest_tmp/
+workspace/tmp_tests/
+workspace/tmp_fixture/
 .ruff_cache/
 .agent/
 .jules/

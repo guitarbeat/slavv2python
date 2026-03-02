@@ -109,6 +109,12 @@ Verify that the environment is configured correctly by running the test suite:
 python -m pytest tests/
 ```
 
+Fast lane (used by CI for quick feedback):
+
+```bash
+python -m pytest -m "unit or integration"
+```
+
 ## Troubleshooting
 
 - **ImportError for `slavv`** - Ensure you are running Python from the repository root and have run `pip install -e .`.
