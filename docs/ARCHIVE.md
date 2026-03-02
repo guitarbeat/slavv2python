@@ -1,12 +1,25 @@
-# Documentation Archive
+# Archive Summary
 
-Historical reports, status updates, and post-mortems from prior project phases.
+This file keeps a minimal record of legacy project history after consolidation.
 
-| Document | Description |
-|----------|-------------|
-| [ARCHIVE_FINAL_STATUS.md](ARCHIVE_FINAL_STATUS.md) | Final status of MATLAB vs Python debugging |
-| [ARCHIVE_DEBUG_STATUS.md](ARCHIVE_DEBUG_STATUS.md) | MATLAB/Python debugging issue log |
-| [ARCHIVE_DEBUGGING_PROGRESS_REPORT.md](ARCHIVE_DEBUGGING_PROGRESS_REPORT.md) | Detailed debugging analysis |
-| [ARCHIVE_2026-01-27_comparison_framework.md](ARCHIVE_2026-01-27_comparison_framework.md) | Status of comparison tools |
-| [ARCHIVE_2026-01-17_debt_report.md](ARCHIVE_2026-01-17_debt_report.md) | Technical debt assessment |
-| [ARCHIVE_2026-01-27_post_mortem.md](ARCHIVE_2026-01-27_post_mortem.md) | January post-mortem |
+## Historical Highlights
+
+- 2026-01-27: MATLAB vs Python comparison framework completed and documented.
+- 2026-01-27: Post-mortem captured debugging outcomes and migration lessons.
+- 2026-01-17: Technical debt assessment snapshot was recorded.
+
+## Current Policy
+
+- Detailed historical debug/status reports were consolidated and removed from the flat docs set.
+- Canonical, actively maintained docs are:
+  - `DEVELOPMENT.md`
+  - `README.md`
+
+## Recovering Removed Detail
+
+If you need the old deep-dive archive documents, use Git history:
+
+```bash
+git log -- docs/
+git show <commit>:docs/<old-file-name>.md
+```

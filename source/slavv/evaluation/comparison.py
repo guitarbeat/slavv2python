@@ -21,7 +21,7 @@ from slavv.visualization import NetworkVisualizer
 from .matlab_parser import load_matlab_batch_results
 from .metrics import compare_results
 from .reporting import generate_summary
-from .management import generate_manifest
+from .management import generate_manifest, resolve_run_layout
 from slavv.utils import get_system_info, get_matlab_info
 
 def load_parameters(params_file: Optional[str] = None) -> Dict[str, Any]:
@@ -327,9 +327,13 @@ def orchestrate_comparison(
     skip_python: bool = False
 ) -> int:
     """Run full comparison workflow."""
-    
-    matlab_output = output_dir / 'matlab_results'
-    python_output = output_dir / 'python_results'
+    layout = resolve_run_layout(output_dir)
+    matlab_output = layout['matlab_dir']
+    python_output = layout['python_dir']
+    analysis_dir = layout['analysis_dir']
+    metadata_dir = layout['metadata_dir']
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+    metadata_dir.mkdir(parents=True, exist_ok=True)
     
     # Run MATLAB
     matlab_results = None
@@ -372,7 +376,7 @@ def orchestrate_comparison(
         comparison = compare_results(matlab_results, python_results, matlab_parsed)
         
         # Save comparison report
-        report_file = output_dir / 'comparison_report.json'
+        report_file = analysis_dir / 'comparison_report.json'
         with open(report_file, 'w') as f:
             # Remove non-serializable items for JSON
             report = {
@@ -389,14 +393,14 @@ def orchestrate_comparison(
         
     # Generate summary.txt automatically
     try:
-        summary_file = output_dir / 'summary.txt'
+        summary_file = analysis_dir / 'summary.txt'
         generate_summary(output_dir, summary_file)
     except Exception as e:
         print(f"Note: Could not auto-generate summary: {e}")
     
     # Generate manifest automatically
     try:
-        manifest_file = output_dir / 'MANIFEST.md'
+        manifest_file = metadata_dir / 'run_manifest.md'
         generate_manifest(output_dir, manifest_file)
         print(f"Manifest generated: {manifest_file}")
     except Exception as e:
@@ -434,7 +438,11 @@ def run_standalone_comparison(
     print(f"Python Dir: {python_dir}")
     print(f"Output Dir: {output_dir}")
     
-    os.makedirs(output_dir, exist_ok=True)
+    layout = resolve_run_layout(output_dir)
+    analysis_dir = layout['analysis_dir']
+    metadata_dir = layout['metadata_dir']
+    os.makedirs(analysis_dir, exist_ok=True)
+    os.makedirs(metadata_dir, exist_ok=True)
     
     # 1. Reconstruct MATLAB results dict
     matlab_results = {
@@ -444,31 +452,19 @@ def run_standalone_comparison(
     }
     
     # Find batch folder
+    matlab_layout = resolve_run_layout(matlab_dir)
+    matlab_root = matlab_layout['matlab_dir']
     batch_folders = [
-        d for d in os.listdir(matlab_dir)
-        if (matlab_dir / d).is_dir() and d.startswith('batch_')
+        d for d in os.listdir(matlab_root)
+        if (matlab_root / d).is_dir() and d.startswith('batch_')
     ]
     
     if batch_folders:
-        batch_folder = str(matlab_dir / sorted(batch_folders)[-1])
+        batch_folder = str(matlab_root / sorted(batch_folders)[-1])
         matlab_results['batch_folder'] = batch_folder
         print(f"Found MATLAB batch folder: {batch_folder}")
     else:
-        # Check inside matlab_results subdir if it exists (for combined runs)
-        sub_matlab = matlab_dir / 'matlab_results'
-        if sub_matlab.exists():
-            batch_folders_sub = [
-                d for d in os.listdir(sub_matlab)
-                if os.path.isdir(os.path.join(sub_matlab, d)) and d.startswith('batch_')
-            ]
-            if batch_folders_sub:
-                batch_folder = os.path.join(sub_matlab, sorted(batch_folders_sub)[-1])
-                matlab_results['batch_folder'] = batch_folder
-                print(f"Found MATLAB batch folder (in subdir): {batch_folder}")
-            else:
-                 print("Warning: No MATLAB batch_* folder found.")
-        else:
-            print("Warning: No MATLAB batch_* folder found.")
+        print("Warning: No MATLAB batch_* folder found.")
 
     # 2. Reconstruct Python results dict
     python_results = {
@@ -480,10 +476,9 @@ def run_standalone_comparison(
     # Load python results
     # Try finding python_comparison_*.json
     # Check root of python dir
-    json_files = glob.glob(str(python_dir / "python_comparison_*.json"))
-    # Check python_results subdir
-    if not json_files:
-        json_files = glob.glob(str(python_dir / "python_results" / "python_comparison_*.json"))
+    python_layout = resolve_run_layout(python_dir)
+    python_root = python_layout['python_dir']
+    json_files = glob.glob(str(python_root / "python_comparison_*.json"))
     
     if json_files:
         # Load the latest one
@@ -517,9 +512,7 @@ def run_standalone_comparison(
     else:
         # Fallback: Check for network.json
         print("Warning: No python_comparison_*.json found. Checking for network.json...")
-        network_json_paths = glob.glob(str(python_dir / "python_results" / "network.json"))
-        if not network_json_paths:
-             network_json_paths = glob.glob(str(python_dir / "network.json"))
+        network_json_paths = glob.glob(str(python_root / "network.json"))
              
         if network_json_paths:
             network_json = network_json_paths[0]
@@ -576,7 +569,7 @@ def run_standalone_comparison(
     comparison = compare_results(matlab_results, python_results, matlab_parsed)
     
     # 4. Save
-    report_file = output_dir / 'comparison_report.json'
+    report_file = analysis_dir / 'comparison_report.json'
     with open(report_file, 'w') as f:
          # Remove non-serializable items for JSON
         report = {
@@ -592,9 +585,16 @@ def run_standalone_comparison(
     
     # Generate summary
     try:
-        summary_file = output_dir / 'summary.txt'
+        summary_file = analysis_dir / 'summary.txt'
         generate_summary(output_dir, summary_file)
     except Exception as e:
         print(f"Note: Could not auto-generate summary: {e}")
+    
+    # Generate manifest
+    try:
+        manifest_file = metadata_dir / 'run_manifest.md'
+        generate_manifest(output_dir, manifest_file)
+    except Exception as e:
+        print(f"Note: Could not auto-generate manifest: {e}")
         
     return 0

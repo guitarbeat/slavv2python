@@ -5,7 +5,7 @@ Management utilities for SLAVV comparison data.
 import json
 import logging
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Set
 from datetime import datetime
 
 from slavv.utils import format_size
@@ -27,21 +27,22 @@ def get_directory_size(path: Path) -> int:
 
 def load_run_info(run_dir: Path) -> Dict[str, Any]:
     """Load information about a comparison run."""
+    layout = resolve_run_layout(run_dir)
     info = {
         'name': run_dir.name,
         'path': run_dir,
         'size': get_directory_size(run_dir),
-        'has_matlab': (run_dir / 'matlab_results').exists(),
-        'has_python': (run_dir / 'python_results').exists(),
-        'has_report': (run_dir / 'comparison_report.json').exists(),
-        'has_plots': (run_dir / 'visualizations').exists(),
-        'has_summary': (run_dir / 'summary.txt').exists(),
+        'has_matlab': layout['matlab_dir'].exists(),
+        'has_python': layout['python_dir'].exists(),
+        'has_report': layout['report_file'].exists(),
+        'has_plots': layout['plots_dir'].exists(),
+        'has_summary': layout['summary_file'].exists(),
     }
     
     # Load comparison report if exists
     if info['has_report']:
         try:
-            with open(run_dir / 'comparison_report.json', 'r') as f:
+            with open(layout['report_file'], 'r') as f:
                 report = json.load(f)
                 info['matlab_time'] = report.get('matlab', {}).get('elapsed_time', 0)
                 info['python_time'] = report.get('python', {}).get('elapsed_time', 0)
@@ -54,18 +55,93 @@ def load_run_info(run_dir: Path) -> Dict[str, Any]:
     return info
 
 def create_experiment_path(base_dir: Path, label: str = "run") -> Path:
-    """Create a hierarchical, timestamped experiment path."""
+    """Create a flat, timestamped experiment path under base_dir."""
     now = datetime.now()
-    year = now.strftime('%Y')
-    month_val = now.strftime('%m')
-    month_name = now.strftime('%B')
-    month_folder = f"{month_val}-{month_name}"
-    day_time = now.strftime('%d_%H%M%S')
+    timestamp = now.strftime('%Y%m%d_%H%M%S')
     
     # Sanitize label
     safe_label = "".join([c if c.isalnum() or c in ("-", "_") else "-" for c in label])
     
-    return base_dir / year / month_folder / f"{day_time}_{safe_label}"
+    return base_dir / f"{timestamp}_{safe_label}"
+
+
+def _first_existing(candidates: List[Path]) -> Optional[Path]:
+    """Return first existing path from candidates, else None."""
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def resolve_run_root(path: Path) -> Path:
+    """
+    Resolve a run root from a path that may be a staged subdirectory.
+
+    Supports:
+    - run_dir/01_Input
+    - run_dir/02_Output
+    - run_dir/03_Analysis
+    - run_dir/99_Metadata
+    """
+    if path.name in {'01_Input', '02_Output', '03_Analysis', '99_Metadata'}:
+        return path.parent
+    return path
+
+
+def resolve_run_layout(run_dir: Path) -> Dict[str, Path]:
+    """Resolve canonical MATLAB/Python/report paths for legacy and staged layouts."""
+    run_root = resolve_run_root(run_dir)
+
+    matlab_candidates = [
+        run_root / '01_Input' / 'matlab_results',
+        run_root / 'matlab_results',
+    ]
+    python_candidates = [
+        run_root / '02_Output' / 'python_results',
+        run_root / 'python_results',
+    ]
+    analysis_candidates = [
+        run_root / '03_Analysis',
+        run_root,
+    ]
+    metadata_candidates = [
+        run_root / '99_Metadata',
+        run_root,
+    ]
+
+    matlab_dir = _first_existing(matlab_candidates) or matlab_candidates[0]
+    python_dir = _first_existing(python_candidates) or python_candidates[0]
+    analysis_dir = _first_existing(analysis_candidates) or analysis_candidates[0]
+    metadata_dir = _first_existing(metadata_candidates) or metadata_candidates[0]
+
+    report_candidates = [
+        analysis_dir / 'comparison_report.json',
+        run_root / 'comparison_report.json',
+    ]
+    summary_candidates = [
+        analysis_dir / 'summary.txt',
+        run_root / 'summary.txt',
+    ]
+    plots_candidates = [
+        analysis_dir / 'visualizations',
+        run_root / 'visualizations',
+    ]
+    manifest_candidates = [
+        metadata_dir / 'run_manifest.md',
+        run_root / 'MANIFEST.md',
+    ]
+
+    return {
+        'run_root': run_root,
+        'matlab_dir': matlab_dir,
+        'python_dir': python_dir,
+        'analysis_dir': analysis_dir,
+        'metadata_dir': metadata_dir,
+        'report_file': _first_existing(report_candidates) or report_candidates[0],
+        'summary_file': _first_existing(summary_candidates) or summary_candidates[0],
+        'plots_dir': _first_existing(plots_candidates) or plots_candidates[0],
+        'manifest_file': _first_existing(manifest_candidates) or manifest_candidates[0],
+    }
 
 def list_runs(experiment_dir: Path) -> List[Dict[str, Any]]:
     """List all comparison runs in the directory hierarchy."""
@@ -73,16 +149,26 @@ def list_runs(experiment_dir: Path) -> List[Dict[str, Any]]:
         return []
     
     runs = []
-    # Find all directories that contain a manifestation of a run (e.g., comparison_report.json or results.json)
-    # We look for folders that have 'matlab_results' or 'python_results' subdirs
+    seen_paths: Set[Path] = set()
+
+    def add_run(candidate_dir: Path):
+        run_root = resolve_run_root(candidate_dir)
+        if run_root in seen_paths:
+            return
+        seen_paths.add(run_root)
+        runs.append(load_run_info(run_root))
+
+    # Find directories that contain a run manifestation.
     for report in experiment_dir.rglob('comparison_report.json'):
-        runs.append(load_run_info(report.parent))
+        add_run(report.parent)
         
-    # Also find standalone python runs if they don't have a report yet
+    # Standalone python runs if they don't have a report yet.
     for results in experiment_dir.rglob('python_results'):
-        parent = results.parent
-        if not (parent / 'comparison_report.json').exists():
-             runs.append(load_run_info(parent))
+        add_run(results.parent)
+
+    # Standalone matlab runs are also valid run candidates.
+    for results in experiment_dir.rglob('matlab_results'):
+        add_run(results.parent)
 
     return sorted(runs, key=lambda x: x['name'], reverse=True)
 

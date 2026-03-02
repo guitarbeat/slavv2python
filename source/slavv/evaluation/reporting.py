@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 from slavv.utils import format_time
+from .management import resolve_run_layout
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +19,10 @@ logger = logging.getLogger(__name__)
 
 def generate_summary(run_dir: Path, output_file: Path):
     """Generate summary.txt for a comparison run."""
+    layout = resolve_run_layout(run_dir)
     
     # Load comparison report if exists
-    report_path = run_dir / 'comparison_report.json'
+    report_path = layout['report_file']
     report = {}
     if report_path.exists():
         try:
@@ -104,12 +106,12 @@ def generate_summary(run_dir: Path, output_file: Path):
     lines.append("")
     
     # Status/notes
-    matlab_dir = run_dir / 'matlab_results'
-    python_dir = run_dir / 'python_results'
+    matlab_dir = layout['matlab_dir']
+    python_dir = layout['python_dir']
     
     has_matlab = matlab_dir.exists() and any(matlab_dir.iterdir())
     has_python = python_dir.exists() and any(python_dir.iterdir())
-    has_plots = (run_dir / 'visualizations').exists()
+    has_plots = layout['plots_dir'].exists()
     
     lines.append("Status")
     lines.append("-" * 70)

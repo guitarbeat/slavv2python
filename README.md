@@ -13,7 +13,7 @@ Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated
 | **workspace/notebooks/** | Interactive Jupyter workflows and comparison dashboards |
 | **workspace/experiments/** | Output directory for runs and comparisons |
 | **tests/** | Unit, integration, and UI tests |
-| **docs/** | [Documentation index](docs/README.md): architecture, development, migration |
+| **docs/** | Development, archive summary, and workspace reference docs |
 | **external/Vectorization-Public/** | Original MATLAB source |
 | **external/** | Large binary dependencies (e.g., `blender_resources`) |
 | **pyproject.toml** | Package metadata and dependencies |
@@ -155,6 +155,7 @@ python -m pytest tests/ -v
 - For float expectations, use `np.allclose(..., atol=1e-6)`.
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for testing and repository structure policy.
+See [docs/WORKSPACE.md](docs/WORKSPACE.md) for workspace scripts/notebooks/experiments conventions.
 
 ## Troubleshooting
 
@@ -163,7 +164,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for testing and repository struct
 - **High memory usage** - enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
 - **Wrong Jupyter kernel** - run `python -m ipykernel install --user --name=slavv-env --display-name=\"Python (SLAVV)\"` and select that kernel.
 
-For the canonical port status, see [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md).
+For migration and parity status, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## License
 
