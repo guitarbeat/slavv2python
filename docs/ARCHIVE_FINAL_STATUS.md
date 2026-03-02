@@ -137,11 +137,11 @@ All 8 planned components implemented and tested:
 
 ### 4. Documentation Complete ✅
 
-- [`DEBUG_STATUS.md`](DEBUG_STATUS.md) - Issue tracking
-- [`DEBUGGING_PROGRESS_REPORT.md`](DEBUGGING_PROGRESS_REPORT.md) - Detailed analysis
+- [`ARCHIVE_DEBUG_STATUS.md`](ARCHIVE_DEBUG_STATUS.md) - Issue tracking
+- [`ARCHIVE_DEBUGGING_PROGRESS_REPORT.md`](ARCHIVE_DEBUGGING_PROGRESS_REPORT.md) - Detailed analysis
 - [`scripts/TROUBLESHOOTING.md`](scripts/TROUBLESHOOTING.md) - User guide
 - [`scripts/README.md`](scripts/README.md) - Updated with all features
-- [`COMPARISON_FRAMEWORK_STATUS.md`](COMPARISON_FRAMEWORK_STATUS.md) - Implementation status
+- [`ARCHIVE_2026-01-27_comparison_framework.md`](ARCHIVE_2026-01-27_comparison_framework.md) - Implementation status
 
 ---
 

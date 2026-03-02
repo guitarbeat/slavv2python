@@ -68,5 +68,5 @@ Key considerations:
 
 ## References
 
-- [Post-mortem: MATLAB vs Python Debugging](../archive/2026-01-27_post_mortem.md)
-- [Comparison Framework Status](../archive/2026-01-27_comparison_framework.md)
+- [Post-mortem: MATLAB vs Python Debugging](ARCHIVE_2026-01-27_post_mortem.md)
+- [Comparison Framework Status](ARCHIVE_2026-01-27_comparison_framework.md)

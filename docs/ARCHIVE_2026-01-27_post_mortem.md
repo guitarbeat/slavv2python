@@ -165,4 +165,4 @@ Python's energy calculation returns **all zeros** despite correct preprocessing.
 
 ---
 
-*This post-mortem consolidates DEBUG_STATUS.md, DEBUGGING_PROGRESS_REPORT.md, and FINAL_STATUS.md*
+*This post-mortem consolidates ARCHIVE_DEBUG_STATUS.md, ARCHIVE_DEBUGGING_PROGRESS_REPORT.md, and ARCHIVE_FINAL_STATUS.md*

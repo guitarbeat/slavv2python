@@ -71,8 +71,6 @@ This will:
    # Select kernel: "Python (SLAVV)"
    ```
 
-Detailed setup guide: See [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md) for troubleshooting and best practices.
-
 ### Launch the Web Application
 
 ```bash
@@ -99,6 +97,21 @@ results = processor.process_image(image_data, params)
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
+
+### Visualization and export
+
+SLAVV exports `VMV`, `CASX`, `CSV`, and `JSON`.
+
+- `VMV` is intended for Blender + VessMorphoVis.
+- `CASX` is XML-based vascular network data.
+- `CSV` and `JSON` are convenient for analysis pipelines.
+
+To inspect outputs in Blender:
+1. Install Blender and the VessMorphoVis add-on.
+2. Run SLAVV and generate a `.vmv` file.
+3. In Blender, load the `.vmv` file from the VessMorphoVis panel.
+
+For experiment-level inspection, use `workspace/notebooks/04_Comparison_Dashboard.ipynb`.
 
 ## Testing
 
@@ -148,6 +161,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for testing and repository struct
 - **ImportError for `slavv`** - Ensure you are running Python from the repository root and have run `pip install -e .`.
 - **ValueError: expected 3D TIFF** - `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
 - **High memory usage** - enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
+- **Wrong Jupyter kernel** - run `python -m ipykernel install --user --name=slavv-env --display-name=\"Python (SLAVV)\"` and select that kernel.
 
 For the canonical port status, see [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md).
 
