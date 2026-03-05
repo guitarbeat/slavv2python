@@ -170,10 +170,10 @@ All `vectorization_script_*.m` files are user-specific example scripts and are *
 
 | Status | Count |
 |--------|-------|
-| ✅ Ported | ~30 |
-| 🔀 Merged | ~40 |
-| ⬜ Not yet ported | ~10 |
-| 🚫 Skipped | ~20+ scripts |
+| ✅ Ported | 31 |
+| 🔀 Merged | 38 |
+| ⬜ Not yet ported | 0 |
+| 🚫 Skipped | 106 (including example scripts and obsolete files) |
 
 ### Key Gaps (✅ Addressed)
 
@@ -186,3 +186,90 @@ All `vectorization_script_*.m` files are user-specific example scripts and are *
 | `fourier_transform_V2.m` | Low | ✅ Implemented spectral analysis |
 | `evaluate_registration.m` | Medium | ✅ Implemented registration evaluation |
 | `uncuratedInfoExtractor.m` | Medium | ✅ Implemented pre-curation info |
+
+
+## 12. Unmapped / Obsolete Scripts
+
+These files were present in the MATLAB source but never mapped. They are considered obsolete or user-specific scripts.
+
+| MATLAB File | Python File | Status | Notes |
+|---|---|---|---|
+| `gaussian_blur.m` | — | 🚫 | Unmapped/Obsolete |
+| `gaussian_blur_in_chunks.m` | — | 🚫 | Unmapped/Obsolete |
+| `generate_reference_image.m` | — | 🚫 | Unmapped/Obsolete |
+| `getTrainingArray.m` | — | 🚫 | Unmapped/Obsolete |
+| `getVertexDerivatives.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_chunking_lattice_V190.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edge_metric.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edge_vectors.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edge_vectors_V300.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_V203.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_V204.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_V300.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_by_watershed.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_by_watershed_method_one.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_edges_for_vertex.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_energy_V202.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_filter_kernel.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_network_V190.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_starts_and_counts_V200.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_strand_objects.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_vertices_V200.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_vessel_directions_V2.m` | — | 🚫 | Unmapped/Obsolete |
+| `get_vessel_directions_V5.m` | — | 🚫 | Unmapped/Obsolete |
+| `h52mat.m` | — | 🚫 | Unmapped/Obsolete |
+| `import_from_LPPD.m` | — | 🚫 | Unmapped/Obsolete |
+| `index2position.m` | — | 🚫 | Unmapped/Obsolete |
+| `input_from_LPPD.m` | — | 🚫 | Unmapped/Obsolete |
+| `kstest_wrapper.m` | — | 🚫 | Unmapped/Obsolete |
+| `length_histogram_plotter.m` | — | 🚫 | Unmapped/Obsolete |
+| `make_mask_from_registration.m` | — | 🚫 | Unmapped/Obsolete |
+| `mat2h5.m` | — | 🚫 | Unmapped/Obsolete |
+| `mat2tif.m` | — | 🚫 | Unmapped/Obsolete |
+| `network_histogram_plotter.m` | — | 🚫 | Unmapped/Obsolete |
+| `noise_sensitivity_study.m` | — | 🚫 | Unmapped/Obsolete |
+| `noise_sensitivity_study_V2.m` | — | 🚫 | Unmapped/Obsolete |
+| `output_to_LPPD.m` | — | 🚫 | Unmapped/Obsolete |
+| `paint_vertex_image.m` | — | 🚫 | Unmapped/Obsolete |
+| `pre_processing.m` | — | 🚫 | Unmapped/Obsolete |
+| `randomize_anatomy.m` | — | 🚫 | Unmapped/Obsolete |
+| `register_strands.m` | — | 🚫 | Unmapped/Obsolete |
+| `register_strands_script.m` | — | 🚫 | Unmapped/Obsolete |
+| `register_vector_sets.m` | — | 🚫 | Unmapped/Obsolete |
+| `registration_script_1D_example.m` | — | 🚫 | Unmapped/Obsolete |
+| `registration_script_test.m` | — | 🚫 | Unmapped/Obsolete |
+| `render_flow_field_V3.m` | — | 🚫 | Unmapped/Obsolete |
+| `render_flow_field_V4.m` | — | 🚫 | Unmapped/Obsolete |
+| `resample_vectors.m` | — | 🚫 | Unmapped/Obsolete |
+| `save_figures.m` | — | 🚫 | Unmapped/Obsolete |
+| `simpleFeatureArray.m` | — | 🚫 | Unmapped/Obsolete |
+| `smooth_edges.m` | — | 🚫 | Unmapped/Obsolete |
+| `smooth_edges_V2.m` | — | 🚫 | Unmapped/Obsolete |
+| `smooth_hist.m` | — | 🚫 | Unmapped/Obsolete |
+| `sort_edges.m` | — | 🚫 | Unmapped/Obsolete |
+| `sort_network_V180.m` | — | 🚫 | Unmapped/Obsolete |
+| `strand2casx.m` | — | 🚫 | Unmapped/Obsolete |
+| `strand2vmv.m` | — | 🚫 | Unmapped/Obsolete |
+| `subsample_vectors.m` | — | 🚫 | Unmapped/Obsolete |
+| `test_random_anatomy_generation.m` | — | 🚫 | Unmapped/Obsolete |
+| `test_strand_casX_conversion.m` | — | 🚫 | Unmapped/Obsolete |
+| `transform_vector_set.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_2017MMDD_TxRed_chronic.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Alankrit.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Anna.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Annie.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Annie_2.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Annie_3.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Annie_4.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Annie_5.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Blinder.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Chakameh_DVD.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Chakameh_OCT.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Dafna.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Linninger.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_MGB_Broderick.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_MGB_David.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_MGB_David_DVD.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_Shaun.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorization_script_michael.m` | — | 🚫 | Unmapped/Obsolete |
+| `vectorize_V190_20170315_MouseT326_session2_fused.m` | — | 🚫 | Unmapped/Obsolete |
