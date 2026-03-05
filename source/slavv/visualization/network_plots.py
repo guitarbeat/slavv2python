@@ -1887,3 +1887,169 @@ class NetworkVisualizer:
         savemat(output_path, data, do_compression=True)
         logger.info(f"MAT export complete: {output_path}")
         return output_path
+
+    def plot_length_weighted_histograms(
+        self,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        parameters: dict[str, Any],
+        number_of_bins: int = 50,
+    ) -> go.Figure:
+        """Create length-weighted histograms of radius, depth, and inclination.
+
+        Port of MATLAB's area_histogram_plotter.m. Converts edge fragments
+        into lengths, computes median/mean properties per segment, and weights
+        the histogram bins by length (in mm).
+
+        Parameters
+        ----------
+        vertices : Dict[str, Any]
+            Vertex data containing positions and radii.
+        edges : Dict[str, Any]
+            Edge data containing traces and connections.
+        parameters : Dict[str, Any]
+            Processing parameters containing voxel size.
+        number_of_bins : int, optional
+            Number of bins for histograms, by default 50.
+
+        Returns
+        -------
+        go.Figure
+            Multipane Plotly figure containing the three histograms.
+        """
+        microns_per_voxel = np.array(parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]))
+
+        lengths_mm = []
+        depths = []
+        radii = []
+        inclinations = []
+
+        v_radii = vertices.get("radii_microns", vertices.get("radii", []))
+        connections = edges.get("connections", [])
+
+        for i, trace in enumerate(edges.get("traces", [])):
+            trace_arr = np.array(trace)
+            if len(trace_arr) < 2:
+                continue
+
+            # physical units
+            trace_phys = trace_arr * microns_per_voxel
+
+            # segment differences
+            diffs = np.diff(trace_phys, axis=0)
+            seg_lengths = np.linalg.norm(diffs, axis=1)
+
+            # segment depth (Z-axis is index 2)
+            seg_depths = (trace_phys[:-1, 2] + trace_phys[1:, 2]) / 2.0
+
+            # inclination (abs dz / length) => [0, 1] component
+            valid = seg_lengths > 1e-6
+            seg_incls = np.zeros_like(seg_lengths)
+            seg_incls[valid] = np.abs(diffs[valid, 2]) / seg_lengths[valid]
+
+            # radius
+            r0, r1 = 0.0, 0.0
+            if len(v_radii) > 0 and i < len(connections):
+                v0, v1 = int(connections[i][0]), int(connections[i][1])
+                if 0 <= v0 < len(v_radii):
+                    r0 = v_radii[v0]
+                if 0 <= v1 < len(v_radii):
+                    r1 = v_radii[v1]
+
+            # interpolate radius along trace
+            cum_len = np.insert(np.cumsum(seg_lengths), 0, 0.0)
+            total_len = cum_len[-1]
+            if total_len > 1e-6:
+                seg_mids = (cum_len[:-1] + cum_len[1:]) / 2.0
+                seg_rads = r0 + (r1 - r0) * (seg_mids / total_len)
+            else:
+                seg_rads = np.full_like(seg_lengths, (r0 + r1) / 2.0)
+
+            lengths_mm.extend(seg_lengths / 1000.0)  # convert to mm for plotting
+            depths.extend(seg_depths)
+            radii.extend(seg_rads)
+            inclinations.extend(seg_incls)
+
+        fig = make_subplots(
+            rows=1,
+            cols=3,
+            subplot_titles=[
+                "Depth Distribution",
+                "Radius Distribution (log10)",
+                "Z-Axis Alignment",
+            ],
+            horizontal_spacing=0.1,
+        )
+
+        if len(lengths_mm) > 0:
+            lengths_arr = np.array(lengths_mm)
+            depths_arr = np.array(depths)
+            radii_arr = np.array(radii)
+            inclinations_arr = np.array(inclinations)
+
+            # Subplot 1: Depth
+            fig.add_trace(
+                go.Histogram(
+                    x=depths_arr,
+                    y=lengths_arr,
+                    histfunc="sum",
+                    nbinsx=number_of_bins,
+                    name="Depth",
+                    marker_color="teal",
+                    hovertemplate="Depth: %{x:.1f} μm<br>Length: %{y:.2f} mm<extra></extra>",
+                ),
+                row=1,
+                col=1,
+            )
+
+            # Subplot 2: Radius (log10 x-axis)
+            valid_r = radii_arr > 0
+            log_radii = np.log10(radii_arr[valid_r])
+            fig.add_trace(
+                go.Histogram(
+                    x=log_radii,
+                    y=lengths_arr[valid_r],
+                    histfunc="sum",
+                    nbinsx=number_of_bins,
+                    name="Radius",
+                    marker_color="coral",
+                    hovertemplate="Log10 Radius: %{x:.2f}<br>Length: %{y:.2f} mm<extra></extra>",
+                ),
+                row=1,
+                col=2,
+            )
+
+            # Subplot 3: Inclination
+            fig.add_trace(
+                go.Histogram(
+                    x=inclinations_arr,
+                    y=lengths_arr,
+                    histfunc="sum",
+                    nbinsx=number_of_bins,
+                    name="Alignment",
+                    marker_color="mediumpurple",
+                    hovertemplate="Alignment [0-1]: %{x:.2f}<br>Length: %{y:.2f} mm<extra></extra>",
+                ),
+                row=1,
+                col=3,
+            )
+
+        # Layout refinements
+        fig.update_xaxes(title_text="Depth (μm)", row=1, col=1)
+        fig.update_yaxes(title_text="Total Length (mm)", row=1, col=1)
+
+        fig.update_xaxes(title_text="Radius (μm) [10^x]", row=1, col=2)
+        fig.update_yaxes(title_text="Total Length (mm)", row=1, col=2)
+
+        fig.update_xaxes(title_text="Orientation [Component vs Z]", range=[0, 1], row=1, col=3)
+        fig.update_yaxes(title_text="Total Length (mm)", row=1, col=3)
+
+        fig.update_layout(
+            title_text="Length-Weighted Histograms",
+            showlegend=False,
+            height=400,
+            width=1000,
+            bargap=0.05,
+        )
+
+        return fig

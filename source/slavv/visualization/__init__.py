@@ -14,7 +14,10 @@ logger = logging.getLogger(__name__)
 try:
     from .network_plots import NetworkVisualizer
 
-    __all__ = ["NetworkVisualizer"]
+    __all__ = [
+        "NetworkVisualizer",
+        "plot_length_weighted_histograms",
+    ]
 except ImportError as e:
     logger.warning(f"Visualization module unavailable (missing dependencies): {e}")
     NetworkVisualizer = None

@@ -142,7 +142,7 @@
 | `calculate_center_of_area.m` | `analysis/geometry.py` | 🔀 | |
 | `calculate_image_statistics_from_binary.m` | `analysis/geometry.py` | 🔀 | Logic covered by `calculate_image_stats` |
 | `calculate_image_stats.m` | `analysis/geometry.py` | ✅ | Ported `calculate_image_stats` |
-| `area_histogram_plotter.m` | — | ⬜ | Plotting utility |
+| `area_histogram_plotter.m` | `visualization/network_plots.py` | ✅ | Ported `plot_length_weighted_histograms` |
 | `weighted_KStest2.m` | `utils/math.py` (`weighted_ks_test`) | ✅ | |
 | `fourier_transform_V2.m` | `utils/math.py` | ✅ | Ported `fourier_transform_even` |
 | `fix_intensity_bands.m` | `utils/preprocessing.py` | 🔀 | |
