@@ -176,7 +176,7 @@ def main():
             "🤖 ML Curation",
             "📊 Visualization",
             "📈 Analysis",
-            "ℹ️ About",
+            "Info: About",
         ],
     )
 
@@ -191,7 +191,7 @@ def main():
         show_visualization_page()
     elif page == "📈 Analysis":
         show_analysis_page()
-    elif page == "ℹ️ About":
+    elif page == "Info: About":
         show_about_page()
 
 
@@ -286,7 +286,7 @@ def show_processing_page():
 
     # Processing parameters
     st.markdown('<h3 class="section-header">Processing Parameters</h3>', unsafe_allow_html=True)
-    with st.popover("ℹ️ Parameter tips", width=300):
+    with st.popover("Parameter tips", width=300):
         st.write(
             "Use the tabs below to adjust microscopy, vessel size, processing, "
             "and advanced options. Defaults are provided for typical datasets."

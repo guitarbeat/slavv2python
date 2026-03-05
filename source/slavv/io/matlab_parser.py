@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-
-from __future__ import annotations
-
 """
 MATLAB Output Parser for SLAVV Vectorization Results
 
@@ -9,6 +6,8 @@ This module loads and extracts data from MATLAB .mat files produced by vectorize
 It handles the structure of MATLAB batch output folders and provides utilities to
 extract vertices, edges, network statistics, and timing information.
 """
+
+from __future__ import annotations
 
 import json
 import logging

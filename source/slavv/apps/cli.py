@@ -20,7 +20,7 @@ def _build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser."""
     parser = argparse.ArgumentParser(
         prog="slavv",
-        description="SLAVV – Segmentation-Less, Automated, Vascular Vectorization",
+        description="SLAVV - Segmentation-Less, Automated, Vascular Vectorization",
     )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
     subparsers = parser.add_subparsers(dest="command")

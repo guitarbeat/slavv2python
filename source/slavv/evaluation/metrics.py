@@ -152,12 +152,15 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
     if python_traces:
         python_total_length = 0.0
         for trace in python_traces:
-            if isinstance(trace, np.ndarray) and trace.size > 0:
-                # Calculate path length
-                if trace.ndim == 2 and trace.shape[0] > 1:
-                    diffs = np.diff(trace[:, :3], axis=0)
-                    lengths = np.sqrt(np.sum(diffs**2, axis=1))
-                    python_total_length += np.sum(lengths)
+            if (
+                isinstance(trace, np.ndarray)
+                and trace.size > 0
+                and trace.ndim == 2
+                and trace.shape[0] > 1
+            ):
+                diffs = np.diff(trace[:, :3], axis=0)
+                lengths = np.sqrt(np.sum(diffs**2, axis=1))
+                python_total_length += np.sum(lengths)
 
         comparison["total_length"]["python"] = float(python_total_length)
 

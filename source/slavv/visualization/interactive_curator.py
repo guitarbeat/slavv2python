@@ -41,10 +41,10 @@ logger = logging.getLogger(__name__)
 class InteractiveCurator(QMainWindow):
     """
     4-Panel GCI Window.
-    Panel 1 (Top-Left):  Volume Map – 3D bounding-box context + current FOV highlight
-    Panel 2 (Top-Right): Volume Display – 2D MIP with curation controls
-    Panel 3 (Bot-Left):  Intensity Histogram – pixel distribution + brightness/contrast
-    Panel 4 (Bot-Right): Energy Histogram – object energy distribution + threshold line
+    Panel 1 (Top-Left):  Volume Map - 3D bounding-box context + current FOV highlight
+    Panel 2 (Top-Right): Volume Display - 2D MIP with curation controls
+    Panel 3 (Bot-Left):  Intensity Histogram - pixel distribution + brightness/contrast
+    Panel 4 (Bot-Right): Energy Histogram - object energy distribution + threshold line
     """
 
     def __init__(self, energy_data, vertices_data, edges_data=None, parent=None):
@@ -97,14 +97,14 @@ class InteractiveCurator(QMainWindow):
         # ── Top row (Volume Map | Volume Display) ─────────────────────────
         top_split = QSplitter(Qt.Horizontal)
 
-        # Panel 1 – Volume Map
+        # Panel 1 - Volume Map
         map_grp = QGroupBox("1. Volume Map (Context)")
         map_lay = QVBoxLayout()
         self.plotter_map = QtInteractor(self)
         map_lay.addWidget(self.plotter_map.interactor)
         map_grp.setLayout(map_lay)
 
-        # Panel 2 – Volume Display
+        # Panel 2 - Volume Display
         disp_grp = QGroupBox("2. Volume Display (Curation)")
         disp_lay = QVBoxLayout()
         self.plotter_display = QtInteractor(self)
@@ -160,7 +160,7 @@ class InteractiveCurator(QMainWindow):
         # ── Bottom row (Intensity Histogram | Energy Histogram) ──────────
         bot_split = QSplitter(Qt.Horizontal)
 
-        # Panel 3 – Intensity Histogram
+        # Panel 3 - Intensity Histogram
         int_grp = QGroupBox("3. Intensity Histogram")
         int_lay = QVBoxLayout()
         self.hist_intensity = pg.PlotWidget()
@@ -169,7 +169,7 @@ class InteractiveCurator(QMainWindow):
         int_lay.addWidget(self.hist_intensity)
         int_grp.setLayout(int_lay)
 
-        # Panel 4 – Energy Histogram
+        # Panel 4 - Energy Histogram
         eng_grp = QGroupBox("4. Energy Histogram (drag red line to threshold)")
         eng_lay = QVBoxLayout()
         self.hist_energy = pg.PlotWidget()
@@ -260,7 +260,7 @@ class InteractiveCurator(QMainWindow):
         t = self.current_thickness
         gy, gx, gz = self.grid_shape
 
-        # ── Panel 1 – Volume Map ─────────────────────────────────────────
+        # -- Panel 1 - Volume Map ─────────────────────────────────────────
         self.plotter_map.clear()
         full_box = pv.Box(bounds=(0, gx, 0, gy, 0, gz))
         self.plotter_map.add_mesh(full_box, style="wireframe", color="white", line_width=2)
@@ -275,7 +275,7 @@ class InteractiveCurator(QMainWindow):
         self.plotter_map.add_mesh(slice_box, color="red", opacity=0.3)
         self.plotter_map.view_isometric()
 
-        # ── Panel 2 – Volume Display ─────────────────────────────────────
+        # -- Panel 2 - Volume Display ─────────────────────────────────────
         self.plotter_display.clear()
 
         # --- Vertices ---

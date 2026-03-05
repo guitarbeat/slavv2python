@@ -608,14 +608,14 @@ class MLCurator:
         edge_features_list = []
         edge_labels_list = []
 
-        for results, annotations in zip(processing_results, manual_annotations):
+        for results, annot in zip(processing_results, manual_annotations):
             # Extract vertex features and labels
             v_features = self.extract_vertex_features(
                 results["vertices"],
                 results["energy_data"],
                 results.get("image_shape", (100, 100, 50)),
             )
-            v_labels = annotations.get("vertex_labels", np.ones(len(v_features)))
+            v_labels = annot.get("vertex_labels", np.ones(len(v_features)))
 
             vertex_features_list.append(v_features)
             vertex_labels_list.append(v_labels)
@@ -862,24 +862,26 @@ class DrewsCurator:
 
             if i < len(connections) and len(vertex_positions) > 0:
                 start_idx, end_idx = connections[i]
-                if isinstance(start_idx, (int, np.integer)) and 0 <= int(start_idx) < len(
-                    vertex_positions
-                ):
-                    if (
+                if (
+                    isinstance(start_idx, (int, np.integer))
+                    and 0 <= int(start_idx) < len(vertex_positions)
+                    and (
                         np.linalg.norm(trace_arr[0] - vertex_positions[int(start_idx)])
                         > max_endpoint_gap
-                    ):
-                        keep_mask[i] = False
-                        continue
-                if isinstance(end_idx, (int, np.integer)) and 0 <= int(end_idx) < len(
-                    vertex_positions
+                    )
                 ):
-                    if (
+                    keep_mask[i] = False
+                    continue
+                if (
+                    isinstance(end_idx, (int, np.integer))
+                    and 0 <= int(end_idx) < len(vertex_positions)
+                    and (
                         np.linalg.norm(trace_arr[-1] - vertex_positions[int(end_idx)])
                         > max_endpoint_gap
-                    ):
-                        keep_mask[i] = False
-                        continue
+                    )
+                ):
+                    keep_mask[i] = False
+                    continue
 
         keep_indices = np.flatnonzero(keep_mask)
         curated: dict[str, Any] = {}

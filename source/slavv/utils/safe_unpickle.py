@@ -14,7 +14,7 @@ import logging
 import lzma
 import os
 import pickle
-from typing import Any, Union
+from typing import Any, ClassVar, Union
 
 from joblib.numpy_pickle import NumpyUnpickler
 
@@ -31,7 +31,7 @@ class SafeNumpyUnpickler(NumpyUnpickler):
     Inherits from joblib.numpy_pickle.NumpyUnpickler to support joblib dumps.
     """
 
-    SAFE_MODULES = {
+    SAFE_MODULES: ClassVar[set[str]] = {
         "numpy",
         "sklearn",
         "joblib",

@@ -22,7 +22,7 @@ def weighted_ks_test(
     weights1: np.ndarray | None = None,
     weights2: np.ndarray | None = None,
 ) -> float:
-    """Compute the two-sample weighted Kolmogorov–Smirnov statistic."""
+    """Compute the two-sample weighted Kolmogorov-Smirnov statistic."""
     sample1 = np.asarray(sample1)
     sample2 = np.asarray(sample2)
     w1 = (
