@@ -1,20 +1,19 @@
 """System information utilities for performance benchmarking."""
 
+from __future__ import annotations
+
 import platform
 from datetime import datetime
 from typing import Any, Optional
 
 
 def get_system_info() -> dict[str, Any]:
-    """
+    """Capture comprehensive system information for benchmarking.
 
-    from __future__ import annotations
-        Capture comprehensive system information for benchmarking.
-
-        Returns
-        -------
-        dict
-            System information including CPU, memory, GPU, OS, and software versions.
+    Returns
+    -------
+    dict
+        System information including CPU, memory, GPU, OS, and software versions.
     """
     info = {
         "cpu": _get_cpu_info(),
