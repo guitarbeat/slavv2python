@@ -67,6 +67,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.4.0",
+    "mypy>=1.8.0",
 ]
 all = [
     "streamlit>=1.20.0",
@@ -78,6 +79,7 @@ all = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.4.0",
+    "mypy>=1.8.0",
 ]
 
 [project.urls]
@@ -120,3 +122,59 @@ filterwarnings = [
     "ignore:.*np.bool.*:DeprecationWarning",
     "ignore:.*np.float.*:DeprecationWarning",
 ]
+
+# ── Ruff (linter + formatter) ───────────────────────────────────────────────
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+src = ["source", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort (import ordering)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+    "C4",     # flake8-comprehensions
+    "PIE",    # flake8-pie
+    "PT",     # flake8-pytest-style
+    "RET",    # flake8-return
+    "TCH",    # flake8-type-checking
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B905",   # zip() without strict= (needs >=3.10)
+    "UP007",  # use X | Y for union types (needs >=3.10)
+    "RET504", # unnecessary assignment before return
+    "SIM108", # use ternary — sometimes less readable
+    "N803",   # argument name uppercase — common in scientific code
+    "N806",   # variable name uppercase — common in scientific code
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["slavv"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ── Mypy (static type checking) ─────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.9"
+mypy_path = "source"
+packages = ["slavv"]
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_untyped_defs = false      # gradual typing: allow untyped for now
+check_untyped_defs = true          # still check bodies of untyped functions
+ignore_missing_imports = true      # don't error on 3rd-party stubs
+show_error_codes = true
+pretty = true
+

@@ -1,7 +1,11 @@
 """
 Mathematical helper functions for SLAVV.
 """
+
+from __future__ import annotations
+
 from typing import Optional
+
 import numpy as np
 import scipy.fft
 
@@ -23,8 +27,16 @@ def weighted_ks_test(
     """Compute the two-sample weighted Kolmogorov–Smirnov statistic."""
     sample1 = np.asarray(sample1)
     sample2 = np.asarray(sample2)
-    w1 = np.ones_like(sample1, dtype=float) if weights1 is None else np.asarray(weights1, dtype=float)
-    w2 = np.ones_like(sample2, dtype=float) if weights2 is None else np.asarray(weights2, dtype=float)
+    w1 = (
+        np.ones_like(sample1, dtype=float)
+        if weights1 is None
+        else np.asarray(weights1, dtype=float)
+    )
+    w2 = (
+        np.ones_like(sample2, dtype=float)
+        if weights2 is None
+        else np.asarray(weights2, dtype=float)
+    )
 
     if sample1.size == 0 or sample2.size == 0:
         return 0.0
@@ -53,14 +65,14 @@ def weighted_ks_test(
 
 def fourier_transform_even(image: np.ndarray) -> np.ndarray:
     """Pad an image to the next even dimensions and compute its N-dimensional FFT.
-    
+
     Matches the logic of `fourier_transform_V2.m`.
     """
     arr = np.asarray(image)
     shape = np.array(arr.shape)
     next_even_shape = 2 * np.ceil((shape + 1) / 2).astype(int)
-    
+
     pad_width = [(0, e - s) for s, e in zip(shape, next_even_shape)]
-    padded_image = np.pad(arr, pad_width, mode='symmetric')
-    
+    padded_image = np.pad(arr, pad_width, mode="symmetric")
+
     return scipy.fft.fftn(padded_image)

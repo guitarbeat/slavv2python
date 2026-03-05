@@ -1,21 +1,25 @@
-
 """
 Geometric operations and network statistics for SLAVV.
 Handles registration, spatial metrics, and statistical analysis of the vascular network.
 """
-import numpy as np
-import networkx as nx
-from scipy.spatial import cKDTree
-from scipy.ndimage import gaussian_filter1d
+
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any, Optional
+
+import networkx as nx
+import numpy as np
+from scipy.ndimage import gaussian_filter1d
+from scipy.spatial import cKDTree
 
 logger = logging.getLogger(__name__)
+
 
 def calculate_image_stats(
     image: np.ndarray,
     mask: np.ndarray,
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     """Calculate mean and standard deviation of an image inside and outside a mask.
     Returns (mean_in, std_in, mean_out, std_out).
     """
@@ -23,68 +27,69 @@ def calculate_image_stats(
     mask_arr = np.asarray(mask, dtype=bool)
     if img_arr.shape != mask_arr.shape:
         raise ValueError("Image and mask must have the same shape")
-        
+
     inside_vals = img_arr[mask_arr]
     outside_vals = img_arr[~mask_arr]
-    
+
     mean_in = float(np.mean(inside_vals)) if inside_vals.size > 0 else 0.0
     std_in = float(np.std(inside_vals)) if inside_vals.size > 0 else 0.0
-    
+
     mean_out = float(np.mean(outside_vals)) if outside_vals.size > 0 else 0.0
     std_out = float(np.std(outside_vals)) if outside_vals.size > 0 else 0.0
-    
+
     return mean_in, std_in, mean_out, std_out
 
 
 def evaluate_registration(
     vectors_after: np.ndarray,
     vectors_before: np.ndarray,
-) -> Tuple[float, np.ndarray, np.ndarray]:
+) -> tuple[float, np.ndarray, np.ndarray]:
     """Evaluate registration by finding pairwise best match scores between vector sets."""
     V_after = np.asarray(vectors_after, dtype=float)
     V_before = np.asarray(vectors_before, dtype=float)
-    
+
     if V_after.ndim != 2 or V_before.ndim != 2:
-         raise ValueError("Vectors must be 2D arrays")
-         
+        raise ValueError("Vectors must be 2D arrays")
+
     if V_after.size == 0 or V_before.size == 0:
-         return 0.0, np.array([]), np.array([])
-         
+        return 0.0, np.array([]), np.array([])
+
     # Compute normalized vectors for angular similarity
     norms_after = np.linalg.norm(V_after, axis=1, keepdims=True)
     norms_before = np.linalg.norm(V_before, axis=1, keepdims=True)
-    
+
     # Avoid division by zero
     norms_after[norms_after == 0] = 1.0
     norms_before[norms_before == 0] = 1.0
-    
+
     # Normalized sets
     N_after = V_after / norms_after
     N_before = V_before / norms_before
-    
+
     # Pairwise cosine similarity matrix
     sim_matrix = np.clip(N_before @ N_after.T, -1.0, 1.0)
-    
+
     # Find max similarity per vector in both directions
-    best_before2after = np.max(sim_matrix, axis=1) # best match in AFTER for each vector in BEFORE
-    best_after2before = np.max(sim_matrix, axis=0) # best match in BEFORE for each vector in AFTER
-    
+    best_before2after = np.max(sim_matrix, axis=1)  # best match in AFTER for each vector in BEFORE
+    best_after2before = np.max(sim_matrix, axis=0)  # best match in BEFORE for each vector in AFTER
+
     # Combine (similar to MATLAB `reg_score = sum(...) * sum(...)`)
     reg_score = float(np.sum(best_before2after) * np.sum(best_after2before))
-    
+
     return reg_score, best_before2after, best_after2before
 
+
 def calculate_branching_angles(
-    strands: List[List[int]],
+    strands: list[list[int]],
     vertex_positions: np.ndarray,
-    microns_per_voxel: List[float],
+    microns_per_voxel: list[float],
     bifurcations: np.ndarray,
-) -> List[float]:
+) -> list[float]:
     """Compute pairwise angles at each bifurcation."""
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     scale = np.asarray(microns_per_voxel, dtype=float)
-    bifurcations = set(int(b) for b in np.asarray(bifurcations, dtype=int))
-    directions: Dict[int, List[np.ndarray]] = {}
+    bifurcations = {int(b) for b in np.asarray(bifurcations, dtype=int)}
+    directions: dict[int, list[np.ndarray]] = {}
 
     for strand in strands:
         if len(strand) < 2:
@@ -100,7 +105,7 @@ def calculate_branching_angles(
         if end in bifurcations:
             directions.setdefault(end, []).append(vec_end)
 
-    angles: List[float] = []
+    angles: list[float] = []
     for v in directions:
         vecs = [vec for vec in directions[v] if np.linalg.norm(vec) > 0]
         if len(vecs) < 2:
@@ -113,13 +118,20 @@ def calculate_branching_angles(
                 norm_b = np.linalg.norm(direction_vec_b)
                 if norm_a == 0 or norm_b == 0:
                     continue
-                cosang = np.clip(np.dot(direction_vec_a, direction_vec_b) / (norm_a * norm_b), -1.0, 1.0)
+                cosang = np.clip(
+                    np.dot(direction_vec_a, direction_vec_b) / (norm_a * norm_b), -1.0, 1.0
+                )
                 angles.append(float(np.degrees(np.arccos(cosang))))
 
     return angles
 
-def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarray,
-                           radii: np.ndarray, microns_per_voxel: List[float]) -> float:
+
+def calculate_surface_area(
+    strands: list[list[int]],
+    vertex_positions: np.ndarray,
+    radii: np.ndarray,
+    microns_per_voxel: list[float],
+) -> float:
     """Compute total vessel surface area."""
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     radii = np.asarray(radii, dtype=float)
@@ -140,8 +152,13 @@ def calculate_surface_area(strands: List[List[int]], vertex_positions: np.ndarra
 
     return float(total_area)
 
-def calculate_vessel_volume(strands: List[List[int]], vertex_positions: np.ndarray,
-                            radii: np.ndarray, microns_per_voxel: List[float]) -> float:
+
+def calculate_vessel_volume(
+    strands: list[list[int]],
+    vertex_positions: np.ndarray,
+    radii: np.ndarray,
+    microns_per_voxel: list[float],
+) -> float:
     """Compute total vessel volume."""
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     radii = np.asarray(radii, dtype=float)
@@ -162,6 +179,7 @@ def calculate_vessel_volume(strands: List[List[int]], vertex_positions: np.ndarr
 
     return float(total_volume)
 
+
 def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarray:
     """Return indices of edges incident to a given vertex."""
     connections = np.asarray(connections)
@@ -169,6 +187,7 @@ def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarr
         return np.empty((0,), dtype=int)
     mask = (connections[:, 0] == vertex_index) | (connections[:, 1] == vertex_index)
     return np.flatnonzero(mask)
+
 
 def get_edge_metric(
     trace: np.ndarray,
@@ -199,6 +218,7 @@ def get_edge_metric(
     # Fallback
     return float(np.mean(samples))
 
+
 def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
     """Resample a polyline trace at approximately uniform arc-length spacing."""
     pts = np.asarray(trace, dtype=float)
@@ -216,9 +236,10 @@ def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
         out[:, d] = np.interp(targets, arclen, pts[:, d])
     return out
 
-def smooth_edge_traces(traces: List[np.ndarray], sigma: float = 1.0) -> List[np.ndarray]:
+
+def smooth_edge_traces(traces: list[np.ndarray], sigma: float = 1.0) -> list[np.ndarray]:
     """Smooth each polyline trace with a 1D Gaussian along its path."""
-    smoothed: List[np.ndarray] = []
+    smoothed: list[np.ndarray] = []
     for t in traces:
         arr = np.asarray(t, dtype=float)
         if arr.ndim != 2 or arr.shape[0] < 3:
@@ -230,13 +251,14 @@ def smooth_edge_traces(traces: List[np.ndarray], sigma: float = 1.0) -> List[np.
         smoothed.append(out)
     return smoothed
 
+
 def transform_vector_set(
     positions: np.ndarray,
     *,
     matrix: Optional[np.ndarray] = None,
-    scale: Optional[List[float]] = None,
+    scale: Optional[list[float]] = None,
     rotation: Optional[np.ndarray] = None,
-    translate: Optional[List[float]] = None,
+    translate: Optional[list[float]] = None,
 ) -> np.ndarray:
     """Apply geometric transforms to a set of positions."""
     pts = np.asarray(positions, dtype=float)
@@ -267,6 +289,7 @@ def transform_vector_set(
         out = out + t
     return out
 
+
 def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
     """Subsample a polyline by keeping every ``step``-th point."""
     arr = np.asarray(trace)
@@ -277,6 +300,7 @@ def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
         idx = np.r_[idx, arr.shape[0] - 1]
     return arr[idx]
 
+
 def icp_register_rigid(
     source: np.ndarray,
     target: np.ndarray,
@@ -284,7 +308,7 @@ def icp_register_rigid(
     with_scale: bool = False,
     max_iters: int = 50,
     tol: float = 1e-6,
-) -> Tuple[np.ndarray, float]:
+) -> tuple[np.ndarray, float]:
     """Iterative closest point (rigid) registration using Kabsch per iteration."""
     X = np.asarray(source, dtype=float)
     Y = np.asarray(target, dtype=float)
@@ -304,7 +328,7 @@ def icp_register_rigid(
 
     for _ in range(max_iters):
         Xp = (X @ R.T) * s + t
-        dists, idx = tree.query(Xp, k=1)
+        _dists, idx = tree.query(Xp, k=1)
         Ymatch = Y[idx]
 
         Xm = X
@@ -319,7 +343,7 @@ def icp_register_rigid(
             Rk = Vt.T @ U.T
         sk = 1.0
         if with_scale:
-            denom = np.sum(Xc ** 2)
+            denom = np.sum(Xc**2)
             if denom > 0:
                 sk = float(np.sum(Svals) / denom)
         tk = Ym.mean(axis=0) - sk * (Rk @ Xm.mean(axis=0))
@@ -339,6 +363,7 @@ def icp_register_rigid(
     T[:3, :3] = s * R
     T[:3, 3] = t
     return T, prev_err
+
 
 def register_vector_sets(
     source: np.ndarray,
@@ -365,7 +390,7 @@ def register_vector_sets(
         T = np.eye(4)
         T[:3, :3] = A[:3, :].T
         T[:3, 3] = A[3, :]
-        Xp = (Xh @ A)
+        Xp = Xh @ A
         err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
         return (T, err) if return_error else T
 
@@ -383,7 +408,7 @@ def register_vector_sets(
         R = Vt.T @ U.T
     s = 1.0
     if with_scale:
-        denom = np.sum(Xc ** 2)
+        denom = np.sum(Xc**2)
         if denom > 0:
             s = float(np.sum(S) / denom)
     t = muY - s * (R @ muX)
@@ -393,6 +418,7 @@ def register_vector_sets(
     Xp = (np.c_[X, np.ones((num_points, 1))] @ T.T)[:, :3]
     err = float(np.sqrt(np.mean(np.sum((Xp - Y) ** 2, axis=1))))
     return (T, err) if return_error else T
+
 
 def register_strands(
     vertices_a: np.ndarray,
@@ -404,7 +430,7 @@ def register_strands(
     with_scale: bool = False,
     match_threshold: float = 2.0,
     max_iters: int = 50,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Register and merge two networks (A onto B) and return the merged result."""
     Va = np.asarray(vertices_a, dtype=float)
     Vb = np.asarray(vertices_b, dtype=float)
@@ -442,50 +468,62 @@ def register_strands(
 
     merged_vertices_arr = np.asarray(merged_vertices, dtype=float)
 
-    edges_a_mapped = np.vstack([
-        np.minimum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
-        np.maximum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
-    ]).T
+    edges_a_mapped = np.vstack(
+        [
+            np.minimum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
+            np.maximum(a_to_merged[Ea[:, 0]], a_to_merged[Ea[:, 1]]),
+        ]
+    ).T
 
-    edges_b_norm = np.vstack([
-        np.minimum(Eb[:, 0], Eb[:, 1]),
-        np.maximum(Eb[:, 0], Eb[:, 1]),
-    ]).T
+    edges_b_norm = np.vstack(
+        [
+            np.minimum(Eb[:, 0], Eb[:, 1]),
+            np.maximum(Eb[:, 0], Eb[:, 1]),
+        ]
+    ).T
 
     all_edges = np.vstack([edges_b_norm, edges_a_mapped])
     mask = all_edges[:, 0] != all_edges[:, 1]
     all_edges = all_edges[mask]
     if all_edges.size:
-        view = np.ascontiguousarray(all_edges).view([("a", all_edges.dtype), ("b", all_edges.dtype)])
+        view = np.ascontiguousarray(all_edges).view(
+            [("a", all_edges.dtype), ("b", all_edges.dtype)]
+        )
         _, idx_unique = np.unique(view, return_index=True)
         merged_edges = all_edges[np.sort(idx_unique)]
     else:
         merged_edges = all_edges
 
-    return {"vertices": merged_vertices_arr, "edges": merged_edges.astype(int), "transform": T, "rms": rms}
+    return {
+        "vertices": merged_vertices_arr,
+        "edges": merged_edges.astype(int),
+        "transform": T,
+        "rms": rms,
+    }
+
 
 def calculate_network_statistics(
-    strands: List[List[int]],
+    strands: list[list[int]],
     bifurcations: np.ndarray,
     vertex_positions: np.ndarray,
     radii: np.ndarray,
-    microns_per_voxel: List[float],
-    image_shape: Tuple[int, ...],
+    microns_per_voxel: list[float],
+    image_shape: tuple[int, ...],
     edge_energies: Optional[np.ndarray] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Calculate aggregate metrics for a traced vascular network."""
     stats = {}
-    
-    stats['num_strands'] = len(strands)
-    stats['num_bifurcations'] = len(bifurcations)
-    stats['num_vertices'] = len(vertex_positions)
-    
+
+    stats["num_strands"] = len(strands)
+    stats["num_bifurcations"] = len(bifurcations)
+    stats["num_vertices"] = len(vertex_positions)
+
     G = nx.Graph()
     G.add_nodes_from(range(len(vertex_positions)))
-    strand_lengths: List[float] = []
-    edge_lengths: List[float] = []
-    edge_radii: List[float] = []
-    tortuosities: List[float] = []
+    strand_lengths: list[float] = []
+    edge_lengths: list[float] = []
+    edge_radii: list[float] = []
+    tortuosities: list[float] = []
     for strand in strands:
         if len(strand) > 1:
             length = 0.0
@@ -506,166 +544,177 @@ def calculate_network_statistics(
                 tortuosities.append(length / euclidean)
 
     if strand_lengths:
-        stats['mean_strand_length'] = np.mean(strand_lengths)
-        stats['total_length'] = np.sum(strand_lengths)
-        stats['strand_length_std'] = np.std(strand_lengths)
+        stats["mean_strand_length"] = np.mean(strand_lengths)
+        stats["total_length"] = np.sum(strand_lengths)
+        stats["strand_length_std"] = np.std(strand_lengths)
     else:
-        stats['mean_strand_length'] = 0
-        stats['total_length'] = 0
-        stats['strand_length_std'] = 0
+        stats["mean_strand_length"] = 0
+        stats["total_length"] = 0
+        stats["strand_length_std"] = 0
 
     if tortuosities:
-        stats['mean_tortuosity'] = np.mean(tortuosities)
-        stats['tortuosity_std'] = np.std(tortuosities)
+        stats["mean_tortuosity"] = np.mean(tortuosities)
+        stats["tortuosity_std"] = np.std(tortuosities)
     else:
-        stats['mean_tortuosity'] = 0
-        stats['tortuosity_std'] = 0
+        stats["mean_tortuosity"] = 0
+        stats["tortuosity_std"] = 0
 
-    stats['num_edges'] = G.number_of_edges()
+    stats["num_edges"] = G.number_of_edges()
     degrees = [d for _, d in G.degree()]
     if degrees:
-        stats['mean_degree'] = float(np.mean(degrees))
-        stats['degree_std'] = float(np.std(degrees))
+        stats["mean_degree"] = float(np.mean(degrees))
+        stats["degree_std"] = float(np.std(degrees))
     else:
-        stats['mean_degree'] = 0.0
-        stats['degree_std'] = 0.0
+        stats["mean_degree"] = 0.0
+        stats["degree_std"] = 0.0
 
-    stats['num_connected_components'] = nx.number_connected_components(G)
-    stats['num_endpoints'] = sum(1 for _, d in G.degree() if d == 1)
-    pairwise_lengths: List[float] = []
+    stats["num_connected_components"] = nx.number_connected_components(G)
+    stats["num_endpoints"] = sum(1 for _, d in G.degree() if d == 1)
+    pairwise_lengths: list[float] = []
     for comp in nx.connected_components(G):
         sub = G.subgraph(comp)
         if sub.number_of_nodes() < 2:
             continue
-        for u, dist_map in nx.all_pairs_dijkstra_path_length(sub, weight='weight'):
+        for u, dist_map in nx.all_pairs_dijkstra_path_length(sub, weight="weight"):
             for v, dist in dist_map.items():
                 if u < v:
                     pairwise_lengths.append(dist)
     if pairwise_lengths:
-        stats['avg_path_length'] = float(np.mean(pairwise_lengths))
-        stats['network_diameter'] = float(np.max(pairwise_lengths))
+        stats["avg_path_length"] = float(np.mean(pairwise_lengths))
+        stats["network_diameter"] = float(np.max(pairwise_lengths))
     else:
-        stats['avg_path_length'] = 0.0
-        stats['network_diameter'] = 0.0
-    stats['clustering_coefficient'] = (
-        float(nx.average_clustering(G, weight='weight'))
-        if G.number_of_nodes() > 1
-        else 0.0
+        stats["avg_path_length"] = 0.0
+        stats["network_diameter"] = 0.0
+    stats["clustering_coefficient"] = (
+        float(nx.average_clustering(G, weight="weight")) if G.number_of_nodes() > 1 else 0.0
     )
 
-    betweenness = nx.betweenness_centrality(G, weight='weight')
+    betweenness = nx.betweenness_centrality(G, weight="weight")
     if betweenness:
         vals = np.fromiter(betweenness.values(), dtype=float)
-        stats['betweenness_mean'] = float(np.mean(vals))
-        stats['betweenness_std'] = float(np.std(vals))
+        stats["betweenness_mean"] = float(np.mean(vals))
+        stats["betweenness_std"] = float(np.std(vals))
     else:
-        stats['betweenness_mean'] = 0.0
-        stats['betweenness_std'] = 0.0
+        stats["betweenness_mean"] = 0.0
+        stats["betweenness_std"] = 0.0
 
-    closeness = nx.closeness_centrality(G, distance='weight')
+    closeness = nx.closeness_centrality(G, distance="weight")
     if closeness:
         cvals = np.fromiter(closeness.values(), dtype=float)
-        stats['closeness_mean'] = float(np.mean(cvals))
-        stats['closeness_std'] = float(np.std(cvals))
+        stats["closeness_mean"] = float(np.mean(cvals))
+        stats["closeness_std"] = float(np.std(cvals))
     else:
-        stats['closeness_mean'] = 0.0
-        stats['closeness_std'] = 0.0
+        stats["closeness_mean"] = 0.0
+        stats["closeness_std"] = 0.0
 
     eigen = (
-        nx.eigenvector_centrality(G, weight='weight', max_iter=1000)
+        nx.eigenvector_centrality(G, weight="weight", max_iter=1000)
         if G.number_of_nodes() > 0
         else {}
     )
     if eigen:
         evals = np.fromiter(eigen.values(), dtype=float)
-        stats['eigenvector_mean'] = float(np.mean(evals))
-        stats['eigenvector_std'] = float(np.std(evals))
+        stats["eigenvector_mean"] = float(np.mean(evals))
+        stats["eigenvector_std"] = float(np.std(evals))
     else:
-        stats['eigenvector_mean'] = 0.0
-        stats['eigenvector_std'] = 0.0
+        stats["eigenvector_mean"] = 0.0
+        stats["eigenvector_std"] = 0.0
 
-    stats['graph_density'] = float(nx.density(G))
+    stats["graph_density"] = float(nx.density(G))
 
     if edge_lengths:
-        stats['mean_edge_length'] = float(np.mean(edge_lengths))
-        stats['edge_length_std'] = float(np.std(edge_lengths))
+        stats["mean_edge_length"] = float(np.mean(edge_lengths))
+        stats["edge_length_std"] = float(np.std(edge_lengths))
     else:
-        stats['mean_edge_length'] = 0.0
-        stats['edge_length_std'] = 0.0
+        stats["mean_edge_length"] = 0.0
+        stats["edge_length_std"] = 0.0
 
     if edge_radii:
-        stats['mean_edge_radius'] = float(np.mean(edge_radii))
-        stats['edge_radius_std'] = float(np.std(edge_radii))
+        stats["mean_edge_radius"] = float(np.mean(edge_radii))
+        stats["edge_radius_std"] = float(np.std(edge_radii))
     else:
-        stats['mean_edge_radius'] = 0.0
-        stats['edge_radius_std'] = 0.0
+        stats["mean_edge_radius"] = 0.0
+        stats["edge_radius_std"] = 0.0
 
     angles = calculate_branching_angles(strands, vertex_positions, microns_per_voxel, bifurcations)
     if angles:
-        stats['mean_branch_angle'] = float(np.mean(angles))
-        stats['branch_angle_std'] = float(np.std(angles))
+        stats["mean_branch_angle"] = float(np.mean(angles))
+        stats["branch_angle_std"] = float(np.std(angles))
     else:
-        stats['mean_branch_angle'] = 0.0
-        stats['branch_angle_std'] = 0.0
-    
+        stats["mean_branch_angle"] = 0.0
+        stats["branch_angle_std"] = 0.0
+
     if len(radii) > 0:
-        stats['mean_radius'] = np.mean(radii)
-        stats['radius_std'] = np.std(radii)
-        stats['min_radius'] = np.min(radii)
-        stats['max_radius'] = np.max(radii)
+        stats["mean_radius"] = np.mean(radii)
+        stats["radius_std"] = np.std(radii)
+        stats["min_radius"] = np.min(radii)
+        stats["max_radius"] = np.max(radii)
 
     if edge_energies is not None and len(edge_energies) > 0:
-        stats['mean_edge_energy'] = float(np.mean(edge_energies))
-        stats['edge_energy_std'] = float(np.std(edge_energies))
+        stats["mean_edge_energy"] = float(np.mean(edge_energies))
+        stats["edge_energy_std"] = float(np.std(edge_energies))
     else:
-        stats['mean_edge_energy'] = 0.0
-        stats['edge_energy_std'] = 0.0
+        stats["mean_edge_energy"] = 0.0
+        stats["edge_energy_std"] = 0.0
 
     total_volume = calculate_vessel_volume(strands, vertex_positions, radii, microns_per_voxel)
     image_volume = np.prod(image_shape) * np.prod(microns_per_voxel)
-    stats['total_volume'] = total_volume
-    stats['volume_fraction'] = total_volume / image_volume if image_volume > 0 else 0
+    stats["total_volume"] = total_volume
+    stats["volume_fraction"] = total_volume / image_volume if image_volume > 0 else 0
 
     total_surface_area = calculate_surface_area(strands, vertex_positions, radii, microns_per_voxel)
-    stats['total_surface_area'] = total_surface_area
-    stats['surface_area_density'] = total_surface_area / image_volume if image_volume > 0 else 0
-    
-    stats['length_density'] = stats.get('total_length', 0) / image_volume if image_volume > 0 else 0
-    stats['bifurcation_density'] = len(bifurcations) / image_volume if image_volume > 0 else 0
-    stats['vertex_density'] = stats['num_vertices'] / image_volume if image_volume > 0 else 0
-    stats['edge_density'] = stats['num_edges'] / image_volume if image_volume > 0 else 0
+    stats["total_surface_area"] = total_surface_area
+    stats["surface_area_density"] = total_surface_area / image_volume if image_volume > 0 else 0
+
+    stats["length_density"] = stats.get("total_length", 0) / image_volume if image_volume > 0 else 0
+    stats["bifurcation_density"] = len(bifurcations) / image_volume if image_volume > 0 else 0
+    stats["vertex_density"] = stats["num_vertices"] / image_volume if image_volume > 0 else 0
+    stats["edge_density"] = stats["num_edges"] / image_volume if image_volume > 0 else 0
 
     return stats
 
-def crop_vertices(vertex_positions: np.ndarray,
-                  bounds: Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]) -> Tuple[np.ndarray, np.ndarray]:
+
+def crop_vertices(
+    vertex_positions: np.ndarray,
+    bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]],
+) -> tuple[np.ndarray, np.ndarray]:
     """Crop vertices to an axis-aligned bounding box."""
     vertex_positions = np.asarray(vertex_positions)
     bounds = np.asarray(bounds, dtype=float)
 
     mask = (
-        (vertex_positions[:, 0] >= bounds[0, 0]) & (vertex_positions[:, 0] <= bounds[0, 1]) &
-        (vertex_positions[:, 1] >= bounds[1, 0]) & (vertex_positions[:, 1] <= bounds[1, 1]) &
-        (vertex_positions[:, 2] >= bounds[2, 0]) & (vertex_positions[:, 2] <= bounds[2, 1])
+        (vertex_positions[:, 0] >= bounds[0, 0])
+        & (vertex_positions[:, 0] <= bounds[0, 1])
+        & (vertex_positions[:, 1] >= bounds[1, 0])
+        & (vertex_positions[:, 1] <= bounds[1, 1])
+        & (vertex_positions[:, 2] >= bounds[2, 0])
+        & (vertex_positions[:, 2] <= bounds[2, 1])
     )
     return vertex_positions[mask], mask
 
-def crop_edges(edge_indices: np.ndarray, vertex_mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+
+def crop_edges(edge_indices: np.ndarray, vertex_mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Remove edges whose endpoints are not both retained in ``vertex_mask``."""
     vertex_mask = np.asarray(vertex_mask, dtype=bool)
     keep = vertex_mask[edge_indices[:, 0]] & vertex_mask[edge_indices[:, 1]]
     return edge_indices[keep], keep
 
-def crop_vertices_by_mask(vertex_positions: np.ndarray, mask_volume: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+
+def crop_vertices_by_mask(
+    vertex_positions: np.ndarray, mask_volume: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Crop vertices by a 3D binary mask."""
     vertex_positions = np.asarray(vertex_positions)
     mask_volume = np.asarray(mask_volume, dtype=bool)
 
     coords = np.floor(vertex_positions).astype(int)
     in_bounds = (
-        (coords[:, 0] >= 0) & (coords[:, 0] < mask_volume.shape[0]) &
-        (coords[:, 1] >= 0) & (coords[:, 1] < mask_volume.shape[1]) &
-        (coords[:, 2] >= 0) & (coords[:, 2] < mask_volume.shape[2])
+        (coords[:, 0] >= 0)
+        & (coords[:, 0] < mask_volume.shape[0])
+        & (coords[:, 1] >= 0)
+        & (coords[:, 1] < mask_volume.shape[1])
+        & (coords[:, 2] >= 0)
+        & (coords[:, 2] < mask_volume.shape[2])
     )
 
     mask = np.zeros(len(vertex_positions), dtype=bool)
@@ -674,23 +723,23 @@ def crop_vertices_by_mask(vertex_positions: np.ndarray, mask_volume: np.ndarray)
     mask[valid_indices] = mask_volume[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
     return vertex_positions[mask], mask
 
+
 __all__ = [
     "calculate_branching_angles",
+    "calculate_image_stats",
+    "calculate_network_statistics",
     "calculate_surface_area",
     "calculate_vessel_volume",
-    "get_edges_for_vertex",
+    "crop_edges",
+    "crop_vertices",
+    "evaluate_registration",
     "get_edge_metric",
+    "get_edges_for_vertex",
+    "icp_register_rigid",
+    "register_strands",
+    "register_vector_sets",
     "resample_vectors",
     "smooth_edge_traces",
-    "transform_vector_set",
     "subsample_vectors",
-    "icp_register_rigid",
-    "register_vector_sets",
-    "register_strands",
-    "calculate_network_statistics",
-    "crop_vertices",
-    "crop_edges",
-    "evaluate_registration",
-    "calculate_image_stats",
+    "transform_vector_set",
 ]
-

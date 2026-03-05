@@ -5,6 +5,9 @@ Usage:
     slavv run -i volume.tif -o results/ --export csv json
     slavv info
 """
+
+from __future__ import annotations
+
 import argparse
 import logging
 import os
@@ -19,75 +22,83 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="slavv",
         description="SLAVV – Segmentation-Less, Automated, Vascular Vectorization",
     )
-    parser.add_argument(
-        "--version", action="store_true", help="Print version and exit"
-    )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
     subparsers = parser.add_subparsers(dest="command")
 
     # --- slavv run --------------------------------------------------------
-    run_parser = subparsers.add_parser(
-        "run", help="Run the SLAVV pipeline on a TIFF volume"
+    run_parser = subparsers.add_parser("run", help="Run the SLAVV pipeline on a TIFF volume")
+    run_parser.add_argument("-i", "--input", required=True, help="Path to input TIFF file")
+    run_parser.add_argument(
+        "-o",
+        "--output",
+        default="./slavv_output",
+        help="Output directory (default: ./slavv_output)",
     )
     run_parser.add_argument(
-        "-i", "--input", required=True, help="Path to input TIFF file"
+        "--checkpoint-dir", default=None, help="Checkpoint directory for resume support"
     )
     run_parser.add_argument(
-        "-o", "--output", default="./slavv_output", help="Output directory (default: ./slavv_output)"
+        "--energy-method",
+        choices=["hessian", "frangi", "sato"],
+        default="hessian",
+        help="Energy computation method (default: hessian)",
     )
     run_parser.add_argument(
-        "--checkpoint-dir", default=None,
-        help="Checkpoint directory for resume support"
+        "--edge-method",
+        choices=["tracing", "watershed"],
+        default="tracing",
+        help="Edge extraction method (default: tracing)",
     )
     run_parser.add_argument(
-        "--energy-method", choices=["hessian", "frangi", "sato"],
-        default="hessian", help="Energy computation method (default: hessian)"
+        "--vessel-radius",
+        type=float,
+        default=1.5,
+        help="Smallest vessel radius in microns (default: 1.5)",
     )
     run_parser.add_argument(
-        "--edge-method", choices=["tracing", "watershed"],
-        default="tracing", help="Edge extraction method (default: tracing)"
-    )
-    run_parser.add_argument(
-        "--vessel-radius", type=float, default=1.5,
-        help="Smallest vessel radius in microns (default: 1.5)"
-    )
-    run_parser.add_argument(
-        "--microns-per-voxel", type=float, nargs=3, default=[1.0, 1.0, 1.0],
+        "--microns-per-voxel",
+        type=float,
+        nargs=3,
+        default=[1.0, 1.0, 1.0],
         metavar=("Y", "X", "Z"),
-        help="Voxel size in microns (default: 1.0 1.0 1.0)"
+        help="Voxel size in microns (default: 1.0 1.0 1.0)",
     )
     run_parser.add_argument(
-        "--export", nargs="+", choices=["csv", "json", "mat"],
-        default=[], help="Export formats (can specify multiple)"
+        "--export",
+        nargs="+",
+        choices=["csv", "json", "mat"],
+        default=[],
+        help="Export formats (can specify multiple)",
     )
-    run_parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable debug logging"
-    )
+    run_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
 
     # --- slavv info -------------------------------------------------------
     subparsers.add_parser("info", help="Print version and system information")
 
     # --- slavv import-matlab ----------------------------------------------
     imp_parser = subparsers.add_parser(
-        "import-matlab",
-        help="Import a MATLAB batch_* folder as Python checkpoints"
+        "import-matlab", help="Import a MATLAB batch_* folder as Python checkpoints"
     )
     imp_parser.add_argument(
-        "-b", "--batch-folder", required=True,
-        help="Path to the MATLAB batch_* folder (or parent directory)"
+        "-b",
+        "--batch-folder",
+        required=True,
+        help="Path to the MATLAB batch_* folder (or parent directory)",
     )
     imp_parser.add_argument(
-        "-c", "--checkpoint-dir", required=True,
-        help="Output directory for Python checkpoint pickles"
+        "-c",
+        "--checkpoint-dir",
+        required=True,
+        help="Output directory for Python checkpoint pickles",
     )
     imp_parser.add_argument(
-        "--stages", nargs="+",
+        "--stages",
+        nargs="+",
         choices=["energy", "vertices", "edges", "network"],
         default=None,
-        help="Which stages to import (default: all available)"
+        help="Which stages to import (default: all available)",
     )
-    imp_parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable debug logging"
-    )
+    imp_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
 
     return parser
 
@@ -163,6 +174,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         elif fmt == "mat":
             try:
                 from slavv.io import save_network_to_mat
+
                 path = os.path.join(args.output, "network.mat")
                 save_network_to_mat(network, path)
                 logger.info("Saved MAT to %s", path)
@@ -206,6 +218,7 @@ def main(argv=None):
 
     if args.version:
         from slavv import __version__
+
         print(f"slavv {__version__}")
         return
 

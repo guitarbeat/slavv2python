@@ -1,19 +1,23 @@
-
 """
 Energy field calculations for SLAVV.
 Includes Hessian-based vessel enhancement (Frangi/Sato) and Numba-accelerated gradient computation.
 """
+
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any
+from typing import Any
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
 from skimage import feature
+
 try:
     from skimage.filters import frangi, sato
 except ImportError:
     try:
         from skimage.filters import frangi
+
         sato = None
     except ImportError:
         frangi = None
@@ -43,32 +47,38 @@ if _NUMBA_AVAILABLE:
 
         if dim_y < 3 or dim_x < 3 or dim_z < 3:
             return np.zeros(3, dtype=np.float64)
-        
+
         # Manual clamping to [1, shape-2]
         pos_y = int(pos_int[0])
         if pos_y < 1:
             pos_y = 1
         elif pos_y > dim_y - 2:
             pos_y = dim_y - 2
-        
+
         pos_x = int(pos_int[1])
         if pos_x < 1:
             pos_x = 1
         elif pos_x > dim_x - 2:
             pos_x = dim_x - 2
-        
+
         pos_z = int(pos_int[2])
         if pos_z < 1:
             pos_z = 1
         elif pos_z > dim_z - 2:
             pos_z = dim_z - 2
-        
+
         grad = np.zeros(3, dtype=np.float64)
         # Use explicit indexing for speed and clarity
-        grad[0] = (energy[pos_y+1, pos_x, pos_z] - energy[pos_y-1, pos_x, pos_z]) / (2.0 * mpv[0])
-        grad[1] = (energy[pos_y, pos_x+1, pos_z] - energy[pos_y, pos_x-1, pos_z]) / (2.0 * mpv[1])
-        grad[2] = (energy[pos_y, pos_x, pos_z+1] - energy[pos_y, pos_x, pos_z-1]) / (2.0 * mpv[2])
-        
+        grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
+            2.0 * mpv[0]
+        )
+        grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
+            2.0 * mpv[1]
+        )
+        grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
+            2.0 * mpv[2]
+        )
+
         return grad
 
 else:
@@ -102,9 +112,15 @@ else:
             pos_z = shape_z - 2
 
         # Direct indexing for speed (avoids allocations and tuple overhead)
-        grad[0] = (energy[pos_y+1, pos_x, pos_z] - energy[pos_y-1, pos_x, pos_z]) / (2.0 * microns_per_voxel[0])
-        grad[1] = (energy[pos_y, pos_x+1, pos_z] - energy[pos_y, pos_x-1, pos_z]) / (2.0 * microns_per_voxel[1])
-        grad[2] = (energy[pos_y, pos_x, pos_z+1] - energy[pos_y, pos_x, pos_z-1]) / (2.0 * microns_per_voxel[2])
+        grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
+            2.0 * microns_per_voxel[0]
+        )
+        grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
+            2.0 * microns_per_voxel[1]
+        )
+        grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
+            2.0 * microns_per_voxel[2]
+        )
 
         return grad
 
@@ -135,7 +151,9 @@ def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) ->
     return dist2 <= r_phys**2
 
 
-def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunking_lattice_func=None) -> Dict[str, Any]:
+def calculate_energy_field(
+    image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
+) -> dict[str, Any]:
     """
     Calculate multi-scale energy field using Hessian-based filtering.
 
@@ -146,55 +164,54 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
     :func:`~skimage.filters.sato` vesselness filters as alternative backends.
     """
     logger.info("Calculating energy field")
-    
-
 
     # Extract parameters with defaults from MATLAB
-    microns_per_voxel = params.get('microns_per_voxel', [1.0, 1.0, 1.0])
-    radius_smallest = params.get('radius_of_smallest_vessel_in_microns', 1.5)
-    radius_largest = params.get('radius_of_largest_vessel_in_microns', 50.0)
-    scales_per_octave = params.get('scales_per_octave', 1.5)
-    gaussian_to_ideal_ratio = params.get('gaussian_to_ideal_ratio', 1.0)
-    spherical_to_annular_ratio = params.get('spherical_to_annular_ratio', 1.0)
-    approximating_PSF = params.get('approximating_PSF', True)
-    energy_sign = params.get('energy_sign', -1.0)  # -1 for bright vessels
-    return_all_scales = params.get('return_all_scales', False)
-    energy_method = params.get('energy_method', 'hessian')
+    microns_per_voxel = params.get("microns_per_voxel", [1.0, 1.0, 1.0])
+    radius_smallest = params.get("radius_of_smallest_vessel_in_microns", 1.5)
+    radius_largest = params.get("radius_of_largest_vessel_in_microns", 50.0)
+    scales_per_octave = params.get("scales_per_octave", 1.5)
+    gaussian_to_ideal_ratio = params.get("gaussian_to_ideal_ratio", 1.0)
+    spherical_to_annular_ratio = params.get("spherical_to_annular_ratio", 1.0)
+    approximating_PSF = params.get("approximating_PSF", True)
+    energy_sign = params.get("energy_sign", -1.0)  # -1 for bright vessels
+    return_all_scales = params.get("return_all_scales", False)
+    energy_method = params.get("energy_method", "hessian")
 
     # Cache voxel spacing for anisotropy handling
     voxel_size = np.array(microns_per_voxel, dtype=float)
-    
+
     # PSF calculation (from MATLAB implementation)
     if approximating_PSF:
-        numerical_aperture = params.get('numerical_aperture', 0.95)
-        excitation_wavelength = params.get('excitation_wavelength_in_microns', 1.3)
-        sample_index_of_refraction = params.get('sample_index_of_refraction', 1.33)
-        
+        numerical_aperture = params.get("numerical_aperture", 0.95)
+        excitation_wavelength = params.get("excitation_wavelength_in_microns", 1.3)
+        sample_index_of_refraction = params.get("sample_index_of_refraction", 1.33)
+
         # PSF calculation based on Zipfel et al.
         if numerical_aperture <= 0.7:
             coefficient, exponent = 0.320, 1.0
         else:
             coefficient, exponent = 0.325, 0.91
-            
+
         microns_per_sigma_PSF = [
             excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
             excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
-            excitation_wavelength / (2**0.5) * 0.532 / (
-                sample_index_of_refraction - 
-                (sample_index_of_refraction**2 - numerical_aperture**2)**0.5
-            )
+            excitation_wavelength
+            / (2**0.5)
+            * 0.532
+            / (
+                sample_index_of_refraction
+                - (sample_index_of_refraction**2 - numerical_aperture**2) ** 0.5
+            ),
         ]
     else:
         microns_per_sigma_PSF = [0.0, 0.0, 0.0]
-        
+
     microns_per_sigma_PSF = np.array(microns_per_sigma_PSF, dtype=float)
     pixels_per_sigma_PSF = microns_per_sigma_PSF / voxel_size
-    
+
     # Calculate scale range following MATLAB ordination
     largest_per_smallest_ratio = radius_largest / radius_smallest
-    final_scale = int(
-        np.floor(np.log2(largest_per_smallest_ratio) * scales_per_octave)
-    )
+    final_scale = int(np.floor(np.log2(largest_per_smallest_ratio) * scales_per_octave))
     scale_ordinates = np.arange(0, final_scale + 1)
     scale_factors = 2 ** (scale_ordinates / scales_per_octave)
     lumen_radius_microns = radius_smallest * scale_factors
@@ -209,10 +226,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
     total_voxels = int(np.prod(image.shape))
     max_voxels = int(params.get("max_voxels_per_node_energy", 1e5))
     if total_voxels > max_voxels:
-        max_sigma = (
-            (lumen_radius_microns[-1] / voxel_size)
-            / max(gaussian_to_ideal_ratio, 1e-12)
-        )
+        max_sigma = (lumen_radius_microns[-1] / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
         if approximating_PSF:
             max_sigma = np.sqrt(max_sigma**2 + pixels_per_sigma_PSF**2)
         margin = int(np.ceil(np.max(max_sigma)))
@@ -229,8 +243,8 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             sub_params["return_all_scales"] = return_all_scales
             chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
             if return_all_scales:
-                energy_4d[out_slice + (slice(None),)] = chunk_data["energy_4d"][
-                    inner_slice + (slice(None),)
+                energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
+                    (*inner_slice, slice(None))
                 ]
             else:
                 energy_3d[out_slice] = chunk_data["energy"][inner_slice]
@@ -266,15 +280,17 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             "image_shape": image.shape,
         }
 
-    if energy_method == 'sato' and sato is None:
-        logger.warning("Sato filter unavailable (requires scikit-image>=0.19). Falling back to Hessian.")
-        energy_method = 'hessian'
+    if energy_method == "sato" and sato is None:
+        logger.warning(
+            "Sato filter unavailable (requires scikit-image>=0.19). Falling back to Hessian."
+        )
+        energy_method = "hessian"
 
-    if energy_method == 'frangi' and frangi is None:
+    if energy_method == "frangi" and frangi is None:
         logger.warning("Frangi filter unavailable. Falling back to Hessian.")
-        energy_method = 'hessian'
+        energy_method = "hessian"
 
-    if energy_method in ('frangi', 'sato'):
+    if energy_method in ("frangi", "sato"):
         if return_all_scales:
             energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
         if energy_sign < 0:
@@ -284,7 +300,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
         scale_indices = np.zeros(image.shape, dtype=np.int16)
 
         for scale_idx, sigma in enumerate(lumen_radius_pixels):
-            if energy_method == 'frangi':
+            if energy_method == "frangi":
                 vesselness = frangi(
                     image,
                     sigmas=[sigma],
@@ -315,9 +331,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
         for scale_idx, _ in enumerate(lumen_radius_pixels):
             # Calculate Gaussian sigmas at this scale using physical voxel spacing
             radius_microns = lumen_radius_microns[scale_idx]
-            sigma_scale = (
-                (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
-            )
+            sigma_scale = (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
             sigma_scale = np.asarray(sigma_scale, dtype=float)
 
             if approximating_PSF:
@@ -327,7 +341,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
 
             # Spherical (Gaussian) component
             smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
-            
+
             # Annular (Difference of Gaussians) component
             # When spherical_to_annular_ratio=1: 100% Gaussian, 0% DoG
             # When spherical_to_annular_ratio=0: 0% Gaussian, 100% DoG
@@ -336,45 +350,43 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
                 # Use a larger sigma for the background (annular means larger scale)
                 annular_scale = sigma_scale * 1.5  # MATLAB uses a factor > 1 for annular
                 if approximating_PSF:
-                    sigma_background = np.sqrt(
-                        annular_scale**2 + pixels_per_sigma_PSF**2
-                    )
+                    sigma_background = np.sqrt(annular_scale**2 + pixels_per_sigma_PSF**2)
                 else:
                     sigma_background = annular_scale
-                smoothed_background = gaussian_filter(
-                    image, sigma=tuple(sigma_background)
-                )
+                smoothed_background = gaussian_filter(image, sigma=tuple(sigma_background))
                 dog = smoothed_object - smoothed_background
-                
+
                 # Linear combination: (1-ratio)*DoG + ratio*Gaussian
-                smoothed = (1.0 - spherical_to_annular_ratio) * dog + spherical_to_annular_ratio * smoothed_object
+                smoothed = (
+                    1.0 - spherical_to_annular_ratio
+                ) * dog + spherical_to_annular_ratio * smoothed_object
             else:
                 # Pure Gaussian (no DoG component)
                 smoothed = smoothed_object
 
             # Calculate Hessian eigenvalues with PSF-weighted sigma
-            hessian = feature.hessian_matrix(
-                smoothed, sigma=tuple(sigma_object)
-            )
-            
-            # Memory-efficient eigenvalue computation: compute directly without 
+            hessian = feature.hessian_matrix(smoothed, sigma=tuple(sigma_object))
+
+            # Memory-efficient eigenvalue computation: compute directly without
             # storing all three eigenvalue arrays at full precision
             # Extract Hessian elements (6 components for symmetric 3x3)
             Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = hessian
-            
+
             # Compute eigenvalues in batches by z-slice to reduce peak memory
             shape_3d = smoothed.shape
             lambda1 = np.empty(shape_3d, dtype=np.float32)
             lambda2 = np.empty(shape_3d, dtype=np.float32)
             lambda3 = np.empty(shape_3d, dtype=np.float32)
-            
+
             for z_idx in range(shape_3d[0]):
                 # Build 3x3 Hessian matrices for this z-slice
-                H = np.array([
-                    [Hxx[z_idx], Hxy[z_idx], Hxz[z_idx]],
-                    [Hxy[z_idx], Hyy[z_idx], Hyz[z_idx]],
-                    [Hxz[z_idx], Hyz[z_idx], Hzz[z_idx]]
-                ])  # Shape: (3, 3, Y, X)
+                H = np.array(
+                    [
+                        [Hxx[z_idx], Hxy[z_idx], Hxz[z_idx]],
+                        [Hxy[z_idx], Hyy[z_idx], Hyz[z_idx]],
+                        [Hxz[z_idx], Hyz[z_idx], Hzz[z_idx]],
+                    ]
+                )  # Shape: (3, 3, Y, X)
                 # Transpose to (Y, X, 3, 3) for eigvalsh
                 H = np.moveaxis(H, [0, 1], [-2, -1])
                 # Compute eigenvalues for this slice
@@ -383,7 +395,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
                 lambda1[z_idx] = eigs[..., 2]
                 lambda2[z_idx] = eigs[..., 1]
                 lambda3[z_idx] = eigs[..., 0]
-            
+
             # Free Hessian memory
             del Hxx, Hxy, Hxz, Hyy, Hyz, Hzz, hessian
 
@@ -400,7 +412,7 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
                 logger.debug(f"  lambda3 < 0: {(lambda3 < 0).sum():,} voxels")
                 logger.debug(f"  Both < 0: {((lambda2 < 0) & (lambda3 < 0)).sum():,} voxels")
 
-            # For bright vessels (energy_sign < 0): we want tubular structures with 
+            # For bright vessels (energy_sign < 0): we want tubular structures with
             # at least one negative eigenvalue in the cross-section (lambda2 or lambda3)
             # The original condition was too strict requiring BOTH to be negative
             if energy_sign < 0:
@@ -411,15 +423,17 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             if np.any(mask):
                 # Ratios for tubular structure detection
                 Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
-                Rb = np.abs(lambda1[mask]) / (np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12)
-                S = np.sqrt(lambda1[mask]**2 + lambda2[mask]**2 + lambda3[mask]**2)
+                Rb = np.abs(lambda1[mask]) / (
+                    np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12
+                )
+                S = np.sqrt(lambda1[mask] ** 2 + lambda2[mask] ** 2 + lambda3[mask] ** 2)
 
                 # Vesselness response (Frangi-inspired)
                 alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
                 vesselness[mask] = (
-                    (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2)))) *
-                    np.exp(-(Rb**2) / (2 * (beta**2))) *
-                    (1.0 - np.exp(-(S**2) / (2 * (c**2))))
+                    (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2))))
+                    * np.exp(-(Rb**2) / (2 * (beta**2)))
+                    * (1.0 - np.exp(-(S**2) / (2 * (c**2))))
                 )
 
             energy_scale = energy_sign * vesselness
@@ -433,19 +447,20 @@ def calculate_energy_field(image: np.ndarray, params: Dict[str, Any], get_chunki
             scale_indices[mask] = scale_idx
 
     result = {
-        'energy': energy_3d,
-        'scale_indices': scale_indices,
-        'lumen_radius_microns': lumen_radius_microns,
+        "energy": energy_3d,
+        "scale_indices": scale_indices,
+        "lumen_radius_microns": lumen_radius_microns,
         "lumen_radius_pixels": lumen_radius_pixels,
-        'lumen_radius_pixels_axes': lumen_radius_pixels_axes,
-        'pixels_per_sigma_PSF': pixels_per_sigma_PSF,
-        'microns_per_sigma_PSF': microns_per_sigma_PSF,
-        'energy_sign': energy_sign,
-        'image_shape': image.shape
+        "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
+        "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
+        "microns_per_sigma_PSF": microns_per_sigma_PSF,
+        "energy_sign": energy_sign,
+        "image_shape": image.shape,
     }
     if return_all_scales:
-        result['energy_4d'] = energy_4d
+        result["energy_4d"] = energy_4d
     return result
+
 
 def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
     """
@@ -475,16 +490,16 @@ def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
 
     # We still allocate grad, but we avoid pos_int allocation and unpacking
     grad = np.empty(3, dtype=float)
-    grad[0] = (energy[p0+1, p1, p2] - energy[p0-1, p1, p2]) * inv_mpv_2x[0]
-    grad[1] = (energy[p0, p1+1, p2] - energy[p0, p1-1, p2]) * inv_mpv_2x[1]
-    grad[2] = (energy[p0, p1, p2+1] - energy[p0, p1, p2-1]) * inv_mpv_2x[2]
+    grad[0] = (energy[p0 + 1, p1, p2] - energy[p0 - 1, p1, p2]) * inv_mpv_2x[0]
+    grad[1] = (energy[p0, p1 + 1, p2] - energy[p0, p1 - 1, p2]) * inv_mpv_2x[1]
+    grad[2] = (energy[p0, p1, p2 + 1] - energy[p0, p1, p2 - 1]) * inv_mpv_2x[2]
 
     return grad
 
 
 __all__ = [
     "calculate_energy_field",
-    "spherical_structuring_element",
-    "compute_gradient_impl",
     "compute_gradient_fast",
+    "compute_gradient_impl",
+    "spherical_structuring_element",
 ]

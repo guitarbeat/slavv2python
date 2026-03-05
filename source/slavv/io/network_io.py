@@ -2,15 +2,15 @@
 
 Supports: MATLAB .mat, CASX XML, VMV text, CSV, JSON.
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Network:
     """Container for basic network data."""
+
     vertices: np.ndarray
     edges: np.ndarray
-    radii: Optional[np.ndarray] = None
+    radii: np.ndarray | None = None
 
 
 # Backwards-compatible alias
@@ -35,11 +36,10 @@ MatNetwork = Network
 # Loaders
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def load_network_from_mat(path: Union[str, Path]) -> Network:
     """Load network data stored in a MATLAB ``.mat`` file."""
-    matlab_data_dict: Dict[str, Any] = loadmat(
-        Path(path), squeeze_me=True, struct_as_record=False
-    )
+    matlab_data_dict: dict[str, Any] = loadmat(Path(path), squeeze_me=True, struct_as_record=False)
     v_struct = matlab_data_dict.get("vertices")
     if hasattr(v_struct, "positions"):
         vertices = np.asarray(getattr(v_struct, "positions", []), dtype=float)
@@ -55,16 +55,14 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
     if hasattr(e_struct, "connections"):
         edges = np.atleast_2d(np.asarray(e_struct.connections, dtype=int))
     else:
-        edges = np.atleast_2d(
-            np.asarray(e_struct if e_struct is not None else [], dtype=int)
-        )
+        edges = np.atleast_2d(np.asarray(e_struct if e_struct is not None else [], dtype=int))
 
     return Network(vertices=vertices, edges=edges, radii=radii if radii.size else None)
 
 
-def _convert_edges_to_strands(edges: np.ndarray) -> List[List[int]]:
+def _convert_edges_to_strands(edges: np.ndarray) -> list[list[int]]:
     """Helper method to construct strands from an edge list.
-    
+
     A VMV strand is essentially an array of connected nodes in sequence.
     This performs a simple connected components-like traversal, although
     a robust graph might have branches. For basic VMV writing without explicit
@@ -72,26 +70,27 @@ def _convert_edges_to_strands(edges: np.ndarray) -> List[List[int]]:
     with degree <= 2. To avoid full NetworkX dependency here, we trace simple paths.
     """
     import networkx as nx
+
     g = nx.Graph()
     g.add_edges_from(edges)
-    
+
     # Very simple strand logic: each edge is a strand if no robust pathing is needed,
     # but let's try to extract paths that don't pass through bifurcations (degree > 2).
     # Since this is a basic converter, we'll extract simply connected components
     # as strands, or just use edges. Let's trace linear segments.
-    
+
     strands = []
     visited_edges = set()
-    
+
     for u, v in edges:
         edge = tuple(sorted((u, v)))
         if edge in visited_edges:
             continue
-            
+
         # Trace forward from v
         strand = [u, v]
         visited_edges.add(edge)
-        
+
         current = v
         while g.degree(current) == 2:
             neighbors = list(g.neighbors(current))
@@ -102,7 +101,7 @@ def _convert_edges_to_strands(edges: np.ndarray) -> List[List[int]]:
             strand.append(next_node)
             visited_edges.add(next_edge)
             current = next_node
-            
+
         # Trace backward from u
         current = u
         while g.degree(current) == 2:
@@ -114,18 +113,17 @@ def _convert_edges_to_strands(edges: np.ndarray) -> List[List[int]]:
             strand.insert(0, next_node)
             visited_edges.add(next_edge)
             current = next_node
-            
-        strands.append(strand)
-        
-    return strands
 
+        strands.append(strand)
+
+    return strands
 
 
 def load_network_from_casx(path: Union[str, Path]) -> Network:
     """Load network data from a CASX XML file."""
     root = ET.parse(Path(path)).getroot()
-    vert_list: List[List[float]] = []
-    radii_list: List[float] = []
+    vert_list: list[list[float]] = []
+    radii_list: list[float] = []
     for v in root.findall(".//Vertex"):
         x = float(v.attrib.get("x", 0.0))
         y = float(v.attrib.get("y", 0.0))
@@ -134,7 +132,7 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
         vert_list.append([y, x, z])
         radii_list.append(radius)
 
-    edge_list: List[List[int]] = []
+    edge_list: list[list[int]] = []
     for e in root.findall(".//Edge"):
         start = e.attrib.get("start")
         end = e.attrib.get("end")
@@ -150,11 +148,11 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
 
 def load_network_from_vmv(path: Union[str, Path]) -> Network:
     """Load network data from a VMV text file."""
-    positions: List[List[float]] = []
-    radii: List[float] = []
-    edges_list: List[List[int]] = []
+    positions: list[list[float]] = []
+    radii: list[float] = []
+    edges_list: list[list[int]] = []
     section = None
-    with open(Path(path), "r") as f:
+    with open(Path(path)) as f:
         for raw in f:
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -187,7 +185,7 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
     """Load network data from paired CSV files."""
     base = Path(path).with_suffix("")
     name = base.name
-    if name.endswith("_vertices") or name.endswith("_edges"):
+    if name.endswith(("_vertices", "_edges")):
         base = base.with_name(name.rsplit("_", 1)[0])
 
     vertex_path = base.with_name(base.name + "_vertices.csv")
@@ -209,8 +207,8 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
 
 def load_network_from_json(path: Union[str, Path]) -> Network:
     """Load network data from a JSON export."""
-    with open(Path(path), "r") as f:
-        data: Dict[str, Any] = json.load(f)
+    with open(Path(path)) as f:
+        data: dict[str, Any] = json.load(f)
 
     v_data = data.get("vertices", {})
     vertices = np.asarray(v_data.get("positions", []), dtype=float)
@@ -229,9 +227,8 @@ def load_network_from_json(path: Union[str, Path]) -> Network:
 # Savers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def save_network_to_csv(
-    network: Network, base_path: Union[str, Path]
-) -> Tuple[Path, Path]:
+
+def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[Path, Path]:
     """Save network data to paired CSV files."""
     base = Path(base_path).with_suffix("")
     vertex_path = base.with_name(base.name + "_vertices.csv")
@@ -255,7 +252,7 @@ def save_network_to_csv(
 
 def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a JSON file."""
-    data: Dict[str, Any] = {
+    data: dict[str, Any] = {
         "vertices": {"positions": np.asarray(network.vertices, dtype=float).tolist()},
         "edges": {"connections": np.atleast_2d(np.asarray(network.edges, dtype=int)).tolist()},
     }
@@ -270,10 +267,10 @@ def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
 def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a CASX XML file format."""
     casx_path = Path(path)
-    
+
     root = ET.Element("CasX")
     network_elem = ET.SubElement(root, "Network")
-    
+
     # Write vertices
     vertices_elem = ET.SubElement(network_elem, "Vertices")
     for i, pt in enumerate(network.vertices):
@@ -282,13 +279,13 @@ def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
         # Use attributes for Vertex
         v_elem = ET.SubElement(vertices_elem, "Vertex")
         v_elem.set("id", str(i))
-        # Important: CASX original uses specific x, y, z mappings. 
+        # Important: CASX original uses specific x, y, z mappings.
         # The loader reads y, x, z into x, y, z labels, so we reverse it here.
         v_elem.set("x", str(x))
         v_elem.set("y", str(y))
         v_elem.set("z", str(z))
         v_elem.set("radius", str(radius))
-        
+
     # Write edges
     edges_elem = ET.SubElement(network_elem, "Edges")
     for i, edge in enumerate(network.edges):
@@ -302,19 +299,19 @@ def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
     # Python 3.9+ feature for pretty printing if desired, but we'll use base write string formatting
     ET.indent(tree, space="  ", level=0)
     tree.write(casx_path, encoding="UTF-8", xml_declaration=True)
-    
+
     return casx_path
 
 
 def save_network_to_vmv(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a VMV text format file."""
     vmv_path = Path(path)
-    
+
     strands = _convert_edges_to_strands(network.edges)
-    
+
     with open(vmv_path, "w") as f:
         f.write("# VMV Format Export\n")
-        
+
         # Write vertices block
         f.write("[VERTICES]\n")
         # Format: <id> <x> <y> <z> <radius> <extra>
@@ -323,11 +320,11 @@ def save_network_to_vmv(network: Network, path: Union[str, Path]) -> Path:
             radius = network.radii[i] if network.radii is not None else 0.0
             # VMV expects y, x, z to map back to x, y, z logically, but matching load order:
             f.write(f"{i} {y} {x} {z} {radius} 0.0\n")
-            
+
         f.write("\n[EDGES]\n")
         # Write strands block / edges block
         for i, strand in enumerate(strands):
-            # Sequence: <strand_id> <num_points> <pt1> <pt2> ... 
+            # Sequence: <strand_id> <num_points> <pt1> <pt2> ...
             # Or edge mode: <id> <node1> <node2>
             # Based on the test, it parses '[EDGES]' with `_, start, end = parts[:3]`
             # We'll just write simple edges for now to match the loader syntax.
@@ -336,8 +333,8 @@ def save_network_to_vmv(network: Network, path: Union[str, Path]) -> Path:
             else:
                 # If a strand has multiple segments, save as multiple edges to match test expectations
                 for j in range(len(strand) - 1):
-                    f.write(f"{i}_{j} {strand[j]} {strand[j+1]}\n")
-                    
+                    f.write(f"{i}_{j} {strand[j]} {strand[j + 1]}\n")
+
     return vmv_path
 
 

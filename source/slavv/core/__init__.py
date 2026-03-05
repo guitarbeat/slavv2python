@@ -7,49 +7,51 @@ This subpackage contains the main processing modules:
 - graph: Network construction from traces
 - pipeline: Orchestration of the complete workflow
 """
-from .pipeline import SLAVVProcessor
+
+from __future__ import annotations
+
 from .energy import (
     calculate_energy_field,
-    spherical_structuring_element,
-    compute_gradient_impl,
     compute_gradient_fast,
-)
-from .tracing import (
-    extract_vertices,
-    extract_edges,
-    extract_edges_watershed,
-    trace_edge,
-    near_vertex,
-    find_terminal_vertex,
-    generate_edge_directions,
-    estimate_vessel_directions,
-    compute_gradient,
-    in_bounds,
+    compute_gradient_impl,
+    spherical_structuring_element,
 )
 from .graph import (
     construct_network,
-    trace_strand_sparse,
     sort_and_validate_strands_sparse,
+    trace_strand_sparse,
+)
+from .pipeline import SLAVVProcessor
+from .tracing import (
+    compute_gradient,
+    estimate_vessel_directions,
+    extract_edges,
+    extract_edges_watershed,
+    extract_vertices,
+    find_terminal_vertex,
+    generate_edge_directions,
+    in_bounds,
+    near_vertex,
+    trace_edge,
 )
 
 __all__ = [
     "SLAVVProcessor",
     "calculate_energy_field",
-    "spherical_structuring_element",
-    "compute_gradient_impl",
+    "compute_gradient",
     "compute_gradient_fast",
-    "extract_vertices",
+    "compute_gradient_impl",
+    "construct_network",
+    "estimate_vessel_directions",
     "extract_edges",
     "extract_edges_watershed",
-    "trace_edge",
-    "near_vertex",
+    "extract_vertices",
     "find_terminal_vertex",
     "generate_edge_directions",
-    "estimate_vessel_directions",
-    "compute_gradient",
     "in_bounds",
-    "construct_network",
-    "trace_strand_sparse",
+    "near_vertex",
     "sort_and_validate_strands_sparse",
+    "spherical_structuring_element",
+    "trace_edge",
+    "trace_strand_sparse",
 ]
-

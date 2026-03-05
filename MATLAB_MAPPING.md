@@ -179,10 +179,10 @@ All `vectorization_script_*.m` files are user-specific example scripts and are *
 
 | MATLAB File | Priority | Notes |
 |---|---|---|
-| `casx_mat2file.m` | Medium | ✅ ImplementedCASX **writer** |
-| `vmv_mat2file.m` | Low | ✅ ImplementedVMV **writer** |
-| `casx2vmv.m` | Low | ✅ ImplementedCross-format converter |
-| `calculate_image_stats.m` | Medium | ✅ ImplementedImage-level statistics |
-| `fourier_transform_V2.m` | Low | ✅ ImplementedSpectral analysis |
-| `evaluate_registration.m` | Medium | ✅ ImplementedRegistration evaluation |
-| `uncuratedInfoExtractor.m` | Medium | ✅ ImplementedPre-curation info |
+| `casx_mat2file.m` | Medium | ✅ Implemented CASX **writer** |
+| `vmv_mat2file.m` | Low | ✅ Implemented VMV **writer** |
+| `casx2vmv.m` | Low | ✅ Implemented cross-format converter |
+| `calculate_image_stats.m` | Medium | ✅ Implemented image-level statistics |
+| `fourier_transform_V2.m` | Low | ✅ Implemented spectral analysis |
+| `evaluate_registration.m` | Medium | ✅ Implemented registration evaluation |
+| `uncuratedInfoExtractor.m` | Medium | ✅ Implemented pre-curation info |

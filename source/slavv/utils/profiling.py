@@ -1,13 +1,16 @@
+from __future__ import annotations
 import cProfile
 import pstats
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import numpy as np
 
 # from ..core import SLAVVProcessor  # Moved inside to avoid circular dependency
 
 
-def profile_process_image(image: np.ndarray, parameters: Optional[Dict[str, Any]] = None) -> pstats.Stats:
+def profile_process_image(
+    image: np.ndarray, parameters: Optional[dict[str, Any]] = None
+) -> pstats.Stats:
     """Profile the SLAVV pipeline on a 3D volume.
 
     Parameters
@@ -27,6 +30,7 @@ def profile_process_image(image: np.ndarray, parameters: Optional[Dict[str, Any]
         parameters = {}
 
     from ..core import SLAVVProcessor
+
     profiler = cProfile.Profile()
     processor = SLAVVProcessor()
     profiler.runcall(processor.process_image, image, parameters)

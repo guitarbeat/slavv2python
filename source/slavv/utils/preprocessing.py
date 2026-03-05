@@ -1,12 +1,16 @@
 """
 Image preprocessing functions for SLAVV.
 """
-from typing import Dict, Any
+
+from __future__ import annotations
+
+from typing import Any
+
 import numpy as np
 import scipy.ndimage as ndi
 
 
-def preprocess_image(image: np.ndarray, params: Dict[str, Any]) -> np.ndarray:
+def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
     """Normalize intensities and optionally correct axial banding.
 
     Parameters

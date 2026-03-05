@@ -5,47 +5,60 @@ This subpackage contains:
 - geometry: Geometric operations and network statistics
 - ml_curator: Machine learning-based curation
 """
+
+from __future__ import annotations
+
 from .geometry import (
     calculate_branching_angles,
+    calculate_image_stats,
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,
-    crop_vertices,
     crop_edges,
+    crop_vertices,
     crop_vertices_by_mask,
-    get_edges_for_vertex,
+    evaluate_registration,
     get_edge_metric,
+    get_edges_for_vertex,
+    register_strands,
+    register_vector_sets,
     resample_vectors,
     smooth_edge_traces,
-    transform_vector_set,
     subsample_vectors,
-    register_vector_sets,
-    register_strands,
+    transform_vector_set,
 )
-from .ml_curator import MLCurator, AutomaticCurator, extract_uncurated_info, choose_vertices, choose_edges
+from .ml_curator import (
+    AutomaticCurator,
+    MLCurator,
+    choose_edges,
+    choose_vertices,
+    extract_uncurated_info,
+)
+
 # InteractiveCurator requires PyQt5/PyVista/VTK — import directly when needed:
 #   from slavv.analysis.interactive_curator import InteractiveCurator, run_curator
 
 __all__ = [
+    "AutomaticCurator",
+    "MLCurator",
     "calculate_branching_angles",
+    "calculate_image_stats",
     "calculate_network_statistics",
     "calculate_surface_area",
     "calculate_vessel_volume",
-    "crop_vertices",
+    "choose_edges",
+    "choose_vertices",
     "crop_edges",
+    "crop_vertices",
     "crop_vertices_by_mask",
-    "get_edges_for_vertex",
+    "evaluate_registration",
+    "extract_uncurated_info",
     "get_edge_metric",
+    "get_edges_for_vertex",
+    "register_strands",
+    "register_vector_sets",
     "resample_vectors",
     "smooth_edge_traces",
-    "transform_vector_set",
     "subsample_vectors",
-    "register_vector_sets",
-    "register_strands",
-    "MLCurator",
-    "AutomaticCurator",
-    "extract_uncurated_info",
-    "choose_vertices",
-    "choose_edges",
+    "transform_vector_set",
 ]
-

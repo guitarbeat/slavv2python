@@ -6,24 +6,24 @@ imports to a strict whitelist to mitigate potential security vulnerabilities
 from malicious pickle files.
 """
 
-import pickle
-import io
-import os
-import sys
-import logging
-import joblib
-import numpy as np
-import gzip
+from __future__ import annotations
+
 import bz2
+import gzip
+import logging
 import lzma
+import os
+import pickle
+from typing import Any, Union
+
 from joblib.numpy_pickle import NumpyUnpickler
-from typing import Any, List, Set, Union, Optional
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Default maximum file size (1GB)
 DEFAULT_MAX_PICKLE_SIZE = 1024 * 1024 * 1024
+
 
 class SafeNumpyUnpickler(NumpyUnpickler):
     """
@@ -32,17 +32,17 @@ class SafeNumpyUnpickler(NumpyUnpickler):
     """
 
     SAFE_MODULES = {
-        'numpy',
-        'sklearn',
-        'joblib',
-        'pandas',
-        'scipy',
-        '_codecs',
-        'copyreg',
-        'collections',
-        'types',
-        'builtins',
-        '__builtin__'
+        "numpy",
+        "sklearn",
+        "joblib",
+        "pandas",
+        "scipy",
+        "_codecs",
+        "copyreg",
+        "collections",
+        "types",
+        "builtins",
+        "__builtin__",
     }
 
     def find_class(self, module, name):
@@ -53,7 +53,7 @@ class SafeNumpyUnpickler(NumpyUnpickler):
             is_safe = True
         else:
             for m in self.SAFE_MODULES:
-                if module.startswith(m + '.'):
+                if module.startswith(m + "."):
                     is_safe = True
                     break
 
@@ -94,19 +94,19 @@ def safe_load(file_path: Union[str, os.PathLike], max_size: int = DEFAULT_MAX_PI
 
     try:
         # Detect compression
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             header = f.read(4)
 
-        if header.startswith(b'\x1f\x8b'):  # gzip
+        if header.startswith(b"\x1f\x8b"):  # gzip
             opener = gzip.open
-        elif header.startswith(b'BZh'):     # bz2
+        elif header.startswith(b"BZh"):  # bz2
             opener = bz2.open
-        elif header.startswith(b'\xfd7zXZ') or header.startswith(b']\x00\x00\x80\x00'): # lzma/xz
+        elif header.startswith((b"\xfd7zXZ", b"]\x00\x00\x80\x00")):  # lzma/xz
             opener = lzma.open
         else:
             opener = open
 
-        with opener(file_path, 'rb') as f:
+        with opener(file_path, "rb") as f:
             # We must pass the filename and file handle to NumpyUnpickler
             # ensure_native_byte_order=False is required to verify correctly (as per memory)
             # mmap_mode=None (default) as we load everything to memory

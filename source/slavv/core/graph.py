@@ -1,21 +1,26 @@
-
 """
 Network construction and graph theory operations for SLAVV.
 Handles the conversion of traced edges into a connected graph (strands, bifurcations).
 """
-import numpy as np
+
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, List, Tuple, Set
+from typing import Any
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
-def trace_strand_sparse(start: int, adjacency_list: Dict[int, Set[int]], 
-                        visited: np.ndarray) -> List[int]:
+
+def trace_strand_sparse(
+    start: int, adjacency_list: dict[int, set[int]], visited: np.ndarray
+) -> list[int]:
     """Trace a strand through connected vertices using sparse adjacency list."""
     strand = [start]
     visited[start] = True
     current = start
-    
+
     while True:
         neighbors = [n for n in adjacency_list[current] if not visited[n]]
         if not neighbors:
@@ -24,37 +29,39 @@ def trace_strand_sparse(start: int, adjacency_list: Dict[int, Set[int]],
         strand.append(next_vertex)
         visited[next_vertex] = True
         current = next_vertex
-    
+
     return strand
 
-def sort_and_validate_strands_sparse(strands: List[List[int]], 
-                                     adjacency_list: Dict[int, Set[int]]) -> Tuple[List[List[int]], List[List[int]]]:
+
+def sort_and_validate_strands_sparse(
+    strands: list[list[int]], adjacency_list: dict[int, set[int]]
+) -> tuple[list[list[int]], list[list[int]]]:
     """Sort strands and identify mismatched orderings using sparse adjacency."""
     sorted_strands = []
     mismatched = []
-    
-    for i, strand in enumerate(strands):
+
+    for _i, strand in enumerate(strands):
         # Check if strand endpoints are correctly ordered
         if len(strand) >= 2:
             start, end = strand[0], strand[-1]
             # A strand is valid if start and end have appropriate connectivity
             start_degree = len(adjacency_list[start])
             end_degree = len(adjacency_list[end])
-            
+
             # Sort strand so lower-degree vertex is at start (for consistency)
-            if start_degree > end_degree:
+            if start_degree > end_degree or (start_degree == end_degree and start > end):
                 strand = strand[::-1]
-            elif start_degree == end_degree and start > end:
-                strand = strand[::-1]
-        
+
         sorted_strands.append(strand)
-    
+
     return sorted_strands, mismatched
 
-def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
-                      params: Dict[str, Any]) -> Dict[str, Any]:
+
+def construct_network(
+    edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+) -> dict[str, Any]:
     """Construct network from traced edges and detected vertices.
-    
+
     MATLAB Equivalent: `get_network_V190.m`
     """
     logger.info("Constructing network")
@@ -70,7 +77,7 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
 
     # Build SPARSE adjacency list (instead of dense matrix for memory efficiency)
     n_vertices = len(vertex_positions)
-    adjacency_list: Dict[int, Set[int]] = {i: set() for i in range(n_vertices)}
+    adjacency_list: dict[int, set[int]] = {i: set() for i in range(n_vertices)}
 
     # Early return if there are no edges
     if len(edge_traces) == 0:
@@ -93,16 +100,18 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
         }
 
     # Store actual edges in a dictionary keyed by sorted vertex index pairs
-    graph_edges: Dict[Tuple[int, int], np.ndarray] = {}
-    dangling_edges: List[Dict[str, Any]] = []
+    graph_edges: dict[tuple[int, int], np.ndarray] = {}
+    dangling_edges: list[dict[str, Any]] = []
 
     for trace, (start_vertex, end_vertex) in zip(edge_traces, edge_connections):
         if start_vertex < 0 or end_vertex < 0:
-            dangling_edges.append({
-                "start": int(start_vertex) if start_vertex >= 0 else None,
-                "end": int(end_vertex) if end_vertex >= 0 else None,
-                "trace": trace,
-            })
+            dangling_edges.append(
+                {
+                    "start": int(start_vertex) if start_vertex >= 0 else None,
+                    "end": int(end_vertex) if end_vertex >= 0 else None,
+                    "trace": trace,
+                }
+            )
             continue
 
         adjacency_list[start_vertex].add(end_vertex)
@@ -120,12 +129,8 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
     if min_hair_length > 0:
         to_remove = []
         for (v0, v1), trace in graph_edges.items():
-            length = np.sum(
-                np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1)
-            )
-            if length < min_hair_length and (
-                get_degree(v0) == 1 or get_degree(v1) == 1
-            ):
+            length = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
+            if length < min_hair_length and (get_degree(v0) == 1 or get_degree(v1) == 1):
                 adjacency_list[v0].discard(v1)
                 adjacency_list[v1].discard(v0)
                 to_remove.append((v0, v1))
@@ -133,12 +138,12 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
             del graph_edges[key]
 
     # Optionally remove cycles by building a spanning forest
-    cycles: List[Tuple[int, int]] = []
+    cycles: list[tuple[int, int]] = []
     if remove_cycles and graph_edges:
         parent = np.arange(n_vertices)
 
         # --- EXPLANATION FOR JUNIOR DEVS ---
-        # WHY: Vascular networks should ideally be tree-like structures (mostly) 
+        # WHY: Vascular networks should ideally be tree-like structures (mostly)
         #      without loops, unless specific biological loops exist.
         # HOW: We use the Union-Find (Disjoint Set) algorithm to detect cycles.
         #      1. We iterate through all edges.
@@ -153,7 +158,7 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
                 x = parent[x]
             return x
 
-        for (v0, v1) in list(graph_edges.keys()):
+        for v0, v1 in list(graph_edges.keys()):
             r0, r1 = find(v0), find(v1)
             if r0 == r1:
                 cycles.append((v0, v1))
@@ -202,8 +207,9 @@ def construct_network(edges: Dict[str, Any], vertices: Dict[str, Any],
         "dangling_edges": dangling_edges,
     }
 
+
 __all__ = [
-    "trace_strand_sparse",
-    "sort_and_validate_strands_sparse",
     "construct_network",
+    "sort_and_validate_strands_sparse",
+    "trace_strand_sparse",
 ]

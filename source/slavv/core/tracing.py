@@ -1,36 +1,40 @@
-
 """
 Vertex and Edge tracing logic for SLAVV.
 Handles vertex extraction (local maxima/minima) and edge tracing through the energy field.
 """
-import logging
-from typing import Dict, Any, List, Optional, Tuple
 
+from __future__ import annotations
+
+import logging
 import math
+from typing import Any, Optional
+
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage import feature  # Needed for Hessian
-from skimage.segmentation import watershed
 from skimage.draw import ellipsoid
+from skimage.segmentation import watershed
 
 # Imports from sibling modules
 from .energy import compute_gradient_impl, spherical_structuring_element
 
 logger = logging.getLogger(__name__)
 
-def in_bounds(pos: np.ndarray, shape: Tuple[int, ...]) -> bool:
+
+def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:
     """Check if the floored position lies within array bounds."""
     # Optimization for 3D case which is the bottleneck in tracing
     if len(shape) == 3:
-        return (0 <= pos[0] < shape[0] and
-                0 <= pos[1] < shape[1] and
-                0 <= pos[2] < shape[2])
+        return 0 <= pos[0] < shape[0] and 0 <= pos[1] < shape[1] and 0 <= pos[2] < shape[2]
 
     pos_int = np.floor(pos).astype(int)
     return np.all((pos_int >= 0) & (pos_int < np.array(shape)))
 
-def compute_gradient(energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray) -> np.ndarray:
+
+def compute_gradient(
+    energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray
+) -> np.ndarray:
     """Compute gradient at ``pos`` using central differences (wrapper for implementation)."""
     pos_int = np.round(pos).astype(np.int64)
     # Ensure proper dtypes for Numba compatibility (if enabled in impl)
@@ -38,9 +42,10 @@ def compute_gradient(energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.
     mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
     return compute_gradient_impl(energy_arr, pos_int, mpv_arr)
 
+
 def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> np.ndarray:
     """Generate uniformly distributed unit vectors on the sphere.
-    
+
     Parameters
     ----------
     n_directions : int
@@ -64,16 +69,16 @@ def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> n
 
 def paint_vertex_image(
     vertex_positions: np.ndarray,  # Shape: (N, 3) - [y, x, z] positions
-    vertex_scales: np.ndarray,     # Shape: (N,) - scale indices  
+    vertex_scales: np.ndarray,  # Shape: (N,) - scale indices
     lumen_radius_pixels: np.ndarray,  # Shape: (M, 3) - [ry, rx, rz] per scale
-    image_shape: Tuple[int, int, int]  # (height, width, depth)
+    image_shape: tuple[int, int, int],  # (height, width, depth)
 ) -> np.ndarray:
     """
     Create a volume where each voxel is labeled with its vertex membership (1-indexed, 0=background).
-    
+
     This matches MATLAB's approach for fast O(1) vertex detection during edge tracing.
     Paints ellipsoidal regions around each vertex with the vertex index.
-    
+
     Parameters
     ----------
     vertex_positions : np.ndarray
@@ -84,18 +89,18 @@ def paint_vertex_image(
         Radii for each scale in pixels [ry, rx, rz]
     image_shape : tuple
         Shape of the output volume (height, width, depth)
-        
+
     Returns
     -------
     vertex_image : np.ndarray
         Volume where each voxel contains vertex index (1-indexed) or 0 for background
     """
     vertex_image = np.zeros(image_shape, dtype=np.uint16)  # Supports up to 65k vertices
-    
+
     for i, (pos, scale) in enumerate(zip(vertex_positions, vertex_scales)):
         # Get ellipsoid radii for this vertex's scale
         radii = lumen_radius_pixels[scale]  # [ry, rx, rz]
-        
+
         # Generate ellipsoid mask using skimage
         try:
             # ellipsoid returns a 3D boolean array
@@ -107,52 +112,55 @@ def paint_vertex_image(
             rr = coords[0] - center[0]
             cc = coords[1] - center[1]
             dd = coords[2] - center[2]
-            
+
             # Offset to vertex position (convert to int)
             y_coords = rr + int(np.round(pos[0]))
             x_coords = cc + int(np.round(pos[1]))
             z_coords = dd + int(np.round(pos[2]))
-            
+
             # Clip to image bounds
             valid_mask = (
-                (y_coords >= 0) & (y_coords < image_shape[0]) &
-                (x_coords >= 0) & (x_coords < image_shape[1]) &
-                (z_coords >= 0) & (z_coords < image_shape[2])
+                (y_coords >= 0)
+                & (y_coords < image_shape[0])
+                & (x_coords >= 0)
+                & (x_coords < image_shape[1])
+                & (z_coords >= 0)
+                & (z_coords < image_shape[2])
             )
-            
+
             y_coords = y_coords[valid_mask]
             x_coords = x_coords[valid_mask]
             z_coords = z_coords[valid_mask]
-            
+
             # Paint vertex index (1-indexed, so i+1)
             vertex_image[y_coords, x_coords, z_coords] = i + 1
-            
+
         except Exception as e:
             logger.warning(f"Failed to paint vertex {i} at {pos} with scale {scale}: {e}")
             continue
-    
+
     logger.info(f"Painted {len(vertex_positions)} vertices into volume image")
     return vertex_image
 
 
-def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
     """
     Extract vertices as local extrema in the energy field.
     MATLAB Equivalent: `get_vertices_V200.m`
     """
     logger.info("Extracting vertices")
-    
-    energy = energy_data['energy']
-    scale_indices = energy_data['scale_indices']
-    lumen_radius_pixels = energy_data['lumen_radius_pixels']
-    energy_sign = energy_data.get('energy_sign', -1.0)
-    lumen_radius_microns = energy_data['lumen_radius_microns']
+
+    energy = energy_data["energy"]
+    scale_indices = energy_data["scale_indices"]
+    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    energy_sign = energy_data.get("energy_sign", -1.0)
+    lumen_radius_microns = energy_data["lumen_radius_microns"]
 
     # Parameters
-    energy_upper_bound = params.get('energy_upper_bound', 0.0)
-    space_strel_apothem = params.get('space_strel_apothem', 1)
-    length_dilation_ratio = params.get('length_dilation_ratio', 1.0)
-    voxel_size = np.array(params.get('microns_per_voxel', [1.0, 1.0, 1.0]), dtype=float)
+    energy_upper_bound = params.get("energy_upper_bound", 0.0)
+    space_strel_apothem = params.get("space_strel_apothem", 1)
+    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
+    voxel_size = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
 
     # Find local extrema using a spacing-aware structuring element
     strel = spherical_structuring_element(space_strel_apothem, voxel_size)
@@ -181,12 +189,12 @@ def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dic
     if len(vertex_positions) == 0:
         logger.info("Extracted 0 vertices")
         return {
-            'positions': np.empty((0, 3), dtype=np.float32),
-            'scales': np.empty((0,), dtype=np.int16),
-            'energies': np.empty((0,), dtype=np.float32),
-            'radii_pixels': np.empty((0,), dtype=np.float32),
-            'radii_microns': np.empty((0,), dtype=np.float32),
-            'radii': np.empty((0,), dtype=np.float32),
+            "positions": np.empty((0, 3), dtype=np.float32),
+            "scales": np.empty((0,), dtype=np.int16),
+            "energies": np.empty((0,), dtype=np.float32),
+            "radii_pixels": np.empty((0,), dtype=np.float32),
+            "radii_microns": np.empty((0,), dtype=np.float32),
+            "radii": np.empty((0,), dtype=np.float32),
         }
 
     # Volume exclusion: remove overlapping vertices using energy-ordered cKDTree
@@ -194,7 +202,7 @@ def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dic
     max_radius = np.max(lumen_radius_microns) * length_dilation_ratio
     tree = cKDTree(vertex_positions_microns)
     keep_mask = np.ones(len(vertex_positions), dtype=bool)
-    
+
     for i, pos in enumerate(vertex_positions_microns):
         if not keep_mask[i]:
             continue
@@ -222,55 +230,60 @@ def extract_vertices(energy_data: Dict[str, Any], params: Dict[str, Any]) -> Dic
     radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
 
     return {
-        'positions': vertex_positions,
-        'scales': vertex_scales,
-        'energies': vertex_energies,
-        'radii_pixels': radii_pixels,
-        'radii_microns': radii_microns,
-        'radii': radii_microns,
+        "positions": vertex_positions,
+        "scales": vertex_scales,
+        "energies": vertex_energies,
+        "radii_pixels": radii_pixels,
+        "radii_microns": radii_microns,
+        "radii": radii_microns,
     }
+
 
 def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> Optional[int]:
     """
     Fast O(1) vertex lookup using pre-computed vertex volume image.
-    
+
     Parameters
     ----------
     pos : np.ndarray
         Position in voxel coordinates [y, x, z]
     vertex_image : np.ndarray
         Volume where each voxel contains vertex index (1-indexed) or 0
-        
+
     Returns
     -------
     vertex_idx : Optional[int]
         Vertex index (0-indexed) if position is within a vertex region, None otherwise
     """
     pos_int = np.floor(pos).astype(int)
-    
+
     # Check bounds
     if not np.all((pos_int >= 0) & (pos_int < np.array(vertex_image.shape))):
         return None
-    
+
     vertex_id = vertex_image[pos_int[0], pos_int[1], pos_int[2]]
-    
+
     if vertex_id > 0:
         return int(vertex_id - 1)  # Convert from 1-indexed to 0-indexed
     return None
 
 
-def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
-                vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
-                microns_per_voxel: np.ndarray,
-                tree: Optional[cKDTree] = None,
-                max_search_radius: float = 0.0) -> Optional[int]:
+def near_vertex(
+    pos: np.ndarray,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    tree: Optional[cKDTree] = None,
+    max_search_radius: float = 0.0,
+) -> Optional[int]:
     """Return the index of a nearby vertex if within its physical radius; otherwise None
-    
+
     Uses a tolerance of 0.5 voxels to account for traces ending near but not exactly at vertices.
     """
     # Tolerance: 0.5 voxels in physical units (use average voxel size)
     tolerance_microns = 0.5 * np.mean(microns_per_voxel)
-    
+
     if tree is not None:
         # Optimized spatial query
         pos_microns = pos * microns_per_voxel
@@ -285,38 +298,45 @@ def near_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
             if np.linalg.norm(diff) <= radius + tolerance_microns:
                 return i
         return None
-    else:
-        # Fallback linear scan
-        for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-            radius = lumen_radius_microns[vertex_scale]
-            diff = (pos - vertex_pos) * microns_per_voxel
-            if np.linalg.norm(diff) <= radius + tolerance_microns:
-                return i
-        return None
+    # Fallback linear scan
+    for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+        radius = lumen_radius_microns[vertex_scale]
+        diff = (pos - vertex_pos) * microns_per_voxel
+        if np.linalg.norm(diff) <= radius + tolerance_microns:
+            return i
+    return None
 
-def find_terminal_vertex(pos: np.ndarray, vertex_positions: np.ndarray,
-                         vertex_scales: np.ndarray, lumen_radius_microns: np.ndarray,
-                         microns_per_voxel: np.ndarray,
-                         tree: Optional[cKDTree] = None,
-                         max_search_radius: float = 0.0) -> Optional[int]:
+
+def find_terminal_vertex(
+    pos: np.ndarray,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    tree: Optional[cKDTree] = None,
+    max_search_radius: float = 0.0,
+) -> Optional[int]:
     """Find the index of a terminal vertex near a given position, if any."""
-    return near_vertex(pos, vertex_positions, vertex_scales,
-                       lumen_radius_microns, microns_per_voxel,
-                       tree=tree, max_search_radius=max_search_radius)
+    return near_vertex(
+        pos,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_microns,
+        microns_per_voxel,
+        tree=tree,
+        max_search_radius=max_search_radius,
+    )
 
 
-
-def estimate_vessel_directions(energy: np.ndarray, pos: np.ndarray, radius: float,
-                               microns_per_voxel: np.ndarray) -> np.ndarray:
+def estimate_vessel_directions(
+    energy: np.ndarray, pos: np.ndarray, radius: float, microns_per_voxel: np.ndarray
+) -> np.ndarray:
     """Estimate vessel directions at a vertex via local Hessian analysis."""
     # Determine a small neighborhood around the vertex
     sigma = max(radius / 2.0, 1.0)
     center = np.round(pos).astype(int)
     r = int(max(1, np.ceil(sigma)))
-    slices = tuple(
-        slice(max(c - r, 0), min(c + r + 1, s))
-        for c, s in zip(center, energy.shape)
-    )
+    slices = tuple(slice(max(c - r, 0), min(c + r + 1, s)) for c, s in zip(center, energy.shape))
     patch = energy[slices]
     # Fallback to uniform directions if patch is too small
     if patch.ndim != 3 or min(patch.shape) < 3:
@@ -339,18 +359,18 @@ def estimate_vessel_directions(energy: np.ndarray, pos: np.ndarray, radius: floa
 
     # Compute Hessian in the local patch and extract center values
     hessian_elems = [
-        h * (radius ** 2)
-        for h in feature.hessian_matrix(
-            patch, sigma=sigma, mode='nearest', order='rc'
-        )
+        h * (radius**2)
+        for h in feature.hessian_matrix(patch, sigma=sigma, mode="nearest", order="rc")
     ]
     patch_center = tuple(np.array(patch.shape) // 2)
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
-    H = np.array([
-        [Hxx, Hxy, Hxz],
-        [Hxy, Hyy, Hyz],
-        [Hxz, Hyz, Hzz],
-    ])
+    H = np.array(
+        [
+            [Hxx, Hxy, Hxz],
+            [Hxy, Hyy, Hyz],
+            [Hxz, Hyz, Hzz],
+        ]
+    )
     # Eigen decomposition to find principal axis
     try:
         w, v = np.linalg.eigh(H)
@@ -372,6 +392,7 @@ def estimate_vessel_directions(energy: np.ndarray, pos: np.ndarray, radius: floa
     direction = direction / norm
     return np.stack((direction, -direction))
 
+
 def trace_edge(
     energy: np.ndarray,
     start_pos: np.ndarray,
@@ -389,12 +410,20 @@ def trace_edge(
     vertex_image: Optional[np.ndarray] = None,
     tree: Optional[cKDTree] = None,
     max_search_radius: float = 0.0,
-) -> List[np.ndarray]:
+) -> list[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""
     trace = [start_pos.copy()]
     # Scalarize position and direction
-    current_pos_y, current_pos_x, current_pos_z = float(start_pos[0]), float(start_pos[1]), float(start_pos[2])
-    current_dir_y, current_dir_x, current_dir_z = float(direction[0]), float(direction[1]), float(direction[2])
+    current_pos_y, current_pos_x, current_pos_z = (
+        float(start_pos[0]),
+        float(start_pos[1]),
+        float(start_pos[2]),
+    )
+    current_dir_y, current_dir_x, current_dir_z = (
+        float(direction[0]),
+        float(direction[1]),
+        float(direction[2]),
+    )
 
     # Precompute for optimized gradient calc
     inv_mpv_2x_y = 1.0 / (2.0 * float(microns_per_voxel[0]))
@@ -410,9 +439,9 @@ def trace_edge(
     if dim_y < 3 or dim_x < 3 or dim_z < 3:
         return trace
 
-    pos_y = int(math.floor(current_pos_y))
-    pos_x = int(math.floor(current_pos_x))
-    pos_z = int(math.floor(current_pos_z))
+    pos_y = math.floor(current_pos_y)
+    pos_x = math.floor(current_pos_x)
+    pos_z = math.floor(current_pos_z)
     prev_energy = energy[pos_y, pos_x, pos_z]
 
     for _ in range(max_steps):
@@ -428,21 +457,32 @@ def trace_edge(
                 r_next_pos_x = round(next_pos_x)
                 r_next_pos_z = round(next_pos_z)
                 # Check if position changed
-                if (r_next_pos_y == round(current_pos_y) and
-                    r_next_pos_x == round(current_pos_x) and
-                    r_next_pos_z == round(current_pos_z)):
+                if (
+                    r_next_pos_y == round(current_pos_y)
+                    and r_next_pos_x == round(current_pos_x)
+                    and r_next_pos_z == round(current_pos_z)
+                ):
                     return trace
-                next_pos_y, next_pos_x, next_pos_z = float(r_next_pos_y), float(r_next_pos_x), float(r_next_pos_z)
+                next_pos_y, next_pos_x, next_pos_z = (
+                    float(r_next_pos_y),
+                    float(r_next_pos_x),
+                    float(r_next_pos_z),
+                )
 
             # Inline bounds check for speed
-            if (next_pos_y < 0 or next_pos_y >= dim_y or
-                next_pos_x < 0 or next_pos_x >= dim_x or
-                next_pos_z < 0 or next_pos_z >= dim_z):
+            if (
+                next_pos_y < 0
+                or next_pos_y >= dim_y
+                or next_pos_x < 0
+                or next_pos_x >= dim_x
+                or next_pos_z < 0
+                or next_pos_z >= dim_z
+            ):
                 return trace
 
-            pos_y = int(math.floor(next_pos_y))
-            pos_x = int(math.floor(next_pos_x))
-            pos_z = int(math.floor(next_pos_z))
+            pos_y = math.floor(next_pos_y)
+            pos_x = math.floor(next_pos_x)
+            pos_z = math.floor(next_pos_z)
             current_energy = energy[pos_y, pos_x, pos_z]
 
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
@@ -468,9 +508,9 @@ def trace_edge(
 
         # Optimized gradient computation
         # Use scalar args to avoid allocating arrays
-        pos_y = int(round(current_pos_y))
-        pos_x = int(round(current_pos_x))
-        pos_z = int(round(current_pos_z))
+        pos_y = round(current_pos_y)
+        pos_x = round(current_pos_x)
+        pos_z = round(current_pos_z)
 
         # Inline gradient computation to avoid function call and allocation
         # Manual clamping
@@ -493,16 +533,25 @@ def trace_edge(
             grad_pos_z = dim_z_minus_2
 
         # Compute gradient components
-        grad_y = (energy[grad_pos_y+1, grad_pos_x, grad_pos_z] - energy[grad_pos_y-1, grad_pos_x, grad_pos_z]) * inv_mpv_2x_y
-        grad_x = (energy[grad_pos_y, grad_pos_x+1, grad_pos_z] - energy[grad_pos_y, grad_pos_x-1, grad_pos_z]) * inv_mpv_2x_x
-        grad_z = (energy[grad_pos_y, grad_pos_x, grad_pos_z+1] - energy[grad_pos_y, grad_pos_x, grad_pos_z-1]) * inv_mpv_2x_z
+        grad_y = (
+            energy[grad_pos_y + 1, grad_pos_x, grad_pos_z]
+            - energy[grad_pos_y - 1, grad_pos_x, grad_pos_z]
+        ) * inv_mpv_2x_y
+        grad_x = (
+            energy[grad_pos_y, grad_pos_x + 1, grad_pos_z]
+            - energy[grad_pos_y, grad_pos_x - 1, grad_pos_z]
+        ) * inv_mpv_2x_x
+        grad_z = (
+            energy[grad_pos_y, grad_pos_x, grad_pos_z + 1]
+            - energy[grad_pos_y, grad_pos_x, grad_pos_z - 1]
+        ) * inv_mpv_2x_z
 
         # Manual norm
         grad_norm = math.sqrt(grad_y**2 + grad_x**2 + grad_z**2)
 
         if grad_norm > 1e-12:
             # Project gradient onto plane perpendicular to current direction
-            dot_prod = grad_y*current_dir_y + grad_x*current_dir_x + grad_z*current_dir_z
+            dot_prod = grad_y * current_dir_y + grad_x * current_dir_x + grad_z * current_dir_z
 
             perp_grad_y = grad_y - current_dir_y * dot_prod
             perp_grad_x = grad_x - current_dir_x * dot_prod
@@ -525,9 +574,9 @@ def trace_edge(
         if vertex_image is not None:
             # OPTIMIZATION: Inlined vertex_at_position to avoid function call and numpy overhead
             # vertex_at_position uses np.floor, so we use math.floor here to match logic
-            vi_y = int(math.floor(current_pos_y))
-            vi_x = int(math.floor(current_pos_x))
-            vi_z = int(math.floor(current_pos_z))
+            vi_y = math.floor(current_pos_y)
+            vi_x = math.floor(current_pos_x)
+            vi_z = math.floor(current_pos_z)
 
             # Bounds check is implicitly handled because (current_pos_y, x, z) are
             # constrained to be within energy.shape, and vertex_image has the same shape.
@@ -540,9 +589,13 @@ def trace_edge(
                 terminal_vertex_idx = None
         else:
             terminal_vertex_idx = near_vertex(
-                current_pos_arr, vertex_positions, vertex_scales,
-                lumen_radius_microns, microns_per_voxel,
-                tree=tree, max_search_radius=max_search_radius
+                current_pos_arr,
+                vertex_positions,
+                vertex_scales,
+                lumen_radius_microns,
+                microns_per_voxel,
+                tree=tree,
+                max_search_radius=max_search_radius,
             )
         if terminal_vertex_idx is not None:
             trace.append(vertex_positions[terminal_vertex_idx].copy())
@@ -550,14 +603,16 @@ def trace_edge(
 
     return trace
 
-def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any], 
-                  params: Dict[str, Any]) -> Dict[str, Any]:
+
+def extract_edges(
+    energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+) -> dict[str, Any]:
     """
     Extract edges by tracing from vertices through energy field.
     MATLAB Equivalent: `get_edges_V300.m`
     """
     logger.info("Extracting edges")
-    
+
     energy = energy_data["energy"]
     vertex_positions = vertices["positions"]
     vertex_scales = vertices["scales"]
@@ -576,7 +631,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
 
     edges = []
     edge_connections = []
-    edge_energies: List[float] = []
+    edge_energies: list[float] = []
     edges_per_vertex = np.zeros(len(vertex_positions), dtype=int)
     existing_pairs = set()
 
@@ -596,7 +651,7 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
         vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape
     )
     logger.info("Vertex volume image created")
-    
+
     # Also build cKDTree as fallback for out-of-volume queries
     vertex_positions_microns = vertex_positions * microns_per_voxel
     tree = cKDTree(vertex_positions_microns)
@@ -620,15 +675,13 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 energy, start_pos, start_radius, microns_per_voxel
             )
             if directions.shape[0] < max_edges_per_vertex:
-                extra = generate_edge_directions(
-                    max_edges_per_vertex - directions.shape[0]
-                )
+                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
                 directions = np.vstack([directions, extra])
             else:
                 directions = directions[:max_edges_per_vertex]
         else:
             directions = generate_edge_directions(max_edges_per_vertex)
-        
+
         for direction in directions:
             if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
                 break
@@ -653,16 +706,16 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
             if len(edge_trace) > 1:  # Valid edge found
                 # Use vertex image for fast O(1) lookup at endpoint
                 terminal_vertex = vertex_at_position(edge_trace[-1], vertex_image)
-                
+
                 # If endpoint check failed and trace is short, check earlier points
                 if terminal_vertex is None and len(edge_trace) <= 5:
-                    for point in reversed(edge_trace[-len(edge_trace):-1]):
+                    for point in reversed(edge_trace[-len(edge_trace) : -1]):
                         terminal_vertex = vertex_at_position(point, vertex_image)
                         if terminal_vertex is not None and terminal_vertex != vertex_idx:
                             break
-                        elif terminal_vertex == vertex_idx:
+                        if terminal_vertex == vertex_idx:
                             terminal_vertex = None
-                            
+
                 # Skip self-connections
                 if terminal_vertex == vertex_idx:
                     continue
@@ -677,15 +730,17 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
                 idx = np.floor(edge_arr).astype(int)
                 energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
                 edge_energies.append(float(np.mean(energies)))
-                edge_connections.append([
-                    vertex_idx,
-                    terminal_vertex if terminal_vertex is not None else -1,
-                ])
+                edge_connections.append(
+                    [
+                        vertex_idx,
+                        terminal_vertex if terminal_vertex is not None else -1,
+                    ]
+                )
                 edges_per_vertex[vertex_idx] += 1
                 if terminal_vertex is not None:
                     edges_per_vertex[terminal_vertex] += 1
                     existing_pairs.add(pair)
-    
+
     logger.info(f"Extracted {len(edges)} edges")
 
     edge_connections = np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2)
@@ -694,12 +749,13 @@ def extract_edges(energy_data: Dict[str, Any], vertices: Dict[str, Any],
         "traces": edges,
         "connections": edge_connections,
         "energies": np.asarray(edge_energies, dtype=np.float32),
-        "vertex_positions": vertex_positions.astype(np.float32)
+        "vertex_positions": vertex_positions.astype(np.float32),
     }
 
-def extract_edges_watershed(energy_data: Dict[str, Any],
-                            vertices: Dict[str, Any],
-                            params: Dict[str, Any]) -> Dict[str, Any]:
+
+def extract_edges_watershed(
+    energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+) -> dict[str, Any]:
     """Extract edges using watershed segmentation seeded at vertices."""
     logger.info("Extracting edges via watershed")
 
@@ -719,15 +775,19 @@ def extract_edges_watershed(energy_data: Dict[str, Any],
 
     edges = []
     connections = []
-    edge_energies: List[float] = []
+    edge_energies: list[float] = []
     seen = set()
     n_vertices = len(vertex_positions)
     log_interval = max(1, n_vertices // 20)  # Log ~20 times over the loop
 
     for label in range(1, n_vertices + 1):
         if label % log_interval == 0 or label == n_vertices:
-            logger.info("Watershed progress: vertex %d / %d, edges so far: %d",
-                        label, n_vertices, len(edges))
+            logger.info(
+                "Watershed progress: vertex %d / %d, edges so far: %d",
+                label,
+                n_vertices,
+                len(edges),
+            )
         region = labels == label
         dilated = ndi.binary_dilation(region, structure)
         neighbors = np.unique(labels[dilated & (labels != label)])
@@ -737,9 +797,7 @@ def extract_edges_watershed(energy_data: Dict[str, Any],
             pair = (label - 1, neighbor - 1)
             if pair in seen:
                 continue
-            boundary = (
-                ndi.binary_dilation(labels == neighbor, structure) & region
-            ) | (
+            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
                 ndi.binary_dilation(region, structure) & (labels == neighbor)
             )
             coords = np.argwhere(boundary)
@@ -762,15 +820,16 @@ def extract_edges_watershed(energy_data: Dict[str, Any],
         "vertex_positions": vertex_positions.astype(np.float32),
     }
 
+
 __all__ = [
-    "in_bounds",
     "compute_gradient",
-    "generate_edge_directions",
-    "extract_vertices",
-    "near_vertex",
-    "find_terminal_vertex",
     "estimate_vessel_directions",
-    "trace_edge",
     "extract_edges",
     "extract_edges_watershed",
+    "extract_vertices",
+    "find_terminal_vertex",
+    "generate_edge_directions",
+    "in_bounds",
+    "near_vertex",
+    "trace_edge",
 ]

@@ -1,12 +1,15 @@
 """
 Chunking utilities for memory-efficient processing in SLAVV.
 """
-from typing import List, Tuple
+
+from __future__ import annotations
 
 
 def get_chunking_lattice(
-    shape: Tuple[int, int, int], max_voxels: int, margin: int
-) -> List[Tuple[Tuple[slice, slice, slice], Tuple[slice, slice, slice], Tuple[slice, slice, slice]]]:
+    shape: tuple[int, int, int], max_voxels: int, margin: int
+) -> list[
+    tuple[tuple[slice, slice, slice], tuple[slice, slice, slice], tuple[slice, slice, slice]]
+]:
     """Generate overlapping z-axis chunks to limit voxel processing.
 
     Parameters

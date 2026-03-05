@@ -1,11 +1,12 @@
 """Pipeline result exporters and network partitioning utilities."""
+
 from __future__ import annotations
 
 import json
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 
@@ -15,17 +16,17 @@ logger = logging.getLogger(__name__)
 
 
 def export_pipeline_results(
-    results: Dict[str, Any],
+    results: dict[str, Any],
     output_dir: Union[str, Path],
     base_name: str = "result",
-) -> List[Path]:
+) -> list[Path]:
     """Export all standard components of a pipeline result to files.
 
     Saves pipeline parameters to JSON.  Returns list of written file paths.
     """
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    created: List[Path] = []
+    created: list[Path] = []
 
     def _default(o):
         if isinstance(o, np.integer):
@@ -49,10 +50,10 @@ def export_pipeline_results(
 
 def partition_network(
     network: Network,
-    chunks: Tuple[int, int],
+    chunks: tuple[int, int],
     overlap: float = 0.0,
-    output_dir: Optional[Union[str, Path]] = None,
-) -> Dict[Tuple[int, int], Network]:
+    output_dir: Union[str, Path] | None = None,
+) -> dict[tuple[int, int], Network]:
     """Partition a network into spatial (Y, X) bins.
 
     Corresponds to ``partition_casx_by_xy_bins.m``.
@@ -68,7 +69,7 @@ def partition_network(
     y_step = extent[0] / ny
     x_step = extent[1] / nx
 
-    partitions: Dict[Tuple[int, int], Network] = {}
+    partitions: dict[tuple[int, int], Network] = {}
     for y_i in range(ny):
         for x_i in range(nx):
             y_min = min_coords[0] + y_i * y_step - overlap
@@ -77,8 +78,10 @@ def partition_network(
             x_max = min_coords[1] + (x_i + 1) * x_step + overlap
 
             mask = (
-                (vertices[:, 0] >= y_min) & (vertices[:, 0] <= y_max) &
-                (vertices[:, 1] >= x_min) & (vertices[:, 1] <= x_max)
+                (vertices[:, 0] >= y_min)
+                & (vertices[:, 0] <= y_max)
+                & (vertices[:, 1] >= x_min)
+                & (vertices[:, 1] <= x_max)
             )
             if not np.any(mask):
                 continue
@@ -89,9 +92,7 @@ def partition_network(
             sub_radii = network.radii[mask] if network.radii is not None else None
 
             sub_edges = [
-                [remap[u], remap[v]]
-                for u, v in network.edges
-                if u in remap and v in remap
+                [remap[u], remap[v]] for u, v in network.edges if u in remap and v in remap
             ]
             partitions[(y_i, x_i)] = Network(
                 vertices=sub_verts,
@@ -102,7 +103,7 @@ def partition_network(
     return partitions
 
 
-def parse_registration_file(path: Union[str, Path]) -> Tuple[np.ndarray, np.ndarray]:
+def parse_registration_file(path: Union[str, Path]) -> tuple[np.ndarray, np.ndarray]:
     """Parse a legacy SLAVV registration text file.
 
     Corresponds to ``registration_txt2mat.m``.
@@ -122,9 +123,7 @@ def parse_registration_file(path: Union[str, Path]) -> Tuple[np.ndarray, np.ndar
             coords.append(parts)
 
     if len(coords) < 2 * num_images:
-        logger.warning(
-            "Expected %d coordinate triplets, found %d", 2 * num_images, len(coords)
-        )
+        logger.warning("Expected %d coordinate triplets, found %d", 2 * num_images, len(coords))
 
     starts = np.array(coords[:num_images])
     dims = np.array(coords[num_images : 2 * num_images])

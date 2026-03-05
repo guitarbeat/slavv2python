@@ -2,20 +2,19 @@
 
 This module handles loading 3-D grayscale microscopy volumes.
 """
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import IO, Optional, Union
+from typing import IO, Union
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-def load_tiff_volume(
-    file: Union[str, Path, IO[bytes]], *, memory_map: bool = False
-) -> np.ndarray:
+def load_tiff_volume(file: Union[str, Path, IO[bytes]], *, memory_map: bool = False) -> np.ndarray:
     """Load a 3D grayscale TIFF volume with validation.
 
     Parameters
@@ -57,7 +56,7 @@ def load_tiff_volume(
 
 def dicom_to_tiff(
     input_path: Union[str, Path],
-    output_path: Optional[Union[str, Path]] = None,
+    output_path: Union[str, Path] | None = None,
     *,
     sort_by: str = "instance",
     rescale: bool = True,
@@ -140,7 +139,9 @@ def dicom_to_tiff(
         if not datasets:
             raise ValueError("No readable DICOM slices found in directory")
         datasets.sort(key=_sort_key)
-        volume = np.stack([np.asarray(_apply_rescale(ds.pixel_array, ds)) for ds in datasets], axis=0)
+        volume = np.stack(
+            [np.asarray(_apply_rescale(ds.pixel_array, ds)) for ds in datasets], axis=0
+        )
     else:
         ds = pydicom.dcmread(str(in_path), stop_before_pixels=False)
         arr = _apply_rescale(ds.pixel_array, ds)
@@ -153,7 +154,9 @@ def dicom_to_tiff(
 
     out_dtype = np.dtype(dtype)
     volume = np.asarray(volume)
-    volume = _normalize_dtype(volume, out_dtype) if rescale else volume.astype(out_dtype, copy=False)
+    volume = (
+        _normalize_dtype(volume, out_dtype) if rescale else volume.astype(out_dtype, copy=False)
+    )
 
     if output_path is not None:
         outp = Path(output_path)
