@@ -29,7 +29,7 @@
 | `energy_filter_V200.m` | `core/energy.py` | ✅ | Multi-scale Hessian energy |
 | `energy_filter_V200_backup_191202.m` | — | 🚫 | Old backup |
 | `construct_structuring_element.m` | `core/energy.py` (`construct_structuring_element`) | 🔀 | Merged into energy |
-| `construct_structuring_element_V190.m` | — | 🚫 | Superseded by above |
+| `construct_structuring_element_V190.m` | — | 🚫 | Superseded by above. V200 improved grid spacing logic with generalized ellipsoid generation. |
 | `construct_structuring_elements.m` | `core/energy.py` | 🔀 | |
 | `calculate_linear_strel.m` | `core/energy.py` | 🔀 | |
 | `calculate_linear_strel_range.m` | `core/energy.py` | 🔀 | |
@@ -45,10 +45,10 @@
 | `vertex_curator.m` | `visualization/interactive_curator.py`, `analysis/ml_curator.py` | ✅ | GCI + ML curator |
 | `vertex_info_extractor.m` | `io/matlab_parser.py` (`extract_vertices`) | ✅ | |
 | `vertex_feature_extractor.m` | `analysis/ml_curator.py` | 🔀 | |
-| `vertexCuratorNetwork_V1.m` | `visualization/interactive_curator.py` | 🔀 | Superseded |
-| `vertexCuratorNetwork_V2.m` | `visualization/interactive_curator.py` | 🔀 | Superseded |
+| `vertexCuratorNetwork_V1.m` | `visualization/interactive_curator.py` | 🔀 | Superseded by V3. V1 lacked multi-scale support and refined labeling controls. |
+| `vertexCuratorNetwork_V2.m` | `visualization/interactive_curator.py` | 🔀 | Superseded by V3. V2 improved UI, but V3 finalized Graph extraction and advanced representations. |
 | `vertexCuratorNetwork_V3.m` | `visualization/interactive_curator.py` | ✅ | Latest GCI version |
-| `uncuratedInfoExtractor.m` | — | ⬜ | |
+| `uncuratedInfoExtractor.m` | `analysis/ml_curator.py` | ✅ | Ported `extract_uncurated_info` method |
 
 ---
 
@@ -68,8 +68,8 @@
 | `edge_curator.m` | `visualization/interactive_curator.py` | ✅ | |
 | `edge_curator_Drews.m` | — | 🚫 | User-specific script |
 | `edge_info_extractor.m` | `io/matlab_parser.py` (`extract_edges`) | ✅ | |
-| `edgeCuratorNetwork_V1.m` | `visualization/interactive_curator.py` | 🔀 | Superseded |
-| `edgeCuratorNetwork_V2.m` | `visualization/interactive_curator.py` | 🔀 | Superseded |
+| `edgeCuratorNetwork_V1.m` | `visualization/interactive_curator.py` | 🔀 | Superseded by V4_20. V1 lacked advanced trace visualization. |
+| `edgeCuratorNetwork_V2.m` | `visualization/interactive_curator.py` | 🔀 | Superseded by V4_20. V2 added basic features, but V4_20 integrated ML curation inputs and edge selection refinements. |
 | `edgeCuratorNetwork_V4_20.m` | `visualization/interactive_curator.py` | ✅ | Latest |
 
 ---
@@ -124,10 +124,10 @@
 | `tif2mat.m` | `io/tiff.py` (`load_tiff_volume`) | ✅ | |
 | `casX2mat.m` | `io/network_io.py` (`load_network_from_casx`) | ✅ | |
 | `casx_file2mat.m` | `io/network_io.py` | 🔀 | |
-| `casx_mat2file.m` | — | ⬜ | No CASX writer yet |
+| `casx_mat2file.m` | `io/network_io.py` | ✅ | Ported `save_network_to_casx` |
 | `casx2strand.m` | `io/network_io.py` | 🔀 | |
-| `casx2vmv.m` | — | ⬜ | Format converter |
-| `vmv_mat2file.m` | — | ⬜ | No VMV writer yet |
+| `casx2vmv.m` | `io/network_io.py` | ✅ | Ported `convert_casx_to_vmv` |
+| `vmv_mat2file.m` | `io/network_io.py` | ✅ | Ported `save_network_to_vmv` |
 | `registration_txt2mat.m` | `io/exporters.py` (`parse_registration_file`) | ✅ | |
 | `partition_casx_by_xy_bins.m` | `io/exporters.py` (`partition_network`) | ✅ | |
 
@@ -140,13 +140,13 @@
 | `calculate_surface_area.m` | `analysis/geometry.py` | ✅ | |
 | `calculate_depth_statistics.m` | `analysis/geometry.py` | 🔀 | |
 | `calculate_center_of_area.m` | `analysis/geometry.py` | 🔀 | |
-| `calculate_image_statistics_from_binary.m` | — | ⬜ | |
-| `calculate_image_stats.m` | — | ⬜ | |
+| `calculate_image_statistics_from_binary.m` | `analysis/geometry.py` | 🔀 | Logic covered by `calculate_image_stats` |
+| `calculate_image_stats.m` | `analysis/geometry.py` | ✅ | Ported `calculate_image_stats` |
 | `area_histogram_plotter.m` | — | ⬜ | Plotting utility |
 | `weighted_KStest2.m` | `utils/math.py` (`weighted_ks_test`) | ✅ | |
-| `fourier_transform_V2.m` | — | ⬜ | |
+| `fourier_transform_V2.m` | `utils/math.py` | ✅ | Ported `fourier_transform_even` |
 | `fix_intensity_bands.m` | `utils/preprocessing.py` | 🔀 | |
-| `evaluate_registration.m` | — | ⬜ | |
+| `evaluate_registration.m` | `analysis/geometry.py` | ✅ | Ported `evaluate_registration` |
 
 ---
 
@@ -175,14 +175,14 @@ All `vectorization_script_*.m` files are user-specific example scripts and are *
 | ⬜ Not yet ported | ~10 |
 | 🚫 Skipped | ~20+ scripts |
 
-### Key Gaps (⬜)
+### Key Gaps (✅ Addressed)
 
 | MATLAB File | Priority | Notes |
 |---|---|---|
-| `casx_mat2file.m` | Medium | Need a CASX **writer** |
-| `vmv_mat2file.m` | Low | Need a VMV **writer** |
-| `casx2vmv.m` | Low | Cross-format converter |
-| `calculate_image_stats.m` | Medium | Image-level statistics |
-| `fourier_transform_V2.m` | Low | Spectral analysis |
-| `evaluate_registration.m` | Medium | Registration evaluation |
-| `uncuratedInfoExtractor.m` | Medium | Pre-curation info |
+| `casx_mat2file.m` | Medium | ✅ ImplementedCASX **writer** |
+| `vmv_mat2file.m` | Low | ✅ ImplementedVMV **writer** |
+| `casx2vmv.m` | Low | ✅ ImplementedCross-format converter |
+| `calculate_image_stats.m` | Medium | ✅ ImplementedImage-level statistics |
+| `fourier_transform_V2.m` | Low | ✅ ImplementedSpectral analysis |
+| `evaluate_registration.m` | Medium | ✅ ImplementedRegistration evaluation |
+| `uncuratedInfoExtractor.m` | Medium | ✅ ImplementedPre-curation info |
