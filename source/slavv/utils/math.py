@@ -3,6 +3,7 @@ Mathematical helper functions for SLAVV.
 """
 from typing import Optional
 import numpy as np
+import scipy.fft
 
 
 def calculate_path_length(path: np.ndarray) -> float:
@@ -48,3 +49,18 @@ def weighted_ks_test(
     cdf2_vals = np.concatenate([[0.0], cdf2])[idx2]
 
     return float(np.max(np.abs(cdf1_vals - cdf2_vals)))
+
+
+def fourier_transform_even(image: np.ndarray) -> np.ndarray:
+    """Pad an image to the next even dimensions and compute its N-dimensional FFT.
+    
+    Matches the logic of `fourier_transform_V2.m`.
+    """
+    arr = np.asarray(image)
+    shape = np.array(arr.shape)
+    next_even_shape = 2 * np.ceil((shape + 1) / 2).astype(int)
+    
+    pad_width = [(0, e - s) for s, e in zip(shape, next_even_shape)]
+    padded_image = np.pad(arr, pad_width, mode='symmetric')
+    
+    return scipy.fft.fftn(padded_image)

@@ -62,6 +62,65 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
     return Network(vertices=vertices, edges=edges, radii=radii if radii.size else None)
 
 
+def _convert_edges_to_strands(edges: np.ndarray) -> List[List[int]]:
+    """Helper method to construct strands from an edge list.
+    
+    A VMV strand is essentially an array of connected nodes in sequence.
+    This performs a simple connected components-like traversal, although
+    a robust graph might have branches. For basic VMV writing without explicit
+    strands, we'll treat each edge as a short strand, or trace continuous paths
+    with degree <= 2. To avoid full NetworkX dependency here, we trace simple paths.
+    """
+    import networkx as nx
+    g = nx.Graph()
+    g.add_edges_from(edges)
+    
+    # Very simple strand logic: each edge is a strand if no robust pathing is needed,
+    # but let's try to extract paths that don't pass through bifurcations (degree > 2).
+    # Since this is a basic converter, we'll extract simply connected components
+    # as strands, or just use edges. Let's trace linear segments.
+    
+    strands = []
+    visited_edges = set()
+    
+    for u, v in edges:
+        edge = tuple(sorted((u, v)))
+        if edge in visited_edges:
+            continue
+            
+        # Trace forward from v
+        strand = [u, v]
+        visited_edges.add(edge)
+        
+        current = v
+        while g.degree(current) == 2:
+            neighbors = list(g.neighbors(current))
+            next_node = neighbors[0] if neighbors[1] == strand[-2] else neighbors[1]
+            next_edge = tuple(sorted((current, next_node)))
+            if next_edge in visited_edges:
+                break
+            strand.append(next_node)
+            visited_edges.add(next_edge)
+            current = next_node
+            
+        # Trace backward from u
+        current = u
+        while g.degree(current) == 2:
+            neighbors = list(g.neighbors(current))
+            next_node = neighbors[0] if neighbors[1] == strand[1] else neighbors[1]
+            next_edge = tuple(sorted((current, next_node)))
+            if next_edge in visited_edges:
+                break
+            strand.insert(0, next_node)
+            visited_edges.add(next_edge)
+            current = next_node
+            
+        strands.append(strand)
+        
+    return strands
+
+
+
 def load_network_from_casx(path: Union[str, Path]) -> Network:
     """Load network data from a CASX XML file."""
     root = ET.parse(Path(path)).getroot()
@@ -206,3 +265,83 @@ def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     with open(json_path, "w") as f:
         json.dump(data, f)
     return json_path
+
+
+def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
+    """Save network data to a CASX XML file format."""
+    casx_path = Path(path)
+    
+    root = ET.Element("CasX")
+    network_elem = ET.SubElement(root, "Network")
+    
+    # Write vertices
+    vertices_elem = ET.SubElement(network_elem, "Vertices")
+    for i, pt in enumerate(network.vertices):
+        y, x, z = pt
+        radius = network.radii[i] if network.radii is not None else 0.0
+        # Use attributes for Vertex
+        v_elem = ET.SubElement(vertices_elem, "Vertex")
+        v_elem.set("id", str(i))
+        # Important: CASX original uses specific x, y, z mappings. 
+        # The loader reads y, x, z into x, y, z labels, so we reverse it here.
+        v_elem.set("x", str(x))
+        v_elem.set("y", str(y))
+        v_elem.set("z", str(z))
+        v_elem.set("radius", str(radius))
+        
+    # Write edges
+    edges_elem = ET.SubElement(network_elem, "Edges")
+    for i, edge in enumerate(network.edges):
+        start, end = edge
+        e_elem = ET.SubElement(edges_elem, "Edge")
+        e_elem.set("id", str(i))
+        e_elem.set("start", str(int(start)))
+        e_elem.set("end", str(int(end)))
+
+    tree = ET.ElementTree(root)
+    # Python 3.9+ feature for pretty printing if desired, but we'll use base write string formatting
+    ET.indent(tree, space="  ", level=0)
+    tree.write(casx_path, encoding="UTF-8", xml_declaration=True)
+    
+    return casx_path
+
+
+def save_network_to_vmv(network: Network, path: Union[str, Path]) -> Path:
+    """Save network data to a VMV text format file."""
+    vmv_path = Path(path)
+    
+    strands = _convert_edges_to_strands(network.edges)
+    
+    with open(vmv_path, "w") as f:
+        f.write("# VMV Format Export\n")
+        
+        # Write vertices block
+        f.write("[VERTICES]\n")
+        # Format: <id> <x> <y> <z> <radius> <extra>
+        for i, pt in enumerate(network.vertices):
+            y, x, z = pt
+            radius = network.radii[i] if network.radii is not None else 0.0
+            # VMV expects y, x, z to map back to x, y, z logically, but matching load order:
+            f.write(f"{i} {y} {x} {z} {radius} 0.0\n")
+            
+        f.write("\n[EDGES]\n")
+        # Write strands block / edges block
+        for i, strand in enumerate(strands):
+            # Sequence: <strand_id> <num_points> <pt1> <pt2> ... 
+            # Or edge mode: <id> <node1> <node2>
+            # Based on the test, it parses '[EDGES]' with `_, start, end = parts[:3]`
+            # We'll just write simple edges for now to match the loader syntax.
+            if len(strand) == 2:
+                f.write(f"{i} {strand[0]} {strand[1]}\n")
+            else:
+                # If a strand has multiple segments, save as multiple edges to match test expectations
+                for j in range(len(strand) - 1):
+                    f.write(f"{i}_{j} {strand[j]} {strand[j+1]}\n")
+                    
+    return vmv_path
+
+
+def convert_casx_to_vmv(casx_path: Union[str, Path], vmv_path: Union[str, Path]) -> Path:
+    """Convert a CASX file directly to VMV format."""
+    network = load_network_from_casx(casx_path)
+    return save_network_to_vmv(network, vmv_path)

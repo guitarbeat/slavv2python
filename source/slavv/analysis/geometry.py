@@ -12,6 +12,68 @@ from typing import Dict, Any, List, Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
+def calculate_image_stats(
+    image: np.ndarray,
+    mask: np.ndarray,
+) -> Tuple[float, float, float, float]:
+    """Calculate mean and standard deviation of an image inside and outside a mask.
+    Returns (mean_in, std_in, mean_out, std_out).
+    """
+    img_arr = np.asarray(image, dtype=float)
+    mask_arr = np.asarray(mask, dtype=bool)
+    if img_arr.shape != mask_arr.shape:
+        raise ValueError("Image and mask must have the same shape")
+        
+    inside_vals = img_arr[mask_arr]
+    outside_vals = img_arr[~mask_arr]
+    
+    mean_in = float(np.mean(inside_vals)) if inside_vals.size > 0 else 0.0
+    std_in = float(np.std(inside_vals)) if inside_vals.size > 0 else 0.0
+    
+    mean_out = float(np.mean(outside_vals)) if outside_vals.size > 0 else 0.0
+    std_out = float(np.std(outside_vals)) if outside_vals.size > 0 else 0.0
+    
+    return mean_in, std_in, mean_out, std_out
+
+
+def evaluate_registration(
+    vectors_after: np.ndarray,
+    vectors_before: np.ndarray,
+) -> Tuple[float, np.ndarray, np.ndarray]:
+    """Evaluate registration by finding pairwise best match scores between vector sets."""
+    V_after = np.asarray(vectors_after, dtype=float)
+    V_before = np.asarray(vectors_before, dtype=float)
+    
+    if V_after.ndim != 2 or V_before.ndim != 2:
+         raise ValueError("Vectors must be 2D arrays")
+         
+    if V_after.size == 0 or V_before.size == 0:
+         return 0.0, np.array([]), np.array([])
+         
+    # Compute normalized vectors for angular similarity
+    norms_after = np.linalg.norm(V_after, axis=1, keepdims=True)
+    norms_before = np.linalg.norm(V_before, axis=1, keepdims=True)
+    
+    # Avoid division by zero
+    norms_after[norms_after == 0] = 1.0
+    norms_before[norms_before == 0] = 1.0
+    
+    # Normalized sets
+    N_after = V_after / norms_after
+    N_before = V_before / norms_before
+    
+    # Pairwise cosine similarity matrix
+    sim_matrix = np.clip(N_before @ N_after.T, -1.0, 1.0)
+    
+    # Find max similarity per vector in both directions
+    best_before2after = np.max(sim_matrix, axis=1) # best match in AFTER for each vector in BEFORE
+    best_after2before = np.max(sim_matrix, axis=0) # best match in BEFORE for each vector in AFTER
+    
+    # Combine (similar to MATLAB `reg_score = sum(...) * sum(...)`)
+    reg_score = float(np.sum(best_before2after) * np.sum(best_after2before))
+    
+    return reg_score, best_before2after, best_after2before
+
 def calculate_branching_angles(
     strands: List[List[int]],
     vertex_positions: np.ndarray,
@@ -628,5 +690,7 @@ __all__ = [
     "calculate_network_statistics",
     "crop_vertices",
     "crop_edges",
-    "crop_vertices_by_mask",
+    "evaluate_registration",
+    "calculate_image_stats",
 ]
+
