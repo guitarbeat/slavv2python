@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import joblib
 import numpy as np
@@ -95,7 +95,7 @@ def import_matlab_batch(
     batch_folder: Union[str, Path],
     checkpoint_dir: Union[str, Path],
     *,
-    stages: Optional[list] = None,
+    stages: list | None = None,
 ) -> dict[str, str]:
     """
     Import MATLAB batch output and write Python-compatible checkpoint files.

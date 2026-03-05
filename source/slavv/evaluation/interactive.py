@@ -12,7 +12,6 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
@@ -52,7 +51,7 @@ def find_available_files(project_root: Path) -> list[str]:
 class BaseRunnerWidget:
     """Base class for pipeline runner widgets."""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Path | None = None):
         self.project_root = project_root or Path.cwd().parent
         if self.project_root.name in [
             "scripts",
@@ -90,7 +89,7 @@ class BaseRunnerWidget:
 class MatlabRunnerWidget(BaseRunnerWidget):
     """Widget for running MATLAB vectorization."""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Path | None = None):
         super().__init__(project_root)
 
         # specific defaults
@@ -194,7 +193,7 @@ class MatlabRunnerWidget(BaseRunnerWidget):
 class PythonRunnerWidget(BaseRunnerWidget):
     """Widget for running Python vectorization."""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Path | None = None):
         super().__init__(project_root)
 
         # specific defaults
@@ -285,7 +284,7 @@ class PythonRunnerWidget(BaseRunnerWidget):
 class ComparisonDashboardWidget:
     """Widget for running comparison and visualization."""
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Path | None = None):
         self.project_root = project_root or Path.cwd().parent
         if self.project_root.name in ["scripts", "notebooks"]:
             self.project_root = self.project_root.parent
@@ -422,7 +421,7 @@ class ComparisonDashboardWidget:
                 self.run_button.description = "Compare Results"
 
 
-def show_comparison_plots(report_path: Optional[Path] = None):
+def show_comparison_plots(report_path: Path | None = None):
     """
     Display comparison plots from a generated report.
 

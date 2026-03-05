@@ -15,7 +15,7 @@ import logging
 import pickle
 import warnings
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import joblib
 import numpy as np
@@ -530,9 +530,7 @@ class MLCurator:
 
         return curated_edges
 
-    def save_models(
-        self, vertex_path: Optional[Any] = None, edge_path: Optional[Any] = None
-    ) -> None:
+    def save_models(self, vertex_path: Any | None = None, edge_path: Any | None = None) -> None:
         """Save trained models and scalers.
 
         Parameters:
@@ -553,9 +551,7 @@ class MLCurator:
             )
             logger.info(f"Edge model saved to {edge_path}")
 
-    def load_models(
-        self, vertex_path: Optional[Any] = None, edge_path: Optional[Any] = None
-    ) -> None:
+    def load_models(self, vertex_path: Any | None = None, edge_path: Any | None = None) -> None:
         """Load trained models and scalers.
 
         Parameters:
@@ -661,13 +657,13 @@ class MLCurator:
         """Check if position is within bounds"""
         return all(0 <= p < s for p, s in zip(pos, shape))
 
-    def _get_feature_importance(self) -> Optional[np.ndarray]:
+    def _get_feature_importance(self) -> np.ndarray | None:
         """Get feature importance from vertex classifier if available."""
         if hasattr(self.vertex_classifier, "feature_importances_"):
             return self.vertex_classifier.feature_importances_
         return None
 
-    def _get_edge_feature_importance(self) -> Optional[np.ndarray]:
+    def _get_edge_feature_importance(self) -> np.ndarray | None:
         """Get feature importance from edge classifier if available."""
         if hasattr(self.edge_classifier, "feature_importances_"):
             return self.edge_classifier.feature_importances_
@@ -689,7 +685,7 @@ class MLCurator:
             Arrays of (v_feat, v_labels, e_feat, e_labels).
         """
 
-        def _to_2d_array(value: Any, dtype: Any = float) -> Optional[np.ndarray]:
+        def _to_2d_array(value: Any, dtype: Any = float) -> np.ndarray | None:
             if value is None:
                 return None
             arr = np.asarray(value, dtype=dtype)
@@ -699,7 +695,7 @@ class MLCurator:
                 arr = arr.reshape(-1, 1)
             return arr
 
-        def _to_1d_array(value: Any, dtype: Any = int) -> Optional[np.ndarray]:
+        def _to_1d_array(value: Any, dtype: Any = int) -> np.ndarray | None:
             if value is None:
                 return None
             arr = np.asarray(value, dtype=dtype).reshape(-1)
@@ -727,7 +723,7 @@ class MLCurator:
         edge_label_chunks: list[np.ndarray] = []
 
         for file_path in files:
-            loaded: Optional[dict[str, Any]] = None
+            loaded: dict[str, Any] | None = None
             suffix = file_path.suffix.lower()
             try:
                 if suffix == ".npz":
@@ -809,7 +805,7 @@ class DrewsCurator:
         self,
         edges: dict[str, Any],
         vertices: dict[str, Any],
-        parameters: Optional[dict[str, Any]] = None,
+        parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Apply Drews' curation logic.
@@ -910,8 +906,8 @@ class AutomaticCurator:
 
     def __init__(
         self,
-        vertex_parameters: Optional[dict[str, Any]] = None,
-        edge_parameters: Optional[dict[str, Any]] = None,
+        vertex_parameters: dict[str, Any] | None = None,
+        edge_parameters: dict[str, Any] | None = None,
     ) -> None:
         """Store default heuristic parameters for vertex and edge curation.
 

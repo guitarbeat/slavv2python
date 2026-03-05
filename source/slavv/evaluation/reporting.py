@@ -9,11 +9,14 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from slavv.utils import format_time
 
 from .management import resolve_run_layout
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 

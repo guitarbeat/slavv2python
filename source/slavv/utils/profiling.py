@@ -1,15 +1,17 @@
 from __future__ import annotations
+
 import cProfile
 import pstats
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
 # from ..core import SLAVVProcessor  # Moved inside to avoid circular dependency
 
 
 def profile_process_image(
-    image: np.ndarray, parameters: Optional[dict[str, Any]] = None
+    image: np.ndarray, parameters: dict[str, Any] | None = None
 ) -> pstats.Stats:
     """Profile the SLAVV pipeline on a 3D volume.
 

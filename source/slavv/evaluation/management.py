@@ -7,10 +7,12 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from slavv.utils import format_size
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ def create_experiment_path(base_dir: Path, label: str = "run") -> Path:
     return base_dir / f"{timestamp}_{safe_label}"
 
 
-def _first_existing(candidates: list[Path]) -> Optional[Path]:
+def _first_existing(candidates: list[Path]) -> Path | None:
     """Return first existing path from candidates, else None."""
     for candidate in candidates:
         if candidate.exists():
@@ -237,7 +239,7 @@ def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
     return inventory
 
 
-def generate_manifest(comparison_dir: Path, output_file: Optional[Path] = None) -> str:
+def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> str:
     """Generate manifest/README for a comparison directory."""
     if output_file is None:
         output_file = comparison_dir / "MANIFEST.md"

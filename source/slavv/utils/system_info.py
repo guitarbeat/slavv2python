@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import platform
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 def get_system_info() -> dict[str, Any]:
@@ -132,7 +132,7 @@ def _get_python_info() -> dict[str, Any]:
     }
 
 
-def get_matlab_info(matlab_path: Optional[str] = None) -> dict[str, Any]:
+def get_matlab_info(matlab_path: str | None = None) -> dict[str, Any]:
     """
     Get MATLAB version information.
 

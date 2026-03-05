@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -43,7 +43,7 @@ def compute_gradient(
     return compute_gradient_impl(energy_arr, pos_int, mpv_arr)
 
 
-def generate_edge_directions(n_directions: int, seed: Optional[int] = None) -> np.ndarray:
+def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.ndarray:
     """Generate uniformly distributed unit vectors on the sphere.
 
     Parameters
@@ -239,7 +239,7 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
     }
 
 
-def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> Optional[int]:
+def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> int | None:
     """
     Fast O(1) vertex lookup using pre-computed vertex volume image.
 
@@ -274,9 +274,9 @@ def near_vertex(
     vertex_scales: np.ndarray,
     lumen_radius_microns: np.ndarray,
     microns_per_voxel: np.ndarray,
-    tree: Optional[cKDTree] = None,
+    tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
-) -> Optional[int]:
+) -> int | None:
     """Return the index of a nearby vertex if within its physical radius; otherwise None
 
     Uses a tolerance of 0.5 voxels to account for traces ending near but not exactly at vertices.
@@ -313,9 +313,9 @@ def find_terminal_vertex(
     vertex_scales: np.ndarray,
     lumen_radius_microns: np.ndarray,
     microns_per_voxel: np.ndarray,
-    tree: Optional[cKDTree] = None,
+    tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
-) -> Optional[int]:
+) -> int | None:
     """Find the index of a terminal vertex near a given position, if any."""
     return near_vertex(
         pos,
@@ -407,8 +407,8 @@ def trace_edge(
     microns_per_voxel: np.ndarray,
     energy_sign: float,
     discrete_steps: bool = False,
-    vertex_image: Optional[np.ndarray] = None,
-    tree: Optional[cKDTree] = None,
+    vertex_image: np.ndarray | None = None,
+    tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
 ) -> list[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""

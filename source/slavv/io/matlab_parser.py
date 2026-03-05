@@ -13,7 +13,7 @@ extract vertices, edges, network statistics, and timing information.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import numpy as np
 from scipy.io import loadmat
@@ -25,7 +25,7 @@ class MATLABParseError(Exception):
     """Exception raised when MATLAB output parsing fails."""
 
 
-def find_batch_folder(output_dir: Union[str, Path]) -> Optional[Path]:
+def find_batch_folder(output_dir: Union[str, Path]) -> Path | None:
     """Find the most recent MATLAB batch folder in the output directory.
 
     Parameters
@@ -55,7 +55,7 @@ def find_batch_folder(output_dir: Union[str, Path]) -> Optional[Path]:
     return batch_folders[-1]
 
 
-def load_mat_file_safe(file_path: Path) -> Optional[dict[str, Any]]:
+def load_mat_file_safe(file_path: Path) -> dict[str, Any] | None:
     """Safely load a MATLAB .mat file with error handling.
 
     Parameters
@@ -313,7 +313,7 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
     return results
 
 
-def load_matlab_results_from_output_dir(output_dir: Union[str, Path]) -> Optional[dict[str, Any]]:
+def load_matlab_results_from_output_dir(output_dir: Union[str, Path]) -> dict[str, Any] | None:
     """Find and load MATLAB results from an output directory.
 
     Convenience function that finds the most recent batch folder and loads results.

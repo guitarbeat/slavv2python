@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -191,7 +191,7 @@ class NetworkVisualizer:
             # Determine values and colors for all edges
             edge_colors: list[str] = []
             strand_ids: list[int] = []
-            values: Optional[np.ndarray] = None
+            values: np.ndarray | None = None
 
             # 1. Calculate values based on color_by
             if color_by == "depth":
@@ -651,7 +651,7 @@ class NetworkVisualizer:
         show_vertices: bool = True,
         show_edges: bool = True,
         show_bifurcations: bool = True,
-        opacity_by: Optional[str] = None,
+        opacity_by: str | None = None,
     ) -> go.Figure:
         """Create 3D network visualization.
 
@@ -1068,7 +1068,7 @@ class NetworkVisualizer:
         return fig
 
     def plot_energy_field(
-        self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: Optional[int] = None
+        self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
     ) -> go.Figure:
         """
         Visualize energy field as 2D slice

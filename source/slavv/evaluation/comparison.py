@@ -13,8 +13,7 @@ import json
 import os
 import subprocess
 import time
-from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -28,8 +27,11 @@ from .matlab_parser import load_matlab_batch_results
 from .metrics import compare_results
 from .reporting import generate_summary
 
+if TYPE_CHECKING:
+    from pathlib import Path
 
-def load_parameters(params_file: Optional[str] = None) -> dict[str, Any]:
+
+def load_parameters(params_file: str | None = None) -> dict[str, Any]:
     """Load parameters from JSON file or use defaults."""
     if params_file and os.path.exists(params_file):
         with open(params_file) as f:
@@ -62,7 +64,7 @@ def run_matlab_vectorization(
     output_dir: str,
     matlab_path: str,
     project_root: Path,
-    batch_script: Optional[str] = None,
+    batch_script: str | None = None,
 ) -> dict[str, Any]:
     """Run MATLAB vectorization via CLI."""
     print("\n" + "=" * 60)

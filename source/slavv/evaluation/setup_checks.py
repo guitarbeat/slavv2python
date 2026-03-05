@@ -8,7 +8,6 @@ import contextlib
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 # Add project root to path if needed for imports
 # (Assuming this module is importable as slavv.dev.validation)
@@ -31,8 +30,8 @@ class Validator:
     def __init__(
         self,
         project_root: Path,
-        matlab_path: Optional[str] = None,
-        test_data_path: Optional[str] = None,
+        matlab_path: str | None = None,
+        test_data_path: str | None = None,
     ):
         self.project_root = project_root
         self.matlab_path = matlab_path

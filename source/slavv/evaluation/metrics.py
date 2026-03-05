@@ -7,7 +7,7 @@ between MATLAB and Python implementations.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from scipy import stats
@@ -206,7 +206,7 @@ def compare_networks(
 def compare_results(
     matlab_results: dict[str, Any],
     python_results: dict[str, Any],
-    matlab_parsed: Optional[dict[str, Any]] = None,
+    matlab_parsed: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Compare MATLAB and Python vectorization results.

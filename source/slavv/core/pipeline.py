@@ -7,13 +7,15 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 import joblib
-import numpy as np
 
 from .. import utils
 from . import energy, graph, tracing
+
+if TYPE_CHECKING:
+    import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +33,8 @@ class SLAVVProcessor:
         self,
         image: np.ndarray,
         parameters: dict[str, Any],
-        progress_callback: Optional[Callable[[float, str], None]] = None,
-        checkpoint_dir: Optional[str] = None,
+        progress_callback: Callable[[float, str], None] | None = None,
+        checkpoint_dir: str | None = None,
     ) -> dict[str, Any]:
         """Complete SLAVV processing pipeline.
 

@@ -6,7 +6,7 @@ Handles registration, spatial metrics, and statistical analysis of the vascular 
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -191,7 +191,7 @@ def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarr
 
 def get_edge_metric(
     trace: np.ndarray,
-    energy: Optional[np.ndarray] = None,
+    energy: np.ndarray | None = None,
     method: str = "mean_energy",
 ) -> float:
     """Compute a simple metric for a single edge trace."""
@@ -255,10 +255,10 @@ def smooth_edge_traces(traces: list[np.ndarray], sigma: float = 1.0) -> list[np.
 def transform_vector_set(
     positions: np.ndarray,
     *,
-    matrix: Optional[np.ndarray] = None,
-    scale: Optional[list[float]] = None,
-    rotation: Optional[np.ndarray] = None,
-    translate: Optional[list[float]] = None,
+    matrix: np.ndarray | None = None,
+    scale: list[float] | None = None,
+    rotation: np.ndarray | None = None,
+    translate: list[float] | None = None,
 ) -> np.ndarray:
     """Apply geometric transforms to a set of positions."""
     pts = np.asarray(positions, dtype=float)
@@ -509,7 +509,7 @@ def calculate_network_statistics(
     radii: np.ndarray,
     microns_per_voxel: list[float],
     image_shape: tuple[int, ...],
-    edge_energies: Optional[np.ndarray] = None,
+    edge_energies: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Calculate aggregate metrics for a traced vascular network."""
     stats = {}

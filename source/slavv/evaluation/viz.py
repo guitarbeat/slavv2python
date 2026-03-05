@@ -6,11 +6,13 @@ This module provides plotting functions for comparing MATLAB and Python results.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def set_plot_style():
@@ -33,7 +35,7 @@ def set_plot_style():
     plt.rcParams["grid.alpha"] = 0.3
 
 
-def plot_count_comparison(comparison: dict[str, Any], output_path: Optional[Path] = None):
+def plot_count_comparison(comparison: dict[str, Any], output_path: Path | None = None):
     """Create bar chart comparing counts (vertices, edges, strands)."""
     fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -94,9 +96,9 @@ def plot_count_comparison(comparison: dict[str, Any], output_path: Optional[Path
 
 def plot_radius_distributions(
     comparison: dict[str, Any],
-    matlab_radii: Optional[np.ndarray],
-    python_radii: Optional[np.ndarray],
-    output_path: Optional[Path] = None,
+    matlab_radii: np.ndarray | None,
+    python_radii: np.ndarray | None,
+    output_path: Path | None = None,
 ):
     """Create overlaid histograms of radius distributions."""
     fig, ax = plt.subplots(figsize=(12, 6))
