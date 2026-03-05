@@ -66,6 +66,29 @@ def _build_parser() -> argparse.ArgumentParser:
     # --- slavv info -------------------------------------------------------
     subparsers.add_parser("info", help="Print version and system information")
 
+    # --- slavv import-matlab ----------------------------------------------
+    imp_parser = subparsers.add_parser(
+        "import-matlab",
+        help="Import a MATLAB batch_* folder as Python checkpoints"
+    )
+    imp_parser.add_argument(
+        "-b", "--batch-folder", required=True,
+        help="Path to the MATLAB batch_* folder (or parent directory)"
+    )
+    imp_parser.add_argument(
+        "-c", "--checkpoint-dir", required=True,
+        help="Output directory for Python checkpoint pickles"
+    )
+    imp_parser.add_argument(
+        "--stages", nargs="+",
+        choices=["energy", "vertices", "edges", "network"],
+        default=None,
+        help="Which stages to import (default: all available)"
+    )
+    imp_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable debug logging"
+    )
+
     return parser
 
 
@@ -149,6 +172,33 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print(f"Done. Results in {args.output}")
 
 
+def _cmd_import_matlab(args: argparse.Namespace) -> None:
+    """Import MATLAB batch output as Python checkpoints."""
+    from slavv.io.matlab_bridge import import_matlab_batch
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+    )
+
+    written = import_matlab_batch(
+        args.batch_folder,
+        args.checkpoint_dir,
+        stages=args.stages,
+    )
+
+    if written:
+        print(f"Imported {len(written)} stage(s) into {args.checkpoint_dir}:")
+        for stage, path in written.items():
+            print(f"  {stage}: {path}")
+        print()
+        print("You can now run the Python pipeline with:")
+        print(f"  slavv run -i <image.tif> --checkpoint-dir {args.checkpoint_dir}")
+    else:
+        print("No MATLAB data files found. Check that the batch folder path is correct.")
+
+
 def main(argv=None):
     """CLI entry point."""
     parser = _build_parser()
@@ -163,6 +213,8 @@ def main(argv=None):
         _cmd_info()
     elif args.command == "run":
         _cmd_run(args)
+    elif args.command == "import-matlab":
+        _cmd_import_matlab(args)
     else:
         parser.print_help()
         sys.exit(0 if args.command is None else 1)

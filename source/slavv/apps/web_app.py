@@ -11,6 +11,7 @@ import warnings
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 from slavv.analysis import MLCurator, AutomaticCurator
+from slavv.visualization.interactive_curator import run_curator
 from slavv.visualization import NetworkVisualizer
 from slavv.io import load_tiff_volume
 
@@ -585,11 +586,42 @@ def show_ml_curation_page():
     st.markdown("### 🎯 Curation Options")
     curation_type = st.radio(
         "Select Curation Type:",
-        ("Automatic (Rule-based)", "Machine Learning (Model-based)"),
-        help="Choose between rule-based automatic curation or machine learning model-based curation."
+        ("Interactive (Manual GUI)", "Automatic (Rule-based)", "Machine Learning (Model-based)"),
+        help="Choose how to curate nodes/edges. Interactive opens a 3D pop-up window."
     )
 
-    if curation_type == "Automatic (Rule-based)":
+    if curation_type == "Interactive (Manual GUI)":
+        st.markdown("#### Interactive 3D Curation")
+        st.info("Launch the 3D Graphical Curator Interface to manually add or delete vertices and edges.")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚀 Launch Interactive Curator", type="primary", width=250):
+                # Put up a status so user knows to look for the window
+                with st.status("Interactive Curator running in new window...", expanded=True) as status:
+                    st.warning("⚠️ Please check your taskbar for the new 3D window. Closing the window will save and continue.")
+                    
+                    # Launch the blocking PyQt5 Application
+                    curated_vertices, curated_edges = run_curator(
+                        results["energy_data"], 
+                        results["vertices"], 
+                        results["edges"]
+                    )
+                    
+                    st.session_state["processing_results"]["vertices"] = curated_vertices
+                    st.session_state["processing_results"]["edges"] = curated_edges
+                    
+                    status.update(label="Interactive Curation complete!", state="complete")
+                    st.success("✅ Interactive edits saved!")
+                    
+                    # Rerender metrics
+                    c1, c2 = st.columns(2, gap="small")
+                    with c1:
+                        st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                    with c2:
+                        st.metric("Curated Edges", len(curated_edges.get("traces", [])))
+
+    elif curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
         col1, col2 = st.columns(2, gap="medium")
         with col1:

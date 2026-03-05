@@ -1,6 +1,6 @@
-"""Tests for the SLAVV CLI entry point (slavv.cli)."""
+"""Tests for the SLAVV CLI entry point (slavv.apps.cli)."""
 import pytest
-from slavv.cli import _build_parser, _args_to_parameters, main
+from slavv.apps.cli import _build_parser, _args_to_parameters, main
 
 
 class TestBuildParser:

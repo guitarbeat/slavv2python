@@ -23,6 +23,8 @@ from .geometry import (
     register_strands,
 )
 from .ml_curator import MLCurator, AutomaticCurator, extract_uncurated_info, choose_vertices, choose_edges
+# InteractiveCurator requires PyQt5/PyVista/VTK — import directly when needed:
+#   from slavv.analysis.interactive_curator import InteractiveCurator, run_curator
 
 __all__ = [
     "calculate_branching_angles",

@@ -1,7 +1,7 @@
 """
 Unit tests for MATLAB output parser.
 
-Tests the functionality of slavv.evaluation.matlab_parser for loading
+Tests the functionality of slavv.io.matlab_parser for loading
 and parsing MATLAB vectorization output files.
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 
-from slavv.evaluation.matlab_parser import (
+from slavv.io.matlab_parser import (
     find_batch_folder,
     load_mat_file_safe,
     extract_vertices,
@@ -171,7 +171,7 @@ class TestLoadMatFileSafe:
         result = load_mat_file_safe(nonexistent)
         assert result is None
     
-    @patch('slavv.evaluation.matlab_parser.loadmat')
+    @patch('slavv.io.matlab_parser.loadmat')
     def test_load_mat_file_success(self, mock_loadmat, tmp_path):
         """Test successful loading."""
         test_file = tmp_path / "test.mat"
@@ -183,7 +183,7 @@ class TestLoadMatFileSafe:
         assert result == {'data': 'test'}
         mock_loadmat.assert_called_once()
     
-    @patch('slavv.evaluation.matlab_parser.loadmat')
+    @patch('slavv.io.matlab_parser.loadmat')
     def test_load_mat_file_error(self, mock_loadmat, tmp_path):
         """Test handling of loading error."""
         test_file = tmp_path / "test.mat"

@@ -82,20 +82,92 @@ Open the provided URL in your browser.
 ## Usage
 
 ### Programmatic Usage (Headless/Batch)
+The core `SLAVVProcessor` acts as an agnostic API backend for the entire pipeline. It is entirely decoupled from any user interface (like Streamlit or the CLI), meaning you can easily import it into your own custom Python scripts, Jupyter notebooks, or wrap it in a REST API (like FastAPI) to process remote jobs.
+
 For integration into other pipelines or running on a cluster without the UI, use the `SLAVVProcessor` class.
 See **`workspace/examples/run_tutorial.py`** or the docstrings for details.
 
 ```python
 from slavv import SLAVVProcessor
 
-# Initialize
+# Initialize the agnostic backend processor
 processor = SLAVVProcessor()
 
-# Run
+# Run the pipeline (takes pure numpy arrays and a parameter dict)
 results = processor.process_image(image_data, params)
 
+# Returns a pure Python dictionary of vectorization features
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
+```
+
+### Checkpointing and Manual Curation (Resuming)
+
+Just like the original MATLAB implementation's ability to pick up in the middle of a workflow (e.g., after manual curation of vertices or edges), the Python `SLAVVProcessor` supports intermediate checkpointing. 
+
+By passing a `checkpoint_dir` to `process_image()`, the pipeline will automatically save intermediate steps to disk (`checkpoint_energy.pkl`, `checkpoint_vertices.pkl`, `checkpoint_edges.pkl`, and `checkpoint_network.pkl`). 
+
+If you run the pipeline again with the same `checkpoint_dir`, it will automatically detect these files, skip the expensive computations for those prior steps, and load the cached (or manually curated) data instead. This enables seamless resumption of crashed runs, iterative parameter tuning on downstream steps, and injecting manual external curation natively.
+
+```python
+from slavv import SLAVVProcessor
+
+processor = SLAVVProcessor()
+
+# Run the pipeline with checkpointing enabled.
+# If 'my_run_checkpoints/checkpoint_vertices.pkl' already exists (e.g., from a previous run
+# or after an external script manually curated the vertices), the pipeline will automatically 
+# load it, skip the Energy and Vertex Extraction steps, and resume directly at Edge Extraction!
+results = processor.process_image(
+    image_data, 
+    params, 
+    checkpoint_dir="my_run_checkpoints"
+)
+```
+
+### Interactive Curation (Graphical Curator Interface)
+
+Just like the original MATLAB GCI, the Python port provides a **4-panel desktop application** for manual curation of vertices and edges. The interface includes:
+
+- **Volume Map** – 3D bounding box showing your current field of view
+- **Volume Display** – 2D MIP with Depth/Thickness sliders and X/Y/Z orthogonal views
+- **Intensity Histogram** – pixel distribution with brightness/contrast controls
+- **Energy Histogram** – draggable threshold line for global energy thresholding
+
+Curation actions: **Toggle** individual vertices/edges between True (blue) and False (red), **Sweep** to hide red objects, and **Add** edges by clicking two vertices.
+
+Launch from the Streamlit app (**Curation → Interactive (Manual GUI) → Launch**) or programmatically:
+
+```python
+from slavv.analysis.interactive_curator import run_curator
+
+curated_vertices, curated_edges = run_curator(energy_data, vertices, edges)
+```
+
+### MATLAB Cross-Compatibility
+
+You can **import curated data from MATLAB** and continue the pipeline in Python. This enables workflows like: run Energy + Vertex Extraction in MATLAB → curate vertices in MATLAB's GCI → import into Python → run Edge Extraction and Network in Python.
+
+**Via CLI:**
+```bash
+# Import a MATLAB batch folder as Python checkpoints
+slavv import-matlab -b path/to/batch_260210-101213 -c my_checkpoints/
+
+# Resume the pipeline in Python (skips steps that have checkpoints)
+slavv run -i volume.tif --checkpoint-dir my_checkpoints/ --export csv json
+```
+
+**Via Python:**
+```python
+from slavv.io.matlab_bridge import import_matlab_batch
+from slavv import SLAVVProcessor
+
+# Convert MATLAB batch output → Python checkpoint pickles
+import_matlab_batch("path/to/batch_260210-101213", "my_checkpoints/")
+
+# Pipeline auto-detects checkpoints and skips those stages
+processor = SLAVVProcessor()
+results = processor.process_image(image, params, checkpoint_dir="my_checkpoints/")
 ```
 
 ### Visualization and export
