@@ -67,7 +67,7 @@ def test_end_to_end_pipeline(tmp_path):
 
     # Use a small central crop to keep the test fast while still exercising
     # every pipeline stage on real data.
-    crop = image[50:120, 100:300, 100:300]  # 70 × 200 × 200
+    crop = image[50:120, 100:300, 100:300]  # 70 x 200 x 200
 
     # 2. Pipeline parameters tuned for speed
     params = {
@@ -110,7 +110,8 @@ def test_end_to_end_pipeline(tmp_path):
     # JSON
     json_path = out_dir / "network.json"
     save_network_to_json(net_obj, str(json_path))
-    assert json_path.exists() and json_path.stat().st_size > 0
+    assert json_path.exists()
+    assert json_path.stat().st_size > 0
 
     # CSV
     csv_base = str(out_dir / "network")
@@ -121,9 +122,11 @@ def test_end_to_end_pipeline(tmp_path):
     # CASX
     casx_path = out_dir / "network.casx"
     save_network_to_casx(net_obj, str(casx_path))
-    assert casx_path.exists() and casx_path.stat().st_size > 0
+    assert casx_path.exists()
+    assert casx_path.stat().st_size > 0
 
     # VMV
     vmv_path = out_dir / "network.vmv"
     save_network_to_vmv(net_obj, str(vmv_path))
-    assert vmv_path.exists() and vmv_path.stat().st_size > 0
+    assert vmv_path.exists()
+    assert vmv_path.stat().st_size > 0
