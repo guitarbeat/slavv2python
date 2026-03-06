@@ -1,4 +1,11 @@
-import os
+"""End-to-end integration test for the full SLAVV pipeline.
+
+Loads the real test volume, runs every stage (energy → vertices → edges → network),
+and verifies that all export formats produce valid output files.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +13,7 @@ import pytest
 
 from slavv.core import SLAVVProcessor
 from slavv.io import (
+    Network,
     load_tiff_volume,
     save_network_to_casx,
     save_network_to_csv,
@@ -13,92 +21,109 @@ from slavv.io import (
     save_network_to_vmv,
 )
 
-# Skip integration tests by default unless explicitly requested or running locally,
-# as they can be slow and require the test volume.
-# For our purposes, we want to run it, but in CI it might be large.
-# We'll just run it normally for this task.
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+TEST_VOLUME = DATA_DIR / "slavv_test_volume.tif"
 
 
+def _results_to_network(results: dict) -> Network:
+    """Convert the raw pipeline results dict into a Network dataclass for exporters."""
+    verts = results.get("vertices", {})
+    edges = results.get("edges", {})
+
+    positions = np.asarray(verts.get("positions", []), dtype=float)
+    radii = np.asarray(verts.get("radii_microns", []), dtype=float)
+
+    # Build a simple edge list from connections (N x 2)
+    connections = edges.get("connections", [])
+    if len(connections) == 0:
+        edge_arr = np.empty((0, 2), dtype=int)
+    else:
+        edge_arr = np.atleast_2d(np.asarray(connections, dtype=int))
+
+    return Network(
+        vertices=positions if positions.size > 0 else np.empty((0, 3)),
+        edges=edge_arr,
+        radii=radii if radii.size > 0 else None,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not TEST_VOLUME.exists(), reason="Test volume not available")
 def test_end_to_end_pipeline(tmp_path):
-    """
-    Run the entire SLAVV pipeline on the test volume and verify outputs
-    and exporters.
-    """
-    # 1. Load the volume
-    # The test data is located at tests/data/slavv_test_volume.tif
-    # We resolve the path relative to this test file.
-    current_dir = Path(__file__).parent
-    test_vol_path = current_dir.parent / "data" / "slavv_test_volume.tif"
-    
-    if not test_vol_path.exists():
-        pytest.skip(f"Test volume not found at {test_vol_path}")
-        
-    image = load_tiff_volume(str(test_vol_path))
+    """Run the full SLAVV pipeline and validate all outputs + exporters."""
+
+    # 1. Load volume
+    image = load_tiff_volume(str(TEST_VOLUME))
     assert image is not None
-    assert len(image.shape) == 3
-    
-    # 2. Configure processor with robust parameters
-    # We use fewer scales to speed up the test slightly.
+    assert image.ndim == 3
+
+    # Use a small central crop to keep the test fast while still exercising
+    # every pipeline stage on real data.
+    crop = image[50:120, 100:300, 100:300]  # 70 × 200 × 200
+
+    # 2. Pipeline parameters tuned for speed
     params = {
         "microns_per_voxel": [1.0, 1.0, 1.0],
         "radius_of_smallest_vessel_in_microns": 1.5,
-        "radius_of_largest_vessel_in_microns": 10.0,
-        "scales_per_octave": 1.0,  # fast test
+        "radius_of_largest_vessel_in_microns": 5.0,  # small range → fewer scales
+        "scales_per_octave": 1.0,
         "energy_upper_bound": 0.0,
         "space_strel_apothem": 1,
         "length_dilation_ratio": 1.0,
         "number_of_edges_per_vertex": 4,
-        "max_voxels_per_node_energy": 500000,
-        "approximating_PSF": False,  # disable PSF for speed if needed, or leave True
+        # Set large enough so no chunking occurs (crop is ~2.8M voxels)
+        "max_voxels_per_node_energy": 5_000_000,
+        "approximating_PSF": False,
     }
-    
-    # 3. Process image
+
+    # 3. Process
     processor = SLAVVProcessor()
-    results = processor.process_image(image, params)
-    
-    # 4. Assert Results Integrity
+    results = processor.process_image(crop, params)
+
+    # 4. Validate result structure
     assert "vertices" in results
     assert "edges" in results
     assert "network" in results
-    
+
     vertices = results["vertices"]
     edges = results["edges"]
     network = results["network"]
-    
-    assert len(vertices["positions"]) > 0, "No vertices detected."
+
+    assert len(vertices["positions"]) > 0, "No vertices detected"
     assert len(vertices["energies"]) == len(vertices["positions"])
-    assert len(edges["traces"]) > 0, "No edges traced."
-    assert len(network["strands"]) > 0, "No network strands assembled."
-    
-    # 5. Test Exporters
+    assert len(edges["traces"]) > 0, "No edges traced"
+    assert len(network["strands"]) > 0, "No network strands assembled"
+
+    # 5. Test exporters — convert dict → Network dataclass first
+    net_obj = _results_to_network(results)
     out_dir = tmp_path / "exports"
-    out_dir.mkdir(exist_ok=True)
-    
+    out_dir.mkdir()
+
     # JSON
     json_path = out_dir / "network.json"
-    save_network_to_json(network, str(json_path))
-    assert json_path.exists()
-    assert json_path.stat().st_size > 0
-    
+    save_network_to_json(net_obj, str(json_path))
+    assert json_path.exists() and json_path.stat().st_size > 0
+
     # CSV
-    csv_path = out_dir / "network_edges.csv"
-    save_network_to_csv(network, str(csv_path).replace("_edges.csv", ".csv"))
-    # Save network to CSV actually outputs network_edges.csv and network_vertices.csv
-    # based on the base path.
-    # Our exporter writes directly or adds suffixes?
-    # Let's just check the directory has CSV files.
+    csv_base = str(out_dir / "network")
+    save_network_to_csv(net_obj, csv_base)
     csv_files = list(out_dir.glob("*.csv"))
     assert len(csv_files) > 0
-    
-    
+
     # CASX
     casx_path = out_dir / "network.casx"
-    save_network_to_casx(network, str(casx_path))
-    assert casx_path.exists()
-    assert casx_path.stat().st_size > 0
-    
+    save_network_to_casx(net_obj, str(casx_path))
+    assert casx_path.exists() and casx_path.stat().st_size > 0
+
     # VMV
     vmv_path = out_dir / "network.vmv"
-    save_network_to_vmv(network, str(vmv_path))
-    assert vmv_path.exists()
-    assert vmv_path.stat().st_size > 0
+    save_network_to_vmv(net_obj, str(vmv_path))
+    assert vmv_path.exists() and vmv_path.stat().st_size > 0

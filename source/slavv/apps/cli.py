@@ -13,6 +13,8 @@ import logging
 import os
 import sys
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
@@ -271,7 +273,7 @@ def _cmd_import_matlab(args: argparse.Namespace) -> None:
 def _load_dict_from_json(path: str) -> dict:
     import json
 
-    with open(path, "r") as f:
+    with open(path) as f:
         data = json.load(f)
 
     # Reconstruct the structure that calculate_network_statistics expects, which is the internal representation.
@@ -294,7 +296,6 @@ def _load_dict_from_json(path: str) -> dict:
 
 def _cmd_analyze(args: argparse.Namespace) -> None:
     """Analyze an exported network JSON file and print statistics."""
-    import json
     from slavv.analysis.statistics import calculate_network_statistics
 
     level = logging.DEBUG if args.verbose else logging.INFO
@@ -373,12 +374,8 @@ def main(argv=None):
     elif args.command == "import-matlab":
         _cmd_import_matlab(args)
     elif args.command == "analyze":
-        import numpy as np
-
         _cmd_analyze(args)
     elif args.command == "plot":
-        import numpy as np
-
         _cmd_plot(args)
     else:
         parser.print_help()

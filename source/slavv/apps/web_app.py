@@ -1251,6 +1251,19 @@ def show_analysis_page():
             fig_radius = visualizer.plot_radius_distribution(results["vertices"])
             st.plotly_chart(fig_radius, use_container_width=True)
 
+        # Length-weighted histograms (ported from area_histogram_plotter.m)
+        st.markdown("#### Length-Weighted Histograms")
+        st.caption(
+            "Depth, radius, and inclination distributions weighted by segment length. "
+            "Ported from `area_histogram_plotter.m`."
+        )
+
+        try:
+            fig_hist = visualizer.plot_length_weighted_histograms(results, number_of_bins=50)
+            st.plotly_chart(fig_hist, use_container_width=True)
+        except Exception as e:
+            st.info(f"Length-weighted histograms unavailable: {e}")
+
     with tab2:
         st.markdown("#### Network Topology")
 
