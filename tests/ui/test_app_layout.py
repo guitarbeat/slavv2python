@@ -1,5 +1,7 @@
-import pytest
 import importlib
+
+import pytest
+
 st = pytest.importorskip("streamlit")
 
 
@@ -11,5 +13,6 @@ def test_app_sets_wide_layout(monkeypatch):
 
     monkeypatch.setattr(st, "set_page_config", fake_config)
     from slavv.apps import web_app as app
+
     importlib.reload(app)
     assert called.get("layout") == "wide"

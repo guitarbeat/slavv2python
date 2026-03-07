@@ -1,19 +1,20 @@
-import os
 import subprocess
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # Assume script is at <repo_root>/workspace/scripts/cli/run_matlab_cli.sh
 REPO_ROOT = Path(__file__).parent.parent.parent
 SCRIPT_DIR = REPO_ROOT / "workspace" / "scripts" / "cli"
 
-@pytest.mark.skipif(sys.platform == 'win32', reason="Shell script only runs on Linux/Unix")
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Shell script only runs on Linux/Unix")
 def test_run_matlab_cli_injection_sh(tmp_path):
     # Create a mock matlab script
     mock_matlab = tmp_path / "mock_matlab.sh"
     # The mock script just exits successfully
-    mock_matlab.write_text("#!/bin/bash\necho \"MOCK MATLAB CALLED WITH: $@\"\nexit 0")
+    mock_matlab.write_text('#!/bin/bash\necho "MOCK MATLAB CALLED WITH: $@"\nexit 0')
     mock_matlab.chmod(0o755)
 
     # Create a file with a single quote in its name
@@ -37,7 +38,7 @@ def test_run_matlab_cli_injection_sh(tmp_path):
     result = subprocess.run(
         [str(script), str(input_file), str(output_dir), str(mock_matlab)],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     # Check that the script ran successfully

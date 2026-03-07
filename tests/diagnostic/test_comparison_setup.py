@@ -6,21 +6,22 @@ This doesn't run the full vectorization, just checks that files exist and paths 
 
 import sys
 from pathlib import Path
-from typing import Tuple, List
+from typing import List, Tuple
 
 # Add project root and source to path for slavv imports
 project_root = Path(__file__).parent.parent.parent
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 
+
 def _run_setup_checks() -> Tuple[List[str], List[str]]:
     """Run setup checks and return (errors, warnings)."""
     print("Testing comparison setup...")
     print("=" * 60)
-    
+
     errors = []
     warnings = []
-    
+
     # Check test data file (may be in data/ or tests/data/)
     test_data = project_root / "data" / "slavv_test_volume.tif"
     if not test_data.exists():
@@ -29,7 +30,7 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
         print(f"[OK] Test data file found: {test_data}")
     else:
         warnings.append("[WARN] Test data file not found (optional for comparison)")
-    
+
     # Check MATLAB executable
     matlab_path = Path("C:/Program Files/MATLAB/R2019a/bin/matlab.exe")
     if matlab_path.exists():
@@ -37,14 +38,14 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
     else:
         warnings.append(f"[WARN] MATLAB executable not found at default path: {matlab_path}")
         print("  (You can specify a different path with --matlab-path)")
-    
+
     # Check scripts (in workspace/scripts/cli)
     scripts_dir = project_root / "workspace" / "scripts" / "cli"
     required_scripts = [
         "run_matlab_vectorization.m",
         "run_matlab_cli.bat",
     ]
-    
+
     print(f"\nChecking scripts in {scripts_dir}:")
     for script in required_scripts:
         script_path = scripts_dir / script
@@ -52,12 +53,12 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
             print(f"  [OK] {script}")
         else:
             errors.append(f"  [ERROR] {script} not found")
-    
+
     # Check Vectorization-Public (in external/ per README)
-    matlab_repo_path = project_root / 'external' / 'Vectorization-Public'
+    matlab_repo_path = project_root / "external" / "Vectorization-Public"
     if matlab_repo_path.exists():
         print(f"\n[OK] Vectorization-Public directory found: {matlab_repo_path}")
-        
+
         # Check for vectorize_V200.m
         vectorize_file = matlab_repo_path / "vectorize_V200.m"
         if vectorize_file.exists():
@@ -65,22 +66,26 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
         else:
             errors.append("  [ERROR] vectorize_V200.m not found in Vectorization-Public")
     else:
-        warnings.append(f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)")
-    
+        warnings.append(
+            f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)"
+        )
+
     # Check Python imports
     print("\nChecking Python imports:")
     try:
         from slavv.core import SLAVVProcessor  # noqa: F401
+
         print("  [OK] SLAVVProcessor imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import SLAVVProcessor: {e}")
-    
+
     try:
         from slavv.io import load_tiff_volume  # noqa: F401
+
         print("  [OK] load_tiff_volume imported successfully")
     except ImportError as e:
         errors.append(f"  [ERROR] Failed to import load_tiff_volume: {e}")
-    
+
     # Summary
     print("\n" + "=" * 60)
     if errors:
@@ -95,7 +100,7 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
             for warning in warnings:
                 print(f"  {warning}")
         print("\nSetup is ready. You can now run:")
-        print('  python workspace/scripts/cli/compare_matlab_python.py \\')
+        print("  python workspace/scripts/cli/compare_matlab_python.py \\")
         print('      --input "data/slavv_test_volume.tif" \\')
         print('      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
         print('      --output-dir "comparison_output"')
@@ -106,6 +111,7 @@ def test_setup():
     """Test that all required files and paths exist."""
     errors, _warnings = _run_setup_checks()
     assert not errors, "Setup diagnostic found errors:\n" + "\n".join(errors)
+
 
 if __name__ == "__main__":
     errors, _warnings = _run_setup_checks()

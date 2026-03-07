@@ -1,0 +1,237 @@
+﻿W291 Trailing whitespace
+   --> source\slavv\apps\web_app.py:265:88
+    |
+263 |         st.markdown("### ≡ƒÄ» Workflow Control")
+264 |         st.markdown("""
+265 |             Like the original MATLAB scripts (`StartWorkflow`/`FinalWorkflow`), you can 
+    |                                                                                        ^
+266 |             pause the pipeline early to inspect intermediate results or force the pipeline
+267 |             to recalculate specific steps to test parameter changes.
+    |
+help: Remove trailing whitespace
+
+F821 Undefined name `processor`
+   --> source\slavv\apps\web_app.py:620:31
+    |
+618 |                         f"{uploaded_file.name}_{uploaded_file.size}".encode()
+619 |                     ).hexdigest()[:8]
+620 |                     results = processor.process_image(
+    |                               ^^^^^^^^^
+621 |                         image,
+622 |                         validated_params,
+    |
+
+UP035 `typing.List` is deprecated, use `list` instead
+  --> tests\diagnostic\test_comparison_setup.py:9:1
+   |
+ 7 | import sys
+ 8 | from pathlib import Path
+ 9 | from typing import List, Tuple
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | # Add project root and source to path for slavv imports
+   |
+
+UP035 `typing.Tuple` is deprecated, use `tuple` instead
+  --> tests\diagnostic\test_comparison_setup.py:9:1
+   |
+ 7 | import sys
+ 8 | from pathlib import Path
+ 9 | from typing import List, Tuple
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | # Add project root and source to path for slavv imports
+   |
+
+UP006 Use `tuple` instead of `Tuple` for type annotation
+  --> tests\diagnostic\test_comparison_setup.py:17:28
+   |
+17 | def _run_setup_checks() -> Tuple[List[str], List[str]]:
+   |                            ^^^^^
+18 |     """Run setup checks and return (errors, warnings)."""
+19 |     print("Testing comparison setup...")
+   |
+help: Replace with `tuple`
+
+UP006 Use `list` instead of `List` for type annotation
+  --> tests\diagnostic\test_comparison_setup.py:17:34
+   |
+17 | def _run_setup_checks() -> Tuple[List[str], List[str]]:
+   |                                  ^^^^
+18 |     """Run setup checks and return (errors, warnings)."""
+19 |     print("Testing comparison setup...")
+   |
+help: Replace with `list`
+
+UP006 Use `list` instead of `List` for type annotation
+  --> tests\diagnostic\test_comparison_setup.py:17:45
+   |
+17 | def _run_setup_checks() -> Tuple[List[str], List[str]]:
+   |                                             ^^^^
+18 |     """Run setup checks and return (errors, warnings)."""
+19 |     print("Testing comparison setup...")
+   |
+help: Replace with `list`
+
+PT011 `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
+  --> tests\integration\test_public_api.py:39:24
+   |
+38 | def test_validate_parameters_invalid_scales():
+39 |     with pytest.raises(ValueError):
+   |                        ^^^^^^^^^^
+40 |         validate_parameters({"scales_per_octave": 0})
+   |
+
+PT011 `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
+  --> tests\integration\test_public_api.py:44:24
+   |
+43 | def test_validate_parameters_negative_bandpass():
+44 |     with pytest.raises(ValueError):
+   |                        ^^^^^^^^^^
+45 |         validate_parameters({"bandpass_window": -1})
+   |
+
+PT018 Assertion should be broken down into multiple parts
+  --> tests\integration\test_uncurated_info.py:21:5
+   |
+19 |     info = extract_uncurated_info(vertices, edges, {"energy": energy}, energy.shape)
+20 |
+21 |     assert "vertex_features" in info and "edge_features" in info
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+22 |     assert info["vertex_features"].shape[0] == 2
+23 |     assert info["edge_features"].shape[0] == 1
+   |
+help: Break down assertion into multiple parts
+
+RUF043 Pattern passed to `match=` contains metacharacters but is neither escaped nor raw
+  --> tests\unit\analysis\test_ml_curator_security.py:27:54
+   |
+25 |     # Should raise UnpicklingError because safe_load raises it and ml_curator doesn't catch it.
+26 |
+27 |     with pytest.raises(pickle.UnpicklingError, match="forbidden|Failed to safely unpickle"):
+   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+28 |         curator.load_models(vertex_path=filepath)
+   |
+help: Use a raw string or `re.escape()` to make the intention explicit
+
+RUF043 Pattern passed to `match=` contains metacharacters but is neither escaped nor raw
+  --> tests\unit\analysis\test_ml_curator_security.py:31:54
+   |
+30 |     # Attempt to load as edge model
+31 |     with pytest.raises(pickle.UnpicklingError, match="forbidden|Failed to safely unpickle"):
+   |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 |         curator.load_models(edge_path=filepath)
+   |
+help: Use a raw string or `re.escape()` to make the intention explicit
+
+PT011 `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
+  --> tests\unit\core\test_edge_cases.py:32:24
+   |
+30 |     processor = SLAVVProcessor()
+31 |     img2d = np.zeros((5, 5), dtype=np.float32)
+32 |     with pytest.raises(ValueError):
+   |                        ^^^^^^^^^^
+33 |         processor.process_image(img2d, {})
+   |
+
+PT011 `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
+  --> tests\unit\io\test_direction_method.py:16:24
+   |
+14 |     params = validate_parameters({"direction_method": "uniform"})
+15 |     assert params["direction_method"] == "uniform"
+16 |     with pytest.raises(ValueError):
+   |                        ^^^^^^^^^^
+17 |         validate_parameters({"direction_method": "invalid"})
+   |
+
+PT006 Wrong type passed to first argument of `pytest.mark.parametrize`; expected `tuple`
+  --> tests\unit\io\test_edge_directions.py:10:5
+   |
+ 9 | @pytest.mark.parametrize(
+10 |     "n_directions,expected_shape",
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |     [
+12 |         (0, (0, 3)),
+   |
+help: Use a `tuple` for the first argument
+
+RUF005 Consider `[*A, 10, 0, 0]` instead of concatenation
+  --> tests\unit\io\test_geometry_functions.py:83:9
+   |
+82 |     # Target: Translate by (10, 0, 0)
+83 |     B = A + [10, 0, 0]
+   |         ^^^^^^^^^^^^^^
+84 |
+85 |     # Register A to B
+   |
+help: Replace with `[*A, 10, 0, 0]`
+
+PT011 `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
+  --> tests\unit\io\test_io_utils.py:21:24
+   |
+19 | def test_load_tiff_volume_non_tiff():
+20 |     buf = io.BytesIO(b"not a tiff")
+21 |     with pytest.raises(ValueError):
+   |                        ^^^^^^^^^^
+22 |         load_tiff_volume(buf)
+   |
+
+PT018 Assertion should be broken down into multiple parts
+  --> tests\unit\io\test_network_io.py:31:9
+   |
+30 |         v_path, e_path = save_network_to_csv(network, tmp_path / "net")
+31 |         assert v_path.exists() and e_path.exists()
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+32 |
+33 |         loaded = load_network_from_csv(tmp_path / "net")
+   |
+help: Break down assertion into multiple parts
+
+RUF059 Unpacked variable `output` is never used
+  --> tests\unit\utils\test_utils.py:49:12
+   |
+48 |     assert len(slices) == 1
+49 |     chunk, output, inner = slices[0]
+   |            ^^^^^^
+50 |     # Full coverage
+51 |     assert chunk == (slice(0, 10), slice(0, 10), slice(0, 10))
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+RUF059 Unpacked variable `inner` is never used
+  --> tests\unit\utils\test_utils.py:49:20
+   |
+48 |     assert len(slices) == 1
+49 |     chunk, output, inner = slices[0]
+   |                    ^^^^^
+50 |     # Full coverage
+51 |     assert chunk == (slice(0, 10), slice(0, 10), slice(0, 10))
+   |
+help: Prefix it with an underscore or any other dummy variable pattern
+
+B007 Loop control variable `chunk` not used within loop body
+  --> tests\unit\utils\test_utils.py:67:9
+   |
+65 |     # Verify total coverage
+66 |     processed_z = 0
+67 |     for chunk, output, inner in slices:
+   |         ^^^^^
+68 |         z_start = output[2].start
+69 |         z_end = output[2].stop
+   |
+help: Rename unused `chunk` to `_chunk`
+
+B007 Loop control variable `inner` not used within loop body
+  --> tests\unit\utils\test_utils.py:67:24
+   |
+65 |     # Verify total coverage
+66 |     processed_z = 0
+67 |     for chunk, output, inner in slices:
+   |                        ^^^^^
+68 |         z_start = output[2].start
+69 |         z_end = output[2].stop
+   |
+help: Rename unused `inner` to `_inner`
+
+Found 22 errors.
+No fixes available (12 hidden fixes can be enabled with the `--unsafe-fixes` option).

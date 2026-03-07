@@ -11,16 +11,16 @@ except ImportError:
 
 
 def test_validate_parameters_direction_method():
-    params = validate_parameters({'direction_method': 'uniform'})
-    assert params['direction_method'] == 'uniform'
+    params = validate_parameters({"direction_method": "uniform"})
+    assert params["direction_method"] == "uniform"
     with pytest.raises(ValueError):
-        validate_parameters({'direction_method': 'invalid'})
+        validate_parameters({"direction_method": "invalid"})
 
 
 def test_extract_edges_uniform_direction_method_skips_hessian():
     class DummyProcessor(SLAVVProcessor):
         def _estimate_vessel_directions(self, *args, **kwargs):  # pragma: no cover
-            raise AssertionError('Hessian estimator should not be called')
+            raise AssertionError("Hessian estimator should not be called")
 
     processor = DummyProcessor()
 
@@ -33,20 +33,20 @@ def test_extract_edges_uniform_direction_method_skips_hessian():
     vertex_pos = np.array([[10.0, 10.0, 10.0]], dtype=float)
     vertex_scales = np.array([0], dtype=int)
     energy_data = {
-        'energy': energy,
-        'lumen_radius_pixels': np.array([2.0], dtype=float),
-        'lumen_radius_microns': np.array([2.0], dtype=float),
-        'lumen_radius_pixels_axes': np.array([[2.0, 2.0, 2.0]], dtype=float),
-        'energy_sign': -1.0,
+        "energy": energy,
+        "lumen_radius_pixels": np.array([2.0], dtype=float),
+        "lumen_radius_microns": np.array([2.0], dtype=float),
+        "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
+        "energy_sign": -1.0,
     }
-    vertices = {'positions': vertex_pos, 'scales': vertex_scales}
+    vertices = {"positions": vertex_pos, "scales": vertex_scales}
     params = {
-        'number_of_edges_per_vertex': 2,
-        'step_size_per_origin_radius': 2.0,
-        'length_dilation_ratio': 5.0,
-        'microns_per_voxel': [1.0, 1.0, 1.0],
-        'direction_method': 'uniform',
+        "number_of_edges_per_vertex": 2,
+        "step_size_per_origin_radius": 2.0,
+        "length_dilation_ratio": 5.0,
+        "microns_per_voxel": [1.0, 1.0, 1.0],
+        "direction_method": "uniform",
     }
 
     edges = processor.extract_edges(energy_data, vertices, params)
-    assert len(edges['traces']) == 2
+    assert len(edges["traces"]) == 2

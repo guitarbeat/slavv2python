@@ -74,6 +74,19 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
 
+    run_parser.add_argument(
+        "--stop-after",
+        choices=["energy", "vertices", "edges", "network"],
+        default=None,
+        help="Stop the pipeline early after completing this stage.",
+    )
+    run_parser.add_argument(
+        "--force-rerun-from",
+        choices=["energy", "vertices", "edges", "network"],
+        default=None,
+        help="Ignore checkpoints and force recalculation starting from this stage.",
+    )
+
     # --- slavv analyze ----------------------------------------------------
     analyze_parser = subparsers.add_parser("analyze", help="Analyze an exported network JSON file")
     analyze_parser.add_argument("-i", "--input", required=True, help="Path to input network.json")
@@ -176,6 +189,8 @@ def _cmd_run(args: argparse.Namespace) -> None:
         image,
         parameters,
         checkpoint_dir=args.checkpoint_dir,
+        stop_after=args.stop_after,
+        force_rerun_from=args.force_rerun_from,
     )
 
     # Save outputs
@@ -202,6 +217,16 @@ def _cmd_run(args: argparse.Namespace) -> None:
     export_formats = args.export
     if "all" in export_formats:
         export_formats = ["csv", "json", "casx", "vmv", "mat"]
+
+    if export_formats and "vertices" not in results:
+        logger.warning(
+            "Export requested but pipeline stopped before extracting vertices. Skipping export."
+        )
+        export_formats = []
+    elif export_formats and "network" not in results and "edges" not in results:
+        logger.warning(
+            "Export requested but pipeline stopped early. Formatting output with available data only."
+        )
 
     for fmt in export_formats:
         if fmt == "csv":
@@ -235,7 +260,13 @@ def _cmd_run(args: argparse.Namespace) -> None:
                 path = os.path.join(args.output, "network.mat")
                 # Using Visualizer's internal method for .mat because it packages up the dict structure.
                 vis = NetworkVisualizer()
-                vis._export_mat(results, path)
+                vis._export_mat(
+                    results.get("vertices", {}),
+                    results.get("edges", {}),
+                    results.get("network", {}),
+                    results.get("parameters", {}),
+                    path,
+                )
                 logger.info("Saved MAT to %s", path)
             except ImportError as e:
                 logger.warning("Error saving MAT file: %s", e)
@@ -350,7 +381,12 @@ def _cmd_plot(args: argparse.Namespace) -> None:
 
     # We're passing results which lacks 'traces'. The visualizer `plot_length_weighted_histograms`
     # computes euclidean distance if traces are missing.
-    fig = vis.plot_length_weighted_histograms(results, number_of_bins=args.number_of_bins)
+    fig = vis.plot_length_weighted_histograms(
+        results.get("vertices", {}),
+        results.get("edges", {}),
+        results.get("parameters", {}),
+        number_of_bins=args.number_of_bins,
+    )
 
     fig.write_html(args.output)
     print(f"Saved interactive plots to {args.output}")

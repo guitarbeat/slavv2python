@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import tempfile
 import warnings
@@ -259,6 +260,13 @@ def show_home_page():
             - [Troubleshooting](#)
             """)
 
+        st.markdown("### 🎯 Workflow Control")
+        st.markdown("""
+            Like the original MATLAB scripts (`StartWorkflow`/`FinalWorkflow`), you can 
+            pause the pipeline early to inspect intermediate results or force the pipeline
+            to recalculate specific steps to test parameter changes.
+            """)
+
 
 def show_processing_page():
     """Display the image processing page"""
@@ -512,6 +520,32 @@ def show_processing_page():
     # Processing button and results
     st.markdown('<h3 class="section-header">Processing</h3>', unsafe_allow_html=True)
 
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        stop_after_options = {
+            "Energy Field Only": "energy",
+            "Energy + Vertices": "vertices",
+            "Energy + Vertices + Edges": "edges",
+            "Full Pipeline (Network)": "network",
+        }
+        stop_after_selection = st.selectbox(
+            "Pipeline Target",
+            options=list(stop_after_options.keys()),
+            index=3,
+            help="Stop the pipeline early after completing this stage. Useful for tweaking parameters.",
+        )
+        stop_after_val = stop_after_options[stop_after_selection]
+
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        force_rerun_stage = st.selectbox(
+            "Force Recalculation From:",
+            options=["None", "energy", "vertices", "edges", "network"],
+            index=0,
+            help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
+        )
+
     if uploaded_file is not None:
         if st.button("🚀 Start Processing", type="primary", width=250):
             # Collect parameters
@@ -561,7 +595,7 @@ def show_processing_page():
                         st.error(f"❌ Error loading TIFF file: {e}")
                         st.stop()
 
-                    SLAVVProcessor()
+                    processor = SLAVVProcessor()
 
                     stage_labels = {
                         "start": "Starting pipeline...",
@@ -580,12 +614,24 @@ def show_processing_page():
                         status.update(label=label, state=state)
                         progress_bar.progress(int(fraction * 100))
 
-                    results = cached_process_image(
-                        image, validated_params, _progress_callback=progress_cb
+                    file_hash = hashlib.md5(
+                        f"{uploaded_file.name}_{uploaded_file.size}".encode()
+                    ).hexdigest()[:8]
+                    results = processor.process_image(
+                        image,
+                        validated_params,
+                        progress_callback=progress_cb,
+                        checkpoint_dir=os.path.join(
+                            tempfile.gettempdir(), f"slavv_cache_{file_hash}"
+                        ),
+                        stop_after=stop_after_val,
+                        force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
                     )
 
                     # Ensure progress indicates completion even if cached
-                    status.update(label="Processing complete!", state="complete")
+                    status.update(
+                        label=f"Processing stopped after {stop_after_val}!", state="complete"
+                    )
                     progress_bar.progress(100)
 
                 # Store results in session state
@@ -593,44 +639,54 @@ def show_processing_page():
                 st.session_state["parameters"] = validated_params
                 st.session_state["image_shape"] = image.shape
 
+                # Cleanup state if we stopped early so UI doesn't crash trying to render old networks
+                if stop_after_val != "network":
+                    st.warning(
+                        f"⚠️ Pipeline halted early at '{stop_after_val}'. Downstream results (if any) are not available."
+                    )
+
                 # Display results summary
                 st.markdown('<div class="success-box">', unsafe_allow_html=True)
-                st.success("🎉 Processing completed successfully!")
+                st.success("🎉 Processing stage completed successfully!")
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 # Results summary
                 col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
 
                 with col1:
+                    vertices_count = len(results.get("vertices", {}).get("positions", []))
                     st.metric(
                         "Vertices Found",
-                        len(results["vertices"]["positions"]),
+                        vertices_count if "vertices" in results else "N/A",
                         help="Total vertices detected in the volume",
                     )
 
                 with col2:
+                    edges_count = len(results.get("edges", {}).get("traces", []))
                     st.metric(
                         "Edges Extracted",
-                        len(results["edges"]["traces"]),
+                        edges_count if "edges" in results else "N/A",
                         help="Number of vessel segments traced",
                     )
 
                 with col3:
+                    strands_count = len(results.get("network", {}).get("strands", []))
                     st.metric(
                         "Network Strands",
-                        len(results["network"]["strands"]),
+                        strands_count if "network" in results else "N/A",
                         help="Connected components in the network",
                     )
 
                 with col4:
+                    bif_count = len(results.get("network", {}).get("bifurcations", []))
                     st.metric(
                         "Bifurcations",
-                        len(results["network"]["bifurcations"]),
+                        bif_count if "network" in results else "N/A",
                         help="Detected branching points",
                     )
 
             except Exception as e:
-                st.error(f"❌ Parameter validation failed: {e!s}")
+                st.error(f"❌ Processing failed: {e!s}")
 
     else:
         st.info("👆 Please upload a TIFF file to begin processing")
@@ -643,6 +699,13 @@ def show_ml_curation_page():
 
     if "processing_results" not in st.session_state:
         st.warning("⚠️ No processing results found. Please process an image first.")
+        return
+
+    results = st.session_state["processing_results"]
+    if "vertices" not in results or "edges" not in results:
+        st.warning(
+            "⚠️ Curation requires both vertices and edges to be extracted. Please run the pipeline at least up to the 'edges' stage."
+        )
         return
 
     st.markdown("""
@@ -881,20 +944,20 @@ def show_ml_curation_page():
                 st.error("Please upload training data for vertices, edges, or both.")
             else:
                 with st.status("Training ML models...", expanded=True) as status:
-                    curator = MLCurator()
+                    ml_curator = MLCurator()
                     if vertex_training_data is not None:
                         df_v = pd.read_csv(vertex_training_data)
                         X_v = df_v.drop(columns=["label"]).values
                         y_v = df_v["label"].values
-                        res_v = curator.train_vertex_classifier(X_v, y_v)
+                        res_v = ml_curator.train_vertex_classifier(X_v, y_v)
                         st.write(f"Vertex test accuracy: {res_v['test_accuracy']:.3f}")
                     if edge_training_data is not None:
                         df_e = pd.read_csv(edge_training_data)
                         X_e = df_e.drop(columns=["label"]).values
                         y_e = df_e["label"].values
-                        res_e = curator.train_edge_classifier(X_e, y_e)
+                        res_e = ml_curator.train_edge_classifier(X_e, y_e)
                         st.write(f"Edge test accuracy: {res_e['test_accuracy']:.3f}")
-                    st.session_state["ml_curator"] = curator
+                    st.session_state["ml_curator"] = ml_curator
                     status.update(label="Training complete!", state="complete")
                     st.success("✅ Models trained!")
 
@@ -903,23 +966,23 @@ def show_ml_curation_page():
                 "Performing ML curation...",
                 expanded=True,
             ) as status:
-                curator = st.session_state.get("ml_curator")
-                if curator is None:
-                    curator = MLCurator()
-                    curator.load_models(vertex_model_file, edge_model_file)
+                ml_curator = st.session_state.get("ml_curator")
+                if ml_curator is None:
+                    ml_curator = MLCurator()
+                    ml_curator.load_models(vertex_model_file, edge_model_file)
 
-                if curator.vertex_classifier is None or curator.edge_classifier is None:
+                if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:  # type: ignore[union-attr]
                     st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
                     st.stop()
 
-                curated_vertices = curator.curate_vertices(
+                curated_vertices = ml_curator.curate_vertices(  # type: ignore[union-attr]
                     results["vertices"],
                     results["energy_data"],
                     st.session_state["image_shape"],
                     vertex_confidence_threshold,
                 )
 
-                curated_edges = curator.curate_edges(
+                curated_edges = ml_curator.curate_edges(  # type: ignore[union-attr]
                     results["edges"],
                     curated_vertices,
                     results["energy_data"],
@@ -1016,10 +1079,22 @@ def show_visualization_page():
     Corresponds to `Visual` and `SpecialOutput` parameters in MATLAB.
     """)
 
+    results = st.session_state["processing_results"]
+
+    available_viz = []
+    if "energy_data" in results:
+        available_viz.append("Energy Field")
+    if "vertices" in results and "edges" in results and "network" in results:
+        available_viz.extend(["2D Network", "3D Network", "Depth Projection", "Strand Analysis"])
+
+    if not available_viz:
+        st.warning("⚠️ No visualizable results found in the current run.")
+        return
+
     # Visualization options
     viz_type = st.selectbox(
         "Visualization type",
-        ["2D Network", "3D Network", "Depth Projection", "Strand Analysis", "Energy Field"],
+        available_viz,
         help="Choose the type of visualization to display",
     )
 
@@ -1176,6 +1251,13 @@ def show_analysis_page():
         st.warning("⚠️ No processing results found. Please process an image first.")
         return
 
+    results = st.session_state["processing_results"]
+    if "network" not in results:
+        st.warning(
+            "⚠️ Analysis requires complete network extraction. Please run the pipeline up to the 'network' target."
+        )
+        return
+
     st.markdown("""
     Perform comprehensive statistical analysis on the vectorized vascular network. This section provides key metrics and detailed distributions.
     Corresponds to `SpecialOutput` parameters like `histograms`, `depth-stats`, `original-stats` in MATLAB.
@@ -1259,7 +1341,12 @@ def show_analysis_page():
         )
 
         try:
-            fig_hist = visualizer.plot_length_weighted_histograms(results, number_of_bins=50)
+            fig_hist = visualizer.plot_length_weighted_histograms(
+                results.get("vertices", {}),
+                results.get("edges", {}),
+                results.get("parameters", {}),
+                number_of_bins=50,
+            )
             st.plotly_chart(fig_hist, use_container_width=True)
         except Exception as e:
             st.info(f"Length-weighted histograms unavailable: {e}")

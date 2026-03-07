@@ -1,17 +1,22 @@
 import os
 import pickle
+
 import pytest
+
 from slavv.analysis.ml_curator import MLCurator
+
 # We expect pickle.UnpicklingError to be raised
+
 
 class Malicious:
     def __reduce__(self):
         return (os.system, ("echo malicious code execution",))
 
+
 def test_ml_curator_load_malicious_model(tmp_path):
     # Create malicious pickle
     filepath = tmp_path / "malicious_model.pkl"
-    with open(filepath, 'wb') as f:
+    with open(filepath, "wb") as f:
         pickle.dump(Malicious(), f)
 
     curator = MLCurator()

@@ -102,9 +102,7 @@ def test_2d_numeric_edge_coloring_maps_expected_colors(
     normalized = (expected_values - np.min(expected_values)) / (
         np.max(expected_values) - np.min(expected_values)
     )
-    expected_colors = [
-        px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized
-    ]
+    expected_colors = [px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized]
 
     assert line_colors == expected_colors
 

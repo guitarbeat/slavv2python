@@ -1,7 +1,7 @@
-
 import numpy as np
 
 from slavv.core import SLAVVProcessor
+
 
 def test_compute_gradient_linear_field():
     proc = SLAVVProcessor()

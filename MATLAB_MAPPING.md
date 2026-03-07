@@ -273,3 +273,37 @@ These files were present in the MATLAB source but never mapped. They are conside
 | `vectorization_script_Shaun.m` | — | 🚫 | Unmapped/Obsolete |
 | `vectorization_script_michael.m` | — | 🚫 | Unmapped/Obsolete |
 | `vectorize_V190_20170315_MouseT326_session2_fused.m` | — | 🚫 | Unmapped/Obsolete |
+
+---
+
+## 13. MATLAB Scripts (Non-Functions) Summary
+
+During the review of the original MATLAB codebase, 34 files were identified as **scripts** (files that do not define a `function` at the top level). These scripts were primarily used for batch processing, testing, and utilities, and they are generally **intentionally not ported** to the core Python library, though their logic may inform future Python CLI tools or Jupyter notebooks.
+
+### 13.1 User-Specific Vectorization Scripts (18 files)
+*   **Files:** `vectorization_script_*.m` (e.g., `_Anna.m`, `_Annie.m`, `_Blinder.m`, etc.)
+*   **Purpose:** These are hardcoded execution scripts tailored to specific users, datasets, or experiments. They set up input paths, configure pipeline parameters (e.g., `microns_per_voxel`, thresholds), and sequentially call `vectorize_V200` to run the vectorization workflow. 
+*   **Python Equivalent:** Replaced by the modular `SLAVVProcessor` and generic entry points like the CLI or Jupyter notebooks.
+
+### 13.2 Experiments & Studies (2 files)
+*   **Files:** `noise_sensitivity_study.m`, `noise_sensitivity_study_V2.m`
+*   **Purpose:** Evaluation scripts that systematically add synthetic noise to ground-truth images and assess the vectorization algorithm's robustness. They sweep through parameter ranges and compute ROC curves to find the best classifiers.
+
+### 13.3 Test Scripts (2 files)
+*   **Files:** `test_random_anatomy_generation.m`, `test_strand_casX_conversion.m`
+*   **Purpose:** Validation scripts. One generates simulated vascular anatomy with randomized geometries and verifies the extracted network statistics, while the other verifies the integrity of CASX format conversion.
+
+### 13.4 Registration Demos & Utilities (3 files)
+*   **Files:** `register_strands_script.m`, `registration_script_1D_example.m`, `registration_script_test.m`
+*   **Purpose:** Demonstration and testing scripts for registering/aligning different sets of vascular vectors. They apply test transformations and evaluate the goodness of registration.
+
+### 13.5 Data Processing & Correction Utilities (9 files)
+These are ad-hoc utilities for one-off tasks, data conversion, or hotfixing issues:
+*   **`dicom2tif.m`**: Converts DICOM image sequences into multi-page TIFF stacks.
+*   **`pre_processing.m`**: Applies background subtraction, normalization, and contrast enhancement to TIFFs prior to vectorization.
+*   **`export_strand_data.m`**: Loads a curated network, filters strands by z-direction and radius, and exports the geometry.
+*   **`fix_strand_vertex_mismatch_again.m`**: A hotfix script to clean up problematic networks by identifying and deleting strands with anomalously long segment lengths.
+*   **`animate_strands_3D_script.m`**: Top-level script to trigger the 3D strand animation logic.
+*   **Others**: `import_from_LPPD.m`, `for_Chakameh_vascular_vector_rendering_V600.m`, `kstest_wrapper.m`, `vectorize_V190_20170315_MouseT326_session2_fused.m`. 
+
+*Note: The script `run_matlab_vectorization.m` is technically wrapped as a function to accept CLI arguments, but it serves the role of a non-interactive batch script and equivalent functionality is provided by the Python SLAVV CLI.*

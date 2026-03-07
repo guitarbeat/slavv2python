@@ -1,14 +1,16 @@
 """Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
+
 import json
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 from slavv.io import (
     Network,
     load_network_from_casx,
-    load_network_from_vmv,
     load_network_from_csv,
     load_network_from_json,
+    load_network_from_vmv,
     save_network_to_csv,
     save_network_to_json,
 )
@@ -16,7 +18,7 @@ from slavv.io import (
 
 class TestNetworkRoundtrip:
     """Test save/load roundtrip for network formats."""
-    
+
     def test_csv_roundtrip(self, tmp_path: Path) -> None:
         """Test CSV save and load preserves data."""
         network = Network(
@@ -25,10 +27,10 @@ class TestNetworkRoundtrip:
             radii=np.array([4.0, 7.0], dtype=float),
         )
 
-        v_path, e_path = save_network_to_csv(network, tmp_path / 'net')
+        v_path, e_path = save_network_to_csv(network, tmp_path / "net")
         assert v_path.exists() and e_path.exists()
 
-        loaded = load_network_from_csv(tmp_path / 'net')
+        loaded = load_network_from_csv(tmp_path / "net")
         assert np.allclose(loaded.vertices, network.vertices)
         assert np.array_equal(loaded.edges, network.edges)
         assert np.allclose(loaded.radii, network.radii)
@@ -41,7 +43,7 @@ class TestNetworkRoundtrip:
             radii=np.array([4.0, 7.0], dtype=float),
         )
 
-        path = save_network_to_json(network, tmp_path / 'net.json')
+        path = save_network_to_json(network, tmp_path / "net.json")
         assert Path(path).exists()
 
         loaded = load_network_from_json(path)
@@ -52,7 +54,7 @@ class TestNetworkRoundtrip:
 
 class TestNetworkImport:
     """Test loading networks from various formats."""
-    
+
     def test_load_from_casx(self, tmp_path: Path) -> None:
         """Test loading network from CASX XML format."""
         xml = (
@@ -123,9 +125,7 @@ class TestNetworkImport:
             "0,1.0,2.0,3.0,0.1,4.0,1.0\n"
             "1,4.0,5.0,6.0,0.2,7.0,1.0\n"
         )
-        edge_csv.write_text(
-            "edge_id,start_vertex,end_vertex,length,n_points\n0,0,1,1.0,2\n"
-        )
+        edge_csv.write_text("edge_id,start_vertex,end_vertex,length,n_points\n0,0,1,1.0,2\n")
 
         network = load_network_from_csv(prefix)
 

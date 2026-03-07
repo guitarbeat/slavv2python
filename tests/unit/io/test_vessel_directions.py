@@ -1,12 +1,11 @@
 import pathlib
 import sys
-import numpy as np
 from unittest.mock import patch
 
+import numpy as np
+
 # Add source path for imports
-sys.path.append(
-    str(pathlib.Path(__file__).resolve().parents[1] / 'slavv-streamlit' / 'src')
-)
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / "slavv-streamlit" / "src"))
 
 from slavv.core import SLAVVProcessor
 
@@ -26,7 +25,7 @@ def test_estimate_vessel_directions_axis_aligned():
 
 
 @patch(
-    'slavv.core.tracing.generate_edge_directions',
+    "slavv.core.tracing.generate_edge_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_fallback(mock_generate_directions):
@@ -56,7 +55,7 @@ def test_estimate_vessel_directions_anisotropic_spacing():
 
 
 @patch(
-    'slavv.core.tracing.generate_edge_directions',
+    "slavv.core.tracing.generate_edge_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):
@@ -68,4 +67,3 @@ def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):
     )
     expected = processor._generate_edge_directions(2)
     assert np.allclose(dirs, expected)
-

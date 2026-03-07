@@ -1,4 +1,3 @@
-
 import numpy as np
 
 # Add source path for imports
@@ -12,9 +11,7 @@ from slavv.analysis import (
 def test_calculate_network_statistics_basic():
     strands = [[0, 1, 2]]
     bifurcations = np.array([], dtype=np.int32)
-    vertex_positions = np.array(
-        [[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32
-    )
+    vertex_positions = np.array([[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32)
     radii = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     edge_energies = np.array([-1.0, -2.0], dtype=np.float32)
     stats = calculate_network_statistics(
@@ -63,9 +60,7 @@ def test_calculate_network_statistics_basic():
 
 def test_calculate_surface_area_direct():
     strands = [[0, 1, 2]]
-    vertex_positions = np.array(
-        [[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32
-    )
+    vertex_positions = np.array([[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32)
     radii = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     area = calculate_surface_area(strands, vertex_positions, radii, [1.0, 1.0, 1.0])
     assert np.isclose(area, 4 * np.pi)
@@ -73,9 +68,7 @@ def test_calculate_surface_area_direct():
 
 def test_calculate_vessel_volume_direct():
     strands = [[0, 1, 2]]
-    vertex_positions = np.array(
-        [[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32
-    )
+    vertex_positions = np.array([[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32)
     radii = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     volume = calculate_vessel_volume(strands, vertex_positions, radii, [1.0, 1.0, 1.0])
     assert np.isclose(volume, 2 * np.pi)
@@ -84,9 +77,7 @@ def test_calculate_vessel_volume_direct():
 def test_edge_radius_stats_varying():
     strands = [[0, 1, 2]]
     bifurcations = np.array([], dtype=np.int32)
-    vertex_positions = np.array(
-        [[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32
-    )
+    vertex_positions = np.array([[0, 0, 0], [0, 1, 0], [0, 2, 0]], dtype=np.float32)
     radii = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     stats = calculate_network_statistics(
         strands, bifurcations, vertex_positions, radii, [1.0, 1.0, 1.0], (3, 3, 1)
@@ -98,9 +89,7 @@ def test_edge_radius_stats_varying():
 def test_calculate_network_statistics_tortuosity():
     strands = [[0, 1, 2]]
     bifurcations = np.array([], dtype=np.int32)
-    vertex_positions = np.array(
-        [[0, 0, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float32
-    )
+    vertex_positions = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0]], dtype=np.float32)
     radii = np.array([1.0, 1.0, 1.0], dtype=np.float32)
     stats = calculate_network_statistics(
         strands, bifurcations, vertex_positions, radii, [1.0, 1.0, 1.0], (2, 2, 1)

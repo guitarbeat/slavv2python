@@ -264,6 +264,25 @@ def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     return json_path
 
 
+def _indent_xml(elem: ET.Element, level: int = 0) -> None:
+    """In-place indentation of XML tree.
+    Matches functionality of ET.indent() which is only available in Python 3.9+.
+    """
+    i = "\n" + level * "  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for subelem in elem:
+            _indent_xml(subelem, level + 1)
+        if not subelem.tail or not subelem.tail.strip():
+            subelem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
+
+
 def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a CASX XML file format."""
     casx_path = Path(path)
@@ -296,8 +315,7 @@ def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
         e_elem.set("end", str(int(end)))
 
     tree = ET.ElementTree(root)
-    # Python 3.9+ feature for pretty printing if desired, but we'll use base write string formatting
-    ET.indent(tree, space="  ", level=0)
+    _indent_xml(root)
     tree.write(casx_path, encoding="UTF-8", xml_declaration=True)
 
     return casx_path

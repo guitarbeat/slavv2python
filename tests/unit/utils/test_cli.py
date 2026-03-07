@@ -1,6 +1,8 @@
 """Tests for the SLAVV CLI entry point (slavv.apps.cli)."""
+
 import pytest
-from slavv.apps.cli import _build_parser, _args_to_parameters, main
+
+from slavv.apps.cli import _args_to_parameters, _build_parser, main
 
 
 class TestBuildParser:
@@ -39,15 +41,29 @@ class TestBuildParser:
 
     def test_run_subcommand_full_options(self):
         parser = _build_parser()
-        args = parser.parse_args([
-            "run", "-i", "vol.tif", "-o", "out/",
-            "--energy-method", "frangi",
-            "--edge-method", "watershed",
-            "--vessel-radius", "2.0",
-            "--microns-per-voxel", "0.5", "0.5", "1.0",
-            "--export", "csv", "json",
-            "-v",
-        ])
+        args = parser.parse_args(
+            [
+                "run",
+                "-i",
+                "vol.tif",
+                "-o",
+                "out/",
+                "--energy-method",
+                "frangi",
+                "--edge-method",
+                "watershed",
+                "--vessel-radius",
+                "2.0",
+                "--microns-per-voxel",
+                "0.5",
+                "0.5",
+                "1.0",
+                "--export",
+                "csv",
+                "json",
+                "-v",
+            ]
+        )
         assert args.energy_method == "frangi"
         assert args.edge_method == "watershed"
         assert args.vessel_radius == 2.0

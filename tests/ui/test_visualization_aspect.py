@@ -1,5 +1,6 @@
-import sys
 import pathlib
+import sys
+
 import numpy as np
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))

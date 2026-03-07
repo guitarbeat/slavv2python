@@ -1,5 +1,6 @@
-import sys
 import pathlib
+import sys
+
 import numpy as np
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
@@ -37,4 +38,3 @@ def test_plot_network_slice_filters_edges_and_vertices():
     # Axes should share scale to preserve physical aspect ratio
     assert fig.layout.yaxis.scaleanchor == "x"
     assert fig.layout.yaxis.scaleratio == 1
-

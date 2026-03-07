@@ -5,6 +5,7 @@ Coordinates the energy, tracing, and graph construction steps.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Callable
@@ -35,6 +36,8 @@ class SLAVVProcessor:
         parameters: dict[str, Any],
         progress_callback: Callable[[float, str], None] | None = None,
         checkpoint_dir: str | None = None,
+        stop_after: str | None = None,
+        force_rerun_from: str | None = None,
     ) -> dict[str, Any]:
         """Complete SLAVV processing pipeline.
 
@@ -48,7 +51,11 @@ class SLAVVProcessor:
             checkpoint_dir: Optional directory path. If provided, intermediate steps
                 (Energy, Vertices, Edges, Network) will be saved/loaded from this directory.
                 Enables resuming crashed runs or inspecting intermediate results.
-
+            stop_after: Optional string ('energy', 'vertices', 'edges', 'network').
+                The pipeline will return early after completing the specified stage.
+            force_rerun_from: Optional string ('energy', 'vertices', 'edges', 'network').
+                If provided, checkpoints for this stage and all subsequent stages will be
+                ignored, forcing recalculation.
         Returns:
             Dictionary containing all processing results
         """
@@ -74,13 +81,55 @@ class SLAVVProcessor:
         # Validate and populate default parameters
         parameters = utils.validate_parameters(parameters)
 
+        stages_order = ["energy", "vertices", "edges", "network"]
+
+        # Check against previous parameters if we have a checkpoint_dir
+        params_path = (
+            os.path.join(checkpoint_dir, "checkpoint_params.json") if checkpoint_dir else None
+        )
+        cache_invalid = False
+        if params_path and os.path.exists(params_path):
+            try:
+                with open(params_path) as f:
+                    old_params = json.load(f)
+                if old_params != parameters:
+                    logger.warning("Parameters have changed since last run. Invalidating cache.")
+                    cache_invalid = True
+            except (OSError, json.JSONDecodeError):
+                cache_invalid = True
+        elif params_path:
+            cache_invalid = True
+
+        if params_path and (cache_invalid or not os.path.exists(params_path)):
+            with open(params_path, "w") as f:
+                json.dump(parameters, f)
+
+        # Determine which stages to force rerun
+        force_rerun = dict.fromkeys(stages_order, False)
+        if force_rerun_from and force_rerun_from in stages_order:
+            start_idx = stages_order.index(force_rerun_from)
+            for i in range(start_idx, len(stages_order)):
+                force_rerun[stages_order[i]] = True
+
+        # If cache invalid (e.g. parameters changed), force rerun all stages
+        if cache_invalid:
+            for stage in stages_order:
+                force_rerun[stage] = True
+
+        results = {"parameters": parameters}
+
         # Step 0: Image preprocessing (fast, typically not cached)
         image = utils.preprocess_image(image, parameters)
         if progress_callback:
             progress_callback(0.2, "preprocess")
 
         # Step 1: Energy image formation
-        if checkpoint_dir and paths and os.path.exists(paths["energy"]):
+        if (
+            checkpoint_dir
+            and paths
+            and os.path.exists(paths["energy"])
+            and not force_rerun["energy"]
+        ):
             logger.info(f"Loading cached Energy Field from {paths['energy']}")
             energy_data = joblib.load(paths["energy"])
         else:
@@ -89,11 +138,21 @@ class SLAVVProcessor:
                 logger.info(f"Saving Energy Field to {paths['energy']}")
                 joblib.dump(energy_data, paths["energy"])
 
+        results["energy_data"] = energy_data
         if progress_callback:
             progress_callback(0.4, "energy")
 
+        if stop_after == "energy":
+            logger.info("Pipeline stopped after 'energy' stage as requested.")
+            return results
+
         # Step 2: Vertex extraction
-        if checkpoint_dir and paths and os.path.exists(paths["vertices"]):
+        if (
+            checkpoint_dir
+            and paths
+            and os.path.exists(paths["vertices"])
+            and not force_rerun["vertices"]
+        ):
             logger.info(f"Loading cached Vertices from {paths['vertices']}")
             vertices = joblib.load(paths["vertices"])
         else:
@@ -102,11 +161,16 @@ class SLAVVProcessor:
                 logger.info(f"Saving Vertices to {paths['vertices']}")
                 joblib.dump(vertices, paths["vertices"])
 
+        results["vertices"] = vertices
         if progress_callback:
             progress_callback(0.6, "vertices")
 
+        if stop_after == "vertices":
+            logger.info("Pipeline stopped after 'vertices' stage as requested.")
+            return results
+
         # Step 3: Edge extraction
-        if checkpoint_dir and paths and os.path.exists(paths["edges"]):
+        if checkpoint_dir and paths and os.path.exists(paths["edges"]) and not force_rerun["edges"]:
             logger.info(f"Loading cached Edges from {paths['edges']}")
             edges = joblib.load(paths["edges"])
         else:
@@ -119,11 +183,21 @@ class SLAVVProcessor:
                 logger.info(f"Saving Edges to {paths['edges']}")
                 joblib.dump(edges, paths["edges"])
 
+        results["edges"] = edges
         if progress_callback:
             progress_callback(0.8, "edges")
 
+        if stop_after == "edges":
+            logger.info("Pipeline stopped after 'edges' stage as requested.")
+            return results
+
         # Step 4: Network construction
-        if checkpoint_dir and paths and os.path.exists(paths["network"]):
+        if (
+            checkpoint_dir
+            and paths
+            and os.path.exists(paths["network"])
+            and not force_rerun["network"]
+        ):
             logger.info(f"Loading cached Network from {paths['network']}")
             network = joblib.load(paths["network"])
         else:
@@ -132,16 +206,9 @@ class SLAVVProcessor:
                 logger.info(f"Saving Network to {paths['network']}")
                 joblib.dump(network, paths["network"])
 
+        results["network"] = network
         if progress_callback:
             progress_callback(1.0, "network")
-
-        results = {
-            "energy_data": energy_data,
-            "vertices": vertices,
-            "edges": edges,
-            "network": network,
-            "parameters": parameters,
-        }
 
         logger.info("SLAVV processing pipeline completed")
         return results

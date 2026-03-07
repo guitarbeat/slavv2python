@@ -3,8 +3,9 @@
 Ensures the slavv package is importable when running tests from the repo root,
 whether or not `pip install -e .` has been run.
 """
-import sys
+
 import shutil
+import sys
 from pathlib import Path
 from uuid import uuid4
 
