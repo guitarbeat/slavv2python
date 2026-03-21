@@ -12,13 +12,13 @@ import plotly.express as px
 import streamlit as st
 
 from slavv.analysis import AutomaticCurator, MLCurator
+from slavv.apps.share_report import build_share_report_html, record_share_event
 
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
 from slavv.utils import validate_parameters
 from slavv.visualization import NetworkVisualizer
-from slavv.visualization.interactive_curator import run_curator
 
 warnings.filterwarnings("ignore")
 
@@ -151,6 +151,49 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
         return None
 
 
+def _has_full_network_results(results):
+    """Return True when a full network exists and exports can be offered."""
+    required_keys = {"vertices", "edges", "network"}
+    return required_keys.issubset(results)
+
+
+@st.cache_data(show_spinner=False)
+def generate_share_report_data(processing_results, dataset_name, image_shape):
+    """Generate a self-contained HTML share report."""
+    return build_share_report_html(
+        processing_results,
+        dataset_name=dataset_name,
+        image_shape=image_shape,
+    )
+
+
+def _log_share_report_prepared_once(dataset_name, report_data, results):
+    """Track report preparation exactly once per report signature in a session."""
+    signature = report_data["signature"]
+    if st.session_state.get("share_report_prepared_signature") == signature:
+        return
+
+    st.session_state["share_report_prepared_signature"] = signature
+    record_share_event(
+        st.session_state,
+        "share_report_requested",
+        dataset_name,
+        signature,
+        extra={
+            "vertices_count": len(results["vertices"].get("positions", [])),
+            "edges_count": len(results["edges"].get("traces", [])),
+            "strands_count": len(results["network"].get("strands", [])),
+        },
+    )
+
+
+def _run_interactive_curator(energy_data, vertices_data, edges_data):
+    """Import the desktop curator lazily so the web app can load without Qt deps."""
+    from slavv.visualization.interactive_curator import run_curator
+
+    return run_curator(energy_data, vertices_data, edges_data)
+
+
 def main():
     """Main application function"""
 
@@ -236,7 +279,7 @@ def show_home_page():
         """)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with col2, st.container(height=400, gap="medium", horizontal_alignment="center"):
+    with col2, st.container(height=400):
         st.markdown("### 📊 Quick Stats")
 
         # Sample statistics (would be replaced with actual data)
@@ -638,6 +681,8 @@ def show_processing_page():
                 st.session_state["processing_results"] = results
                 st.session_state["parameters"] = validated_params
                 st.session_state["image_shape"] = image.shape
+                st.session_state["dataset_name"] = uploaded_file.name
+                st.session_state.pop("share_report_prepared_signature", None)
 
                 # Cleanup state if we stopped early so UI doesn't crash trying to render old networks
                 if stop_after_val != "network":
@@ -742,7 +787,7 @@ def show_ml_curation_page():
                     )
 
                     # Launch the blocking PyQt5 Application
-                    curated_vertices, curated_edges = run_curator(
+                    curated_vertices, curated_edges = _run_interactive_curator(
                         results["energy_data"], results["vertices"], results["edges"]
                     )
 
@@ -1191,10 +1236,14 @@ def show_visualization_page():
                 slice_index=slice_index,
             )
             st.plotly_chart(fig, use_container_width=True)
+
+    if not _has_full_network_results(results):
+        st.info("Complete the full network stage to unlock exports and the share report.")
+        return
     # Export options
     st.markdown("### 💾 Export Options")
 
-    col1, col2, col3 = st.columns(3, gap="medium")
+    col1, col2, col3, col4 = st.columns(4, gap="medium")
 
     # Prepare data for export if available
     vertices = st.session_state["processing_results"]["vertices"]
@@ -1240,6 +1289,45 @@ def show_visualization_page():
             )
         else:
             st.button("📊 Export CSV", disabled=True, help="Export generation failed")
+    share_report_data = generate_share_report_data(
+        st.session_state["processing_results"],
+        st.session_state.get("dataset_name", "SLAVV dataset"),
+        st.session_state.get("image_shape", (100, 100, 50)),
+    )
+    _log_share_report_prepared_once(
+        st.session_state.get("dataset_name", "SLAVV dataset"),
+        share_report_data,
+        st.session_state["processing_results"],
+    )
+
+    with col4:
+        downloaded = st.download_button(
+            label="Download Share Report",
+            data=share_report_data["html"],
+            file_name=share_report_data["file_name"],
+            mime="text/html",
+            help="Download a self-contained HTML report to share with collaborators.",
+        )
+        if downloaded:
+            record_share_event(
+                st.session_state,
+                "share_report_downloaded",
+                st.session_state.get("dataset_name", "SLAVV dataset"),
+                share_report_data["signature"],
+                extra={"report_file_name": share_report_data["file_name"]},
+            )
+
+    if downloaded:
+        st.success(
+            "Share report downloaded. Forward the HTML file to collaborators for offline review."
+        )
+
+    share_metrics = st.session_state.get("share_report_metrics", {})
+    st.caption(
+        "Tracked share events this session: "
+        f"requested={share_metrics.get('share_report_requested', 0)}, "
+        f"downloaded={share_metrics.get('share_report_downloaded', 0)}"
+    )
 
 
 def show_analysis_page():

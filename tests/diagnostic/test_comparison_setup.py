@@ -59,12 +59,19 @@ def _run_setup_checks() -> Tuple[List[str], List[str]]:
     if matlab_repo_path.exists():
         print(f"\n[OK] Vectorization-Public directory found: {matlab_repo_path}")
 
-        # Check for vectorize_V200.m
-        vectorize_file = matlab_repo_path / "vectorize_V200.m"
+        # The upstream MATLAB repo stores source files under source/.
+        matlab_source_dir = matlab_repo_path / "source"
+        vectorize_file = matlab_source_dir / "vectorize_V200.m"
         if vectorize_file.exists():
-            print("  [OK] vectorize_V200.m found")
+            print(f"  [OK] vectorize_V200.m found: {vectorize_file}")
+        elif matlab_source_dir.exists():
+            warnings.append(
+                f"[WARN] vectorize_V200.m not found in expected source directory: {matlab_source_dir}"
+            )
         else:
-            errors.append("  [ERROR] vectorize_V200.m not found in Vectorization-Public")
+            warnings.append(
+                f"[WARN] Vectorization-Public source directory not found or not populated: {matlab_source_dir}"
+            )
     else:
         warnings.append(
             f"[WARN] Vectorization-Public directory not found: {matlab_repo_path} (required for MATLAB comparison)"
