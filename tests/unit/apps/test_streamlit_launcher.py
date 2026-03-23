@@ -57,3 +57,13 @@ def test_main_delegates_to_streamlit_cli(monkeypatch):
             "--browser.gatherUsageStats=false",
         ]
     ]
+
+
+def test_build_env_overrides_incompatible_console_encoding(monkeypatch):
+    monkeypatch.setenv("PYTHONIOENCODING", "cp1252")
+    monkeypatch.setenv("PYTHONUTF8", "0")
+
+    env = streamlit_launcher._build_env()
+
+    assert env["PYTHONIOENCODING"] == "utf-8"
+    assert env["PYTHONUTF8"] == "1"

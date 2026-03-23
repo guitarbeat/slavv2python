@@ -32,10 +32,11 @@ def get_directory_size(path: Path) -> int:
 def load_run_info(run_dir: Path) -> dict[str, Any]:
     """Load information about a comparison run."""
     layout = resolve_run_layout(run_dir)
+    run_root = layout["run_root"]
     info = {
-        "name": run_dir.name,
-        "path": run_dir,
-        "size": get_directory_size(run_dir),
+        "name": run_root.name,
+        "path": run_root,
+        "size": get_directory_size(run_root),
         "has_matlab": layout["matlab_dir"].exists(),
         "has_python": layout["python_dir"].exists(),
         "has_report": layout["report_file"].exists(),

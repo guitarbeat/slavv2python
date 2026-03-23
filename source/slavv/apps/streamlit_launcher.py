@@ -33,8 +33,8 @@ def _build_command(app_path: Path, argv: Sequence[str]) -> list[str]:
 def _build_env() -> dict[str, str]:
     """Use UTF-8 for the delegated Streamlit process on Windows consoles."""
     env = os.environ.copy()
-    env.setdefault("PYTHONIOENCODING", "utf-8")
-    env.setdefault("PYTHONUTF8", "1")
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     return env
 
 

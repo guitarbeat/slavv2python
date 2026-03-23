@@ -47,6 +47,17 @@ def test_load_run_info_reads_report_from_analysis_stage(tmp_path: Path):
     assert info["speedup"] == 2.0
 
 
+def test_load_run_info_normalizes_staged_input_path(tmp_path: Path):
+    run_dir = tmp_path / "20260209_173550_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    analysis_dir.mkdir(parents=True)
+
+    info = load_run_info(analysis_dir)
+
+    assert info["name"] == "20260209_173550_full_run"
+    assert info["path"] == run_dir
+
+
 def test_list_runs_returns_run_roots_for_staged_layout(tmp_path: Path):
     run_with_report = tmp_path / "20260209_173134_full_run"
     (run_with_report / "03_Analysis").mkdir(parents=True)
