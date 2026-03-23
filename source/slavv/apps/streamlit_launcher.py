@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from contextlib import contextmanager
@@ -29,6 +30,14 @@ def _build_command(app_path: Path, argv: Sequence[str]) -> list[str]:
     return [sys.executable, "-m", "streamlit", "run", str(app_path), *argv]
 
 
+def _build_env() -> dict[str, str]:
+    """Use UTF-8 for the delegated Streamlit process on Windows consoles."""
+    env = os.environ.copy()
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PYTHONUTF8", "1")
+    return env
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the packaged Streamlit application through Streamlit itself."""
     if util.find_spec("streamlit") is None:
@@ -42,7 +51,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     streamlit_args = list(sys.argv[1:] if argv is None else argv)
 
     with _resolve_app_path() as app_path:
-        completed = subprocess.run(_build_command(app_path, streamlit_args), check=False)
+        completed = subprocess.run(
+            _build_command(app_path, streamlit_args),
+            check=False,
+            env=_build_env(),
+        )
 
     return completed.returncode
 

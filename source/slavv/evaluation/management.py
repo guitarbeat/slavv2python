@@ -282,9 +282,11 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
 
         if "performance" in report:
             perf = report["performance"]
+            matlab_time = perf.get("matlab_time_seconds", report.get("matlab", {}).get("elapsed_time", 0))
+            python_time = perf.get("python_time_seconds", report.get("python", {}).get("elapsed_time", 0))
             lines.append("### Performance")
-            lines.append(f"- **MATLAB:** {perf.get('matlab_time_seconds', 0):.1f}s")
-            lines.append(f"- **Python:** {perf.get('python_time_seconds', 0):.1f}s")
+            lines.append(f"- **MATLAB:** {matlab_time:.1f}s")
+            lines.append(f"- **Python:** {python_time:.1f}s")
             lines.append(
                 f"- **Speedup:** {perf.get('speedup', 0):.2f}x ({perf.get('faster', 'N/A')} faster)"
             )

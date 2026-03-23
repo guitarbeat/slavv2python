@@ -3,7 +3,12 @@
 import json
 from pathlib import Path
 
-from slavv.evaluation.management import generate_manifest, list_runs, load_run_info, resolve_run_layout
+from slavv.evaluation.management import (
+    generate_manifest,
+    list_runs,
+    load_run_info,
+    resolve_run_layout,
+)
 from slavv.evaluation.reporting import generate_summary
 
 
@@ -109,6 +114,27 @@ def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     (python_dir / "network.json").write_text("{}", encoding="utf-8")
 
     content = generate_manifest(analysis_dir, metadata_dir / "run_manifest.md")
+    normalized = content.replace("\\", "/")
 
     assert content.splitlines()[0] == "# SLAVV Comparison Run: 20260210_100526_full_run"
-    assert "`02_Output/python_results/network.json`" in content
+    assert "`02_Output/python_results/network.json`" in normalized
+
+
+def test_generate_manifest_uses_report_elapsed_times(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    report = {
+        "matlab": {"elapsed_time": 12.5},
+        "python": {"elapsed_time": 3.25},
+        "performance": {"speedup": 3.85, "faster": "Python"},
+    }
+    (analysis_dir / "comparison_report.json").write_text(json.dumps(report), encoding="utf-8")
+
+    content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
+
+    assert "- **MATLAB:** 12.5s" in content
+    assert "- **Python:** 3.2s" in content
+    assert "- **Speedup:** 3.85x (Python faster)" in content

@@ -25,8 +25,15 @@ def test_main_delegates_to_streamlit_cli(monkeypatch):
 
     commands: list[list[str]] = []
 
-    def fake_run(command: list[str], check: bool) -> subprocess.CompletedProcess[str]:
+    monkeypatch.delenv("PYTHONIOENCODING", raising=False)
+    monkeypatch.delenv("PYTHONUTF8", raising=False)
+
+    def fake_run(
+        command: list[str], check: bool, env: dict[str, str]
+    ) -> subprocess.CompletedProcess[str]:
         assert check is False
+        assert env["PYTHONIOENCODING"] == "utf-8"
+        assert env["PYTHONUTF8"] == "1"
         commands.append(command)
         return subprocess.CompletedProcess(command, 0)
 
