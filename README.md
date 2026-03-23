@@ -1,243 +1,133 @@
 # SLAVV Python Port
 
-Python and Streamlit reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network vectorization from microscopy volumes. This repository includes the core library, a web UI, and tooling to compare results with the original MATLAB implementation.
+Python reimplementation of SLAVV (Segmentation-Less, Automated, Vascular
+Vectorization) for 3D vascular network extraction from microscopy volumes.
+This repository ships the core library, a Streamlit UI, a command-line
+interface, and MATLAB comparison helpers.
 
-## Repository structure
+## Repository layout
 
 | Path | Description |
-|------|-------------|
-| **source/slavv/** | Core Python package (energy, tracing, graph, I/O, visualization) |
-| **source/slavv/apps/** | Web applications (`web_app.py`) |
-| **workspace/scripts/** | Setup, CLI wrappers, and MATLAB integration |
-| **workspace/examples/** | Programmatic usage examples (`run_tutorial.py`) |
-| **workspace/notebooks/** | Interactive Jupyter workflows and comparison dashboards |
-| **workspace/experiments/** | Output directory for runs and comparisons |
-| **tests/** | Unit, integration, and UI tests |
-| **docs/** | Development, archive summary, and workspace reference docs |
-| **external/Vectorization-Public/** | Original MATLAB source |
-| **external/** | Large binary dependencies (e.g., `blender_resources`) |
-| **pyproject.toml** | Package metadata and dependencies |
+| --- | --- |
+| `source/slavv/` | Core package code, including processing, I/O, analysis, and visualization |
+| `source/slavv/apps/` | User-facing entry points such as the CLI and Streamlit app |
+| `tests/` | Unit, integration, UI, and diagnostic coverage |
+| `workspace/scripts/cli/` | MATLAB comparison scripts and helper wrappers |
+| `external/Vectorization-Public/` | Upstream MATLAB SLAVV checkout, when populated locally |
+| `MATLAB_MAPPING.md` | Notes on MATLAB-to-Python mapping decisions |
+| `EXPERIMENTS_REVIEW.md` | Review notes for experiment assets and repo state |
+| `pyproject.toml` | Package metadata and tool configuration |
 
-## Getting started
+## Installation
 
-### Quick Setup (Windows)
+1. Create and activate a virtual environment:
 
-Run the automated setup script:
 ```powershell
-.\workspace\scripts\setup\setup_env.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-This will:
-- Create a virtual environment (venv or conda)
-- Install all dependencies from `pyproject.toml`
-- Register a Jupyter kernel for notebooks
-- Guide you through the next steps
+2. Install the package for the workflow you need:
 
-### Manual Setup
+```powershell
+# Core library only
+pip install -e .
 
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/UTFOIL/slavv2python.git
-   cd slavv2python
-   ```
+# Streamlit app support
+pip install -e ".[app]"
 
-2. **Create and activate a virtual environment**:
-   ```bash
-   # Option A: venv (built-in)
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1  # Windows
-   source .venv/bin/activate      # Linux/Mac
-
-   # Option B: conda
-   conda create -n slavv-env python=3.10
-   conda activate slavv-env
-   ```
-
-3. **Install the package in editable mode**:
-   ```bash
-   pip install -e .
-   ```
-   This installs all dependencies from `pyproject.toml` including matplotlib, numpy, scipy, etc.
-
-4. **For notebook usage, install Jupyter**:
-   ```bash
-   pip install jupyter ipykernel
-   python -m ipykernel install --user --name=slavv-env --display-name="Python (SLAVV)"
-   ```
-
-5. **Validate your setup**:
-   ```bash
-   jupyter notebook workspace/notebooks/00_Setup_and_Validation.ipynb
-   # Select kernel: "Python (SLAVV)"
-   ```
-
-### Launch the Web Application
-
-```bash
-streamlit run source/slavv/apps/web_app.py
-# Or use the entry point: slavv-app
+# Development tooling plus the app
+pip install -e ".[app,dev]"
 ```
-Open the provided URL in your browser.
 
-## Usage
+The `slavv-app` launcher requires the `app` extra because it depends on
+Streamlit.
 
-### Programmatic Usage (Headless/Batch)
-The core `SLAVVProcessor` acts as an agnostic API backend for the entire pipeline. It is entirely decoupled from any user interface (like Streamlit or the CLI), meaning you can easily import it into your own custom Python scripts, Jupyter notebooks, or wrap it in a REST API (like FastAPI) to process remote jobs.
+## Launching the app
 
-For integration into other pipelines or running on a cluster without the UI, use the `SLAVVProcessor` class.
-See **`workspace/examples/run_tutorial.py`** or the docstrings for details.
+After installing `.[app]`, start the UI with either of these commands:
+
+```powershell
+slavv-app
+```
+
+```powershell
+python -m streamlit run source/slavv/apps/web_app.py
+```
+
+Open the local URL printed by Streamlit in your browser.
+
+## CLI usage
+
+Use the packaged CLI for headless or scripted workflows:
+
+```powershell
+slavv info
+slavv run -i volume.tif -o slavv_output --export csv json
+slavv import-matlab -b path\to\batch_260210-101213 -c my_checkpoints
+```
+
+## Programmatic usage
 
 ```python
 from slavv import SLAVVProcessor
 
-# Initialize the agnostic backend processor
 processor = SLAVVProcessor()
-
-# Run the pipeline (takes pure numpy arrays and a parameter dict)
 results = processor.process_image(image_data, params)
 
-# Returns a pure Python dictionary of vectorization features
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
 
-### Checkpointing and Manual Curation (Resuming)
+## MATLAB comparison helpers
 
-Just like the original MATLAB implementation's ability to pick up in the middle of a workflow (e.g., after manual curation of vertices or edges), the Python `SLAVVProcessor` supports intermediate checkpointing. 
+Validate the local comparison surface first:
 
-By passing a `checkpoint_dir` to `process_image()`, the pipeline will automatically save intermediate steps to disk (`checkpoint_energy.pkl`, `checkpoint_vertices.pkl`, `checkpoint_edges.pkl`, and `checkpoint_network.pkl`). 
-
-If you run the pipeline again with the same `checkpoint_dir`, it will automatically detect these files, skip the expensive computations for those prior steps, and load the cached (or manually curated) data instead. This enables seamless resumption of crashed runs, iterative parameter tuning on downstream steps, and injecting manual external curation natively.
-
-```python
-from slavv import SLAVVProcessor
-
-processor = SLAVVProcessor()
-
-# Run the pipeline with checkpointing enabled.
-# If 'my_run_checkpoints/checkpoint_vertices.pkl' already exists (e.g., from a previous run
-# or after an external script manually curated the vertices), the pipeline will automatically 
-# load it, skip the Energy and Vertex Extraction steps, and resume directly at Edge Extraction!
-results = processor.process_image(
-    image_data, 
-    params, 
-    checkpoint_dir="my_run_checkpoints"
-)
+```powershell
+pytest tests/diagnostic/test_comparison_setup.py
 ```
 
-### Interactive Curation (Graphical Curator Interface)
+Run the comparison helper script from the repository root:
 
-Just like the original MATLAB GCI, the Python port provides a **4-panel desktop application** for manual curation of vertices and edges. The interface includes:
-
-- **Volume Map** – 3D bounding box showing your current field of view
-- **Volume Display** – 2D MIP with Depth/Thickness sliders and X/Y/Z orthogonal views
-- **Intensity Histogram** – pixel distribution with brightness/contrast controls
-- **Energy Histogram** – draggable threshold line for global energy thresholding
-
-Curation actions: **Toggle** individual vertices/edges between True (blue) and False (red), **Sweep** to hide red objects, and **Add** edges by clicking two vertices.
-
-Launch from the Streamlit app (**Curation → Interactive (Manual GUI) → Launch**) or programmatically:
-
-```python
-from slavv.analysis.interactive_curator import run_curator
-
-curated_vertices, curated_edges = run_curator(energy_data, vertices, edges)
+```powershell
+python workspace/scripts/cli/compare_matlab_python.py `
+    --input data/slavv_test_volume.tif `
+    --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" `
+    --output-dir comparison_output
 ```
 
-### MATLAB Cross-Compatibility
+## Testing and checks
 
-You can **import curated data from MATLAB** and continue the pipeline in Python. This enables workflows like: run Energy + Vertex Extraction in MATLAB → curate vertices in MATLAB's GCI → import into Python → run Edge Extraction and Network in Python.
+Fast verification:
 
-**Via CLI:**
-```bash
-# Import a MATLAB batch folder as Python checkpoints
-slavv import-matlab -b path/to/batch_260210-101213 -c my_checkpoints/
-
-# Resume the pipeline in Python (skips steps that have checkpoints)
-slavv run -i volume.tif --checkpoint-dir my_checkpoints/ --export csv json
-```
-
-**Via Python:**
-```python
-from slavv.io.matlab_bridge import import_matlab_batch
-from slavv import SLAVVProcessor
-
-# Convert MATLAB batch output → Python checkpoint pickles
-import_matlab_batch("path/to/batch_260210-101213", "my_checkpoints/")
-
-# Pipeline auto-detects checkpoints and skips those stages
-processor = SLAVVProcessor()
-results = processor.process_image(image, params, checkpoint_dir="my_checkpoints/")
-```
-
-### Visualization and export
-
-SLAVV exports `VMV`, `CASX`, `CSV`, and `JSON`.
-
-- `VMV` is intended for Blender + VessMorphoVis.
-- `CASX` is XML-based vascular network data.
-- `CSV` and `JSON` are convenient for analysis pipelines.
-
-To inspect outputs in Blender:
-1. Install Blender and the VessMorphoVis add-on.
-2. Run SLAVV and generate a `.vmv` file.
-3. In Blender, load the `.vmv` file from the VessMorphoVis panel.
-
-For experiment-level inspection, use `workspace/notebooks/04_Comparison_Dashboard.ipynb`.
-
-## Testing
-
-Verify that the environment is configured correctly by running the test suite:
-
-```bash
-python -m pytest tests/
-```
-
-Fast lane (used by CI for quick feedback):
-
-```bash
+```powershell
 python -m pytest -m "unit or integration"
 ```
+
+Recommended local release checks:
+
+```powershell
+python -m compileall source workspace/scripts
+python -m ruff format --check source tests
+python -m ruff check source tests
+python -m mypy
+python -m pytest -m "unit or integration"
+```
+
+The current mypy gate is intentionally scoped to the packaged entry points.
+Broader package-wide typing is still in progress, so new type-check coverage
+should expand deliberately rather than claiming full-package enforcement.
 
 ## Contributing
 
-### Code and docs
-- Place package code under `source/slavv/`.
-- Place tests under `tests/` by category (`unit`, `integration`, `ui`, `diagnostic`).
-- Place supplementary docs under `docs/`.
-- Use relative links between repo documents.
-
-### Style
-- Follow PEP 8.
-- Public functions in `source/` should use type hints.
-- Use docstrings for exported members.
-- Use `logging` in library code (avoid `print()` in `source/`).
-
-### Checks before opening a PR
-```bash
-python -m compileall source/ tests/
-python -m pytest -m "unit or integration"
-python -m pytest tests/ -v
-```
-
-### Regression guardrails
-- Do not break existing tests.
-- Preserve MATLAB parity for core algorithms.
-- Prefer behavior-level tests with deterministic fixtures.
-- For float expectations, use `np.allclose(..., atol=1e-6)`.
-
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for testing and repository structure policy.
-See [docs/WORKSPACE.md](docs/WORKSPACE.md) for workspace scripts/notebooks/experiments conventions.
-
-## Troubleshooting
-
-- **ImportError for `slavv`** - Ensure you are running Python from the repository root and have run `pip install -e .`.
-- **ValueError: expected 3D TIFF** - `load_tiff_volume` only accepts grayscale, volumetric TIFFs.
-- **High memory usage** - enable memory mapping with `load_tiff_volume(..., memory_map=True)` or reduce tile sizes via `max_voxels_per_node_energy`.
-- **Wrong Jupyter kernel** - run `python -m ipykernel install --user --name=slavv-env --display-name=\"Python (SLAVV)\"` and select that kernel.
-
-For migration and parity status, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+- Keep package code under `source/slavv/`.
+- Keep tests under `tests/` and use the existing `unit`, `integration`, `ui`,
+  and `diagnostic` markers.
+- Prefer type hints for new or modified public functions.
+- Use `logging` in library code instead of `print()`.
+- Preserve MATLAB parity where practical and add deterministic regression tests
+  for behavior changes.
 
 ## License
 
-This project is licensed under the [GNU GPL-3.0](LICENSE) license, consistent with the upstream SLAVV (Vectorization-Public) repository.
+This project is licensed under GNU GPL-3.0. See `LICENSE`.

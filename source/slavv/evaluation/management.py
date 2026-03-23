@@ -241,15 +241,18 @@ def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
 
 def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> str:
     """Generate manifest/README for a comparison directory."""
+    layout = resolve_run_layout(comparison_dir)
+    run_root = layout["run_root"]
+
     if output_file is None:
-        output_file = comparison_dir / "MANIFEST.md"
+        output_file = layout["manifest_file"]
 
     # Get directory name and timestamp
-    dir_name = comparison_dir.name
+    dir_name = run_root.name
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Load comparison report
-    report_file = comparison_dir / "comparison_report.json"
+    report_file = layout["report_file"]
     report = {}
     if report_file.exists():
         try:
@@ -259,10 +262,10 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
             pass
 
     # Get file inventory
-    inventory = get_file_inventory(comparison_dir)
+    inventory = get_file_inventory(run_root)
 
     # Calculate total size
-    total_size = sum(f.stat().st_size for f in comparison_dir.rglob("*") if f.is_file())
+    total_size = sum(f.stat().st_size for f in run_root.rglob("*") if f.is_file())
 
     # Build manifest content
     lines = []
@@ -314,14 +317,14 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         if vmv_files:
             lines.append("**VMV Files** (VessMorphoVis/Blender):")
             for f in sorted(vmv_files):
-                rel_path = f.relative_to(comparison_dir)
+                rel_path = f.relative_to(run_root)
                 size = format_size(f.stat().st_size)
                 lines.append(f"- `{rel_path}` ({size})")
             lines.append("")
         if casx_files:
             lines.append("**CASX Files** (CASX format):")
             for f in sorted(casx_files):
-                rel_path = f.relative_to(comparison_dir)
+                rel_path = f.relative_to(run_root)
                 size = format_size(f.stat().st_size)
                 lines.append(f"- `{rel_path}` ({size})")
             lines.append("")
@@ -336,19 +339,19 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         if csv_files:
             lines.append("**CSV Files:**")
             for f in sorted(csv_files):
-                rel_path = f.relative_to(comparison_dir)
+                rel_path = f.relative_to(run_root)
                 lines.append(f"- `{rel_path}`")
             lines.append("")
         if json_files:
             lines.append("**JSON Files:**")
             for f in sorted(json_files):
-                rel_path = f.relative_to(comparison_dir)
+                rel_path = f.relative_to(run_root)
                 lines.append(f"- `{rel_path}`")
             lines.append("")
         if mat_files:
             lines.append("**MATLAB Files:**")
             for f in sorted(mat_files):
-                rel_path = f.relative_to(comparison_dir)
+                rel_path = f.relative_to(run_root)
                 lines.append(f"- `{rel_path}`")
             lines.append("")
 
@@ -358,7 +361,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         lines.append("### Visualization Images")
         lines.append("")
         for f in sorted(png_files):
-            rel_path = f.relative_to(comparison_dir)
+            rel_path = f.relative_to(run_root)
             lines.append(f"- `{rel_path}`")
         lines.append("")
 

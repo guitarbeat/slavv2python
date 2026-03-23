@@ -1,0 +1,52 @@
+from __future__ import annotations
+
+import subprocess
+import sys
+from contextlib import contextmanager
+from pathlib import Path
+
+from slavv.apps import streamlit_launcher
+
+
+def test_main_reports_missing_streamlit(monkeypatch, capsys):
+    monkeypatch.setattr(streamlit_launcher.util, "find_spec", lambda name: None)
+
+    exit_code = streamlit_launcher.main([])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert 'pip install -e ".[app]"' in captured.err
+
+
+def test_main_delegates_to_streamlit_cli(monkeypatch):
+    @contextmanager
+    def fake_resolve_app_path():
+        yield Path("C:/tmp/web_app.py")
+
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], check: bool) -> subprocess.CompletedProcess[str]:
+        assert check is False
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(streamlit_launcher.util, "find_spec", lambda name: object())
+    monkeypatch.setattr(streamlit_launcher, "_resolve_app_path", fake_resolve_app_path)
+    monkeypatch.setattr(streamlit_launcher.subprocess, "run", fake_run)
+
+    exit_code = streamlit_launcher.main(
+        ["--server.headless=true", "--browser.gatherUsageStats=false"]
+    )
+
+    assert exit_code == 0
+    assert commands == [
+        [
+            sys.executable,
+            "-m",
+            "streamlit",
+            "run",
+            "C:\\tmp\\web_app.py",
+            "--server.headless=true",
+            "--browser.gatherUsageStats=false",
+        ]
+    ]

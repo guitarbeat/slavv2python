@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from slavv.evaluation.management import list_runs, load_run_info, resolve_run_layout
+from slavv.evaluation.management import generate_manifest, list_runs, load_run_info, resolve_run_layout
 from slavv.evaluation.reporting import generate_summary
 
 
@@ -78,3 +78,37 @@ def test_generate_summary_uses_staged_result_paths(tmp_path: Path):
 
     assert "MATLAB results: Present" in summary
     assert "Python results: Present" in summary
+
+
+def test_generate_summary_normalizes_staged_run_name(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    (run_dir / "01_Input" / "matlab_results").mkdir(parents=True)
+    (run_dir / "02_Output" / "python_results").mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    (analysis_dir / "comparison_report.json").write_text("{}", encoding="utf-8")
+
+    output_file = analysis_dir / "summary.txt"
+    generate_summary(analysis_dir, output_file)
+    summary = output_file.read_text(encoding="utf-8")
+
+    assert "Run: 20260210_100526_full_run" in summary
+    assert "Run: 03_Analysis" not in summary
+    assert "Date: 2026-02-10" in summary
+
+
+def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    (run_dir / "01_Input" / "matlab_results").mkdir(parents=True)
+    python_dir = run_dir / "02_Output" / "python_results"
+    python_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+
+    content = generate_manifest(analysis_dir, metadata_dir / "run_manifest.md")
+
+    assert content.splitlines()[0] == "# SLAVV Comparison Run: 20260210_100526_full_run"
+    assert "`02_Output/python_results/network.json`" in content

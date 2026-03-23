@@ -21,7 +21,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
@@ -89,8 +88,11 @@ Repository = "https://github.com/UTFOIL/slavv2python"
 "Original MATLAB" = "https://github.com/UTFOIL/Vectorization-Public"
 
 [project.scripts]
-slavv-app = "slavv.apps.web_app:main"
+slavv-app = "slavv.apps.streamlit_launcher:main"
 slavv = "slavv.apps.cli:main"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["source"]
@@ -167,15 +169,19 @@ docstring-code-format = true
 
 # ── Mypy (static type checking) ─────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.12"
 mypy_path = "source"
-packages = ["slavv"]
+files = [
+    "source/slavv/apps/cli.py",
+    "source/slavv/apps/streamlit_launcher.py",
+]
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
 disallow_untyped_defs = false      # gradual typing: allow untyped for now
 check_untyped_defs = true          # still check bodies of untyped functions
 ignore_missing_imports = true      # don't error on 3rd-party stubs
+follow_imports = "skip"
 show_error_codes = true
 pretty = true
 

@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 def generate_summary(run_dir: Path, output_file: Path):
     """Generate summary.txt for a comparison run."""
     layout = resolve_run_layout(run_dir)
+    run_root = layout["run_root"]
 
     # Load comparison report if exists
     report_path = layout["report_file"]
@@ -36,7 +37,7 @@ def generate_summary(run_dir: Path, output_file: Path):
             logger.error(f"Failed to load comparison report {report_path}: {e}")
 
     # Extract metadata
-    run_name = run_dir.name
+    run_name = run_root.name
 
     # Try to infer date from directory name or file modification times
     date_str = "Unknown"
