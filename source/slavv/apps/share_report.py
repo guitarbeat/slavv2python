@@ -8,12 +8,15 @@ import tempfile
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
-from typing import Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 from plotly.io import to_html
 
 from slavv.analysis import calculate_network_statistics
 from slavv.visualization import NetworkVisualizer
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping
 
 DEFAULT_SHARE_REPORT_EVENT_LOG = Path(tempfile.gettempdir()) / "slavv_share_report_events.jsonl"
 
@@ -313,7 +316,7 @@ def build_share_report_html(
       <div class="panel">
         <h2>Processing Parameters</h2>
         <table>
-          {"".join(f'<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>' for label, value in parameter_rows)}
+          {"".join(f"<tr><td>{escape(label)}</td><td>{escape(value)}</td></tr>" for label, value in parameter_rows)}
         </table>
       </div>
       <div class="panel">

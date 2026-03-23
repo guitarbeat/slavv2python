@@ -208,7 +208,9 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
     edge_path = base.with_name(base.name + "_edges.csv")
 
     v_df = pd.read_csv(vertex_path)
-    vertices = _normalize_vertices_array(v_df[["y_position", "x_position", "z_position"]].to_numpy(float))
+    vertices = _normalize_vertices_array(
+        v_df[["y_position", "x_position", "z_position"]].to_numpy(float)
+    )
 
     radii = None
     if "radius_microns" in v_df.columns:

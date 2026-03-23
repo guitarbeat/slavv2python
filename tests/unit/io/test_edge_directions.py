@@ -7,7 +7,7 @@ from slavv.core import generate_edge_directions
 
 
 @pytest.mark.parametrize(
-    "n_directions,expected_shape",
+    ("n_directions", "expected_shape"),
     [
         (0, (0, 3)),
         (1, (1, 3)),

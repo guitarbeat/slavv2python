@@ -29,5 +29,5 @@ def test_extract_handles_no_vertices():
 def test_process_image_requires_3d():
     processor = SLAVVProcessor()
     img2d = np.zeros((5, 5), dtype=np.float32)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="non-empty 3D array"):
         processor.process_image(img2d, {})

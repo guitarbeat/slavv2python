@@ -36,10 +36,10 @@ def test_process_image_output_types():
 
 
 def test_validate_parameters_invalid_scales():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="scales_per_octave must be positive"):
         validate_parameters({"scales_per_octave": 0})
 
 
 def test_validate_parameters_negative_bandpass():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="bandpass_window must be non-negative"):
         validate_parameters({"bandpass_window": -1})

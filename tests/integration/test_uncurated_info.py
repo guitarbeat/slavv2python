@@ -18,6 +18,7 @@ def test_extract_uncurated_info_shapes() -> None:
     energy = np.zeros((2, 2, 2), dtype=float)
     info = extract_uncurated_info(vertices, edges, {"energy": energy}, energy.shape)
 
-    assert "vertex_features" in info and "edge_features" in info
+    assert "vertex_features" in info
+    assert "edge_features" in info
     assert info["vertex_features"].shape[0] == 2
     assert info["edge_features"].shape[0] == 1

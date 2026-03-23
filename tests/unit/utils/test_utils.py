@@ -46,7 +46,7 @@ def test_get_chunking_lattice_small_volume():
     slices = get_chunking_lattice(shape, max_voxels, margin=1)
 
     assert len(slices) == 1
-    chunk, output, inner = slices[0]
+    chunk, _output, _inner = slices[0]
     # Full coverage
     assert chunk == (slice(0, 10), slice(0, 10), slice(0, 10))
 
@@ -64,7 +64,7 @@ def test_get_chunking_lattice_splitting():
 
     # Verify total coverage
     processed_z = 0
-    for chunk, output, inner in slices:
+    for _chunk, output, _inner in slices:
         z_start = output[2].start
         z_end = output[2].stop
         assert z_start == processed_z

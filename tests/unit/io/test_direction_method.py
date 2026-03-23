@@ -13,7 +13,7 @@ except ImportError:
 def test_validate_parameters_direction_method():
     params = validate_parameters({"direction_method": "uniform"})
     assert params["direction_method"] == "uniform"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="direction_method must be 'hessian' or 'uniform'"):
         validate_parameters({"direction_method": "invalid"})
 
 

@@ -18,7 +18,7 @@ def test_load_tiff_volume_valid():
 
 def test_load_tiff_volume_non_tiff():
     buf = io.BytesIO(b"not a tiff")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Failed to read TIFF volume"):
         load_tiff_volume(buf)
 
 

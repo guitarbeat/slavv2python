@@ -80,7 +80,7 @@ def test_register_vector_sets_rigid():
     A = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=float)
 
     # Target: Translate by (10, 0, 0)
-    B = A + [10, 0, 0]
+    B = A + np.array([10, 0, 0])
 
     # Register A to B
     Tx, err = register_vector_sets(A, B, method="rigid", return_error=True)

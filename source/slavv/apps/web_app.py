@@ -305,7 +305,7 @@ def show_home_page():
 
         st.markdown("### 🎯 Workflow Control")
         st.markdown("""
-            Like the original MATLAB scripts (`StartWorkflow`/`FinalWorkflow`), you can 
+            Like the original MATLAB scripts (`StartWorkflow`/`FinalWorkflow`), you can
             pause the pipeline early to inspect intermediate results or force the pipeline
             to recalculate specific steps to test parameter changes.
             """)
