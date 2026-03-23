@@ -52,7 +52,7 @@ def test_main_delegates_to_streamlit_cli(monkeypatch):
             "-m",
             "streamlit",
             "run",
-            "C:\\tmp\\web_app.py",
+            str(Path("C:/tmp/web_app.py")),
             "--server.headless=true",
             "--browser.gatherUsageStats=false",
         ]
