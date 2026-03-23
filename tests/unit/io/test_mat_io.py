@@ -84,3 +84,21 @@ def test_mat_export_complex_params(tmp_path: Path) -> None:
     NetworkVisualizer().export_network_data(processing_results, out_path, format="mat")
 
     assert out_path.exists()
+
+
+def test_load_empty_mat_network_shapes(tmp_path: Path) -> None:
+    """Test MAT import normalizes empty vertices/edges to 2D network shapes."""
+    mat_path = tmp_path / "empty_network.mat"
+    savemat(
+        mat_path,
+        {
+            "vertices": np.empty((0, 3), dtype=float),
+            "edges": np.empty((0, 2), dtype=int),
+        },
+    )
+
+    network = load_network_from_mat(mat_path)
+
+    assert network.vertices.shape == (0, 3)
+    assert network.edges.shape == (0, 2)
+    assert network.radii is None

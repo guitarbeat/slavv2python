@@ -32,6 +32,22 @@ class Network:
 MatNetwork = Network
 
 
+def _normalize_vertices_array(vertices: Any) -> np.ndarray:
+    """Return vertex data in stable ``(N, 3)`` form."""
+    array = np.asarray(vertices, dtype=float)
+    if array.size == 0:
+        return np.empty((0, 3), dtype=float)
+    return np.atleast_2d(array)
+
+
+def _normalize_edges_array(edges: Any) -> np.ndarray:
+    """Return edge connections in stable ``(N, 2)`` form."""
+    array = np.asarray(edges, dtype=int)
+    if array.size == 0:
+        return np.empty((0, 2), dtype=int)
+    return np.atleast_2d(array)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Loaders
 # ──────────────────────────────────────────────────────────────────────────────
@@ -42,20 +58,20 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
     matlab_data_dict: dict[str, Any] = loadmat(Path(path), squeeze_me=True, struct_as_record=False)
     v_struct = matlab_data_dict.get("vertices")
     if hasattr(v_struct, "positions"):
-        vertices = np.asarray(getattr(v_struct, "positions", []), dtype=float)
+        vertices = _normalize_vertices_array(getattr(v_struct, "positions", []))
         radii = np.asarray(
             getattr(v_struct, "radii_microns", getattr(v_struct, "radii", [])),
             dtype=float,
         )
     else:
-        vertices = np.asarray(v_struct if v_struct is not None else [], dtype=float)
+        vertices = _normalize_vertices_array(v_struct if v_struct is not None else [])
         radii = np.asarray(matlab_data_dict.get("radii", []), dtype=float)
 
     e_struct = matlab_data_dict.get("edges")
     if hasattr(e_struct, "connections"):
-        edges = np.atleast_2d(np.asarray(e_struct.connections, dtype=int))
+        edges = _normalize_edges_array(e_struct.connections)
     else:
-        edges = np.atleast_2d(np.asarray(e_struct if e_struct is not None else [], dtype=int))
+        edges = _normalize_edges_array(e_struct if e_struct is not None else [])
 
     return Network(vertices=vertices, edges=edges, radii=radii if radii.size else None)
 
@@ -140,8 +156,8 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
             continue
         edge_list.append([int(start), int(end)])
 
-    vertices = np.asarray(vert_list, dtype=float)
-    edges = np.atleast_2d(np.asarray(edge_list, dtype=int))
+    vertices = _normalize_vertices_array(vert_list)
+    edges = _normalize_edges_array(edge_list)
     radii = np.asarray(radii_list, dtype=float) if radii_list else None
     return Network(vertices=vertices, edges=edges, radii=radii)
 
@@ -175,8 +191,8 @@ def load_network_from_vmv(path: Union[str, Path]) -> Network:
                     _, start, end = parts[:3]
                     edges_list.append([int(start), int(end)])
 
-    vertices = np.asarray(positions, dtype=float)
-    edges = np.atleast_2d(np.asarray(edges_list, dtype=int))
+    vertices = _normalize_vertices_array(positions)
+    edges = _normalize_edges_array(edges_list)
     radii_arr = np.asarray(radii, dtype=float) if radii else None
     return Network(vertices=vertices, edges=edges, radii=radii_arr)
 
@@ -192,7 +208,7 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
     edge_path = base.with_name(base.name + "_edges.csv")
 
     v_df = pd.read_csv(vertex_path)
-    vertices = v_df[["y_position", "x_position", "z_position"]].to_numpy(float)
+    vertices = _normalize_vertices_array(v_df[["y_position", "x_position", "z_position"]].to_numpy(float))
 
     radii = None
     if "radius_microns" in v_df.columns:
@@ -201,7 +217,7 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
         radii = v_df["radius_pixels"].to_numpy(float)
 
     e_df = pd.read_csv(edge_path)
-    edges = np.atleast_2d(e_df[["start_vertex", "end_vertex"]].to_numpy(int))
+    edges = _normalize_edges_array(e_df[["start_vertex", "end_vertex"]].to_numpy(int))
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
@@ -211,7 +227,7 @@ def load_network_from_json(path: Union[str, Path]) -> Network:
         data: dict[str, Any] = json.load(f)
 
     v_data = data.get("vertices", {})
-    vertices = np.asarray(v_data.get("positions", []), dtype=float)
+    vertices = _normalize_vertices_array(v_data.get("positions", []))
     radii_list = v_data.get("radii_microns", v_data.get("radii"))
     radii = (
         np.asarray(radii_list, dtype=float)
@@ -219,7 +235,7 @@ def load_network_from_json(path: Union[str, Path]) -> Network:
         else None
     )
     e_data = data.get("edges", {})
-    edges = np.atleast_2d(np.asarray(e_data.get("connections", []), dtype=int))
+    edges = _normalize_edges_array(e_data.get("connections", []))
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 
@@ -235,7 +251,7 @@ def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[
     edge_path = base.with_name(base.name + "_edges.csv")
 
     v_df = pd.DataFrame(
-        np.asarray(network.vertices, dtype=float),
+        _normalize_vertices_array(network.vertices),
         columns=["y_position", "x_position", "z_position"],
     )
     if network.radii is not None:
@@ -243,7 +259,7 @@ def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[
     v_df.to_csv(vertex_path, index=False)
 
     e_df = pd.DataFrame(
-        np.atleast_2d(np.asarray(network.edges, dtype=int))[:, :2],
+        _normalize_edges_array(network.edges)[:, :2],
         columns=["start_vertex", "end_vertex"],
     )
     e_df.to_csv(edge_path, index=False)
@@ -253,8 +269,8 @@ def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[
 def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a JSON file."""
     data: dict[str, Any] = {
-        "vertices": {"positions": np.asarray(network.vertices, dtype=float).tolist()},
-        "edges": {"connections": np.atleast_2d(np.asarray(network.edges, dtype=int)).tolist()},
+        "vertices": {"positions": _normalize_vertices_array(network.vertices).tolist()},
+        "edges": {"connections": _normalize_edges_array(network.edges).tolist()},
     }
     if network.radii is not None:
         data["vertices"]["radii_microns"] = np.asarray(network.radii, dtype=float).tolist()

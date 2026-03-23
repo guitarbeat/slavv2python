@@ -16,7 +16,6 @@ try:
 
     __all__ = [
         "NetworkVisualizer",
-        "plot_length_weighted_histograms",
     ]
 except ImportError as e:
     logger.warning(f"Visualization module unavailable (missing dependencies): {e}")

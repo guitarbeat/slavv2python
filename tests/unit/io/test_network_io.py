@@ -28,7 +28,8 @@ class TestNetworkRoundtrip:
         )
 
         v_path, e_path = save_network_to_csv(network, tmp_path / "net")
-        assert v_path.exists() and e_path.exists()
+        assert v_path.exists()
+        assert e_path.exists()
 
         loaded = load_network_from_csv(tmp_path / "net")
         assert np.allclose(loaded.vertices, network.vertices)
@@ -50,6 +51,31 @@ class TestNetworkRoundtrip:
         assert np.allclose(loaded.vertices, network.vertices)
         assert np.array_equal(loaded.edges, network.edges)
         assert np.allclose(loaded.radii, network.radii)
+
+    def test_csv_roundtrip_empty_network(self, tmp_path: Path) -> None:
+        """Test CSV save/load handles empty networks without malformed shapes."""
+        network = Network(vertices=[], edges=[])
+
+        v_path, e_path = save_network_to_csv(network, tmp_path / "empty")
+        assert v_path.exists()
+        assert e_path.exists()
+
+        loaded = load_network_from_csv(tmp_path / "empty")
+        assert loaded.vertices.shape == (0, 3)
+        assert loaded.edges.shape == (0, 2)
+
+    def test_json_roundtrip_empty_network(self, tmp_path: Path) -> None:
+        """Test JSON save/load keeps empty connections as an empty list."""
+        network = Network(vertices=[], edges=[])
+
+        path = save_network_to_json(network, tmp_path / "empty.json")
+        payload = json.loads(Path(path).read_text())
+        assert payload["vertices"]["positions"] == []
+        assert payload["edges"]["connections"] == []
+
+        loaded = load_network_from_json(path)
+        assert loaded.vertices.shape == (0, 3)
+        assert loaded.edges.shape == (0, 2)
 
 
 class TestNetworkImport:
