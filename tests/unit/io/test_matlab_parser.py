@@ -5,6 +5,7 @@ Tests the functionality of slavv.io.matlab_parser for loading
 and parsing MATLAB vectorization output files.
 """
 
+import json
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -237,6 +238,33 @@ class TestLoadMatlabBatchResults:
         assert "edges" in result
         assert "network_stats" in result
         assert "timings" in result
+
+    def test_load_batch_folder_reads_wrapper_timings(self, tmp_path):
+        """Test loading wrapper timing metadata when present."""
+        batch_folder = tmp_path / "batch_250127-120000"
+        vectors_dir = batch_folder / "vectors"
+        batch_folder.mkdir()
+        vectors_dir.mkdir()
+        (batch_folder / "timings.json").write_text(
+            json.dumps(
+                {
+                    "total_seconds": 12.5,
+                    "stage_seconds": {"energy": 6.0, "edges": 2.5},
+                    "wrapper_mode": "batch",
+                    "matlab_version": "R2019a",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = load_matlab_batch_results(batch_folder)
+
+        assert result["timings"] == {
+            "total": 12.5,
+            "stage_seconds": {"energy": 6.0, "edges": 2.5},
+            "wrapper_mode": "batch",
+            "matlab_version": "R2019a",
+        }
 
 
 class TestIntegrationScenarios:

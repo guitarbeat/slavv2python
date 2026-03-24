@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import joblib
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
@@ -18,6 +19,11 @@ from skimage.segmentation import watershed
 
 # Imports from sibling modules
 from .energy import compute_gradient_impl, spherical_structuring_element
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from slavv.runtime import StageController
 
 logger = logging.getLogger(__name__)
 
@@ -821,12 +827,459 @@ def extract_edges_watershed(
     }
 
 
+def extract_vertices_resumable(
+    energy_data: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+) -> dict[str, Any]:
+    """Extract vertices with persisted materialization and suppression state."""
+    from slavv.runtime.run_state import atomic_joblib_dump
+
+    energy = energy_data["energy"]
+    scale_indices = energy_data["scale_indices"]
+    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    energy_sign = energy_data.get("energy_sign", -1.0)
+    lumen_radius_microns = energy_data["lumen_radius_microns"]
+    energy_upper_bound = params.get("energy_upper_bound", 0.0)
+    space_strel_apothem = params.get("space_strel_apothem", 1)
+    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
+    voxel_size = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+    block_size = int(params.get("resume_vertex_block_size", 256))
+
+    candidate_path = stage_controller.artifact_path("candidates.pkl")
+    ordered_path = stage_controller.artifact_path("ordered_candidates.pkl")
+    keep_mask_path = stage_controller.artifact_path("keep_mask.pkl")
+    suppression_state = stage_controller.load_state()
+
+    stage_controller.begin(
+        detail="Preparing vertex candidates", units_total=4, substage="materialize"
+    )
+    if not candidate_path.exists():
+        strel = spherical_structuring_element(space_strel_apothem, voxel_size)
+        if energy_sign < 0:
+            filt = ndi.minimum_filter(energy, footprint=strel, mode="nearest")
+            extrema = (energy <= filt) & (energy < energy_upper_bound)
+        else:
+            filt = ndi.maximum_filter(energy, footprint=strel, mode="nearest")
+            extrema = (energy >= filt) & (energy > energy_upper_bound)
+
+        coords = np.where(extrema)
+        atomic_joblib_dump(
+            {
+                "positions": np.column_stack(coords),
+                "scales": scale_indices[coords],
+                "energies": energy[coords],
+            },
+            candidate_path,
+        )
+    stage_controller.update(units_total=4, units_completed=1, substage="materialize")
+
+    candidate_data = joblib.load(candidate_path)
+    vertex_positions = candidate_data["positions"]
+    vertex_scales = candidate_data["scales"]
+    vertex_energies = candidate_data["energies"]
+    if len(vertex_positions) == 0:
+        return {
+            "positions": np.empty((0, 3), dtype=np.float32),
+            "scales": np.empty((0,), dtype=np.int16),
+            "energies": np.empty((0,), dtype=np.float32),
+            "radii_pixels": np.empty((0,), dtype=np.float32),
+            "radii_microns": np.empty((0,), dtype=np.float32),
+            "radii": np.empty((0,), dtype=np.float32),
+        }
+
+    if not ordered_path.exists():
+        if energy_sign < 0:
+            sort_indices = np.argsort(vertex_energies)
+        else:
+            sort_indices = np.argsort(-vertex_energies)
+        atomic_joblib_dump(
+            {
+                "positions": vertex_positions[sort_indices],
+                "scales": vertex_scales[sort_indices],
+                "energies": vertex_energies[sort_indices],
+            },
+            ordered_path,
+        )
+    stage_controller.update(units_total=4, units_completed=2, substage="order")
+
+    ordered = joblib.load(ordered_path)
+    vertex_positions = ordered["positions"]
+    vertex_scales = ordered["scales"]
+    vertex_energies = ordered["energies"]
+    vertex_positions_microns = vertex_positions * voxel_size
+    max_radius = np.max(lumen_radius_microns) * length_dilation_ratio
+    tree = cKDTree(vertex_positions_microns)
+
+    if keep_mask_path.exists():
+        keep_mask = joblib.load(keep_mask_path)
+    else:
+        keep_mask = np.ones(len(vertex_positions), dtype=bool)
+    next_index = int(suppression_state.get("next_index", 0))
+    total_blocks = max(1, int(np.ceil(len(vertex_positions) / max(block_size, 1))))
+    completed_blocks = min(total_blocks, next_index // max(block_size, 1))
+    stage_controller.update(
+        units_total=4 + total_blocks,
+        units_completed=2 + completed_blocks,
+        substage="suppression",
+        detail=f"Vertex suppression {next_index}/{len(vertex_positions)}",
+        resumed=next_index > 0,
+    )
+
+    for i, pos in enumerate(vertex_positions_microns[next_index:], start=next_index):
+        if not keep_mask[i]:
+            continue
+        radius_i = lumen_radius_microns[vertex_scales[i]] * length_dilation_ratio
+        neighbors = tree.query_ball_point(pos, radius_i + max_radius)
+        for j in neighbors:
+            if j <= i or not keep_mask[j]:
+                continue
+            radius_j = lumen_radius_microns[vertex_scales[j]] * length_dilation_ratio
+            dist = np.linalg.norm(vertex_positions_microns[j] - pos)
+            if dist < (radius_i + radius_j):
+                keep_mask[j] = False
+
+        if (i + 1) % block_size == 0 or i == len(vertex_positions) - 1:
+            atomic_joblib_dump(keep_mask, keep_mask_path)
+            stage_controller.save_state({"next_index": i + 1, "block_size": block_size})
+            completed_blocks = min(total_blocks, (i + 1 + block_size - 1) // block_size)
+            stage_controller.update(
+                units_total=4 + total_blocks,
+                units_completed=2 + completed_blocks,
+                substage="suppression",
+                detail=f"Vertex suppression {i + 1}/{len(vertex_positions)}",
+                resumed=next_index > 0,
+            )
+
+    vertex_positions = vertex_positions[keep_mask].astype(np.float32)
+    vertex_scales = vertex_scales[keep_mask].astype(np.int16)
+    vertex_energies = vertex_energies[keep_mask].astype(np.float32)
+    radii_pixels = lumen_radius_pixels[vertex_scales].astype(np.float32)
+    radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
+    stage_controller.update(
+        units_total=4 + total_blocks, units_completed=3 + total_blocks, substage="finalize"
+    )
+    return {
+        "positions": vertex_positions,
+        "scales": vertex_scales,
+        "energies": vertex_energies,
+        "radii_pixels": radii_pixels,
+        "radii_microns": radii_microns,
+        "radii": radii_microns,
+    }
+
+
+def _load_edge_units(
+    units_dir: Path,
+    n_vertices: int,
+) -> tuple[
+    list[np.ndarray], list[list[int]], list[float], np.ndarray, set[tuple[int, int]], set[int]
+]:
+    edges: list[np.ndarray] = []
+    edge_connections: list[list[int]] = []
+    edge_energies: list[float] = []
+    edges_per_vertex = np.zeros(n_vertices, dtype=int)
+    existing_pairs: set[tuple[int, int]] = set()
+    completed: set[int] = set()
+
+    if not units_dir.exists():
+        return edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed
+
+    for unit_file in sorted(units_dir.glob("*.pkl")):
+        payload = joblib.load(unit_file)
+        origin_index = int(payload["origin_index"])
+        completed.add(origin_index)
+        for trace, connection, energy in zip(
+            payload["traces"],
+            payload["connections"],
+            payload["energies"],
+        ):
+            edges.append(np.asarray(trace, dtype=np.float32))
+            edge_connections.append([int(connection[0]), int(connection[1])])
+            edge_energies.append(float(energy))
+            start_vertex, end_vertex = int(connection[0]), int(connection[1])
+            if start_vertex >= 0:
+                edges_per_vertex[start_vertex] += 1
+            if end_vertex >= 0:
+                edges_per_vertex[end_vertex] += 1
+                existing_pairs.add(tuple(sorted((start_vertex, end_vertex))))
+    return edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed
+
+
+def extract_edges_resumable(
+    energy_data: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+) -> dict[str, Any]:
+    """Trace edges with per-origin persisted units."""
+    from slavv.runtime.run_state import atomic_joblib_dump
+
+    energy = energy_data["energy"]
+    vertex_positions = vertices["positions"]
+    vertex_scales = vertices["scales"]
+    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_microns = energy_data["lumen_radius_microns"]
+    energy_sign = energy_data.get("energy_sign", -1.0)
+    max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
+    step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
+    max_edge_energy = params.get("max_edge_energy", 0.0)
+    length_ratio = params.get("length_dilation_ratio", 1.0)
+    microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+    discrete_tracing = params.get("discrete_tracing", False)
+    direction_method = params.get("direction_method", "hessian")
+
+    if len(vertex_positions) == 0:
+        return {
+            "traces": [],
+            "connections": np.zeros((0, 2), dtype=np.int32),
+            "energies": np.zeros((0,), dtype=np.float32),
+            "vertex_positions": vertex_positions.astype(np.float32),
+        }
+
+    units_dir = stage_controller.artifact_path("units")
+    units_dir.mkdir(parents=True, exist_ok=True)
+    edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed = (
+        _load_edge_units(
+            units_dir,
+            len(vertex_positions),
+        )
+    )
+
+    logger.info("Creating vertex volume image...")
+    lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
+    vertex_image = paint_vertex_image(
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        energy.shape,
+    )
+    logger.info("Vertex volume image created")
+    vertex_positions_microns = vertex_positions * microns_per_voxel
+    tree = cKDTree(vertex_positions_microns)
+    max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
+    max_search_radius = max_vertex_radius * 5.0
+    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
+    mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
+
+    stage_controller.begin(
+        detail="Tracing edges with resumable origin units",
+        units_total=len(vertex_positions),
+        units_completed=len(completed),
+        substage="trace_origins",
+        resumed=bool(completed),
+    )
+
+    for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+        if vertex_idx in completed:
+            continue
+
+        unit_traces: list[np.ndarray] = []
+        unit_connections: list[list[int]] = []
+        unit_energies: list[float] = []
+        if edges_per_vertex[vertex_idx] < max_edges_per_vertex:
+            start_radius = lumen_radius_pixels[start_scale]
+            step_size = start_radius * step_size_ratio
+            max_length = start_radius * length_ratio
+            max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+            if direction_method == "hessian":
+                directions = estimate_vessel_directions(
+                    energy,
+                    start_pos,
+                    start_radius,
+                    microns_per_voxel,
+                )
+                if directions.shape[0] < max_edges_per_vertex:
+                    extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                    directions = np.vstack([directions, extra])
+                else:
+                    directions = directions[:max_edges_per_vertex]
+            else:
+                directions = generate_edge_directions(max_edges_per_vertex)
+
+            for direction in directions:
+                if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
+                    break
+                edge_trace = trace_edge(
+                    energy_prepared,
+                    start_pos,
+                    direction,
+                    step_size,
+                    max_edge_energy,
+                    vertex_positions,
+                    vertex_scales,
+                    lumen_radius_pixels,
+                    lumen_radius_microns,
+                    max_steps,
+                    mpv_prepared,
+                    energy_sign,
+                    discrete_steps=discrete_tracing,
+                    vertex_image=vertex_image,
+                    tree=tree,
+                    max_search_radius=max_search_radius,
+                )
+                if len(edge_trace) <= 1:
+                    continue
+                terminal_vertex = vertex_at_position(edge_trace[-1], vertex_image)
+                if terminal_vertex is None and len(edge_trace) <= 5:
+                    for point in reversed(edge_trace[:-1]):
+                        terminal_vertex = vertex_at_position(point, vertex_image)
+                        if terminal_vertex is not None and terminal_vertex != vertex_idx:
+                            break
+                        if terminal_vertex == vertex_idx:
+                            terminal_vertex = None
+                if terminal_vertex == vertex_idx:
+                    continue
+                if terminal_vertex is not None:
+                    if edges_per_vertex[terminal_vertex] >= max_edges_per_vertex:
+                        continue
+                    pair = tuple(sorted((vertex_idx, terminal_vertex)))
+                    if pair in existing_pairs:
+                        continue
+                edge_arr = np.asarray(edge_trace, dtype=np.float32)
+                idx = np.floor(edge_arr).astype(int)
+                energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
+                unit_traces.append(edge_arr)
+                unit_energies.append(float(np.mean(energies)))
+                unit_connections.append(
+                    [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
+                )
+                edges_per_vertex[vertex_idx] += 1
+                if terminal_vertex is not None:
+                    edges_per_vertex[terminal_vertex] += 1
+                    existing_pairs.add(pair)
+
+        payload = {
+            "origin_index": vertex_idx,
+            "traces": unit_traces,
+            "connections": unit_connections,
+            "energies": unit_energies,
+        }
+        atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
+        edges.extend(unit_traces)
+        edge_connections.extend(unit_connections)
+        edge_energies.extend(unit_energies)
+        completed.add(vertex_idx)
+        stage_controller.save_state({"last_completed_origin": vertex_idx})
+        stage_controller.update(
+            units_total=len(vertex_positions),
+            units_completed=len(completed),
+            substage="trace_origins",
+            detail=f"Tracing origin {vertex_idx + 1}/{len(vertex_positions)}",
+            resumed=bool(completed - {vertex_idx}),
+        )
+
+    return {
+        "traces": edges,
+        "connections": np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2),
+        "energies": np.asarray(edge_energies, dtype=np.float32),
+        "vertex_positions": vertex_positions.astype(np.float32),
+    }
+
+
+def extract_edges_watershed_resumable(
+    energy_data: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+) -> dict[str, Any]:
+    """Extract watershed edges with per-label persisted units."""
+    from slavv.runtime.run_state import atomic_joblib_dump
+
+    energy = energy_data["energy"]
+    energy_sign = float(energy_data.get("energy_sign", -1.0))
+    vertex_positions = vertices["positions"]
+    markers = np.zeros_like(energy, dtype=np.int32)
+    idxs = np.floor(vertex_positions).astype(int)
+    idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
+    markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
+
+    logger.info("Running watershed on volume (this may take several minutes)...")
+    labels = watershed(-energy_sign * energy, markers)
+    logger.info("Watershed complete, extracting edges between regions...")
+    structure = ndi.generate_binary_structure(3, 1)
+
+    units_dir = stage_controller.artifact_path("units")
+    units_dir.mkdir(parents=True, exist_ok=True)
+    edges, connections, edge_energies, _, seen_pairs, completed = _load_edge_units(
+        units_dir,
+        len(vertex_positions),
+    )
+    stage_controller.begin(
+        detail="Tracing watershed label adjacencies",
+        units_total=len(vertex_positions),
+        units_completed=len(completed),
+        substage="watershed_labels",
+        resumed=bool(completed),
+    )
+
+    for label in range(1, len(vertex_positions) + 1):
+        origin_index = label - 1
+        if origin_index in completed:
+            continue
+        region = labels == label
+        dilated = ndi.binary_dilation(region, structure)
+        neighbors = np.unique(labels[dilated & (labels != label)])
+        unit_traces: list[np.ndarray] = []
+        unit_connections: list[list[int]] = []
+        unit_energies: list[float] = []
+        for neighbor in neighbors:
+            if neighbor <= label or neighbor == 0:
+                continue
+            pair = (label - 1, neighbor - 1)
+            if pair in seen_pairs:
+                continue
+            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
+                ndi.binary_dilation(region, structure) & (labels == neighbor)
+            )
+            coords = np.argwhere(boundary)
+            if coords.size == 0:
+                continue
+            coords = coords.astype(np.float32)
+            idx = np.floor(coords).astype(int)
+            energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
+            unit_traces.append(coords)
+            unit_connections.append([label - 1, neighbor - 1])
+            unit_energies.append(float(np.mean(energies)))
+            seen_pairs.add(pair)
+
+        payload = {
+            "origin_index": origin_index,
+            "traces": unit_traces,
+            "connections": unit_connections,
+            "energies": unit_energies,
+        }
+        atomic_joblib_dump(payload, units_dir / f"label_{origin_index:06d}.pkl")
+        edges.extend(unit_traces)
+        connections.extend(unit_connections)
+        edge_energies.extend(unit_energies)
+        completed.add(origin_index)
+        stage_controller.save_state({"last_completed_label": origin_index})
+        stage_controller.update(
+            units_total=len(vertex_positions),
+            units_completed=len(completed),
+            substage="watershed_labels",
+            detail=f"Watershed label {label}/{len(vertex_positions)}",
+            resumed=bool(completed - {origin_index}),
+        )
+
+    return {
+        "traces": edges,
+        "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
+        "energies": np.asarray(edge_energies, dtype=np.float32),
+        "vertex_positions": vertex_positions.astype(np.float32),
+    }
+
+
 __all__ = [
     "compute_gradient",
     "estimate_vessel_directions",
     "extract_edges",
+    "extract_edges_resumable",
     "extract_edges_watershed",
+    "extract_edges_watershed_resumable",
     "extract_vertices",
+    "extract_vertices_resumable",
     "find_terminal_vertex",
     "generate_edge_directions",
     "in_bounds",

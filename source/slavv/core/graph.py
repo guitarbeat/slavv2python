@@ -6,11 +6,14 @@ Handles the conversion of traced edges into a connected graph (strands, bifurcat
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from slavv.runtime import StageController
 
 
 def trace_strand_sparse(
@@ -208,8 +211,161 @@ def construct_network(
     }
 
 
+def construct_network_resumable(
+    edges: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+) -> dict[str, Any]:
+    """Construct a network while persisting stage-level substeps."""
+    from slavv.runtime.run_state import atomic_joblib_dump
+
+    edge_traces = edges["traces"]
+    edge_connections = edges["connections"]
+    vertex_positions = vertices["positions"]
+    microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
+    remove_cycles = params.get("remove_cycles", True)
+    n_vertices = len(vertex_positions)
+
+    stage_controller.begin(detail="Building network graph", units_total=5, substage="adjacency")
+    adjacency_path = stage_controller.artifact_path("adjacency.pkl")
+    pruned_path = stage_controller.artifact_path("hair_pruned.pkl")
+    cycle_path = stage_controller.artifact_path("cycle_pruned.pkl")
+    strands_path = stage_controller.artifact_path("strands.pkl")
+
+    if adjacency_path.exists():
+        adjacency_state = stage_controller.load_state().get("adjacency_loaded", True)
+        adjacency_payload = None
+        if adjacency_state:
+            import joblib
+
+            adjacency_payload = joblib.load(adjacency_path)
+        if adjacency_payload is None:
+            adjacency_path.unlink(missing_ok=True)
+    if not adjacency_path.exists():
+        adjacency_list: dict[int, set[int]] = {i: set() for i in range(n_vertices)}
+        graph_edges: dict[tuple[int, int], np.ndarray] = {}
+        dangling_edges: list[dict[str, Any]] = []
+        for trace, (start_vertex, end_vertex) in zip(edge_traces, edge_connections):
+            if start_vertex < 0 or end_vertex < 0:
+                dangling_edges.append(
+                    {
+                        "start": int(start_vertex) if start_vertex >= 0 else None,
+                        "end": int(end_vertex) if end_vertex >= 0 else None,
+                        "trace": trace,
+                    }
+                )
+                continue
+            adjacency_list[start_vertex].add(end_vertex)
+            adjacency_list[end_vertex].add(start_vertex)
+            key = tuple(sorted((start_vertex, end_vertex)))
+            graph_edges.setdefault(key, trace)
+        atomic_joblib_dump(
+            {
+                "adjacency_list": adjacency_list,
+                "graph_edges": graph_edges,
+                "dangling_edges": dangling_edges,
+            },
+            adjacency_path,
+        )
+    import joblib
+
+    adjacency_payload = joblib.load(adjacency_path)
+    adjacency_list = adjacency_payload["adjacency_list"]
+    graph_edges = adjacency_payload["graph_edges"]
+    dangling_edges = adjacency_payload["dangling_edges"]
+    stage_controller.update(units_total=5, units_completed=1, substage="adjacency")
+
+    if min_hair_length > 0 and not pruned_path.exists():
+        to_remove = []
+        for (v0, v1), trace in graph_edges.items():
+            length = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
+            if length < min_hair_length and (
+                len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
+            ):
+                adjacency_list[v0].discard(v1)
+                adjacency_list[v1].discard(v0)
+                to_remove.append((v0, v1))
+        for key in to_remove:
+            del graph_edges[key]
+        atomic_joblib_dump(
+            {"adjacency_list": adjacency_list, "graph_edges": graph_edges},
+            pruned_path,
+        )
+    if pruned_path.exists():
+        pruned_payload = joblib.load(pruned_path)
+        adjacency_list = pruned_payload["adjacency_list"]
+        graph_edges = pruned_payload["graph_edges"]
+    stage_controller.update(units_total=5, units_completed=2, substage="hair_prune")
+
+    cycles: list[tuple[int, int]] = []
+    if remove_cycles and graph_edges and not cycle_path.exists():
+        parent = np.arange(n_vertices)
+
+        def find(x: int) -> int:
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        for v0, v1 in list(graph_edges.keys()):
+            r0, r1 = find(v0), find(v1)
+            if r0 == r1:
+                cycles.append((v0, v1))
+                adjacency_list[v0].discard(v1)
+                adjacency_list[v1].discard(v0)
+                del graph_edges[(v0, v1)]
+            else:
+                parent[r1] = r0
+        atomic_joblib_dump(
+            {"adjacency_list": adjacency_list, "graph_edges": graph_edges, "cycles": cycles},
+            cycle_path,
+        )
+    if cycle_path.exists():
+        cycle_payload = joblib.load(cycle_path)
+        adjacency_list = cycle_payload["adjacency_list"]
+        graph_edges = cycle_payload["graph_edges"]
+        cycles = cycle_payload["cycles"]
+    stage_controller.update(units_total=5, units_completed=3, substage="cycle_prune")
+
+    if not strands_path.exists():
+        strands = []
+        visited = np.zeros(n_vertices, dtype=bool)
+        for vertex_idx in range(n_vertices):
+            if not visited[vertex_idx] and len(adjacency_list[vertex_idx]) > 0:
+                strand = trace_strand_sparse(vertex_idx, adjacency_list, visited)
+                if len(strand) > 1:
+                    strands.append(strand)
+        strands, mismatched = sort_and_validate_strands_sparse(strands, adjacency_list)
+        atomic_joblib_dump(
+            {"strands": strands, "mismatched": mismatched},
+            strands_path,
+        )
+    strands_payload = joblib.load(strands_path)
+    strands = strands_payload["strands"]
+    mismatched = strands_payload["mismatched"]
+    stage_controller.update(units_total=5, units_completed=4, substage="strand_trace")
+
+    vertex_degrees = np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)
+    bifurcations = np.where(vertex_degrees > 2)[0].astype(np.int32)
+    orphans = np.where(vertex_degrees == 0)[0].astype(np.int32)
+    return {
+        "strands": strands,
+        "bifurcations": bifurcations,
+        "orphans": orphans,
+        "cycles": cycles,
+        "mismatched_strands": mismatched,
+        "adjacency_list": adjacency_list,
+        "vertex_degrees": vertex_degrees,
+        "graph_edges": graph_edges,
+        "dangling_edges": dangling_edges,
+    }
+
+
 __all__ = [
     "construct_network",
+    "construct_network_resumable",
     "sort_and_validate_strands_sparse",
     "trace_strand_sparse",
 ]

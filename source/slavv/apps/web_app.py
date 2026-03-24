@@ -17,6 +17,8 @@ from slavv.apps.share_report import build_share_report_html, record_share_event
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
+from slavv.runtime import RunContext, load_run_snapshot
+from slavv.runtime.run_state import target_stage_progress
 from slavv.utils import validate_parameters
 from slavv.visualization import NetworkVisualizer
 
@@ -165,6 +167,90 @@ def generate_share_report_data(processing_results, dataset_name, image_shape):
         dataset_name=dataset_name,
         image_shape=image_shape,
     )
+
+
+def _snapshot_for_display(run_dir: str | None):
+    """Load the current run snapshot if one exists."""
+    if not run_dir:
+        return None
+    return load_run_snapshot(run_dir)
+
+
+def _update_run_task(
+    run_dir: str | None,
+    task_name: str,
+    *,
+    status: str,
+    detail: str,
+    artifacts: dict[str, str] | None = None,
+) -> None:
+    """Attach optional task progress to the active run."""
+    if not run_dir:
+        return
+    context = RunContext.from_existing(run_dir)
+    context.update_optional_task(
+        task_name,
+        status=status,
+        detail=detail,
+        artifacts=artifacts,
+    )
+
+
+def _render_run_dashboard(snapshot) -> None:
+    """Render an in-app dashboard for the current run snapshot."""
+    if snapshot is None:
+        return
+
+    current_stage = snapshot.current_stage or "idle"
+    overall_pct = int(snapshot.overall_progress * 100)
+    target_pct = int(target_stage_progress(snapshot) * 100)
+    st.markdown("### Run Status")
+    col1, col2, col3, col4 = st.columns(4, gap="small")
+    with col1:
+        st.metric("Run", snapshot.run_id)
+    with col2:
+        st.metric("Overall", f"{overall_pct}%")
+    with col3:
+        st.metric("Target", f"{target_pct}%")
+    with col4:
+        st.metric("Stage", current_stage)
+    st.progress(overall_pct, text=f"Overall pipeline progress: {overall_pct}%")
+    st.progress(
+        target_pct,
+        text=f"Progress to selected target ({snapshot.target_stage}): {target_pct}%",
+    )
+
+    stage_rows = []
+    for stage_name in ("energy", "vertices", "edges", "network"):
+        stage_snapshot = snapshot.stages.get(stage_name)
+        if stage_snapshot is None:
+            continue
+        badge = "resumed" if stage_snapshot.resumed else "computed"
+        detail = stage_snapshot.detail or stage_snapshot.substage or ""
+        stage_rows.append(
+            {
+                "Stage": stage_name,
+                "Status": stage_snapshot.status,
+                "Progress": f"{int(stage_snapshot.progress * 100)}%",
+                "Mode": badge,
+                "Detail": detail,
+            }
+        )
+    if stage_rows:
+        st.dataframe(pd.DataFrame(stage_rows), use_container_width=True, hide_index=True)
+
+    if snapshot.optional_tasks:
+        st.markdown("### Optional Tasks")
+        task_rows = [
+            {
+                "Task": name,
+                "Status": task.status,
+                "Progress": f"{int(task.progress * 100)}%",
+                "Detail": task.detail,
+            }
+            for name, task in sorted(snapshot.optional_tasks.items())
+        ]
+        st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
 
 
 def _log_share_report_prepared_once(dataset_name, report_data, results):
@@ -589,6 +675,10 @@ def show_processing_page():
             help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
         )
 
+    current_snapshot = _snapshot_for_display(st.session_state.get("current_run_dir"))
+    if current_snapshot is not None:
+        _render_run_dashboard(current_snapshot)
+
     if uploaded_file is not None:
         if st.button("🚀 Start Processing", type="primary", width=250):
             # Collect parameters
@@ -628,8 +718,6 @@ def show_processing_page():
                 st.success("✅ Parameters validated successfully")
 
                 with st.status("Processing image...", expanded=True) as status:
-                    progress_bar = status.progress(0)
-
                     status.update(label="Loading image...", state="running")
                     try:
                         image = cached_load_tiff_volume(uploaded_file)
@@ -640,49 +728,45 @@ def show_processing_page():
 
                     processor = SLAVVProcessor()
 
-                    stage_labels = {
-                        "start": "Starting pipeline...",
-                        "preprocess": "Preprocessing image...",
-                        "energy": "Calculating energy field...",
-                        "vertices": "Extracting vertices...",
-                        "edges": "Extracting edges...",
-                        "network": "Constructing network...",
-                    }
+                    dashboard_placeholder = st.empty()
+                    file_hash = hashlib.md5(uploaded_file.getvalue()).hexdigest()[:12]
+                    run_dir = os.path.join(tempfile.gettempdir(), "slavv_runs", file_hash)
 
-                    def progress_cb(fraction: float, stage: str) -> None:
-                        label = stage_labels.get(stage, stage)
-                        state = "running" if fraction < 1.0 else "complete"
-                        if fraction >= 1.0:
-                            label = "Processing complete!"
+                    def event_cb(event) -> None:
+                        state = "complete" if event.status.startswith("completed") else "running"
+                        label = event.detail or f"{event.stage} {int(event.stage_progress * 100)}%"
                         status.update(label=label, state=state)
-                        progress_bar.progress(int(fraction * 100))
+                        with dashboard_placeholder.container():
+                            _render_run_dashboard(event.snapshot)
 
-                    file_hash = hashlib.md5(
-                        f"{uploaded_file.name}_{uploaded_file.size}".encode()
-                    ).hexdigest()[:8]
                     results = processor.process_image(
                         image,
                         validated_params,
-                        progress_callback=progress_cb,
-                        checkpoint_dir=os.path.join(
-                            tempfile.gettempdir(), f"slavv_cache_{file_hash}"
-                        ),
+                        event_callback=event_cb,
+                        run_dir=run_dir,
                         stop_after=stop_after_val,
                         force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
                     )
 
-                    # Ensure progress indicates completion even if cached
+                    final_snapshot = _snapshot_for_display(run_dir)
+                    with dashboard_placeholder.container():
+                        _render_run_dashboard(final_snapshot)
                     status.update(
-                        label=f"Processing stopped after {stop_after_val}!", state="complete"
+                        label=f"Processing finished at target: {stop_after_val}",
+                        state="complete",
                     )
-                    progress_bar.progress(100)
 
                 # Store results in session state
                 st.session_state["processing_results"] = results
                 st.session_state["parameters"] = validated_params
                 st.session_state["image_shape"] = image.shape
                 st.session_state["dataset_name"] = uploaded_file.name
+                st.session_state["current_run_dir"] = run_dir
+                st.session_state["run_snapshot"] = (
+                    final_snapshot.to_dict() if final_snapshot is not None else None
+                )
                 st.session_state.pop("share_report_prepared_signature", None)
+                _render_run_dashboard(final_snapshot)
 
                 # Cleanup state if we stopped early so UI doesn't crash trying to render old networks
                 if stop_after_val != "network":
@@ -752,7 +836,6 @@ def show_ml_curation_page():
             "⚠️ Curation requires both vertices and edges to be extracted. Please run the pipeline at least up to the 'edges' stage."
         )
         return
-
     st.markdown("""
     Use machine learning algorithms or heuristic rules to automatically curate and refine the detected vertices and edges.
     This step helps improve the accuracy of the vectorization by removing false positives and enhancing
@@ -778,6 +861,12 @@ def show_ml_curation_page():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🚀 Launch Interactive Curator", type="primary", width=250):
+                _update_run_task(
+                    st.session_state.get("current_run_dir"),
+                    "manual_curation",
+                    status="running",
+                    detail="Interactive curator launched",
+                )
                 # Put up a status so user knows to look for the window
                 with st.status(
                     "Interactive Curator running in new window...", expanded=True
@@ -793,6 +882,12 @@ def show_ml_curation_page():
 
                     st.session_state["processing_results"]["vertices"] = curated_vertices
                     st.session_state["processing_results"]["edges"] = curated_edges
+                    _update_run_task(
+                        st.session_state.get("current_run_dir"),
+                        "manual_curation",
+                        status="completed",
+                        detail="Interactive curation saved",
+                    )
 
                     status.update(label="Interactive Curation complete!", state="complete")
                     st.success("✅ Interactive edits saved!")
@@ -878,6 +973,12 @@ def show_ml_curation_page():
         }
 
         if st.button("🚀 Start Automatic Curation", type="primary", width=250):
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "automatic_curation",
+                status="running",
+                detail="Automatic curation started",
+            )
             with st.status(
                 "Performing automatic curation...",
                 expanded=True,
@@ -894,6 +995,12 @@ def show_ml_curation_page():
 
                 st.session_state["processing_results"]["vertices"] = curated_vertices
                 st.session_state["processing_results"]["edges"] = curated_edges
+                _update_run_task(
+                    st.session_state.get("current_run_dir"),
+                    "automatic_curation",
+                    status="completed",
+                    detail="Automatic curation complete",
+                )
 
                 st.success("✅ Automatic curation complete!")
                 status.update(label="Automatic curation complete!", state="complete")
@@ -988,6 +1095,12 @@ def show_ml_curation_page():
             if vertex_training_data is None and edge_training_data is None:
                 st.error("Please upload training data for vertices, edges, or both.")
             else:
+                _update_run_task(
+                    st.session_state.get("current_run_dir"),
+                    "ml_training",
+                    status="running",
+                    detail="Training ML models",
+                )
                 with st.status("Training ML models...", expanded=True) as status:
                     ml_curator = MLCurator()
                     if vertex_training_data is not None:
@@ -1003,10 +1116,22 @@ def show_ml_curation_page():
                         res_e = ml_curator.train_edge_classifier(X_e, y_e)
                         st.write(f"Edge test accuracy: {res_e['test_accuracy']:.3f}")
                     st.session_state["ml_curator"] = ml_curator
+                    _update_run_task(
+                        st.session_state.get("current_run_dir"),
+                        "ml_training",
+                        status="completed",
+                        detail="ML models trained",
+                    )
                     status.update(label="Training complete!", state="complete")
                     st.success("✅ Models trained!")
 
         if st.button("🤖 Start ML Curation", type="primary", width=250):
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "ml_curation",
+                status="running",
+                detail="ML curation started",
+            )
             with st.status(
                 "Performing ML curation...",
                 expanded=True,
@@ -1018,6 +1143,12 @@ def show_ml_curation_page():
 
                 if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:  # type: ignore[union-attr]
                     st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
+                    _update_run_task(
+                        st.session_state.get("current_run_dir"),
+                        "ml_curation",
+                        status="failed",
+                        detail="ML models were not available for curation",
+                    )
                     st.stop()
 
                 curated_vertices = ml_curator.curate_vertices(  # type: ignore[union-attr]
@@ -1039,6 +1170,12 @@ def show_ml_curation_page():
 
                 st.success("✅ ML curation complete!")
                 status.update(label="ML curation complete!", state="complete")
+                _update_run_task(
+                    st.session_state.get("current_run_dir"),
+                    "ml_curation",
+                    status="completed",
+                    detail="ML curation complete",
+                )
 
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
@@ -1254,6 +1391,13 @@ def show_visualization_page():
     with col1:
         vmv_data = generate_export_data(vertices, edges, network, parameters, "vmv")
         if vmv_data:
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "exports",
+                status="completed",
+                detail="App export downloads prepared",
+                artifacts={"vmv_file": "network.vmv"},
+            )
             st.download_button(
                 label="📄 Download VMV",
                 data=vmv_data,
@@ -1267,6 +1411,13 @@ def show_visualization_page():
     with col2:
         casx_data = generate_export_data(vertices, edges, network, parameters, "casx")
         if casx_data:
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "exports",
+                status="completed",
+                detail="App export downloads prepared",
+                artifacts={"casx_file": "network.casx"},
+            )
             st.download_button(
                 label="📄 Download CASX",
                 data=casx_data,
@@ -1280,6 +1431,13 @@ def show_visualization_page():
     with col3:
         csv_data = generate_export_data(vertices, edges, network, parameters, "csv")
         if csv_data:
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "exports",
+                status="completed",
+                detail="App export downloads prepared",
+                artifacts={"csv_archive": "network_csv.zip"},
+            )
             st.download_button(
                 label="📊 Download CSV (Zip)",
                 data=csv_data,
@@ -1299,6 +1457,16 @@ def show_visualization_page():
         share_report_data,
         st.session_state["processing_results"],
     )
+    _update_run_task(
+        st.session_state.get("current_run_dir"),
+        "share_report",
+        status="completed",
+        detail="Share report generated in app",
+        artifacts={
+            "share_report_file": share_report_data["file_name"],
+            "share_report_signature": share_report_data["signature"],
+        },
+    )
 
     with col4:
         downloaded = st.download_button(
@@ -1315,6 +1483,13 @@ def show_visualization_page():
                 st.session_state.get("dataset_name", "SLAVV dataset"),
                 share_report_data["signature"],
                 extra={"report_file_name": share_report_data["file_name"]},
+            )
+            _update_run_task(
+                st.session_state.get("current_run_dir"),
+                "share_report",
+                status="completed",
+                detail="Share report downloaded",
+                artifacts={"downloaded_report": share_report_data["file_name"]},
             )
 
     if downloaded:
@@ -1353,6 +1528,12 @@ def show_analysis_page():
 
     results = st.session_state["processing_results"]
     parameters = st.session_state["parameters"]
+    _update_run_task(
+        st.session_state.get("current_run_dir"),
+        "analysis",
+        status="completed",
+        detail="Analysis dashboard viewed",
+    )
 
     # Calculate actual statistics using available data
     from slavv.analysis import calculate_network_statistics as _calc_stats

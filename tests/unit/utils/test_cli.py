@@ -3,6 +3,7 @@
 import pytest
 
 from slavv.apps.cli import _args_to_parameters, _build_parser, main
+from slavv.runtime import RunContext
 
 
 class TestBuildParser:
@@ -76,6 +77,12 @@ class TestBuildParser:
         args = parser.parse_args(["info"])
         assert args.command == "info"
 
+    def test_status_subcommand(self):
+        parser = _build_parser()
+        args = parser.parse_args(["status", "--run-dir", "run_dir"])
+        assert args.command == "status"
+        assert args.run_dir == "run_dir"
+
 
 class TestArgsToParameters:
     """Verify CLI args convert correctly to SLAVV parameter dicts."""
@@ -115,3 +122,21 @@ class TestMainEntryPoint:
         with pytest.raises(SystemExit) as exc:
             main(["run", "-i", "nonexistent_file_12345.tif"])
         assert exc.value.code == 1
+
+    def test_status_prints_run_snapshot(self, capsys, tmp_path):
+        run_dir = tmp_path / "run"
+        context = RunContext(
+            run_dir=run_dir,
+            input_fingerprint="input-a",
+            params_fingerprint="params-a",
+            target_stage="network",
+        )
+        context.mark_preprocess_complete()
+        context.stage("energy").begin(detail="Energy running", units_total=4, units_completed=2)
+
+        main(["status", "--run-dir", str(run_dir)])
+
+        captured = capsys.readouterr()
+        assert "Run ID:" in captured.out
+        assert "Target progress:" in captured.out
+        assert "energy" in captured.out

@@ -21,6 +21,7 @@ import numpy as np
 from slavv.core import SLAVVProcessor
 from slavv.io import export_pipeline_results, load_tiff_volume
 from slavv.io.matlab_parser import load_matlab_batch_results
+from slavv.runtime import RunContext
 from slavv.utils import get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
@@ -245,7 +246,7 @@ def run_matlab_vectorization(
 
 
 def run_python_vectorization(
-    input_file: str, output_dir: str, params: dict[str, Any]
+    input_file: str, output_dir: str, params: dict[str, Any], run_dir: str | None = None
 ) -> dict[str, Any]:
     """Run Python vectorization."""
     print("\n" + "=" * 60)
@@ -278,7 +279,8 @@ def run_python_vectorization(
             image,
             params,
             progress_callback=progress_callback,
-            checkpoint_dir=os.path.join(output_dir, "checkpoints"),
+            run_dir=run_dir,
+            checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
         )
 
         elapsed_time = time.time() - start_time
@@ -370,13 +372,33 @@ def orchestrate_comparison(
     metadata_dir = layout["metadata_dir"]
     analysis_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
+    comparison_context = RunContext(
+        run_dir=output_dir,
+        target_stage="network",
+        provenance={"source": "comparison", "input_file": input_file},
+    )
 
     # Run MATLAB
     matlab_results = None
     if not skip_matlab:
         os.makedirs(matlab_output, exist_ok=True)
+        comparison_context.update_optional_task(
+            "matlab_pipeline",
+            status="running",
+            detail="Running MATLAB wrapper",
+        )
         matlab_results = run_matlab_vectorization(
             input_file, str(matlab_output), matlab_path, project_root
+        )
+        comparison_context.update_optional_task(
+            "matlab_pipeline",
+            status="completed" if matlab_results.get("success") else "failed",
+            detail="MATLAB wrapper finished",
+            artifacts=(
+                {"batch_folder": matlab_results["batch_folder"]}
+                if matlab_results.get("batch_folder")
+                else {}
+            ),
         )
     else:
         print("\nSkipping MATLAB execution (--skip-matlab)")
@@ -385,12 +407,33 @@ def orchestrate_comparison(
     python_results = None
     if not skip_python:
         os.makedirs(python_output, exist_ok=True)
-        python_results = run_python_vectorization(input_file, str(python_output), params)
+        comparison_context.update_optional_task(
+            "python_pipeline",
+            status="running",
+            detail="Running Python pipeline",
+        )
+        python_results = run_python_vectorization(
+            input_file,
+            str(python_output),
+            params,
+            run_dir=str(output_dir),
+        )
+        comparison_context.update_optional_task(
+            "python_pipeline",
+            status="completed" if python_results.get("success") else "failed",
+            detail="Python pipeline finished",
+            artifacts={"output_dir": str(python_output)},
+        )
     else:
         print("\nSkipping Python execution (--skip-python)")
 
     # Compare results
     if matlab_results and python_results:
+        comparison_context.update_optional_task(
+            "comparison_analysis",
+            status="running",
+            detail="Comparing MATLAB and Python results",
+        )
         # Try to load parsed MATLAB data
         matlab_parsed = None
         if matlab_results.get("success") and matlab_results.get("batch_folder"):
@@ -424,6 +467,12 @@ def orchestrate_comparison(
             )
 
         print(f"\nComparison report saved to: {report_file}")
+        comparison_context.update_optional_task(
+            "comparison_analysis",
+            status="completed",
+            detail="Comparison report generated",
+            artifacts={"comparison_report": str(report_file)},
+        )
 
     # Generate summary.txt automatically
     try:
@@ -437,6 +486,12 @@ def orchestrate_comparison(
         manifest_file = metadata_dir / "run_manifest.md"
         generate_manifest(output_dir, manifest_file)
         print(f"Manifest generated: {manifest_file}")
+        comparison_context.update_optional_task(
+            "manifest",
+            status="completed",
+            detail="Comparison manifest written",
+            artifacts={"manifest": str(manifest_file)},
+        )
     except Exception as e:
         print(f"Note: Could not auto-generate manifest: {e}")
 

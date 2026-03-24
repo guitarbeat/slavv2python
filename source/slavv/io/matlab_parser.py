@@ -262,6 +262,20 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
         logger.warning(f"Vectors directory not found: {vectors_dir}")
         return results
 
+    timings_file = batch_path / "timings.json"
+    if timings_file.exists():
+        try:
+            with open(timings_file, encoding="utf-8") as handle:
+                timings = json.load(handle)
+            results["timings"] = {
+                "total": timings.get("total_seconds", 0.0),
+                "stage_seconds": timings.get("stage_seconds", {}),
+                "wrapper_mode": timings.get("wrapper_mode", ""),
+                "matlab_version": timings.get("matlab_version", ""),
+            }
+        except Exception as exc:
+            logger.warning("Failed to read MATLAB timings from %s: %s", timings_file, exc)
+
     # Helper to merge dicts
     def merge_info(target, source):
         for k, v in source.items():

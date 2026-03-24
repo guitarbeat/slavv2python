@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from slavv.runtime import load_run_snapshot
 from slavv.utils import format_size
 
 if TYPE_CHECKING:
@@ -255,6 +256,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     # Load comparison report
     report_file = layout["report_file"]
     report = {}
+    run_snapshot = load_run_snapshot(run_root)
     if report_file.exists():
         try:
             with open(report_file) as f:
@@ -275,6 +277,15 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     lines.append(f"**Generated:** {timestamp}")
     lines.append(f"**Total Size:** {format_size(total_size)}")
     lines.append("")
+
+    if run_snapshot is not None:
+        lines.append("## Run Status")
+        lines.append("")
+        lines.append(f"- **Status:** {run_snapshot.status}")
+        lines.append(f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%")
+        lines.append(f"- **Target stage:** {run_snapshot.target_stage}")
+        lines.append(f"- **Current stage:** {run_snapshot.current_stage or 'idle'}")
+        lines.append("")
 
     # Comparison Summary
     if report:

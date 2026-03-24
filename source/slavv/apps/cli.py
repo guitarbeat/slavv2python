@@ -37,6 +37,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Output directory (default: ./slavv_output)",
     )
     run_parser.add_argument(
+        "--run-dir",
+        default=None,
+        help="Structured run directory for resumable status tracking",
+    )
+    run_parser.add_argument(
         "--checkpoint-dir", default=None, help="Checkpoint directory for resume support"
     )
     run_parser.add_argument(
@@ -133,6 +138,15 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     imp_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
 
+    # --- slavv status ------------------------------------------------------
+    status_parser = subparsers.add_parser("status", help="Inspect the status of a resumable run")
+    status_parser.add_argument(
+        "--run-dir",
+        required=True,
+        help="Run directory or legacy checkpoint directory containing run metadata",
+    )
+    status_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+
     return parser
 
 
@@ -163,6 +177,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     """Execute the SLAVV processing pipeline."""
     from slavv import SLAVVProcessor
     from slavv.io import load_tiff_volume, save_network_to_csv, save_network_to_json
+    from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
 
     # Validate input
     if not os.path.isfile(args.input):
@@ -182,12 +197,30 @@ def _cmd_run(args: argparse.Namespace) -> None:
 
     # Build parameters
     parameters = _args_to_parameters(args)
+    effective_run_dir = args.run_dir or (
+        None if args.checkpoint_dir else os.path.join(args.output, "_slavv_run")
+    )
+
+    last_event_line = {"value": ""}
+
+    def event_callback(event) -> None:
+        line = (
+            f"[{event.stage}] stage={event.stage_progress * 100:.1f}% "
+            f"overall={event.overall_progress * 100:.1f}%"
+        )
+        if event.detail:
+            line = f"{line} - {event.detail}"
+        if line != last_event_line["value"]:
+            print(line)
+            last_event_line["value"] = line
 
     # Run pipeline
     processor = SLAVVProcessor()
     results = processor.process_image(
         image,
         parameters,
+        event_callback=event_callback,
+        run_dir=effective_run_dir,
         checkpoint_dir=args.checkpoint_dir,
         stop_after=args.stop_after,
         force_rerun_from=args.force_rerun_from,
@@ -271,12 +304,43 @@ def _cmd_run(args: argparse.Namespace) -> None:
             except ImportError as e:
                 logger.warning("Error saving MAT file: %s", e)
 
+    snapshot = None
+    if effective_run_dir:
+        snapshot = load_run_snapshot(effective_run_dir)
+        if snapshot is not None:
+            context = RunContext.from_existing(effective_run_dir)
+            context.update_optional_task(
+                "exports",
+                status="completed" if export_formats else "pending",
+                detail="Exported requested output formats"
+                if export_formats
+                else "No exports requested",
+                artifacts={
+                    fmt: os.path.join(args.output, f"network.{fmt}")
+                    for fmt in export_formats
+                    if fmt != "csv"
+                },
+            )
+            snapshot = context.snapshot
+    elif args.checkpoint_dir:
+        snapshot = load_run_snapshot(args.checkpoint_dir)
+
+    if effective_run_dir:
+        print(f"Run directory: {effective_run_dir}")
+    elif args.checkpoint_dir:
+        print(f"Checkpoint directory: {args.checkpoint_dir}")
+    if snapshot is not None:
+        print()
+        for line in build_status_lines(snapshot):
+            print(line)
+
     print(f"Done. Results in {args.output}")
 
 
 def _cmd_import_matlab(args: argparse.Namespace) -> None:
     """Import MATLAB batch output as Python checkpoints."""
     from slavv.io.matlab_bridge import import_matlab_batch
+    from slavv.runtime import RunContext
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
@@ -294,11 +358,44 @@ def _cmd_import_matlab(args: argparse.Namespace) -> None:
         print(f"Imported {len(written)} stage(s) into {args.checkpoint_dir}:")
         for stage, path in written.items():
             print(f"  {stage}: {path}")
+        context = RunContext(
+            checkpoint_dir=args.checkpoint_dir,
+            target_stage="network",
+            provenance={"source": "matlab_import"},
+            legacy=True,
+        )
+        for stage, path in written.items():
+            context.complete_stage(
+                stage,
+                detail="Imported from MATLAB batch output",
+                artifacts={"checkpoint": path},
+                resumed=True,
+            )
         print()
         print("You can now run the Python pipeline with:")
         print(f"  slavv run -i <image.tif> --checkpoint-dir {args.checkpoint_dir}")
     else:
         print("No MATLAB data files found. Check that the batch folder path is correct.")
+
+
+def _cmd_status(args: argparse.Namespace) -> None:
+    """Render run status from a run directory or legacy checkpoint directory."""
+    from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.basicConfig(level=level, format="%(asctime)s %(message)s")
+
+    snapshot = load_run_snapshot(args.run_dir)
+    if snapshot is None:
+        legacy_context = RunContext(
+            checkpoint_dir=args.run_dir,
+            target_stage="network",
+            legacy=True,
+        )
+        snapshot = legacy_context.snapshot
+
+    for line in build_status_lines(snapshot):
+        print(line)
 
 
 def _load_dict_from_json(path: str) -> dict:
@@ -409,6 +506,8 @@ def main(argv=None):
         _cmd_run(args)
     elif args.command == "import-matlab":
         _cmd_import_matlab(args)
+    elif args.command == "status":
+        _cmd_status(args)
     elif args.command == "analyze":
         _cmd_analyze(args)
     elif args.command == "plot":
