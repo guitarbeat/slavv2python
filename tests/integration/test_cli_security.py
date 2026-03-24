@@ -71,3 +71,46 @@ def test_run_matlab_cli_injection_sh(tmp_path):
     # Verify the specific MATLAB call structure
     # run_matlab_vectorization('...input''injection.tif', ...
     assert f"run_matlab_vectorization('{expected_escaped}'," in content
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Batch script only runs on Windows")
+def test_run_matlab_cli_injection_bat(tmp_path):
+    mock_matlab = tmp_path / "mock_matlab.bat"
+    mock_matlab.write_text('@echo off\necho "MOCK MATLAB CALLED WITH: %*"\nexit /b 0', encoding="utf-8")
+
+    input_file_name = "input'injection.tif"
+    input_file = tmp_path / input_file_name
+    input_file.touch()
+
+    output_dir = tmp_path / "output_dir"
+    script = SCRIPT_DIR / "run_matlab_cli.bat"
+
+    if not script.exists():
+        pytest.fail(f"Script not found at {script}")
+
+    result = subprocess.run(
+        ["cmd", "/c", str(script), str(input_file), str(output_dir), str(mock_matlab)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+
+    if result.returncode != 0:
+        print("STDOUT:", result.stdout)
+        print("STDERR:", result.stderr)
+    assert result.returncode == 0
+
+    log_file = output_dir / "matlab_run.log"
+    assert log_file.exists()
+    content = log_file.read_text(encoding="utf-8")
+
+    expected_input = str(input_file.resolve()).replace("\\", "/").replace("'", "''")
+    expected_vectorization_dir = str(REPO_ROOT / "external" / "Vectorization-Public").replace(
+        "\\", "/"
+    )
+
+    assert "-wait -batch" in content
+    assert expected_input in content
+    assert f"run_matlab_vectorization('{expected_input}'," in content
+    assert f"cd('{expected_vectorization_dir}')" in content
+    assert "workspace/external/Vectorization-Public" not in content

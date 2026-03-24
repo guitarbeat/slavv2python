@@ -13,7 +13,8 @@ import json
 import os
 import subprocess
 import time
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -26,9 +27,6 @@ from slavv.visualization import NetworkVisualizer
 from .management import generate_manifest, resolve_run_layout
 from .metrics import compare_results
 from .reporting import generate_summary
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 def load_parameters(params_file: str | None = None) -> dict[str, Any]:
@@ -57,6 +55,62 @@ def load_parameters(params_file: str | None = None) -> dict[str, Any]:
         params["microns_per_voxel"] = np.array(params["microns_per_voxel"])
 
     return params
+
+
+def discover_matlab_artifacts(output_dir: str | Path) -> dict[str, Any]:
+    """Discover the newest MATLAB batch folder and key output artifacts."""
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        return {}
+
+    batch_folders = sorted(
+        path for path in output_path.iterdir() if path.is_dir() and path.name.startswith("batch_")
+    )
+    if not batch_folders:
+        return {}
+
+    batch_folder = batch_folders[-1]
+    artifacts: dict[str, Any] = {"batch_folder": str(batch_folder)}
+
+    vectors_dir = batch_folder / "vectors"
+    if vectors_dir.exists():
+        artifacts["vectors_dir"] = str(vectors_dir)
+        network_files = sorted(vectors_dir.glob("network_*.mat"))
+        if network_files:
+            artifacts["network_mat"] = str(network_files[-1])
+
+    return artifacts
+
+
+def _run_command_with_timeout(
+    cmd: list[str], cwd: Path, timeout_seconds: int
+) -> tuple[int, str, str, bool]:
+    """Run a command and tear down the full process tree on timeout."""
+    process = subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    try:
+        stdout, stderr = process.communicate(timeout=timeout_seconds)
+        return process.returncode or 0, stdout, stderr, False
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/f", "/t", "/pid", str(process.pid)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        else:
+            process.kill()
+
+        stdout, stderr = process.communicate()
+        returncode = process.returncode if process.returncode is not None else -9
+        return returncode, stdout, stderr, True
 
 
 def run_matlab_vectorization(
@@ -123,101 +177,71 @@ def run_matlab_vectorization(
     system_info["matlab"] = matlab_info
 
     start_time = time.time()
+    timeout_seconds = 3600
 
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=project_root,
-            timeout=3600,  # 1 hour timeout to prevent hanging
-        )
-        elapsed_time = time.time() - start_time
+    returncode, stdout, stderr, timed_out = _run_command_with_timeout(
+        cmd, project_root, timeout_seconds
+    )
+    elapsed_time = time.time() - start_time
+    artifacts = discover_matlab_artifacts(output_dir)
 
-        print(f"\nMATLAB execution completed in {elapsed_time:.2f} seconds")
+    if timed_out:
+        print(f"\nMATLAB execution timed out after {elapsed_time:.2f} seconds")
         print("STDOUT:")
-        print(result.stdout)
+        print(stdout)
+        print("STDERR:")
+        print(stderr)
 
-        if result.stderr:
-            print("STDERR:")
-            print(result.stderr)
-
-        # Try to find MATLAB output files
         matlab_results = {
-            "success": True,
+            "success": False,
             "elapsed_time": elapsed_time,
-            "output_dir": output_dir,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "error": f"TimeoutExpired after {timeout_seconds} seconds",
+            "stdout": stdout,
+            "stderr": stderr,
             "system_info": system_info,
+            "output_dir": output_dir,
         }
-
-        # Look for batch folder in output directory
-        batch_folders = [
-            d
-            for d in os.listdir(output_dir)
-            if os.path.isdir(os.path.join(output_dir, d)) and d.startswith("batch_")
-        ]
-
-        if batch_folders:
-            # Use most recent batch folder
-            batch_folder = os.path.join(output_dir, sorted(batch_folders)[-1])
-            matlab_results["batch_folder"] = batch_folder
-
-            # Look for network results
-            vectors_dir = os.path.join(batch_folder, "vectors")
-            if os.path.exists(vectors_dir):
-                matlab_results["vectors_dir"] = vectors_dir
-
-                # Try to find network .mat file
-                mat_files = [
-                    f
-                    for f in os.listdir(vectors_dir)
-                    if f.startswith("network_") and f.endswith(".mat")
-                ]
-                if mat_files:
-                    matlab_results["network_mat"] = os.path.join(vectors_dir, mat_files[0])
-
+        matlab_results.update(artifacts)
         return matlab_results
 
-    except subprocess.TimeoutExpired as e:
-        elapsed_time = time.time() - start_time
-        print(f"\nMATLAB execution timed out after {elapsed_time:.2f} seconds")
-        # Note: subprocess.run kills the process on timeout automatically on POSIX,
-        # but on Windows it might need specific handling if it spawns children.
-        # Python 3.7+ handles this reasonably well.
-        print("STDOUT:")
-        print(e.stdout)
-        print("STDERR:")
-        print(e.stderr)
-
-        return {
-            "success": False,
-            "elapsed_time": elapsed_time,
-            "error": f"TimeoutExpired: {e}",
-            "stdout": e.stdout,
-            "stderr": e.stderr,
-            "system_info": system_info,
-        }
-
-    except subprocess.CalledProcessError as e:
-        elapsed_time = time.time() - start_time
+    if returncode != 0:
         print(f"\nMATLAB execution failed after {elapsed_time:.2f} seconds")
-        print(f"Exit code: {e.returncode}")
+        print(f"Exit code: {returncode}")
         print("STDOUT:")
-        print(e.stdout)
+        print(stdout)
         print("STDERR:")
-        print(e.stderr)
+        print(stderr)
 
-        return {
+        matlab_results = {
             "success": False,
             "elapsed_time": elapsed_time,
-            "error": str(e),
-            "stdout": e.stdout,
-            "stderr": e.stderr,
+            "error": f"MATLAB exited with code {returncode}",
+            "stdout": stdout,
+            "stderr": stderr,
             "system_info": system_info,
+            "output_dir": output_dir,
         }
+        matlab_results.update(artifacts)
+        return matlab_results
+
+    print(f"\nMATLAB execution completed in {elapsed_time:.2f} seconds")
+    print("STDOUT:")
+    print(stdout)
+
+    if stderr:
+        print("STDERR:")
+        print(stderr)
+
+    matlab_results = {
+        "success": True,
+        "elapsed_time": elapsed_time,
+        "output_dir": output_dir,
+        "stdout": stdout,
+        "stderr": stderr,
+        "system_info": system_info,
+    }
+    matlab_results.update(artifacts)
+    return matlab_results
 
 
 def run_python_vectorization(

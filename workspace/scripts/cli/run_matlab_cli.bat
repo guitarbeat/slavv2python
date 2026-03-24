@@ -54,8 +54,8 @@ REM Get script directory (where this batch file is located)
 set SCRIPT_DIR=%~dp0
 set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
-REM Get project root (parent of parent of this directory)
-for %%P in ("%SCRIPT_DIR%\..\..") do set PROJECT_ROOT=%%~fP
+REM Get project root (parent of workspace/scripts/cli)
+for %%P in ("%SCRIPT_DIR%\..\..\..") do set PROJECT_ROOT=%%~fP
 
 REM Change to Vectorization-Public directory for MATLAB
 set VECTORIZATION_DIR=%PROJECT_ROOT%\external\Vectorization-Public
@@ -83,11 +83,11 @@ set OUTPUT_DIR_ESC=%OUTPUT_DIR_ABS:'=''%
 set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ESC:\=/%', '%OUTPUT_DIR_ESC:\=/%'); exit
 
 echo Running MATLAB vectorization...
-echo Command: "%MATLAB_PATH%" -batch "%MATLAB_SCRIPT%"
+echo Command: "%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%"
 echo.
 
-REM Run MATLAB and capture output
-"%MATLAB_PATH%" -batch "%MATLAB_SCRIPT%" >> "%LOG_FILE%" 2>&1
+REM Run MATLAB and wait for the worker process so callers can time out or retry cleanly.
+"%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%" >> "%LOG_FILE%" 2>&1
 set MATLAB_EXIT_CODE=%ERRORLEVEL%
 
 echo.
