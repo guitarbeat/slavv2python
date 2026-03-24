@@ -76,7 +76,9 @@ def test_run_matlab_cli_injection_sh(tmp_path):
 @pytest.mark.skipif(sys.platform != "win32", reason="Batch script only runs on Windows")
 def test_run_matlab_cli_injection_bat(tmp_path):
     mock_matlab = tmp_path / "mock_matlab.bat"
-    mock_matlab.write_text('@echo off\necho "MOCK MATLAB CALLED WITH: %*"\nexit /b 0', encoding="utf-8")
+    mock_matlab.write_text(
+        '@echo off\necho "MOCK MATLAB CALLED WITH: %*"\nexit /b 0', encoding="utf-8"
+    )
 
     input_file_name = "input'injection.tif"
     input_file = tmp_path / input_file_name
@@ -88,11 +90,13 @@ def test_run_matlab_cli_injection_bat(tmp_path):
     if not script.exists():
         pytest.fail(f"Script not found at {script}")
 
+    command = f'"{script}" "{input_file}" "{output_dir}" "{mock_matlab}"'
     result = subprocess.run(
-        ["cmd", "/c", str(script), str(input_file), str(output_dir), str(mock_matlab)],
+        command,
         capture_output=True,
         text=True,
         cwd=str(REPO_ROOT),
+        shell=True,
     )
 
     if result.returncode != 0:
