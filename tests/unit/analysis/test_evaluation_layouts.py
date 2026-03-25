@@ -113,6 +113,34 @@ def test_generate_summary_normalizes_staged_run_name(tmp_path: Path):
     assert "Date: 2026-02-10" in summary
 
 
+def test_generate_summary_falls_back_to_nested_counts(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    analysis_dir = run_dir / "03_Analysis"
+    matlab_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    (matlab_dir / "batch_260210-100526").mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    report = {
+        "matlab": {"elapsed_time": 20.0},
+        "python": {"elapsed_time": 10.0},
+        "vertices": {"matlab_count": 1863, "python_count": 535},
+        "edges": {"matlab_count": 1379, "python_count": 67},
+        "network": {"matlab_strand_count": 682, "python_strand_count": 10},
+    }
+    (analysis_dir / "comparison_report.json").write_text(json.dumps(report), encoding="utf-8")
+
+    output_file = analysis_dir / "summary.txt"
+    generate_summary(run_dir, output_file)
+    summary = output_file.read_text(encoding="utf-8")
+
+    assert "1,863" in summary
+    assert "1,379" in summary
+    assert "682" in summary
+
+
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"

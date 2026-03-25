@@ -24,3 +24,20 @@ def test_alternative_energy_methods(method):
     assert result["energy"].shape == image.shape
     assert result["scale_indices"].shape == image.shape
     assert result["energy"][4, 4, 4] < 0  # Tubular structure should have negative energy
+
+
+def test_default_hessian_energy_produces_negative_tubular_response():
+    """Default Hessian energy should mark the vessel center as a local minimum."""
+    image = np.zeros((9, 9, 9), dtype=np.float32)
+    image[4, :, 4] = 1.0
+
+    proc = SLAVVProcessor()
+    params = {
+        "radius_of_smallest_vessel_in_microns": 1.0,
+        "radius_of_largest_vessel_in_microns": 2.0,
+        "scales_per_octave": 1.0,
+    }
+    result = proc.calculate_energy_field(image, params)
+
+    assert result["energy"][4, 4, 4] < 0
+    assert np.isinf(result["energy"][0, 0, 0])

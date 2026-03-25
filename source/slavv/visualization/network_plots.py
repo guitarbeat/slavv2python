@@ -1532,15 +1532,15 @@ class NetworkVisualizer:
         # Convert numpy arrays and other non-JSON-serializable types
         def convert_numpy(obj):
             if isinstance(obj, np.ndarray):
-                return obj.tolist()
-            if isinstance(obj, np.integer):
-                return int(obj)
-            if isinstance(obj, np.floating):
-                return float(obj)
+                return convert_numpy(obj.tolist())
+            if isinstance(obj, np.generic):
+                return convert_numpy(obj.item())
             if isinstance(obj, set):
-                return list(obj)  # Sets are not JSON serializable
+                return [convert_numpy(item) for item in obj]
             if isinstance(obj, tuple):
-                return list(obj)  # Tuples become lists in JSON
+                return [convert_numpy(item) for item in obj]
+            if isinstance(obj, Path):
+                return str(obj)
             if isinstance(obj, dict):
                 return {str(key): convert_numpy(value) for key, value in obj.items()}
             if isinstance(obj, list):

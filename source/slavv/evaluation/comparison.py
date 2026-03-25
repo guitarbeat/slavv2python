@@ -30,6 +30,26 @@ from .metrics import compare_results
 from .reporting import generate_summary
 
 
+def _json_default(value: Any) -> Any:
+    """Serialize numpy-heavy comparison parameters to JSON."""
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, Path):
+        return str(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) -> Path:
+    """Persist the normalized comparison parameters for both MATLAB and Python runs."""
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    params_path = metadata_dir / "comparison_params.normalized.json"
+    with open(params_path, "w", encoding="utf-8") as handle:
+        json.dump(params, handle, indent=2, default=_json_default)
+    return params_path
+
+
 def load_parameters(params_file: str | None = None) -> dict[str, Any]:
     """Load parameters from JSON file or use defaults."""
     if params_file and os.path.exists(params_file):
@@ -120,6 +140,7 @@ def run_matlab_vectorization(
     matlab_path: str,
     project_root: Path,
     batch_script: str | None = None,
+    params_file: str | None = None,
 ) -> dict[str, Any]:
     """Run MATLAB vectorization via CLI."""
     print("\n" + "=" * 60)
@@ -131,6 +152,10 @@ def run_matlab_vectorization(
         raise FileNotFoundError(f"Input file not found: {input_file}")
     input_file = os.path.abspath(input_file)
     output_dir = os.path.abspath(output_dir)
+    if params_file is not None:
+        if not os.path.exists(params_file):
+            raise FileNotFoundError(f"Parameters file not found: {params_file}")
+        params_file = os.path.abspath(params_file)
 
     # Define script paths with absolute resolution.
     # Prefer workspace/scripts (current layout), fallback to scripts (legacy layout).
@@ -164,6 +189,8 @@ def run_matlab_vectorization(
 
     # Build command list
     cmd = [batch_script, input_file, output_dir, matlab_path]
+    if params_file is not None:
+        cmd.append(params_file)
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -171,6 +198,8 @@ def run_matlab_vectorization(
     print(f"Command: {' '.join(cmd)}")
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
+    if params_file is not None:
+        print(f"Parameters file: {params_file}")
 
     # Capture system info
     system_info = get_system_info()
@@ -201,6 +230,7 @@ def run_matlab_vectorization(
             "stderr": stderr,
             "system_info": system_info,
             "output_dir": output_dir,
+            "params_file": params_file or "",
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -221,6 +251,7 @@ def run_matlab_vectorization(
             "stderr": stderr,
             "system_info": system_info,
             "output_dir": output_dir,
+            "params_file": params_file or "",
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -237,6 +268,7 @@ def run_matlab_vectorization(
         "success": True,
         "elapsed_time": elapsed_time,
         "output_dir": output_dir,
+        "params_file": params_file or "",
         "stdout": stdout,
         "stderr": stderr,
         "system_info": system_info,
@@ -372,6 +404,7 @@ def orchestrate_comparison(
     metadata_dir = layout["metadata_dir"]
     analysis_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
+    normalized_params_file = _write_normalized_params_file(metadata_dir, params)
     comparison_context = RunContext(
         run_dir=output_dir,
         target_stage="network",
@@ -386,18 +419,26 @@ def orchestrate_comparison(
             "matlab_pipeline",
             status="running",
             detail="Running MATLAB wrapper",
+            artifacts={"params_file": str(normalized_params_file)},
         )
         matlab_results = run_matlab_vectorization(
-            input_file, str(matlab_output), matlab_path, project_root
+            input_file,
+            str(matlab_output),
+            matlab_path,
+            project_root,
+            params_file=str(normalized_params_file),
         )
         comparison_context.update_optional_task(
             "matlab_pipeline",
             status="completed" if matlab_results.get("success") else "failed",
             detail="MATLAB wrapper finished",
             artifacts=(
-                {"batch_folder": matlab_results["batch_folder"]}
+                {
+                    "batch_folder": matlab_results["batch_folder"],
+                    "params_file": str(normalized_params_file),
+                }
                 if matlab_results.get("batch_folder")
-                else {}
+                else {"params_file": str(normalized_params_file)}
             ),
         )
     else:

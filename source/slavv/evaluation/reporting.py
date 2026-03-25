@@ -21,6 +21,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _report_count(
+    report: dict, side: str, top_level_key: str, section: str, nested_key: str
+) -> int:
+    """Read a count from the preferred top-level field with nested fallbacks."""
+    value = report.get(side, {}).get(top_level_key)
+    if value is not None:
+        return int(value)
+    nested = report.get(section, {}).get(nested_key, 0)
+    return int(nested)
+
+
 def generate_summary(run_dir: Path, output_file: Path):
     """Generate summary.txt for a comparison run."""
     layout = resolve_run_layout(run_dir)
@@ -89,20 +100,24 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append("-" * 70)
 
         # Vertices
-        matlab_verts = report.get("matlab", {}).get("vertices_count", 0)
-        python_verts = report.get("python", {}).get("vertices_count", 0)
+        matlab_verts = _report_count(report, "matlab", "vertices_count", "vertices", "matlab_count")
+        python_verts = _report_count(report, "python", "vertices_count", "vertices", "python_count")
         diff_verts = python_verts - matlab_verts
         lines.append(f"{'Vertices':<15} {matlab_verts:>12,} {python_verts:>12,} {diff_verts:>+15,}")
 
         # Edges
-        matlab_edges = report.get("matlab", {}).get("edges_count", 0)
-        python_edges = report.get("python", {}).get("edges_count", 0)
+        matlab_edges = _report_count(report, "matlab", "edges_count", "edges", "matlab_count")
+        python_edges = _report_count(report, "python", "edges_count", "edges", "python_count")
         diff_edges = python_edges - matlab_edges
         lines.append(f"{'Edges':<15} {matlab_edges:>12,} {python_edges:>12,} {diff_edges:>+15,}")
 
         # Strands
-        matlab_strands = report.get("matlab", {}).get("strand_count", 0)
-        python_strands = report.get("python", {}).get("network_strands_count", 0)
+        matlab_strands = _report_count(
+            report, "matlab", "strand_count", "network", "matlab_strand_count"
+        )
+        python_strands = _report_count(
+            report, "python", "network_strands_count", "network", "python_strand_count"
+        )
         diff_strands = python_strands - matlab_strands
         lines.append(
             f"{'Strands':<15} {matlab_strands:>12,} {python_strands:>12,} {diff_strands:>+15,}"
@@ -130,8 +145,8 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append("- Visualizations: Present")
 
     if report:
-        matlab_verts = report.get("matlab", {}).get("vertices_count", 0)
-        python_verts = report.get("python", {}).get("vertices_count", 0)
+        matlab_verts = _report_count(report, "matlab", "vertices_count", "vertices", "matlab_count")
+        python_verts = _report_count(report, "python", "vertices_count", "vertices", "python_count")
 
         if matlab_verts == 0 and has_matlab:
             lines.append("- WARNING: MATLAB produced 0 vertices (possible config issue)")

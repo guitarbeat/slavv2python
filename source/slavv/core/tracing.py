@@ -18,7 +18,7 @@ from skimage.draw import ellipsoid
 from skimage.segmentation import watershed
 
 # Imports from sibling modules
-from .energy import compute_gradient_impl, spherical_structuring_element
+from .energy import compute_gradient_impl
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,6 +26,112 @@ if TYPE_CHECKING:
     from slavv.runtime import StageController
 
 logger = logging.getLogger(__name__)
+
+
+def _vertex_window_apothem(space_strel_apothem: int) -> int:
+    """Normalize the MATLAB vertex neighborhood radius in voxel units."""
+    return max(int(space_strel_apothem), 0)
+
+
+def _vertex_neighborhood_slices(
+    pos: np.ndarray, apothem: int, shape: tuple[int, int, int]
+) -> tuple[slice, slice, slice]:
+    """Return clipped cube slices centered on ``pos``."""
+    y, x, z = (int(coord) for coord in pos)
+    return (
+        slice(max(0, y - apothem), min(shape[0], y + apothem + 1)),
+        slice(max(0, x - apothem), min(shape[1], x + apothem + 1)),
+        slice(max(0, z - apothem), min(shape[2], z + apothem + 1)),
+    )
+
+
+def _matlab_vertex_candidates(
+    energy: np.ndarray,
+    scale_indices: np.ndarray,
+    energy_sign: float,
+    energy_upper_bound: float,
+    space_strel_apothem: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Find MATLAB-style spatial extrema on the min-projected energy volume."""
+    apothem = _vertex_window_apothem(space_strel_apothem)
+    footprint = np.ones((2 * apothem + 1, 2 * apothem + 1, 2 * apothem + 1), dtype=bool)
+
+    if energy_sign < 0:
+        filt = ndi.minimum_filter(energy, footprint=footprint, mode="nearest")
+        extrema = (energy <= filt) & (energy < energy_upper_bound)
+    else:
+        filt = ndi.maximum_filter(energy, footprint=footprint, mode="nearest")
+        extrema = (energy >= filt) & (energy > energy_upper_bound)
+
+    if apothem > 0:
+        extrema[:apothem, :, :] = False
+        extrema[-apothem:, :, :] = False
+        extrema[:, :apothem, :] = False
+        extrema[:, -apothem:, :] = False
+        extrema[:, :, :apothem] = False
+        extrema[:, :, -apothem:] = False
+
+    coords = np.where(extrema)
+    return np.column_stack(coords), scale_indices[coords], energy[coords]
+
+
+def _suppress_vertices_matlab_style(
+    vertex_positions: np.ndarray,
+    energy_shape: tuple[int, int, int],
+    space_strel_apothem: int,
+    start_index: int = 0,
+    keep_mask: np.ndarray | None = None,
+) -> np.ndarray:
+    """Greedily keep vertices and zero a fixed voxel neighborhood like MATLAB."""
+    apothem = _vertex_window_apothem(space_strel_apothem)
+    if keep_mask is None:
+        keep_mask = np.ones(len(vertex_positions), dtype=bool)
+
+    suppressed = np.zeros(energy_shape, dtype=bool)
+    for prior_index in range(start_index):
+        if not keep_mask[prior_index]:
+            continue
+        slices = _vertex_neighborhood_slices(vertex_positions[prior_index], apothem, energy_shape)
+        suppressed[slices] = True
+
+    for index in range(start_index, len(vertex_positions)):
+        pos = vertex_positions[index]
+        if suppressed[tuple(int(coord) for coord in pos)]:
+            keep_mask[index] = False
+            continue
+
+        keep_mask[index] = True
+        slices = _vertex_neighborhood_slices(pos, apothem, energy_shape)
+        suppressed[slices] = True
+
+    return keep_mask
+
+
+def _crop_vertices_matlab_style(
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    vertex_energies: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Remove boundary-touching and extreme-scale vertices like MATLAB."""
+    if len(vertex_positions) == 0:
+        return vertex_positions, vertex_scales, vertex_energies
+
+    radii = np.round(lumen_radius_pixels_axes[vertex_scales]).astype(int)
+    shape = np.asarray(image_shape, dtype=int)
+    excluded = (
+        (vertex_positions[:, 0] + radii[:, 0] > shape[0] - 1)
+        | (vertex_positions[:, 1] + radii[:, 1] > shape[1] - 1)
+        | (vertex_positions[:, 2] + radii[:, 2] > shape[2] - 1)
+        | (vertex_positions[:, 0] - radii[:, 0] < 0)
+        | (vertex_positions[:, 1] - radii[:, 1] < 0)
+        | (vertex_positions[:, 2] - radii[:, 2] < 0)
+        | (vertex_scales == 0)
+        | (vertex_scales == len(lumen_radius_pixels_axes) - 1)
+    )
+    keep = ~excluded
+    return vertex_positions[keep], vertex_scales[keep], vertex_energies[keep]
 
 
 def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:
@@ -159,29 +265,25 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = np.asarray(
+        energy_data.get(
+            "lumen_radius_pixels_axes",
+            np.repeat(np.asarray(lumen_radius_pixels)[:, None], 3, axis=1),
+        )
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
 
     # Parameters
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)
-    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
-    voxel_size = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-
-    # Find local extrema using a spacing-aware structuring element
-    strel = spherical_structuring_element(space_strel_apothem, voxel_size)
-    if energy_sign < 0:
-        filt = ndi.minimum_filter(energy, footprint=strel, mode="nearest")
-        extrema = (energy <= filt) & (energy < energy_upper_bound)
-    else:
-        filt = ndi.maximum_filter(energy, footprint=strel, mode="nearest")
-        extrema = (energy >= filt) & (energy > energy_upper_bound)
-
-    # Get coordinates of extrema
-    coords = np.where(extrema)
-    vertex_positions = np.column_stack(coords)
-    vertex_scales = scale_indices[coords]
-    vertex_energies = energy[coords]
+    vertex_positions, vertex_scales, vertex_energies = _matlab_vertex_candidates(
+        energy,
+        scale_indices,
+        energy_sign,
+        energy_upper_bound,
+        space_strel_apothem,
+    )
 
     # Sort by energy (best first depending on sign)
     if energy_sign < 0:
@@ -203,28 +305,21 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
             "radii": np.empty((0,), dtype=np.float32),
         }
 
-    # Volume exclusion: remove overlapping vertices using energy-ordered cKDTree
-    vertex_positions_microns = vertex_positions * voxel_size
-    max_radius = np.max(lumen_radius_microns) * length_dilation_ratio
-    tree = cKDTree(vertex_positions_microns)
-    keep_mask = np.ones(len(vertex_positions), dtype=bool)
-
-    for i, pos in enumerate(vertex_positions_microns):
-        if not keep_mask[i]:
-            continue
-        radius_i = lumen_radius_microns[vertex_scales[i]] * length_dilation_ratio
-        neighbors = tree.query_ball_point(pos, radius_i + max_radius)
-        for j in neighbors:
-            if j <= i or not keep_mask[j]:
-                continue
-            radius_j = lumen_radius_microns[vertex_scales[j]] * length_dilation_ratio
-            dist = np.linalg.norm(vertex_positions_microns[j] - pos)
-            if dist < (radius_i + radius_j):
-                keep_mask[j] = False
-
+    keep_mask = _suppress_vertices_matlab_style(
+        vertex_positions,
+        energy.shape,
+        space_strel_apothem,
+    )
     vertex_positions = vertex_positions[keep_mask]
     vertex_scales = vertex_scales[keep_mask]
     vertex_energies = vertex_energies[keep_mask]
+    vertex_positions, vertex_scales, vertex_energies = _crop_vertices_matlab_style(
+        vertex_positions,
+        vertex_scales,
+        vertex_energies,
+        lumen_radius_pixels_axes,
+        energy.shape,
+    )
 
     logger.info(f"Extracted {len(vertex_positions)} vertices")
 
@@ -457,6 +552,19 @@ def trace_edge(
             next_pos_x = current_pos_x + current_dir_x * step_size
             next_pos_z = current_pos_z + current_dir_z * step_size
 
+            if not all(
+                math.isfinite(value)
+                for value in (
+                    next_pos_y,
+                    next_pos_x,
+                    next_pos_z,
+                    current_dir_y,
+                    current_dir_x,
+                    current_dir_z,
+                )
+            ):
+                return trace
+
             if discrete_steps:
                 # Rounding logic for discrete steps
                 r_next_pos_y = round(next_pos_y)
@@ -575,6 +683,13 @@ def trace_edge(
                 current_dir_y *= inv_norm
                 current_dir_x *= inv_norm
                 current_dir_z *= inv_norm
+            else:
+                return trace
+
+            if not all(
+                math.isfinite(value) for value in (current_dir_y, current_dir_x, current_dir_z)
+            ):
+                return trace
 
         # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
         if vertex_image is not None:
@@ -630,7 +745,7 @@ def extract_edges(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_edge_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -673,7 +788,7 @@ def extract_edges(
             continue
         start_radius = lumen_radius_pixels[start_scale]
         step_size = start_radius * step_size_ratio
-        max_length = start_radius * length_ratio
+        max_length = start_radius * max_edge_length_ratio
         max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
 
         if direction_method == "hessian":
@@ -838,12 +953,16 @@ def extract_vertices_resumable(
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = np.asarray(
+        energy_data.get(
+            "lumen_radius_pixels_axes",
+            np.repeat(np.asarray(lumen_radius_pixels)[:, None], 3, axis=1),
+        )
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)
-    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
-    voxel_size = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     block_size = int(params.get("resume_vertex_block_size", 256))
 
     candidate_path = stage_controller.artifact_path("candidates.pkl")
@@ -855,20 +974,18 @@ def extract_vertices_resumable(
         detail="Preparing vertex candidates", units_total=4, substage="materialize"
     )
     if not candidate_path.exists():
-        strel = spherical_structuring_element(space_strel_apothem, voxel_size)
-        if energy_sign < 0:
-            filt = ndi.minimum_filter(energy, footprint=strel, mode="nearest")
-            extrema = (energy <= filt) & (energy < energy_upper_bound)
-        else:
-            filt = ndi.maximum_filter(energy, footprint=strel, mode="nearest")
-            extrema = (energy >= filt) & (energy > energy_upper_bound)
-
-        coords = np.where(extrema)
+        positions, scales, energies = _matlab_vertex_candidates(
+            energy,
+            scale_indices,
+            energy_sign,
+            energy_upper_bound,
+            space_strel_apothem,
+        )
         atomic_joblib_dump(
             {
-                "positions": np.column_stack(coords),
-                "scales": scale_indices[coords],
-                "energies": energy[coords],
+                "positions": positions,
+                "scales": scales,
+                "energies": energies,
             },
             candidate_path,
         )
@@ -907,9 +1024,6 @@ def extract_vertices_resumable(
     vertex_positions = ordered["positions"]
     vertex_scales = ordered["scales"]
     vertex_energies = ordered["energies"]
-    vertex_positions_microns = vertex_positions * voxel_size
-    max_radius = np.max(lumen_radius_microns) * length_dilation_ratio
-    tree = cKDTree(vertex_positions_microns)
 
     if keep_mask_path.exists():
         keep_mask = joblib.load(keep_mask_path)
@@ -926,19 +1040,15 @@ def extract_vertices_resumable(
         resumed=next_index > 0,
     )
 
-    for i, pos in enumerate(vertex_positions_microns[next_index:], start=next_index):
-        if not keep_mask[i]:
-            continue
-        radius_i = lumen_radius_microns[vertex_scales[i]] * length_dilation_ratio
-        neighbors = tree.query_ball_point(pos, radius_i + max_radius)
-        for j in neighbors:
-            if j <= i or not keep_mask[j]:
-                continue
-            radius_j = lumen_radius_microns[vertex_scales[j]] * length_dilation_ratio
-            dist = np.linalg.norm(vertex_positions_microns[j] - pos)
-            if dist < (radius_i + radius_j):
-                keep_mask[j] = False
+    keep_mask = _suppress_vertices_matlab_style(
+        vertex_positions,
+        energy.shape,
+        space_strel_apothem,
+        start_index=next_index,
+        keep_mask=keep_mask,
+    )
 
+    for i in range(next_index, len(vertex_positions)):
         if (i + 1) % block_size == 0 or i == len(vertex_positions) - 1:
             atomic_joblib_dump(keep_mask, keep_mask_path)
             stage_controller.save_state({"next_index": i + 1, "block_size": block_size})
@@ -954,6 +1064,13 @@ def extract_vertices_resumable(
     vertex_positions = vertex_positions[keep_mask].astype(np.float32)
     vertex_scales = vertex_scales[keep_mask].astype(np.int16)
     vertex_energies = vertex_energies[keep_mask].astype(np.float32)
+    vertex_positions, vertex_scales, vertex_energies = _crop_vertices_matlab_style(
+        vertex_positions,
+        vertex_scales,
+        vertex_energies,
+        lumen_radius_pixels_axes,
+        energy.shape,
+    )
     radii_pixels = lumen_radius_pixels[vertex_scales].astype(np.float32)
     radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
     stage_controller.update(
@@ -1024,7 +1141,7 @@ def extract_edges_resumable(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_edge_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -1080,7 +1197,7 @@ def extract_edges_resumable(
         if edges_per_vertex[vertex_idx] < max_edges_per_vertex:
             start_radius = lumen_radius_pixels[start_scale]
             step_size = start_radius * step_size_ratio
-            max_length = start_radius * length_ratio
+            max_length = start_radius * max_edge_length_ratio
             max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
             if direction_method == "hessian":
                 directions = estimate_vessel_directions(

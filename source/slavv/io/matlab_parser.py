@@ -24,6 +24,74 @@ class MATLABParseError(Exception):
     """Exception raised when MATLAB output parsing fails."""
 
 
+def _normalize_matlab_subscripts(values: Any) -> np.ndarray:
+    """Convert MATLAB `[y, x, z, ...]` 1-based subscripts to Python `[z, y, x, ...]`."""
+    arr = np.asarray(values)
+    if arr.size == 0:
+        return arr
+    if arr.ndim == 1:
+        arr = arr.reshape(1, -1)
+    if arr.ndim != 2 or arr.shape[1] < 3:
+        return arr
+
+    normalized = arr.copy()
+    normalized[:, :3] = normalized[:, [2, 0, 1]] - 1
+    return normalized
+
+
+def _get_struct_value(obj: Any, name: str) -> Any:
+    """Safely fetch a MATLAB struct field."""
+    if obj is None or not hasattr(obj, name):
+        return None
+
+    value = getattr(obj, name)
+    if isinstance(value, np.ndarray) and value.size == 1:
+        return value.reshape(()).item()
+    if isinstance(value, np.ndarray) and value.ndim == 0:
+        return value.item()
+    return value
+
+
+def _count_items(value: Any) -> int:
+    """Count items for MATLAB arrays, including object arrays and row matrices."""
+    if value is None:
+        return 0
+    if isinstance(value, np.ndarray):
+        if value.size == 0:
+            return 0
+        if value.ndim == 0:
+            return 1
+        return int(value.shape[0])
+    try:
+        return len(value)
+    except TypeError:
+        return 1
+
+
+def _infer_strand_count(
+    mat_data: dict[str, Any], network_data: dict[str, Any], network_stats: Any | None
+) -> int:
+    """Infer strand count from MATLAB network outputs when num_strands is absent."""
+    explicit_count = _get_struct_value(network_stats, "num_strands")
+    if explicit_count:
+        return int(explicit_count)
+
+    strand_lengths = _get_struct_value(network_stats, "strand_lengths")
+    strand_lengths_count = _count_items(strand_lengths)
+    if strand_lengths_count > 0:
+        return strand_lengths_count
+
+    strands2vertices_count = _count_items(mat_data.get("strands2vertices"))
+    if strands2vertices_count > 0:
+        return strands2vertices_count
+
+    strand_count = len(network_data.get("strands", []))
+    if strand_count > 0:
+        return strand_count
+
+    return _count_items(mat_data.get("strand_subscripts"))
+
+
 def find_batch_folder(output_dir: Union[str, Path]) -> Path | None:
     """Find the most recent MATLAB batch folder in the output directory.
 
@@ -83,7 +151,7 @@ def extract_vertices(mat_data: dict[str, Any]) -> dict[str, np.ndarray]:
 
     # Check for root-level arrays (common in this dataset)
     if "vertex_space_subscripts" in mat_data:
-        positions = np.array(mat_data["vertex_space_subscripts"])
+        positions = _normalize_matlab_subscripts(mat_data["vertex_space_subscripts"])
         if positions.ndim == 1 and positions.size > 0:
             positions = positions.reshape(-1, 1)
         vertices_info["positions"] = positions
@@ -112,11 +180,11 @@ def extract_vertices(mat_data: dict[str, Any]) -> dict[str, np.ndarray]:
     elif "vertex" in mat_data or "vertices" in mat_data:
         vertex_struct = mat_data.get("vertex", mat_data.get("vertices"))
         if hasattr(vertex_struct, "space_subscripts"):
-            positions = np.array(vertex_struct.space_subscripts)
+            positions = _normalize_matlab_subscripts(vertex_struct.space_subscripts)
             vertices_info["positions"] = positions
             vertices_info["count"] = positions.shape[0] if positions.size > 0 else 0
         elif hasattr(vertex_struct, "positions"):
-            positions = np.array(vertex_struct.positions)
+            positions = _normalize_matlab_subscripts(vertex_struct.positions)
             vertices_info["positions"] = positions
             vertices_info["count"] = positions.shape[0] if positions.size > 0 else 0
 
@@ -145,10 +213,11 @@ def extract_edges(mat_data: dict[str, Any]) -> dict[str, Any]:
         if isinstance(space_subs, np.ndarray):
             if space_subs.dtype == object:
                 edges_info["traces"] = [
-                    np.array(t) if t is not None else np.array([]) for t in space_subs
+                    _normalize_matlab_subscripts(t) if t is not None else np.array([])
+                    for t in space_subs
                 ]
             else:
-                edges_info["traces"] = [space_subs]  # Single edge?
+                edges_info["traces"] = [_normalize_matlab_subscripts(space_subs)]  # Single edge?
 
     # Fallback to struct-based
     if edges_info["count"] == 0:
@@ -165,7 +234,9 @@ def extract_edges(mat_data: dict[str, Any]) -> dict[str, Any]:
             if hasattr(edge_struct, "space_subscripts"):
                 space_subs = edge_struct.space_subscripts
                 if isinstance(space_subs, np.ndarray) and space_subs.dtype == object:
-                    edges_info["traces"] = [np.array(t) for t in space_subs if t is not None]
+                    edges_info["traces"] = [
+                        _normalize_matlab_subscripts(t) for t in space_subs if t is not None
+                    ]
 
     logger.info(f"Extracted {edges_info['count']} edges")
     return edges_info
@@ -184,7 +255,10 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
                 # Filter out None and empty arrays
                 # Do NOT flatten coordinate arrays (N, 4) -> keep them as is
                 network_data["strands"] = [
-                    np.array(s) if s is not None and s.size > 0 else np.array([]) for s in strands
+                    _normalize_matlab_subscripts(s)
+                    if s is not None and s.size > 0
+                    else np.array([])
+                    for s in strands
                 ]
                 # Filter out empty entries
                 network_data["strands"] = [s for s in network_data["strands"] if s.size > 0]
@@ -195,27 +269,23 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
         # Alternative key used by some MATLAB outputs
         s = mat_data["strand"]
         if isinstance(s, np.ndarray) and s.size > 0:
-            network_data["strands"] = [np.array(x) for x in s] if s.dtype == object else [s]
+            network_data["strands"] = (
+                [_normalize_matlab_subscripts(x) for x in s]
+                if s.dtype == object
+                else [_normalize_matlab_subscripts(s)]
+            )
 
     # Extract statistics
     if "network_statistics" in mat_data:
         ns = mat_data["network_statistics"]
-
-        # Helper to extract scalar or array
-        def get_val(obj, name):
-            if hasattr(obj, name):
-                val = getattr(obj, name)
-                if isinstance(val, np.ndarray) and val.size == 1:
-                    return val.item()
-                # Handle 0-d arrays
-                if isinstance(val, np.ndarray) and val.ndim == 0:
-                    return val.item()
-                return val
-            return None
-
-        network_data["stats"]["strand_count"] = get_val(ns, "num_strands") or 0
-        network_data["stats"]["total_length_microns"] = get_val(ns, "length") or 0.0
-        network_data["stats"]["mean_radius_microns"] = get_val(ns, "strand_ave_radii")
+        network_data["stats"]["strand_count"] = _infer_strand_count(mat_data, network_data, ns)
+        total_length = _get_struct_value(ns, "length")
+        if total_length in (None, 0, 0.0):
+            strand_lengths = _get_struct_value(ns, "strand_lengths")
+            if isinstance(strand_lengths, np.ndarray) and strand_lengths.size > 0:
+                total_length = float(np.sum(strand_lengths))
+        network_data["stats"]["total_length_microns"] = total_length or 0.0
+        network_data["stats"]["mean_radius_microns"] = _get_struct_value(ns, "strand_ave_radii")
 
         # Handle mean radius being an array
         mr = network_data["stats"]["mean_radius_microns"]
@@ -223,6 +293,8 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
             network_data["stats"]["mean_radius_microns"] = (
                 float(np.mean(mr)) if mr.size > 0 else 0.0
             )
+    elif "strand_subscripts" in mat_data or "strands2vertices" in mat_data:
+        network_data["stats"]["strand_count"] = _infer_strand_count(mat_data, network_data, None)
 
     return network_data
 
@@ -231,9 +303,12 @@ def extract_network_stats(mat_data: dict[str, Any]) -> dict[str, Any]:
     """Extract network statistics from MATLAB data. Returns a flat stats dict."""
     net = extract_network_data(mat_data)
     stats = net.get("stats", {})
+    strand_count = stats.get("strand_count")
+    if not strand_count:
+        strand_count = len(net.get("strands", []))
     # Ensure expected keys with defaults
     return {
-        "strand_count": stats.get("strand_count", len(net.get("strands", []))),
+        "strand_count": strand_count,
         "total_length_microns": stats.get("total_length_microns", 0.0),
         "mean_radius_microns": stats.get("mean_radius_microns", 0.0),
     }
@@ -289,7 +364,9 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
                 target[k] = v
 
     # 1. Load Vertices
-    v_files = list(vectors_dir.glob("vertices_*.mat"))
+    v_files = sorted(vectors_dir.glob("curated_vertices_*.mat")) or sorted(
+        vectors_dir.glob("vertices_*.mat")
+    )
     if v_files:
         f = v_files[-1]
         logger.info(f"Loading vertices: {f.name}")
@@ -300,7 +377,9 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
             results["files"].append(str(f))
 
     # 2. Load Edges
-    e_files = list(vectors_dir.glob("edges_*.mat"))
+    e_files = sorted(vectors_dir.glob("curated_edges_*.mat")) or sorted(
+        vectors_dir.glob("edges_*.mat")
+    )
     if e_files:
         f = e_files[-1]
         logger.info(f"Loading edges: {f.name}")

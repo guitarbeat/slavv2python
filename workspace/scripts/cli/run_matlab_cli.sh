@@ -3,7 +3,7 @@
 # Bash script to invoke MATLAB from command line
 #
 # Usage:
-#   ./run_matlab_cli.sh "input_file.tif" "output_directory" [matlab_path]
+#   ./run_matlab_cli.sh "input_file.tif" "output_directory" [matlab_path] [params_json]
 
 set -e
 
@@ -11,17 +11,18 @@ set -e
 INPUT_FILE="$1"
 OUTPUT_DIR="$2"
 MATLAB_PATH="$3"
+PARAMS_FILE="$4"
 
 # Validation
 if [ -z "$INPUT_FILE" ]; then
     echo "ERROR: Input file required"
-    echo "Usage: ./run_matlab_cli.sh \"input_file.tif\" \"output_directory\" [matlab_path]"
+    echo "Usage: ./run_matlab_cli.sh \"input_file.tif\" \"output_directory\" [matlab_path] [params_json]"
     exit 1
 fi
 
 if [ -z "$OUTPUT_DIR" ]; then
     echo "ERROR: Output directory required"
-    echo "Usage: ./run_matlab_cli.sh \"input_file.tif\" \"output_directory\" [matlab_path]"
+    echo "Usage: ./run_matlab_cli.sh \"input_file.tif\" \"output_directory\" [matlab_path] [params_json]"
     exit 1
 fi
 
@@ -46,9 +47,17 @@ if [ ! -x "$MATLAB_PATH" ] && ! command -v "$MATLAB_PATH" &> /dev/null; then
     exit 1
 fi
 
+if [ -n "$PARAMS_FILE" ] && [ ! -f "$PARAMS_FILE" ]; then
+    echo "ERROR: Parameters file not found: $PARAMS_FILE"
+    exit 1
+fi
+
 # Get absolute paths
 INPUT_FILE_ABS=$(readlink -f "$INPUT_FILE")
 OUTPUT_DIR_ABS=$(readlink -f "$OUTPUT_DIR") || OUTPUT_DIR_ABS="$OUTPUT_DIR"
+if [ -n "$PARAMS_FILE" ]; then
+    PARAMS_FILE_ABS=$(readlink -f "$PARAMS_FILE")
+fi
 
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -69,6 +78,9 @@ LOG_FILE="$OUTPUT_DIR_ABS/matlab_run.log"
     echo "Input file: $INPUT_FILE_ABS"
     echo "Output directory: $OUTPUT_DIR_ABS"
     echo "MATLAB path: $MATLAB_PATH"
+    if [ -n "$PARAMS_FILE_ABS" ]; then
+        echo "Parameters file: $PARAMS_FILE_ABS"
+    fi
     echo "Start time: $(date)"
     echo ""
 } > "$LOG_FILE"
@@ -80,7 +92,12 @@ OUTPUT_DIR_ESC="${OUTPUT_DIR_ABS//\'/\'\'}"
 VECTORIZATION_DIR_ESC="${VECTORIZATION_DIR//\'/\'\'}"
 SCRIPT_DIR_ESC="${SCRIPT_DIR//\'/\'\'}"
 
-MATLAB_SCRIPT="cd('$VECTORIZATION_DIR_ESC'); addpath('$SCRIPT_DIR_ESC'); run_matlab_vectorization('$INPUT_FILE_ESC', '$OUTPUT_DIR_ESC'); exit"
+if [ -n "$PARAMS_FILE_ABS" ]; then
+    PARAMS_FILE_ESC="${PARAMS_FILE_ABS//\'/\'\'}"
+    MATLAB_SCRIPT="cd('$VECTORIZATION_DIR_ESC'); addpath('$SCRIPT_DIR_ESC'); run_matlab_vectorization('$INPUT_FILE_ESC', '$OUTPUT_DIR_ESC', '$PARAMS_FILE_ESC'); exit"
+else
+    MATLAB_SCRIPT="cd('$VECTORIZATION_DIR_ESC'); addpath('$SCRIPT_DIR_ESC'); run_matlab_vectorization('$INPUT_FILE_ESC', '$OUTPUT_DIR_ESC'); exit"
+fi
 
 echo "Running MATLAB vectorization..."
 echo "Command: $MATLAB_PATH -batch \"$MATLAB_SCRIPT\""

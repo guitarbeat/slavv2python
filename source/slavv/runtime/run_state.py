@@ -95,7 +95,7 @@ def atomic_write_json(path: str | Path, data: Any) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(_normalize_for_json(data), handle, indent=2, sort_keys=True)
-        os.replace(tmp_name, target)
+        _replace_with_retry(tmp_name, target)
     finally:
         if os.path.exists(tmp_name):
             os.unlink(tmp_name)
@@ -109,10 +109,26 @@ def atomic_joblib_dump(value: Any, path: str | Path) -> None:
     os.close(fd)
     try:
         joblib.dump(value, tmp_name)
-        os.replace(tmp_name, target)
+        _replace_with_retry(tmp_name, target)
     finally:
         if os.path.exists(tmp_name):
             os.unlink(tmp_name)
+
+
+def _replace_with_retry(tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25) -> None:
+    """Retry atomic replacement to tolerate transient Windows file locks."""
+    last_error = None
+    for attempt in range(attempts):
+        try:
+            os.replace(tmp_name, target)
+            return
+        except PermissionError as exc:
+            last_error = exc
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay)
+    if last_error is not None:
+        raise last_error
 
 
 @dataclass

@@ -125,6 +125,16 @@ def test_compare_edges_computes_python_total_length_and_percent_difference():
     assert np.isclose(result["total_length"]["percent_difference"], 0.0)
 
 
+def test_compare_edges_infers_count_and_length_from_json_style_traces():
+    matlab_edges = {"count": 1, "total_length": 5.0}
+    python_edges = {"traces": [[[0, 0, 0], [3, 4, 0]]]}
+
+    result = compare_edges(matlab_edges, python_edges)
+
+    assert result["python_count"] == 1
+    assert np.isclose(result["total_length"]["python"], 5.0)
+
+
 def test_compare_networks_computes_strand_differences():
     matlab_stats = {"strand_count": 25}
     python_network = {"strands": [object() for _ in range(23)]}
@@ -161,9 +171,42 @@ def test_compare_results_includes_performance_and_nested_metrics():
 
     assert result["performance"]["speedup"] == 2.0
     assert result["performance"]["faster"] == "Python"
+    assert result["matlab"]["vertices_count"] == 2
+    assert result["matlab"]["edges_count"] == 1
+    assert result["matlab"]["strand_count"] == 1
     assert "vertices" in result
     assert "edges" in result
     assert "network" in result
+
+
+def test_compare_results_infers_missing_top_level_counts_from_payloads():
+    matlab_results = {"success": True, "elapsed_time": 9.0, "output_dir": "m_out"}
+    python_results = {
+        "success": True,
+        "elapsed_time": 3.0,
+        "output_dir": "p_out",
+        "results": {
+            "vertices": {"positions": np.array([[0, 0, 0], [1, 1, 1]])},
+            "edges": {"connections": [[0, 1], [1, 0]]},
+            "network": {"strands": [[0, 1], [1, 2]]},
+        },
+    }
+    matlab_parsed = {
+        "vertices": {"positions": np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])},
+        "edges": {"connections": np.array([[0, 1]])},
+        "network_stats": {"strand_count": 4},
+    }
+
+    result = compare_results(matlab_results, python_results, matlab_parsed)
+
+    assert result["matlab"]["vertices_count"] == 3
+    assert result["matlab"]["edges_count"] == 1
+    assert result["matlab"]["strand_count"] == 4
+    assert result["python"]["vertices_count"] == 2
+    assert result["python"]["edges_count"] == 2
+    assert result["python"]["network_strands_count"] == 2
+    assert result["vertices"]["python_count"] == 2
+    assert result["edges"]["python_count"] == 2
 
 
 def test_compare_results_skips_nested_metrics_without_parsed_data():
