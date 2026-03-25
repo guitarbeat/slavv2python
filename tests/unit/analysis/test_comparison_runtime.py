@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from slavv.evaluation.comparison import discover_matlab_artifacts, orchestrate_comparison
@@ -71,12 +72,18 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     project_root.mkdir()
     batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
 
-    def fake_run_matlab_vectorization(_input, _output, _matlab_path, _project_root):
+    def fake_run_matlab_vectorization(
+        _input, _output, _matlab_path, _project_root, params_file=None
+    ):
         batch_folder.mkdir(parents=True, exist_ok=True)
+        assert params_file is not None
+        params_payload = json.loads(Path(params_file).read_text(encoding="utf-8"))
+        assert params_payload["edge_method"] == "tracing"
         return {
             "success": True,
             "batch_folder": str(batch_folder),
             "elapsed_time": 12.0,
+            "params_file": params_file,
         }
 
     def fake_run_python_vectorization(_input, output, _params, run_dir=None):
@@ -139,6 +146,11 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert snapshot.optional_tasks["python_pipeline"].status == "completed"
     assert snapshot.optional_tasks["comparison_analysis"].status == "completed"
     assert snapshot.optional_tasks["manifest"].status == "completed"
+    assert (
+        snapshot.optional_tasks["matlab_pipeline"]
+        .artifacts["params_file"]
+        .endswith("comparison_params.normalized.json")
+    )
     assert Path(
         snapshot.optional_tasks["comparison_analysis"].artifacts["comparison_report"]
     ).exists()

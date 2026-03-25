@@ -3,7 +3,7 @@ REM run_matlab_cli.bat
 REM Windows batch script to invoke MATLAB R2019a from command line
 REM
 REM Usage:
-REM   run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path]
+REM   run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path] [params_json]
 REM
 REM Example:
 REM   run_matlab_cli.bat "data\slavv_test_volume.tif" "comparison_output\matlab_results" "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
@@ -13,13 +13,13 @@ setlocal enabledelayedexpansion
 REM Parse arguments
 if "%~1"=="" (
     echo ERROR: Input file required
-    echo Usage: run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path]
+    echo Usage: run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path] [params_json]
     exit /b 1
 )
 
 if "%~2"=="" (
     echo ERROR: Output directory required
-    echo Usage: run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path]
+    echo Usage: run_matlab_cli.bat "input_file.tif" "output_directory" [matlab_path] [params_json]
     exit /b 1
 )
 
@@ -46,9 +46,21 @@ if not exist "%MATLAB_PATH%" (
     exit /b 1
 )
 
+set PARAMS_FILE=
+if not "%~4"=="" (
+    set PARAMS_FILE=%~4
+    if not exist "!PARAMS_FILE!" (
+        echo ERROR: Parameters file not found: !PARAMS_FILE!
+        exit /b 1
+    )
+)
+
 REM Get absolute paths
 for %%F in ("%INPUT_FILE%") do set INPUT_FILE_ABS=%%~fF
 for %%D in ("%OUTPUT_DIR%") do set OUTPUT_DIR_ABS=%%~fD
+if defined PARAMS_FILE (
+    for %%P in ("%PARAMS_FILE%") do set PARAMS_FILE_ABS=%%~fP
+)
 
 REM Get script directory (where this batch file is located)
 set SCRIPT_DIR=%~dp0
@@ -71,6 +83,7 @@ echo =================== >> "%LOG_FILE%"
 echo Input file: %INPUT_FILE_ABS% >> "%LOG_FILE%"
 echo Output directory: %OUTPUT_DIR_ABS% >> "%LOG_FILE%"
 echo MATLAB path: %MATLAB_PATH% >> "%LOG_FILE%"
+if defined PARAMS_FILE_ABS echo Parameters file: %PARAMS_FILE_ABS% >> "%LOG_FILE%"
 echo Start time: %DATE% %TIME% >> "%LOG_FILE%"
 echo. >> "%LOG_FILE%"
 
@@ -81,6 +94,8 @@ REM Also escape single quotes for MATLAB string literals
 set INPUT_FILE_ESC=%INPUT_FILE_ABS:'=''%
 set OUTPUT_DIR_ESC=%OUTPUT_DIR_ABS:'=''%
 set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ESC:\=/%', '%OUTPUT_DIR_ESC:\=/%'); exit
+if defined PARAMS_FILE_ABS set PARAMS_FILE_ESC=%PARAMS_FILE_ABS:'=''%
+if defined PARAMS_FILE_ABS set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addpath('%SCRIPT_DIR:\=/%'); run_matlab_vectorization('%INPUT_FILE_ESC:\=/%', '%OUTPUT_DIR_ESC:\=/%', '%PARAMS_FILE_ESC:\=/%'); exit
 
 echo Running MATLAB vectorization...
 echo Command: "%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%"

@@ -156,6 +156,167 @@ def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) ->
     return dist2 <= r_phys**2
 
 
+def _matlab_lumen_radius_range(
+    radius_smallest: float, radius_largest: float, scales_per_octave: float
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return MATLAB-aligned scale ordinates and lumen radii.
+
+    MATLAB defines ``scales_per_octave`` per doubling of the vessel radius cubed
+    and pads the requested range by one scale on each side so 4D extrema can be
+    detected during vertex extraction.
+    """
+    largest_per_smallest_volume_ratio = (radius_largest / radius_smallest) ** 3
+    final_scale = int(np.round(np.log2(largest_per_smallest_volume_ratio) * scales_per_octave))
+    scale_ordinates = np.arange(-1, final_scale + 2, dtype=float)
+    scale_factors = 2 ** (scale_ordinates / scales_per_octave / 3.0)
+    return scale_ordinates, radius_smallest * scale_factors
+
+
+def _matched_filter_derivative(
+    image: np.ndarray,
+    sigma_object: np.ndarray,
+    sigma_background: np.ndarray | None,
+    spherical_to_annular_ratio: float,
+    order: tuple[int, int, int],
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Evaluate a matched-kernel derivative in physical units."""
+    derivative = gaussian_filter(image, sigma=tuple(sigma_object), order=order)
+    if sigma_background is not None and spherical_to_annular_ratio < 1.0:
+        background = gaussian_filter(image, sigma=tuple(sigma_background), order=order)
+        derivative = spherical_to_annular_ratio * derivative + (
+            1.0 - spherical_to_annular_ratio
+        ) * (derivative - background)
+    scale = np.prod(np.power(microns_per_voxel, order))
+    if scale > 0:
+        derivative = derivative / scale
+    return derivative.astype(np.float32, copy=False)
+
+
+def _matlab_hessian_energy(
+    image: np.ndarray,
+    sigma_object: np.ndarray,
+    sigma_background: np.ndarray | None,
+    spherical_to_annular_ratio: float,
+    microns_per_voxel: np.ndarray,
+    energy_sign: float,
+) -> np.ndarray:
+    """Approximate MATLAB's curvature-weighted Hessian energy response."""
+    grad_y = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 0),
+        microns_per_voxel,
+    )
+    grad_x = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 0),
+        microns_per_voxel,
+    )
+    grad_z = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 1),
+        microns_per_voxel,
+    )
+    h_yy = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (2, 0, 0),
+        microns_per_voxel,
+    )
+    h_xx = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 2, 0),
+        microns_per_voxel,
+    )
+    h_zz = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 2),
+        microns_per_voxel,
+    )
+    h_yx = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 1, 0),
+        microns_per_voxel,
+    )
+    h_xz = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 1),
+        microns_per_voxel,
+    )
+    h_yz = _matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 1),
+        microns_per_voxel,
+    )
+
+    laplacian = h_yy + h_xx + h_zz
+    if energy_sign < 0:
+        valid = laplacian < 0
+        energy = np.full(image.shape, np.inf, dtype=np.float32)
+    else:
+        valid = laplacian > 0
+        energy = np.full(image.shape, -np.inf, dtype=np.float32)
+    if not np.any(valid):
+        return energy
+
+    grad_valid = np.stack([grad_y[valid], grad_x[valid], grad_z[valid]], axis=1).astype(np.float64)
+    hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
+    hessian_valid[:, 0, 0] = h_yy[valid]
+    hessian_valid[:, 0, 1] = h_yx[valid]
+    hessian_valid[:, 0, 2] = h_yz[valid]
+    hessian_valid[:, 1, 0] = h_yx[valid]
+    hessian_valid[:, 1, 1] = h_xx[valid]
+    hessian_valid[:, 1, 2] = h_xz[valid]
+    hessian_valid[:, 2, 0] = h_yz[valid]
+    hessian_valid[:, 2, 1] = h_xz[valid]
+    hessian_valid[:, 2, 2] = h_zz[valid]
+
+    eigvals, eigvecs = np.linalg.eigh(hessian_valid)
+    projections = np.einsum("ni,nik->nk", grad_valid, eigvecs)
+    denom = np.where(np.abs(eigvals) > 1e-12, eigvals, np.where(eigvals >= 0, 1e-12, -1e-12))
+    principal_energy = eigvals * np.exp(-0.5 * np.square(projections / denom))
+
+    if energy_sign < 0:
+        principal_energy[:, 2] = np.minimum(principal_energy[:, 2], 0.0)
+        energy_valid = principal_energy.sum(axis=1)
+        energy_valid[~np.isfinite(energy_valid)] = np.inf
+        energy_valid[energy_valid >= 0] = np.inf
+    else:
+        principal_energy[:, 0] = np.maximum(principal_energy[:, 0], 0.0)
+        energy_valid = principal_energy.sum(axis=1)
+        energy_valid[~np.isfinite(energy_valid)] = -np.inf
+        energy_valid[energy_valid <= 0] = -np.inf
+
+    energy[valid] = energy_valid.astype(np.float32, copy=False)
+    return energy
+
+
 def calculate_energy_field(
     image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
 ) -> dict[str, Any]:
@@ -214,12 +375,13 @@ def calculate_energy_field(
     microns_per_sigma_PSF = np.array(microns_per_sigma_PSF, dtype=float)
     pixels_per_sigma_PSF = microns_per_sigma_PSF / voxel_size
 
-    # Calculate scale range following MATLAB ordination
-    largest_per_smallest_ratio = radius_largest / radius_smallest
-    final_scale = int(np.floor(np.log2(largest_per_smallest_ratio) * scales_per_octave))
-    scale_ordinates = np.arange(0, final_scale + 1)
-    scale_factors = 2 ** (scale_ordinates / scales_per_octave)
-    lumen_radius_microns = radius_smallest * scale_factors
+    # Calculate scale range following MATLAB ordination.
+    _, lumen_radius_microns = _matlab_lumen_radius_range(
+        radius_smallest,
+        radius_largest,
+        scales_per_octave,
+    )
+    n_scales = len(lumen_radius_microns)
 
     # Convert radii to pixels per axis then average for scalar pixel radii
     lumen_radius_pixels_axes = lumen_radius_microns[:, None] / voxel_size[None, :]
@@ -237,7 +399,7 @@ def calculate_energy_field(
         margin = int(np.ceil(np.max(max_sigma)))
         lattice = get_chunking_lattice_func(image.shape, max_voxels, margin)
         if return_all_scales:
-            energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
         else:
             energy_3d = np.empty(image.shape, dtype=np.float32)
             scale_indices = np.empty(image.shape, dtype=np.int16)
@@ -297,7 +459,7 @@ def calculate_energy_field(
 
     if energy_method in ("frangi", "sato"):
         if return_all_scales:
-            energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
         if energy_sign < 0:
             energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
         else:
@@ -326,7 +488,7 @@ def calculate_energy_field(
     else:
         # Multi-scale energy calculation with per-scale PSF weighting
         if return_all_scales:
-            energy_4d = np.zeros((*image.shape, len(scale_factors)), dtype=np.float32)
+            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
         if energy_sign < 0:
             energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
         else:
@@ -343,6 +505,33 @@ def calculate_energy_field(
                 sigma_object = np.sqrt(sigma_scale**2 + pixels_per_sigma_PSF**2)
             else:
                 sigma_object = sigma_scale
+
+            if spherical_to_annular_ratio < 1.0:
+                annular_scale = sigma_scale * 1.5
+                if approximating_PSF:
+                    sigma_background = np.sqrt(annular_scale**2 + pixels_per_sigma_PSF**2)
+                else:
+                    sigma_background = annular_scale
+            else:
+                sigma_background = None
+
+            energy_scale = _matlab_hessian_energy(
+                image,
+                sigma_object,
+                sigma_background,
+                spherical_to_annular_ratio,
+                voxel_size,
+                energy_sign,
+            )
+            if return_all_scales:
+                energy_4d[:, :, :, scale_idx] = energy_scale
+            if energy_sign < 0:
+                mask = energy_scale < energy_3d
+            else:
+                mask = energy_scale > energy_3d
+            energy_3d[mask] = energy_scale[mask]
+            scale_indices[mask] = scale_idx
+            continue
 
             # Spherical (Gaussian) component
             smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
@@ -507,11 +696,11 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         microns_per_sigma_PSF = np.zeros(3, dtype=float)
 
     pixels_per_sigma_PSF = microns_per_sigma_PSF / microns_per_voxel
-    largest_per_smallest_ratio = radius_largest / radius_smallest
-    final_scale = int(np.floor(np.log2(largest_per_smallest_ratio) * scales_per_octave))
-    scale_ordinates = np.arange(0, final_scale + 1)
-    scale_factors = 2 ** (scale_ordinates / scales_per_octave)
-    lumen_radius_microns = radius_smallest * scale_factors
+    scale_ordinates, lumen_radius_microns = _matlab_lumen_radius_range(
+        radius_smallest,
+        radius_largest,
+        scales_per_octave,
+    )
     lumen_radius_pixels_axes = lumen_radius_microns[:, None] / microns_per_voxel[None, :]
     lumen_radius_pixels = lumen_radius_pixels_axes.mean(axis=1)
 
@@ -544,6 +733,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "return_all_scales": return_all_scales,
         "max_voxels": max_voxels,
         "margin": margin,
+        "scale_ordinates": scale_ordinates,
         "lumen_radius_microns": lumen_radius_microns,
         "lumen_radius_pixels": lumen_radius_pixels,
         "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
@@ -573,6 +763,24 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
         else:
             vesselness = sato(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
         return energy_sign * vesselness.astype(np.float32)
+
+    if config["spherical_to_annular_ratio"] < 1.0:
+        annular_scale = sigma_scale * 1.5
+        if config["approximating_PSF"]:
+            sigma_background = np.sqrt(annular_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
+        else:
+            sigma_background = annular_scale
+    else:
+        sigma_background = None
+
+    return _matlab_hessian_energy(
+        image,
+        sigma_object,
+        sigma_background,
+        config["spherical_to_annular_ratio"],
+        config["microns_per_voxel"],
+        energy_sign,
+    )
 
     smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
     if config["spherical_to_annular_ratio"] < 1.0:

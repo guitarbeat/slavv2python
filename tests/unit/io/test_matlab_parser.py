@@ -6,6 +6,7 @@ and parsing MATLAB vectorization output files.
 """
 
 import json
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -154,6 +155,28 @@ class TestExtractNetworkData:
 
         result = extract_network_stats(mat_data)
         assert result["strand_count"] == 3
+
+    def test_extract_network_stats_falls_back_to_strand_lengths(self):
+        """Test strand count fallback from network_statistics.strand_lengths."""
+        mat_data = {
+            "network_statistics": SimpleNamespace(strand_lengths=np.array([1.0, 2.0, 3.0])),
+        }
+
+        result = extract_network_stats(mat_data)
+
+        assert result["strand_count"] == 3
+        assert result["total_length_microns"] == 6.0
+
+    def test_extract_network_stats_falls_back_to_strands2vertices(self):
+        """Test strand count fallback from strands2vertices when num_strands is absent."""
+        mat_data = {
+            "network_statistics": SimpleNamespace(),
+            "strands2vertices": np.array([[1, 2], [2, 3], [3, 4], [4, 5]]),
+        }
+
+        result = extract_network_stats(mat_data)
+
+        assert result["strand_count"] == 4
 
 
 class TestLoadMatFileSafe:

@@ -22,7 +22,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Add project root to path
-project_root = Path(__file__).resolve().parent.parent.parent
+project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root / 'source'))
 
 from slavv.evaluation.comparison import load_parameters, orchestrate_comparison

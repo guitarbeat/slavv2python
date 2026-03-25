@@ -85,12 +85,14 @@ def test_run_matlab_cli_injection_bat(tmp_path):
     input_file.touch()
 
     output_dir = tmp_path / "output_dir"
+    params_file = tmp_path / "comparison params.json"
+    params_file.write_text("{}", encoding="utf-8")
     script = SCRIPT_DIR / "run_matlab_cli.bat"
 
     if not script.exists():
         pytest.fail(f"Script not found at {script}")
 
-    command = f'"{script}" "{input_file}" "{output_dir}" "{mock_matlab}"'
+    command = f'"{script}" "{input_file}" "{output_dir}" "{mock_matlab}" "{params_file}"'
     result = subprocess.run(
         command,
         capture_output=True,
@@ -109,6 +111,7 @@ def test_run_matlab_cli_injection_bat(tmp_path):
     content = log_file.read_text(encoding="utf-8")
 
     expected_input = str(input_file.resolve()).replace("\\", "/").replace("'", "''")
+    expected_params = str(params_file.resolve()).replace("\\", "/").replace("'", "''")
     expected_vectorization_dir = str(REPO_ROOT / "external" / "Vectorization-Public").replace(
         "\\", "/"
     )
@@ -116,5 +119,6 @@ def test_run_matlab_cli_injection_bat(tmp_path):
     assert "-wait -batch" in content
     assert expected_input in content
     assert f"run_matlab_vectorization('{expected_input}'," in content
+    assert expected_params in content
     assert f"cd('{expected_vectorization_dir}')" in content
     assert "workspace/external/Vectorization-Public" not in content

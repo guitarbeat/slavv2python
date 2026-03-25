@@ -24,6 +24,59 @@ class MATLABParseError(Exception):
     """Exception raised when MATLAB output parsing fails."""
 
 
+def _get_struct_value(obj: Any, name: str) -> Any:
+    """Safely fetch a MATLAB struct field."""
+    if obj is None or not hasattr(obj, name):
+        return None
+
+    value = getattr(obj, name)
+    if isinstance(value, np.ndarray) and value.size == 1:
+        return value.reshape(()).item()
+    if isinstance(value, np.ndarray) and value.ndim == 0:
+        return value.item()
+    return value
+
+
+def _count_items(value: Any) -> int:
+    """Count items for MATLAB arrays, including object arrays and row matrices."""
+    if value is None:
+        return 0
+    if isinstance(value, np.ndarray):
+        if value.size == 0:
+            return 0
+        if value.ndim == 0:
+            return 1
+        return int(value.shape[0])
+    try:
+        return len(value)
+    except TypeError:
+        return 1
+
+
+def _infer_strand_count(
+    mat_data: dict[str, Any], network_data: dict[str, Any], network_stats: Any | None
+) -> int:
+    """Infer strand count from MATLAB network outputs when num_strands is absent."""
+    explicit_count = _get_struct_value(network_stats, "num_strands")
+    if explicit_count:
+        return int(explicit_count)
+
+    strand_lengths = _get_struct_value(network_stats, "strand_lengths")
+    strand_lengths_count = _count_items(strand_lengths)
+    if strand_lengths_count > 0:
+        return strand_lengths_count
+
+    strands2vertices_count = _count_items(mat_data.get("strands2vertices"))
+    if strands2vertices_count > 0:
+        return strands2vertices_count
+
+    strand_count = len(network_data.get("strands", []))
+    if strand_count > 0:
+        return strand_count
+
+    return _count_items(mat_data.get("strand_subscripts"))
+
+
 def find_batch_folder(output_dir: Union[str, Path]) -> Path | None:
     """Find the most recent MATLAB batch folder in the output directory.
 
@@ -200,22 +253,14 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
     # Extract statistics
     if "network_statistics" in mat_data:
         ns = mat_data["network_statistics"]
-
-        # Helper to extract scalar or array
-        def get_val(obj, name):
-            if hasattr(obj, name):
-                val = getattr(obj, name)
-                if isinstance(val, np.ndarray) and val.size == 1:
-                    return val.item()
-                # Handle 0-d arrays
-                if isinstance(val, np.ndarray) and val.ndim == 0:
-                    return val.item()
-                return val
-            return None
-
-        network_data["stats"]["strand_count"] = get_val(ns, "num_strands") or 0
-        network_data["stats"]["total_length_microns"] = get_val(ns, "length") or 0.0
-        network_data["stats"]["mean_radius_microns"] = get_val(ns, "strand_ave_radii")
+        network_data["stats"]["strand_count"] = _infer_strand_count(mat_data, network_data, ns)
+        total_length = _get_struct_value(ns, "length")
+        if total_length in (None, 0, 0.0):
+            strand_lengths = _get_struct_value(ns, "strand_lengths")
+            if isinstance(strand_lengths, np.ndarray) and strand_lengths.size > 0:
+                total_length = float(np.sum(strand_lengths))
+        network_data["stats"]["total_length_microns"] = total_length or 0.0
+        network_data["stats"]["mean_radius_microns"] = _get_struct_value(ns, "strand_ave_radii")
 
         # Handle mean radius being an array
         mr = network_data["stats"]["mean_radius_microns"]
@@ -223,6 +268,8 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
             network_data["stats"]["mean_radius_microns"] = (
                 float(np.mean(mr)) if mr.size > 0 else 0.0
             )
+    elif "strand_subscripts" in mat_data or "strands2vertices" in mat_data:
+        network_data["stats"]["strand_count"] = _infer_strand_count(mat_data, network_data, None)
 
     return network_data
 
@@ -231,9 +278,12 @@ def extract_network_stats(mat_data: dict[str, Any]) -> dict[str, Any]:
     """Extract network statistics from MATLAB data. Returns a flat stats dict."""
     net = extract_network_data(mat_data)
     stats = net.get("stats", {})
+    strand_count = stats.get("strand_count")
+    if not strand_count:
+        strand_count = len(net.get("strands", []))
     # Ensure expected keys with defaults
     return {
-        "strand_count": stats.get("strand_count", len(net.get("strands", []))),
+        "strand_count": strand_count,
         "total_length_microns": stats.get("total_length_microns", 0.0),
         "mean_radius_microns": stats.get("mean_radius_microns", 0.0),
     }

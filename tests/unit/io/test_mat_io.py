@@ -1,5 +1,6 @@
-"""Consolidated tests for MAT file I/O."""
+"""Consolidated tests for MAT and JSON network I/O."""
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -102,3 +103,36 @@ def test_load_empty_mat_network_shapes(tmp_path: Path) -> None:
     assert network.vertices.shape == (0, 3)
     assert network.edges.shape == (0, 2)
     assert network.radii is None
+
+
+def test_json_export_handles_numpy_scalars_and_paths(tmp_path: Path) -> None:
+    """Test JSON export sanitizes numpy scalars nested inside object containers."""
+    processing_results = {
+        "vertices": {
+            "positions": np.array([[0, 0, 0]], dtype=np.int32),
+            "energies": np.array([np.float32(-1.0)]),
+            "radii": np.array([np.float32(1.5)]),
+        },
+        "edges": {
+            "connections": np.array([[np.int32(0), np.int32(0)]], dtype=object),
+            "traces": [np.array([[0, 0, 0], [1, 1, 1]], dtype=np.int32)],
+            "metadata": {"best_scale": np.int32(3)},
+        },
+        "network": {
+            "strands": [np.array([np.int32(0)], dtype=object)],
+            "bifurcations": np.array([np.int32(0)], dtype=np.int32),
+            "adjacency": {np.int32(0): {np.int32(1), np.int32(2)}},
+            "graph_edges": {np.int32(0): (np.int32(3), np.int32(4))},
+        },
+        "parameters": {"threshold": np.float32(0.5), "path": Path("nested") / "output"},
+    }
+
+    out_path = tmp_path / "network.json"
+    NetworkVisualizer().export_network_data(processing_results, out_path, format="json")
+
+    exported = json.loads(out_path.read_text(encoding="utf-8"))
+    assert exported["edges"]["metadata"]["best_scale"] == 3
+    assert exported["network"]["bifurcations"] == [0]
+    assert sorted(exported["network"]["adjacency"]["0"]) == [1, 2]
+    assert exported["network"]["graph_edges"]["0"] == [3, 4]
+    assert exported["parameters"]["path"] == str(Path("nested") / "output")
