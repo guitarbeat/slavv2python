@@ -16,6 +16,7 @@ interface, and MATLAB comparison helpers.
 | `external/Vectorization-Public/` | Upstream MATLAB SLAVV checkout, when populated locally |
 | `MATLAB_MAPPING.md` | Notes on MATLAB-to-Python mapping decisions |
 | `EXPERIMENTS_REVIEW.md` | Review notes for experiment assets and repo state |
+| `CHANGELOG.md` | Recent project changes and release-style notes |
 | `pyproject.toml` | Package metadata and tool configuration |
 
 ## Installation
