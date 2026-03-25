@@ -182,14 +182,24 @@ def _matched_filter_derivative(
 ) -> np.ndarray:
     """Evaluate a matched-kernel derivative in physical units."""
     derivative = gaussian_filter(image, sigma=tuple(sigma_object), order=order)
+    spacing_scale = np.prod(np.power(microns_per_voxel, order))
+    if spacing_scale > 0:
+        derivative = derivative / spacing_scale
+    sigma_object_physical = np.asarray(sigma_object, dtype=float) * microns_per_voxel
+    object_normalization = np.prod(np.power(sigma_object_physical, order))
+    if object_normalization > 0:
+        derivative = derivative * object_normalization
     if sigma_background is not None and spherical_to_annular_ratio < 1.0:
         background = gaussian_filter(image, sigma=tuple(sigma_background), order=order)
+        if spacing_scale > 0:
+            background = background / spacing_scale
+        sigma_background_physical = np.asarray(sigma_background, dtype=float) * microns_per_voxel
+        background_normalization = np.prod(np.power(sigma_background_physical, order))
+        if background_normalization > 0:
+            background = background * background_normalization
         derivative = spherical_to_annular_ratio * derivative + (
             1.0 - spherical_to_annular_ratio
         ) * (derivative - background)
-    scale = np.prod(np.power(microns_per_voxel, order))
-    if scale > 0:
-        derivative = derivative / scale
     return derivative.astype(np.float32, copy=False)
 
 

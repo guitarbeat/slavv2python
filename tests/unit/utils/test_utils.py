@@ -29,6 +29,7 @@ def test_validate_parameters_defaults():
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
     assert validated["energy_sign"] == -1.0
+    assert validated["max_edge_length_per_origin_radius"] == 60.0
 
 
 def test_validate_parameters_invalid():

@@ -6,6 +6,7 @@ and parsing MATLAB vectorization output files.
 """
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -83,6 +84,11 @@ class TestExtractVertices:
 
         assert result["count"] == 3
         assert result["positions"].shape == (3, 4)
+        assert result["positions"][:, :3].tolist() == [
+            [29, 9, 19],
+            [34, 14, 24],
+            [39, 19, 29],
+        ]
 
     def test_extract_vertices_with_radii(self):
         """Test extraction of vertex radii."""
@@ -120,6 +126,20 @@ class TestExtractEdges:
 
         assert result["count"] == 3
         assert result["connections"].shape == (3, 2)
+
+    def test_extract_edges_normalizes_trace_coordinates(self):
+        """Trace coordinates should be normalized to Python voxel order."""
+        mat_data = {
+            "edge_space_subscripts": np.array(
+                [np.array([[10, 20, 30, 1], [11, 21, 31, 1]])],
+                dtype=object,
+            )
+        }
+
+        result = extract_edges(mat_data)
+
+        assert len(result["traces"]) == 1
+        assert result["traces"][0][:, :3].tolist() == [[29, 9, 19], [30, 10, 20]]
 
     def test_extract_edges_with_lengths(self):
         """Test extraction of edge lengths."""
@@ -288,6 +308,35 @@ class TestLoadMatlabBatchResults:
             "wrapper_mode": "batch",
             "matlab_version": "R2019a",
         }
+
+    def test_load_batch_prefers_curated_vectors(self, tmp_path):
+        """Curated MATLAB vector files should take precedence for final comparisons."""
+        batch_folder = tmp_path / "batch_250127-120000"
+        vectors_dir = batch_folder / "vectors"
+        batch_folder.mkdir()
+        vectors_dir.mkdir()
+
+        raw_vertices = vectors_dir / "vertices_250127-120000_demo.mat"
+        curated_vertices = vectors_dir / "curated_vertices_250127-120000_demo.mat"
+        raw_edges = vectors_dir / "edges_250127-120000_demo.mat"
+        curated_edges = vectors_dir / "curated_edges_250127-120000_demo.mat"
+        network = vectors_dir / "network_250127-120000_demo.mat"
+        for path in (raw_vertices, curated_vertices, raw_edges, curated_edges, network):
+            path.write_text("placeholder", encoding="utf-8")
+
+        with patch("slavv.io.matlab_parser.load_mat_file_safe") as mock_load:
+            mock_load.side_effect = [
+                {"vertex_space_subscripts": np.array([[1, 2, 3]])},
+                {"edges2vertices": np.array([[1, 2]])},
+                {"strand_subscripts": np.array([], dtype=object)},
+            ]
+            result = load_matlab_batch_results(batch_folder)
+
+        loaded_paths = [Path(path).name for path in result["files"]]
+        assert loaded_paths[0] == curated_vertices.name
+        assert loaded_paths[1] == curated_edges.name
+        assert result["vertices"]["count"] == 1
+        assert result["edges"]["count"] == 1
 
 
 class TestIntegrationScenarios:

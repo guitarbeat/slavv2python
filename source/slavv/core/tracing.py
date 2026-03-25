@@ -107,6 +107,33 @@ def _suppress_vertices_matlab_style(
     return keep_mask
 
 
+def _crop_vertices_matlab_style(
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    vertex_energies: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Remove boundary-touching and extreme-scale vertices like MATLAB."""
+    if len(vertex_positions) == 0:
+        return vertex_positions, vertex_scales, vertex_energies
+
+    radii = np.round(lumen_radius_pixels_axes[vertex_scales]).astype(int)
+    shape = np.asarray(image_shape, dtype=int)
+    excluded = (
+        (vertex_positions[:, 0] + radii[:, 0] > shape[0] - 1)
+        | (vertex_positions[:, 1] + radii[:, 1] > shape[1] - 1)
+        | (vertex_positions[:, 2] + radii[:, 2] > shape[2] - 1)
+        | (vertex_positions[:, 0] - radii[:, 0] < 0)
+        | (vertex_positions[:, 1] - radii[:, 1] < 0)
+        | (vertex_positions[:, 2] - radii[:, 2] < 0)
+        | (vertex_scales == 0)
+        | (vertex_scales == len(lumen_radius_pixels_axes) - 1)
+    )
+    keep = ~excluded
+    return vertex_positions[keep], vertex_scales[keep], vertex_energies[keep]
+
+
 def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:
     """Check if the floored position lies within array bounds."""
     # Optimization for 3D case which is the bottleneck in tracing
@@ -238,6 +265,12 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = np.asarray(
+        energy_data.get(
+            "lumen_radius_pixels_axes",
+            np.repeat(np.asarray(lumen_radius_pixels)[:, None], 3, axis=1),
+        )
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
 
@@ -280,6 +313,13 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
     vertex_positions = vertex_positions[keep_mask]
     vertex_scales = vertex_scales[keep_mask]
     vertex_energies = vertex_energies[keep_mask]
+    vertex_positions, vertex_scales, vertex_energies = _crop_vertices_matlab_style(
+        vertex_positions,
+        vertex_scales,
+        vertex_energies,
+        lumen_radius_pixels_axes,
+        energy.shape,
+    )
 
     logger.info(f"Extracted {len(vertex_positions)} vertices")
 
@@ -512,6 +552,19 @@ def trace_edge(
             next_pos_x = current_pos_x + current_dir_x * step_size
             next_pos_z = current_pos_z + current_dir_z * step_size
 
+            if not all(
+                math.isfinite(value)
+                for value in (
+                    next_pos_y,
+                    next_pos_x,
+                    next_pos_z,
+                    current_dir_y,
+                    current_dir_x,
+                    current_dir_z,
+                )
+            ):
+                return trace
+
             if discrete_steps:
                 # Rounding logic for discrete steps
                 r_next_pos_y = round(next_pos_y)
@@ -630,6 +683,13 @@ def trace_edge(
                 current_dir_y *= inv_norm
                 current_dir_x *= inv_norm
                 current_dir_z *= inv_norm
+            else:
+                return trace
+
+            if not all(
+                math.isfinite(value) for value in (current_dir_y, current_dir_x, current_dir_z)
+            ):
+                return trace
 
         # Check if we've reached a vertex (use vertex_image for O(1) lookup if available)
         if vertex_image is not None:
@@ -685,7 +745,7 @@ def extract_edges(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_edge_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -728,7 +788,7 @@ def extract_edges(
             continue
         start_radius = lumen_radius_pixels[start_scale]
         step_size = start_radius * step_size_ratio
-        max_length = start_radius * length_ratio
+        max_length = start_radius * max_edge_length_ratio
         max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
 
         if direction_method == "hessian":
@@ -893,6 +953,12 @@ def extract_vertices_resumable(
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = np.asarray(
+        energy_data.get(
+            "lumen_radius_pixels_axes",
+            np.repeat(np.asarray(lumen_radius_pixels)[:, None], 3, axis=1),
+        )
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
@@ -998,6 +1064,13 @@ def extract_vertices_resumable(
     vertex_positions = vertex_positions[keep_mask].astype(np.float32)
     vertex_scales = vertex_scales[keep_mask].astype(np.int16)
     vertex_energies = vertex_energies[keep_mask].astype(np.float32)
+    vertex_positions, vertex_scales, vertex_energies = _crop_vertices_matlab_style(
+        vertex_positions,
+        vertex_scales,
+        vertex_energies,
+        lumen_radius_pixels_axes,
+        energy.shape,
+    )
     radii_pixels = lumen_radius_pixels[vertex_scales].astype(np.float32)
     radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
     stage_controller.update(
@@ -1068,7 +1141,7 @@ def extract_edges_resumable(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_edge_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -1124,7 +1197,7 @@ def extract_edges_resumable(
         if edges_per_vertex[vertex_idx] < max_edges_per_vertex:
             start_radius = lumen_radius_pixels[start_scale]
             step_size = start_radius * step_size_ratio
-            max_length = start_radius * length_ratio
+            max_length = start_radius * max_edge_length_ratio
             max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
             if direction_method == "hessian":
                 directions = estimate_vessel_directions(
