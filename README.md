@@ -2,24 +2,10 @@
 
 Python reimplementation of SLAVV (Segmentation-Less, Automated, Vascular
 Vectorization) for 3D vascular network extraction from microscopy volumes.
-This repository ships the core library, a Streamlit UI, a command-line
-interface, and MATLAB comparison helpers.
+This repository contains the package code, Streamlit app, CLI, MATLAB import
+helpers, and parity/comparison tooling used to validate the port.
 
-## Repository layout
-
-| Path | Description |
-| --- | --- |
-| `source/slavv/` | Core package code, including processing, I/O, analysis, and visualization |
-| `source/slavv/apps/` | User-facing entry points such as the CLI and Streamlit app |
-| `tests/` | Unit, integration, UI, and diagnostic coverage |
-| `workspace/scripts/cli/` | MATLAB comparison scripts and helper wrappers |
-| `external/Vectorization-Public/` | Upstream MATLAB SLAVV checkout, when populated locally |
-| `MATLAB_MAPPING.md` | Notes on MATLAB-to-Python mapping decisions |
-| `EXPERIMENTS_REVIEW.md` | Review notes for experiment assets and repo state |
-| `CHANGELOG.md` | Recent project changes and release-style notes |
-| `pyproject.toml` | Package metadata and tool configuration |
-
-## Installation
+## Quick Start
 
 1. Create and activate a virtual environment:
 
@@ -31,44 +17,50 @@ python -m venv .venv
 2. Install the package for the workflow you need:
 
 ```powershell
-# Core library only
 pip install -e .
-
-# Streamlit app support
 pip install -e ".[app]"
-
-# Development tooling plus the app
 pip install -e ".[app,dev]"
 ```
 
 The `slavv-app` launcher requires the `app` extra because it depends on
 Streamlit.
 
-## Launching the app
+## Repository Layout
 
-After installing `.[app]`, start the UI with either of these commands:
+| Path | Description |
+| --- | --- |
+| `source/slavv/` | Core package code, including processing, I/O, analysis, visualization, and CLI/app entry points |
+| `tests/` | Unit, integration, UI, regression, and diagnostic coverage |
+| `workspace/scripts/cli/` | MATLAB comparison wrappers and other repo-local helper scripts |
+| `docs/` | Maintained reference docs for MATLAB mapping and comparison run layout |
+| `external/Vectorization-Public/` | Upstream MATLAB SLAVV checkout, when populated locally |
+| `CHANGELOG.md` | Recent project changes and development notes |
+| `AGENTS.md` | Repository guidance for coding agents working in this repo |
+| `pyproject.toml` | Package metadata and tool configuration |
 
-```powershell
-slavv-app
-```
-
-```powershell
-python -m streamlit run source/slavv/apps/web_app.py
-```
-
-Open the local URL printed by Streamlit in your browser.
-
-## CLI usage
+## Common Commands
 
 Use the packaged CLI for headless or scripted workflows:
 
 ```powershell
 slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
+slavv run -i volume.tif -o slavv_output --checkpoint-dir checkpoints
 slavv import-matlab -b path\to\batch_260210-101213 -c my_checkpoints
 ```
 
-## Programmatic usage
+The `slavv import-matlab` workflow imports staged MATLAB batches into
+pipeline-compatible checkpoints, including curated vertex/edge artifacts and
+the MATLAB HDF5 energy sidecar when present.
+
+After installing `.[app]`, start the UI with either of these commands:
+
+```powershell
+slavv-app
+python -m streamlit run source/slavv/apps/web_app.py
+```
+
+## Programmatic Usage
 
 ```python
 from slavv import SLAVVProcessor
@@ -80,15 +72,15 @@ print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
 ```
 
-## MATLAB comparison helpers
+## MATLAB Import And Parity Workflows
 
 Validate the local comparison surface first:
 
 ```powershell
-pytest tests/diagnostic/test_comparison_setup.py
+python -m pytest tests/diagnostic/test_comparison_setup.py
 ```
 
-Run the comparison helper script from the repository root:
+Run the MATLAB/Python comparison helper from the repository root:
 
 ```powershell
 python workspace/scripts/cli/compare_matlab_python.py `
@@ -97,7 +89,17 @@ python workspace/scripts/cli/compare_matlab_python.py `
     --output-dir comparison_output
 ```
 
-## Testing and checks
+Generated comparison runs should follow the staged layout documented in
+[`docs/COMPARISON_LAYOUT.md`](docs/COMPARISON_LAYOUT.md): `01_Input`,
+`02_Output`, `03_Analysis`, and `99_Metadata`.
+
+As of March 26, 2026, exact vertex parity under MATLAB-energy control is in
+place. Remaining parity work is concentrated in edge cleanup and downstream
+strand construction rather than low-level candidate tracing. See
+[`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) for the current mapping and
+parity status.
+
+## Testing And Checks
 
 Fast verification:
 
@@ -119,11 +121,21 @@ The current mypy gate is intentionally scoped to the packaged entry points.
 Broader package-wide typing is still in progress, so new type-check coverage
 should expand deliberately rather than claiming full-package enforcement.
 
+## Documentation
+
+Detailed docs that support the parity workflow now live under `docs/`:
+
+| File | Purpose |
+| --- | --- |
+| [`docs/README.md`](docs/README.md) | Doc index and repository-reference entry point |
+| [`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) | High-level MATLAB-to-Python module mapping and current parity status |
+| [`docs/COMPARISON_LAYOUT.md`](docs/COMPARISON_LAYOUT.md) | Canonical staged layout for MATLAB/Python comparison runs |
+
 ## Contributing
 
 - Keep package code under `source/slavv/`.
 - Keep tests under `tests/` and use the existing `unit`, `integration`, `ui`,
-  and `diagnostic` markers.
+  `diagnostic`, `slow`, and `regression` markers.
 - Prefer type hints for new or modified public functions.
 - Use `logging` in library code instead of `print()`.
 - Preserve MATLAB parity where practical and add deterministic regression tests

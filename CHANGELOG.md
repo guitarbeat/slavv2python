@@ -8,7 +8,7 @@ cuts.
 
 ## Unreleased
 
-Recent work landed between 2026-03-21 and 2026-03-24.
+Recent work landed between 2026-03-21 and 2026-03-26.
 
 ### Added
 
@@ -32,6 +32,12 @@ Recent work landed between 2026-03-21 and 2026-03-24.
 - Repository-local agent workflow guidance in `AGENTS.md`.
 - `slavv-app` launcher support and Python 3.12 CI updates.
 - Share-report export support in the evaluation app.
+- Real MATLAB HDF5 energy import for `slavv import-matlab`, producing
+  pipeline-compatible checkpoints instead of placeholder energy payloads.
+- A parity-only MATLAB-style frontier tracer for comparison runs that use
+  MATLAB-origin energy and `comparison_exact_network`.
+- Repository reference docs under `docs/`, including the refreshed MATLAB
+  mapping and comparison layout guides.
 
 ### Changed
 
@@ -43,6 +49,10 @@ Recent work landed between 2026-03-21 and 2026-03-24.
   the repo-root `external/Vectorization-Public` checkout.
 - Comparison outputs are increasingly normalized around staged run folders such
   as `01_Input`, `02_Output`, `03_Analysis`, and `99_Metadata`.
+- `slavv import-matlab` now prefers curated MATLAB vertices and edges when both
+  curated and raw artifacts are present in a batch.
+- Comparison summaries and reports now surface the actual Python energy source
+  and frontier-specific tracing diagnostics during parity runs.
 
 ### Fixed
 
@@ -52,9 +62,17 @@ Recent work landed between 2026-03-21 and 2026-03-24.
 - Manifest timing fallback behavior for staged comparison runs.
 - Linux launcher-path test expectations.
 - CI lint failures while restoring MATLAB shell-launcher coverage.
+- Validation now preserves parity-sensitive parameters such as
+  `comparison_exact_network` and `space_strel_apothem_edges`.
+- MATLAB-energy tracing no longer fails primarily as a dangling-path problem;
+  frontier runs now produce terminal candidates consistently, shifting the
+  remaining gap into edge cleanup and strand construction.
 
 ### Notes
 
 - Commit `11f8445` on 2026-03-24 mostly expands test coverage for the MATLAB
   restart flow; the primary implementation work for restartable MATLAB
   comparison runs landed in `afed6e1` on 2026-03-23.
+- As of 2026-03-26, the MATLAB-energy control reaches exact vertex parity and
+  improved edge parity (`1349` Python vs `1379` MATLAB), but exact edge and
+  strand parity still remain open.

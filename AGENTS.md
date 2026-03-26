@@ -14,6 +14,7 @@ Repository guidance for coding agents working in `slavv2python`.
 - `source/slavv/`: core package code, including processing, I/O, analysis, visualization, and app entry points
 - `tests/`: unit, integration, UI, benchmark, and diagnostic coverage
 - `workspace/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
+- `docs/`: maintained reference docs for MATLAB mapping, parity notes, and comparison run layout
 - `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
 - `make.ps1`: Windows helper for common dev tasks
 - `Makefile`: Unix-style helper; useful on POSIX shells, but prefer `make.ps1` on Windows
