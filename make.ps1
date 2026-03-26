@@ -20,7 +20,7 @@ function Lint-Code {
 
 function Typecheck-Code {
     Write-Host "Typechecking code..."
-    python -m mypy source
+    python -m mypy
 }
 
 function Run-Tests {

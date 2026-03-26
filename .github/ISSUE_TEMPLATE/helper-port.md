@@ -13,8 +13,8 @@ assignees: ''
 
 ## Python target
 
-- Proposed module: `slavv-streamlit/src/vectorization_core.py` | `slavv-streamlit/src/io_utils.py` | `slavv-streamlit/src/visualization.py` | other
-- Mapping doc entry: add/expand in `docs/MATLAB_TO_PYTHON_MAPPING.md`
+- Proposed module: `source/slavv/core/*.py` | `source/slavv/io/*.py` | `source/slavv/visualization/*.py` | other
+- Mapping doc entry: add/expand in `docs/MATLAB_MAPPING.md`
 
 ## Scope
 

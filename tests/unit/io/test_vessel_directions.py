@@ -1,11 +1,6 @@
-import pathlib
-import sys
 from unittest.mock import patch
 
 import numpy as np
-
-# Add source path for imports
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / "slavv-streamlit" / "src"))
 
 from slavv.core import SLAVVProcessor
 

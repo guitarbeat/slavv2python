@@ -46,3 +46,42 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
     # Updated to reflect sparse implementation behavior (greedy tracing linearization).
     assert len(network["strands"]) >= 1
     assert len(network["mismatched_strands"]) == 0
+
+
+def test_construct_network_parity_emits_matlab_shaped_strands():
+    processor = SLAVVProcessor()
+    vertices = {
+        "positions": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0],
+                [3.0, 0.0, 0.0],
+                [2.0, 1.0, 0.0],
+            ],
+            dtype=float,
+        ),
+    }
+    edges = {
+        "connections": np.array(
+            [
+                [0, 1],
+                [1, 2],
+                [2, 3],
+                [2, 4],
+            ],
+            dtype=np.int32,
+        ),
+        "traces": [
+            np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
+            np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
+            np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
+            np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
+        ],
+    }
+
+    network = processor.construct_network(edges, vertices, {"comparison_exact_network": True})
+
+    assert network["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
+    assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
+    assert network["mismatched_strands"] == []

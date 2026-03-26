@@ -227,6 +227,37 @@ def test_choose_edges_filters_nonterminal_duplicates_and_antiparallel():
     assert chosen["diagnostics"]["antiparallel_pair_count"] == 1
 
 
+def test_choose_edges_prefers_shorter_equal_energy_duplicate():
+    vertex_positions = np.array([[1, 1, 1], [1, 5, 1]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    long_trace = np.array([[1, 1, 1], [1, 2, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
+    short_trace = np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
+    candidates = {
+        "traces": [long_trace, short_trace],
+        "connections": np.array([[0, 1], [0, 1]], dtype=np.int32),
+        "metrics": np.array([-5.0, -5.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+        ],
+        "scale_traces": [np.zeros(4, dtype=np.int16), np.zeros(3, dtype=np.int16)],
+        "origin_indices": np.array([0, 0], dtype=np.int32),
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1]]
+    assert np.array_equal(chosen["traces"][0], short_trace)
+    assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
+
+
 def test_choose_edges_prunes_degree_excess_and_cycles():
     vertex_positions = np.array(
         [[1, 1, 1], [1, 5, 1], [5, 5, 1], [5, 1, 1]],

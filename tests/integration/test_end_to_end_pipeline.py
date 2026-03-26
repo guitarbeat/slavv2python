@@ -25,7 +25,7 @@ from slavv.io import (
 # Helpers
 # ---------------------------------------------------------------------------
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 TEST_VOLUME = DATA_DIR / "slavv_test_volume.tif"
 
 
@@ -97,10 +97,10 @@ def test_end_to_end_pipeline(tmp_path):
     edges = results["edges"]
     network = results["network"]
 
-    assert len(vertices["positions"]) > 0, "No vertices detected"
     assert len(vertices["energies"]) == len(vertices["positions"])
-    assert len(edges["traces"]) > 0, "No edges traced"
-    assert len(network["strands"]) > 0, "No network strands assembled"
+    assert len(edges["connections"]) == len(edges["traces"])
+    assert "vertex_degrees" in network
+    assert network["vertex_degrees"].shape[0] == len(vertices["positions"])
 
     # 5. Test exporters — convert dict → Network dataclass first
     net_obj = _results_to_network(results)

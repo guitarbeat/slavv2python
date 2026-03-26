@@ -973,7 +973,9 @@ def _prune_frontier_indices_beyond_found_vertices(
     if len(candidate_coords) == 0 or not displacement_vectors:
         return candidate_coords
 
-    vectors_from_origin = candidate_coords.astype(np.float64) * microns_per_voxel - origin_position_microns
+    vectors_from_origin = (
+        candidate_coords.astype(np.float64) * microns_per_voxel - origin_position_microns
+    )
     indices_beyond = np.zeros((len(candidate_coords),), dtype=bool)
     for displacement in displacement_vectors:
         indices_beyond |= np.sum(displacement * vectors_from_origin, axis=1) > 1.0
@@ -1025,14 +1027,10 @@ def _resolve_frontier_edge_connection(
     parent_1 = parent_path[:bifurcation_index]
     parent_2 = parent_path[bifurcation_index + 1 :]
     parent_1_energy = (
-        _path_max_energy_from_linear_indices(parent_1, energy, shape)
-        if parent_1
-        else float("-inf")
+        _path_max_energy_from_linear_indices(parent_1, energy, shape) if parent_1 else float("-inf")
     )
     parent_2_energy = (
-        _path_max_energy_from_linear_indices(parent_2, energy, shape)
-        if parent_2
-        else float("-inf")
+        _path_max_energy_from_linear_indices(parent_2, energy, shape) if parent_2 else float("-inf")
     )
     better_half = 0 if parent_1_energy <= parent_2_energy else 1
     origin_vertex_idx = (parent_terminal, parent_origin)[better_half]
@@ -1059,7 +1057,9 @@ def _trace_origin_edges_matlab_frontier(
     strel_apothem = int(
         params.get(
             "space_strel_apothem_edges",
-            params.get("space_strel_apothem", max(1, round(params.get("step_size_per_origin_radius", 1.0)))),
+            params.get(
+                "space_strel_apothem", max(1, round(params.get("step_size_per_origin_radius", 1.0)))
+            ),
         )
     )
     offsets, offset_distances = _matlab_frontier_offsets(strel_apothem, microns_per_voxel)
@@ -1094,10 +1094,15 @@ def _trace_origin_edges_matlab_frontier(
 
     current_linear = origin_linear
 
-    while len(edge_paths_linear) < max_edges_per_vertex and len(previous_indices_visited) < max_number_of_indices:
+    while (
+        len(edge_paths_linear) < max_edges_per_vertex
+        and len(previous_indices_visited) < max_number_of_indices
+    ):
         current_coord = _matlab_linear_index_to_coord(current_linear, shape)
         current_energy = float(energy[current_coord[0], current_coord[1], current_coord[2]])
-        terminal_vertex_idx = int(vertex_center_image[current_coord[0], current_coord[1], current_coord[2]]) - 1
+        terminal_vertex_idx = (
+            int(vertex_center_image[current_coord[0], current_coord[1], current_coord[2]]) - 1
+        )
         if terminal_vertex_idx == origin_vertex_idx:
             terminal_vertex_idx = -1
 
@@ -1148,7 +1153,9 @@ def _trace_origin_edges_matlab_frontier(
             path_linear = [current_linear]
             tracing_linear = current_linear
             while int(pointer_index_map.get(tracing_linear, 0)) > 0:
-                tracing_linear = previous_indices_visited[int(pointer_index_map[tracing_linear]) - 1]
+                tracing_linear = previous_indices_visited[
+                    int(pointer_index_map[tracing_linear]) - 1
+                ]
                 path_linear.append(tracing_linear)
 
             for path_index in path_linear[:-1]:
@@ -1236,7 +1243,9 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
     unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]
     unit_connections = np.asarray(unit_payload["connections"], dtype=np.int32).reshape(-1, 2)
     unit_metrics = np.asarray(unit_payload["metrics"], dtype=np.float32).reshape(-1)
-    unit_origin_indices = np.asarray(unit_payload.get("origin_indices", []), dtype=np.int32).reshape(-1)
+    unit_origin_indices = np.asarray(
+        unit_payload.get("origin_indices", []), dtype=np.int32
+    ).reshape(-1)
 
     target["traces"].extend(unit_traces)
     target["energy_traces"].extend(
@@ -1585,8 +1594,12 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    order = np.argsort(metrics[filtered_indices], kind="stable")
-    ordered = filtered_indices[order]
+    edge_lengths = np.asarray(
+        [len(np.asarray(energy_traces[index])) for index in filtered_indices],
+        dtype=np.int32,
+    )
+    length_sorted = filtered_indices[np.argsort(edge_lengths, kind="stable")]
+    ordered = length_sorted[np.argsort(metrics[length_sorted], kind="stable")]
 
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []
@@ -1757,7 +1770,13 @@ def estimate_vessel_directions(
     # Compute Hessian in the local patch and extract center values
     hessian_elems = [
         h * (radius**2)
-        for h in feature.hessian_matrix(patch, sigma=sigma, mode="nearest", order="rc")
+        for h in feature.hessian_matrix(
+            patch,
+            sigma=sigma,
+            mode="nearest",
+            order="rc",
+            use_gaussian_derivatives=False,
+        )
     ]
     patch_center = tuple(np.array(patch.shape) // 2)
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]

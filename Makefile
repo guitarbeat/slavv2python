@@ -11,7 +11,7 @@ lint:
 	python -m ruff check source tests --fix
 
 typecheck:
-	python -m mypy source
+	python -m mypy
 
 test:
 	python -m pytest tests/

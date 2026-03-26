@@ -78,7 +78,6 @@ python -m mypy
 Notes:
 
 - The current supported mypy gate is the repo-root `python -m mypy` command.
-- `make.ps1 typecheck` and `make typecheck` still run `python -m mypy source`, which is broader than the currently documented release gate.
 
 Tests:
 
