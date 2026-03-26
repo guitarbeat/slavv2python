@@ -38,6 +38,8 @@ Recent work landed between 2026-03-21 and 2026-03-26.
   MATLAB-origin energy and `comparison_exact_network`.
 - Repository reference docs under `docs/`, including the refreshed MATLAB
   mapping and comparison layout guides.
+- Workspace-local maintenance scripts and tooling snapshots grouped under
+  `workspace/scripts/maintenance/` and `workspace/reports/tooling/`.
 
 ### Changed
 

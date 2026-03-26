@@ -123,6 +123,6 @@ the scope of the maintained Python package:
 - backups and superseded variants
 - ad-hoc utilities that are replaced by the Python CLI or notebook workflows
 
-Run `python check_mapped.py` from the repository root if you need a generated
-appendix of upstream `.m` files that are not mentioned explicitly in this
-document.
+Run `python workspace/scripts/maintenance/check_mapped.py` from the repository
+root if you need a generated appendix of upstream `.m` files that are not
+mentioned explicitly in this document.

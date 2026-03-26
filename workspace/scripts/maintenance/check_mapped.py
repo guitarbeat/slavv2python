@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[3]
 MAPPING_PATH = REPO_ROOT / "docs" / "MATLAB_MAPPING.md"
 MATLAB_DIR = REPO_ROOT / "external" / "Vectorization-Public" / "source"
 APPENDIX_HEADER = "## Appendix: Unmapped MATLAB Files"

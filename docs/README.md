@@ -23,4 +23,6 @@ project metadata:
 
 ## Related Utilities
 
-- `check_mapped.py` updates the unmapped-file appendix in `MATLAB_MAPPING.md`.
+- `workspace/scripts/maintenance/check_mapped.py` updates the unmapped-file appendix in `MATLAB_MAPPING.md`.
+- `workspace/scripts/maintenance/find_matlab_scripts.py` lists upstream MATLAB scripts that are not declared as functions.
+- `workspace/reports/tooling/` stores archived linter and test-output snapshots that were moved out of the repository root.

@@ -31,7 +31,8 @@ Streamlit.
 | --- | --- |
 | `source/slavv/` | Core package code, including processing, I/O, analysis, visualization, and CLI/app entry points |
 | `tests/` | Unit, integration, UI, regression, and diagnostic coverage |
-| `workspace/scripts/cli/` | MATLAB comparison wrappers and other repo-local helper scripts |
+| `workspace/scripts/` | MATLAB comparison wrappers and maintenance helpers |
+| `workspace/reports/` | Archived tooling snapshots and other repo-local reference artifacts |
 | `docs/` | Maintained reference docs for MATLAB mapping and comparison run layout |
 | `external/Vectorization-Public/` | Upstream MATLAB SLAVV checkout, when populated locally |
 | `CHANGELOG.md` | Recent project changes and development notes |
@@ -130,6 +131,9 @@ Detailed docs that support the parity workflow now live under `docs/`:
 | [`docs/README.md`](docs/README.md) | Doc index and repository-reference entry point |
 | [`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) | High-level MATLAB-to-Python module mapping and current parity status |
 | [`docs/COMPARISON_LAYOUT.md`](docs/COMPARISON_LAYOUT.md) | Canonical staged layout for MATLAB/Python comparison runs |
+
+Repo-local maintenance helpers and archived tooling snapshots now live under
+`workspace/scripts/maintenance/` and `workspace/reports/tooling/`.
 
 ## Contributing
 
