@@ -174,6 +174,31 @@ def generate_summary(run_dir: Path, output_file: Path):
             f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
             f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
         )
+        if any(
+            key in edge_diag
+            for key in (
+                "terminal_direct_hit_count",
+                "terminal_reverse_center_hit_count",
+                "terminal_reverse_near_hit_count",
+            )
+        ):
+            lines.append(
+                "Terminal resolution direct/reverse-center/reverse-near: "
+                f"{int(edge_diag.get('terminal_direct_hit_count', 0)):,}/"
+                f"{int(edge_diag.get('terminal_reverse_center_hit_count', 0)):,}/"
+                f"{int(edge_diag.get('terminal_reverse_near_hit_count', 0)):,}"
+            )
+        stop_reason_counts = edge_diag.get("stop_reason_counts", {})
+        if stop_reason_counts:
+            lines.append(
+                "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: "
+                f"{int(stop_reason_counts.get('bounds', 0)):,}/"
+                f"{int(stop_reason_counts.get('nan', 0)):,}/"
+                f"{int(stop_reason_counts.get('energy_threshold', 0)):,}/"
+                f"{int(stop_reason_counts.get('energy_rise_step_halving', 0)):,}/"
+                f"{int(stop_reason_counts.get('max_steps', 0)):,}/"
+                f"{int(stop_reason_counts.get('direct_terminal_hit', 0)):,}"
+            )
         lines.append("")
 
     # Status/notes

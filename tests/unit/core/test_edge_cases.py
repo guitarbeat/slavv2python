@@ -3,7 +3,12 @@ import pytest
 
 # Add source path for imports
 from slavv.core import SLAVVProcessor
-from slavv.core.tracing import _choose_edges_matlab_style, extract_vertices
+from slavv.core.tracing import (
+    _choose_edges_matlab_style,
+    _finalize_traced_edge,
+    extract_vertices,
+    paint_vertex_center_image,
+)
 
 
 def test_extract_handles_no_vertices():
@@ -75,6 +80,111 @@ def test_vertex_extraction_uses_matlab_paint_selection():
 
     assert len(vertices["positions"]) == 1
     assert np.allclose(vertices["positions"][0], [5, 5, 5])
+
+
+def test_finalize_traced_edge_attaches_terminal_at_final_center_hit():
+    vertex_positions = np.array([[2, 2, 2], [2, 5, 2]], dtype=np.float32)
+    center_image = paint_vertex_center_image(vertex_positions, (8, 8, 8))
+
+    final_trace, metadata = _finalize_traced_edge(
+        np.array([[2, 2, 2], [2, 4, 2], [2, 5, 2]], dtype=np.float32),
+        stop_reason="max_steps",
+        direct_terminal_vertex=None,
+        vertex_center_image=center_image,
+        vertex_positions=vertex_positions,
+        vertex_scales=np.zeros(2, dtype=np.int16),
+        lumen_radius_microns=np.ones(2, dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        origin_vertex=0,
+    )
+
+    assert metadata["terminal_vertex"] == 1
+    assert metadata["terminal_resolution"] == "direct_hit"
+    assert np.allclose(final_trace[-1], vertex_positions[1])
+
+
+def test_finalize_traced_edge_recovers_reverse_center_hit_on_long_trace():
+    vertex_positions = np.array([[2, 2, 2], [2, 5, 2]], dtype=np.float32)
+    center_image = paint_vertex_center_image(vertex_positions, (9, 9, 9))
+
+    final_trace, metadata = _finalize_traced_edge(
+        np.array([[2, 2, 2], [2, 4, 2], [2, 5, 2], [2, 6, 2], [2, 7, 2]], dtype=np.float32),
+        stop_reason="bounds",
+        direct_terminal_vertex=None,
+        vertex_center_image=center_image,
+        vertex_positions=vertex_positions,
+        vertex_scales=np.zeros(2, dtype=np.int16),
+        lumen_radius_microns=np.ones(2, dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        origin_vertex=0,
+    )
+
+    assert metadata["terminal_vertex"] == 1
+    assert metadata["terminal_resolution"] == "reverse_center_hit"
+    assert np.allclose(final_trace[-1], vertex_positions[1])
+
+
+def test_finalize_traced_edge_recovers_terminal_from_near_vertex_fallback():
+    vertex_positions = np.array([[2, 2, 2], [2, 5, 2]], dtype=np.float32)
+    center_image = paint_vertex_center_image(vertex_positions, (8, 8, 8))
+
+    final_trace, metadata = _finalize_traced_edge(
+        np.array([[2, 2, 2], [2, 3, 2], [2, 4, 2]], dtype=np.float32),
+        stop_reason="max_steps",
+        direct_terminal_vertex=None,
+        vertex_center_image=center_image,
+        vertex_positions=vertex_positions,
+        vertex_scales=np.zeros(2, dtype=np.int16),
+        lumen_radius_microns=np.array([1.1, 1.1], dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        origin_vertex=0,
+    )
+
+    assert metadata["terminal_vertex"] == 1
+    assert metadata["terminal_resolution"] == "reverse_near_hit"
+    assert np.allclose(final_trace[-1], vertex_positions[1])
+
+
+def test_finalize_traced_edge_ignores_reentry_into_origin_vertex():
+    vertex_positions = np.array([[2, 2, 2], [2, 5, 2]], dtype=np.float32)
+    center_image = paint_vertex_center_image(vertex_positions, (8, 8, 8))
+
+    final_trace, metadata = _finalize_traced_edge(
+        np.array([[2, 2, 2], [2, 3, 2], [2, 2, 2]], dtype=np.float32),
+        stop_reason="bounds",
+        direct_terminal_vertex=None,
+        vertex_center_image=center_image,
+        vertex_positions=vertex_positions,
+        vertex_scales=np.zeros(2, dtype=np.int16),
+        lumen_radius_microns=np.array([0.5, 0.5], dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        origin_vertex=0,
+    )
+
+    assert metadata["terminal_vertex"] is None
+    assert metadata["terminal_resolution"] is None
+    assert len(final_trace) == 3
+
+
+def test_finalize_traced_edge_keeps_truly_unresolved_trace_dangling():
+    vertex_positions = np.array([[2, 2, 2], [2, 6, 2]], dtype=np.float32)
+    center_image = paint_vertex_center_image(vertex_positions, (10, 10, 10))
+
+    final_trace, metadata = _finalize_traced_edge(
+        np.array([[2, 2, 2], [2, 3, 2], [2, 4, 2]], dtype=np.float32),
+        stop_reason="energy_threshold",
+        direct_terminal_vertex=None,
+        vertex_center_image=center_image,
+        vertex_positions=vertex_positions,
+        vertex_scales=np.zeros(2, dtype=np.int16),
+        lumen_radius_microns=np.array([0.5, 0.5], dtype=np.float32),
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+        origin_vertex=0,
+    )
+
+    assert metadata["terminal_vertex"] is None
+    assert metadata["terminal_resolution"] is None
+    assert len(final_trace) == 3
 
 
 def test_choose_edges_filters_nonterminal_duplicates_and_antiparallel():

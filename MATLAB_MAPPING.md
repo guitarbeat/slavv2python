@@ -56,8 +56,8 @@
 
 | MATLAB File | Python File | Status | Notes |
 |---|---|---|---|
-| `choose_edges_V200.m` | `core/tracing.py` | 🔀 | Candidate cleanup exists, but final chosen-edge parity is not yet exact on the real comparison volume. |
-| `get_edges_V200.m` | `core/tracing.py` | 🔀 | |
+| `choose_edges_V200.m` | `core/tracing.py` | 🔀 | Candidate cleanup exists, and MATLAB-energy parity work now routes terminal resolution through MATLAB-style center hits plus tolerant endpoint fallback. |
+| `get_edges_V200.m` | `core/tracing.py` | 🔀 | MATLAB-energy parity is currently gated on exact terminal attachment and candidate tracing behavior rather than the comparison harness. |
 | `add_vertices_to_edges.m` | `core/tracing.py` | 🔀 | |
 | `clean_edges.m` | `core/tracing.py` | 🔀 | |
 | `clean_edges_cycles.m` | `core/tracing.py` | 🔀 | |

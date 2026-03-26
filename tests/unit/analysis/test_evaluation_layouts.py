@@ -157,6 +157,56 @@ def test_generate_summary_falls_back_to_nested_counts(tmp_path: Path):
     assert "682" in summary
 
 
+def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    analysis_dir = run_dir / "03_Analysis"
+    matlab_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    (matlab_dir / "batch_260210-100526").mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    report = {
+        "edges": {
+            "diagnostics": {
+                "python": {
+                    "candidate_traced_edge_count": 10,
+                    "terminal_edge_count": 3,
+                    "chosen_edge_count": 2,
+                    "dangling_edge_count": 7,
+                    "duplicate_directed_pair_count": 1,
+                    "antiparallel_pair_count": 0,
+                    "negative_energy_rejected_count": 4,
+                    "conflict_rejected_count": 5,
+                    "degree_pruned_count": 6,
+                    "orphan_pruned_count": 7,
+                    "cycle_pruned_count": 8,
+                    "terminal_direct_hit_count": 9,
+                    "terminal_reverse_center_hit_count": 10,
+                    "terminal_reverse_near_hit_count": 11,
+                    "stop_reason_counts": {
+                        "bounds": 12,
+                        "nan": 13,
+                        "energy_threshold": 14,
+                        "energy_rise_step_halving": 15,
+                        "max_steps": 16,
+                        "direct_terminal_hit": 17,
+                    },
+                }
+            }
+        }
+    }
+    (analysis_dir / "comparison_report.json").write_text(json.dumps(report), encoding="utf-8")
+
+    output_file = analysis_dir / "summary.txt"
+    generate_summary(run_dir, output_file)
+    summary = output_file.read_text(encoding="utf-8")
+
+    assert "Terminal resolution direct/reverse-center/reverse-near: 9/10/11" in summary
+    assert "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: 12/13/14/15/16/17" in summary
+
+
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"

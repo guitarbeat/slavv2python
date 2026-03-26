@@ -49,3 +49,43 @@ def test_extract_edges_regression(mock_generate_directions):
     assert diagnostics["candidate_traced_edge_count"] == 2
     assert diagnostics["dangling_edge_count"] == 2
     assert diagnostics["chosen_edge_count"] == 0
+
+
+@patch(
+    "slavv.core.tracing.estimate_vessel_directions",
+    return_value=np.array([[0.0, 1.0, 0.0]], dtype=float),
+)
+def test_extract_edges_recovers_near_terminal_attachment(mock_generate_directions):
+    energy = -np.ones((7, 7, 7), dtype=float)
+
+    energy_data = {
+        "energy": energy,
+        "lumen_radius_pixels": np.array([1.0], dtype=float),
+        "lumen_radius_microns": np.array([1.1], dtype=float),
+        "lumen_radius_pixels_axes": np.array([[1.0, 1.0, 1.0]], dtype=float),
+        "energy_sign": -1.0,
+    }
+    vertices = {
+        "positions": np.array([[3.0, 0.0, 3.0], [3.0, 4.0, 3.0]], dtype=float),
+        "scales": np.array([0, 0], dtype=int),
+    }
+    params = {
+        "number_of_edges_per_vertex": 1,
+        "step_size_per_origin_radius": 1.5,
+        "max_edge_length_per_origin_radius": 3.0,
+        "microns_per_voxel": [1.0, 1.0, 1.0],
+    }
+
+    processor = SLAVVProcessor()
+    edges = processor.extract_edges(energy_data, vertices, params)
+    diagnostics = edges["diagnostics"]
+
+    assert edges["connections"].tolist() == [[0, 1]]
+    assert np.allclose(edges["traces"][0][-1], vertices["positions"][1])
+    assert diagnostics["candidate_traced_edge_count"] == 2
+    assert diagnostics["terminal_edge_count"] == 1
+    assert diagnostics["dangling_edge_count"] == 1
+    assert diagnostics["chosen_edge_count"] == 1
+    assert diagnostics["terminal_reverse_near_hit_count"] == 1
+    assert diagnostics["stop_reason_counts"]["max_steps"] == 1
+    assert diagnostics["stop_reason_counts"]["bounds"] == 1
