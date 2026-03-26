@@ -34,20 +34,34 @@ def test_process_image_requires_3d():
         processor.process_image(img2d, {})
 
 
-def test_vertex_extraction_uses_fixed_voxel_suppression_not_radius_overlap():
-    energy = np.zeros((8, 8, 8), dtype=np.float32)
+def test_vertex_extraction_uses_matlab_paint_selection():
+    energy = np.zeros((12, 12, 12), dtype=np.float32)
     scale_indices = np.zeros_like(energy, dtype=np.int16)
 
-    energy[2, 2, 2] = -5.0
-    energy[5, 2, 2] = -4.0
-    scale_indices[2, 2, 2] = 10
-    scale_indices[5, 2, 2] = 10
+    energy[5, 5, 5] = -5.0
+    energy[6, 5, 5] = -4.0
+    scale_indices[5, 5, 5] = 2
+    scale_indices[6, 5, 5] = 2
 
     energy_data = {
         "energy": energy,
         "scale_indices": scale_indices,
-        "lumen_radius_pixels": np.linspace(1.0, 12.0, 16, dtype=np.float32),
-        "lumen_radius_microns": np.linspace(1.0, 12.0, 16, dtype=np.float32),
+        "lumen_radius_pixels": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
+        "lumen_radius_pixels_axes": np.tile(
+            np.array(
+                [
+                    [0.5, 0.5, 0.5],
+                    [0.8, 0.8, 0.8],
+                    [1.0, 1.0, 1.0],
+                    [1.4, 1.4, 1.4],
+                    [1.8, 1.8, 1.8],
+                    [2.2, 2.2, 2.2],
+                ],
+                dtype=np.float32,
+            ),
+            (1, 1),
+        ),
+        "lumen_radius_microns": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
         "energy_sign": -1.0,
     }
     params = {
@@ -59,4 +73,5 @@ def test_vertex_extraction_uses_fixed_voxel_suppression_not_radius_overlap():
 
     vertices = extract_vertices(energy_data, params)
 
-    assert len(vertices["positions"]) == 2
+    assert len(vertices["positions"]) == 1
+    assert np.allclose(vertices["positions"][0], [5, 5, 5])

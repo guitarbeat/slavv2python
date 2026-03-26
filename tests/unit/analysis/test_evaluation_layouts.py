@@ -58,6 +58,22 @@ def test_load_run_info_normalizes_staged_input_path(tmp_path: Path):
     assert info["path"] == run_dir
 
 
+def test_resolve_run_layout_normalizes_result_subdirectories(tmp_path: Path):
+    run_dir = tmp_path / "20260209_173550_full_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    matlab_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+
+    matlab_layout = resolve_run_layout(matlab_dir)
+    python_layout = resolve_run_layout(python_dir)
+
+    assert matlab_layout["run_root"] == run_dir
+    assert matlab_layout["matlab_dir"] == matlab_dir
+    assert python_layout["run_root"] == run_dir
+    assert python_layout["python_dir"] == python_dir
+
+
 def test_list_runs_returns_run_roots_for_staged_layout(tmp_path: Path):
     run_with_report = tmp_path / "20260209_173134_full_run"
     (run_with_report / "03_Analysis").mkdir(parents=True)

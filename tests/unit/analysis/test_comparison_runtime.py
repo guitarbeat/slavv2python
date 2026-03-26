@@ -5,7 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from slavv.evaluation.comparison import discover_matlab_artifacts, orchestrate_comparison
+from slavv.evaluation.comparison import (
+    discover_matlab_artifacts,
+    orchestrate_comparison,
+    run_standalone_comparison,
+)
 from slavv.evaluation.management import generate_manifest
 from slavv.runtime import RunContext, load_run_snapshot
 
@@ -154,3 +158,63 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert Path(
         snapshot.optional_tasks["comparison_analysis"].artifacts["comparison_report"]
     ).exists()
+
+
+def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkeypatch):
+    import slavv.evaluation.comparison as comparison_module
+
+    run_dir = tmp_path / "comparison_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    batch_dir = matlab_dir / "batch_260323-190000"
+    batch_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+
+    (python_dir / "python_comparison_parameters.json").write_text("{}", encoding="utf-8")
+    (python_dir / "network.json").write_text(
+        json.dumps(
+            {
+                "vertices": {"positions": [[0, 0, 0]]},
+                "edges": {"connections": [[0, 0]], "traces": []},
+                "network": {"strands": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {
+            "vertices": {"count": 1, "positions": []},
+            "edges": {"count": 0, "connections": [], "traces": []},
+            "network": {"strands": []},
+            "network_stats": {"strand_count": 0},
+        }
+
+    captured = {}
+
+    def fake_compare_results(_matlab_results, python_results, _matlab_parsed):
+        captured["python_results"] = python_results
+        return {
+            "matlab": {"elapsed_time": 0.0},
+            "python": {"elapsed_time": 0.0},
+            "performance": {},
+            "vertices": {"matlab_count": 1, "python_count": 1},
+            "edges": {"matlab_count": 0, "python_count": 0},
+            "network": {"matlab_strand_count": 0, "python_strand_count": 0},
+            "parity_gate": {"vertices_exact": True, "edges_exact": True, "strands_exact": True},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+
+    result = run_standalone_comparison(matlab_dir, python_dir, run_dir, tmp_path)
+
+    assert result == 0
+    assert captured["python_results"]["vertices_count"] == 1
+    assert "results" in captured["python_results"]

@@ -499,6 +499,7 @@ def orchestrate_comparison(
                 "vertices": comparison.get("vertices", {}),
                 "edges": comparison.get("edges", {}),
                 "network": comparison.get("network", {}),
+                "parity_gate": comparison.get("parity_gate", {}),
             }
             json.dump(
                 report,
@@ -596,11 +597,15 @@ def run_standalone_comparison(
     python_results = {"success": True, "output_dir": str(python_dir), "elapsed_time": 0.0}
 
     # Load python results
-    # Try finding python_comparison_*.json
+    # Try finding exported Python result JSON. Ignore parameter-only files.
     # Check root of python dir
     python_layout = resolve_run_layout(python_dir)
     python_root = python_layout["python_dir"]
-    json_files = glob.glob(str(python_root / "python_comparison_*.json"))
+    json_files = [
+        path
+        for path in glob.glob(str(python_root / "python_comparison_*.json"))
+        if not path.endswith("_parameters.json")
+    ]
 
     if json_files:
         # Load the latest one
@@ -713,6 +718,7 @@ def run_standalone_comparison(
             "vertices": comparison.get("vertices", {}),
             "edges": comparison.get("edges", {}),
             "network": comparison.get("network", {}),
+            "parity_gate": comparison.get("parity_gate", {}),
         }
         json.dump(
             report,

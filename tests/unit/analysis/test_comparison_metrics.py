@@ -56,13 +56,15 @@ def test_match_vertices_uses_xyz_and_applies_threshold():
 
 def test_compare_vertices_reports_matching_and_distance_stats():
     matlab = _vertex_payload(
-        positions=[[10, 20, 30, 1], [15, 25, 35, 2], [20, 30, 40, 3]],
+        positions=[[10, 20, 30], [15, 25, 35], [20, 30, 40]],
         radii=[2.5, 3.0, 3.5],
     )
+    matlab["scales"] = np.array([1, 2, 3])
     python = _vertex_payload(
-        positions=[[10.5, 20.5, 30.5, 9], [15.5, 25.5, 35.5, 9], [20.5, 30.5, 40.5, 9]],
+        positions=[[10.5, 20.5, 30.5], [15.5, 25.5, 35.5], [20.5, 30.5, 40.5]],
         radii=[2.6, 3.1, 3.6],
     )
+    python["scales"] = np.array([1, 2, 3])
 
     result = compare_vertices(matlab, python)
 
@@ -76,13 +78,15 @@ def test_compare_vertices_reports_matching_and_distance_stats():
 
 def test_compare_vertices_reports_unmatched_counts():
     matlab = _vertex_payload(
-        positions=[[0, 0, 0, 1], [1, 1, 1, 2], [100, 100, 100, 3]],
+        positions=[[0, 0, 0], [1, 1, 1], [100, 100, 100]],
         radii=[1.0, 2.0, 3.0],
     )
+    matlab["scales"] = np.array([1, 2, 3])
     python = _vertex_payload(
-        positions=[[0.1, 0.1, 0.1, 1], [1.1, 1.1, 1.1, 2]],
+        positions=[[0.1, 0.1, 0.1], [1.1, 1.1, 1.1]],
         radii=[1.1, 2.1],
     )
+    python["scales"] = np.array([1, 2])
 
     result = compare_vertices(matlab, python)
 
@@ -94,13 +98,15 @@ def test_compare_vertices_reports_unmatched_counts():
 
 def test_compare_vertices_tolerates_nan_radii():
     matlab = _vertex_payload(
-        positions=[[10, 10, 10, 1], [20, 20, 20, 2]],
+        positions=[[10, 10, 10], [20, 20, 20]],
         radii=[2.5, np.nan],
     )
+    matlab["scales"] = np.array([1, 2])
     python = _vertex_payload(
-        positions=[[10, 10, 10, 1], [20, 20, 20, 2]],
+        positions=[[10, 10, 10], [20, 20, 20]],
         radii=[2.5, 3.0],
     )
+    python["scales"] = np.array([1, 2])
 
     result = compare_vertices(matlab, python)
 
@@ -156,14 +162,25 @@ def test_compare_results_includes_performance_and_nested_metrics():
         "edges_count": 1,
         "network_strands_count": 1,
         "results": {
-            "vertices": _vertex_payload([[0, 0, 0, 1], [1, 1, 1, 2]], [1.0, 2.0]),
-            "edges": {"count": 1, "traces": [np.array([[0, 0, 0], [1, 0, 0]])]},
+            "vertices": {
+                **_vertex_payload([[0, 0, 0], [1, 1, 1]], [1.0, 2.0]),
+                "scales": np.array([1, 2]),
+            },
+            "edges": {
+                "count": 1,
+                "connections": np.array([[0, 1]]),
+                "traces": [np.array([[0, 0, 0], [1, 0, 0]])],
+            },
             "network": {"strands": [[0, 1]]},
         },
     }
     matlab_parsed = {
-        "vertices": _vertex_payload([[0, 0, 0, 1], [1, 1, 1, 2]], [1.0, 2.0]),
-        "edges": {"count": 1, "traces": [], "total_length": 1.0},
+        "vertices": {
+            **_vertex_payload([[0, 0, 0], [1, 1, 1]], [1.0, 2.0]),
+            "scale_indices": np.array([1, 2]),
+        },
+        "edges": {"count": 1, "connections": np.array([[0, 1]]), "traces": [], "total_length": 1.0},
+        "network": {"strands_to_vertices": [[0, 1]]},
         "network_stats": {"strand_count": 1},
     }
 
@@ -177,6 +194,7 @@ def test_compare_results_includes_performance_and_nested_metrics():
     assert "vertices" in result
     assert "edges" in result
     assert "network" in result
+    assert result["parity_gate"]["passed"]
 
 
 def test_compare_results_infers_missing_top_level_counts_from_payloads():
@@ -194,6 +212,7 @@ def test_compare_results_infers_missing_top_level_counts_from_payloads():
     matlab_parsed = {
         "vertices": {"positions": np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])},
         "edges": {"connections": np.array([[0, 1]])},
+        "network": {"strands_to_vertices": [[0, 1], [1, 2], [2, 3], [3, 4]]},
         "network_stats": {"strand_count": 4},
     }
 
@@ -207,6 +226,38 @@ def test_compare_results_infers_missing_top_level_counts_from_payloads():
     assert result["python"]["network_strands_count"] == 2
     assert result["vertices"]["python_count"] == 2
     assert result["edges"]["python_count"] == 2
+
+
+def test_compare_results_reports_exact_mismatch_samples():
+    matlab_results = {"success": True, "elapsed_time": 5.0}
+    python_results = {
+        "success": True,
+        "elapsed_time": 4.0,
+        "results": {
+            "vertices": {"positions": np.array([[0, 0, 0]]), "scales": np.array([1])},
+            "edges": {
+                "connections": np.array([[0, 1]]),
+                "traces": [np.array([[0, 0, 0], [0, 0, 1]])],
+            },
+            "network": {"strands": [[0, 1]]},
+        },
+    }
+    matlab_parsed = {
+        "vertices": {"positions": np.array([[0, 0, 1]]), "scale_indices": np.array([1])},
+        "edges": {
+            "connections": np.array([[0, 1]]),
+            "traces": [np.array([[0, 0, 0], [0, 1, 0]])],
+        },
+        "network": {"strands_to_vertices": [[0, 2]]},
+        "network_stats": {"strand_count": 1},
+    }
+
+    result = compare_results(matlab_results, python_results, matlab_parsed)
+
+    assert not result["parity_gate"]["passed"]
+    assert result["vertices"]["matlab_only_samples"]
+    assert result["edges"]["matlab_only_samples"]
+    assert result["network"]["matlab_only_samples"]
 
 
 def test_compare_results_skips_nested_metrics_without_parsed_data():

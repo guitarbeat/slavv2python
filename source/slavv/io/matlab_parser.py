@@ -53,6 +53,50 @@ def _count_items(value: Any) -> int:
         return 1
 
 
+def _normalize_space_subscripts(value: Any) -> np.ndarray:
+    """Convert MATLAB 1-based `[y, x, z]` voxel subscripts into Python coordinates."""
+    array = np.asarray(value)
+    if array.size == 0:
+        return np.array([])
+    if array.ndim == 1:
+        array = array.reshape(1, -1)
+    try:
+        normalized = array.astype(np.float32, copy=True)
+    except (TypeError, ValueError):
+        return array
+    if normalized.shape[1] >= 3:
+        normalized[:, :3] -= 1.0
+        normalized[:, :3] = normalized[:, [2, 1, 0]]
+    return normalized
+
+
+def _normalize_index_array(value: Any) -> np.ndarray:
+    """Convert MATLAB 1-based index arrays into 0-based integer arrays."""
+    array = np.asarray(value)
+    if array.size == 0:
+        return np.array([])
+    try:
+        normalized = array.astype(np.int32, copy=True)
+    except (TypeError, ValueError):
+        return np.array([])
+    if np.min(normalized) >= 1:
+        normalized -= 1
+    return normalized
+
+
+def _normalize_trace_cells(space_subs: Any) -> list[np.ndarray]:
+    """Normalize MATLAB cell-array edge/strand traces."""
+    if isinstance(space_subs, np.ndarray) and space_subs.dtype == object:
+        return [
+            _normalize_space_subscripts(trace)
+            for trace in space_subs
+            if trace is not None and np.asarray(trace).size > 0
+        ]
+    if isinstance(space_subs, np.ndarray) and space_subs.size > 0:
+        return [_normalize_space_subscripts(space_subs)]
+    return []
+
+
 def _infer_strand_count(
     mat_data: dict[str, Any], network_data: dict[str, Any], network_stats: Any | None
 ) -> int:
@@ -136,7 +180,7 @@ def extract_vertices(mat_data: dict[str, Any]) -> dict[str, np.ndarray]:
 
     # Check for root-level arrays (common in this dataset)
     if "vertex_space_subscripts" in mat_data:
-        positions = np.array(mat_data["vertex_space_subscripts"])
+        positions = _normalize_space_subscripts(mat_data["vertex_space_subscripts"])
         if positions.ndim == 1 and positions.size > 0:
             positions = positions.reshape(-1, 1)
         vertices_info["positions"] = positions
@@ -144,7 +188,7 @@ def extract_vertices(mat_data: dict[str, Any]) -> dict[str, np.ndarray]:
 
         # Handle scales/radii
         if "vertex_scale_subscripts" in mat_data:
-            scale_indices = np.array(mat_data["vertex_scale_subscripts"])
+            scale_indices = _normalize_index_array(mat_data["vertex_scale_subscripts"])
             vertices_info["scale_indices"] = scale_indices
 
             # Try to map to radii if range is available
@@ -156,22 +200,22 @@ def extract_vertices(mat_data: dict[str, Any]) -> dict[str, np.ndarray]:
                     # But scipy.io might load them as is.
                     # Let's assume 1-based if coming from Matlab.
                     # Actually, let's check min value.
-                    if np.min(scale_indices) >= 1:
-                        vertices_info["radii"] = radii_range[scale_indices.astype(int) - 1]
-                    else:
-                        vertices_info["radii"] = radii_range[scale_indices.astype(int)]
+                    vertices_info["radii"] = radii_range[scale_indices.astype(int)]
 
     # Fallback to struct-based extraction
     elif "vertex" in mat_data or "vertices" in mat_data:
         vertex_struct = mat_data.get("vertex", mat_data.get("vertices"))
         if hasattr(vertex_struct, "space_subscripts"):
-            positions = np.array(vertex_struct.space_subscripts)
+            positions = _normalize_space_subscripts(vertex_struct.space_subscripts)
             vertices_info["positions"] = positions
             vertices_info["count"] = positions.shape[0] if positions.size > 0 else 0
         elif hasattr(vertex_struct, "positions"):
-            positions = np.array(vertex_struct.positions)
+            positions = _normalize_space_subscripts(vertex_struct.positions)
             vertices_info["positions"] = positions
             vertices_info["count"] = positions.shape[0] if positions.size > 0 else 0
+
+        if hasattr(vertex_struct, "scale_subscripts"):
+            vertices_info["scale_indices"] = _normalize_index_array(vertex_struct.scale_subscripts)
 
         if hasattr(vertex_struct, "radii"):
             vertices_info["radii"] = np.array(vertex_struct.radii)
@@ -186,39 +230,24 @@ def extract_edges(mat_data: dict[str, Any]) -> dict[str, Any]:
 
     # Check for root-level arrays
     if "edges2vertices" in mat_data:
-        indices = np.array(mat_data["edges2vertices"])
-        # Matlab indices are 1-based, convert to 0-based
-        if indices.size > 0 and np.min(indices) >= 1:
-            indices = indices - 1
+        indices = _normalize_index_array(mat_data["edges2vertices"])
         edges_info["connections"] = indices
         edges_info["count"] = indices.shape[0] if indices.size > 0 else 0
 
     if "edge_space_subscripts" in mat_data:
-        space_subs = mat_data["edge_space_subscripts"]
-        if isinstance(space_subs, np.ndarray):
-            if space_subs.dtype == object:
-                edges_info["traces"] = [
-                    np.array(t) if t is not None else np.array([]) for t in space_subs
-                ]
-            else:
-                edges_info["traces"] = [space_subs]  # Single edge?
+        edges_info["traces"] = _normalize_trace_cells(mat_data["edge_space_subscripts"])
 
     # Fallback to struct-based
     if edges_info["count"] == 0:
         edge_struct = mat_data.get("edge", mat_data.get("edges"))
         if edge_struct is not None:
             if hasattr(edge_struct, "vertices"):
-                indices = np.array(edge_struct.vertices)
-                # Check for 1-based indexing heuristic
-                if indices.size > 0 and np.min(indices) >= 1:
-                    indices = indices - 1
+                indices = _normalize_index_array(edge_struct.vertices)
                 edges_info["connections"] = indices
                 edges_info["count"] = indices.shape[0]
 
             if hasattr(edge_struct, "space_subscripts"):
-                space_subs = edge_struct.space_subscripts
-                if isinstance(space_subs, np.ndarray) and space_subs.dtype == object:
-                    edges_info["traces"] = [np.array(t) for t in space_subs if t is not None]
+                edges_info["traces"] = _normalize_trace_cells(edge_struct.space_subscripts)
 
     logger.info(f"Extracted {edges_info['count']} edges")
     return edges_info
@@ -230,25 +259,21 @@ def extract_network_data(mat_data: dict[str, Any]) -> dict[str, Any]:
 
     # Extract strands (topology)
     if "strand_subscripts" in mat_data:
-        strands = mat_data["strand_subscripts"]
-        if isinstance(strands, np.ndarray):
-            # Handle object array (cell array)
-            if strands.dtype == object:
-                # Filter out None and empty arrays
-                # Do NOT flatten coordinate arrays (N, 4) -> keep them as is
-                network_data["strands"] = [
-                    np.array(s) if s is not None and s.size > 0 else np.array([]) for s in strands
-                ]
-                # Filter out empty entries
-                network_data["strands"] = [s for s in network_data["strands"] if s.size > 0]
-            else:
-                # Single array or different format
-                network_data["strands"] = [strands]
+        network_data["strands"] = _normalize_trace_cells(mat_data["strand_subscripts"])
     elif "strand" in mat_data:
         # Alternative key used by some MATLAB outputs
         s = mat_data["strand"]
         if isinstance(s, np.ndarray) and s.size > 0:
-            network_data["strands"] = [np.array(x) for x in s] if s.dtype == object else [s]
+            network_data["strands"] = _normalize_trace_cells(s)
+
+    if "strands2vertices" in mat_data:
+        strands_to_vertices = _normalize_index_array(mat_data["strands2vertices"])
+        if strands_to_vertices.size > 0:
+            if strands_to_vertices.ndim == 1:
+                strands_to_vertices = strands_to_vertices.reshape(1, -1)
+            network_data["strands_to_vertices"] = [
+                [int(value) for value in row if int(value) >= 0] for row in strands_to_vertices
+            ]
 
     # Extract statistics
     if "network_statistics" in mat_data:
@@ -338,8 +363,10 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
             elif v:
                 target[k] = v
 
-    # 1. Load Vertices
-    v_files = list(vectors_dir.glob("vertices_*.mat"))
+    # 1. Load Vertices (prefer curated/final artifacts when available)
+    v_files = list(vectors_dir.glob("curated_vertices_*.mat")) or list(
+        vectors_dir.glob("vertices_*.mat")
+    )
     if v_files:
         f = v_files[-1]
         logger.info(f"Loading vertices: {f.name}")
@@ -349,8 +376,8 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
             merge_info(results["vertices"], v_info)
             results["files"].append(str(f))
 
-    # 2. Load Edges
-    e_files = list(vectors_dir.glob("edges_*.mat"))
+    # 2. Load Edges (prefer curated/final artifacts when available)
+    e_files = list(vectors_dir.glob("curated_edges_*.mat")) or list(vectors_dir.glob("edges_*.mat"))
     if e_files:
         f = e_files[-1]
         logger.info(f"Loading edges: {f.name}")
@@ -368,8 +395,9 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
         data = load_mat_file_safe(f)
         if data:
             net_data = extract_network_data(data)
-            if net_data.get("strands"):
-                results["network"]["strands"] = net_data["strands"]
+            for key, value in net_data.items():
+                if key != "stats" and value:
+                    results["network"][key] = value
             results["network_stats"].update(net_data.get("stats", {}))
             results["files"].append(str(f))
 

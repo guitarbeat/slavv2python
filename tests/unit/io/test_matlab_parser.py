@@ -6,6 +6,7 @@ and parsing MATLAB vectorization output files.
 """
 
 import json
+from contextlib import ExitStack
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -77,12 +78,15 @@ class TestExtractVertices:
         vertex_struct.space_subscripts = np.array(
             [[10, 20, 30, 1], [15, 25, 35, 2], [20, 30, 40, 3]]
         )
+        vertex_struct.scale_subscripts = np.array([1, 2, 3])
 
         mat_data = {"vertex": vertex_struct}
         result = extract_vertices(mat_data)
 
         assert result["count"] == 3
         assert result["positions"].shape == (3, 4)
+        assert result["positions"][0, :3].tolist() == [29.0, 19.0, 9.0]
+        assert result["scale_indices"].tolist() == [0, 1, 2]
 
     def test_extract_vertices_with_radii(self):
         """Test extraction of vertex radii."""
@@ -113,13 +117,27 @@ class TestExtractEdges:
     def test_extract_edges_with_indices(self):
         """Test extraction of edge connectivity."""
         edge_struct = Mock()
-        edge_struct.vertices = np.array([[0, 1], [1, 2], [2, 3]])
+        edge_struct.vertices = np.array([[1, 2], [2, 3], [3, 4]])
 
         mat_data = {"edge": edge_struct}
         result = extract_edges(mat_data)
 
         assert result["count"] == 3
         assert result["connections"].shape == (3, 2)
+        assert result["connections"].tolist() == [[0, 1], [1, 2], [2, 3]]
+
+    def test_extract_edges_normalizes_trace_coordinates(self):
+        """Test extraction of edge trace coordinates into Python order."""
+        edge_struct = Mock()
+        edge_struct.vertices = np.array([[1, 2]])
+        edge_struct.space_subscripts = np.array(
+            [np.array([[10, 20, 30], [11, 21, 31]], dtype=np.int32)],
+            dtype=object,
+        )
+
+        result = extract_edges({"edge": edge_struct})
+
+        assert result["traces"][0].tolist() == [[29.0, 19.0, 9.0], [30.0, 20.0, 10.0]]
 
     def test_extract_edges_with_lengths(self):
         """Test extraction of edge lengths."""
@@ -155,6 +173,31 @@ class TestExtractNetworkData:
 
         result = extract_network_stats(mat_data)
         assert result["strand_count"] == 3
+
+    def test_extract_network_data_reads_strands_to_vertices(self):
+        mat_data = {
+            "strands2vertices": np.array([[1, 2, 3], [4, 5, 6]]),
+        }
+
+        from slavv.io.matlab_parser import extract_network_data
+
+        result = extract_network_data(mat_data)
+
+        assert result["strands_to_vertices"] == [[0, 1, 2], [3, 4, 5]]
+
+    def test_extract_network_data_normalizes_strand_coordinates(self):
+        mat_data = {
+            "strand_subscripts": np.array(
+                [np.array([[10, 20, 30], [11, 21, 31]], dtype=np.int32)],
+                dtype=object,
+            ),
+        }
+
+        from slavv.io.matlab_parser import extract_network_data
+
+        result = extract_network_data(mat_data)
+
+        assert result["strands"][0].tolist() == [[29.0, 19.0, 9.0], [30.0, 20.0, 10.0]]
 
     def test_extract_network_stats_falls_back_to_strand_lengths(self):
         """Test strand count fallback from network_statistics.strand_lengths."""
@@ -288,6 +331,31 @@ class TestLoadMatlabBatchResults:
             "wrapper_mode": "batch",
             "matlab_version": "R2019a",
         }
+
+    def test_load_batch_prefers_curated_vectors(self, tmp_path):
+        batch_folder = tmp_path / "batch_250127-120000"
+        vectors_dir = batch_folder / "vectors"
+        batch_folder.mkdir()
+        vectors_dir.mkdir()
+        (vectors_dir / "vertices_foo.mat").touch()
+        (vectors_dir / "curated_vertices_foo.mat").touch()
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    "slavv.io.matlab_parser.load_mat_file_safe",
+                    return_value={"vertex_space_subscripts": np.array([[1, 2, 3]])},
+                )
+            )
+            stack.enter_context(
+                patch(
+                    "slavv.io.matlab_parser.extract_vertices",
+                    side_effect=[{"count": 1, "positions": np.array([[2, 1, 0]])}],
+                )
+            )
+            result = load_matlab_batch_results(batch_folder)
+
+        assert any("curated_vertices_foo.mat" in path for path in result["files"])
 
 
 class TestIntegrationScenarios:

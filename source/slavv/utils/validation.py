@@ -74,9 +74,13 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["max_voxels_per_node_energy"] = params.get("max_voxels_per_node_energy", 1e5)
     validated["energy_upper_bound"] = params.get("energy_upper_bound", 0.0)
     validated["space_strel_apothem"] = params.get("space_strel_apothem", 1)
+    validated["max_voxels_per_node"] = params.get("max_voxels_per_node", 6000)
     validated["length_dilation_ratio"] = params.get("length_dilation_ratio", 1.0)
     validated["number_of_edges_per_vertex"] = params.get("number_of_edges_per_vertex", 4)
     validated["step_size_per_origin_radius"] = params.get("step_size_per_origin_radius", 1.0)
+    validated["max_edge_length_per_origin_radius"] = params.get(
+        "max_edge_length_per_origin_radius", 60.0
+    )
     validated["max_edge_energy"] = params.get("max_edge_energy", 0.0)
     validated["min_hair_length_in_microns"] = params.get("min_hair_length_in_microns", 0.0)
     validated["bandpass_window"] = params.get("bandpass_window", 0.0)
@@ -96,10 +100,14 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         )
     if validated["length_dilation_ratio"] <= 0:
         raise ValueError("length_dilation_ratio must be positive")
+    if validated["max_voxels_per_node"] <= 0:
+        raise ValueError("max_voxels_per_node must be positive")
     if validated["number_of_edges_per_vertex"] < 1:
         raise ValueError("number_of_edges_per_vertex must be at least 1")
     if validated["step_size_per_origin_radius"] <= 0:
         raise ValueError("step_size_per_origin_radius must be positive; try 0.5 for finer tracing")
+    if validated["max_edge_length_per_origin_radius"] <= 0:
+        raise ValueError("max_edge_length_per_origin_radius must be positive")
     if validated["min_hair_length_in_microns"] < 0:
         raise ValueError("min_hair_length_in_microns cannot be negative")
     if validated["bandpass_window"] < 0:

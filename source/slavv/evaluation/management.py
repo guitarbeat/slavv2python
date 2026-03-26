@@ -86,12 +86,19 @@ def resolve_run_root(path: Path) -> Path:
 
     Supports:
     - run_dir/01_Input
+    - run_dir/01_Input/matlab_results
     - run_dir/02_Output
+    - run_dir/02_Output/python_results
     - run_dir/03_Analysis
     - run_dir/99_Metadata
     """
     if path.name in {"01_Input", "02_Output", "03_Analysis", "99_Metadata"}:
         return path.parent
+    if path.name in {"matlab_results", "python_results"} and path.parent.name in {
+        "01_Input",
+        "02_Output",
+    }:
+        return path.parent.parent
     return path
 
 

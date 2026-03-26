@@ -45,66 +45,328 @@ def _vertex_neighborhood_slices(
     )
 
 
-def _matlab_vertex_candidates(
+def _matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
+    """Return MATLAB-style column-major linear indices for 0-based coordinates."""
+    coords = np.asarray(coords, dtype=np.int64)
+    return coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
+
+
+def _sort_vertex_order(
+    vertex_positions: np.ndarray,
+    vertex_energies: np.ndarray,
+    image_shape: tuple[int, int, int],
+    energy_sign: float,
+) -> np.ndarray:
+    """Sort vertices like MATLAB: by energy, then by column-major linear index for ties."""
+    if len(vertex_positions) == 0:
+        return np.array([], dtype=np.int64)
+
+    linear_indices = _matlab_linear_indices(vertex_positions, image_shape)
+    if energy_sign < 0:
+        return np.lexsort((linear_indices, vertex_energies))
+    return np.lexsort((linear_indices, -vertex_energies))
+
+
+def _empty_vertices_result() -> dict[str, Any]:
+    """Return the canonical empty vertex payload."""
+    return {
+        "positions": np.empty((0, 3), dtype=np.float32),
+        "scales": np.empty((0,), dtype=np.int16),
+        "energies": np.empty((0,), dtype=np.float32),
+        "radii_pixels": np.empty((0,), dtype=np.float32),
+        "radii_microns": np.empty((0,), dtype=np.float32),
+        "radii": np.empty((0,), dtype=np.float32),
+    }
+
+
+def _coerce_radius_axes(
+    lumen_radius_pixels: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray | None,
+) -> np.ndarray:
+    """Normalize scale radii into a `(num_scales, 3)` axis-aware array."""
+    if lumen_radius_pixels_axes is not None:
+        axes = np.asarray(lumen_radius_pixels_axes, dtype=np.float32)
+        if axes.ndim == 2 and axes.shape[1] == 3:
+            return axes
+
+    radii = np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1)
+    return np.repeat(radii, 3, axis=1)
+
+
+def _chunk_lattice_dimensions(
+    image_shape: tuple[int, int, int],
+    strel_size_pixels: np.ndarray,
+    max_voxels_per_node: float,
+) -> tuple[int, int, int]:
+    """Approximate MATLAB's 3D chunk lattice sizing."""
+    target_voxels = max(float(max_voxels_per_node), 1.0)
+    target_char_len = target_voxels ** (1.0 / 3.0)
+    strel = np.asarray(strel_size_pixels, dtype=np.float64)
+    aspect_ratio = strel / max(np.prod(strel) ** (1.0 / 3.0), 1e-12)
+    target_dims = np.maximum(target_char_len * aspect_ratio, 1.0)
+    lattice = np.maximum(np.rint(np.asarray(image_shape, dtype=np.float64) / target_dims), 1)
+    return tuple(int(value) for value in lattice.tolist())
+
+
+def _iter_overlapping_chunks(
+    image_shape: tuple[int, int, int],
+    lattice_dims: tuple[int, int, int],
+    overlap: tuple[int, int, int],
+):
+    """Yield padded 3D chunk slices using MATLAB-like lattice borders."""
+    overlap = np.asarray(overlap, dtype=np.int64)
+    borders = [
+        np.rint(np.linspace(0, image_shape[axis], lattice_dims[axis] + 1)).astype(np.int64)
+        for axis in range(3)
+    ]
+
+    for y_index in range(lattice_dims[0]):
+        y_start = max(int(borders[0][y_index] - overlap[0]), 0)
+        y_end = min(int(borders[0][y_index + 1] + overlap[0]), image_shape[0])
+        for x_index in range(lattice_dims[1]):
+            x_start = max(int(borders[1][x_index] - overlap[1]), 0)
+            x_end = min(int(borders[1][x_index + 1] + overlap[1]), image_shape[1])
+            for z_index in range(lattice_dims[2]):
+                z_start = max(int(borders[2][z_index] - overlap[2]), 0)
+                z_end = min(int(borders[2][z_index + 1] + overlap[2]), image_shape[2])
+                yield (
+                    slice(y_start, y_end),
+                    slice(x_start, x_end),
+                    slice(z_start, z_end),
+                )
+
+
+def _matlab_vertex_candidates_in_chunk(
     energy: np.ndarray,
     scale_indices: np.ndarray,
     energy_sign: float,
     energy_upper_bound: float,
     space_strel_apothem: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Find MATLAB-style spatial extrema on the min-projected energy volume."""
+    """Run MATLAB-style candidate scanning within one overlapped chunk."""
     apothem = _vertex_window_apothem(space_strel_apothem)
-    footprint = np.ones((2 * apothem + 1, 2 * apothem + 1, 2 * apothem + 1), dtype=bool)
-
-    if energy_sign < 0:
-        filt = ndi.minimum_filter(energy, footprint=footprint, mode="nearest")
-        extrema = (energy <= filt) & (energy < energy_upper_bound)
+    interior_mask = np.zeros(energy.shape, dtype=bool)
+    if apothem == 0:
+        interior_mask[:] = True
     else:
-        filt = ndi.maximum_filter(energy, footprint=footprint, mode="nearest")
-        extrema = (energy >= filt) & (energy > energy_upper_bound)
+        interior_mask[
+            apothem : energy.shape[0] - apothem,
+            apothem : energy.shape[1] - apothem,
+            apothem : energy.shape[2] - apothem,
+        ] = True
 
-    if apothem > 0:
-        extrema[:apothem, :, :] = False
-        extrema[-apothem:, :, :] = False
-        extrema[:, :apothem, :] = False
-        extrema[:, -apothem:, :] = False
-        extrema[:, :, :apothem] = False
-        extrema[:, :, -apothem:] = False
+    finite_mask = np.isfinite(energy)
+    if energy_sign < 0:
+        active_mask = interior_mask & finite_mask & (energy < energy_upper_bound)
+    else:
+        active_mask = interior_mask & finite_mask & (energy > energy_upper_bound)
 
-    coords = np.where(extrema)
-    return np.column_stack(coords), scale_indices[coords], energy[coords]
+    candidate_positions = np.argwhere(active_mask)
+    if len(candidate_positions) == 0:
+        return (
+            np.empty((0, 3), dtype=np.int32),
+            np.empty((0,), dtype=np.int16),
+            np.empty((0,), dtype=np.float32),
+        )
+
+    candidate_energies = energy[active_mask]
+    order = _sort_vertex_order(candidate_positions, candidate_energies, energy.shape, energy_sign)
+    candidate_positions = candidate_positions[order]
+
+    accepted_positions: list[np.ndarray] = []
+    accepted_scales: list[int] = []
+    accepted_energies: list[float] = []
+
+    for pos in candidate_positions:
+        y, x, z = (int(coord) for coord in pos)
+        if not active_mask[y, x, z]:
+            continue
+
+        slices = _vertex_neighborhood_slices(pos, apothem, energy.shape)
+        window = energy[slices]
+        if energy_sign < 0:
+            window_extreme = np.nanmin(window)
+            is_vertex = np.isfinite(window_extreme) and energy[y, x, z] <= window_extreme
+        else:
+            window_extreme = np.nanmax(window)
+            is_vertex = np.isfinite(window_extreme) and energy[y, x, z] >= window_extreme
+
+        if is_vertex:
+            accepted_positions.append(pos.astype(np.int32, copy=False))
+            accepted_scales.append(int(scale_indices[y, x, z]))
+            accepted_energies.append(float(energy[y, x, z]))
+
+        active_mask[slices] = False
+
+    return (
+        np.asarray(accepted_positions, dtype=np.int32).reshape(-1, 3),
+        np.asarray(accepted_scales, dtype=np.int16),
+        np.asarray(accepted_energies, dtype=np.float32),
+    )
 
 
-def _suppress_vertices_matlab_style(
-    vertex_positions: np.ndarray,
-    energy_shape: tuple[int, int, int],
+def _matlab_vertex_candidates(
+    energy: np.ndarray,
+    scale_indices: np.ndarray,
+    energy_sign: float,
+    energy_upper_bound: float,
     space_strel_apothem: int,
-    start_index: int = 0,
-    keep_mask: np.ndarray | None = None,
-) -> np.ndarray:
-    """Greedily keep vertices and zero a fixed voxel neighborhood like MATLAB."""
+    strel_size_pixels: np.ndarray,
+    max_voxels_per_node: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Find MATLAB-style candidate vertices on the projected energy volume."""
     apothem = _vertex_window_apothem(space_strel_apothem)
-    if keep_mask is None:
-        keep_mask = np.ones(len(vertex_positions), dtype=bool)
+    overlap = (apothem, apothem, apothem)
+    lattice_dims = _chunk_lattice_dimensions(energy.shape, strel_size_pixels, max_voxels_per_node)
 
-    suppressed = np.zeros(energy_shape, dtype=bool)
-    for prior_index in range(start_index):
-        if not keep_mask[prior_index]:
+    accepted_positions: list[np.ndarray] = []
+    accepted_scales: list[np.ndarray] = []
+    accepted_energies: list[np.ndarray] = []
+    for chunk_slice in _iter_overlapping_chunks(energy.shape, lattice_dims, overlap):
+        chunk_positions, chunk_scales, chunk_energies = _matlab_vertex_candidates_in_chunk(
+            energy[chunk_slice],
+            scale_indices[chunk_slice],
+            energy_sign,
+            energy_upper_bound,
+            space_strel_apothem,
+        )
+        if len(chunk_positions) == 0:
             continue
-        slices = _vertex_neighborhood_slices(vertex_positions[prior_index], apothem, energy_shape)
-        suppressed[slices] = True
 
-    for index in range(start_index, len(vertex_positions)):
-        pos = vertex_positions[index]
-        if suppressed[tuple(int(coord) for coord in pos)]:
-            keep_mask[index] = False
+        chunk_offset = np.array(
+            [chunk_slice[0].start, chunk_slice[1].start, chunk_slice[2].start],
+            dtype=np.int32,
+        )
+        accepted_positions.append(chunk_positions + chunk_offset)
+        accepted_scales.append(chunk_scales)
+        accepted_energies.append(chunk_energies)
+
+    if not accepted_positions:
+        return (
+            np.empty((0, 3), dtype=np.int32),
+            np.empty((0,), dtype=np.int16),
+            np.empty((0,), dtype=np.float32),
+        )
+
+    return (
+        np.vstack(accepted_positions).astype(np.int32, copy=False),
+        np.concatenate(accepted_scales).astype(np.int16, copy=False),
+        np.concatenate(accepted_energies).astype(np.float32, copy=False),
+    )
+
+
+def _crop_vertices_matlab_style(
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    vertex_energies: np.ndarray,
+    image_shape: tuple[int, int, int],
+    lumen_radius_pixels_axes: np.ndarray,
+    length_dilation_ratio: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Crop MATLAB candidate vertices against image bounds and extreme scales."""
+    if len(vertex_positions) == 0:
+        return (
+            np.empty((0, 3), dtype=np.int32),
+            np.empty((0,), dtype=np.int16),
+            np.empty((0,), dtype=np.float32),
+        )
+
+    scale_indices = np.rint(vertex_scales).astype(np.int64)
+    scaled_radii = np.rint(length_dilation_ratio * lumen_radius_pixels_axes[scale_indices]).astype(
+        np.int64
+    )
+    positions = np.rint(vertex_positions).astype(np.int64)
+
+    mins = positions - scaled_radii
+    maxs = positions + scaled_radii
+    scale_is_min = scale_indices <= 0
+    scale_is_max = scale_indices >= (len(lumen_radius_pixels_axes) - 1)
+    excluded = (
+        (mins[:, 0] < 0)
+        | (mins[:, 1] < 0)
+        | (mins[:, 2] < 0)
+        | (maxs[:, 0] >= image_shape[0])
+        | (maxs[:, 1] >= image_shape[1])
+        | (maxs[:, 2] >= image_shape[2])
+        | scale_is_min
+        | scale_is_max
+    )
+    keep = ~excluded
+    return (
+        vertex_positions[keep].astype(np.int32, copy=False),
+        vertex_scales[keep].astype(np.int16, copy=False),
+        vertex_energies[keep].astype(np.float32, copy=False),
+    )
+
+
+def _ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
+    """Construct centered voxel offsets for a scale-specific ellipsoid."""
+    radii = np.maximum(np.rint(radii_pixels).astype(int), 0)
+    if np.all(radii == 0):
+        return np.zeros((1, 3), dtype=np.int16)
+
+    mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
+    coords = np.column_stack(np.where(mask))
+    center = np.asarray(mask.shape, dtype=np.int64) // 2
+    return (coords - center).astype(np.int16, copy=False)
+
+
+def _choose_vertices_matlab_style(
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    image_shape: tuple[int, int, int],
+    lumen_radius_pixels_axes: np.ndarray,
+    length_dilation_ratio: float,
+    start_index: int = 0,
+    end_index: int | None = None,
+    chosen_mask: np.ndarray | None = None,
+) -> np.ndarray:
+    """Choose non-overlapping vertices with MATLAB's paint-and-check semantics."""
+    n_vertices = len(vertex_positions)
+    if chosen_mask is None:
+        chosen_mask = np.zeros(n_vertices, dtype=bool)
+    else:
+        chosen_mask = np.asarray(chosen_mask, dtype=bool).copy()
+
+    if end_index is None:
+        end_index = n_vertices
+
+    scale_indices = np.rint(vertex_scales).astype(np.int64)
+    scaled_radii = length_dilation_ratio * lumen_radius_pixels_axes
+    template_cache = {
+        scale_index: _ellipsoid_offsets(scaled_radii[scale_index])
+        for scale_index in np.unique(scale_indices)
+    }
+    painted_image = np.zeros(image_shape, dtype=bool)
+
+    def paint(index: int) -> np.ndarray:
+        center = np.rint(vertex_positions[index]).astype(np.int64)
+        coords = template_cache[int(scale_indices[index])].astype(np.int64) + center
+        valid = (
+            (coords[:, 0] >= 0)
+            & (coords[:, 0] < image_shape[0])
+            & (coords[:, 1] >= 0)
+            & (coords[:, 1] < image_shape[1])
+            & (coords[:, 2] >= 0)
+            & (coords[:, 2] < image_shape[2])
+        )
+        return coords[valid]
+
+    for index in np.flatnonzero(chosen_mask[:start_index]):
+        coords = paint(int(index))
+        painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = True
+
+    for index in range(start_index, min(end_index, n_vertices)):
+        coords = paint(index)
+        if coords.size == 0:
+            chosen_mask[index] = False
             continue
+        occupied = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].any()
+        chosen_mask[index] = not occupied
+        if chosen_mask[index]:
+            painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = True
 
-        keep_mask[index] = True
-        slices = _vertex_neighborhood_slices(pos, apothem, energy_shape)
-        suppressed[slices] = True
-
-    return keep_mask
+    return chosen_mask
 
 
 def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:
@@ -238,48 +500,56 @@ def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dic
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = _coerce_radius_axes(
+        lumen_radius_pixels,
+        energy_data.get("lumen_radius_pixels_axes"),
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
 
     # Parameters
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)
+    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
+    max_voxels_per_node = params.get("max_voxels_per_node", 6000)
     vertex_positions, vertex_scales, vertex_energies = _matlab_vertex_candidates(
         energy,
         scale_indices,
         energy_sign,
         energy_upper_bound,
         space_strel_apothem,
+        lumen_radius_pixels_axes[0],
+        max_voxels_per_node,
     )
 
-    # Sort by energy (best first depending on sign)
-    if energy_sign < 0:
-        sort_indices = np.argsort(vertex_energies)
-    else:
-        sort_indices = np.argsort(-vertex_energies)
+    vertex_positions, vertex_scales, vertex_energies = _crop_vertices_matlab_style(
+        vertex_positions,
+        vertex_scales,
+        vertex_energies,
+        energy.shape,
+        lumen_radius_pixels_axes,
+        length_dilation_ratio,
+    )
+
+    if len(vertex_positions) == 0:
+        logger.info("Extracted 0 vertices")
+        return _empty_vertices_result()
+
+    sort_indices = _sort_vertex_order(vertex_positions, vertex_energies, energy.shape, energy_sign)
     vertex_positions = vertex_positions[sort_indices]
     vertex_scales = vertex_scales[sort_indices]
     vertex_energies = vertex_energies[sort_indices]
 
-    if len(vertex_positions) == 0:
-        logger.info("Extracted 0 vertices")
-        return {
-            "positions": np.empty((0, 3), dtype=np.float32),
-            "scales": np.empty((0,), dtype=np.int16),
-            "energies": np.empty((0,), dtype=np.float32),
-            "radii_pixels": np.empty((0,), dtype=np.float32),
-            "radii_microns": np.empty((0,), dtype=np.float32),
-            "radii": np.empty((0,), dtype=np.float32),
-        }
-
-    keep_mask = _suppress_vertices_matlab_style(
+    chosen_mask = _choose_vertices_matlab_style(
         vertex_positions,
+        vertex_scales,
         energy.shape,
-        space_strel_apothem,
+        lumen_radius_pixels_axes,
+        length_dilation_ratio,
     )
-    vertex_positions = vertex_positions[keep_mask]
-    vertex_scales = vertex_scales[keep_mask]
-    vertex_energies = vertex_energies[keep_mask]
+    vertex_positions = vertex_positions[chosen_mask]
+    vertex_scales = vertex_scales[chosen_mask]
+    vertex_energies = vertex_energies[chosen_mask]
 
     logger.info(f"Extracted {len(vertex_positions)} vertices")
 
@@ -504,6 +774,8 @@ def trace_edge(
     pos_x = math.floor(current_pos_x)
     pos_z = math.floor(current_pos_z)
     prev_energy = energy[pos_y, pos_x, pos_z]
+    if not math.isfinite(prev_energy):
+        return trace
 
     for _ in range(max_steps):
         attempt = 0
@@ -511,6 +783,12 @@ def trace_edge(
             next_pos_y = current_pos_y + current_dir_y * step_size
             next_pos_x = current_pos_x + current_dir_x * step_size
             next_pos_z = current_pos_z + current_dir_z * step_size
+            if not (
+                math.isfinite(next_pos_y)
+                and math.isfinite(next_pos_x)
+                and math.isfinite(next_pos_z)
+            ):
+                return trace
 
             if discrete_steps:
                 # Rounding logic for discrete steps
@@ -545,6 +823,8 @@ def trace_edge(
             pos_x = math.floor(next_pos_x)
             pos_z = math.floor(next_pos_z)
             current_energy = energy[pos_y, pos_x, pos_z]
+            if not math.isfinite(current_energy):
+                return trace
 
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
                 energy_sign > 0 and current_energy < max_edge_energy
@@ -685,7 +965,7 @@ def extract_edges(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -728,7 +1008,7 @@ def extract_edges(
             continue
         start_radius = lumen_radius_pixels[start_scale]
         step_size = start_radius * step_size_ratio
-        max_length = start_radius * length_ratio
+        max_length = start_radius * max_length_ratio
         max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
 
         if direction_method == "hessian":
@@ -887,25 +1167,33 @@ def extract_vertices_resumable(
     params: dict[str, Any],
     stage_controller: StageController,
 ) -> dict[str, Any]:
-    """Extract vertices with persisted materialization and suppression state."""
+    """Extract vertices with persisted MATLAB-style scan, crop, and choose state."""
     from slavv.runtime.run_state import atomic_joblib_dump
 
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    lumen_radius_pixels_axes = _coerce_radius_axes(
+        lumen_radius_pixels,
+        energy_data.get("lumen_radius_pixels_axes"),
+    )
     energy_sign = energy_data.get("energy_sign", -1.0)
     lumen_radius_microns = energy_data["lumen_radius_microns"]
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)
+    length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
+    max_voxels_per_node = params.get("max_voxels_per_node", 6000)
     block_size = int(params.get("resume_vertex_block_size", 256))
 
     candidate_path = stage_controller.artifact_path("candidates.pkl")
-    ordered_path = stage_controller.artifact_path("ordered_candidates.pkl")
-    keep_mask_path = stage_controller.artifact_path("keep_mask.pkl")
-    suppression_state = stage_controller.load_state()
+    cropped_path = stage_controller.artifact_path("cropped_candidates.pkl")
+    chosen_mask_path = stage_controller.artifact_path("chosen_mask.pkl")
+    choose_state = stage_controller.load_state()
 
     stage_controller.begin(
-        detail="Preparing vertex candidates", units_total=4, substage="materialize"
+        detail="Scanning MATLAB-style vertex candidates",
+        units_total=3,
+        substage="candidate_scan",
     )
     if not candidate_path.exists():
         positions, scales, energies = _matlab_vertex_candidates(
@@ -914,6 +1202,8 @@ def extract_vertices_resumable(
             energy_sign,
             energy_upper_bound,
             space_strel_apothem,
+            lumen_radius_pixels_axes[0],
+            max_voxels_per_node,
         )
         atomic_joblib_dump(
             {
@@ -923,85 +1213,89 @@ def extract_vertices_resumable(
             },
             candidate_path,
         )
-    stage_controller.update(units_total=4, units_completed=1, substage="materialize")
+    stage_controller.update(units_total=3, units_completed=1, substage="candidate_scan")
 
     candidate_data = joblib.load(candidate_path)
     vertex_positions = candidate_data["positions"]
     vertex_scales = candidate_data["scales"]
     vertex_energies = candidate_data["energies"]
     if len(vertex_positions) == 0:
-        return {
-            "positions": np.empty((0, 3), dtype=np.float32),
-            "scales": np.empty((0,), dtype=np.int16),
-            "energies": np.empty((0,), dtype=np.float32),
-            "radii_pixels": np.empty((0,), dtype=np.float32),
-            "radii_microns": np.empty((0,), dtype=np.float32),
-            "radii": np.empty((0,), dtype=np.float32),
-        }
+        return _empty_vertices_result()
 
-    if not ordered_path.exists():
-        if energy_sign < 0:
-            sort_indices = np.argsort(vertex_energies)
-        else:
-            sort_indices = np.argsort(-vertex_energies)
+    if not cropped_path.exists():
+        positions, scales, energies = _crop_vertices_matlab_style(
+            vertex_positions,
+            vertex_scales,
+            vertex_energies,
+            energy.shape,
+            lumen_radius_pixels_axes,
+            length_dilation_ratio,
+        )
+        sort_indices = _sort_vertex_order(positions, energies, energy.shape, energy_sign)
         atomic_joblib_dump(
             {
-                "positions": vertex_positions[sort_indices],
-                "scales": vertex_scales[sort_indices],
-                "energies": vertex_energies[sort_indices],
+                "positions": positions[sort_indices],
+                "scales": scales[sort_indices],
+                "energies": energies[sort_indices],
             },
-            ordered_path,
+            cropped_path,
         )
-    stage_controller.update(units_total=4, units_completed=2, substage="order")
+    stage_controller.update(units_total=3, units_completed=2, substage="crop_sort")
 
-    ordered = joblib.load(ordered_path)
+    ordered = joblib.load(cropped_path)
     vertex_positions = ordered["positions"]
     vertex_scales = ordered["scales"]
     vertex_energies = ordered["energies"]
+    if len(vertex_positions) == 0:
+        return _empty_vertices_result()
 
-    if keep_mask_path.exists():
-        keep_mask = joblib.load(keep_mask_path)
+    if chosen_mask_path.exists():
+        chosen_mask = joblib.load(chosen_mask_path)
     else:
-        keep_mask = np.ones(len(vertex_positions), dtype=bool)
-    next_index = int(suppression_state.get("next_index", 0))
+        chosen_mask = np.zeros(len(vertex_positions), dtype=bool)
+    next_index = int(choose_state.get("next_index", 0))
     total_blocks = max(1, int(np.ceil(len(vertex_positions) / max(block_size, 1))))
     completed_blocks = min(total_blocks, next_index // max(block_size, 1))
     stage_controller.update(
-        units_total=4 + total_blocks,
+        units_total=3 + total_blocks,
         units_completed=2 + completed_blocks,
-        substage="suppression",
-        detail=f"Vertex suppression {next_index}/{len(vertex_positions)}",
+        substage="choose_paint",
+        detail=f"Vertex choose/paint {next_index}/{len(vertex_positions)}",
         resumed=next_index > 0,
     )
 
-    keep_mask = _suppress_vertices_matlab_style(
-        vertex_positions,
-        energy.shape,
-        space_strel_apothem,
-        start_index=next_index,
-        keep_mask=keep_mask,
-    )
+    for block_start in range(next_index, len(vertex_positions), max(block_size, 1)):
+        block_end = min(len(vertex_positions), block_start + max(block_size, 1))
+        chosen_mask = _choose_vertices_matlab_style(
+            vertex_positions,
+            vertex_scales,
+            energy.shape,
+            lumen_radius_pixels_axes,
+            length_dilation_ratio,
+            start_index=block_start,
+            end_index=block_end,
+            chosen_mask=chosen_mask,
+        )
+        atomic_joblib_dump(chosen_mask, chosen_mask_path)
+        stage_controller.save_state({"next_index": block_end, "block_size": block_size})
+        completed_blocks = min(total_blocks, (block_end + block_size - 1) // max(block_size, 1))
+        stage_controller.update(
+            units_total=3 + total_blocks,
+            units_completed=2 + completed_blocks,
+            substage="choose_paint",
+            detail=f"Vertex choose/paint {block_end}/{len(vertex_positions)}",
+            resumed=next_index > 0,
+        )
 
-    for i in range(next_index, len(vertex_positions)):
-        if (i + 1) % block_size == 0 or i == len(vertex_positions) - 1:
-            atomic_joblib_dump(keep_mask, keep_mask_path)
-            stage_controller.save_state({"next_index": i + 1, "block_size": block_size})
-            completed_blocks = min(total_blocks, (i + 1 + block_size - 1) // block_size)
-            stage_controller.update(
-                units_total=4 + total_blocks,
-                units_completed=2 + completed_blocks,
-                substage="suppression",
-                detail=f"Vertex suppression {i + 1}/{len(vertex_positions)}",
-                resumed=next_index > 0,
-            )
-
-    vertex_positions = vertex_positions[keep_mask].astype(np.float32)
-    vertex_scales = vertex_scales[keep_mask].astype(np.int16)
-    vertex_energies = vertex_energies[keep_mask].astype(np.float32)
+    vertex_positions = vertex_positions[chosen_mask].astype(np.float32)
+    vertex_scales = vertex_scales[chosen_mask].astype(np.int16)
+    vertex_energies = vertex_energies[chosen_mask].astype(np.float32)
     radii_pixels = lumen_radius_pixels[vertex_scales].astype(np.float32)
     radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
     stage_controller.update(
-        units_total=4 + total_blocks, units_completed=3 + total_blocks, substage="finalize"
+        units_total=3 + total_blocks,
+        units_completed=3 + total_blocks,
+        substage="finalize",
     )
     return {
         "positions": vertex_positions,
@@ -1068,7 +1362,7 @@ def extract_edges_resumable(
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
-    length_ratio = params.get("length_dilation_ratio", 1.0)
+    max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
@@ -1124,7 +1418,7 @@ def extract_edges_resumable(
         if edges_per_vertex[vertex_idx] < max_edges_per_vertex:
             start_radius = lumen_radius_pixels[start_scale]
             step_size = start_radius * step_size_ratio
-            max_length = start_radius * length_ratio
+            max_length = start_radius * max_length_ratio
             max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
             if direction_method == "hessian":
                 directions = estimate_vessel_directions(

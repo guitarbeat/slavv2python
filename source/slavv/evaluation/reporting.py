@@ -127,6 +127,26 @@ def generate_summary(run_dir: Path, output_file: Path):
 
     lines.append("")
 
+    if report and "parity_gate" in report:
+        lines.append("Parity Gate")
+        lines.append("-" * 70)
+        gate = report["parity_gate"]
+        lines.append(f"Overall:   {'PASS' if gate.get('passed') else 'FAIL'}")
+        lines.append(f"Vertices:  {'PASS' if gate.get('vertices_exact') else 'FAIL'}")
+        lines.append(f"Edges:     {'PASS' if gate.get('edges_exact') else 'FAIL'}")
+        lines.append(f"Strands:   {'PASS' if gate.get('strands_exact') else 'FAIL'}")
+
+        vertex_mismatch = report.get("vertices", {}).get("matlab_only_samples", [])
+        edge_mismatch = report.get("edges", {}).get("matlab_only_samples", [])
+        strand_mismatch = report.get("network", {}).get("matlab_only_samples", [])
+        if vertex_mismatch:
+            lines.append(f"First vertex mismatch: {vertex_mismatch[0]}")
+        if edge_mismatch:
+            lines.append(f"First edge mismatch: {edge_mismatch[0]}")
+        if strand_mismatch:
+            lines.append(f"First strand mismatch: {strand_mismatch[0]}")
+        lines.append("")
+
     # Status/notes
     matlab_dir = layout["matlab_dir"]
     python_dir = layout["python_dir"]

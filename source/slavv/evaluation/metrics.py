@@ -7,6 +7,7 @@ between MATLAB and Python implementations.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 import numpy as np
@@ -90,6 +91,132 @@ def _as_position_array(positions: Any) -> np.ndarray:
     return array
 
 
+def _round_positions(positions: Any) -> np.ndarray:
+    """Convert coordinate payloads to rounded integer voxel positions."""
+    array = _as_position_array(positions)
+    if array.size == 0:
+        return np.empty((0, 3), dtype=np.int32)
+    return np.rint(array[:, :3]).astype(np.int32, copy=False)
+
+
+def _extract_vertex_scales(payload: dict[str, Any]) -> np.ndarray:
+    """Extract 0-based scale indices from vertex payloads."""
+    for key in ("scales", "scale_indices"):
+        value = payload.get(key)
+        if value is not None:
+            return np.rint(np.asarray(value)).astype(np.int32, copy=False).reshape(-1)
+
+    positions = _as_position_array(payload.get("positions", np.array([])))
+    if positions.size > 0 and positions.shape[1] >= 4:
+        return np.rint(positions[:, 3]).astype(np.int32, copy=False).reshape(-1)
+    return np.empty((0,), dtype=np.int32)
+
+
+def _extract_vertex_energies(payload: dict[str, Any]) -> np.ndarray:
+    """Extract per-vertex energies when available."""
+    value = payload.get("energies")
+    if value is None:
+        return np.empty((0,), dtype=np.float32)
+    return np.asarray(value, dtype=np.float32).reshape(-1)
+
+
+def _vertex_signatures(
+    payload: dict[str, Any],
+) -> tuple[list[tuple[Any, ...]], list[tuple[Any, ...]]]:
+    """Build exact-match signatures for vertices."""
+    coords = _round_positions(payload.get("positions", np.array([])))
+    scales = _extract_vertex_scales(payload)
+    energies = _extract_vertex_energies(payload)
+
+    coords_scales: list[tuple[Any, ...]] = []
+    coords_scales_energies: list[tuple[Any, ...]] = []
+    for index, coord in enumerate(coords):
+        coord_tuple = tuple(int(value) for value in coord.tolist())
+        scale = int(scales[index]) if index < len(scales) else None
+        coords_scales.append((coord_tuple, scale))
+        energy = None
+        if index < len(energies):
+            energy = round(float(energies[index]), 6)
+        coords_scales_energies.append((coord_tuple, scale, energy))
+    return coords_scales, coords_scales_energies
+
+
+def _sample_counter_diff(counter_a: Counter, counter_b: Counter, limit: int = 3) -> list[Any]:
+    """Return a few mismatch samples present in `counter_a` but not `counter_b`."""
+    samples = []
+    for item, count in (counter_a - counter_b).items():
+        for _ in range(count):
+            samples.append(item)
+            if len(samples) >= limit:
+                return samples
+    return samples
+
+
+def _canonical_trace(trace: Any) -> tuple[tuple[int, int, int], ...]:
+    """Canonicalize a voxel trace independent of traversal direction."""
+    coords = _round_positions(trace)
+    if coords.size == 0:
+        return ()
+    forward = tuple(tuple(int(v) for v in row.tolist()) for row in coords)
+    reverse = tuple(tuple(int(v) for v in row.tolist()) for row in coords[::-1])
+    return min(forward, reverse)
+
+
+def _edge_signatures(
+    payload: dict[str, Any],
+    include_trace: bool,
+    include_energy: bool,
+) -> list[tuple[Any, ...]]:
+    """Build exact-match signatures for chosen edges."""
+    connections = np.asarray(payload.get("connections", np.array([])))
+    if connections.size == 0:
+        connections = np.empty((0, 2), dtype=np.int32)
+    if connections.ndim == 1:
+        connections = connections.reshape(1, -1)
+    traces = payload.get("traces", [])
+    energies = np.asarray(payload.get("energies", np.array([])), dtype=np.float32).reshape(-1)
+
+    signatures: list[tuple[Any, ...]] = []
+    n_items = max(len(traces), len(connections))
+    for index in range(n_items):
+        if index < len(connections):
+            connection = [int(value) for value in np.asarray(connections[index]).tolist()]
+        else:
+            connection = [-1, -1]
+        if len(connection) >= 2 and connection[0] >= 0 and connection[1] >= 0:
+            connection_signature = tuple(sorted(connection[:2]))
+        else:
+            connection_signature = tuple(connection[:2])
+        trace_signature = ()
+        if include_trace and index < len(traces):
+            trace_signature = _canonical_trace(traces[index])
+        energy = None
+        if include_energy and index < len(energies):
+            energy = round(float(energies[index]), 6)
+        signatures.append((connection_signature, trace_signature, energy))
+    return signatures
+
+
+def _strand_signatures(payload: dict[str, Any]) -> list[tuple[int, ...]]:
+    """Build orientation-independent strand signatures."""
+    strands = payload.get("strands_to_vertices")
+    if strands is None:
+        strands = payload.get("strands", [])
+
+    signatures: list[tuple[int, ...]] = []
+    for strand in strands:
+        strand_array = np.asarray(strand).reshape(-1)
+        if strand_array.size == 0:
+            continue
+        try:
+            strand_tuple = tuple(int(value) for value in strand_array.tolist())
+        except (TypeError, ValueError):
+            strand_tuple = tuple(str(value) for value in strand_array.tolist())
+        reverse = strand_tuple[::-1]
+        signatures.append(min(strand_tuple, reverse))
+    return signatures
+
+
 def match_vertices(
     matlab_positions: np.ndarray, python_positions: np.ndarray, distance_threshold: float = 3.0
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -133,6 +260,10 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
         "unmatched_python": 0,
         "radius_correlation": None,
         "radius_stats": {},
+        "exact_positions_scales_match": False,
+        "exact_positions_scales_energies_match": False,
+        "matlab_only_samples": [],
+        "python_only_samples": [],
     }
 
     matlab_count = comparison["matlab_count"]
@@ -193,6 +324,26 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
                 "rmse": float(np.sqrt(np.mean((matched_matlab_radii - matched_python_radii) ** 2))),
             }
 
+    coords_scales_matlab, coords_scales_energy_matlab = _vertex_signatures(matlab_verts)
+    coords_scales_python, coords_scales_energy_python = _vertex_signatures(python_verts)
+    coords_scales_counter_matlab = Counter(coords_scales_matlab)
+    coords_scales_counter_python = Counter(coords_scales_python)
+    coords_scales_energy_counter_matlab = Counter(coords_scales_energy_matlab)
+    coords_scales_energy_counter_python = Counter(coords_scales_energy_python)
+
+    comparison["exact_positions_scales_match"] = (
+        coords_scales_counter_matlab == coords_scales_counter_python
+    )
+    comparison["exact_positions_scales_energies_match"] = (
+        coords_scales_energy_counter_matlab == coords_scales_energy_counter_python
+    )
+    comparison["matlab_only_samples"] = _sample_counter_diff(
+        coords_scales_counter_matlab, coords_scales_counter_python
+    )
+    comparison["python_only_samples"] = _sample_counter_diff(
+        coords_scales_counter_python, coords_scales_counter_matlab
+    )
+
     return comparison
 
 
@@ -204,6 +355,9 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
         "count_difference": 0,
         "count_percent_difference": 0.0,
         "total_length": {},
+        "exact_match": False,
+        "matlab_only_samples": [],
+        "python_only_samples": [],
     }
 
     matlab_count = comparison["matlab_count"]
@@ -247,18 +401,46 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
                 * 100.0
             )
 
+    include_trace = (
+        _count_items(matlab_edges.get("traces")) > 0
+        and _count_items(python_edges.get("traces")) > 0
+    )
+    include_energy = (
+        _count_items(matlab_edges.get("energies")) > 0
+        and _count_items(python_edges.get("energies")) > 0
+    )
+    matlab_counter = Counter(_edge_signatures(matlab_edges, include_trace, include_energy))
+    python_counter = Counter(_edge_signatures(python_edges, include_trace, include_energy))
+    comparison["exact_match"] = matlab_counter == python_counter
+    comparison["matlab_only_samples"] = _sample_counter_diff(matlab_counter, python_counter)
+    comparison["python_only_samples"] = _sample_counter_diff(python_counter, matlab_counter)
+
     return comparison
 
 
 def compare_networks(
-    matlab_stats: dict[str, Any], python_network: dict[str, Any]
+    matlab_network: dict[str, Any],
+    python_network: dict[str, Any],
+    matlab_stats: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compare network-level statistics."""
+    if (
+        matlab_stats is None
+        and "strands_to_vertices" not in matlab_network
+        and "strands" not in matlab_network
+    ):
+        matlab_stats = matlab_network
+        matlab_network = {}
+
     comparison = {
         "matlab_strand_count": _resolve_count(
-            matlab_stats.get("strand_count"), _count_items(matlab_stats.get("strands"))
+            (matlab_stats or {}).get("strand_count"),
+            _count_items((matlab_network or {}).get("strands_to_vertices")),
         ),
         "python_strand_count": _infer_strand_count(python_network),
+        "exact_match": False,
+        "matlab_only_samples": [],
+        "python_only_samples": [],
     }
 
     matlab_count = comparison["matlab_strand_count"]
@@ -271,6 +453,12 @@ def compare_networks(
             comparison["strand_count_percent_difference"] = (
                 comparison["strand_count_difference"] / avg_count
             ) * 100.0
+
+    matlab_counter = Counter(_strand_signatures(matlab_network or {}))
+    python_counter = Counter(_strand_signatures(python_network))
+    comparison["exact_match"] = matlab_counter == python_counter
+    comparison["matlab_only_samples"] = _sample_counter_diff(matlab_counter, python_counter)
+    comparison["python_only_samples"] = _sample_counter_diff(python_counter, matlab_counter)
 
     return comparison
 
@@ -369,9 +557,18 @@ def compare_results(
             comparison["edges"] = compare_edges(matlab_parsed["edges"], python_data["edges"])
 
         # Compare networks
-        if "network_stats" in matlab_parsed and "network" in python_data:
+        if "network" in matlab_parsed and "network" in python_data:
             comparison["network"] = compare_networks(
-                matlab_parsed["network_stats"], python_data["network"]
+                matlab_parsed["network"],
+                python_data["network"],
+                matlab_parsed.get("network_stats"),
             )
+
+    comparison["parity_gate"] = {
+        "vertices_exact": comparison.get("vertices", {}).get("exact_positions_scales_match", False),
+        "edges_exact": comparison.get("edges", {}).get("exact_match", False),
+        "strands_exact": comparison.get("network", {}).get("exact_match", False),
+    }
+    comparison["parity_gate"]["passed"] = all(comparison["parity_gate"].values())
 
     return comparison

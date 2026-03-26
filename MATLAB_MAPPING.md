@@ -26,7 +26,7 @@
 
 | MATLAB File | Python File | Status | Notes |
 |---|---|---|---|
-| `energy_filter_V200.m` | `core/energy.py` | ✅ | Multi-scale Hessian energy |
+| `energy_filter_V200.m` | `core/energy.py` | 🔀 | Core port exists, but real-volume parity is still blocked by octave/downsampling and projected scale-index differences. |
 | `energy_filter_V200_backup_191202.m` | — | 🚫 | Old backup |
 | `construct_structuring_element.m` | `core/energy.py` (`construct_structuring_element`) | 🔀 | Merged into energy |
 | `construct_structuring_element_V190.m` | — | 🚫 | Superseded by above. V200 improved grid spacing logic with generalized ellipsoid generation. |
@@ -41,7 +41,7 @@
 
 | MATLAB File | Python File | Status | Notes |
 |---|---|---|---|
-| `choose_vertices_V200.m` | `core/energy.py` (vertex extraction) | 🔀 | |
+| `choose_vertices_V200.m` | `core/tracing.py` (vertex extraction) | 🔀 | MATLAB-style crop/paint selection is ported, but exact parity still depends on upstream energy parity. |
 | `vertex_curator.m` | `visualization/interactive_curator.py`, `analysis/ml_curator.py` | ✅ | GCI + ML curator |
 | `vertex_info_extractor.m` | `io/matlab_parser.py` (`extract_vertices`) | ✅ | |
 | `vertex_feature_extractor.m` | `analysis/ml_curator.py` | 🔀 | |
@@ -56,7 +56,7 @@
 
 | MATLAB File | Python File | Status | Notes |
 |---|---|---|---|
-| `choose_edges_V200.m` | `core/tracing.py` | ✅ | |
+| `choose_edges_V200.m` | `core/tracing.py` | 🔀 | Candidate cleanup exists, but final chosen-edge parity is not yet exact on the real comparison volume. |
 | `get_edges_V200.m` | `core/tracing.py` | 🔀 | |
 | `add_vertices_to_edges.m` | `core/tracing.py` | 🔀 | |
 | `clean_edges.m` | `core/tracing.py` | 🔀 | |
