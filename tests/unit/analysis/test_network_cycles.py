@@ -2,6 +2,8 @@ import numpy as np
 
 # Add source path for imports
 from slavv.core import SLAVVProcessor
+from slavv.core.graph import construct_network_resumable
+from slavv.runtime import RunContext
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():
@@ -85,3 +87,48 @@ def test_construct_network_parity_emits_matlab_shaped_strands():
     assert network["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
     assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
     assert network["mismatched_strands"] == []
+
+
+def test_construct_network_resumable_reuses_parity_topology(tmp_path):
+    vertices = {
+        "positions": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0],
+                [3.0, 0.0, 0.0],
+                [2.0, 1.0, 0.0],
+            ],
+            dtype=float,
+        ),
+    }
+    edges = {
+        "connections": np.array(
+            [
+                [0, 1],
+                [1, 2],
+                [2, 3],
+                [2, 4],
+            ],
+            dtype=np.int32,
+        ),
+        "traces": [
+            np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
+            np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
+            np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
+            np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
+        ],
+    }
+    run_context = RunContext(run_dir=tmp_path / "run", target_stage="network")
+
+    network = construct_network_resumable(
+        edges,
+        vertices,
+        {"comparison_exact_network": True},
+        run_context.stage("network"),
+    )
+
+    assert network["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
+    assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
+    assert network["mismatched_strands"] == []
+    assert run_context.stage("network").artifact_path("strands.pkl").exists()

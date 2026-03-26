@@ -40,6 +40,8 @@ Recent work landed between 2026-03-21 and 2026-03-26.
   mapping and comparison layout guides.
 - Workspace-local maintenance scripts and tooling snapshots grouped under
   `workspace/scripts/maintenance/` and `workspace/reports/tooling/`.
+- Targeted regression coverage for parity-mode edge cleanup tie-breaking and
+  shared fresh/resumable MATLAB-shaped strand construction.
 
 ### Changed
 
@@ -55,6 +57,10 @@ Recent work landed between 2026-03-21 and 2026-03-26.
   curated and raw artifacts are present in a batch.
 - Comparison summaries and reports now surface the actual Python energy source
   and frontier-specific tracing diagnostics during parity runs.
+- `make`, `make.ps1`, and CI now treat repo-root `python -m mypy` as the
+  supported typecheck gate.
+- CI now includes a Windows CLI-security lane and an app-enabled Ubuntu UI
+  lane without expanding the full matrix.
 
 ### Fixed
 
@@ -67,14 +73,25 @@ Recent work landed between 2026-03-21 and 2026-03-26.
 - Validation now preserves parity-sensitive parameters such as
   `comparison_exact_network` and `space_strel_apothem_edges`.
 - MATLAB-energy tracing no longer fails primarily as a dangling-path problem;
-  frontier runs now produce terminal candidates consistently, shifting the
-  remaining gap into edge cleanup and strand construction.
+  frontier runs now produce terminal candidates consistently.
+- The end-to-end integration test now resolves the committed fixture from the
+  repo-root `data/` directory.
+- Stale `slavv-streamlit` and old mapping-doc references were removed from
+  tests and contributor templates.
+- Hessian direction estimation now explicitly pins the current scikit-image
+  derivative behavior to avoid future-warning drift.
+- Parity-mode edge cleanup now prefers shorter equal-energy duplicates before
+  downstream MATLAB-style pruning.
+- Parity-mode network construction now shares deterministic MATLAB-shaped
+  strand assembly between fresh and resumable runs, including additive
+  `strands_to_vertices` output for exact-network comparisons.
 
 ### Notes
 
 - Commit `11f8445` on 2026-03-24 mostly expands test coverage for the MATLAB
   restart flow; the primary implementation work for restartable MATLAB
   comparison runs landed in `afed6e1` on 2026-03-23.
-- As of 2026-03-26, the MATLAB-energy control reaches exact vertex parity and
-  improved edge parity (`1349` Python vs `1379` MATLAB), but exact edge and
-  strand parity still remain open.
+- As of 2026-03-26, exact vertex parity is established under MATLAB-energy
+  control, and the parity-only downstream edge/strand logic has been tightened.
+  Final exact edge/strand confirmation still requires a live MATLAB-enabled
+  comparison run.

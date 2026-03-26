@@ -95,8 +95,10 @@ Generated comparison runs should follow the staged layout documented in
 `02_Output`, `03_Analysis`, and `99_Metadata`.
 
 As of March 26, 2026, exact vertex parity under MATLAB-energy control is in
-place. Remaining parity work is concentrated in edge cleanup and downstream
-strand construction rather than low-level candidate tracing. See
+place, and the parity-only edge cleanup plus strand-assembly path now uses
+MATLAB-shaped ordering under `comparison_exact_network=True`. Live MATLAB
+comparison runs remain the final confirmation surface for exact edge and strand
+parity in a MATLAB-enabled environment. See
 [`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) for the current mapping and
 parity status.
 

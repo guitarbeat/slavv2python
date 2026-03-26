@@ -75,6 +75,7 @@ run root, keep the following staged folders:
 ## Current Parity Context
 
 As of March 26, 2026, the staged comparison surface is being used to validate
-MATLAB-energy parity work. Exact vertex parity is in place, and the remaining
-gap sits in edge cleanup and strand construction rather than low-level trace
-generation.
+MATLAB-energy parity work. Exact vertex parity is in place, and the parity-only
+edge-cleanup plus strand-construction path has been tightened to follow MATLAB
+ordering more closely. Final exact edge/strand confirmation still comes from a
+live MATLAB-enabled comparison run.

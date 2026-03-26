@@ -1,7 +1,7 @@
 ---
 name: Helper Port Request
 about: Track implementation or documentation of a MATLAB helper in Python
-title: "[Helper Port] <function>.m → Python"
+title: "[Helper Port] <function>.m -> Python"
 labels: enhancement, parity
 assignees: ''
 ---
@@ -31,4 +31,3 @@ assignees: ''
 ## Notes
 
 Reference any tests, fixtures, or sample data. Attach small examples if helpful.
-

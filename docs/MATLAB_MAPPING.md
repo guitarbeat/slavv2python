@@ -109,8 +109,14 @@ As of March 26, 2026:
 - The parity-only frontier tracer in `source/slavv/core/tracing.py` ports the
   best-first search behavior from `get_edges_for_vertex.m` closely enough to
   remove dangling-path collapse as the dominant failure mode.
-- The remaining exact-parity gap has moved downstream into edge cleanup and
-  strand construction rather than candidate tracing or report plumbing.
+- Edge cleanup in `source/slavv/core/tracing.py` now applies MATLAB-shaped
+  duplicate ordering for parity runs, including deterministic shorter-trace
+  tie-breaking before downstream pruning.
+- Network construction in `source/slavv/core/graph.py` now shares a parity-aware
+  topology path between fresh and resumable runs and emits additive
+  `strands_to_vertices` payloads for exact-network comparisons.
+- Live MATLAB comparison runs remain the final confirmation surface for exact
+  edge and strand parity in a MATLAB-enabled environment.
 
 ## Upstream Files Intentionally Not Ported
 
