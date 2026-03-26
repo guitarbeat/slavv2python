@@ -6,6 +6,9 @@ from slavv.core import SLAVVProcessor
 from slavv.core.tracing import (
     _choose_edges_matlab_style,
     _finalize_traced_edge,
+    _prune_frontier_indices_beyond_found_vertices,
+    _resolve_frontier_edge_connection,
+    _trace_origin_edges_matlab_frontier,
     extract_vertices,
     paint_vertex_center_image,
 )
@@ -256,3 +259,142 @@ def test_choose_edges_prunes_degree_excess_and_cycles():
     assert chosen["connections"].tolist() == [[0, 1], [1, 2]]
     assert chosen["diagnostics"]["degree_pruned_count"] == 1
     assert chosen["diagnostics"]["cycle_pruned_count"] == 1
+
+
+def test_frontier_tracer_finds_terminal_through_non_monotonic_energy():
+    energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
+    corridor = {
+        (3, 1, 3): -2.0,
+        (3, 2, 3): -3.0,
+        (3, 3, 3): -1.0,
+        (3, 4, 3): -4.0,
+        (3, 5, 3): -2.0,
+    }
+    for coord, value in corridor.items():
+        energy[coord] = value
+
+    vertex_positions = np.array([[3.0, 1.0, 3.0], [3.0, 5.0, 3.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 8.0,
+        },
+    )
+
+    assert payload["connections"] == [[0, 1]]
+    assert np.allclose(payload["traces"][0][-1], vertex_positions[1])
+    assert payload["diagnostics"]["stop_reason_counts"]["terminal_frontier_hit"] == 1
+
+
+def test_frontier_tracer_stops_when_best_frontier_energy_is_nonnegative():
+    energy = np.ones((5, 5, 5), dtype=np.float32)
+    energy[2, 2, 2] = -2.0
+    vertex_positions = np.array([[2.0, 2.0, 2.0]], dtype=np.float32)
+    vertex_scales = np.array([0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 4.0,
+        },
+    )
+
+    assert payload["connections"] == []
+    assert payload["diagnostics"]["stop_reason_counts"]["frontier_exhausted_nonnegative"] >= 1
+
+
+def test_frontier_tracer_records_length_limited_expansion():
+    energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
+    energy[3, 1:6, 3] = -5.0
+    vertex_positions = np.array([[3.0, 1.0, 3.0], [3.0, 5.0, 3.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 1.1,
+        },
+    )
+
+    assert payload["connections"] == []
+    assert payload["diagnostics"]["stop_reason_counts"]["length_limit"] > 0
+
+
+def test_resolve_frontier_edge_connection_invalidates_better_child_than_parent():
+    energy = np.full((5, 5, 5), 1.0, dtype=np.float32)
+    shape = energy.shape
+
+    def set_energy(coord, value):
+        energy[coord] = value
+        return int(coord[0] + coord[1] * shape[0] + coord[2] * shape[0] * shape[1])
+
+    root = set_energy((2, 2, 2), -6.0)
+    parent_mid = set_energy((2, 3, 2), -5.0)
+    parent_terminal = set_energy((2, 4, 2), -4.0)
+    child_terminal = set_energy((3, 2, 2), -7.0)
+
+    current_path = [child_terminal, root]
+    parent_path = [parent_terminal, parent_mid, root]
+    pointer_index_map = {
+        root: -1,
+        parent_terminal: -1,
+        parent_mid: -1,
+    }
+
+    origin_idx, terminal_idx = _resolve_frontier_edge_connection(
+        current_path,
+        terminal_vertex_idx=2,
+        seed_origin_idx=0,
+        edge_paths_linear=[parent_path],
+        edge_pairs=[(1, 0)],
+        pointer_index_map=pointer_index_map,
+        energy=energy,
+        shape=shape,
+    )
+
+    assert origin_idx is None
+    assert terminal_idx is None
+
+
+def test_prune_frontier_indices_beyond_found_vertices_removes_forward_voxels():
+    candidates = np.array([[2, 3, 2], [2, 4, 2], [2, 1, 2]], dtype=np.int32)
+    pruned = _prune_frontier_indices_beyond_found_vertices(
+        candidates,
+        origin_position_microns=np.array([2.0, 2.0, 2.0]),
+        displacement_vectors=[np.array([0.0, 1.0, 0.0])],
+        microns_per_voxel=np.ones(3, dtype=np.float32),
+    )
+
+    assert pruned.tolist() == [[2, 3, 2], [2, 1, 2]]

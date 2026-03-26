@@ -1,29 +1,17 @@
 """
-MATLAB ↔ Python Bridge for SLAVV.
+MATLAB to Python bridge for SLAVV checkpoint import.
 
-Converts MATLAB batch_* output folders into Python checkpoint pickles so
-the Python pipeline can resume from MATLAB-curated vertices, edges, or
-network data.
-
-Usage:
-    from slavv.io.matlab_bridge import import_matlab_batch
-
-    # Point at a MATLAB batch folder and a Python checkpoint directory
-    import_matlab_batch("path/to/batch_260210-101213", "my_checkpoints/")
-
-    # Now run the pipeline — it will skip any step that has a checkpoint
-    from slavv import SLAVVProcessor
-    processor = SLAVVProcessor()
-    results = processor.process_image(image, params, checkpoint_dir="my_checkpoints/")
+This module converts MATLAB ``batch_*`` output folders into Python checkpoint
+pickles so the Python pipeline can resume from MATLAB-produced stages.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
+import h5py
 import joblib
 import numpy as np
 
@@ -38,62 +26,224 @@ from slavv.io.matlab_parser import (
 logger = logging.getLogger(__name__)
 
 
-def _mat_vertices_to_python(mat_vertices: dict[str, Any]) -> dict[str, Any]:
-    """Convert matlab_parser vertex dict to pipeline-compatible dict."""
-    positions = mat_vertices.get("positions", np.array([]))
-    radii = mat_vertices.get("radii", np.array([]))
+def _settings_file(batch_path: Path, stem: str) -> Path | None:
+    """Return the latest settings MAT file for a given stage stem."""
+    settings_dir = batch_path / "settings"
+    if not settings_dir.exists():
+        return None
+    candidates = sorted(settings_dir.glob(f"{stem}_*.mat"))
+    return candidates[-1] if candidates else None
 
-    # Ensure positions is a list-of-lists (pipeline convention)
-    if isinstance(positions, np.ndarray) and positions.ndim == 2:
-        positions = positions.tolist()
-    elif isinstance(positions, np.ndarray):
-        positions = []
 
-    if isinstance(radii, np.ndarray) and radii.ndim >= 1:
-        radii = radii.flatten().tolist()
-    else:
-        radii = []
+def _load_stage_settings(batch_path: Path, stem: str) -> dict[str, Any]:
+    """Load a MATLAB settings MAT file with safe fallbacks."""
+    settings_path = _settings_file(batch_path, stem)
+    if settings_path is None:
+        return {}
+    data = load_mat_file_safe(settings_path)
+    return data or {}
+
+
+def _coerce_radius_axes(radius_range: Any) -> np.ndarray:
+    """Normalize MATLAB radius settings into a ``(num_scales, 3)`` array."""
+    axes = np.asarray(radius_range, dtype=np.float32)
+    if axes.size == 0:
+        return np.ones((1, 3), dtype=np.float32)
+    if axes.ndim == 1:
+        axes = axes.reshape(-1, 1)
+    if axes.shape[1] == 1:
+        axes = np.repeat(axes, 3, axis=1)
+    return axes.astype(np.float32, copy=False)
+
+
+def _scalar_radius_range(radius_axes: np.ndarray) -> np.ndarray:
+    """Collapse anisotropic radii into the scalar convention used by tracing."""
+    if radius_axes.size == 0:
+        return np.ones((1,), dtype=np.float32)
+    if radius_axes.shape[1] == 1:
+        return radius_axes[:, 0].astype(np.float32, copy=False)
+    return np.cbrt(np.prod(radius_axes, axis=1)).astype(np.float32, copy=False)
+
+
+def _read_matlab_energy_hdf5(batch_path: Path) -> tuple[np.ndarray, Path]:
+    """Read the MATLAB HDF5 sidecar that stores scale and energy volumes."""
+    data_dir = batch_path / "data"
+    candidates = sorted(
+        path
+        for path in data_dir.glob("energy_*")
+        if path.is_file() and path.suffix.lower() != ".mat"
+    )
+    if not candidates:
+        raise FileNotFoundError(f"No MATLAB HDF5 energy sidecar found in {data_dir}")
+
+    energy_path = candidates[-1]
+    with h5py.File(energy_path, "r") as handle:
+        if "d" not in handle:
+            raise KeyError(f"MATLAB energy sidecar {energy_path} does not contain dataset 'd'")
+        data = handle["d"][()]
+
+    array = np.asarray(data)
+    if array.ndim != 4:
+        raise ValueError(
+            f"Expected MATLAB energy sidecar dataset 'd' to be 4D, got shape {array.shape}"
+        )
+    if array.shape[0] != 2 and array.shape[-1] == 2:
+        array = np.moveaxis(array, -1, 0)
+    if array.shape[0] < 2:
+        raise ValueError(
+            f"Expected MATLAB energy sidecar dataset 'd' to expose 2 channels, got {array.shape}"
+        )
+
+    return array, energy_path
+
+
+def _load_matlab_energy_checkpoint(batch_path: Path) -> dict[str, Any]:
+    """Build a pipeline-compatible MATLAB energy checkpoint payload."""
+    raw_energy, energy_path = _read_matlab_energy_hdf5(batch_path)
+    settings = _load_stage_settings(batch_path, "energy")
+
+    scale_channel = np.asarray(raw_energy[0], dtype=np.float32)
+    energy_channel = np.asarray(raw_energy[1], dtype=np.float32)
+    scale_indices = np.rint(scale_channel).astype(np.int16, copy=False) - 1
+    scale_indices = np.maximum(scale_indices, 0).astype(np.int16, copy=False)
+
+    lumen_radius_pixels_axes = _coerce_radius_axes(settings.get("lumen_radius_in_pixels_range", []))
+    lumen_radius_pixels = _scalar_radius_range(lumen_radius_pixels_axes)
+    lumen_radius_microns = np.asarray(
+        settings.get("lumen_radius_in_microns_range", lumen_radius_pixels),
+        dtype=np.float32,
+    ).reshape(-1)
+    if lumen_radius_microns.size == 0:
+        lumen_radius_microns = lumen_radius_pixels.astype(np.float32, copy=False)
+
+    microns_per_voxel = np.asarray(
+        settings.get("microns_per_voxel", np.ones(3, dtype=np.float32)),
+        dtype=np.float32,
+    ).reshape(-1)
+    if microns_per_voxel.size == 1:
+        microns_per_voxel = np.repeat(microns_per_voxel, 3)
+    pixels_per_sigma_psf = np.asarray(
+        settings.get("pixels_per_sigma_PSF", np.zeros(3, dtype=np.float32)),
+        dtype=np.float32,
+    ).reshape(-1)
+    if pixels_per_sigma_psf.size == 1:
+        pixels_per_sigma_psf = np.repeat(pixels_per_sigma_psf, 3)
+    microns_per_sigma_psf = (pixels_per_sigma_psf * microns_per_voxel).astype(
+        np.float32, copy=False
+    )
 
     return {
-        "positions": positions,
-        "radii": radii,
-        "count": len(positions),
+        "energy": energy_channel.astype(np.float32, copy=False),
+        "scale_indices": scale_indices,
+        "lumen_radius_pixels": lumen_radius_pixels.astype(np.float32, copy=False),
+        "lumen_radius_pixels_axes": lumen_radius_pixels_axes.astype(np.float32, copy=False),
+        "lumen_radius_microns": lumen_radius_microns.astype(np.float32, copy=False),
+        "pixels_per_sigma_PSF": pixels_per_sigma_psf.astype(np.float32, copy=False),
+        "microns_per_sigma_PSF": microns_per_sigma_psf,
+        "energy_sign": -1.0,
+        "image_shape": tuple(int(value) for value in energy_channel.shape),
+        "energy_origin": "matlab_batch_hdf5",
+        "energy_source": "matlab_batch_hdf5",
+        "matlab_batch_folder": str(batch_path),
+        "matlab_energy_path": str(energy_path),
+    }
+
+
+def _mat_vertices_to_python(
+    mat_vertices: dict[str, Any],
+    energy_checkpoint: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Convert MATLAB parser vertex payload into a pipeline-compatible checkpoint."""
+    positions = np.asarray(mat_vertices.get("positions", np.empty((0, 3))), dtype=np.float32)
+    if positions.size == 0:
+        positions = np.empty((0, 3), dtype=np.float32)
+    elif positions.ndim == 1:
+        positions = positions.reshape(1, -1).astype(np.float32, copy=False)
+    if positions.shape[1] > 3:
+        positions = positions[:, :3]
+
+    count = int(positions.shape[0])
+    scales = np.asarray(mat_vertices.get("scale_indices", np.zeros((count,), dtype=np.int16))).reshape(
+        -1
+    )
+    if scales.size == 0:
+        scales = np.zeros((count,), dtype=np.int16)
+    elif scales.size != count:
+        scales = np.resize(scales, count)
+    scales = np.rint(scales).astype(np.int16, copy=False)
+    scales = np.maximum(scales, 0).astype(np.int16, copy=False)
+
+    radii_microns = np.asarray(mat_vertices.get("radii", np.array([])), dtype=np.float32).reshape(-1)
+    radii_pixels = np.zeros((count,), dtype=np.float32)
+
+    if energy_checkpoint is not None:
+        microns_range = np.asarray(energy_checkpoint["lumen_radius_microns"], dtype=np.float32)
+        pixels_range = np.asarray(energy_checkpoint["lumen_radius_pixels"], dtype=np.float32)
+        if count:
+            safe_scales = np.clip(scales.astype(np.int64), 0, len(microns_range) - 1)
+            radii_microns = microns_range[safe_scales].astype(np.float32, copy=False)
+            radii_pixels = pixels_range[safe_scales].astype(np.float32, copy=False)
+    elif radii_microns.size == count:
+        radii_pixels = radii_microns.astype(np.float32, copy=True)
+
+    if radii_microns.size != count:
+        radii_microns = np.zeros((count,), dtype=np.float32)
+
+    return {
+        "positions": positions.astype(np.float32, copy=False),
+        "scales": scales,
+        "energies": np.zeros((count,), dtype=np.float32),
+        "radii_pixels": radii_pixels.astype(np.float32, copy=False),
+        "radii_microns": radii_microns.astype(np.float32, copy=False),
+        "radii": radii_microns.astype(np.float32, copy=False),
+        "count": count,
     }
 
 
 def _mat_edges_to_python(mat_edges: dict[str, Any]) -> dict[str, Any]:
-    """Convert matlab_parser edge dict to pipeline-compatible dict."""
-    connections = mat_edges.get("connections", np.array([]))
+    """Convert matlab_parser edge dict to a pipeline-compatible edge checkpoint."""
+    connections = np.asarray(mat_edges.get("connections", np.array([])), dtype=np.int32)
+    if connections.size == 0:
+        connections = np.zeros((0, 2), dtype=np.int32)
+    elif connections.ndim == 1:
+        connections = connections.reshape(1, -1)
+
     traces_raw = mat_edges.get("traces", [])
+    traces: list[np.ndarray] = []
+    for trace in traces_raw:
+        arr = np.asarray(trace, dtype=np.float32)
+        if arr.size == 0:
+            continue
+        if arr.ndim == 1:
+            arr = arr.reshape(1, -1)
+        traces.append(arr.astype(np.float32, copy=False))
 
-    # connections: Nx2 array of vertex index pairs (already 0-based from parser)
-    if isinstance(connections, np.ndarray) and connections.ndim == 2 and connections.shape[1] == 2:
-        origin_indices = connections[:, 0].tolist()
-        terminal_indices = connections[:, 1].tolist()
-    else:
-        origin_indices = []
-        terminal_indices = []
-
-    # traces: list of Nx3 arrays → list of lists
-    traces = []
-    for t in traces_raw:
-        if isinstance(t, np.ndarray) and t.size > 0:
-            traces.append(t.tolist())
-        elif isinstance(t, list):
-            traces.append(t)
+    energies = [
+        np.zeros((len(trace),), dtype=np.float32)
+        for trace in traces
+    ]
+    scales = [
+        np.zeros((len(trace),), dtype=np.int16)
+        for trace in traces
+    ]
 
     return {
         "traces": traces,
-        "origin_indices": origin_indices,
-        "terminal_indices": terminal_indices,
-        "count": max(len(traces), len(origin_indices)),
-        "total_length": mat_edges.get("total_length", 0.0),
+        "connections": connections.astype(np.int32, copy=False),
+        "energies": np.zeros((len(traces),), dtype=np.float32),
+        "energy_traces": energies,
+        "scale_traces": scales,
+        "origin_indices": connections[:, 0].astype(np.int32, copy=False)
+        if len(connections)
+        else np.zeros((0,), dtype=np.int32),
+        "count": int(max(len(traces), len(connections))),
+        "total_length": float(mat_edges.get("total_length", 0.0)),
     }
 
 
 def import_matlab_batch(
-    batch_folder: Union[str, Path],
-    checkpoint_dir: Union[str, Path],
+    batch_folder: str | Path,
+    checkpoint_dir: str | Path,
     *,
     stages: list | None = None,
 ) -> dict[str, str]:
@@ -102,91 +252,89 @@ def import_matlab_batch(
 
     Parameters
     ----------
-    batch_folder : str | Path
-        Path to a MATLAB ``batch_*`` folder (or a parent dir containing one).
-    checkpoint_dir : str | Path
+    batch_folder
+        Path to a MATLAB ``batch_*`` folder or a parent directory containing one.
+    checkpoint_dir
         Directory where Python checkpoint pickles will be written.
-    stages : list, optional
-        Which stages to import.  Defaults to all available:
-        ``['energy', 'vertices', 'edges', 'network']``.
-
-    Returns
-    -------
-    dict
-        Mapping of stage name → checkpoint file path that was written.
+    stages
+        Stages to import. Defaults to ``["energy", "vertices", "edges", "network"]``.
     """
     batch_path = Path(batch_folder)
 
-    # If user pointed at a parent directory, auto-discover batch subfolder
     if not (batch_path / "vectors").exists():
         found = find_batch_folder(batch_path)
         if found is None:
             raise FileNotFoundError(f"No MATLAB batch_* folder found in {batch_folder}")
         batch_path = found
 
+    checkpoint_path = Path(checkpoint_dir)
+    checkpoint_path.mkdir(parents=True, exist_ok=True)
     vectors_dir = batch_path / "vectors"
     data_dir = batch_path / "data"
-    os.makedirs(checkpoint_dir, exist_ok=True)
 
     if stages is None:
         stages = ["energy", "vertices", "edges", "network"]
 
-    written = {}
+    written: dict[str, str] = {}
+    energy_checkpoint: dict[str, Any] | None = None
 
-    # ── Energy ────────────────────────────────────────────────────────────
     if "energy" in stages:
-        energy_files = sorted(data_dir.glob("energy*.mat")) if data_dir.exists() else []
-        if not energy_files:
-            energy_files = sorted(vectors_dir.glob("energy*.mat"))
-        if energy_files:
-            mat = load_mat_file_safe(energy_files[-1])
-            if mat:
-                # The energy image is typically stored as a 3D array
-                for key in ("energy", "energy_data", "energy_image"):
-                    if key in mat and isinstance(mat[key], np.ndarray):
-                        out = os.path.join(checkpoint_dir, "checkpoint_energy.pkl")
-                        joblib.dump({"energy_image": mat[key]}, out)
-                        written["energy"] = out
-                        logger.info("Wrote energy checkpoint: %s", out)
-                        break
+        energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
+        output_path = checkpoint_path / "checkpoint_energy.pkl"
+        joblib.dump(energy_checkpoint, output_path)
+        written["energy"] = str(output_path)
+        logger.info("Wrote MATLAB energy checkpoint: %s", output_path)
 
-    # ── Vertices ──────────────────────────────────────────────────────────
     if "vertices" in stages:
-        v_files = sorted(vectors_dir.glob("vertices_*.mat"))
-        if v_files:
-            mat = load_mat_file_safe(v_files[-1])
+        vertex_files = sorted(vectors_dir.glob("curated_vertices_*.mat")) or sorted(
+            vectors_dir.glob("vertices_*.mat")
+        )
+        if vertex_files:
+            mat = load_mat_file_safe(vertex_files[-1])
             if mat:
-                raw = extract_vertices(mat)
-                py_verts = _mat_vertices_to_python(raw)
-                out = os.path.join(checkpoint_dir, "checkpoint_vertices.pkl")
-                joblib.dump(py_verts, out)
-                written["vertices"] = out
-                logger.info("Wrote vertices checkpoint (%d verts): %s", py_verts["count"], out)
+                if energy_checkpoint is None:
+                    try:
+                        energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
+                    except Exception as exc:  # pragma: no cover - fallback path only
+                        logger.warning("Unable to preload MATLAB energy metadata for vertices: %s", exc)
+                raw_vertices = extract_vertices(mat)
+                vertices_checkpoint = _mat_vertices_to_python(raw_vertices, energy_checkpoint)
+                output_path = checkpoint_path / "checkpoint_vertices.pkl"
+                joblib.dump(vertices_checkpoint, output_path)
+                written["vertices"] = str(output_path)
+                logger.info(
+                    "Wrote vertices checkpoint (%d vertices): %s",
+                    vertices_checkpoint["count"],
+                    output_path,
+                )
 
-    # ── Edges ─────────────────────────────────────────────────────────────
     if "edges" in stages:
-        e_files = sorted(vectors_dir.glob("edges_*.mat"))
-        if e_files:
-            mat = load_mat_file_safe(e_files[-1])
+        edge_files = sorted(vectors_dir.glob("curated_edges_*.mat")) or sorted(
+            vectors_dir.glob("edges_*.mat")
+        )
+        if edge_files:
+            mat = load_mat_file_safe(edge_files[-1])
             if mat:
-                raw = extract_edges(mat)
-                py_edges = _mat_edges_to_python(raw)
-                out = os.path.join(checkpoint_dir, "checkpoint_edges.pkl")
-                joblib.dump(py_edges, out)
-                written["edges"] = out
-                logger.info("Wrote edges checkpoint (%d edges): %s", py_edges["count"], out)
+                edges_checkpoint = _mat_edges_to_python(extract_edges(mat))
+                output_path = checkpoint_path / "checkpoint_edges.pkl"
+                joblib.dump(edges_checkpoint, output_path)
+                written["edges"] = str(output_path)
+                logger.info(
+                    "Wrote edges checkpoint (%d edges): %s",
+                    edges_checkpoint["count"],
+                    output_path,
+                )
 
-    # ── Network ───────────────────────────────────────────────────────────
     if "network" in stages:
-        n_files = sorted(vectors_dir.glob("network_*.mat"))
-        if n_files:
-            mat = load_mat_file_safe(n_files[-1])
+        network_files = sorted(vectors_dir.glob("network_*.mat"))
+        if network_files:
+            mat = load_mat_file_safe(network_files[-1])
             if mat:
-                net = extract_network_data(mat)
-                out = os.path.join(checkpoint_dir, "checkpoint_network.pkl")
-                joblib.dump(net, out)
-                written["network"] = out
-                logger.info("Wrote network checkpoint: %s", out)
+                network_checkpoint = extract_network_data(mat)
+                output_path = checkpoint_path / "checkpoint_network.pkl"
+                joblib.dump(network_checkpoint, output_path)
+                written["network"] = str(output_path)
+                logger.info("Wrote network checkpoint: %s", output_path)
 
     if not written:
         logger.warning("No MATLAB data files found in %s", batch_path)
@@ -194,8 +342,11 @@ def import_matlab_batch(
         logger.info(
             "Imported %d MATLAB stage(s) into %s: %s",
             len(written),
-            checkpoint_dir,
+            checkpoint_path,
             list(written.keys()),
         )
+
+    if "energy" in stages and not data_dir.exists():
+        logger.warning("Expected MATLAB data directory missing during import: %s", data_dir)
 
     return written

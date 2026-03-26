@@ -68,6 +68,11 @@ def generate_summary(run_dir: Path, output_file: Path):
     lines.append("=" * 70)
     lines.append(f"Run: {run_name}")
     lines.append(f"Date: {date_str}")
+    comparison_mode = report.get("python", {}).get("comparison_mode", {})
+    if comparison_mode.get("energy_source"):
+        lines.append(f"Python energy source: {comparison_mode['energy_source']}")
+    if comparison_mode.get("result_source"):
+        lines.append(f"Python result source: {comparison_mode['result_source']}")
     lines.append("")
 
     # Performance section
@@ -199,6 +204,20 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(stop_reason_counts.get('max_steps', 0)):,}/"
                 f"{int(stop_reason_counts.get('direct_terminal_hit', 0)):,}"
             )
+            if any(
+                key in stop_reason_counts
+                for key in (
+                    "frontier_exhausted_nonnegative",
+                    "length_limit",
+                    "terminal_frontier_hit",
+                )
+            ):
+                lines.append(
+                    "Frontier stop reasons exhausted/length-limit/terminal-hit: "
+                    f"{int(stop_reason_counts.get('frontier_exhausted_nonnegative', 0)):,}/"
+                    f"{int(stop_reason_counts.get('length_limit', 0)):,}/"
+                    f"{int(stop_reason_counts.get('terminal_frontier_hit', 0)):,}"
+                )
         lines.append("")
 
     # Status/notes

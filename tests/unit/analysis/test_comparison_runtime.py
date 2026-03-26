@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import joblib
+
 from slavv.evaluation.comparison import (
     discover_matlab_artifacts,
     orchestrate_comparison,
@@ -218,3 +220,56 @@ def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkey
     assert result == 0
     assert captured["python_results"]["vertices_count"] == 1
     assert "results" in captured["python_results"]
+
+
+def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path, monkeypatch):
+    import slavv.evaluation.comparison as comparison_module
+
+    run_dir = tmp_path / "comparison_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    checkpoint_dir = python_dir / "checkpoints"
+    batch_dir = matlab_dir / "batch_260326-090000"
+    batch_dir.mkdir(parents=True)
+    checkpoint_dir.mkdir(parents=True)
+
+    joblib.dump(
+        {"energy_origin": "matlab_batch_hdf5", "energy_source": "matlab_batch_hdf5"},
+        checkpoint_dir / "checkpoint_energy.pkl",
+    )
+    joblib.dump({"positions": [[0, 0, 0]]}, checkpoint_dir / "checkpoint_vertices.pkl")
+    joblib.dump({"connections": [[0, 0]], "traces": []}, checkpoint_dir / "checkpoint_edges.pkl")
+    joblib.dump({"strands": []}, checkpoint_dir / "checkpoint_network.pkl")
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {
+            "vertices": {"count": 1, "positions": []},
+            "edges": {"count": 1, "connections": [[0, 0]], "traces": []},
+            "network": {"strands": []},
+            "network_stats": {"strand_count": 0},
+        }
+
+    captured = {}
+
+    def fake_compare_results(_matlab_results, python_results, _matlab_parsed):
+        captured["comparison_mode"] = python_results["comparison_mode"]
+        return {
+            "matlab": {"elapsed_time": 0.0},
+            "python": {"elapsed_time": 0.0},
+            "performance": {},
+            "vertices": {"matlab_count": 1, "python_count": 1},
+            "edges": {"matlab_count": 1, "python_count": 1},
+            "network": {"matlab_strand_count": 0, "python_strand_count": 0},
+            "parity_gate": {"vertices_exact": True, "edges_exact": True, "strands_exact": True},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+
+    result = run_standalone_comparison(matlab_dir, python_dir, run_dir, tmp_path)
+
+    assert result == 0
+    assert captured["comparison_mode"]["result_source"] == "checkpoints"
+    assert captured["comparison_mode"]["energy_source"] == "matlab_batch_hdf5"

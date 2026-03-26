@@ -168,6 +168,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     (matlab_dir / "batch_260210-100526").mkdir(parents=True)
     (python_dir / "network.json").write_text("{}", encoding="utf-8")
     report = {
+        "python": {"comparison_mode": {"energy_source": "matlab_batch_hdf5"}},
         "edges": {
             "diagnostics": {
                 "python": {
@@ -192,6 +193,9 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         "energy_rise_step_halving": 15,
                         "max_steps": 16,
                         "direct_terminal_hit": 17,
+                        "frontier_exhausted_nonnegative": 18,
+                        "length_limit": 19,
+                        "terminal_frontier_hit": 20,
                     },
                 }
             }
@@ -205,6 +209,8 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
 
     assert "Terminal resolution direct/reverse-center/reverse-near: 9/10/11" in summary
     assert "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: 12/13/14/15/16/17" in summary
+    assert "Frontier stop reasons exhausted/length-limit/terminal-hit: 18/19/20" in summary
+    assert "Python energy source: matlab_batch_hdf5" in summary
 
 
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):

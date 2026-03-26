@@ -29,6 +29,8 @@ def test_validate_parameters_defaults():
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
     assert validated["energy_sign"] == -1.0
+    assert validated["comparison_exact_network"] is False
+    assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
 
 
 def test_validate_parameters_invalid():

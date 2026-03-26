@@ -74,6 +74,10 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["max_voxels_per_node_energy"] = params.get("max_voxels_per_node_energy", 1e5)
     validated["energy_upper_bound"] = params.get("energy_upper_bound", 0.0)
     validated["space_strel_apothem"] = params.get("space_strel_apothem", 1)
+    validated["space_strel_apothem_edges"] = params.get(
+        "space_strel_apothem_edges",
+        validated["space_strel_apothem"],
+    )
     validated["max_voxels_per_node"] = params.get("max_voxels_per_node", 6000)
     validated["length_dilation_ratio"] = params.get("length_dilation_ratio", 1.0)
     validated["number_of_edges_per_vertex"] = params.get("number_of_edges_per_vertex", 4)
@@ -113,5 +117,6 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     if validated["bandpass_window"] < 0:
         raise ValueError("bandpass_window must be non-negative; set 0 to disable")
     validated["discrete_tracing"] = params.get("discrete_tracing", False)
+    validated["comparison_exact_network"] = bool(params.get("comparison_exact_network", False))
 
     return validated

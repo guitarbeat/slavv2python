@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import math
+from heapq import heappop, heappush
 from typing import TYPE_CHECKING, Any
 
 import joblib
@@ -88,6 +89,9 @@ def _empty_stop_reason_counts() -> dict[str, int]:
         "energy_rise_step_halving": 0,
         "max_steps": 0,
         "direct_terminal_hit": 0,
+        "frontier_exhausted_nonnegative": 0,
+        "length_limit": 0,
+        "terminal_frontier_hit": 0,
     }
 
 
@@ -111,6 +115,19 @@ def _empty_edge_diagnostics() -> dict[str, Any]:
         "terminal_reverse_near_hit_count": 0,
         "stop_reason_counts": _empty_stop_reason_counts(),
     }
+
+
+def _merge_edge_diagnostics(target: dict[str, Any], source: dict[str, Any]) -> None:
+    """Merge additive edge diagnostics from one payload into another."""
+    for key, value in source.items():
+        if key == "stop_reason_counts":
+            target_counts = target.setdefault("stop_reason_counts", _empty_stop_reason_counts())
+            for stop_reason, count in value.items():
+                target_counts[stop_reason] = int(target_counts.get(stop_reason, 0)) + int(count)
+            continue
+
+        if isinstance(value, (int, np.integer)):
+            target[key] = int(target.get(key, 0)) + int(value)
 
 
 def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str, Any]:
@@ -885,6 +902,398 @@ def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
     return value
 
 
+def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, Any]) -> bool:
+    """Enable the parity-specific frontier tracer only for MATLAB-energy parity runs."""
+    if not bool(params.get("comparison_exact_network", False)):
+        return False
+    return energy_data.get("energy_origin") == "matlab_batch_hdf5"
+
+
+def _matlab_frontier_offsets(
+    strel_apothem: int,
+    microns_per_voxel: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Construct MATLAB-style cube-neighborhood offsets with Y-fastest ordering."""
+    local_range = np.arange(-strel_apothem, strel_apothem + 1, dtype=np.int32)
+    offsets = np.array(
+        [[y, x, z] for z in local_range for x in local_range for y in local_range],
+        dtype=np.int32,
+    )
+    distances = np.sqrt(np.sum((offsets.astype(np.float64) * microns_per_voxel) ** 2, axis=1))
+    return offsets, distances.astype(np.float32, copy=False)
+
+
+def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]) -> int:
+    """Convert a 0-based ``(y, x, z)`` coordinate into MATLAB linear order."""
+    y, x, z = (int(value) for value in coord[:3])
+    return int(y + x * shape[0] + z * shape[0] * shape[1])
+
+
+def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np.ndarray:
+    """Convert a 0-based MATLAB linear index into a ``(y, x, z)`` coordinate."""
+    xy_plane = shape[0] * shape[1]
+    z = index // xy_plane
+    pos_xy = index - z * xy_plane
+    x = pos_xy // shape[0]
+    y = pos_xy - x * shape[0]
+    return np.array([y, x, z], dtype=np.int32)
+
+
+def _path_coords_from_linear_indices(
+    path_linear: list[int],
+    shape: tuple[int, int, int],
+) -> np.ndarray:
+    """Convert a linear-index path into origin-to-terminal spatial coordinates."""
+    coords = [_matlab_linear_index_to_coord(index, shape) for index in reversed(path_linear)]
+    return np.asarray(coords, dtype=np.float32)
+
+
+def _path_max_energy_from_linear_indices(
+    path_linear: list[int],
+    energy: np.ndarray,
+    shape: tuple[int, int, int],
+) -> float:
+    """Return the maximum sampled energy along a linear-index path."""
+    if not path_linear:
+        return float("-inf")
+    samples = []
+    for index in path_linear:
+        coord = _matlab_linear_index_to_coord(index, shape)
+        samples.append(float(energy[coord[0], coord[1], coord[2]]))
+    return max(samples) if samples else float("-inf")
+
+
+def _prune_frontier_indices_beyond_found_vertices(
+    candidate_coords: np.ndarray,
+    origin_position_microns: np.ndarray,
+    displacement_vectors: list[np.ndarray],
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Remove frontier voxels that lie beyond an already-found terminal direction."""
+    if len(candidate_coords) == 0 or not displacement_vectors:
+        return candidate_coords
+
+    vectors_from_origin = candidate_coords.astype(np.float64) * microns_per_voxel - origin_position_microns
+    indices_beyond = np.zeros((len(candidate_coords),), dtype=bool)
+    for displacement in displacement_vectors:
+        indices_beyond |= np.sum(displacement * vectors_from_origin, axis=1) > 1.0
+    return candidate_coords[~indices_beyond]
+
+
+def _resolve_frontier_edge_connection(
+    current_path_linear: list[int],
+    terminal_vertex_idx: int,
+    seed_origin_idx: int,
+    edge_paths_linear: list[list[int]],
+    edge_pairs: list[tuple[int, int]],
+    pointer_index_map: dict[int, int],
+    energy: np.ndarray,
+    shape: tuple[int, int, int],
+) -> tuple[int | None, int | None]:
+    """Resolve MATLAB-style parent/child validity for a frontier-found terminal."""
+    root_index = current_path_linear[-1]
+    root_pointer = int(pointer_index_map.get(root_index, 0))
+    parent_index = -root_pointer if root_pointer < 0 else 0
+
+    if parent_index == 0:
+        return seed_origin_idx, terminal_vertex_idx
+
+    parent_path = edge_paths_linear[parent_index - 1]
+    parent_pointers = {
+        -int(pointer_index_map.get(index, 0))
+        for index in parent_path
+        if int(pointer_index_map.get(index, 0)) < 0
+    }
+    parent_pointers.discard(0)
+    parent_pointers.discard(parent_index)
+    if parent_pointers:
+        return None, None
+
+    parent_terminal, parent_origin = edge_pairs[parent_index - 1]
+    if parent_terminal < 0 or parent_origin < 0:
+        return None, None
+
+    parent_energy = _path_max_energy_from_linear_indices(parent_path, energy, shape)
+    child_energy = _path_max_energy_from_linear_indices(current_path_linear, energy, shape)
+    if child_energy <= parent_energy:
+        return None, None
+
+    if root_index not in parent_path:
+        return None, None
+
+    bifurcation_index = parent_path.index(root_index)
+    parent_1 = parent_path[:bifurcation_index]
+    parent_2 = parent_path[bifurcation_index + 1 :]
+    parent_1_energy = (
+        _path_max_energy_from_linear_indices(parent_1, energy, shape)
+        if parent_1
+        else float("-inf")
+    )
+    parent_2_energy = (
+        _path_max_energy_from_linear_indices(parent_2, energy, shape)
+        if parent_2
+        else float("-inf")
+    )
+    better_half = 0 if parent_1_energy <= parent_2_energy else 1
+    origin_vertex_idx = (parent_terminal, parent_origin)[better_half]
+    if origin_vertex_idx < 0:
+        return None, None
+    return origin_vertex_idx, terminal_vertex_idx
+
+
+def _trace_origin_edges_matlab_frontier(
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    vertex_center_image: np.ndarray,
+    origin_vertex_idx: int,
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Trace a single origin using a MATLAB-style best-first voxel frontier."""
+    shape = energy.shape
+    max_edges_per_vertex = int(params.get("number_of_edges_per_vertex", 4))
+    max_length_ratio = float(params.get("max_edge_length_per_origin_radius", 60.0))
+    strel_apothem = int(
+        params.get(
+            "space_strel_apothem_edges",
+            params.get("space_strel_apothem", max(1, round(params.get("step_size_per_origin_radius", 1.0)))),
+        )
+    )
+    offsets, offset_distances = _matlab_frontier_offsets(strel_apothem, microns_per_voxel)
+    origin_coord = np.rint(vertex_positions[origin_vertex_idx]).astype(np.int32)
+    origin_coord[0] = np.clip(origin_coord[0], 0, shape[0] - 1)
+    origin_coord[1] = np.clip(origin_coord[1], 0, shape[1] - 1)
+    origin_coord[2] = np.clip(origin_coord[2], 0, shape[2] - 1)
+    origin_linear = _coord_to_matlab_linear_index(origin_coord, shape)
+    origin_position_microns = origin_coord.astype(np.float64) * microns_per_voxel
+    origin_scale = int(vertex_scales[origin_vertex_idx])
+    origin_radius_microns = float(lumen_radius_microns[origin_scale])
+    max_edge_length_microns = max_length_ratio * origin_radius_microns
+    max_edge_length_voxels = int(np.round(max_edge_length_microns / np.min(microns_per_voxel))) + 1
+    max_number_of_indices = max(1, max_edge_length_voxels * max_edges_per_vertex)
+
+    diagnostics = _empty_edge_diagnostics()
+    traces: list[np.ndarray] = []
+    connections: list[list[int]] = []
+    metrics: list[float] = []
+    energy_traces: list[np.ndarray] = []
+    scale_traces: list[np.ndarray] = []
+    origin_indices: list[int] = []
+    edge_paths_linear: list[list[int]] = []
+    edge_pairs: list[tuple[int, int]] = []
+    displacement_vectors: list[np.ndarray] = []
+    previous_indices_visited: list[int] = []
+    pointer_index_map: dict[int, int] = {origin_linear: 0}
+    pointer_energy_map: dict[int, float] = {}
+    distance_map: dict[int, float] = {origin_linear: 0.0}
+    available_map: dict[int, float] = {}
+    available_heap: list[tuple[float, int]] = []
+
+    current_linear = origin_linear
+
+    while len(edge_paths_linear) < max_edges_per_vertex and len(previous_indices_visited) < max_number_of_indices:
+        current_coord = _matlab_linear_index_to_coord(current_linear, shape)
+        current_energy = float(energy[current_coord[0], current_coord[1], current_coord[2]])
+        terminal_vertex_idx = int(vertex_center_image[current_coord[0], current_coord[1], current_coord[2]]) - 1
+        if terminal_vertex_idx == origin_vertex_idx:
+            terminal_vertex_idx = -1
+
+        previous_indices_visited.append(current_linear)
+        current_visit_order = len(previous_indices_visited)
+        pointer_energy_map[current_linear] = float("-inf")
+
+        neighbor_coords = current_coord + offsets
+        valid_mask = (
+            (neighbor_coords[:, 0] >= 0)
+            & (neighbor_coords[:, 0] < shape[0])
+            & (neighbor_coords[:, 1] >= 0)
+            & (neighbor_coords[:, 1] < shape[1])
+            & (neighbor_coords[:, 2] >= 0)
+            & (neighbor_coords[:, 2] < shape[2])
+        )
+        neighbor_coords = neighbor_coords[valid_mask]
+        neighbor_distances = offset_distances[valid_mask]
+        new_coords: list[np.ndarray] = []
+        new_distances: list[float] = []
+        for coord, distance in zip(neighbor_coords, neighbor_distances):
+            linear_index = _coord_to_matlab_linear_index(coord, shape)
+            if pointer_energy_map.get(linear_index, 0.0) > current_energy:
+                pointer_index_map[linear_index] = current_visit_order
+                pointer_energy_map[linear_index] = current_energy
+                distance_map[linear_index] = distance_map[current_linear] + float(distance)
+                new_coords.append(coord.astype(np.int32, copy=False))
+                new_distances.append(float(distance_map[linear_index]))
+
+        if new_coords:
+            new_coords_array = np.asarray(new_coords, dtype=np.int32)
+            new_distances_array = np.asarray(new_distances, dtype=np.float32)
+            within_length = new_distances_array < max_edge_length_microns
+            diagnostics["stop_reason_counts"]["length_limit"] += int(np.sum(~within_length))
+            new_coords_array = new_coords_array[within_length]
+            if len(new_coords_array):
+                new_coords_array = _prune_frontier_indices_beyond_found_vertices(
+                    new_coords_array,
+                    origin_position_microns,
+                    displacement_vectors,
+                    microns_per_voxel,
+                )
+        else:
+            new_coords_array = np.empty((0, 3), dtype=np.int32)
+
+        if terminal_vertex_idx >= 0:
+            diagnostics["stop_reason_counts"]["terminal_frontier_hit"] += 1
+            path_linear = [current_linear]
+            tracing_linear = current_linear
+            while int(pointer_index_map.get(tracing_linear, 0)) > 0:
+                tracing_linear = previous_indices_visited[int(pointer_index_map[tracing_linear]) - 1]
+                path_linear.append(tracing_linear)
+
+            for path_index in path_linear[:-1]:
+                pointer_index_map[path_index] = -(len(edge_paths_linear) + 1)
+
+            origin_idx, terminal_idx = _resolve_frontier_edge_connection(
+                path_linear,
+                terminal_vertex_idx,
+                origin_vertex_idx,
+                edge_paths_linear,
+                edge_pairs,
+                pointer_index_map,
+                energy,
+                shape,
+            )
+
+            edge_paths_linear.append(path_linear)
+            edge_pairs.append(
+                (
+                    int(terminal_idx) if terminal_idx is not None else -1,
+                    int(origin_idx) if origin_idx is not None else -1,
+                )
+            )
+
+            current_position = current_coord.astype(np.float64) * microns_per_voxel
+            displacement = current_position - origin_position_microns
+            displacement_norm_sq = float(np.sum(displacement**2))
+            if displacement_norm_sq > 0:
+                displacement_vectors.append(displacement / displacement_norm_sq)
+
+            if origin_idx is not None and terminal_idx is not None:
+                edge_trace = _path_coords_from_linear_indices(path_linear, shape)
+                energy_trace = _trace_energy_series(edge_trace, energy)
+                scale_trace = _trace_scale_series(edge_trace, scale_indices)
+                traces.append(edge_trace)
+                connections.append([int(origin_idx), int(terminal_idx)])
+                metrics.append(_edge_metric_from_energy_trace(energy_trace))
+                energy_traces.append(energy_trace)
+                scale_traces.append(scale_trace)
+                origin_indices.append(origin_vertex_idx)
+                diagnostics["terminal_direct_hit_count"] += 1
+        else:
+            for coord in new_coords_array:
+                linear_index = _coord_to_matlab_linear_index(coord, shape)
+                available_energy = float(energy[coord[0], coord[1], coord[2]])
+                available_map[linear_index] = available_energy
+                heappush(available_heap, (available_energy, linear_index))
+
+        available_map.pop(current_linear, None)
+        next_current = None
+        while available_heap:
+            candidate_energy, candidate_linear = heappop(available_heap)
+            if available_map.get(candidate_linear) != candidate_energy:
+                continue
+            if candidate_energy >= 0:
+                available_map.pop(candidate_linear, None)
+                diagnostics["stop_reason_counts"]["frontier_exhausted_nonnegative"] += 1
+                available_heap.clear()
+                next_current = None
+                break
+            next_current = int(candidate_linear)
+            break
+
+        if next_current is None:
+            if not available_map:
+                diagnostics["stop_reason_counts"]["frontier_exhausted_nonnegative"] += 1
+            break
+
+        current_linear = next_current
+
+    return {
+        "origin_index": origin_vertex_idx,
+        "traces": traces,
+        "connections": connections,
+        "metrics": metrics,
+        "energy_traces": energy_traces,
+        "scale_traces": scale_traces,
+        "origin_indices": [origin_vertex_idx] * len(traces),
+        "diagnostics": diagnostics,
+    }
+
+
+def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any]) -> None:
+    """Append a per-origin candidate payload into the aggregate candidate manifest."""
+    unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]
+    unit_connections = np.asarray(unit_payload["connections"], dtype=np.int32).reshape(-1, 2)
+    unit_metrics = np.asarray(unit_payload["metrics"], dtype=np.float32).reshape(-1)
+    unit_origin_indices = np.asarray(unit_payload.get("origin_indices", []), dtype=np.int32).reshape(-1)
+
+    target["traces"].extend(unit_traces)
+    target["energy_traces"].extend(
+        np.asarray(trace, dtype=np.float32) for trace in unit_payload["energy_traces"]
+    )
+    target["scale_traces"].extend(
+        np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
+    )
+
+    if unit_connections.size:
+        target["connections"] = (
+            unit_connections
+            if target["connections"].size == 0
+            else np.vstack([target["connections"], unit_connections])
+        )
+        target["metrics"] = np.concatenate([target["metrics"], unit_metrics])
+        target["origin_indices"] = np.concatenate([target["origin_indices"], unit_origin_indices])
+
+    _merge_edge_diagnostics(target["diagnostics"], unit_payload.get("diagnostics", {}))
+
+
+def _generate_edge_candidates_matlab_frontier(
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    vertex_center_image: np.ndarray,
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Generate edge candidates using the MATLAB-style best-first frontier search."""
+    candidates = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+        "diagnostics": _empty_edge_diagnostics(),
+    }
+    for origin_vertex_idx in range(len(vertex_positions)):
+        unit_payload = _trace_origin_edges_matlab_frontier(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            origin_vertex_idx,
+            params,
+        )
+        _append_candidate_unit(candidates, unit_payload)
+    return candidates
+
+
 def _generate_edge_candidates(
     energy: np.ndarray,
     scale_indices: np.ndarray | None,
@@ -1649,20 +2058,32 @@ def extract_edges(
     tree = cKDTree(vertex_positions_microns)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
-    candidates = _generate_edge_candidates(
-        energy,
-        scale_indices,
-        vertex_positions,
-        vertex_scales,
-        lumen_radius_pixels,
-        lumen_radius_microns,
-        microns_per_voxel,
-        vertex_center_image,
-        tree,
-        max_search_radius,
-        params,
-        energy_sign,
-    )
+    if _use_matlab_frontier_tracer(energy_data, params):
+        candidates = _generate_edge_candidates_matlab_frontier(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            params,
+        )
+    else:
+        candidates = _generate_edge_candidates(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_pixels,
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            tree,
+            max_search_radius,
+            params,
+            energy_sign,
+        )
     chosen = _choose_edges_matlab_style(
         candidates,
         vertex_positions.astype(np.float32),
@@ -1932,19 +2353,7 @@ def _load_edge_units(
             np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
         )
         origin_indices.extend(int(value) for value in unit_payload.get("origin_indices", []))
-        unit_diagnostics = unit_payload.get("diagnostics", {})
-        for key, value in unit_diagnostics.items():
-            if key == "stop_reason_counts":
-                for stop_reason, count in value.items():
-                    payload["diagnostics"]["stop_reason_counts"][stop_reason] = int(
-                        payload["diagnostics"]["stop_reason_counts"].get(stop_reason, 0)
-                    ) + int(count)
-            elif key in {
-                "terminal_direct_hit_count",
-                "terminal_reverse_center_hit_count",
-                "terminal_reverse_near_hit_count",
-            }:
-                payload["diagnostics"][key] += int(value)
+        _merge_edge_diagnostics(payload["diagnostics"], unit_payload.get("diagnostics", {}))
 
     payload["traces"] = traces
     payload["connections"] = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
@@ -1998,6 +2407,7 @@ def extract_edges_resumable(
     max_search_radius = max_vertex_radius * 5.0
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
+    use_frontier_tracer = _use_matlab_frontier_tracer(energy_data, params)
 
     stage_controller.begin(
         detail="Tracing edges with resumable origin units",
@@ -2011,70 +2421,89 @@ def extract_edges_resumable(
         if vertex_idx in completed:
             continue
 
-        unit_traces: list[np.ndarray] = []
-        unit_connections: list[list[int]] = []
-        unit_metrics: list[float] = []
-        unit_energy_traces: list[np.ndarray] = []
-        unit_scale_traces: list[np.ndarray] = []
-        unit_trace_metadata: list[dict[str, Any]] = []
-        start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
-        step_size = start_radius * step_size_ratio
-        max_length = start_radius * max_length_ratio
-        max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
-        if direction_method == "hessian":
-            directions = estimate_vessel_directions(
+        if use_frontier_tracer:
+            frontier_payload = _trace_origin_edges_matlab_frontier(
                 energy,
-                start_pos,
-                start_radius,
-                microns_per_voxel,
-            )
-            if directions.shape[0] < max_edges_per_vertex:
-                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
-                directions = np.vstack([directions, extra])
-            else:
-                directions = directions[:max_edges_per_vertex]
-        else:
-            directions = generate_edge_directions(max_edges_per_vertex)
-
-        for direction in directions:
-            edge_trace, trace_metadata = trace_edge(
-                energy_prepared,
-                start_pos,
-                direction,
-                step_size,
-                max_edge_energy,
+                scale_indices,
                 vertex_positions,
                 vertex_scales,
-                lumen_radius_pixels,
                 lumen_radius_microns,
-                max_steps,
-                mpv_prepared,
-                energy_sign,
-                discrete_steps=discrete_tracing,
-                vertex_center_image=vertex_center_image,
-                tree=tree,
-                max_search_radius=max_search_radius,
-                origin_vertex_idx=vertex_idx,
-                return_metadata=True,
+                microns_per_voxel,
+                vertex_center_image,
+                vertex_idx,
+                params,
             )
-            if len(edge_trace) <= 1:
-                continue
-            edge_arr = np.asarray(edge_trace, dtype=np.float32)
-            terminal_vertex = trace_metadata["terminal_vertex"]
-            energy_trace = _trace_energy_series(edge_arr, energy)
-            scale_trace = _trace_scale_series(edge_arr, scale_indices)
-            unit_traces.append(edge_arr)
-            unit_connections.append(
-                [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
-            )
-            unit_metrics.append(_edge_metric_from_energy_trace(energy_trace))
-            unit_energy_traces.append(energy_trace)
-            unit_scale_traces.append(scale_trace)
-            unit_trace_metadata.append(trace_metadata)
+            unit_traces = frontier_payload["traces"]
+            unit_connections = frontier_payload["connections"]
+            unit_metrics = frontier_payload["metrics"]
+            unit_energy_traces = frontier_payload["energy_traces"]
+            unit_scale_traces = frontier_payload["scale_traces"]
+            unit_diagnostics = frontier_payload["diagnostics"]
+        else:
+            unit_traces = []
+            unit_connections = []
+            unit_metrics = []
+            unit_energy_traces = []
+            unit_scale_traces = []
+            unit_trace_metadata: list[dict[str, Any]] = []
+            start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
+            step_size = start_radius * step_size_ratio
+            max_length = start_radius * max_length_ratio
+            max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+            if direction_method == "hessian":
+                directions = estimate_vessel_directions(
+                    energy,
+                    start_pos,
+                    start_radius,
+                    microns_per_voxel,
+                )
+                if directions.shape[0] < max_edges_per_vertex:
+                    extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                    directions = np.vstack([directions, extra])
+                else:
+                    directions = directions[:max_edges_per_vertex]
+            else:
+                directions = generate_edge_directions(max_edges_per_vertex)
 
-        unit_diagnostics = _empty_edge_diagnostics()
-        for trace_metadata in unit_trace_metadata:
-            _record_trace_diagnostics(unit_diagnostics, trace_metadata)
+            for direction in directions:
+                edge_trace, trace_metadata = trace_edge(
+                    energy_prepared,
+                    start_pos,
+                    direction,
+                    step_size,
+                    max_edge_energy,
+                    vertex_positions,
+                    vertex_scales,
+                    lumen_radius_pixels,
+                    lumen_radius_microns,
+                    max_steps,
+                    mpv_prepared,
+                    energy_sign,
+                    discrete_steps=discrete_tracing,
+                    vertex_center_image=vertex_center_image,
+                    tree=tree,
+                    max_search_radius=max_search_radius,
+                    origin_vertex_idx=vertex_idx,
+                    return_metadata=True,
+                )
+                if len(edge_trace) <= 1:
+                    continue
+                edge_arr = np.asarray(edge_trace, dtype=np.float32)
+                terminal_vertex = trace_metadata["terminal_vertex"]
+                energy_trace = _trace_energy_series(edge_arr, energy)
+                scale_trace = _trace_scale_series(edge_arr, scale_indices)
+                unit_traces.append(edge_arr)
+                unit_connections.append(
+                    [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
+                )
+                unit_metrics.append(_edge_metric_from_energy_trace(energy_trace))
+                unit_energy_traces.append(energy_trace)
+                unit_scale_traces.append(scale_trace)
+                unit_trace_metadata.append(trace_metadata)
+
+            unit_diagnostics = _empty_edge_diagnostics()
+            for trace_metadata in unit_trace_metadata:
+                _record_trace_diagnostics(unit_diagnostics, trace_metadata)
 
         payload = {
             "origin_index": vertex_idx,
@@ -2087,42 +2516,7 @@ def extract_edges_resumable(
             "diagnostics": unit_diagnostics,
         }
         atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
-        candidates["traces"].extend(unit_traces)
-        if len(unit_connections) > 0:
-            if candidates["connections"].size == 0:
-                candidates["connections"] = np.asarray(unit_connections, dtype=np.int32).reshape(
-                    -1, 2
-                )
-            else:
-                candidates["connections"] = np.vstack(
-                    [
-                        candidates["connections"],
-                        np.asarray(unit_connections, dtype=np.int32).reshape(-1, 2),
-                    ]
-                )
-            candidates["metrics"] = np.concatenate(
-                [candidates["metrics"], np.asarray(unit_metrics, dtype=np.float32)]
-            )
-            candidates["origin_indices"] = np.concatenate(
-                [
-                    candidates["origin_indices"],
-                    np.asarray([vertex_idx] * len(unit_traces), dtype=np.int32),
-                ]
-            )
-        candidates["energy_traces"].extend(unit_energy_traces)
-        candidates["scale_traces"].extend(unit_scale_traces)
-        for key, value in unit_diagnostics.items():
-            if key == "stop_reason_counts":
-                for stop_reason, count in value.items():
-                    candidates["diagnostics"]["stop_reason_counts"][stop_reason] = int(
-                        candidates["diagnostics"]["stop_reason_counts"].get(stop_reason, 0)
-                    ) + int(count)
-            elif key in {
-                "terminal_direct_hit_count",
-                "terminal_reverse_center_hit_count",
-                "terminal_reverse_near_hit_count",
-            }:
-                candidates["diagnostics"][key] += int(value)
+        _append_candidate_unit(candidates, payload)
         completed.add(vertex_idx)
         stage_controller.save_state({"last_completed_origin": vertex_idx})
         stage_controller.update(

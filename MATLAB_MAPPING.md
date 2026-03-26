@@ -54,6 +54,10 @@
 
 ## 4. Edge Extraction & Tracing
 
+Parity note: the current MATLAB-energy acceptance gate is the `get_edges_for_vertex.m`
+frontier-search behavior plus real MATLAB HDF5 energy import. Endpoint reconciliation and
+comparison reporting are now supporting details rather than the primary parity blocker.
+
 | MATLAB File | Python File | Status | Notes |
 |---|---|---|---|
 | `choose_edges_V200.m` | `core/tracing.py` | 🔀 | Candidate cleanup exists, and MATLAB-energy parity work now routes terminal resolution through MATLAB-style center hits plus tolerant endpoint fallback. |

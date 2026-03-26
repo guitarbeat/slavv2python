@@ -42,6 +42,17 @@ def _json_default(value: Any) -> Any:
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
+def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
+    """Infer the effective energy source label for comparison reporting."""
+    if not energy_data:
+        return "native_python"
+    return str(
+        energy_data.get("energy_source")
+        or energy_data.get("energy_origin")
+        or "native_python"
+    )
+
+
 def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) -> Path:
     """Persist the normalized comparison parameters for both MATLAB and Python runs."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
@@ -336,7 +347,7 @@ def run_python_vectorization(
             "system_info": system_info,
             "comparison_mode": {
                 "network_cleanup": "bypass_python_specific_cleanup",
-                "energy_source": "native_python",
+                "energy_source": _resolve_python_energy_source(results.get("energy_data")),
             },
         }
 
@@ -397,6 +408,7 @@ def run_python_vectorization(
 def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] | None:
     """Prefer stage checkpoints over exported JSON when reconstructing comparison inputs."""
     checkpoint_dir = python_root / "checkpoints"
+    energy_path = checkpoint_dir / "checkpoint_energy.pkl"
     vertices_path = checkpoint_dir / "checkpoint_vertices.pkl"
     edges_path = checkpoint_dir / "checkpoint_edges.pkl"
     network_path = checkpoint_dir / "checkpoint_network.pkl"
@@ -404,6 +416,7 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
         return None
 
     try:
+        energy_data = joblib.load(energy_path) if energy_path.exists() else None
         vertices = joblib.load(vertices_path)
         edges = joblib.load(edges_path)
         network = joblib.load(network_path)
@@ -411,6 +424,7 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
         return None
 
     return {
+        "energy_data": energy_data,
         "vertices": vertices,
         "edges": edges,
         "network": network,
@@ -641,7 +655,7 @@ def run_standalone_comparison(
         )
         python_results["comparison_mode"] = {
             "result_source": "checkpoints",
-            "energy_source": "native_python",
+            "energy_source": _resolve_python_energy_source(checkpoint_results.get("energy_data")),
         }
     else:
         # Load python results
