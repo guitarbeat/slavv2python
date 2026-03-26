@@ -141,6 +141,31 @@ def test_compare_edges_infers_count_and_length_from_json_style_traces():
     assert np.isclose(result["total_length"]["python"], 5.0)
 
 
+def test_compare_edges_reports_exact_endpoint_and_diagnostic_bundle():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [1, 2]], dtype=np.int32),
+        "traces": [
+            np.array([[0, 0, 0], [0, 1, 0]], dtype=float),
+            np.array([[0, 1, 0], [0, 2, 0]], dtype=float),
+        ],
+    }
+    python_edges = {
+        "connections": np.array([[0, 1], [1, 3]], dtype=np.int32),
+        "traces": [
+            np.array([[0, 0, 0], [0, 1, 0]], dtype=float),
+            np.array([[0, 1, 0], [0, 3, 0]], dtype=float),
+        ],
+        "diagnostics": {"candidate_traced_edge_count": 7, "chosen_edge_count": 2},
+    }
+
+    result = compare_edges(matlab_edges, python_edges)
+
+    assert not result["exact_endpoint_pairs_match"]
+    assert result["endpoint_pair_matlab_only_samples"]
+    assert result["endpoint_pair_python_only_samples"]
+    assert result["diagnostics"]["python"]["candidate_traced_edge_count"] == 7
+
+
 def test_compare_networks_computes_strand_differences():
     matlab_stats = {"strand_count": 25}
     python_network = {"strands": [object() for _ in range(23)]}

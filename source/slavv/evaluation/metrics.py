@@ -197,6 +197,22 @@ def _edge_signatures(
     return signatures
 
 
+def _edge_endpoint_signatures(payload: dict[str, Any]) -> list[tuple[int, int]]:
+    """Build orientation-independent endpoint signatures for final edges."""
+    connections = np.asarray(payload.get("connections", np.array([])))
+    if connections.size == 0:
+        return []
+    if connections.ndim == 1:
+        connections = connections.reshape(1, -1)
+    signatures = []
+    for connection in connections:
+        pair = [int(value) for value in np.asarray(connection).tolist()[:2]]
+        if len(pair) < 2:
+            continue
+        signatures.append(tuple(sorted(pair)))
+    return signatures
+
+
 def _strand_signatures(payload: dict[str, Any]) -> list[tuple[int, ...]]:
     """Build orientation-independent strand signatures."""
     strands = payload.get("strands_to_vertices")
@@ -356,8 +372,16 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
         "count_percent_difference": 0.0,
         "total_length": {},
         "exact_match": False,
+        "exact_endpoint_pairs_match": False,
+        "exact_trace_match": False,
         "matlab_only_samples": [],
         "python_only_samples": [],
+        "endpoint_pair_matlab_only_samples": [],
+        "endpoint_pair_python_only_samples": [],
+        "diagnostics": {
+            "matlab": matlab_edges.get("diagnostics", {}),
+            "python": python_edges.get("diagnostics", {}),
+        },
     }
 
     matlab_count = comparison["matlab_count"]
@@ -412,8 +436,19 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
     matlab_counter = Counter(_edge_signatures(matlab_edges, include_trace, include_energy))
     python_counter = Counter(_edge_signatures(python_edges, include_trace, include_energy))
     comparison["exact_match"] = matlab_counter == python_counter
+    comparison["exact_trace_match"] = comparison["exact_match"] if include_trace else False
     comparison["matlab_only_samples"] = _sample_counter_diff(matlab_counter, python_counter)
     comparison["python_only_samples"] = _sample_counter_diff(python_counter, matlab_counter)
+
+    matlab_endpoint_counter = Counter(_edge_endpoint_signatures(matlab_edges))
+    python_endpoint_counter = Counter(_edge_endpoint_signatures(python_edges))
+    comparison["exact_endpoint_pairs_match"] = matlab_endpoint_counter == python_endpoint_counter
+    comparison["endpoint_pair_matlab_only_samples"] = _sample_counter_diff(
+        matlab_endpoint_counter, python_endpoint_counter
+    )
+    comparison["endpoint_pair_python_only_samples"] = _sample_counter_diff(
+        python_endpoint_counter, matlab_endpoint_counter
+    )
 
     return comparison
 
@@ -527,6 +562,7 @@ def compare_results(
             "vertices_count": python_vertices_count,
             "edges_count": python_edges_count,
             "network_strands_count": python_strands_count,
+            "comparison_mode": python_results.get("comparison_mode", {}),
         },
         "performance": {},
     }

@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import joblib
 import numpy as np
 
 from slavv.core import SLAVVProcessor
@@ -298,6 +299,8 @@ def run_python_vectorization(
 
     # Initialize processor
     processor = SLAVVProcessor()
+    params_for_run = copy.deepcopy(params)
+    params_for_run.setdefault("comparison_exact_network", True)
 
     # Run pipeline
     print("Running pipeline...")
@@ -309,7 +312,7 @@ def run_python_vectorization(
     try:
         results = processor.process_image(
             image,
-            params,
+            params_for_run,
             progress_callback=progress_callback,
             run_dir=run_dir,
             checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
@@ -331,6 +334,10 @@ def run_python_vectorization(
             else 0,
             "results": results,
             "system_info": system_info,
+            "comparison_mode": {
+                "network_cleanup": "bypass_python_specific_cleanup",
+                "energy_source": "native_python",
+            },
         }
 
         # Export results
@@ -385,6 +392,29 @@ def run_python_vectorization(
             "error": str(e),
             "system_info": system_info,
         }
+
+
+def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] | None:
+    """Prefer stage checkpoints over exported JSON when reconstructing comparison inputs."""
+    checkpoint_dir = python_root / "checkpoints"
+    vertices_path = checkpoint_dir / "checkpoint_vertices.pkl"
+    edges_path = checkpoint_dir / "checkpoint_edges.pkl"
+    network_path = checkpoint_dir / "checkpoint_network.pkl"
+    if not (vertices_path.exists() and edges_path.exists() and network_path.exists()):
+        return None
+
+    try:
+        vertices = joblib.load(vertices_path)
+        edges = joblib.load(edges_path)
+        network = joblib.load(network_path)
+    except Exception:
+        return None
+
+    return {
+        "vertices": vertices,
+        "edges": edges,
+        "network": network,
+    }
 
 
 def orchestrate_comparison(
@@ -596,103 +626,118 @@ def run_standalone_comparison(
     # 2. Reconstruct Python results dict
     python_results = {"success": True, "output_dir": str(python_dir), "elapsed_time": 0.0}
 
-    # Load python results
-    # Try finding exported Python result JSON. Ignore parameter-only files.
-    # Check root of python dir
     python_layout = resolve_run_layout(python_dir)
     python_root = python_layout["python_dir"]
-    json_files = [
-        path
-        for path in glob.glob(str(python_root / "python_comparison_*.json"))
-        if not path.endswith("_parameters.json")
-    ]
-
-    if json_files:
-        # Load the latest one
-        latest_json = sorted(json_files)[-1]
-        print(f"Loading Python results from: {latest_json}")
-        try:
-            with open(latest_json) as f:
-                loaded_data = json.load(f)
-
-            # Need to convert lists back to numpy arrays for metric comparison
-            # This is a simplified reconstruction. For full fidelity we'd need convert_lists_to_arrays
-            # But compare_results should handle basic lists or we can do a quick pass
-
-            # Specifically restore vertices/positions and edges/traces
-            if "vertices" in loaded_data and "positions" in loaded_data["vertices"]:
-                loaded_data["vertices"]["positions"] = np.array(
-                    loaded_data["vertices"]["positions"]
-                )
-                if "radii" in loaded_data["vertices"]:
-                    loaded_data["vertices"]["radii"] = np.array(loaded_data["vertices"]["radii"])
-
-            # Edges traces are list of arrays
-            if "edges" in loaded_data and "traces" in loaded_data["edges"]:
-                loaded_data["edges"]["traces"] = [
-                    np.array(t) for t in loaded_data["edges"]["traces"]
-                ]
-
-            python_results["results"] = loaded_data
-            python_results["vertices_count"] = len(
-                loaded_data.get("vertices", {}).get("positions", [])
-            )
-            python_results["edges_count"] = len(loaded_data.get("edges", {}).get("traces", []))
-
-        except Exception as e:
-            print(f"Error loading Python JSON: {e}")
-            python_results["success"] = False
+    checkpoint_results = _load_python_results_from_checkpoints(python_root)
+    if checkpoint_results is not None:
+        print(f"Loading Python results from checkpoints in: {python_root / 'checkpoints'}")
+        python_results["results"] = checkpoint_results
+        python_results["vertices_count"] = len(
+            checkpoint_results.get("vertices", {}).get("positions", [])
+        )
+        python_results["edges_count"] = len(checkpoint_results.get("edges", {}).get("traces", []))
+        python_results["network_strands_count"] = len(
+            checkpoint_results.get("network", {}).get("strands", [])
+        )
+        python_results["comparison_mode"] = {
+            "result_source": "checkpoints",
+            "energy_source": "native_python",
+        }
     else:
-        # Fallback: Check for network.json
-        print("Warning: No python_comparison_*.json found. Checking for network.json...")
-        network_json_paths = glob.glob(str(python_root / "network.json"))
+        # Load python results
+        # Try finding exported Python result JSON. Ignore parameter-only files.
+        json_files = [
+            path
+            for path in glob.glob(str(python_root / "python_comparison_*.json"))
+            if not path.endswith("_parameters.json")
+        ]
 
-        if network_json_paths:
-            network_json = network_json_paths[0]
-            print(f"Loading Python results from fallback: {network_json}")
+        if json_files:
+            # Load the latest one
+            latest_json = sorted(json_files)[-1]
+            print(f"Loading Python results from: {latest_json}")
             try:
-                with open(network_json) as f:
-                    net_data = json.load(f)
+                with open(latest_json) as f:
+                    loaded_data = json.load(f)
 
-                # network.json structure: {vertices: {positions: ...}, edges: {connections: ...}}
-                # Adapt to structure expected by compare_results
-                loaded_data = {
-                    "vertices": net_data.get("vertices", {}),
-                    "edges": net_data.get("edges", {}),
-                    "network": net_data.get("network", {}),
-                }
-
-                # Restore arrays
-                if "positions" in loaded_data["vertices"]:
+                # Need to convert lists back to numpy arrays for metric comparison
+                if "vertices" in loaded_data and "positions" in loaded_data["vertices"]:
                     loaded_data["vertices"]["positions"] = np.array(
                         loaded_data["vertices"]["positions"]
                     )
+                    if "radii" in loaded_data["vertices"]:
+                        loaded_data["vertices"]["radii"] = np.array(
+                            loaded_data["vertices"]["radii"]
+                        )
 
-                # Note: network.json usually has 'connections' (N,2) ints, not 'traces'.
-                # We map connections to traces as best effort if traces missing
-                # Count from connections if traces missing
-                if "connections" in loaded_data["edges"]:
-                    python_results["edges_count"] = len(loaded_data["edges"]["connections"])
+                if "edges" in loaded_data and "traces" in loaded_data["edges"]:
+                    loaded_data["edges"]["traces"] = [
+                        np.array(t) for t in loaded_data["edges"]["traces"]
+                    ]
 
                 python_results["results"] = loaded_data
                 python_results["vertices_count"] = len(
                     loaded_data.get("vertices", {}).get("positions", [])
                 )
-
-                # Count from connections if traces missing
-                if "connections" in loaded_data.get("edges", {}):
-                    python_results["edges_count"] = len(loaded_data["edges"]["connections"])
-                else:
-                    python_results["edges_count"] = len(
-                        loaded_data.get("edges", {}).get("traces", [])
-                    )
-
+                python_results["edges_count"] = len(loaded_data.get("edges", {}).get("traces", []))
+                python_results["network_strands_count"] = len(
+                    loaded_data.get("network", {}).get("strands", [])
+                )
+                python_results["comparison_mode"] = {
+                    "result_source": "export_json",
+                    "energy_source": "native_python",
+                }
             except Exception as e:
-                print(f"Error loading network.json: {e}")
+                print(f"Error loading Python JSON: {e}")
                 python_results["success"] = False
         else:
-            print("Error: No result files found.")
-            python_results["success"] = False
+            print("Warning: No python_comparison_*.json found. Checking for network.json...")
+            network_json_paths = glob.glob(str(python_root / "network.json"))
+
+            if network_json_paths:
+                network_json = network_json_paths[0]
+                print(f"Loading Python results from fallback: {network_json}")
+                try:
+                    with open(network_json) as f:
+                        net_data = json.load(f)
+
+                    loaded_data = {
+                        "vertices": net_data.get("vertices", {}),
+                        "edges": net_data.get("edges", {}),
+                        "network": net_data.get("network", {}),
+                    }
+
+                    if "positions" in loaded_data["vertices"]:
+                        loaded_data["vertices"]["positions"] = np.array(
+                            loaded_data["vertices"]["positions"]
+                        )
+
+                    if "connections" in loaded_data["edges"]:
+                        python_results["edges_count"] = len(loaded_data["edges"]["connections"])
+
+                    python_results["results"] = loaded_data
+                    python_results["vertices_count"] = len(
+                        loaded_data.get("vertices", {}).get("positions", [])
+                    )
+                    if "connections" in loaded_data.get("edges", {}):
+                        python_results["edges_count"] = len(loaded_data["edges"]["connections"])
+                    else:
+                        python_results["edges_count"] = len(
+                            loaded_data.get("edges", {}).get("traces", [])
+                        )
+                    python_results["network_strands_count"] = len(
+                        loaded_data.get("network", {}).get("strands", [])
+                    )
+                    python_results["comparison_mode"] = {
+                        "result_source": "network_json",
+                        "energy_source": "native_python",
+                    }
+                except Exception as e:
+                    print(f"Error loading network.json: {e}")
+                    python_results["success"] = False
+            else:
+                print("Error: No result files found.")
+                python_results["success"] = False
 
     # 3. Compare
     # Try to load parsed MATLAB data

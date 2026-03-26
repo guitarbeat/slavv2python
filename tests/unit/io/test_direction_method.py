@@ -49,4 +49,5 @@ def test_extract_edges_uniform_direction_method_skips_hessian():
     }
 
     edges = processor.extract_edges(energy_data, vertices, params)
-    assert len(edges["traces"]) == 2
+    assert len(edges["traces"]) == 0
+    assert edges["diagnostics"]["candidate_traced_edge_count"] == 2

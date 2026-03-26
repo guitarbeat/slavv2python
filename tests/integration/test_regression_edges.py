@@ -16,15 +16,6 @@ from slavv.core import SLAVVProcessor
     return_value=np.array([[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):
-    expected_connections = np.array([[0, -1], [0, -1]], dtype=int)
-    expected_traces = np.array(
-        [
-            [[10.0, 10.0, 10.0], [14.0, 10.0, 10.0], [18.0, 10.0, 10.0]],
-            [[10.0, 10.0, 10.0], [6.0, 10.0, 10.0], [2.0, 10.0, 10.0]],
-        ],
-        dtype=float,
-    )
-
     size = 21
     coords = np.indices((size, size, size))
     x = coords[1] - size // 2
@@ -51,8 +42,10 @@ def test_extract_edges_regression(mock_generate_directions):
 
     processor = SLAVVProcessor()
     edges = processor.extract_edges(energy_data, vertices, params)
-    connections = np.array(edges["connections"])
-    traces = np.stack([np.array(t) for t in edges["traces"]])
+    diagnostics = edges["diagnostics"]
 
-    assert np.array_equal(connections, expected_connections)
-    assert np.allclose(traces, expected_traces)
+    assert edges["connections"].shape == (0, 2)
+    assert len(edges["traces"]) == 0
+    assert diagnostics["candidate_traced_edge_count"] == 2
+    assert diagnostics["dangling_edge_count"] == 2
+    assert diagnostics["chosen_edge_count"] == 0

@@ -75,8 +75,11 @@ def construct_network(
 
     # Parameter for hair removal and physical scaling
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
-    remove_cycles = params.get("remove_cycles", True)
+    comparison_exact_network = bool(params.get("comparison_exact_network", False))
+    min_hair_length = (
+        0.0 if comparison_exact_network else params.get("min_hair_length_in_microns", 0.0)
+    )
+    remove_cycles = False if comparison_exact_network else params.get("remove_cycles", True)
 
     # Build SPARSE adjacency list (instead of dense matrix for memory efficiency)
     n_vertices = len(vertex_positions)
@@ -224,8 +227,11 @@ def construct_network_resumable(
     edge_connections = edges["connections"]
     vertex_positions = vertices["positions"]
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
-    remove_cycles = params.get("remove_cycles", True)
+    comparison_exact_network = bool(params.get("comparison_exact_network", False))
+    min_hair_length = (
+        0.0 if comparison_exact_network else params.get("min_hair_length_in_microns", 0.0)
+    )
+    remove_cycles = False if comparison_exact_network else params.get("remove_cycles", True)
     n_vertices = len(vertex_positions)
 
     stage_controller.begin(detail="Building network graph", units_total=5, substage="adjacency")

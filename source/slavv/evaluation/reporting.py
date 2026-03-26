@@ -138,13 +138,42 @@ def generate_summary(run_dir: Path, output_file: Path):
 
         vertex_mismatch = report.get("vertices", {}).get("matlab_only_samples", [])
         edge_mismatch = report.get("edges", {}).get("matlab_only_samples", [])
+        edge_endpoint_mismatch = report.get("edges", {}).get(
+            "endpoint_pair_matlab_only_samples", []
+        )
         strand_mismatch = report.get("network", {}).get("matlab_only_samples", [])
         if vertex_mismatch:
             lines.append(f"First vertex mismatch: {vertex_mismatch[0]}")
+        if edge_endpoint_mismatch:
+            lines.append(f"First edge endpoint mismatch: {edge_endpoint_mismatch[0]}")
         if edge_mismatch:
             lines.append(f"First edge mismatch: {edge_mismatch[0]}")
         if strand_mismatch:
             lines.append(f"First strand mismatch: {strand_mismatch[0]}")
+        lines.append("")
+
+    edge_diag = report.get("edges", {}).get("diagnostics", {}).get("python", {})
+    if edge_diag:
+        lines.append("Edge Diagnostics")
+        lines.append("-" * 70)
+        lines.append(
+            f"Candidates: {int(edge_diag.get('candidate_traced_edge_count', 0)):,}"
+            f"  Terminal: {int(edge_diag.get('terminal_edge_count', 0)):,}"
+            f"  Chosen: {int(edge_diag.get('chosen_edge_count', 0)):,}"
+        )
+        lines.append(
+            f"Dangling: {int(edge_diag.get('dangling_edge_count', 0)):,}"
+            f"  Directed duplicates: {int(edge_diag.get('duplicate_directed_pair_count', 0)):,}"
+            f"  Antiparallel: {int(edge_diag.get('antiparallel_pair_count', 0)):,}"
+        )
+        lines.append(
+            f"Rejected by energy/conflict/degree/orphan/cycle: "
+            f"{int(edge_diag.get('negative_energy_rejected_count', 0)):,}/"
+            f"{int(edge_diag.get('conflict_rejected_count', 0)):,}/"
+            f"{int(edge_diag.get('degree_pruned_count', 0)):,}/"
+            f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
+            f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
+        )
         lines.append("")
 
     # Status/notes

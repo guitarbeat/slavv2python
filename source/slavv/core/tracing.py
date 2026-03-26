@@ -79,6 +79,38 @@ def _empty_vertices_result() -> dict[str, Any]:
     }
 
 
+def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str, Any]:
+    """Return the canonical empty edge payload."""
+    positions = (
+        np.asarray(vertex_positions, dtype=np.float32)
+        if vertex_positions is not None
+        else np.empty((0, 3), dtype=np.float32)
+    )
+    return {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "energies": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "vertex_positions": positions,
+        "diagnostics": {
+            "candidate_traced_edge_count": 0,
+            "terminal_edge_count": 0,
+            "self_edge_count": 0,
+            "duplicate_directed_pair_count": 0,
+            "antiparallel_pair_count": 0,
+            "chosen_edge_count": 0,
+            "dangling_edge_count": 0,
+            "negative_energy_rejected_count": 0,
+            "conflict_rejected_count": 0,
+            "degree_pruned_count": 0,
+            "orphan_pruned_count": 0,
+            "cycle_pruned_count": 0,
+        },
+        "chosen_candidate_indices": np.zeros((0,), dtype=np.int32),
+    }
+
+
 def _coerce_radius_axes(
     lumen_radius_pixels: np.ndarray,
     lumen_radius_pixels_axes: np.ndarray | None,
@@ -91,6 +123,16 @@ def _coerce_radius_axes(
 
     radii = np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1)
     return np.repeat(radii, 3, axis=1)
+
+
+def _scalar_radius(radius_value: np.ndarray | float | int) -> float:
+    """Convert isotropic or axis-aware radii into a single tracing radius."""
+    radius_array = np.asarray(radius_value, dtype=np.float32).reshape(-1)
+    if radius_array.size == 0:
+        return 0.0
+    if radius_array.size == 1:
+        return float(radius_array[0])
+    return float(np.cbrt(np.prod(radius_array)))
 
 
 def _chunk_lattice_dimensions(
@@ -659,6 +701,488 @@ def find_terminal_vertex(
     )
 
 
+def _clip_trace_indices(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
+    """Convert a trace to clipped integer voxel indices."""
+    coords = np.floor(np.asarray(trace, dtype=np.float32)[:, :3]).astype(np.int32, copy=False)
+    for axis in range(3):
+        coords[:, axis] = np.clip(coords[:, axis], 0, shape[axis] - 1)
+    return coords
+
+
+def _trace_endpoint_vertex(
+    edge_trace: list[np.ndarray] | np.ndarray,
+    vertex_image: np.ndarray,
+    origin_vertex: int,
+) -> int | None:
+    """Resolve the terminal vertex of a traced candidate using painted occupancy."""
+    terminal_vertex = vertex_at_position(np.asarray(edge_trace[-1]), vertex_image)
+    if terminal_vertex == origin_vertex:
+        terminal_vertex = None
+    if terminal_vertex is None and len(edge_trace) <= 5:
+        for point in reversed(edge_trace[:-1]):
+            terminal_vertex = vertex_at_position(np.asarray(point), vertex_image)
+            if terminal_vertex is not None and terminal_vertex != origin_vertex:
+                break
+            if terminal_vertex == origin_vertex:
+                terminal_vertex = None
+    return terminal_vertex
+
+
+def _trace_scale_series(edge_trace: np.ndarray, scale_indices: np.ndarray | None) -> np.ndarray:
+    """Sample projected scale indices along an edge trace."""
+    if scale_indices is None:
+        return np.zeros((len(edge_trace),), dtype=np.int16)
+    idx = _clip_trace_indices(edge_trace, scale_indices.shape)
+    return scale_indices[idx[:, 0], idx[:, 1], idx[:, 2]].astype(np.int16, copy=False)
+
+
+def _trace_energy_series(edge_trace: np.ndarray, energy: np.ndarray) -> np.ndarray:
+    """Sample projected energy values along an edge trace."""
+    idx = _clip_trace_indices(edge_trace, energy.shape)
+    return energy[idx[:, 0], idx[:, 1], idx[:, 2]].astype(np.float32, copy=False)
+
+
+def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
+    """Match MATLAB's current edge quality metric: minimum max-energy is best."""
+    arr = np.asarray(energy_trace, dtype=np.float32)
+    if arr.size == 0:
+        return 0.0
+    value = float(np.nanmax(arr))
+    if math.isnan(value):
+        return -1000.0
+    return value
+
+
+def _generate_edge_candidates(
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_pixels: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    vertex_image: np.ndarray,
+    tree: cKDTree,
+    max_search_radius: float,
+    params: dict[str, Any],
+    energy_sign: float,
+) -> dict[str, Any]:
+    """Generate directed edge candidates without final dedupe or degree pruning."""
+    max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
+    step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
+    max_edge_energy = params.get("max_edge_energy", 0.0)
+    max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
+    discrete_tracing = params.get("discrete_tracing", False)
+    direction_method = params.get("direction_method", "hessian")
+
+    traces: list[np.ndarray] = []
+    connections: list[list[int]] = []
+    metrics: list[float] = []
+    energy_traces: list[np.ndarray] = []
+    scale_traces: list[np.ndarray] = []
+    origin_indices: list[int] = []
+
+    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
+    mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
+
+    for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+        start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
+        step_size = start_radius * step_size_ratio
+        max_length = start_radius * max_length_ratio
+        max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+
+        if direction_method == "hessian":
+            directions = estimate_vessel_directions(
+                energy, start_pos, start_radius, microns_per_voxel
+            )
+            if directions.shape[0] < max_edges_per_vertex:
+                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                directions = np.vstack([directions, extra])
+            else:
+                directions = directions[:max_edges_per_vertex]
+        else:
+            directions = generate_edge_directions(max_edges_per_vertex)
+
+        for direction in directions:
+            edge_trace = trace_edge(
+                energy_prepared,
+                start_pos,
+                direction,
+                step_size,
+                max_edge_energy,
+                vertex_positions,
+                vertex_scales,
+                lumen_radius_pixels,
+                lumen_radius_microns,
+                max_steps,
+                mpv_prepared,
+                energy_sign,
+                discrete_steps=discrete_tracing,
+                vertex_image=vertex_image,
+                tree=tree,
+                max_search_radius=max_search_radius,
+                origin_vertex_idx=vertex_idx,
+            )
+            if len(edge_trace) <= 1:
+                continue
+
+            edge_arr = np.asarray(edge_trace, dtype=np.float32)
+            terminal_vertex = _trace_endpoint_vertex(edge_arr, vertex_image, vertex_idx)
+            energy_trace = _trace_energy_series(edge_arr, energy)
+            scale_trace = _trace_scale_series(edge_arr, scale_indices)
+
+            traces.append(edge_arr)
+            connections.append([vertex_idx, terminal_vertex if terminal_vertex is not None else -1])
+            metrics.append(_edge_metric_from_energy_trace(energy_trace))
+            energy_traces.append(energy_trace)
+            scale_traces.append(scale_trace)
+            origin_indices.append(vertex_idx)
+
+    return {
+        "traces": traces,
+        "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
+        "metrics": np.asarray(metrics, dtype=np.float32),
+        "energy_traces": energy_traces,
+        "scale_traces": scale_traces,
+        "origin_indices": np.asarray(origin_indices, dtype=np.int32),
+    }
+
+
+def _ellipsoid_offsets(radii: np.ndarray) -> np.ndarray:
+    """Construct centered integer offsets for an ellipsoidal influence volume."""
+    ry, rx, rz = [max(float(v), 0.5) for v in np.asarray(radii, dtype=np.float32)]
+    mask = ellipsoid(ry, rx, rz, spacing=(1.0, 1.0, 1.0))
+    coords = np.column_stack(np.where(mask))
+    center = np.asarray(mask.shape) // 2
+    return (coords - center).astype(np.int32, copy=False)
+
+
+def _offset_coords(
+    position: np.ndarray,
+    offsets: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> np.ndarray:
+    """Apply relative offsets to a voxel and clip to valid image bounds."""
+    coords = offsets + np.rint(position[:3]).astype(np.int32)
+    valid = (
+        (coords[:, 0] >= 0)
+        & (coords[:, 0] < image_shape[0])
+        & (coords[:, 1] >= 0)
+        & (coords[:, 1] < image_shape[1])
+        & (coords[:, 2] >= 0)
+        & (coords[:, 2] < image_shape[2])
+    )
+    return coords[valid]
+
+
+def _clean_edges_vertex_degree_excess_python(
+    connections: np.ndarray,
+    max_edges_per_vertex: int,
+) -> np.ndarray:
+    """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
+    if connections.size == 0 or max_edges_per_vertex <= 0:
+        return np.ones((len(connections),), dtype=bool)
+
+    keep = np.ones((len(connections),), dtype=bool)
+    n_vertices = int(np.max(connections)) + 1 if connections.size else 0
+    if n_vertices <= 0:
+        return keep
+
+    adjacency: list[list[int]] = [[] for _ in range(n_vertices)]
+    for edge_index, (start_vertex, end_vertex) in enumerate(connections):
+        adjacency[int(start_vertex)].append(edge_index)
+        adjacency[int(end_vertex)].append(edge_index)
+
+    for edge_indices in adjacency:
+        excess = len(edge_indices) - max_edges_per_vertex
+        if excess > 0:
+            for edge_index in sorted(edge_indices, reverse=True)[:excess]:
+                keep[edge_index] = False
+    return keep
+
+
+def _clean_edges_orphans_python(
+    traces: list[np.ndarray],
+    image_shape: tuple[int, int, int],
+    vertex_positions: np.ndarray,
+) -> np.ndarray:
+    """Remove edges whose endpoints do not touch a vertex or any interior edge voxel."""
+    if not traces:
+        return np.zeros((0,), dtype=bool)
+
+    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
+        np.int32, copy=False
+    )
+    vertex_coords[:, 0] = np.clip(vertex_coords[:, 0], 0, image_shape[0] - 1)
+    vertex_coords[:, 1] = np.clip(vertex_coords[:, 1], 0, image_shape[1] - 1)
+    vertex_coords[:, 2] = np.clip(vertex_coords[:, 2], 0, image_shape[2] - 1)
+    vertex_locations = {
+        int(y + x * image_shape[0] + z * image_shape[0] * image_shape[1])
+        for y, x, z in vertex_coords.tolist()
+    }
+
+    locations = []
+    for trace in traces:
+        coords = _clip_trace_indices(np.asarray(trace, dtype=np.float32), image_shape)
+        locations.append(
+            np.asarray(
+                coords[:, 0]
+                + coords[:, 1] * image_shape[0]
+                + coords[:, 2] * image_shape[0] * image_shape[1],
+                dtype=np.int64,
+            )
+        )
+
+    keep = np.ones((len(locations),), dtype=bool)
+    changed = True
+    while changed:
+        changed = False
+        interior = set()
+        exterior_locations: list[tuple[int, int]] = []
+        for edge_index, edge_locations in enumerate(locations):
+            if not keep[edge_index] or edge_locations.size == 0:
+                continue
+            if edge_locations.size > 2:
+                interior.update(int(value) for value in edge_locations[1:-1].tolist())
+            exterior_locations.append((edge_index, int(edge_locations[0])))
+            exterior_locations.append((edge_index, int(edge_locations[-1])))
+
+        removable = set()
+        allowed = interior | vertex_locations
+        for edge_index, location in exterior_locations:
+            if location not in allowed:
+                removable.add(edge_index)
+
+        if removable:
+            changed = True
+            for edge_index in removable:
+                keep[edge_index] = False
+    return keep
+
+
+def _clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
+    """Remove cycle-closing edges while preserving the best-to-worst order."""
+    if connections.size == 0:
+        return np.zeros((0,), dtype=bool)
+
+    keep = np.ones((len(connections),), dtype=bool)
+    n_vertices = int(np.max(connections)) + 1
+    parent = np.arange(n_vertices, dtype=np.int32)
+
+    def find(vertex: int) -> int:
+        while parent[vertex] != vertex:
+            parent[vertex] = parent[parent[vertex]]
+            vertex = parent[vertex]
+        return int(vertex)
+
+    for edge_index, (start_vertex, end_vertex) in enumerate(connections):
+        root_start = find(int(start_vertex))
+        root_end = find(int(end_vertex))
+        if root_start == root_end:
+            keep[edge_index] = False
+            continue
+        parent[root_end] = root_start
+    return keep
+
+
+def _choose_edges_matlab_style(
+    candidates: dict[str, Any],
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Choose final edges using MATLAB-shaped filtering and cleanup semantics."""
+    traces = candidates["traces"]
+    connections = np.asarray(candidates["connections"], dtype=np.int32).reshape(-1, 2)
+    metrics = np.asarray(candidates["metrics"], dtype=np.float32).reshape(-1)
+    energy_traces = candidates["energy_traces"]
+    scale_traces = candidates["scale_traces"]
+
+    diagnostics = {
+        "candidate_traced_edge_count": len(traces),
+        "terminal_edge_count": int(np.sum(connections[:, 1] >= 0)) if len(connections) else 0,
+        "self_edge_count": int(np.sum(connections[:, 0] == connections[:, 1]))
+        if len(connections)
+        else 0,
+        "duplicate_directed_pair_count": 0,
+        "antiparallel_pair_count": 0,
+        "chosen_edge_count": 0,
+        "dangling_edge_count": int(np.sum(connections[:, 1] < 0)) if len(connections) else 0,
+        "negative_energy_rejected_count": 0,
+        "conflict_rejected_count": 0,
+        "degree_pruned_count": 0,
+        "orphan_pruned_count": 0,
+        "cycle_pruned_count": 0,
+    }
+
+    if len(traces) == 0:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
+    filtered_indices = np.flatnonzero(valid)
+
+    if filtered_indices.size:
+        nonnegative_max = np.array(
+            [
+                np.nanmax(np.asarray(energy_traces[index], dtype=np.float32)) >= 0
+                for index in filtered_indices
+            ],
+            dtype=bool,
+        )
+        diagnostics["negative_energy_rejected_count"] = int(np.sum(nonnegative_max))
+        filtered_indices = filtered_indices[~nonnegative_max]
+    else:
+        diagnostics["negative_energy_rejected_count"] = 0
+
+    if filtered_indices.size == 0:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    order = np.argsort(metrics[filtered_indices], kind="stable")
+    ordered = filtered_indices[order]
+
+    directed_seen: set[tuple[int, int]] = set()
+    directed_indices: list[int] = []
+    for index in ordered:
+        pair = (int(connections[index, 0]), int(connections[index, 1]))
+        if pair in directed_seen:
+            diagnostics["duplicate_directed_pair_count"] += 1
+            continue
+        directed_seen.add(pair)
+        directed_indices.append(int(index))
+
+    undirected_seen: set[tuple[int, int]] = set()
+    antiparallel_indices: list[int] = []
+    for index in directed_indices:
+        pair = tuple(sorted((int(connections[index, 0]), int(connections[index, 1]))))
+        if pair in undirected_seen:
+            diagnostics["antiparallel_pair_count"] += 1
+            continue
+        undirected_seen.add(pair)
+        antiparallel_indices.append(int(index))
+
+    sigma_per_influence_vertices = float(params.get("sigma_per_influence_vertices", 1.0))
+    sigma_per_influence_edges = float(params.get("sigma_per_influence_edges", 0.5))
+    vertex_offset_cache: dict[int, np.ndarray] = {}
+    edge_offset_cache: dict[int, np.ndarray] = {}
+    painted_image = np.zeros(image_shape, dtype=np.int32)
+
+    def vertex_offsets(scale: int) -> np.ndarray:
+        if scale not in vertex_offset_cache:
+            radii = sigma_per_influence_vertices * lumen_radius_pixels_axes[int(scale)]
+            vertex_offset_cache[scale] = _ellipsoid_offsets(radii)
+        return vertex_offset_cache[scale]
+
+    def edge_offsets(scale: int) -> np.ndarray:
+        if scale not in edge_offset_cache:
+            radii = sigma_per_influence_edges * lumen_radius_pixels_axes[int(scale)]
+            edge_offset_cache[scale] = _ellipsoid_offsets(radii)
+        return edge_offset_cache[scale]
+
+    chosen_indices: list[int] = []
+    for index in antiparallel_indices:
+        start_vertex, end_vertex = (int(value) for value in connections[index])
+        endpoint_snapshots: list[tuple[np.ndarray, np.ndarray]] = []
+
+        for vertex_index in (start_vertex, end_vertex):
+            coords = _offset_coords(
+                vertex_positions[vertex_index],
+                vertex_offsets(int(vertex_scales[vertex_index])),
+                image_shape,
+            )
+            snapshot = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
+            painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
+            endpoint_snapshots.append((coords, snapshot))
+
+        chosen = True
+        trace = np.asarray(traces[index], dtype=np.float32)
+        scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
+        for point_index, point in enumerate(trace):
+            scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
+            coords = _offset_coords(point, edge_offsets(scale_value), image_shape)
+            if coords.size == 0:
+                continue
+            conflicting = {
+                int(value)
+                for value in painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].tolist()
+                if int(value) not in {0, start_vertex + 1, end_vertex + 1}
+            }
+            if conflicting:
+                diagnostics["conflict_rejected_count"] += 1
+                chosen = False
+                break
+
+        if chosen:
+            for vertex_index, (coords, _snapshot) in zip(
+                (start_vertex, end_vertex), endpoint_snapshots
+            ):
+                painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
+            chosen_indices.append(index)
+        else:
+            for coords, snapshot in endpoint_snapshots:
+                painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = snapshot
+
+    if not chosen_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    chosen_connections = connections[chosen_indices]
+    keep_degree = _clean_edges_vertex_degree_excess_python(
+        chosen_connections,
+        int(params.get("number_of_edges_per_vertex", 4)),
+    )
+    diagnostics["degree_pruned_count"] = int(np.sum(~keep_degree))
+
+    after_degree_indices = [
+        index for keep, index in zip(keep_degree.tolist(), chosen_indices) if keep
+    ]
+    if not after_degree_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    keep_orphans = _clean_edges_orphans_python(
+        [traces[index] for index in after_degree_indices],
+        image_shape,
+        vertex_positions,
+    )
+    diagnostics["orphan_pruned_count"] = int(np.sum(~keep_orphans))
+    after_orphan_indices = [
+        index for keep, index in zip(keep_orphans.tolist(), after_degree_indices) if keep
+    ]
+    if not after_orphan_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    keep_cycles = _clean_edges_cycles_python(connections[after_orphan_indices])
+    diagnostics["cycle_pruned_count"] = int(np.sum(~keep_cycles))
+    final_indices = [
+        index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep
+    ]
+
+    result = _empty_edges_result(vertex_positions)
+    result["traces"] = [np.asarray(traces[index], dtype=np.float32) for index in final_indices]
+    result["connections"] = np.asarray(connections[final_indices], dtype=np.int32).reshape(-1, 2)
+    result["energies"] = np.asarray(metrics[final_indices], dtype=np.float32)
+    result["energy_traces"] = [
+        np.asarray(energy_traces[index], dtype=np.float32) for index in final_indices
+    ]
+    result["scale_traces"] = [
+        np.asarray(scale_traces[index], dtype=np.int16) for index in final_indices
+    ]
+    result["chosen_candidate_indices"] = np.asarray(final_indices, dtype=np.int32)
+    diagnostics["chosen_edge_count"] = len(final_indices)
+    result["diagnostics"] = diagnostics
+    return result
+
+
 def estimate_vessel_directions(
     energy: np.ndarray, pos: np.ndarray, radius: float, microns_per_voxel: np.ndarray
 ) -> np.ndarray:
@@ -741,6 +1265,7 @@ def trace_edge(
     vertex_image: np.ndarray | None = None,
     tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
+    origin_vertex_idx: int | None = None,
 ) -> list[np.ndarray]:
     """Trace an edge through the energy field with adaptive step sizing."""
     trace = [start_pos.copy()]
@@ -926,6 +1451,8 @@ def trace_edge(
             v_id = vertex_image[vi_y, vi_x, vi_z]
             if v_id > 0:
                 terminal_vertex_idx = int(v_id - 1)
+                if origin_vertex_idx is not None and terminal_vertex_idx == origin_vertex_idx:
+                    terminal_vertex_idx = None
             else:
                 terminal_vertex_idx = None
         else:
@@ -961,31 +1488,13 @@ def extract_edges(
     lumen_radius_microns = energy_data["lumen_radius_microns"]
     energy_sign = energy_data.get("energy_sign", -1.0)
 
-    # Parameters
-    max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
-    step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
-    max_edge_energy = params.get("max_edge_energy", 0.0)
-    max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    discrete_tracing = params.get("discrete_tracing", False)
-    direction_method = params.get("direction_method", "hessian")
-
-    edges = []
-    edge_connections = []
-    edge_energies: list[float] = []
-    edges_per_vertex = np.zeros(len(vertex_positions), dtype=int)
-    existing_pairs = set()
+    scale_indices = energy_data.get("scale_indices")
 
     if len(vertex_positions) == 0:
         logger.info("Extracted 0 edges")
-        return {
-            "traces": [],
-            "connections": np.zeros((0, 2), dtype=np.int32),
-            "energies": np.zeros((0,), dtype=np.float32),
-            "vertex_positions": vertex_positions.astype(np.float32),
-        }
+        return _empty_edges_result(vertex_positions)
 
-    # Build vertex volume image for O(1) vertex detection (matching MATLAB approach)
     logger.info("Creating vertex volume image...")
     lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
     vertex_image = paint_vertex_image(
@@ -993,105 +1502,38 @@ def extract_edges(
     )
     logger.info("Vertex volume image created")
 
-    # Also build cKDTree as fallback for out-of-volume queries
     vertex_positions_microns = vertex_positions * microns_per_voxel
     tree = cKDTree(vertex_positions_microns)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
-
-    # Prepare arrays once for performance (avoiding overhead in trace_edge)
-    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
-    mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
-
-    for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-        if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
-            continue
-        start_radius = lumen_radius_pixels[start_scale]
-        step_size = start_radius * step_size_ratio
-        max_length = start_radius * max_length_ratio
-        max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
-
-        if direction_method == "hessian":
-            directions = estimate_vessel_directions(
-                energy, start_pos, start_radius, microns_per_voxel
-            )
-            if directions.shape[0] < max_edges_per_vertex:
-                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
-                directions = np.vstack([directions, extra])
-            else:
-                directions = directions[:max_edges_per_vertex]
-        else:
-            directions = generate_edge_directions(max_edges_per_vertex)
-
-        for direction in directions:
-            if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
-                break
-            edge_trace = trace_edge(
-                energy_prepared,
-                start_pos,
-                direction,
-                step_size,
-                max_edge_energy,
-                vertex_positions,
-                vertex_scales,
-                lumen_radius_pixels,
-                lumen_radius_microns,
-                max_steps,
-                mpv_prepared,
-                energy_sign,
-                discrete_steps=discrete_tracing,
-                vertex_image=vertex_image,
-                tree=tree,
-                max_search_radius=max_search_radius,
-            )
-            if len(edge_trace) > 1:  # Valid edge found
-                # Use vertex image for fast O(1) lookup at endpoint
-                terminal_vertex = vertex_at_position(edge_trace[-1], vertex_image)
-
-                # If endpoint check failed and trace is short, check earlier points
-                if terminal_vertex is None and len(edge_trace) <= 5:
-                    for point in reversed(edge_trace[-len(edge_trace) : -1]):
-                        terminal_vertex = vertex_at_position(point, vertex_image)
-                        if terminal_vertex is not None and terminal_vertex != vertex_idx:
-                            break
-                        if terminal_vertex == vertex_idx:
-                            terminal_vertex = None
-
-                # Skip self-connections
-                if terminal_vertex == vertex_idx:
-                    continue
-                if terminal_vertex is not None:
-                    if edges_per_vertex[terminal_vertex] >= max_edges_per_vertex:
-                        continue
-                    pair = tuple(sorted((vertex_idx, terminal_vertex)))
-                    if pair in existing_pairs:
-                        continue
-                edge_arr = np.asarray(edge_trace, dtype=np.float32)
-                edges.append(edge_arr)
-                idx = np.floor(edge_arr).astype(int)
-                energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
-                edge_energies.append(float(np.mean(energies)))
-                edge_connections.append(
-                    [
-                        vertex_idx,
-                        terminal_vertex if terminal_vertex is not None else -1,
-                    ]
-                )
-                edges_per_vertex[vertex_idx] += 1
-                if terminal_vertex is not None:
-                    edges_per_vertex[terminal_vertex] += 1
-                    existing_pairs.add(pair)
-
-    logger.info(f"Extracted {len(edges)} edges")
-
-    edge_connections = np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2)
-
-    return {
-        "traces": edges,
-        "connections": edge_connections,
-        "energies": np.asarray(edge_energies, dtype=np.float32),
-        "vertex_positions": vertex_positions.astype(np.float32),
-    }
+    candidates = _generate_edge_candidates(
+        energy,
+        scale_indices,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_pixels,
+        lumen_radius_microns,
+        microns_per_voxel,
+        vertex_image,
+        tree,
+        max_search_radius,
+        params,
+        energy_sign,
+    )
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions.astype(np.float32),
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        energy.shape,
+        params,
+    )
+    logger.info(
+        "Extracted %d chosen edges from %d traced candidates",
+        len(chosen["traces"]),
+        chosen["diagnostics"]["candidate_traced_edge_count"],
+    )
+    return chosen
 
 
 def extract_edges_watershed(
@@ -1310,38 +1752,50 @@ def extract_vertices_resumable(
 def _load_edge_units(
     units_dir: Path,
     n_vertices: int,
-) -> tuple[
-    list[np.ndarray], list[list[int]], list[float], np.ndarray, set[tuple[int, int]], set[int]
-]:
-    edges: list[np.ndarray] = []
-    edge_connections: list[list[int]] = []
-    edge_energies: list[float] = []
-    edges_per_vertex = np.zeros(n_vertices, dtype=int)
-    existing_pairs: set[tuple[int, int]] = set()
+) -> tuple[dict[str, Any], set[int]]:
+    payload = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+    }
     completed: set[int] = set()
 
     if not units_dir.exists():
-        return edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed
+        return payload, completed
 
+    traces: list[np.ndarray] = []
+    connections: list[list[int]] = []
+    metrics: list[float] = []
+    energy_traces: list[np.ndarray] = []
+    scale_traces: list[np.ndarray] = []
+    origin_indices: list[int] = []
     for unit_file in sorted(units_dir.glob("*.pkl")):
-        payload = joblib.load(unit_file)
-        origin_index = int(payload["origin_index"])
+        unit_payload = joblib.load(unit_file)
+        origin_index = int(unit_payload["origin_index"])
         completed.add(origin_index)
-        for trace, connection, energy in zip(
-            payload["traces"],
-            payload["connections"],
-            payload["energies"],
-        ):
-            edges.append(np.asarray(trace, dtype=np.float32))
-            edge_connections.append([int(connection[0]), int(connection[1])])
-            edge_energies.append(float(energy))
-            start_vertex, end_vertex = int(connection[0]), int(connection[1])
-            if start_vertex >= 0:
-                edges_per_vertex[start_vertex] += 1
-            if end_vertex >= 0:
-                edges_per_vertex[end_vertex] += 1
-                existing_pairs.add(tuple(sorted((start_vertex, end_vertex))))
-    return edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed
+        traces.extend(np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"])
+        connections.extend(
+            [int(connection[0]), int(connection[1])] for connection in unit_payload["connections"]
+        )
+        metrics.extend(float(metric) for metric in unit_payload["metrics"])
+        energy_traces.extend(
+            np.asarray(trace, dtype=np.float32) for trace in unit_payload["energy_traces"]
+        )
+        scale_traces.extend(
+            np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
+        )
+        origin_indices.extend(int(value) for value in unit_payload.get("origin_indices", []))
+
+    payload["traces"] = traces
+    payload["connections"] = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    payload["metrics"] = np.asarray(metrics, dtype=np.float32)
+    payload["energy_traces"] = energy_traces
+    payload["scale_traces"] = scale_traces
+    payload["origin_indices"] = np.asarray(origin_indices, dtype=np.int32)
+    return payload, completed
 
 
 def extract_edges_resumable(
@@ -1358,6 +1812,7 @@ def extract_edges_resumable(
     vertex_scales = vertices["scales"]
     lumen_radius_pixels = energy_data["lumen_radius_pixels"]
     lumen_radius_microns = energy_data["lumen_radius_microns"]
+    scale_indices = energy_data.get("scale_indices")
     energy_sign = energy_data.get("energy_sign", -1.0)
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
@@ -1368,21 +1823,13 @@ def extract_edges_resumable(
     direction_method = params.get("direction_method", "hessian")
 
     if len(vertex_positions) == 0:
-        return {
-            "traces": [],
-            "connections": np.zeros((0, 2), dtype=np.int32),
-            "energies": np.zeros((0,), dtype=np.float32),
-            "vertex_positions": vertex_positions.astype(np.float32),
-        }
+        return _empty_edges_result(vertex_positions)
 
     units_dir = stage_controller.artifact_path("units")
     units_dir.mkdir(parents=True, exist_ok=True)
-    edges, edge_connections, edge_energies, edges_per_vertex, existing_pairs, completed = (
-        _load_edge_units(
-            units_dir,
-            len(vertex_positions),
-        )
-    )
+    candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
+    chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
+    candidates, completed = _load_edge_units(units_dir, len(vertex_positions))
 
     logger.info("Creating vertex volume image...")
     lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
@@ -1402,7 +1849,7 @@ def extract_edges_resumable(
 
     stage_controller.begin(
         detail="Tracing edges with resumable origin units",
-        units_total=len(vertex_positions),
+        units_total=len(vertex_positions) + 2,
         units_completed=len(completed),
         substage="trace_origins",
         resumed=bool(completed),
@@ -1414,105 +1861,131 @@ def extract_edges_resumable(
 
         unit_traces: list[np.ndarray] = []
         unit_connections: list[list[int]] = []
-        unit_energies: list[float] = []
-        if edges_per_vertex[vertex_idx] < max_edges_per_vertex:
-            start_radius = lumen_radius_pixels[start_scale]
-            step_size = start_radius * step_size_ratio
-            max_length = start_radius * max_length_ratio
-            max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
-            if direction_method == "hessian":
-                directions = estimate_vessel_directions(
-                    energy,
-                    start_pos,
-                    start_radius,
-                    microns_per_voxel,
-                )
-                if directions.shape[0] < max_edges_per_vertex:
-                    extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
-                    directions = np.vstack([directions, extra])
-                else:
-                    directions = directions[:max_edges_per_vertex]
+        unit_metrics: list[float] = []
+        unit_energy_traces: list[np.ndarray] = []
+        unit_scale_traces: list[np.ndarray] = []
+        start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
+        step_size = start_radius * step_size_ratio
+        max_length = start_radius * max_length_ratio
+        max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+        if direction_method == "hessian":
+            directions = estimate_vessel_directions(
+                energy,
+                start_pos,
+                start_radius,
+                microns_per_voxel,
+            )
+            if directions.shape[0] < max_edges_per_vertex:
+                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                directions = np.vstack([directions, extra])
             else:
-                directions = generate_edge_directions(max_edges_per_vertex)
+                directions = directions[:max_edges_per_vertex]
+        else:
+            directions = generate_edge_directions(max_edges_per_vertex)
 
-            for direction in directions:
-                if edges_per_vertex[vertex_idx] >= max_edges_per_vertex:
-                    break
-                edge_trace = trace_edge(
-                    energy_prepared,
-                    start_pos,
-                    direction,
-                    step_size,
-                    max_edge_energy,
-                    vertex_positions,
-                    vertex_scales,
-                    lumen_radius_pixels,
-                    lumen_radius_microns,
-                    max_steps,
-                    mpv_prepared,
-                    energy_sign,
-                    discrete_steps=discrete_tracing,
-                    vertex_image=vertex_image,
-                    tree=tree,
-                    max_search_radius=max_search_radius,
-                )
-                if len(edge_trace) <= 1:
-                    continue
-                terminal_vertex = vertex_at_position(edge_trace[-1], vertex_image)
-                if terminal_vertex is None and len(edge_trace) <= 5:
-                    for point in reversed(edge_trace[:-1]):
-                        terminal_vertex = vertex_at_position(point, vertex_image)
-                        if terminal_vertex is not None and terminal_vertex != vertex_idx:
-                            break
-                        if terminal_vertex == vertex_idx:
-                            terminal_vertex = None
-                if terminal_vertex == vertex_idx:
-                    continue
-                if terminal_vertex is not None:
-                    if edges_per_vertex[terminal_vertex] >= max_edges_per_vertex:
-                        continue
-                    pair = tuple(sorted((vertex_idx, terminal_vertex)))
-                    if pair in existing_pairs:
-                        continue
-                edge_arr = np.asarray(edge_trace, dtype=np.float32)
-                idx = np.floor(edge_arr).astype(int)
-                energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
-                unit_traces.append(edge_arr)
-                unit_energies.append(float(np.mean(energies)))
-                unit_connections.append(
-                    [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
-                )
-                edges_per_vertex[vertex_idx] += 1
-                if terminal_vertex is not None:
-                    edges_per_vertex[terminal_vertex] += 1
-                    existing_pairs.add(pair)
+        for direction in directions:
+            edge_trace = trace_edge(
+                energy_prepared,
+                start_pos,
+                direction,
+                step_size,
+                max_edge_energy,
+                vertex_positions,
+                vertex_scales,
+                lumen_radius_pixels,
+                lumen_radius_microns,
+                max_steps,
+                mpv_prepared,
+                energy_sign,
+                discrete_steps=discrete_tracing,
+                vertex_image=vertex_image,
+                tree=tree,
+                max_search_radius=max_search_radius,
+                origin_vertex_idx=vertex_idx,
+            )
+            if len(edge_trace) <= 1:
+                continue
+            edge_arr = np.asarray(edge_trace, dtype=np.float32)
+            terminal_vertex = _trace_endpoint_vertex(edge_arr, vertex_image, vertex_idx)
+            energy_trace = _trace_energy_series(edge_arr, energy)
+            scale_trace = _trace_scale_series(edge_arr, scale_indices)
+            unit_traces.append(edge_arr)
+            unit_connections.append(
+                [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
+            )
+            unit_metrics.append(_edge_metric_from_energy_trace(energy_trace))
+            unit_energy_traces.append(energy_trace)
+            unit_scale_traces.append(scale_trace)
 
         payload = {
             "origin_index": vertex_idx,
             "traces": unit_traces,
             "connections": unit_connections,
-            "energies": unit_energies,
+            "metrics": unit_metrics,
+            "energy_traces": unit_energy_traces,
+            "scale_traces": unit_scale_traces,
+            "origin_indices": [vertex_idx] * len(unit_traces),
         }
         atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
-        edges.extend(unit_traces)
-        edge_connections.extend(unit_connections)
-        edge_energies.extend(unit_energies)
+        candidates["traces"].extend(unit_traces)
+        if len(unit_connections) > 0:
+            if candidates["connections"].size == 0:
+                candidates["connections"] = np.asarray(unit_connections, dtype=np.int32).reshape(
+                    -1, 2
+                )
+            else:
+                candidates["connections"] = np.vstack(
+                    [
+                        candidates["connections"],
+                        np.asarray(unit_connections, dtype=np.int32).reshape(-1, 2),
+                    ]
+                )
+            candidates["metrics"] = np.concatenate(
+                [candidates["metrics"], np.asarray(unit_metrics, dtype=np.float32)]
+            )
+            candidates["origin_indices"] = np.concatenate(
+                [
+                    candidates["origin_indices"],
+                    np.asarray([vertex_idx] * len(unit_traces), dtype=np.int32),
+                ]
+            )
+        candidates["energy_traces"].extend(unit_energy_traces)
+        candidates["scale_traces"].extend(unit_scale_traces)
         completed.add(vertex_idx)
         stage_controller.save_state({"last_completed_origin": vertex_idx})
         stage_controller.update(
-            units_total=len(vertex_positions),
+            units_total=len(vertex_positions) + 2,
             units_completed=len(completed),
             substage="trace_origins",
             detail=f"Tracing origin {vertex_idx + 1}/{len(vertex_positions)}",
             resumed=bool(completed - {vertex_idx}),
         )
 
-    return {
-        "traces": edges,
-        "connections": np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2),
-        "energies": np.asarray(edge_energies, dtype=np.float32),
-        "vertex_positions": vertex_positions.astype(np.float32),
-    }
+    atomic_joblib_dump(candidates, candidate_manifest_path)
+    stage_controller.update(
+        units_total=len(vertex_positions) + 2,
+        units_completed=len(completed) + 1,
+        substage="consolidate_candidates",
+        detail="Consolidated edge candidates",
+        resumed=bool(completed),
+    )
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions.astype(np.float32),
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        energy.shape,
+        params,
+    )
+    atomic_joblib_dump(chosen, chosen_manifest_path)
+    stage_controller.update(
+        units_total=len(vertex_positions) + 2,
+        units_completed=len(vertex_positions) + 2,
+        substage="choose_edges",
+        detail="Selected MATLAB-style terminal edges",
+        resumed=bool(completed),
+    )
+    return chosen
 
 
 def extract_edges_watershed_resumable(
@@ -1539,10 +2012,17 @@ def extract_edges_watershed_resumable(
 
     units_dir = stage_controller.artifact_path("units")
     units_dir.mkdir(parents=True, exist_ok=True)
-    edges, connections, edge_energies, _, seen_pairs, completed = _load_edge_units(
-        units_dir,
-        len(vertex_positions),
+    existing_payload, completed = _load_edge_units(units_dir, len(vertex_positions))
+    edges = existing_payload["traces"]
+    connections = (
+        existing_payload["connections"].tolist() if existing_payload["connections"].size else []
     )
+    edge_energies = existing_payload["metrics"].tolist()
+    seen_pairs = {
+        tuple(sorted((int(start), int(end))))
+        for start, end in np.asarray(existing_payload["connections"], dtype=np.int32).reshape(-1, 2)
+        if int(start) >= 0 and int(end) >= 0
+    }
     stage_controller.begin(
         detail="Tracing watershed label adjacencies",
         units_total=len(vertex_positions),
@@ -1585,7 +2065,10 @@ def extract_edges_watershed_resumable(
             "origin_index": origin_index,
             "traces": unit_traces,
             "connections": unit_connections,
-            "energies": unit_energies,
+            "metrics": unit_energies,
+            "energy_traces": [np.asarray([energy], dtype=np.float32) for energy in unit_energies],
+            "scale_traces": [np.zeros((len(trace),), dtype=np.int16) for trace in unit_traces],
+            "origin_indices": [origin_index] * len(unit_traces),
         }
         atomic_joblib_dump(payload, units_dir / f"label_{origin_index:06d}.pkl")
         edges.extend(unit_traces)

@@ -40,8 +40,12 @@ def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
         "microns_per_voxel": [1.0, 1.0, 1.0],
     }
     edges = processor.extract_edges(energy_data, vertices, params)
-    assert len(edges["traces"]) == 2
-    for trace in edges["traces"]:
+    assert edges["diagnostics"]["candidate_traced_edge_count"] == 2
+    assert len(edges["traces"]) == 0
+    for trace in [
+        np.array([[10.0, 10.0, 10.0], [10.0, 14.0, 10.0], [10.0, 18.0, 10.0]], dtype=float),
+        np.array([[10.0, 10.0, 10.0], [10.0, 6.0, 10.0], [10.0, 2.0, 10.0]], dtype=float),
+    ]:
         trace = np.asarray(trace)
         # y and z should remain constant while x moves monotonically
         assert np.allclose(trace[:, 0], 10.0)

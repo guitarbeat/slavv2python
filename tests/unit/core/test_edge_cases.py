@@ -3,7 +3,7 @@ import pytest
 
 # Add source path for imports
 from slavv.core import SLAVVProcessor
-from slavv.core.tracing import extract_vertices
+from slavv.core.tracing import _choose_edges_matlab_style, extract_vertices
 
 
 def test_extract_handles_no_vertices():
@@ -75,3 +75,74 @@ def test_vertex_extraction_uses_matlab_paint_selection():
 
     assert len(vertices["positions"]) == 1
     assert np.allclose(vertices["positions"][0], [5, 5, 5])
+
+
+def test_choose_edges_filters_nonterminal_duplicates_and_antiparallel():
+    vertex_positions = np.array([[1, 1, 1], [1, 5, 1]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    candidates = {
+        "traces": [
+            np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32),
+            np.array([[1, 1, 1], [1, 2, 1], [1, 3, 1]], dtype=np.float32),
+            np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32),
+            np.array([[1, 5, 1], [1, 3, 1], [1, 1, 1]], dtype=np.float32),
+        ],
+        "connections": np.array([[0, 1], [0, -1], [0, 1], [1, 0]], dtype=np.int32),
+        "metrics": np.array([-5.0, -6.0, -4.0, -3.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-6.0, -6.0, -6.0], dtype=np.float32),
+            np.array([-4.0, -4.0, -4.0], dtype=np.float32),
+            np.array([-3.0, -3.0, -3.0], dtype=np.float32),
+        ],
+        "scale_traces": [np.zeros(3, dtype=np.int16) for _ in range(4)],
+        "origin_indices": np.array([0, 0, 0, 1], dtype=np.int32),
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1]]
+    assert chosen["diagnostics"]["dangling_edge_count"] == 1
+    assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
+    assert chosen["diagnostics"]["antiparallel_pair_count"] == 1
+
+
+def test_choose_edges_prunes_degree_excess_and_cycles():
+    vertex_positions = np.array(
+        [[1, 1, 1], [1, 5, 1], [5, 5, 1], [5, 1, 1]],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(4, dtype=np.int16)
+    candidates = {
+        "traces": [
+            np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32),
+            np.array([[1, 5, 1], [3, 5, 1], [5, 5, 1]], dtype=np.float32),
+            np.array([[5, 5, 1], [3, 3, 1], [1, 1, 1]], dtype=np.float32),
+            np.array([[1, 1, 1], [3, 1, 1], [5, 1, 1]], dtype=np.float32),
+        ],
+        "connections": np.array([[0, 1], [1, 2], [2, 0], [0, 3]], dtype=np.int32),
+        "metrics": np.array([-5.0, -4.0, -3.0, -2.0], dtype=np.float32),
+        "energy_traces": [np.array([-5.0, -5.0, -5.0], dtype=np.float32) for _ in range(4)],
+        "scale_traces": [np.zeros(3, dtype=np.int16) for _ in range(4)],
+        "origin_indices": np.array([0, 1, 2, 0], dtype=np.int32),
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 2},
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1], [1, 2]]
+    assert chosen["diagnostics"]["degree_pruned_count"] == 1
+    assert chosen["diagnostics"]["cycle_pruned_count"] == 1
