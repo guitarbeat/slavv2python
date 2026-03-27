@@ -223,6 +223,86 @@ def _edge_endpoint_pair_set(payload: dict[str, Any]) -> set[tuple[int, int]]:
     return set(_edge_endpoint_signatures(payload))
 
 
+def _edge_endpoint_pairs_by_seed_origin(
+    payload: dict[str, Any],
+) -> dict[int, set[tuple[int, int]]]:
+    """Group unique endpoint pairs by the recorded seed origin for candidate edges."""
+    connections = np.asarray(payload.get("connections", np.array([])))
+    if connections.size == 0:
+        return {}
+    if connections.ndim == 1:
+        connections = connections.reshape(1, -1)
+
+    origins = np.asarray(payload.get("origin_indices", np.array([])), dtype=np.int32).reshape(-1)
+    if origins.size != len(connections):
+        origins = connections[:, 0].astype(np.int32, copy=False)
+
+    grouped: dict[int, set[tuple[int, int]]] = {}
+    for index, connection in enumerate(connections):
+        pair = [int(value) for value in np.asarray(connection).tolist()[:2]]
+        if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
+            continue
+        origin = int(origins[index]) if index < len(origins) else int(pair[0])
+        grouped.setdefault(origin, set()).add(tuple(sorted(pair)))
+    return grouped
+
+
+def _incident_endpoint_pairs_by_vertex(
+    endpoint_pairs: set[tuple[int, int]],
+) -> dict[int, set[tuple[int, int]]]:
+    """Group endpoint pairs by each incident vertex."""
+    grouped: dict[int, set[tuple[int, int]]] = {}
+    for pair in endpoint_pairs:
+        start_vertex, end_vertex = (int(value) for value in pair)
+        grouped.setdefault(start_vertex, set()).add(pair)
+        grouped.setdefault(end_vertex, set()).add(pair)
+    return grouped
+
+
+def _missing_matlab_seed_origin_samples(
+    matlab_endpoint_pairs: set[tuple[int, int]],
+    missing_pairs_by_vertex: dict[int, set[tuple[int, int]]],
+    candidate_edges: dict[str, Any],
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Summarize missing MATLAB endpoint pairs by candidate seed origin."""
+    if not missing_pairs_by_vertex:
+        return []
+
+    matlab_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(matlab_endpoint_pairs)
+    candidate_pairs_by_seed_origin = _edge_endpoint_pairs_by_seed_origin(candidate_edges)
+
+    samples = []
+    for seed_origin_index in sorted(missing_pairs_by_vertex):
+        missing_pairs = missing_pairs_by_vertex[seed_origin_index]
+        matlab_incident_pairs = matlab_pairs_by_vertex.get(seed_origin_index, set())
+        candidate_pairs = candidate_pairs_by_seed_origin.get(seed_origin_index, set())
+        matched_candidate_pairs = candidate_pairs & matlab_incident_pairs
+        extra_candidate_pairs = candidate_pairs - matlab_incident_pairs
+        samples.append(
+            {
+                "seed_origin_index": int(seed_origin_index),
+                "matlab_incident_endpoint_pair_count": len(matlab_incident_pairs),
+                "missing_matlab_incident_endpoint_pair_count": len(missing_pairs),
+                "matched_matlab_incident_endpoint_pair_count": len(matched_candidate_pairs),
+                "candidate_endpoint_pair_count": len(candidate_pairs),
+                "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
+                "missing_matlab_incident_endpoint_pair_samples": sorted(missing_pairs)[:3],
+                "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
+                "extra_candidate_endpoint_pair_samples": sorted(extra_candidate_pairs)[:3],
+            }
+        )
+
+    samples.sort(
+        key=lambda item: (
+            -int(item["missing_matlab_incident_endpoint_pair_count"]),
+            int(item["candidate_endpoint_pair_count"]),
+            int(item["seed_origin_index"]),
+        )
+    )
+    return samples[:limit]
+
+
 def _strand_signatures(payload: dict[str, Any]) -> list[tuple[int, ...]]:
     """Build orientation-independent strand signatures."""
     strands = payload.get("strands_to_vertices")
@@ -493,6 +573,7 @@ def compare_edges(
         candidate_endpoint_pairs = _edge_endpoint_pair_set(candidate_edges)
         missing_matlab_pairs = matlab_endpoint_pairs - candidate_endpoint_pairs
         extra_candidate_pairs = candidate_endpoint_pairs - matlab_endpoint_pairs
+        missing_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(missing_matlab_pairs)
         comparison["diagnostics"]["candidate_endpoint_coverage"] = {
             "candidate_endpoint_pair_count": len(candidate_endpoint_pairs),
             "matlab_endpoint_pair_count": len(matlab_endpoint_pairs),
@@ -508,6 +589,12 @@ def compare_edges(
             ),
             "extra_candidate_endpoint_pair_samples": _sample_set_diff(
                 candidate_endpoint_pairs, matlab_endpoint_pairs
+            ),
+            "missing_matlab_seed_origin_count": len(missing_pairs_by_vertex),
+            "missing_matlab_seed_origin_samples": _missing_matlab_seed_origin_samples(
+                matlab_endpoint_pairs,
+                missing_pairs_by_vertex,
+                candidate_edges,
             ),
         }
 

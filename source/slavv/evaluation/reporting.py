@@ -199,6 +199,22 @@ def generate_summary(run_dir: Path, output_file: Path):
             )
             if missing_candidate_pairs:
                 lines.append(f"First missing candidate endpoint pair: {missing_candidate_pairs[0]}")
+            missing_seed_origins = candidate_coverage.get("missing_matlab_seed_origin_samples", [])
+            if missing_seed_origins:
+                top_seed_origin = missing_seed_origins[0]
+                lines.append(
+                    "Top missing seed origin "
+                    f"{int(top_seed_origin.get('seed_origin_index', -1))}: "
+                    f"missing matlab incident pairs "
+                    f"{int(top_seed_origin.get('missing_matlab_incident_endpoint_pair_count', 0)):,}"
+                    f"  seed candidate pairs "
+                    f"{int(top_seed_origin.get('candidate_endpoint_pair_count', 0)):,}"
+                )
+                missing_seed_pairs = top_seed_origin.get(
+                    "missing_matlab_incident_endpoint_pair_samples", []
+                )
+                if missing_seed_pairs:
+                    lines.append(f"First missing pair at top seed origin: {missing_seed_pairs[0]}")
         if any(
             key in edge_diag
             for key in (

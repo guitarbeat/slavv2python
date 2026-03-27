@@ -212,6 +212,45 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     assert coverage["extra_candidate_endpoint_pair_samples"] == [(4, 5)]
 
 
+def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [0, 2], [0, 3], [4, 5]], dtype=np.int32),
+        "traces": [],
+    }
+    python_edges = {
+        "connections": np.array([[0, 1], [4, 5]], dtype=np.int32),
+        "traces": [],
+    }
+    candidate_edges = {
+        "connections": np.array([[0, 1], [0, 4], [4, 5]], dtype=np.int32),
+        "origin_indices": np.array([0, 0, 4], dtype=np.int32),
+        "traces": [],
+    }
+
+    result = compare_edges(matlab_edges, python_edges, candidate_edges)
+
+    coverage = result["diagnostics"]["candidate_endpoint_coverage"]
+    assert coverage["missing_matlab_seed_origin_count"] == 3
+    top_seed_origin = coverage["missing_matlab_seed_origin_samples"][0]
+    assert top_seed_origin["seed_origin_index"] == 0
+    assert top_seed_origin["matlab_incident_endpoint_pair_count"] == 3
+    assert top_seed_origin["missing_matlab_incident_endpoint_pair_count"] == 2
+    assert top_seed_origin["matched_matlab_incident_endpoint_pair_count"] == 1
+    assert top_seed_origin["candidate_endpoint_pair_count"] == 2
+    assert top_seed_origin["extra_candidate_endpoint_pair_count"] == 1
+    assert top_seed_origin["missing_matlab_incident_endpoint_pair_samples"] == [(0, 2), (0, 3)]
+    assert top_seed_origin["candidate_endpoint_pair_samples"] == [(0, 1), (0, 4)]
+    assert top_seed_origin["extra_candidate_endpoint_pair_samples"] == [(0, 4)]
+
+    seed_origin_two = next(
+        sample
+        for sample in coverage["missing_matlab_seed_origin_samples"]
+        if sample["seed_origin_index"] == 2
+    )
+    assert seed_origin_two["candidate_endpoint_pair_count"] == 0
+    assert seed_origin_two["missing_matlab_incident_endpoint_pair_samples"] == [(0, 2)]
+
+
 def test_compare_networks_computes_strand_differences():
     matlab_stats = {"strand_count": 25}
     python_network = {"strands": [object() for _ in range(23)]}

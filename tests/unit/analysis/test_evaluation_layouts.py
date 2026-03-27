@@ -178,6 +178,14 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     "extra_candidate_endpoint_pair_count": 5,
                     "python_endpoint_pair_count": 12,
                     "missing_matlab_endpoint_pair_samples": [[2, 356]],
+                    "missing_matlab_seed_origin_samples": [
+                        {
+                            "seed_origin_index": 2,
+                            "missing_matlab_incident_endpoint_pair_count": 3,
+                            "candidate_endpoint_pair_count": 1,
+                            "missing_matlab_incident_endpoint_pair_samples": [[2, 356]],
+                        }
+                    ],
                 },
                 "python": {
                     "candidate_traced_edge_count": 10,
@@ -223,6 +231,11 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: 21/13/8" in summary
     assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary
+    assert (
+        "Top missing seed origin 2: missing matlab incident pairs 3  seed candidate pairs 1"
+        in summary
+    )
+    assert "First missing pair at top seed origin: [2, 356]" in summary
     assert "Python energy source: matlab_batch_hdf5" in summary
 
 
