@@ -1806,16 +1806,22 @@ def estimate_vessel_directions(
     # -----------------------------------
 
     # Compute Hessian in the local patch and extract center values
-    hessian_elems = [
-        h * (radius**2)
-        for h in feature.hessian_matrix(
+    try:
+        raw_hessian = feature.hessian_matrix(
             patch,
             sigma=sigma,
             mode="nearest",
             order="rc",
             use_gaussian_derivatives=False,
         )
-    ]
+    except TypeError:
+        raw_hessian = feature.hessian_matrix(
+            patch,
+            sigma=sigma,
+            mode="nearest",
+            order="rc",
+        )
+    hessian_elems = [h * (radius**2) for h in raw_hessian]
     patch_center = tuple(np.array(patch.shape) // 2)
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
     H = np.array(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import copy
 import hashlib
 import json
@@ -838,7 +839,7 @@ class RunContext:
         if not timestamp:
             return None
         try:
-            return time.mktime(time.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+            return calendar.timegm(time.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ"))
         except ValueError:
             return None
 

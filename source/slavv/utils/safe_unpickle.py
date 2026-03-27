@@ -14,6 +14,7 @@ import logging
 import lzma
 import os
 import pickle
+import tempfile
 from typing import Any, ClassVar, Union
 
 from joblib.numpy_pickle import NumpyUnpickler
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Default maximum file size (1GB)
 DEFAULT_MAX_PICKLE_SIZE = 1024 * 1024 * 1024
+_STREAM_CHUNK_SIZE = 1024 * 1024
 
 
 class SafeNumpyUnpickler(NumpyUnpickler):
@@ -63,6 +65,42 @@ class SafeNumpyUnpickler(NumpyUnpickler):
         return super().find_class(module, name)
 
 
+def _detect_opener(file_path: str):
+    with open(file_path, "rb") as handle:
+        header = handle.read(6)
+
+    if header.startswith(b"\x1f\x8b"):
+        return gzip.open
+    if header.startswith(b"BZh"):
+        return bz2.open
+    if header.startswith((b"\xfd7zXZ", b"]\x00\x00\x80\x00")):
+        return lzma.open
+    return open
+
+
+def _materialize_bounded_stream(file_path: str, opener, max_size: int) -> str:
+    """Copy the pickle payload to a temp file while enforcing a post-decompression size cap."""
+    fd, temp_name = tempfile.mkstemp(suffix=".pkl")
+    total_size = 0
+    try:
+        with os.fdopen(fd, "wb") as temp_handle, opener(file_path, "rb") as source:
+            while True:
+                chunk = source.read(_STREAM_CHUNK_SIZE)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > max_size:
+                    raise ValueError(
+                        f"Decompressed file size {total_size} exceeds limit of {max_size} bytes"
+                    )
+                temp_handle.write(chunk)
+        return temp_name
+    except Exception:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+        raise
+
+
 def safe_load(file_path: Union[str, os.PathLike], max_size: int = DEFAULT_MAX_PICKLE_SIZE) -> Any:
     """
     Safely load a pickle file with size limits and restricted imports.
@@ -93,30 +131,25 @@ def safe_load(file_path: Union[str, os.PathLike], max_size: int = DEFAULT_MAX_PI
         raise ValueError(f"File size {file_size} exceeds limit of {max_size} bytes")
 
     try:
-        # Detect compression
-        with open(file_path, "rb") as f:
-            header = f.read(4)
-
-        if header.startswith(b"\x1f\x8b"):  # gzip
-            opener = gzip.open
-        elif header.startswith(b"BZh"):  # bz2
-            opener = bz2.open
-        elif header.startswith((b"\xfd7zXZ", b"]\x00\x00\x80\x00")):  # lzma/xz
-            opener = lzma.open
-        else:
-            opener = open
-
-        with opener(file_path, "rb") as f:
-            # We must pass the filename and file handle to NumpyUnpickler
-            # ensure_native_byte_order=False is required to verify correctly (as per memory)
-            # mmap_mode=None (default) as we load everything to memory
-            try:
-                # Try with positional arguments matching joblib 1.5.3 signature
-                return SafeNumpyUnpickler(file_path, f, False, None).load()
-            except TypeError:
-                # Fallback for older joblib versions or different signature
-                # Some versions might not have ensure_native_byte_order
-                return SafeNumpyUnpickler(file_path, f).load()
+        opener = _detect_opener(file_path)
+        materialized_path = (
+            file_path if opener is open else _materialize_bounded_stream(file_path, opener, max_size)
+        )
+        try:
+            with open(materialized_path, "rb") as f:
+                # We must pass the filename and file handle to NumpyUnpickler
+                # ensure_native_byte_order=False is required to verify correctly (as per memory)
+                # mmap_mode=None (default) as we load everything to memory
+                try:
+                    # Try with positional arguments matching joblib 1.5.3 signature
+                    return SafeNumpyUnpickler(materialized_path, f, False, None).load()
+                except TypeError:
+                    # Fallback for older joblib versions or different signature
+                    # Some versions might not have ensure_native_byte_order
+                    return SafeNumpyUnpickler(materialized_path, f).load()
+        finally:
+            if materialized_path != file_path and os.path.exists(materialized_path):
+                os.unlink(materialized_path)
 
     except (pickle.UnpicklingError, AttributeError, ImportError, IndexError, TypeError) as e:
         logger.error(f"Unpickling error for {file_path}: {e}")

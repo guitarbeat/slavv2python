@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
+from defusedxml.common import EntitiesForbidden
 
 from slavv.io import (
     Network,
@@ -101,6 +103,20 @@ class TestNetworkImport:
         assert np.allclose(network.vertices, expected_vertices)
         assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
         assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
+
+    def test_load_from_casx_rejects_entity_expansion(self, tmp_path: Path) -> None:
+        xml = (
+            "<?xml version='1.0' encoding='UTF-8'?>\n"
+            "<!DOCTYPE CasX [<!ENTITY a 'boom'>]>\n"
+            "<CasX><Network><Vertices>"
+            "<Vertex id='0' x='1.0' y='2.0' z='3.0' radius='&a;'/></Vertices>"
+            "<Edges></Edges></Network></CasX>"
+        )
+        casx_path = tmp_path / "hostile.casx"
+        casx_path.write_text(xml, encoding="utf-8")
+
+        with pytest.raises(EntitiesForbidden, match="EntitiesForbidden"):
+            load_network_from_casx(casx_path)
 
     def test_load_from_vmv(self, tmp_path: Path) -> None:
         """Test loading network from VMV text format."""

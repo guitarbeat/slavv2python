@@ -77,3 +77,22 @@ def test_casx_export(tmp_path):
     bifs = root.findall(".//Bifurcation")
     assert len(bifs) == 1
     assert bifs[0].attrib["vertex_id"] == "1"
+
+
+def test_casx_export_defaults_missing_radii_to_zero(tmp_path):
+    output_path = tmp_path / "missing_radii.casx"
+    viz = NetworkVisualizer()
+
+    vertices = {
+        "positions": np.array([[10, 20, 30], [40, 50, 60]], dtype=float),
+    }
+    edges = {"connections": [[0, 1]], "traces": []}
+    network = {"strands": [[0, 1]]}
+
+    viz._export_casx(vertices, edges, network, {}, str(output_path))
+
+    tree = ET.parse(output_path)
+    verts = tree.getroot().findall(".//Vertex")
+    assert len(verts) == 2
+    assert float(verts[0].attrib["radius"]) == pytest.approx(0.0, 0.001)
+    assert float(verts[1].attrib["radius"]) == pytest.approx(0.0, 0.001)

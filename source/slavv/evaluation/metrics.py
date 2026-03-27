@@ -246,7 +246,7 @@ def _strand_signatures(payload: dict[str, Any]) -> list[tuple[int, ...]]:
 def match_vertices(
     matlab_positions: np.ndarray, python_positions: np.ndarray, distance_threshold: float = 3.0
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Match vertices between MATLAB and Python using nearest neighbors."""
+    """Match vertices between MATLAB and Python using one-to-one nearest neighbors."""
     matlab_positions = _as_position_array(matlab_positions)
     python_positions = _as_position_array(python_positions)
 
@@ -263,14 +263,32 @@ def match_vertices(
     # Find nearest Python vertex for each MATLAB vertex
     distances, python_indices = tree.query(matlab_xyz)
 
-    # Filter by distance threshold
-    valid_matches = distances < distance_threshold
+    candidate_pairs = [
+        (float(distance), int(matlab_index), int(python_index))
+        for matlab_index, (distance, python_index) in enumerate(zip(distances, python_indices))
+        if distance < distance_threshold
+    ]
+    candidate_pairs.sort()
 
-    matlab_indices = np.arange(len(matlab_xyz))[valid_matches]
-    matched_python_indices = python_indices[valid_matches]
-    matched_distances = distances[valid_matches]
+    matched_matlab = []
+    matched_python = []
+    matched_distances = []
+    used_matlab: set[int] = set()
+    used_python: set[int] = set()
+    for distance, matlab_index, python_index in candidate_pairs:
+        if matlab_index in used_matlab or python_index in used_python:
+            continue
+        used_matlab.add(matlab_index)
+        used_python.add(python_index)
+        matched_matlab.append(matlab_index)
+        matched_python.append(python_index)
+        matched_distances.append(distance)
 
-    return matlab_indices, matched_python_indices, matched_distances
+    return (
+        np.asarray(matched_matlab, dtype=np.int32),
+        np.asarray(matched_python, dtype=np.int32),
+        np.asarray(matched_distances, dtype=float),
+    )
 
 
 def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any]) -> dict[str, Any]:
@@ -309,10 +327,11 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
 
     if matlab_positions.size > 0 and python_positions.size > 0:
         matlab_idx, python_idx, distances = match_vertices(matlab_positions, python_positions)
+        unique_python_idx = np.unique(python_idx)
 
         comparison["matched_vertices"] = len(matlab_idx)
         comparison["unmatched_matlab"] = matlab_count - len(matlab_idx)
-        comparison["unmatched_python"] = python_count - len(python_idx)
+        comparison["unmatched_python"] = python_count - len(unique_python_idx)
 
         if len(distances) > 0:
             comparison["position_rmse"] = float(np.sqrt(np.mean(distances**2)))
@@ -324,7 +343,12 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
         matlab_radii = np.asarray(matlab_verts.get("radii", np.array([])))
         python_radii = np.asarray(python_verts.get("radii", np.array([])))
 
-        if len(matlab_idx) > 0 and matlab_radii.size > 0 and python_radii.size > 0:
+        if (
+            len(matlab_idx) > 0
+            and len(unique_python_idx) == len(matlab_idx)
+            and matlab_radii.size > 0
+            and python_radii.size > 0
+        ):
             matched_matlab_radii = matlab_radii[matlab_idx]
             matched_python_radii = python_radii[python_idx]
 
@@ -507,7 +531,15 @@ def compare_networks(
     comparison = {
         "matlab_strand_count": _resolve_count(
             (matlab_stats or {}).get("strand_count"),
-            _count_items((matlab_network or {}).get("strands_to_vertices")),
+            _resolve_count(
+                (matlab_network or {}).get("strand_count"),
+                _count_items(
+                    (matlab_network or {}).get(
+                        "strands_to_vertices",
+                        (matlab_network or {}).get("strands"),
+                    )
+                ),
+            ),
         ),
         "python_strand_count": _infer_strand_count(python_network),
         "exact_match": False,
@@ -641,11 +673,13 @@ def compare_results(
                 matlab_parsed.get("network_stats"),
             )
 
-    comparison["parity_gate"] = {
-        "vertices_exact": comparison.get("vertices", {}).get("exact_positions_scales_match", False),
-        "edges_exact": comparison.get("edges", {}).get("exact_match", False),
-        "strands_exact": comparison.get("network", {}).get("exact_match", False),
+    parity_gate = {
+        "vertices_exact": comparison.get("vertices", {}).get("exact_positions_scales_match"),
+        "edges_exact": comparison.get("edges", {}).get("exact_match"),
+        "strands_exact": comparison.get("network", {}).get("exact_match"),
     }
-    comparison["parity_gate"]["passed"] = all(comparison["parity_gate"].values())
+    available_checks = [value for value in parity_gate.values() if value is not None]
+    parity_gate["passed"] = all(available_checks) if available_checks else None
+    comparison["parity_gate"] = parity_gate
 
     return comparison

@@ -26,6 +26,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _validate_stage_control(stage_name: str | None, option_name: str) -> None:
+    if stage_name is not None and stage_name not in PIPELINE_STAGES:
+        valid = ", ".join(PIPELINE_STAGES)
+        raise ValueError(f"{option_name} must be one of: {valid}")
+
+
 class SLAVVProcessor:
     """Main class for SLAVV vectorization processing"""
 
@@ -72,6 +78,8 @@ class SLAVVProcessor:
         """
         if image.ndim != 3 or 0 in image.shape:
             raise ValueError("Input image must be a non-empty 3D array")
+        _validate_stage_control(stop_after, "stop_after")
+        _validate_stage_control(force_rerun_from, "force_rerun_from")
 
         logger.info("Starting SLAVV processing pipeline")
 
@@ -128,7 +136,12 @@ class SLAVVProcessor:
 
         results = {"parameters": parameters}
 
-        image = utils.preprocess_image(image, parameters)
+        try:
+            image = utils.preprocess_image(image, parameters)
+        except Exception as exc:
+            if run_context is not None:
+                run_context.fail_stage("preprocess", exc)
+            raise
         if run_context is not None:
             run_context.mark_preprocess_complete()
         if progress_callback:

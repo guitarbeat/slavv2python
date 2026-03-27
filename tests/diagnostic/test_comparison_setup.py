@@ -4,6 +4,8 @@ Quick test to verify comparison setup is correct.
 This doesn't run the full vectorization, just checks that files exist and paths are correct.
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

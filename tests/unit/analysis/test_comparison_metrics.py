@@ -96,6 +96,24 @@ def test_compare_vertices_reports_unmatched_counts():
     assert result["count_difference"] == 1
 
 
+def test_compare_vertices_enforces_one_to_one_matching():
+    matlab = _vertex_payload(
+        positions=[[0, 0, 0], [0.2, 0.2, 0.2]],
+        radii=[1.0, 3.0],
+    )
+    python = _vertex_payload(
+        positions=[[0.1, 0.1, 0.1]],
+        radii=[2.0],
+    )
+
+    result = compare_vertices(matlab, python)
+
+    assert result["matched_vertices"] == 1
+    assert result["unmatched_matlab"] == 1
+    assert result["unmatched_python"] == 0
+    assert result["radius_stats"]["rmse"] == 1.0
+
+
 def test_compare_vertices_tolerates_nan_radii():
     matlab = _vertex_payload(
         positions=[[10, 10, 10], [20, 20, 20]],
@@ -203,6 +221,35 @@ def test_compare_networks_computes_strand_differences():
     assert result["matlab_strand_count"] == 25
     assert result["python_strand_count"] == 23
     assert result["strand_count_difference"] == 2
+
+
+def test_compare_networks_infers_matlab_strands_without_stats_block():
+    matlab_network = {"strands": [[0, 1], [1, 2]]}
+    python_network = {"strands": [[0, 1], [1, 2]]}
+
+    result = compare_networks(matlab_network, python_network)
+
+    assert result["matlab_strand_count"] == 2
+    assert result["python_strand_count"] == 2
+    assert result["exact_match"]
+
+
+def test_compare_results_infers_matlab_strand_count_from_network_without_stats():
+    matlab_results = {"success": True, "elapsed_time": 5.0}
+    python_results = {
+        "success": True,
+        "elapsed_time": 4.0,
+        "results": {"network": {"strands": [[0, 1], [1, 2]]}},
+    }
+    matlab_parsed = {
+        "network": {"strands": [[0, 1], [1, 2]]},
+    }
+
+    result = compare_results(matlab_results, python_results, matlab_parsed)
+
+    assert result["matlab"]["strand_count"] == 2
+    assert result["network"]["exact_match"]
+    assert result["parity_gate"]["strands_exact"] is True
 
 
 def test_compare_results_includes_performance_and_nested_metrics():
@@ -360,3 +407,7 @@ def test_compare_results_skips_nested_metrics_without_parsed_data():
     assert "vertices" not in result
     assert "edges" not in result
     assert "network" not in result
+    assert result["parity_gate"]["vertices_exact"] is None
+    assert result["parity_gate"]["edges_exact"] is None
+    assert result["parity_gate"]["strands_exact"] is None
+    assert result["parity_gate"]["passed"] is None

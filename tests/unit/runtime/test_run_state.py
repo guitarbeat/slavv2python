@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import calendar
 import json
 
 import joblib
+import numpy as np
 import pytest
 
+from slavv.core import SLAVVProcessor
 from slavv.runtime import RunContext, load_run_snapshot
 from slavv.runtime.run_state import (
     STATUS_BLOCKED,
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
+    STATUS_FAILED,
     STATUS_PENDING,
     atomic_write_json,
     target_stage_progress,
@@ -136,3 +140,39 @@ def test_legacy_checkpoints_bootstrap_snapshot(tmp_path):
     assert snapshot.stages["energy"].resumed is True
     assert snapshot.stages["edges"].status == STATUS_PENDING
     assert load_run_snapshot(checkpoint_dir) is not None
+
+
+def test_process_image_rejects_invalid_stop_after():
+    processor = SLAVVProcessor()
+    image = np.zeros((4, 4, 4), dtype=np.float32)
+
+    with pytest.raises(ValueError, match="stop_after must be one of"):
+        processor.process_image(image, {}, stop_after="bogus")
+
+
+def test_preprocess_failure_marks_run_failed(tmp_path, monkeypatch):
+    processor = SLAVVProcessor()
+    image = np.zeros((4, 4, 4), dtype=np.float32)
+    run_dir = tmp_path / "run"
+
+    def _boom(_image, _parameters):
+        raise RuntimeError("preprocess exploded")
+
+    monkeypatch.setattr("slavv.core.pipeline.utils.preprocess_image", _boom)
+
+    with pytest.raises(RuntimeError, match="preprocess exploded"):
+        processor.process_image(image, {}, run_dir=str(run_dir))
+
+    snapshot = load_run_snapshot(run_dir)
+    assert snapshot is not None
+    assert snapshot.status == STATUS_FAILED
+    assert snapshot.current_stage == "preprocess"
+    assert snapshot.stages["preprocess"].status == STATUS_FAILED
+
+
+def test_parse_time_uses_utc_epoch():
+    timestamp = "2026-03-27T12:00:00Z"
+
+    parsed = RunContext._parse_time(timestamp)
+
+    assert parsed == calendar.timegm((2026, 3, 27, 12, 0, 0))

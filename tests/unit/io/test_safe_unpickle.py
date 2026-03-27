@@ -1,3 +1,4 @@
+import gzip
 import pickle
 
 import joblib
@@ -69,3 +70,13 @@ def test_safe_load_joblib(tmp_path):
 def test_safe_load_missing_file():
     with pytest.raises(FileNotFoundError):
         safe_load("non_existent_file.pkl")
+
+
+def test_safe_load_rejects_oversized_decompressed_stream(tmp_path):
+    payload = b"x" * 2048
+    p = tmp_path / "compressed.pkl.gz"
+    with gzip.open(p, "wb") as f:
+        f.write(payload)
+
+    with pytest.raises(ValueError, match="Decompressed file size"):
+        safe_load(p, max_size=1024)

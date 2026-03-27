@@ -419,12 +419,13 @@ def _load_dict_from_json(path: str) -> dict:
             "radii_microns": np.array(vertices.get("radii_microns", [])),
         },
         "edges": {"connections": np.array(edges.get("connections", []))},
+        "parameters": data.get("parameters", {}),
     }
 
 
 def _cmd_analyze(args: argparse.Namespace) -> None:
     """Analyze an exported network JSON file and print statistics."""
-    from slavv.analysis.statistics import calculate_network_statistics
+    from slavv.analysis import calculate_network_statistics
 
     level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(level=level, format="%(asctime)s %(message)s")

@@ -1,8 +1,11 @@
 """Tests for the SLAVV CLI entry point (slavv.apps.cli)."""
 
+import json
+
+import numpy as np
 import pytest
 
-from slavv.apps.cli import _args_to_parameters, _build_parser, main
+from slavv.apps.cli import _args_to_parameters, _build_parser, _load_dict_from_json, main
 from slavv.runtime import RunContext
 
 
@@ -140,3 +143,22 @@ class TestMainEntryPoint:
         assert "Run ID:" in captured.out
         assert "Target progress:" in captured.out
         assert "energy" in captured.out
+
+
+def test_load_dict_from_json_preserves_parameters(tmp_path):
+    path = tmp_path / "network.json"
+    path.write_text(
+        json.dumps(
+            {
+                "vertices": {"positions": [[1, 2, 3]], "radii_microns": [1.5]},
+                "edges": {"connections": [[0, 1]]},
+                "parameters": {"microns_per_voxel": [0.5, 0.5, 2.0]},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = _load_dict_from_json(str(path))
+
+    np.testing.assert_array_equal(result["vertices"]["positions"], np.array([[1, 2, 3]]))
+    assert result["parameters"]["microns_per_voxel"] == [0.5, 0.5, 2.0]

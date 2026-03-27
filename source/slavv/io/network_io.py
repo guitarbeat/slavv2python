@@ -7,16 +7,22 @@ from __future__ import annotations
 
 import json
 import logging
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as StdET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Union
+
+try:
+    from defusedxml import ElementTree as DefusedElementTree
+except ImportError:  # pragma: no cover - fallback when optional hardening dep is absent
+    DefusedElementTree = None
 
 import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
 logger = logging.getLogger(__name__)
+ReadET = DefusedElementTree or StdET
 
 
 @dataclass
@@ -137,7 +143,7 @@ def _convert_edges_to_strands(edges: np.ndarray) -> list[list[int]]:
 
 def load_network_from_casx(path: Union[str, Path]) -> Network:
     """Load network data from a CASX XML file."""
-    root = ET.parse(Path(path)).getroot()
+    root = ReadET.parse(Path(path)).getroot()
     vert_list: list[list[float]] = []
     radii_list: list[float] = []
     for v in root.findall(".//Vertex"):
@@ -282,7 +288,7 @@ def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
     return json_path
 
 
-def _indent_xml(elem: ET.Element, level: int = 0) -> None:
+def _indent_xml(elem: StdET.Element, level: int = 0) -> None:
     """In-place indentation of XML tree.
     Matches functionality of ET.indent() which is only available in Python 3.9+.
     """
@@ -305,16 +311,16 @@ def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
     """Save network data to a CASX XML file format."""
     casx_path = Path(path)
 
-    root = ET.Element("CasX")
-    network_elem = ET.SubElement(root, "Network")
+    root = StdET.Element("CasX")
+    network_elem = StdET.SubElement(root, "Network")
 
     # Write vertices
-    vertices_elem = ET.SubElement(network_elem, "Vertices")
+    vertices_elem = StdET.SubElement(network_elem, "Vertices")
     for i, pt in enumerate(network.vertices):
         y, x, z = pt
         radius = network.radii[i] if network.radii is not None else 0.0
         # Use attributes for Vertex
-        v_elem = ET.SubElement(vertices_elem, "Vertex")
+        v_elem = StdET.SubElement(vertices_elem, "Vertex")
         v_elem.set("id", str(i))
         # Important: CASX original uses specific x, y, z mappings.
         # The loader reads y, x, z into x, y, z labels, so we reverse it here.
@@ -324,15 +330,15 @@ def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:
         v_elem.set("radius", str(radius))
 
     # Write edges
-    edges_elem = ET.SubElement(network_elem, "Edges")
+    edges_elem = StdET.SubElement(network_elem, "Edges")
     for i, edge in enumerate(network.edges):
         start, end = edge
-        e_elem = ET.SubElement(edges_elem, "Edge")
+        e_elem = StdET.SubElement(edges_elem, "Edge")
         e_elem.set("id", str(i))
         e_elem.set("start", str(int(start)))
         e_elem.set("end", str(int(end)))
 
-    tree = ET.ElementTree(root)
+    tree = StdET.ElementTree(root)
     _indent_xml(root)
     tree.write(casx_path, encoding="UTF-8", xml_declaration=True)
 

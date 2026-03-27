@@ -1782,11 +1782,18 @@ class NetworkVisualizer:
 
             # Write vertices
             f.write("    <Vertices>\n")
+            positions = np.asarray(vertices.get("positions", []), dtype=float)
             radii = vertices.get("radii_microns", vertices.get("radii", []))
             energies = vertices.get("energies")
             scales = vertices.get("scales")
+            radii_array = np.asarray(radii, dtype=float).reshape(-1)
+            if len(radii_array) < len(positions):
+                padded_radii = np.zeros((len(positions),), dtype=float)
+                padded_radii[: len(radii_array)] = radii_array
+                radii_array = padded_radii
 
-            for i, (pos, radius) in enumerate(zip(vertices["positions"], radii)):
+            for i, pos in enumerate(positions):
+                radius = radii_array[i] if i < len(radii_array) else 0.0
                 # Note: Coordinate swap x=pos[1], y=pos[0] to match legacy format
                 line = f'      <Vertex id="{i}" x="{pos[1]:.3f}" y="{pos[0]:.3f}" z="{pos[2]:.3f}" radius="{radius:.3f}"'
 
