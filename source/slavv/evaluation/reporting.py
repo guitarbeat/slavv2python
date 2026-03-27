@@ -157,28 +157,48 @@ def generate_summary(run_dir: Path, output_file: Path):
             lines.append(f"First strand mismatch: {strand_mismatch[0]}")
         lines.append("")
 
-    edge_diag = report.get("edges", {}).get("diagnostics", {}).get("python", {})
-    if edge_diag:
+    edge_diagnostics = report.get("edges", {}).get("diagnostics", {})
+    edge_diag = edge_diagnostics.get("python", {})
+    candidate_coverage = edge_diagnostics.get("candidate_endpoint_coverage", {})
+    if edge_diag or candidate_coverage:
         lines.append("Edge Diagnostics")
         lines.append("-" * 70)
-        lines.append(
-            f"Candidates: {int(edge_diag.get('candidate_traced_edge_count', 0)):,}"
-            f"  Terminal: {int(edge_diag.get('terminal_edge_count', 0)):,}"
-            f"  Chosen: {int(edge_diag.get('chosen_edge_count', 0)):,}"
-        )
-        lines.append(
-            f"Dangling: {int(edge_diag.get('dangling_edge_count', 0)):,}"
-            f"  Directed duplicates: {int(edge_diag.get('duplicate_directed_pair_count', 0)):,}"
-            f"  Antiparallel: {int(edge_diag.get('antiparallel_pair_count', 0)):,}"
-        )
-        lines.append(
-            f"Rejected by energy/conflict/degree/orphan/cycle: "
-            f"{int(edge_diag.get('negative_energy_rejected_count', 0)):,}/"
-            f"{int(edge_diag.get('conflict_rejected_count', 0)):,}/"
-            f"{int(edge_diag.get('degree_pruned_count', 0)):,}/"
-            f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
-            f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
-        )
+        if edge_diag:
+            lines.append(
+                f"Candidates: {int(edge_diag.get('candidate_traced_edge_count', 0)):,}"
+                f"  Terminal: {int(edge_diag.get('terminal_edge_count', 0)):,}"
+                f"  Chosen: {int(edge_diag.get('chosen_edge_count', 0)):,}"
+            )
+            lines.append(
+                f"Dangling: {int(edge_diag.get('dangling_edge_count', 0)):,}"
+                f"  Directed duplicates: {int(edge_diag.get('duplicate_directed_pair_count', 0)):,}"
+                f"  Antiparallel: {int(edge_diag.get('antiparallel_pair_count', 0)):,}"
+            )
+            lines.append(
+                f"Rejected by energy/conflict/degree/orphan/cycle: "
+                f"{int(edge_diag.get('negative_energy_rejected_count', 0)):,}/"
+                f"{int(edge_diag.get('conflict_rejected_count', 0)):,}/"
+                f"{int(edge_diag.get('degree_pruned_count', 0)):,}/"
+                f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
+                f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
+            )
+        if candidate_coverage:
+            lines.append(
+                "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: "
+                f"{int(candidate_coverage.get('candidate_endpoint_pair_count', 0)):,}/"
+                f"{int(candidate_coverage.get('matched_matlab_endpoint_pair_count', 0)):,}/"
+                f"{int(candidate_coverage.get('missing_matlab_endpoint_pair_count', 0)):,}"
+            )
+            lines.append(
+                "Candidate endpoint pairs extra-candidate/final-python: "
+                f"{int(candidate_coverage.get('extra_candidate_endpoint_pair_count', 0)):,}/"
+                f"{int(candidate_coverage.get('python_endpoint_pair_count', 0)):,}"
+            )
+            missing_candidate_pairs = candidate_coverage.get(
+                "missing_matlab_endpoint_pair_samples", []
+            )
+            if missing_candidate_pairs:
+                lines.append(f"First missing candidate endpoint pair: {missing_candidate_pairs[0]}")
         if any(
             key in edge_diag
             for key in (

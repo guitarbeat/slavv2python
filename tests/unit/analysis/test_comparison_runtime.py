@@ -92,12 +92,13 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
             "params_file": params_file,
         }
 
-    def fake_run_python_vectorization(_input, output, _params, run_dir=None):
+    def fake_run_python_vectorization(_input, output, _params, run_dir=None, force_rerun_from=None):
         Path(output).mkdir(parents=True, exist_ok=True)
         return {
             "success": True,
             "elapsed_time": 3.0,
             "run_dir": run_dir,
+            "force_rerun_from": force_rerun_from,
         }
 
     def fake_load_matlab_batch_results(_batch_folder):
@@ -160,6 +161,124 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert Path(
         snapshot.optional_tasks["comparison_analysis"].artifacts["comparison_report"]
     ).exists()
+
+
+def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.evaluation.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+    checkpoint_dir = output_dir / "02_Output" / "python_results" / "checkpoints"
+
+    captured: dict[str, object] = {}
+
+    def fake_run_matlab_vectorization(
+        _input, _output, _matlab_path, _project_root, params_file=None
+    ):
+        batch_folder.mkdir(parents=True, exist_ok=True)
+        assert params_file is not None
+        return {
+            "success": True,
+            "batch_folder": str(batch_folder),
+            "elapsed_time": 12.0,
+            "params_file": params_file,
+        }
+
+    def fake_import_matlab_batch(batch, checkpoints, stages=None):
+        captured["batch"] = batch
+        captured["checkpoints"] = Path(checkpoints)
+        captured["stages"] = stages
+        Path(checkpoints).mkdir(parents=True, exist_ok=True)
+        return {
+            "energy": str(Path(checkpoints) / "checkpoint_energy.pkl"),
+            "vertices": str(Path(checkpoints) / "checkpoint_vertices.pkl"),
+        }
+
+    def fake_load_matlab_batch_params(_batch_folder):
+        return {
+            "sigma_per_influence_vertices": 2.0,
+            "sigma_per_influence_edges": 2.0 / 3.0,
+        }
+
+    def fake_run_python_vectorization(_input, output, _params, run_dir=None, force_rerun_from=None):
+        captured["python_output"] = Path(output)
+        captured["python_run_dir"] = run_dir
+        captured["force_rerun_from"] = force_rerun_from
+        captured["python_params"] = dict(_params)
+        return {
+            "success": True,
+            "elapsed_time": 3.0,
+            "run_dir": run_dir,
+            "force_rerun_from": force_rerun_from,
+        }
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {"timings": {"total": 12.0}}
+
+    def fake_compare_results(_matlab_results, _python_results, matlab_parsed):
+        assert matlab_parsed == {"timings": {"total": 12.0}}
+        return {
+            "matlab": {"elapsed_time": 12.0},
+            "python": {"elapsed_time": 3.0},
+            "performance": {"speedup": 4.0, "faster": "Python"},
+            "vertices": {"matlab_count": 10, "python_count": 9},
+            "edges": {"matlab_count": 5, "python_count": 5},
+            "network": {"strand_delta": 0},
+        }
+
+    def fake_generate_summary(_output_dir, summary_file):
+        summary_file.parent.mkdir(parents=True, exist_ok=True)
+        summary_file.write_text("summary", encoding="utf-8")
+
+    def fake_generate_manifest(_output_dir, manifest_file):
+        manifest_file.parent.mkdir(parents=True, exist_ok=True)
+        manifest_file.write_text("# manifest", encoding="utf-8")
+        return "# manifest"
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fake_run_matlab_vectorization
+    )
+    monkeypatch.setattr(comparison_module, "import_matlab_batch", fake_import_matlab_batch)
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_params", fake_load_matlab_batch_params
+    )
+    monkeypatch.setattr(
+        comparison_module, "run_python_vectorization", fake_run_python_vectorization
+    )
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+    monkeypatch.setattr(comparison_module, "generate_summary", fake_generate_summary)
+    monkeypatch.setattr(comparison_module, "generate_manifest", fake_generate_manifest)
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+    )
+
+    snapshot = load_run_snapshot(output_dir)
+
+    assert result == 0
+    assert captured["batch"] == str(batch_folder)
+    assert captured["checkpoints"] == checkpoint_dir
+    assert captured["stages"] == ["energy", "vertices"]
+    assert captured["python_output"] == output_dir / "02_Output" / "python_results"
+    assert captured["python_run_dir"] == str(output_dir)
+    assert captured["force_rerun_from"] == "edges"
+    assert captured["python_params"]["sigma_per_influence_vertices"] == 2.0
+    assert captured["python_params"]["sigma_per_influence_edges"] == 2.0 / 3.0
+    assert snapshot is not None
+    assert snapshot.optional_tasks["matlab_import"].status == "completed"
 
 
 def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkeypatch):
@@ -229,9 +348,11 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
     matlab_dir = run_dir / "01_Input" / "matlab_results"
     python_dir = run_dir / "02_Output" / "python_results"
     checkpoint_dir = python_dir / "checkpoints"
+    stage_dir = python_dir / "stages" / "edges"
     batch_dir = matlab_dir / "batch_260326-090000"
     batch_dir.mkdir(parents=True)
     checkpoint_dir.mkdir(parents=True)
+    stage_dir.mkdir(parents=True)
 
     joblib.dump(
         {"energy_origin": "matlab_batch_hdf5", "energy_source": "matlab_batch_hdf5"},
@@ -240,6 +361,7 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
     joblib.dump({"positions": [[0, 0, 0]]}, checkpoint_dir / "checkpoint_vertices.pkl")
     joblib.dump({"connections": [[0, 0]], "traces": []}, checkpoint_dir / "checkpoint_edges.pkl")
     joblib.dump({"strands": []}, checkpoint_dir / "checkpoint_network.pkl")
+    joblib.dump({"connections": [[0, 1], [1, 2]], "traces": []}, stage_dir / "candidates.pkl")
 
     def fake_load_matlab_batch_results(_batch_folder):
         return {
@@ -253,6 +375,7 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
 
     def fake_compare_results(_matlab_results, python_results, _matlab_parsed):
         captured["comparison_mode"] = python_results["comparison_mode"]
+        captured["candidate_edges"] = python_results["results"].get("candidate_edges")
         return {
             "matlab": {"elapsed_time": 0.0},
             "python": {"elapsed_time": 0.0},
@@ -273,3 +396,4 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
     assert result == 0
     assert captured["comparison_mode"]["result_source"] == "checkpoints"
     assert captured["comparison_mode"]["energy_source"] == "matlab_batch_hdf5"
+    assert captured["candidate_edges"]["connections"] == [[0, 1], [1, 2]]

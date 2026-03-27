@@ -115,7 +115,9 @@ def atomic_joblib_dump(value: Any, path: str | Path) -> None:
             os.unlink(tmp_name)
 
 
-def _replace_with_retry(tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25) -> None:
+def _replace_with_retry(
+    tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25
+) -> None:
     """Retry atomic replacement to tolerate transient Windows file locks."""
     last_error = None
     for attempt in range(attempts):

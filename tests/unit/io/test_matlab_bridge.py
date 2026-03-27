@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import joblib
 import numpy as np
+import pytest
 from h5py import File
 from scipy.io import savemat
 
-from slavv.io.matlab_bridge import import_matlab_batch
+from slavv.io.matlab_bridge import import_matlab_batch, load_matlab_batch_params
 
 
 def test_import_matlab_batch_loads_hdf5_energy_and_pipeline_vertices(tmp_path):
@@ -96,7 +97,9 @@ def test_import_matlab_batch_prefers_curated_vertices_when_present(tmp_path):
             "microns_per_voxel": np.array([1.0, 1.0, 1.0], dtype=np.float32),
             "pixels_per_sigma_PSF": np.array([1.0, 1.0, 1.0], dtype=np.float32),
             "lumen_radius_in_microns_range": np.array([1.0, 2.0], dtype=np.float32),
-            "lumen_radius_in_pixels_range": np.array([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]], dtype=np.float32),
+            "lumen_radius_in_pixels_range": np.array(
+                [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]], dtype=np.float32
+            ),
         },
     )
     savemat(
@@ -118,3 +121,46 @@ def test_import_matlab_batch_prefers_curated_vertices_when_present(tmp_path):
     vertices_checkpoint = joblib.load(checkpoint_dir / "checkpoint_vertices.pkl")
 
     assert vertices_checkpoint["count"] == 2
+
+
+def test_load_matlab_batch_params_maps_edge_influence_settings(tmp_path):
+    batch_dir = tmp_path / "batch_260326-140000"
+    settings_dir = batch_dir / "settings"
+    settings_dir.mkdir(parents=True)
+
+    savemat(
+        settings_dir / "energy_260326-140000.mat",
+        {
+            "microns_per_voxel": np.array([1.0, 2.0, 3.0], dtype=np.float32),
+            "radius_of_smallest_vessel_in_microns": np.array(1.5, dtype=np.float32),
+            "radius_of_largest_vessel_in_microns": np.array(50.0, dtype=np.float32),
+        },
+    )
+    savemat(
+        settings_dir / "vertices_260326-140010.mat",
+        {
+            "space_strel_apothem": np.array(1, dtype=np.int16),
+            "length_dilation_ratio": np.array(1.0, dtype=np.float32),
+            "max_voxels_per_node": np.array(6000, dtype=np.int32),
+        },
+    )
+    savemat(
+        settings_dir / "edges_260326-140020.mat",
+        {
+            "number_of_edges_per_vertex": np.array(4, dtype=np.int16),
+            "space_strel_apothem_edges": np.array(1, dtype=np.int16),
+            "max_edge_length_per_origin_radius": np.array(60.0, dtype=np.float32),
+            "length_dilation_ratio_vertices": np.array(2.0, dtype=np.float32),
+            "length_dilation_ratio_edges": np.array(2.0 / 3.0, dtype=np.float32),
+        },
+    )
+
+    params = load_matlab_batch_params(batch_dir)
+
+    assert params["microns_per_voxel"] == [1.0, 2.0, 3.0]
+    assert params["max_voxels_per_node"] == 6000
+    assert params["number_of_edges_per_vertex"] == 4
+    assert params["space_strel_apothem_edges"] == 1
+    assert params["max_edge_length_per_origin_radius"] == 60.0
+    assert params["sigma_per_influence_vertices"] == 2.0
+    assert params["sigma_per_influence_edges"] == pytest.approx(2.0 / 3.0)

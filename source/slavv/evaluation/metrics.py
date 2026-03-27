@@ -152,6 +152,11 @@ def _sample_counter_diff(counter_a: Counter, counter_b: Counter, limit: int = 3)
     return samples
 
 
+def _sample_set_diff(items_a: set[Any], items_b: set[Any], limit: int = 3) -> list[Any]:
+    """Return deterministic samples present in `items_a` but not `items_b`."""
+    return sorted(items_a - items_b)[:limit]
+
+
 def _canonical_trace(trace: Any) -> tuple[tuple[int, int, int], ...]:
     """Canonicalize a voxel trace independent of traversal direction."""
     coords = _round_positions(trace)
@@ -211,6 +216,11 @@ def _edge_endpoint_signatures(payload: dict[str, Any]) -> list[tuple[int, int]]:
             continue
         signatures.append(tuple(sorted(pair)))
     return signatures
+
+
+def _edge_endpoint_pair_set(payload: dict[str, Any]) -> set[tuple[int, int]]:
+    """Build the unique orientation-independent endpoint pairs in an edge payload."""
+    return set(_edge_endpoint_signatures(payload))
 
 
 def _strand_signatures(payload: dict[str, Any]) -> list[tuple[int, ...]]:
@@ -363,7 +373,11 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
     return comparison
 
 
-def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) -> dict[str, Any]:
+def compare_edges(
+    matlab_edges: dict[str, Any],
+    python_edges: dict[str, Any],
+    candidate_edges: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Compare edge information between MATLAB and Python."""
     comparison = {
         "matlab_count": _infer_edges_count(matlab_edges),
@@ -449,6 +463,29 @@ def compare_edges(matlab_edges: dict[str, Any], python_edges: dict[str, Any]) ->
     comparison["endpoint_pair_python_only_samples"] = _sample_counter_diff(
         python_endpoint_counter, matlab_endpoint_counter
     )
+    if candidate_edges is not None:
+        matlab_endpoint_pairs = set(matlab_endpoint_counter)
+        python_endpoint_pairs = set(python_endpoint_counter)
+        candidate_endpoint_pairs = _edge_endpoint_pair_set(candidate_edges)
+        missing_matlab_pairs = matlab_endpoint_pairs - candidate_endpoint_pairs
+        extra_candidate_pairs = candidate_endpoint_pairs - matlab_endpoint_pairs
+        comparison["diagnostics"]["candidate_endpoint_coverage"] = {
+            "candidate_endpoint_pair_count": len(candidate_endpoint_pairs),
+            "matlab_endpoint_pair_count": len(matlab_endpoint_pairs),
+            "python_endpoint_pair_count": len(python_endpoint_pairs),
+            "matched_matlab_endpoint_pair_count": len(
+                matlab_endpoint_pairs & candidate_endpoint_pairs
+            ),
+            "missing_matlab_endpoint_pair_count": len(missing_matlab_pairs),
+            "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
+            "matlab_pairs_fully_covered": not missing_matlab_pairs,
+            "missing_matlab_endpoint_pair_samples": _sample_set_diff(
+                matlab_endpoint_pairs, candidate_endpoint_pairs
+            ),
+            "extra_candidate_endpoint_pair_samples": _sample_set_diff(
+                candidate_endpoint_pairs, matlab_endpoint_pairs
+            ),
+        }
 
     return comparison
 
@@ -590,7 +627,11 @@ def compare_results(
 
         # Compare edges
         if "edges" in matlab_parsed and "edges" in python_data:
-            comparison["edges"] = compare_edges(matlab_parsed["edges"], python_data["edges"])
+            comparison["edges"] = compare_edges(
+                matlab_parsed["edges"],
+                python_data["edges"],
+                python_results.get("candidate_edges") or python_data.get("candidate_edges"),
+            )
 
         # Compare networks
         if "network" in matlab_parsed and "network" in python_data:

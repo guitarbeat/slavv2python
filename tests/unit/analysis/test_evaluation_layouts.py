@@ -171,6 +171,14 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
         "python": {"comparison_mode": {"energy_source": "matlab_batch_hdf5"}},
         "edges": {
             "diagnostics": {
+                "candidate_endpoint_coverage": {
+                    "candidate_endpoint_pair_count": 21,
+                    "matched_matlab_endpoint_pair_count": 13,
+                    "missing_matlab_endpoint_pair_count": 8,
+                    "extra_candidate_endpoint_pair_count": 5,
+                    "python_endpoint_pair_count": 12,
+                    "missing_matlab_endpoint_pair_samples": [[2, 356]],
+                },
                 "python": {
                     "candidate_traced_edge_count": 10,
                     "terminal_edge_count": 3,
@@ -197,9 +205,9 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         "length_limit": 19,
                         "terminal_frontier_hit": 20,
                     },
-                }
+                },
             }
-        }
+        },
     }
     (analysis_dir / "comparison_report.json").write_text(json.dumps(report), encoding="utf-8")
 
@@ -208,8 +216,13 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     summary = output_file.read_text(encoding="utf-8")
 
     assert "Terminal resolution direct/reverse-center/reverse-near: 9/10/11" in summary
-    assert "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: 12/13/14/15/16/17" in summary
+    assert (
+        "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: 12/13/14/15/16/17" in summary
+    )
     assert "Frontier stop reasons exhausted/length-limit/terminal-hit: 18/19/20" in summary
+    assert "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: 21/13/8" in summary
+    assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
+    assert "First missing candidate endpoint pair: [2, 356]" in summary
     assert "Python energy source: matlab_batch_hdf5" in summary
 
 

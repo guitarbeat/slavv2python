@@ -8,6 +8,19 @@ import warnings
 from typing import Any
 
 
+def _coerce_integral_parameter(name: str, value: Any) -> int:
+    """Accept MATLAB-style numeric scalars for integer pipeline settings."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not value.is_integer():
+            raise ValueError(f"{name} must be an integer value")
+        return int(value)
+    return value
+
+
 def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     """
     Validate and set default parameters based on MATLAB implementation
@@ -85,6 +98,8 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["max_edge_length_per_origin_radius"] = params.get(
         "max_edge_length_per_origin_radius", 60.0
     )
+    validated["sigma_per_influence_vertices"] = params.get("sigma_per_influence_vertices", 1.0)
+    validated["sigma_per_influence_edges"] = params.get("sigma_per_influence_edges", 0.5)
     validated["max_edge_energy"] = params.get("max_edge_energy", 0.0)
     validated["min_hair_length_in_microns"] = params.get("min_hair_length_in_microns", 0.0)
     validated["bandpass_window"] = params.get("bandpass_window", 0.0)
@@ -112,11 +127,24 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("step_size_per_origin_radius must be positive; try 0.5 for finer tracing")
     if validated["max_edge_length_per_origin_radius"] <= 0:
         raise ValueError("max_edge_length_per_origin_radius must be positive")
+    if validated["sigma_per_influence_vertices"] <= 0:
+        raise ValueError("sigma_per_influence_vertices must be positive")
+    if validated["sigma_per_influence_edges"] <= 0:
+        raise ValueError("sigma_per_influence_edges must be positive")
     if validated["min_hair_length_in_microns"] < 0:
         raise ValueError("min_hair_length_in_microns cannot be negative")
     if validated["bandpass_window"] < 0:
         raise ValueError("bandpass_window must be non-negative; set 0 to disable")
     validated["discrete_tracing"] = params.get("discrete_tracing", False)
     validated["comparison_exact_network"] = bool(params.get("comparison_exact_network", False))
+
+    for key in (
+        "max_voxels_per_node_energy",
+        "space_strel_apothem",
+        "space_strel_apothem_edges",
+        "max_voxels_per_node",
+        "number_of_edges_per_vertex",
+    ):
+        validated[key] = _coerce_integral_parameter(key, validated[key])
 
     return validated

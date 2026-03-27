@@ -21,6 +21,7 @@ import numpy as np
 
 from slavv.core import SLAVVProcessor
 from slavv.io import export_pipeline_results, load_tiff_volume
+from slavv.io.matlab_bridge import import_matlab_batch, load_matlab_batch_params
 from slavv.io.matlab_parser import load_matlab_batch_results
 from slavv.runtime import RunContext
 from slavv.utils import get_matlab_info, get_system_info
@@ -47,9 +48,7 @@ def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
     if not energy_data:
         return "native_python"
     return str(
-        energy_data.get("energy_source")
-        or energy_data.get("energy_origin")
-        or "native_python"
+        energy_data.get("energy_source") or energy_data.get("energy_origin") or "native_python"
     )
 
 
@@ -290,7 +289,11 @@ def run_matlab_vectorization(
 
 
 def run_python_vectorization(
-    input_file: str, output_dir: str, params: dict[str, Any], run_dir: str | None = None
+    input_file: str,
+    output_dir: str,
+    params: dict[str, Any],
+    run_dir: str | None = None,
+    force_rerun_from: str | None = None,
 ) -> dict[str, Any]:
     """Run Python vectorization."""
     print("\n" + "=" * 60)
@@ -327,6 +330,7 @@ def run_python_vectorization(
             progress_callback=progress_callback,
             run_dir=run_dir,
             checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
+            force_rerun_from=force_rerun_from,
         )
 
         elapsed_time = time.time() - start_time
@@ -388,6 +392,11 @@ def run_python_vectorization(
 
             traceback.print_exc()
 
+        candidate_edges = _load_python_candidate_edges(Path(output_dir))
+        if candidate_edges is not None:
+            results["candidate_edges"] = candidate_edges
+            python_results["candidate_edges"] = candidate_edges
+
         return python_results
 
     except Exception as e:
@@ -423,12 +432,27 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
     except Exception:
         return None
 
-    return {
+    results = {
         "energy_data": energy_data,
         "vertices": vertices,
         "edges": edges,
         "network": network,
     }
+    candidate_edges = _load_python_candidate_edges(python_root)
+    if candidate_edges is not None:
+        results["candidate_edges"] = candidate_edges
+    return results
+
+
+def _load_python_candidate_edges(python_root: Path) -> dict[str, Any] | None:
+    """Load the persisted pre-cleanup candidate edge manifest when available."""
+    candidate_path = python_root / "stages" / "edges" / "candidates.pkl"
+    if not candidate_path.exists():
+        return None
+    try:
+        return joblib.load(candidate_path)
+    except Exception:
+        return None
 
 
 def orchestrate_comparison(
@@ -454,6 +478,8 @@ def orchestrate_comparison(
         target_stage="network",
         provenance={"source": "comparison", "input_file": input_file},
     )
+    params_for_python = copy.deepcopy(params)
+    python_force_rerun_from: str | None = None
 
     # Run MATLAB
     matlab_results = None
@@ -485,6 +511,48 @@ def orchestrate_comparison(
                 else {"params_file": str(normalized_params_file)}
             ),
         )
+        batch_folder = matlab_results.get("batch_folder")
+        if matlab_results.get("success") and batch_folder:
+            checkpoint_dir = python_output / "checkpoints"
+            comparison_context.update_optional_task(
+                "matlab_import",
+                status="running",
+                detail="Importing MATLAB energy and vertices into Python checkpoints",
+                artifacts={"batch_folder": batch_folder},
+            )
+            try:
+                imported = import_matlab_batch(
+                    batch_folder,
+                    checkpoint_dir,
+                    stages=["energy", "vertices"],
+                )
+            except Exception as exc:
+                comparison_context.update_optional_task(
+                    "matlab_import",
+                    status="failed",
+                    detail=f"MATLAB checkpoint import failed: {exc}",
+                    artifacts={"batch_folder": batch_folder},
+                )
+            else:
+                imported_stages = set(imported)
+                if {"energy", "vertices"}.issubset(imported_stages):
+                    python_force_rerun_from = "edges"
+                try:
+                    params_for_python.update(load_matlab_batch_params(batch_folder))
+                except Exception as exc:
+                    comparison_context.update_optional_task(
+                        "matlab_import",
+                        status="completed",
+                        detail=f"Imported MATLAB checkpoints; settings overlay unavailable: {exc}",
+                        artifacts=dict(imported),
+                    )
+                else:
+                    comparison_context.update_optional_task(
+                        "matlab_import",
+                        status="completed",
+                        detail="Imported MATLAB checkpoints for Python parity rerun",
+                        artifacts=dict(imported),
+                    )
     else:
         print("\nSkipping MATLAB execution (--skip-matlab)")
 
@@ -500,8 +568,9 @@ def orchestrate_comparison(
         python_results = run_python_vectorization(
             input_file,
             str(python_output),
-            params,
+            params_for_python,
             run_dir=str(output_dir),
+            force_rerun_from=python_force_rerun_from,
         )
         comparison_context.update_optional_task(
             "python_pipeline",

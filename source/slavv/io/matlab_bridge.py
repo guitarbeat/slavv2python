@@ -44,6 +44,17 @@ def _load_stage_settings(batch_path: Path, stem: str) -> dict[str, Any]:
     return data or {}
 
 
+def _normalize_setting_value(value: Any) -> Any:
+    """Convert MATLAB-loaded settings into Python-native scalars and lists."""
+    array = np.asarray(value)
+    if array.size == 0:
+        return None
+    if array.ndim == 0 or array.size == 1:
+        item = array.reshape(-1)[0]
+        return item.item() if isinstance(item, np.generic) else item
+    return array.tolist()
+
+
 def _coerce_radius_axes(radius_range: Any) -> np.ndarray:
     """Normalize MATLAB radius settings into a ``(num_scales, 3)`` array."""
     axes = np.asarray(radius_range, dtype=np.float32)
@@ -163,9 +174,9 @@ def _mat_vertices_to_python(
         positions = positions[:, :3]
 
     count = int(positions.shape[0])
-    scales = np.asarray(mat_vertices.get("scale_indices", np.zeros((count,), dtype=np.int16))).reshape(
-        -1
-    )
+    scales = np.asarray(
+        mat_vertices.get("scale_indices", np.zeros((count,), dtype=np.int16))
+    ).reshape(-1)
     if scales.size == 0:
         scales = np.zeros((count,), dtype=np.int16)
     elif scales.size != count:
@@ -173,7 +184,9 @@ def _mat_vertices_to_python(
     scales = np.rint(scales).astype(np.int16, copy=False)
     scales = np.maximum(scales, 0).astype(np.int16, copy=False)
 
-    radii_microns = np.asarray(mat_vertices.get("radii", np.array([])), dtype=np.float32).reshape(-1)
+    radii_microns = np.asarray(mat_vertices.get("radii", np.array([])), dtype=np.float32).reshape(
+        -1
+    )
     radii_pixels = np.zeros((count,), dtype=np.float32)
 
     if energy_checkpoint is not None:
@@ -218,14 +231,8 @@ def _mat_edges_to_python(mat_edges: dict[str, Any]) -> dict[str, Any]:
             arr = arr.reshape(1, -1)
         traces.append(arr.astype(np.float32, copy=False))
 
-    energies = [
-        np.zeros((len(trace),), dtype=np.float32)
-        for trace in traces
-    ]
-    scales = [
-        np.zeros((len(trace),), dtype=np.int16)
-        for trace in traces
-    ]
+    energies = [np.zeros((len(trace),), dtype=np.float32) for trace in traces]
+    scales = [np.zeros((len(trace),), dtype=np.int16) for trace in traces]
 
     return {
         "traces": traces,
@@ -296,7 +303,9 @@ def import_matlab_batch(
                     try:
                         energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
                     except Exception as exc:  # pragma: no cover - fallback path only
-                        logger.warning("Unable to preload MATLAB energy metadata for vertices: %s", exc)
+                        logger.warning(
+                            "Unable to preload MATLAB energy metadata for vertices: %s", exc
+                        )
                 raw_vertices = extract_vertices(mat)
                 vertices_checkpoint = _mat_vertices_to_python(raw_vertices, energy_checkpoint)
                 output_path = checkpoint_path / "checkpoint_vertices.pkl"
@@ -350,3 +359,75 @@ def import_matlab_batch(
         logger.warning("Expected MATLAB data directory missing during import: %s", data_dir)
 
     return written
+
+
+def load_matlab_batch_params(batch_folder: str | Path) -> dict[str, Any]:
+    """Extract Python-compatible processing parameters from a MATLAB batch folder."""
+    batch_path = Path(batch_folder)
+
+    if not (batch_path / "settings").exists():
+        found = find_batch_folder(batch_path)
+        if found is None:
+            raise FileNotFoundError(f"No MATLAB batch_* folder found in {batch_folder}")
+        batch_path = found
+
+    params: dict[str, Any] = {}
+
+    energy_settings = _load_stage_settings(batch_path, "energy")
+    for key in (
+        "microns_per_voxel",
+        "radius_of_smallest_vessel_in_microns",
+        "radius_of_largest_vessel_in_microns",
+        "approximating_PSF",
+        "excitation_wavelength_in_microns",
+        "numerical_aperture",
+        "sample_index_of_refraction",
+        "scales_per_octave",
+        "gaussian_to_ideal_ratio",
+        "spherical_to_annular_ratio",
+        "max_voxels_per_node_energy",
+    ):
+        if key in energy_settings:
+            normalized = _normalize_setting_value(energy_settings[key])
+            if normalized is not None:
+                params[key] = normalized
+
+    vertex_settings = _load_stage_settings(batch_path, "vertices")
+    for key in ("energy_upper_bound", "max_voxels_per_node", "space_strel_apothem"):
+        if key in vertex_settings:
+            normalized = _normalize_setting_value(vertex_settings[key])
+            if normalized is not None:
+                params[key] = normalized
+    if "length_dilation_ratio" in vertex_settings:
+        normalized = _normalize_setting_value(vertex_settings["length_dilation_ratio"])
+        if normalized is not None:
+            params["length_dilation_ratio"] = normalized
+
+    edge_settings = _load_stage_settings(batch_path, "edges")
+    for key in (
+        "number_of_edges_per_vertex",
+        "space_strel_apothem_edges",
+        "max_edge_length_per_origin_radius",
+        "sigma_edge_smoothing",
+    ):
+        if key in edge_settings:
+            normalized = _normalize_setting_value(edge_settings[key])
+            if normalized is not None:
+                params[key] = normalized
+    if "length_dilation_ratio_vertices" in edge_settings:
+        normalized = _normalize_setting_value(edge_settings["length_dilation_ratio_vertices"])
+        if normalized is not None:
+            params["sigma_per_influence_vertices"] = normalized
+    if "length_dilation_ratio_edges" in edge_settings:
+        normalized = _normalize_setting_value(edge_settings["length_dilation_ratio_edges"])
+        if normalized is not None:
+            params["sigma_per_influence_edges"] = normalized
+
+    network_settings = _load_stage_settings(batch_path, "network")
+    for key in ("sigma_strand_smoothing", "is_combining_strands"):
+        if key in network_settings:
+            normalized = _normalize_setting_value(network_settings[key])
+            if normalized is not None:
+                params[key] = normalized
+
+    return params

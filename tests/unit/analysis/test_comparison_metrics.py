@@ -166,6 +166,34 @@ def test_compare_edges_reports_exact_endpoint_and_diagnostic_bundle():
     assert result["diagnostics"]["python"]["candidate_traced_edge_count"] == 7
 
 
+def test_compare_edges_reports_candidate_endpoint_coverage():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [1, 2], [2, 3]], dtype=np.int32),
+        "traces": [],
+    }
+    python_edges = {
+        "connections": np.array([[0, 1], [1, 3]], dtype=np.int32),
+        "traces": [],
+    }
+    candidate_edges = {
+        "connections": np.array([[0, 1], [1, 2], [4, 5]], dtype=np.int32),
+        "traces": [],
+    }
+
+    result = compare_edges(matlab_edges, python_edges, candidate_edges)
+
+    coverage = result["diagnostics"]["candidate_endpoint_coverage"]
+    assert coverage["candidate_endpoint_pair_count"] == 3
+    assert coverage["matlab_endpoint_pair_count"] == 3
+    assert coverage["python_endpoint_pair_count"] == 2
+    assert coverage["matched_matlab_endpoint_pair_count"] == 2
+    assert coverage["missing_matlab_endpoint_pair_count"] == 1
+    assert coverage["extra_candidate_endpoint_pair_count"] == 1
+    assert not coverage["matlab_pairs_fully_covered"]
+    assert coverage["missing_matlab_endpoint_pair_samples"] == [(2, 3)]
+    assert coverage["extra_candidate_endpoint_pair_samples"] == [(4, 5)]
+
+
 def test_compare_networks_computes_strand_differences():
     matlab_stats = {"strand_count": 25}
     python_network = {"strands": [object() for _ in range(23)]}
@@ -283,6 +311,44 @@ def test_compare_results_reports_exact_mismatch_samples():
     assert result["vertices"]["matlab_only_samples"]
     assert result["edges"]["matlab_only_samples"]
     assert result["network"]["matlab_only_samples"]
+
+
+def test_compare_results_surfaces_candidate_pair_coverage_diagnostics():
+    matlab_results = {"success": True, "elapsed_time": 5.0}
+    python_results = {
+        "success": True,
+        "elapsed_time": 4.0,
+        "results": {
+            "vertices": {"positions": np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])},
+            "edges": {
+                "connections": np.array([[0, 1], [1, 3]], dtype=np.int32),
+                "traces": [],
+            },
+            "candidate_edges": {
+                "connections": np.array([[0, 1], [1, 2], [4, 5]], dtype=np.int32),
+                "traces": [],
+            },
+            "network": {"strands": []},
+        },
+    }
+    matlab_parsed = {
+        "vertices": {"positions": np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])},
+        "edges": {
+            "connections": np.array([[0, 1], [1, 2], [2, 3]], dtype=np.int32),
+            "traces": [],
+        },
+        "network": {"strands_to_vertices": []},
+        "network_stats": {"strand_count": 0},
+    }
+
+    result = compare_results(matlab_results, python_results, matlab_parsed)
+
+    coverage = result["edges"]["diagnostics"]["candidate_endpoint_coverage"]
+    assert coverage["matched_matlab_endpoint_pair_count"] == 2
+    assert coverage["missing_matlab_endpoint_pair_count"] == 1
+    assert coverage["missing_matlab_endpoint_pair_samples"] == [(2, 3)]
+    assert not coverage["matlab_pairs_fully_covered"]
+    assert not result["parity_gate"]["passed"]
 
 
 def test_compare_results_skips_nested_metrics_without_parsed_data():

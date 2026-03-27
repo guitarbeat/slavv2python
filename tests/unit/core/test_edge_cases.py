@@ -5,7 +5,9 @@ import pytest
 from slavv.core import SLAVVProcessor
 from slavv.core.tracing import (
     _choose_edges_matlab_style,
+    _construct_structuring_element_offsets_matlab,
     _finalize_traced_edge,
+    _offset_coords_matlab,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
     _trace_origin_edges_matlab_frontier,
@@ -256,6 +258,19 @@ def test_choose_edges_prefers_shorter_equal_energy_duplicate():
     assert chosen["connections"].tolist() == [[0, 1]]
     assert np.array_equal(chosen["traces"][0], short_trace)
     assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
+
+
+def test_offset_coords_matlab_snaps_out_of_bounds_axes_back_to_center():
+    offsets = _construct_structuring_element_offsets_matlab(
+        np.array([1.0, 1.0, 1.0], dtype=np.float32)
+    )
+
+    coords = _offset_coords_matlab(np.array([0.0, 0.0, 0.0], dtype=np.float32), offsets, (3, 3, 3))
+
+    assert len(coords) == len(offsets)
+    assert np.all(coords >= 0)
+    assert np.all(coords < 3)
+    assert np.any(np.all(coords == np.array([0, 0, 0]), axis=1))
 
 
 def test_choose_edges_prunes_degree_excess_and_cycles():

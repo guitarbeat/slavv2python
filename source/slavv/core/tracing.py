@@ -1132,22 +1132,6 @@ def _trace_origin_edges_matlab_frontier(
                 new_coords.append(coord.astype(np.int32, copy=False))
                 new_distances.append(float(distance_map[linear_index]))
 
-        if new_coords:
-            new_coords_array = np.asarray(new_coords, dtype=np.int32)
-            new_distances_array = np.asarray(new_distances, dtype=np.float32)
-            within_length = new_distances_array < max_edge_length_microns
-            diagnostics["stop_reason_counts"]["length_limit"] += int(np.sum(~within_length))
-            new_coords_array = new_coords_array[within_length]
-            if len(new_coords_array):
-                new_coords_array = _prune_frontier_indices_beyond_found_vertices(
-                    new_coords_array,
-                    origin_position_microns,
-                    displacement_vectors,
-                    microns_per_voxel,
-                )
-        else:
-            new_coords_array = np.empty((0, 3), dtype=np.int32)
-
         if terminal_vertex_idx >= 0:
             diagnostics["stop_reason_counts"]["terminal_frontier_hit"] += 1
             path_linear = [current_linear]
@@ -1157,7 +1141,6 @@ def _trace_origin_edges_matlab_frontier(
                     int(pointer_index_map[tracing_linear]) - 1
                 ]
                 path_linear.append(tracing_linear)
-
             for path_index in path_linear[:-1]:
                 pointer_index_map[path_index] = -(len(edge_paths_linear) + 1)
 
@@ -1198,11 +1181,26 @@ def _trace_origin_edges_matlab_frontier(
                 origin_indices.append(origin_vertex_idx)
                 diagnostics["terminal_direct_hit_count"] += 1
         else:
-            for coord in new_coords_array:
-                linear_index = _coord_to_matlab_linear_index(coord, shape)
-                available_energy = float(energy[coord[0], coord[1], coord[2]])
-                available_map[linear_index] = available_energy
-                heappush(available_heap, (available_energy, linear_index))
+            if new_coords:
+                new_coords_array = np.asarray(new_coords, dtype=np.int32)
+                new_distances_array = np.asarray(new_distances, dtype=np.float32)
+                diagnostics["stop_reason_counts"]["length_limit"] += int(
+                    np.sum(new_distances_array >= max_edge_length_microns)
+                )
+                within_length = new_distances_array < max_edge_length_microns
+                new_coords_array = new_coords_array[within_length]
+                if len(new_coords_array):
+                    new_coords_array = _prune_frontier_indices_beyond_found_vertices(
+                        new_coords_array,
+                        origin_position_microns,
+                        displacement_vectors,
+                        microns_per_voxel,
+                    )
+                for coord in new_coords_array:
+                    linear_index = _coord_to_matlab_linear_index(coord, shape)
+                    available_energy = float(energy[coord[0], coord[1], coord[2]])
+                    available_map[linear_index] = available_energy
+                    heappush(available_heap, (available_energy, linear_index))
 
         available_map.pop(current_linear, None)
         next_current = None
@@ -1429,6 +1427,46 @@ def _offset_coords(
     return coords[valid]
 
 
+def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
+    """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
+    radii = np.asarray(radii, dtype=np.float32).reshape(3)
+    rounded = np.rint(radii).astype(np.int32)
+    safe_radii = np.maximum(radii.astype(np.float64), 1e-6)
+
+    offsets = np.array(
+        [
+            [y, x, z]
+            for z in range(-rounded[2], rounded[2] + 1)
+            for x in range(-rounded[1], rounded[1] + 1)
+            for y in range(-rounded[0], rounded[0] + 1)
+        ],
+        dtype=np.int32,
+    )
+    distances = (
+        (offsets[:, 0].astype(np.float64) ** 2) / (safe_radii[0] ** 2)
+        + (offsets[:, 1].astype(np.float64) ** 2) / (safe_radii[1] ** 2)
+        + (offsets[:, 2].astype(np.float64) ** 2) / (safe_radii[2] ** 2)
+    )
+    kept = offsets[distances <= 1.0]
+    if kept.size == 0:
+        return np.zeros((1, 3), dtype=np.int32)
+    return kept.astype(np.int32, copy=False)
+
+
+def _offset_coords_matlab(
+    position: np.ndarray,
+    offsets: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> np.ndarray:
+    """Apply offsets with MATLAB's edge-handling rule of snapping overflow back to center."""
+    base = np.rint(position[:3]).astype(np.int32)
+    coords = offsets.astype(np.int32, copy=False) + base
+    for axis, size in enumerate(image_shape):
+        invalid = (coords[:, axis] < 0) | (coords[:, axis] >= size)
+        coords[invalid, axis] = base[axis]
+    return coords
+
+
 def _clean_edges_vertex_degree_excess_python(
     connections: np.ndarray,
     max_edges_per_vertex: int,
@@ -1630,13 +1668,13 @@ def _choose_edges_matlab_style(
     def vertex_offsets(scale: int) -> np.ndarray:
         if scale not in vertex_offset_cache:
             radii = sigma_per_influence_vertices * lumen_radius_pixels_axes[int(scale)]
-            vertex_offset_cache[scale] = _ellipsoid_offsets(radii)
+            vertex_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return vertex_offset_cache[scale]
 
     def edge_offsets(scale: int) -> np.ndarray:
         if scale not in edge_offset_cache:
             radii = sigma_per_influence_edges * lumen_radius_pixels_axes[int(scale)]
-            edge_offset_cache[scale] = _ellipsoid_offsets(radii)
+            edge_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return edge_offset_cache[scale]
 
     chosen_indices: list[int] = []
@@ -1645,7 +1683,7 @@ def _choose_edges_matlab_style(
         endpoint_snapshots: list[tuple[np.ndarray, np.ndarray]] = []
 
         for vertex_index in (start_vertex, end_vertex):
-            coords = _offset_coords(
+            coords = _offset_coords_matlab(
                 vertex_positions[vertex_index],
                 vertex_offsets(int(vertex_scales[vertex_index])),
                 image_shape,
@@ -1659,7 +1697,7 @@ def _choose_edges_matlab_style(
         scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
         for point_index, point in enumerate(trace):
             scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
-            coords = _offset_coords(point, edge_offsets(scale_value), image_shape)
+            coords = _offset_coords_matlab(point, edge_offsets(scale_value), image_shape)
             if coords.size == 0:
                 continue
             conflicting = {

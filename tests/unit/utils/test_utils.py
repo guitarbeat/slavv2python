@@ -31,6 +31,39 @@ def test_validate_parameters_defaults():
     assert validated["energy_sign"] == -1.0
     assert validated["comparison_exact_network"] is False
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
+    assert validated["sigma_per_influence_vertices"] == 1.0
+    assert validated["sigma_per_influence_edges"] == 0.5
+
+
+def test_validate_parameters_preserves_edge_influence_overrides():
+    validated = validate_parameters(
+        {
+            "sigma_per_influence_vertices": 2.0,
+            "sigma_per_influence_edges": 2.0 / 3.0,
+        }
+    )
+
+    assert validated["sigma_per_influence_vertices"] == 2.0
+    assert validated["sigma_per_influence_edges"] == 2.0 / 3.0
+
+
+def test_validate_parameters_coerces_integer_like_matlab_settings():
+    validated = validate_parameters(
+        {
+            "max_voxels_per_node_energy": 100000.0,
+            "space_strel_apothem": 1.0,
+            "space_strel_apothem_edges": 2.0,
+            "max_voxels_per_node": 6000.0,
+            "number_of_edges_per_vertex": 4.0,
+        }
+    )
+
+    assert validated["max_voxels_per_node_energy"] == 100000
+    assert validated["space_strel_apothem"] == 1
+    assert validated["space_strel_apothem_edges"] == 2
+    assert validated["max_voxels_per_node"] == 6000
+    assert validated["number_of_edges_per_vertex"] == 4
+    assert isinstance(validated["number_of_edges_per_vertex"], int)
 
 
 def test_validate_parameters_invalid():
@@ -39,6 +72,9 @@ def test_validate_parameters_invalid():
 
     with pytest.raises(ValueError, match="microns_per_voxel must be a 3-element array"):
         validate_parameters({"microns_per_voxel": [1.0, 1.0]})
+
+    with pytest.raises(ValueError, match="number_of_edges_per_vertex must be an integer value"):
+        validate_parameters({"number_of_edges_per_vertex": 4.5})
 
 
 def test_get_chunking_lattice_small_volume():
