@@ -9,6 +9,7 @@ entry points and project metadata.
 | --- | --- |
 | `MATLAB_MAPPING.md` | High-level map from upstream MATLAB modules to Python modules, with current parity notes |
 | `COMPARISON_LAYOUT.md` | Canonical staged layout for generated MATLAB/Python comparison runs |
+| `PARITY_FINDINGS_2026-03-27.md` | Verified findings from the fresh March 27, 2026 parity reruns and recommended next steps |
 
 ## Root-Level Docs
 

@@ -133,6 +133,7 @@ Detailed docs that support the parity workflow now live under `docs/`:
 | [`docs/README.md`](docs/README.md) | Doc index and repository-reference entry point |
 | [`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) | High-level MATLAB-to-Python module mapping and current parity status |
 | [`docs/COMPARISON_LAYOUT.md`](docs/COMPARISON_LAYOUT.md) | Canonical staged layout for MATLAB/Python comparison runs |
+| [`docs/PARITY_FINDINGS_2026-03-27.md`](docs/PARITY_FINDINGS_2026-03-27.md) | Fresh-run findings, remaining blockers, and next-phase parity guidance |
 
 Repo-local maintenance helpers and archived tooling snapshots now live under
 `workspace/scripts/maintenance/` and `workspace/reports/tooling/`.

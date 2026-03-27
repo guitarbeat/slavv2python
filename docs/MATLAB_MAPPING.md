@@ -100,7 +100,7 @@ MATLAB script.
 
 ## Current Parity Focus
 
-As of March 26, 2026:
+As of March 27, 2026:
 
 - The MATLAB batch importer in `source/slavv/io/matlab_bridge.py` now loads
   real HDF5 energy sidecars into checkpoint-compatible `energy_data` payloads.
@@ -115,8 +115,10 @@ As of March 26, 2026:
 - Network construction in `source/slavv/core/graph.py` now shares a parity-aware
   topology path between fresh and resumable runs and emits additive
   `strands_to_vertices` payloads for exact-network comparisons.
-- Live MATLAB comparison runs remain the final confirmation surface for exact
-  edge and strand parity in a MATLAB-enabled environment.
+- Fresh live MATLAB comparison runs now confirm exact vertex parity but still
+  miss exact edge and strand parity on the canonical parity path.
+- See `docs/PARITY_FINDINGS_2026-03-27.md` for the current clean-run numbers,
+  blocker analysis, and recommended next-phase investigations.
 
 ## Upstream Files Intentionally Not Ported
 
