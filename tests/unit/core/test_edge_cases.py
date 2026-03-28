@@ -4,6 +4,7 @@ import pytest
 # Add source path for imports
 from slavv.core import SLAVVProcessor
 from slavv.core.tracing import (
+    _best_watershed_contact_coords,
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
     _finalize_traced_edge,
@@ -397,6 +398,24 @@ def test_frontier_tracer_records_length_limited_expansion():
 
     assert payload["connections"] == []
     assert payload["diagnostics"]["stop_reason_counts"]["length_limit"] > 0
+
+
+def test_best_watershed_contact_coords_selects_lowest_energy_touch():
+    labels = np.zeros((3, 3, 3), dtype=np.int32)
+    labels[0, 0, 0] = 1
+    labels[1, 0, 0] = 2
+    labels[0, 1, 0] = 1
+    labels[1, 1, 0] = 2
+    energy = np.zeros((3, 3, 3), dtype=np.float32)
+    energy[0, 0, 0] = -3.0
+    energy[1, 0, 0] = -4.0
+    energy[0, 1, 0] = -6.0
+    energy[1, 1, 0] = -5.0
+
+    contacts = _best_watershed_contact_coords(labels, energy)
+
+    assert set(contacts) == {(0, 1)}
+    assert contacts[(0, 1)].tolist() == [0, 1, 0]
 
 
 def test_watershed_join_supplement_adds_missing_touching_pair():

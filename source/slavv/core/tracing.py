@@ -1015,6 +1015,70 @@ def _build_watershed_join_trace(
     return np.vstack([start_half, end_half]).astype(np.float32, copy=False)
 
 
+def _best_watershed_contact_coords(
+    labels: np.ndarray,
+    energy: np.ndarray,
+) -> dict[tuple[int, int], np.ndarray]:
+    """Return the lowest-energy face contact voxel for each touching watershed pair."""
+    best_contacts: dict[tuple[int, int], tuple[float, np.ndarray]] = {}
+    shifts = (
+        np.array((1, 0, 0), dtype=np.int32),
+        np.array((0, 1, 0), dtype=np.int32),
+        np.array((0, 0, 1), dtype=np.int32),
+    )
+
+    for shift in shifts:
+        source_slices = tuple(
+            slice(None, -int(delta)) if delta else slice(None) for delta in shift
+        )
+        target_slices = tuple(
+            slice(int(delta), None) if delta else slice(None) for delta in shift
+        )
+        source_labels = labels[source_slices]
+        target_labels = labels[target_slices]
+        is_touching = (
+            (source_labels != target_labels) & (source_labels > 0) & (target_labels > 0)
+        )
+        if not np.any(is_touching):
+            continue
+
+        source_coords = np.argwhere(is_touching).astype(np.int32, copy=False)
+        target_coords = source_coords + shift
+        source_pairs = source_labels[is_touching].astype(np.int32, copy=False) - 1
+        target_pairs = target_labels[is_touching].astype(np.int32, copy=False) - 1
+        pair_indices = np.stack([source_pairs, target_pairs], axis=1)
+        pair_indices.sort(axis=1)
+
+        source_energy = energy[source_slices][is_touching]
+        target_energy = energy[target_slices][is_touching]
+        prefer_target = target_energy < source_energy
+        contact_coords = source_coords.copy()
+        contact_coords[prefer_target] = target_coords[prefer_target]
+        contact_energy = np.where(prefer_target, target_energy, source_energy).astype(
+            np.float32,
+            copy=False,
+        )
+
+        order = np.lexsort((contact_energy, pair_indices[:, 1], pair_indices[:, 0]))
+        pair_indices = pair_indices[order]
+        contact_coords = contact_coords[order]
+        contact_energy = contact_energy[order]
+        keep = np.ones((len(pair_indices),), dtype=bool)
+        keep[1:] = np.any(pair_indices[1:] != pair_indices[:-1], axis=1)
+
+        for pair_array, coord, pair_energy in zip(
+            pair_indices[keep],
+            contact_coords[keep],
+            contact_energy[keep],
+        ):
+            pair = (int(pair_array[0]), int(pair_array[1]))
+            best = best_contacts.get(pair)
+            if best is None or float(pair_energy) < best[0]:
+                best_contacts[pair] = (float(pair_energy), coord.astype(np.int32, copy=False))
+
+    return {pair: coord for pair, (_, coord) in best_contacts.items()}
+
+
 def _supplement_matlab_frontier_candidates_with_watershed_joins(
     candidates: dict[str, Any],
     energy: np.ndarray,
@@ -1032,9 +1096,9 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     idxs = np.clip(idxs, 0, np.array(image_shape) - 1)
     markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
     labels = watershed(-energy_sign * energy, markers)
-    structure = ndi.generate_binary_structure(3, 1)
 
     existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
+    contact_coords_by_pair = _best_watershed_contact_coords(labels, energy)
     supplement_payload = {
         "traces": [],
         "connections": [],
@@ -1045,52 +1109,32 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         "diagnostics": {"watershed_join_supplement_count": 0},
     }
 
-    for label in range(1, len(vertex_positions) + 1):
-        region = labels == label
-        dilated = ndi.binary_dilation(region, structure)
-        neighbors = np.unique(labels[dilated & (labels != label)])
-        for neighbor in neighbors:
-            if neighbor <= label or neighbor == 0:
-                continue
+    for pair, contact_coord in sorted(contact_coords_by_pair.items()):
+        if pair in existing_pairs:
+            continue
 
-            pair = tuple(sorted((label - 1, neighbor - 1)))
-            if pair in existing_pairs:
-                continue
+        trace = _build_watershed_join_trace(
+            vertex_positions[pair[0]],
+            contact_coord,
+            vertex_positions[pair[1]],
+            image_shape,
+        )
+        if len(trace) <= 1:
+            continue
 
-            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
-                ndi.binary_dilation(region, structure) & (labels == neighbor)
-            )
-            boundary_coords = np.argwhere(boundary)
-            if boundary_coords.size == 0:
-                continue
+        energy_trace = _trace_energy_series(trace, energy)
+        if float(np.nanmax(np.asarray(energy_trace, dtype=np.float32))) >= 0:
+            continue
 
-            boundary_coords = boundary_coords.astype(np.int32, copy=False)
-            boundary_energies = energy[
-                boundary_coords[:, 0], boundary_coords[:, 1], boundary_coords[:, 2]
-            ]
-            contact_coord = boundary_coords[int(np.argmin(boundary_energies))]
-            trace = _build_watershed_join_trace(
-                vertex_positions[pair[0]],
-                contact_coord,
-                vertex_positions[pair[1]],
-                image_shape,
-            )
-            if len(trace) <= 1:
-                continue
-
-            energy_trace = _trace_energy_series(trace, energy)
-            if float(np.nanmax(np.asarray(energy_trace, dtype=np.float32))) >= 0:
-                continue
-
-            scale_trace = _trace_scale_series(trace, scale_indices)
-            supplement_payload["traces"].append(trace)
-            supplement_payload["connections"].append([pair[0], pair[1]])
-            supplement_payload["metrics"].append(_edge_metric_from_energy_trace(energy_trace))
-            supplement_payload["energy_traces"].append(energy_trace)
-            supplement_payload["scale_traces"].append(scale_trace)
-            supplement_payload["origin_indices"].append(pair[0])
-            supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
-            existing_pairs.add(pair)
+        scale_trace = _trace_scale_series(trace, scale_indices)
+        supplement_payload["traces"].append(trace)
+        supplement_payload["connections"].append([pair[0], pair[1]])
+        supplement_payload["metrics"].append(_edge_metric_from_energy_trace(energy_trace))
+        supplement_payload["energy_traces"].append(energy_trace)
+        supplement_payload["scale_traces"].append(scale_trace)
+        supplement_payload["origin_indices"].append(pair[0])
+        supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
+        existing_pairs.add(pair)
 
     if supplement_payload["connections"]:
         _append_candidate_unit(candidates, supplement_payload)
