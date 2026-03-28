@@ -191,6 +191,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     "candidate_traced_edge_count": 10,
                     "terminal_edge_count": 3,
                     "chosen_edge_count": 2,
+                    "watershed_join_supplement_count": 4,
                     "dangling_edge_count": 7,
                     "duplicate_directed_pair_count": 1,
                     "antiparallel_pair_count": 0,
@@ -228,6 +229,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
         "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: 12/13/14/15/16/17" in summary
     )
     assert "Frontier stop reasons exhausted/length-limit/terminal-hit: 18/19/20" in summary
+    assert "Watershed join supplements: 4" in summary
     assert "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: 21/13/8" in summary
     assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary

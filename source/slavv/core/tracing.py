@@ -110,6 +110,7 @@ def _empty_edge_diagnostics() -> dict[str, Any]:
         "degree_pruned_count": 0,
         "orphan_pruned_count": 0,
         "cycle_pruned_count": 0,
+        "watershed_join_supplement_count": 0,
         "terminal_direct_hit_count": 0,
         "terminal_reverse_center_hit_count": 0,
         "terminal_reverse_near_hit_count": 0,
@@ -961,6 +962,139 @@ def _path_max_energy_from_linear_indices(
         coord = _matlab_linear_index_to_coord(index, shape)
         samples.append(float(energy[coord[0], coord[1], coord[2]]))
     return max(samples) if samples else float("-inf")
+
+
+def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
+    """Return the orientation-independent terminal endpoint pairs in a candidate payload."""
+    pairs: set[tuple[int, int]] = set()
+    connections = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    for start_vertex, end_vertex in connections:
+        if int(start_vertex) < 0 or int(end_vertex) < 0:
+            continue
+        pairs.add(tuple(sorted((int(start_vertex), int(end_vertex)))))
+    return pairs
+
+
+def _rasterize_trace_segment(
+    start: np.ndarray,
+    end: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> np.ndarray:
+    """Rasterize a straight voxel segment between two points, preserving endpoints."""
+    start_coord = np.rint(np.asarray(start, dtype=np.float32)[:3]).astype(np.int32, copy=False)
+    end_coord = np.rint(np.asarray(end, dtype=np.float32)[:3]).astype(np.int32, copy=False)
+    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    start_coord = np.clip(start_coord, 0, max_coord)
+    end_coord = np.clip(end_coord, 0, max_coord)
+
+    steps = int(np.max(np.abs(end_coord - start_coord)))
+    if steps <= 0:
+        return start_coord.reshape(1, 3).astype(np.float32, copy=False)
+
+    coords = np.rint(np.linspace(start_coord, end_coord, num=steps + 1)).astype(np.int32)
+    deduped = [coords[0]]
+    for coord in coords[1:]:
+        if not np.array_equal(coord, deduped[-1]):
+            deduped.append(coord)
+    return np.asarray(deduped, dtype=np.float32)
+
+
+def _build_watershed_join_trace(
+    start: np.ndarray,
+    contact: np.ndarray,
+    end: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> np.ndarray:
+    """Construct a simple ordered trace that joins two vertices through a watershed contact."""
+    start_half = _rasterize_trace_segment(start, contact, image_shape)
+    end_half = _rasterize_trace_segment(contact, end, image_shape)
+    if len(end_half) > 0 and len(start_half) > 0 and np.array_equal(start_half[-1], end_half[0]):
+        end_half = end_half[1:]
+    if len(end_half) == 0:
+        return start_half
+    return np.vstack([start_half, end_half]).astype(np.float32, copy=False)
+
+
+def _supplement_matlab_frontier_candidates_with_watershed_joins(
+    candidates: dict[str, Any],
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    energy_sign: float,
+) -> dict[str, Any]:
+    """Add parity-only watershed contact candidates that the local frontier misses."""
+    if len(vertex_positions) < 2:
+        return candidates
+
+    image_shape = energy.shape
+    markers = np.zeros(image_shape, dtype=np.int32)
+    idxs = np.floor(vertex_positions).astype(int)
+    idxs = np.clip(idxs, 0, np.array(image_shape) - 1)
+    markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
+    labels = watershed(-energy_sign * energy, markers)
+    structure = ndi.generate_binary_structure(3, 1)
+
+    existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
+    supplement_payload = {
+        "traces": [],
+        "connections": [],
+        "metrics": [],
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": [],
+        "diagnostics": {"watershed_join_supplement_count": 0},
+    }
+
+    for label in range(1, len(vertex_positions) + 1):
+        region = labels == label
+        dilated = ndi.binary_dilation(region, structure)
+        neighbors = np.unique(labels[dilated & (labels != label)])
+        for neighbor in neighbors:
+            if neighbor <= label or neighbor == 0:
+                continue
+
+            pair = tuple(sorted((label - 1, neighbor - 1)))
+            if pair in existing_pairs:
+                continue
+
+            boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
+                ndi.binary_dilation(region, structure) & (labels == neighbor)
+            )
+            boundary_coords = np.argwhere(boundary)
+            if boundary_coords.size == 0:
+                continue
+
+            boundary_coords = boundary_coords.astype(np.int32, copy=False)
+            boundary_energies = energy[
+                boundary_coords[:, 0], boundary_coords[:, 1], boundary_coords[:, 2]
+            ]
+            contact_coord = boundary_coords[int(np.argmin(boundary_energies))]
+            trace = _build_watershed_join_trace(
+                vertex_positions[pair[0]],
+                contact_coord,
+                vertex_positions[pair[1]],
+                image_shape,
+            )
+            if len(trace) <= 1:
+                continue
+
+            energy_trace = _trace_energy_series(trace, energy)
+            if float(np.nanmax(np.asarray(energy_trace, dtype=np.float32))) >= 0:
+                continue
+
+            scale_trace = _trace_scale_series(trace, scale_indices)
+            supplement_payload["traces"].append(trace)
+            supplement_payload["connections"].append([pair[0], pair[1]])
+            supplement_payload["metrics"].append(_edge_metric_from_energy_trace(energy_trace))
+            supplement_payload["energy_traces"].append(energy_trace)
+            supplement_payload["scale_traces"].append(scale_trace)
+            supplement_payload["origin_indices"].append(pair[0])
+            supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
+            existing_pairs.add(pair)
+
+    if supplement_payload["connections"]:
+        _append_candidate_unit(candidates, supplement_payload)
+    return candidates
 
 
 def _prune_frontier_indices_beyond_found_vertices(
@@ -2132,6 +2266,13 @@ def extract_edges(
             vertex_center_image,
             params,
         )
+        candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+        )
     else:
         candidates = _generate_edge_candidates(
             energy,
@@ -2588,6 +2729,15 @@ def extract_edges_resumable(
             substage="trace_origins",
             detail=f"Tracing origin {vertex_idx + 1}/{len(vertex_positions)}",
             resumed=bool(completed - {vertex_idx}),
+        )
+
+    if use_frontier_tracer:
+        candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
         )
 
     atomic_joblib_dump(candidates, candidate_manifest_path)

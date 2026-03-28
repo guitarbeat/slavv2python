@@ -169,6 +169,11 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"  Terminal: {int(edge_diag.get('terminal_edge_count', 0)):,}"
                 f"  Chosen: {int(edge_diag.get('chosen_edge_count', 0)):,}"
             )
+            if "watershed_join_supplement_count" in edge_diag:
+                lines.append(
+                    "Watershed join supplements: "
+                    f"{int(edge_diag.get('watershed_join_supplement_count', 0)):,}"
+                )
             lines.append(
                 f"Dangling: {int(edge_diag.get('dangling_edge_count', 0)):,}"
                 f"  Directed duplicates: {int(edge_diag.get('duplicate_directed_pair_count', 0)):,}"

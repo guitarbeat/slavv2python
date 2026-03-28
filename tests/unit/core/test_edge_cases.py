@@ -10,6 +10,7 @@ from slavv.core.tracing import (
     _offset_coords_matlab,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
+    _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_origin_edges_matlab_frontier,
     extract_vertices,
     paint_vertex_center_image,
@@ -396,6 +397,76 @@ def test_frontier_tracer_records_length_limited_expansion():
 
     assert payload["connections"] == []
     assert payload["diagnostics"]["stop_reason_counts"]["length_limit"] > 0
+
+
+def test_watershed_join_supplement_adds_missing_touching_pair():
+    energy = np.full((5, 5, 5), -1.0, dtype=np.float32)
+    candidates = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+        "diagnostics": {},
+    }
+    vertex_positions = np.array([[0.0, 0.0, 0.0], [4.0, 4.0, 4.0]], dtype=np.float32)
+
+    supplemented = _supplement_matlab_frontier_candidates_with_watershed_joins(
+        candidates,
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        energy_sign=-1.0,
+    )
+
+    assert supplemented["connections"].tolist() == [[0, 1]]
+    assert supplemented["diagnostics"]["watershed_join_supplement_count"] == 1
+    assert np.allclose(supplemented["traces"][0][0], vertex_positions[0])
+    assert np.allclose(supplemented["traces"][0][-1], vertex_positions[1])
+
+
+def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypatch):
+    def fake_frontier(*_args, **_kwargs):
+        return {
+            "traces": [],
+            "connections": np.zeros((0, 2), dtype=np.int32),
+            "metrics": np.zeros((0,), dtype=np.float32),
+            "energy_traces": [],
+            "scale_traces": [],
+            "origin_indices": np.zeros((0,), dtype=np.int32),
+            "diagnostics": {},
+        }
+
+    monkeypatch.setattr(
+        "slavv.core.tracing._generate_edge_candidates_matlab_frontier",
+        fake_frontier,
+    )
+
+    processor = SLAVVProcessor()
+    energy = np.full((5, 5, 5), -1.0, dtype=np.float32)
+    energy_data = {
+        "energy": energy,
+        "scale_indices": np.zeros_like(energy, dtype=np.int16),
+        "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
+        "lumen_radius_pixels_axes": np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+        "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+        "energy_sign": -1.0,
+        "energy_origin": "matlab_batch_hdf5",
+    }
+    vertices = {
+        "positions": np.array([[0.0, 0.0, 0.0], [4.0, 4.0, 4.0]], dtype=np.float32),
+        "scales": np.array([0, 0], dtype=np.int16),
+    }
+
+    edges = processor.extract_edges(
+        energy_data,
+        vertices,
+        {"comparison_exact_network": True, "number_of_edges_per_vertex": 1},
+    )
+
+    assert edges["connections"].tolist() == [[0, 1]]
+    assert edges["diagnostics"]["watershed_join_supplement_count"] == 1
 
 
 def test_resolve_frontier_edge_connection_invalidates_better_child_than_parent():
