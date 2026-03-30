@@ -1523,12 +1523,14 @@ def _generate_edge_candidates(
                 energy, start_pos, start_radius, microns_per_voxel
             )
             if directions.shape[0] < max_edges_per_vertex:
-                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                extra = generate_edge_directions(
+                    max_edges_per_vertex - directions.shape[0], seed=vertex_idx
+                )
                 directions = np.vstack([directions, extra])
             else:
                 directions = directions[:max_edges_per_vertex]
         else:
-            directions = generate_edge_directions(max_edges_per_vertex)
+            directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
 
         for direction in directions:
             edge_trace, trace_metadata = trace_edge(
@@ -1966,7 +1968,7 @@ def estimate_vessel_directions(
     patch = energy[slices]
     # Fallback to uniform directions if patch is too small
     if patch.ndim != 3 or min(patch.shape) < 3:
-        return generate_edge_directions(2)
+        return generate_edge_directions(2, seed=0)
 
     # Rescale patch to account for anisotropic voxel spacing
     scale = microns_per_voxel / microns_per_voxel.min()
@@ -2013,20 +2015,20 @@ def estimate_vessel_directions(
     try:
         w, v = np.linalg.eigh(H)
     except np.linalg.LinAlgError:
-        return generate_edge_directions(2)
+        return generate_edge_directions(2, seed=0)
     if not np.all(np.isfinite(w)):
-        return generate_edge_directions(2)
+        return generate_edge_directions(2, seed=0)
 
     # Fallback if eigenvalues are nearly isotropic or all zero
     w_abs = np.sort(np.abs(w))
     max_eig = w_abs[-1]
     if max_eig == 0 or (w_abs[1] - w_abs[0]) < 1e-6 * max_eig:
-        return generate_edge_directions(2)
+        return generate_edge_directions(2, seed=0)
 
     direction = v[:, np.argmin(np.abs(w))]
     norm = np.linalg.norm(direction)
     if norm == 0 or not np.isfinite(norm):
-        return generate_edge_directions(2)
+        return generate_edge_directions(2, seed=0)
     direction = direction / norm
     return np.stack((direction, -direction))
 
@@ -2706,12 +2708,14 @@ def extract_edges_resumable(
                     microns_per_voxel,
                 )
                 if directions.shape[0] < max_edges_per_vertex:
-                    extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0])
+                    extra = generate_edge_directions(
+                        max_edges_per_vertex - directions.shape[0], seed=vertex_idx
+                    )
                     directions = np.vstack([directions, extra])
                 else:
                     directions = directions[:max_edges_per_vertex]
             else:
-                directions = generate_edge_directions(max_edges_per_vertex)
+                directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
 
             for direction in directions:
                 edge_trace, trace_metadata = trace_edge(
