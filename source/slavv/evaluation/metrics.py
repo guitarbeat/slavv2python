@@ -574,8 +574,16 @@ def compare_edges(
         missing_matlab_pairs = matlab_endpoint_pairs - candidate_endpoint_pairs
         extra_candidate_pairs = candidate_endpoint_pairs - matlab_endpoint_pairs
         missing_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(missing_matlab_pairs)
-        comparison["diagnostics"]["candidate_endpoint_coverage"] = {
+
+        # Split candidate counts by source (frontier vs watershed supplement)
+        candidate_diag = candidate_edges.get("diagnostics", {})
+        supplement_count = int(candidate_diag.get("watershed_join_supplement_count", 0))
+        frontier_count = max(0, len(candidate_endpoint_pairs) - supplement_count)
+
+        coverage: dict[str, Any] = {
             "candidate_endpoint_pair_count": len(candidate_endpoint_pairs),
+            "frontier_candidate_endpoint_pair_count": frontier_count,
+            "supplement_candidate_endpoint_pair_count": supplement_count,
             "matlab_endpoint_pair_count": len(matlab_endpoint_pairs),
             "python_endpoint_pair_count": len(python_endpoint_pairs),
             "matched_matlab_endpoint_pair_count": len(
@@ -597,6 +605,19 @@ def compare_edges(
                 candidate_edges,
             ),
         }
+        # Propagate watershed rejection breakdowns when available
+        for diag_key in (
+            "watershed_total_pairs",
+            "watershed_already_existing",
+            "watershed_short_trace_rejected",
+            "watershed_energy_rejected",
+            "watershed_accepted",
+            "frontier_origins_with_candidates",
+            "frontier_origins_without_candidates",
+        ):
+            if diag_key in candidate_diag:
+                coverage[diag_key] = int(candidate_diag[diag_key])
+        comparison["diagnostics"]["candidate_endpoint_coverage"] = coverage
 
     return comparison
 

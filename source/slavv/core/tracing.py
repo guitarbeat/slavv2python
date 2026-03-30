@@ -1085,8 +1085,19 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     scale_indices: np.ndarray | None,
     vertex_positions: np.ndarray,
     energy_sign: float,
+    max_edges_per_vertex: int = 4,
 ) -> dict[str, Any]:
-    """Add parity-only watershed contact candidates that the local frontier misses."""
+    """Add parity-only watershed contact candidates that the local frontier misses.
+
+    Phase 2 gates (applied in order):
+    1. Already-existing pair skip
+    2. Short-trace rejection (trace length <= 1)
+    3. Non-negative energy rejection (max energy along trace >= 0)
+    4. Frontier reachability: at least one vertex in the pair must already
+       have a frontier candidate to *any* vertex.
+    5. Per-origin supplement cap: each seed origin can contribute at most
+       ``max_edges_per_vertex`` supplement candidates.
+    """
     if len(vertex_positions) < 2:
         return candidates
 
@@ -1099,7 +1110,20 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
 
     existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
     contact_coords_by_pair = _best_watershed_contact_coords(labels, energy)
-    supplement_payload = {
+
+    # Phase 2: build frontier reachability set — vertices that participate in
+    # at least one frontier candidate (before supplementation)
+    frontier_vertices: set[int] = set()
+    existing_connections = np.asarray(
+        candidates.get("connections", np.zeros((0, 2))), dtype=np.int32
+    ).reshape(-1, 2)
+    for start_vertex, end_vertex in existing_connections:
+        if int(start_vertex) >= 0:
+            frontier_vertices.add(int(start_vertex))
+        if int(end_vertex) >= 0:
+            frontier_vertices.add(int(end_vertex))
+
+    supplement_payload: dict[str, Any] = {
         "traces": [],
         "connections": [],
         "metrics": [],
@@ -1109,8 +1133,34 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         "diagnostics": {"watershed_join_supplement_count": 0},
     }
 
+    # Diagnostic counters
+    n_already_existing = 0
+    n_short_trace = 0
+    n_energy_rejected = 0
+    n_reachability_rejected = 0
+    n_cap_rejected = 0
+    n_accepted = 0
+    n_total_watershed_pairs = len(contact_coords_by_pair)
+
+    # Phase 2: per-origin supplement cap tracking
+    origin_supplement_counts: dict[int, int] = {}
+
     for pair, contact_coord in sorted(contact_coords_by_pair.items()):
         if pair in existing_pairs:
+            n_already_existing += 1
+            continue
+
+        # Phase 2 gate: frontier reachability — at least one endpoint must have
+        # participated in a frontier candidate
+        if pair[0] not in frontier_vertices and pair[1] not in frontier_vertices:
+            n_reachability_rejected += 1
+            continue
+
+        # Phase 2 gate: per-origin supplement cap
+        seed_origin = pair[0]
+        current_origin_count = origin_supplement_counts.get(seed_origin, 0)
+        if current_origin_count >= max_edges_per_vertex:
+            n_cap_rejected += 1
             continue
 
         trace = _build_watershed_join_trace(
@@ -1120,10 +1170,12 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             image_shape,
         )
         if len(trace) <= 1:
+            n_short_trace += 1
             continue
 
         energy_trace = _trace_energy_series(trace, energy)
         if float(np.nanmax(np.asarray(energy_trace, dtype=np.float32))) >= 0:
+            n_energy_rejected += 1
             continue
 
         scale_trace = _trace_scale_series(trace, scale_indices)
@@ -1134,10 +1186,36 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         supplement_payload["scale_traces"].append(scale_trace)
         supplement_payload["origin_indices"].append(pair[0])
         supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
+        n_accepted += 1
+        origin_supplement_counts[seed_origin] = current_origin_count + 1
         existing_pairs.add(pair)
+
+    supplement_payload["diagnostics"]["watershed_total_pairs"] = n_total_watershed_pairs
+    supplement_payload["diagnostics"]["watershed_already_existing"] = n_already_existing
+    supplement_payload["diagnostics"]["watershed_short_trace_rejected"] = n_short_trace
+    supplement_payload["diagnostics"]["watershed_energy_rejected"] = n_energy_rejected
+    supplement_payload["diagnostics"]["watershed_reachability_rejected"] = n_reachability_rejected
+    supplement_payload["diagnostics"]["watershed_cap_rejected"] = n_cap_rejected
+    supplement_payload["diagnostics"]["watershed_accepted"] = n_accepted
+
+    logger.info(
+        "Watershed supplement: %d total pairs, %d already existing, "
+        "%d reachability rejected, %d cap rejected, "
+        "%d short-trace rejected, %d energy rejected, %d accepted",
+        n_total_watershed_pairs,
+        n_already_existing,
+        n_reachability_rejected,
+        n_cap_rejected,
+        n_short_trace,
+        n_energy_rejected,
+        n_accepted,
+    )
 
     if supplement_payload["connections"]:
         _append_candidate_unit(candidates, supplement_payload)
+    else:
+        # Still merge the diagnostic counters even when no candidates were added
+        _merge_edge_diagnostics(candidates.get("diagnostics", {}), supplement_payload["diagnostics"])
     return candidates
 
 
@@ -1156,6 +1234,13 @@ def _prune_frontier_indices_beyond_found_vertices(
     )
     indices_beyond = np.zeros((len(candidate_coords),), dtype=bool)
     for displacement in displacement_vectors:
+        # MATLAB parity note: The threshold of 1.0 matches the normalized
+        # dot-product gate in get_edges_for_vertex.m. 'displacement' has been
+        # pre-normalized by ||d||^2 (not ||d||), so the dot product gives
+        # (cos(theta) * ||v_from_origin||) / ||d|| which exceeds 1.0 when the
+        # candidate voxel lies at least one ||d|| beyond the found vertex in
+        # the same direction. This prevents the frontier from exploring beyond
+        # already-resolved terminal vertices.
         indices_beyond |= np.sum(displacement * vectors_from_origin, axis=1) > 1.0
     return candidate_coords[~indices_beyond]
 
@@ -1195,6 +1280,11 @@ def _resolve_frontier_edge_connection(
 
     parent_energy = _path_max_energy_from_linear_indices(parent_path, energy, shape)
     child_energy = _path_max_energy_from_linear_indices(current_path_linear, energy, shape)
+    # MATLAB parity note: This mirrors get_edges_for_vertex.m's "child is better
+    # than parent" rejection. In MATLAB, when a child path has a better (lower,
+    # more negative) energy than its parent, the child is considered to be
+    # stealing the parent's best voxels, so the child is invalidated.
+    # The strict <= comparison preserves MATLAB's exact behavior.
     if child_energy <= parent_energy:
         return None, None
 
@@ -1378,6 +1468,10 @@ def _trace_origin_edges_matlab_frontier(
                     linear_index = _coord_to_matlab_linear_index(coord, shape)
                     available_energy = float(energy[coord[0], coord[1], coord[2]])
                     available_map[linear_index] = available_energy
+                    # MATLAB parity note: the tiebreaker for equal-energy
+                    # frontier voxels is the linear index, which corresponds to
+                    # MATLAB's column-major order. This matches get_edges_by_
+                    # watershed.m's implicit ordering from the priority queue.
                     heappush(available_heap, (available_energy, linear_index))
 
         available_map.pop(current_linear, None)
@@ -1454,7 +1548,7 @@ def _generate_edge_candidates_matlab_frontier(
     params: dict[str, Any],
 ) -> dict[str, Any]:
     """Generate edge candidates using the MATLAB-style best-first frontier search."""
-    candidates = {
+    candidates: dict[str, Any] = {
         "traces": [],
         "connections": np.zeros((0, 2), dtype=np.int32),
         "metrics": np.zeros((0,), dtype=np.float32),
@@ -1463,6 +1557,7 @@ def _generate_edge_candidates_matlab_frontier(
         "origin_indices": np.zeros((0,), dtype=np.int32),
         "diagnostics": _empty_edge_diagnostics(),
     }
+    per_origin_candidate_counts: dict[int, int] = {}
     for origin_vertex_idx in range(len(vertex_positions)):
         unit_payload = _trace_origin_edges_matlab_frontier(
             energy,
@@ -1475,7 +1570,26 @@ def _generate_edge_candidates_matlab_frontier(
             origin_vertex_idx,
             params,
         )
+        n_unit_traces = len(unit_payload.get("traces", []))
+        if n_unit_traces > 0:
+            per_origin_candidate_counts[origin_vertex_idx] = n_unit_traces
         _append_candidate_unit(candidates, unit_payload)
+
+    # Phase 1 per-origin summary diagnostics
+    candidates["diagnostics"]["frontier_origins_with_candidates"] = len(
+        per_origin_candidate_counts
+    )
+    candidates["diagnostics"]["frontier_origins_without_candidates"] = (
+        len(vertex_positions) - len(per_origin_candidate_counts)
+    )
+    candidates["diagnostics"]["frontier_per_origin_candidate_counts"] = (
+        per_origin_candidate_counts
+    )
+    logger.info(
+        "Frontier candidates: %d origins produced candidates, %d did not",
+        len(per_origin_candidate_counts),
+        len(vertex_positions) - len(per_origin_candidate_counts),
+    )
     return candidates
 
 
@@ -1765,7 +1879,30 @@ def _choose_edges_matlab_style(
     image_shape: tuple[int, int, int],
     params: dict[str, Any],
 ) -> dict[str, Any]:
-    """Choose final edges using MATLAB-shaped filtering and cleanup semantics."""
+    """Choose final edges using MATLAB-shaped filtering and cleanup semantics.
+
+    This function is a **downstream safety net**. It should not be used to
+    compensate for upstream semantic drift in the frontier tracer or watershed
+    supplement. If parity is failing here, the root cause is almost certainly
+    in ``_trace_origin_edges_matlab_frontier`` or
+    ``_supplement_matlab_frontier_candidates_with_watershed_joins``.
+
+    MATLAB-parity-critical steps (in order):
+        1. **Self-edge / dangling removal** — Filters edges where start == end
+           or end < 0. MATLAB equivalent: implicit in the edge loop.
+        2. **Non-negative energy rejection** — Removes edges whose energy trace
+           max is >= 0. MATLAB equivalent: ``max(trace) >= 0`` guard.
+        3. **Directed dedup, then undirected (antiparallel) dedup** — Prefer
+           the best-metric copy. MATLAB equivalent: unique-pair filter.
+        4. **Conflict painting** — Reject edges that overlap with already-chosen
+           edges in voxel space. MATLAB equivalent: 3D label image overlap test.
+        5. **Degree pruning** — Cap edges per vertex to ``number_of_edges_per_vertex``.
+           MATLAB equivalent: explicit cap in ``choose_edges_V300.m``.
+        6. **Orphan pruning** — Remove edges whose endpoints touch neither a
+           vertex nor any interior edge voxel. Python-only safety net.
+        7. **Cycle pruning** — Remove cycle-closing edges via union-find.
+           MATLAB equivalent: acyclic spanning-tree construction.
+    """
     traces = candidates["traces"]
     connections = np.asarray(candidates["connections"], dtype=np.int32).reshape(-1, 2)
     metrics = np.asarray(candidates["metrics"], dtype=np.float32).reshape(-1)
@@ -2318,6 +2455,7 @@ def extract_edges(
             scale_indices,
             vertex_positions,
             energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
         )
     else:
         candidates = _generate_edge_candidates(
@@ -2786,6 +2924,7 @@ def extract_edges_resumable(
             scale_indices,
             vertex_positions,
             energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
         )
 
     atomic_joblib_dump(candidates, candidate_manifest_path)
