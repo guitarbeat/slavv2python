@@ -1028,17 +1028,11 @@ def _best_watershed_contact_coords(
     )
 
     for shift in shifts:
-        source_slices = tuple(
-            slice(None, -int(delta)) if delta else slice(None) for delta in shift
-        )
-        target_slices = tuple(
-            slice(int(delta), None) if delta else slice(None) for delta in shift
-        )
+        source_slices = tuple(slice(None, -int(delta)) if delta else slice(None) for delta in shift)
+        target_slices = tuple(slice(int(delta), None) if delta else slice(None) for delta in shift)
         source_labels = labels[source_slices]
         target_labels = labels[target_slices]
-        is_touching = (
-            (source_labels != target_labels) & (source_labels > 0) & (target_labels > 0)
-        )
+        is_touching = (source_labels != target_labels) & (source_labels > 0) & (target_labels > 0)
         if not np.any(is_touching):
             continue
 
@@ -1215,7 +1209,9 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         _append_candidate_unit(candidates, supplement_payload)
     else:
         # Still merge the diagnostic counters even when no candidates were added
-        _merge_edge_diagnostics(candidates.get("diagnostics", {}), supplement_payload["diagnostics"])
+        _merge_edge_diagnostics(
+            candidates.get("diagnostics", {}), supplement_payload["diagnostics"]
+        )
     return candidates
 
 
@@ -1576,15 +1572,11 @@ def _generate_edge_candidates_matlab_frontier(
         _append_candidate_unit(candidates, unit_payload)
 
     # Phase 1 per-origin summary diagnostics
-    candidates["diagnostics"]["frontier_origins_with_candidates"] = len(
+    candidates["diagnostics"]["frontier_origins_with_candidates"] = len(per_origin_candidate_counts)
+    candidates["diagnostics"]["frontier_origins_without_candidates"] = len(vertex_positions) - len(
         per_origin_candidate_counts
     )
-    candidates["diagnostics"]["frontier_origins_without_candidates"] = (
-        len(vertex_positions) - len(per_origin_candidate_counts)
-    )
-    candidates["diagnostics"]["frontier_per_origin_candidate_counts"] = (
-        per_origin_candidate_counts
-    )
+    candidates["diagnostics"]["frontier_per_origin_candidate_counts"] = per_origin_candidate_counts
     logger.info(
         "Frontier candidates: %d origins produced candidates, %d did not",
         len(per_origin_candidate_counts),

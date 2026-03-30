@@ -119,6 +119,7 @@ def test_extract_edges_direction_padding_is_repeatable(monkeypatch):
     assert len(first["traces"]) == len(second["traces"])
     for trace_a, trace_b in zip(first["traces"], second["traces"]):
         assert np.allclose(trace_a, trace_b)
-    assert first["diagnostics"]["candidate_traced_edge_count"] == second["diagnostics"][
-        "candidate_traced_edge_count"
-    ]
+    assert (
+        first["diagnostics"]["candidate_traced_edge_count"]
+        == second["diagnostics"]["candidate_traced_edge_count"]
+    )

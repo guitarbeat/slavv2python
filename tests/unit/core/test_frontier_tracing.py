@@ -44,8 +44,11 @@ class TestFrontierOrdering:
             np.ones(3, dtype=np.float32),
             center_image,
             0,
-            {"number_of_edges_per_vertex": 4, "space_strel_apothem": 1,
-             "max_edge_length_per_origin_radius": 10.0},
+            {
+                "number_of_edges_per_vertex": 4,
+                "space_strel_apothem": 1,
+                "max_edge_length_per_origin_radius": 10.0,
+            },
         )
 
         result_2 = _trace_origin_edges_matlab_frontier(
@@ -57,8 +60,11 @@ class TestFrontierOrdering:
             np.ones(3, dtype=np.float32),
             center_image,
             0,
-            {"number_of_edges_per_vertex": 4, "space_strel_apothem": 1,
-             "max_edge_length_per_origin_radius": 10.0},
+            {
+                "number_of_edges_per_vertex": 4,
+                "space_strel_apothem": 1,
+                "max_edge_length_per_origin_radius": 10.0,
+            },
         )
 
         # Must be bit-for-bit identical across runs
@@ -151,7 +157,7 @@ class TestParentChildResolution:
             parent_mid_li: -1,
         }
 
-        origin_idx, terminal_idx = _resolve_frontier_edge_connection(
+        _origin_idx, terminal_idx = _resolve_frontier_edge_connection(
             current_path,
             terminal_vertex_idx=2,
             seed_origin_idx=0,
@@ -214,9 +220,7 @@ class TestPathBacktracking:
         energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
         energy[3, 1:6, 3] = -5.0  # corridor
 
-        vertex_positions = np.array(
-            [[3.0, 1.0, 3.0], [3.0, 5.0, 3.0]], dtype=np.float32
-        )
+        vertex_positions = np.array([[3.0, 1.0, 3.0], [3.0, 5.0, 3.0]], dtype=np.float32)
         vertex_scales = np.array([0, 0], dtype=np.int16)
         center_image = paint_vertex_center_image(vertex_positions, energy.shape)
 
@@ -229,13 +233,17 @@ class TestPathBacktracking:
             np.ones(3, dtype=np.float32),
             center_image,
             0,
-            {"number_of_edges_per_vertex": 1, "space_strel_apothem": 1,
-             "max_edge_length_per_origin_radius": 10.0},
+            {
+                "number_of_edges_per_vertex": 1,
+                "space_strel_apothem": 1,
+                "max_edge_length_per_origin_radius": 10.0,
+            },
         )
 
         assert len(payload["traces"]) >= 1
         trace = payload["traces"][0]
         # Trace should start near origin and end near terminal
-        assert np.allclose(trace[-1], vertex_positions[1], atol=1.0) or \
-               np.allclose(trace[0], vertex_positions[1], atol=1.0)
+        assert np.allclose(trace[-1], vertex_positions[1], atol=1.0) or np.allclose(
+            trace[0], vertex_positions[1], atol=1.0
+        )
         assert payload["connections"][0] == [0, 1]

@@ -56,9 +56,7 @@ class TestWatershedSupplementDiagnostics:
     def test_supplement_diagnostics_count_accepted(self):
         """Verify accepted count matches supplement count."""
         energy = _make_small_volume(9)
-        vertex_positions = np.array(
-            [[4.0, 1.0, 4.0], [4.0, 7.0, 4.0]], dtype=np.float32
-        )
+        vertex_positions = np.array([[4.0, 1.0, 4.0], [4.0, 7.0, 4.0]], dtype=np.float32)
         candidates = {
             "traces": [],
             "connections": np.zeros((0, 2), dtype=np.int32),
@@ -82,9 +80,7 @@ class TestFrontierCandidateDiagnostics:
     def test_per_origin_summary_populated(self):
         """Per-origin candidate counts must appear after frontier generation."""
         energy = _make_small_volume(9)
-        vertex_positions = np.array(
-            [[4.0, 2.0, 4.0], [4.0, 6.0, 4.0]], dtype=np.float32
-        )
+        vertex_positions = np.array([[4.0, 2.0, 4.0], [4.0, 6.0, 4.0]], dtype=np.float32)
         vertex_scales = np.array([0, 0], dtype=np.int16)
         lumen_radius_microns = np.array([1.0], dtype=np.float32)
         microns_per_voxel = np.array([1.0, 1.0, 1.0], dtype=np.float64)

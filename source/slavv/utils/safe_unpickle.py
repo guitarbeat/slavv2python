@@ -133,7 +133,9 @@ def safe_load(file_path: Union[str, os.PathLike], max_size: int = DEFAULT_MAX_PI
     try:
         opener = _detect_opener(file_path)
         materialized_path = (
-            file_path if opener is open else _materialize_bounded_stream(file_path, opener, max_size)
+            file_path
+            if opener is open
+            else _materialize_bounded_stream(file_path, opener, max_size)
         )
         try:
             with open(materialized_path, "rb") as f:
