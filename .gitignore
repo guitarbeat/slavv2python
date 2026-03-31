@@ -53,8 +53,10 @@ cover/
 *.mo
 *.pot
 
-# Django stuff
+# Logs and debugging
 *.log
+
+# Django stuff
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -82,7 +84,7 @@ ipython_config.py
 
 # Environments
 .env
-.venv
+.venv*
 env/
 venv/
 ENV/
@@ -115,6 +117,7 @@ cython_debug/
 
 # IDE
 .idea/
+.vscode/
 
 # macOS
 .DS_Store

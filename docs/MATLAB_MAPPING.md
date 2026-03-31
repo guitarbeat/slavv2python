@@ -100,25 +100,23 @@ MATLAB script.
 
 ## Current Parity Focus
 
-As of March 27, 2026:
+As of March 30, 2026:
 
 - The MATLAB batch importer in `source/slavv/io/matlab_bridge.py` now loads
   real HDF5 energy sidecars into checkpoint-compatible `energy_data` payloads.
 - Exact vertex parity is reached when the Python pipeline runs under imported
   MATLAB energy with `comparison_exact_network=True`.
-- The parity-only frontier tracer in `source/slavv/core/tracing.py` ports the
-  best-first search behavior from `get_edges_for_vertex.m` closely enough to
-  remove dangling-path collapse as the dominant failure mode.
-- Edge cleanup in `source/slavv/core/tracing.py` now applies MATLAB-shaped
-  duplicate ordering for parity runs, including deterministic shorter-trace
-  tie-breaking before downstream pruning.
-- Network construction in `source/slavv/core/graph.py` now shares a parity-aware
-  topology path between fresh and resumable runs and emits additive
-  `strands_to_vertices` payloads for exact-network comparisons.
-- Fresh live MATLAB comparison runs now confirm exact vertex parity but still
-  miss exact edge and strand parity on the canonical parity path.
-- See `docs/PARITY_FINDINGS_2026-03-27.md` for the current clean-run numbers,
-  blocker analysis, and recommended next-phase investigations.
+- The parity-only frontier tracer in `source/slavv/core/tracing.py` strictly
+  simulates MATLAB's `edge_number_tolerance = 2` to curb edge over-generation.
+- Watershed supplementation in `source/slavv/core/tracing.py` now implements
+  Phase 2 gates (Frontier Reachability and Per-Origin Caps) to prevent redundant
+  strands during parity runs.
+- Edge cleanup in `source/slavv/core/tracing.py` applies MATLAB-shaped
+  duplicate ordering, including deterministic shorter-trace tie-breaking.
+- Fresh live MATLAB comparison runs confirm exact vertex parity. Complete edge
+  and strand parity is actively undergoing Phase 2 validation against canonical datasets.
+- See `docs/PARITY_FINDINGS_2026-03-27.md` and `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` 
+  for the blocker analysis and the active Phase 2 parity investigations.
 
 ## Upstream Files Intentionally Not Ported
 

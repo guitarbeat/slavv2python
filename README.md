@@ -66,8 +66,16 @@ python -m streamlit run source/slavv/apps/web_app.py
 ```python
 from slavv import SLAVVProcessor
 
+def on_event(event):
+    if event.detail:
+        print(f"[{event.stage}] {event.detail}")
+
 processor = SLAVVProcessor()
-results = processor.process_image(image_data, params)
+results = processor.process_image(
+    image_data, 
+    params, 
+    event_callback=on_event
+)
 
 print(f"Vertices: {len(results['vertices']['positions'])}")
 print(f"Edges: {len(results['edges']['traces'])}")
@@ -94,13 +102,12 @@ Generated comparison runs should follow the staged layout documented in
 [`docs/COMPARISON_LAYOUT.md`](docs/COMPARISON_LAYOUT.md): `01_Input`,
 `02_Output`, `03_Analysis`, and `99_Metadata`.
 
-As of March 26, 2026, exact vertex parity under MATLAB-energy control is in
-place, and the parity-only edge cleanup plus strand-assembly path now uses
-MATLAB-shaped ordering under `comparison_exact_network=True`. Live MATLAB
-comparison runs remain the final confirmation surface for exact edge and strand
-parity in a MATLAB-enabled environment. See
-[`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) for the current mapping and
-parity status.
+As of March 30, 2026, exact vertex parity under MATLAB-energy control is in
+place. The parity-only edge path now strictly implements MATLAB's V300 watershed 
+constraints, including deterministic shorter-trace tie-breaking and strict 
+per-origin strand generation limits under `comparison_exact_network=True`. 
+See [`docs/MATLAB_MAPPING.md`](docs/MATLAB_MAPPING.md) for the current 
+mapping and Phase 2 parity status.
 
 ## Testing And Checks
 
