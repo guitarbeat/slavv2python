@@ -20,6 +20,9 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Add project root to path
 project_root = Path(__file__).resolve().parents[3]
