@@ -198,7 +198,52 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
         "traces": [],
     }
 
-    result = compare_edges(matlab_edges, python_edges, candidate_edges)
+    candidate_audit = {
+        "schema_version": 1,
+        "vertex_count": 7,
+        "use_frontier_tracer": True,
+        "candidate_connection_count": 3,
+        "candidate_origin_count": 4,
+        "source_breakdown": {
+            "frontier": {"candidate_connection_count": 1, "candidate_origin_count": 1},
+            "watershed": {"candidate_connection_count": 2, "candidate_origin_count": 1},
+            "fallback": {"candidate_connection_count": 0, "candidate_origin_count": 0},
+        },
+        "frontier_per_origin_candidate_counts": {0: 1},
+        "watershed_per_origin_candidate_counts": {4: 1, 5: 1},
+        "per_origin_summary": [
+            {
+                "origin_index": 4,
+                "frontier_candidate_count": 0,
+                "watershed_candidate_count": 1,
+                "fallback_candidate_count": 0,
+                "candidate_connection_count": 1,
+            },
+            {
+                "origin_index": 5,
+                "frontier_candidate_count": 0,
+                "watershed_candidate_count": 1,
+                "fallback_candidate_count": 0,
+                "candidate_connection_count": 1,
+            },
+            {
+                "origin_index": 0,
+                "frontier_candidate_count": 1,
+                "watershed_candidate_count": 0,
+                "fallback_candidate_count": 0,
+                "candidate_connection_count": 1,
+            },
+        ],
+        "diagnostic_counters": {
+            "watershed_reachability_rejected": 3,
+            "watershed_energy_rejected": 1,
+            "watershed_cap_rejected": 0,
+            "watershed_short_trace_rejected": 0,
+            "watershed_accepted": 2,
+        },
+    }
+
+    result = compare_edges(matlab_edges, python_edges, candidate_edges, candidate_audit)
 
     coverage = result["diagnostics"]["candidate_endpoint_coverage"]
     assert coverage["candidate_endpoint_pair_count"] == 3
@@ -210,6 +255,10 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     assert not coverage["matlab_pairs_fully_covered"]
     assert coverage["missing_matlab_endpoint_pair_samples"] == [(2, 3)]
     assert coverage["extra_candidate_endpoint_pair_samples"] == [(4, 5)]
+    assert "candidate_audit" in result["diagnostics"]
+    assert result["diagnostics"]["candidate_audit"]["schema_version"] == 1
+    assert result["diagnostics"]["candidate_audit"]["candidate_connection_count"] == 3
+    assert result["diagnostics"]["candidate_audit"]["candidate_origin_count"] == 4
 
 
 def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():

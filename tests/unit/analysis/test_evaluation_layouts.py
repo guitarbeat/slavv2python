@@ -187,6 +187,39 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         }
                     ],
                 },
+                "candidate_audit": {
+                    "schema_version": 1,
+                    "candidate_connection_count": 13,
+                    "candidate_origin_count": 5,
+                    "source_breakdown": {
+                        "frontier": {"candidate_connection_count": 9, "candidate_origin_count": 3},
+                        "watershed": {"candidate_connection_count": 4, "candidate_origin_count": 1},
+                        "fallback": {"candidate_connection_count": 0, "candidate_origin_count": 1},
+                    },
+                    "top_origin_summaries": [
+                        {
+                            "origin_index": 12,
+                            "watershed_candidate_count": 4,
+                            "frontier_candidate_count": 0,
+                            "fallback_candidate_count": 0,
+                            "candidate_connection_count": 4,
+                        },
+                        {
+                            "origin_index": 5,
+                            "watershed_candidate_count": 0,
+                            "frontier_candidate_count": 3,
+                            "fallback_candidate_count": 0,
+                            "candidate_connection_count": 3,
+                        },
+                    ],
+                    "diagnostic_counters": {
+                        "watershed_reachability_rejected": 1,
+                        "watershed_energy_rejected": 2,
+                        "watershed_cap_rejected": 3,
+                        "watershed_short_trace_rejected": 4,
+                        "watershed_accepted": 9,
+                    },
+                },
                 "python": {
                     "candidate_traced_edge_count": 10,
                     "terminal_edge_count": 3,
@@ -234,6 +267,16 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary
     assert (
+        f"Candidate audit artifact: {analysis_dir.parent / '02_Output' / 'python_results' / 'stages' / 'edges' / 'candidate_audit.json'}"
+        in summary
+    )
+    assert (
+        f"Candidate manifest path: {analysis_dir.parent / '02_Output' / 'python_results' / 'stages' / 'edges' / 'candidates.pkl'}"
+        in summary
+    )
+    assert "Top audit origin summaries" in summary
+    assert "Candidate audit: schema=v1 frontier=9/4/0" in summary
+    assert (
         "Top missing seed origin 2: missing matlab incident pairs 3  seed candidate pairs 1"
         in summary
     )
@@ -251,12 +294,18 @@ def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     analysis_dir.mkdir(parents=True)
     metadata_dir.mkdir(parents=True)
     (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    (python_dir / "stages").mkdir(parents=True)
+    (python_dir / "stages" / "edges").mkdir(parents=True)
+    (python_dir / "stages" / "edges" / "candidates.pkl").write_text("{}", encoding="utf-8")
+    (python_dir / "stages" / "edges" / "candidate_audit.json").write_text("{}", encoding="utf-8")
 
     content = generate_manifest(analysis_dir, metadata_dir / "run_manifest.md")
     normalized = content.replace("\\", "/")
 
     assert content.splitlines()[0] == "# SLAVV Comparison Run: 20260210_100526_full_run"
     assert "`02_Output/python_results/network.json`" in normalized
+    assert "`02_Output/python_results/stages/edges/candidates.pkl`" in normalized
+    assert "`02_Output/python_results/stages/edges/candidate_audit.json`" in normalized
 
 
 def test_generate_manifest_uses_report_elapsed_times(tmp_path: Path):

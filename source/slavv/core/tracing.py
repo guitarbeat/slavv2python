@@ -127,6 +127,15 @@ def _merge_edge_diagnostics(target: dict[str, Any], source: dict[str, Any]) -> N
                 target_counts[stop_reason] = int(target_counts.get(stop_reason, 0)) + int(count)
             continue
 
+        if isinstance(value, dict):
+            target_map = target.setdefault(key, {})
+            if not isinstance(target_map, dict):
+                target_map = {}
+            for item_key, item_value in value.items():
+                target_map[str(item_key)] = int(target_map.get(str(item_key), 0)) + int(item_value)
+            target[key] = target_map
+            continue
+
         if isinstance(value, (int, np.integer)):
             target[key] = int(target.get(key, 0)) + int(value)
 
@@ -1080,6 +1089,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     vertex_positions: np.ndarray,
     energy_sign: float,
     max_edges_per_vertex: int = 4,
+    enforce_frontier_reachability: bool = True,
 ) -> dict[str, Any]:
     """Add parity-only watershed contact candidates that the local frontier misses.
 
@@ -1124,7 +1134,10 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         "energy_traces": [],
         "scale_traces": [],
         "origin_indices": [],
-        "diagnostics": {"watershed_join_supplement_count": 0},
+        "diagnostics": {
+            "watershed_join_supplement_count": 0,
+            "watershed_per_origin_candidate_counts": {},
+        },
     }
 
     # Diagnostic counters
@@ -1146,7 +1159,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
 
         # Phase 2 gate: frontier reachability — at least one endpoint must have
         # participated in a frontier candidate
-        if pair[0] not in frontier_vertices and pair[1] not in frontier_vertices:
+        if enforce_frontier_reachability and pair[0] not in frontier_vertices and pair[1] not in frontier_vertices:
             n_reachability_rejected += 1
             continue
 
@@ -1183,6 +1196,9 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         n_accepted += 1
         origin_supplement_counts[seed_origin] = current_origin_count + 1
         existing_pairs.add(pair)
+        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][str(seed_origin)] = int(
+            origin_supplement_counts.get(seed_origin, 0)
+        )
 
     supplement_payload["diagnostics"]["watershed_total_pairs"] = n_total_watershed_pairs
     supplement_payload["diagnostics"]["watershed_already_existing"] = n_already_existing
@@ -1531,6 +1547,128 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         target["origin_indices"] = np.concatenate([target["origin_indices"], unit_origin_indices])
 
     _merge_edge_diagnostics(target["diagnostics"], unit_payload.get("diagnostics", {}))
+
+
+def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dict[str, int]:
+    """Return a JSON-safe mapping from origin index to candidate count."""
+    normalized: dict[str, int] = {}
+    if not raw_counts:
+        return normalized
+
+    for key, value in raw_counts.items():
+        try:
+            normalized[str(int(key))] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return normalized
+
+
+def _build_edge_candidate_audit(
+    candidates: dict[str, Any],
+    vertex_count: int,
+    use_frontier_tracer: bool,
+    frontier_origin_counts: dict[int, int] | None = None,
+    supplement_origin_counts: dict[int, int] | None = None,
+) -> dict[str, Any]:
+    """Build a stable, JSON-serializable summary of edge-candidate provenance."""
+    connections = np.asarray(candidates.get("connections", np.zeros((0, 2), dtype=np.int32)), dtype=np.int32)
+    if connections.ndim == 1 and connections.size > 0:
+        connections = connections.reshape(-1, 2)
+    candidate_connection_count = int(connections.shape[0]) if connections.size else 0
+
+    origin_indices = np.asarray(candidates.get("origin_indices", np.zeros((0,), dtype=np.int32)), dtype=np.int32)
+    origin_indices = origin_indices.reshape(-1)
+    if origin_indices.size != candidate_connection_count:
+        origin_indices = np.zeros((candidate_connection_count,), dtype=np.int32)
+
+    total_origin_counts: dict[int, int] = {}
+    for origin_index in origin_indices:
+        origin_index_int = int(origin_index)
+        if origin_index_int < 0:
+            continue
+        total_origin_counts[origin_index_int] = total_origin_counts.get(origin_index_int, 0) + 1
+
+    frontier_origin_counts = {
+        int(origin): int(count) for origin, count in (frontier_origin_counts or {}).items()
+    }
+    supplement_origin_counts = {
+        int(origin): int(count) for origin, count in (supplement_origin_counts or {}).items()
+    }
+    frontier_connection_count = sum(frontier_origin_counts.values())
+    supplement_connection_count = sum(supplement_origin_counts.values())
+    fallback_connection_count = max(
+        0, candidate_connection_count - frontier_connection_count - supplement_connection_count
+    )
+
+    per_origin_payload: list[dict[str, int]] = []
+    all_origins = (
+        set(total_origin_counts.keys())
+        | set(frontier_origin_counts.keys())
+        | set(supplement_origin_counts.keys())
+    )
+    for origin_index in sorted(all_origins):
+        frontier_count = int(frontier_origin_counts.get(origin_index, 0))
+        supplement_count = int(supplement_origin_counts.get(origin_index, 0))
+        total_count = int(total_origin_counts.get(origin_index, 0))
+        fallback_count = max(0, total_count - frontier_count - supplement_count)
+        per_origin_payload.append(
+            {
+                "origin_index": origin_index,
+                "frontier_candidate_count": frontier_count,
+                "watershed_candidate_count": supplement_count,
+                "fallback_candidate_count": fallback_count,
+                "candidate_connection_count": total_count,
+            }
+        )
+
+    diag = candidates.get("diagnostics", {})
+    candidate_diagnostics: dict[str, int] = {
+        "candidate_traced_edge_count": int(diag.get("candidate_traced_edge_count", 0)),
+        "terminal_edge_count": int(diag.get("terminal_edge_count", 0)),
+        "chosen_edge_count": int(diag.get("chosen_edge_count", 0)),
+        "watershed_join_supplement_count": int(diag.get("watershed_join_supplement_count", 0)),
+        "watershed_total_pairs": int(diag.get("watershed_total_pairs", 0)),
+        "watershed_already_existing": int(diag.get("watershed_already_existing", 0)),
+        "watershed_short_trace_rejected": int(diag.get("watershed_short_trace_rejected", 0)),
+        "watershed_energy_rejected": int(diag.get("watershed_energy_rejected", 0)),
+        "watershed_reachability_rejected": int(diag.get("watershed_reachability_rejected", 0)),
+        "watershed_cap_rejected": int(diag.get("watershed_cap_rejected", 0)),
+        "watershed_accepted": int(diag.get("watershed_accepted", 0)),
+        "frontier_origins_with_candidates": int(diag.get("frontier_origins_with_candidates", 0)),
+        "frontier_origins_without_candidates": int(diag.get("frontier_origins_without_candidates", 0)),
+    }
+
+    origin_count_union = set(frontier_origin_counts.keys()) | set(supplement_origin_counts.keys())
+    fallback_source_total = {
+        "candidate_connection_count": fallback_connection_count,
+        "candidate_origin_count": len(total_origin_counts) - len(origin_count_union),
+    }
+
+    return {
+        "schema_version": 1,
+        "vertex_count": int(vertex_count),
+        "use_frontier_tracer": bool(use_frontier_tracer),
+        "candidate_traces": int(len(candidates.get("traces", []))),
+        "candidate_connection_count": candidate_connection_count,
+        "candidate_origin_count": len(total_origin_counts),
+        "source_breakdown": {
+            "frontier": {
+                "candidate_connection_count": frontier_connection_count,
+                "candidate_origin_count": len(frontier_origin_counts),
+            },
+            "watershed": {
+                "candidate_connection_count": supplement_connection_count,
+                "candidate_origin_count": len(supplement_origin_counts),
+            },
+            "fallback": fallback_source_total,
+        },
+        "frontier_per_origin_candidate_counts": frontier_origin_counts,
+        "watershed_per_origin_candidate_counts": _normalize_candidate_origin_counts(
+            diag.get("watershed_per_origin_candidate_counts")
+        ),
+        "per_origin_summary": per_origin_payload,
+        "diagnostic_counters": candidate_diagnostics,
+    }
 
 
 def _generate_edge_candidates_matlab_frontier(
@@ -2431,6 +2569,7 @@ def extract_edges(
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
     if _use_matlab_frontier_tracer(energy_data, params):
+        enforce_frontier_reachability_gate = bool(params.get("parity_frontier_reachability_gate", True))
         candidates = _generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -2448,6 +2587,7 @@ def extract_edges(
             vertex_positions,
             energy_sign,
             max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            enforce_frontier_reachability=enforce_frontier_reachability_gate,
         )
     else:
         candidates = _generate_edge_candidates(
@@ -2751,7 +2891,7 @@ def extract_edges_resumable(
     stage_controller: StageController,
 ) -> dict[str, Any]:
     """Trace edges with per-origin persisted units."""
-    from slavv.runtime.run_state import atomic_joblib_dump
+    from slavv.runtime.run_state import atomic_joblib_dump, atomic_write_json
 
     energy = energy_data["energy"]
     vertex_positions = vertices["positions"]
@@ -2774,6 +2914,7 @@ def extract_edges_resumable(
     units_dir = stage_controller.artifact_path("units")
     units_dir.mkdir(parents=True, exist_ok=True)
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
+    candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
     candidates, completed = _load_edge_units(units_dir, len(vertex_positions))
 
@@ -2797,6 +2938,16 @@ def extract_edges_resumable(
         resumed=bool(completed),
     )
 
+    frontier_origin_counts: dict[int, int] = {}
+    if use_frontier_tracer:
+        for origin_index, count in (
+            candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts", {}).items()
+        ):
+            try:
+                frontier_origin_counts[int(origin_index)] = int(count)
+            except (TypeError, ValueError):
+                continue
+
     for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if vertex_idx in completed:
             continue
@@ -2819,6 +2970,9 @@ def extract_edges_resumable(
             unit_energy_traces = frontier_payload["energy_traces"]
             unit_scale_traces = frontier_payload["scale_traces"]
             unit_diagnostics = frontier_payload["diagnostics"]
+            frontier_count = len(unit_connections)
+            if frontier_count > 0:
+                frontier_origin_counts[vertex_idx] = frontier_count
         else:
             unit_traces = []
             unit_connections = []
@@ -2910,6 +3064,9 @@ def extract_edges_resumable(
         )
 
     if use_frontier_tracer:
+        enforce_frontier_reachability_gate = bool(
+            params.get("parity_frontier_reachability_gate", True)
+        )
         candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
             candidates,
             energy,
@@ -2917,7 +3074,25 @@ def extract_edges_resumable(
             vertex_positions,
             energy_sign,
             max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            enforce_frontier_reachability=enforce_frontier_reachability_gate,
         )
+        supplement_origin_counts = _normalize_candidate_origin_counts(
+            candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")
+        )
+    else:
+        supplement_origin_counts = {}
+
+    candidate_audit = _build_edge_candidate_audit(
+        candidates,
+        int(len(vertex_positions)),
+        use_frontier_tracer=use_frontier_tracer,
+        frontier_origin_counts=frontier_origin_counts,
+        supplement_origin_counts={
+            int(origin_index): int(count)
+            for origin_index, count in (supplement_origin_counts or {}).items()
+        },
+    )
+    atomic_write_json(candidate_audit_path, candidate_audit)
 
     atomic_joblib_dump(candidates, candidate_manifest_path)
     stage_controller.update(

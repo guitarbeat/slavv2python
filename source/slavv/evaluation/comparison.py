@@ -416,6 +416,10 @@ def run_python_vectorization(
         if candidate_edges is not None:
             results["candidate_edges"] = candidate_edges
             python_results["candidate_edges"] = candidate_edges
+        candidate_audit = _load_python_candidate_audit(Path(output_dir))
+        if candidate_audit is not None:
+            results["candidate_audit"] = candidate_audit
+            python_results["candidate_audit"] = candidate_audit
 
         return python_results
 
@@ -461,6 +465,9 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
     candidate_edges = _load_python_candidate_edges(python_root)
     if candidate_edges is not None:
         results["candidate_edges"] = candidate_edges
+    candidate_audit = _load_python_candidate_audit(python_root)
+    if candidate_audit is not None:
+        results["candidate_audit"] = candidate_audit
     return results
 
 
@@ -471,6 +478,18 @@ def _load_python_candidate_edges(python_root: Path) -> dict[str, Any] | None:
         return None
     try:
         return joblib.load(candidate_path)
+    except Exception:
+        return None
+
+
+def _load_python_candidate_audit(python_root: Path) -> dict[str, Any] | None:
+    """Load the persisted candidate provenance audit when available."""
+    candidate_audit_path = python_root / "stages" / "edges" / "candidate_audit.json"
+    if not candidate_audit_path.exists():
+        return None
+    try:
+        with open(candidate_audit_path, encoding="utf-8") as handle:
+            return json.load(handle)
     except Exception:
         return None
 

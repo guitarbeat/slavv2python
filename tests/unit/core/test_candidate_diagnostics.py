@@ -11,6 +11,7 @@ from slavv.core.tracing import (
     _empty_edge_diagnostics,
     _generate_edge_candidates_matlab_frontier,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
+    _build_edge_candidate_audit,
     paint_vertex_center_image,
 )
 from slavv.evaluation.metrics import compare_edges
@@ -108,6 +109,39 @@ class TestFrontierCandidateDiagnostics:
         assert diag["frontier_origins_with_candidates"] + diag[
             "frontier_origins_without_candidates"
         ] == len(vertex_positions)
+
+    def test_candidate_audit_summarizes_origin_and_source_counts(self):
+        candidate_edges = {
+            "connections": np.array([[0, 1], [0, 3], [1, 2], [2, 4]], dtype=np.int32),
+            "origin_indices": np.array([0, 0, 1, 2], dtype=np.int32),
+            "traces": [
+                np.array([[0, 0, 0], [0.5, 0.5, 0.5]], dtype=np.float32),
+                np.array([[1, 1, 1], [1.5, 1.5, 1.5]], dtype=np.float32),
+                np.array([[2, 2, 2], [2.5, 2.5, 2.5]], dtype=np.float32),
+                np.array([[3, 3, 3], [3.5, 3.5, 3.5]], dtype=np.float32),
+            ],
+            "diagnostics": {
+                "candidate_traced_edge_count": 4,
+                "terminal_edge_count": 4,
+                "chosen_edge_count": 2,
+            },
+        }
+
+        candidate_audit = _build_edge_candidate_audit(
+            candidate_edges,
+            vertex_count=5,
+            use_frontier_tracer=True,
+            frontier_origin_counts={0: 2, 1: 1},
+            supplement_origin_counts={1: 1},
+        )
+
+        assert candidate_audit["schema_version"] == 1
+        assert candidate_audit["candidate_connection_count"] == 4
+        assert candidate_audit["source_breakdown"]["frontier"]["candidate_connection_count"] == 3
+        assert candidate_audit["source_breakdown"]["watershed"]["candidate_connection_count"] == 1
+        assert candidate_audit["frontier_per_origin_candidate_counts"] == {0: 2, 1: 1}
+        assert isinstance(candidate_audit["per_origin_summary"], list)
+        assert len(candidate_audit["per_origin_summary"]) == 3
 
 
 @pytest.mark.unit

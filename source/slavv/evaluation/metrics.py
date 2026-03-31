@@ -223,6 +223,54 @@ def _edge_endpoint_pair_set(payload: dict[str, Any]) -> set[tuple[int, int]]:
     return set(_edge_endpoint_signatures(payload))
 
 
+def _coerce_str_int_map(raw: Any) -> dict[int, int]:
+    if not isinstance(raw, dict):
+        return {}
+    converted: dict[int, int] = {}
+    for key, value in raw.items():
+        try:
+            converted[int(key)] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return converted
+
+
+def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Create a compact summary payload from a candidate-audit artifact."""
+    if not isinstance(candidate_audit, dict):
+        return None
+
+    per_origin = candidate_audit.get("per_origin_summary")
+    top_per_origin = []
+    if isinstance(per_origin, list):
+        top_per_origin = sorted(
+            [item for item in per_origin if isinstance(item, dict)],
+            key=lambda item: (
+                -int(item.get("watershed_candidate_count", 0)),
+                -int(item.get("frontier_candidate_count", 0)),
+                -int(item.get("candidate_connection_count", 0)),
+                int(item.get("origin_index", 0)),
+            ),
+        )[:10]
+
+    return {
+        "schema_version": int(candidate_audit.get("schema_version", 1)),
+        "vertex_count": int(candidate_audit.get("vertex_count", 0)),
+        "use_frontier_tracer": bool(candidate_audit.get("use_frontier_tracer", False)),
+        "candidate_traces": int(candidate_audit.get("candidate_traces", 0)),
+        "candidate_connection_count": int(candidate_audit.get("candidate_connection_count", 0)),
+        "candidate_origin_count": int(candidate_audit.get("candidate_origin_count", 0)),
+        "source_breakdown": candidate_audit.get("source_breakdown", {}),
+        "frontier_per_origin_candidate_counts": _coerce_str_int_map(
+            candidate_audit.get("frontier_per_origin_candidate_counts")
+        ),
+        "watershed_per_origin_candidate_counts": _coerce_str_int_map(
+            candidate_audit.get("watershed_per_origin_candidate_counts")
+        ),
+        "top_origin_summaries": top_per_origin,
+    }
+
+
 def _edge_endpoint_pairs_by_seed_origin(
     payload: dict[str, Any],
 ) -> dict[int, set[tuple[int, int]]]:
@@ -481,6 +529,7 @@ def compare_edges(
     matlab_edges: dict[str, Any],
     python_edges: dict[str, Any],
     candidate_edges: dict[str, Any] | None = None,
+    candidate_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compare edge information between MATLAB and Python."""
     comparison = {
@@ -618,6 +667,8 @@ def compare_edges(
             if diag_key in candidate_diag:
                 coverage[diag_key] = int(candidate_diag[diag_key])
         comparison["diagnostics"]["candidate_endpoint_coverage"] = coverage
+    if candidate_audit is not None:
+        comparison["diagnostics"]["candidate_audit"] = _candidate_audit_summary(candidate_audit)
 
     return comparison
 
@@ -771,6 +822,7 @@ def compare_results(
                 matlab_parsed["edges"],
                 python_data["edges"],
                 python_results.get("candidate_edges") or python_data.get("candidate_edges"),
+                python_results.get("candidate_audit") or python_data.get("candidate_audit"),
             )
 
         # Compare networks

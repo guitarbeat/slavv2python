@@ -36,7 +36,9 @@ run root, keep the following staged folders:
 ### `02_Output/`
 
 - `python_results/checkpoints/`
-- exported `json` or `csv` network outputs
+- `python_results/network.json`, `python_results/vertices.json`
+- `python_results/stages/edges/candidates.pkl`
+- `python_results/stages/edges/candidate_audit.json` (candidate source breakdown and origin-level counters)
 - resumable pipeline state and stage snapshots
 
 ### `03_Analysis/`
@@ -44,6 +46,7 @@ run root, keep the following staged folders:
 - `summary.txt`
 - `comparison_report.json`
 - report assets produced by evaluation and reporting helpers
+- candidate-audit provenance path references shown in `summary.txt` for quick triage
 
 ### `99_Metadata/`
 

@@ -160,7 +160,8 @@ def generate_summary(run_dir: Path, output_file: Path):
     edge_diagnostics = report.get("edges", {}).get("diagnostics", {})
     edge_diag = edge_diagnostics.get("python", {})
     candidate_coverage = edge_diagnostics.get("candidate_endpoint_coverage", {})
-    if edge_diag or candidate_coverage:
+    candidate_audit = edge_diagnostics.get("candidate_audit", {})
+    if edge_diag or candidate_coverage or candidate_audit:
         lines.append("Edge Diagnostics")
         lines.append("-" * 70)
         if edge_diag:
@@ -220,6 +221,41 @@ def generate_summary(run_dir: Path, output_file: Path):
                 )
                 if missing_seed_pairs:
                     lines.append(f"First missing pair at top seed origin: {missing_seed_pairs[0]}")
+        if candidate_audit:
+            lines.append(
+                "Candidate audit: "
+                f"schema=v{int(candidate_audit.get('schema_version', 1))} "
+                f"frontier={int(candidate_audit.get('source_breakdown', {}).get('frontier', {}).get('candidate_connection_count', 0)):,}/"
+                f"watershed={int(candidate_audit.get('source_breakdown', {}).get('watershed', {}).get('candidate_connection_count', 0)):,}/"
+                f"fallback={int(candidate_audit.get('source_breakdown', {}).get('fallback', {}).get('candidate_connection_count', 0)):,}"
+            )
+            candidate_audit_path = layout["python_dir"] / "stages" / "edges" / "candidate_audit.json"
+            candidate_manifest_path = layout["python_dir"] / "stages" / "edges" / "candidates.pkl"
+            lines.append(f"Candidate audit artifact: {candidate_audit_path}")
+            lines.append(f"Candidate manifest path: {candidate_manifest_path}")
+            audit_top = candidate_audit.get("top_origin_summaries", [])
+            if audit_top:
+                lines.append("Top audit origin summaries (watershed/frontier/fallback total):")
+                for entry in audit_top[:3]:
+                    if not isinstance(entry, dict):
+                        continue
+                    lines.append(
+                        f"  Origin {int(entry.get('origin_index', -1))}: "
+                        f"w={int(entry.get('watershed_candidate_count', 0)):,}/"
+                        f"f={int(entry.get('frontier_candidate_count', 0)):,}/"
+                        f"x={int(entry.get('fallback_candidate_count', 0)):,} "
+                        f"total={int(entry.get('candidate_connection_count', 0)):,}"
+                    )
+            audit_diag = candidate_audit.get("diagnostic_counters", {})
+            if audit_diag:
+                lines.append(
+                    "Audit rejections reachability/energy/cap/short/accepted: "
+                    f"{int(audit_diag.get('watershed_reachability_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_energy_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_cap_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_short_trace_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_accepted', 0)):,}"
+                )
         if any(
             key in edge_diag
             for key in (
