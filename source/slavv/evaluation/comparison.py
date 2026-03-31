@@ -321,17 +321,37 @@ def run_python_vectorization(
     start_time = time.time()
 
     def progress_callback(frac, stage):
-        print(f"  Progress: {frac * 100:.1f}% - {stage}")
+        stage_descriptions = {
+            "start": "Initializing pipeline...",
+            "preprocess": "Preprocessing finished. Calculating multi-scale energy field (this step takes 20-30 minutes)...",
+            "energy": "Energy calculation complete. Extracting vertices...",
+            "vertices": "Vertices extracted. Tracing edges...",
+            "edges": "Edges traced. Building final network...",
+            "network": "Network assembly complete!"
+        }
+        msg = stage_descriptions.get(stage, f"completed {stage}")
+        print(f"  Progress: {frac * 100:.1f}% - {msg}")
+
+    last_detail = ""
+    def event_callback(event):
+        nonlocal last_detail
+        # Use carriage return \r to avoid spamming the console with millions of lines,
+        # overwriting the current "      -> Energy chunk..." line instead
+        if event.detail and event.detail != last_detail:
+            print(f"      -> {event.detail:<60}", end="\r", flush=True)
+            last_detail = event.detail
 
     try:
         results = processor.process_image(
             image,
             params_for_run,
             progress_callback=progress_callback,
+            event_callback=event_callback,
             run_dir=run_dir,
             checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
             force_rerun_from=force_rerun_from,
         )
+        print() # Add a final newline to clear the \r string
 
         elapsed_time = time.time() - start_time
 
