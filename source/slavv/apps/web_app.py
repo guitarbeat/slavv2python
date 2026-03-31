@@ -13,6 +13,7 @@ import streamlit as st
 
 from slavv.analysis import AutomaticCurator, MLCurator
 from slavv.apps.share_report import build_share_report_html, record_share_event
+
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume

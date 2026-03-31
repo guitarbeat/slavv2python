@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import math
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import joblib
 import numpy as np
@@ -50,7 +50,7 @@ def _vertex_neighborhood_slices(
 def _matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-style column-major linear indices for 0-based coordinates."""
     coords = np.asarray(coords, dtype=np.int64)
-    return (coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1])  # type: ignore[no-any-return]
+    return coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]  # type: ignore[no-any-return]
 
 
 def _sort_vertex_order(
@@ -1850,8 +1850,6 @@ def _generate_edge_candidates(
     }
 
 
-
-
 def _offset_coords(
     position: np.ndarray,
     offsets: np.ndarray,
@@ -2353,7 +2351,7 @@ def trace_edge(
     # Tracing state
     trace: list[np.ndarray] = [np.asarray(start_pos, dtype=np.float32).copy()]
     stop_reason: str = "max_steps"
-    direct_terminal_vertex_v: int | None = None
+    direct_terminal_vertex: int | None = None
 
     def finish(reason: str, terminal_vertex: int | None = None) -> Any:
         finalized_trace, metadata = _finalize_traced_edge(
@@ -2369,10 +2367,9 @@ def trace_edge(
             tree=tree,
             max_search_radius=max_search_radius,
         )
-        res_f: Any = finalized_trace
         if return_metadata:
-            res_f = (finalized_trace, metadata)
-        return res_f
+            return finalized_trace, metadata
+        return finalized_trace
 
     # Scalarize position and direction
     current_pos_y, current_pos_x, current_pos_z = (
@@ -2507,18 +2504,9 @@ def trace_edge(
             gp_z = dim_z_minus_2
 
         # Compute gradient components
-        grad_y = (
-            energy[gp_y + 1, gp_x, gp_z]
-            - energy[gp_y - 1, gp_x, gp_z]
-        ) * inv_mpv_2x_y
-        grad_x = (
-            energy[gp_y, gp_x + 1, gp_z]
-            - energy[gp_y, gp_x - 1, gp_z]
-        ) * inv_mpv_2x_x
-        grad_z = (
-            energy[gp_y, gp_x, gp_z + 1]
-            - energy[gp_y, gp_x, gp_z - 1]
-        ) * inv_mpv_2x_z
+        grad_y = (energy[gp_y + 1, gp_x, gp_z] - energy[gp_y - 1, gp_x, gp_z]) * inv_mpv_2x_y
+        grad_x = (energy[gp_y, gp_x + 1, gp_z] - energy[gp_y, gp_x - 1, gp_z]) * inv_mpv_2x_x
+        grad_z = (energy[gp_y, gp_x, gp_z + 1] - energy[gp_y, gp_x, gp_z - 1]) * inv_mpv_2x_z
 
         # Manual norm
         grad_norm = math.sqrt(grad_y**2 + grad_x**2 + grad_z**2)
@@ -2545,9 +2533,9 @@ def trace_edge(
                 current_dir_z *= inv_norm
 
         if vertex_center_image is not None:
-            terminal_vertex_idx_v = vertex_at_position(current_pos_arr, vertex_center_image)
+            terminal_vertex_idx = vertex_at_position(current_pos_arr, vertex_center_image)
         else:
-            terminal_vertex_idx_v = near_vertex(
+            terminal_vertex_idx = near_vertex(
                 current_pos_arr,
                 vertex_positions,
                 vertex_scales,
@@ -2556,19 +2544,14 @@ def trace_edge(
                 tree=tree,
                 max_search_radius=max_search_radius,
             )
-        if origin_vertex_idx is not None and terminal_vertex_idx_v == origin_vertex_idx:
-            terminal_vertex_idx_v = None
-        if terminal_vertex_idx_v is not None:
-            direct_terminal_vertex_v = int(terminal_vertex_idx_v)
+        if origin_vertex_idx is not None and terminal_vertex_idx == origin_vertex_idx:
+            terminal_vertex_idx = None
+        if terminal_vertex_idx is not None:
+            direct_terminal_vertex = int(terminal_vertex_idx)
             stop_reason = "direct_terminal_hit"
             break
 
-    res_finish: Union[list[np.ndarray], tuple[list[np.ndarray], dict[str, Any]]] = finish(
-        stop_reason, direct_terminal_vertex_v
-    )
-    return res_finish
-
-
+    return finish(stop_reason, direct_terminal_vertex)  # type: ignore[no-any-return]
 
 
 def extract_edges(
@@ -3014,12 +2997,12 @@ def extract_edges_resumable(
                 vertex_idx,
                 params,
             )
-            unit_traces = cast(list[np.ndarray], frontier_payload["traces"])
-            unit_connections = cast(list[list[int]], frontier_payload["connections"])
-            unit_metrics = cast(list[float], frontier_payload["metrics"])
-            unit_energy_traces = cast(list[np.ndarray], frontier_payload["energy_traces"])
-            unit_scale_traces = cast(list[np.ndarray], frontier_payload["scale_traces"])
-            unit_diagnostics = cast(dict[str, Any], frontier_payload["diagnostics"])
+            unit_traces = cast("list[np.ndarray]", frontier_payload["traces"])
+            unit_connections = cast("list[list[int]]", frontier_payload["connections"])
+            unit_metrics = cast("list[float]", frontier_payload["metrics"])
+            unit_energy_traces = cast("list[np.ndarray]", frontier_payload["energy_traces"])
+            unit_scale_traces = cast("list[np.ndarray]", frontier_payload["scale_traces"])
+            unit_diagnostics = cast("dict[str, Any]", frontier_payload["diagnostics"])
             unit_trace_metadata_v = []
             frontier_count = len(unit_connections)
             if frontier_count > 0:
@@ -3073,11 +3056,15 @@ def extract_edges_resumable(
                     origin_vertex_idx=vertex_idx,
                     return_metadata=True,
                 )
-                edge_trace, trace_metadata = cast(tuple[list[np.ndarray], dict[str, Any]], res_te)
+                edge_trace, trace_metadata = cast("tuple[list[np.ndarray], dict[str, Any]]", res_te)
                 if len(edge_trace) <= 1:
                     continue
                 edge_arr = np.asarray(edge_trace, dtype=np.float32)
-                term_v: int = int(trace_metadata["terminal_vertex"]) if trace_metadata["terminal_vertex"] is not None else -1
+                term_v: int = (
+                    int(trace_metadata["terminal_vertex"])
+                    if trace_metadata["terminal_vertex"] is not None
+                    else -1
+                )
                 energy_trace = _trace_energy_series(edge_arr, energy)
                 scale_trace = _trace_scale_series(edge_arr, scale_indices)
                 unit_traces.append(edge_arr)
@@ -3089,7 +3076,7 @@ def extract_edges_resumable(
 
             unit_diagnostics = _empty_edge_diagnostics()
             for item in unit_trace_metadata_v:
-                trace_metadata_item = cast(dict[str, Any], item)
+                trace_metadata_item = cast("dict[str, Any]", item)
                 _record_trace_diagnostics(unit_diagnostics, trace_metadata_item)
 
         payload = {
