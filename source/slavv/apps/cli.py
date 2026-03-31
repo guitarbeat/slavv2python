@@ -176,7 +176,7 @@ def _cmd_info() -> None:
 def _cmd_run(args: argparse.Namespace) -> None:
     """Execute the SLAVV processing pipeline."""
     from slavv import SLAVVProcessor
-    from slavv.io import load_tiff_volume, save_network_to_csv, save_network_to_json
+    from slavv.io import load_tiff_volume
     from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
 
     # Validate input

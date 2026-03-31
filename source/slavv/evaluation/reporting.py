@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from slavv.utils import format_time
-
 from .management import resolve_run_layout
 
 if TYPE_CHECKING:
@@ -229,7 +228,9 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"watershed={int(candidate_audit.get('source_breakdown', {}).get('watershed', {}).get('candidate_connection_count', 0)):,}/"
                 f"fallback={int(candidate_audit.get('source_breakdown', {}).get('fallback', {}).get('candidate_connection_count', 0)):,}"
             )
-            candidate_audit_path = layout["python_dir"] / "stages" / "edges" / "candidate_audit.json"
+            candidate_audit_path = (
+                layout["python_dir"] / "stages" / "edges" / "candidate_audit.json"
+            )
             candidate_manifest_path = layout["python_dir"] / "stages" / "edges" / "candidates.pkl"
             lines.append(f"Candidate audit artifact: {candidate_audit_path}")
             lines.append(f"Candidate manifest path: {candidate_manifest_path}")

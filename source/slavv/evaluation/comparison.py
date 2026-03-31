@@ -26,7 +26,6 @@ from slavv.io.matlab_parser import load_matlab_batch_results
 from slavv.runtime import RunContext
 from slavv.utils import get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
-
 from .management import generate_manifest, resolve_run_layout
 from .metrics import compare_results
 from .reporting import generate_summary
@@ -327,12 +326,13 @@ def run_python_vectorization(
             "energy": "Energy calculation complete. Extracting vertices...",
             "vertices": "Vertices extracted. Tracing edges...",
             "edges": "Edges traced. Building final network...",
-            "network": "Network assembly complete!"
+            "network": "Network assembly complete!",
         }
         msg = stage_descriptions.get(stage, f"completed {stage}")
         print(f"  Progress: {frac * 100:.1f}% - {msg}")
 
     last_detail = ""
+
     def event_callback(event):
         nonlocal last_detail
         # Use carriage return \r to avoid spamming the console with millions of lines,
@@ -351,7 +351,7 @@ def run_python_vectorization(
             checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
             force_rerun_from=force_rerun_from,
         )
-        print() # Add a final newline to clear the \r string
+        print()  # Add a final newline to clear the \r string
 
         elapsed_time = time.time() - start_time
 

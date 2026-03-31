@@ -41,7 +41,7 @@ def sort_and_validate_strands_sparse(
 ) -> tuple[list[list[int]], list[list[int]]]:
     """Sort strands and identify mismatched orderings using sparse adjacency."""
     sorted_strands = []
-    mismatched = []
+    mismatched: list[list[int]] = []
 
     for strand in strands:
         if len(strand) >= 2:
@@ -61,7 +61,7 @@ def _normalize_connections(edge_connections: Any) -> np.ndarray:
     connections = np.asarray(edge_connections, dtype=np.int32)
     if connections.size == 0:
         return np.empty((0, 2), dtype=np.int32)
-    return connections.reshape(-1, 2)
+    return connections.reshape(-1, 2)  # type: ignore[no-any-return]
 
 
 def _build_graph_state(
@@ -85,9 +85,11 @@ def _build_graph_state(
             )
             continue
 
-        adjacency_list[int(start_vertex)].add(int(end_vertex))
-        adjacency_list[int(end_vertex)].add(int(start_vertex))
-        graph_edges.setdefault(tuple(sorted((int(start_vertex), int(end_vertex)))), trace)
+        v0, v1 = int(start_vertex), int(end_vertex)
+        adjacency_list[v0].add(v1)
+        adjacency_list[v1].add(v0)
+        key = (v0, v1) if v0 < v1 else (v1, v0)
+        graph_edges.setdefault(key, trace)
 
     return adjacency_list, graph_edges, dangling_edges
 
@@ -104,7 +106,7 @@ def _remove_short_hairs(
 
     to_remove: list[tuple[int, int]] = []
     for (v0, v1), trace in graph_edges.items():
-        length = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
+        length: float = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
         if length < min_hair_length and (
             len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
         ):
@@ -126,7 +128,7 @@ def _remove_cycles(
     if not graph_edges:
         return cycles
 
-    parent = np.arange(n_vertices, dtype=np.int32)
+    parent: np.ndarray = np.arange(n_vertices, dtype=np.int32)
 
     def find(vertex: int) -> int:
         while parent[vertex] != vertex:
@@ -150,7 +152,7 @@ def _remove_cycles(
 
 def _vertex_degrees(adjacency_list: dict[int, set[int]], n_vertices: int) -> np.ndarray:
     """Return per-vertex degree counts."""
-    return np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)
+    return np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)  # type: ignore[no-any-return]
 
 
 def _default_network_topology(
@@ -159,7 +161,7 @@ def _default_network_topology(
 ) -> dict[str, Any]:
     """Construct the default sparse-walk network topology."""
     strands = []
-    visited = np.zeros(n_vertices, dtype=bool)
+    visited: np.ndarray = np.zeros(n_vertices, dtype=bool)
 
     for vertex_idx in range(n_vertices):
         if not visited[vertex_idx] and len(adjacency_list[vertex_idx]) > 0:
@@ -241,7 +243,8 @@ def _order_strand_vertices(
     while len(used_edges) < len(edge_pairs):
         next_vertex = None
         for neighbor in sorted(local_adjacency[current]):
-            edge_key = tuple(sorted((current, int(neighbor))))
+            v0, v1 = current, int(neighbor)
+            edge_key = (v0, v1) if v0 < v1 else (v1, v0)
             if edge_key not in used_edges:
                 next_vertex = int(neighbor)
                 used_edges.add(edge_key)
@@ -308,7 +311,10 @@ def _matlab_parity_network_topology(
             continue
 
         ordered_vertices = _order_strand_vertices(
-            [tuple(int(value) for value in edge_connections[index]) for index in edge_indices],
+            [
+                (int(edge_connections[index, 0]), int(edge_connections[index, 1]))
+                for index in edge_indices
+            ],
             end_vertices[0] if end_vertices else None,
         )
         if len(ordered_vertices) > 1:

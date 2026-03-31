@@ -7,8 +7,9 @@ from __future__ import annotations
 
 import logging
 import tempfile
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
+from . import energy, graph, tracing
 from .. import utils
 from ..runtime import ProgressEvent, RunContext
 from ..runtime.run_state import (
@@ -18,7 +19,6 @@ from ..runtime.run_state import (
     fingerprint_array,
     fingerprint_jsonable,
 )
-from . import energy, graph, tracing
 
 if TYPE_CHECKING:
     import numpy as np
@@ -230,7 +230,7 @@ class SLAVVProcessor:
         controller = run_context.stage("energy")
         if controller.checkpoint_path.exists() and not force_rerun:
             logger.info("Loading cached Energy Field from %s", controller.checkpoint_path)
-            energy_data = controller.load_checkpoint()
+            energy_data = cast(dict[str, Any], controller.load_checkpoint())
             controller.complete(
                 detail="Loaded energy checkpoint",
                 artifacts=self._stage_artifacts(controller),
@@ -238,11 +238,14 @@ class SLAVVProcessor:
             )
             return energy_data
         try:
-            energy_data = energy.calculate_energy_field_resumable(
-                image,
-                parameters,
-                controller,
-                utils.get_chunking_lattice,
+            energy_data = cast(
+                dict[str, Any],
+                energy.calculate_energy_field_resumable(
+                    image,
+                    parameters,
+                    controller,
+                    utils.get_chunking_lattice,
+                ),
             )
             controller.save_checkpoint(energy_data)
             controller.complete(
@@ -266,7 +269,7 @@ class SLAVVProcessor:
         controller = run_context.stage("vertices")
         if controller.checkpoint_path.exists() and not force_rerun:
             logger.info("Loading cached Vertices from %s", controller.checkpoint_path)
-            vertices = controller.load_checkpoint()
+            vertices = cast(dict[str, Any], controller.load_checkpoint())
             controller.complete(
                 detail="Loaded vertex checkpoint",
                 artifacts=self._stage_artifacts(controller),
@@ -274,7 +277,9 @@ class SLAVVProcessor:
             )
             return vertices
         try:
-            vertices = tracing.extract_vertices_resumable(energy_data, parameters, controller)
+            vertices = cast(
+                dict[str, Any], tracing.extract_vertices_resumable(energy_data, parameters, controller)
+            )
             controller.save_checkpoint(vertices)
             controller.complete(
                 detail="Vertices extracted",
@@ -301,7 +306,7 @@ class SLAVVProcessor:
         controller = run_context.stage("edges")
         if controller.checkpoint_path.exists() and not force_rerun:
             logger.info("Loading cached Edges from %s", controller.checkpoint_path)
-            edges = controller.load_checkpoint()
+            edges = cast(dict[str, Any], controller.load_checkpoint())
             controller.complete(
                 detail="Loaded edge checkpoint",
                 artifacts=self._stage_artifacts(controller),
@@ -311,18 +316,24 @@ class SLAVVProcessor:
         try:
             edge_method = parameters.get("edge_method", "tracing")
             if edge_method == "watershed":
-                edges = tracing.extract_edges_watershed_resumable(
-                    energy_data,
-                    vertices,
-                    parameters,
-                    controller,
+                edges = cast(
+                    dict[str, Any],
+                    tracing.extract_edges_watershed_resumable(
+                        energy_data,
+                        vertices,
+                        parameters,
+                        controller,
+                    ),
                 )
             else:
-                edges = tracing.extract_edges_resumable(
-                    energy_data,
-                    vertices,
-                    parameters,
-                    controller,
+                edges = cast(
+                    dict[str, Any],
+                    tracing.extract_edges_resumable(
+                        energy_data,
+                        vertices,
+                        parameters,
+                        controller,
+                    ),
                 )
             controller.save_checkpoint(edges)
             controller.complete(
@@ -347,7 +358,7 @@ class SLAVVProcessor:
         controller = run_context.stage("network")
         if controller.checkpoint_path.exists() and not force_rerun:
             logger.info("Loading cached Network from %s", controller.checkpoint_path)
-            network = controller.load_checkpoint()
+            network = cast(dict[str, Any], controller.load_checkpoint())
             controller.complete(
                 detail="Loaded network checkpoint",
                 artifacts=self._stage_artifacts(controller),
@@ -355,7 +366,10 @@ class SLAVVProcessor:
             )
             return network
         try:
-            network = graph.construct_network_resumable(edges, vertices, parameters, controller)
+            network = cast(
+                dict[str, Any],
+                graph.construct_network_resumable(edges, vertices, parameters, controller),
+            )
             controller.save_checkpoint(network)
             controller.complete(
                 detail="Network constructed",
@@ -370,7 +384,9 @@ class SLAVVProcessor:
         """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
         from .. import utils as utils_module
 
-        return energy.calculate_energy_field(image, params, utils_module.get_chunking_lattice)
+        return energy.calculate_energy_field(
+            image, params, utils_module.get_chunking_lattice
+        )
 
     def extract_vertices(
         self, energy_data: dict[str, Any], params: dict[str, Any]
@@ -388,7 +404,9 @@ class SLAVVProcessor:
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract edges by watershed. Delegates to ``tracing`` module."""
-        return tracing.extract_edges_watershed(energy_data, vertices, params)
+        return tracing.extract_edges_watershed(
+            energy_data, vertices, params
+        )
 
     def construct_network(
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]

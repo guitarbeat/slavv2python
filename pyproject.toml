@@ -170,11 +170,15 @@ docstring-code-format = true
 
 # ── Mypy (static type checking) ─────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.9"
 mypy_path = "source"
 files = [
     "source/slavv/apps/cli.py",
     "source/slavv/apps/streamlit_launcher.py",
+    "source/slavv/core/energy.py",
+    "source/slavv/core/graph.py",
+    "source/slavv/core/pipeline.py",
+    "source/slavv/core/tracing.py",
 ]
 warn_return_any = true
 warn_unused_configs = true

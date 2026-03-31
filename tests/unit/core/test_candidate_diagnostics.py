@@ -8,10 +8,10 @@ import numpy as np
 import pytest
 
 from slavv.core.tracing import (
+    _build_edge_candidate_audit,
     _empty_edge_diagnostics,
     _generate_edge_candidates_matlab_frontier,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
-    _build_edge_candidate_audit,
     paint_vertex_center_image,
 )
 from slavv.evaluation.metrics import compare_edges

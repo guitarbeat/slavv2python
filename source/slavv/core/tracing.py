@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import math
 from heapq import heappop, heappush
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union, cast
 
 import joblib
 import numpy as np
@@ -39,17 +39,18 @@ def _vertex_neighborhood_slices(
 ) -> tuple[slice, slice, slice]:
     """Return clipped cube slices centered on ``pos``."""
     y, x, z = (int(coord) for coord in pos)
-    return (
+    res_v: tuple[slice, slice, slice] = (
         slice(max(0, y - apothem), min(shape[0], y + apothem + 1)),
         slice(max(0, x - apothem), min(shape[1], x + apothem + 1)),
         slice(max(0, z - apothem), min(shape[2], z + apothem + 1)),
     )
+    return res_v
 
 
 def _matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-style column-major linear indices for 0-based coordinates."""
     coords = np.asarray(coords, dtype=np.int64)
-    return coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
+    return (coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1])  # type: ignore[no-any-return]
 
 
 def _sort_vertex_order(
@@ -60,12 +61,12 @@ def _sort_vertex_order(
 ) -> np.ndarray:
     """Sort vertices like MATLAB: by energy, then by column-major linear index for ties."""
     if len(vertex_positions) == 0:
-        return np.array([], dtype=np.int64)
+        return np.array([], dtype=np.int64)  # type: ignore[no-any-return]
 
     linear_indices = _matlab_linear_indices(vertex_positions, image_shape)
     if energy_sign < 0:
-        return np.lexsort((linear_indices, vertex_energies))
-    return np.lexsort((linear_indices, -vertex_energies))
+        return np.lexsort((linear_indices, vertex_energies))  # type: ignore[no-any-return]
+    return np.lexsort((linear_indices, -vertex_energies))  # type: ignore[no-any-return]
 
 
 def _empty_vertices_result() -> dict[str, Any]:
@@ -167,10 +168,10 @@ def _coerce_radius_axes(
     if lumen_radius_pixels_axes is not None:
         axes = np.asarray(lumen_radius_pixels_axes, dtype=np.float32)
         if axes.ndim == 2 and axes.shape[1] == 3:
-            return axes
+            return axes  # type: ignore[no-any-return]
 
     radii = np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1)
-    return np.repeat(radii, 3, axis=1)
+    return np.repeat(radii, 3, axis=1)  # type: ignore[no-any-return]
 
 
 def _scalar_radius(radius_value: np.ndarray | float | int) -> float:
@@ -195,7 +196,8 @@ def _chunk_lattice_dimensions(
     aspect_ratio = strel / max(np.prod(strel) ** (1.0 / 3.0), 1e-12)
     target_dims = np.maximum(target_char_len * aspect_ratio, 1.0)
     lattice = np.maximum(np.rint(np.asarray(image_shape, dtype=np.float64) / target_dims), 1)
-    return tuple(int(value) for value in lattice.tolist())
+    val = lattice.tolist()
+    return (int(val[0]), int(val[1]), int(val[2]))
 
 
 def _iter_overlapping_chunks(
@@ -275,7 +277,7 @@ def _matlab_vertex_candidates_in_chunk(
         slices = _vertex_neighborhood_slices(pos, apothem, energy.shape)
         window = energy[slices]
         if energy_sign < 0:
-            window_extreme = np.nanmin(window)
+            window_extreme: float = np.nanmin(window)
             is_vertex = np.isfinite(window_extreme) and energy[y, x, z] <= window_extreme
         else:
             window_extreme = np.nanmax(window)
@@ -398,7 +400,8 @@ def _ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
     mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
     coords = np.column_stack(np.where(mask))
     center = np.asarray(mask.shape, dtype=np.int64) // 2
-    return (coords - center).astype(np.int16, copy=False)
+    offsets: np.ndarray = (coords - center).astype(np.int16, copy=False)
+    return offsets
 
 
 def _choose_vertices_matlab_style(
@@ -424,10 +427,10 @@ def _choose_vertices_matlab_style(
     scale_indices = np.rint(vertex_scales).astype(np.int64)
     scaled_radii = length_dilation_ratio * lumen_radius_pixels_axes
     template_cache = {
-        scale_index: _ellipsoid_offsets(scaled_radii[scale_index])
+        int(scale_index): _ellipsoid_offsets(scaled_radii[scale_index])
         for scale_index in np.unique(scale_indices)
     }
-    painted_image = np.zeros(image_shape, dtype=bool)
+    painted_image: np.ndarray = np.zeros(image_shape, dtype=bool)
 
     def paint(index: int) -> np.ndarray:
         center = np.rint(vertex_positions[index]).astype(np.int64)
@@ -440,7 +443,8 @@ def _choose_vertices_matlab_style(
             & (coords[:, 2] >= 0)
             & (coords[:, 2] < image_shape[2])
         )
-        return coords[valid]
+        res: np.ndarray = coords[valid]
+        return res
 
     for index in np.flatnonzero(chosen_mask[:start_index]):
         coords = paint(int(index))
@@ -463,10 +467,12 @@ def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:
     """Check if the floored position lies within array bounds."""
     # Optimization for 3D case which is the bottleneck in tracing
     if len(shape) == 3:
-        return 0 <= pos[0] < shape[0] and 0 <= pos[1] < shape[1] and 0 <= pos[2] < shape[2]
+        res_3d: bool = 0 <= pos[0] < shape[0] and 0 <= pos[1] < shape[1] and 0 <= pos[2] < shape[2]
+        return res_3d
 
     pos_int = np.floor(pos).astype(int)
-    return np.all((pos_int >= 0) & (pos_int < np.array(shape)))
+    res: bool = np.all((pos_int >= 0) & (pos_int < np.array(shape)))  # type: ignore[assignment]
+    return res
 
 
 def compute_gradient(
@@ -477,7 +483,8 @@ def compute_gradient(
     # Ensure proper dtypes for Numba compatibility (if enabled in impl)
     energy_arr = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_arr = np.asarray(microns_per_voxel, dtype=np.float64)
-    return compute_gradient_impl(energy_arr, pos_int, mpv_arr)
+    res: np.ndarray = compute_gradient_impl(energy_arr, pos_int, mpv_arr)
+    return res
 
 
 def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.ndarray:
@@ -491,9 +498,11 @@ def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.n
         Random seed for reproducibility. If None, uses unseeded RNG.
     """
     if n_directions <= 0:
-        return np.empty((0, 3))
+        res_empty: np.ndarray = np.empty((0, 3), dtype=np.float64)
+        return res_empty
     if n_directions == 1:
-        return np.array([[0, 0, 1]], dtype=float)
+        res_single: np.ndarray = np.array([[0, 0, 1]], dtype=np.float64)
+        return res_single
 
     # Generate random points from a 3D standard normal distribution
     rng = np.random.default_rng(seed)
@@ -501,7 +510,8 @@ def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.n
     # Normalize to unit vectors
     norms = np.linalg.norm(points, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
-    return points / norms
+    res_arr: np.ndarray = (points / norms).astype(np.float64)
+    return res_arr
 
 
 def paint_vertex_image(
@@ -577,7 +587,8 @@ def paint_vertex_image(
             continue
 
     logger.info(f"Painted {len(vertex_positions)} vertices into volume image")
-    return vertex_image
+    res_v: np.ndarray = vertex_image
+    return res_v
 
 
 def paint_vertex_center_image(
@@ -585,7 +596,7 @@ def paint_vertex_center_image(
     image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     """Create a sparse image containing only vertex center identities."""
-    center_image = np.zeros(image_shape, dtype=np.uint16)
+    center_image: np.ndarray = np.zeros(image_shape, dtype=np.uint16)
     if len(vertex_positions) == 0:
         return center_image
 
@@ -598,8 +609,8 @@ def paint_vertex_center_image(
         len(coords) + 1,
         dtype=np.uint16,
     )
-    logger.info("Painted %d vertex centers into lookup image", len(vertex_positions))
-    return center_image
+    res_ci: np.ndarray = center_image
+    return res_ci
 
 
 def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
@@ -980,7 +991,9 @@ def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]
     for start_vertex, end_vertex in connections:
         if int(start_vertex) < 0 or int(end_vertex) < 0:
             continue
-        pairs.add(tuple(sorted((int(start_vertex), int(end_vertex)))))
+        u, v = int(start_vertex), int(end_vertex)
+        pair: tuple[int, int] = (u, v) if u < v else (v, u)
+        pairs.add(pair)
     return pairs
 
 
@@ -1066,7 +1079,7 @@ def _best_watershed_contact_coords(
         pair_indices = pair_indices[order]
         contact_coords = contact_coords[order]
         contact_energy = contact_energy[order]
-        keep = np.ones((len(pair_indices),), dtype=bool)
+        keep: np.ndarray = np.ones((len(pair_indices),), dtype=bool)
         keep[1:] = np.any(pair_indices[1:] != pair_indices[:-1], axis=1)
 
         for pair_array, coord, pair_energy in zip(
@@ -1159,7 +1172,11 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
 
         # Phase 2 gate: frontier reachability — at least one endpoint must have
         # participated in a frontier candidate
-        if enforce_frontier_reachability and pair[0] not in frontier_vertices and pair[1] not in frontier_vertices:
+        if (
+            enforce_frontier_reachability
+            and pair[0] not in frontier_vertices
+            and pair[1] not in frontier_vertices
+        ):
             n_reachability_rejected += 1
             continue
 
@@ -1196,9 +1213,9 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         n_accepted += 1
         origin_supplement_counts[seed_origin] = current_origin_count + 1
         existing_pairs.add(pair)
-        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][str(seed_origin)] = int(
-            origin_supplement_counts.get(seed_origin, 0)
-        )
+        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][
+            str(seed_origin)
+        ] = int(origin_supplement_counts.get(seed_origin, 0))
 
     supplement_payload["diagnostics"]["watershed_total_pairs"] = n_total_watershed_pairs
     supplement_payload["diagnostics"]["watershed_already_existing"] = n_already_existing
@@ -1244,7 +1261,7 @@ def _prune_frontier_indices_beyond_found_vertices(
     vectors_from_origin = (
         candidate_coords.astype(np.float64) * microns_per_voxel - origin_position_microns
     )
-    indices_beyond = np.zeros((len(candidate_coords),), dtype=bool)
+    indices_beyond: np.ndarray = np.zeros((len(candidate_coords),), dtype=bool)
     for displacement in displacement_vectors:
         # MATLAB parity note: The threshold of 1.0 matches the normalized
         # dot-product gate in get_edges_for_vertex.m. 'displacement' has been
@@ -1546,7 +1563,10 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         target["metrics"] = np.concatenate([target["metrics"], unit_metrics])
         target["origin_indices"] = np.concatenate([target["origin_indices"], unit_origin_indices])
 
-    _merge_edge_diagnostics(target["diagnostics"], unit_payload.get("diagnostics", {}))
+    _merge_edge_diagnostics(
+        cast("dict[str, Any]", target["diagnostics"]),
+        cast("dict[str, Any]", unit_payload.get("diagnostics", {})),
+    )
 
 
 def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dict[str, int]:
@@ -1571,12 +1591,16 @@ def _build_edge_candidate_audit(
     supplement_origin_counts: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     """Build a stable, JSON-serializable summary of edge-candidate provenance."""
-    connections = np.asarray(candidates.get("connections", np.zeros((0, 2), dtype=np.int32)), dtype=np.int32)
+    connections = np.asarray(
+        candidates.get("connections", np.zeros((0, 2), dtype=np.int32)), dtype=np.int32
+    )
     if connections.ndim == 1 and connections.size > 0:
         connections = connections.reshape(-1, 2)
     candidate_connection_count = int(connections.shape[0]) if connections.size else 0
 
-    origin_indices = np.asarray(candidates.get("origin_indices", np.zeros((0,), dtype=np.int32)), dtype=np.int32)
+    origin_indices = np.asarray(
+        candidates.get("origin_indices", np.zeros((0,), dtype=np.int32)), dtype=np.int32
+    )
     origin_indices = origin_indices.reshape(-1)
     if origin_indices.size != candidate_connection_count:
         origin_indices = np.zeros((candidate_connection_count,), dtype=np.int32)
@@ -1635,7 +1659,9 @@ def _build_edge_candidate_audit(
         "watershed_cap_rejected": int(diag.get("watershed_cap_rejected", 0)),
         "watershed_accepted": int(diag.get("watershed_accepted", 0)),
         "frontier_origins_with_candidates": int(diag.get("frontier_origins_with_candidates", 0)),
-        "frontier_origins_without_candidates": int(diag.get("frontier_origins_without_candidates", 0)),
+        "frontier_origins_without_candidates": int(
+            diag.get("frontier_origins_without_candidates", 0)
+        ),
     }
 
     origin_count_union = set(frontier_origin_counts.keys()) | set(supplement_origin_counts.keys())
@@ -1648,7 +1674,7 @@ def _build_edge_candidate_audit(
         "schema_version": 1,
         "vertex_count": int(vertex_count),
         "use_frontier_tracer": bool(use_frontier_tracer),
-        "candidate_traces": int(len(candidates.get("traces", []))),
+        "candidate_traces": len(candidates.get("traces", [])),
         "candidate_connection_count": candidate_connection_count,
         "candidate_origin_count": len(total_origin_counts),
         "source_breakdown": {
@@ -1824,13 +1850,6 @@ def _generate_edge_candidates(
     }
 
 
-def _ellipsoid_offsets(radii: np.ndarray) -> np.ndarray:
-    """Construct centered integer offsets for an ellipsoidal influence volume."""
-    ry, rx, rz = [max(float(v), 0.5) for v in np.asarray(radii, dtype=np.float32)]
-    mask = ellipsoid(ry, rx, rz, spacing=(1.0, 1.0, 1.0))
-    coords = np.column_stack(np.where(mask))
-    center = np.asarray(mask.shape) // 2
-    return (coords - center).astype(np.int32, copy=False)
 
 
 def _offset_coords(
@@ -1893,13 +1912,15 @@ def _offset_coords_matlab(
 
 def _clean_edges_vertex_degree_excess_python(
     connections: np.ndarray,
+    metrics: np.ndarray,
     max_edges_per_vertex: int,
 ) -> np.ndarray:
     """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
     if connections.size == 0 or max_edges_per_vertex <= 0:
         return np.ones((len(connections),), dtype=bool)
 
-    keep = np.ones((len(connections),), dtype=bool)
+    # Edge cleanup
+    keep: np.ndarray = np.ones((len(connections),), dtype=bool)
     n_vertices = int(np.max(connections)) + 1 if connections.size else 0
     if n_vertices <= 0:
         return keep
@@ -1949,11 +1970,11 @@ def _clean_edges_orphans_python(
             )
         )
 
-    keep = np.ones((len(locations),), dtype=bool)
+    keep: np.ndarray = np.ones((len(locations),), dtype=bool)
     changed = True
     while changed:
         changed = False
-        interior = set()
+        interior: set[int] = set()
         exterior_locations: list[tuple[int, int]] = []
         for edge_index, edge_locations in enumerate(locations):
             if not keep[edge_index] or edge_locations.size == 0:
@@ -1963,7 +1984,7 @@ def _clean_edges_orphans_python(
             exterior_locations.append((edge_index, int(edge_locations[0])))
             exterior_locations.append((edge_index, int(edge_locations[-1])))
 
-        removable = set()
+        removable: set[int] = set()
         allowed = interior | vertex_locations
         for edge_index, location in exterior_locations:
             if location not in allowed:
@@ -1981,7 +2002,7 @@ def _clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
     if connections.size == 0:
         return np.zeros((0,), dtype=bool)
 
-    keep = np.ones((len(connections),), dtype=bool)
+    keep: np.ndarray = np.ones((len(connections),), dtype=bool)
     n_vertices = int(np.max(connections)) + 1
     parent = np.arange(n_vertices, dtype=np.int32)
 
@@ -2089,28 +2110,30 @@ def _choose_edges_matlab_style(
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []
     for index in ordered:
-        pair = (int(connections[index, 0]), int(connections[index, 1]))
-        if pair in directed_seen:
+        pair_d = (int(connections[index, 0]), int(connections[index, 1]))
+        if pair_d in directed_seen:
             diagnostics["duplicate_directed_pair_count"] += 1
             continue
-        directed_seen.add(pair)
+        directed_seen.add(pair_d)
         directed_indices.append(int(index))
 
-    undirected_seen: set[tuple[int, int]] = set()
-    antiparallel_indices: list[int] = []
+    # Conflict painting
+    undirected_seen_u: set[tuple[int, int]] = set()
+    antiparallel_indices_u: list[int] = []
     for index in directed_indices:
-        pair = tuple(sorted((int(connections[index, 0]), int(connections[index, 1]))))
-        if pair in undirected_seen:
+        u, v = int(connections[index, 0]), int(connections[index, 1])
+        pair_u: tuple[int, int] = (u, v) if u < v else (v, u)
+        if pair_u in undirected_seen_u:
             diagnostics["antiparallel_pair_count"] += 1
             continue
-        undirected_seen.add(pair)
-        antiparallel_indices.append(int(index))
+        undirected_seen_u.add(pair_u)
+        antiparallel_indices_u.append(int(index))
 
     sigma_per_influence_vertices = float(params.get("sigma_per_influence_vertices", 1.0))
     sigma_per_influence_edges = float(params.get("sigma_per_influence_edges", 0.5))
     vertex_offset_cache: dict[int, np.ndarray] = {}
     edge_offset_cache: dict[int, np.ndarray] = {}
-    painted_image = np.zeros(image_shape, dtype=np.int32)
+    painted_image: np.ndarray = np.zeros(image_shape, dtype=np.int32)
 
     def vertex_offsets(scale: int) -> np.ndarray:
         if scale not in vertex_offset_cache:
@@ -2125,7 +2148,7 @@ def _choose_edges_matlab_style(
         return edge_offset_cache[scale]
 
     chosen_indices: list[int] = []
-    for index in antiparallel_indices:
+    for index in antiparallel_indices_u:
         start_vertex, end_vertex = (int(value) for value in connections[index])
         endpoint_snapshots: list[tuple[np.ndarray, np.ndarray]] = []
 
@@ -2173,8 +2196,10 @@ def _choose_edges_matlab_style(
         return empty
 
     chosen_connections = connections[chosen_indices]
-    keep_degree = _clean_edges_vertex_degree_excess_python(
+    chosen_metrics = metrics[chosen_indices]
+    keep_degree: np.ndarray = _clean_edges_vertex_degree_excess_python(
         chosen_connections,
+        chosen_metrics,
         int(params.get("number_of_edges_per_vertex", 4)),
     )
     diagnostics["degree_pruned_count"] = int(np.sum(~keep_degree))
@@ -2187,7 +2212,7 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    keep_orphans = _clean_edges_orphans_python(
+    keep_orphans: np.ndarray = _clean_edges_orphans_python(
         [traces[index] for index in after_degree_indices],
         image_shape,
         vertex_positions,
@@ -2201,13 +2226,13 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    keep_cycles = _clean_edges_cycles_python(connections[after_orphan_indices])
+    keep_cycles: np.ndarray = _clean_edges_cycles_python(connections[after_orphan_indices])
     diagnostics["cycle_pruned_count"] = int(np.sum(~keep_cycles))
     final_indices = [
         index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep
     ]
 
-    result = _empty_edges_result(vertex_positions)
+    result: dict[str, Any] = _empty_edges_result(vertex_positions)
     result["traces"] = [np.asarray(traces[index], dtype=np.float32) for index in final_indices]
     result["connections"] = np.asarray(connections[final_indices], dtype=np.int32).reshape(-1, 2)
     result["energies"] = np.asarray(metrics[final_indices], dtype=np.float32)
@@ -2325,11 +2350,12 @@ def trace_edge(
     if vertex_center_image is None:
         vertex_center_image = vertex_image
 
-    trace = [np.asarray(start_pos, dtype=np.float32).copy()]
-    stop_reason = "max_steps"
-    direct_terminal_vertex: int | None = None
+    # Tracing state
+    trace: list[np.ndarray] = [np.asarray(start_pos, dtype=np.float32).copy()]
+    stop_reason: str = "max_steps"
+    direct_terminal_vertex_v: int | None = None
 
-    def finish(reason: str, terminal_vertex: int | None = None):
+    def finish(reason: str, terminal_vertex: int | None = None) -> Any:
         finalized_trace, metadata = _finalize_traced_edge(
             trace,
             stop_reason=reason,
@@ -2343,9 +2369,10 @@ def trace_edge(
             tree=tree,
             max_search_radius=max_search_radius,
         )
+        res_f: Any = finalized_trace
         if return_metadata:
-            return finalized_trace, metadata
-        return finalized_trace
+            res_f = (finalized_trace, metadata)
+        return res_f
 
     # Scalarize position and direction
     current_pos_y, current_pos_x, current_pos_z = (
@@ -2365,13 +2392,16 @@ def trace_edge(
     inv_mpv_2x_z = 1.0 / (2.0 * float(microns_per_voxel[2]))
 
     # Precompute shape scalars
-    dim_y, dim_x, dim_z = energy.shape
-    dim_y_minus_2 = dim_y - 2
-    dim_x_minus_2 = dim_x - 2
-    dim_z_minus_2 = dim_z - 2
+    dim_y: int = int(energy.shape[0])
+    dim_x: int = int(energy.shape[1])
+    dim_z: int = int(energy.shape[2])
+    dim_y_minus_2: int = dim_y - 2
+    dim_x_minus_2: int = dim_x - 2
+    dim_z_minus_2: int = dim_z - 2
 
+    res_v: Any = finish("bounds")
     if dim_y < 3 or dim_x < 3 or dim_z < 3:
-        return finish("bounds")
+        return res_v
 
     pos_y = math.floor(current_pos_y)
     pos_x = math.floor(current_pos_x)
@@ -2452,42 +2482,42 @@ def trace_edge(
 
         # Optimized gradient computation
         # Use scalar args to avoid allocating arrays
-        pos_y = round(current_pos_y)
-        pos_x = round(current_pos_x)
-        pos_z = round(current_pos_z)
+        pos_y_r: int = round(current_pos_y)
+        pos_x_r: int = round(current_pos_x)
+        pos_z_r: int = round(current_pos_z)
 
         # Inline gradient computation to avoid function call and allocation
         # Manual clamping
-        grad_pos_y = pos_y
-        if grad_pos_y < 1:
-            grad_pos_y = 1
-        elif grad_pos_y > dim_y_minus_2:
-            grad_pos_y = dim_y_minus_2
+        gp_y: int = pos_y_r
+        if gp_y < 1:
+            gp_y = 1
+        elif gp_y > dim_y_minus_2:
+            gp_y = dim_y_minus_2
 
-        grad_pos_x = pos_x
-        if grad_pos_x < 1:
-            grad_pos_x = 1
-        elif grad_pos_x > dim_x_minus_2:
-            grad_pos_x = dim_x_minus_2
+        gp_x: int = pos_x_r
+        if gp_x < 1:
+            gp_x = 1
+        elif gp_x > dim_x_minus_2:
+            gp_x = dim_x_minus_2
 
-        grad_pos_z = pos_z
-        if grad_pos_z < 1:
-            grad_pos_z = 1
-        elif grad_pos_z > dim_z_minus_2:
-            grad_pos_z = dim_z_minus_2
+        gp_z: int = pos_z_r
+        if gp_z < 1:
+            gp_z = 1
+        elif gp_z > dim_z_minus_2:
+            gp_z = dim_z_minus_2
 
         # Compute gradient components
         grad_y = (
-            energy[grad_pos_y + 1, grad_pos_x, grad_pos_z]
-            - energy[grad_pos_y - 1, grad_pos_x, grad_pos_z]
+            energy[gp_y + 1, gp_x, gp_z]
+            - energy[gp_y - 1, gp_x, gp_z]
         ) * inv_mpv_2x_y
         grad_x = (
-            energy[grad_pos_y, grad_pos_x + 1, grad_pos_z]
-            - energy[grad_pos_y, grad_pos_x - 1, grad_pos_z]
+            energy[gp_y, gp_x + 1, gp_z]
+            - energy[gp_y, gp_x - 1, gp_z]
         ) * inv_mpv_2x_x
         grad_z = (
-            energy[grad_pos_y, grad_pos_x, grad_pos_z + 1]
-            - energy[grad_pos_y, grad_pos_x, grad_pos_z - 1]
+            energy[gp_y, gp_x, gp_z + 1]
+            - energy[gp_y, gp_x, gp_z - 1]
         ) * inv_mpv_2x_z
 
         # Manual norm
@@ -2515,9 +2545,9 @@ def trace_edge(
                 current_dir_z *= inv_norm
 
         if vertex_center_image is not None:
-            terminal_vertex_idx = vertex_at_position(current_pos_arr, vertex_center_image)
+            terminal_vertex_idx_v = vertex_at_position(current_pos_arr, vertex_center_image)
         else:
-            terminal_vertex_idx = near_vertex(
+            terminal_vertex_idx_v = near_vertex(
                 current_pos_arr,
                 vertex_positions,
                 vertex_scales,
@@ -2526,14 +2556,19 @@ def trace_edge(
                 tree=tree,
                 max_search_radius=max_search_radius,
             )
-        if origin_vertex_idx is not None and terminal_vertex_idx == origin_vertex_idx:
-            terminal_vertex_idx = None
-        if terminal_vertex_idx is not None:
-            direct_terminal_vertex = int(terminal_vertex_idx)
+        if origin_vertex_idx is not None and terminal_vertex_idx_v == origin_vertex_idx:
+            terminal_vertex_idx_v = None
+        if terminal_vertex_idx_v is not None:
+            direct_terminal_vertex_v = int(terminal_vertex_idx_v)
             stop_reason = "direct_terminal_hit"
             break
 
-    return finish(stop_reason, direct_terminal_vertex)
+    res_finish: Union[list[np.ndarray], tuple[list[np.ndarray], dict[str, Any]]] = finish(
+        stop_reason, direct_terminal_vertex_v
+    )
+    return res_finish
+
+
 
 
 def extract_edges(
@@ -2569,7 +2604,9 @@ def extract_edges(
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
     if _use_matlab_frontier_tracer(energy_data, params):
-        enforce_frontier_reachability_gate = bool(params.get("parity_frontier_reachability_gate", True))
+        enforce_frontier_reachability_gate = bool(
+            params.get("parity_frontier_reachability_gate", True)
+        )
         candidates = _generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -2640,8 +2677,8 @@ def extract_edges_watershed(
     logger.info("Watershed complete, extracting edges between regions...")
     structure = ndi.generate_binary_structure(3, 1)
 
-    edges = []
-    connections = []
+    edges: list[np.ndarray] = []
+    connections: list[list[int]] = []
     edge_energies: list[float] = []
     seen = set()
     n_vertices = len(vertex_positions)
@@ -2873,7 +2910,10 @@ def _load_edge_units(
             np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
         )
         origin_indices.extend(int(value) for value in unit_payload.get("origin_indices", []))
-        _merge_edge_diagnostics(payload["diagnostics"], unit_payload.get("diagnostics", {}))
+        _merge_edge_diagnostics(
+            cast("dict[str, Any]", payload["diagnostics"]),
+            cast("dict[str, Any]", unit_payload.get("diagnostics", {})),
+        )
 
     payload["traces"] = traces
     payload["connections"] = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
@@ -2941,12 +2981,22 @@ def extract_edges_resumable(
     frontier_origin_counts: dict[int, int] = {}
     if use_frontier_tracer:
         for origin_index, count in (
-            candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts", {}).items()
+            candidates.get("diagnostics", {})
+            .get("frontier_per_origin_candidate_counts", {})
+            .items()
         ):
             try:
                 frontier_origin_counts[int(origin_index)] = int(count)
             except (TypeError, ValueError):
                 continue
+
+    # Results for the current vertex
+    unit_traces: list[np.ndarray] = []
+    unit_connections: list[list[int]] = []
+    unit_metrics: list[float] = []
+    unit_energy_traces: list[np.ndarray] = []
+    unit_scale_traces: list[np.ndarray] = []
+    unit_trace_metadata_v: list[dict[str, Any]] = []
 
     for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if vertex_idx in completed:
@@ -2964,12 +3014,13 @@ def extract_edges_resumable(
                 vertex_idx,
                 params,
             )
-            unit_traces = frontier_payload["traces"]
-            unit_connections = frontier_payload["connections"]
-            unit_metrics = frontier_payload["metrics"]
-            unit_energy_traces = frontier_payload["energy_traces"]
-            unit_scale_traces = frontier_payload["scale_traces"]
-            unit_diagnostics = frontier_payload["diagnostics"]
+            unit_traces = cast(list[np.ndarray], frontier_payload["traces"])
+            unit_connections = cast(list[list[int]], frontier_payload["connections"])
+            unit_metrics = cast(list[float], frontier_payload["metrics"])
+            unit_energy_traces = cast(list[np.ndarray], frontier_payload["energy_traces"])
+            unit_scale_traces = cast(list[np.ndarray], frontier_payload["scale_traces"])
+            unit_diagnostics = cast(dict[str, Any], frontier_payload["diagnostics"])
+            unit_trace_metadata_v = []
             frontier_count = len(unit_connections)
             if frontier_count > 0:
                 frontier_origin_counts[vertex_idx] = frontier_count
@@ -2979,7 +3030,7 @@ def extract_edges_resumable(
             unit_metrics = []
             unit_energy_traces = []
             unit_scale_traces = []
-            unit_trace_metadata: list[dict[str, Any]] = []
+            unit_trace_metadata_v = []
             start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
             step_size = start_radius * step_size_ratio
             max_length = start_radius * max_length_ratio
@@ -3002,7 +3053,7 @@ def extract_edges_resumable(
                 directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
 
             for direction in directions:
-                edge_trace, trace_metadata = trace_edge(
+                res_te = trace_edge(
                     energy_prepared,
                     start_pos,
                     direction,
@@ -3022,24 +3073,24 @@ def extract_edges_resumable(
                     origin_vertex_idx=vertex_idx,
                     return_metadata=True,
                 )
+                edge_trace, trace_metadata = cast(tuple[list[np.ndarray], dict[str, Any]], res_te)
                 if len(edge_trace) <= 1:
                     continue
                 edge_arr = np.asarray(edge_trace, dtype=np.float32)
-                terminal_vertex = trace_metadata["terminal_vertex"]
+                term_v: int = int(trace_metadata["terminal_vertex"]) if trace_metadata["terminal_vertex"] is not None else -1
                 energy_trace = _trace_energy_series(edge_arr, energy)
                 scale_trace = _trace_scale_series(edge_arr, scale_indices)
                 unit_traces.append(edge_arr)
-                unit_connections.append(
-                    [vertex_idx, terminal_vertex if terminal_vertex is not None else -1]
-                )
+                unit_connections.append([vertex_idx, term_v])
                 unit_metrics.append(_edge_metric_from_energy_trace(energy_trace))
                 unit_energy_traces.append(energy_trace)
                 unit_scale_traces.append(scale_trace)
-                unit_trace_metadata.append(trace_metadata)
+                unit_trace_metadata_v.append(trace_metadata)
 
             unit_diagnostics = _empty_edge_diagnostics()
-            for trace_metadata in unit_trace_metadata:
-                _record_trace_diagnostics(unit_diagnostics, trace_metadata)
+            for item in unit_trace_metadata_v:
+                trace_metadata_item = cast(dict[str, Any], item)
+                _record_trace_diagnostics(unit_diagnostics, trace_metadata_item)
 
         payload = {
             "origin_index": vertex_idx,
@@ -3084,7 +3135,7 @@ def extract_edges_resumable(
 
     candidate_audit = _build_edge_candidate_audit(
         candidates,
-        int(len(vertex_positions)),
+        len(vertex_positions),
         use_frontier_tracer=use_frontier_tracer,
         frontier_origin_counts=frontier_origin_counts,
         supplement_origin_counts={

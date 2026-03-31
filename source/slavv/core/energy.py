@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 if _NUMBA_AVAILABLE:
 
     @njit
-    def compute_gradient_impl(energy, pos_int, mpv):
+    def compute_gradient_impl(
+        energy: np.ndarray, pos_int: np.ndarray | tuple[int, int, int], mpv: np.ndarray
+    ) -> np.ndarray:
         """Compute local energy gradient via central differences (Numba accelerated)."""
         dim_y = energy.shape[0]
         dim_x = energy.shape[1]
@@ -72,7 +74,7 @@ if _NUMBA_AVAILABLE:
         elif pos_z > dim_z - 2:
             pos_z = dim_z - 2
 
-        grad = np.zeros(3, dtype=np.float64)
+        grad: np.ndarray = np.zeros(3, dtype=np.float64)
         # Use explicit indexing for speed and clarity
         grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
             2.0 * mpv[0]
@@ -88,9 +90,13 @@ if _NUMBA_AVAILABLE:
 
 else:
 
-    def compute_gradient_impl(energy, pos_int, microns_per_voxel):
+    def compute_gradient_impl(
+        energy: np.ndarray,
+        pos_int: np.ndarray | tuple[int, int, int],
+        microns_per_voxel: np.ndarray,
+    ) -> np.ndarray:
         """Compute local energy gradient via central differences."""
-        grad = np.zeros(3, dtype=float)
+        grad: np.ndarray = np.zeros(3, dtype=float)
 
         # Unpack position and shape
         pos_y, pos_x, pos_z = pos_int
@@ -153,7 +159,7 @@ def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) ->
         + (xx * microns_per_voxel[1]) ** 2
         + (zz * microns_per_voxel[2]) ** 2
     )
-    return dist2 <= r_phys**2
+    return (dist2 <= r_phys**2).astype(bool)  # type: ignore[no-any-return]
 
 
 def _matlab_lumen_radius_range(
@@ -167,7 +173,7 @@ def _matlab_lumen_radius_range(
     """
     largest_per_smallest_volume_ratio = (radius_largest / radius_smallest) ** 3
     final_scale = int(np.round(np.log2(largest_per_smallest_volume_ratio) * scales_per_octave))
-    scale_ordinates = np.arange(-1, final_scale + 2, dtype=float)
+    scale_ordinates: np.ndarray = np.arange(-1, final_scale + 2, dtype=float)
     scale_factors = 2 ** (scale_ordinates / scales_per_octave / 3.0)
     return scale_ordinates, radius_smallest * scale_factors
 
@@ -190,7 +196,7 @@ def _matched_filter_derivative(
     scale = np.prod(np.power(microns_per_voxel, order))
     if scale > 0:
         derivative = derivative / scale
-    return derivative.astype(np.float32, copy=False)
+    return derivative.astype(np.float32, copy=False)  # type: ignore[no-any-return]
 
 
 def _matlab_hessian_energy(
@@ -283,7 +289,7 @@ def _matlab_hessian_energy(
         valid = laplacian > 0
         energy = np.full(image.shape, -np.inf, dtype=np.float32)
     if not np.any(valid):
-        return energy
+        return energy  # type: ignore[no-any-return]
 
     grad_valid = np.stack([grad_y[valid], grad_x[valid], grad_z[valid]], axis=1).astype(np.float64)
     hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
@@ -314,7 +320,7 @@ def _matlab_hessian_energy(
         energy_valid[energy_valid <= 0] = -np.inf
 
     energy[valid] = energy_valid.astype(np.float32, copy=False)
-    return energy
+    return energy  # type: ignore[no-any-return]
 
 
 def calculate_energy_field(
@@ -762,7 +768,7 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
             vesselness = frangi(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
         else:
             vesselness = sato(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
-        return energy_sign * vesselness.astype(np.float32)
+        return energy_sign * vesselness.astype(np.float32)  # type: ignore[no-any-return]
 
     if config["spherical_to_annular_ratio"] < 1.0:
         annular_scale = sigma_scale * 1.5
@@ -1010,7 +1016,7 @@ def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
         p2 = s2 - 2
 
     # We still allocate grad, but we avoid pos_int allocation and unpacking
-    grad = np.empty(3, dtype=float)
+    grad: np.ndarray = np.empty(3, dtype=float)
     grad[0] = (energy[p0 + 1, p1, p2] - energy[p0 - 1, p1, p2]) * inv_mpv_2x[0]
     grad[1] = (energy[p0, p1 + 1, p2] - energy[p0, p1 - 1, p2]) * inv_mpv_2x[1]
     grad[2] = (energy[p0, p1, p2 + 1] - energy[p0, p1, p2 - 1]) * inv_mpv_2x[2]
