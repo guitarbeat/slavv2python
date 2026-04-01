@@ -154,6 +154,7 @@ def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str,
         "energies": np.zeros((0,), dtype=np.float32),
         "energy_traces": [],
         "scale_traces": [],
+        "connection_sources": [],
         "vertex_positions": positions,
         "diagnostics": _empty_edge_diagnostics(),
         "chosen_candidate_indices": np.zeros((0,), dtype=np.int32),
@@ -1141,12 +1142,14 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             frontier_vertices.add(int(end_vertex))
 
     supplement_payload: dict[str, Any] = {
+        "candidate_source": "watershed",
         "traces": [],
         "connections": [],
         "metrics": [],
         "energy_traces": [],
         "scale_traces": [],
         "origin_indices": [],
+        "connection_sources": [],
         "diagnostics": {
             "watershed_join_supplement_count": 0,
             "watershed_per_origin_candidate_counts": {},
@@ -1209,6 +1212,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         supplement_payload["energy_traces"].append(energy_trace)
         supplement_payload["scale_traces"].append(scale_trace)
         supplement_payload["origin_indices"].append(pair[0])
+        supplement_payload["connection_sources"].append("watershed")
         supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
         n_accepted += 1
         origin_supplement_counts[seed_origin] = current_origin_count + 1
@@ -1527,12 +1531,14 @@ def _trace_origin_edges_matlab_frontier(
 
     return {
         "origin_index": origin_vertex_idx,
+        "candidate_source": "frontier",
         "traces": traces,
         "connections": connections,
         "metrics": metrics,
         "energy_traces": energy_traces,
         "scale_traces": scale_traces,
         "origin_indices": [origin_vertex_idx] * len(traces),
+        "connection_sources": ["frontier"] * len(traces),
         "diagnostics": diagnostics,
     }
 
@@ -1545,6 +1551,16 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
     unit_origin_indices = np.asarray(
         unit_payload.get("origin_indices", []), dtype=np.int32
     ).reshape(-1)
+    unit_connection_sources = _normalize_candidate_connection_sources(
+        unit_payload.get("connection_sources"),
+        len(unit_connections),
+        default_source=str(unit_payload.get("candidate_source", "unknown")),
+    )
+    unit_connection_sources = _normalize_candidate_connection_sources(
+        unit_payload.get("connection_sources"),
+        len(unit_connections),
+        default_source=str(unit_payload.get("candidate_source", "unknown")),
+    )
 
     target["traces"].extend(unit_traces)
     target["energy_traces"].extend(
@@ -1562,6 +1578,8 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         )
         target["metrics"] = np.concatenate([target["metrics"], unit_metrics])
         target["origin_indices"] = np.concatenate([target["origin_indices"], unit_origin_indices])
+        target["connection_sources"].extend(unit_connection_sources)
+        target.setdefault("connection_sources", []).extend(unit_connection_sources)
 
     _merge_edge_diagnostics(
         cast("dict[str, Any]", target["diagnostics"]),
@@ -1580,6 +1598,35 @@ def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dic
             normalized[str(int(key))] = int(value)
         except (TypeError, ValueError):
             continue
+    return normalized
+
+
+def _normalize_candidate_connection_sources(
+    raw_sources: Any,
+    candidate_connection_count: int,
+    *,
+    default_source: str = "unknown",
+) -> list[str]:
+    """Return a normalized per-connection source label list."""
+    if candidate_connection_count <= 0:
+        return []
+
+    if isinstance(raw_sources, np.ndarray):
+        source_values = np.asarray(raw_sources).reshape(-1).tolist()
+    elif isinstance(raw_sources, (list, tuple)):
+        source_values = list(raw_sources)
+    else:
+        source_values = []
+
+    allowed_sources = {"frontier", "watershed", "fallback", "unknown"}
+    default_label = default_source if default_source in allowed_sources else "unknown"
+    normalized: list[str] = []
+    for index in range(candidate_connection_count):
+        if index < len(source_values):
+            source_label = str(source_values[index]).strip().lower()
+            normalized.append(source_label if source_label in allowed_sources else default_label)
+            continue
+        normalized.append(default_label)
     return normalized
 
 
@@ -1605,12 +1652,53 @@ def _build_edge_candidate_audit(
     if origin_indices.size != candidate_connection_count:
         origin_indices = np.zeros((candidate_connection_count,), dtype=np.int32)
 
+    connection_sources = _normalize_candidate_connection_sources(
+        candidates.get("connection_sources"),
+        candidate_connection_count,
+        default_source=str(candidates.get("candidate_source", "unknown")),
+    )
+
     total_origin_counts: dict[int, int] = {}
-    for origin_index in origin_indices:
+    total_origin_pairs: dict[int, set[tuple[int, int]]] = {}
+    source_pair_sets: dict[str, set[tuple[int, int]]] = {
+        "frontier": set(),
+        "watershed": set(),
+        "fallback": set(),
+    }
+    source_origin_pair_sets: dict[str, dict[int, set[tuple[int, int]]]] = {
+        "frontier": {},
+        "watershed": {},
+        "fallback": {},
+    }
+    source_origin_sets: dict[str, set[int]] = {
+        "frontier": set(),
+        "watershed": set(),
+        "fallback": set(),
+    }
+    for index, origin_index in enumerate(origin_indices):
         origin_index_int = int(origin_index)
         if origin_index_int < 0:
             continue
         total_origin_counts[origin_index_int] = total_origin_counts.get(origin_index_int, 0) + 1
+
+        source_label = connection_sources[index] if index < len(connection_sources) else "unknown"
+        if source_label in source_origin_sets:
+            source_origin_sets[source_label].add(origin_index_int)
+
+        if index >= len(connections):
+            continue
+        start_vertex, end_vertex = (int(value) for value in connections[index][:2])
+        if start_vertex < 0 or end_vertex < 0:
+            continue
+        endpoint_pair = (
+            (start_vertex, end_vertex) if start_vertex < end_vertex else (end_vertex, start_vertex)
+        )
+        total_origin_pairs.setdefault(origin_index_int, set()).add(endpoint_pair)
+        if source_label in source_pair_sets:
+            source_pair_sets[source_label].add(endpoint_pair)
+            source_origin_pair_sets[source_label].setdefault(origin_index_int, set()).add(
+                endpoint_pair
+            )
 
     frontier_origin_counts = {
         int(origin): int(count) for origin, count in (frontier_origin_counts or {}).items()
@@ -1618,13 +1706,37 @@ def _build_edge_candidate_audit(
     supplement_origin_counts = {
         int(origin): int(count) for origin, count in (supplement_origin_counts or {}).items()
     }
-    frontier_connection_count = sum(frontier_origin_counts.values())
-    supplement_connection_count = sum(supplement_origin_counts.values())
-    fallback_connection_count = max(
-        0, candidate_connection_count - frontier_connection_count - supplement_connection_count
-    )
+    if frontier_origin_counts or supplement_origin_counts:
+        frontier_connection_count = sum(frontier_origin_counts.values())
+        supplement_connection_count = sum(supplement_origin_counts.values())
+        fallback_connection_count = max(
+            0, candidate_connection_count - frontier_connection_count - supplement_connection_count
+        )
+        frontier_origin_count = len(frontier_origin_counts)
+        supplement_origin_count = len(supplement_origin_counts)
+        origin_count_union = set(frontier_origin_counts.keys()) | set(
+            supplement_origin_counts.keys()
+        )
+        fallback_origin_count = max(0, len(total_origin_counts) - len(origin_count_union))
+    else:
+        frontier_connection_count = len(
+            [source for source in connection_sources if source == "frontier"]
+        )
+        supplement_connection_count = len(
+            [source for source in connection_sources if source == "watershed"]
+        )
+        fallback_connection_count = max(
+            0, candidate_connection_count - frontier_connection_count - supplement_connection_count
+        )
+        frontier_origin_count = len(source_origin_sets["frontier"])
+        supplement_origin_count = len(source_origin_sets["watershed"])
+        fallback_origin_count = max(
+            0,
+            len(total_origin_counts)
+            - len(source_origin_sets["frontier"] | source_origin_sets["watershed"]),
+        )
 
-    per_origin_payload: list[dict[str, int]] = []
+    per_origin_payload: list[dict[str, Any]] = []
     all_origins = (
         set(total_origin_counts.keys())
         | set(frontier_origin_counts.keys())
@@ -1635,6 +1747,10 @@ def _build_edge_candidate_audit(
         supplement_count = int(supplement_origin_counts.get(origin_index, 0))
         total_count = int(total_origin_counts.get(origin_index, 0))
         fallback_count = max(0, total_count - frontier_count - supplement_count)
+        candidate_pairs = total_origin_pairs.get(origin_index, set())
+        frontier_pairs = source_origin_pair_sets["frontier"].get(origin_index, set())
+        watershed_pairs = source_origin_pair_sets["watershed"].get(origin_index, set())
+        fallback_pairs = source_origin_pair_sets["fallback"].get(origin_index, set())
         per_origin_payload.append(
             {
                 "origin_index": origin_index,
@@ -1642,6 +1758,14 @@ def _build_edge_candidate_audit(
                 "watershed_candidate_count": supplement_count,
                 "fallback_candidate_count": fallback_count,
                 "candidate_connection_count": total_count,
+                "candidate_endpoint_pair_count": len(candidate_pairs),
+                "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
+                "frontier_endpoint_pair_count": len(frontier_pairs),
+                "frontier_endpoint_pair_samples": sorted(frontier_pairs)[:3],
+                "watershed_endpoint_pair_count": len(watershed_pairs),
+                "watershed_endpoint_pair_samples": sorted(watershed_pairs)[:3],
+                "fallback_endpoint_pair_count": len(fallback_pairs),
+                "fallback_endpoint_pair_samples": sorted(fallback_pairs)[:3],
             }
         )
 
@@ -1664,10 +1788,11 @@ def _build_edge_candidate_audit(
         ),
     }
 
-    origin_count_union = set(frontier_origin_counts.keys()) | set(supplement_origin_counts.keys())
     fallback_source_total = {
         "candidate_connection_count": fallback_connection_count,
-        "candidate_origin_count": len(total_origin_counts) - len(origin_count_union),
+        "candidate_origin_count": fallback_origin_count,
+        "candidate_endpoint_pair_count": len(source_pair_sets["fallback"]),
+        "candidate_endpoint_pair_samples": sorted(source_pair_sets["fallback"])[:5],
     }
 
     return {
@@ -1680,11 +1805,15 @@ def _build_edge_candidate_audit(
         "source_breakdown": {
             "frontier": {
                 "candidate_connection_count": frontier_connection_count,
-                "candidate_origin_count": len(frontier_origin_counts),
+                "candidate_origin_count": frontier_origin_count,
+                "candidate_endpoint_pair_count": len(source_pair_sets["frontier"]),
+                "candidate_endpoint_pair_samples": sorted(source_pair_sets["frontier"])[:5],
             },
             "watershed": {
                 "candidate_connection_count": supplement_connection_count,
-                "candidate_origin_count": len(supplement_origin_counts),
+                "candidate_origin_count": supplement_origin_count,
+                "candidate_endpoint_pair_count": len(source_pair_sets["watershed"]),
+                "candidate_endpoint_pair_samples": sorted(source_pair_sets["watershed"])[:5],
             },
             "fallback": fallback_source_total,
         },
@@ -1715,6 +1844,7 @@ def _generate_edge_candidates_matlab_frontier(
         "energy_traces": [],
         "scale_traces": [],
         "origin_indices": np.zeros((0,), dtype=np.int32),
+        "connection_sources": [],
         "diagnostics": _empty_edge_diagnostics(),
     }
     per_origin_candidate_counts: dict[int, int] = {}
@@ -1777,6 +1907,7 @@ def _generate_edge_candidates(
     energy_traces: list[np.ndarray] = []
     scale_traces: list[np.ndarray] = []
     origin_indices: list[int] = []
+    connection_sources: list[str] = []
     diagnostics = _empty_edge_diagnostics()
 
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
@@ -1838,6 +1969,7 @@ def _generate_edge_candidates(
             energy_traces.append(energy_trace)
             scale_traces.append(scale_trace)
             origin_indices.append(vertex_idx)
+            connection_sources.append("fallback")
 
     return {
         "traces": traces,
@@ -1846,6 +1978,8 @@ def _generate_edge_candidates(
         "energy_traces": energy_traces,
         "scale_traces": scale_traces,
         "origin_indices": np.asarray(origin_indices, dtype=np.int32),
+        "candidate_source": "fallback",
+        "connection_sources": connection_sources,
         "diagnostics": diagnostics,
     }
 
@@ -2864,6 +2998,7 @@ def _load_edge_units(
         "energy_traces": [],
         "scale_traces": [],
         "origin_indices": np.zeros((0,), dtype=np.int32),
+        "connection_sources": [],
         "diagnostics": _empty_edge_diagnostics(),
     }
     completed: set[int] = set()
@@ -2877,13 +3012,16 @@ def _load_edge_units(
     energy_traces: list[np.ndarray] = []
     scale_traces: list[np.ndarray] = []
     origin_indices: list[int] = []
+    connection_sources: list[str] = []
     for unit_file in sorted(units_dir.glob("*.pkl")):
         unit_payload = joblib.load(unit_file)
         origin_index = int(unit_payload["origin_index"])
         completed.add(origin_index)
-        traces.extend(np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"])
+        unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]
+        unit_connections = np.asarray(unit_payload["connections"], dtype=np.int32).reshape(-1, 2)
+        traces.extend(unit_traces)
         connections.extend(
-            [int(connection[0]), int(connection[1])] for connection in unit_payload["connections"]
+            [int(connection[0]), int(connection[1])] for connection in unit_connections
         )
         metrics.extend(float(metric) for metric in unit_payload["metrics"])
         energy_traces.extend(
@@ -2893,6 +3031,13 @@ def _load_edge_units(
             np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
         )
         origin_indices.extend(int(value) for value in unit_payload.get("origin_indices", []))
+        connection_sources.extend(
+            _normalize_candidate_connection_sources(
+                unit_payload.get("connection_sources"),
+                len(unit_connections),
+                default_source=str(unit_payload.get("candidate_source", "unknown")),
+            )
+        )
         _merge_edge_diagnostics(
             cast("dict[str, Any]", payload["diagnostics"]),
             cast("dict[str, Any]", unit_payload.get("diagnostics", {})),
@@ -2904,6 +3049,7 @@ def _load_edge_units(
     payload["energy_traces"] = energy_traces
     payload["scale_traces"] = scale_traces
     payload["origin_indices"] = np.asarray(origin_indices, dtype=np.int32)
+    payload["connection_sources"] = connection_sources
     return payload, completed
 
 
@@ -3081,12 +3227,14 @@ def extract_edges_resumable(
 
         payload = {
             "origin_index": vertex_idx,
+            "candidate_source": "fallback",
             "traces": unit_traces,
             "connections": unit_connections,
             "metrics": unit_metrics,
             "energy_traces": unit_energy_traces,
             "scale_traces": unit_scale_traces,
             "origin_indices": [vertex_idx] * len(unit_traces),
+            "connection_sources": ["fallback"] * len(unit_traces),
             "diagnostics": unit_diagnostics,
         }
         atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
@@ -3234,12 +3382,14 @@ def extract_edges_watershed_resumable(
 
         payload = {
             "origin_index": origin_index,
+            "candidate_source": "fallback",
             "traces": unit_traces,
             "connections": unit_connections,
             "metrics": unit_energies,
             "energy_traces": [np.asarray([energy], dtype=np.float32) for energy in unit_energies],
             "scale_traces": [np.zeros((len(trace),), dtype=np.int16) for trace in unit_traces],
             "origin_indices": [origin_index] * len(unit_traces),
+            "connection_sources": ["fallback"] * len(unit_traces),
         }
         atomic_joblib_dump(payload, units_dir / f"label_{origin_index:06d}.pkl")
         edges.extend(unit_traces)

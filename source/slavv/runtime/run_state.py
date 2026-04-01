@@ -898,6 +898,37 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
             if task.detail:
                 parts.append(task.detail)
             lines.append(" | ".join(parts))
+    matlab_status_task = snapshot.optional_tasks.get("matlab_status")
+    if matlab_status_task is not None:
+        artifacts = matlab_status_task.artifacts
+        lines.append("")
+        lines.append("MATLAB resume:")
+        lines.append(
+            f"  Batch folder: {artifacts.get('batch_folder') or '(none)'}"
+        )
+        lines.append(
+            "  Resume mode: "
+            f"{artifacts.get('resume_mode', 'unknown')}"
+            f" | last completed={artifacts.get('last_completed_stage', '(none)')}"
+            f" | next={artifacts.get('next_stage', '(none)')}"
+        )
+        if artifacts.get("python_force_rerun_from"):
+            lines.append(
+                "  Python rerun from: "
+                f"{artifacts.get('python_force_rerun_from')}"
+            )
+        elif snapshot.optional_tasks.get("python_pipeline") is not None:
+            python_force_rerun_from = snapshot.optional_tasks["python_pipeline"].artifacts.get(
+                "force_rerun_from", ""
+            )
+            if python_force_rerun_from:
+                lines.append(f"  Python rerun from: {python_force_rerun_from}")
+        if artifacts.get("rerun_prediction"):
+            lines.append(f"  Prediction: {artifacts.get('rerun_prediction')}")
+        if artifacts.get("failure_summary_file"):
+            lines.append(
+                f"  Failure summary file: {artifacts.get('failure_summary_file')}"
+            )
     if snapshot.errors:
         lines.append("")
         lines.append("Errors:")

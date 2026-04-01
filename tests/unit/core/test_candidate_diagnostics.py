@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from slavv.core.tracing import (
+    _append_candidate_unit,
     _build_edge_candidate_audit,
     _empty_edge_diagnostics,
     _generate_edge_candidates_matlab_frontier,
@@ -78,6 +79,33 @@ class TestWatershedSupplementDiagnostics:
 class TestFrontierCandidateDiagnostics:
     """Diagnostics from the frontier candidate generator."""
 
+    def test_append_candidate_unit_preserves_connection_sources(self):
+        aggregate = {
+            "traces": [],
+            "connections": np.zeros((0, 2), dtype=np.int32),
+            "metrics": np.zeros((0,), dtype=np.float32),
+            "energy_traces": [],
+            "scale_traces": [],
+            "origin_indices": np.zeros((0,), dtype=np.int32),
+            "connection_sources": [],
+            "diagnostics": _empty_edge_diagnostics(),
+        }
+        unit_payload = {
+            "candidate_source": "watershed",
+            "traces": [np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)],
+            "connections": [[0, 1]],
+            "metrics": [-1.0],
+            "energy_traces": [np.array([-1.0, -1.0], dtype=np.float32)],
+            "scale_traces": [np.zeros(2, dtype=np.int16)],
+            "origin_indices": [0],
+            "connection_sources": ["watershed"],
+            "diagnostics": _empty_edge_diagnostics(),
+        }
+
+        _append_candidate_unit(aggregate, unit_payload)
+
+        assert aggregate["connection_sources"] == ["watershed"]
+
     def test_per_origin_summary_populated(self):
         """Per-origin candidate counts must appear after frontier generation."""
         energy = _make_small_volume(9)
@@ -114,6 +142,7 @@ class TestFrontierCandidateDiagnostics:
         candidate_edges = {
             "connections": np.array([[0, 1], [0, 3], [1, 2], [2, 4]], dtype=np.int32),
             "origin_indices": np.array([0, 0, 1, 2], dtype=np.int32),
+            "connection_sources": ["frontier", "frontier", "watershed", "fallback"],
             "traces": [
                 np.array([[0, 0, 0], [0.5, 0.5, 0.5]], dtype=np.float32),
                 np.array([[1, 1, 1], [1.5, 1.5, 1.5]], dtype=np.float32),
@@ -139,9 +168,31 @@ class TestFrontierCandidateDiagnostics:
         assert candidate_audit["candidate_connection_count"] == 4
         assert candidate_audit["source_breakdown"]["frontier"]["candidate_connection_count"] == 3
         assert candidate_audit["source_breakdown"]["watershed"]["candidate_connection_count"] == 1
+        assert candidate_audit["source_breakdown"]["frontier"]["candidate_endpoint_pair_count"] == 2
+        assert candidate_audit["source_breakdown"]["frontier"][
+            "candidate_endpoint_pair_samples"
+        ] == [
+            (0, 1),
+            (0, 3),
+        ]
+        assert candidate_audit["source_breakdown"]["watershed"][
+            "candidate_endpoint_pair_samples"
+        ] == [(1, 2)]
+        assert candidate_audit["pair_source_breakdown"]["frontier_only_pair_count"] == 2
+        assert candidate_audit["pair_source_breakdown"]["watershed_only_pair_count"] == 1
+        assert candidate_audit["pair_source_breakdown"]["fallback_only_pair_count"] == 1
+        assert candidate_audit["pair_source_breakdown"]["watershed_only_endpoint_pair_samples"] == [
+            (1, 2)
+        ]
         assert candidate_audit["frontier_per_origin_candidate_counts"] == {0: 2, 1: 1}
         assert isinstance(candidate_audit["per_origin_summary"], list)
         assert len(candidate_audit["per_origin_summary"]) == 3
+        origin_zero = next(
+            entry for entry in candidate_audit["per_origin_summary"] if entry["origin_index"] == 0
+        )
+        assert origin_zero["candidate_endpoint_pair_count"] == 2
+        assert origin_zero["candidate_endpoint_pair_samples"] == [(0, 1), (0, 3)]
+        assert origin_zero["frontier_endpoint_pair_samples"] == [(0, 1), (0, 3)]
 
 
 @pytest.mark.unit

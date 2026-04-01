@@ -28,6 +28,13 @@ from slavv.utils import get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
 from .management import generate_manifest, resolve_run_layout
+from .matlab_status import (
+    MatlabStatusReport,
+    inspect_matlab_status,
+    persist_matlab_failure_summary,
+    persist_matlab_status,
+    summarize_matlab_status,
+)
 from .metrics import compare_results
 from .preflight import (
     OutputRootPreflightReport,
@@ -97,6 +104,67 @@ def _record_preflight_task(
         "output_preflight",
         status="completed" if report.allows_launch else "failed",
         detail=summarize_output_preflight(report),
+        artifacts=artifacts,
+    )
+
+
+def _persist_matlab_status_report(
+    report: MatlabStatusReport,
+    metadata_dir: Path,
+) -> Path | None:
+    """Best-effort persistence for normalized MATLAB status metadata."""
+    try:
+        return persist_matlab_status(report, metadata_dir)
+    except OSError as exc:
+        print(f"Warning: Could not persist MATLAB status report: {exc}")
+        return None
+
+
+def _persist_matlab_failure_report(
+    report: MatlabStatusReport,
+    metadata_dir: Path,
+) -> Path | None:
+    """Best-effort persistence for MATLAB failure summaries."""
+    try:
+        return persist_matlab_failure_summary(report, metadata_dir)
+    except OSError as exc:
+        print(f"Warning: Could not persist MATLAB failure summary: {exc}")
+        return None
+
+
+def _record_matlab_status_task(
+    comparison_context: RunContext,
+    report: MatlabStatusReport,
+    report_path: Path | None,
+    failure_summary_path: Path | None = None,
+    *,
+    python_force_rerun_from: str | None = None,
+) -> None:
+    """Mirror normalized MATLAB resume semantics into the shared run snapshot."""
+    task_status = "failed" if report.failure_summary else "completed"
+    if report.stale_running_snapshot_suspected and not report.failure_summary:
+        task_status = "failed"
+
+    artifacts = {
+        "resume_mode": report.matlab_resume_mode,
+        "last_completed_stage": report.matlab_last_completed_stage or "(none)",
+        "next_stage": report.matlab_next_stage or "(none)",
+        "rerun_prediction": report.matlab_rerun_prediction,
+        "batch_folder": report.matlab_batch_folder or "",
+        "resume_state_file": report.matlab_resume_state_file,
+        "log_file": report.matlab_log_file,
+    }
+    if report_path is not None:
+        artifacts["report"] = str(report_path)
+    if failure_summary_path is not None:
+        artifacts["failure_summary_file"] = str(failure_summary_path)
+    if python_force_rerun_from is not None:
+        artifacts["python_force_rerun_from"] = python_force_rerun_from
+
+    comparison_context.update_optional_task(
+        "matlab_status",
+        status=task_status,
+        detail=summarize_matlab_status(report),
         artifacts=artifacts,
     )
 
@@ -242,6 +310,7 @@ def run_matlab_vectorization(
     cmd = [batch_script, input_file, output_dir, matlab_path]
     if params_file is not None:
         cmd.append(params_file)
+    log_file = os.path.join(output_dir, "matlab_run.log")
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -282,6 +351,7 @@ def run_matlab_vectorization(
             "system_info": system_info,
             "output_dir": output_dir,
             "params_file": params_file or "",
+            "log_file": log_file,
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -303,6 +373,7 @@ def run_matlab_vectorization(
             "system_info": system_info,
             "output_dir": output_dir,
             "params_file": params_file or "",
+            "log_file": log_file,
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -323,6 +394,7 @@ def run_matlab_vectorization(
         "stdout": stdout,
         "stderr": stderr,
         "system_info": system_info,
+        "log_file": log_file,
     }
     matlab_results.update(artifacts)
     return matlab_results
@@ -555,6 +627,7 @@ def orchestrate_comparison(
     params_for_python = copy.deepcopy(params)
     python_force_rerun_from: str | None = None
     preflight_report: OutputRootPreflightReport | None = None
+    matlab_status_report: MatlabStatusReport | None = None
 
     if not skip_matlab:
         preflight_report = evaluate_output_root_preflight(run_root)
@@ -611,6 +684,19 @@ def orchestrate_comparison(
         if preflight_report is not None:
             _record_preflight_task(comparison_context, preflight_report, metadata_dir / "output_preflight.json")
 
+    if not skip_matlab:
+        matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+        matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
+        _record_matlab_status_task(
+            comparison_context,
+            matlab_status_report,
+            matlab_status_report_path,
+        )
+        print("\n" + "=" * 60)
+        print("MATLAB Rerun Semantics")
+        print("=" * 60)
+        print(summarize_matlab_status(matlab_status_report))
+
     # Run MATLAB
     matlab_results = None
     if not skip_matlab:
@@ -628,19 +714,51 @@ def orchestrate_comparison(
             project_root,
             params_file=str(normalized_params_file),
         )
+        matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+        matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
+        failure_summary_path = _persist_matlab_failure_report(matlab_status_report, metadata_dir)
+        _record_matlab_status_task(
+            comparison_context,
+            matlab_status_report,
+            matlab_status_report_path,
+            failure_summary_path,
+        )
+        matlab_results["matlab_status"] = matlab_status_report.to_dict()
+        if failure_summary_path is not None:
+            matlab_results["failure_summary_file"] = str(failure_summary_path)
         comparison_context.update_optional_task(
             "matlab_pipeline",
             status="completed" if matlab_results.get("success") else "failed",
-            detail="MATLAB wrapper finished",
+            detail=(
+                "MATLAB wrapper finished"
+                if matlab_results.get("success")
+                else (
+                    matlab_status_report.failure_summary
+                    or matlab_results.get("error", "MATLAB wrapper failed")
+                )
+            ),
             artifacts=(
                 {
                     "batch_folder": matlab_results["batch_folder"],
                     "params_file": str(normalized_params_file),
+                    "log_file": matlab_results.get("log_file", ""),
                 }
                 if matlab_results.get("batch_folder")
-                else {"params_file": str(normalized_params_file)}
+                else {
+                    "params_file": str(normalized_params_file),
+                    "log_file": matlab_results.get("log_file", ""),
+                }
             ),
         )
+        if not matlab_results.get("success"):
+            comparison_context.mark_run_status(
+                "failed",
+                current_stage="matlab",
+                detail=(
+                    matlab_status_report.failure_summary
+                    or matlab_results.get("error", "MATLAB wrapper failed")
+                ),
+            )
         batch_folder = matlab_results.get("batch_folder")
         if matlab_results.get("success") and batch_folder:
             checkpoint_dir = python_output / "checkpoints"
@@ -681,8 +799,22 @@ def orchestrate_comparison(
                         "matlab_import",
                         status="completed",
                         detail="Imported MATLAB checkpoints for Python parity rerun",
-                        artifacts=dict(imported),
+                        artifacts={
+                            **dict(imported),
+                            **(
+                                {"python_force_rerun_from": python_force_rerun_from}
+                                if python_force_rerun_from is not None
+                                else {}
+                            ),
+                        },
                     )
+                _record_matlab_status_task(
+                    comparison_context,
+                    matlab_status_report,
+                    matlab_status_report_path,
+                    failure_summary_path,
+                    python_force_rerun_from=python_force_rerun_from,
+                )
     else:
         print("\nSkipping MATLAB execution (--skip-matlab)")
 
@@ -693,7 +825,11 @@ def orchestrate_comparison(
         comparison_context.update_optional_task(
             "python_pipeline",
             status="running",
-            detail="Running Python pipeline",
+            detail=(
+                f"Running Python pipeline from {python_force_rerun_from}"
+                if python_force_rerun_from is not None
+                else "Running Python pipeline"
+            ),
         )
         python_results = run_python_vectorization(
             input_file,
@@ -706,7 +842,14 @@ def orchestrate_comparison(
             "python_pipeline",
             status="completed" if python_results.get("success") else "failed",
             detail="Python pipeline finished",
-            artifacts={"output_dir": str(python_output)},
+            artifacts={
+                "output_dir": str(python_output),
+                **(
+                    {"force_rerun_from": python_force_rerun_from}
+                    if python_force_rerun_from is not None
+                    else {}
+                ),
+            },
         )
     else:
         print("\nSkipping Python execution (--skip-python)")

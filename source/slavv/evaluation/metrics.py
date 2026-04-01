@@ -223,6 +223,80 @@ def _edge_endpoint_pair_set(payload: dict[str, Any]) -> set[tuple[int, int]]:
     return set(_edge_endpoint_signatures(payload))
 
 
+def _normalize_candidate_connection_sources(
+    raw_sources: Any,
+    candidate_connection_count: int,
+) -> list[str]:
+    """Return normalized connection-source labels when candidate provenance is available."""
+    if candidate_connection_count <= 0:
+        return []
+    if isinstance(raw_sources, np.ndarray):
+        source_values = np.asarray(raw_sources).reshape(-1).tolist()
+    elif isinstance(raw_sources, (list, tuple)):
+        source_values = list(raw_sources)
+    else:
+        return []
+    if len(source_values) != candidate_connection_count:
+        return []
+    allowed_sources = {"frontier", "watershed", "fallback"}
+    normalized: list[str] = []
+    for value in source_values:
+        source_label = str(value).strip().lower()
+        normalized.append(source_label if source_label in allowed_sources else "fallback")
+    return normalized
+
+
+def _candidate_endpoint_pair_details(
+    payload: dict[str, Any],
+) -> tuple[
+    dict[int, set[tuple[int, int]]],
+    dict[int, dict[str, set[tuple[int, int]]]],
+    dict[str, set[tuple[int, int]]],
+    dict[tuple[int, int], set[str]],
+]:
+    """Group candidate endpoint pairs by seed origin and provenance source."""
+    connections = np.asarray(payload.get("connections", np.array([])))
+    if connections.size == 0:
+        return {}, {}, {"frontier": set(), "watershed": set(), "fallback": set()}, {}
+    if connections.ndim == 1:
+        connections = connections.reshape(1, -1)
+
+    origins = np.asarray(payload.get("origin_indices", np.array([])), dtype=np.int32).reshape(-1)
+    if origins.size != len(connections):
+        origins = connections[:, 0].astype(np.int32, copy=False)
+    connection_sources = _normalize_candidate_connection_sources(
+        payload.get("connection_sources"),
+        len(connections),
+    )
+
+    pairs_by_seed_origin: dict[int, set[tuple[int, int]]] = {}
+    source_pairs_by_seed_origin: dict[int, dict[str, set[tuple[int, int]]]] = {}
+    pairs_by_source: dict[str, set[tuple[int, int]]] = {
+        "frontier": set(),
+        "watershed": set(),
+        "fallback": set(),
+    }
+    pair_sources: dict[tuple[int, int], set[str]] = {}
+
+    for index, connection in enumerate(connections):
+        pair = [int(value) for value in np.asarray(connection).tolist()[:2]]
+        if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
+            continue
+        endpoint_pair = tuple(sorted(pair))
+        origin = int(origins[index]) if index < len(origins) else int(endpoint_pair[0])
+        pairs_by_seed_origin.setdefault(origin, set()).add(endpoint_pair)
+        if index >= len(connection_sources):
+            continue
+        source_label = connection_sources[index]
+        pairs_by_source[source_label].add(endpoint_pair)
+        pair_sources.setdefault(endpoint_pair, set()).add(source_label)
+        source_pairs_by_seed_origin.setdefault(origin, {}).setdefault(source_label, set()).add(
+            endpoint_pair
+        )
+
+    return pairs_by_seed_origin, source_pairs_by_seed_origin, pairs_by_source, pair_sources
+
+
 def _coerce_str_int_map(raw: Any) -> dict[int, int]:
     if not isinstance(raw, dict):
         return {}
@@ -267,6 +341,7 @@ def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str
         "watershed_per_origin_candidate_counts": _coerce_str_int_map(
             candidate_audit.get("watershed_per_origin_candidate_counts")
         ),
+        "pair_source_breakdown": candidate_audit.get("pair_source_breakdown", {}),
         "top_origin_summaries": top_per_origin,
     }
 
@@ -275,24 +350,16 @@ def _edge_endpoint_pairs_by_seed_origin(
     payload: dict[str, Any],
 ) -> dict[int, set[tuple[int, int]]]:
     """Group unique endpoint pairs by the recorded seed origin for candidate edges."""
-    connections = np.asarray(payload.get("connections", np.array([])))
-    if connections.size == 0:
-        return {}
-    if connections.ndim == 1:
-        connections = connections.reshape(1, -1)
-
-    origins = np.asarray(payload.get("origin_indices", np.array([])), dtype=np.int32).reshape(-1)
-    if origins.size != len(connections):
-        origins = connections[:, 0].astype(np.int32, copy=False)
-
-    grouped: dict[int, set[tuple[int, int]]] = {}
-    for index, connection in enumerate(connections):
-        pair = [int(value) for value in np.asarray(connection).tolist()[:2]]
-        if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
-            continue
-        origin = int(origins[index]) if index < len(origins) else int(pair[0])
-        grouped.setdefault(origin, set()).add(tuple(sorted(pair)))
+    grouped, _, _, _ = _candidate_endpoint_pair_details(payload)
     return grouped
+
+
+def _candidate_endpoint_pairs_by_source(
+    payload: dict[str, Any],
+) -> dict[str, set[tuple[int, int]]]:
+    """Group unique candidate endpoint pairs by their recorded source label."""
+    _, _, grouped, _ = _candidate_endpoint_pair_details(payload)
+    return {label: pairs for label, pairs in grouped.items() if pairs}
 
 
 def _incident_endpoint_pairs_by_vertex(
@@ -318,13 +385,16 @@ def _missing_matlab_seed_origin_samples(
         return []
 
     matlab_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(matlab_endpoint_pairs)
-    candidate_pairs_by_seed_origin = _edge_endpoint_pairs_by_seed_origin(candidate_edges)
+    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = (
+        _candidate_endpoint_pair_details(candidate_edges)
+    )
 
     samples = []
     for seed_origin_index in sorted(missing_pairs_by_vertex):
         missing_pairs = missing_pairs_by_vertex[seed_origin_index]
         matlab_incident_pairs = matlab_pairs_by_vertex.get(seed_origin_index, set())
         candidate_pairs = candidate_pairs_by_seed_origin.get(seed_origin_index, set())
+        source_pairs = source_pairs_by_seed_origin.get(seed_origin_index, {})
         matched_candidate_pairs = candidate_pairs & matlab_incident_pairs
         extra_candidate_pairs = candidate_pairs - matlab_incident_pairs
         samples.append(
@@ -335,6 +405,11 @@ def _missing_matlab_seed_origin_samples(
                 "matched_matlab_incident_endpoint_pair_count": len(matched_candidate_pairs),
                 "candidate_endpoint_pair_count": len(candidate_pairs),
                 "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
+                "frontier_candidate_endpoint_pair_count": len(source_pairs.get("frontier", set())),
+                "watershed_candidate_endpoint_pair_count": len(
+                    source_pairs.get("watershed", set())
+                ),
+                "fallback_candidate_endpoint_pair_count": len(source_pairs.get("fallback", set())),
                 "missing_matlab_incident_endpoint_pair_samples": sorted(missing_pairs)[:3],
                 "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
                 "extra_candidate_endpoint_pair_samples": sorted(extra_candidate_pairs)[:3],
@@ -345,6 +420,49 @@ def _missing_matlab_seed_origin_samples(
         key=lambda item: (
             -int(item["missing_matlab_incident_endpoint_pair_count"]),
             int(item["candidate_endpoint_pair_count"]),
+            int(item["seed_origin_index"]),
+        )
+    )
+    return samples[:limit]
+
+
+def _extra_candidate_seed_origin_samples(
+    matlab_endpoint_pairs: set[tuple[int, int]],
+    candidate_edges: dict[str, Any],
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Summarize extra candidate endpoint pairs by the recorded seed origin."""
+    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = (
+        _candidate_endpoint_pair_details(candidate_edges)
+    )
+    if not candidate_pairs_by_seed_origin:
+        return []
+
+    samples = []
+    for seed_origin_index, candidate_pairs in candidate_pairs_by_seed_origin.items():
+        extra_candidate_pairs = candidate_pairs - matlab_endpoint_pairs
+        if not extra_candidate_pairs:
+            continue
+        source_pairs = source_pairs_by_seed_origin.get(seed_origin_index, {})
+        samples.append(
+            {
+                "seed_origin_index": int(seed_origin_index),
+                "candidate_endpoint_pair_count": len(candidate_pairs),
+                "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
+                "frontier_candidate_endpoint_pair_count": len(source_pairs.get("frontier", set())),
+                "watershed_candidate_endpoint_pair_count": len(
+                    source_pairs.get("watershed", set())
+                ),
+                "fallback_candidate_endpoint_pair_count": len(source_pairs.get("fallback", set())),
+                "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
+                "extra_candidate_endpoint_pair_samples": sorted(extra_candidate_pairs)[:3],
+            }
+        )
+
+    samples.sort(
+        key=lambda item: (
+            -int(item["extra_candidate_endpoint_pair_count"]),
+            -int(item["candidate_endpoint_pair_count"]),
             int(item["seed_origin_index"]),
         )
     )
@@ -623,16 +741,63 @@ def compare_edges(
         missing_matlab_pairs = matlab_endpoint_pairs - candidate_endpoint_pairs
         extra_candidate_pairs = candidate_endpoint_pairs - matlab_endpoint_pairs
         missing_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(missing_matlab_pairs)
+        _, _, _, pair_sources = _candidate_endpoint_pair_details(candidate_edges)
 
         # Split candidate counts by source (frontier vs watershed supplement)
         candidate_diag = candidate_edges.get("diagnostics", {})
-        supplement_count = int(candidate_diag.get("watershed_join_supplement_count", 0))
-        frontier_count = max(0, len(candidate_endpoint_pairs) - supplement_count)
+        source_pairs = _candidate_endpoint_pairs_by_source(candidate_edges)
+        if source_pairs:
+            frontier_count = len(source_pairs.get("frontier", set()))
+            supplement_count = len(source_pairs.get("watershed", set()))
+            fallback_count = len(source_pairs.get("fallback", set()))
+            frontier_pair_samples = sorted(source_pairs.get("frontier", set()))[:3]
+            supplement_pair_samples = sorted(source_pairs.get("watershed", set()))[:3]
+            fallback_pair_samples = sorted(source_pairs.get("fallback", set()))[:3]
+        elif candidate_audit is not None:
+            source_breakdown = candidate_audit.get("source_breakdown", {})
+            frontier_count = int(
+                source_breakdown.get("frontier", {}).get("candidate_endpoint_pair_count", 0)
+            )
+            supplement_count = int(
+                source_breakdown.get("watershed", {}).get("candidate_endpoint_pair_count", 0)
+            )
+            fallback_count = int(
+                source_breakdown.get("fallback", {}).get("candidate_endpoint_pair_count", 0)
+            )
+            frontier_pair_samples = list(
+                source_breakdown.get("frontier", {}).get("candidate_endpoint_pair_samples", [])
+            )[:3]
+            supplement_pair_samples = list(
+                source_breakdown.get("watershed", {}).get("candidate_endpoint_pair_samples", [])
+            )[:3]
+            fallback_pair_samples = list(
+                source_breakdown.get("fallback", {}).get("candidate_endpoint_pair_samples", [])
+            )[:3]
+        else:
+            supplement_count = int(candidate_diag.get("watershed_join_supplement_count", 0))
+            frontier_count = max(0, len(candidate_endpoint_pairs) - supplement_count)
+            fallback_count = 0
+            frontier_pair_samples = []
+            supplement_pair_samples = []
+            fallback_pair_samples = []
+        frontier_only_pairs = sorted(
+            pair for pair, sources in pair_sources.items() if sources == {"frontier"}
+        )
+        watershed_only_pairs = sorted(
+            pair for pair, sources in pair_sources.items() if sources == {"watershed"}
+        )
+        fallback_only_pairs = sorted(
+            pair for pair, sources in pair_sources.items() if sources == {"fallback"}
+        )
+        multi_source_pairs = sorted(
+            pair for pair, sources in pair_sources.items() if len(sources) > 1
+        )
 
         coverage: dict[str, Any] = {
             "candidate_endpoint_pair_count": len(candidate_endpoint_pairs),
             "frontier_candidate_endpoint_pair_count": frontier_count,
             "supplement_candidate_endpoint_pair_count": supplement_count,
+            "fallback_candidate_endpoint_pair_count": fallback_count,
             "matlab_endpoint_pair_count": len(matlab_endpoint_pairs),
             "python_endpoint_pair_count": len(python_endpoint_pairs),
             "matched_matlab_endpoint_pair_count": len(
@@ -653,13 +818,30 @@ def compare_edges(
                 missing_pairs_by_vertex,
                 candidate_edges,
             ),
+            "extra_candidate_seed_origin_samples": _extra_candidate_seed_origin_samples(
+                matlab_endpoint_pairs,
+                candidate_edges,
+            ),
+            "frontier_candidate_endpoint_pair_samples": frontier_pair_samples,
+            "supplement_candidate_endpoint_pair_samples": supplement_pair_samples,
+            "fallback_candidate_endpoint_pair_samples": fallback_pair_samples,
+            "frontier_only_candidate_endpoint_pair_count": len(frontier_only_pairs),
+            "watershed_only_candidate_endpoint_pair_count": len(watershed_only_pairs),
+            "fallback_only_candidate_endpoint_pair_count": len(fallback_only_pairs),
+            "multi_source_candidate_endpoint_pair_count": len(multi_source_pairs),
+            "watershed_only_candidate_endpoint_pair_samples": watershed_only_pairs[:3],
         }
+        coverage["extra_candidate_seed_origin_count"] = len(
+            coverage["extra_candidate_seed_origin_samples"]
+        )
         # Propagate watershed rejection breakdowns when available
         for diag_key in (
             "watershed_total_pairs",
             "watershed_already_existing",
             "watershed_short_trace_rejected",
             "watershed_energy_rejected",
+            "watershed_reachability_rejected",
+            "watershed_cap_rejected",
             "watershed_accepted",
             "frontier_origins_with_candidates",
             "frontier_origins_without_candidates",

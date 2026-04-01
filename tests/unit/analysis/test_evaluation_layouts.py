@@ -178,12 +178,21 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     "extra_candidate_endpoint_pair_count": 5,
                     "python_endpoint_pair_count": 12,
                     "missing_matlab_endpoint_pair_samples": [[2, 356]],
+                    "supplement_candidate_endpoint_pair_samples": [[12, 88]],
                     "missing_matlab_seed_origin_samples": [
                         {
                             "seed_origin_index": 2,
                             "missing_matlab_incident_endpoint_pair_count": 3,
                             "candidate_endpoint_pair_count": 1,
                             "missing_matlab_incident_endpoint_pair_samples": [[2, 356]],
+                        }
+                    ],
+                    "extra_candidate_seed_origin_samples": [
+                        {
+                            "seed_origin_index": 12,
+                            "extra_candidate_endpoint_pair_count": 4,
+                            "candidate_endpoint_pair_count": 4,
+                            "extra_candidate_endpoint_pair_samples": [[12, 88]],
                         }
                     ],
                 },
@@ -275,12 +284,15 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
         in summary
     )
     assert "Top audit origin summaries" in summary
-    assert "Candidate audit: schema=v1 frontier=9/4/0" in summary
+    assert "Candidate audit: schema=v1 frontier=9/watershed=4/fallback=0" in summary
     assert (
         "Top missing seed origin 2: missing matlab incident pairs 3  seed candidate pairs 1"
         in summary
     )
     assert "First missing pair at top seed origin: [2, 356]" in summary
+    assert "First watershed supplement candidate pair: [12, 88]" in summary
+    assert "Top extra seed origin 12: extra candidate pairs 4  seed candidate pairs 4" in summary
+    assert "First extra pair at top seed origin: [12, 88]" in summary
     assert "Python energy source: matlab_batch_hdf5" in summary
 
 
@@ -359,3 +371,47 @@ def test_generate_manifest_includes_output_preflight_summary(tmp_path: Path):
     assert "- **Status:** warning" in content
     assert "- **Artifact:** `99_Metadata/output_preflight.json`" in content
     assert "OneDrive sync" in content
+
+
+def test_generate_manifest_includes_matlab_resume_semantics(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    batch_dir = matlab_dir / "batch_260401-140000"
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    batch_dir.mkdir(parents=True)
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "restart-current-stage",
+                "matlab_batch_folder": str(batch_dir),
+                "matlab_last_completed_stage": "",
+                "matlab_next_stage": "energy",
+                "matlab_rerun_prediction": "Rerun will reuse batch_260401-140000 but restart energy from the stage boundary.",
+                "matlab_partial_stage_artifacts_present": True,
+                "matlab_partial_stage_name": "energy",
+                "stale_running_snapshot_suspected": True,
+                "failure_summary": "ERROR: MATLAB error Exit Status: 0x00000001",
+                "matlab_log_tail": [
+                    "Running Energy workflow...",
+                    "ERROR: MATLAB error Exit Status: 0x00000001",
+                ],
+                "matlab_resume_state_file": str(matlab_dir / "matlab_resume_state.json"),
+                "matlab_log_file": str(matlab_dir / "matlab_run.log"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
+    normalized = content.replace("\\", "/")
+
+    assert "## Resume Semantics" in content
+    assert "- **MATLAB resume mode:** restart-current-stage" in content
+    assert "- **MATLAB batch folder:** `01_Input/matlab_results/batch_260401-140000`" in normalized
+    assert "## Authoritative Files" in content
+    assert "`99_Metadata/matlab_status.json`" in content
+    assert "## Failure Summary" in content
+    assert "ERROR: MATLAB error Exit Status: 0x00000001" in content

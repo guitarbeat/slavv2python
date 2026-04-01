@@ -195,6 +195,7 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     }
     candidate_edges = {
         "connections": np.array([[0, 1], [1, 2], [4, 5]], dtype=np.int32),
+        "connection_sources": ["frontier", "frontier", "watershed"],
         "traces": [],
     }
 
@@ -205,9 +206,24 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
         "candidate_connection_count": 3,
         "candidate_origin_count": 4,
         "source_breakdown": {
-            "frontier": {"candidate_connection_count": 1, "candidate_origin_count": 1},
-            "watershed": {"candidate_connection_count": 2, "candidate_origin_count": 1},
-            "fallback": {"candidate_connection_count": 0, "candidate_origin_count": 0},
+            "frontier": {
+                "candidate_connection_count": 1,
+                "candidate_origin_count": 1,
+                "candidate_endpoint_pair_count": 2,
+                "candidate_endpoint_pair_samples": [(0, 1), (1, 2)],
+            },
+            "watershed": {
+                "candidate_connection_count": 2,
+                "candidate_origin_count": 1,
+                "candidate_endpoint_pair_count": 1,
+                "candidate_endpoint_pair_samples": [(4, 5)],
+            },
+            "fallback": {
+                "candidate_connection_count": 0,
+                "candidate_origin_count": 0,
+                "candidate_endpoint_pair_count": 0,
+                "candidate_endpoint_pair_samples": [],
+            },
         },
         "frontier_per_origin_candidate_counts": {0: 1},
         "watershed_per_origin_candidate_counts": {4: 1, 5: 1},
@@ -255,6 +271,16 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     assert not coverage["matlab_pairs_fully_covered"]
     assert coverage["missing_matlab_endpoint_pair_samples"] == [(2, 3)]
     assert coverage["extra_candidate_endpoint_pair_samples"] == [(4, 5)]
+    assert coverage["frontier_only_candidate_endpoint_pair_count"] == 2
+    assert coverage["watershed_only_candidate_endpoint_pair_count"] == 1
+    assert coverage["fallback_only_candidate_endpoint_pair_count"] == 0
+    assert coverage["watershed_only_candidate_endpoint_pair_samples"] == [(4, 5)]
+    assert coverage["supplement_candidate_endpoint_pair_samples"] == [(4, 5)]
+    assert coverage["extra_candidate_seed_origin_count"] == 1
+    assert coverage["extra_candidate_seed_origin_samples"][0]["seed_origin_index"] == 4
+    assert coverage["extra_candidate_seed_origin_samples"][0][
+        "extra_candidate_endpoint_pair_samples"
+    ] == [(4, 5)]
     assert "candidate_audit" in result["diagnostics"]
     assert result["diagnostics"]["candidate_audit"]["schema_version"] == 1
     assert result["diagnostics"]["candidate_audit"]["candidate_connection_count"] == 3
@@ -287,6 +313,8 @@ def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():
     assert top_seed_origin["matched_matlab_incident_endpoint_pair_count"] == 1
     assert top_seed_origin["candidate_endpoint_pair_count"] == 2
     assert top_seed_origin["extra_candidate_endpoint_pair_count"] == 1
+    assert top_seed_origin["frontier_candidate_endpoint_pair_count"] == 1
+    assert top_seed_origin["watershed_candidate_endpoint_pair_count"] == 1
     assert top_seed_origin["missing_matlab_incident_endpoint_pair_samples"] == [(0, 2), (0, 3)]
     assert top_seed_origin["candidate_endpoint_pair_samples"] == [(0, 1), (0, 4)]
     assert top_seed_origin["extra_candidate_endpoint_pair_samples"] == [(0, 4)]
@@ -298,6 +326,36 @@ def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():
     )
     assert seed_origin_two["candidate_endpoint_pair_count"] == 0
     assert seed_origin_two["missing_matlab_incident_endpoint_pair_samples"] == [(0, 2)]
+
+
+def test_compare_edges_uses_candidate_audit_source_pair_counts_when_payload_lacks_sources():
+    matlab_edges = {"connections": np.array([[0, 1], [1, 2]], dtype=np.int32), "traces": []}
+    python_edges = {"connections": np.array([[0, 1]], dtype=np.int32), "traces": []}
+    candidate_edges = {"connections": np.array([[0, 1], [4, 5]], dtype=np.int32), "traces": []}
+    candidate_audit = {
+        "schema_version": 1,
+        "source_breakdown": {
+            "frontier": {
+                "candidate_endpoint_pair_count": 1,
+                "candidate_endpoint_pair_samples": [(0, 1)],
+            },
+            "watershed": {
+                "candidate_endpoint_pair_count": 1,
+                "candidate_endpoint_pair_samples": [(4, 5)],
+            },
+            "fallback": {
+                "candidate_endpoint_pair_count": 0,
+                "candidate_endpoint_pair_samples": [],
+            },
+        },
+    }
+
+    result = compare_edges(matlab_edges, python_edges, candidate_edges, candidate_audit)
+
+    coverage = result["diagnostics"]["candidate_endpoint_coverage"]
+    assert coverage["frontier_candidate_endpoint_pair_count"] == 1
+    assert coverage["supplement_candidate_endpoint_pair_count"] == 1
+    assert coverage["supplement_candidate_endpoint_pair_samples"] == [(4, 5)]
 
 
 def test_compare_networks_computes_strand_differences():

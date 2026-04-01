@@ -171,8 +171,8 @@ def _is_onedrive_suspected(path: Path) -> bool:
         except OSError:
             continue
         try:
-            if path.is_relative_to(env_path):
-                return True
+            path.relative_to(env_path)
+            return True
         except ValueError:
             continue
     return False

@@ -144,6 +144,41 @@ class TestMainEntryPoint:
         assert "Target progress:" in captured.out
         assert "energy" in captured.out
 
+    def test_status_prints_matlab_resume_section(self, capsys, tmp_path):
+        run_dir = tmp_path / "run"
+        context = RunContext(
+            run_dir=run_dir,
+            input_fingerprint="input-a",
+            params_fingerprint="params-a",
+            target_stage="network",
+        )
+        context.update_optional_task(
+            "matlab_status",
+            status="failed",
+            detail="Rerun will reuse batch_260401-140000 but restart energy from the stage boundary. Last failure: ERROR: MATLAB error Exit Status: 0x00000001",
+            artifacts={
+                "batch_folder": "C:\\temp\\batch_260401-140000",
+                "resume_mode": "restart-current-stage",
+                "last_completed_stage": "(none)",
+                "next_stage": "energy",
+                "rerun_prediction": "Rerun will reuse batch_260401-140000 but restart energy from the stage boundary.",
+                "failure_summary_file": "C:\\temp\\matlab_failure_summary.json",
+            },
+        )
+        context.update_optional_task(
+            "python_pipeline",
+            status="pending",
+            detail="Waiting for MATLAB import",
+            artifacts={"force_rerun_from": "edges"},
+        )
+
+        main(["status", "--run-dir", str(run_dir)])
+
+        captured = capsys.readouterr()
+        assert "MATLAB resume:" in captured.out
+        assert "restart-current-stage" in captured.out
+        assert "Python rerun from: edges" in captured.out
+
 
 def test_load_dict_from_json_preserves_parameters(tmp_path):
     path = tmp_path / "network.json"

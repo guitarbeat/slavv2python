@@ -7,14 +7,13 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 
+from slavv.evaluation.matlab_status import load_matlab_status
 from slavv.evaluation.preflight import load_output_preflight
 from slavv.runtime import load_run_snapshot
 from slavv.utils import format_size
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +266,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     report = {}
     run_snapshot = load_run_snapshot(run_root)
     preflight_report = load_output_preflight(metadata_dir)
+    matlab_status = load_matlab_status(metadata_dir)
     if report_file.exists():
         try:
             with open(report_file) as f:
@@ -331,6 +331,60 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
             for error in errors:
                 lines.append(f"- {error}")
         lines.append("")
+
+    if matlab_status:
+        lines.append("## Resume Semantics")
+        lines.append("")
+        lines.append(f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}")
+        batch_folder = matlab_status.get("matlab_batch_folder", "")
+        if batch_folder:
+            lines.append(f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`")
+        lines.append(
+            "- **Last completed MATLAB stage:** "
+            f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
+        )
+        lines.append(
+            "- **Next MATLAB stage:** "
+            f"{matlab_status.get('matlab_next_stage') or '(none)'}"
+        )
+        lines.append(
+            "- **Rerun prediction:** "
+            f"{matlab_status.get('matlab_rerun_prediction', 'unknown')}"
+        )
+        if matlab_status.get("matlab_partial_stage_artifacts_present"):
+            lines.append(
+                "- **Partial stage artifacts:** "
+                f"{matlab_status.get('matlab_partial_stage_name') or 'present'}"
+            )
+        if matlab_status.get("stale_running_snapshot_suspected"):
+            lines.append("- **Stale running snapshot suspected:** True")
+        lines.append("")
+
+        lines.append("## Authoritative Files")
+        lines.append("")
+        lines.append("- `99_Metadata/matlab_status.json`")
+        if matlab_status.get("matlab_resume_state_file"):
+            lines.append(
+                f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`"
+            )
+        if matlab_status.get("matlab_log_file"):
+            lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`")
+        if batch_folder:
+            lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
+        lines.append("")
+
+        if matlab_status.get("failure_summary"):
+            lines.append("## Failure Summary")
+            lines.append("")
+            lines.append(f"- **Failure:** {matlab_status.get('failure_summary')}")
+            log_tail = matlab_status.get("matlab_log_tail") or []
+            if log_tail:
+                lines.append("")
+                lines.append("```text")
+                for line in log_tail[-10:]:
+                    lines.append(str(line))
+                lines.append("```")
+                lines.append("")
 
     # Comparison Summary
     if report:
@@ -434,3 +488,11 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         f.write(manifest_content)
 
     return manifest_content
+
+
+def _display_path(run_root: Path, path: Path) -> str:
+    """Render a path relative to the run root when possible."""
+    try:
+        return str(path.relative_to(run_root))
+    except ValueError:
+        return str(path)

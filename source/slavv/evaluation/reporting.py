@@ -200,6 +200,20 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(candidate_coverage.get('extra_candidate_endpoint_pair_count', 0)):,}/"
                 f"{int(candidate_coverage.get('python_endpoint_pair_count', 0)):,}"
             )
+            if any(
+                key in candidate_coverage
+                for key in (
+                    "frontier_only_candidate_endpoint_pair_count",
+                    "watershed_only_candidate_endpoint_pair_count",
+                    "fallback_only_candidate_endpoint_pair_count",
+                )
+            ):
+                lines.append(
+                    "Candidate endpoint pair provenance frontier-only/watershed-only/fallback-only: "
+                    f"{int(candidate_coverage.get('frontier_only_candidate_endpoint_pair_count', 0)):,}/"
+                    f"{int(candidate_coverage.get('watershed_only_candidate_endpoint_pair_count', 0)):,}/"
+                    f"{int(candidate_coverage.get('fallback_only_candidate_endpoint_pair_count', 0)):,}"
+                )
             missing_candidate_pairs = candidate_coverage.get(
                 "missing_matlab_endpoint_pair_samples", []
             )
@@ -221,6 +235,27 @@ def generate_summary(run_dir: Path, output_file: Path):
                 )
                 if missing_seed_pairs:
                     lines.append(f"First missing pair at top seed origin: {missing_seed_pairs[0]}")
+            supplement_candidate_pairs = candidate_coverage.get(
+                "supplement_candidate_endpoint_pair_samples", []
+            )
+            if supplement_candidate_pairs:
+                lines.append(
+                    f"First watershed supplement candidate pair: {supplement_candidate_pairs[0]}"
+                )
+            extra_seed_origins = candidate_coverage.get("extra_candidate_seed_origin_samples", [])
+            if extra_seed_origins:
+                top_extra_origin = extra_seed_origins[0]
+                lines.append(
+                    "Top extra seed origin "
+                    f"{int(top_extra_origin.get('seed_origin_index', -1))}: "
+                    f"extra candidate pairs "
+                    f"{int(top_extra_origin.get('extra_candidate_endpoint_pair_count', 0)):,}"
+                    f"  seed candidate pairs "
+                    f"{int(top_extra_origin.get('candidate_endpoint_pair_count', 0)):,}"
+                )
+                extra_seed_pairs = top_extra_origin.get("extra_candidate_endpoint_pair_samples", [])
+                if extra_seed_pairs:
+                    lines.append(f"First extra pair at top seed origin: {extra_seed_pairs[0]}")
         if candidate_audit:
             lines.append(
                 "Candidate audit: "
@@ -248,6 +283,20 @@ def generate_summary(run_dir: Path, output_file: Path):
                         f"x={int(entry.get('fallback_candidate_count', 0)):,} "
                         f"total={int(entry.get('candidate_connection_count', 0)):,}"
                     )
+            pair_source_breakdown = candidate_audit.get("pair_source_breakdown", {})
+            if pair_source_breakdown:
+                lines.append(
+                    "Candidate audit pair provenance frontier-only/watershed-only/fallback-only/multi-source: "
+                    f"{int(pair_source_breakdown.get('frontier_only_pair_count', 0)):,}/"
+                    f"{int(pair_source_breakdown.get('watershed_only_pair_count', 0)):,}/"
+                    f"{int(pair_source_breakdown.get('fallback_only_pair_count', 0)):,}/"
+                    f"{int(pair_source_breakdown.get('multi_source_pair_count', 0)):,}"
+                )
+                watershed_only_pairs = pair_source_breakdown.get(
+                    "watershed_only_endpoint_pair_samples", []
+                )
+                if watershed_only_pairs:
+                    lines.append(f"First watershed-only candidate pair: {watershed_only_pairs[0]}")
             audit_diag = candidate_audit.get("diagnostic_counters", {})
             if audit_diag:
                 lines.append(

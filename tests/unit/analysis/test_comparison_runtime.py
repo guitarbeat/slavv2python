@@ -13,6 +13,7 @@ from slavv.evaluation.comparison import (
     run_standalone_comparison,
 )
 from slavv.evaluation.management import generate_manifest
+from slavv.evaluation.matlab_status import MatlabStatusReport
 from slavv.evaluation.preflight import OutputRootPreflightReport
 from slavv.runtime import RunContext, load_run_snapshot
 
@@ -40,6 +41,53 @@ def _make_preflight_report(
         errors=list(errors or []),
         recommended_action="Proceed." if allows_launch else "Choose a safer local output root.",
     )
+
+
+def _make_matlab_status_report(
+    output_root: Path,
+    *,
+    resume_mode: str = "fresh",
+    batch_folder: Path | None = None,
+    last_completed_stage: str = "",
+    next_stage: str = "energy",
+    rerun_prediction: str | None = None,
+    failure_summary: str = "",
+    stale_running_snapshot_suspected: bool = False,
+    python_force_rerun_from: str | None = None,
+) -> MatlabStatusReport:
+    effective_batch_folder = batch_folder or (output_root / "01_Input" / "matlab_results" / "batch_260323-190000")
+    report = MatlabStatusReport(
+        output_directory=str(output_root / "01_Input" / "matlab_results"),
+        input_file=str(output_root / "input_volume.tif"),
+        matlab_resume_state_file=str(output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"),
+        matlab_resume_state_present=True,
+        matlab_resume_state_status="running:energy" if stale_running_snapshot_suspected else "completed",
+        matlab_resume_state_updated_at="2026-04-01 12:27:34",
+        matlab_log_file=str(output_root / "01_Input" / "matlab_results" / "matlab_run.log"),
+        matlab_log_present=True,
+        matlab_batch_folder=str(effective_batch_folder) if batch_folder is not None else "",
+        matlab_batch_timestamp=effective_batch_folder.name.replace("batch_", "")
+        if batch_folder is not None
+        else "",
+        matlab_batch_complete=resume_mode == "complete-noop",
+        matlab_resume_mode=resume_mode,
+        matlab_last_completed_stage=last_completed_stage,
+        matlab_next_stage=next_stage,
+        matlab_partial_stage_artifacts_present=resume_mode == "restart-current-stage",
+        matlab_partial_stage_name=next_stage if resume_mode == "restart-current-stage" else "",
+        matlab_rerun_prediction=rerun_prediction
+        or f"Rerun will reuse {effective_batch_folder.name} and start at {next_stage}.",
+        stale_running_snapshot_suspected=stale_running_snapshot_suspected,
+        failure_summary=failure_summary,
+        matlab_log_tail=[failure_summary] if failure_summary else [],
+        authoritative_files={
+            "resume_state": str(output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"),
+            "matlab_log": str(output_root / "01_Input" / "matlab_results" / "matlab_run.log"),
+        },
+    )
+    if python_force_rerun_from is not None:
+        report.authoritative_files["python_force_rerun_from"] = python_force_rerun_from
+    return report
 
 
 def test_discover_matlab_artifacts_returns_empty_for_missing_output(tmp_path: Path):
@@ -167,6 +215,29 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
         "evaluate_output_root_preflight",
         lambda _output_root: _make_preflight_report(output_dir),
     )
+    matlab_status_reports = iter(
+        [
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="fresh",
+                batch_folder=None,
+                rerun_prediction="No reusable MATLAB batch found; rerun will create a new batch and start at energy.",
+            ),
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="complete-noop",
+                batch_folder=batch_folder,
+                last_completed_stage="network",
+                next_stage="",
+                rerun_prediction="batch_260323-190000 is already complete; rerun should be a no-op unless inputs change.",
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: next(matlab_status_reports),
+    )
 
     result = orchestrate_comparison(
         str(input_file),
@@ -181,10 +252,12 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert result == 0
     assert snapshot is not None
     assert snapshot.optional_tasks["output_preflight"].status == "completed"
+    assert snapshot.optional_tasks["matlab_status"].status == "completed"
     assert snapshot.optional_tasks["matlab_pipeline"].status == "completed"
     assert snapshot.optional_tasks["python_pipeline"].status == "completed"
     assert snapshot.optional_tasks["comparison_analysis"].status == "completed"
     assert snapshot.optional_tasks["manifest"].status == "completed"
+    assert snapshot.optional_tasks["matlab_status"].artifacts["resume_mode"] == "complete-noop"
     assert (
         snapshot.optional_tasks["matlab_pipeline"]
         .artifacts["params_file"]
@@ -295,6 +368,29 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
         "evaluate_output_root_preflight",
         lambda _output_root: _make_preflight_report(output_dir),
     )
+    matlab_status_reports = iter(
+        [
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="fresh",
+                batch_folder=None,
+                rerun_prediction="No reusable MATLAB batch found; rerun will create a new batch and start at energy.",
+            ),
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="resume-stage",
+                batch_folder=batch_folder,
+                last_completed_stage="vertices",
+                next_stage="edges",
+                rerun_prediction="Rerun will reuse batch_260323-190000 and start at edges.",
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: next(matlab_status_reports),
+    )
 
     result = orchestrate_comparison(
         str(input_file),
@@ -317,6 +413,7 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     assert captured["python_params"]["sigma_per_influence_edges"] == 2.0 / 3.0
     assert snapshot is not None
     assert snapshot.optional_tasks["output_preflight"].status == "completed"
+    assert snapshot.optional_tasks["matlab_status"].artifacts["python_force_rerun_from"] == "edges"
     assert snapshot.optional_tasks["matlab_import"].status == "completed"
 
 
@@ -378,6 +475,100 @@ def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(
     assert snapshot.optional_tasks["manifest"].status == "completed"
     assert preflight_payload["preflight_status"] == "blocked"
     assert preflight_payload["allows_launch"] is False
+
+
+def test_orchestrate_comparison_persists_matlab_failure_summary(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.evaluation.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+
+    def fake_run_matlab_vectorization(
+        _input, _output, _matlab_path, _project_root, params_file=None
+    ):
+        batch_folder.mkdir(parents=True, exist_ok=True)
+        return {
+            "success": False,
+            "batch_folder": str(batch_folder),
+            "elapsed_time": 12.0,
+            "params_file": params_file,
+            "error": "MATLAB exited with code 1",
+            "log_file": str(output_dir / "01_Input" / "matlab_results" / "matlab_run.log"),
+        }
+
+    def fake_generate_summary(_output_dir, summary_file):
+        summary_file.parent.mkdir(parents=True, exist_ok=True)
+        summary_file.write_text("summary", encoding="utf-8")
+
+    def fake_generate_manifest(_output_dir, manifest_file):
+        manifest_file.parent.mkdir(parents=True, exist_ok=True)
+        manifest_file.write_text("# manifest", encoding="utf-8")
+        return "# manifest"
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fake_run_matlab_vectorization
+    )
+    monkeypatch.setattr(comparison_module, "generate_summary", fake_generate_summary)
+    monkeypatch.setattr(comparison_module, "generate_manifest", fake_generate_manifest)
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
+    matlab_status_reports = iter(
+        [
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="fresh",
+                batch_folder=None,
+                rerun_prediction="No reusable MATLAB batch found; rerun will create a new batch and start at energy.",
+            ),
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="restart-current-stage",
+                batch_folder=batch_folder,
+                next_stage="energy",
+                rerun_prediction="Rerun will reuse batch_260323-190000 but restart energy from the stage boundary. Partial energy artifacts were found.",
+                failure_summary="ERROR: MATLAB error Exit Status: 0x00000001",
+                stale_running_snapshot_suspected=True,
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: next(matlab_status_reports),
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+        skip_python=True,
+    )
+
+    snapshot = load_run_snapshot(output_dir)
+    failure_summary_file = output_dir / "99_Metadata" / "matlab_failure_summary.json"
+    matlab_status_file = output_dir / "99_Metadata" / "matlab_status.json"
+    failure_summary = json.loads(failure_summary_file.read_text(encoding="utf-8"))
+
+    assert result == 0
+    assert snapshot is not None
+    assert snapshot.status == "failed"
+    assert snapshot.current_stage == "matlab"
+    assert snapshot.optional_tasks["matlab_status"].status == "failed"
+    assert snapshot.optional_tasks["matlab_pipeline"].status == "failed"
+    assert failure_summary_file.exists()
+    assert matlab_status_file.exists()
+    assert failure_summary["failure_summary"] == "ERROR: MATLAB error Exit Status: 0x00000001"
 
 
 def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkeypatch):

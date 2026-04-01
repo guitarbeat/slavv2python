@@ -62,33 +62,33 @@ Recommended order:
 
 ## Track 2: Comparison Resume Transparency
 
-- [ ] Create `source/slavv/evaluation/matlab_status.py`.
-- [ ] Implement normalized parsing for:
+- [x] Create `source/slavv/evaluation/matlab_status.py`.
+- [x] Implement normalized parsing for:
   - `matlab_resume_state.json`
   - selected `batch_*` folder completeness
   - partial stage artifacts
   - `matlab_run.log` tail
-- [ ] Derive and persist rerun semantics fields such as:
+- [x] Derive and persist rerun semantics fields such as:
   - batch folder being reused
   - resume mode
   - last completed stage
   - next stage
   - partial-artifact detection
   - rerun prediction
-- [ ] Mirror MATLAB-specific state into `99_Metadata/run_snapshot.json`.
-- [ ] Capture failure summaries and log tails on MATLAB failure.
-- [ ] Distinguish:
+- [x] Mirror MATLAB-specific state into `99_Metadata/run_snapshot.json`.
+- [x] Capture failure summaries and log tails on MATLAB failure.
+- [x] Distinguish:
   - fresh run
   - completed batch no-op
   - stage-boundary resume
   - mid-stage restart
   - stale running snapshot
-- [ ] Update `slavv status` to show the MATLAB rerun decision clearly.
-- [ ] Update the run manifest with:
+- [x] Update `slavv status` to show the MATLAB rerun decision clearly.
+- [x] Update the run manifest with:
   - `Resume Semantics`
   - `Authoritative Files`
   - `Failure Summary`
-- [ ] Add tests for:
+- [x] Add tests for:
   - fresh run
   - completed batch no-op
   - stage resume from `vertices` to `edges`
@@ -98,12 +98,12 @@ Recommended order:
 
 ## Track 3: Edge Parity
 
-- [ ] Expand parity diagnostics in:
+- [x] Expand parity diagnostics in:
   - `source/slavv/evaluation/metrics.py`
   - `source/slavv/core/tracing.py`
-- [ ] Record per-origin candidate coverage so missing MATLAB endpoint pairs can
+- [x] Record per-origin candidate coverage so missing MATLAB endpoint pairs can
   be traced back to specific origin vertices.
-- [ ] Measure separately:
+- [x] Measure separately:
   - raw frontier candidates
   - watershed supplement additions
   - cleanup rejections
@@ -157,8 +157,8 @@ Recommended order:
 
 - [x] First slice for operational safety:
   implement output-root preflight plus persisted preflight metadata.
-- [ ] First slice for transparency:
+- [x] First slice for transparency:
   implement normalized MATLAB status parsing plus rerun prediction in the run
   snapshot.
-- [ ] First slice for parity:
+- [x] First slice for parity:
   improve candidate coverage diagnostics before changing tracer behavior.
