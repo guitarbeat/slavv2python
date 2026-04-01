@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from slavv.evaluation.preflight import load_output_preflight
 from slavv.runtime import load_run_snapshot
 from slavv.utils import format_size
 
@@ -252,6 +253,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     """Generate manifest/README for a comparison directory."""
     layout = resolve_run_layout(comparison_dir)
     run_root = layout["run_root"]
+    metadata_dir = layout["metadata_dir"]
 
     if output_file is None:
         output_file = layout["manifest_file"]
@@ -264,6 +266,7 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     report_file = layout["report_file"]
     report = {}
     run_snapshot = load_run_snapshot(run_root)
+    preflight_report = load_output_preflight(metadata_dir)
     if report_file.exists():
         try:
             with open(report_file) as f:
@@ -292,6 +295,41 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         lines.append(f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%")
         lines.append(f"- **Target stage:** {run_snapshot.target_stage}")
         lines.append(f"- **Current stage:** {run_snapshot.current_stage or 'idle'}")
+        lines.append("")
+
+    if preflight_report:
+        lines.append("## Preflight")
+        lines.append("")
+        lines.append(f"- **Status:** {preflight_report.get('preflight_status', 'unknown')}")
+        lines.append(f"- **Allows launch:** {preflight_report.get('allows_launch', False)}")
+        output_root = preflight_report.get("resolved_output_root") or preflight_report.get(
+            "output_root", ""
+        )
+        if output_root:
+            lines.append(f"- **Output root:** `{output_root}`")
+        free_space_gb = preflight_report.get("free_space_gb")
+        required_space_gb = preflight_report.get("required_space_gb")
+        if isinstance(free_space_gb, (int, float)) and isinstance(required_space_gb, (int, float)):
+            lines.append(
+                "- **Free space:** "
+                f"{free_space_gb:.1f} GB available / {required_space_gb:.1f} GB required"
+            )
+        recommended_action = preflight_report.get("recommended_action")
+        if recommended_action:
+            lines.append(f"- **Recommended action:** {recommended_action}")
+        lines.append("- **Artifact:** `99_Metadata/output_preflight.json`")
+        warnings = preflight_report.get("warnings") or []
+        errors = preflight_report.get("errors") or []
+        if warnings:
+            lines.append("")
+            lines.append("### Preflight Warnings")
+            for warning in warnings:
+                lines.append(f"- {warning}")
+        if errors:
+            lines.append("")
+            lines.append("### Preflight Errors")
+            for error in errors:
+                lines.append(f"- {error}")
         lines.append("")
 
     # Comparison Summary

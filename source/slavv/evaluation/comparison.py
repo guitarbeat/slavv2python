@@ -29,6 +29,12 @@ from slavv.visualization import NetworkVisualizer
 
 from .management import generate_manifest, resolve_run_layout
 from .metrics import compare_results
+from .preflight import (
+    OutputRootPreflightReport,
+    evaluate_output_root_preflight,
+    persist_output_preflight,
+    summarize_output_preflight,
+)
 from .reporting import generate_summary
 
 
@@ -59,6 +65,40 @@ def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) ->
     with open(params_path, "w", encoding="utf-8") as handle:
         json.dump(params, handle, indent=2, default=_json_default)
     return params_path
+
+
+def _persist_preflight_report(
+    report: OutputRootPreflightReport,
+    metadata_dir: Path,
+) -> Path | None:
+    """Best-effort persistence for output-root preflight metadata."""
+    try:
+        return persist_output_preflight(report, metadata_dir)
+    except OSError as exc:
+        print(f"Warning: Could not persist output preflight report: {exc}")
+        return None
+
+
+def _record_preflight_task(
+    comparison_context: RunContext,
+    report: OutputRootPreflightReport,
+    report_path: Path | None,
+) -> None:
+    """Mirror the preflight decision into the shared run snapshot."""
+    artifacts = {
+        "output_root": report.resolved_output_root or report.output_root,
+        "preflight_status": report.preflight_status,
+    }
+    if report_path is not None:
+        artifacts["report"] = str(report_path)
+    if report.free_space_gb is not None:
+        artifacts["free_space_gb"] = f"{report.free_space_gb:.2f}"
+    comparison_context.update_optional_task(
+        "output_preflight",
+        status="completed" if report.allows_launch else "failed",
+        detail=summarize_output_preflight(report),
+        artifacts=artifacts,
+    )
 
 
 def load_parameters(params_file: str | None = None) -> dict[str, Any]:
@@ -506,20 +546,70 @@ def orchestrate_comparison(
 ) -> int:
     """Run full comparison workflow."""
     layout = resolve_run_layout(output_dir)
+    run_root = layout["run_root"]
     matlab_output = layout["matlab_dir"]
     python_output = layout["python_dir"]
     analysis_dir = layout["analysis_dir"]
-    metadata_dir = layout["metadata_dir"]
+    metadata_dir = run_root / "99_Metadata"
+    comparison_context: RunContext | None = None
+    params_for_python = copy.deepcopy(params)
+    python_force_rerun_from: str | None = None
+    preflight_report: OutputRootPreflightReport | None = None
+
+    if not skip_matlab:
+        preflight_report = evaluate_output_root_preflight(run_root)
+        preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
+
+        print("\n" + "=" * 60)
+        print("Output Root Preflight")
+        print("=" * 60)
+        print(summarize_output_preflight(preflight_report))
+        for warning in preflight_report.warnings:
+            print(f"WARNING: {warning}")
+        for error in preflight_report.errors:
+            print(f"ERROR: {error}")
+
+        if preflight_report.allows_launch or preflight_report_path is not None:
+            comparison_context = RunContext(
+                run_dir=run_root,
+                target_stage="network",
+                provenance={"source": "comparison", "input_file": input_file},
+            )
+            _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
+
+        if not preflight_report.allows_launch:
+            if comparison_context is not None:
+                comparison_context.mark_run_status(
+                    "failed",
+                    current_stage="preflight",
+                    detail=summarize_output_preflight(preflight_report),
+                )
+                try:
+                    manifest_file = metadata_dir / "run_manifest.md"
+                    generate_manifest(run_root, manifest_file)
+                    print(f"Manifest generated: {manifest_file}")
+                    comparison_context.update_optional_task(
+                        "manifest",
+                        status="completed",
+                        detail="Comparison manifest written",
+                        artifacts={"manifest": str(manifest_file)},
+                    )
+                except Exception as e:
+                    print(f"Note: Could not auto-generate manifest: {e}")
+            print(f"Recommended action: {preflight_report.recommended_action}")
+            return 1
+
     analysis_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
     normalized_params_file = _write_normalized_params_file(metadata_dir, params)
-    comparison_context = RunContext(
-        run_dir=output_dir,
-        target_stage="network",
-        provenance={"source": "comparison", "input_file": input_file},
-    )
-    params_for_python = copy.deepcopy(params)
-    python_force_rerun_from: str | None = None
+    if comparison_context is None:
+        comparison_context = RunContext(
+            run_dir=run_root,
+            target_stage="network",
+            provenance={"source": "comparison", "input_file": input_file},
+        )
+        if preflight_report is not None:
+            _record_preflight_task(comparison_context, preflight_report, metadata_dir / "output_preflight.json")
 
     # Run MATLAB
     matlab_results = None
@@ -609,7 +699,7 @@ def orchestrate_comparison(
             input_file,
             str(python_output),
             params_for_python,
-            run_dir=str(output_dir),
+            run_dir=str(run_root),
             force_rerun_from=python_force_rerun_from,
         )
         comparison_context.update_optional_task(
@@ -672,14 +762,14 @@ def orchestrate_comparison(
     # Generate summary.txt automatically
     try:
         summary_file = analysis_dir / "summary.txt"
-        generate_summary(output_dir, summary_file)
+        generate_summary(run_root, summary_file)
     except Exception as e:
         print(f"Note: Could not auto-generate summary: {e}")
 
     # Generate manifest automatically
     try:
         manifest_file = metadata_dir / "run_manifest.md"
-        generate_manifest(output_dir, manifest_file)
+        generate_manifest(run_root, manifest_file)
         print(f"Manifest generated: {manifest_file}")
         comparison_context.update_optional_task(
             "manifest",

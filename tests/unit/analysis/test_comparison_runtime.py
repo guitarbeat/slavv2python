@@ -13,7 +13,33 @@ from slavv.evaluation.comparison import (
     run_standalone_comparison,
 )
 from slavv.evaluation.management import generate_manifest
+from slavv.evaluation.preflight import OutputRootPreflightReport
 from slavv.runtime import RunContext, load_run_snapshot
+
+
+def _make_preflight_report(
+    output_root: Path,
+    *,
+    preflight_status: str = "passed",
+    allows_launch: bool = True,
+    warnings: list[str] | None = None,
+    errors: list[str] | None = None,
+) -> OutputRootPreflightReport:
+    return OutputRootPreflightReport(
+        output_root=str(output_root),
+        resolved_output_root=str(output_root.resolve()),
+        preflight_status=preflight_status,
+        allows_launch=allows_launch,
+        writable=allows_launch,
+        output_root_exists=True,
+        output_root_created=False,
+        free_space_gb=24.0,
+        required_space_gb=5.0,
+        onedrive_suspected=bool(warnings),
+        warnings=list(warnings or []),
+        errors=list(errors or []),
+        recommended_action="Proceed." if allows_launch else "Choose a safer local output root.",
+    )
 
 
 def test_discover_matlab_artifacts_returns_empty_for_missing_output(tmp_path: Path):
@@ -136,6 +162,11 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
     monkeypatch.setattr(comparison_module, "generate_summary", fake_generate_summary)
     monkeypatch.setattr(comparison_module, "generate_manifest", fake_generate_manifest)
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
 
     result = orchestrate_comparison(
         str(input_file),
@@ -149,6 +180,7 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
 
     assert result == 0
     assert snapshot is not None
+    assert snapshot.optional_tasks["output_preflight"].status == "completed"
     assert snapshot.optional_tasks["matlab_pipeline"].status == "completed"
     assert snapshot.optional_tasks["python_pipeline"].status == "completed"
     assert snapshot.optional_tasks["comparison_analysis"].status == "completed"
@@ -161,6 +193,7 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert Path(
         snapshot.optional_tasks["comparison_analysis"].artifacts["comparison_report"]
     ).exists()
+    assert (output_dir / "99_Metadata" / "output_preflight.json").exists()
 
 
 def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
@@ -257,6 +290,11 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
     monkeypatch.setattr(comparison_module, "generate_summary", fake_generate_summary)
     monkeypatch.setattr(comparison_module, "generate_manifest", fake_generate_manifest)
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
 
     result = orchestrate_comparison(
         str(input_file),
@@ -278,7 +316,68 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     assert captured["python_params"]["sigma_per_influence_vertices"] == 2.0
     assert captured["python_params"]["sigma_per_influence_edges"] == 2.0 / 3.0
     assert snapshot is not None
+    assert snapshot.optional_tasks["output_preflight"].status == "completed"
     assert snapshot.optional_tasks["matlab_import"].status == "completed"
+
+
+def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.evaluation.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    matlab_called = {"value": False}
+
+    def fake_run_matlab_vectorization(*_args, **_kwargs):
+        matlab_called["value"] = True
+        return {"success": True}
+
+    def fake_generate_manifest(_output_dir, manifest_file):
+        manifest_file.parent.mkdir(parents=True, exist_ok=True)
+        manifest_file.write_text("# manifest", encoding="utf-8")
+        return "# manifest"
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fake_run_matlab_vectorization
+    )
+    monkeypatch.setattr(comparison_module, "generate_manifest", fake_generate_manifest)
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(
+            output_dir,
+            preflight_status="blocked",
+            allows_launch=False,
+            errors=["Low disk space: 1.5 GB available (required minimum: 5.0 GB)"],
+        ),
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+    )
+
+    snapshot = load_run_snapshot(output_dir)
+    preflight_payload = json.loads(
+        (output_dir / "99_Metadata" / "output_preflight.json").read_text(encoding="utf-8")
+    )
+
+    assert result == 1
+    assert matlab_called["value"] is False
+    assert snapshot is not None
+    assert snapshot.status == "failed"
+    assert snapshot.current_stage == "preflight"
+    assert snapshot.optional_tasks["output_preflight"].status == "failed"
+    assert snapshot.optional_tasks["manifest"].status == "completed"
+    assert preflight_payload["preflight_status"] == "blocked"
+    assert preflight_payload["allows_launch"] is False
 
 
 def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkeypatch):

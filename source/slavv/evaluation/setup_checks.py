@@ -5,9 +5,10 @@ Validation utilities for SLAVV comparison setup.
 from __future__ import annotations
 
 import contextlib
-import shutil
 import subprocess
 from pathlib import Path
+
+from .preflight import measure_free_space_gb
 
 # Add project root to path if needed for imports
 # (Assuming this module is importable as slavv.dev.validation)
@@ -182,9 +183,7 @@ class Validator:
 
     def check_disk_space(self, output_dir: Path, required_gb: float = 5.0) -> bool:
         try:
-            target = output_dir if output_dir.exists() else output_dir.parent
-            stat = shutil.disk_usage(target)
-            free_gb = stat.free / (1024**3)
+            free_gb = measure_free_space_gb(output_dir)
 
             if free_gb < required_gb:
                 self.add_warning(

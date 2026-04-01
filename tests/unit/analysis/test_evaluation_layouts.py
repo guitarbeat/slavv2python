@@ -326,3 +326,36 @@ def test_generate_manifest_uses_report_elapsed_times(tmp_path: Path):
     assert "- **MATLAB:** 12.5s" in content
     assert "- **Python:** 3.2s" in content
     assert "- **Speedup:** 3.85x (Python faster)" in content
+
+
+def test_generate_manifest_includes_output_preflight_summary(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "output_preflight.json").write_text(
+        json.dumps(
+            {
+                "output_root": str(run_dir),
+                "resolved_output_root": str(run_dir),
+                "preflight_status": "warning",
+                "allows_launch": True,
+                "free_space_gb": 24.0,
+                "required_space_gb": 5.0,
+                "warnings": [
+                    "Output root appears to be under OneDrive sync; a local non-synced drive is safer for MATLAB outputs."
+                ],
+                "errors": [],
+                "recommended_action": "Proceed with caution.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
+
+    assert "## Preflight" in content
+    assert "- **Status:** warning" in content
+    assert "- **Artifact:** `99_Metadata/output_preflight.json`" in content
+    assert "OneDrive sync" in content
