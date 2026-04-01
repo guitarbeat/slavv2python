@@ -1,0 +1,102 @@
+{
+  "artifacts": {},
+  "created_at": "2026-04-01T17:26:40Z",
+  "current_stage": "",
+  "elapsed_seconds": 0.00598597526550293,
+  "errors": [],
+  "eta_seconds": null,
+  "input_fingerprint": "",
+  "last_event": "Running MATLAB wrapper",
+  "optional_tasks": {
+    "matlab_pipeline": {
+      "artifacts": {
+        "params_file": "comparison_results_test_run\\99_Metadata\\comparison_params.normalized.json"
+      },
+      "completed_at": null,
+      "detail": "Running MATLAB wrapper",
+      "elapsed_seconds": 0.0,
+      "name": "matlab_pipeline",
+      "progress": 0.0,
+      "started_at": "2026-04-01T17:26:40Z",
+      "status": "running",
+      "updated_at": "2026-04-01T17:26:40Z"
+    }
+  },
+  "overall_progress": 0.0,
+  "params_fingerprint": "",
+  "provenance": {
+    "input_file": "data/slavv_test_volume.tif",
+    "layout": "structured",
+    "source": "comparison"
+  },
+  "run_id": "13993d80ec57",
+  "stages": {
+    "edges": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "edges",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "energy": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "energy",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "network": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "network",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "vertices": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "vertices",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    }
+  },
+  "status": "pending",
+  "target_stage": "network",
+  "updated_at": "2026-04-01T17:26:40Z"
+}
