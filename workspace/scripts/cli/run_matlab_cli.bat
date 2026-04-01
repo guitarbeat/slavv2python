@@ -62,6 +62,9 @@ if defined PARAMS_FILE (
     for %%P in ("%PARAMS_FILE%") do set PARAMS_FILE_ABS=%%~fP
 )
 
+set "ONEDRIVE_WARNING="
+echo %OUTPUT_DIR_ABS% | findstr /I /C:"OneDrive" >nul && set "ONEDRIVE_WARNING=WARNING: Output directory appears to be under OneDrive sync; prefer a local non-synced drive for MATLAB outputs."
+
 REM Get script directory (where this batch file is located)
 set SCRIPT_DIR=%~dp0
 set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
@@ -72,20 +75,39 @@ for %%P in ("%SCRIPT_DIR%\..\..\..") do set PROJECT_ROOT=%%~fP
 REM Change to Vectorization-Public directory for MATLAB
 set VECTORIZATION_DIR=%PROJECT_ROOT%\external\Vectorization-Public
 
-REM Ensure output directory exists before creating log file
+REM Thin shell-level safety checks. Keep policy in Python preflight.
 if not exist "%OUTPUT_DIR_ABS%" (
-    mkdir "%OUTPUT_DIR_ABS%"
+    mkdir "%OUTPUT_DIR_ABS%" 2>nul
+    if errorlevel 1 (
+        echo ERROR: Could not create output directory: %OUTPUT_DIR_ABS%
+        exit /b 1
+    )
+)
+if not exist "%OUTPUT_DIR_ABS%" (
+    echo ERROR: Output directory is not accessible: %OUTPUT_DIR_ABS%
+    exit /b 1
 )
 
 set LOG_FILE=%OUTPUT_DIR_ABS%\matlab_run.log
-echo MATLAB CLI Run Log > "%LOG_FILE%"
-echo =================== >> "%LOG_FILE%"
-echo Input file: %INPUT_FILE_ABS% >> "%LOG_FILE%"
-echo Output directory: %OUTPUT_DIR_ABS% >> "%LOG_FILE%"
-echo MATLAB path: %MATLAB_PATH% >> "%LOG_FILE%"
-if defined PARAMS_FILE_ABS echo Parameters file: %PARAMS_FILE_ABS% >> "%LOG_FILE%"
-echo Start time: %DATE% %TIME% >> "%LOG_FILE%"
-echo. >> "%LOG_FILE%"
+> "%LOG_FILE%" (
+    echo MATLAB CLI Run Log
+    echo ===================
+    echo Input file: %INPUT_FILE_ABS%
+    echo Output directory: %OUTPUT_DIR_ABS%
+    echo MATLAB path: %MATLAB_PATH%
+    if defined PARAMS_FILE_ABS echo Parameters file: %PARAMS_FILE_ABS%
+    echo Start time: %DATE% %TIME%
+    echo.
+)
+if not exist "%LOG_FILE%" (
+    echo ERROR: Could not create log file in output directory: %LOG_FILE%
+    exit /b 1
+)
+if defined ONEDRIVE_WARNING (
+    echo !ONEDRIVE_WARNING!
+    >> "%LOG_FILE%" echo !ONEDRIVE_WARNING!
+    >> "%LOG_FILE%" echo.
+)
 
 REM Build MATLAB command
 REM Note: R2019a+ uses -batch flag, older versions may need -r
@@ -100,6 +122,8 @@ if defined PARAMS_FILE_ABS set MATLAB_SCRIPT=cd('%VECTORIZATION_DIR:\=/%'); addp
 echo Running MATLAB vectorization...
 echo Command: "%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%"
 echo.
+>> "%LOG_FILE%" echo Command: "%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%"
+>> "%LOG_FILE%" echo.
 
 REM Run MATLAB and wait for the worker process so callers can time out or retry cleanly.
 "%MATLAB_PATH%" -wait -batch "%MATLAB_SCRIPT%" >> "%LOG_FILE%" 2>&1

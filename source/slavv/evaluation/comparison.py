@@ -23,8 +23,8 @@ from slavv.core import SLAVVProcessor
 from slavv.io import export_pipeline_results, load_tiff_volume
 from slavv.io.matlab_bridge import import_matlab_batch, load_matlab_batch_params
 from slavv.io.matlab_parser import load_matlab_batch_results
-from slavv.runtime import RunContext
-from slavv.utils import get_matlab_info, get_system_info
+from slavv.runtime import ProgressEvent, RunContext
+from slavv.utils import format_time, get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
 from .management import generate_manifest, resolve_run_layout
@@ -223,7 +223,7 @@ def discover_matlab_artifacts(output_dir: str | Path) -> dict[str, Any]:
 
 
 def _run_command_with_timeout(
-    cmd: list[str], cwd: Path, timeout_seconds: int
+    cmd: list[str] | str, cwd: Path, timeout_seconds: int, *, shell: bool = False
 ) -> tuple[int, str, str, bool]:
     """Run a command and tear down the full process tree on timeout."""
     process = subprocess.Popen(
@@ -232,6 +232,7 @@ def _run_command_with_timeout(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        shell=shell,
     )
 
     try:
@@ -251,6 +252,29 @@ def _run_command_with_timeout(
         stdout, stderr = process.communicate()
         returncode = process.returncode if process.returncode is not None else -9
         return returncode, stdout, stderr, True
+
+
+def _format_progress_event_message(event: ProgressEvent) -> str:
+    """Render progress events into concise, human-readable console output."""
+    stage_snapshot = event.snapshot.stages.get(event.stage)
+    stage_label = event.stage.replace("_", " ").title()
+    detail = (event.detail or "").strip()
+    pieces = [f"{stage_label} {event.stage_progress * 100:.1f}%"]
+
+    if detail:
+        pieces.append(detail)
+
+    if stage_snapshot is not None and stage_snapshot.units_total > 0:
+        pieces.append(
+            f"{stage_snapshot.units_completed:,}/{stage_snapshot.units_total:,} work units"
+        )
+        if stage_snapshot.eta_seconds is not None:
+            pieces.append(f"ETA {format_time(stage_snapshot.eta_seconds)}")
+
+    if event.resumed:
+        pieces.append("resumed")
+
+    return " | ".join(pieces)
 
 
 def run_matlab_vectorization(
@@ -307,15 +331,24 @@ def run_matlab_vectorization(
             print(f"Warning: Could not set executable permission on {batch_script}: {e}")
 
     # Build command list
-    cmd = [batch_script, input_file, output_dir, matlab_path]
-    if params_file is not None:
-        cmd.append(params_file)
+    if os.name == "nt" and batch_script.lower().endswith((".bat", ".cmd")):
+        script_args = [batch_script, input_file, output_dir, matlab_path]
+        if params_file is not None:
+            script_args.append(params_file)
+        cmd: list[str] | str = subprocess.list2cmdline(script_args)
+        use_shell = True
+    else:
+        cmd = [batch_script, input_file, output_dir, matlab_path]
+        if params_file is not None:
+            cmd.append(params_file)
+        use_shell = False
     log_file = os.path.join(output_dir, "matlab_run.log")
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"Command: {' '.join(cmd)}")
+    rendered_command = cmd if isinstance(cmd, str) else " ".join(cmd)
+    print(f"Command: {rendered_command}")
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
     if params_file is not None:
@@ -330,7 +363,7 @@ def run_matlab_vectorization(
     timeout_seconds = 3600
 
     returncode, stdout, stderr, timed_out = _run_command_with_timeout(
-        cmd, project_root, timeout_seconds
+        cmd, project_root, timeout_seconds, shell=use_shell
     )
     elapsed_time = time.time() - start_time
     artifacts = discover_matlab_artifacts(output_dir)
@@ -444,15 +477,16 @@ def run_python_vectorization(
         msg = stage_descriptions.get(stage, f"completed {stage}")
         print(f"  Progress: {frac * 100:.1f}% - {msg}")
 
-    last_detail = ""
+    last_message = ""
 
     def event_callback(event):
-        nonlocal last_detail
+        nonlocal last_message
         # Use carriage return \r to avoid spamming the console with millions of lines,
-        # overwriting the current "      -> Energy chunk..." line instead
-        if event.detail and event.detail != last_detail:
-            print(f"      -> {event.detail:<60}", end="\r", flush=True)
-            last_detail = event.detail
+        # overwriting the current progress line instead of flooding the console.
+        message = _format_progress_event_message(event)
+        if message and message != last_message:
+            print(f"      -> {message:<120}", end="\r", flush=True)
+            last_message = message
 
     try:
         results = processor.process_image(
@@ -682,11 +716,15 @@ def orchestrate_comparison(
             provenance={"source": "comparison", "input_file": input_file},
         )
         if preflight_report is not None:
-            _record_preflight_task(comparison_context, preflight_report, metadata_dir / "output_preflight.json")
+            _record_preflight_task(
+                comparison_context, preflight_report, metadata_dir / "output_preflight.json"
+            )
 
     if not skip_matlab:
         matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
-        matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
+        matlab_status_report_path = _persist_matlab_status_report(
+            matlab_status_report, metadata_dir
+        )
         _record_matlab_status_task(
             comparison_context,
             matlab_status_report,
@@ -715,7 +753,9 @@ def orchestrate_comparison(
             params_file=str(normalized_params_file),
         )
         matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
-        matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
+        matlab_status_report_path = _persist_matlab_status_report(
+            matlab_status_report, metadata_dir
+        )
         failure_summary_path = _persist_matlab_failure_report(matlab_status_report, metadata_dir)
         _record_matlab_status_task(
             comparison_context,

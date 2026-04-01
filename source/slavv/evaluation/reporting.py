@@ -300,8 +300,10 @@ def generate_summary(run_dir: Path, output_file: Path):
             audit_diag = candidate_audit.get("diagnostic_counters", {})
             if audit_diag:
                 lines.append(
-                    "Audit rejections reachability/energy/cap/short/accepted: "
+                    "Audit rejections reachability/mutual/endpoint-degree/energy/cap/short/accepted: "
                     f"{int(audit_diag.get('watershed_reachability_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_mutual_frontier_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_endpoint_degree_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_energy_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_cap_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_short_trace_rejected', 0)):,}/"

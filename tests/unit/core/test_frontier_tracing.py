@@ -72,6 +72,45 @@ class TestFrontierOrdering:
         for t1, t2 in zip(result_1["traces"], result_2["traces"]):
             assert np.array_equal(t1, t2)
 
+    def test_source_fanout_is_clamped_to_matlab_edge_number_tolerance(self):
+        """A source vertex should emit at most MATLAB's default two frontier seeds."""
+        energy = np.full((9, 9, 9), 1.0, dtype=np.float32)
+        for x in range(1, 8):
+            energy[4, x, 4] = -5.0
+        for y in range(1, 8):
+            energy[y, 4, 4] = -5.0
+
+        vertex_positions = np.array(
+            [
+                [4.0, 4.0, 4.0],
+                [4.0, 1.0, 4.0],
+                [4.0, 7.0, 4.0],
+                [1.0, 4.0, 4.0],
+                [7.0, 4.0, 4.0],
+            ],
+            dtype=np.float32,
+        )
+        vertex_scales = np.zeros(len(vertex_positions), dtype=np.int16)
+        center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+        payload = _trace_origin_edges_matlab_frontier(
+            energy,
+            np.zeros_like(energy, dtype=np.int16),
+            vertex_positions,
+            vertex_scales,
+            np.array([1.0], dtype=np.float32),
+            np.ones(3, dtype=np.float32),
+            center_image,
+            0,
+            {
+                "number_of_edges_per_vertex": 4,
+                "space_strel_apothem": 1,
+                "max_edge_length_per_origin_radius": 20.0,
+            },
+        )
+
+        assert payload["connections"] == [[0, 1], [0, 3]]
+
 
 @pytest.mark.unit
 class TestParentChildResolution:

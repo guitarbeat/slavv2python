@@ -968,7 +968,10 @@ def calculate_energy_field_resumable(
             stage_controller.update(
                 units_total=total_units,
                 units_completed=len(completed_units),
-                detail=f"Energy chunk {chunk_idx + 1}/{len(lattice)}, scale {scale_idx + 1}/{n_scales}",
+                detail=(
+                    f"Energy volume tile {chunk_idx + 1}/{len(lattice)}, "
+                    f"vessel scale {scale_idx + 1}/{n_scales}"
+                ),
                 substage="scale_chunks",
                 resumed=resumed,
             )

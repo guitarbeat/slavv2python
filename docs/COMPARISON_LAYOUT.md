@@ -24,6 +24,20 @@ run root, keep the following staged folders:
 | `03_Analysis/` | Comparison summaries, `comparison_report.json`, rendered tables, and other human-facing analysis |
 | `99_Metadata/` | Run manifests, resume state, status snapshots, and other orchestration metadata |
 
+## Recommended Output Root
+
+For live MATLAB-enabled comparisons, prefer a local non-synced drive with
+comfortable free space. Good examples are:
+
+- Windows: `D:\slavv_comparisons\20260401_parity`
+- POSIX: `/tmp/slavv_comparisons/20260401_parity`
+
+Avoid placing fresh MATLAB outputs under OneDrive-synced folders, network
+mounts, or repo-local scratch paths unless you are intentionally debugging a
+failure mode. The comparison preflight now records that decision in
+`99_Metadata/output_preflight.json`, but the safest default is still an
+explicit local output root outside the repository.
+
 ## Typical Contents
 
 ### `01_Input/`
@@ -50,9 +64,26 @@ run root, keep the following staged folders:
 
 ### `99_Metadata/`
 
-- run manifest
-- status snapshots
-- resume guards and other orchestration metadata
+- `comparison_params.normalized.json`
+- `run_snapshot.json`
+- `output_preflight.json`
+- `matlab_status.json`
+- `matlab_failure_summary.json` when MATLAB fails
+- `run_manifest.md`
+
+## Metadata Contract
+
+The staged comparison workflow now treats `99_Metadata/` as the shared
+human-facing ledger for orchestration decisions:
+
+| Artifact | Purpose |
+| --- | --- |
+| `comparison_params.normalized.json` | Normalized parameter payload passed to both MATLAB and Python so reruns can inspect the exact effective settings |
+| `run_snapshot.json` | Shared run-state ledger with overall status, current stage, and optional-task artifacts such as `output_preflight` and `matlab_status` |
+| `output_preflight.json` | Authoritative preflight decision for the selected output root, including warnings, fatal errors, free-space estimates, and recommended action |
+| `matlab_status.json` | Normalized MATLAB rerun semantics such as selected `batch_*` folder, resume mode, next stage, partial-artifact detection, and predicted rerun behavior |
+| `matlab_failure_summary.json` | Concise failure summary and log-tail evidence persisted when MATLAB exits unsuccessfully |
+| `run_manifest.md` | Human-readable run summary that links the preflight decision, resume semantics, authoritative files, and comparison outputs |
 
 ## Workflow Notes
 
@@ -77,8 +108,9 @@ run root, keep the following staged folders:
 
 ## Current Parity Context
 
-As of March 30, 2026, the staged comparison surface is being used to validate
-Phase 2 edge parity work. Exact vertex parity is in place, and the parity-only
-edge-cleanup plus strand-construction path has been tightened to follow MATLAB
-ordering and watershed generation limits strictly. Final exact edge/strand 
-confirmation still comes from a live MATLAB-enabled comparison run.
+As of April 1, 2026, the staged comparison surface is also the expected place to
+inspect output-root preflight decisions and MATLAB rerun semantics. Exact
+vertex parity is in place, and the parity-only edge path now records richer
+candidate provenance and frontier diagnostics. Final exact edge/strand
+confirmation still comes from a fresh live MATLAB-enabled comparison run on a
+healthy local output root.

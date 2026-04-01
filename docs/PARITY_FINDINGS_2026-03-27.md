@@ -3,6 +3,15 @@
 This note captures what the fresh March 27, 2026 MATLAB/Python reruns taught us
 so the next parity phase can start from verified facts instead of chat history.
 
+Follow-up as of April 1, 2026:
+
+- Fresh comparison runs now persist output-root preflight decisions to
+  `99_Metadata/output_preflight.json`.
+- MATLAB rerun semantics and failure summaries now persist to
+  `99_Metadata/matlab_status.json` and `99_Metadata/matlab_failure_summary.json`.
+- For current staged layout and recommended local output-root guidance, start
+  with [COMPARISON_LAYOUT.md](COMPARISON_LAYOUT.md).
+
 ## Fresh Baselines
 
 ### Canonical parity rerun

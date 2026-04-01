@@ -3,19 +3,23 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import joblib
+import pytest
 
 from slavv.evaluation.comparison import (
+    _format_progress_event_message,
     discover_matlab_artifacts,
     orchestrate_comparison,
+    run_matlab_vectorization,
     run_standalone_comparison,
 )
 from slavv.evaluation.management import generate_manifest
 from slavv.evaluation.matlab_status import MatlabStatusReport
 from slavv.evaluation.preflight import OutputRootPreflightReport
-from slavv.runtime import RunContext, load_run_snapshot
+from slavv.runtime import ProgressEvent, RunContext, RunSnapshot, StageSnapshot, load_run_snapshot
 
 
 def _make_preflight_report(
@@ -55,13 +59,19 @@ def _make_matlab_status_report(
     stale_running_snapshot_suspected: bool = False,
     python_force_rerun_from: str | None = None,
 ) -> MatlabStatusReport:
-    effective_batch_folder = batch_folder or (output_root / "01_Input" / "matlab_results" / "batch_260323-190000")
+    effective_batch_folder = batch_folder or (
+        output_root / "01_Input" / "matlab_results" / "batch_260323-190000"
+    )
     report = MatlabStatusReport(
         output_directory=str(output_root / "01_Input" / "matlab_results"),
         input_file=str(output_root / "input_volume.tif"),
-        matlab_resume_state_file=str(output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"),
+        matlab_resume_state_file=str(
+            output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"
+        ),
         matlab_resume_state_present=True,
-        matlab_resume_state_status="running:energy" if stale_running_snapshot_suspected else "completed",
+        matlab_resume_state_status="running:energy"
+        if stale_running_snapshot_suspected
+        else "completed",
         matlab_resume_state_updated_at="2026-04-01 12:27:34",
         matlab_log_file=str(output_root / "01_Input" / "matlab_results" / "matlab_run.log"),
         matlab_log_present=True,
@@ -81,7 +91,9 @@ def _make_matlab_status_report(
         failure_summary=failure_summary,
         matlab_log_tail=[failure_summary] if failure_summary else [],
         authoritative_files={
-            "resume_state": str(output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"),
+            "resume_state": str(
+                output_root / "01_Input" / "matlab_results" / "matlab_resume_state.json"
+            ),
             "matlab_log": str(output_root / "01_Input" / "matlab_results" / "matlab_run.log"),
         },
     )
@@ -121,6 +133,81 @@ def test_discover_matlab_artifacts_handles_partial_batch_without_network(tmp_pat
     assert artifacts["batch_folder"] == str(batch_folder)
     assert artifacts["vectors_dir"] == str(vectors_dir)
     assert "network_mat" not in artifacts
+
+
+def test_format_progress_event_message_explains_energy_stage_units():
+    snapshot = RunSnapshot(
+        run_id="run-1",
+        overall_progress=0.14,
+        stages={
+            "energy": StageSnapshot(
+                name="energy",
+                status="running",
+                progress=0.2654,
+                detail="Energy volume tile 136/512, vessel scale 23/26",
+                substage="scale_chunks",
+                units_completed=3533,
+                units_total=13312,
+                eta_seconds=2596.0,
+            )
+        },
+    )
+    event = ProgressEvent(
+        stage="energy",
+        status="running",
+        overall_progress=snapshot.overall_progress,
+        stage_progress=snapshot.stages["energy"].progress,
+        detail=snapshot.stages["energy"].detail,
+        resumed=False,
+        snapshot=snapshot,
+    )
+
+    message = _format_progress_event_message(event)
+
+    assert "Energy 26.5%" in message
+    assert "Energy volume tile 136/512, vessel scale 23/26" in message
+    assert "3,533/13,312 work units" in message
+    assert "ETA" in message
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows batch launcher only runs on Windows")
+def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path, monkeypatch):
+    import slavv.evaluation.comparison as comparison_module
+
+    repo_root = Path(__file__).resolve().parents[3]
+    input_file = tmp_path / "input.tif"
+    input_file.write_bytes(b"fake")
+    output_dir = tmp_path / "matlab_results"
+    params_file = tmp_path / "comparison params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    mock_matlab = tmp_path / "mock_matlab.bat"
+    mock_matlab.write_text(
+        '@echo off\necho "MOCK MATLAB CALLED WITH: %*"\nexit /b 0',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(comparison_module, "get_system_info", lambda: {"platform": "test"})
+    monkeypatch.setattr(
+        comparison_module,
+        "get_matlab_info",
+        lambda _path: {"version": "mock", "available": True},
+    )
+
+    result = run_matlab_vectorization(
+        str(input_file),
+        str(output_dir),
+        str(mock_matlab),
+        repo_root,
+        batch_script=str(repo_root / "workspace" / "scripts" / "cli" / "run_matlab_cli.bat"),
+        params_file=str(params_file),
+    )
+
+    log_file = output_dir / "matlab_run.log"
+    assert result["success"] is True
+    assert log_file.exists()
+    content = log_file.read_text(encoding="utf-8")
+    assert "MOCK MATLAB CALLED WITH:" in content
+    assert "-wait -batch" in content
 
 
 def test_generate_manifest_includes_run_status(tmp_path: Path):
@@ -417,9 +504,7 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     assert snapshot.optional_tasks["matlab_import"].status == "completed"
 
 
-def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(
-    tmp_path: Path, monkeypatch
-):
+def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(tmp_path: Path, monkeypatch):
     import slavv.evaluation.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
@@ -477,9 +562,7 @@ def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(
     assert preflight_payload["allows_launch"] is False
 
 
-def test_orchestrate_comparison_persists_matlab_failure_summary(
-    tmp_path: Path, monkeypatch
-):
+def test_orchestrate_comparison_persists_matlab_failure_summary(tmp_path: Path, monkeypatch):
     import slavv.evaluation.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"

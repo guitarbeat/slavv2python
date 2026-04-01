@@ -52,6 +52,7 @@ class TestWatershedSupplementDiagnostics:
         assert "watershed_total_pairs" in diag
         assert "watershed_already_existing" in diag
         assert "watershed_energy_rejected" in diag
+        assert "watershed_endpoint_degree_rejected" in diag
         assert "watershed_accepted" in diag
         assert diag["watershed_accepted"] == 0
 
@@ -216,6 +217,7 @@ class TestCoverageReportSplitBySource:
                 "watershed_join_supplement_count": 0,
                 "watershed_total_pairs": 5,
                 "watershed_already_existing": 3,
+                "watershed_endpoint_degree_rejected": 1,
                 "watershed_energy_rejected": 2,
                 "watershed_accepted": 0,
                 "frontier_origins_with_candidates": 1,
@@ -228,4 +230,5 @@ class TestCoverageReportSplitBySource:
         assert "frontier_candidate_endpoint_pair_count" in coverage
         assert "supplement_candidate_endpoint_pair_count" in coverage
         assert "watershed_total_pairs" in coverage
+        assert "watershed_endpoint_degree_rejected" in coverage
         assert "frontier_origins_with_candidates" in coverage

@@ -53,10 +53,9 @@ if [ -n "$PARAMS_FILE" ] && [ ! -f "$PARAMS_FILE" ]; then
 fi
 
 # Get absolute paths
-INPUT_FILE_ABS=$(readlink -f "$INPUT_FILE")
-OUTPUT_DIR_ABS=$(readlink -f "$OUTPUT_DIR") || OUTPUT_DIR_ABS="$OUTPUT_DIR"
+INPUT_FILE_ABS="$(cd "$(dirname "$INPUT_FILE")" && pwd)/$(basename "$INPUT_FILE")"
 if [ -n "$PARAMS_FILE" ]; then
-    PARAMS_FILE_ABS=$(readlink -f "$PARAMS_FILE")
+    PARAMS_FILE_ABS="$(cd "$(dirname "$PARAMS_FILE")" && pwd)/$(basename "$PARAMS_FILE")"
 fi
 
 # Get script directory
@@ -66,13 +65,20 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 VECTORIZATION_DIR="$PROJECT_ROOT/external/Vectorization-Public"
 
-# Ensure output directory exists
-mkdir -p "$OUTPUT_DIR_ABS"
-# Re-resolve absolute path now that it exists
-OUTPUT_DIR_ABS=$(readlink -f "$OUTPUT_DIR_ABS")
+# Thin shell-level safety checks. Keep policy in Python preflight.
+if ! mkdir -p "$OUTPUT_DIR"; then
+    echo "ERROR: Could not create output directory: $OUTPUT_DIR"
+    exit 1
+fi
+OUTPUT_DIR_ABS="$(cd "$OUTPUT_DIR" && pwd)"
+
+ONEDRIVE_WARNING=""
+if printf '%s' "$OUTPUT_DIR_ABS" | grep -qi "onedrive"; then
+    ONEDRIVE_WARNING="WARNING: Output directory appears to be under OneDrive sync; prefer a local non-synced drive for MATLAB outputs."
+fi
 
 LOG_FILE="$OUTPUT_DIR_ABS/matlab_run.log"
-{
+if ! {
     echo "MATLAB CLI Run Log"
     echo "==================="
     echo "Input file: $INPUT_FILE_ABS"
@@ -83,7 +89,16 @@ LOG_FILE="$OUTPUT_DIR_ABS/matlab_run.log"
     fi
     echo "Start time: $(date)"
     echo ""
-} > "$LOG_FILE"
+} > "$LOG_FILE"; then
+    echo "ERROR: Could not create log file in output directory: $LOG_FILE"
+    exit 1
+fi
+
+if [ -n "$ONEDRIVE_WARNING" ]; then
+    echo "$ONEDRIVE_WARNING"
+    echo "$ONEDRIVE_WARNING" >> "$LOG_FILE"
+    echo "" >> "$LOG_FILE"
+fi
 
 # Prepare MATLAB command
 # Escape single quotes in paths for MATLAB string literals
@@ -101,6 +116,8 @@ fi
 
 echo "Running MATLAB vectorization..."
 echo "Command: $MATLAB_PATH -batch \"$MATLAB_SCRIPT\""
+echo "Command: $MATLAB_PATH -batch \"$MATLAB_SCRIPT\"" >> "$LOG_FILE"
+echo "" >> "$LOG_FILE"
 
 # Run MATLAB
 "$MATLAB_PATH" -batch "$MATLAB_SCRIPT" >> "$LOG_FILE" 2>&1

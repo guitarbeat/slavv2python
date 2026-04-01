@@ -223,9 +223,11 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     ],
                     "diagnostic_counters": {
                         "watershed_reachability_rejected": 1,
-                        "watershed_energy_rejected": 2,
-                        "watershed_cap_rejected": 3,
-                        "watershed_short_trace_rejected": 4,
+                        "watershed_mutual_frontier_rejected": 2,
+                        "watershed_endpoint_degree_rejected": 3,
+                        "watershed_energy_rejected": 4,
+                        "watershed_cap_rejected": 5,
+                        "watershed_short_trace_rejected": 6,
                         "watershed_accepted": 9,
                     },
                 },
@@ -293,6 +295,10 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "First watershed supplement candidate pair: [12, 88]" in summary
     assert "Top extra seed origin 12: extra candidate pairs 4  seed candidate pairs 4" in summary
     assert "First extra pair at top seed origin: [12, 88]" in summary
+    assert (
+        "Audit rejections reachability/mutual/endpoint-degree/energy/cap/short/accepted: 1/2/3/4/5/6/9"
+        in summary
+    )
     assert "Python energy source: matlab_batch_hdf5" in summary
 
 
@@ -340,29 +346,28 @@ def test_generate_manifest_uses_report_elapsed_times(tmp_path: Path):
     assert "- **Speedup:** 3.85x (Python faster)" in content
 
 
-def test_generate_manifest_includes_output_preflight_summary(tmp_path: Path):
+def test_generate_manifest_includes_output_preflight_summary(
+    tmp_path: Path,
+    comparison_metadata_builder,
+):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"
-    metadata_dir = run_dir / "99_Metadata"
     analysis_dir.mkdir(parents=True)
-    metadata_dir.mkdir(parents=True)
-    (metadata_dir / "output_preflight.json").write_text(
-        json.dumps(
-            {
-                "output_root": str(run_dir),
-                "resolved_output_root": str(run_dir),
-                "preflight_status": "warning",
-                "allows_launch": True,
-                "free_space_gb": 24.0,
-                "required_space_gb": 5.0,
-                "warnings": [
-                    "Output root appears to be under OneDrive sync; a local non-synced drive is safer for MATLAB outputs."
-                ],
-                "errors": [],
-                "recommended_action": "Proceed with caution.",
-            }
-        ),
-        encoding="utf-8",
+    metadata_dir = comparison_metadata_builder(
+        run_dir,
+        output_preflight={
+            "output_root": str(run_dir),
+            "resolved_output_root": str(run_dir),
+            "preflight_status": "warning",
+            "allows_launch": True,
+            "free_space_gb": 24.0,
+            "required_space_gb": 5.0,
+            "warnings": [
+                "Output root appears to be under OneDrive sync; a local non-synced drive is safer for MATLAB outputs."
+            ],
+            "errors": [],
+            "recommended_action": "Proceed with caution.",
+        },
     )
 
     content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
@@ -373,36 +378,35 @@ def test_generate_manifest_includes_output_preflight_summary(tmp_path: Path):
     assert "OneDrive sync" in content
 
 
-def test_generate_manifest_includes_matlab_resume_semantics(tmp_path: Path):
+def test_generate_manifest_includes_matlab_resume_semantics(
+    tmp_path: Path,
+    comparison_metadata_builder,
+):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"
-    metadata_dir = run_dir / "99_Metadata"
     matlab_dir = run_dir / "01_Input" / "matlab_results"
     batch_dir = matlab_dir / "batch_260401-140000"
     analysis_dir.mkdir(parents=True)
-    metadata_dir.mkdir(parents=True)
     batch_dir.mkdir(parents=True)
-    (metadata_dir / "matlab_status.json").write_text(
-        json.dumps(
-            {
-                "matlab_resume_mode": "restart-current-stage",
-                "matlab_batch_folder": str(batch_dir),
-                "matlab_last_completed_stage": "",
-                "matlab_next_stage": "energy",
-                "matlab_rerun_prediction": "Rerun will reuse batch_260401-140000 but restart energy from the stage boundary.",
-                "matlab_partial_stage_artifacts_present": True,
-                "matlab_partial_stage_name": "energy",
-                "stale_running_snapshot_suspected": True,
-                "failure_summary": "ERROR: MATLAB error Exit Status: 0x00000001",
-                "matlab_log_tail": [
-                    "Running Energy workflow...",
-                    "ERROR: MATLAB error Exit Status: 0x00000001",
-                ],
-                "matlab_resume_state_file": str(matlab_dir / "matlab_resume_state.json"),
-                "matlab_log_file": str(matlab_dir / "matlab_run.log"),
-            }
-        ),
-        encoding="utf-8",
+    metadata_dir = comparison_metadata_builder(
+        run_dir,
+        matlab_status={
+            "matlab_resume_mode": "restart-current-stage",
+            "matlab_batch_folder": str(batch_dir),
+            "matlab_last_completed_stage": "",
+            "matlab_next_stage": "energy",
+            "matlab_rerun_prediction": "Rerun will reuse batch_260401-140000 but restart energy from the stage boundary.",
+            "matlab_partial_stage_artifacts_present": True,
+            "matlab_partial_stage_name": "energy",
+            "stale_running_snapshot_suspected": True,
+            "failure_summary": "ERROR: MATLAB error Exit Status: 0x00000001",
+            "matlab_log_tail": [
+                "Running Energy workflow...",
+                "ERROR: MATLAB error Exit Status: 0x00000001",
+            ],
+            "matlab_resume_state_file": str(matlab_dir / "matlab_resume_state.json"),
+            "matlab_log_file": str(matlab_dir / "matlab_run.log"),
+        },
     )
 
     content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")

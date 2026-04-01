@@ -370,7 +370,7 @@ def test_frontier_tracer_stops_when_best_frontier_energy_is_nonnegative():
     )
 
     assert payload["connections"] == []
-    assert payload["diagnostics"]["stop_reason_counts"]["frontier_exhausted_nonnegative"] >= 1
+    assert payload["diagnostics"]["stop_reason_counts"]["frontier_exhausted_nonnegative"] == 1
 
 
 def test_frontier_tracer_records_length_limited_expansion():
@@ -398,6 +398,61 @@ def test_frontier_tracer_records_length_limited_expansion():
 
     assert payload["connections"] == []
     assert payload["diagnostics"]["stop_reason_counts"]["length_limit"] > 0
+
+
+def test_frontier_tracer_matches_matlab_origin_distance_budget():
+    energy = np.ones((7, 7, 7), dtype=np.float32)
+    energy[3, 1:5, 3] = -5.0
+    vertex_positions = np.array([[3.0, 1.0, 3.0], [3.0, 4.0, 3.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 4.0,
+        },
+    )
+
+    # MATLAB seeds the origin distance map at 1, so a terminal exactly three
+    # voxel steps away is beyond a 4.0 budget and should not be reached.
+    assert payload["connections"] == []
+    assert payload["diagnostics"]["stop_reason_counts"]["length_limit"] > 0
+
+
+def test_frontier_tracer_skips_origins_too_close_to_border():
+    energy = np.full((5, 5, 5), -2.0, dtype=np.float32)
+    vertex_positions = np.array([[0.0, 2.0, 2.0], [4.0, 2.0, 2.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 8.0,
+        },
+    )
+
+    assert payload["connections"] == []
+    assert payload["diagnostics"]["stop_reason_counts"]["bounds"] == 1
 
 
 def test_best_watershed_contact_coords_selects_lowest_energy_touch():
@@ -438,12 +493,70 @@ def test_watershed_join_supplement_adds_missing_touching_pair():
         np.zeros_like(energy, dtype=np.int16),
         vertex_positions,
         energy_sign=-1.0,
+        require_mutual_frontier_participation=False,
     )
 
     # The supplement should have added the (0, 1) pair
     connections = supplemented["connections"].tolist()
     assert [0, 1] in connections
     assert supplemented["diagnostics"]["watershed_join_supplement_count"] >= 1
+
+
+def test_watershed_join_supplement_can_require_mutual_frontier_participation():
+    energy = np.full((5, 5, 5), -1.0, dtype=np.float32)
+    candidates = {
+        "traces": [np.array([[0, 0, 0], [2, 2, 2]], dtype=np.float32)],
+        "connections": np.array([[0, -1]], dtype=np.int32),
+        "metrics": np.array([-1.0], dtype=np.float32),
+        "energy_traces": [np.array([-1.0, -1.0], dtype=np.float32)],
+        "scale_traces": [np.zeros(2, dtype=np.int16)],
+        "origin_indices": np.array([0], dtype=np.int32),
+        "diagnostics": {},
+    }
+    vertex_positions = np.array([[0.0, 0.0, 0.0], [4.0, 4.0, 4.0]], dtype=np.float32)
+
+    supplemented = _supplement_matlab_frontier_candidates_with_watershed_joins(
+        candidates,
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        energy_sign=-1.0,
+        require_mutual_frontier_participation=True,
+    )
+
+    assert supplemented["connections"].tolist() == [[0, -1]]
+    assert supplemented["diagnostics"]["watershed_join_supplement_count"] == 0
+    assert supplemented["diagnostics"]["watershed_mutual_frontier_rejected"] >= 1
+
+
+def test_watershed_join_supplement_respects_endpoint_degree_cap():
+    energy = np.full((5, 5, 5), -1.0, dtype=np.float32)
+    candidates = {
+        "traces": [np.array([[0, 0, 0], [0, 4, 0]], dtype=np.float32)],
+        "connections": np.array([[0, 2]], dtype=np.int32),
+        "metrics": np.array([-1.0], dtype=np.float32),
+        "energy_traces": [np.array([-1.0, -1.0], dtype=np.float32)],
+        "scale_traces": [np.zeros(2, dtype=np.int16)],
+        "origin_indices": np.array([0], dtype=np.int32),
+        "diagnostics": {},
+    }
+    vertex_positions = np.array(
+        [[0.0, 0.0, 0.0], [4.0, 4.0, 4.0], [0.0, 4.0, 0.0]],
+        dtype=np.float32,
+    )
+
+    supplemented = _supplement_matlab_frontier_candidates_with_watershed_joins(
+        candidates,
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        energy_sign=-1.0,
+        max_edges_per_vertex=1,
+    )
+
+    assert supplemented["connections"].tolist() == [[0, 2]]
+    assert supplemented["diagnostics"]["watershed_join_supplement_count"] == 0
+    assert supplemented["diagnostics"]["watershed_endpoint_degree_rejected"] >= 1
 
 
 def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypatch):
@@ -485,8 +598,53 @@ def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypat
         {"comparison_exact_network": True, "number_of_edges_per_vertex": 1},
     )
 
-    # Phase 2: with empty frontier candidates, reachability gate blocks supplements
-    assert edges["diagnostics"].get("watershed_reachability_rejected", 0) >= 0
+    # Phase 2+: with empty frontier candidates, reachability gate blocks supplements
+    assert edges["connections"].size == 0
+    assert edges["diagnostics"].get("watershed_reachability_rejected", 0) >= 1
+
+
+def test_extract_edges_parity_requires_mutual_frontier_participation(monkeypatch):
+    def fake_frontier(*_args, **_kwargs):
+        return {
+            "traces": [np.array([[0, 0, 0], [2, 2, 2]], dtype=np.float32)],
+            "connections": np.array([[0, -1]], dtype=np.int32),
+            "metrics": np.array([-1.0], dtype=np.float32),
+            "energy_traces": [np.array([-1.0, -1.0], dtype=np.float32)],
+            "scale_traces": [np.zeros(2, dtype=np.int16)],
+            "origin_indices": np.array([0], dtype=np.int32),
+            "connection_sources": ["frontier"],
+            "diagnostics": {},
+        }
+
+    monkeypatch.setattr(
+        "slavv.core.tracing._generate_edge_candidates_matlab_frontier",
+        fake_frontier,
+    )
+
+    processor = SLAVVProcessor()
+    energy = np.full((5, 5, 5), -1.0, dtype=np.float32)
+    energy_data = {
+        "energy": energy,
+        "scale_indices": np.zeros_like(energy, dtype=np.int16),
+        "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
+        "lumen_radius_pixels_axes": np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+        "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+        "energy_sign": -1.0,
+        "energy_origin": "matlab_batch_hdf5",
+    }
+    vertices = {
+        "positions": np.array([[0.0, 0.0, 0.0], [4.0, 4.0, 4.0]], dtype=np.float32),
+        "scales": np.array([0, 0], dtype=np.int16),
+    }
+
+    edges = processor.extract_edges(
+        energy_data,
+        vertices,
+        {"comparison_exact_network": True, "number_of_edges_per_vertex": 1},
+    )
+
+    assert edges["connections"].size == 0
+    assert edges["diagnostics"].get("watershed_mutual_frontier_rejected", 0) >= 1
 
 
 def test_resolve_frontier_edge_connection_invalidates_better_child_than_parent():
@@ -523,6 +681,89 @@ def test_resolve_frontier_edge_connection_invalidates_better_child_than_parent()
 
     assert origin_idx is None
     assert terminal_idx is None
+
+
+def test_resolve_frontier_edge_connection_matches_matlab_origin_side_for_root_bifurcation():
+    energy = np.full((5, 5, 5), 1.0, dtype=np.float32)
+    shape = energy.shape
+
+    def set_energy(coord, value):
+        energy[coord] = value
+        return int(coord[0] + coord[1] * shape[0] + coord[2] * shape[0] * shape[1])
+
+    parent_origin = set_energy((2, 2, 2), -6.0)
+    parent_mid = set_energy((2, 3, 2), -7.0)
+    parent_terminal = set_energy((2, 4, 2), -8.0)
+    child_terminal = set_energy((3, 2, 2), -5.0)
+
+    current_path = [child_terminal, parent_origin]
+    parent_path = [parent_terminal, parent_mid, parent_origin]
+    pointer_index_map = {
+        parent_origin: -1,
+        parent_terminal: -1,
+        parent_mid: -1,
+    }
+
+    origin_idx, terminal_idx = _resolve_frontier_edge_connection(
+        current_path,
+        terminal_vertex_idx=2,
+        seed_origin_idx=0,
+        edge_paths_linear=[parent_path],
+        edge_pairs=[(1, 0)],
+        pointer_index_map=pointer_index_map,
+        energy=energy,
+        shape=shape,
+    )
+
+    assert origin_idx == 1
+    assert terminal_idx == 2
+
+
+def test_frontier_tracer_does_not_prune_from_invalid_terminal_before_valid_edge(
+    monkeypatch,
+):
+    energy = np.full((5, 5, 5), 1.0, dtype=np.float32)
+    energy[2, 2, 2] = -4.0
+    energy[2, 3, 2] = -8.0
+    energy[3, 2, 2] = -7.0
+    energy[3, 3, 2] = -6.0
+    vertex_positions = np.array([[2.0, 2.0, 2.0], [2.0, 3.0, 2.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    resolve_calls = {"count": 0}
+
+    def fake_resolve(*_args, **_kwargs):
+        resolve_calls["count"] += 1
+        return None, None
+
+    def fail_if_pruned(*_args, **_kwargs):
+        raise AssertionError("invalid terminal directions should not prune frontier yet")
+
+    monkeypatch.setattr("slavv.core.tracing._resolve_frontier_edge_connection", fake_resolve)
+    monkeypatch.setattr(
+        "slavv.core.tracing._prune_frontier_indices_beyond_found_vertices",
+        fail_if_pruned,
+    )
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 1,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 6.0,
+        },
+    )
+
+    assert resolve_calls["count"] >= 1
+    assert payload["connections"] == []
 
 
 def test_prune_frontier_indices_beyond_found_vertices_removes_forward_voxels():

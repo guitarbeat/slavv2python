@@ -232,6 +232,7 @@ def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
         "csv": [],
         "json": [],
         "mat": [],
+        "pkl": [],
         "png": [],
         "txt": [],
         "other": [],
@@ -335,21 +336,23 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     if matlab_status:
         lines.append("## Resume Semantics")
         lines.append("")
-        lines.append(f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}")
+        lines.append(
+            f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}"
+        )
         batch_folder = matlab_status.get("matlab_batch_folder", "")
         if batch_folder:
-            lines.append(f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`")
+            lines.append(
+                f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`"
+            )
         lines.append(
             "- **Last completed MATLAB stage:** "
             f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
         )
         lines.append(
-            "- **Next MATLAB stage:** "
-            f"{matlab_status.get('matlab_next_stage') or '(none)'}"
+            f"- **Next MATLAB stage:** {matlab_status.get('matlab_next_stage') or '(none)'}"
         )
         lines.append(
-            "- **Rerun prediction:** "
-            f"{matlab_status.get('matlab_rerun_prediction', 'unknown')}"
+            f"- **Rerun prediction:** {matlab_status.get('matlab_rerun_prediction', 'unknown')}"
         )
         if matlab_status.get("matlab_partial_stage_artifacts_present"):
             lines.append(
@@ -368,7 +371,9 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
                 f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`"
             )
         if matlab_status.get("matlab_log_file"):
-            lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`")
+            lines.append(
+                f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`"
+            )
         if batch_folder:
             lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
         lines.append("")
@@ -450,7 +455,8 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     csv_files = inventory.get("csv", [])
     json_files = inventory.get("json", [])
     mat_files = inventory.get("mat", [])
-    if csv_files or json_files or mat_files:
+    pkl_files = inventory.get("pkl", [])
+    if csv_files or json_files or mat_files or pkl_files:
         lines.append("### Data Files")
         lines.append("")
         if csv_files:
@@ -468,6 +474,12 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         if mat_files:
             lines.append("**MATLAB Files:**")
             for f in sorted(mat_files):
+                rel_path = f.relative_to(run_root)
+                lines.append(f"- `{rel_path}`")
+            lines.append("")
+        if pkl_files:
+            lines.append("**Checkpoint Files:**")
+            for f in sorted(pkl_files):
                 rel_path = f.relative_to(run_root)
                 lines.append(f"- `{rel_path}`")
             lines.append("")

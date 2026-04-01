@@ -343,6 +343,7 @@ def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str
         ),
         "pair_source_breakdown": candidate_audit.get("pair_source_breakdown", {}),
         "top_origin_summaries": top_per_origin,
+        "diagnostic_counters": candidate_audit.get("diagnostic_counters", {}),
     }
 
 
@@ -841,6 +842,8 @@ def compare_edges(
             "watershed_short_trace_rejected",
             "watershed_energy_rejected",
             "watershed_reachability_rejected",
+            "watershed_mutual_frontier_rejected",
+            "watershed_endpoint_degree_rejected",
             "watershed_cap_rejected",
             "watershed_accepted",
             "frontier_origins_with_candidates",

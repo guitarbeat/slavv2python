@@ -12,6 +12,15 @@ entry points and project metadata.
 | `PARITY_FINDINGS_2026-03-27.md` | Verified findings from the fresh March 27, 2026 parity reruns and recommended next steps |
 | `EDGE_PARITY_IMPLEMENTATION_PLAN.md` | Implementation plan for narrowing the remaining MATLAB-vs-Python edge and strand parity gap |
 
+## Current Comparison Workflow Notes
+
+- `docs/COMPARISON_LAYOUT.md` is the canonical reference for staged comparison
+  outputs, including the shared `99_Metadata/` contract.
+- The output-root preflight and MATLAB resume-transparency work has been folded
+  into the maintained workflow docs and tests.
+- `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` remains the active implementation
+  plan while exact edge/strand convergence work is still open.
+
 ## Root-Level Docs
 
 These docs stay at the repository root because they function as entry points or

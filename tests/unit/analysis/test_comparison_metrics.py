@@ -299,6 +299,7 @@ def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():
     candidate_edges = {
         "connections": np.array([[0, 1], [0, 4], [4, 5]], dtype=np.int32),
         "origin_indices": np.array([0, 0, 4], dtype=np.int32),
+        "connection_sources": ["frontier", "watershed", "fallback"],
         "traces": [],
     }
 

@@ -1,10 +1,8 @@
 # TODO
 
-This checklist rolls up the current implementation plans into one execution
-order:
+This checklist rolls up the remaining implementation work and release
+verification:
 
-- [docs/COMPARISON_OUTPUT_PREFLIGHT_IMPLEMENTATION_PLAN.md](docs/COMPARISON_OUTPUT_PREFLIGHT_IMPLEMENTATION_PLAN.md)
-- [docs/COMPARISON_RESUME_TRANSPARENCY_IMPLEMENTATION_PLAN.md](docs/COMPARISON_RESUME_TRANSPARENCY_IMPLEMENTATION_PLAN.md)
 - [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
 
 Recommended order:
@@ -19,16 +17,16 @@ Recommended order:
 
 - [x] Confirm the first-pass scope is comparison-mode first, with standalone
   MATLAB support only where it is cheap and low-risk.
-- [ ] Define the shared metadata contract for new run artifacts and snapshot
+- [x] Define the shared metadata contract for new run artifacts and snapshot
   fields before implementing multiple features in parallel.
 - [x] Decide which findings are fatal vs warning-only for preflight and resume
   status.
-- [ ] Add or refresh reusable test fixtures for:
+- [x] Add or refresh reusable test fixtures for:
   - MATLAB `batch_*` directories
   - `matlab_resume_state.json`
   - `matlab_run.log`
   - run snapshots and manifests
-- [ ] Document a canonical local output root for live MATLAB-enabled reruns so
+- [x] Document a canonical local output root for live MATLAB-enabled reruns so
   developers do not default back to risky paths.
 
 ## Track 1: Comparison Output Preflight
@@ -50,7 +48,7 @@ Recommended order:
 - [x] Persist the result to `99_Metadata/output_preflight.json`.
 - [x] Mirror the high-level outcome into the shared run snapshot.
 - [x] Surface preflight warnings in the manifest and `slavv status`.
-- [ ] Add minimal launcher-level safety checks in:
+- [x] Add minimal launcher-level safety checks in:
   - `workspace/scripts/cli/run_matlab_cli.bat`
   - `workspace/scripts/cli/run_matlab_cli.sh`
 - [x] Add tests for:
@@ -109,19 +107,28 @@ Recommended order:
   - cleanup rejections
   - missing MATLAB endpoint pairs
   - extra Python endpoint pairs
-- [ ] Audit `_supplement_matlab_frontier_candidates_with_watershed_joins()`.
-- [ ] Tighten supplement rules so they only add MATLAB-like joins.
+- [x] Audit `_supplement_matlab_frontier_candidates_with_watershed_joins()`.
+- [x] Tighten supplement rules so they only add MATLAB-like joins.
 - [ ] Compare `_trace_origin_edges_matlab_frontier()` against the MATLAB
   `get_edges_for_vertex.m` and `get_edges_by_watershed.m` behavior.
+  - [x] Match MATLAB's origin-entry gate for seeds that start too close to the
+    border for the current structuring element.
+  - [x] Match MATLAB's parent-half selection when a child branches directly at
+    the parent origin/root.
+  - [x] Clamp parity frontier source fanout to MATLAB's
+    `edge_number_tolerance = 2` behavior.
+  - [x] Delay beyond-terminal pruning until at least one valid terminal edge
+    exists, so invalid terminal hits do not suppress frontier exploration
+    early.
 - [ ] Align frontier behavior around:
   - ordering
   - parent/child resolution
   - pruning
   - terminal hit handling
   - trace finalization
-- [ ] Keep `_choose_edges_matlab_style()` focused on downstream dedupe/pruning
+- [x] Keep `_choose_edges_matlab_style()` focused on downstream dedupe/pruning
   rather than masking upstream semantic drift.
-- [ ] Add or update parity-focused tests in:
+- [x] Add or update parity-focused tests in:
   - `tests/unit/analysis/test_comparison_metrics.py`
   - `tests/unit/core/test_edge_cases.py`
   - `tests/integration/test_regression_edges.py`
@@ -132,20 +139,20 @@ Recommended order:
 
 ## Verification And Release Checklist
 
-- [ ] Update docs after implementation:
+- [x] Update docs after implementation:
   - `docs/COMPARISON_LAYOUT.md`
   - `docs/README.md`
   - any parity findings note that should reference the new workflow
-- [ ] Run formatting:
+- [x] Run formatting:
   - `python -m ruff format source tests`
   - `python -m ruff check source tests`
 - [ ] Run type checking:
   - `python -m mypy`
-- [ ] Run targeted test coverage for modified modules first.
-- [ ] Run broad regression coverage:
+- [x] Run targeted test coverage for modified modules first.
+- [x] Run broad regression coverage:
   - `python -m pytest -m "unit or integration"`
   - `python -m pytest tests/diagnostic/test_comparison_setup.py`
-- [ ] Run `python -m compileall source workspace/scripts`.
+- [x] Run `python -m compileall source workspace/scripts`.
 - [ ] If MATLAB is available, run a fresh live comparison on a high-free-space
   local output root and verify:
   - preflight metadata is written
