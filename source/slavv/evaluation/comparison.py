@@ -921,13 +921,17 @@ def orchestrate_comparison(
                 else "Running Python pipeline"
             ),
         )
+        python_kwargs: dict[str, Any] = {
+            "run_dir": str(run_root),
+            "force_rerun_from": python_force_rerun_from,
+        }
+        if minimal_exports:
+            python_kwargs["minimal_exports"] = True
         python_results = run_python_vectorization(
             input_file,
             str(python_output),
             params_for_python,
-            run_dir=str(run_root),
-            force_rerun_from=python_force_rerun_from,
-            minimal_exports=minimal_exports,
+            **python_kwargs,
         )
         comparison_context.update_optional_task(
             "python_pipeline",
