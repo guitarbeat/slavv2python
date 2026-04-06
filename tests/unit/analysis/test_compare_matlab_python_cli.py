@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -175,6 +176,17 @@ def test_cli_passes_comparison_depth_and_resume_latest(cli_module, tmp_path, mon
     params_file.write_text("{}", encoding="utf-8")
     existing_run = tmp_path / "comparisons" / "20260406_120000_comparison"
     (existing_run / "99_Metadata").mkdir(parents=True)
+    (existing_run / "99_Metadata" / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(input_file)}}),
+        encoding="utf-8",
+    )
+    (existing_run / "99_Metadata" / "comparison_params.normalized.json").write_text(
+        json.dumps({"edge_method": "tracing"}),
+        encoding="utf-8",
+    )
+    checkpoints_dir = existing_run / "02_Output" / "python_results" / "checkpoints"
+    checkpoints_dir.mkdir(parents=True)
+    (checkpoints_dir / "checkpoint_edges.pkl").write_bytes(b"checkpoint")
     observed = {}
 
     monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
@@ -207,6 +219,151 @@ def test_cli_passes_comparison_depth_and_resume_latest(cli_module, tmp_path, mon
     assert cli_module.main() == 0
     assert observed["output_dir"] == existing_run
     assert observed["comparison_depth"] == "shallow"
+
+
+def test_cli_resume_latest_falls_back_to_fresh_run_root_when_required_artifacts_are_missing(
+    cli_module, tmp_path, monkeypatch, capsys
+):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    comparisons_dir = tmp_path / "comparisons"
+    existing_run = comparisons_dir / "20260406_120000_comparison"
+    fresh_run = comparisons_dir / "20260406_121500_comparison"
+    (existing_run / "99_Metadata").mkdir(parents=True)
+    (existing_run / "99_Metadata" / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(input_file)}}),
+        encoding="utf-8",
+    )
+    (existing_run / "99_Metadata" / "comparison_params.normalized.json").write_text(
+        json.dumps({"edge_method": "tracing"}),
+        encoding="utf-8",
+    )
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+    monkeypatch.setattr(cli_module, "list_runs", lambda _base_dir: [{"path": existing_run}])
+    monkeypatch.setattr(cli_module, "_build_fresh_output_dir", lambda _base_dir=None: fresh_run)
+
+    def fake_orchestrate(*, output_dir, **_kwargs):
+        observed["output_dir"] = output_dir
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-matlab",
+            "--resume-latest",
+            "--output-dir",
+            str(comparisons_dir),
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"] == fresh_run
+    assert "missing reusable Python checkpoints" in capsys.readouterr().out
+
+
+def test_cli_resume_latest_falls_back_to_fresh_run_root_when_params_mismatch(
+    cli_module, tmp_path, monkeypatch, capsys
+):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    comparisons_dir = tmp_path / "comparisons"
+    existing_run = comparisons_dir / "20260406_120000_comparison"
+    fresh_run = comparisons_dir / "20260406_121500_comparison"
+    (existing_run / "99_Metadata").mkdir(parents=True)
+    (existing_run / "99_Metadata" / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(input_file)}}),
+        encoding="utf-8",
+    )
+    (existing_run / "99_Metadata" / "comparison_params.normalized.json").write_text(
+        json.dumps({"edge_method": "different"}),
+        encoding="utf-8",
+    )
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+    monkeypatch.setattr(cli_module, "list_runs", lambda _base_dir: [{"path": existing_run}])
+    monkeypatch.setattr(cli_module, "_build_fresh_output_dir", lambda _base_dir=None: fresh_run)
+
+    def fake_orchestrate(*, output_dir, **_kwargs):
+        observed["output_dir"] = output_dir
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-matlab",
+            "--resume-latest",
+            "--output-dir",
+            str(comparisons_dir),
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"] == fresh_run
+    assert "recorded comparison parameters do not match" in capsys.readouterr().out
+
+
+def test_cli_resume_latest_falls_back_to_fresh_run_root_when_input_mismatches(
+    cli_module, tmp_path, monkeypatch, capsys
+):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    comparisons_dir = tmp_path / "comparisons"
+    existing_run = comparisons_dir / "20260406_120000_comparison"
+    fresh_run = comparisons_dir / "20260406_121500_comparison"
+    (existing_run / "99_Metadata").mkdir(parents=True)
+    (existing_run / "99_Metadata" / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-1",
+                "provenance": {"input_file": str(tmp_path / "different_input.tif")},
+            }
+        ),
+        encoding="utf-8",
+    )
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+    monkeypatch.setattr(cli_module, "list_runs", lambda _base_dir: [{"path": existing_run}])
+    monkeypatch.setattr(cli_module, "_build_fresh_output_dir", lambda _base_dir=None: fresh_run)
+
+    def fake_orchestrate(*, output_dir, **_kwargs):
+        observed["output_dir"] = output_dir
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-matlab",
+            "--resume-latest",
+            "--output-dir",
+            str(comparisons_dir),
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"] == fresh_run
+    assert "not compatible with the current input" in capsys.readouterr().out
 
 
 def test_cli_runs_standalone_comparison_with_explicit_python_result_source(

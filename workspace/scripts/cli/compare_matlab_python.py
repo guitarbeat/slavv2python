@@ -15,12 +15,16 @@ Usage:
         --output-dir "comparison_output"
 """
 
+from __future__ import annotations
+
+# ruff: noqa: UP045
 import argparse
+import json
 import sys
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -34,6 +38,7 @@ from slavv.evaluation.comparison import (  # noqa: E402
     run_standalone_comparison,
 )
 from slavv.evaluation.management import list_runs  # noqa: E402
+from slavv.runtime import load_run_snapshot  # noqa: E402
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -166,7 +171,120 @@ def _find_latest_run_root(base_dir: Path) -> Optional[Path]:
     return latest if isinstance(latest, Path) else None
 
 
-def _resolve_output_dir(user_output_dir, *, resume_latest: bool = False):
+def _normalize_resume_path(path: Union[Path, str]) -> str:
+    normalized = Path(path)
+    try:
+        normalized = normalized.resolve()
+    except OSError:
+        normalized = normalized.absolute()
+    return str(normalized).replace("\\", "/").lower()
+
+
+def _normalize_resume_value(value):
+    if isinstance(value, dict):
+        return {str(key): _normalize_resume_value(subvalue) for key, subvalue in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_normalize_resume_value(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    if hasattr(value, "tolist") and not isinstance(value, (str, bytes)):
+        try:
+            return value.tolist()
+        except TypeError:
+            pass
+    if hasattr(value, "item") and not isinstance(value, (str, bytes)):
+        try:
+            return value.item()
+        except (TypeError, ValueError):
+            pass
+    return value
+
+
+def _load_recorded_comparison_params(run_root: Path):
+    params_path = run_root / "99_Metadata" / "comparison_params.normalized.json"
+    if not params_path.exists():
+        return None
+    return json.loads(params_path.read_text(encoding="utf-8"))
+
+
+def _has_reusable_matlab_artifacts(run_root: Path) -> bool:
+    matlab_dir = run_root / "01_Input" / "matlab_results"
+    if not matlab_dir.exists():
+        return False
+    return any(child.name.startswith("batch_") for child in matlab_dir.iterdir())
+
+
+def _has_reusable_python_checkpoints(run_root: Path) -> bool:
+    checkpoint_dir = run_root / "02_Output" / "python_results" / "checkpoints"
+    if not checkpoint_dir.exists():
+        return False
+    return any(checkpoint_dir.glob("checkpoint_*.pkl"))
+
+
+def _has_required_resume_artifacts(
+    run_root: Path,
+    *,
+    standalone_mode: bool,
+    validate_only: bool,
+    skip_matlab: bool,
+    skip_python: bool,
+) -> tuple[bool, str]:
+    if standalone_mode or validate_only:
+        return True, "no staged artifact requirement for this mode"
+    if skip_matlab and not skip_python:
+        if _has_reusable_python_checkpoints(run_root):
+            return True, "python checkpoint surface is reusable"
+        return False, "missing reusable Python checkpoints for a skip-matlab parity rerun"
+    if skip_python and not skip_matlab:
+        if _has_reusable_matlab_artifacts(run_root):
+            return True, "matlab batch surface is reusable"
+        return False, "missing reusable MATLAB batch artifacts for a skip-python rerun"
+    if _has_reusable_matlab_artifacts(run_root):
+        return True, "matlab batch surface is reusable"
+    return False, "missing reusable MATLAB batch artifacts for a full comparison rerun"
+
+
+def _is_resume_candidate_compatible(
+    run_root: Path,
+    input_path: Optional[Path],
+    params: Optional[dict] = None,
+) -> tuple[bool, str]:
+    if input_path is None:
+        return True, "no input compatibility check required"
+    snapshot = load_run_snapshot(run_root)
+    if snapshot is None:
+        return False, "missing run snapshot"
+    recorded_input = snapshot.provenance.get("input_file")
+    if not recorded_input:
+        return False, "missing recorded input provenance"
+    if _normalize_resume_path(recorded_input) != _normalize_resume_path(input_path):
+        return False, f"recorded input '{recorded_input}' does not match '{input_path}'"
+    if params is not None:
+        recorded_params = _load_recorded_comparison_params(run_root)
+        if recorded_params is None:
+            return False, "missing normalized comparison params"
+        if _normalize_resume_value(recorded_params) != _normalize_resume_value(params):
+            return False, "recorded comparison parameters do not match the current request"
+    return True, "input provenance matches"
+
+
+def _build_fresh_output_dir(base_dir: Optional[Path] = None) -> Path:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    parent = base_dir or Path("comparisons")
+    return parent / f"{timestamp}_comparison"
+
+
+def _resolve_output_dir(
+    user_output_dir,
+    *,
+    resume_latest: bool = False,
+    input_path: Optional[Path] = None,
+    params: Optional[dict] = None,
+    standalone_mode: bool = False,
+    validate_only: bool = False,
+    skip_matlab: bool = False,
+    skip_python: bool = False,
+):
     if user_output_dir:
         requested = Path(user_output_dir)
         if not resume_latest:
@@ -175,14 +293,43 @@ def _resolve_output_dir(user_output_dir, *, resume_latest: bool = False):
             return requested
         latest = _find_latest_run_root(requested)
         if latest is not None:
-            return latest
-        return requested
+            compatible, reason = _is_resume_candidate_compatible(latest, input_path, params)
+            has_artifacts, artifact_reason = _has_required_resume_artifacts(
+                latest,
+                standalone_mode=standalone_mode,
+                validate_only=validate_only,
+                skip_matlab=skip_matlab,
+                skip_python=skip_python,
+            )
+            if compatible and has_artifacts:
+                print(f"Reusing latest compatible run root: {latest}")
+                return latest
+            print(
+                "Latest discovered run root is not compatible with the current input; "
+                "starting a fresh run root instead "
+                f"({reason if not compatible else artifact_reason})."
+            )
+        return _build_fresh_output_dir(requested)
     if resume_latest:
         latest = _find_latest_run_root(Path("comparisons"))
         if latest is not None:
-            return latest
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return Path("comparisons") / f"{timestamp}_comparison"
+            compatible, reason = _is_resume_candidate_compatible(latest, input_path, params)
+            has_artifacts, artifact_reason = _has_required_resume_artifacts(
+                latest,
+                standalone_mode=standalone_mode,
+                validate_only=validate_only,
+                skip_matlab=skip_matlab,
+                skip_python=skip_python,
+            )
+            if compatible and has_artifacts:
+                print(f"Reusing latest compatible run root: {latest}")
+                return latest
+            print(
+                "Latest discovered run root is not compatible with the current input; "
+                "starting a fresh run root instead "
+                f"({reason if not compatible else artifact_reason})."
+            )
+    return _build_fresh_output_dir(Path(user_output_dir) if user_output_dir else None)
 
 
 def main():
@@ -194,10 +341,17 @@ def main():
     if validation_error is not None:
         return validation_error
 
-    output_dir = _resolve_output_dir(args.output_dir, resume_latest=args.resume_latest)
-    print(f"Output directory: {output_dir}")
-
     if args.standalone_matlab_dir and args.standalone_python_dir:
+        output_dir = _resolve_output_dir(
+            args.output_dir,
+            resume_latest=args.resume_latest,
+            input_path=Path(args.input) if args.input else None,
+            standalone_mode=True,
+            validate_only=args.validate_only,
+            skip_matlab=args.skip_matlab,
+            skip_python=args.skip_python,
+        )
+        print(f"Output directory: {output_dir}")
         return run_standalone_comparison(
             matlab_dir=Path(args.standalone_matlab_dir),
             python_dir=Path(args.standalone_python_dir),
@@ -218,6 +372,18 @@ def main():
         print(f"ERROR: Failed to load parameters from {params_file}: {exc}")
         return 1
 
+    output_dir = _resolve_output_dir(
+        args.output_dir,
+        resume_latest=args.resume_latest,
+        input_path=Path(args.input) if args.input else None,
+        params=params,
+        standalone_mode=False,
+        validate_only=args.validate_only,
+        skip_matlab=args.skip_matlab,
+        skip_python=args.skip_python,
+    )
+    print(f"Output directory: {output_dir}")
+
     # Run orchestration
     return orchestrate_comparison(
         input_file=args.input,
@@ -230,6 +396,7 @@ def main():
         validate_only=args.validate_only,
         minimal_exports=args.minimal_exports,
         comparison_depth=args.comparison_depth,
+        python_result_source=args.python_result_source,
     )
 
 

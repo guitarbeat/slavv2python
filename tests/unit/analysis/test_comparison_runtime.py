@@ -751,7 +751,7 @@ def test_orchestrate_comparison_persists_matlab_failure_summary(tmp_path: Path, 
     matlab_status_file = output_dir / "99_Metadata" / "matlab_status.json"
     failure_summary = json.loads(failure_summary_file.read_text(encoding="utf-8"))
 
-    assert result == 0
+    assert result == 1
     assert snapshot is not None
     assert snapshot.status == "failed"
     assert snapshot.current_stage == "matlab"

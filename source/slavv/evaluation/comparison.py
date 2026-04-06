@@ -688,6 +688,7 @@ def orchestrate_comparison(
     validate_only: bool = False,
     minimal_exports: bool = False,
     comparison_depth: str = "deep",
+    python_result_source: str = "auto",
 ) -> int:
     """Run full comparison workflow."""
     layout = resolve_run_layout(output_dir)
@@ -977,6 +978,16 @@ def orchestrate_comparison(
                 ),
             },
         )
+    elif skip_python and python_output.exists():
+        # Even if we skip execution, we can still load existing results for comparison
+        print(
+            f"\nSkipping Python execution (--skip-python); attempting to load results from {python_output}"
+        )
+        try:
+            python_results = _load_python_results_from_source(python_output, python_result_source)
+        except Exception as e:
+            print(f"Warning: Could not load existing Python results: {e}")
+            python_results = None
     else:
         print("\nSkipping Python execution (--skip-python)")
 

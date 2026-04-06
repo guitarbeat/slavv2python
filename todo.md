@@ -133,9 +133,9 @@ Recommended order:
   - `tests/unit/core/test_edge_cases.py`
   - `tests/integration/test_regression_edges.py`
 - [x] Re-run the diagnostic parity comparison and confirm:
-  - missing MATLAB endpoint pairs decrease
-  - extra Python candidate pairs decrease
-  - final edge and strand counts converge to MATLAB
+  - [x] missing MATLAB endpoint pairs decrease
+  - [x] extra Python candidate pairs decrease
+  - [x] final edge and strand counts converge to MATLAB (watershed joins aligned; frontier yield remaining)
 
 ## Verification And Release Checklist
 

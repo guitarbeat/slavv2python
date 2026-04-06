@@ -39,8 +39,11 @@ MATLAB-vs-Python runs as the default development loop.
   `network.json`.
 - Standalone comparison internals already support explicit Python result-source
   selection (`auto`, `checkpoints-only`, `export-json-only`,
-  `network-json-only`), even though that control is not yet exposed as a
-  public CLI flag.
+  `network-json-only`).
+- `workspace/scripts/cli/compare_matlab_python.py` now exposes the
+  analysis-only loop directly through `--standalone-matlab-dir`,
+  `--standalone-python-dir`, and `--python-result-source`, so existing
+  artifacts can be compared without relaunching MATLAB or Python.
 - Full comparison orchestration already imports MATLAB `energy` and `vertices`
   into Python checkpoints and reruns Python from `edges` when those stages are
   available.
@@ -48,13 +51,24 @@ MATLAB-vs-Python runs as the default development loop.
   summaries already persist under `99_Metadata/`.
 - Successful comparison runs already print explicit reuse guidance so the next
   parity rerun naturally stays on the same staged output root.
+- `--resume-latest` now checks recorded input provenance before reusing a
+  discovered run root and falls back to a fresh timestamped run root when the
+  newest candidate is clearly for a different input or normalized parameter
+  set.
+- `--resume-latest` now also checks that the requested loop has the staged
+  artifacts it actually depends on before reuse is allowed. For example,
+  Python-only parity reruns now require reusable Python checkpoints instead of
+  treating any recent run root as resumable.
 - Manifest generation and run inspection now share one filesystem inventory
   pass for total-size reporting and typed file inventory generation.
+- Generated summaries now recommend candidate-endpoint coverage as the first
+  triage surface when missing or extra candidate endpoint pairs are present.
 
 ### Verified parity baseline
 
 - Exact vertex parity is already established on the imported-MATLAB parity
   surface.
+- Watershed join supplement parity established (removed ~1,000 invalid joins by tightening energy rejection).
 - Imported MATLAB `energy` plus imported MATLAB `vertices`, followed by a
   Python rerun from `edges`, is the correct current surface for convergence
   work.
@@ -63,15 +77,33 @@ MATLAB-vs-Python runs as the default development loop.
 - Native Python-from-`energy` runs are still far from parity on the current
   canonical workload and should not be treated as the primary parity loop.
 
+### Reflection From Recent Iterations
+
+- The highest-leverage wins have come from Python-side workflow control rather
+  than algorithm edits: cheaper comparison entry points, shallower analysis
+  modes, and clearer reuse guidance all landed cleanly without disturbing the
+  MATLAB control.
+- The analysis-only loop is more valuable once it is first-class at the CLI.
+  Internal support alone was not enough; engineers need a direct command path
+  to force checkpoint-backed, export-JSON, or `network.json` comparison.
+- Reuse needs provenance, not just recency. The newest run root is not a safe
+  default if it cannot prove that it was created for the same input and
+  normalized parameter surface.
+- Reuse also needs the right staged surface for the requested loop. Matching
+  provenance is still not enough if the run root does not contain the
+  checkpoints or batch artifacts that make reuse meaningful.
+- Candidate-endpoint coverage remains the cheapest useful mismatch signal and
+  is now surfaced directly in generated summaries, which should keep triage
+  focused on the earliest divergence point.
+
 ### Planned next
 
-- Expose strict standalone source selection as a public CLI flag so callers can
-  choose one authoritative Python result source explicitly instead of probing
-  fallbacks.
-- Add compatibility checks for `--resume-latest` so reuse decisions validate
-  the selected run root against the current input and run shape.
 - Add a lightweight MATLAB warm-up or health-check command before long live
   runs.
+- Cache preflight and other repeated metadata inspections when the output root
+  and relevant inputs have not changed.
+- Extend `--resume-latest` compatibility checks to more loop-specific staged
+  surfaces and operator hints beyond the first requested-artifact checks.
 
 ## Recommended Development Loops
 
@@ -99,7 +131,9 @@ Use the cheapest loop that can answer the current question.
 - Does not prove: that a fresh rerun would reproduce the same result on a new
   output root.
 - Implemented now: standalone comparison already prefers checkpoints over
-  exported comparison JSON and `network.json`.
+  exported comparison JSON and `network.json`, and the CLI exposes this reuse
+  path directly through `--standalone-matlab-dir`,
+  `--standalone-python-dir`, and `--python-result-source`.
 
 ### 3. Python parity loop
 
@@ -196,6 +230,8 @@ Use the cheapest loop that can answer the current question.
       run root.
 - [x] Add shallow versus deep comparison control so summary checks can skip
       full MATLAB batch parsing.
+- [x] Expose strict standalone source selection as a public CLI option so the
+      analysis-only loop can choose an authoritative Python result source.
 - [x] Persist output-root preflight decisions to `99_Metadata/output_preflight.json`.
 - [x] Persist MATLAB rerun semantics and failure summaries to
       `99_Metadata/matlab_status.json` and
@@ -206,18 +242,27 @@ Use the cheapest loop that can answer the current question.
       are available.
 - [x] Print explicit reuse-output-dir guidance after successful comparison
       runs.
+- [x] Gate `--resume-latest` reuse on recorded input provenance and fall back
+      to a fresh run root when the newest candidate is incompatible.
+- [x] Extend `--resume-latest` compatibility checks to validate normalized
+      comparison parameters as well as recorded input provenance.
+- [x] Extend `--resume-latest` compatibility checks to validate required staged
+      artifacts for the requested loop before reuse is allowed.
 - [x] Share one filesystem inventory pass across manifest generation and run
       size reporting.
+- [x] Surface candidate-endpoint coverage as the first triage recommendation in
+      generated comparison summaries.
 
 ## Immediate Next Actions
 
-- [ ] Expose strict standalone source selection as a public CLI option so
-      comparison can skip fallback probing when the caller already knows which
-      Python result source is authoritative.
 - [ ] Add a lightweight MATLAB warm-up or health-check command that validates
       launch viability before a long live comparison run.
 - [ ] Add cached metadata and preflight inspection so repeated parity triage in
       the same output root does not redo avoidable work.
-- [ ] Surface candidate-endpoint coverage as the first triage recommendation in
-      the generated comparison summaries so edge and strand diff inspection
-      starts with the cheapest parity signal.
+- [ ] Extend `--resume-latest` artifact checks beyond the first loop-specific
+      rules so reuse decisions can distinguish checkpoint-backed Python reruns,
+      reusable MATLAB batch surfaces, and analysis-only output roots more
+      explicitly.
+- [ ] Add lightweight operator messaging that distinguishes "safe to reuse",
+      "safe to analyze only", and "requires fresh MATLAB run" directly in CLI
+      summaries.

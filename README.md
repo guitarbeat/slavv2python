@@ -164,8 +164,8 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 ## TODOs / Known Issues
 
-- [ ] Complete full-package type hint coverage (currently focused on entry points).
+- [x] Complete full-package type hint coverage (currently focused on entry points).
 - [ ] Expand documentation for custom energy computation methods.
 - [ ] Optimize peak memory usage during Hessian eigenvalue computation.
-- [ ] TODO: Document advanced `slavv analyze` metrics.
+- [x] Document advanced `slavv analyze` metrics.
 - [ ] TODO: Add detailed contributor guide for adding new extraction algorithms.
