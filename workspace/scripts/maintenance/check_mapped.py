@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -8,10 +9,24 @@ MATLAB_DIR = REPO_ROOT / "external" / "Vectorization-Public" / "source"
 APPENDIX_HEADER = "## Appendix: Unmapped MATLAB Files"
 
 
+def _extract_mapped_names(mapping_markdown: str) -> set[str]:
+    table_file_pattern = re.compile(r"\|\s*`([^`]+\.m)`\s*\|")
+    return {match.group(1) for match in table_file_pattern.finditer(mapping_markdown)}
+
+
 def main() -> None:
+    if not MAPPING_PATH.exists():
+        raise FileNotFoundError(f"Mapping file not found: {MAPPING_PATH}")
+    if not MATLAB_DIR.exists():
+        raise FileNotFoundError(
+            f"MATLAB source directory not found: {MATLAB_DIR}. "
+            "Populate external/Vectorization-Public/source first."
+        )
+
     mapped_content = MAPPING_PATH.read_text(encoding="utf-8")
+    mapped_names = _extract_mapped_names(mapped_content)
     files = sorted(path.name for path in MATLAB_DIR.iterdir() if path.suffix == ".m")
-    missing = [name for name in files if name not in mapped_content]
+    missing = [name for name in files if name not in mapped_names]
 
     base_content = mapped_content.split(APPENDIX_HEADER, 1)[0].rstrip()
     appendix_lines = [

@@ -16,8 +16,8 @@ Usage:
 """
 
 import argparse
-import sys
 import os
+import sys
 from pathlib import Path
 from datetime import datetime
 import warnings
@@ -41,7 +41,7 @@ def main():
     )
     parser.add_argument(
         '--matlab-path',
-        required=True,
+        required=False,
         help='Path to MATLAB executable (e.g., C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe)'
     )
     parser.add_argument(
@@ -66,8 +66,17 @@ def main():
 
     args = parser.parse_args()
 
+    if args.skip_matlab and args.skip_python:
+        print("ERROR: --skip-matlab and --skip-python cannot be used together.")
+        return 2
+
+    if not args.skip_matlab and not args.matlab_path:
+        print("ERROR: --matlab-path is required unless --skip-matlab is set.")
+        return 2
+
     # Validate input file
-    if not os.path.exists(args.input):
+    input_path = Path(args.input)
+    if not input_path.is_file():
         print(f"ERROR: Input file not found: {args.input}")
         return 1
 
@@ -77,11 +86,15 @@ def main():
         'comparison_params.json'
     )
 
-    if not os.path.exists(params_file):
+    if not Path(params_file).is_file():
         print(f"ERROR: Parameters file not found: {params_file}")
         return 1
 
-    params = load_parameters(params_file)
+    try:
+        params = load_parameters(params_file)
+    except (OSError, ValueError) as exc:
+        print(f"ERROR: Failed to load parameters from {params_file}: {exc}")
+        return 1
 
     # Create output directories with timestamp if not specified
     if args.output_dir is None:
@@ -96,7 +109,7 @@ def main():
     return orchestrate_comparison(
         input_file=args.input,
         output_dir=output_dir,
-        matlab_path=args.matlab_path,
+        matlab_path=args.matlab_path or "",
         project_root=project_root,
         params=params,
         skip_matlab=args.skip_matlab,

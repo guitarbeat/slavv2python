@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -7,6 +8,7 @@ SEARCH_ROOTS = (
     REPO_ROOT / "external" / "Vectorization-Public",
     REPO_ROOT / "workspace",
 )
+MATLAB_FUNCTION_RE = re.compile(r"^function\b", re.IGNORECASE)
 
 
 def _read_text(path: Path) -> str:
@@ -21,7 +23,7 @@ def _is_matlab_function(path: Path) -> bool:
         stripped = line.strip()
         if not stripped or stripped.startswith("%"):
             continue
-        return stripped.startswith(("function ", "function["))
+        return MATLAB_FUNCTION_RE.match(stripped) is not None
     return False
 
 

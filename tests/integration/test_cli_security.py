@@ -73,6 +73,32 @@ def test_run_matlab_cli_injection_sh(tmp_path):
     assert f"run_matlab_vectorization('{expected_escaped}'," in content
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Shell script only runs on Linux/Unix")
+def test_run_matlab_cli_sh_reports_nonzero_matlab_exit(tmp_path):
+    mock_matlab = tmp_path / "mock_matlab_fail.sh"
+    mock_matlab.write_text('#!/bin/bash\necho "MOCK MATLAB FAIL"\nexit 7', encoding="utf-8")
+    mock_matlab.chmod(0o755)
+
+    input_file = tmp_path / "input.tif"
+    input_file.touch()
+    output_dir = tmp_path / "output_dir"
+    script = SCRIPT_DIR / "run_matlab_cli.sh"
+
+    if not script.exists():
+        pytest.fail(f"Script not found at {script}")
+
+    script.chmod(0o755)
+    result = subprocess.run(
+        [str(script), str(input_file), str(output_dir), str(mock_matlab)],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 7
+    assert "ERROR: MATLAB execution failed" in result.stdout
+    assert (output_dir / "matlab_run.log").exists()
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Batch script only runs on Windows")
 def test_run_matlab_cli_injection_bat(tmp_path):
     mock_matlab = tmp_path / "mock_matlab.bat"

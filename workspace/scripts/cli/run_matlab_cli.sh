@@ -119,9 +119,12 @@ echo "Command: $MATLAB_PATH -batch \"$MATLAB_SCRIPT\""
 echo "Command: $MATLAB_PATH -batch \"$MATLAB_SCRIPT\"" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 
-# Run MATLAB
-"$MATLAB_PATH" -batch "$MATLAB_SCRIPT" >> "$LOG_FILE" 2>&1
-EXIT_CODE=$?
+# Run MATLAB. Keep explicit exit-code handling even with set -e.
+if "$MATLAB_PATH" -batch "$MATLAB_SCRIPT" >> "$LOG_FILE" 2>&1; then
+    EXIT_CODE=0
+else
+    EXIT_CODE=$?
+fi
 
 echo ""
 echo "MATLAB execution completed with exit code: $EXIT_CODE"
