@@ -932,11 +932,10 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
     return energy_data.get("energy_origin") == "matlab_batch_hdf5"
 
 
-def _matlab_parity_edge_number_tolerance(params: dict[str, Any]) -> int:
-    """Return the MATLAB-style source fanout cap for parity frontier tracing."""
+def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
+    """Return MATLAB's per-origin frontier edge budget from get_edges_for_vertex.m."""
     requested_edges = int(params.get("number_of_edges_per_vertex", 4))
-    edge_number_tolerance = int(params.get("parity_edge_number_tolerance", 2))
-    return max(1, min(requested_edges, edge_number_tolerance))
+    return max(1, requested_edges)
 
 
 def _matlab_frontier_offsets(
@@ -1405,10 +1404,10 @@ def _trace_origin_edges_matlab_frontier(
 ) -> dict[str, Any]:
     """Trace a single origin using a MATLAB-style best-first voxel frontier."""
     shape = energy.shape
-    # MATLAB's watershed frontier seeds at most ``edge_number_tolerance``
-    # directions from a source vertex. Clamp the parity helper to that same
-    # fanout so imported-MATLAB runs do not over-generate per-origin edges.
-    max_edges_per_vertex = _matlab_parity_edge_number_tolerance(params)
+    # get_edges_for_vertex.m budgets both the trace count and the visited
+    # frontier size from number_of_edges_per_vertex. The separate watershed
+    # edge_number_tolerance heuristic does not cap this frontier tracer.
+    max_edges_per_vertex = _matlab_frontier_edge_budget(params)
     max_length_ratio = float(params.get("max_edge_length_per_origin_radius", 60.0))
     strel_apothem = int(
         params.get(
@@ -1511,6 +1510,23 @@ def _trace_origin_edges_matlab_frontier(
                 new_coords.append(coord.astype(np.int32, copy=False))
                 new_distances.append(float(distance_map[linear_index]))
 
+        new_coords_array = np.zeros((0, 3), dtype=np.int32)
+        if new_coords:
+            new_coords_array = np.asarray(new_coords, dtype=np.int32)
+            new_distances_array = np.asarray(new_distances, dtype=np.float32)
+            diagnostics["stop_reason_counts"]["length_limit"] += int(
+                np.sum(new_distances_array >= max_edge_length_microns)
+            )
+            within_length = new_distances_array < max_edge_length_microns
+            new_coords_array = new_coords_array[within_length]
+            if len(new_coords_array) and has_valid_terminal_edge:
+                new_coords_array = _prune_frontier_indices_beyond_found_vertices(
+                    new_coords_array,
+                    origin_position_microns,
+                    displacement_vectors,
+                    microns_per_voxel,
+                )
+
         if terminal_vertex_idx >= 0:
             diagnostics["stop_reason_counts"]["terminal_frontier_hit"] += 1
             path_linear = [current_linear]
@@ -1560,31 +1576,21 @@ def _trace_origin_edges_matlab_frontier(
                 scale_traces.append(scale_trace)
                 origin_indices.append(origin_vertex_idx)
                 diagnostics["terminal_direct_hit_count"] += 1
-        else:
-            if new_coords:
-                new_coords_array = np.asarray(new_coords, dtype=np.int32)
-                new_distances_array = np.asarray(new_distances, dtype=np.float32)
-                diagnostics["stop_reason_counts"]["length_limit"] += int(
-                    np.sum(new_distances_array >= max_edge_length_microns)
-                )
-                within_length = new_distances_array < max_edge_length_microns
-                new_coords_array = new_coords_array[within_length]
-                if len(new_coords_array) and has_valid_terminal_edge:
-                    new_coords_array = _prune_frontier_indices_beyond_found_vertices(
-                        new_coords_array,
-                        origin_position_microns,
-                        displacement_vectors,
-                        microns_per_voxel,
-                    )
+            if len(new_coords_array):
+                # MATLAB clears the newly exposed frontier voxels after any terminal
+                # hit instead of leaving them queued for later expansion.
                 for coord in new_coords_array:
                     linear_index = _coord_to_matlab_linear_index(coord, shape)
-                    available_energy = float(energy[coord[0], coord[1], coord[2]])
-                    available_map[linear_index] = available_energy
-                    # MATLAB parity note: the tiebreaker for equal-energy
-                    # frontier voxels is the linear index, which corresponds to
-                    # MATLAB's column-major order. This matches get_edges_by_
-                    # watershed.m's implicit ordering from the priority queue.
-                    heappush(available_heap, (available_energy, linear_index))
+                    available_map.pop(linear_index, None)
+        else:
+            for coord in new_coords_array:
+                linear_index = _coord_to_matlab_linear_index(coord, shape)
+                available_energy = float(energy[coord[0], coord[1], coord[2]])
+                available_map[linear_index] = available_energy
+                # MATLAB parity note: the tiebreaker for equal-energy frontier
+                # voxels is the linear index, which corresponds to MATLAB's
+                # column-major order. This matches get_edges_for_vertex.m.
+                heappush(available_heap, (available_energy, linear_index))
 
         available_map.pop(current_linear, None)
         next_current = None
@@ -3331,18 +3337,32 @@ def extract_edges_resumable(
                 trace_metadata_item = cast("dict[str, Any]", item)
                 _record_trace_diagnostics(unit_diagnostics, trace_metadata_item)
 
-        payload = {
-            "origin_index": vertex_idx,
-            "candidate_source": "fallback",
-            "traces": unit_traces,
-            "connections": unit_connections,
-            "metrics": unit_metrics,
-            "energy_traces": unit_energy_traces,
-            "scale_traces": unit_scale_traces,
-            "origin_indices": [vertex_idx] * len(unit_traces),
-            "connection_sources": ["fallback"] * len(unit_traces),
-            "diagnostics": unit_diagnostics,
-        }
+        if use_frontier_tracer:
+            payload = {
+                "origin_index": vertex_idx,
+                "candidate_source": str(frontier_payload.get("candidate_source", "frontier")),
+                "traces": unit_traces,
+                "connections": unit_connections,
+                "metrics": unit_metrics,
+                "energy_traces": unit_energy_traces,
+                "scale_traces": unit_scale_traces,
+                "origin_indices": list(frontier_payload.get("origin_indices", [])),
+                "connection_sources": list(frontier_payload.get("connection_sources", [])),
+                "diagnostics": unit_diagnostics,
+            }
+        else:
+            payload = {
+                "origin_index": vertex_idx,
+                "candidate_source": "fallback",
+                "traces": unit_traces,
+                "connections": unit_connections,
+                "metrics": unit_metrics,
+                "energy_traces": unit_energy_traces,
+                "scale_traces": unit_scale_traces,
+                "origin_indices": [vertex_idx] * len(unit_traces),
+                "connection_sources": ["fallback"] * len(unit_traces),
+                "diagnostics": unit_diagnostics,
+            }
         atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
         _append_candidate_unit(candidates, payload)
         completed.add(vertex_idx)
