@@ -174,7 +174,7 @@ def _matlab_lumen_radius_range(
     largest_per_smallest_volume_ratio = (radius_largest / radius_smallest) ** 3
     final_scale = int(np.round(np.log2(largest_per_smallest_volume_ratio) * scales_per_octave))
     scale_ordinates: np.ndarray = np.arange(-1, final_scale + 2, dtype=float)
-    scale_factors = 2 ** (scale_ordinates / scales_per_octave / 3.0)
+    scale_factors: np.ndarray = np.power(2.0, scale_ordinates / scales_per_octave / 3.0)
     return scale_ordinates, radius_smallest * scale_factors
 
 
@@ -281,15 +281,15 @@ def _matlab_hessian_energy(
         microns_per_voxel,
     )
 
-    laplacian = h_yy + h_xx + h_zz
+    laplacian: np.ndarray = h_yy + h_xx + h_zz
     if energy_sign < 0:
-        valid = laplacian < 0
+        valid: np.ndarray = laplacian < 0
         energy = np.full(image.shape, np.inf, dtype=np.float32)
     else:
         valid = laplacian > 0
         energy = np.full(image.shape, -np.inf, dtype=np.float32)
     if not np.any(valid):
-        return energy  # type: ignore[no-any-return]
+        return energy
 
     grad_valid = np.stack([grad_y[valid], grad_x[valid], grad_z[valid]], axis=1).astype(np.float64)
     hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
@@ -320,7 +320,7 @@ def _matlab_hessian_energy(
         energy_valid[energy_valid <= 0] = -np.inf
 
     energy[valid] = energy_valid.astype(np.float32, copy=False)
-    return energy  # type: ignore[no-any-return]
+    return energy
 
 
 def calculate_energy_field(
@@ -364,21 +364,22 @@ def calculate_energy_field(
         else:
             coefficient, exponent = 0.325, 0.91
 
-        microns_per_sigma_PSF = [
-            excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
-            excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
-            excitation_wavelength
-            / (2**0.5)
-            * 0.532
-            / (
-                sample_index_of_refraction
-                - (sample_index_of_refraction**2 - numerical_aperture**2) ** 0.5
-            ),
-        ]
+        microns_per_sigma_PSF = np.array(
+            [
+                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
+                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
+                excitation_wavelength
+                / (2**0.5)
+                * 0.532
+                / (
+                    sample_index_of_refraction
+                    - (sample_index_of_refraction**2 - numerical_aperture**2) ** 0.5
+                ),
+            ],
+            dtype=float,
+        )
     else:
-        microns_per_sigma_PSF = [0.0, 0.0, 0.0]
-
-    microns_per_sigma_PSF = np.array(microns_per_sigma_PSF, dtype=float)
+        microns_per_sigma_PSF = np.zeros(3, dtype=float)
     pixels_per_sigma_PSF = microns_per_sigma_PSF / voxel_size
 
     # Calculate scale range following MATLAB ordination.
