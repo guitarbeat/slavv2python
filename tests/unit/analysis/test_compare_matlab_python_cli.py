@@ -50,6 +50,45 @@ def test_cli_rejects_invalid_flag_combinations(
     assert expected_message in capsys.readouterr().out
 
 
+def test_cli_requires_input_when_not_in_standalone_mode(cli_module, monkeypatch, capsys):
+    _run_cli(monkeypatch, ["--skip-matlab"])
+
+    assert cli_module.main() == 2
+    assert (
+        "--input is required unless standalone comparison directories are provided"
+        in capsys.readouterr().out
+    )
+
+
+def test_cli_requires_both_standalone_directories(cli_module, tmp_path, monkeypatch, capsys):
+    matlab_dir = tmp_path / "matlab_results"
+    matlab_dir.mkdir()
+    _run_cli(monkeypatch, ["--standalone-matlab-dir", str(matlab_dir)])
+
+    assert cli_module.main() == 2
+    assert "must be provided together" in capsys.readouterr().out
+
+
+def test_cli_rejects_validate_only_in_standalone_mode(cli_module, tmp_path, monkeypatch, capsys):
+    matlab_dir = tmp_path / "matlab_results"
+    python_dir = tmp_path / "python_results"
+    matlab_dir.mkdir()
+    python_dir.mkdir()
+    _run_cli(
+        monkeypatch,
+        [
+            "--standalone-matlab-dir",
+            str(matlab_dir),
+            "--standalone-python-dir",
+            str(python_dir),
+            "--validate-only",
+        ],
+    )
+
+    assert cli_module.main() == 2
+    assert "standalone comparison cannot be combined" in capsys.readouterr().out
+
+
 def test_cli_allows_skip_matlab_without_matlab_path(cli_module, tmp_path, monkeypatch):
     input_file = _write_input_file(tmp_path)
     params_file = tmp_path / "params.json"
@@ -128,3 +167,89 @@ def test_cli_handles_parameter_load_error(cli_module, tmp_path, monkeypatch, cap
 
     assert cli_module.main() == 1
     assert "Failed to load parameters" in capsys.readouterr().out
+
+
+def test_cli_passes_comparison_depth_and_resume_latest(cli_module, tmp_path, monkeypatch):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    existing_run = tmp_path / "comparisons" / "20260406_120000_comparison"
+    (existing_run / "99_Metadata").mkdir(parents=True)
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+    monkeypatch.setattr(
+        cli_module,
+        "list_runs",
+        lambda _base_dir: [{"path": existing_run}],
+    )
+
+    def fake_orchestrate(*, output_dir, comparison_depth, **_kwargs):
+        observed["output_dir"] = output_dir
+        observed["comparison_depth"] = comparison_depth
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-matlab",
+            "--resume-latest",
+            "--comparison-depth",
+            "shallow",
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"] == existing_run
+    assert observed["comparison_depth"] == "shallow"
+
+
+def test_cli_runs_standalone_comparison_with_explicit_python_result_source(
+    cli_module, tmp_path, monkeypatch
+):
+    matlab_dir = tmp_path / "matlab_results"
+    python_dir = tmp_path / "python_results"
+    output_dir = tmp_path / "comparison_output"
+    matlab_dir.mkdir()
+    python_dir.mkdir()
+    observed = {}
+
+    def fake_run_standalone_comparison(
+        *, matlab_dir, python_dir, output_dir, project_root, python_result_source, comparison_depth
+    ):
+        observed["matlab_dir"] = matlab_dir
+        observed["python_dir"] = python_dir
+        observed["output_dir"] = output_dir
+        observed["project_root"] = project_root
+        observed["python_result_source"] = python_result_source
+        observed["comparison_depth"] = comparison_depth
+        return 0
+
+    monkeypatch.setattr(cli_module, "run_standalone_comparison", fake_run_standalone_comparison)
+    _run_cli(
+        monkeypatch,
+        [
+            "--standalone-matlab-dir",
+            str(matlab_dir),
+            "--standalone-python-dir",
+            str(python_dir),
+            "--output-dir",
+            str(output_dir),
+            "--python-result-source",
+            "network-json-only",
+            "--comparison-depth",
+            "shallow",
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["matlab_dir"] == matlab_dir
+    assert observed["python_dir"] == python_dir
+    assert observed["output_dir"] == output_dir
+    assert observed["python_result_source"] == "network-json-only"
+    assert observed["comparison_depth"] == "shallow"

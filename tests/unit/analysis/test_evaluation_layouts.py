@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from slavv.evaluation.management import (
+    collect_directory_inventory,
     generate_manifest,
     list_runs,
     load_run_info,
@@ -45,6 +46,23 @@ def test_load_run_info_reads_report_from_analysis_stage(tmp_path: Path):
     assert info["has_python"] is True
     assert info["has_report"] is True
     assert info["speedup"] == 2.0
+
+
+def test_collect_directory_inventory_returns_size_and_type_buckets(tmp_path: Path):
+    run_dir = tmp_path / "20260209_173550_full_run"
+    (run_dir / "03_Analysis").mkdir(parents=True)
+    json_file = run_dir / "03_Analysis" / "comparison_report.json"
+    text_file = run_dir / "99_Metadata" / "notes.txt"
+    (run_dir / "99_Metadata").mkdir(parents=True)
+    json_file.write_text("{}", encoding="utf-8")
+    text_file.write_text("hello", encoding="utf-8")
+
+    inventory = collect_directory_inventory(run_dir)
+
+    assert inventory["total_size"] == json_file.stat().st_size + text_file.stat().st_size
+    assert inventory["inventory"]["json"] == [json_file]
+    assert inventory["inventory"]["txt"] == [text_file]
+    assert inventory["inventory"]["other"] == []
 
 
 def test_load_run_info_normalizes_staged_input_path(tmp_path: Path):
@@ -300,6 +318,8 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
         in summary
     )
     assert "Python energy source: matlab_batch_hdf5" in summary
+    assert "Triage Recommendation" in summary
+    assert "Start with candidate-endpoint coverage before edge or strand diffs." in summary
 
 
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):

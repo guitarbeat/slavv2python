@@ -44,6 +44,14 @@ from .preflight import (
 )
 from .reporting import generate_summary
 
+_PYTHON_RESULT_SOURCE_CHOICES = {
+    "auto",
+    "checkpoints-only",
+    "export-json-only",
+    "network-json-only",
+}
+_COMPARISON_DEPTH_CHOICES = {"shallow", "deep"}
+
 
 def _json_default(value: Any) -> Any:
     """Serialize numpy-heavy comparison parameters to JSON."""
@@ -62,6 +70,28 @@ def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
         return "native_python"
     return str(
         energy_data.get("energy_source") or energy_data.get("energy_origin") or "native_python"
+    )
+
+
+def _should_load_deep_matlab_results(comparison_depth: str) -> bool:
+    """Return whether comparison should parse the full MATLAB batch surface."""
+    normalized = comparison_depth.strip().lower()
+    if normalized not in _COMPARISON_DEPTH_CHOICES:
+        raise ValueError(
+            f"Unsupported comparison depth '{comparison_depth}'. "
+            f"Expected one of: {sorted(_COMPARISON_DEPTH_CHOICES)}"
+        )
+    return normalized == "deep"
+
+
+def _print_reuse_guidance(run_root: Path) -> None:
+    """Print a concise reminder that the current run root is reusable."""
+    print("\n" + "=" * 60)
+    print("Reuse Guidance")
+    print("=" * 60)
+    print(f"Reuse this output dir for the next parity rerun: {run_root}")
+    print(
+        "Prefer reusing this staged run root for imported-MATLAB parity loops before launching MATLAB again."
     )
 
 
@@ -657,6 +687,7 @@ def orchestrate_comparison(
     skip_python: bool = False,
     validate_only: bool = False,
     minimal_exports: bool = False,
+    comparison_depth: str = "deep",
 ) -> int:
     """Run full comparison workflow."""
     layout = resolve_run_layout(output_dir)
@@ -960,12 +991,15 @@ def orchestrate_comparison(
         matlab_parsed = None
         if matlab_results.get("success") and matlab_results.get("batch_folder"):
             print("\nLoading MATLAB output data...")
-            try:
-                matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
-                print(f"Successfully loaded MATLAB data from {matlab_results['batch_folder']}")
-            except Exception as e:
-                print(f"Warning: Could not load MATLAB output data: {e}")
-                print("Comparison will proceed with basic metrics only.")
+            if _should_load_deep_matlab_results(comparison_depth):
+                try:
+                    matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
+                    print(f"Successfully loaded MATLAB data from {matlab_results['batch_folder']}")
+                except Exception as e:
+                    print(f"Warning: Could not load MATLAB output data: {e}")
+                    print("Comparison will proceed with basic metrics only.")
+            else:
+                print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
 
         comparison = compare_results(matlab_results, python_results, matlab_parsed)
 
@@ -994,7 +1028,10 @@ def orchestrate_comparison(
             "comparison_analysis",
             status="completed",
             detail="Comparison report generated",
-            artifacts={"comparison_report": str(report_file)},
+            artifacts={
+                "comparison_report": str(report_file),
+                "comparison_depth": comparison_depth,
+            },
         )
 
     # Generate summary.txt automatically
@@ -1021,12 +1058,168 @@ def orchestrate_comparison(
     # Print final summary status
     if matlab_results and python_results:
         success = matlab_results.get("success") and python_results.get("success")
+        if success:
+            _print_reuse_guidance(run_root)
         return 0 if success else 1
     return 0
 
 
+def _load_python_results_from_source(
+    python_root: Path,
+    python_result_source: str,
+) -> dict[str, Any]:
+    """Load Python comparison data from the requested source."""
+    normalized_source = python_result_source.strip().lower()
+    if normalized_source not in _PYTHON_RESULT_SOURCE_CHOICES:
+        raise ValueError(
+            f"Unsupported python result source '{python_result_source}'. "
+            f"Expected one of: {sorted(_PYTHON_RESULT_SOURCE_CHOICES)}"
+        )
+
+    source_order: list[str]
+    if normalized_source == "auto":
+        source_order = ["checkpoints-only", "export-json-only", "network-json-only"]
+    else:
+        source_order = [normalized_source]
+
+    result_payload = {"success": True, "output_dir": str(python_root), "elapsed_time": 0.0}
+    source_errors: list[str] = []
+
+    for source_name in source_order:
+        if source_name == "checkpoints-only":
+            checkpoint_results = _load_python_results_from_checkpoints(python_root)
+            if checkpoint_results is None:
+                source_errors.append("checkpoints unavailable")
+                continue
+
+            print(f"Loading Python results from checkpoints in: {python_root / 'checkpoints'}")
+            result_payload["results"] = checkpoint_results
+            result_payload["vertices_count"] = len(
+                checkpoint_results.get("vertices", {}).get("positions", [])
+            )
+            result_payload["edges_count"] = len(
+                checkpoint_results.get("edges", {}).get("traces", [])
+            )
+            result_payload["network_strands_count"] = len(
+                checkpoint_results.get("network", {}).get("strands", [])
+            )
+            result_payload["comparison_mode"] = {
+                "result_source": "checkpoints",
+                "energy_source": _resolve_python_energy_source(
+                    checkpoint_results.get("energy_data")
+                ),
+            }
+            return result_payload
+
+        if source_name == "export-json-only":
+            json_files = [
+                path
+                for path in glob.glob(str(python_root / "python_comparison_*.json"))
+                if not path.endswith("_parameters.json")
+            ]
+            if not json_files:
+                source_errors.append("export_json unavailable")
+                continue
+
+            latest_json = sorted(json_files)[-1]
+            print(f"Loading Python results from: {latest_json}")
+            try:
+                with open(latest_json) as f:
+                    loaded_data = json.load(f)
+
+                if "vertices" in loaded_data and "positions" in loaded_data["vertices"]:
+                    loaded_data["vertices"]["positions"] = np.array(
+                        loaded_data["vertices"]["positions"]
+                    )
+                    if "radii" in loaded_data["vertices"]:
+                        loaded_data["vertices"]["radii"] = np.array(
+                            loaded_data["vertices"]["radii"]
+                        )
+
+                if "edges" in loaded_data and "traces" in loaded_data["edges"]:
+                    loaded_data["edges"]["traces"] = [
+                        np.array(t) for t in loaded_data["edges"]["traces"]
+                    ]
+
+                result_payload["results"] = loaded_data
+                result_payload["vertices_count"] = len(
+                    loaded_data.get("vertices", {}).get("positions", [])
+                )
+                result_payload["edges_count"] = len(loaded_data.get("edges", {}).get("traces", []))
+                result_payload["network_strands_count"] = len(
+                    loaded_data.get("network", {}).get("strands", [])
+                )
+                result_payload["comparison_mode"] = {
+                    "result_source": "export_json",
+                    "energy_source": "native_python",
+                }
+                return result_payload
+            except Exception as e:
+                result_payload["success"] = False
+                source_errors.append(f"export_json error: {e}")
+                continue
+
+        if source_name == "network-json-only":
+            network_json_paths = glob.glob(str(python_root / "network.json"))
+            if not network_json_paths:
+                source_errors.append("network_json unavailable")
+                continue
+
+            network_json = network_json_paths[0]
+            print(f"Loading Python results from fallback: {network_json}")
+            try:
+                with open(network_json) as f:
+                    net_data = json.load(f)
+
+                loaded_data = {
+                    "vertices": net_data.get("vertices", {}),
+                    "edges": net_data.get("edges", {}),
+                    "network": net_data.get("network", {}),
+                }
+
+                if "positions" in loaded_data["vertices"]:
+                    loaded_data["vertices"]["positions"] = np.array(
+                        loaded_data["vertices"]["positions"]
+                    )
+
+                result_payload["results"] = loaded_data
+                result_payload["vertices_count"] = len(
+                    loaded_data.get("vertices", {}).get("positions", [])
+                )
+                if "connections" in loaded_data.get("edges", {}):
+                    result_payload["edges_count"] = len(loaded_data["edges"]["connections"])
+                else:
+                    result_payload["edges_count"] = len(
+                        loaded_data.get("edges", {}).get("traces", [])
+                    )
+                result_payload["network_strands_count"] = len(
+                    loaded_data.get("network", {}).get("strands", [])
+                )
+                result_payload["comparison_mode"] = {
+                    "result_source": "network_json",
+                    "energy_source": "native_python",
+                }
+                return result_payload
+            except Exception as e:
+                result_payload["success"] = False
+                source_errors.append(f"network_json error: {e}")
+                continue
+
+    result_payload["success"] = False
+    result_payload["error"] = (
+        "; ".join(source_errors) if source_errors else "No result files found."
+    )
+    return result_payload
+
+
 def run_standalone_comparison(
-    matlab_dir: Path, python_dir: Path, output_dir: Path, project_root: Path
+    matlab_dir: Path,
+    python_dir: Path,
+    output_dir: Path,
+    project_root: Path,
+    *,
+    python_result_source: str = "auto",
+    comparison_depth: str = "deep",
 ) -> int:
     """
     Run comparison on existing result directories.
@@ -1074,132 +1267,26 @@ def run_standalone_comparison(
     else:
         print("Warning: No MATLAB batch_* folder found.")
 
-    # 2. Reconstruct Python results dict
-    python_results = {"success": True, "output_dir": str(python_dir), "elapsed_time": 0.0}
-
     python_layout = resolve_run_layout(python_dir)
     python_root = python_layout["python_dir"]
-    checkpoint_results = _load_python_results_from_checkpoints(python_root)
-    if checkpoint_results is not None:
-        print(f"Loading Python results from checkpoints in: {python_root / 'checkpoints'}")
-        python_results["results"] = checkpoint_results
-        python_results["vertices_count"] = len(
-            checkpoint_results.get("vertices", {}).get("positions", [])
-        )
-        python_results["edges_count"] = len(checkpoint_results.get("edges", {}).get("traces", []))
-        python_results["network_strands_count"] = len(
-            checkpoint_results.get("network", {}).get("strands", [])
-        )
-        python_results["comparison_mode"] = {
-            "result_source": "checkpoints",
-            "energy_source": _resolve_python_energy_source(checkpoint_results.get("energy_data")),
-        }
-    else:
-        # Load python results
-        # Try finding exported Python result JSON. Ignore parameter-only files.
-        json_files = [
-            path
-            for path in glob.glob(str(python_root / "python_comparison_*.json"))
-            if not path.endswith("_parameters.json")
-        ]
-
-        if json_files:
-            # Load the latest one
-            latest_json = sorted(json_files)[-1]
-            print(f"Loading Python results from: {latest_json}")
-            try:
-                with open(latest_json) as f:
-                    loaded_data = json.load(f)
-
-                # Need to convert lists back to numpy arrays for metric comparison
-                if "vertices" in loaded_data and "positions" in loaded_data["vertices"]:
-                    loaded_data["vertices"]["positions"] = np.array(
-                        loaded_data["vertices"]["positions"]
-                    )
-                    if "radii" in loaded_data["vertices"]:
-                        loaded_data["vertices"]["radii"] = np.array(
-                            loaded_data["vertices"]["radii"]
-                        )
-
-                if "edges" in loaded_data and "traces" in loaded_data["edges"]:
-                    loaded_data["edges"]["traces"] = [
-                        np.array(t) for t in loaded_data["edges"]["traces"]
-                    ]
-
-                python_results["results"] = loaded_data
-                python_results["vertices_count"] = len(
-                    loaded_data.get("vertices", {}).get("positions", [])
-                )
-                python_results["edges_count"] = len(loaded_data.get("edges", {}).get("traces", []))
-                python_results["network_strands_count"] = len(
-                    loaded_data.get("network", {}).get("strands", [])
-                )
-                python_results["comparison_mode"] = {
-                    "result_source": "export_json",
-                    "energy_source": "native_python",
-                }
-            except Exception as e:
-                print(f"Error loading Python JSON: {e}")
-                python_results["success"] = False
-        else:
-            print("Warning: No python_comparison_*.json found. Checking for network.json...")
-            network_json_paths = glob.glob(str(python_root / "network.json"))
-
-            if network_json_paths:
-                network_json = network_json_paths[0]
-                print(f"Loading Python results from fallback: {network_json}")
-                try:
-                    with open(network_json) as f:
-                        net_data = json.load(f)
-
-                    loaded_data = {
-                        "vertices": net_data.get("vertices", {}),
-                        "edges": net_data.get("edges", {}),
-                        "network": net_data.get("network", {}),
-                    }
-
-                    if "positions" in loaded_data["vertices"]:
-                        loaded_data["vertices"]["positions"] = np.array(
-                            loaded_data["vertices"]["positions"]
-                        )
-
-                    if "connections" in loaded_data["edges"]:
-                        python_results["edges_count"] = len(loaded_data["edges"]["connections"])
-
-                    python_results["results"] = loaded_data
-                    python_results["vertices_count"] = len(
-                        loaded_data.get("vertices", {}).get("positions", [])
-                    )
-                    if "connections" in loaded_data.get("edges", {}):
-                        python_results["edges_count"] = len(loaded_data["edges"]["connections"])
-                    else:
-                        python_results["edges_count"] = len(
-                            loaded_data.get("edges", {}).get("traces", [])
-                        )
-                    python_results["network_strands_count"] = len(
-                        loaded_data.get("network", {}).get("strands", [])
-                    )
-                    python_results["comparison_mode"] = {
-                        "result_source": "network_json",
-                        "energy_source": "native_python",
-                    }
-                except Exception as e:
-                    print(f"Error loading network.json: {e}")
-                    python_results["success"] = False
-            else:
-                print("Error: No result files found.")
-                python_results["success"] = False
+    python_results = _load_python_results_from_source(python_root, python_result_source)
+    if not python_results.get("success"):
+        print(f"Error loading Python results: {python_results.get('error', 'unknown error')}")
+        return 1
 
     # 3. Compare
     # Try to load parsed MATLAB data
     matlab_parsed = None
     if matlab_results.get("batch_folder"):
         print("\nLoading MATLAB output data...")
-        try:
-            matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
-            print("Successfully loaded MATLAB data")
-        except Exception as e:
-            print(f"Warning: Could not load MATLAB output data: {e}")
+        if _should_load_deep_matlab_results(comparison_depth):
+            try:
+                matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
+                print("Successfully loaded MATLAB data")
+            except Exception as e:
+                print(f"Warning: Could not load MATLAB output data: {e}")
+        else:
+            print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
 
     comparison = compare_results(matlab_results, python_results, matlab_parsed)
 
@@ -1238,4 +1325,5 @@ def run_standalone_comparison(
     except Exception as e:
         print(f"Note: Could not auto-generate manifest: {e}")
 
+    _print_reuse_guidance(layout["run_root"])
     return 0

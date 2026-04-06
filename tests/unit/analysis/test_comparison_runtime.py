@@ -356,6 +356,114 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert (output_dir / "99_Metadata" / "output_preflight.json").exists()
 
 
+def test_orchestrate_comparison_shallow_mode_skips_matlab_parse(tmp_path: Path, monkeypatch):
+    import slavv.evaluation.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+
+    def fake_run_matlab_vectorization(
+        _input, _output, _matlab_path, _project_root, params_file=None
+    ):
+        batch_folder.mkdir(parents=True, exist_ok=True)
+        return {
+            "success": True,
+            "batch_folder": str(batch_folder),
+            "elapsed_time": 12.0,
+            "params_file": params_file,
+        }
+
+    def fake_run_python_vectorization(_input, output, _params, run_dir=None, force_rerun_from=None):
+        Path(output).mkdir(parents=True, exist_ok=True)
+        return {
+            "success": True,
+            "elapsed_time": 3.0,
+            "run_dir": run_dir,
+            "force_rerun_from": force_rerun_from,
+        }
+
+    def fail_load_matlab_batch_results(_batch_folder):
+        raise AssertionError("deep MATLAB parsing should be skipped in shallow mode")
+
+    captured = {}
+
+    def fake_compare_results(_matlab_results, _python_results, matlab_parsed):
+        captured["matlab_parsed"] = matlab_parsed
+        return {
+            "matlab": {"elapsed_time": 12.0},
+            "python": {"elapsed_time": 3.0},
+            "performance": {"speedup": 4.0, "faster": "Python"},
+            "vertices": {"matlab_count": 10, "python_count": 9},
+            "edges": {"matlab_count": 5, "python_count": 5},
+            "network": {"strand_delta": 0},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fake_run_matlab_vectorization
+    )
+    monkeypatch.setattr(
+        comparison_module, "run_python_vectorization", fake_run_python_vectorization
+    )
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fail_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_summary",
+        lambda _output_dir, summary_file: (
+            summary_file.parent.mkdir(parents=True, exist_ok=True)
+            or summary_file.write_text("summary", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_manifest",
+        lambda _output_dir, manifest_file: (
+            manifest_file.parent.mkdir(parents=True, exist_ok=True)
+            or manifest_file.write_text("# manifest", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
+    matlab_status_reports = iter(
+        [
+            _make_matlab_status_report(output_dir, resume_mode="fresh", batch_folder=None),
+            _make_matlab_status_report(
+                output_dir,
+                resume_mode="complete-noop",
+                batch_folder=batch_folder,
+                last_completed_stage="network",
+                next_stage="",
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: next(matlab_status_reports),
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+        comparison_depth="shallow",
+    )
+
+    assert result == 0
+    assert captured["matlab_parsed"] is None
+
+
 def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     tmp_path: Path, monkeypatch
 ):
@@ -770,3 +878,67 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
     assert captured["comparison_mode"]["result_source"] == "checkpoints"
     assert captured["comparison_mode"]["energy_source"] == "matlab_batch_hdf5"
     assert captured["candidate_edges"]["connections"] == [[0, 1], [1, 2]]
+
+
+def test_run_standalone_comparison_can_force_network_json_source(tmp_path: Path, monkeypatch):
+    import slavv.evaluation.comparison as comparison_module
+
+    run_dir = tmp_path / "comparison_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    checkpoint_dir = python_dir / "checkpoints"
+    batch_dir = matlab_dir / "batch_260326-090000"
+    batch_dir.mkdir(parents=True)
+    checkpoint_dir.mkdir(parents=True)
+
+    joblib.dump({"positions": [[9, 9, 9]]}, checkpoint_dir / "checkpoint_vertices.pkl")
+    (python_dir / "network.json").write_text(
+        json.dumps(
+            {
+                "vertices": {"positions": [[1, 2, 3]]},
+                "edges": {"connections": [[0, 0]], "traces": []},
+                "network": {"strands": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {
+            "vertices": {"count": 1, "positions": []},
+            "edges": {"count": 1, "connections": [[0, 0]], "traces": []},
+            "network": {"strands": []},
+            "network_stats": {"strand_count": 0},
+        }
+
+    captured = {}
+
+    def fake_compare_results(_matlab_results, python_results, _matlab_parsed):
+        captured["comparison_mode"] = python_results["comparison_mode"]
+        captured["vertex_positions"] = python_results["results"]["vertices"]["positions"].tolist()
+        return {
+            "matlab": {"elapsed_time": 0.0},
+            "python": {"elapsed_time": 0.0},
+            "performance": {},
+            "vertices": {"matlab_count": 1, "python_count": 1},
+            "edges": {"matlab_count": 1, "python_count": 1},
+            "network": {"matlab_strand_count": 0, "python_strand_count": 0},
+            "parity_gate": {"vertices_exact": True, "edges_exact": True, "strands_exact": True},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+
+    result = run_standalone_comparison(
+        matlab_dir,
+        python_dir,
+        run_dir,
+        tmp_path,
+        python_result_source="network-json-only",
+    )
+
+    assert result == 0
+    assert captured["comparison_mode"]["result_source"] == "network_json"
+    assert captured["vertex_positions"] == [[1, 2, 3]]

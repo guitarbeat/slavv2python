@@ -17,27 +17,49 @@ from slavv.utils import format_size
 
 logger = logging.getLogger(__name__)
 
+_INVENTORY_EXTENSIONS = ("vmv", "casx", "csv", "json", "mat", "pkl", "png", "txt")
+
+
+def _build_empty_inventory() -> dict[str, list[Path]]:
+    """Create the normalized file inventory buckets used by manifests and run info."""
+    inventory: dict[str, list[Path]] = {ext: [] for ext in _INVENTORY_EXTENSIONS}
+    inventory["other"] = []
+    return inventory
+
+
+def collect_directory_inventory(path: Path) -> dict[str, Any]:
+    """Scan a directory once and return both total size and extension-grouped inventory."""
+    inventory = _build_empty_inventory()
+    total_size = 0
+
+    try:
+        for item in path.rglob("*"):
+            if not item.is_file():
+                continue
+            size = item.stat().st_size
+            total_size += size
+            ext = item.suffix.lower().lstrip(".")
+            inventory[ext if ext in inventory else "other"].append(item)
+    except PermissionError:
+        pass
+
+    return {"total_size": total_size, "inventory": inventory}
+
 
 def get_directory_size(path: Path) -> int:
     """Calculate total size of directory in bytes."""
-    total = 0
-    try:
-        for item in path.rglob("*"):
-            if item.is_file():
-                total += item.stat().st_size
-    except PermissionError:
-        pass
-    return total
+    return int(collect_directory_inventory(path)["total_size"])
 
 
 def load_run_info(run_dir: Path) -> dict[str, Any]:
     """Load information about a comparison run."""
     layout = resolve_run_layout(run_dir)
     run_root = layout["run_root"]
+    directory_inventory = collect_directory_inventory(run_root)
     info = {
         "name": run_root.name,
         "path": run_root,
-        "size": get_directory_size(run_root),
+        "size": directory_inventory["total_size"],
         "has_matlab": layout["matlab_dir"].exists(),
         "has_python": layout["python_dir"].exists(),
         "has_report": layout["report_file"].exists(),
@@ -226,27 +248,7 @@ def cleanup_checkpoints(run_data: dict[str, Any]) -> int:
 
 def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
     """Get inventory of files organized by type."""
-    inventory = {
-        "vmv": [],
-        "casx": [],
-        "csv": [],
-        "json": [],
-        "mat": [],
-        "pkl": [],
-        "png": [],
-        "txt": [],
-        "other": [],
-    }
-
-    for file_path in directory.rglob("*"):
-        if file_path.is_file():
-            ext = file_path.suffix.lower().lstrip(".")
-            if ext in inventory:
-                inventory[ext].append(file_path)
-            else:
-                inventory["other"].append(file_path)
-
-    return inventory
+    return collect_directory_inventory(directory)["inventory"]
 
 
 def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> str:
@@ -276,10 +278,9 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
             pass
 
     # Get file inventory
-    inventory = get_file_inventory(run_root)
-
-    # Calculate total size
-    total_size = sum(f.stat().st_size for f in run_root.rglob("*") if f.is_file())
+    directory_inventory = collect_directory_inventory(run_root)
+    inventory = directory_inventory["inventory"]
+    total_size = directory_inventory["total_size"]
 
     # Build manifest content
     lines = []

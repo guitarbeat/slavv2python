@@ -132,6 +132,34 @@ def generate_summary(run_dir: Path, output_file: Path):
 
     lines.append("")
 
+    candidate_coverage = (
+        report.get("edges", {}).get("diagnostics", {}).get("candidate_endpoint_coverage", {})
+    )
+    if report:
+        missing_candidate_pairs = int(
+            candidate_coverage.get("missing_matlab_endpoint_pair_count", 0)
+        )
+        extra_candidate_pairs = int(
+            candidate_coverage.get("extra_candidate_endpoint_pair_count", 0)
+        )
+        lines.append("Triage Recommendation")
+        lines.append("-" * 70)
+        if missing_candidate_pairs > 0:
+            lines.append("Start with candidate-endpoint coverage before edge or strand diffs.")
+            lines.append(
+                "Focus: missing MATLAB endpoint pairs indicate the parity gap is still in candidate generation."
+            )
+        elif extra_candidate_pairs > 0:
+            lines.append("Start with candidate-endpoint coverage before final edge diffs.")
+            lines.append(
+                "Focus: extra candidate endpoint pairs suggest Python is over-generating before cleanup."
+            )
+        else:
+            lines.append(
+                "Candidate-endpoint coverage looks healthy; move to final edge and strand diffs next."
+            )
+        lines.append("")
+
     if report and "parity_gate" in report:
         lines.append("Parity Gate")
         lines.append("-" * 70)
