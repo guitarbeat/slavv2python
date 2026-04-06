@@ -439,6 +439,7 @@ def run_python_vectorization(
     params: dict[str, Any],
     run_dir: str | None = None,
     force_rerun_from: str | None = None,
+    minimal_exports: bool = False,
 ) -> dict[str, Any]:
     """Run Python vectorization."""
     print("\n" + "=" * 60)
@@ -526,38 +527,43 @@ def run_python_vectorization(
         print("Exporting results...")
         export_pipeline_results(results, output_dir, base_name="python_comparison")
 
-        # Export VMV and CASX formats for visualization
-        print("Exporting VMV and CASX formats...")
-        try:
-            visualizer = NetworkVisualizer()
-            vmv_path = os.path.join(output_dir, "network.vmv")
-            casx_path = os.path.join(output_dir, "network.casx")
-            csv_base = os.path.join(output_dir, "network")
-            json_path = os.path.join(output_dir, "network.json")
+        if minimal_exports:
+            print("Minimal export mode enabled; skipping VMV/CASX/CSV/JSON extra exports.")
+            python_results["exports"] = {"profile": "minimal"}
+        else:
+            # Export VMV and CASX formats for visualization
+            print("Exporting VMV and CASX formats...")
+            try:
+                visualizer = NetworkVisualizer()
+                vmv_path = os.path.join(output_dir, "network.vmv")
+                casx_path = os.path.join(output_dir, "network.casx")
+                csv_base = os.path.join(output_dir, "network")
+                json_path = os.path.join(output_dir, "network.json")
 
-            visualizer.export_network_data(results, vmv_path, format="vmv")
-            print(f"  VMV export: {vmv_path}")
+                visualizer.export_network_data(results, vmv_path, format="vmv")
+                print(f"  VMV export: {vmv_path}")
 
-            visualizer.export_network_data(results, casx_path, format="casx")
-            print(f"  CASX export: {casx_path}")
+                visualizer.export_network_data(results, casx_path, format="casx")
+                print(f"  CASX export: {casx_path}")
 
-            visualizer.export_network_data(results, csv_base, format="csv")
-            print(f"  CSV export: {csv_base}_vertices.csv, {csv_base}_edges.csv")
+                visualizer.export_network_data(results, csv_base, format="csv")
+                print(f"  CSV export: {csv_base}_vertices.csv, {csv_base}_edges.csv")
 
-            visualizer.export_network_data(results, json_path, format="json")
-            print(f"  JSON export: {json_path}")
+                visualizer.export_network_data(results, json_path, format="json")
+                print(f"  JSON export: {json_path}")
 
-            python_results["exports"] = {
-                "vmv": vmv_path,
-                "casx": casx_path,
-                "csv": csv_base,
-                "json": json_path,
-            }
-        except Exception as e:
-            print(f"  Warning: Export failed: {e}")
-            import traceback
+                python_results["exports"] = {
+                    "profile": "full",
+                    "vmv": vmv_path,
+                    "casx": casx_path,
+                    "csv": csv_base,
+                    "json": json_path,
+                }
+            except Exception as e:
+                print(f"  Warning: Export failed: {e}")
+                import traceback
 
-            traceback.print_exc()
+                traceback.print_exc()
 
         candidate_edges = _load_python_candidate_edges(Path(output_dir))
         if candidate_edges is not None:
@@ -649,6 +655,8 @@ def orchestrate_comparison(
     params: dict[str, Any],
     skip_matlab: bool = False,
     skip_python: bool = False,
+    validate_only: bool = False,
+    minimal_exports: bool = False,
 ) -> int:
     """Run full comparison workflow."""
     layout = resolve_run_layout(output_dir)
@@ -662,6 +670,48 @@ def orchestrate_comparison(
     python_force_rerun_from: str | None = None
     preflight_report: OutputRootPreflightReport | None = None
     matlab_status_report: MatlabStatusReport | None = None
+
+    if validate_only:
+        preflight_report = evaluate_output_root_preflight(run_root)
+        preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
+        print("\n" + "=" * 60)
+        print("Output Root Preflight")
+        print("=" * 60)
+        print(summarize_output_preflight(preflight_report))
+        for warning in preflight_report.warnings:
+            print(f"WARNING: {warning}")
+        for error in preflight_report.errors:
+            print(f"ERROR: {error}")
+
+        comparison_context = RunContext(
+            run_dir=run_root,
+            target_stage="network",
+            provenance={"source": "comparison", "input_file": input_file},
+        )
+        _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
+        if not preflight_report.allows_launch:
+            comparison_context.mark_run_status(
+                "failed",
+                current_stage="preflight",
+                detail=summarize_output_preflight(preflight_report),
+            )
+            print(f"Recommended action: {preflight_report.recommended_action}")
+            return 1
+
+        print("\nValidation-only mode enabled.")
+        print("Preflight checks passed; skipping MATLAB/Python execution.")
+        comparison_context.mark_run_status(
+            "completed",
+            current_stage="preflight",
+            detail="Validation-only mode completed successfully.",
+        )
+        try:
+            manifest_file = metadata_dir / "run_manifest.md"
+            generate_manifest(run_root, manifest_file)
+            print(f"Manifest generated: {manifest_file}")
+        except Exception as e:
+            print(f"Note: Could not auto-generate manifest: {e}")
+        return 0
 
     if not skip_matlab:
         preflight_report = evaluate_output_root_preflight(run_root)
@@ -877,6 +927,7 @@ def orchestrate_comparison(
             params_for_python,
             run_dir=str(run_root),
             force_rerun_from=python_force_rerun_from,
+            minimal_exports=minimal_exports,
         )
         comparison_context.update_optional_task(
             "python_pipeline",

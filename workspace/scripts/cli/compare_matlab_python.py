@@ -53,6 +53,16 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-python", action="store_true", help="Skip Python execution (for testing MATLAB only)"
     )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Run output-root preflight checks and exit without executing MATLAB or Python",
+    )
+    parser.add_argument(
+        "--minimal-exports",
+        action="store_true",
+        help="Reduce Python export workload for comparison runs (skip VMV/CASX/CSV extras)",
+    )
     return parser
 
 
@@ -61,7 +71,7 @@ def _validate_cli_args(args: argparse.Namespace):
         print("ERROR: --skip-matlab and --skip-python cannot be used together.")
         return 2
 
-    if not args.skip_matlab and not args.matlab_path:
+    if not args.validate_only and not args.skip_matlab and not args.matlab_path:
         print("ERROR: --matlab-path is required unless --skip-matlab is set.")
         return 2
 
@@ -118,6 +128,8 @@ def main():
         params=params,
         skip_matlab=args.skip_matlab,
         skip_python=args.skip_python,
+        validate_only=args.validate_only,
+        minimal_exports=args.minimal_exports,
     )
 
 
