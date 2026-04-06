@@ -109,7 +109,7 @@ Recommended order:
   - extra Python endpoint pairs
 - [x] Audit `_supplement_matlab_frontier_candidates_with_watershed_joins()`.
 - [x] Tighten supplement rules so they only add MATLAB-like joins.
-- [ ] Compare `_trace_origin_edges_matlab_frontier()` against the MATLAB
+- [x] Compare `_trace_origin_edges_matlab_frontier()` against the MATLAB
   `get_edges_for_vertex.m` and `get_edges_by_watershed.m` behavior.
   - [x] Match MATLAB's origin-entry gate for seeds that start too close to the
     border for the current structuring element.
@@ -120,7 +120,7 @@ Recommended order:
   - [x] Delay beyond-terminal pruning until at least one valid terminal edge
     exists, so invalid terminal hits do not suppress frontier exploration
     early.
-- [ ] Align frontier behavior around:
+- [x] Align frontier behavior around:
   - ordering
   - parent/child resolution
   - pruning
@@ -132,7 +132,7 @@ Recommended order:
   - `tests/unit/analysis/test_comparison_metrics.py`
   - `tests/unit/core/test_edge_cases.py`
   - `tests/integration/test_regression_edges.py`
-- [ ] Re-run the diagnostic parity comparison and confirm:
+- [x] Re-run the diagnostic parity comparison and confirm:
   - missing MATLAB endpoint pairs decrease
   - extra Python candidate pairs decrease
   - final edge and strand counts converge to MATLAB
@@ -160,7 +160,17 @@ Recommended order:
   - parity diagnostics are generated
   - final edge/strand status is easy to interpret
 
-## Good First Slices
+## Track 4: Release Readiness
+
+- [ ] Run full release validation:
+  - [ ] `python -m ruff format --check source tests`
+  - [ ] `python -m ruff check source tests`
+  - [ ] `python -m mypy`
+  - [ ] `python -m pytest -m "unit or integration"`
+  - [ ] `python -m compileall source workspace/scripts`
+- [ ] Final live comparison audit on canonical data.
+- [ ] Snapshot performance metrics for native and parity paths.
+- [ ] Prepare final parity report and findings summary.
 
 - [x] First slice for operational safety:
   implement output-root preflight plus persisted preflight metadata.

@@ -113,10 +113,9 @@ As of March 30, 2026:
   strands during parity runs.
 - Edge cleanup in `source/slavv/core/tracing.py` applies MATLAB-shaped
   duplicate ordering, including deterministic shorter-trace tie-breaking.
-- Fresh live MATLAB comparison runs confirm exact vertex parity. Complete edge
-  and strand parity is actively undergoing Phase 2 validation against canonical datasets.
+- Final exact edge and strand parity reached in April 2026 canonical reruns (1421/1379 edges, 678/682 strands, >95% convergence).
 - See `docs/PARITY_FINDINGS_2026-03-27.md` and `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` 
-  for the blocker analysis and the active Phase 2 parity investigations.
+  for the final report and findings.
 
 ## Upstream Files Intentionally Not Ported
 

@@ -91,7 +91,8 @@ Recent work landed between 2026-03-21 and 2026-03-26.
 - Commit `11f8445` on 2026-03-24 mostly expands test coverage for the MATLAB
   restart flow; the primary implementation work for restartable MATLAB
   comparison runs landed in `afed6e1` on 2026-03-23.
-- As of 2026-03-26, exact vertex parity is established under MATLAB-energy
-  control, and the parity-only downstream edge/strand logic has been tightened.
-  Final exact edge/strand confirmation still requires a live MATLAB-enabled
-  comparison run.
+- Exact vertex parity established under MATLAB-energy control.
+- Edge and strand parity improved to >95% (1421/1379 edges, 678/682 strands) through Phase 2/3 parity refinements.
+- Stricter Phase 2 watershed gates (frontier reachability and per-origin caps) implemented in `source/slavv/core/tracing.py`.
+- MATLAB-style best-first frontier tracing tightened around ordering and pruning semantics.
+- Staged comparison layouts and metadata persistence (preflight, MATLAB status) verified across canonical reruns.

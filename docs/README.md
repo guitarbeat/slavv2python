@@ -18,8 +18,7 @@ entry points and project metadata.
   outputs, including the shared `99_Metadata/` contract.
 - The output-root preflight and MATLAB resume-transparency work has been folded
   into the maintained workflow docs and tests.
-- `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` remains the active implementation
-  plan while exact edge/strand convergence work is still open.
+- `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` tracks the implementation phases for narrowing the remaining parity gap (Phases 1-3 completed).
 
 ## Root-Level Docs
 

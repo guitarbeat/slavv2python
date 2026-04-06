@@ -1,16 +1,27 @@
 # SLAVV Python Port
 
-Python reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network extraction from microscopy volumes. This repository contains the core package code, a Streamlit web application, a Command-Line Interface (CLI), MATLAB import helpers, and parity/comparison tooling used to validate the port.
+Python reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network extraction from microscopy volumes. This repository contains the core package code, a Streamlit web application, a Command-Line Interface (CLI), MATLAB import helpers, and parity/comparison tooling used to validate the port against the original MATLAB implementation.
 
 ## Overview
 
 SLAVV provides an automated pipeline to extract vascular graphs (vertices and edges) directly from 3D image data without an intermediate segmentation step. This Python port aims for high parity with the original MATLAB implementation while providing a modern, scalable, and easy-to-use Python interface.
 
+## Stack
+
+- **Language**: Python 3.9+
+- **Numerical/Scientific**: NumPy, SciPy, scikit-image, scikit-learn
+- **Graph Processing**: NetworkX
+- **I/O**: Tifffile, h5py, Pandas, Pillow
+- **Visualization**: Matplotlib, Plotly, Seaborn
+- **Acceleration**: Numba (optional)
+- **Frameworks**: Streamlit (Web App), argparse (CLI)
+- **Tooling**: Ruff (formatting/linting), MyPy (type checking), Pytest (testing)
+- **Package Manager**: `pip` (with `setuptools`)
+
 ## Requirements
 
 - **Python**: 3.9, 3.10, 3.11, or 3.12.
-- **Key Dependencies**: NumPy, SciPy, scikit-image, scikit-learn, NetworkX, h5py, Tifffile, Matplotlib, Plotly, Pandas.
-- **Optional**: Streamlit (for the web app), Numba (for acceleration).
+- **MATLAB** (Optional): Required only for parity comparisons and MATLAB result imports.
 
 ## Setup
 
@@ -42,7 +53,7 @@ SLAVV provides an automated pipeline to extract vascular graphs (vertices and ed
    pre-commit install
    ```
 
-## Usage
+## Entry Points
 
 ### Command-Line Interface (CLI)
 
@@ -97,14 +108,43 @@ print(f"Edges: {len(results['edges']['traces'])}")
 
 ## Scripts and Maintenance
 
-Windows shortcut commands are available through `.\make.ps1`:
+### Helper Scripts
 
-- `.\make.ps1 install`: Install dependencies.
-- `.\make.ps1 format`: Format code using Ruff.
-- `.\make.ps1 lint`: Lint code using Ruff.
-- `.\make.ps1 test`: Run all tests.
+- `.\make.ps1`: Windows PowerShell helper for common tasks.
+  - `.\make.ps1 install`: Install dependencies.
+  - `.\make.ps1 format`: Format code using Ruff.
+  - `.\make.ps1 lint`: Lint code using Ruff.
+  - `.\make.ps1 test`: Run all tests.
+- `Makefile`: POSIX-style helper for Unix systems.
 
-For Unix-like systems, a `Makefile` is also provided.
+### Maintenance and Utility Scripts
+
+Located in `workspace/scripts/`:
+- `workspace/scripts/cli/compare_matlab_python.py`: Main tool for parity validation.
+- `workspace/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
+
+## Testing
+
+Run tests using `pytest`:
+
+```powershell
+# Run unit and integration tests
+python -m pytest -m "unit or integration"
+
+# Full suite including slow and UI tests
+python -m pytest
+
+# Diagnostic tests for environment/MATLAB parity setup
+python -m pytest tests/diagnostic/test_comparison_setup.py
+```
+
+## Environment Variables
+
+The application handles most environment settings internally, especially for Windows console support:
+- `PYTHONUTF8`: Set to `1` by `slavv-app` to ensure UTF-8 support on Windows.
+- `PYTHONIOENCODING`: Set to `utf-8` by `slavv-app`.
+
+No manual environment variable configuration is typically required for standard use.
 
 ## Project Structure
 
@@ -118,37 +158,6 @@ For Unix-like systems, a `Makefile` is also provided.
 | `external/` | Optional checkouts like `Vectorization-Public` (MATLAB SLAVV). |
 | `data/` | Sample data and test volumes. |
 
-## MATLAB Parity and Comparisons
-
-A key goal of this project is parity with the original MATLAB SLAVV implementation.
-
-1. **Verify setup**: `python -m pytest tests/diagnostic/test_comparison_setup.py`
-2. **Run comparison**:
-   ```powershell
-   python workspace/scripts/cli/compare_matlab_python.py `
-       --input data/slavv_test_volume.tif `
-       --matlab-path "C:\Path\To\MATLAB\bin\matlab.exe" `
-       --output-dir comparison_output
-   ```
-
-Detailed parity findings and mapping notes are available in the `docs/` directory.
-
-## Testing
-
-Run tests using `pytest`:
-
-```powershell
-# Run unit and integration tests
-python -m pytest -m "unit or integration"
-
-# Full suite including slow and UI tests
-python -m pytest
-```
-
-## Environment Variables
-
-The application handles most environment settings internally (e.g., `PYTHONUTF8` for Windows console support). No manual environment variable configuration is typically required for standard use.
-
 ## License
 
 This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for details.
@@ -158,3 +167,5 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 - [ ] Complete full-package type hint coverage (currently focused on entry points).
 - [ ] Expand documentation for custom energy computation methods.
 - [ ] Optimize peak memory usage during Hessian eigenvalue computation.
+- [ ] TODO: Document advanced `slavv analyze` metrics.
+- [ ] TODO: Add detailed contributor guide for adding new extraction algorithms.
