@@ -40,8 +40,7 @@ def main() -> None:
         "| --- | --- | --- |",
     ]
     appendix_lines.extend(
-        f"| `{name}` | `Skipped` | Upstream-only or archival helper |"
-        for name in missing
+        f"| `{name}` | `Skipped` | Upstream-only or archival helper |" for name in missing
     )
     appendix_text = "\n".join(appendix_lines)
     MAPPING_PATH.write_text(f"{base_content}\n\n{appendix_text}\n", encoding="utf-8")

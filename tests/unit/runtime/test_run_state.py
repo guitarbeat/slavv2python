@@ -208,5 +208,8 @@ def test_build_status_lines_includes_matlab_resume_details(tmp_path):
     assert "MATLAB resume:" in rendered
     assert "Batch folder: C:\\temp\\batch_260401-140000" in rendered
     assert "Resume mode: restart-current-stage | last completed=(none) | next=energy" in rendered
-    assert "Prediction: Rerun will reuse batch_260401-140000 but restart energy from the stage boundary." in rendered
+    assert (
+        "Prediction: Rerun will reuse batch_260401-140000 but restart energy from the stage boundary."
+        in rendered
+    )
     assert "Python rerun from: edges" in rendered

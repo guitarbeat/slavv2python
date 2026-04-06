@@ -7,9 +7,7 @@ from slavv.runtime.run_state import RunContext
 
 
 @pytest.mark.unit
-def test_extract_edges_resumable_preserves_frontier_candidate_provenance(
-    monkeypatch, tmp_path
-):
+def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeypatch, tmp_path):
     energy = -np.ones((5, 5, 5), dtype=np.float64)
     energy_data = {
         "energy": energy,
@@ -106,8 +104,8 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(
     candidates = joblib.load(run_context.stage("edges").artifact_path("candidates.pkl"))
     assert candidates["connection_sources"] == ["frontier", "frontier"]
 
-    candidate_audit = run_context.stage("edges").artifact_path("candidate_audit.json").read_text(
-        encoding="utf-8"
+    candidate_audit = (
+        run_context.stage("edges").artifact_path("candidate_audit.json").read_text(encoding="utf-8")
     )
     assert '"frontier_only_pair_count": 1' in candidate_audit
     assert '"fallback_only_pair_count": 0' in candidate_audit

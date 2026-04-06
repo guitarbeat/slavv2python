@@ -202,9 +202,15 @@ def _find_matching_batch_folder(
     if preferred_batch is not None and _batch_matches_input(preferred_batch, normalized_input):
         return preferred_batch
 
-    batch_folders = sorted(
-        path for path in output_directory.iterdir() if path.is_dir() and path.name.startswith("batch_")
-    ) if output_directory.exists() else []
+    batch_folders = (
+        sorted(
+            path
+            for path in output_directory.iterdir()
+            if path.is_dir() and path.name.startswith("batch_")
+        )
+        if output_directory.exists()
+        else []
+    )
     for batch_folder in reversed(batch_folders):
         if _batch_matches_input(batch_folder, normalized_input):
             return batch_folder
@@ -477,13 +483,9 @@ def _derive_rerun_prediction(report: MatlabStatusReport) -> str:
         return f"{batch_label} is already complete; rerun should be a no-op unless inputs change."
 
     if report.matlab_resume_mode == "restart-current-stage":
-        prediction = (
-            f"Rerun will reuse {batch_label} but restart {report.matlab_next_stage} from the stage boundary."
-        )
+        prediction = f"Rerun will reuse {batch_label} but restart {report.matlab_next_stage} from the stage boundary."
         if report.matlab_partial_stage_artifacts_present and report.matlab_partial_stage_name:
-            prediction = (
-                f"{prediction[:-1]} Partial {report.matlab_partial_stage_name} artifacts were found."
-            )
+            prediction = f"{prediction[:-1]} Partial {report.matlab_partial_stage_name} artifacts were found."
         return prediction
 
     return f"Rerun will reuse {batch_label} and start at {report.matlab_next_stage}."

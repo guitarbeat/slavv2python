@@ -125,11 +125,7 @@ def persist_output_preflight(report: OutputRootPreflightReport, metadata_dir: Pa
 
 def load_output_preflight(path_or_dir: Path) -> dict[str, object] | None:
     """Load a persisted preflight report from a metadata dir or explicit file path."""
-    candidate = (
-        path_or_dir / "output_preflight.json"
-        if path_or_dir.is_dir()
-        else path_or_dir
-    )
+    candidate = path_or_dir / "output_preflight.json" if path_or_dir.is_dir() else path_or_dir
     if not candidate.exists():
         return None
     with open(candidate, encoding="utf-8") as handle:
