@@ -1134,6 +1134,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     idxs = np.floor(vertex_positions).astype(int)
     idxs = np.clip(idxs, 0, np.array(image_shape) - 1)
     markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
+
     labels = watershed(-energy_sign * energy, markers)
 
     existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
@@ -1236,7 +1237,20 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             continue
 
         energy_trace = _trace_energy_series(trace, energy)
-        if float(np.nanmax(np.asarray(energy_trace, dtype=np.float32))) >= 0:
+        # Tighter parity gate: float comparison with nan handling.
+        # MATLAB typically rejects traces that cross into non-negative energy
+        # (background) when working with cost-based tracing.
+        max_energy = float(np.nanmax(np.asarray(energy_trace, dtype=np.float32)))
+        if energy_sign < 0:
+            # For negative-is-foreground, a positive max energy means we hit background
+            is_invalid = max_energy >= 0
+        else:
+            # For positive-is-foreground (less common in this repo's parity path),
+            # we check the min instead, but this tracer is currently specialized
+            # for the negative-sign imported MATLAB energy.
+            is_invalid = float(np.nanmin(np.asarray(energy_trace, dtype=np.float32))) <= 0
+
+        if is_invalid:
             n_energy_rejected += 1
             continue
 
