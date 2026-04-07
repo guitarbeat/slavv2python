@@ -69,6 +69,12 @@ MATLAB-vs-Python runs as the default development loop.
 - Generated summaries now also surface
   `watershed_metric_threshold_rejected` when parity experiments use a
   watershed metric gate.
+- Generated summaries now surface chosen-edge source breakdowns for parity
+  runs, including matched-versus-extra counts and median energy/trace-length
+  profiles for frontier and watershed survivors.
+- Generated summaries now surface overlap between extra frontier edges and
+  missing MATLAB vertices, including total overlap, strongest-edge overlap, and
+  the top shared vertices.
 
 ### Verified parity baseline
 
@@ -130,6 +136,16 @@ MATLAB-vs-Python runs as the default development loop.
 - The April 6, 2026 live retest still shows the majority of final extra Python
   edges coming from frontier candidates rather than watershed-only candidates:
   `391` chosen frontier extras versus `140` chosen watershed extras.
+- The April 6, 2026 conflict-provenance refresh made the conflict story more
+  concrete:
+  - conflict rejects by source: `254` frontier, `741` watershed
+  - conflict blockers by source: `868` frontier, `326` watershed
+  - conflict source pairs: `236` frontier->frontier, `24` frontier->watershed,
+    `632` watershed->frontier, `302` watershed->watershed
+- That means watershed candidates are often losing to already-painted frontier
+  candidates, but the final extra edge set is still frontier-heavy. The next
+  fix should therefore focus on frontier generation and frontier claim quality,
+  not on blindly preferring watershed candidates downstream.
 - The same live retest also shows a candidate-quality split:
   - frontier candidate pairs: `892` matched MATLAB, `615` extra Python
   - watershed candidate pairs: `81` matched MATLAB, `952` extra Python
@@ -140,6 +156,30 @@ MATLAB-vs-Python runs as the default development loop.
   median length `18` vs `12`). Watershed extras are even weaker and longer,
   but watershed filtering alone cannot close the final gap because frontier
   extras still dominate the chosen-edge mismatch.
+- The conflict-provenance refresh confirmed the same pattern in the final chosen
+  edges:
+  - chosen frontier edges: median energy `-225.4` matched vs `-152.3` extra,
+    median trace length `11` matched vs `16` extra
+  - chosen watershed edges: median energy `-118.6` matched vs `-75.3` extra,
+    median trace length `17` matched vs `21` extra
+- A follow-up artifact probe also showed that the strongest extra frontier
+  edges are usually local mispairings rather than isolated noise:
+  - `281` of `391` extra frontier edges share at least one vertex with a
+    missing MATLAB endpoint pair
+  - `18` of the top `20` strongest extra frontier edges share a vertex with at
+    least one missing MATLAB endpoint pair
+  - `41` of the top `50` strongest extra frontier edges do the same
+- The landed shared-vertex candidate-hit diagnostic sharpened that result even
+  more: for the top shared vertices in the April 6 refresh, the missing MATLAB
+  incident pairs were absent from the Python candidate pool entirely
+  (`359: 0/4`, `1283: 0/4`, `866: 0/4` missing-pair candidate hits).
+- A manual artifact read also showed that some extra frontier edges touching
+  those vertices were generated from neighboring origins rather than from the
+  shared vertex itself. The next tracer pass should therefore inspect
+  neighborhood-level frontier behavior, not just each origin in isolation.
+- Those profiles are now emitted directly in `summary.txt`, which means future
+  parity runs can answer "which source is carrying the weak long extras?" from
+  the staged analysis output alone.
 
 ### Planned next
 
@@ -154,11 +194,11 @@ MATLAB-vs-Python runs as the default development loop.
 - Compare chosen-edge conflict ordering before and after watershed filtering,
   since the threshold trials changed final topology even when candidate
   coverage improved.
-- Inspect frontier candidate semantics before cleanup, especially why long,
-  weaker frontier candidates survive in large numbers and still account for
-  most final extra Python edges.
-- Add provenance-aware diagnostics around conflict painting so we can see when
-  long weak frontier candidates block MATLAB-like choices downstream.
+- Inspect frontier candidate semantics before cleanup, especially why strong
+  but still non-MATLAB frontier candidates survive in large numbers and still
+  account for most final extra Python edges.
+- Compare frontier claim ordering and local candidate competition around the
+  strongest extra frontier edges before adding more source-preference rules.
 
 ## Recommended Development Loops
 
@@ -309,6 +349,15 @@ Use the cheapest loop that can answer the current question.
       generated comparison summaries.
 - [x] Surface `watershed_metric_threshold_rejected` in generated summaries so
       parity threshold experiments leave an explicit audit trail.
+- [x] Add provenance-aware conflict diagnostics so parity runs report which
+      source lost conflicts, which source blocked them, and the conflict
+      source-pair mix.
+- [x] Add chosen-edge source breakdowns to comparison reports and summaries so
+      parity runs automatically show matched/extra frontier and watershed edge
+      counts plus median energy and trace-length profiles.
+- [x] Add extra-frontier versus missing-MATLAB overlap diagnostics so parity
+      runs automatically show whether the strongest extra frontier edges are
+      clustering around the same vertices as missing MATLAB endpoint pairs.
 
 ## Immediate Next Actions
 
@@ -323,6 +372,7 @@ Use the cheapest loop that can answer the current question.
 - [ ] Add lightweight operator messaging that distinguishes "safe to reuse",
       "safe to analyze only", and "requires fresh MATLAB run" directly in CLI
       summaries.
-- [ ] Add a targeted parity diagnostic that explains why chosen edge topology
-      changed when candidate filtering improved, so strand regressions can be
-      traced without another full MATLAB rerun.
+- [ ] Use the landed shared-vertex candidate-hit diagnostic to compare the top
+      shared vertices against `_trace_origin_edges_matlab_frontier()` and
+      decide which frontier-discovery rule is suppressing the MATLAB incident
+      pairs before cleanup ever sees them.

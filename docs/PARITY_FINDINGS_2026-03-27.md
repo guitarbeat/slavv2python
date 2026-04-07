@@ -24,6 +24,10 @@ Further follow-up as of April 6, 2026:
     regressed strands.
   - `parity_watershed_metric_threshold = -50.0` improved candidate coverage but
     worsened final edge and strand parity.
+- An analysis-only refresh now records provenance-aware conflict outcomes and
+  chosen-edge source quality in the staged `summary.txt`, so future parity runs
+  can answer whether frontier or watershed is carrying the weak long extras
+  without ad hoc scripts.
 
 ## Fresh Baselines
 
@@ -155,6 +159,64 @@ Interpretation:
   frontier candidates, which points back toward frontier discovery semantics or
   provenance-aware cleanup rather than another blunt watershed filter.
 
+### April 6 conflict-provenance refresh
+
+Using the analysis-only refresh artifact
+`comparisons/20260406_conflict_provenance_refresh`:
+
+- Conflict rejects by source:
+  - `254` frontier
+  - `741` watershed
+- Conflict blockers by source:
+  - `868` frontier
+  - `326` watershed
+- Conflict source pairs:
+  - `236` frontier -> frontier
+  - `24` frontier -> watershed
+  - `632` watershed -> frontier
+  - `302` watershed -> watershed
+- Chosen frontier edges:
+  - `847` matched MATLAB
+  - `391` extra Python
+  - median energy `-225.4` matched vs `-152.3` extra
+  - median trace length `11` matched vs `16` extra
+- Chosen watershed edges:
+  - `47` matched MATLAB
+  - `140` extra Python
+  - median energy `-118.6` matched vs `-75.3` extra
+  - median trace length `17` matched vs `21` extra
+- Strongest extra frontier overlap:
+  - `281/391` extra frontier edges share at least one vertex with a missing
+    MATLAB endpoint pair
+  - `18/20` of the strongest extra frontier edges share a vertex with at least
+    one missing MATLAB endpoint pair
+  - `41/50` of the strongest extra frontier edges do the same
+- Shared-vertex missing-pair candidate hits:
+  - vertex `359`: `0/4`
+  - vertex `1283`: `0/4`
+  - vertex `866`: `0/4`
+
+Interpretation:
+
+- Watershed candidates are frequently being rejected because frontier
+  candidates painted the conflicting voxels first.
+- That does not mean watershed is the main remaining bug. The final extra edge
+  set is still dominated by frontier edges, and those extra frontier survivors
+  remain weaker and longer than the matched frontier set.
+- The strongest frontier extras are usually attached to the same vertices as
+  missing MATLAB pairs, which points toward wrong local partner choice or local
+  claim ordering rather than a purely global threshold problem.
+- For the worst shared vertices examined so far, the missing MATLAB pairs never
+  appear in the Python candidate set at all. That makes the current leading
+  diagnosis an upstream frontier-discovery mismatch rather than a cleanup-only
+  problem.
+- Some extra frontier edges touching those vertices also come from neighboring
+  origins, which suggests the remaining mismatch is not purely a per-origin
+  budget problem; neighborhood-level frontier behavior matters too.
+- The next parity pass should therefore prioritize frontier candidate semantics
+  and frontier claim ordering before adding more global source-preference or
+  threshold rules.
+
 ### Important bug found during the fresh rerun
 
 The independent Python-from-`energy` rerun initially crashed because MATLAB
@@ -211,9 +273,10 @@ Why:
    - whether Python enters the same basin but fails to claim/merge it
 4. Keep cleanup work gated to `comparison_exact_network=True` unless a change is
    clearly beneficial for default native-Python behavior too.
-5. Add provenance-aware conflict diagnostics so we can tell when a long weak
-   frontier candidate blocks a stronger MATLAB-like alternative during final
-   edge selection.
+5. Use the landed provenance-aware conflict diagnostics to compare the strongest
+   extra frontier edges against nearby missing MATLAB endpoint pairs and decide
+   whether the next fix belongs in frontier discovery, claim ordering, or final
+   conflict resolution.
 
 ## Guardrails For The Next Pass
 

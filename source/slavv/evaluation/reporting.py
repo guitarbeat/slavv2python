@@ -190,6 +190,7 @@ def generate_summary(run_dir: Path, output_file: Path):
     candidate_coverage = edge_diagnostics.get("candidate_endpoint_coverage", {})
     candidate_audit = edge_diagnostics.get("candidate_audit", {})
     chosen_candidate_sources = edge_diagnostics.get("chosen_candidate_sources", {})
+    extra_frontier_overlap = edge_diagnostics.get("extra_frontier_missing_vertex_overlap", {})
     if edge_diag or candidate_coverage or candidate_audit:
         lines.append("Edge Diagnostics")
         lines.append("-" * 70)
@@ -346,6 +347,105 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(chosen_candidate_sources.get('watershed_matched_matlab_endpoint_pair_count', 0)):,}/"
                     f"{int(chosen_candidate_sources.get('watershed_extra_python_endpoint_pair_count', 0)):,}"
                 )
+            source_breakdown = chosen_candidate_sources.get("source_breakdown", {})
+            for source_label in ("frontier", "watershed", "fallback"):
+                source_summary = source_breakdown.get(source_label, {})
+                if not source_summary:
+                    continue
+                matched = int(source_summary.get("matched_matlab_edge_count", 0))
+                extra = int(source_summary.get("extra_python_edge_count", 0))
+                matched_stats = source_summary.get("matched", {})
+                extra_stats = source_summary.get("extra", {})
+                if matched == 0 and extra == 0:
+                    continue
+                lines.append(
+                    f"Chosen {source_label} edges matched/extra: "
+                    f"{matched:,}/{extra:,}"
+                )
+                if matched_stats or extra_stats:
+                    matched_energy = matched_stats.get("median_energy")
+                    extra_energy = extra_stats.get("median_energy")
+                    matched_length = matched_stats.get("median_length")
+                    extra_length = extra_stats.get("median_length")
+                    fragments = []
+                    if matched_energy is not None or extra_energy is not None:
+                        matched_energy_text = (
+                            f"{float(matched_energy):.1f}" if matched_energy is not None else "n/a"
+                        )
+                        extra_energy_text = (
+                            f"{float(extra_energy):.1f}" if extra_energy is not None else "n/a"
+                        )
+                        fragments.append(
+                            "median energy matched/extra "
+                            f"{matched_energy_text}/{extra_energy_text}"
+                        )
+                    if matched_length is not None or extra_length is not None:
+                        matched_length_text = (
+                            f"{round(float(matched_length))}"
+                            if matched_length is not None
+                            else "n/a"
+                        )
+                        extra_length_text = (
+                            f"{round(float(extra_length))}"
+                            if extra_length is not None
+                            else "n/a"
+                        )
+                        fragments.append(
+                            "median length matched/extra "
+                            f"{matched_length_text}/{extra_length_text}"
+                        )
+                    if fragments:
+                        lines.append(
+                            f"Chosen {source_label} profile: " + "  ".join(fragments)
+                        )
+        if extra_frontier_overlap:
+            lines.append(
+                "Extra frontier edges sharing missing-matlab vertex total: "
+                f"{int(extra_frontier_overlap.get('shared_missing_vertex_edge_count', 0)):,}/"
+                f"{int(extra_frontier_overlap.get('extra_frontier_edge_count', 0)):,}"
+            )
+            strength_overlap = extra_frontier_overlap.get("top_strength_overlap_counts", {})
+            if strength_overlap:
+                segments = []
+                for threshold in ("20", "50", "100"):
+                    entry = strength_overlap.get(threshold, {})
+                    if not entry:
+                        continue
+                    segments.append(
+                        f"top{int(entry.get('threshold', 0))}:"
+                        f"{int(entry.get('shared_missing_vertex_count', 0))}/"
+                        f"{int(entry.get('evaluated_edge_count', 0))}"
+                    )
+                if segments:
+                    lines.append(
+                        "Strongest extra frontier sharing missing-matlab vertex: "
+                        + "  ".join(segments)
+                    )
+            top_shared_vertices = extra_frontier_overlap.get("top_shared_vertices", [])
+            if top_shared_vertices:
+                formatted_vertices = []
+                for entry in top_shared_vertices[:3]:
+                    formatted_vertices.append(
+                        f"{int(entry.get('vertex_index', -1))}"
+                        f"(m{int(entry.get('missing_matlab_endpoint_pair_count', 0))}/"
+                        f"e{int(entry.get('extra_frontier_endpoint_pair_count', 0))})"
+                    )
+                if formatted_vertices:
+                    lines.append(
+                        "Top shared frontier/missing vertices: " + " ".join(formatted_vertices)
+                    )
+                candidate_hits = []
+                for entry in top_shared_vertices[:3]:
+                    candidate_hits.append(
+                        f"{int(entry.get('vertex_index', -1))}"
+                        f"({int(entry.get('missing_matlab_pairs_present_in_candidates', 0))}/"
+                        f"{int(entry.get('missing_matlab_endpoint_pair_count', 0))})"
+                    )
+                if candidate_hits:
+                    lines.append(
+                        "Top shared vertex missing-pair candidate hits: "
+                        + " ".join(candidate_hits)
+                    )
         if candidate_audit:
             lines.append(
                 "Candidate audit: "

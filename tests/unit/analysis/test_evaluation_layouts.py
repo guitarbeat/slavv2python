@@ -293,6 +293,54 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     "watershed_endpoint_pair_count": 1,
                     "watershed_matched_matlab_endpoint_pair_count": 0,
                     "watershed_extra_python_endpoint_pair_count": 1,
+                    "source_breakdown": {
+                        "frontier": {
+                            "matched_matlab_edge_count": 1,
+                            "extra_python_edge_count": 0,
+                            "matched": {
+                                "median_energy": -220.5,
+                                "median_length": 12.0,
+                            },
+                        },
+                        "watershed": {
+                            "matched_matlab_edge_count": 0,
+                            "extra_python_edge_count": 1,
+                            "extra": {
+                                "median_energy": -88.1,
+                                "median_length": 21.0,
+                            },
+                        },
+                    },
+                },
+                "extra_frontier_missing_vertex_overlap": {
+                    "extra_frontier_edge_count": 7,
+                    "shared_missing_vertex_edge_count": 5,
+                    "top_strength_overlap_counts": {
+                        "20": {
+                            "threshold": 20,
+                            "shared_missing_vertex_count": 5,
+                            "evaluated_edge_count": 7,
+                        },
+                        "50": {
+                            "threshold": 50,
+                            "shared_missing_vertex_count": 5,
+                            "evaluated_edge_count": 7,
+                        },
+                    },
+                    "top_shared_vertices": [
+                        {
+                            "vertex_index": 359,
+                            "missing_matlab_endpoint_pair_count": 4,
+                            "extra_frontier_endpoint_pair_count": 2,
+                            "missing_matlab_pairs_present_in_candidates": 0,
+                        },
+                        {
+                            "vertex_index": 768,
+                            "missing_matlab_endpoint_pair_count": 3,
+                            "extra_frontier_endpoint_pair_count": 3,
+                            "missing_matlab_pairs_present_in_candidates": 1,
+                        },
+                    ],
                 },
             }
         },
@@ -317,6 +365,18 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Conflict source pairs f->f/f->w/w->f/w->w: 3/0/1/1" in summary
     assert "Chosen candidate sources frontier/watershed/fallback: 1/1/0" in summary
     assert "Chosen watershed endpoint pairs total/matched-matlab/extra-python: 1/0/1" in summary
+    assert "Chosen frontier edges matched/extra: 1/0" in summary
+    assert "Chosen frontier profile: median energy matched/extra -220.5/n/a" in summary
+    assert "median length matched/extra 12/n/a" in summary
+    assert "Chosen watershed edges matched/extra: 0/1" in summary
+    assert "Chosen watershed profile: median energy matched/extra n/a/-88.1" in summary
+    assert "median length matched/extra n/a/21" in summary
+    assert "Extra frontier edges sharing missing-matlab vertex total: 5/7" in summary
+    assert "Strongest extra frontier sharing missing-matlab vertex:" in summary
+    assert "top20:5/7" in summary
+    assert "top50:5/7" in summary
+    assert "Top shared frontier/missing vertices: 359(m4/e2) 768(m3/e3)" in summary
+    assert "Top shared vertex missing-pair candidate hits: 359(0/4) 768(1/3)" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary
     assert (
         f"Candidate audit artifact: {analysis_dir.parent / '02_Output' / 'python_results' / 'stages' / 'edges' / 'candidate_audit.json'}"

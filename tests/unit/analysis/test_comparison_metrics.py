@@ -194,7 +194,11 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     }
     python_edges = {
         "connections": np.array([[0, 1], [1, 3]], dtype=np.int32),
-        "traces": [],
+        "traces": [
+            np.array([[0, 0, 0], [0, 1, 0]], dtype=float),
+            np.array([[0, 1, 0], [0, 2, 0], [0, 3, 0]], dtype=float),
+        ],
+        "energies": np.array([-10.0, -5.0], dtype=np.float32),
         "chosen_candidate_indices": np.array([0, 2], dtype=np.int32),
     }
     candidate_edges = {
@@ -290,6 +294,20 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     assert chosen_sources["watershed_endpoint_pair_count"] == 1
     assert chosen_sources["watershed_matched_matlab_endpoint_pair_count"] == 0
     assert chosen_sources["watershed_extra_python_endpoint_pair_count"] == 1
+    assert chosen_sources["source_breakdown"]["frontier"]["matched_matlab_edge_count"] == 1
+    assert chosen_sources["source_breakdown"]["frontier"]["extra_python_edge_count"] == 0
+    assert chosen_sources["source_breakdown"]["frontier"]["matched"] == {
+        "edge_count": 1,
+        "median_energy": -10.0,
+        "median_length": 2.0,
+    }
+    assert chosen_sources["source_breakdown"]["watershed"]["matched_matlab_edge_count"] == 0
+    assert chosen_sources["source_breakdown"]["watershed"]["extra_python_edge_count"] == 1
+    assert chosen_sources["source_breakdown"]["watershed"]["extra"] == {
+        "edge_count": 1,
+        "median_energy": -5.0,
+        "median_length": 3.0,
+    }
     assert "candidate_audit" in result["diagnostics"]
     assert result["diagnostics"]["candidate_audit"]["schema_version"] == 1
     assert result["diagnostics"]["candidate_audit"]["candidate_connection_count"] == 3
@@ -336,6 +354,51 @@ def test_compare_edges_reports_missing_matlab_pairs_by_seed_origin():
     )
     assert seed_origin_two["candidate_endpoint_pair_count"] == 0
     assert seed_origin_two["missing_matlab_incident_endpoint_pair_samples"] == [(0, 2)]
+
+
+def test_compare_edges_reports_extra_frontier_missing_vertex_overlap():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [0, 2], [3, 4], [5, 6]], dtype=np.int32),
+        "traces": [],
+    }
+    python_edges = {
+        "connections": np.array([[0, 1], [0, 7], [8, 9]], dtype=np.int32),
+        "traces": [
+            np.array([[0, 0, 0], [0, 1, 0]], dtype=float),
+            np.array([[0, 0, 0], [0, 2, 0], [0, 3, 0]], dtype=float),
+            np.array([[1, 1, 1], [1, 2, 2]], dtype=float),
+        ],
+        "energies": np.array([-10.0, -20.0, -5.0], dtype=np.float32),
+        "connection_sources": ["frontier", "frontier", "watershed"],
+    }
+    candidate_edges = {
+        "connections": np.array([[0, 1], [0, 7], [8, 9]], dtype=np.int32),
+        "connection_sources": ["frontier", "frontier", "watershed"],
+        "traces": [],
+    }
+
+    result = compare_edges(matlab_edges, python_edges, candidate_edges)
+
+    overlap = result["diagnostics"]["extra_frontier_missing_vertex_overlap"]
+    assert overlap["extra_frontier_edge_count"] == 1
+    assert overlap["shared_missing_vertex_edge_count"] == 1
+    assert overlap["missing_matlab_pair_count"] == 3
+    assert overlap["shared_vertex_count"] == 1
+    assert overlap["top_strength_overlap_counts"]["20"] == {
+        "threshold": 20,
+        "shared_missing_vertex_count": 1,
+        "evaluated_edge_count": 1,
+    }
+    assert overlap["top_shared_vertices"][0]["vertex_index"] == 0
+    assert overlap["top_shared_vertices"][0]["missing_matlab_endpoint_pair_count"] == 1
+    assert overlap["top_shared_vertices"][0]["extra_frontier_endpoint_pair_count"] == 1
+    assert overlap["top_shared_vertices"][0]["missing_matlab_pairs_present_in_candidates"] == 0
+    assert overlap["top_shared_vertices"][0][
+        "frontier_candidate_incident_endpoint_pair_count"
+    ] == 2
+    assert overlap["top_shared_vertices"][0]["chosen_frontier_incident_endpoint_pair_count"] == 2
+    assert overlap["strongest_extra_frontier_samples"][0]["pair"] == (0, 7)
+    assert overlap["strongest_extra_frontier_samples"][0]["shares_missing_vertex"] is True
 
 
 def test_compare_edges_uses_candidate_audit_source_pair_counts_when_payload_lacks_sources():

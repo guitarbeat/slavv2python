@@ -1,6 +1,6 @@
 # Edge Parity Implementation Plan
 
-Status: In Progress (Phase 2-3 diagnostics active)
+Status: In Progress (Phase 2-3 diagnostics active; conflict-provenance reporting landed)
 Date: 2026-04-06
 
 ## Context
@@ -36,6 +36,36 @@ Repeatability check on April 6, 2026:
 The current evidence still points to the edge-candidate path after the imported
 MATLAB vertices stage, but the threshold experiments also showed that candidate
 improvements can change final chosen-edge topology in non-obvious ways.
+
+Conflict-provenance refresh on April 6, 2026
+(`comparisons/20260406_conflict_provenance_refresh/03_Analysis/summary.txt`):
+
+- Conflict rejects by source: `254` frontier, `741` watershed
+- Conflict blockers by source: `868` frontier, `326` watershed
+- Conflict source pairs:
+  - `236` frontier -> frontier
+  - `24` frontier -> watershed
+  - `632` watershed -> frontier
+  - `302` watershed -> watershed
+- Chosen frontier edges:
+  - `847` matched MATLAB, `391` extra
+  - median energy `-225.4` matched vs `-152.3` extra
+  - median trace length `11` matched vs `16` extra
+- Chosen watershed edges:
+  - `47` matched MATLAB, `140` extra
+  - median energy `-118.6` matched vs `-75.3` extra
+  - median trace length `17` matched vs `21` extra
+- Strongest extra frontier edges overlapping missing MATLAB vertices:
+  - `281/391` extra frontier edges share at least one vertex with a missing
+    MATLAB endpoint pair
+  - `18/20` of the strongest extra frontier edges share a vertex with at least
+    one missing MATLAB endpoint pair
+  - `41/50` of the strongest extra frontier edges do the same
+- Shared-vertex missing-pair candidate hits from the same refresh:
+  - vertex `359`: `0/4` missing MATLAB incident pairs ever appear as Python
+    candidates
+  - vertex `1283`: `0/4`
+  - vertex `866`: `0/4`
 
 Key references:
 
@@ -78,6 +108,21 @@ Current code-level findings from the April 6, 2026 live retest:
 - Extra frontier candidates are systematically longer and weaker than matched
   frontier candidates in the baseline run (median length `18` vs `12`, median
   metric `-156` vs `-223`).
+- Provenance-aware conflict diagnostics now show that watershed candidates are
+  often losing directly to already-painted frontier edges (`632`
+  watershed->frontier conflict rejections), yet the final extra set still
+  contains many more frontier edges than watershed edges.
+- The strongest frontier extras usually touch the same vertices as missing
+  MATLAB pairs, which makes the remaining gap look more like wrong partner
+  selection around shared vertices than random frontier overgrowth.
+- For the worst shared vertices inspected so far, the missing MATLAB incident
+  pairs are absent from the Python candidate pool entirely. That shifts the
+  current highest-confidence diagnosis upstream from cleanup into frontier
+  candidate discovery.
+- Some extra frontier edges touching those same vertices were generated from
+  neighboring origins rather than from the shared vertex's own frontier search,
+  so the next fix should inspect neighborhood-level frontier behavior and claim
+  ordering, not just per-origin edge budgets.
 
 ## Goals
 
@@ -119,9 +164,12 @@ The recent threshold trials showed:
 
 That combination means the next fix probably needs to be selective rather than
 global: preserve strand-critical watershed structure while reducing the
-watershed candidates that only create extra Python topology. It also means the
-frontier tracer itself still needs attention, because frontier-sourced extras
-remain the largest contributor to the final chosen-edge mismatch.
+watershed candidates that only create extra Python topology. The new
+conflict-provenance refresh sharpens that conclusion: watershed candidates
+often lose to frontier blockers, but frontier survivors still dominate the
+extra final edges. The frontier tracer and frontier claim ordering therefore
+remain the highest-leverage surfaces, especially around shared vertices where
+Python appears to be choosing the wrong partner endpoint.
 
 ## Proposed Implementation Plan
 
@@ -153,8 +201,9 @@ Candidate changes to evaluate:
   strand-critical so the next gate preserves them.
 - Compare chosen-edge set changes between the live retest and threshold trials
   before adding more pruning rules.
-- Track which long, weak frontier candidates survive into the chosen set and
-  whether they displace MATLAB-like alternatives during conflict painting.
+- Keep using the new provenance-aware conflict diagnostics to track when weak,
+  long frontier winners displace MATLAB-like alternatives during conflict
+  painting.
 
 ### Phase 3: Tighten frontier tracing semantics
 
@@ -166,6 +215,12 @@ following areas:
 - parent/child resolution
 - frontier pruning beyond already-found terminal directions
 - terminal hit handling and trace finalization
+- why some high-confidence but still non-MATLAB frontier candidates survive
+  cleanup and whether they correspond to nearby missing MATLAB endpoint pairs
+- whether shared-vertex local ordering is selecting the wrong partner edge at
+  vertices that appear in both the missing-MATLAB and extra-frontier sets
+- which rule inside `_trace_origin_edges_matlab_frontier()` is preventing the
+  missing MATLAB incident pairs from being generated at the top shared vertices
 
 ### Phase 4: Preserve cleanup as a downstream safety net
 
@@ -173,8 +228,8 @@ Keep `_choose_edges_matlab_style()` focused on dedupe and pruning, not on
 compensating for upstream semantic drift. However, the threshold experiments now
 show that cleanup order is part of the parity story, so conflict ordering and
 source preference may need targeted diagnostics before the next edge-candidate
-change. The next cleanup investigation should be provenance-aware rather than
-another global threshold sweep.
+change. The next cleanup investigation should use the landed provenance-aware
+reporting rather than another global threshold sweep.
 
 ## Acceptance Criteria
 
@@ -217,6 +272,7 @@ If a selective watershed gate can reduce extra topology without repeating the
 strand regressions from the `-90.0` and `-50.0` trials, keep iterating there
 first.
 
-If chosen-edge conflict ordering still changes too much even when candidate
-coverage improves, the next patch should inspect `_choose_edges_matlab_style()`
-before making another watershed-filtering change.
+If the strongest extra frontier edges still survive with clearly worse
+energy/length profiles than matched frontier edges, the next patch should
+inspect `_trace_origin_edges_matlab_frontier()` and local claim ordering before
+making another watershed-filtering change.
