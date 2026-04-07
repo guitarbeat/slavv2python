@@ -363,6 +363,61 @@ def _candidate_endpoint_pairs_by_source(
     return {label: pairs for label, pairs in grouped.items() if pairs}
 
 
+def _chosen_candidate_source_summary(
+    python_edges: dict[str, Any],
+    candidate_edges: dict[str, Any],
+    matlab_endpoint_pairs: set[tuple[int, int]],
+) -> dict[str, Any] | None:
+    """Summarize which candidate sources survived into the final chosen Python edges."""
+    candidate_connections = np.asarray(candidate_edges.get("connections", np.array([])))
+    if candidate_connections.size == 0:
+        return None
+    if candidate_connections.ndim == 1:
+        candidate_connections = candidate_connections.reshape(1, -1)
+
+    chosen_indices = np.asarray(
+        python_edges.get("chosen_candidate_indices", np.array([], dtype=np.int32)),
+        dtype=np.int32,
+    ).reshape(-1)
+    if chosen_indices.size == 0:
+        return None
+
+    connection_sources = _normalize_candidate_connection_sources(
+        candidate_edges.get("connection_sources"),
+        len(candidate_connections),
+    )
+    if not connection_sources:
+        return None
+
+    allowed_sources = ("frontier", "watershed", "fallback")
+    source_counts = dict.fromkeys(allowed_sources, 0)
+    chosen_watershed_pairs: set[tuple[int, int]] = set()
+
+    for raw_index in chosen_indices.tolist():
+        candidate_index = int(raw_index)
+        if candidate_index < 0 or candidate_index >= len(candidate_connections):
+            continue
+        source_label = connection_sources[candidate_index]
+        if source_label not in source_counts:
+            continue
+        source_counts[source_label] += 1
+        if source_label != "watershed":
+            continue
+        pair = [int(value) for value in np.asarray(candidate_connections[candidate_index]).tolist()[:2]]
+        if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
+            continue
+        chosen_watershed_pairs.add(tuple(sorted(pair)))
+
+    chosen_watershed_matched = len(chosen_watershed_pairs & matlab_endpoint_pairs)
+    return {
+        "counts": source_counts,
+        "watershed_endpoint_pair_count": len(chosen_watershed_pairs),
+        "watershed_matched_matlab_endpoint_pair_count": chosen_watershed_matched,
+        "watershed_extra_python_endpoint_pair_count": len(chosen_watershed_pairs)
+        - chosen_watershed_matched,
+    }
+
+
 def _incident_endpoint_pairs_by_vertex(
     endpoint_pairs: set[tuple[int, int]],
 ) -> dict[int, set[tuple[int, int]]]:
@@ -728,7 +783,12 @@ def compare_edges(
 
     matlab_endpoint_counter = Counter(_edge_endpoint_signatures(matlab_edges))
     python_endpoint_counter = Counter(_edge_endpoint_signatures(python_edges))
+    matlab_endpoint_pairs = set(matlab_endpoint_counter)
+    python_endpoint_pairs = set(python_endpoint_counter)
     comparison["exact_endpoint_pairs_match"] = matlab_endpoint_counter == python_endpoint_counter
+    comparison["matched_endpoint_pair_count"] = len(matlab_endpoint_pairs & python_endpoint_pairs)
+    comparison["missing_endpoint_pair_count"] = len(matlab_endpoint_pairs - python_endpoint_pairs)
+    comparison["extra_endpoint_pair_count"] = len(python_endpoint_pairs - matlab_endpoint_pairs)
     comparison["endpoint_pair_matlab_only_samples"] = _sample_counter_diff(
         matlab_endpoint_counter, python_endpoint_counter
     )
@@ -736,8 +796,6 @@ def compare_edges(
         python_endpoint_counter, matlab_endpoint_counter
     )
     if candidate_edges is not None:
-        matlab_endpoint_pairs = set(matlab_endpoint_counter)
-        python_endpoint_pairs = set(python_endpoint_counter)
         candidate_endpoint_pairs = _edge_endpoint_pair_set(candidate_edges)
         missing_matlab_pairs = matlab_endpoint_pairs - candidate_endpoint_pairs
         extra_candidate_pairs = candidate_endpoint_pairs - matlab_endpoint_pairs
@@ -852,6 +910,13 @@ def compare_edges(
             if diag_key in candidate_diag:
                 coverage[diag_key] = int(candidate_diag[diag_key])
         comparison["diagnostics"]["candidate_endpoint_coverage"] = coverage
+        chosen_source_summary = _chosen_candidate_source_summary(
+            python_edges,
+            candidate_edges,
+            matlab_endpoint_pairs,
+        )
+        if chosen_source_summary is not None:
+            comparison["diagnostics"]["chosen_candidate_sources"] = chosen_source_summary
     if candidate_audit is not None:
         comparison["diagnostics"]["candidate_audit"] = _candidate_audit_summary(candidate_audit)
 

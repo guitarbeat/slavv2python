@@ -95,6 +95,111 @@ def _print_reuse_guidance(run_root: Path) -> None:
     )
 
 
+def _bootstrap_existing_matlab_batch_for_python_parity(
+    *,
+    matlab_output: Path,
+    python_output: Path,
+    input_file: str,
+    params_for_python: dict[str, Any],
+    comparison_context: RunContext | None,
+    metadata_dir: Path,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Reuse an existing MATLAB batch to seed a skip-MATLAB Python parity rerun."""
+    matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+    matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
+    if comparison_context is not None:
+        _record_matlab_status_task(
+            comparison_context,
+            matlab_status_report,
+            matlab_status_report_path,
+        )
+
+    print("\n" + "=" * 60)
+    print("MATLAB Reuse Semantics")
+    print("=" * 60)
+    print(summarize_matlab_status(matlab_status_report))
+
+    batch_folder = matlab_status_report.matlab_batch_folder
+    if not batch_folder:
+        print(
+            "Warning: --skip-matlab requested but no reusable MATLAB batch was found in the staged input surface."
+        )
+        return None, None
+
+    matlab_results = {
+        "success": True,
+        "elapsed_time": 0.0,
+        "output_dir": str(matlab_output),
+        "batch_folder": batch_folder,
+        "matlab_status": matlab_status_report.to_dict(),
+    }
+
+    checkpoint_dir = python_output / "checkpoints"
+    python_force_rerun_from: str | None = None
+    if comparison_context is not None:
+        comparison_context.update_optional_task(
+            "matlab_import",
+            status="running",
+            detail="Importing existing MATLAB energy and vertices for a skip-MATLAB parity rerun",
+            artifacts={"batch_folder": batch_folder},
+        )
+
+    try:
+        imported = import_matlab_batch(
+            batch_folder,
+            checkpoint_dir,
+            stages=["energy", "vertices"],
+        )
+    except Exception as exc:
+        if comparison_context is not None:
+            comparison_context.update_optional_task(
+                "matlab_import",
+                status="failed",
+                detail=f"Existing MATLAB checkpoint import failed: {exc}",
+                artifacts={"batch_folder": batch_folder},
+            )
+        print(f"Warning: Could not import existing MATLAB checkpoints: {exc}")
+        return matlab_results, None
+
+    imported_stages = set(imported)
+    if {"energy", "vertices"}.issubset(imported_stages):
+        python_force_rerun_from = "edges"
+
+    try:
+        params_for_python.update(load_matlab_batch_params(batch_folder))
+    except Exception as exc:
+        if comparison_context is not None:
+            comparison_context.update_optional_task(
+                "matlab_import",
+                status="completed",
+                detail=f"Imported existing MATLAB checkpoints; settings overlay unavailable: {exc}",
+                artifacts=dict(imported),
+            )
+    else:
+        if comparison_context is not None:
+            comparison_context.update_optional_task(
+                "matlab_import",
+                status="completed",
+                detail="Imported existing MATLAB checkpoints for skip-MATLAB parity rerun",
+                artifacts={
+                    **dict(imported),
+                    **(
+                        {"python_force_rerun_from": python_force_rerun_from}
+                        if python_force_rerun_from is not None
+                        else {}
+                    ),
+                },
+            )
+    if comparison_context is not None:
+        _record_matlab_status_task(
+            comparison_context,
+            matlab_status_report,
+            matlab_status_report_path,
+            python_force_rerun_from=python_force_rerun_from,
+        )
+    return matlab_results, python_force_rerun_from
+
+
 def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) -> Path:
     """Persist the normalized comparison parameters for both MATLAB and Python runs."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
@@ -939,6 +1044,14 @@ def orchestrate_comparison(
                 )
     else:
         print("\nSkipping MATLAB execution (--skip-matlab)")
+        matlab_results, python_force_rerun_from = _bootstrap_existing_matlab_batch_for_python_parity(
+            matlab_output=matlab_output,
+            python_output=python_output,
+            input_file=input_file,
+            params_for_python=params_for_python,
+            comparison_context=comparison_context,
+            metadata_dir=metadata_dir,
+        )
 
     # Run Python
     python_results = None

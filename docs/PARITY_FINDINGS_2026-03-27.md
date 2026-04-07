@@ -12,6 +12,19 @@ Follow-up as of April 1, 2026:
 - For current staged layout and recommended local output-root guidance, start
   with [COMPARISON_LAYOUT.md](COMPARISON_LAYOUT.md).
 
+Further follow-up as of April 6, 2026:
+
+- Imported-MATLAB Python-only reruns are now repeatable on the current machine:
+  three fresh reruns produced identical Python edge counts, strand counts,
+  chosen endpoint-pair hashes, and chosen trace hashes.
+- The current parity gap is therefore systematic rather than stochastic.
+- Later skip-MATLAB threshold trials showed that global watershed metric
+  thresholds are not a clean path to parity:
+  - `parity_watershed_metric_threshold = -90.0` improved edge count but
+    regressed strands.
+  - `parity_watershed_metric_threshold = -50.0` improved candidate coverage but
+    worsened final edge and strand parity.
+
 ## Fresh Baselines
 
 ### Canonical parity rerun
@@ -112,6 +125,35 @@ Implication:
   earlier experiments and sometimes made it worse.
 - Pure cleanup-order tuning is not enough by itself because too many MATLAB edge
   endpoint pairs are absent before cleanup starts.
+- The shorter-trace tie-break in Python is not an obvious mismatch by itself;
+  MATLAB's `clean_edge_pairs.m` also pre-sorts equal-energy candidates by
+  trajectory length before unique-pair cleanup.
+
+### New April 6 code-level signal
+
+Using the live rerun artifact `comparisons/20260406_live_parity_retest`:
+
+- Raw frontier candidate pairs:
+  - `892` matched MATLAB
+  - `615` extra Python
+- Raw watershed candidate pairs:
+  - `81` matched MATLAB
+  - `952` extra Python
+- Final chosen frontier edges:
+  - `847` matched MATLAB
+  - `391` extra Python
+- Final chosen watershed edges:
+  - `47` matched MATLAB
+  - `140` extra Python
+
+Interpretation:
+
+- Watershed supplementation is noisy, but it is not the whole explanation for
+  the final parity gap.
+- The majority of final extra Python edges are still frontier-sourced.
+- Extra frontier candidates also tend to be weaker and longer than matched
+  frontier candidates, which points back toward frontier discovery semantics or
+  provenance-aware cleanup rather than another blunt watershed filter.
 
 ### Important bug found during the fresh rerun
 
@@ -169,6 +211,9 @@ Why:
    - whether Python enters the same basin but fails to claim/merge it
 4. Keep cleanup work gated to `comparison_exact_network=True` unless a change is
    clearly beneficial for default native-Python behavior too.
+5. Add provenance-aware conflict diagnostics so we can tell when a long weak
+   frontier candidate blocks a stronger MATLAB-like alternative during final
+   edge selection.
 
 ## Guardrails For The Next Pass
 

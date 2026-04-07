@@ -1112,6 +1112,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     max_edges_per_vertex: int = 4,
     enforce_frontier_reachability: bool = True,
     require_mutual_frontier_participation: bool = False,
+    parity_watershed_metric_threshold: float | None = None,
 ) -> dict[str, Any]:
     """Add parity-only watershed contact candidates that the local frontier misses.
 
@@ -1125,6 +1126,8 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
        must already participate in frontier candidates.
     6. Per-origin supplement cap: each seed origin can contribute at most
        ``max_edges_per_vertex`` supplement candidates.
+    7. Optional parity-only metric threshold: reject watershed traces whose
+       max sampled energy is weaker than the configured ceiling.
     """
     if len(vertex_positions) < 2:
         return candidates
@@ -1183,6 +1186,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     n_mutual_frontier_rejected = 0
     n_cap_rejected = 0
     n_endpoint_degree_rejected = 0
+    n_metric_threshold_rejected = 0
     n_accepted = 0
     n_total_watershed_pairs = len(contact_coords_by_pair)
 
@@ -1237,10 +1241,11 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             continue
 
         energy_trace = _trace_energy_series(trace, energy)
+        energy_trace_array = np.asarray(energy_trace, dtype=np.float32)
         # Tighter parity gate: float comparison with nan handling.
         # MATLAB typically rejects traces that cross into non-negative energy
         # (background) when working with cost-based tracing.
-        max_energy = float(np.nanmax(np.asarray(energy_trace, dtype=np.float32)))
+        max_energy = float(np.nanmax(energy_trace_array))
         if energy_sign < 0:
             # For negative-is-foreground, a positive max energy means we hit background
             is_invalid = max_energy >= 0
@@ -1248,11 +1253,21 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             # For positive-is-foreground (less common in this repo's parity path),
             # we check the min instead, but this tracer is currently specialized
             # for the negative-sign imported MATLAB energy.
-            is_invalid = float(np.nanmin(np.asarray(energy_trace, dtype=np.float32))) <= 0
+            min_energy = float(np.nanmin(energy_trace_array))
+            is_invalid = min_energy <= 0
 
         if is_invalid:
             n_energy_rejected += 1
             continue
+
+        if parity_watershed_metric_threshold is not None:
+            if energy_sign < 0:
+                fails_metric_threshold = max_energy > parity_watershed_metric_threshold
+            else:
+                fails_metric_threshold = min_energy < parity_watershed_metric_threshold
+            if fails_metric_threshold:
+                n_metric_threshold_rejected += 1
+                continue
 
         scale_trace = _trace_scale_series(trace, scale_indices)
         supplement_payload["traces"].append(trace)
@@ -1284,18 +1299,22 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     supplement_payload["diagnostics"]["watershed_endpoint_degree_rejected"] = (
         n_endpoint_degree_rejected
     )
+    supplement_payload["diagnostics"]["watershed_metric_threshold_rejected"] = (
+        n_metric_threshold_rejected
+    )
     supplement_payload["diagnostics"]["watershed_accepted"] = n_accepted
 
     logger.info(
         "Watershed supplement: %d total pairs, %d already existing, "
         "%d reachability rejected, %d mutual-frontier rejected, "
-        "%d endpoint-degree rejected, %d cap rejected, "
+        "%d endpoint-degree rejected, %d metric-threshold rejected, %d cap rejected, "
         "%d short-trace rejected, %d energy rejected, %d accepted",
         n_total_watershed_pairs,
         n_already_existing,
         n_reachability_rejected,
         n_mutual_frontier_rejected,
         n_endpoint_degree_rejected,
+        n_metric_threshold_rejected,
         n_cap_rejected,
         n_short_trace,
         n_energy_rejected,
@@ -1879,6 +1898,9 @@ def _build_edge_candidate_audit(
         "watershed_already_existing": int(diag.get("watershed_already_existing", 0)),
         "watershed_short_trace_rejected": int(diag.get("watershed_short_trace_rejected", 0)),
         "watershed_energy_rejected": int(diag.get("watershed_energy_rejected", 0)),
+        "watershed_metric_threshold_rejected": int(
+            diag.get("watershed_metric_threshold_rejected", 0)
+        ),
         "watershed_reachability_rejected": int(diag.get("watershed_reachability_rejected", 0)),
         "watershed_mutual_frontier_rejected": int(
             diag.get("watershed_mutual_frontier_rejected", 0)
@@ -2849,6 +2871,12 @@ def extract_edges(
         require_mutual_frontier_participation = bool(
             params.get("parity_require_mutual_frontier_participation", True)
         )
+        watershed_metric_threshold_raw = params.get("parity_watershed_metric_threshold")
+        watershed_metric_threshold = (
+            None
+            if watershed_metric_threshold_raw in (None, "")
+            else float(watershed_metric_threshold_raw)
+        )
         candidates = _generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -2868,6 +2896,7 @@ def extract_edges(
             max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
             enforce_frontier_reachability=enforce_frontier_reachability_gate,
             require_mutual_frontier_participation=require_mutual_frontier_participation,
+            parity_watershed_metric_threshold=watershed_metric_threshold,
         )
     else:
         candidates = _generate_edge_candidates(
@@ -3396,6 +3425,12 @@ def extract_edges_resumable(
         require_mutual_frontier_participation = bool(
             params.get("parity_require_mutual_frontier_participation", True)
         )
+        watershed_metric_threshold_raw = params.get("parity_watershed_metric_threshold")
+        watershed_metric_threshold = (
+            None
+            if watershed_metric_threshold_raw in (None, "")
+            else float(watershed_metric_threshold_raw)
+        )
         candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
             candidates,
             energy,
@@ -3405,6 +3440,7 @@ def extract_edges_resumable(
             max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
             enforce_frontier_reachability=enforce_frontier_reachability_gate,
             require_mutual_frontier_participation=require_mutual_frontier_participation,
+            parity_watershed_metric_threshold=watershed_metric_threshold,
         )
         supplement_origin_counts = _normalize_candidate_origin_counts(
             candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")

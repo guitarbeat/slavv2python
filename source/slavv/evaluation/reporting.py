@@ -189,6 +189,7 @@ def generate_summary(run_dir: Path, output_file: Path):
     edge_diag = edge_diagnostics.get("python", {})
     candidate_coverage = edge_diagnostics.get("candidate_endpoint_coverage", {})
     candidate_audit = edge_diagnostics.get("candidate_audit", {})
+    chosen_candidate_sources = edge_diagnostics.get("chosen_candidate_sources", {})
     if edge_diag or candidate_coverage or candidate_audit:
         lines.append("Edge Diagnostics")
         lines.append("-" * 70)
@@ -215,6 +216,20 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(edge_diag.get('degree_pruned_count', 0)):,}/"
                 f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
                 f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
+            )
+        final_matched_endpoint_pairs = int(report.get("edges", {}).get("matched_endpoint_pair_count", 0))
+        final_missing_endpoint_pairs = int(report.get("edges", {}).get("missing_endpoint_pair_count", 0))
+        final_extra_endpoint_pairs = int(report.get("edges", {}).get("extra_endpoint_pair_count", 0))
+        if (
+            final_matched_endpoint_pairs
+            or final_missing_endpoint_pairs
+            or final_extra_endpoint_pairs
+        ):
+            lines.append(
+                "Final endpoint pairs matched/matlab-only/python-only: "
+                f"{final_matched_endpoint_pairs:,}/"
+                f"{final_missing_endpoint_pairs:,}/"
+                f"{final_extra_endpoint_pairs:,}"
             )
         if candidate_coverage:
             lines.append(
@@ -284,6 +299,24 @@ def generate_summary(run_dir: Path, output_file: Path):
                 extra_seed_pairs = top_extra_origin.get("extra_candidate_endpoint_pair_samples", [])
                 if extra_seed_pairs:
                     lines.append(f"First extra pair at top seed origin: {extra_seed_pairs[0]}")
+        if chosen_candidate_sources:
+            chosen_counts = chosen_candidate_sources.get("counts", {})
+            lines.append(
+                "Chosen candidate sources frontier/watershed/fallback: "
+                f"{int(chosen_counts.get('frontier', 0)):,}/"
+                f"{int(chosen_counts.get('watershed', 0)):,}/"
+                f"{int(chosen_counts.get('fallback', 0)):,}"
+            )
+            watershed_pair_count = int(
+                chosen_candidate_sources.get("watershed_endpoint_pair_count", 0)
+            )
+            if watershed_pair_count > 0:
+                lines.append(
+                    "Chosen watershed endpoint pairs total/matched-matlab/extra-python: "
+                    f"{watershed_pair_count:,}/"
+                    f"{int(chosen_candidate_sources.get('watershed_matched_matlab_endpoint_pair_count', 0)):,}/"
+                    f"{int(chosen_candidate_sources.get('watershed_extra_python_endpoint_pair_count', 0)):,}"
+                )
         if candidate_audit:
             lines.append(
                 "Candidate audit: "
@@ -328,11 +361,12 @@ def generate_summary(run_dir: Path, output_file: Path):
             audit_diag = candidate_audit.get("diagnostic_counters", {})
             if audit_diag:
                 lines.append(
-                    "Audit rejections reachability/mutual/endpoint-degree/energy/cap/short/accepted: "
+                    "Audit rejections reachability/mutual/endpoint-degree/energy/metric-threshold/cap/short/accepted: "
                     f"{int(audit_diag.get('watershed_reachability_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_mutual_frontier_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_endpoint_degree_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_energy_rejected', 0)):,}/"
+                    f"{int(audit_diag.get('watershed_metric_threshold_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_cap_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_short_trace_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_accepted', 0)):,}"

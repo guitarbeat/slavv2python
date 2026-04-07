@@ -75,6 +75,32 @@ class TestWatershedSupplementDiagnostics:
         diag = result["diagnostics"]
         assert diag["watershed_accepted"] == diag["watershed_join_supplement_count"]
 
+    def test_supplement_metric_threshold_can_reject_weak_watershed_traces(self):
+        """A parity-only metric threshold should reject weak watershed supplements."""
+        energy = _make_small_volume(9)
+        vertex_positions = np.array([[4.0, 1.0, 4.0], [4.0, 7.0, 4.0]], dtype=np.float32)
+        candidates = {
+            "traces": [],
+            "connections": np.zeros((0, 2), dtype=np.int32),
+            "metrics": np.zeros((0,), dtype=np.float32),
+            "energy_traces": [],
+            "scale_traces": [],
+            "origin_indices": np.zeros((0,), dtype=np.int32),
+            "diagnostics": _empty_edge_diagnostics(),
+        }
+        result = _supplement_matlab_frontier_candidates_with_watershed_joins(
+            candidates,
+            energy,
+            None,
+            vertex_positions,
+            -1.0,
+            enforce_frontier_reachability=False,
+            parity_watershed_metric_threshold=-0.6,
+        )
+        diag = result["diagnostics"]
+        assert diag["watershed_metric_threshold_rejected"] >= 1
+        assert diag["watershed_accepted"] == 0
+
 
 @pytest.mark.unit
 class TestFrontierCandidateDiagnostics:
@@ -154,6 +180,7 @@ class TestFrontierCandidateDiagnostics:
                 "candidate_traced_edge_count": 4,
                 "terminal_edge_count": 4,
                 "chosen_edge_count": 2,
+                "watershed_metric_threshold_rejected": 3,
             },
         }
 
@@ -186,6 +213,7 @@ class TestFrontierCandidateDiagnostics:
             (1, 2)
         ]
         assert candidate_audit["frontier_per_origin_candidate_counts"] == {0: 2, 1: 1}
+        assert candidate_audit["diagnostic_counters"]["watershed_metric_threshold_rejected"] == 3
         assert isinstance(candidate_audit["per_origin_summary"], list)
         assert len(candidate_audit["per_origin_summary"]) == 3
         origin_zero = next(

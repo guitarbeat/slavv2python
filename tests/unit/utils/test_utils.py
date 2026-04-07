@@ -47,6 +47,20 @@ def test_validate_parameters_preserves_edge_influence_overrides():
     assert validated["sigma_per_influence_edges"] == 2.0 / 3.0
 
 
+def test_validate_parameters_preserves_parity_specific_overrides():
+    validated = validate_parameters(
+        {
+            "parity_frontier_reachability_gate": False,
+            "parity_require_mutual_frontier_participation": False,
+            "parity_watershed_metric_threshold": -90.0,
+        }
+    )
+
+    assert validated["parity_frontier_reachability_gate"] is False
+    assert validated["parity_require_mutual_frontier_participation"] is False
+    assert validated["parity_watershed_metric_threshold"] == -90.0
+
+
 def test_validate_parameters_coerces_integer_like_matlab_settings():
     validated = validate_parameters(
         {

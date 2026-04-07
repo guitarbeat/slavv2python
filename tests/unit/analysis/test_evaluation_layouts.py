@@ -188,6 +188,9 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     report = {
         "python": {"comparison_mode": {"energy_source": "matlab_batch_hdf5"}},
         "edges": {
+            "matched_endpoint_pair_count": 9,
+            "missing_endpoint_pair_count": 3,
+            "extra_endpoint_pair_count": 4,
             "diagnostics": {
                 "candidate_endpoint_coverage": {
                     "candidate_endpoint_pair_count": 21,
@@ -244,8 +247,9 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         "watershed_mutual_frontier_rejected": 2,
                         "watershed_endpoint_degree_rejected": 3,
                         "watershed_energy_rejected": 4,
-                        "watershed_cap_rejected": 5,
-                        "watershed_short_trace_rejected": 6,
+                        "watershed_metric_threshold_rejected": 5,
+                        "watershed_cap_rejected": 6,
+                        "watershed_short_trace_rejected": 7,
                         "watershed_accepted": 9,
                     },
                 },
@@ -277,6 +281,12 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         "terminal_frontier_hit": 20,
                     },
                 },
+                "chosen_candidate_sources": {
+                    "counts": {"frontier": 1, "watershed": 1, "fallback": 0},
+                    "watershed_endpoint_pair_count": 1,
+                    "watershed_matched_matlab_endpoint_pair_count": 0,
+                    "watershed_extra_python_endpoint_pair_count": 1,
+                },
             }
         },
     }
@@ -292,8 +302,11 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     )
     assert "Frontier stop reasons exhausted/length-limit/terminal-hit: 18/19/20" in summary
     assert "Watershed join supplements: 4" in summary
+    assert "Final endpoint pairs matched/matlab-only/python-only: 9/3/4" in summary
     assert "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: 21/13/8" in summary
     assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
+    assert "Chosen candidate sources frontier/watershed/fallback: 1/1/0" in summary
+    assert "Chosen watershed endpoint pairs total/matched-matlab/extra-python: 1/0/1" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary
     assert (
         f"Candidate audit artifact: {analysis_dir.parent / '02_Output' / 'python_results' / 'stages' / 'edges' / 'candidate_audit.json'}"
@@ -314,7 +327,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Top extra seed origin 12: extra candidate pairs 4  seed candidate pairs 4" in summary
     assert "First extra pair at top seed origin: [12, 88]" in summary
     assert (
-        "Audit rejections reachability/mutual/endpoint-degree/energy/cap/short/accepted: 1/2/3/4/5/6/9"
+        "Audit rejections reachability/mutual/endpoint-degree/energy/metric-threshold/cap/short/accepted: 1/2/3/4/5/6/7/9"
         in summary
     )
     assert "Python energy source: matlab_batch_hdf5" in summary

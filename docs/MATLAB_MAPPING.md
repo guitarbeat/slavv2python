@@ -100,7 +100,7 @@ MATLAB script.
 
 ## Current Parity Focus
 
-As of March 30, 2026:
+As of April 6, 2026:
 
 - The MATLAB batch importer in `source/slavv/io/matlab_bridge.py` now loads
   real HDF5 energy sidecars into checkpoint-compatible `energy_data` payloads.
@@ -113,9 +113,22 @@ As of March 30, 2026:
   strands during parity runs.
 - Edge cleanup in `source/slavv/core/tracing.py` applies MATLAB-shaped
   duplicate ordering, including deterministic shorter-trace tie-breaking.
-- Final exact edge and strand parity reached in April 2026 canonical reruns (1421/1379 edges, 678/682 strands, >95% convergence).
-- See `docs/PARITY_FINDINGS_2026-03-27.md` and `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` 
-  for the final report and findings.
+- Exact edge and strand parity are still in progress.
+- Latest live rerun on April 6, 2026:
+  - Edges: `1425` Python vs `1379` MATLAB
+  - Strands: `681` Python vs `682` MATLAB
+- Skip-MATLAB threshold experiments on April 6, 2026 showed that global
+  watershed metric thresholds are not a reliable standalone parity lever:
+  - `parity_watershed_metric_threshold = -90.0` tightened edges to `1387`, but
+    regressed strands to `654`.
+  - `parity_watershed_metric_threshold = -50.0` improved candidate coverage,
+    but final parity worsened to `1426` Python edges and `697` Python strands.
+- Candidate-endpoint coverage is still the first triage signal, but the current
+  evidence shows that better candidate counts alone do not guarantee better
+  final chosen-edge or strand parity.
+- See `docs/PARITY_FINDINGS_2026-03-27.md` and
+  `docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md` for current findings and the next
+  parity work items.
 
 ## Upstream Files Intentionally Not Ported
 

@@ -47,6 +47,9 @@ MATLAB-vs-Python runs as the default development loop.
 - Full comparison orchestration already imports MATLAB `energy` and `vertices`
   into Python checkpoints and reruns Python from `edges` when those stages are
   available.
+- `--skip-matlab` parity reruns now bootstrap from the staged MATLAB batch in
+  the current output root, reimport MATLAB `energy` and `vertices`, rerun
+  Python from `edges`, and compare in one pass.
 - Output-root preflight decisions, MATLAB rerun semantics, and MATLAB failure
   summaries already persist under `99_Metadata/`.
 - Successful comparison runs already print explicit reuse guidance so the next
@@ -63,6 +66,9 @@ MATLAB-vs-Python runs as the default development loop.
   pass for total-size reporting and typed file inventory generation.
 - Generated summaries now recommend candidate-endpoint coverage as the first
   triage surface when missing or extra candidate endpoint pairs are present.
+- Generated summaries now also surface
+  `watershed_metric_threshold_rejected` when parity experiments use a
+  watershed metric gate.
 
 ### Verified parity baseline
 
@@ -95,6 +101,45 @@ MATLAB-vs-Python runs as the default development loop.
 - Candidate-endpoint coverage remains the cheapest useful mismatch signal and
   is now surfaced directly in generated summaries, which should keep triage
   focused on the earliest divergence point.
+- The April 6, 2026 skip-MATLAB threshold trials showed that better
+  candidate-endpoint coverage does not automatically improve final parity.
+  A blunt watershed metric threshold changed the candidate pool in the
+  expected direction, but it also shifted conflict resolution and downstream
+  graph assembly in ways that worsened final edge and strand convergence.
+- The `parity_watershed_metric_threshold = -90.0` trial tightened edges from
+  `1425` to `1387`, but regressed strands from `681` to `654`.
+- The milder `parity_watershed_metric_threshold = -50.0` trial improved
+  candidate coverage (`2164/990/389` candidate/matched/missing vs
+  `2540/973/406` in the live retest), but final parity worsened to `1426`
+  Python edges and `697` Python strands.
+- Global watershed thresholds are therefore not a reliable standalone parity
+  lever. The next iteration should focus on selective watershed acceptance or
+  chosen-edge conflict ordering instead of another blunt threshold sweep.
+- Three fresh imported-MATLAB Python-only reruns on April 6, 2026 produced
+  identical Python outputs on the current machine and parameter surface:
+  `1425` edges, `681` strands, identical chosen-edge endpoint-pair hashes, and
+  identical chosen-trace hashes across all three runs. The current parity gap
+  therefore looks systematic rather than stochastic.
+- Quick repeatability checks should read Python artifacts directly or use deep
+  comparison mode when MATLAB counts matter. In the current shallow mode,
+  summary files skip deep MATLAB parsing and therefore show MATLAB counts as
+  zero even when staged MATLAB results are present.
+- MATLAB's `clean_edge_pairs.m` confirms that the Python shorter-trace
+  tie-break before metric ordering is intentional and parity-aligned. The
+  remaining gap is probably not caused by that ordering rule.
+- The April 6, 2026 live retest still shows the majority of final extra Python
+  edges coming from frontier candidates rather than watershed-only candidates:
+  `391` chosen frontier extras versus `140` chosen watershed extras.
+- The same live retest also shows a candidate-quality split:
+  - frontier candidate pairs: `892` matched MATLAB, `615` extra Python
+  - watershed candidate pairs: `81` matched MATLAB, `952` extra Python
+  - chosen frontier edges: `847` matched MATLAB, `391` extra Python
+  - chosen watershed edges: `47` matched MATLAB, `140` extra Python
+- Extra frontier pairs are systematically weaker and longer than matched
+  frontier pairs in the current baseline (median metric `-156` vs `-223`,
+  median length `18` vs `12`). Watershed extras are even weaker and longer,
+  but watershed filtering alone cannot close the final gap because frontier
+  extras still dominate the chosen-edge mismatch.
 
 ### Planned next
 
@@ -104,6 +149,16 @@ MATLAB-vs-Python runs as the default development loop.
   and relevant inputs have not changed.
 - Extend `--resume-latest` compatibility checks to more loop-specific staged
   surfaces and operator hints beyond the first requested-artifact checks.
+- Investigate selective watershed acceptance that preserves strand-critical
+  structure instead of applying a single global metric cutoff.
+- Compare chosen-edge conflict ordering before and after watershed filtering,
+  since the threshold trials changed final topology even when candidate
+  coverage improved.
+- Inspect frontier candidate semantics before cleanup, especially why long,
+  weaker frontier candidates survive in large numbers and still account for
+  most final extra Python edges.
+- Add provenance-aware diagnostics around conflict painting so we can see when
+  long weak frontier candidates block MATLAB-like choices downstream.
 
 ## Recommended Development Loops
 
@@ -252,6 +307,8 @@ Use the cheapest loop that can answer the current question.
       size reporting.
 - [x] Surface candidate-endpoint coverage as the first triage recommendation in
       generated comparison summaries.
+- [x] Surface `watershed_metric_threshold_rejected` in generated summaries so
+      parity threshold experiments leave an explicit audit trail.
 
 ## Immediate Next Actions
 
@@ -266,3 +323,6 @@ Use the cheapest loop that can answer the current question.
 - [ ] Add lightweight operator messaging that distinguishes "safe to reuse",
       "safe to analyze only", and "requires fresh MATLAB run" directly in CLI
       summaries.
+- [ ] Add a targeted parity diagnostic that explains why chosen edge topology
+      changed when candidate filtering improved, so strand regressions can be
+      traced without another full MATLAB rerun.

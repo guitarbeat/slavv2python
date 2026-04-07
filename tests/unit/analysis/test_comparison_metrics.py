@@ -179,6 +179,9 @@ def test_compare_edges_reports_exact_endpoint_and_diagnostic_bundle():
     result = compare_edges(matlab_edges, python_edges)
 
     assert not result["exact_endpoint_pairs_match"]
+    assert result["matched_endpoint_pair_count"] == 1
+    assert result["missing_endpoint_pair_count"] == 1
+    assert result["extra_endpoint_pair_count"] == 1
     assert result["endpoint_pair_matlab_only_samples"]
     assert result["endpoint_pair_python_only_samples"]
     assert result["diagnostics"]["python"]["candidate_traced_edge_count"] == 7
@@ -192,6 +195,7 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     python_edges = {
         "connections": np.array([[0, 1], [1, 3]], dtype=np.int32),
         "traces": [],
+        "chosen_candidate_indices": np.array([0, 2], dtype=np.int32),
     }
     candidate_edges = {
         "connections": np.array([[0, 1], [1, 2], [4, 5]], dtype=np.int32),
@@ -281,6 +285,11 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
     assert coverage["extra_candidate_seed_origin_samples"][0][
         "extra_candidate_endpoint_pair_samples"
     ] == [(4, 5)]
+    chosen_sources = result["diagnostics"]["chosen_candidate_sources"]
+    assert chosen_sources["counts"] == {"frontier": 1, "watershed": 1, "fallback": 0}
+    assert chosen_sources["watershed_endpoint_pair_count"] == 1
+    assert chosen_sources["watershed_matched_matlab_endpoint_pair_count"] == 0
+    assert chosen_sources["watershed_extra_python_endpoint_pair_count"] == 1
     assert "candidate_audit" in result["diagnostics"]
     assert result["diagnostics"]["candidate_audit"]["schema_version"] == 1
     assert result["diagnostics"]["candidate_audit"]["candidate_connection_count"] == 3
