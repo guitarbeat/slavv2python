@@ -263,6 +263,13 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                     "antiparallel_pair_count": 0,
                     "negative_energy_rejected_count": 4,
                     "conflict_rejected_count": 5,
+                    "conflict_rejected_by_source": {"frontier": 3, "watershed": 2},
+                    "conflict_blocking_source_counts": {"frontier": 4, "watershed": 1},
+                    "conflict_source_pairs": {
+                        "frontier->frontier": 3,
+                        "watershed->frontier": 1,
+                        "watershed->watershed": 1,
+                    },
                     "degree_pruned_count": 6,
                     "orphan_pruned_count": 7,
                     "cycle_pruned_count": 8,
@@ -305,6 +312,9 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Final endpoint pairs matched/matlab-only/python-only: 9/3/4" in summary
     assert "Candidate endpoint pairs candidate/matched-matlab/missing-matlab: 21/13/8" in summary
     assert "Candidate endpoint pairs extra-candidate/final-python: 5/12" in summary
+    assert "Conflict rejects by source frontier/watershed/fallback/unknown: 3/2/0/0" in summary
+    assert "Conflict blockers by source frontier/watershed/fallback/unknown: 4/1/0/0" in summary
+    assert "Conflict source pairs f->f/f->w/w->f/w->w: 3/0/1/1" in summary
     assert "Chosen candidate sources frontier/watershed/fallback: 1/1/0" in summary
     assert "Chosen watershed endpoint pairs total/matched-matlab/extra-python: 1/0/1" in summary
     assert "First missing candidate endpoint pair: [2, 356]" in summary

@@ -217,6 +217,35 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
                 f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
             )
+            conflict_rejected_by_source = edge_diag.get("conflict_rejected_by_source", {})
+            if conflict_rejected_by_source:
+                lines.append(
+                    "Conflict rejects by source frontier/watershed/fallback/unknown: "
+                    f"{int(conflict_rejected_by_source.get('frontier', 0)):,}/"
+                    f"{int(conflict_rejected_by_source.get('watershed', 0)):,}/"
+                    f"{int(conflict_rejected_by_source.get('fallback', 0)):,}/"
+                    f"{int(conflict_rejected_by_source.get('unknown', 0)):,}"
+                )
+            conflict_blocking_source_counts = edge_diag.get(
+                "conflict_blocking_source_counts", {}
+            )
+            if conflict_blocking_source_counts:
+                lines.append(
+                    "Conflict blockers by source frontier/watershed/fallback/unknown: "
+                    f"{int(conflict_blocking_source_counts.get('frontier', 0)):,}/"
+                    f"{int(conflict_blocking_source_counts.get('watershed', 0)):,}/"
+                    f"{int(conflict_blocking_source_counts.get('fallback', 0)):,}/"
+                    f"{int(conflict_blocking_source_counts.get('unknown', 0)):,}"
+                )
+            conflict_source_pairs = edge_diag.get("conflict_source_pairs", {})
+            if conflict_source_pairs:
+                lines.append(
+                    "Conflict source pairs f->f/f->w/w->f/w->w: "
+                    f"{int(conflict_source_pairs.get('frontier->frontier', 0)):,}/"
+                    f"{int(conflict_source_pairs.get('frontier->watershed', 0)):,}/"
+                    f"{int(conflict_source_pairs.get('watershed->frontier', 0)):,}/"
+                    f"{int(conflict_source_pairs.get('watershed->watershed', 0)):,}"
+                )
         final_matched_endpoint_pairs = int(report.get("edges", {}).get("matched_endpoint_pair_count", 0))
         final_missing_endpoint_pairs = int(report.get("edges", {}).get("missing_endpoint_pair_count", 0))
         final_extra_endpoint_pairs = int(report.get("edges", {}).get("extra_endpoint_pair_count", 0))

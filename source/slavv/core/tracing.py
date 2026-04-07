@@ -108,6 +108,9 @@ def _empty_edge_diagnostics() -> dict[str, Any]:
         "dangling_edge_count": 0,
         "negative_energy_rejected_count": 0,
         "conflict_rejected_count": 0,
+        "conflict_rejected_by_source": {},
+        "conflict_blocking_source_counts": {},
+        "conflict_source_pairs": {},
         "degree_pruned_count": 0,
         "orphan_pruned_count": 0,
         "cycle_pruned_count": 0,
@@ -2382,6 +2385,10 @@ def _choose_edges_matlab_style(
     )
     length_sorted = filtered_indices[np.argsort(edge_lengths, kind="stable")]
     ordered = length_sorted[np.argsort(metrics[length_sorted], kind="stable")]
+    connection_sources = _normalize_candidate_connection_sources(
+        candidates.get("connection_sources"),
+        len(connections),
+    )
 
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []
@@ -2410,6 +2417,9 @@ def _choose_edges_matlab_style(
     vertex_offset_cache: dict[int, np.ndarray] = {}
     edge_offset_cache: dict[int, np.ndarray] = {}
     painted_image: np.ndarray = np.zeros(image_shape, dtype=np.int32)
+    painted_source_image: np.ndarray = np.zeros(image_shape, dtype=np.uint8)
+    source_code_by_label = {"unknown": 0, "frontier": 1, "watershed": 2, "fallback": 3}
+    source_label_by_code = {code: label for label, code in source_code_by_label.items()}
 
     def vertex_offsets(scale: int) -> np.ndarray:
         if scale not in vertex_offset_cache:
@@ -2426,7 +2436,11 @@ def _choose_edges_matlab_style(
     chosen_indices: list[int] = []
     for index in antiparallel_indices_u:
         start_vertex, end_vertex = (int(value) for value in connections[index])
-        endpoint_snapshots: list[tuple[np.ndarray, np.ndarray]] = []
+        current_source = (
+            connection_sources[index] if index < len(connection_sources) else "unknown"
+        )
+        current_source_code = source_code_by_label.get(current_source, 0)
+        endpoint_snapshots: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
 
         for vertex_index in (start_vertex, end_vertex):
             coords = _offset_coords_matlab(
@@ -2435,8 +2449,12 @@ def _choose_edges_matlab_style(
                 image_shape,
             )
             snapshot = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
+            source_snapshot = painted_source_image[
+                coords[:, 0], coords[:, 1], coords[:, 2]
+            ].copy()
             painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
-            endpoint_snapshots.append((coords, snapshot))
+            painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
+            endpoint_snapshots.append((coords, snapshot, source_snapshot))
 
         chosen = True
         trace = np.asarray(traces[index], dtype=np.float32)
@@ -2453,18 +2471,48 @@ def _choose_edges_matlab_style(
             }
             if conflicting:
                 diagnostics["conflict_rejected_count"] += 1
+                blocking_sources = {
+                    source_label_by_code.get(int(value), "unknown")
+                    for value in painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]]
+                    .tolist()
+                    if int(value) != 0
+                }
+                conflict_rejected_by_source = diagnostics.setdefault(
+                    "conflict_rejected_by_source", {}
+                )
+                conflict_rejected_by_source[current_source] = int(
+                    conflict_rejected_by_source.get(current_source, 0)
+                ) + 1
+                conflict_blocking_source_counts = diagnostics.setdefault(
+                    "conflict_blocking_source_counts", {}
+                )
+                conflict_source_pairs = diagnostics.setdefault("conflict_source_pairs", {})
+                for blocking_source in blocking_sources:
+                    conflict_blocking_source_counts[blocking_source] = int(
+                        conflict_blocking_source_counts.get(blocking_source, 0)
+                    ) + 1
+                    pair_key = f"{current_source}->{blocking_source}"
+                    conflict_source_pairs[pair_key] = int(
+                        conflict_source_pairs.get(pair_key, 0)
+                    ) + 1
                 chosen = False
                 break
 
         if chosen:
-            for vertex_index, (coords, _snapshot) in zip(
+            for vertex_index, (coords, _snapshot, _source_snapshot) in zip(
                 (start_vertex, end_vertex), endpoint_snapshots
             ):
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
+                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = (
+                    current_source_code
+                )
             chosen_indices.append(index)
         else:
-            for coords, snapshot in endpoint_snapshots:
+            for coords, snapshot, source_snapshot in endpoint_snapshots:
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = snapshot
+                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = (
+                    source_snapshot
+                )
 
     if not chosen_indices:
         empty = _empty_edges_result(vertex_positions)
@@ -2517,6 +2565,10 @@ def _choose_edges_matlab_style(
     ]
     result["scale_traces"] = [
         np.asarray(scale_traces[index], dtype=np.int16) for index in final_indices
+    ]
+    result["connection_sources"] = [
+        connection_sources[index] if index < len(connection_sources) else "unknown"
+        for index in final_indices
     ]
     result["chosen_candidate_indices"] = np.asarray(final_indices, dtype=np.int32)
     diagnostics["chosen_edge_count"] = len(final_indices)

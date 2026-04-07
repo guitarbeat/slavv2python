@@ -262,6 +262,47 @@ def test_choose_edges_prefers_shorter_equal_energy_duplicate():
     assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
 
 
+def test_choose_edges_tracks_conflict_provenance_by_source():
+    vertex_positions = np.array(
+        [[1, 1, 1], [1, 5, 1], [1, 3, 1], [3, 5, 1]],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(4, dtype=np.int16)
+    chosen_frontier = np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
+    rejected_watershed = np.array(
+        [[1, 3, 1], [1, 4, 1], [1, 5, 1], [2, 5, 1], [3, 5, 1]],
+        dtype=np.float32,
+    )
+    candidates = {
+        "traces": [chosen_frontier, rejected_watershed],
+        "connections": np.array([[0, 1], [2, 3]], dtype=np.int32),
+        "metrics": np.array([-5.0, -4.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-4.0, -4.0, -4.0, -4.0, -4.0], dtype=np.float32),
+        ],
+        "scale_traces": [np.zeros(3, dtype=np.int16), np.zeros(5, dtype=np.int16)],
+        "origin_indices": np.array([0, 2], dtype=np.int32),
+        "connection_sources": ["frontier", "watershed"],
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1]]
+    assert chosen["connection_sources"] == ["frontier"]
+    assert chosen["diagnostics"]["conflict_rejected_count"] == 1
+    assert chosen["diagnostics"]["conflict_rejected_by_source"] == {"watershed": 1}
+    assert chosen["diagnostics"]["conflict_blocking_source_counts"] == {"frontier": 1}
+    assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
+
+
 def test_offset_coords_matlab_snaps_out_of_bounds_axes_back_to_center():
     offsets = _construct_structuring_element_offsets_matlab(
         np.array([1.0, 1.0, 1.0], dtype=np.float32)
