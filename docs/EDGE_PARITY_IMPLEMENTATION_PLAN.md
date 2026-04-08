@@ -12,8 +12,10 @@ Use this file when you want to know:
 - which code surface should change next
 - what acceptance looks like for edge convergence
 
-Use [PARITY_HUB.md](PARITY_HUB.md) for quick re-entry and
-[PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) for the
+Use [PARITY_HUB.md](PARITY_HUB.md) for quick re-entry,
+[parity_decision_memo_2026-04-08.md](../workspace/reports/parity_decision_memo_2026-04-08.md)
+for the current implementation decision, and
+[PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) for the longer
 evidence behind this plan.
 
 ## Rapid Recall
@@ -26,6 +28,8 @@ evidence behind this plan.
   - Python edge generation from imported MATLAB `energy` and `vertices`
 - Current blocker:
   - upstream frontier candidate generation and local partner selection
+  - plus a newly confirmed cleanup-path mismatch between Python and the active
+    MATLAB V200 flow
   - not generic downstream graph assembly
 - Standing downstream gate:
 
@@ -49,7 +53,9 @@ On the imported-MATLAB parity surface:
   from `network`
 
 That means the remaining primary blocker is the edge-candidate path before
-downstream graph assembly.
+downstream graph assembly, but the cleanup path also needs to match the active
+MATLAB V200 code surface before further frontier debugging is fully
+trustworthy.
 
 ## Evidence Snapshot
 
@@ -63,9 +69,14 @@ Current evidence, consolidated:
   vertices as the missing MATLAB pairs.
 - For the worst shared vertices inspected so far, some missing MATLAB pairs
   never enter the Python candidate pool at all.
+- A direct April 8 MATLAB/Python code audit showed that Python cleanup still
+  models `choose_edges_V200`-style conflict painting even though the active
+  `vectorize_V200.m` path uses `clean_edge_pairs` followed by degree/orphan/
+  cycle cleanup.
 
 Detailed metrics and experiment history live in:
 
+- [parity_decision_memo_2026-04-08.md](../workspace/reports/parity_decision_memo_2026-04-08.md)
 - [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
 - [stage_isolated_network_parity_2026-04-07.md](../workspace/reports/stage_isolated_network_parity_2026-04-07.md)
 
@@ -82,8 +93,10 @@ The remaining parity work is centered on:
 
 ## Working Hypothesis
 
-The remaining gap is most likely caused by a frontier-discovery mismatch rather
-than by generic cleanup or graph assembly.
+The remaining gap is now best modeled as two layered problems:
+
+1. upstream frontier-discovery mismatch
+2. downstream cleanup-path mismatch with the active MATLAB V200 flow
 
 Current working model:
 
@@ -91,8 +104,10 @@ Current working model:
 - the final extra set is still frontier-heavy
 - some strong extra frontier edges appear to be local partner substitutions
   around shared vertices
-- the highest-value fixes are likely in local claim ordering, terminal
-  ownership, bifurcation handling, or related frontier semantics
+- the highest-value fixes are likely:
+  - first, cleanup-path alignment with active MATLAB V200
+  - second, local claim ordering, terminal ownership, bifurcation handling, or
+    related frontier semantics
 
 ## Implementation Phases
 
@@ -103,14 +118,25 @@ Current working model:
   regresses.
 - Keep parity-mode network assembly enabled for all comparison-mode reruns.
 
-### Phase 2: Localize the first edge divergence
+### Phase 2: Align cleanup with active MATLAB V200
+
+- Replace the current mixed cleanup path with the active MATLAB V200 cleanup
+  chain:
+  - `clean_edge_pairs`
+  - `clean_edges_vertex_degree_excess`
+  - `clean_edges_orphans`
+  - `clean_edges_cycles`
+- Re-run the imported-MATLAB parity loop after cleanup alignment.
+- Treat the residual mismatch after that rerun as the true upstream gap.
+
+### Phase 3: Localize the first edge divergence
 
 - Continue using candidate-endpoint coverage as the first triage gate.
 - Keep using shared-vertex diagnostics to identify where missing MATLAB pairs
   and extra frontier edges overlap.
 - Focus on the worst shared vertices first rather than broad global changes.
 
-### Phase 3: Tighten frontier tracing semantics
+### Phase 4: Tighten frontier tracing semantics
 
 Compare Python against MATLAB in the areas most likely to suppress MATLAB-like
 candidate pairs before cleanup:
@@ -125,18 +151,19 @@ Primary audit companion:
 
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
-### Phase 4: Keep watershed changes selective
+### Phase 5: Keep watershed changes selective
 
 - Avoid blunt global threshold sweeps unless a diagnostic specifically points
   there.
 - Preserve strand-critical structure if watershed filtering is tightened.
 - Prefer evidence-driven, local changes over broad source-preference rules.
 
-### Phase 5: Use cleanup as a downstream safety net
+### Phase 6: Keep cleanup narrow after alignment
 
-- Keep `_choose_edges_matlab_style()` focused on dedupe and pruning.
+- Keep cleanup aligned to the active MATLAB code path rather than blending old
+  and new MATLAB helpers.
 - Do not use cleanup changes as the primary way to mask upstream candidate
-  drift.
+  drift once the cleanup model is aligned.
 - Add diagnostics first if cleanup ordering becomes a suspected blocker again.
 
 ## Non-Goals
@@ -171,6 +198,7 @@ Run the cheaper checks first:
 ## Related Docs
 
 - [PARITY_HUB.md](PARITY_HUB.md)
+- [parity_decision_memo_2026-04-08.md](../workspace/reports/parity_decision_memo_2026-04-08.md)
 - [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
 - [workspace/reports/stage_isolated_network_parity_2026-04-07.md](../workspace/reports/stage_isolated_network_parity_2026-04-07.md)

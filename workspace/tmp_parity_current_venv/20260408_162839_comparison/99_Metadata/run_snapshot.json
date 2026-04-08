@@ -1,0 +1,135 @@
+{
+  "artifacts": {},
+  "created_at": "2026-04-08T21:28:39Z",
+  "current_stage": "",
+  "elapsed_seconds": 1198.6667149066925,
+  "errors": [],
+  "eta_seconds": null,
+  "input_fingerprint": "",
+  "last_event": "Comparison manifest written",
+  "optional_tasks": {
+    "manifest": {
+      "artifacts": {
+        "manifest": "workspace\\tmp_parity_current_venv\\20260408_162839_comparison\\99_Metadata\\run_manifest.md"
+      },
+      "completed_at": "2026-04-08T21:48:38Z",
+      "detail": "Comparison manifest written",
+      "elapsed_seconds": 0.0,
+      "name": "manifest",
+      "progress": 1.0,
+      "started_at": null,
+      "status": "completed",
+      "updated_at": "2026-04-08T21:48:38Z"
+    },
+    "matlab_status": {
+      "artifacts": {
+        "batch_folder": "",
+        "last_completed_stage": "(none)",
+        "log_file": "workspace\\tmp_parity_current_venv\\20260408_162839_comparison\\01_Input\\matlab_results\\matlab_run.log",
+        "next_stage": "energy",
+        "report": "workspace\\tmp_parity_current_venv\\20260408_162839_comparison\\99_Metadata\\matlab_status.json",
+        "rerun_prediction": "No reusable MATLAB batch found; rerun will create a new batch and start at energy.",
+        "resume_mode": "fresh",
+        "resume_state_file": "workspace\\tmp_parity_current_venv\\20260408_162839_comparison\\01_Input\\matlab_results\\matlab_resume_state.json"
+      },
+      "completed_at": "2026-04-08T21:28:39Z",
+      "detail": "No reusable MATLAB batch found; rerun will create a new batch and start at energy.",
+      "elapsed_seconds": 0.0,
+      "name": "matlab_status",
+      "progress": 1.0,
+      "started_at": null,
+      "status": "completed",
+      "updated_at": "2026-04-08T21:28:39Z"
+    },
+    "python_pipeline": {
+      "artifacts": {
+        "output_dir": "workspace\\tmp_parity_current_venv\\20260408_162839_comparison\\02_Output\\python_results"
+      },
+      "completed_at": null,
+      "detail": "Python pipeline finished",
+      "elapsed_seconds": 0.0,
+      "name": "python_pipeline",
+      "progress": 0.0,
+      "started_at": "2026-04-08T21:28:39Z",
+      "status": "failed",
+      "updated_at": "2026-04-08T21:48:38Z"
+    }
+  },
+  "overall_progress": 0.0,
+  "params_fingerprint": "",
+  "provenance": {
+    "input_file": "data/slavv_test_volume.tif",
+    "layout": "structured",
+    "source": "comparison"
+  },
+  "run_id": "24215eb1b187",
+  "stages": {
+    "edges": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "edges",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "energy": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "energy",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "network": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "network",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "vertices": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "vertices",
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    }
+  },
+  "status": "pending",
+  "target_stage": "network",
+  "updated_at": "2026-04-08T21:48:38Z"
+}
