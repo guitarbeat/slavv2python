@@ -1,278 +1,176 @@
 # Edge Parity Implementation Plan
 
-Status: In Progress (Phase 2-3 diagnostics active; conflict-provenance reporting landed)
-Date: 2026-04-06
+Status: In Progress
+Updated: 2026-04-08
 
-## Context
+This file is the edge-generation source of truth for parity implementation
+work.
 
-The latest MATLAB-vs-Python parity reruns reached exact vertex parity but still
-miss exact edge and strand parity.
+Use this file when you want to know:
 
-Observed live rerun metrics on April 6, 2026:
+- what the remaining technical blocker is
+- which code surface should change next
+- what acceptance looks like for edge convergence
 
-- Vertices: `1682` MATLAB vs `1682` Python
-- Edges: `1379` MATLAB vs `1425` Python
-- Strands: `682` MATLAB vs `681` Python
+Use [PARITY_HUB.md](PARITY_HUB.md) for quick re-entry and
+[PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) for the
+evidence behind this plan.
 
-Recent skip-MATLAB watershed-threshold experiments on the same imported-MATLAB
-surface:
+## Rapid Recall
 
-- `parity_watershed_metric_threshold = -90.0`
-  - Edges: `1379` MATLAB vs `1387` Python
-  - Strands: `682` MATLAB vs `654` Python
-  - Final endpoint pairs: `893` matched / `486` MATLAB-only / `494` Python-only
-- `parity_watershed_metric_threshold = -50.0`
-  - Edges: `1379` MATLAB vs `1426` Python
-  - Strands: `682` MATLAB vs `697` Python
-  - Final endpoint pairs: `896` matched / `483` MATLAB-only / `530` Python-only
-  - Candidate endpoint pairs: `2164` candidate / `990` matched / `389` missing
+- Already solved:
+  - vertex parity on the imported-MATLAB surface
+  - stage-isolated `network` parity when exact MATLAB `edges` are imported and
+    Python reruns from `network`
+- Still failing:
+  - Python edge generation from imported MATLAB `energy` and `vertices`
+- Current blocker:
+  - upstream frontier candidate generation and local partner selection
+  - not generic downstream graph assembly
+- Standing downstream gate:
 
-Repeatability check on April 6, 2026:
+```powershell
+python workspace/scripts/cli/compare_matlab_python.py `
+  --input data/slavv_test_volume.tif `
+  --skip-matlab `
+  --resume-latest `
+  --python-parity-rerun-from network `
+  --comparison-depth deep
+```
 
-- Three fresh Python-only reruns from the same staged MATLAB batch produced the
-  same Python result every time: `1425` edges, `681` strands, identical chosen
-  endpoint-pair hashes, and identical chosen-trace hashes.
+## Current Problem Statement
 
-The current evidence still points to the edge-candidate path after the imported
-MATLAB vertices stage, but the threshold experiments also showed that candidate
-improvements can change final chosen-edge topology in non-obvious ways.
+On the imported-MATLAB parity surface:
 
-Conflict-provenance refresh on April 6, 2026
-(`comparisons/20260406_conflict_provenance_refresh/03_Analysis/summary.txt`):
+- vertices are exact
+- edges are still mismatched
+- strands are close when Python reruns from `edges`
+- strands are exact when exact MATLAB `edges` are imported and Python reruns
+  from `network`
 
-- Conflict rejects by source: `254` frontier, `741` watershed
-- Conflict blockers by source: `868` frontier, `326` watershed
-- Conflict source pairs:
-  - `236` frontier -> frontier
-  - `24` frontier -> watershed
-  - `632` watershed -> frontier
-  - `302` watershed -> watershed
-- Chosen frontier edges:
-  - `847` matched MATLAB, `391` extra
-  - median energy `-225.4` matched vs `-152.3` extra
-  - median trace length `11` matched vs `16` extra
-- Chosen watershed edges:
-  - `47` matched MATLAB, `140` extra
-  - median energy `-118.6` matched vs `-75.3` extra
-  - median trace length `17` matched vs `21` extra
-- Strongest extra frontier edges overlapping missing MATLAB vertices:
-  - `281/391` extra frontier edges share at least one vertex with a missing
-    MATLAB endpoint pair
-  - `18/20` of the strongest extra frontier edges share a vertex with at least
-    one missing MATLAB endpoint pair
-  - `41/50` of the strongest extra frontier edges do the same
-- Shared-vertex missing-pair candidate hits from the same refresh:
-  - vertex `359`: `0/4` missing MATLAB incident pairs ever appear as Python
-    candidates
-  - vertex `1283`: `0/4`
-  - vertex `866`: `0/4`
+That means the remaining primary blocker is the edge-candidate path before
+downstream graph assembly.
 
-Key references:
+## Evidence Snapshot
 
-- `workspace/reports/python_matlab_parity_postfix_2026-03-30.md`
-- `docs/PARITY_FINDINGS_2026-03-27.md`
-- `source/slavv/core/tracing.py`
-- `source/slavv/core/graph.py`
+Current evidence, consolidated:
 
-## Problem Statement
+- Imported-MATLAB Python reruns are repeatable on the current machine.
+- The stage-isolated MATLAB-edges-to-Python-network probe passes exactly.
+- The remaining live mismatch is still concentrated in extra Python frontier
+  edges and missing MATLAB endpoint pairs.
+- The strongest extra frontier edges often cluster around the same shared
+  vertices as the missing MATLAB pairs.
+- For the worst shared vertices inspected so far, some missing MATLAB pairs
+  never enter the Python candidate pool at all.
 
-Python is producing too many candidate endpoint pairs and too many final edges
-in the imported-MATLAB parity path. The extra edges then inflate the strand
-count downstream, but blunt candidate pruning can also overshoot and destabilize
-final strand assembly.
+Detailed metrics and experiment history live in:
 
-The most likely causes are:
+- [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
+- [stage_isolated_network_parity_2026-04-07.md](../workspace/reports/stage_isolated_network_parity_2026-04-07.md)
 
-1. The parity frontier tracer still diverges from MATLAB before cleanup.
-2. The parity-only watershed supplement step is too permissive and adds extra
-   pairs that MATLAB does not keep.
-3. Cleanup logic in `_choose_edges_matlab_style()` can prune bad candidates, but
-   it can also change topology in response to candidate-pool shifts, so better
-   candidate coverage does not guarantee better final parity.
+## Active Code Surface
 
-Current code-level findings from the April 6, 2026 live retest:
+The remaining parity work is centered on:
 
-- The shorter-trace tie-break in Python is not a suspected divergence by
-  itself; MATLAB's `clean_edge_pairs.m` pre-sorts by trajectory length before
-  sorting by edge metric.
-- Raw frontier candidates already contain a large extra set:
-  - `892` matched MATLAB endpoint pairs
-  - `615` frontier-only extra endpoint pairs
-- Raw watershed candidates are even noisier:
-  - `81` matched MATLAB endpoint pairs
-  - `952` watershed-only extra endpoint pairs
-- After cleanup, the final extra edge set is still dominated by frontier
-  candidates:
-  - chosen frontier edges: `847` matched / `391` extra
-  - chosen watershed edges: `47` matched / `140` extra
-- Extra frontier candidates are systematically longer and weaker than matched
-  frontier candidates in the baseline run (median length `18` vs `12`, median
-  metric `-156` vs `-223`).
-- Provenance-aware conflict diagnostics now show that watershed candidates are
-  often losing directly to already-painted frontier edges (`632`
-  watershed->frontier conflict rejections), yet the final extra set still
-  contains many more frontier edges than watershed edges.
-- The strongest frontier extras usually touch the same vertices as missing
-  MATLAB pairs, which makes the remaining gap look more like wrong partner
-  selection around shared vertices than random frontier overgrowth.
-- For the worst shared vertices inspected so far, the missing MATLAB incident
-  pairs are absent from the Python candidate pool entirely. That shifts the
-  current highest-confidence diagnosis upstream from cleanup into frontier
-  candidate discovery.
-- Some extra frontier edges touching those same vertices were generated from
-  neighboring origins rather than from the shared vertex's own frontier search,
-  so the next fix should inspect neighborhood-level frontier behavior and claim
-  ordering, not just per-origin edge budgets.
-
-## Goals
-
-- Reduce Python candidate endpoint pairs so they align with MATLAB.
-- Preserve exact vertex parity.
-- Keep the parity path deterministic and repeatable.
-- Restore exact edge and strand parity on the canonical imported-MATLAB run.
-
-## Non-Goals
-
-- Do not change native Python-from-TIFF behavior unless a fix also benefits the
-  parity path.
-- Do not rework graph assembly as the primary fix.
-- Do not broaden cleanup heuristics just to mask upstream mismatch.
-
-## Current Code Path
-
-The parity flow currently looks like this:
-
-1. `comparison.py` enables `comparison_exact_network=True` for parity runs.
-2. `extract_edges()` in `source/slavv/core/tracing.py` selects the MATLAB
-   frontier tracer when `energy_origin == "matlab_batch_hdf5"`.
-3. `_trace_origin_edges_matlab_frontier()` produces per-origin candidate traces.
-4. `_supplement_matlab_frontier_candidates_with_watershed_joins()` adds
-   watershed-touching pairs that the frontier tracer missed.
-5. `_choose_edges_matlab_style()` dedupes and prunes candidates.
-6. `source/slavv/core/graph.py` turns the chosen edges into strands.
+- [comparison.py](../source/slavv/evaluation/comparison.py)
+  for parity-mode orchestration and replay surfaces
+- [tracing.py](../source/slavv/core/tracing.py)
+  for frontier candidate generation, ownership, and local partner choice
+- [graph.py](../source/slavv/core/graph.py)
+  only as a downstream gate, not as the current primary suspect
 
 ## Working Hypothesis
 
-Overly broad watershed supplementation is still a real source of extra endpoint
-pairs, but global watershed metric thresholds are not sufficient on their own.
-The recent threshold trials showed:
+The remaining gap is most likely caused by a frontier-discovery mismatch rather
+than by generic cleanup or graph assembly.
 
-- stronger thresholds can reduce the edge-count gap,
-- milder thresholds can improve candidate coverage,
-- neither threshold produced better final edge and strand parity than the live
-  no-threshold baseline.
+Current working model:
 
-That combination means the next fix probably needs to be selective rather than
-global: preserve strand-critical watershed structure while reducing the
-watershed candidates that only create extra Python topology. The new
-conflict-provenance refresh sharpens that conclusion: watershed candidates
-often lose to frontier blockers, but frontier survivors still dominate the
-extra final edges. The frontier tracer and frontier claim ordering therefore
-remain the highest-leverage surfaces, especially around shared vertices where
-Python appears to be choosing the wrong partner endpoint.
+- watershed supplementation is noisy, but it is not the whole explanation
+- the final extra set is still frontier-heavy
+- some strong extra frontier edges appear to be local partner substitutions
+  around shared vertices
+- the highest-value fixes are likely in local claim ordering, terminal
+  ownership, bifurcation handling, or related frontier semantics
 
-## Proposed Implementation Plan
+## Implementation Phases
 
-### Phase 1: Measure the candidate gap precisely
+### Phase 1: Keep the downstream gate fixed
 
-Add or expand diagnostics so we can answer these questions for the parity run:
+- Preserve the stage-isolated `network` probe as a standing regression gate.
+- Do not treat `graph.py` as the active problem surface unless that gate
+  regresses.
+- Keep parity-mode network assembly enabled for all comparison-mode reruns.
 
-- Which MATLAB endpoint pairs are missing before supplementation?
-- Which candidate pairs are added only by the watershed supplement step?
-- Which seed origins are responsible for the missing pairs?
-- Which origin vertices generate the largest number of extra candidate pairs?
+### Phase 2: Localize the first edge divergence
 
-Recommended code touch points:
-
-- `source/slavv/evaluation/metrics.py`
-- `source/slavv/core/tracing.py`
-
-### Phase 2: Constrain watershed supplementation
-
-Audit `_supplement_matlab_frontier_candidates_with_watershed_joins()` and its
-helpers so that the supplement step only fills true MATLAB-like gaps.
-
-Candidate changes to evaluate:
-
-- Prefer selective gates over a single global metric threshold.
-- Limit supplements to pairs that are also consistent with origin-local
-  topology or with conflict outcomes in `_choose_edges_matlab_style()`.
-- Identify which rejected watershed candidates from the `-90.0` trial were
-  strand-critical so the next gate preserves them.
-- Compare chosen-edge set changes between the live retest and threshold trials
-  before adding more pruning rules.
-- Keep using the new provenance-aware conflict diagnostics to track when weak,
-  long frontier winners displace MATLAB-like alternatives during conflict
-  painting.
+- Continue using candidate-endpoint coverage as the first triage gate.
+- Keep using shared-vertex diagnostics to identify where missing MATLAB pairs
+  and extra frontier edges overlap.
+- Focus on the worst shared vertices first rather than broad global changes.
 
 ### Phase 3: Tighten frontier tracing semantics
 
-Compare `_trace_origin_edges_matlab_frontier()` with the MATLAB
-`get_edges_for_vertex.m` / `get_edges_by_watershed.m` behavior and align the
-following areas:
+Compare Python against MATLAB in the areas most likely to suppress MATLAB-like
+candidate pairs before cleanup:
 
-- frontier ordering
-- parent/child resolution
-- frontier pruning beyond already-found terminal directions
-- terminal hit handling and trace finalization
-- why some high-confidence but still non-MATLAB frontier candidates survive
-  cleanup and whether they correspond to nearby missing MATLAB endpoint pairs
-- whether shared-vertex local ordering is selecting the wrong partner edge at
-  vertices that appear in both the missing-MATLAB and extra-frontier sets
-- which rule inside `_trace_origin_edges_matlab_frontier()` is preventing the
-  missing MATLAB incident pairs from being generated at the top shared vertices
+- frontier voxel admission and overwrite
+- terminal-hit ownership semantics
+- parent/child and bifurcation claim ordering
+- post-hit pruning
+- local partner choice around shared neighborhoods
 
-### Phase 4: Preserve cleanup as a downstream safety net
+Primary audit companion:
 
-Keep `_choose_edges_matlab_style()` focused on dedupe and pruning, not on
-compensating for upstream semantic drift. However, the threshold experiments now
-show that cleanup order is part of the parity story, so conflict ordering and
-source preference may need targeted diagnostics before the next edge-candidate
-change. The next cleanup investigation should use the landed provenance-aware
-reporting rather than another global threshold sweep.
+- [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
+
+### Phase 4: Keep watershed changes selective
+
+- Avoid blunt global threshold sweeps unless a diagnostic specifically points
+  there.
+- Preserve strand-critical structure if watershed filtering is tightened.
+- Prefer evidence-driven, local changes over broad source-preference rules.
+
+### Phase 5: Use cleanup as a downstream safety net
+
+- Keep `_choose_edges_matlab_style()` focused on dedupe and pruning.
+- Do not use cleanup changes as the primary way to mask upstream candidate
+  drift.
+- Add diagnostics first if cleanup ordering becomes a suspected blocker again.
+
+## Non-Goals
+
+- Do not rework native Python-from-TIFF behavior as the primary parity fix.
+- Do not treat generic downstream graph assembly as the main problem unless the
+  stage-isolated `network` gate regresses.
+- Do not broaden heuristics just to force count agreement without matching
+  local behavior.
 
 ## Acceptance Criteria
 
-The fix is considered successful when the canonical parity rerun produces:
+The edge parity work is successful when the canonical imported-MATLAB parity
+surface produces:
 
-- exact vertex match
-- exact edge match
-- exact strand match
-- stable rerun-to-rerun candidate counts
-- no regression in the imported-MATLAB parity workflow runtime
+- exact vertices
+- exact edges
+- exact strands
+- stable rerun-to-rerun counts and hashes
+- continued exact strand parity in the stage-isolated
+  MATLAB-edges-to-Python-network probe
 
-## Verification Plan
+## Verification
 
-Run the targeted parity checks first, then the full comparison:
+Run the cheaper checks first:
 
-1. Re-run the diagnostic comparison that reports candidate endpoint coverage.
-2. Verify the missing MATLAB endpoint pair count decreases.
-3. Verify the extra candidate endpoint pair count decreases.
-4. Re-run the full parity workflow and confirm the final edge and strand counts
-   match MATLAB exactly.
+1. default imported-MATLAB edge loop
+2. candidate-endpoint coverage and shared-vertex diagnostics
+3. stage-isolated `network` gate
+4. fresh full MATLAB confirmation only when the milestone is worth it
 
-Helpful references:
+## Related Docs
 
-- `tests/unit/analysis/test_comparison_metrics.py`
-- `tests/unit/core/test_candidate_diagnostics.py`
-- `tests/unit/core/test_edge_cases.py`
-- `tests/integration/test_regression_edges.py`
-
-## Risks
-
-- Over-constraining supplements may reduce coverage and regress edges that are
-  currently correct.
-- Frontier tracing changes can be subtle and may alter runtime or ordering.
-- Graph-layer changes are unlikely to fix the root issue and should be avoided
-  unless new evidence appears.
-
-## Next Decision Point
-
-If a selective watershed gate can reduce extra topology without repeating the
-strand regressions from the `-90.0` and `-50.0` trials, keep iterating there
-first.
-
-If the strongest extra frontier edges still survive with clearly worse
-energy/length profiles than matched frontier edges, the next patch should
-inspect `_trace_origin_edges_matlab_frontier()` and local claim ordering before
-making another watershed-filtering change.
+- [PARITY_HUB.md](PARITY_HUB.md)
+- [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
+- [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
+- [workspace/reports/stage_isolated_network_parity_2026-04-07.md](../workspace/reports/stage_isolated_network_parity_2026-04-07.md)

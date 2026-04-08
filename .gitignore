@@ -179,6 +179,7 @@ pytest_collect*.txt
 tests/.pytest_tmp/
 workspace/tmp_tests/
 workspace/tmp_fixture/
+workspace/tmp_network_stage_probe/
 .ruff_cache/
 .agent/
 .jules/

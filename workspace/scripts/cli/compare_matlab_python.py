@@ -99,6 +99,16 @@ def _build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="Choose which Python result surface standalone comparison should trust",
     )
+    parser.add_argument(
+        "--python-parity-rerun-from",
+        choices=("edges", "network"),
+        default="edges",
+        help=(
+            "Choose the Python stage to rerun after importing reusable MATLAB checkpoints. "
+            "'edges' is the default imported-MATLAB parity loop; 'network' is the stage-isolated "
+            "MATLAB-edges-to-Python-network probe."
+        ),
+    )
     return parser
 
 
@@ -119,6 +129,16 @@ def _validate_cli_args(args: argparse.Namespace):
         print(
             "ERROR: standalone comparison cannot be combined with --skip-matlab, --skip-python, or --validate-only."
         )
+        return 2
+
+    if args.skip_python and args.python_parity_rerun_from != "edges":
+        print(
+            "ERROR: --python-parity-rerun-from is only meaningful when Python execution is enabled."
+        )
+        return 2
+
+    if standalone_mode and args.python_parity_rerun_from != "edges":
+        print("ERROR: --python-parity-rerun-from cannot be used with standalone comparison mode.")
         return 2
 
     if not standalone_mode and not args.input:
@@ -200,11 +220,25 @@ def _normalize_resume_value(value):
     return value
 
 
+def _normalize_comparison_request_params(
+    params: dict | None, python_parity_rerun_from: str
+) -> dict | None:
+    if params is None:
+        return None
+    normalized = dict(params)
+    normalized["comparison_exact_network"] = True
+    normalized.setdefault("python_parity_rerun_from", python_parity_rerun_from)
+    return normalized
+
+
 def _load_recorded_comparison_params(run_root: Path):
     params_path = run_root / "99_Metadata" / "comparison_params.normalized.json"
     if not params_path.exists():
         return None
-    return json.loads(params_path.read_text(encoding="utf-8"))
+    params = json.loads(params_path.read_text(encoding="utf-8"))
+    params["comparison_exact_network"] = True
+    params.setdefault("python_parity_rerun_from", "edges")
+    return params
 
 
 def _has_reusable_matlab_artifacts(run_root: Path) -> bool:
@@ -372,11 +406,15 @@ def main():
         print(f"ERROR: Failed to load parameters from {params_file}: {exc}")
         return 1
 
+    compatibility_params = _normalize_comparison_request_params(
+        params, args.python_parity_rerun_from
+    )
+
     output_dir = _resolve_output_dir(
         args.output_dir,
         resume_latest=args.resume_latest,
         input_path=Path(args.input) if args.input else None,
-        params=params,
+        params=compatibility_params,
         standalone_mode=False,
         validate_only=args.validate_only,
         skip_matlab=args.skip_matlab,
@@ -397,6 +435,7 @@ def main():
         minimal_exports=args.minimal_exports,
         comparison_depth=args.comparison_depth,
         python_result_source=args.python_result_source,
+        python_parity_rerun_from=args.python_parity_rerun_from,
     )
 
 

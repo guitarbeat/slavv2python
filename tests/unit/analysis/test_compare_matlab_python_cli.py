@@ -90,6 +90,54 @@ def test_cli_rejects_validate_only_in_standalone_mode(cli_module, tmp_path, monk
     assert "standalone comparison cannot be combined" in capsys.readouterr().out
 
 
+def test_cli_rejects_python_parity_rerun_from_network_when_python_is_skipped(
+    cli_module, tmp_path, monkeypatch, capsys
+):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-python",
+            "--python-parity-rerun-from",
+            "network",
+        ],
+    )
+
+    assert cli_module.main() == 2
+    assert "only meaningful when Python execution is enabled" in capsys.readouterr().out
+
+
+def test_cli_rejects_python_parity_rerun_from_network_in_standalone_mode(
+    cli_module, tmp_path, monkeypatch, capsys
+):
+    matlab_dir = tmp_path / "matlab_results"
+    python_dir = tmp_path / "python_results"
+    matlab_dir.mkdir()
+    python_dir.mkdir()
+
+    _run_cli(
+        monkeypatch,
+        [
+            "--standalone-matlab-dir",
+            str(matlab_dir),
+            "--standalone-python-dir",
+            str(python_dir),
+            "--python-parity-rerun-from",
+            "network",
+        ],
+    )
+
+    assert cli_module.main() == 2
+    assert "cannot be used with standalone comparison mode" in capsys.readouterr().out
+
+
 def test_cli_allows_skip_matlab_without_matlab_path(cli_module, tmp_path, monkeypatch):
     input_file = _write_input_file(tmp_path)
     params_file = tmp_path / "params.json"
@@ -219,6 +267,36 @@ def test_cli_passes_comparison_depth_and_resume_latest(cli_module, tmp_path, mon
     assert cli_module.main() == 0
     assert observed["output_dir"] == existing_run
     assert observed["comparison_depth"] == "shallow"
+
+
+def test_cli_passes_python_parity_rerun_from_to_orchestration(cli_module, tmp_path, monkeypatch):
+    input_file = _write_input_file(tmp_path)
+    params_file = tmp_path / "params.json"
+    params_file.write_text("{}", encoding="utf-8")
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+
+    def fake_orchestrate(*, python_parity_rerun_from, **_kwargs):
+        observed["python_parity_rerun_from"] = python_parity_rerun_from
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--params",
+            str(params_file),
+            "--skip-matlab",
+            "--python-parity-rerun-from",
+            "network",
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["python_parity_rerun_from"] == "network"
 
 
 def test_cli_resume_latest_falls_back_to_fresh_run_root_when_required_artifacts_are_missing(

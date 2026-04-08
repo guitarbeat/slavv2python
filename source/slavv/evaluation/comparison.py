@@ -95,6 +95,16 @@ def _print_reuse_guidance(run_root: Path) -> None:
     )
 
 
+def _resolve_python_parity_import_plan(
+    python_parity_rerun_from: str,
+) -> tuple[list[str], str]:
+    """Return the MATLAB stages needed to seed a Python parity rerun."""
+    normalized = str(python_parity_rerun_from or "edges").strip().lower()
+    if normalized == "network":
+        return ["energy", "vertices", "edges"], "network"
+    return ["energy", "vertices"], "edges"
+
+
 def _bootstrap_existing_matlab_batch_for_python_parity(
     *,
     matlab_output: Path,
@@ -103,6 +113,7 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
     params_for_python: dict[str, Any],
     comparison_context: RunContext | None,
     metadata_dir: Path,
+    python_parity_rerun_from: str = "edges",
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Reuse an existing MATLAB batch to seed a skip-MATLAB Python parity rerun."""
     matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
@@ -136,19 +147,29 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
 
     checkpoint_dir = python_output / "checkpoints"
     python_force_rerun_from: str | None = None
+    import_stages, requested_rerun_from = _resolve_python_parity_import_plan(
+        python_parity_rerun_from
+    )
     if comparison_context is not None:
         comparison_context.update_optional_task(
             "matlab_import",
             status="running",
-            detail="Importing existing MATLAB energy and vertices for a skip-MATLAB parity rerun",
-            artifacts={"batch_folder": batch_folder},
+            detail=(
+                "Importing existing MATLAB "
+                + ", ".join(import_stages)
+                + f" for a skip-MATLAB parity rerun from {requested_rerun_from}"
+            ),
+            artifacts={
+                "batch_folder": batch_folder,
+                "python_parity_rerun_from": requested_rerun_from,
+            },
         )
 
     try:
         imported = import_matlab_batch(
             batch_folder,
             checkpoint_dir,
-            stages=["energy", "vertices"],
+            stages=import_stages,
         )
     except Exception as exc:
         if comparison_context is not None:
@@ -162,8 +183,8 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
         return matlab_results, None
 
     imported_stages = set(imported)
-    if {"energy", "vertices"}.issubset(imported_stages):
-        python_force_rerun_from = "edges"
+    if set(import_stages).issubset(imported_stages):
+        python_force_rerun_from = requested_rerun_from
 
     try:
         params_for_python.update(load_matlab_batch_params(batch_folder))
@@ -180,9 +201,13 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
             comparison_context.update_optional_task(
                 "matlab_import",
                 status="completed",
-                detail="Imported existing MATLAB checkpoints for skip-MATLAB parity rerun",
+                detail=(
+                    "Imported existing MATLAB checkpoints for skip-MATLAB parity rerun "
+                    f"from {requested_rerun_from}"
+                ),
                 artifacts={
                     **dict(imported),
+                    "python_parity_rerun_from": requested_rerun_from,
                     **(
                         {"python_force_rerun_from": python_force_rerun_from}
                         if python_force_rerun_from is not None
@@ -595,7 +620,7 @@ def run_python_vectorization(
     # Initialize processor
     processor = SLAVVProcessor()
     params_for_run = copy.deepcopy(params)
-    params_for_run.setdefault("comparison_exact_network", True)
+    params_for_run["comparison_exact_network"] = True
 
     # Run pipeline
     print("Running pipeline...")
@@ -794,6 +819,7 @@ def orchestrate_comparison(
     minimal_exports: bool = False,
     comparison_depth: str = "deep",
     python_result_source: str = "auto",
+    python_parity_rerun_from: str = "edges",
 ) -> int:
     """Run full comparison workflow."""
     layout = resolve_run_layout(output_dir)
@@ -803,7 +829,12 @@ def orchestrate_comparison(
     analysis_dir = layout["analysis_dir"]
     metadata_dir = run_root / "99_Metadata"
     comparison_context: RunContext | None = None
+    import_stages, requested_python_rerun_from = _resolve_python_parity_import_plan(
+        python_parity_rerun_from
+    )
     params_for_python = copy.deepcopy(params)
+    params_for_python["comparison_exact_network"] = True
+    params_for_python["python_parity_rerun_from"] = requested_python_rerun_from
     python_force_rerun_from: str | None = None
     preflight_report: OutputRootPreflightReport | None = None
     matlab_status_report: MatlabStatusReport | None = None
@@ -895,7 +926,7 @@ def orchestrate_comparison(
 
     analysis_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
-    normalized_params_file = _write_normalized_params_file(metadata_dir, params)
+    normalized_params_file = _write_normalized_params_file(metadata_dir, params_for_python)
     if comparison_context is None:
         comparison_context = RunContext(
             run_dir=run_root,
@@ -999,7 +1030,7 @@ def orchestrate_comparison(
                 imported = import_matlab_batch(
                     batch_folder,
                     checkpoint_dir,
-                    stages=["energy", "vertices"],
+                    stages=import_stages,
                 )
             except Exception as exc:
                 comparison_context.update_optional_task(
@@ -1010,8 +1041,8 @@ def orchestrate_comparison(
                 )
             else:
                 imported_stages = set(imported)
-                if {"energy", "vertices"}.issubset(imported_stages):
-                    python_force_rerun_from = "edges"
+                if set(import_stages).issubset(imported_stages):
+                    python_force_rerun_from = requested_python_rerun_from
                 try:
                     params_for_python.update(load_matlab_batch_params(batch_folder))
                 except Exception as exc:
@@ -1025,9 +1056,13 @@ def orchestrate_comparison(
                     comparison_context.update_optional_task(
                         "matlab_import",
                         status="completed",
-                        detail="Imported MATLAB checkpoints for Python parity rerun",
+                        detail=(
+                            "Imported MATLAB checkpoints for Python parity rerun "
+                            f"from {requested_python_rerun_from}"
+                        ),
                         artifacts={
                             **dict(imported),
+                            "python_parity_rerun_from": requested_python_rerun_from,
                             **(
                                 {"python_force_rerun_from": python_force_rerun_from}
                                 if python_force_rerun_from is not None
@@ -1044,13 +1079,16 @@ def orchestrate_comparison(
                 )
     else:
         print("\nSkipping MATLAB execution (--skip-matlab)")
-        matlab_results, python_force_rerun_from = _bootstrap_existing_matlab_batch_for_python_parity(
-            matlab_output=matlab_output,
-            python_output=python_output,
-            input_file=input_file,
-            params_for_python=params_for_python,
-            comparison_context=comparison_context,
-            metadata_dir=metadata_dir,
+        matlab_results, python_force_rerun_from = (
+            _bootstrap_existing_matlab_batch_for_python_parity(
+                matlab_output=matlab_output,
+                python_output=python_output,
+                input_file=input_file,
+                params_for_python=params_for_python,
+                comparison_context=comparison_context,
+                metadata_dir=metadata_dir,
+                python_parity_rerun_from=requested_python_rerun_from,
+            )
         )
 
     # Run Python

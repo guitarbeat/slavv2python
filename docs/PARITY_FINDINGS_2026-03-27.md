@@ -3,6 +3,34 @@
 This note captures what the fresh March 27, 2026 MATLAB/Python reruns taught us
 so the next parity phase can start from verified facts instead of chat history.
 
+This file is intentionally the evidence log, not the workflow plan.
+
+## Rapid Recall
+
+- Still true now:
+  - imported-MATLAB Python reruns are repeatable on the current machine
+  - vertex parity is exact on the imported-MATLAB surface
+  - stage-isolated `network` parity is exact when exact MATLAB `edges` are
+    imported and Python reruns from `network`
+  - the main remaining blocker is edge generation, not generic downstream
+    network assembly
+- Current failure shape:
+  - Python still misses some MATLAB endpoint pairs before cleanup
+  - many extra frontier edges cluster around the same shared vertices as the
+    missing MATLAB pairs
+- Best next code surface:
+  - `source/slavv/core/tracing.py`
+- Best companion docs:
+  - [PARITY_HUB.md](PARITY_HUB.md)
+  - [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+  - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
+
+## Read This File When
+
+- you want verified evidence rather than the current plan
+- you need to remember which experiments helped and which ones failed
+- you want the strongest artifact-level clues before changing code
+
 Follow-up as of April 1, 2026:
 
 - Fresh comparison runs now persist output-root preflight decisions to
@@ -28,6 +56,21 @@ Further follow-up as of April 6, 2026:
   chosen-edge source quality in the staged `summary.txt`, so future parity runs
   can answer whether frontier or watershed is carrying the weak long extras
   without ad hoc scripts.
+
+Further follow-up as of April 7, 2026:
+
+- A stage-isolated parity probe showed that Python `network` assembly already
+  reaches exact parity when given exact MATLAB `edges`, but only when
+  `comparison_exact_network=True` is enabled during the `network` rerun.
+- The same stage-isolated rerun without that parity-mode flag produced a false
+  negative (`364` Python strands vs `682` MATLAB strands), so replaying the
+  network stage depends on more than the current normalized params snapshot.
+- That materially changes the convergence plan: the remaining primary blocker
+  is edge generation, not generic downstream network assembly.
+- The comparison CLI now supports this probe directly through
+  `--python-parity-rerun-from network`, and comparison-mode Python execution
+  now forces the parity-specific network path instead of only setting it when
+  the incoming params omit the key.
 
 ## Fresh Baselines
 
@@ -119,12 +162,21 @@ Implication:
   through the parity-specific edge cleanup and network assembly path.
 - Shared parity-aware network assembly in `source/slavv/core/graph.py` removed
   earlier fresh-vs-resume divergence.
+- A stage-isolated replay with imported MATLAB `edges` confirms that the
+  parity-specific Python `network` stage can now match MATLAB exactly on the
+  canonical imported-MATLAB surface.
+- The stage-isolated replay is now a supported comparison workflow rather than
+  an ad hoc probe, which makes it practical to keep `network` as a standing
+  downstream gate while edge-generation work continues.
 - Candidate endpoint coverage diagnostics are useful and should remain a primary
   regression signal.
 
 ### What is not the dominant blocker
 
 - Vertex matching is no longer the main issue on the parity path.
+- Generic downstream network assembly is not the main issue on the parity path
+  when exact MATLAB `edges` are supplied and parity-mode `network` assembly is
+  enabled.
 - Simple short-range terminal attachment tweaks did not improve live parity in
   earlier experiments and sometimes made it worse.
 - Pure cleanup-order tuning is not enough by itself because too many MATLAB edge
@@ -195,6 +247,19 @@ Using the analysis-only refresh artifact
   - vertex `359`: `0/4`
   - vertex `1283`: `0/4`
   - vertex `866`: `0/4`
+- Negative tracer experiment:
+  - a literal "claim the full recovered path, including the shared
+    root/bifurcation voxel" change improved one local shared-vertex signal but
+    worsened end-to-end parity on the imported-MATLAB rerun
+  - baseline refresh: `1379` MATLAB edges vs `1425` Python, `682` MATLAB
+    strands vs `681` Python, candidate endpoint pairs `2540/973/406`
+    candidate/matched/missing
+  - full-path-claim experiment: `1379` MATLAB edges vs `1306` Python,
+    `682` MATLAB strands vs `620` Python, candidate endpoint pairs
+    `2620/884/495`
+  - conclusion: blanket full-path ownership is not the right next fix; it
+    reduces extra frontier edges, but it also suppresses too many
+    MATLAB-matching frontier survivors
 
 Interpretation:
 
@@ -213,9 +278,51 @@ Interpretation:
 - Some extra frontier edges touching those vertices also come from neighboring
   origins, which suggests the remaining mismatch is not purely a per-origin
   budget problem; neighborhood-level frontier behavior matters too.
+- The failed full-path-claim experiment reinforces that diagnosis. The next
+  pass should aim for selective claim-ordering behavior around shared vertices,
+  not a global ownership change after every terminal hit.
 - The next parity pass should therefore prioritize frontier candidate semantics
   and frontier claim ordering before adding more global source-preference or
   threshold rules.
+- Operator note: the skip-MATLAB reuse loop is sensitive to input provenance.
+  Using the canonical absolute input path is the safest way to ensure the
+  wrapper recognizes an otherwise reusable completed MATLAB batch.
+- Replay note: stage-isolated `network` probes also need explicit parity-mode
+  network semantics. Replaying from `99_Metadata/comparison_params.normalized.json`
+  alone was not enough to reproduce the exact-network path in the April 7, 2026
+  probe.
+
+Artifact-level read on the worst shared vertices from the staged April 6, 2026
+trial:
+
+- The missing MATLAB pairs are not missing because those neighborhoods are
+  inactive.
+- At vertex `359`, the origin itself only produced `[359, 181]` from the
+  frontier path, while the chosen extra frontier edges touching `359` came from
+  neighboring origins `1180` and `1568`.
+- At vertex `866`, the origin recorded `terminal_frontier_hit = 3` but only
+  emitted `[866, 885]` into the candidate manifest.
+- At vertex `1283`, the origin emitted `[1283, 1134]`, `[1283, 768]`, and
+  watershed pair `[1283, 1659]`, while the missing MATLAB pairs still never
+  entered the candidate manifest.
+- The missing partner vertices themselves were active elsewhere:
+  - `1023` had chosen pair `[394, 1023]`
+  - `1203` had chosen pairs `[1309, 1203]` and `[1466, 1203]`
+  - `1284` had chosen pairs `[1180, 1284]` and `[1284, 1272]`
+  - `95` had chosen pairs `[95, 285]` and `[95, 1134]`
+  - `542` had chosen pairs `[542, 768]` and `[1285, 542]`
+- That points to local partner substitution around shared neighborhoods as the
+  first concrete artifact-level divergence, which keeps frontier ownership,
+  bifurcation handling, and claim ordering ahead of any new global threshold
+  work.
+- Geometry alone does not fully explain the substitutions:
+  - around `866`, the chosen alternatives (`885`, `810`) are clearly closer
+    than the missing MATLAB partners
+  - around `1283`, missing partner `1319` is about as close as chosen partners
+    `1659` and `1134`
+- That makes a pure nearest-neighbor explanation too weak; the remaining gap is
+  more likely to sit in local path formation, terminal ownership, or
+  bifurcation-level claim ordering.
 
 ### Important bug found during the fresh rerun
 
