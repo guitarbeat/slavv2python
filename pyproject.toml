@@ -46,7 +46,7 @@ dependencies = [
 
 [project.optional-dependencies]
 app = [
-    "streamlit>=1.20.0",
+    "streamlit>=1.55.0",
 ]
 ml = [
     "tensorflow>=2.14.0",
@@ -71,7 +71,7 @@ dev = [
     "pre-commit>=3.0.0",
 ]
 all = [
-    "streamlit>=1.20.0",
+    "streamlit>=1.55.0",
     "tensorflow>=2.14.0",
     "jupyter>=1.0.0",
     "ipykernel>=6.0.0",

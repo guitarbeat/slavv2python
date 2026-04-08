@@ -5,6 +5,7 @@ import os
 import tempfile
 import warnings
 import zipfile
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,11 @@ import plotly.express as px
 import streamlit as st
 
 from slavv.analysis import AutomaticCurator, MLCurator
-from slavv.apps.share_report import build_share_report_html, record_share_event
+from slavv.apps.share_report import (
+    build_share_report_html,
+    compute_shareable_stats,
+    record_share_event,
+)
 
 # Import our modules
 from slavv.core import SLAVVProcessor
@@ -24,6 +29,16 @@ from slavv.visualization import NetworkVisualizer
 
 warnings.filterwarnings("ignore")
 
+DASHBOARD_ASSUMPTION = (
+    "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
+    "current network outputs, and share-report activity for the current session."
+)
+DASHBOARD_STAGE_ORDER = ("energy", "vertices", "edges", "network")
+DASHBOARD_PLACEHOLDER = "TODO"
+DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
+DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
+DASHBOARD_BREAKDOWN_SECTIONS = ("Pipeline", "Network", "Share Report", "Optional Tasks")
+
 # Page configuration
 st.set_page_config(
     page_title="SLAVV - Vascular Vectorization",
@@ -33,7 +48,7 @@ st.set_page_config(
 )
 
 # Custom CSS for better styling
-st.markdown(
+st.html(
     """
 <style>
     .main-header {
@@ -92,8 +107,7 @@ st.markdown(
         }
     }
 </style>
-""",
-    unsafe_allow_html=True,
+"""
 )
 
 
@@ -253,6 +267,569 @@ def _render_run_dashboard(snapshot) -> None:
         st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
 
 
+def _dashboard_stage_frame(snapshot) -> pd.DataFrame:
+    """Return pipeline stage progress for dashboard charts and tables."""
+    rows = []
+    for stage_name in DASHBOARD_STAGE_ORDER:
+        stage_snapshot = None if snapshot is None else snapshot.stages.get(stage_name)
+        rows.append(
+            {
+                "Stage": stage_name.title(),
+                "Progress (%)": int(stage_snapshot.progress * 100) if stage_snapshot else 0,
+                "Status": stage_snapshot.status if stage_snapshot else "placeholder",
+                "Detail": (
+                    (stage_snapshot.detail or stage_snapshot.substage)
+                    if stage_snapshot
+                    else "Waiting for a processed run"
+                ),
+                "Source": (
+                    "run_snapshot.json"
+                    if stage_snapshot is not None
+                    else "TODO: current_run_dir/run_snapshot.json"
+                ),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
+    """Return a dashboard breakdown table that is safe to render without live data."""
+    rows = []
+
+    for stage_row in _dashboard_stage_frame(snapshot).to_dict("records"):
+        rows.append(
+            {
+                "Section": "Pipeline",
+                "Metric": stage_row["Stage"],
+                "Progress": int(stage_row["Progress (%)"]),
+                "Value": f"{stage_row['Progress (%)']}%",
+                "Status": stage_row["Status"],
+                "Source": stage_row["Source"],
+                "Notes": stage_row["Detail"],
+            }
+        )
+
+    optional_tasks = {} if snapshot is None else snapshot.optional_tasks
+    if optional_tasks:
+        for task_name, task in sorted(optional_tasks.items()):
+            rows.append(
+                {
+                    "Section": "Optional Tasks",
+                    "Metric": task_name,
+                    "Progress": int(task.progress * 100),
+                    "Value": f"{int(task.progress * 100)}%",
+                    "Status": task.status,
+                    "Source": "run_snapshot.json",
+                    "Notes": task.detail or "Tracked optional work",
+                }
+            )
+    else:
+        rows.append(
+            {
+                "Section": "Optional Tasks",
+                "Metric": "Tracked tasks",
+                "Progress": None,
+                "Value": DASHBOARD_PLACEHOLDER,
+                "Status": "placeholder",
+                "Source": "TODO: optional_tasks",
+                "Notes": "Wiring point for export, analysis, and review tasks",
+            }
+        )
+
+    stat_rows = [
+        ("Strands", None if stats is None else int(stats.get("num_strands", 0)), "count"),
+        (
+            "Total Length (um)",
+            None if stats is None else float(stats.get("total_length", 0.0)),
+            "length",
+        ),
+        (
+            "Volume Fraction",
+            None if stats is None else float(stats.get("volume_fraction", 0.0)),
+            "ratio",
+        ),
+        (
+            "Mean Radius (um)",
+            None if stats is None else float(stats.get("mean_radius", 0.0)),
+            "radius",
+        ),
+    ]
+    for metric_name, value, value_type in stat_rows:
+        if value is None:
+            display_value = DASHBOARD_PLACEHOLDER
+            status = "placeholder"
+            source = "TODO: session_state.processing_results"
+            notes = "Loads when a full network result is available"
+        elif value_type == "count":
+            display_value = f"{value:d}"
+            status = "live"
+            source = "session_state.processing_results"
+            notes = "Computed from the current network"
+        elif value_type == "length":
+            display_value = f"{value:.1f}"
+            status = "live"
+            source = "session_state.processing_results"
+            notes = "Computed from calculate_network_statistics"
+        else:
+            display_value = f"{value:.3f}" if value_type == "ratio" else f"{value:.2f}"
+            status = "live"
+            source = "session_state.processing_results"
+            notes = "Computed from calculate_network_statistics"
+
+        rows.append(
+            {
+                "Section": "Network",
+                "Metric": metric_name,
+                "Progress": None,
+                "Value": display_value,
+                "Status": status,
+                "Source": source,
+                "Notes": notes,
+            }
+        )
+
+    rows.append(
+        {
+            "Section": "Share Report",
+            "Metric": "Requested",
+            "Progress": None,
+            "Value": str(share_metrics.get("share_report_requested", 0)),
+            "Status": "live" if share_metrics else "placeholder",
+            "Source": (
+                "session_state.share_report_metrics"
+                if share_metrics
+                else "TODO: share_report event counters"
+            ),
+            "Notes": "Counts report generations in this session",
+        }
+    )
+    rows.append(
+        {
+            "Section": "Share Report",
+            "Metric": "Downloaded",
+            "Progress": None,
+            "Value": str(share_metrics.get("share_report_downloaded", 0)),
+            "Status": "live" if share_metrics else "placeholder",
+            "Source": (
+                "session_state.share_report_metrics"
+                if share_metrics
+                else "TODO: share_report event counters"
+            ),
+            "Notes": "Counts report downloads in this session",
+        }
+    )
+
+    return pd.DataFrame(rows)
+
+
+def _build_dashboard_placeholder_trend():
+    """Build a placeholder trend chart used before network metrics exist."""
+    placeholder = pd.DataFrame(
+        {
+            "Depth Band": ["Surface", "Mid", "Deep"],
+            "Coverage": [0.0, 0.0, 0.0],
+        }
+    )
+    fig = px.line(placeholder, x="Depth Band", y="Coverage", markers=True)
+    fig.update_traces(line={"dash": "dot", "width": 3}, marker={"size": 9})
+    fig.update_layout(
+        height=320,
+        margin={"l": 20, "r": 20, "t": 40, "b": 20},
+        xaxis_title="Depth band",
+        yaxis_title="Coverage",
+        showlegend=False,
+    )
+    return fig
+
+
+def _init_dashboard_state() -> None:
+    """Initialize local UI state for the dashboard shell."""
+    st.session_state.setdefault("dashboard_focus", "Overview")
+    st.session_state.setdefault("dashboard_sections", list(DASHBOARD_BREAKDOWN_SECTIONS))
+    st.session_state.setdefault("dashboard_show_placeholders", True)
+    st.session_state.setdefault("dashboard_auto_refresh", False)
+    st.session_state.setdefault("dashboard_feedback", None)
+    st.session_state.setdefault("dashboard_metric_requests", [])
+
+
+def _dashboard_context() -> dict[str, object]:
+    """Load dashboard context from session state and run metadata."""
+    snapshot = _snapshot_for_display(st.session_state.get("current_run_dir"))
+    results = st.session_state.get("processing_results")
+    share_metrics = st.session_state.get("share_report_metrics", {})
+    dataset_name = st.session_state.get("dataset_name", "No dataset loaded")
+
+    stats = None
+    if results and _has_full_network_results(results):
+        stats = compute_shareable_stats(
+            results,
+            image_shape=st.session_state.get("image_shape", (100, 100, 50)),
+        )
+
+    return {
+        "snapshot": snapshot,
+        "results": results,
+        "share_metrics": share_metrics,
+        "dataset_name": dataset_name,
+        "stats": stats,
+    }
+
+
+def _normalize_dashboard_sections(selected_sections) -> list[str]:
+    """Normalize the selected pills value to a stable list."""
+    if not selected_sections:
+        return list(DASHBOARD_BREAKDOWN_SECTIONS)
+    if isinstance(selected_sections, str):
+        return [selected_sections]
+    return list(selected_sections)
+
+
+def _filter_dashboard_breakdown(frame: pd.DataFrame) -> pd.DataFrame:
+    """Apply focus and section filters to the breakdown table."""
+    focus = st.session_state.get("dashboard_focus", "Overview")
+    selected_sections = _normalize_dashboard_sections(st.session_state.get("dashboard_sections"))
+    show_placeholders = st.session_state.get("dashboard_show_placeholders", True)
+
+    filtered = frame.copy()
+    if focus == "Pipeline":
+        filtered = filtered[filtered["Section"].isin(["Pipeline", "Optional Tasks"])]
+    elif focus == "Network":
+        filtered = filtered[filtered["Section"].isin(["Network", "Share Report"])]
+
+    if selected_sections:
+        filtered = filtered[filtered["Section"].isin(selected_sections)]
+
+    if not show_placeholders:
+        filtered = filtered[filtered["Status"] != "placeholder"]
+
+    if filtered.empty:
+        return frame.head(0)
+    return filtered.reset_index(drop=True)
+
+
+def _build_dashboard_backlog_frame() -> pd.DataFrame:
+    """Build an editable backlog for follow-on dashboard work."""
+    rows = [
+        {
+            "Metric": "Run throughput",
+            "Owner": "Pipeline",
+            "Priority": "High",
+            "Tracked": True,
+            "Status": "Ready",
+            "Reference": DASHBOARD_REPO_URL,
+            "Notes": "Track runtime, resume rate, and cache effectiveness per run.",
+        },
+        {
+            "Metric": "Dataset inventory",
+            "Owner": "Operations",
+            "Priority": "Medium",
+            "Tracked": False,
+            "Status": "TODO",
+            "Reference": DASHBOARD_REPO_URL,
+            "Notes": "Summarize queued, active, and completed volumes once entities are defined.",
+        },
+        {
+            "Metric": "Curation QA",
+            "Owner": "Analysis",
+            "Priority": "Medium",
+            "Tracked": False,
+            "Status": "TODO",
+            "Reference": DASHBOARD_RELEASE_URL,
+            "Notes": "Add reviewer throughput and acceptance-rate metrics when QA sources exist.",
+        },
+    ]
+    for request in st.session_state.get("dashboard_metric_requests", []):
+        rows.append(
+            {
+                "Metric": request["metric"],
+                "Owner": request["owner"],
+                "Priority": request["priority"],
+                "Tracked": False,
+                "Status": "Requested",
+                "Reference": DASHBOARD_REPO_URL,
+                "Notes": request["notes"] or "Captured from the in-app planning dialog.",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _toast_dashboard_feedback() -> None:
+    """Acknowledge dashboard feedback in the current session."""
+    st.toast(
+        "Thanks. The dashboard feedback was captured for this session.", icon=":material/thumb_up:"
+    )
+
+
+@st.dialog("Plan Dashboard Metrics")
+def _open_dashboard_metric_dialog() -> None:
+    """Collect a lightweight backlog request for dashboard follow-up."""
+    with st.form("dashboard_metric_request", clear_on_submit=True):
+        metric_name = st.text_input("Metric name", placeholder="Example: Export success rate")
+        owner = st.selectbox(
+            "Primary owner",
+            ["Pipeline", "Operations", "Analysis", "Collaboration"],
+            index=0,
+        )
+        priority = st.selectbox("Priority", ["High", "Medium", "Low"], index=1)
+        notes = st.text_area(
+            "Why it matters",
+            placeholder="Describe the decision this metric should support.",
+        )
+        submitted = st.form_submit_button("Add backlog request")
+
+    if not submitted:
+        return
+    if not metric_name.strip():
+        st.warning("Add a metric name before submitting the request.")
+        return
+
+    requests = list(st.session_state.get("dashboard_metric_requests", []))
+    requests.append(
+        {
+            "metric": metric_name.strip(),
+            "owner": owner,
+            "priority": priority,
+            "notes": notes.strip(),
+            "captured_at": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+    st.session_state["dashboard_metric_requests"] = requests
+    st.toast(f"Added '{metric_name.strip()}' to the dashboard backlog.", icon=":material/task_alt:")
+    st.rerun()
+
+
+def _render_dashboard_surface() -> None:
+    """Render the core dashboard surface using the current session context."""
+    context = _dashboard_context()
+    snapshot = context["snapshot"]
+    results = context["results"]
+    share_metrics = context["share_metrics"]
+    dataset_name = context["dataset_name"]
+    stats = context["stats"]
+
+    source_mode = "Live run" if snapshot is not None else "Shell only"
+    data_mode = "Network loaded" if stats is not None else "Awaiting metrics"
+
+    badge_col, link_col = st.columns([3, 2], gap="large", vertical_alignment="center")
+    with badge_col:
+        st.badge("Streamlit 1.55")
+        st.badge(source_mode)
+        st.badge(data_mode)
+        st.caption(
+            f"Dataset: {dataset_name} | Sources: current run snapshot, session processing results, "
+            "share-report counters"
+        )
+    with link_col:
+        st.link_button("Release notes", DASHBOARD_RELEASE_URL, use_container_width=True)
+        st.link_button("Repository", DASHBOARD_REPO_URL, use_container_width=True)
+
+    st.space("small")
+
+    if snapshot is None and stats is None:
+        st.info(
+            "No active run or completed network is loaded yet. Placeholder values stay visible so "
+            "this layout can be extended once the dashboard scope is finalized."
+        )
+
+    overall_pct = int(snapshot.overall_progress * 100) if snapshot is not None else 0
+    target_pct = int(target_stage_progress(snapshot) * 100) if snapshot is not None else 0
+    strands_value = (
+        DASHBOARD_PLACEHOLDER if stats is None else str(int(stats.get("num_strands", 0)))
+    )
+    total_length_value = (
+        DASHBOARD_PLACEHOLDER
+        if stats is None
+        else f"{float(stats.get('total_length', 0.0)):.1f} um"
+    )
+
+    with st.container(border=True):
+        st.subheader("Headline KPIs")
+        col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
+        with col1:
+            st.metric("Run Progress", f"{overall_pct}%")
+        with col2:
+            st.metric("Target Progress", f"{target_pct}%")
+        with col3:
+            st.metric("Strands", strands_value)
+        with col4:
+            st.metric("Total Length", total_length_value)
+
+    st.space("small")
+
+    with st.container(border=True):
+        st.subheader("Trends")
+        trend_col1, trend_col2 = st.columns(2, gap="large")
+
+        stage_frame = _dashboard_stage_frame(snapshot)
+        stage_fig = px.line(stage_frame, x="Stage", y="Progress (%)", markers=True)
+        stage_fig.update_traces(line={"width": 3}, marker={"size": 10})
+        stage_fig.update_layout(
+            height=320,
+            margin={"l": 20, "r": 20, "t": 40, "b": 20},
+            xaxis_title="Pipeline stage",
+            yaxis_title="Completion %",
+            yaxis_range=[0, 100],
+            showlegend=False,
+        )
+        with trend_col1:
+            st.plotly_chart(stage_fig, use_container_width=True)
+            st.caption("Pipeline progress is derived from the resumable run snapshot.")
+
+        with trend_col2:
+            if stats is not None and results is not None:
+                try:
+                    depth_fig = NetworkVisualizer().plot_depth_statistics(
+                        results["vertices"],
+                        results["edges"],
+                        results.get("parameters", st.session_state.get("parameters", {})),
+                    )
+                    depth_fig.update_layout(
+                        height=320,
+                        margin={"l": 20, "r": 20, "t": 40, "b": 20},
+                    )
+                    st.plotly_chart(depth_fig, use_container_width=True)
+                    st.caption("Depth statistics reuse the existing analysis visualization.")
+                except Exception as exc:
+                    st.plotly_chart(_build_dashboard_placeholder_trend(), use_container_width=True)
+                    st.caption(
+                        f"Depth trend placeholder shown because the live chart is unavailable: {exc}"
+                    )
+            else:
+                st.plotly_chart(_build_dashboard_placeholder_trend(), use_container_width=True)
+                st.caption(
+                    "Placeholder trend slot for depth-resolved metrics once a complete network is available."
+                )
+
+    st.space("small")
+
+    filtered_breakdown = _filter_dashboard_breakdown(
+        _dashboard_breakdown_frame(snapshot, stats, share_metrics)
+    )
+    with st.container(border=True):
+        st.subheader("Breakdown Table")
+        if filtered_breakdown.empty:
+            st.warning(
+                "The current filters hide all rows. Re-enable placeholders or broaden the section filter."
+            )
+        else:
+            st.dataframe(
+                filtered_breakdown,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Section": st.column_config.TextColumn("Section", width="small"),
+                    "Metric": st.column_config.TextColumn("Metric", width="medium"),
+                    "Progress": st.column_config.ProgressColumn(
+                        "Progress",
+                        min_value=0,
+                        max_value=100,
+                        format="%d%%",
+                    ),
+                    "Value": st.column_config.TextColumn("Value", width="small"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Source": st.column_config.TextColumn("Source", width="medium"),
+                    "Notes": st.column_config.TextColumn("Notes", width="large"),
+                },
+            )
+
+    source_tab, backlog_tab = st.tabs(["Source wiring", "Extension backlog"])
+    with source_tab:
+        st.caption("Dashboard controls are query-bound so the current view is easy to share.")
+        st.json(dict(st.query_params))
+        with st.expander("Assumptions and wiring points", icon=":material/lan:"):
+            st.markdown(
+                "\n".join(
+                    [
+                        "- The current shell focuses on the active run, network outputs, and share activity.",
+                        "- `Pipeline` rows come from `run_snapshot.json`.",
+                        "- `Network` rows come from `processing_results` via `compute_shareable_stats()`.",
+                        "- Placeholder rows mark the next data sources to wire once entities are finalized.",
+                    ]
+                )
+            )
+
+    with backlog_tab:
+        st.caption("Use this backlog to capture the next round of dashboard metrics and ownership.")
+        st.data_editor(
+            _build_dashboard_backlog_frame(),
+            key="dashboard_backlog_editor",
+            hide_index=True,
+            use_container_width=True,
+            num_rows="fixed",
+            column_config={
+                "Metric": st.column_config.TextColumn("Metric", width="medium"),
+                "Owner": st.column_config.SelectboxColumn(
+                    "Owner",
+                    options=["Pipeline", "Operations", "Analysis", "Collaboration"],
+                    width="small",
+                ),
+                "Priority": st.column_config.SelectboxColumn(
+                    "Priority",
+                    options=["High", "Medium", "Low"],
+                    width="small",
+                ),
+                "Tracked": st.column_config.CheckboxColumn("Tracked"),
+                "Status": st.column_config.SelectboxColumn(
+                    "Status",
+                    options=["TODO", "Requested", "Ready"],
+                    width="small",
+                ),
+                "Reference": st.column_config.LinkColumn("Reference", display_text="Open"),
+                "Notes": st.column_config.TextColumn("Notes", width="large"),
+            },
+            disabled=["Metric", "Reference"],
+        )
+        st.feedback("stars", key="dashboard_feedback", on_change=_toast_dashboard_feedback)
+
+
+@st.fragment(run_every="20s")
+def _render_dashboard_surface_fragment() -> None:
+    """Refresh the dashboard surface independently when auto-refresh is enabled."""
+    _render_dashboard_surface()
+
+
+def show_dashboard_page():
+    """Display an extendable dashboard shell for the current SLAVV session."""
+    st.markdown('<h2 class="section-header">Operations Dashboard</h2>', unsafe_allow_html=True)
+    st.info(DASHBOARD_ASSUMPTION)
+    _init_dashboard_state()
+
+    controls_col, action_col = st.columns([3, 1], gap="large", vertical_alignment="bottom")
+    with controls_col, st.popover("Dashboard controls", use_container_width=True):
+        st.segmented_control(
+            "Focus",
+            ["Overview", "Pipeline", "Network"],
+            key="dashboard_focus",
+            bind="query-params",
+        )
+        st.pills(
+            "Sections",
+            list(DASHBOARD_BREAKDOWN_SECTIONS),
+            key="dashboard_sections",
+            selection_mode="multi",
+            bind="query-params",
+        )
+        st.toggle(
+            "Show placeholder rows",
+            key="dashboard_show_placeholders",
+            bind="query-params",
+        )
+        st.toggle(
+            "Auto-refresh dashboard",
+            key="dashboard_auto_refresh",
+            bind="query-params",
+        )
+        st.caption("These controls sync with the URL so the current view is easy to share.")
+    with action_col:
+        if st.button("Plan metrics", use_container_width=True):
+            _open_dashboard_metric_dialog()
+
+    if st.session_state.get("dashboard_auto_refresh", False):
+        _render_dashboard_surface_fragment()
+    else:
+        _render_dashboard_surface()
+
+
 def _log_share_report_prepared_once(dataset_name, report_data, results):
     """Track report preparation exactly once per report signature in a session."""
     signature = report_data["signature"]
@@ -328,6 +905,8 @@ def main():
 def show_home_page():
     """Display the home page with overview and quick start"""
 
+    show_dashboard_page()
+    st.divider()
     st.markdown('<h2 class="section-header">Welcome to SLAVV</h2>', unsafe_allow_html=True)
 
     col1, col2 = st.columns([2, 1], gap="large", vertical_alignment="top")
@@ -1535,17 +2114,9 @@ def show_analysis_page():
         detail="Analysis dashboard viewed",
     )
 
-    # Calculate actual statistics using available data
-    from slavv.analysis import calculate_network_statistics as _calc_stats
-
-    stats = _calc_stats(
-        results["network"]["strands"],
-        results["network"]["bifurcations"],
-        results["vertices"]["positions"],
-        results["vertices"].get("radii_microns", results["vertices"].get("radii", [])),
-        parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-        st.session_state.get("image_shape", (100, 100, 50)),
-        edge_energies=results["edges"].get("energies"),
+    stats = compute_shareable_stats(
+        results,
+        image_shape=st.session_state.get("image_shape", (100, 100, 50)),
     )
 
     # Key metrics
