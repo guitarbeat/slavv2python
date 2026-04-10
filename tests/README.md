@@ -7,6 +7,8 @@ historical task that introduced them.
 
 - `tests/unit/<owner>/` for package behavior owned by a source package such as
   `analysis`, `utils`, `io`, `core`, or `apps`
+- `tests/unit/workspace_scripts/` for maintained helper scripts that live under
+  `workspace/scripts/`
 - `tests/unit/parity/` for pure-Python parity helpers, comparison layout, and
   comparison runtime logic
 - `tests/diagnostic/` for environment checks, MATLAB availability, and

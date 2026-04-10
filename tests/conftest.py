@@ -6,14 +6,26 @@ whether or not `pip install -e .` has been run.
 
 from __future__ import annotations
 
+import collections
 import json
 import shutil
 import sys
+from collections import abc as collections_abc
 from pathlib import Path
 from uuid import uuid4
 
+import numpy as np
 import pytest
 from scipy.io import savemat
+
+# Keep the legacy Python 3.7 scientific stack importable without flooding test
+# output with third-party deprecations from old networkx/sklearn releases.
+collections.Mapping = collections_abc.Mapping
+collections.Set = collections_abc.Set
+collections.Iterable = collections_abc.Iterable
+np.int = int
+np.float = float
+np.bool = np.bool_
 
 # Add source/ to path so slavv is importable
 repo_root = Path(__file__).resolve().parent.parent

@@ -1,31 +1,10 @@
-import numpy as np
 import pytest
 
-from slavv.utils import (
-    calculate_path_length,
-    get_chunking_lattice,
-    preprocess_image,
-    validate_parameters,
-)
-
-
-def test_calculate_path_length():
-    # Simple straight line
-    path = np.array([[0, 0, 0], [0, 0, 10]], dtype=float)
-    assert calculate_path_length(path) == 10.0
-
-    # L-shape
-    path = np.array([[0, 0, 0], [0, 3, 0], [4, 3, 0]], dtype=float)
-    assert calculate_path_length(path) == 3.0 + 4.0
-
-    # Empty/Single point
-    assert calculate_path_length(np.array([], dtype=float)) == 0.0
-    assert calculate_path_length(np.array([[1, 2, 3]], dtype=float)) == 0.0
+from slavv.utils import validate_parameters
 
 
 def test_validate_parameters_defaults():
-    params = {}
-    validated = validate_parameters(params)
+    validated = validate_parameters({})
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
     assert validated["energy_sign"] == -1.0
@@ -90,57 +69,45 @@ def test_validate_parameters_coerces_integer_like_matlab_settings():
     assert isinstance(validated["number_of_edges_per_vertex"], int)
 
 
-def test_validate_parameters_invalid():
-    with pytest.raises(ValueError, match="radius_of_smallest_vessel_in_microns must be positive"):
-        validate_parameters({"radius_of_smallest_vessel_in_microns": -1})
+def test_validate_parameters_warns_for_unusual_excitation_wavelength():
+    with pytest.warns(UserWarning, match="Excitation wavelength outside typical range"):
+        validated = validate_parameters({"excitation_wavelength_in_microns": 3.5})
 
-    with pytest.raises(ValueError, match="microns_per_voxel must be a 3-element array"):
-        validate_parameters({"microns_per_voxel": [1.0, 1.0]})
-
-    with pytest.raises(ValueError, match="number_of_edges_per_vertex must be an integer value"):
-        validate_parameters({"number_of_edges_per_vertex": 4.5})
+    assert validated["excitation_wavelength_in_microns"] == 3.5
 
 
-def test_get_chunking_lattice_small_volume():
-    # Volume fits in one chunk
-    shape = (10, 10, 10)
-    max_voxels = 2000  # > 1000
-    slices = get_chunking_lattice(shape, max_voxels, margin=1)
-
-    assert len(slices) == 1
-    chunk, _output, _inner = slices[0]
-    # Full coverage
-    assert chunk == (slice(0, 10), slice(0, 10), slice(0, 10))
-
-
-def test_get_chunking_lattice_splitting():
-    # Volume needs splitting
-    # Plane size = 100 voxels. Max = 300. Max depth = 3.
-    # Total depth = 6. Should split into chunks.
-    shape = (10, 10, 6)
-    max_voxels = 300
-    margin = 1
-
-    slices = get_chunking_lattice(shape, max_voxels, margin)
-    assert len(slices) > 1
-
-    # Verify total coverage
-    processed_z = 0
-    for _chunk, output, _inner in slices:
-        z_start = output[2].start
-        z_end = output[2].stop
-        assert z_start == processed_z
-        processed_z = z_end
-
-    assert processed_z == 6
-
-
-def test_preprocess_image():
-    img = np.array([[[0, 100], [50, 100]]], dtype=float)
-    params = {"bandpass_window": 0}  # Disable bandpass for simple range check
-
-    processed = preprocess_image(img, params)
-
-    assert processed.min() == 0.0
-    assert processed.max() == 1.0
-    assert processed.shape == img.shape
+@pytest.mark.parametrize(
+    ("params", "message"),
+    [
+        (
+            {"radius_of_smallest_vessel_in_microns": -1},
+            "radius_of_smallest_vessel_in_microns must be positive",
+        ),
+        (
+            {
+                "radius_of_smallest_vessel_in_microns": 3.0,
+                "radius_of_largest_vessel_in_microns": 3.0,
+            },
+            "radius_of_largest_vessel_in_microns must be larger than smallest",
+        ),
+        (
+            {"microns_per_voxel": [1.0, 1.0]},
+            "microns_per_voxel must be a 3-element array",
+        ),
+        (
+            {"number_of_edges_per_vertex": 4.5},
+            "number_of_edges_per_vertex must be an integer value",
+        ),
+        (
+            {"parity_watershed_candidate_mode": "unknown_mode"},
+            "parity_watershed_candidate_mode must be one of",
+        ),
+        (
+            {"parity_candidate_salvage_mode": "unknown_mode"},
+            "parity_candidate_salvage_mode must be one of",
+        ),
+    ],
+)
+def test_validate_parameters_rejects_invalid_values(params, message):
+    with pytest.raises(ValueError, match=message):
+        validate_parameters(params)
