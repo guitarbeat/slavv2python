@@ -18,6 +18,7 @@ from skimage import feature  # Needed for Hessian
 from skimage.draw import ellipsoid
 from skimage.graph import route_through_array
 from skimage.segmentation import watershed
+from typing_extensions import TypeAlias
 
 # Imports from sibling modules
 from .energy import compute_gradient_impl
@@ -25,9 +26,20 @@ from .energy import compute_gradient_impl
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from numpy.typing import NDArray
+
     from slavv.runtime import StageController
 
 logger = logging.getLogger(__name__)
+
+Int16Array: TypeAlias = "NDArray[np.int16]"
+Int32Array: TypeAlias = "NDArray[np.int32]"
+Int64Array: TypeAlias = "NDArray[np.int64]"
+Float32Array: TypeAlias = "NDArray[np.float32]"
+Float64Array: TypeAlias = "NDArray[np.float64]"
+BoolArray: TypeAlias = "NDArray[np.bool_]"
+TraceMetadata: TypeAlias = "dict[str, Any]"
+TraceEdgeResult: TypeAlias = "list[np.ndarray] | tuple[list[np.ndarray], TraceMetadata]"
 
 
 def _vertex_window_apothem(space_strel_apothem: int) -> int:
@@ -51,7 +63,10 @@ def _vertex_neighborhood_slices(
 def _matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-style column-major linear indices for 0-based coordinates."""
     coords = np.asarray(coords, dtype=np.int64)
-    return coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]  # type: ignore[no-any-return]
+    linear_indices: Int64Array = (
+        coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
+    )
+    return cast("np.ndarray", linear_indices)
 
 
 def _sort_vertex_order(
@@ -62,12 +77,21 @@ def _sort_vertex_order(
 ) -> np.ndarray:
     """Sort vertices like MATLAB: by energy, then by column-major linear index for ties."""
     if len(vertex_positions) == 0:
-        return np.array([], dtype=np.int64)  # type: ignore[no-any-return]
+        empty_order: Int64Array = np.array([], dtype=np.int64)
+        return cast("np.ndarray", empty_order)
 
     linear_indices = _matlab_linear_indices(vertex_positions, image_shape)
     if energy_sign < 0:
-        return np.lexsort((linear_indices, vertex_energies))  # type: ignore[no-any-return]
-    return np.lexsort((linear_indices, -vertex_energies))  # type: ignore[no-any-return]
+        sort_order: Int64Array = np.asarray(
+            np.lexsort((linear_indices, vertex_energies)),
+            dtype=np.int64,
+        )
+        return cast("np.ndarray", sort_order)
+    sort_order = np.asarray(
+        np.lexsort((linear_indices, -vertex_energies)),
+        dtype=np.int64,
+    )
+    return cast("np.ndarray", sort_order)
 
 
 def _empty_vertices_result() -> dict[str, Any]:
@@ -173,12 +197,13 @@ def _coerce_radius_axes(
 ) -> np.ndarray:
     """Normalize scale radii into a `(num_scales, 3)` axis-aware array."""
     if lumen_radius_pixels_axes is not None:
-        axes = np.asarray(lumen_radius_pixels_axes, dtype=np.float32)
+        axes: Float32Array = np.asarray(lumen_radius_pixels_axes, dtype=np.float32)
         if axes.ndim == 2 and axes.shape[1] == 3:
-            return axes  # type: ignore[no-any-return]
+            return cast("np.ndarray", axes)
 
     radii = np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1)
-    return np.repeat(radii, 3, axis=1)  # type: ignore[no-any-return]
+    repeated_radii: Float32Array = np.repeat(radii, 3, axis=1)
+    return cast("np.ndarray", repeated_radii)
 
 
 def _scalar_radius(radius_value: np.ndarray | float | int) -> float:
@@ -213,21 +238,21 @@ def _iter_overlapping_chunks(
     overlap: tuple[int, int, int],
 ):
     """Yield padded 3D chunk slices using MATLAB-like lattice borders."""
-    overlap = np.asarray(overlap, dtype=np.int64)
+    overlap_arr: Int64Array = np.asarray(overlap, dtype=np.int64)
     borders = [
         np.rint(np.linspace(0, image_shape[axis], lattice_dims[axis] + 1)).astype(np.int64)
         for axis in range(3)
     ]
 
     for y_index in range(lattice_dims[0]):
-        y_start = max(int(borders[0][y_index] - overlap[0]), 0)
-        y_end = min(int(borders[0][y_index + 1] + overlap[0]), image_shape[0])
+        y_start = max(int(borders[0][y_index] - overlap_arr[0]), 0)
+        y_end = min(int(borders[0][y_index + 1] + overlap_arr[0]), image_shape[0])
         for x_index in range(lattice_dims[1]):
-            x_start = max(int(borders[1][x_index] - overlap[1]), 0)
-            x_end = min(int(borders[1][x_index + 1] + overlap[1]), image_shape[1])
+            x_start = max(int(borders[1][x_index] - overlap_arr[1]), 0)
+            x_end = min(int(borders[1][x_index + 1] + overlap_arr[1]), image_shape[1])
             for z_index in range(lattice_dims[2]):
-                z_start = max(int(borders[2][z_index] - overlap[2]), 0)
-                z_end = min(int(borders[2][z_index + 1] + overlap[2]), image_shape[2])
+                z_start = max(int(borders[2][z_index] - overlap_arr[2]), 0)
+                z_end = min(int(borders[2][z_index + 1] + overlap_arr[2]), image_shape[2])
                 yield (
                     slice(y_start, y_end),
                     slice(x_start, x_end),
@@ -406,7 +431,7 @@ def _ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
 
     mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
     coords = np.column_stack(np.where(mask))
-    center = np.asarray(mask.shape, dtype=np.int64) // 2
+    center: Int64Array = np.asarray(mask.shape, dtype=np.int64) // 2
     offsets: np.ndarray = (coords - center).astype(np.int16, copy=False)
     return offsets
 
@@ -432,7 +457,10 @@ def _choose_vertices_matlab_style(
         end_index = n_vertices
 
     scale_indices = np.rint(vertex_scales).astype(np.int64)
-    scaled_radii = length_dilation_ratio * lumen_radius_pixels_axes
+    scaled_radii: Float32Array = np.asarray(
+        length_dilation_ratio * lumen_radius_pixels_axes,
+        dtype=np.float32,
+    )
     template_cache = {
         int(scale_index): _ellipsoid_offsets(scaled_radii[scale_index])
         for scale_index in np.unique(scale_indices)
@@ -562,7 +590,7 @@ def paint_vertex_image(
             # Get coordinates of True voxels (centered at origin of mask array)
             coords = np.where(ellipsoid_mask)
             # Center the ellipsoid coordinates (they're currently offset from origin)
-            center = np.array(ellipsoid_mask.shape) // 2
+            center: Int64Array = np.array(ellipsoid_mask.shape, dtype=np.int64) // 2
             rr = coords[0] - center[0]
             cc = coords[1] - center[1]
             dd = coords[2] - center[2]
@@ -747,7 +775,7 @@ def near_vertex(
 
     if tree is not None:
         # Optimized spatial query
-        pos_microns = pos * microns_per_voxel
+        pos_microns: Float64Array = np.asarray(pos * microns_per_voxel, dtype=np.float64)
         # Query candidates within max possible radius
         candidates = tree.query_ball_point(pos_microns, max_search_radius)
         for i in candidates:
@@ -757,14 +785,14 @@ def near_vertex(
             radius = lumen_radius_microns[vertex_scale]
             diff = pos_microns - (vertex_pos * microns_per_voxel)
             if np.linalg.norm(diff) <= radius + tolerance_microns:
-                return i
+                return int(i)
         return None
     # Fallback linear scan
     for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
         radius = lumen_radius_microns[vertex_scale]
         diff = (pos - vertex_pos) * microns_per_voxel
         if np.linalg.norm(diff) <= radius + tolerance_microns:
-            return i
+            return int(i)
     return None
 
 
@@ -791,10 +819,13 @@ def find_terminal_vertex(
 
 def _clip_trace_indices(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Convert a trace to clipped integer voxel indices."""
-    coords = np.floor(np.asarray(trace, dtype=np.float32)[:, :3]).astype(np.int32, copy=False)
+    clipped_coords: Int32Array = np.floor(np.asarray(trace, dtype=np.float32)[:, :3]).astype(
+        np.int32,
+        copy=False,
+    )
     for axis in range(3):
-        coords[:, axis] = np.clip(coords[:, axis], 0, shape[axis] - 1)
-    return coords
+        clipped_coords[:, axis] = np.clip(clipped_coords[:, axis], 0, shape[axis] - 1)
+    return cast("np.ndarray", clipped_coords)
 
 
 def _resolve_trace_terminal_vertex(
@@ -910,13 +941,21 @@ def _trace_scale_series(edge_trace: np.ndarray, scale_indices: np.ndarray | None
     if scale_indices is None:
         return np.zeros((len(edge_trace),), dtype=np.int16)
     idx = _clip_trace_indices(edge_trace, scale_indices.shape)
-    return scale_indices[idx[:, 0], idx[:, 1], idx[:, 2]].astype(np.int16, copy=False)
+    scale_trace: Int16Array = scale_indices[idx[:, 0], idx[:, 1], idx[:, 2]].astype(
+        np.int16,
+        copy=False,
+    )
+    return cast("np.ndarray", scale_trace)
 
 
 def _trace_energy_series(edge_trace: np.ndarray, energy: np.ndarray) -> np.ndarray:
     """Sample projected energy values along an edge trace."""
     idx = _clip_trace_indices(edge_trace, energy.shape)
-    return energy[idx[:, 0], idx[:, 1], idx[:, 2]].astype(np.float32, copy=False)
+    energy_trace: Float32Array = energy[idx[:, 0], idx[:, 1], idx[:, 2]].astype(
+        np.float32,
+        copy=False,
+    )
+    return cast("np.ndarray", energy_trace)
 
 
 def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
@@ -950,7 +989,8 @@ def _parity_watershed_metric_threshold_from_params(params: dict[str, Any]) -> fl
     threshold_raw = params.get("parity_watershed_metric_threshold")
     if threshold_raw in (None, ""):
         return None
-    return float(threshold_raw)
+    threshold_value = cast("Any", threshold_raw)
+    return float(threshold_value)
 
 
 def _parity_candidate_salvage_mode(
@@ -1052,7 +1092,7 @@ def _vertex_center_linear_lookup(
     if len(vertex_positions) == 0:
         return {}
     coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
-    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    max_coord: Int32Array = np.asarray(image_shape, dtype=np.int32) - 1
     coords = np.clip(coords, 0, max_coord)
     linear_indices = _matlab_linear_indices(coords, image_shape)
     return {
@@ -1071,7 +1111,7 @@ def _trace_local_geodesic_between_vertices(
 ) -> np.ndarray | None:
     """Trace a local geodesic path between two vertices inside a bounded subvolume."""
     image_shape = energy.shape
-    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    max_coord: Int32Array = np.asarray(image_shape, dtype=np.int32) - 1
     start_coord = np.clip(
         np.rint(np.asarray(start, dtype=np.float32)[:3]).astype(np.int32, copy=False),
         0,
@@ -1131,7 +1171,8 @@ def _trace_local_geodesic_between_vertices(
             deduped.append(coord)
     if len(deduped) <= 1:
         return None
-    return np.asarray(deduped, dtype=np.float32)
+    trace_coords: Float32Array = np.asarray(deduped, dtype=np.float32)
+    return cast("np.ndarray", trace_coords)
 
 
 def _candidate_incident_pair_counts(
@@ -1153,20 +1194,22 @@ def _rasterize_trace_segment(
     """Rasterize a straight voxel segment between two points, preserving endpoints."""
     start_coord = np.rint(np.asarray(start, dtype=np.float32)[:3]).astype(np.int32, copy=False)
     end_coord = np.rint(np.asarray(end, dtype=np.float32)[:3]).astype(np.int32, copy=False)
-    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    max_coord: Int32Array = np.asarray(image_shape, dtype=np.int32) - 1
     start_coord = np.clip(start_coord, 0, max_coord)
     end_coord = np.clip(end_coord, 0, max_coord)
 
     steps = int(np.max(np.abs(end_coord - start_coord)))
     if steps <= 0:
-        return start_coord.reshape(1, 3).astype(np.float32, copy=False)
+        single_coord: Float32Array = start_coord.reshape(1, 3).astype(np.float32, copy=False)
+        return cast("np.ndarray", single_coord)
 
     coords = np.rint(np.linspace(start_coord, end_coord, num=steps + 1)).astype(np.int32)
     deduped = [coords[0]]
     for coord in coords[1:]:
         if not np.array_equal(coord, deduped[-1]):
             deduped.append(coord)
-    return np.asarray(deduped, dtype=np.float32)
+    segment_coords: Float32Array = np.asarray(deduped, dtype=np.float32)
+    return cast("np.ndarray", segment_coords)
 
 
 def _build_watershed_join_trace(
@@ -1182,7 +1225,8 @@ def _build_watershed_join_trace(
         end_half = end_half[1:]
     if len(end_half) == 0:
         return start_half
-    return np.vstack([start_half, end_half]).astype(np.float32, copy=False)
+    joined_trace: Float32Array = np.vstack([start_half, end_half]).astype(np.float32, copy=False)
+    return cast("np.ndarray", joined_trace)
 
 
 def _best_watershed_contact_coords(
@@ -1666,7 +1710,9 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
 
     existing_pairs = _candidate_endpoint_pair_set(connections)
     incident_pair_counts = _candidate_incident_pair_counts(connections)
-    vertex_positions_microns = np.asarray(vertex_positions, dtype=np.float32) * np.asarray(
+    vertex_positions_microns: Float32Array = np.asarray(
+        vertex_positions, dtype=np.float32
+    ) * np.asarray(
         microns_per_voxel,
         dtype=np.float32,
     )
@@ -1686,7 +1732,7 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
     accepted_rows: list[tuple[int, float, float, int, np.ndarray, np.ndarray, np.ndarray]] = []
     accepted_pairs: set[tuple[int, int]] = set()
     origin_added_counts: dict[int, int] = {}
-    diagnostics = {
+    diagnostics: TraceMetadata = {
         "geodesic_join_supplement_count": 0,
         "geodesic_total_attempted_pairs": 0,
         "geodesic_existing_pair_skipped": 0,
@@ -1851,7 +1897,7 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
         _merge_edge_diagnostics(candidates.get("diagnostics", {}), diagnostics)
         return candidates
 
-    supplement_payload = {
+    supplement_payload: dict[str, Any] = {
         "candidate_source": "geodesic",
         "traces": [],
         "connections": [],
@@ -1973,7 +2019,8 @@ def _prune_frontier_indices_beyond_found_vertices(
         # the same direction. This prevents the frontier from exploring beyond
         # already-resolved terminal vertices.
         indices_beyond |= np.sum(displacement * vectors_from_origin, axis=1) > 1.0
-    return candidate_coords[~indices_beyond]
+    kept_coords: Int32Array = candidate_coords[~indices_beyond]
+    return cast("np.ndarray", kept_coords)
 
 
 def _resolve_frontier_edge_connection(
@@ -2140,7 +2187,7 @@ def _trace_origin_edges_matlab_frontier(
         current_visit_order = len(previous_indices_visited)
         pointer_energy_map[current_linear] = float("-inf")
 
-        neighbor_coords = current_coord + offsets
+        neighbor_coords: Int32Array = np.asarray(current_coord + offsets, dtype=np.int32)
         valid_mask = (
             (neighbor_coords[:, 0] >= 0)
             & (neighbor_coords[:, 0] < shape[0])
@@ -2149,11 +2196,12 @@ def _trace_origin_edges_matlab_frontier(
             & (neighbor_coords[:, 2] >= 0)
             & (neighbor_coords[:, 2] < shape[2])
         )
-        neighbor_coords = neighbor_coords[valid_mask]
+        neighbor_coords = np.asarray(neighbor_coords[valid_mask], dtype=np.int32)
         neighbor_distances = offset_distances[valid_mask]
         new_coords: list[np.ndarray] = []
         new_distances: list[float] = []
-        for coord, distance in zip(neighbor_coords, neighbor_distances):
+        for coord_row, distance in zip(neighbor_coords, neighbor_distances):
+            coord: Int32Array = np.asarray(coord_row, dtype=np.int32)
             linear_index = _coord_to_matlab_linear_index(coord, shape)
             if pointer_energy_map.get(linear_index, 0.0) > current_energy:
                 pointer_index_map[linear_index] = current_visit_order
@@ -2169,7 +2217,7 @@ def _trace_origin_edges_matlab_frontier(
             diagnostics["stop_reason_counts"]["length_limit"] += int(
                 np.sum(new_distances_array >= max_edge_length_microns)
             )
-            within_length = new_distances_array < max_edge_length_microns
+            within_length: BoolArray = new_distances_array < max_edge_length_microns
             new_coords_array = new_coords_array[within_length]
             if len(new_coords_array) and has_valid_terminal_edge:
                 new_coords_array = _prune_frontier_indices_beyond_found_vertices(
@@ -2747,7 +2795,7 @@ def _generate_edge_candidates(
             directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
 
         for direction in directions:
-            edge_trace, trace_metadata = trace_edge(
+            trace_result = trace_edge(
                 energy_prepared,
                 start_pos,
                 direction,
@@ -2766,6 +2814,10 @@ def _generate_edge_candidates(
                 max_search_radius=max_search_radius,
                 origin_vertex_idx=vertex_idx,
                 return_metadata=True,
+            )
+            edge_trace, trace_metadata = cast(
+                "tuple[list[np.ndarray], TraceMetadata]",
+                trace_result,
             )
             if len(edge_trace) <= 1:
                 continue
@@ -2820,7 +2872,8 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
     kept = offsets[distances <= 1.0]
     if kept.size == 0:
         return np.zeros((1, 3), dtype=np.int32)
-    return kept.astype(np.int32, copy=False)
+    kept_offsets: Int32Array = kept.astype(np.int32, copy=False)
+    return cast("np.ndarray", kept_offsets)
 
 
 def _offset_coords_matlab(
@@ -2834,7 +2887,8 @@ def _offset_coords_matlab(
     for axis, size in enumerate(image_shape):
         invalid = (coords[:, axis] < 0) | (coords[:, axis] >= size)
         coords[invalid, axis] = base[axis]
-    return coords
+    clipped_coords: Int32Array = coords
+    return cast("np.ndarray", clipped_coords)
 
 
 def _clean_edges_vertex_degree_excess_python(
@@ -3263,7 +3317,8 @@ def estimate_vessel_directions(
             order="rc",
         )
     hessian_elems = [h * (radius**2) for h in raw_hessian]
-    patch_center = tuple(np.array(patch.shape) // 2)
+    patch_center_arr: Int64Array = np.array(patch.shape, dtype=np.int64) // 2
+    patch_center = tuple(int(value) for value in patch_center_arr.tolist())
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
     H = np.array(
         [
@@ -3324,7 +3379,7 @@ def trace_edge(
     stop_reason: str = "max_steps"
     direct_terminal_vertex: int | None = None
 
-    def finish(reason: str, terminal_vertex: int | None = None) -> Any:
+    def finish(reason: str, terminal_vertex: int | None = None) -> TraceEdgeResult:
         finalized_trace, metadata = _finalize_traced_edge(
             trace,
             stop_reason=reason,
@@ -3367,7 +3422,7 @@ def trace_edge(
     dim_x_minus_2: int = dim_x - 2
     dim_z_minus_2: int = dim_z - 2
 
-    res_v: Any = finish("bounds")
+    res_v: TraceEdgeResult = finish("bounds")
     if dim_y < 3 or dim_x < 3 or dim_z < 3:
         return res_v
 
@@ -3522,7 +3577,8 @@ def trace_edge(
             stop_reason = "direct_terminal_hit"
             break
 
-    return finish(stop_reason, direct_terminal_vertex)  # type: ignore[no-any-return]
+    final_result: TraceEdgeResult = finish(stop_reason, direct_terminal_vertex)
+    return final_result
 
 
 def extract_edges(
