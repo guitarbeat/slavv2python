@@ -2,7 +2,7 @@ import joblib
 import numpy as np
 import pytest
 
-from slavv.core.tracing import extract_edges_resumable
+from slavv.core.edges import extract_edges_resumable
 from slavv.runtime.run_state import RunContext
 
 
@@ -89,12 +89,12 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
             "diagnostics": dict(candidates["diagnostics"]),
         }
 
-    monkeypatch.setattr("slavv.core.tracing._trace_origin_edges_matlab_frontier", fake_frontier)
+    monkeypatch.setattr("slavv.core.edges._trace_origin_edges_matlab_frontier", fake_frontier)
     monkeypatch.setattr(
-        "slavv.core.tracing._supplement_matlab_frontier_candidates_with_watershed_joins",
+        "slavv.core.edges._finalize_matlab_parity_candidates",
         fake_supplement,
     )
-    monkeypatch.setattr("slavv.core.tracing._choose_edges_matlab_style", fake_choose)
+    monkeypatch.setattr("slavv.core.edges._choose_edges_matlab_style", fake_choose)
 
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     edges = extract_edges_resumable(energy_data, vertices, params, run_context.stage("edges"))

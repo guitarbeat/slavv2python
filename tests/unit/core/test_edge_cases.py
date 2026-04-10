@@ -2,16 +2,20 @@ import numpy as np
 import pytest
 
 from slavv.core import SLAVVProcessor
-from slavv.core.tracing import (
+from slavv.core.edge_candidates import (
     _best_watershed_contact_coords,
-    _choose_edges_matlab_style,
-    _construct_structuring_element_offsets_matlab,
-    _finalize_traced_edge,
-    _offset_coords_matlab,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_origin_edges_matlab_frontier,
+)
+from slavv.core.edge_primitives import _finalize_traced_edge
+from slavv.core.edge_selection import (
+    _choose_edges_matlab_style,
+    _construct_structuring_element_offsets_matlab,
+    _offset_coords_matlab,
+)
+from slavv.core.vertices import (
     extract_vertices,
     paint_vertex_center_image,
 )
@@ -612,7 +616,7 @@ def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypat
         }
 
     monkeypatch.setattr(
-        "slavv.core.tracing._generate_edge_candidates_matlab_frontier",
+        "slavv.core.edges._generate_edge_candidates_matlab_frontier",
         fake_frontier,
     )
 
@@ -661,7 +665,7 @@ def test_extract_edges_parity_requires_mutual_frontier_participation(monkeypatch
         }
 
     monkeypatch.setattr(
-        "slavv.core.tracing._generate_edge_candidates_matlab_frontier",
+        "slavv.core.edges._generate_edge_candidates_matlab_frontier",
         fake_frontier,
     )
 
@@ -788,9 +792,12 @@ def test_frontier_tracer_does_not_prune_from_invalid_terminal_before_valid_edge(
     def fail_if_pruned(*_args, **_kwargs):
         raise AssertionError("invalid terminal directions should not prune frontier yet")
 
-    monkeypatch.setattr("slavv.core.tracing._resolve_frontier_edge_connection", fake_resolve)
     monkeypatch.setattr(
-        "slavv.core.tracing._prune_frontier_indices_beyond_found_vertices",
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection",
+        fake_resolve,
+    )
+    monkeypatch.setattr(
+        "slavv.core.edge_candidates._prune_frontier_indices_beyond_found_vertices",
         fail_if_pruned,
     )
 
@@ -848,7 +855,10 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
             return 0, 2
         return 0, 3
 
-    monkeypatch.setattr("slavv.core.tracing._resolve_frontier_edge_connection", fake_resolve)
+    monkeypatch.setattr(
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection",
+        fake_resolve,
+    )
 
     payload = _trace_origin_edges_matlab_frontier(
         energy,

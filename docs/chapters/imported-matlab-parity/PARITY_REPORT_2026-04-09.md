@@ -334,7 +334,7 @@ The retained code changes from this parity pass include:
 
 Relevant files:
 
-- `source/slavv/core/tracing.py`
+- `source/slavv/core/edge_candidates.py`
 - `source/slavv/utils/validation.py`
 - `tests/unit/core/test_candidate_diagnostics.py`
 - `source/slavv/parity/metrics.py`

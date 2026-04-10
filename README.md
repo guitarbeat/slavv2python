@@ -90,7 +90,7 @@ python -m streamlit run source/slavv/apps/web_app.py
 ### Programmatic Usage
 
 ```python
-from slavv.core.pipeline import SLAVVProcessor
+from slavv import SLAVVProcessor
 
 # Initialize the processor
 processor = SLAVVProcessor()

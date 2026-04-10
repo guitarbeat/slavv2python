@@ -17,10 +17,12 @@ a generic bioimage-processing list.
 The current Python stack already covers a lot:
 
 - `scikit-image` is a declared dependency in `pyproject.toml` and is used in
-  `source/slavv/core/energy.py` and `source/slavv/core/tracing.py`.
-- `scipy.ndimage` is used in `source/slavv/utils/preprocessing.py` and
-  `source/slavv/core/tracing.py`.
-- `cKDTree` is used in `source/slavv/core/tracing.py`,
+  `source/slavv/core/energy.py`, `source/slavv/core/edge_primitives.py`, and
+  `source/slavv/core/edge_candidates.py`.
+- `scipy.ndimage` is used in `source/slavv/utils/preprocessing.py`,
+  `source/slavv/core/edge_primitives.py`, and `source/slavv/core/edges.py`.
+- `cKDTree` is used in `source/slavv/core/edge_primitives.py`,
+  `source/slavv/core/edge_candidates.py`, `source/slavv/core/edges.py`,
   `source/slavv/parity/metrics.py`, and `source/slavv/analysis/geometry.py`.
 - `networkx` is used in `source/slavv/analysis/geometry.py` and
   `source/slavv/io/network_io.py`.
@@ -45,8 +47,8 @@ then add one or two libraries where they clearly beat the current stack.
 | Library | Where it fits here | Recommendation | Why |
 | --- | --- | --- | --- |
 | `SimpleITK` / `ITK` | `source/slavv/core/energy.py`, `source/slavv/utils/preprocessing.py`, `source/slavv/io/tiff.py` | `High priority` | Best fit for 3D microscopy/medical-style volumes, anisotropic spacing, recursive Gaussian filtering, objectness/vesselness filters, and image I/O pipelines. |
-| `CuPy` | `source/slavv/core/energy.py`, `source/slavv/core/tracing.py`, `source/slavv/utils/preprocessing.py` | `High priority if you have NVIDIA GPUs` | Easiest way to move NumPy/SciPy-style array math and `ndimage`-like work onto GPU. |
-| `cuCIM` | `source/slavv/core/tracing.py`, `source/slavv/utils/preprocessing.py`, future segmentation helpers | `High priority if you have NVIDIA GPUs` | Gives you GPU image operations in a scikit-image-shaped API, which matches this repo's current mental model better than rewriting everything around OpenCV. |
+| `CuPy` | `source/slavv/core/energy.py`, `source/slavv/core/edge_primitives.py`, `source/slavv/core/edge_candidates.py`, `source/slavv/utils/preprocessing.py` | `High priority if you have NVIDIA GPUs` | Easiest way to move NumPy/SciPy-style array math and `ndimage`-like work onto GPU. |
+| `cuCIM` | `source/slavv/core/edge_candidates.py`, `source/slavv/core/edge_selection.py`, `source/slavv/utils/preprocessing.py`, future segmentation helpers | `High priority if you have NVIDIA GPUs` | Gives you GPU image operations in a scikit-image-shaped API, which matches this repo's current mental model better than rewriting everything around OpenCV. |
 | `Dask` + `Zarr` | `source/slavv/core/energy.py`, `source/slavv/runtime/run_state.py`, checkpoint/artifact storage | `High priority for large datasets` | Strong fit for chunked, resumable, larger-than-memory arrays and persistent chunked storage. |
 | `napari` | `source/slavv/visualization/interactive_curator.py` | `Medium-high priority` | Better ecosystem for image + points + labels curation than a hand-rolled Qt stack, especially if manual review grows. |
 
@@ -136,7 +138,7 @@ cuCIM is especially interesting because this repo already thinks in
 
 Why it matches this repo:
 
-- `source/slavv/core/tracing.py` already imports `skimage.segmentation.watershed`.
+- `source/slavv/core/edge_candidates.py` and `source/slavv/core/edges.py` already import `skimage.segmentation.watershed`.
 - `source/slavv/core/energy.py` already imports `skimage.filters.frangi` and
   `sato` when available.
 - cuCIM exposes a GPU image-processing surface that is much closer to
@@ -167,7 +169,7 @@ volume size and chunk persistence."
 Why it matches this repo:
 
 - `source/slavv/core/energy.py` already has explicit chunking logic.
-- `source/slavv/core/tracing.py` and `source/slavv/runtime/run_state.py` already
+- `source/slavv/core/edges.py` and `source/slavv/runtime/run_state.py` already
   have resumable/persisted execution patterns.
 - Your repo has active comparison and checkpoint workflows, so chunked on-disk
   array storage is already part of the mental model.

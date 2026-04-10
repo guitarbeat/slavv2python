@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import slavv.core as core
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 
@@ -42,3 +43,21 @@ def test_validate_parameters_invalid_scales():
 def test_validate_parameters_negative_bandpass():
     with pytest.raises(ValueError, match="bandpass_window must be non-negative"):
         validate_parameters({"bandpass_window": -1})
+
+
+def test_core_module_exports_minimal_public_api():
+    assert core.__all__ == ["SLAVVProcessor"]
+    assert hasattr(core, "SLAVVProcessor")
+    for removed_name in (
+        "compute_gradient",
+        "estimate_vessel_directions",
+        "extract_edges",
+        "extract_edges_watershed",
+        "extract_vertices",
+        "find_terminal_vertex",
+        "generate_edge_directions",
+        "in_bounds",
+        "near_vertex",
+        "trace_edge",
+    ):
+        assert not hasattr(core, removed_name)

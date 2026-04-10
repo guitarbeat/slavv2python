@@ -91,7 +91,7 @@ The remaining parity work is centered on:
 
 - [comparison.py](../../../source/slavv/parity/comparison.py)
   for parity-mode orchestration and replay surfaces
-- [tracing.py](../../../source/slavv/core/tracing.py)
+- [edge_candidates.py](../../../source/slavv/core/edge_candidates.py)
   for frontier candidate generation, ownership, and local partner choice
 - [graph.py](../../../source/slavv/core/graph.py)
   only as a downstream gate, not as the current primary suspect

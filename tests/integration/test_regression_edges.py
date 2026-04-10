@@ -2,12 +2,12 @@ from unittest.mock import patch
 
 import numpy as np
 
-import slavv.core.tracing as tracing_module
+import slavv.core.edges as edges_module
 from slavv.core import SLAVVProcessor
 
 
 @patch(
-    "slavv.core.tracing.estimate_vessel_directions",
+    "slavv.core.edge_candidates.estimate_vessel_directions",
     return_value=np.array([[1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]], dtype=float),
 )
 def test_extract_edges_regression(mock_generate_directions):
@@ -47,7 +47,7 @@ def test_extract_edges_regression(mock_generate_directions):
 
 
 @patch(
-    "slavv.core.tracing.estimate_vessel_directions",
+    "slavv.core.edge_candidates.estimate_vessel_directions",
     return_value=np.array([[0.0, 1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_recovers_near_terminal_attachment(mock_generate_directions):
@@ -144,7 +144,7 @@ def test_extract_edges_routes_matlab_energy_parity_runs_to_frontier(monkeypatch)
         }
 
     monkeypatch.setattr(
-        tracing_module,
+        edges_module,
         "_generate_edge_candidates_matlab_frontier",
         fake_frontier,
     )

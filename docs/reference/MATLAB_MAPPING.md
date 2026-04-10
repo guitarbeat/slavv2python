@@ -37,7 +37,7 @@ MATLAB script.
 
 | MATLAB File | Python Location | Status | Notes |
 | --- | --- | --- | --- |
-| `choose_vertices_V200.m` | `source/slavv/core/tracing.py` | `Merged` | MATLAB-style crop/paint logic is ported |
+| `choose_vertices_V200.m` | `source/slavv/core/vertices.py` | `Merged` | MATLAB-style crop/paint logic is ported |
 | `vertex_info_extractor.m` | `source/slavv/io/matlab_parser.py` | `Ported` | |
 | `vertex_feature_extractor.m` | `source/slavv/analysis/ml_curator.py` | `Merged` | |
 | `uncuratedInfoExtractor.m` | `source/slavv/analysis/ml_curator.py` | `Ported` | |
@@ -47,17 +47,17 @@ MATLAB script.
 
 | MATLAB File | Python Location | Status | Notes |
 | --- | --- | --- | --- |
-| `get_edges_V200.m` | `source/slavv/core/tracing.py` | `Merged` | Main edge extraction flow and candidate cleanup |
-| `get_edges_V204.m` | `source/slavv/core/tracing.py` | `Merged` | MATLAB frontier semantics inform the parity-only tracer path |
-| `get_edges_for_vertex.m` | `source/slavv/core/tracing.py` | `Merged` | Ported as the parity-only best-first frontier search for MATLAB-energy runs |
-| `choose_edges_V200.m` | `source/slavv/core/tracing.py` | `Merged` | Duplicate cleanup, conflict handling, and graph-facing edge selection |
-| `add_vertices_to_edges.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edges.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edges_cycles.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edges_hairs.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edges_orphans.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edges_vertex_degree_excess.m` | `source/slavv/core/tracing.py` | `Merged` | |
-| `clean_edge_pairs.m` | `source/slavv/core/tracing.py` | `Merged` | |
+| `get_edges_V200.m` | `source/slavv/core/edges.py`, `source/slavv/core/edge_candidates.py`, and `source/slavv/core/edge_selection.py` | `Merged` | Main edge extraction flow, candidate generation, and cleanup are now split by responsibility |
+| `get_edges_V204.m` | `source/slavv/core/edge_candidates.py` | `Merged` | MATLAB frontier semantics inform the parity-only tracer path |
+| `get_edges_for_vertex.m` | `source/slavv/core/edge_candidates.py` | `Merged` | Ported as the parity-only best-first frontier search for MATLAB-energy runs |
+| `choose_edges_V200.m` | `source/slavv/core/edge_selection.py` | `Merged` | Duplicate cleanup, conflict handling, and graph-facing edge selection |
+| `add_vertices_to_edges.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edges.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edges_cycles.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edges_hairs.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edges_orphans.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edges_vertex_degree_excess.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
+| `clean_edge_pairs.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
 | `edge_info_extractor.m` | `source/slavv/io/matlab_parser.py` | `Ported` | |
 | `edge_curator.m` | `source/slavv/visualization/interactive_curator.py` | `Ported` | Interactive curation UI |
 

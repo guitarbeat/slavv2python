@@ -1,15 +1,14 @@
 import numpy as np
 
-from slavv.core import SLAVVProcessor
+from slavv.core.edge_primitives import trace_edge
 
 
 def test_discrete_tracing_steps_snap_to_voxels():
-    proc = SLAVVProcessor()
     # Energy decreases along +x (axis 1) so tracing proceeds without energy rise.
     energy = np.tile(-np.arange(5)[None, :, None], (5, 1, 5)).astype(float)
     start_pos = np.array([2.0, 0.0, 2.0])  # (y, x, z)
     direction = np.array([0.0, 1.0, 0.0])
-    trace = proc._trace_edge(
+    trace = trace_edge(
         energy,
         start_pos,
         direction,

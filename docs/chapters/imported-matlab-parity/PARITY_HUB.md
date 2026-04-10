@@ -125,6 +125,6 @@ python workspace/scripts/cli/compare_matlab_python.py `
 ## Next Likely Move
 
 If you are resuming implementation work rather than documentation work, the
-next best target is still `source/slavv/core/tracing.py`, but the first change
+next best target is still `source/slavv/core/edge_candidates.py`, but the first change
 should be to align Python cleanup with the active MATLAB V200 cleanup chain
 before continuing with local frontier partner-choice tuning.

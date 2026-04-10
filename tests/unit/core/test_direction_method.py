@@ -12,12 +12,8 @@ def test_validate_parameters_direction_method():
         validate_parameters({"direction_method": "invalid"})
 
 
-def test_extract_edges_uniform_direction_method_skips_hessian():
-    class DummyProcessor(SLAVVProcessor):
-        def _estimate_vessel_directions(self, *args, **kwargs):  # pragma: no cover
-            raise AssertionError("Hessian estimator should not be called")
-
-    processor = DummyProcessor()
+def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
+    processor = SLAVVProcessor()
 
     size = 21
     coords = np.indices((size, size, size))
@@ -42,6 +38,13 @@ def test_extract_edges_uniform_direction_method_skips_hessian():
         "microns_per_voxel": [1.0, 1.0, 1.0],
         "direction_method": "uniform",
     }
+
+    monkeypatch.setattr(
+        "slavv.core.edge_candidates.estimate_vessel_directions",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("Hessian estimator should not be called")
+        ),
+    )
 
     edges = processor.extract_edges(energy_data, vertices, params)
     assert len(edges["traces"]) == 0

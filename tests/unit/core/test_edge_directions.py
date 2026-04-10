@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from slavv.core import generate_edge_directions
+from slavv.core.edge_primitives import generate_edge_directions
 
 
 @pytest.mark.parametrize(

@@ -19,7 +19,7 @@ This file is intentionally the evidence log, not the workflow plan.
   - many extra frontier edges cluster around the same shared vertices as the
     missing MATLAB pairs
 - Best next code surface:
-  - `source/slavv/core/tracing.py`
+  - `source/slavv/core/edge_candidates.py`
 - Best companion docs:
   - [PARITY_HUB.md](PARITY_HUB.md)
   - [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
@@ -343,7 +343,7 @@ Implication:
 
 ### Primary target
 
-Focus on upstream candidate generation in `source/slavv/core/tracing.py`,
+Focus on upstream candidate generation in `source/slavv/core/edge_candidates.py`,
 especially where the parity tracer diverges from MATLAB before
 `_choose_edges_matlab_style` runs.
 

@@ -18,7 +18,9 @@ from ..runtime.run_state import (
     fingerprint_array,
     fingerprint_jsonable,
 )
-from . import energy, graph, tracing
+from . import edges as edge_ops
+from . import energy, graph
+from . import vertices as vertex_ops
 
 if TYPE_CHECKING:
     import numpy as np
@@ -279,7 +281,7 @@ class SLAVVProcessor:
         try:
             vertices = cast(
                 "dict[str, Any]",
-                tracing.extract_vertices_resumable(energy_data, parameters, controller),
+                vertex_ops.extract_vertices_resumable(energy_data, parameters, controller),
             )
             controller.save_checkpoint(vertices)
             controller.complete(
@@ -319,7 +321,7 @@ class SLAVVProcessor:
             if edge_method == "watershed":
                 edges = cast(
                     "dict[str, Any]",
-                    tracing.extract_edges_watershed_resumable(
+                    edge_ops.extract_edges_watershed_resumable(
                         energy_data,
                         vertices,
                         parameters,
@@ -329,7 +331,7 @@ class SLAVVProcessor:
             else:
                 edges = cast(
                     "dict[str, Any]",
-                    tracing.extract_edges_resumable(
+                    edge_ops.extract_edges_resumable(
                         energy_data,
                         vertices,
                         parameters,
@@ -390,76 +392,23 @@ class SLAVVProcessor:
     def extract_vertices(
         self, energy_data: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Extract vertices as local extrema. Delegates to ``tracing`` module."""
-        return tracing.extract_vertices(energy_data, params)
+        """Extract vertices as local extrema. Delegates to ``vertices`` module."""
+        return vertex_ops.extract_vertices(energy_data, params)
 
     def extract_edges(
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Extract edges by tracing. Delegates to ``tracing`` module."""
-        return tracing.extract_edges(energy_data, vertices, params)
+        """Extract edges by tracing. Delegates to ``edges`` module."""
+        return edge_ops.extract_edges(energy_data, vertices, params)
 
     def extract_edges_watershed(
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Extract edges by watershed. Delegates to ``tracing`` module."""
-        return tracing.extract_edges_watershed(energy_data, vertices, params)
+        """Extract edges by watershed. Delegates to ``edges`` module."""
+        return edge_ops.extract_edges_watershed(energy_data, vertices, params)
 
     def construct_network(
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Construct network from traces. Delegates to ``graph`` module."""
         return graph.construct_network(edges, vertices, params)
-
-    # Legacy private methods exposed for compatibility/internal use
-    # These static methods can be attached to the class if needed, or kept as module calls
-    # Since original code used `self._method`, we can map them.
-
-    @staticmethod
-    def _spherical_structuring_element(radius, mpv):
-        return energy.spherical_structuring_element(radius, mpv)
-
-    @staticmethod
-    def _trace_edge(*args, **kwargs):
-        return tracing.trace_edge(*args, **kwargs)
-
-    @staticmethod
-    def _generate_edge_directions(*args, **kwargs):
-        return tracing.generate_edge_directions(*args, **kwargs)
-
-    @staticmethod
-    def _estimate_vessel_directions(*args, **kwargs):
-        return tracing.estimate_vessel_directions(*args, **kwargs)
-
-    @staticmethod
-    def _near_vertex(*args, **kwargs):
-        return tracing.near_vertex(*args, **kwargs)
-
-    @staticmethod
-    def _find_terminal_vertex(*args, **kwargs):
-        return tracing.find_terminal_vertex(*args, **kwargs)
-
-    @staticmethod
-    def _compute_gradient(*args, **kwargs):
-        return tracing.compute_gradient(*args, **kwargs)
-
-    @staticmethod
-    def _in_bounds(*args, **kwargs):
-        return tracing.in_bounds(*args, **kwargs)
-
-    @staticmethod
-    def _trace_strand(*args, **kwargs):
-        """Legacy method - delegates to sparse implementation.
-
-        Note: Signature differs from original dense implementation.
-        Use graph.trace_strand_sparse directly for new code.
-        """
-        return graph.trace_strand_sparse(*args, **kwargs)
-
-    @staticmethod
-    def _trace_strand_sparse(*args, **kwargs):
-        return graph.trace_strand_sparse(*args, **kwargs)
-
-    @staticmethod
-    def _sort_and_validate_strands_sparse(*args, **kwargs):
-        return graph.sort_and_validate_strands_sparse(*args, **kwargs)

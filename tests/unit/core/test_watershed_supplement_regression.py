@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from slavv.core.tracing import _supplement_matlab_frontier_candidates_with_watershed_joins
+from slavv.core.edge_candidates import _supplement_matlab_frontier_candidates_with_watershed_joins
 
 pytestmark = [pytest.mark.unit, pytest.mark.regression]
 

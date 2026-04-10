@@ -7,10 +7,12 @@ pruning, and path backtracking to verify MATLAB alignment.
 import numpy as np
 import pytest
 
-from slavv.core.tracing import (
+from slavv.core.edge_candidates import (
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
     _trace_origin_edges_matlab_frontier,
+)
+from slavv.core.vertices import (
     paint_vertex_center_image,
 )
 

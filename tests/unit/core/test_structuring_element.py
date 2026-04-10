@@ -1,12 +1,11 @@
 import numpy as np
 
-from slavv.core import SLAVVProcessor
+from slavv.core.energy import spherical_structuring_element
 
 
 def test_anisotropic_structuring_element():
-    core = SLAVVProcessor()
-    strel_iso = core._spherical_structuring_element(1, np.array([1.0, 1.0, 1.0]))
-    strel_aniso = core._spherical_structuring_element(1, np.array([1.0, 1.0, 2.0]))
+    strel_iso = spherical_structuring_element(1, np.array([1.0, 1.0, 1.0]))
+    strel_aniso = spherical_structuring_element(1, np.array([1.0, 1.0, 2.0]))
     assert strel_iso.shape == (3, 3, 3)
     assert strel_iso[1, 1, 2]
     assert not strel_aniso[1, 1, 2]

@@ -21,7 +21,8 @@ or workflow plan.
 
 ## Read This File When
 
-- you are comparing `get_edges_for_vertex.m` to `tracing.py`
+- you are comparing `get_edges_for_vertex.m` to the split edge-tracing modules
+  under `source/slavv/core/`
 - you want a concrete check-off audit rather than a narrative findings doc
 - you need to know which local semantic differences are still worth auditing
 
@@ -56,9 +57,8 @@ or workflow plan.
       semantics closely enough for parity.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 202 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1523.
+      around line 202 and the frontier-admission logic in
+      `source/slavv/core/edge_candidates.py`.
 - [ ] Add a focused parity note here if any admission or overwrite mismatch is
       found.
 
@@ -91,9 +91,8 @@ Current findings:
       compared with MATLAB's repeated `min` over the current sparse image.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 425 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1621.
+      around line 425 and the frontier-selection logic in
+      `source/slavv/core/edge_candidates.py`.
 - [x] Add a targeted regression case if we find a tie-breaking drift.
 
 Current findings:
@@ -127,9 +126,8 @@ Current findings:
       repeating it as-is.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 271 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1566.
+      around line 271 and the terminal-hit ownership flow in
+      `source/slavv/core/edge_candidates.py`.
 - [ ] Record whether the next fix needs selective ownership or selective claim
       ordering rather than broader ownership.
 
@@ -174,9 +172,8 @@ Current findings:
       is empty or when half energies tie.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 308 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1363.
+      around line 308 and the parent/child cleanup logic in
+      `source/slavv/core/edge_selection.py`.
 - [ ] Add a parity note if the drift is really in half selection rather than in
       path generation.
 
@@ -206,9 +203,8 @@ Current findings:
       terminal hit.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 221 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1337.
+      around line 221 and the post-hit frontier-pruning logic in
+      `source/slavv/core/edge_candidates.py`.
 - [ ] Note whether the missing MATLAB pairs are being suppressed here before
       cleanup ever sees them.
 
@@ -244,9 +240,8 @@ Current findings:
       scale source and the same rounding rules.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around lines 35, 91, and 104 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around lines 1443 and 1490.
+      around lines 35, 91, and 104 and the border/length cutoff handling in
+      `source/slavv/core/edge_candidates.py`.
 - [ ] Log any vertex-specific cases where Python stops early or explores too
       long.
 
@@ -281,9 +276,8 @@ Current findings:
       worst shared vertices already matched in spot checks.
 - [ ] Compare:
       [get_edges_for_vertex.m](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\external\Vectorization-Public\source\get_edges_for_vertex.m)
-      around line 24 and
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 1463.
+      around line 24 and the scale-sourcing path in
+      `source/slavv/core/edge_candidates.py`.
 
 Current findings:
 
@@ -298,8 +292,8 @@ Current findings:
 
 - [ ] Do not start with neighborhood offset order or MATLAB linear-index
       conversion unless new evidence appears. Those already look aligned in
-      [tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\source\slavv\core\tracing.py)
-      around line 944.
+      `source/slavv/core/edge_selection.py` and
+      `source/slavv/core/vertices.py`.
 
 ## Working Notes
 

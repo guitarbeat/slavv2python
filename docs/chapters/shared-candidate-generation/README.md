@@ -50,7 +50,7 @@ vertex path.
   MATLAB energy with `comparison_exact_network=True`.
 - The parity-only frontier tracer simulates MATLAB's
   `edge_number_tolerance = 2` to limit edge over-generation on imported runs.
-- Watershed supplementation in `source/slavv/core/tracing.py` applies Phase 2
+- Watershed supplementation in `source/slavv/core/edge_candidates.py` applies Phase 2
   gates (Frontier Reachability and Per-Origin Caps) to prevent redundant
   strands during parity runs.
 - Edge cleanup applies MATLAB-shaped duplicate ordering, including deterministic

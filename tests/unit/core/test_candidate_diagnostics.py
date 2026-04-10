@@ -7,14 +7,16 @@ in the candidate payload and comparison report.
 import numpy as np
 import pytest
 
-from slavv.core.tracing import (
+from slavv.core.edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
-    _empty_edge_diagnostics,
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates_matlab_frontier,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_local_geodesic_between_vertices,
+)
+from slavv.core.edge_selection import _empty_edge_diagnostics
+from slavv.core.vertices import (
     paint_vertex_center_image,
 )
 from slavv.parity.metrics import compare_edges
@@ -107,7 +109,7 @@ class TestWatershedSupplementDiagnostics:
             return None
 
         monkeypatch.setattr(
-            "slavv.core.tracing._trace_local_geodesic_between_vertices",
+            "slavv.core.edge_candidates._trace_local_geodesic_between_vertices",
             fake_geodesic,
         )
 
