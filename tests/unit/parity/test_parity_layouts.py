@@ -405,6 +405,57 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Start with candidate-endpoint coverage before edge or strand diffs." in summary
 
 
+def test_generate_summary_and_manifest_include_workflow_decision(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    matlab_dir = run_dir / "01_Input" / "matlab_results"
+    python_dir = run_dir / "02_Output" / "python_results"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    matlab_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    (matlab_dir / "batch_260210-100526").mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    (analysis_dir / "comparison_report.json").write_text("{}", encoding="utf-8")
+    (metadata_dir / "loop_assessment.json").write_text(
+        json.dumps(
+            {
+                "requested_loop": "full_comparison",
+                "verdict": "fresh_matlab_required",
+                "safe_to_reuse": False,
+                "safe_to_analyze_only": True,
+                "requires_fresh_matlab": True,
+                "recommended_action": "Launch a fresh MATLAB run in this staged run root.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (metadata_dir / "matlab_health_check.json").write_text(
+        json.dumps(
+            {
+                "success": True,
+                "elapsed_seconds": 4.2,
+                "message": "MATLAB launch probe succeeded.",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summary_file = analysis_dir / "summary.txt"
+    generate_summary(run_dir, summary_file)
+    summary = summary_file.read_text(encoding="utf-8")
+    manifest = generate_manifest(run_dir)
+
+    assert "Workflow Decision" in summary
+    assert "Safe to analyze only: True" in summary
+    assert "Requires fresh MATLAB: True" in summary
+    assert "MATLAB Health Check" in summary
+    assert "## Workflow Decision" in manifest
+    assert "- **Requires fresh MATLAB:** True" in manifest
+    assert "## MATLAB Health Check" in manifest
+
+
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"

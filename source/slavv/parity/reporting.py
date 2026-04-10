@@ -13,7 +13,10 @@ from typing import TYPE_CHECKING
 
 from slavv.utils import format_time
 
+from .matlab_status import load_matlab_status
+from .preflight import load_output_preflight
 from .run_layout import resolve_run_layout
+from .workflow_assessment import load_loop_assessment, load_matlab_health_check
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -36,6 +39,7 @@ def generate_summary(run_dir: Path, output_file: Path):
     """Generate summary.txt for a comparison run."""
     layout = resolve_run_layout(run_dir)
     run_root = layout["run_root"]
+    metadata_dir = layout["metadata_dir"]
 
     # Load comparison report if exists
     report_path = layout["report_file"]
@@ -46,6 +50,10 @@ def generate_summary(run_dir: Path, output_file: Path):
                 report = json.load(f)
         except Exception as e:
             logger.error(f"Failed to load comparison report {report_path}: {e}")
+    loop_assessment = load_loop_assessment(metadata_dir)
+    preflight_report = load_output_preflight(metadata_dir)
+    matlab_status = load_matlab_status(metadata_dir)
+    matlab_health_check = load_matlab_health_check(metadata_dir)
 
     # Extract metadata
     run_name = run_root.name
@@ -74,6 +82,52 @@ def generate_summary(run_dir: Path, output_file: Path):
     if comparison_mode.get("result_source"):
         lines.append(f"Python result source: {comparison_mode['result_source']}")
     lines.append("")
+
+    if loop_assessment:
+        lines.append("Workflow Decision")
+        lines.append("-" * 70)
+        lines.append(
+            "Verdict: " + str(loop_assessment.get("verdict", "unknown")).replace("_", " ").upper()
+        )
+        lines.append(f"Safe to reuse: {bool(loop_assessment.get('safe_to_reuse', False))}")
+        lines.append(
+            f"Safe to analyze only: {bool(loop_assessment.get('safe_to_analyze_only', False))}"
+        )
+        lines.append(
+            f"Requires fresh MATLAB: {bool(loop_assessment.get('requires_fresh_matlab', False))}"
+        )
+        recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
+        if recommended_action:
+            lines.append(f"Recommended action: {recommended_action}")
+        lines.append("Assessment artifact: 99_Metadata/loop_assessment.json")
+        lines.append("")
+
+    if preflight_report:
+        lines.append("Preflight Status")
+        lines.append("-" * 70)
+        lines.append(f"Output preflight: {preflight_report.get('preflight_status', 'unknown')}")
+        recommended_action = str(preflight_report.get("recommended_action", "") or "").strip()
+        if recommended_action:
+            lines.append(f"Preflight action: {recommended_action}")
+        lines.append("")
+
+    if matlab_status:
+        lines.append("MATLAB Status")
+        lines.append("-" * 70)
+        lines.append(f"MATLAB resume mode: {matlab_status.get('matlab_resume_mode', 'unknown')}")
+        lines.append(
+            f"MATLAB rerun prediction: {matlab_status.get('matlab_rerun_prediction', 'unknown')}"
+        )
+        lines.append("")
+
+    if matlab_health_check:
+        lines.append("MATLAB Health Check")
+        lines.append("-" * 70)
+        lines.append(f"Health check passed: {bool(matlab_health_check.get('success', False))}")
+        message = str(matlab_health_check.get("message", "") or "").strip()
+        if message:
+            lines.append(message)
+        lines.append("")
 
     # Performance section
     if report and "performance" in report:

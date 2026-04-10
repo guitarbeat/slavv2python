@@ -6,7 +6,7 @@ Handles the conversion of traced edges into a connected graph (strands, bifurcat
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -61,7 +61,8 @@ def _normalize_connections(edge_connections: Any) -> np.ndarray:
     connections = np.asarray(edge_connections, dtype=np.int32)
     if connections.size == 0:
         return np.empty((0, 2), dtype=np.int32)
-    return connections.reshape(-1, 2)
+    normalized = connections.reshape(-1, 2)
+    return cast("np.ndarray", normalized)
 
 
 def _build_graph_state(
@@ -152,7 +153,8 @@ def _remove_cycles(
 
 def _vertex_degrees(adjacency_list: dict[int, set[int]], n_vertices: int) -> np.ndarray:
     """Return per-vertex degree counts."""
-    return np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)
+    degrees = np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)
+    return cast("np.ndarray", degrees)
 
 
 def _default_network_topology(

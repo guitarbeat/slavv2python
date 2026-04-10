@@ -1044,7 +1044,8 @@ def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np
     pos_xy = index - z * xy_plane
     x = pos_xy // shape[0]
     y = pos_xy - x * shape[0]
-    return np.array([y, x, z], dtype=np.int32)
+    coord: Int32Array = np.array([y, x, z], dtype=np.int32)
+    return cast("np.ndarray", coord)
 
 
 def _path_coords_from_linear_indices(
@@ -1053,7 +1054,8 @@ def _path_coords_from_linear_indices(
 ) -> np.ndarray:
     """Convert a linear-index path into origin-to-terminal spatial coordinates."""
     coords = [_matlab_linear_index_to_coord(index, shape) for index in reversed(path_linear)]
-    return np.asarray(coords, dtype=np.float32)
+    coord_array: Float32Array = np.asarray(coords, dtype=np.float32)
+    return cast("np.ndarray", coord_array)
 
 
 def _path_max_energy_from_linear_indices(
@@ -2210,7 +2212,7 @@ def _trace_origin_edges_matlab_frontier(
                 new_coords.append(coord.astype(np.int32, copy=False))
                 new_distances.append(float(distance_map[linear_index]))
 
-        new_coords_array = np.zeros((0, 3), dtype=np.int32)
+        new_coords_array: Int32Array = np.zeros((0, 3), dtype=np.int32)
         if new_coords:
             new_coords_array = np.asarray(new_coords, dtype=np.int32)
             new_distances_array = np.asarray(new_distances, dtype=np.float32)
@@ -3346,7 +3348,8 @@ def estimate_vessel_directions(
     if norm == 0 or not np.isfinite(norm):
         return generate_edge_directions(2, seed=0)
     direction = direction / norm
-    return np.stack((direction, -direction))
+    bidirectional: Float64Array = np.stack((direction, -direction))
+    return cast("np.ndarray", bidirectional)
 
 
 def trace_edge(

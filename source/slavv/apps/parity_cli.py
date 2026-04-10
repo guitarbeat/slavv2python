@@ -13,9 +13,11 @@ from typing import Optional, Union
 from slavv.parity.comparison import (
     load_parameters,
     orchestrate_comparison,
+    run_matlab_health_check_workflow,
     run_standalone_comparison,
 )
 from slavv.parity.run_layout import list_runs
+from slavv.parity.workflow_assessment import assess_loop_request, determine_loop_kind
 from slavv.runtime import load_run_snapshot
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -62,6 +64,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Run output-root preflight checks and exit without executing MATLAB or Python",
     )
     parser.add_argument(
+        "--matlab-health-check",
+        action="store_true",
+        help="Run a lightweight MATLAB launch probe after output-root preflight and exit",
+    )
+    parser.add_argument(
         "--minimal-exports",
         action="store_true",
         help="Reduce Python export workload for comparison runs (skip VMV/CASX/CSV extras)",
@@ -98,6 +105,27 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _validate_cli_args(args: argparse.Namespace):
     standalone_mode = bool(args.standalone_matlab_dir or args.standalone_python_dir)
+
+    if args.matlab_health_check:
+        disallowed = [
+            standalone_mode,
+            bool(args.input),
+            args.skip_matlab,
+            args.skip_python,
+            args.validate_only,
+        ]
+        if any(disallowed):
+            print(
+                "ERROR: --matlab-health-check cannot be combined with run, standalone, skip, or validate-only flags."
+            )
+            return 2
+        if not args.output_dir:
+            print("ERROR: --output-dir is required when --matlab-health-check is used.")
+            return 2
+        if not args.matlab_path:
+            print("ERROR: --matlab-path is required when --matlab-health-check is used.")
+            return 2
+        return None
 
     if standalone_mode and not (args.standalone_matlab_dir and args.standalone_python_dir):
         print(
@@ -292,6 +320,23 @@ def _build_fresh_output_dir(base_dir: Optional[Path] = None) -> Path:
     return parent / f"{timestamp}_comparison"
 
 
+def _loop_kind_for_resolution(
+    *,
+    standalone_mode: bool,
+    validate_only: bool,
+    skip_matlab: bool,
+    skip_python: bool,
+    python_parity_rerun_from: str = "edges",
+) -> str:
+    return determine_loop_kind(
+        standalone_mode=standalone_mode,
+        validate_only=validate_only,
+        skip_matlab=skip_matlab,
+        skip_python=skip_python,
+        python_parity_rerun_from=python_parity_rerun_from,
+    )
+
+
 def _resolve_output_dir(
     user_output_dir,
     *,
@@ -302,51 +347,65 @@ def _resolve_output_dir(
     validate_only: bool = False,
     skip_matlab: bool = False,
     skip_python: bool = False,
+    python_parity_rerun_from: str = "edges",
 ):
+    loop_kind = _loop_kind_for_resolution(
+        standalone_mode=standalone_mode,
+        validate_only=validate_only,
+        skip_matlab=skip_matlab,
+        skip_python=skip_python,
+        python_parity_rerun_from=python_parity_rerun_from,
+    )
+
+    def select_compatible_run(base_dir: Path) -> Path | None:
+        latest_blocking_reason: str | None = None
+        if loop_kind in {"skip_matlab_edges", "skip_matlab_network"}:
+            reusable_verdicts = {"reuse_ready"}
+        elif loop_kind in {"standalone_analysis", "validate_only"}:
+            reusable_verdicts = {"analysis_ready"}
+        else:
+            reusable_verdicts = {"reuse_ready", "fresh_matlab_required"}
+        for index, entry in enumerate(list_runs(base_dir)):
+            candidate = entry.get("path")
+            if not isinstance(candidate, Path):
+                continue
+            assessment = assess_loop_request(
+                candidate,
+                loop_kind=loop_kind,
+                input_path=input_path,
+                params=params,
+            )
+            if assessment.verdict in reusable_verdicts:
+                print(f"Reusing latest compatible run root: {candidate}")
+                return candidate
+            if index == 0:
+                latest_blocking_reason = (
+                    assessment.reasons[0]
+                    if assessment.reasons
+                    else assessment.artifact_reason or assessment.compatibility_reason
+                )
+        if latest_blocking_reason:
+            print(
+                "Latest discovered run root is not compatible with the current input; "
+                "starting a fresh run root instead "
+                f"({latest_blocking_reason})."
+            )
+        return None
+
     if user_output_dir:
         requested = Path(user_output_dir)
         if not resume_latest:
             return requested
         if _is_run_root(requested):
             return requested
-        latest = _find_latest_run_root(requested)
+        latest = select_compatible_run(requested)
         if latest is not None:
-            compatible, reason = _is_resume_candidate_compatible(latest, input_path, params)
-            has_artifacts, artifact_reason = _has_required_resume_artifacts(
-                latest,
-                standalone_mode=standalone_mode,
-                validate_only=validate_only,
-                skip_matlab=skip_matlab,
-                skip_python=skip_python,
-            )
-            if compatible and has_artifacts:
-                print(f"Reusing latest compatible run root: {latest}")
-                return latest
-            print(
-                "Latest discovered run root is not compatible with the current input; "
-                "starting a fresh run root instead "
-                f"({reason if not compatible else artifact_reason})."
-            )
+            return latest
         return _build_fresh_output_dir(requested)
     if resume_latest:
-        latest = _find_latest_run_root(Path("comparisons"))
+        latest = select_compatible_run(Path("comparisons"))
         if latest is not None:
-            compatible, reason = _is_resume_candidate_compatible(latest, input_path, params)
-            has_artifacts, artifact_reason = _has_required_resume_artifacts(
-                latest,
-                standalone_mode=standalone_mode,
-                validate_only=validate_only,
-                skip_matlab=skip_matlab,
-                skip_python=skip_python,
-            )
-            if compatible and has_artifacts:
-                print(f"Reusing latest compatible run root: {latest}")
-                return latest
-            print(
-                "Latest discovered run root is not compatible with the current input; "
-                "starting a fresh run root instead "
-                f"({reason if not compatible else artifact_reason})."
-            )
+            return latest
     return _build_fresh_output_dir(Path(user_output_dir) if user_output_dir else None)
 
 
@@ -368,6 +427,7 @@ def main():
             validate_only=args.validate_only,
             skip_matlab=args.skip_matlab,
             skip_python=args.skip_python,
+            python_parity_rerun_from=args.python_parity_rerun_from,
         )
         print(f"Output directory: {output_dir}")
         return run_standalone_comparison(
@@ -377,6 +437,15 @@ def main():
             project_root=project_root,
             python_result_source=args.python_result_source,
             comparison_depth=args.comparison_depth,
+        )
+
+    if args.matlab_health_check:
+        output_dir = Path(args.output_dir)
+        print(f"Output directory: {output_dir}")
+        return run_matlab_health_check_workflow(
+            output_dir=output_dir,
+            matlab_path=args.matlab_path,
+            project_root=project_root,
         )
 
     params_file = _resolve_params_file(args.params)
@@ -403,6 +472,7 @@ def main():
         validate_only=args.validate_only,
         skip_matlab=args.skip_matlab,
         skip_python=args.skip_python,
+        python_parity_rerun_from=args.python_parity_rerun_from,
     )
     print(f"Output directory: {output_dir}")
 

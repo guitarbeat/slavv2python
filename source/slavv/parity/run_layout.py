@@ -15,6 +15,7 @@ from slavv.utils import format_size
 
 from .matlab_status import load_matlab_status
 from .preflight import load_output_preflight
+from .workflow_assessment import load_loop_assessment, load_matlab_health_check
 
 logger = logging.getLogger(__name__)
 
@@ -269,8 +270,10 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
     report_file = layout["report_file"]
     report = {}
     run_snapshot = load_run_snapshot(run_root)
+    loop_assessment = load_loop_assessment(metadata_dir)
     preflight_report = load_output_preflight(metadata_dir)
     matlab_status = load_matlab_status(metadata_dir)
+    matlab_health_check = load_matlab_health_check(metadata_dir)
     if report_file.exists():
         try:
             with open(report_file) as f:
@@ -298,6 +301,33 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         lines.append(f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%")
         lines.append(f"- **Target stage:** {run_snapshot.target_stage}")
         lines.append(f"- **Current stage:** {run_snapshot.current_stage or 'idle'}")
+        lines.append("")
+
+    if loop_assessment:
+        lines.append("## Workflow Decision")
+        lines.append("")
+        lines.append(
+            f"- **Verdict:** {str(loop_assessment.get('verdict', 'unknown')).replace('_', ' ')}"
+        )
+        lines.append(f"- **Safe to reuse:** {bool(loop_assessment.get('safe_to_reuse', False))}")
+        lines.append(
+            "- **Safe to analyze only:** "
+            f"{bool(loop_assessment.get('safe_to_analyze_only', False))}"
+        )
+        lines.append(
+            "- **Requires fresh MATLAB:** "
+            f"{bool(loop_assessment.get('requires_fresh_matlab', False))}"
+        )
+        recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
+        if recommended_action:
+            lines.append(f"- **Recommended action:** {recommended_action}")
+        lines.append("- **Artifact:** `99_Metadata/loop_assessment.json`")
+        reasons = loop_assessment.get("reasons") or []
+        if reasons:
+            lines.append("")
+            lines.append("### Assessment Reasons")
+            for reason in reasons:
+                lines.append(f"- {reason}")
         lines.append("")
 
     if preflight_report:
@@ -392,6 +422,19 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
                     lines.append(str(line))
                 lines.append("```")
                 lines.append("")
+
+    if matlab_health_check:
+        lines.append("## MATLAB Health Check")
+        lines.append("")
+        lines.append(f"- **Success:** {bool(matlab_health_check.get('success', False))}")
+        lines.append(
+            f"- **Elapsed seconds:** {float(matlab_health_check.get('elapsed_seconds', 0.0)):.1f}"
+        )
+        message = str(matlab_health_check.get("message", "") or "").strip()
+        if message:
+            lines.append(f"- **Summary:** {message}")
+        lines.append("- **Artifact:** `99_Metadata/matlab_health_check.json`")
+        lines.append("")
 
     # Comparison Summary
     if report:

@@ -33,6 +33,9 @@ class OutputRootPreflightReport:
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     recommended_action: str = ""
+    cache_used: bool = False
+    cache_created_at: str = ""
+    cache_valid_for_seconds: int = 0
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable representation."""

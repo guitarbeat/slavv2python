@@ -212,7 +212,7 @@ class TestWatershedSupplementDiagnostics:
             vertex_positions,
             -1.0,
             enforce_frontier_reachability=False,
-            parity_watershed_metric_threshold=-0.6,
+            parity_watershed_metric_threshold=-1.1,
         )
         diag = result["diagnostics"]
         assert diag["watershed_metric_threshold_rejected"] >= 1

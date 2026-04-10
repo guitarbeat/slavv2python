@@ -29,20 +29,39 @@ from slavv.visualization import NetworkVisualizer
 
 from .matlab_status import (
     MatlabStatusReport,
-    inspect_matlab_status,
     persist_matlab_failure_summary,
     persist_matlab_status,
     summarize_matlab_status,
 )
+from .matlab_status import (
+    inspect_matlab_status as _inspect_matlab_status_direct,
+)
 from .metrics import compare_results
 from .preflight import (
     OutputRootPreflightReport,
-    evaluate_output_root_preflight,
     persist_output_preflight,
     summarize_output_preflight,
 )
+from .preflight import (
+    evaluate_output_root_preflight as _evaluate_output_root_preflight_direct,
+)
 from .reporting import generate_summary
 from .run_layout import generate_manifest, resolve_run_layout
+from .workflow_assessment import (
+    LOOP_BLOCKED,
+    LOOP_FRESH_MATLAB_REQUIRED,
+    LoopAssessmentReport,
+    MatlabHealthCheckReport,
+    assess_loop_request,
+    determine_loop_kind,
+    evaluate_output_root_preflight_cached,
+    inspect_matlab_status_cached,
+    persist_loop_assessment,
+    persist_matlab_health_check,
+    run_matlab_health_check,
+    summarize_loop_assessment,
+    summarize_matlab_health_check,
+)
 
 _PYTHON_RESULT_SOURCE_CHOICES = {
     "auto",
@@ -51,6 +70,48 @@ _PYTHON_RESULT_SOURCE_CHOICES = {
     "network-json-only",
 }
 _COMPARISON_DEPTH_CHOICES = {"shallow", "deep"}
+
+
+def evaluate_output_root_preflight(output_root: str | Path) -> OutputRootPreflightReport:
+    """Backward-compatible public preflight hook for callers and tests."""
+    return _evaluate_output_root_preflight_direct(output_root)
+
+
+def inspect_matlab_status(
+    output_directory: str | Path,
+    *,
+    input_file: str | None = None,
+) -> MatlabStatusReport:
+    """Backward-compatible public MATLAB status hook for callers and tests."""
+    return _inspect_matlab_status_direct(output_directory, input_file=input_file)
+
+
+_DEFAULT_EVALUATE_OUTPUT_ROOT_PREFLIGHT_HOOK = evaluate_output_root_preflight
+_DEFAULT_INSPECT_MATLAB_STATUS_HOOK = inspect_matlab_status
+
+
+def _evaluate_output_root_preflight_for_workflow(
+    output_root: str | Path,
+    metadata_dir: Path,
+) -> OutputRootPreflightReport:
+    """Use cached preflight by default while preserving the monkeypatch surface."""
+    preflight_hook = globals()["evaluate_output_root_preflight"]
+    if preflight_hook is not _DEFAULT_EVALUATE_OUTPUT_ROOT_PREFLIGHT_HOOK:
+        return preflight_hook(output_root)
+    return evaluate_output_root_preflight_cached(output_root, metadata_dir)
+
+
+def _inspect_matlab_status_for_workflow(
+    output_directory: str | Path,
+    metadata_dir: Path,
+    *,
+    input_file: str | None = None,
+) -> MatlabStatusReport:
+    """Use cached MATLAB status inspection by default while preserving tests."""
+    status_hook = globals()["inspect_matlab_status"]
+    if status_hook is not _DEFAULT_INSPECT_MATLAB_STATUS_HOOK:
+        return status_hook(output_directory, input_file=input_file)
+    return inspect_matlab_status_cached(output_directory, metadata_dir, input_file=input_file)
 
 
 def _json_default(value: Any) -> Any:
@@ -185,7 +246,11 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
     python_parity_rerun_from: str = "edges",
 ) -> tuple[dict[str, Any] | None, str | None]:
     """Reuse an existing MATLAB batch to seed a skip-MATLAB Python parity rerun."""
-    matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+    matlab_status_report = _inspect_matlab_status_for_workflow(
+        matlab_output,
+        metadata_dir,
+        input_file=input_file,
+    )
     matlab_status_report_path = _persist_matlab_status_report(matlab_status_report, metadata_dir)
     if comparison_context is not None:
         _record_matlab_status_task(
@@ -315,6 +380,48 @@ def _persist_preflight_report(
         return None
 
 
+def _persist_loop_assessment_report(
+    report: LoopAssessmentReport,
+    metadata_dir: Path,
+) -> Path | None:
+    """Best-effort persistence for workflow-loop assessments."""
+    try:
+        return persist_loop_assessment(report, metadata_dir)
+    except OSError as exc:
+        print(f"Warning: Could not persist loop assessment report: {exc}")
+        return None
+
+
+def _record_loop_assessment_task(
+    comparison_context: RunContext,
+    report: LoopAssessmentReport,
+    report_path: Path | None,
+) -> None:
+    """Mirror the workflow decision into the shared run snapshot."""
+    task_status = "completed"
+    if report.verdict == LOOP_BLOCKED:
+        task_status = "failed"
+    elif report.verdict == LOOP_FRESH_MATLAB_REQUIRED:
+        task_status = "running"
+
+    artifacts = {
+        "requested_loop": report.requested_loop,
+        "verdict": report.verdict,
+        "safe_to_reuse": str(report.safe_to_reuse).lower(),
+        "safe_to_analyze_only": str(report.safe_to_analyze_only).lower(),
+        "requires_fresh_matlab": str(report.requires_fresh_matlab).lower(),
+    }
+    if report_path is not None:
+        artifacts["report"] = str(report_path)
+
+    comparison_context.update_optional_task(
+        "workflow_assessment",
+        status=task_status,
+        detail=summarize_loop_assessment(report),
+        artifacts=artifacts,
+    )
+
+
 def _record_preflight_task(
     comparison_context: RunContext,
     report: OutputRootPreflightReport,
@@ -359,6 +466,40 @@ def _persist_matlab_failure_report(
     except OSError as exc:
         print(f"Warning: Could not persist MATLAB failure summary: {exc}")
         return None
+
+
+def _persist_matlab_health_check_report(
+    report: MatlabHealthCheckReport,
+    metadata_dir: Path,
+) -> Path | None:
+    """Best-effort persistence for MATLAB health-check metadata."""
+    try:
+        return persist_matlab_health_check(report, metadata_dir)
+    except OSError as exc:
+        print(f"Warning: Could not persist MATLAB health check report: {exc}")
+        return None
+
+
+def _record_matlab_health_check_task(
+    comparison_context: RunContext,
+    report: MatlabHealthCheckReport,
+    report_path: Path | None,
+) -> None:
+    """Mirror MATLAB health-check results into the shared run snapshot."""
+    artifacts = {
+        "matlab_path": report.matlab_path,
+        "exit_code": str(report.exit_code if report.exit_code is not None else ""),
+        "timed_out": str(report.timed_out).lower(),
+    }
+    if report_path is not None:
+        artifacts["report"] = str(report_path)
+
+    comparison_context.update_optional_task(
+        "matlab_health_check",
+        status="completed" if report.success else "failed",
+        detail=summarize_matlab_health_check(report),
+        artifacts=artifacts,
+    )
 
 
 def _record_matlab_status_task(
@@ -897,19 +1038,38 @@ def orchestrate_comparison(
     python_output = layout["python_dir"]
     analysis_dir = layout["analysis_dir"]
     metadata_dir = run_root / "99_Metadata"
-    comparison_context: RunContext | None = None
     import_stages, requested_python_rerun_from = _resolve_python_parity_import_plan(
         python_parity_rerun_from
     )
     params_for_python = copy.deepcopy(params)
     params_for_python["comparison_exact_network"] = True
     params_for_python["python_parity_rerun_from"] = requested_python_rerun_from
+    loop_kind = determine_loop_kind(
+        standalone_mode=False,
+        validate_only=validate_only,
+        skip_matlab=skip_matlab,
+        skip_python=skip_python,
+        python_parity_rerun_from=requested_python_rerun_from,
+    )
+    comparison_context = RunContext(
+        run_dir=run_root,
+        target_stage="network",
+        provenance={"source": "comparison", "input_file": input_file},
+    )
+    loop_assessment = assess_loop_request(
+        run_root,
+        loop_kind=loop_kind,
+        input_path=Path(input_file) if input_file else None,
+        params=params_for_python,
+    )
+    loop_assessment_path = _persist_loop_assessment_report(loop_assessment, metadata_dir)
+    _record_loop_assessment_task(comparison_context, loop_assessment, loop_assessment_path)
     python_force_rerun_from: str | None = None
     preflight_report: OutputRootPreflightReport | None = None
     matlab_status_report: MatlabStatusReport | None = None
 
     if validate_only:
-        preflight_report = evaluate_output_root_preflight(run_root)
+        preflight_report = _evaluate_output_root_preflight_for_workflow(run_root, metadata_dir)
         preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
         print("\n" + "=" * 60)
         print("Output Root Preflight")
@@ -920,11 +1080,6 @@ def orchestrate_comparison(
         for error in preflight_report.errors:
             print(f"ERROR: {error}")
 
-        comparison_context = RunContext(
-            run_dir=run_root,
-            target_stage="network",
-            provenance={"source": "comparison", "input_file": input_file},
-        )
         _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
         if not preflight_report.allows_launch:
             comparison_context.mark_run_status(
@@ -953,7 +1108,7 @@ def orchestrate_comparison(
         return 0
 
     if not skip_matlab:
-        preflight_report = evaluate_output_root_preflight(run_root)
+        preflight_report = _evaluate_output_root_preflight_for_workflow(run_root, metadata_dir)
         preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
 
         print("\n" + "=" * 60)
@@ -966,11 +1121,6 @@ def orchestrate_comparison(
             print(f"ERROR: {error}")
 
         if preflight_report.allows_launch or preflight_report_path is not None:
-            comparison_context = RunContext(
-                run_dir=run_root,
-                target_stage="network",
-                provenance={"source": "comparison", "input_file": input_file},
-            )
             _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
 
         if not preflight_report.allows_launch:
@@ -994,19 +1144,17 @@ def orchestrate_comparison(
     analysis_dir.mkdir(parents=True, exist_ok=True)
     metadata_dir.mkdir(parents=True, exist_ok=True)
     normalized_params_file = _write_normalized_params_file(metadata_dir, params_for_python)
-    if comparison_context is None:
-        comparison_context = RunContext(
-            run_dir=run_root,
-            target_stage="network",
-            provenance={"source": "comparison", "input_file": input_file},
+    if preflight_report is not None:
+        _record_preflight_task(
+            comparison_context, preflight_report, metadata_dir / "output_preflight.json"
         )
-        if preflight_report is not None:
-            _record_preflight_task(
-                comparison_context, preflight_report, metadata_dir / "output_preflight.json"
-            )
 
     if not skip_matlab:
-        matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+        matlab_status_report = _inspect_matlab_status_for_workflow(
+            matlab_output,
+            metadata_dir,
+            input_file=input_file,
+        )
         matlab_status_report_path = _persist_matlab_status_report(
             matlab_status_report, metadata_dir
         )
@@ -1037,7 +1185,11 @@ def orchestrate_comparison(
             project_root,
             params_file=str(normalized_params_file),
         )
-        matlab_status_report = inspect_matlab_status(matlab_output, input_file=input_file)
+        matlab_status_report = _inspect_matlab_status_for_workflow(
+            matlab_output,
+            metadata_dir,
+            input_file=input_file,
+        )
         matlab_status_report_path = _persist_matlab_status_report(
             matlab_status_report, metadata_dir
         )
@@ -1408,6 +1560,84 @@ def _load_python_results_from_source(
     return result_payload
 
 
+def run_matlab_health_check_workflow(
+    *,
+    output_dir: Path,
+    matlab_path: str,
+    project_root: Path,
+) -> int:
+    """Run a lightweight MATLAB health check and persist staged metadata."""
+    layout = resolve_run_layout(output_dir)
+    run_root = layout["run_root"]
+    analysis_dir = layout["analysis_dir"]
+    metadata_dir = layout["metadata_dir"]
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+
+    comparison_context = RunContext(
+        run_dir=run_root,
+        target_stage="preflight",
+        provenance={"source": "matlab-health-check"},
+    )
+    loop_assessment = assess_loop_request(run_root, loop_kind="validate_only")
+    loop_assessment_path = _persist_loop_assessment_report(loop_assessment, metadata_dir)
+    _record_loop_assessment_task(comparison_context, loop_assessment, loop_assessment_path)
+
+    preflight_report = _evaluate_output_root_preflight_for_workflow(run_root, metadata_dir)
+    preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
+
+    print("\n" + "=" * 60)
+    print("Output Root Preflight")
+    print("=" * 60)
+    print(summarize_output_preflight(preflight_report))
+    _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
+
+    if not preflight_report.allows_launch:
+        comparison_context.mark_run_status(
+            "failed",
+            current_stage="preflight",
+            detail=summarize_output_preflight(preflight_report),
+        )
+        _generate_post_comparison_artifacts(
+            run_dir=run_root,
+            analysis_dir=analysis_dir,
+            metadata_dir=metadata_dir,
+            comparison_context=comparison_context,
+            include_summary=False,
+            announce_manifest=True,
+        )
+        print(f"Recommended action: {preflight_report.recommended_action}")
+        return 1
+
+    health_report = run_matlab_health_check(
+        output_root=run_root,
+        matlab_path=matlab_path,
+        project_root=project_root,
+    )
+    health_report_path = _persist_matlab_health_check_report(health_report, metadata_dir)
+    _record_matlab_health_check_task(comparison_context, health_report, health_report_path)
+
+    print("\n" + "=" * 60)
+    print("MATLAB Health Check")
+    print("=" * 60)
+    print(summarize_matlab_health_check(health_report))
+
+    comparison_context.mark_run_status(
+        "completed" if health_report.success else "failed",
+        current_stage="matlab_health_check",
+        detail=summarize_matlab_health_check(health_report),
+    )
+    _generate_post_comparison_artifacts(
+        run_dir=run_root,
+        analysis_dir=analysis_dir,
+        metadata_dir=metadata_dir,
+        comparison_context=comparison_context,
+        include_summary=False,
+        announce_manifest=True,
+    )
+    return 0 if health_report.success else 1
+
+
 def run_standalone_comparison(
     matlab_dir: Path,
     python_dir: Path,
@@ -1437,10 +1667,18 @@ def run_standalone_comparison(
     print(f"Output Dir: {output_dir}")
 
     layout = resolve_run_layout(output_dir)
+    run_root = layout["run_root"]
     analysis_dir = layout["analysis_dir"]
     metadata_dir = layout["metadata_dir"]
     os.makedirs(analysis_dir, exist_ok=True)
     os.makedirs(metadata_dir, exist_ok=True)
+    loop_assessment = assess_loop_request(
+        run_root,
+        loop_kind="standalone_analysis",
+        standalone_matlab_dir=matlab_dir,
+        standalone_python_dir=python_dir,
+    )
+    _persist_loop_assessment_report(loop_assessment, metadata_dir)
 
     # 1. Reconstruct MATLAB results dict
     matlab_results = {
@@ -1488,10 +1726,10 @@ def run_standalone_comparison(
 
     _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
     _generate_post_comparison_artifacts(
-        run_dir=output_dir,
+        run_dir=run_root,
         analysis_dir=analysis_dir,
         metadata_dir=metadata_dir,
     )
 
-    _print_reuse_guidance(layout["run_root"])
+    _print_reuse_guidance(run_root)
     return 0

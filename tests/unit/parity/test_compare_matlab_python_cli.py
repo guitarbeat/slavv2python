@@ -190,6 +190,51 @@ def test_cli_allows_skip_matlab_without_matlab_path(cli_module, tmp_path, monkey
     assert observed["params"]["edge_method"] == "tracing"
 
 
+def test_cli_requires_output_dir_for_matlab_health_check(cli_module, tmp_path, monkeypatch, capsys):
+    _run_cli(
+        monkeypatch,
+        [
+            "--matlab-health-check",
+            "--matlab-path",
+            str(tmp_path / "matlab.exe"),
+        ],
+    )
+
+    assert cli_module.main() == 2
+    assert "--output-dir is required" in capsys.readouterr().out
+
+
+def test_cli_routes_to_matlab_health_check_workflow(cli_module, tmp_path, monkeypatch):
+    output_dir = tmp_path / "health_check_run"
+    observed = {}
+
+    def fake_run_matlab_health_check_workflow(*, output_dir, matlab_path, project_root):
+        observed["output_dir"] = output_dir
+        observed["matlab_path"] = matlab_path
+        observed["project_root"] = project_root
+        return 0
+
+    monkeypatch.setattr(
+        cli_module,
+        "run_matlab_health_check_workflow",
+        fake_run_matlab_health_check_workflow,
+    )
+    _run_cli(
+        monkeypatch,
+        [
+            "--matlab-health-check",
+            "--output-dir",
+            str(output_dir),
+            "--matlab-path",
+            str(tmp_path / "matlab.exe"),
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"] == output_dir
+    assert observed["matlab_path"] == str(tmp_path / "matlab.exe")
+
+
 def test_cli_uses_canonical_default_params_file(cli_module, tmp_path, monkeypatch):
     input_file = _write_input_file(tmp_path)
     observed = {}

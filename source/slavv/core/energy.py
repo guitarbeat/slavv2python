@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
@@ -289,7 +289,7 @@ def _matlab_hessian_energy(
         valid = laplacian > 0
         energy = np.full(image.shape, -np.inf, dtype=np.float32)
     if not np.any(valid):
-        return energy
+        return cast("np.ndarray", energy)
 
     grad_valid = np.stack([grad_y[valid], grad_x[valid], grad_z[valid]], axis=1).astype(np.float64)
     hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
@@ -320,7 +320,7 @@ def _matlab_hessian_energy(
         energy_valid[energy_valid <= 0] = -np.inf
 
     energy[valid] = energy_valid.astype(np.float32, copy=False)
-    return energy
+    return cast("np.ndarray", energy)
 
 
 def calculate_energy_field(

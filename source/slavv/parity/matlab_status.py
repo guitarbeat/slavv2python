@@ -45,6 +45,11 @@ class MatlabStatusReport:
     matlab_log_tail: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     authoritative_files: dict[str, str] = field(default_factory=dict)
+    cache_used: bool = False
+    cache_created_at: str = ""
+    matlab_resume_state_mtime: float | None = None
+    matlab_log_mtime: float | None = None
+    matlab_batch_folder_mtime: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
