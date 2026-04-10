@@ -2,12 +2,16 @@
 
 Submodules
 ----------
-cli      — Command-line interface  (``slavv`` command)
-web_app  — Streamlit web application
+cli
+    Command-line interface (``slavv`` command).
+parity_cli
+    Packaged MATLAB/Python parity comparison CLI.
+web_app
+    Streamlit web application.
 """
 
 from __future__ import annotations
 
-from .cli import main  # re-export so entry-point can use slavv.apps:main
+from .cli import main  # legacy package-level re-export; console scripts target slavv.apps.cli:main
 
 __all__ = ["main"]

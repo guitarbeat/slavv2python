@@ -1,6 +1,5 @@
 import numpy as np
 
-# Add source path for imports
 from slavv.core import SLAVVProcessor
 
 

@@ -1,6 +1,5 @@
 import numpy as np
 
-# Add source path for imports
 from slavv.analysis import (
     calculate_network_statistics,
     calculate_surface_area,

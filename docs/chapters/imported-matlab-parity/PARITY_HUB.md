@@ -4,13 +4,18 @@ Status: Historical Chapter 1 hub
 
 This file is no longer the active spec entry point.
 
-Use [README.md](../../README.md) for chapter status and the active chapter entry,
-and [PARITY_REPORT_2026-04-09.md](PARITY_REPORT_2026-04-09.md) for the
-Chapter 1 closeout.
+Use [README.md](../../README.md) for chapter status,
+[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
+for the active chapter, and
+[PARITY_REPORT_2026-04-09.md](PARITY_REPORT_2026-04-09.md) for the Chapter 1
+closeout.
 
 This was the fastest re-entry point during Chapter 1.
 
-If you need the active starting point now, read [README.md](../../README.md#active-chapter).
+If you need the active starting point now, read
+[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
+and the maintained
+[MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 
 ## Historical Status At Chapter 1 Close
 
@@ -87,7 +92,7 @@ python workspace/scripts/cli/compare_matlab_python.py `
 
 | Question | Best file |
 | --- | --- |
-| What is true right now, quickly? | [PARITY_HUB.md](PARITY_HUB.md) |
+| What is true right now, quickly? | [Shared Candidate Generation Alignment](../shared-candidate-generation/README.md) |
 | What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](../../../workspace/reports/parity_decision_memo_2026-04-08.md) |
 | What evidence supports the current diagnosis? | [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) |
 | What should I run next? | [BOTTLENECK_TODO.md](../../../BOTTLENECK_TODO.md) |
@@ -97,7 +102,7 @@ python workspace/scripts/cli/compare_matlab_python.py `
 | Where is the MATLAB-to-Python module map? | [MATLAB_MAPPING.md](../../reference/MATLAB_MAPPING.md) |
 | What proved stage-isolated network parity? | [stage_isolated_network_parity_2026-04-07.md](../../../workspace/reports/stage_isolated_network_parity_2026-04-07.md) |
 
-## Current Working Model
+## Historical Working Model
 
 - Treat parity-mode `network` assembly as a standing downstream gate.
 - Treat edge generation as the active upstream problem surface.

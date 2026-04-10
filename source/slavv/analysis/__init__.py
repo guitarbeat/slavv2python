@@ -36,7 +36,7 @@ from .ml_curator import (
 )
 
 # InteractiveCurator requires PyQt5/PyVista/VTK — import directly when needed:
-#   from slavv.analysis.interactive_curator import InteractiveCurator, run_curator
+#   from slavv.visualization.interactive_curator import InteractiveCurator, run_curator
 
 __all__ = [
     "AutomaticCurator",

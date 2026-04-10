@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from slavv.utils import format_time
 
-from .management import resolve_run_layout
+from .run_layout import resolve_run_layout
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -1,6 +1,5 @@
 import numpy as np
 
-# Add source path for imports
 from slavv.analysis import crop_edges, crop_vertices, crop_vertices_by_mask
 
 

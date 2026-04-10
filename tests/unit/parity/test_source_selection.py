@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import joblib
 
-from slavv.evaluation.comparison import orchestrate_comparison
+from slavv.parity.comparison import orchestrate_comparison
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_orchestrate_comparison_respects_python_result_source(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     # Setup directories
     run_root = tmp_path / "run_root"
@@ -45,14 +48,14 @@ def test_orchestrate_comparison_respects_python_result_source(tmp_path: Path, mo
 
     # Mocking dependencies
     def fake_evaluate_preflight(*args, **kwargs):
-        from slavv.evaluation.preflight import OutputRootPreflightReport
+        from slavv.parity.preflight import OutputRootPreflightReport
 
         return OutputRootPreflightReport(
             output_root=str(run_root), preflight_status="passed", allows_launch=True
         )
 
     def fake_inspect_matlab_status(*args, **kwargs):
-        from slavv.evaluation.matlab_status import MatlabStatusReport
+        from slavv.parity.matlab_status import MatlabStatusReport
 
         return MatlabStatusReport(output_directory=str(matlab_results_dir))
 

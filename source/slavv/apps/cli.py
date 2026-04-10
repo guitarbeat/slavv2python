@@ -16,6 +16,15 @@ import sys
 import numpy as np
 
 logger = logging.getLogger(__name__)
+_DETAILED_LOG_FORMAT = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
+_SIMPLE_LOG_FORMAT = "%(asctime)s %(message)s"
+_EXPORT_FILE_NAMES = {
+    "csv": "network.csv",
+    "json": "network.json",
+    "casx": "network.casx",
+    "vmv": "network.vmv",
+    "mat": "network.mat",
+}
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -173,6 +182,86 @@ def _cmd_info() -> None:
         print(f"  {key}: {value}")
 
 
+def _configure_logging(verbose: bool, *, format_string: str) -> None:
+    """Configure command logging with the requested verbosity."""
+    level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(level=level, format=format_string)
+
+
+def _require_existing_file(path: str, *, label: str = "file") -> None:
+    """Exit with a consistent error if a required file path is missing."""
+    if not os.path.isfile(path):
+        print(f"Error: {label} not found: {path}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _expand_export_formats(export_formats: list[str]) -> list[str]:
+    """Normalize CLI export selections into concrete formats."""
+    return ["csv", "json", "casx", "vmv", "mat"] if "all" in export_formats else export_formats
+
+
+def _save_network_export(
+    format_type: str,
+    *,
+    output_dir: str,
+    network_obj,
+    results: dict,
+) -> str | None:
+    """Persist one export format and return the written path when successful."""
+    export_path = os.path.join(output_dir, _EXPORT_FILE_NAMES[format_type])
+
+    if format_type == "mat":
+        try:
+            from slavv.visualization import NetworkVisualizer
+
+            vis = NetworkVisualizer()
+            vis._export_mat(
+                results.get("vertices", {}),
+                results.get("edges", {}),
+                results.get("network", {}),
+                results.get("parameters", {}),
+                export_path,
+            )
+            logger.info("Saved MAT to %s", export_path)
+            return export_path
+        except ImportError as exc:
+            logger.warning("Error saving MAT file: %s", exc)
+            return None
+
+    from slavv.io import (
+        save_network_to_casx,
+        save_network_to_csv,
+        save_network_to_json,
+        save_network_to_vmv,
+    )
+
+    exporters = {
+        "csv": save_network_to_csv,
+        "json": save_network_to_json,
+        "casx": save_network_to_casx,
+        "vmv": save_network_to_vmv,
+    }
+    exporters[format_type](network_obj, export_path)
+    logger.info("Saved %s to %s", format_type.upper(), export_path)
+    return export_path
+
+
+def _build_export_artifacts(output_dir: str, export_formats: list[str]) -> dict[str, str]:
+    """Build run-state artifact paths for requested exports."""
+    return {
+        fmt: os.path.join(output_dir, _EXPORT_FILE_NAMES[fmt])
+        for fmt in export_formats
+        if fmt != "csv"
+    }
+
+
+def _load_exported_results(input_path: str) -> dict:
+    """Validate and load exported JSON results for analyze/plot commands."""
+    _require_existing_file(input_path)
+    logger.info("Loading network from %s", input_path)
+    return _load_dict_from_json(input_path)
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
     """Execute the SLAVV processing pipeline."""
     from slavv import SLAVVProcessor
@@ -180,16 +269,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
 
     # Validate input
-    if not os.path.isfile(args.input):
-        print(f"Error: input file not found: {args.input}", file=sys.stderr)
-        sys.exit(1)
+    _require_existing_file(args.input, label="input file")
 
     # Setup logging
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
-    )
+    _configure_logging(args.verbose, format_string=_DETAILED_LOG_FORMAT)
 
     # Load volume
     logger.info("Loading volume from %s", args.input)
@@ -247,9 +330,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
         radii=rad if rad.size > 0 else None,
     )
 
-    export_formats = args.export
-    if "all" in export_formats:
-        export_formats = ["csv", "json", "casx", "vmv", "mat"]
+    export_formats = _expand_export_formats(args.export)
 
     if export_formats and "vertices" not in results:
         logger.warning(
@@ -262,47 +343,12 @@ def _cmd_run(args: argparse.Namespace) -> None:
         )
 
     for fmt in export_formats:
-        if fmt == "csv":
-            from slavv.io import save_network_to_csv
-
-            path = os.path.join(args.output, "network.csv")
-            save_network_to_csv(network_obj, path)
-            logger.info("Saved CSV to %s", path)
-        elif fmt == "json":
-            from slavv.io import save_network_to_json
-
-            path = os.path.join(args.output, "network.json")
-            save_network_to_json(network_obj, path)
-            logger.info("Saved JSON to %s", path)
-        elif fmt == "casx":
-            from slavv.io import save_network_to_casx
-
-            path = os.path.join(args.output, "network.casx")
-            save_network_to_casx(network_obj, path)
-            logger.info("Saved CASX to %s", path)
-        elif fmt == "vmv":
-            from slavv.io import save_network_to_vmv
-
-            path = os.path.join(args.output, "network.vmv")
-            save_network_to_vmv(network_obj, path)
-            logger.info("Saved VMV to %s", path)
-        elif fmt == "mat":
-            try:
-                from slavv.visualization import NetworkVisualizer
-
-                path = os.path.join(args.output, "network.mat")
-                # Using Visualizer's internal method for .mat because it packages up the dict structure.
-                vis = NetworkVisualizer()
-                vis._export_mat(
-                    results.get("vertices", {}),
-                    results.get("edges", {}),
-                    results.get("network", {}),
-                    results.get("parameters", {}),
-                    path,
-                )
-                logger.info("Saved MAT to %s", path)
-            except ImportError as e:
-                logger.warning("Error saving MAT file: %s", e)
+        _save_network_export(
+            fmt,
+            output_dir=args.output,
+            network_obj=network_obj,
+            results=results,
+        )
 
     snapshot = None
     if effective_run_dir:
@@ -315,11 +361,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
                 detail="Exported requested output formats"
                 if export_formats
                 else "No exports requested",
-                artifacts={
-                    fmt: os.path.join(args.output, f"network.{fmt}")
-                    for fmt in export_formats
-                    if fmt != "csv"
-                },
+                artifacts=_build_export_artifacts(args.output, export_formats),
             )
             snapshot = context.snapshot
     elif args.checkpoint_dir:
@@ -342,11 +384,7 @@ def _cmd_import_matlab(args: argparse.Namespace) -> None:
     from slavv.io.matlab_bridge import import_matlab_batch
     from slavv.runtime import RunContext
 
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
-    )
+    _configure_logging(args.verbose, format_string=_DETAILED_LOG_FORMAT)
 
     written = import_matlab_batch(
         args.batch_folder,
@@ -382,8 +420,7 @@ def _cmd_status(args: argparse.Namespace) -> None:
     """Render run status from a run directory or legacy checkpoint directory."""
     from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
 
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(asctime)s %(message)s")
+    _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
 
     snapshot = load_run_snapshot(args.run_dir)
     if snapshot is None:
@@ -427,15 +464,8 @@ def _cmd_analyze(args: argparse.Namespace) -> None:
     """Analyze an exported network JSON file and print statistics."""
     from slavv.analysis import calculate_network_statistics
 
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(asctime)s %(message)s")
-
-    if not os.path.isfile(args.input):
-        print(f"Error: file not found: {args.input}", file=sys.stderr)
-        sys.exit(1)
-
-    logger.info("Loading network from %s", args.input)
-    results = _load_dict_from_json(args.input)
+    _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
+    results = _load_exported_results(args.input)
 
     logger.info("Calculating statistics...")
     stats = calculate_network_statistics(results)
@@ -464,15 +494,8 @@ def _cmd_plot(args: argparse.Namespace) -> None:
     """Generate interactive plots from exported network JSON."""
     from slavv.visualization.network_plots import NetworkVisualizer
 
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(level=level, format="%(asctime)s %(message)s")
-
-    if not os.path.isfile(args.input):
-        print(f"Error: file not found: {args.input}", file=sys.stderr)
-        sys.exit(1)
-
-    logger.info("Loading network from %s", args.input)
-    results = _load_dict_from_json(args.input)
+    _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
+    results = _load_exported_results(args.input)
 
     vis = NetworkVisualizer()
     logger.info("Generating length-weighted histograms...")

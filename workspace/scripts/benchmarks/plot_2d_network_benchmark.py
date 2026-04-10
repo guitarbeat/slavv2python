@@ -1,3 +1,11 @@
+"""Ad-hoc benchmark for large 2D network plotting.
+
+This helper is intentionally kept out of ``tests/`` because it is a manual
+performance probe rather than collected pytest coverage.
+"""
+
+from __future__ import annotations
+
 import time
 
 import numpy as np
@@ -5,8 +13,8 @@ import numpy as np
 from slavv.visualization import NetworkVisualizer
 
 
-def generate_large_network(n_edges=5000):
-    """Generates a large synthetic network."""
+def generate_large_network(n_edges: int = 5000):
+    """Generate a large synthetic network payload for plotting benchmarks."""
     vertices = {
         "positions": np.random.rand(n_edges * 2, 3) * 100,
         "energies": np.random.rand(n_edges * 2),

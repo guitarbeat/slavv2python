@@ -1,10 +1,8 @@
-"""Behavior-focused tests for evaluation metric comparisons."""
-
-import importlib
+"""Behavior-focused tests for parity metric comparisons."""
 
 import numpy as np
 
-from slavv.evaluation.metrics import (
+from slavv.parity.metrics import (
     compare_edges,
     compare_networks,
     compare_results,
@@ -17,11 +15,6 @@ def _vertex_payload(positions, radii):
     positions = np.asarray(positions, dtype=float)
     radii = np.asarray(radii, dtype=float)
     return {"count": len(positions), "positions": positions, "radii": radii}
-
-
-def test_evaluation_package_imports_without_missing_parser_dependency():
-    evaluation = importlib.import_module("slavv.evaluation")
-    assert evaluation.compare_results is compare_results
 
 
 def test_match_vertices_handles_empty_inputs():

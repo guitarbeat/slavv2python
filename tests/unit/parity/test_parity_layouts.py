@@ -1,16 +1,16 @@
-"""Focused tests for staged run layout support in evaluation tools."""
+"""Focused tests for staged run layout support in parity tools."""
 
 import json
 from pathlib import Path
 
-from slavv.evaluation.management import (
+from slavv.parity.reporting import generate_summary
+from slavv.parity.run_layout import (
     collect_directory_inventory,
     generate_manifest,
     list_runs,
     load_run_info,
     resolve_run_layout,
 )
-from slavv.evaluation.reporting import generate_summary
 
 
 def test_resolve_run_layout_prefers_staged_directories(tmp_path: Path):

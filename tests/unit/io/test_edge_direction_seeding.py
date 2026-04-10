@@ -1,13 +1,8 @@
+from unittest.mock import patch
+
 import numpy as np
 
-# Add source path for imports
-try:
-    from slavv.core import SLAVVProcessor
-except ImportError:
-    from slavv.core import SLAVVProcessor
-
-
-from unittest.mock import patch
+from slavv.core import SLAVVProcessor
 
 
 @patch(

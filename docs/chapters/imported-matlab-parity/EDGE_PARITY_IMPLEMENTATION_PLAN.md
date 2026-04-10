@@ -5,7 +5,8 @@ Updated: 2026-04-08
 
 This file is retained as a historical implementation plan from Chapter 1.
 
-For the active chapter, use [README.md](../../README.md#active-chapter).
+For the active chapter, use
+[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md).
 
 During Chapter 1, this file was the edge-generation source of truth for the
 active parity implementation plan.
@@ -88,7 +89,7 @@ Detailed metrics and experiment history live in:
 
 The remaining parity work is centered on:
 
-- [comparison.py](../../../source/slavv/evaluation/comparison.py)
+- [comparison.py](../../../source/slavv/parity/comparison.py)
   for parity-mode orchestration and replay surfaces
 - [tracing.py](../../../source/slavv/core/tracing.py)
   for frontier candidate generation, ownership, and local partner choice

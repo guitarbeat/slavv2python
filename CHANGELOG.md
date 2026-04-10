@@ -13,7 +13,7 @@ Recent work landed between 2026-03-21 and 2026-03-26.
 ### Added
 
 - Stricter energy rejection criteria for watershed-based edge candidates in `source/slavv/core/tracing.py`, aligning Python's candidate generation more closely with MATLAB's restrictive requirements.
-- Reproduction test suite `tests/repro_watershed_permissiveness.py` to verify watershed supplement rejection rules and prevent future regressions.
+- Regression coverage in `tests/unit/core/test_watershed_supplement_regression.py` to verify watershed supplement rejection rules and prevent future regressions.
 - File-backed run state for SLAVV processing, including stage snapshots,
   structured artifacts, progress events, ETA tracking, and fingerprint-based
   resume guards.

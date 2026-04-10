@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from slavv.evaluation.matlab_status import inspect_matlab_status
+from slavv.parity.matlab_status import inspect_matlab_status
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -1,6 +1,5 @@
 import numpy as np
 
-# Add source path for imports
 from slavv.core import SLAVVProcessor
 from slavv.core.graph import construct_network_resumable
 from slavv.runtime import RunContext

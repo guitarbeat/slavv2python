@@ -11,9 +11,13 @@ material lives under `reference/`.
 
 ## Start Here
 
-1. [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
-2. [README.md](#active-chapter)
-3. [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md)
+Follow this maintained reading path:
+
+1. [Repository README](../README.md)
+2. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
+3. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
+4. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+5. [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 
 ## Chapter Status
 
@@ -51,59 +55,16 @@ Started:
 
 - April 10, 2026
 
-Why this is a new chapter:
+Active chapter home:
 
-- The previous spec ended with a stable handoff rather than an open-ended parity chase.
-- Vertex parity is already stable.
-- The remaining gap is narrow enough to treat as a focused candidate-generation chapter instead of a general parity chapter.
-
-Current starting facts:
-
-- current best retained saved-batch result is `vertices 110/110`, `edges 94/93`, `strands 49/54`
-- origin `64` remains the clearest next target
-- the retained geodesic widening to `k=10` improved the saved-batch result without breaking the broader suite
-- the relaxed geodesic and origin-owned pruning experiments were informative but rejected
-
-Main goal:
-
-- align Python candidate generation more closely with active MATLAB shared-state / watershed behavior
-
-Primary questions:
-
-1. Why does origin `64` remain under-covered in the retained candidate set?
-2. Does MATLAB temporarily allow over-budget candidate admission before later cleanup in a way Python still does not?
-3. Which parts of `get_edges_by_watershed` shared-map behavior are still not represented in Python candidate discovery?
-4. Is the remaining loss happening during candidate admission, claim ownership, or candidate conflict resolution?
-
-In scope:
-
-- candidate-endpoint coverage
-- shared-state / watershed join semantics
-- origin ownership and claim-map behavior
-- bounded parity-only experiments on the saved batch
-
-Out of scope:
-
-- re-solving vertex parity
-- broad threshold sweeps without a targeted diagnostic reason
-- generic downstream network assembly work already known to pass when exact MATLAB edges are imported
-
-Suggested first loop:
-
-```powershell
-python workspace/scripts/cli/compare_matlab_python.py `
-  --input comparison_output_synthetic_final_20260409/00_InputFixtures/synthetic_branch_volume.tif `
-  --skip-matlab `
-  --output-dir comparison_output_next_chapter `
-  --params comparison_output_synthetic_final_20260409_rerun/99_Metadata/comparison_params.normalized.json
-```
+- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 
 Core references for the active chapter:
 
-- [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
-- [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md)
-- [COMPARISON_LAYOUT.md](reference/COMPARISON_LAYOUT.md)
-- [PARITY_FINDINGS_2026-03-27.md](chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
+- [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
+- [MATLAB Mapping](reference/MATLAB_MAPPING.md)
+- [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+- [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 
 ## Reference Shelf
 
@@ -111,6 +72,7 @@ These docs remain active references across chapters.
 
 | File | Purpose |
 | --- | --- |
+| `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
 | `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
 | `reference/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
 | `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | External package survey and context |
@@ -121,8 +83,9 @@ These docs remain active references across chapters.
 | Question | Best file |
 | --- | --- |
 | What closed the last spec? | [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
-| What chapter is active right now? | [README.md](#active-chapter) |
-| What is the next chapter trying to solve? | [README.md](#active-chapter) |
+| What chapter is active right now? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
+| What is the next chapter trying to solve? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
+| What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
 | Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md) |
 | Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md) |
 | How do staged comparison outputs work? | [COMPARISON_LAYOUT.md](reference/COMPARISON_LAYOUT.md) |

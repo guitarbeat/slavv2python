@@ -1,9 +1,4 @@
-import pathlib
-import sys
-
 import numpy as np
-
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from slavv.analysis import choose_edges, choose_vertices
 

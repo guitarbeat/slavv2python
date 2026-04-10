@@ -27,7 +27,6 @@ from slavv.runtime import ProgressEvent, RunContext
 from slavv.utils import format_time, get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
-from .management import generate_manifest, resolve_run_layout
 from .matlab_status import (
     MatlabStatusReport,
     inspect_matlab_status,
@@ -43,6 +42,7 @@ from .preflight import (
     summarize_output_preflight,
 )
 from .reporting import generate_summary
+from .run_layout import generate_manifest, resolve_run_layout
 
 _PYTHON_RESULT_SOURCE_CHOICES = {
     "auto",
@@ -62,6 +62,75 @@ def _json_default(value: Any) -> Any:
     if isinstance(value, Path):
         return str(value)
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
+def _comparison_report_default(value: Any) -> Any:
+    """Serialize comparison-report payloads with a string fallback."""
+    try:
+        return _json_default(value)
+    except TypeError:
+        return str(value)
+
+
+def _build_serializable_comparison_report(comparison: dict[str, Any]) -> dict[str, Any]:
+    """Normalize comparison output into the persisted report surface."""
+    return {
+        "matlab": copy.deepcopy(comparison["matlab"]),
+        "python": copy.deepcopy(comparison["python"]),
+        "performance": comparison["performance"],
+        "vertices": comparison.get("vertices", {}),
+        "edges": comparison.get("edges", {}),
+        "network": comparison.get("network", {}),
+        "parity_gate": comparison.get("parity_gate", {}),
+    }
+
+
+def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> Path:
+    """Persist the normalized comparison report JSON."""
+    with open(report_file, "w", encoding="utf-8") as handle:
+        json.dump(
+            _build_serializable_comparison_report(comparison),
+            handle,
+            indent=2,
+            default=_comparison_report_default,
+        )
+    print(f"\nComparison report saved to: {report_file}")
+    return report_file
+
+
+def _generate_post_comparison_artifacts(
+    *,
+    run_dir: Path,
+    analysis_dir: Path,
+    metadata_dir: Path,
+    comparison_context: RunContext | None = None,
+    include_summary: bool = True,
+    include_manifest: bool = True,
+    announce_manifest: bool = False,
+) -> None:
+    """Best-effort generation of summary and manifest sidecar files."""
+    if include_summary:
+        try:
+            summary_file = analysis_dir / "summary.txt"
+            generate_summary(run_dir, summary_file)
+        except Exception as exc:
+            print(f"Note: Could not auto-generate summary: {exc}")
+
+    if include_manifest:
+        try:
+            manifest_file = metadata_dir / "run_manifest.md"
+            generate_manifest(run_dir, manifest_file)
+            if announce_manifest:
+                print(f"Manifest generated: {manifest_file}")
+            if comparison_context is not None:
+                comparison_context.update_optional_task(
+                    "manifest",
+                    status="completed",
+                    detail="Comparison manifest written",
+                    artifacts={"manifest": str(manifest_file)},
+                )
+        except Exception as exc:
+            print(f"Note: Could not auto-generate manifest: {exc}")
 
 
 def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
@@ -873,12 +942,14 @@ def orchestrate_comparison(
             current_stage="preflight",
             detail="Validation-only mode completed successfully.",
         )
-        try:
-            manifest_file = metadata_dir / "run_manifest.md"
-            generate_manifest(run_root, manifest_file)
-            print(f"Manifest generated: {manifest_file}")
-        except Exception as e:
-            print(f"Note: Could not auto-generate manifest: {e}")
+        _generate_post_comparison_artifacts(
+            run_dir=run_root,
+            analysis_dir=analysis_dir,
+            metadata_dir=metadata_dir,
+            comparison_context=comparison_context,
+            include_summary=False,
+            announce_manifest=True,
+        )
         return 0
 
     if not skip_matlab:
@@ -909,18 +980,14 @@ def orchestrate_comparison(
                     current_stage="preflight",
                     detail=summarize_output_preflight(preflight_report),
                 )
-                try:
-                    manifest_file = metadata_dir / "run_manifest.md"
-                    generate_manifest(run_root, manifest_file)
-                    print(f"Manifest generated: {manifest_file}")
-                    comparison_context.update_optional_task(
-                        "manifest",
-                        status="completed",
-                        detail="Comparison manifest written",
-                        artifacts={"manifest": str(manifest_file)},
-                    )
-                except Exception as e:
-                    print(f"Note: Could not auto-generate manifest: {e}")
+                _generate_post_comparison_artifacts(
+                    run_dir=run_root,
+                    analysis_dir=analysis_dir,
+                    metadata_dir=metadata_dir,
+                    comparison_context=comparison_context,
+                    include_summary=False,
+                    announce_manifest=True,
+                )
             print(f"Recommended action: {preflight_report.recommended_action}")
             return 1
 
@@ -1165,27 +1232,7 @@ def orchestrate_comparison(
 
         comparison = compare_results(matlab_results, python_results, matlab_parsed)
 
-        # Save comparison report
-        report_file = analysis_dir / "comparison_report.json"
-        with open(report_file, "w") as f:
-            # Remove non-serializable items for JSON
-            report = {
-                "matlab": copy.deepcopy(comparison["matlab"]),
-                "python": copy.deepcopy(comparison["python"]),
-                "performance": comparison["performance"],
-                "vertices": comparison.get("vertices", {}),
-                "edges": comparison.get("edges", {}),
-                "network": comparison.get("network", {}),
-                "parity_gate": comparison.get("parity_gate", {}),
-            }
-            json.dump(
-                report,
-                f,
-                indent=2,
-                default=lambda o: o.tolist() if isinstance(o, np.ndarray) else str(o),
-            )
-
-        print(f"\nComparison report saved to: {report_file}")
+        report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
         comparison_context.update_optional_task(
             "comparison_analysis",
             status="completed",
@@ -1196,26 +1243,13 @@ def orchestrate_comparison(
             },
         )
 
-    # Generate summary.txt automatically
-    try:
-        summary_file = analysis_dir / "summary.txt"
-        generate_summary(run_root, summary_file)
-    except Exception as e:
-        print(f"Note: Could not auto-generate summary: {e}")
-
-    # Generate manifest automatically
-    try:
-        manifest_file = metadata_dir / "run_manifest.md"
-        generate_manifest(run_root, manifest_file)
-        print(f"Manifest generated: {manifest_file}")
-        comparison_context.update_optional_task(
-            "manifest",
-            status="completed",
-            detail="Comparison manifest written",
-            artifacts={"manifest": str(manifest_file)},
-        )
-    except Exception as e:
-        print(f"Note: Could not auto-generate manifest: {e}")
+    _generate_post_comparison_artifacts(
+        run_dir=run_root,
+        analysis_dir=analysis_dir,
+        metadata_dir=metadata_dir,
+        comparison_context=comparison_context,
+        announce_manifest=True,
+    )
 
     # Print final summary status
     if matlab_results and python_results:
@@ -1452,40 +1486,12 @@ def run_standalone_comparison(
 
     comparison = compare_results(matlab_results, python_results, matlab_parsed)
 
-    # 4. Save
-    report_file = analysis_dir / "comparison_report.json"
-    with open(report_file, "w") as f:
-        # Remove non-serializable items for JSON
-        report = {
-            "matlab": copy.deepcopy(comparison["matlab"]),
-            "python": copy.deepcopy(comparison["python"]),
-            "performance": comparison["performance"],
-            "vertices": comparison.get("vertices", {}),
-            "edges": comparison.get("edges", {}),
-            "network": comparison.get("network", {}),
-            "parity_gate": comparison.get("parity_gate", {}),
-        }
-        json.dump(
-            report,
-            f,
-            indent=2,
-            default=lambda o: o.tolist() if isinstance(o, np.ndarray) else str(o),
-        )
-    print(f"\nComparison report saved to: {report_file}")
-
-    # Generate summary
-    try:
-        summary_file = analysis_dir / "summary.txt"
-        generate_summary(output_dir, summary_file)
-    except Exception as e:
-        print(f"Note: Could not auto-generate summary: {e}")
-
-    # Generate manifest
-    try:
-        manifest_file = metadata_dir / "run_manifest.md"
-        generate_manifest(output_dir, manifest_file)
-    except Exception as e:
-        print(f"Note: Could not auto-generate manifest: {e}")
+    _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
+    _generate_post_comparison_artifacts(
+        run_dir=output_dir,
+        analysis_dir=analysis_dir,
+        metadata_dir=metadata_dir,
+    )
 
     _print_reuse_guidance(layout["run_root"])
     return 0

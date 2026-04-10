@@ -10,10 +10,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from slavv.evaluation.matlab_status import load_matlab_status
-from slavv.evaluation.preflight import load_output_preflight
 from slavv.runtime import load_run_snapshot
 from slavv.utils import format_size
+
+from .matlab_status import load_matlab_status
+from .preflight import load_output_preflight
 
 logger = logging.getLogger(__name__)
 

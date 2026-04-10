@@ -2797,24 +2797,6 @@ def _generate_edge_candidates(
     }
 
 
-def _offset_coords(
-    position: np.ndarray,
-    offsets: np.ndarray,
-    image_shape: tuple[int, int, int],
-) -> np.ndarray:
-    """Apply relative offsets to a voxel and clip to valid image bounds."""
-    coords = offsets + np.rint(position[:3]).astype(np.int32)
-    valid = (
-        (coords[:, 0] >= 0)
-        & (coords[:, 0] < image_shape[0])
-        & (coords[:, 1] >= 0)
-        & (coords[:, 1] < image_shape[1])
-        & (coords[:, 2] >= 0)
-        & (coords[:, 2] < image_shape[2])
-    )
-    return coords[valid]
-
-
 def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
     """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
     radii = np.asarray(radii, dtype=np.float32).reshape(3)

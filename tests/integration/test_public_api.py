@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-# Add source path for imports
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 

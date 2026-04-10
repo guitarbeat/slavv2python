@@ -38,6 +38,35 @@ DASHBOARD_PLACEHOLDER = "TODO"
 DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
 DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
 DASHBOARD_BREAKDOWN_SECTIONS = ("Pipeline", "Network", "Share Report", "Optional Tasks")
+EXPORT_BUTTON_SPECS = (
+    {
+        "format_type": "vmv",
+        "label": "\U0001f4c4 Download VMV",
+        "empty_label": "\U0001f4c4 Export VMV",
+        "file_name": "network.vmv",
+        "mime": "text/plain",
+        "help": "Export network in VessMorphoVis (VMV) format",
+        "artifact_key": "vmv_file",
+    },
+    {
+        "format_type": "casx",
+        "label": "\U0001f4c4 Download CASX",
+        "empty_label": "\U0001f4c4 Export CASX",
+        "file_name": "network.casx",
+        "mime": "application/xml",
+        "help": "Export network in CASX XML format",
+        "artifact_key": "casx_file",
+    },
+    {
+        "format_type": "csv",
+        "label": "\U0001f4ca Download CSV (Zip)",
+        "empty_label": "\U0001f4ca Export CSV",
+        "file_name": "network_csv.zip",
+        "mime": "application/zip",
+        "help": "Export network data as Zipped CSVs (vertices & edges)",
+        "artifact_key": "csv_archive",
+    },
+)
 
 # Page configuration
 st.set_page_config(
@@ -112,18 +141,6 @@ st.html(
 
 
 @st.cache_data(show_spinner=False)
-def cached_process_image(image, params, _progress_callback=None):
-    """Cached wrapper for SLAVVProcessor.process_image.
-
-    _progress_callback is excluded from hashing so we can pass a callback
-    without invalidating the cache. Note that if the result is cached,
-    the callback will not be executed, so the caller must handle UI updates.
-    """
-    processor = SLAVVProcessor()
-    return processor.process_image(image, params, progress_callback=_progress_callback)
-
-
-@st.cache_data(show_spinner=False)
 def cached_load_tiff_volume(file):
     """Cached wrapper for load_tiff_volume."""
     return load_tiff_volume(file)
@@ -165,6 +182,48 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
             with open(file_path, "rb") as f:
                 return f.read()
         return None
+
+
+def _render_export_download(
+    column,
+    *,
+    run_dir: str | None,
+    vertices,
+    edges,
+    network,
+    parameters,
+    export_spec: dict[str, str],
+) -> None:
+    """Render one export button using a shared table-driven config."""
+    with column:
+        export_data = generate_export_data(
+            vertices,
+            edges,
+            network,
+            parameters,
+            export_spec["format_type"],
+        )
+        if export_data:
+            _update_run_task(
+                run_dir,
+                "exports",
+                status="completed",
+                detail="App export downloads prepared",
+                artifacts={export_spec["artifact_key"]: export_spec["file_name"]},
+            )
+            st.download_button(
+                label=export_spec["label"],
+                data=export_data,
+                file_name=export_spec["file_name"],
+                mime=export_spec["mime"],
+                help=export_spec["help"],
+            )
+        else:
+            st.button(
+                export_spec["empty_label"],
+                disabled=True,
+                help="Export generation failed",
+            )
 
 
 def _has_full_network_results(results):
@@ -1966,66 +2025,18 @@ def show_visualization_page():
     edges = st.session_state["processing_results"]["edges"]
     network = st.session_state["processing_results"]["network"]
     parameters = st.session_state["processing_results"]["parameters"]
+    current_run_dir = st.session_state.get("current_run_dir")
 
-    with col1:
-        vmv_data = generate_export_data(vertices, edges, network, parameters, "vmv")
-        if vmv_data:
-            _update_run_task(
-                st.session_state.get("current_run_dir"),
-                "exports",
-                status="completed",
-                detail="App export downloads prepared",
-                artifacts={"vmv_file": "network.vmv"},
-            )
-            st.download_button(
-                label="📄 Download VMV",
-                data=vmv_data,
-                file_name="network.vmv",
-                mime="text/plain",
-                help="Export network in VessMorphoVis (VMV) format",
-            )
-        else:
-            st.button("📄 Export VMV", disabled=True, help="Export generation failed")
-
-    with col2:
-        casx_data = generate_export_data(vertices, edges, network, parameters, "casx")
-        if casx_data:
-            _update_run_task(
-                st.session_state.get("current_run_dir"),
-                "exports",
-                status="completed",
-                detail="App export downloads prepared",
-                artifacts={"casx_file": "network.casx"},
-            )
-            st.download_button(
-                label="📄 Download CASX",
-                data=casx_data,
-                file_name="network.casx",
-                mime="application/xml",
-                help="Export network in CASX XML format",
-            )
-        else:
-            st.button("📄 Export CASX", disabled=True, help="Export generation failed")
-
-    with col3:
-        csv_data = generate_export_data(vertices, edges, network, parameters, "csv")
-        if csv_data:
-            _update_run_task(
-                st.session_state.get("current_run_dir"),
-                "exports",
-                status="completed",
-                detail="App export downloads prepared",
-                artifacts={"csv_archive": "network_csv.zip"},
-            )
-            st.download_button(
-                label="📊 Download CSV (Zip)",
-                data=csv_data,
-                file_name="network_csv.zip",
-                mime="application/zip",
-                help="Export network data as Zipped CSVs (vertices & edges)",
-            )
-        else:
-            st.button("📊 Export CSV", disabled=True, help="Export generation failed")
+    for column, export_spec in zip((col1, col2, col3), EXPORT_BUTTON_SPECS):
+        _render_export_download(
+            column,
+            run_dir=current_run_dir,
+            vertices=vertices,
+            edges=edges,
+            network=network,
+            parameters=parameters,
+            export_spec=export_spec,
+        )
     share_report_data = generate_share_report_data(
         st.session_state["processing_results"],
         st.session_state.get("dataset_name", "SLAVV dataset"),

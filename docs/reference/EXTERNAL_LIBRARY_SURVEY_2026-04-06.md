@@ -21,7 +21,7 @@ The current Python stack already covers a lot:
 - `scipy.ndimage` is used in `source/slavv/utils/preprocessing.py` and
   `source/slavv/core/tracing.py`.
 - `cKDTree` is used in `source/slavv/core/tracing.py`,
-  `source/slavv/evaluation/metrics.py`, and `source/slavv/analysis/geometry.py`.
+  `source/slavv/parity/metrics.py`, and `source/slavv/analysis/geometry.py`.
 - `networkx` is used in `source/slavv/analysis/geometry.py` and
   `source/slavv/io/network_io.py`.
 - `pyvista` and `pyqtgraph` are used in

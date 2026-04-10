@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import slavv.evaluation.preflight as preflight_module
-from slavv.evaluation.preflight import (
+import slavv.parity.preflight as preflight_module
+from slavv.parity.preflight import (
     PREFLIGHT_STATUS_BLOCKED,
     PREFLIGHT_STATUS_PASSED,
     PREFLIGHT_STATUS_WARNING,

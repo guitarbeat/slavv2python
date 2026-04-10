@@ -87,8 +87,10 @@ human-facing ledger for orchestration decisions:
 
 ## Workflow Notes
 
-- `workspace/scripts/cli/compare_matlab_python.py` should treat this staged
-  layout as the default organization for generated runs.
+- `source/slavv/apps/parity_cli.py` is the canonical parity CLI implementation,
+  and `workspace/scripts/cli/compare_matlab_python.py` remains a thin wrapper.
+- The parity CLI should treat this staged layout as the default organization
+  for generated runs.
 - `slavv import-matlab` imports a MATLAB batch into checkpoint-compatible
   artifacts that can then be consumed by parity reruns from the `edges` or
   `network` stage.
@@ -106,11 +108,10 @@ human-facing ledger for orchestration decisions:
 - If a workflow produces a new durable output convention, update this document
   and the relevant tests before relying on it.
 
-## Current Parity Context
+## Current Work
 
-As of April 1, 2026, the staged comparison surface is also the expected place to
-inspect output-root preflight decisions and MATLAB rerun semantics. Exact
-vertex parity is in place, and the parity-only edge path now records richer
-candidate provenance and frontier diagnostics. Final exact edge/strand
-confirmation still comes from a fresh live MATLAB-enabled comparison run on a
-healthy local output root.
+Chapter-specific parity status now lives in
+[`docs/chapters/shared-candidate-generation/README.md`](../chapters/shared-candidate-generation/README.md).
+Keep this document focused on the run-layout contract. For translation
+semantics and boundary rules, use
+[`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md).

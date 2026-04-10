@@ -1,0 +1,98 @@
+# Shared Candidate Generation Alignment
+
+Active chapter opened on April 10, 2026.
+
+This chapter continues the parity work after the imported-MATLAB chapter
+closed. The remaining gap is narrow enough to treat as a focused
+candidate-generation problem instead of a general parity chase.
+
+## Why This Chapter Exists
+
+- Vertex parity is already stable on the retained imported-MATLAB surface.
+- The best saved-batch result is close enough to isolate candidate discovery and
+  ownership behavior.
+- The previous chapter closed with a stable handoff and a clearer MATLAB source
+  path through `get_edges_V300 -> get_edges_by_watershed`.
+
+## Current Starting Facts
+
+- Current best retained saved-batch result is `vertices 110/110`,
+  `edges 94/93`, `strands 49/54`.
+- Origin `64` remains the clearest next under-covered case.
+- Retained geodesic widening to `k=10` improved the saved-batch result without
+  breaking the broader suite.
+- Relaxed geodesic and origin-owned pruning experiments were informative but
+  rejected.
+
+## Main Goal
+
+Align Python candidate generation more closely with active MATLAB shared-state
+and watershed behavior without regressing the already-stable imported-MATLAB
+vertex path.
+
+## Working Questions
+
+1. Why does origin `64` remain under-covered in the retained candidate set?
+2. Does MATLAB temporarily allow over-budget candidate admission before later
+   cleanup in a way Python still does not?
+3. Which parts of `get_edges_by_watershed` shared-map behavior are still not
+   represented in Python candidate discovery?
+4. Is the remaining loss happening during candidate admission, claim ownership,
+   or candidate conflict resolution?
+
+## Current Parity Context
+
+- The staged comparison run root is the canonical place to inspect output-root
+  preflight decisions, MATLAB rerun semantics, and human-readable manifests.
+- The MATLAB batch importer now loads real HDF5 energy sidecars into
+  checkpoint-compatible `energy_data` payloads.
+- Exact vertex parity is reached when the Python pipeline runs under imported
+  MATLAB energy with `comparison_exact_network=True`.
+- The parity-only frontier tracer simulates MATLAB's
+  `edge_number_tolerance = 2` to limit edge over-generation on imported runs.
+- Watershed supplementation in `source/slavv/core/tracing.py` applies Phase 2
+  gates (Frontier Reachability and Per-Origin Caps) to prevent redundant
+  strands during parity runs.
+- Edge cleanup applies MATLAB-shaped duplicate ordering, including deterministic
+  shorter-trace tie-breaking.
+- Exact edge and strand parity are still in progress.
+- Latest live rerun on April 6, 2026: `1425` Python edges vs `1379` MATLAB
+  edges, and `681` Python strands vs `682` MATLAB strands.
+- Candidate-endpoint coverage is still the first triage signal, but better
+  candidate counts alone do not guarantee better final edge or strand parity.
+- Final exact edge and strand confirmation still requires a fresh live
+  MATLAB-enabled comparison run on a healthy local output root.
+
+## Scope
+
+In scope:
+
+- candidate-endpoint coverage
+- shared-state and watershed join semantics
+- origin ownership and claim-map behavior
+- bounded parity-only experiments on the saved batch
+
+Out of scope:
+
+- re-solving vertex parity
+- broad threshold sweeps without a targeted diagnostic reason
+- downstream network assembly behavior that already passes when exact MATLAB
+  edges are imported
+
+## Suggested First Loop
+
+```powershell
+python workspace/scripts/cli/compare_matlab_python.py `
+  --input comparison_output_synthetic_final_20260409/00_InputFixtures/synthetic_branch_volume.tif `
+  --skip-matlab `
+  --output-dir comparison_output_next_chapter `
+  --params comparison_output_synthetic_final_20260409_rerun/99_Metadata/comparison_params.normalized.json
+```
+
+## Core References
+
+- [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
+- [MATLAB Mapping](../../reference/MATLAB_MAPPING.md)
+- [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
+- [Imported-MATLAB Parity Report](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)

@@ -9,16 +9,16 @@ from pathlib import Path
 import joblib
 import pytest
 
-from slavv.evaluation.comparison import (
+from slavv.parity.comparison import (
     _format_progress_event_message,
     discover_matlab_artifacts,
     orchestrate_comparison,
     run_matlab_vectorization,
     run_standalone_comparison,
 )
-from slavv.evaluation.management import generate_manifest
-from slavv.evaluation.matlab_status import MatlabStatusReport
-from slavv.evaluation.preflight import OutputRootPreflightReport
+from slavv.parity.matlab_status import MatlabStatusReport
+from slavv.parity.preflight import OutputRootPreflightReport
+from slavv.parity.run_layout import generate_manifest
 from slavv.runtime import ProgressEvent, RunContext, RunSnapshot, StageSnapshot, load_run_snapshot
 
 
@@ -172,7 +172,7 @@ def test_format_progress_event_message_explains_energy_stage_units():
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows batch launcher only runs on Windows")
 def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     repo_root = Path(__file__).resolve().parents[3]
     input_file = tmp_path / "input.tif"
@@ -230,7 +230,7 @@ def test_generate_manifest_includes_run_status(tmp_path: Path):
 
 
 def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -359,7 +359,7 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
 
 
 def test_orchestrate_comparison_shallow_mode_skips_matlab_parse(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -469,7 +469,7 @@ def test_orchestrate_comparison_shallow_mode_skips_matlab_parse(tmp_path: Path, 
 def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
     tmp_path: Path, monkeypatch
 ):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -619,7 +619,7 @@ def test_orchestrate_comparison_imports_matlab_energy_for_python_parity_run(
 def test_orchestrate_comparison_skip_matlab_reuses_existing_batch_for_python_parity_run(
     tmp_path: Path, monkeypatch
 ):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -744,7 +744,7 @@ def test_orchestrate_comparison_skip_matlab_reuses_existing_batch_for_python_par
 def test_orchestrate_comparison_can_rerun_python_from_network_with_imported_matlab_edges(
     tmp_path: Path, monkeypatch
 ):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -876,7 +876,7 @@ def test_orchestrate_comparison_can_rerun_python_from_network_with_imported_matl
 def test_orchestrate_comparison_imports_matlab_edges_for_fresh_network_stage_probe(
     tmp_path: Path, monkeypatch
 ):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -1027,7 +1027,7 @@ def test_orchestrate_comparison_imports_matlab_edges_for_fresh_network_stage_pro
 
 
 def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -1085,7 +1085,7 @@ def test_orchestrate_comparison_blocks_launch_on_fatal_preflight(tmp_path: Path,
 
 
 def test_orchestrate_comparison_persists_matlab_failure_summary(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     input_file = tmp_path / "input_volume.tif"
     input_file.write_bytes(b"fake-tiff")
@@ -1177,7 +1177,7 @@ def test_orchestrate_comparison_persists_matlab_failure_summary(tmp_path: Path, 
 
 
 def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     run_dir = tmp_path / "comparison_run"
     matlab_dir = run_dir / "01_Input" / "matlab_results"
@@ -1237,7 +1237,7 @@ def test_run_standalone_comparison_ignores_parameter_json(tmp_path: Path, monkey
 
 
 def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     run_dir = tmp_path / "comparison_run"
     matlab_dir = run_dir / "01_Input" / "matlab_results"
@@ -1295,7 +1295,7 @@ def test_run_standalone_comparison_uses_checkpoint_energy_source(tmp_path: Path,
 
 
 def test_run_standalone_comparison_can_force_network_json_source(tmp_path: Path, monkeypatch):
-    import slavv.evaluation.comparison as comparison_module
+    import slavv.parity.comparison as comparison_module
 
     run_dir = tmp_path / "comparison_run"
     matlab_dir = run_dir / "01_Input" / "matlab_results"

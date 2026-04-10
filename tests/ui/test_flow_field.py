@@ -1,10 +1,6 @@
-import pathlib
-import sys
-
 import numpy as np
 import plotly.graph_objects as go
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 from slavv.visualization import NetworkVisualizer
 
 

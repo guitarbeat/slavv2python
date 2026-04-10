@@ -1,13 +1,8 @@
 import numpy as np
 import pytest
 
-# Add source path for imports
-try:
-    from slavv.core import SLAVVProcessor
-    from slavv.utils import validate_parameters
-except ImportError:
-    from slavv.core import SLAVVProcessor
-    from slavv.utils import validate_parameters
+from slavv.core import SLAVVProcessor
+from slavv.utils import validate_parameters
 
 
 def test_validate_parameters_direction_method():

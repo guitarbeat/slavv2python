@@ -19,7 +19,7 @@ MATLAB script.
 | MATLAB File | Python Location | Status | Notes |
 | --- | --- | --- | --- |
 | `vectorize_V200.m` | `source/slavv/core/pipeline.py` (`SLAVVProcessor`) | `Ported` | Main pipeline orchestration entry point |
-| `run_matlab_vectorization.m` | `workspace/scripts/cli/compare_matlab_python.py` and package CLI | `Merged` | Batch-style orchestration now lives in Python wrappers and CLI workflows |
+| `run_matlab_vectorization.m` | `source/slavv/apps/parity_cli.py` and `workspace/scripts/cli/compare_matlab_python.py` | `Merged` | Batch-style orchestration now lives in packaged Python CLI code plus a compatibility wrapper |
 
 ## Energy And Enhancement
 
@@ -98,37 +98,13 @@ MATLAB script.
 | `fourier_transform_V2.m` | `source/slavv/utils/math.py` | `Ported` | |
 | `get_vessel_directions_V3.m` | `source/slavv/analysis/geometry.py` | `Merged` | |
 
-## Current Parity Focus
+## Current Work Links
 
-As of April 6, 2026:
-
-- The MATLAB batch importer in `source/slavv/io/matlab_bridge.py` now loads
-  real HDF5 energy sidecars into checkpoint-compatible `energy_data` payloads.
-- Exact vertex parity is reached when the Python pipeline runs under imported
-  MATLAB energy with `comparison_exact_network=True`.
-- The parity-only frontier tracer in `source/slavv/core/tracing.py` strictly
-  simulates MATLAB's `edge_number_tolerance = 2` to curb edge over-generation.
-- Watershed supplementation in `source/slavv/core/tracing.py` now implements
-  Phase 2 gates (Frontier Reachability and Per-Origin Caps) to prevent redundant
-  strands during parity runs.
-- Edge cleanup in `source/slavv/core/tracing.py` applies MATLAB-shaped
-  duplicate ordering, including deterministic shorter-trace tie-breaking.
-- Exact edge and strand parity are still in progress.
-- Latest live rerun on April 6, 2026:
-  - Edges: `1425` Python vs `1379` MATLAB
-  - Strands: `681` Python vs `682` MATLAB
-- Skip-MATLAB threshold experiments on April 6, 2026 showed that global
-  watershed metric thresholds are not a reliable standalone parity lever:
-  - `parity_watershed_metric_threshold = -90.0` tightened edges to `1387`, but
-    regressed strands to `654`.
-  - `parity_watershed_metric_threshold = -50.0` improved candidate coverage,
-    but final parity worsened to `1426` Python edges and `697` Python strands.
-- Candidate-endpoint coverage is still the first triage signal, but the current
-  evidence shows that better candidate counts alone do not guarantee better
-  final chosen-edge or strand parity.
-- See `docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md` and
-  `docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md` for current findings and the next
-  parity work items.
+Chapter-specific parity status now lives in
+[`docs/chapters/shared-candidate-generation/README.md`](../chapters/shared-candidate-generation/README.md).
+Use this mapping document for maintained source correspondence, and use
+[`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md)
+for semantic differences, boundary rules, and intentional divergences.
 
 ## Upstream Files Intentionally Not Ported
 

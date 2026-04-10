@@ -17,7 +17,7 @@ from slavv.core.tracing import (
     _trace_local_geodesic_between_vertices,
     paint_vertex_center_image,
 )
-from slavv.evaluation.metrics import compare_edges
+from slavv.parity.metrics import compare_edges
 
 
 def _make_small_volume(size: int = 11):

@@ -136,21 +136,17 @@ def calculate_surface_area(
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     radii = np.asarray(radii, dtype=float)
     scale = np.asarray(microns_per_voxel, dtype=float)
-    total_area = 0.0
-
-    for strand in strands:
-        if len(strand) < 2:
-            continue
-        for i in range(len(strand) - 1):
-            v1 = strand[i]
-            v2 = strand[i + 1]
-            pos1 = vertex_positions[v1] * scale
-            pos2 = vertex_positions[v2] * scale
-            length = np.linalg.norm(pos2 - pos1)
-            radius = 0.5 * (radii[v1] + radii[v2])
-            total_area += 2 * np.pi * radius * length
-
-    return float(total_area)
+    return float(
+        sum(
+            2 * np.pi * radius * length
+            for length, radius in _iter_segment_lengths_and_radii(
+                strands,
+                vertex_positions,
+                radii,
+                scale,
+            )
+        )
+    )
 
 
 def calculate_vessel_volume(
@@ -163,21 +159,35 @@ def calculate_vessel_volume(
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     radii = np.asarray(radii, dtype=float)
     scale = np.asarray(microns_per_voxel, dtype=float)
-    total_volume = 0.0
+    return float(
+        sum(
+            np.pi * radius**2 * length
+            for length, radius in _iter_segment_lengths_and_radii(
+                strands,
+                vertex_positions,
+                radii,
+                scale,
+            )
+        )
+    )
 
+
+def _iter_segment_lengths_and_radii(
+    strands: list[list[int]],
+    vertex_positions: np.ndarray,
+    radii: np.ndarray,
+    scale: np.ndarray,
+):
+    """Yield scaled segment lengths with their midpoint radii."""
     for strand in strands:
         if len(strand) < 2:
             continue
-        for i in range(len(strand) - 1):
-            v1 = strand[i]
-            v2 = strand[i + 1]
-            pos1 = vertex_positions[v1] * scale
-            pos2 = vertex_positions[v2] * scale
-            length = np.linalg.norm(pos2 - pos1)
-            radius = 0.5 * (radii[v1] + radii[v2])
-            total_volume += np.pi * radius**2 * length
-
-    return float(total_volume)
+        for start_vertex, end_vertex in zip(strand, strand[1:]):
+            pos1 = vertex_positions[start_vertex] * scale
+            pos2 = vertex_positions[end_vertex] * scale
+            length = float(np.linalg.norm(pos2 - pos1))
+            radius = float(0.5 * (radii[start_vertex] + radii[end_vertex]))
+            yield length, radius
 
 
 def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarray:

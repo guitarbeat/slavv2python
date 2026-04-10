@@ -5,7 +5,10 @@ Status: Chapter 1 closeout report
 
 This report closes Chapter 1 of the MATLAB parity work.
 
-For the active chapter, start with [README.md](../../README.md#active-chapter).
+For the active chapter, start with
+[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
+and the maintained
+[MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 
 ## Purpose
 
@@ -334,8 +337,8 @@ Relevant files:
 - `source/slavv/core/tracing.py`
 - `source/slavv/utils/validation.py`
 - `tests/unit/core/test_candidate_diagnostics.py`
-- `source/slavv/evaluation/metrics.py`
-- `source/slavv/evaluation/reporting.py`
+- `source/slavv/parity/metrics.py`
+- `source/slavv/parity/reporting.py`
 
 ## Verification Performed
 

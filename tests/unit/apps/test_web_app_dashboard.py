@@ -74,3 +74,85 @@ def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     assert requested_row["Source"] == "session_state.share_report_metrics"
     assert task_row["Section"] == "Optional Tasks"
     assert task_row["Status"] == "completed"
+
+
+class _DummyColumn:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+def test_render_export_download_uses_shared_success_path(monkeypatch):
+    calls = {}
+
+    monkeypatch.setattr(web_app, "generate_export_data", lambda *args, **kwargs: b"export-bytes")
+
+    def fake_update(run_dir, task_name, **kwargs):
+        calls["update"] = (run_dir, task_name, kwargs)
+
+    def fake_download_button(**kwargs):
+        calls["download"] = kwargs
+        return False
+
+    monkeypatch.setattr(web_app, "_update_run_task", fake_update)
+    monkeypatch.setattr(web_app.st, "download_button", fake_download_button)
+    monkeypatch.setattr(
+        web_app.st,
+        "button",
+        lambda *args, **kwargs: calls.setdefault("button", (args, kwargs)),
+    )
+
+    web_app._render_export_download(
+        _DummyColumn(),
+        run_dir="run-dir",
+        vertices={},
+        edges={},
+        network={},
+        parameters={},
+        export_spec=web_app.EXPORT_BUTTON_SPECS[0],
+    )
+
+    assert calls["update"][0] == "run-dir"
+    assert calls["update"][1] == "exports"
+    assert calls["update"][2]["artifacts"] == {"vmv_file": "network.vmv"}
+    assert calls["download"]["file_name"] == "network.vmv"
+    assert "button" not in calls
+
+
+def test_render_export_download_uses_shared_failure_path(monkeypatch):
+    calls = {}
+
+    monkeypatch.setattr(web_app, "generate_export_data", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        web_app,
+        "_update_run_task",
+        lambda *args, **kwargs: calls.setdefault("update", (args, kwargs)),
+    )
+    monkeypatch.setattr(
+        web_app.st,
+        "download_button",
+        lambda **kwargs: calls.setdefault("download", kwargs),
+    )
+
+    def fake_button(*args, **kwargs):
+        calls["button"] = (args, kwargs)
+        return False
+
+    monkeypatch.setattr(web_app.st, "button", fake_button)
+
+    web_app._render_export_download(
+        _DummyColumn(),
+        run_dir="run-dir",
+        vertices={},
+        edges={},
+        network={},
+        parameters={},
+        export_spec=web_app.EXPORT_BUTTON_SPECS[2],
+    )
+
+    assert calls["button"][0][0] == "📊 Export CSV"
+    assert calls["button"][1]["disabled"] is True
+    assert "update" not in calls
+    assert "download" not in calls

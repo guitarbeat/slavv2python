@@ -5,7 +5,15 @@ import json
 import numpy as np
 import pytest
 
-from slavv.apps.cli import _args_to_parameters, _build_parser, _load_dict_from_json, main
+from slavv.apps.cli import (
+    _args_to_parameters,
+    _build_export_artifacts,
+    _build_parser,
+    _expand_export_formats,
+    _load_dict_from_json,
+    _require_existing_file,
+    main,
+)
 from slavv.runtime import RunContext
 
 
@@ -98,6 +106,30 @@ class TestArgsToParameters:
         assert params["edge_method"] == "tracing"
         assert params["radius_of_smallest_vessel_in_microns"] == 1.5
         assert params["microns_per_voxel"] == [1.0, 1.0, 1.0]
+
+
+class TestCliHelpers:
+    """Focused tests for shared CLI helper paths."""
+
+    def test_expand_export_formats_preserves_explicit_selection(self):
+        assert _expand_export_formats(["csv", "json"]) == ["csv", "json"]
+
+    def test_expand_export_formats_expands_all(self):
+        assert _expand_export_formats(["all"]) == ["csv", "json", "casx", "vmv", "mat"]
+
+    def test_build_export_artifacts_skips_csv(self, tmp_path):
+        artifacts = _build_export_artifacts(str(tmp_path), ["csv", "json", "mat"])
+
+        assert artifacts == {
+            "json": str(tmp_path / "network.json"),
+            "mat": str(tmp_path / "network.mat"),
+        }
+
+    def test_require_existing_file_uses_consistent_error(self):
+        with pytest.raises(SystemExit) as exc:
+            _require_existing_file("missing-file-12345.tif", label="input file")
+
+        assert exc.value.code == 1
 
 
 class TestMainEntryPoint:

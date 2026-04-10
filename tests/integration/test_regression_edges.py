@@ -1,12 +1,6 @@
-import pathlib
-import sys
+from unittest.mock import patch
 
 import numpy as np
-
-# Add source path for imports
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-
-from unittest.mock import patch
 
 import slavv.core.tracing as tracing_module
 from slavv.core import SLAVVProcessor

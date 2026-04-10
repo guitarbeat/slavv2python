@@ -120,8 +120,10 @@ print(f"Edges: {len(results['edges']['traces'])}")
 ### Maintenance and Utility Scripts
 
 Located in `workspace/scripts/`:
-- `workspace/scripts/cli/compare_matlab_python.py`: Main tool for parity validation.
+- `source/slavv/apps/parity_cli.py`: Canonical implementation of the parity comparison CLI.
+- `workspace/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
 - `workspace/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
+- `workspace/scripts/benchmarks/`: Ad-hoc benchmark helpers that are not part of pytest collection.
 
 ## Testing
 
@@ -154,9 +156,19 @@ No manual environment variable configuration is typically required for standard 
 | `tests/` | Unit, integration, UI, regression, and diagnostic tests. |
 | `workspace/scripts/` | MATLAB comparison wrappers and maintenance helpers. |
 | `workspace/reports/` | Archived tooling snapshots and repo-local reference artifacts. |
-| `docs/` | Documentation for MATLAB mapping, comparison layouts, and parity status. |
+| `docs/` | Translation guide, MATLAB mapping, comparison layout references, and active chapter docs. |
 | `external/` | Optional checkouts like `Vectorization-Public` (MATLAB SLAVV). |
 | `data/` | Sample data and test volumes. |
+
+## Documentation Path
+
+For maintained project context, read in this order:
+
+1. [Repository overview](README.md)
+2. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
+3. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
+4. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
+5. [Shared Candidate Generation Alignment](docs/chapters/shared-candidate-generation/README.md)
 
 ## License
 

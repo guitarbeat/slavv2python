@@ -11,15 +11,12 @@ SEARCH_ROOTS = (
 MATLAB_FUNCTION_RE = re.compile(r"^function\b", re.IGNORECASE)
 
 
-def _read_text(path: Path) -> str:
-    try:
-        return path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        return path.read_text(encoding="latin-1")
-
-
 def _is_matlab_function(path: Path) -> bool:
-    for line in _read_text(path).splitlines():
+    try:
+        content = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        content = path.read_text(encoding="latin-1")
+    for line in content.splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("%"):
             continue

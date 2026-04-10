@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
 import sys
@@ -9,6 +10,10 @@ import pytest
 
 
 def _load_cli_module():
+    return importlib.import_module("slavv.apps.parity_cli")
+
+
+def _load_wrapper_module():
     repo_root = Path(__file__).resolve().parents[3]
     module_path = repo_root / "workspace" / "scripts" / "cli" / "compare_matlab_python.py"
     spec = importlib.util.spec_from_file_location("compare_matlab_python_cli_test", module_path)
@@ -24,6 +29,11 @@ def cli_module():
     return _load_cli_module()
 
 
+@pytest.fixture
+def wrapper_module():
+    return _load_wrapper_module()
+
+
 def _write_input_file(tmp_path):
     input_file = tmp_path / "input.tif"
     input_file.write_bytes(b"fake")
@@ -32,6 +42,11 @@ def _write_input_file(tmp_path):
 
 def _run_cli(monkeypatch, argv):
     monkeypatch.setattr(sys, "argv", ["compare_matlab_python.py", *argv])
+
+
+def test_workspace_script_wraps_packaged_cli(wrapper_module, monkeypatch):
+    monkeypatch.setattr("slavv.apps.parity_cli.main", lambda: 17)
+    assert wrapper_module.main() == 17
 
 
 @pytest.mark.parametrize(
@@ -173,6 +188,35 @@ def test_cli_allows_skip_matlab_without_matlab_path(cli_module, tmp_path, monkey
     assert observed["params_path"] == str(params_file)
     assert observed["matlab_path"] == ""
     assert observed["params"]["edge_method"] == "tracing"
+
+
+def test_cli_uses_canonical_default_params_file(cli_module, tmp_path, monkeypatch):
+    input_file = _write_input_file(tmp_path)
+    observed = {}
+
+    def fake_load_parameters(path):
+        observed["params_path"] = path
+        return {"edge_method": "tracing"}
+
+    monkeypatch.setattr(cli_module, "load_parameters", fake_load_parameters)
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", lambda **_kwargs: 0)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--skip-matlab",
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert Path(observed["params_path"]) == (
+        Path(__file__).resolve().parents[3]
+        / "workspace"
+        / "scripts"
+        / "cli"
+        / "comparison_params.json"
+    )
 
 
 def test_cli_rejects_directory_as_input(cli_module, tmp_path, monkeypatch, capsys):

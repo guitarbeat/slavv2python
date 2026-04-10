@@ -1,12 +1,11 @@
 import numpy as np
 
-# Add source path for imports
 from slavv.utils import get_chunking_lattice
 
 
 def test_chunking_lattice_reconstructs_volume():
     shape = (4, 4, 6)
-    volume = np.random.rand(*shape)
+    volume = np.arange(np.prod(shape), dtype=float).reshape(shape)
     lattice = get_chunking_lattice(shape, max_voxels=64, margin=1)
     assert len(lattice) == 3
 
