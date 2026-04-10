@@ -1,14 +1,14 @@
 .PHONY: install format lint typecheck test all clean
 
 install:
-	pip install -e ".[dev]"
+	pip install -e ".[app,dev]"
 	pre-commit install
 
 format:
 	python -m ruff format source tests
 
 lint:
-	python -m ruff check source tests --fix
+	python -m ruff check source tests
 
 typecheck:
 	python -m mypy

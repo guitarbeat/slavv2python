@@ -14,10 +14,11 @@ material lives under `reference/`.
 Follow this maintained reading path:
 
 1. [Repository README](../README.md)
-2. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
-3. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
-4. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-5. [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
+2. [Contributor workflow commands](../AGENTS.md)
+3. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
+4. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
+5. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+6. [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 
 ## Chapter Status
 
@@ -99,8 +100,8 @@ project metadata:
 | --- | --- |
 | `README.md` | Project overview, quick start, and common workflows |
 | `CHANGELOG.md` | Notable recent development changes |
-| `BOTTLENECK_TODO.md` | Workflow notes and cross-cutting backlog |
-| `AGENTS.md` | Repository instructions for coding agents |
+| `BOTTLENECK_TODO.md` | Active parity backlog and investigation log; not the canonical workflow guide |
+| `AGENTS.md` | Repository instructions for coding agents and the canonical developer-command reference |
 
 ## High-Value Reports Outside `docs/`
 

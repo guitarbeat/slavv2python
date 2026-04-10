@@ -81,12 +81,15 @@ Out of scope:
 
 ## Suggested First Loop
 
+Use a retained staged run root and keep new generated comparison outputs outside
+the package source tree when practical.
+
 ```powershell
 python workspace/scripts/cli/compare_matlab_python.py `
-  --input comparison_output_synthetic_final_20260409/00_InputFixtures/synthetic_branch_volume.tif `
+  --input C:\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
   --skip-matlab `
-  --output-dir comparison_output_next_chapter `
-  --params comparison_output_synthetic_final_20260409_rerun/99_Metadata/comparison_params.normalized.json
+  --output-dir C:\slavv_comparisons\next_chapter_run `
+  --params C:\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
 ```
 
 ## Core References

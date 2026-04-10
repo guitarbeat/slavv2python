@@ -11,6 +11,9 @@ historical task that introduced them.
   `workspace/scripts/`
 - `tests/unit/parity/` for pure-Python parity helpers, comparison layout, and
   comparison runtime logic
+- `tests/integration/` for cross-component workflows and end-to-end pipeline
+  paths
+- `tests/ui/` for Streamlit- and visualization-facing behavior
 - `tests/diagnostic/` for environment checks, MATLAB availability, and
   cross-runtime parity harnesses
 

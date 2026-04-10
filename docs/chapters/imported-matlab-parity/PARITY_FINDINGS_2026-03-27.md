@@ -72,6 +72,10 @@ Further follow-up as of April 7, 2026:
   now forces the parity-specific network path instead of only setting it when
   the incoming params omit the key.
 
+Concrete run roots cited below are retained evidence artifacts, not standing
+source-of-truth paths for new work. For current staged layout expectations,
+start from [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+
 ## Fresh Baselines
 
 ### Canonical parity rerun
@@ -387,8 +391,8 @@ Why:
 
 ## Guardrails For The Next Pass
 
-- Treat `comparison_output_live_parity` as the current trusted canonical parity
-  artifact.
+- Treat `comparison_output_live_parity` as a retained historical evidence
+  artifact, not as the canonical source of truth for new work.
 - Do not use old failed scratch runs on `C:` as evidence.
 - Prefer fresh MATLAB reruns on `D:` and promote only after the full run
   completes cleanly.

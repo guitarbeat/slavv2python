@@ -7,12 +7,12 @@ Repository guidance for coding agents working in `slavv2python`.
 - Work from the repository root.
 - Prefer PowerShell-friendly commands on Windows.
 - Treat the commands in this file as the canonical workflows for the repo.
-- Historical notes under `.agent/workflows/` are stale in places; do not use references to `biome` or `workspace/examples/run_tutorial.py` for this project.
+- Historical references to `biome` or `workspace/examples/run_tutorial.py` are stale and do not apply to this project.
 
 ## Repository Map
 
 - `source/slavv/`: core package code, including processing, I/O, analysis, visualization, and app entry points
-- `tests/`: unit, integration, UI, benchmark, and diagnostic coverage
+- `tests/`: unit, integration, UI, and diagnostic coverage
 - `workspace/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
 - `workspace/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
 - `workspace/reports/`: archived tooling snapshots and other non-source reference artifacts
@@ -50,8 +50,15 @@ Windows shortcut commands are available through:
 .\make.ps1 install
 .\make.ps1 format
 .\make.ps1 lint
+.\make.ps1 typecheck
 .\make.ps1 test
 ```
+
+Notes:
+
+- `.\make.ps1 install` installs the full contributor toolchain with `.[app,dev]`.
+- `.\make.ps1 lint` runs non-mutating `ruff check` only.
+- `.\make.ps1 test` is the broad full-suite shortcut; the routine boundary-crossing gate remains `python -m pytest -m "unit or integration"`.
 
 ## Canonical Commands
 

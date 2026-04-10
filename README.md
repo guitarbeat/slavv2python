@@ -111,9 +111,10 @@ print(f"Edges: {len(results['edges']['traces'])}")
 ### Helper Scripts
 
 - `.\make.ps1`: Windows PowerShell helper for common tasks.
-  - `.\make.ps1 install`: Install dependencies.
+  - `.\make.ps1 install`: Install the full contributor toolchain with `.[app,dev]`.
   - `.\make.ps1 format`: Format code using Ruff.
-  - `.\make.ps1 lint`: Lint code using Ruff.
+  - `.\make.ps1 lint`: Run non-mutating Ruff lint checks.
+  - `.\make.ps1 typecheck`: Run MyPy.
   - `.\make.ps1 test`: Run all tests.
 - `Makefile`: POSIX-style helper for Unix systems.
 
@@ -165,10 +166,11 @@ No manual environment variable configuration is typically required for standard 
 For maintained project context, read in this order:
 
 1. [Repository overview](README.md)
-2. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
-3. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
-4. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
-5. [Shared Candidate Generation Alignment](docs/chapters/shared-candidate-generation/README.md)
+2. [Contributor workflow commands](AGENTS.md)
+3. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
+4. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
+5. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
+6. [Shared Candidate Generation Alignment](docs/chapters/shared-candidate-generation/README.md)
 
 ## License
 

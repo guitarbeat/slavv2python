@@ -181,6 +181,7 @@ pytest_collect*.txt
 .tmp/
 .pytest_tmp/
 tests/.pytest_tmp/
+workspace/tmp_*/
 workspace/tmp_tests/
 workspace/tmp_fixture/
 workspace/tmp_network_stage_probe/

@@ -1,6 +1,9 @@
 # MATLAB vs Python Parity Workflow Plan
 
-This file is the workflow and tooling source of truth for parity work.
+This file is the active parity backlog and investigation log.
+
+Use [AGENTS.md](AGENTS.md) for the canonical repository workflow commands and
+[docs/README.md](docs/README.md) for the maintained reading path.
 
 Use this file when you want to know:
 

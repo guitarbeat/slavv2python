@@ -4,7 +4,7 @@ param (
 
 function Install-Dependencies {
     Write-Host "Installing dependencies..."
-    pip install -e ".[dev]"
+    pip install -e ".[app,dev]"
     pre-commit install
 }
 
@@ -15,7 +15,7 @@ function Format-Code {
 
 function Lint-Code {
     Write-Host "Linting code..."
-    python -m ruff check source tests --fix
+    python -m ruff check source tests
 }
 
 function Typecheck-Code {
