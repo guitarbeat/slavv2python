@@ -12,17 +12,22 @@ def test_dashboard_stage_frame_uses_placeholders_without_snapshot():
     assert frame["Stage"].tolist() == ["Energy", "Vertices", "Edges", "Network"]
     assert frame["Progress (%)"].tolist() == [0, 0, 0, 0]
     assert set(frame["Status"]) == {"placeholder"}
+    assert set(frame["Source"]) == {"No run snapshot loaded"}
 
 
 def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     snapshot = RunSnapshot(
         run_id="run-123",
+        status="running",
+        elapsed_seconds=3665.0,
+        eta_seconds=95.0,
         stages={
             "energy": StageSnapshot(
                 name="energy",
                 status="completed",
                 progress=1.0,
                 detail="Energy ready",
+                resumed=True,
             ),
             "vertices": StageSnapshot(
                 name="vertices",
@@ -35,6 +40,7 @@ def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
                 status="running",
                 progress=0.5,
                 detail="Tracing edges",
+                resumed=True,
             ),
             "network": StageSnapshot(
                 name="network",
@@ -67,6 +73,9 @@ def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     strands_row = frame.loc[frame["Metric"] == "Strands"].iloc[0]
     requested_row = frame.loc[frame["Metric"] == "Requested"].iloc[0]
     task_row = frame.loc[frame["Metric"] == "share_report"].iloc[0]
+    runtime_row = frame.loc[frame["Metric"] == "Elapsed runtime"].iloc[0]
+    eta_row = frame.loc[frame["Metric"] == "ETA"].iloc[0]
+    resume_row = frame.loc[frame["Metric"] == "Resume rate"].iloc[0]
 
     assert strands_row["Value"] == "12"
     assert strands_row["Status"] == "live"
@@ -74,6 +83,26 @@ def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     assert requested_row["Source"] == "session_state.share_report_metrics"
     assert task_row["Section"] == "Optional Tasks"
     assert task_row["Status"] == "completed"
+    assert runtime_row["Value"] == "1h 1m"
+    assert eta_row["Value"] == "1m 35.0s"
+    assert resume_row["Value"] == "67% (2/3)"
+
+
+def test_dashboard_breakdown_frame_uses_clean_empty_states_without_todo_labels():
+    frame = web_app._dashboard_breakdown_frame(None, None, {}, run_dir=None)
+
+    optional_row = frame.loc[frame["Metric"] == "Tracked tasks"].iloc[0]
+    strands_row = frame.loc[frame["Metric"] == "Strands"].iloc[0]
+    requested_row = frame.loc[frame["Metric"] == "Requested"].iloc[0]
+    runtime_row = frame.loc[frame["Metric"] == "Elapsed runtime"].iloc[0]
+
+    assert optional_row["Value"] == web_app.DASHBOARD_PLACEHOLDER
+    assert optional_row["Source"] == "No run snapshot loaded"
+    assert strands_row["Source"] == "session_state.processing_results"
+    assert requested_row["Status"] == "idle"
+    assert runtime_row["Value"] == web_app.DASHBOARD_PLACEHOLDER
+    assert not frame["Value"].astype(str).str.contains("TODO").any()
+    assert not frame["Source"].astype(str).str.contains("TODO").any()
 
 
 class _DummyColumn:

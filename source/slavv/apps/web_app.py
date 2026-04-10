@@ -13,6 +13,11 @@ import plotly.express as px
 import streamlit as st
 
 from slavv.analysis import AutomaticCurator, MLCurator
+from slavv.apps.curation_state import (
+    build_curation_stats_rows,
+    summarize_processing_counts,
+    sync_curated_processing_results,
+)
 from slavv.apps.share_report import (
     build_share_report_html,
     compute_shareable_stats,
@@ -25,6 +30,7 @@ from slavv.io import load_tiff_volume
 from slavv.runtime import RunContext, load_run_snapshot
 from slavv.runtime.run_state import target_stage_progress
 from slavv.utils import validate_parameters
+from slavv.utils.formatting import format_time
 from slavv.visualization import NetworkVisualizer
 
 warnings.filterwarnings("ignore")
@@ -34,7 +40,7 @@ DASHBOARD_ASSUMPTION = (
     "current network outputs, and share-report activity for the current session."
 )
 DASHBOARD_STAGE_ORDER = ("energy", "vertices", "edges", "network")
-DASHBOARD_PLACEHOLDER = "TODO"
+DASHBOARD_PLACEHOLDER = "Awaiting data"
 DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
 DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
 DASHBOARD_BREAKDOWN_SECTIONS = ("Pipeline", "Network", "Share Report", "Optional Tasks")
@@ -249,6 +255,13 @@ def _snapshot_for_display(run_dir: str | None):
     return load_run_snapshot(run_dir)
 
 
+def _dashboard_snapshot_source(run_dir: str | None) -> str:
+    """Return the most specific snapshot source label available."""
+    if not run_dir:
+        return "No run snapshot loaded"
+    return os.path.join(run_dir, "run_snapshot.json")
+
+
 def _update_run_task(
     run_dir: str | None,
     task_name: str,
@@ -267,6 +280,26 @@ def _update_run_task(
         detail=detail,
         artifacts=artifacts,
     )
+
+
+def _apply_curated_results(
+    curated_vertices: dict[str, object],
+    curated_edges: dict[str, object],
+    *,
+    curation_mode: str,
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Sync curated vertices and edges into session state with a rebuilt network."""
+    updated_results, baseline_counts, current_counts = sync_curated_processing_results(
+        st.session_state["processing_results"],
+        curated_vertices,
+        curated_edges,
+        baseline_counts=st.session_state.get("curation_baseline_counts"),
+    )
+    st.session_state["processing_results"] = updated_results
+    st.session_state["curation_baseline_counts"] = baseline_counts
+    st.session_state["last_curation_mode"] = curation_mode
+    st.session_state.pop("share_report_prepared_signature", None)
+    return baseline_counts, current_counts
 
 
 def _render_run_dashboard(snapshot) -> None:
@@ -326,7 +359,7 @@ def _render_run_dashboard(snapshot) -> None:
         st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
 
 
-def _dashboard_stage_frame(snapshot) -> pd.DataFrame:
+def _dashboard_stage_frame(snapshot, run_dir: str | None = None) -> pd.DataFrame:
     """Return pipeline stage progress for dashboard charts and tables."""
     rows = []
     for stage_name in DASHBOARD_STAGE_ORDER:
@@ -341,21 +374,112 @@ def _dashboard_stage_frame(snapshot) -> pd.DataFrame:
                     if stage_snapshot
                     else "Waiting for a processed run"
                 ),
-                "Source": (
-                    "run_snapshot.json"
-                    if stage_snapshot is not None
-                    else "TODO: current_run_dir/run_snapshot.json"
-                ),
+                "Source": "run_snapshot.json"
+                if snapshot is not None
+                else _dashboard_snapshot_source(run_dir),
             }
         )
     return pd.DataFrame(rows)
 
 
-def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
+def _dashboard_run_throughput_rows(snapshot, run_dir: str | None = None) -> list[dict[str, object]]:
+    """Build per-run throughput metrics from the persisted snapshot."""
+    source = "run_snapshot.json" if snapshot is not None else _dashboard_snapshot_source(run_dir)
+    if snapshot is None:
+        return [
+            {
+                "Section": "Pipeline",
+                "Metric": "Elapsed runtime",
+                "Progress": None,
+                "Value": DASHBOARD_PLACEHOLDER,
+                "Status": "placeholder",
+                "Source": source,
+                "Notes": "Available once a run snapshot is loaded.",
+            },
+            {
+                "Section": "Pipeline",
+                "Metric": "ETA",
+                "Progress": None,
+                "Value": DASHBOARD_PLACEHOLDER,
+                "Status": "placeholder",
+                "Source": source,
+                "Notes": "Available while a persisted run is active.",
+            },
+            {
+                "Section": "Pipeline",
+                "Metric": "Resume rate",
+                "Progress": None,
+                "Value": DASHBOARD_PLACEHOLDER,
+                "Status": "placeholder",
+                "Source": source,
+                "Notes": "Tracks how often a run reuses prior stage artifacts.",
+            },
+        ]
+
+    active_or_completed = [
+        stage
+        for stage in snapshot.stages.values()
+        if stage.progress > 0.0 or stage.status not in {"pending", "placeholder"}
+    ]
+    resumed_count = sum(1 for stage in active_or_completed if stage.resumed)
+    considered_count = len(active_or_completed)
+    resume_rate = 0 if considered_count == 0 else round((resumed_count / considered_count) * 100)
+
+    if snapshot.eta_seconds is None:
+        eta_value = "Complete" if snapshot.status.startswith("completed") else "Awaiting estimate"
+        eta_status = "live" if snapshot.status.startswith("completed") else "idle"
+        eta_notes = (
+            "Run has finished all currently scheduled work."
+            if snapshot.status.startswith("completed")
+            else "ETA appears after the run has enough progress history."
+        )
+    else:
+        eta_value = format_time(snapshot.eta_seconds)
+        eta_status = "live"
+        eta_notes = "Estimated remaining time for the active run."
+
+    return [
+        {
+            "Section": "Pipeline",
+            "Metric": "Elapsed runtime",
+            "Progress": None,
+            "Value": format_time(snapshot.elapsed_seconds),
+            "Status": "live",
+            "Source": source,
+            "Notes": "Wall-clock runtime captured in the run snapshot.",
+        },
+        {
+            "Section": "Pipeline",
+            "Metric": "ETA",
+            "Progress": None,
+            "Value": eta_value,
+            "Status": eta_status,
+            "Source": source,
+            "Notes": eta_notes,
+        },
+        {
+            "Section": "Pipeline",
+            "Metric": "Resume rate",
+            "Progress": None,
+            "Value": f"{resume_rate}% ({resumed_count}/{considered_count})",
+            "Status": "live",
+            "Source": source,
+            "Notes": "Proxy for cache/reuse effectiveness across active or completed stages.",
+        },
+    ]
+
+
+def _dashboard_breakdown_frame(
+    snapshot,
+    stats,
+    share_metrics,
+    *,
+    run_dir: str | None = None,
+) -> pd.DataFrame:
     """Return a dashboard breakdown table that is safe to render without live data."""
     rows = []
 
-    for stage_row in _dashboard_stage_frame(snapshot).to_dict("records"):
+    for stage_row in _dashboard_stage_frame(snapshot, run_dir=run_dir).to_dict("records"):
         rows.append(
             {
                 "Section": "Pipeline",
@@ -367,6 +491,7 @@ def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
                 "Notes": stage_row["Detail"],
             }
         )
+    rows.extend(_dashboard_run_throughput_rows(snapshot, run_dir=run_dir))
 
     optional_tasks = {} if snapshot is None else snapshot.optional_tasks
     if optional_tasks:
@@ -387,11 +512,19 @@ def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
             {
                 "Section": "Optional Tasks",
                 "Metric": "Tracked tasks",
-                "Progress": None,
-                "Value": DASHBOARD_PLACEHOLDER,
-                "Status": "placeholder",
-                "Source": "TODO: optional_tasks",
-                "Notes": "Wiring point for export, analysis, and review tasks",
+                "Progress": 0 if snapshot is not None else None,
+                "Value": "0 tracked" if snapshot is not None else DASHBOARD_PLACEHOLDER,
+                "Status": "idle" if snapshot is not None else "placeholder",
+                "Source": (
+                    "run_snapshot.json optional_tasks"
+                    if snapshot is not None
+                    else _dashboard_snapshot_source(run_dir)
+                ),
+                "Notes": (
+                    "No optional tasks have been tracked for this run yet."
+                    if snapshot is not None
+                    else "Optional tasks appear after a run snapshot is available."
+                ),
             }
         )
 
@@ -417,8 +550,8 @@ def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
         if value is None:
             display_value = DASHBOARD_PLACEHOLDER
             status = "placeholder"
-            source = "TODO: session_state.processing_results"
-            notes = "Loads when a full network result is available"
+            source = "session_state.processing_results"
+            notes = "Loads when a full network result is available in session state"
         elif value_type == "count":
             display_value = f"{value:d}"
             status = "live"
@@ -453,13 +586,13 @@ def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
             "Metric": "Requested",
             "Progress": None,
             "Value": str(share_metrics.get("share_report_requested", 0)),
-            "Status": "live" if share_metrics else "placeholder",
-            "Source": (
-                "session_state.share_report_metrics"
+            "Status": "live" if share_metrics else "idle",
+            "Source": "session_state.share_report_metrics",
+            "Notes": (
+                "Counts report generations in this session"
                 if share_metrics
-                else "TODO: share_report event counters"
+                else "No share report generations have been recorded in this session yet"
             ),
-            "Notes": "Counts report generations in this session",
         }
     )
     rows.append(
@@ -468,13 +601,13 @@ def _dashboard_breakdown_frame(snapshot, stats, share_metrics) -> pd.DataFrame:
             "Metric": "Downloaded",
             "Progress": None,
             "Value": str(share_metrics.get("share_report_downloaded", 0)),
-            "Status": "live" if share_metrics else "placeholder",
-            "Source": (
-                "session_state.share_report_metrics"
+            "Status": "live" if share_metrics else "idle",
+            "Source": "session_state.share_report_metrics",
+            "Notes": (
+                "Counts report downloads in this session"
                 if share_metrics
-                else "TODO: share_report event counters"
+                else "No share report downloads have been recorded in this session yet"
             ),
-            "Notes": "Counts report downloads in this session",
         }
     )
 
@@ -513,7 +646,8 @@ def _init_dashboard_state() -> None:
 
 def _dashboard_context() -> dict[str, object]:
     """Load dashboard context from session state and run metadata."""
-    snapshot = _snapshot_for_display(st.session_state.get("current_run_dir"))
+    run_dir = st.session_state.get("current_run_dir")
+    snapshot = _snapshot_for_display(run_dir)
     results = st.session_state.get("processing_results")
     share_metrics = st.session_state.get("share_report_metrics", {})
     dataset_name = st.session_state.get("dataset_name", "No dataset loaded")
@@ -526,6 +660,7 @@ def _dashboard_context() -> dict[str, object]:
         )
 
     return {
+        "run_dir": run_dir,
         "snapshot": snapshot,
         "results": results,
         "share_metrics": share_metrics,
@@ -660,6 +795,7 @@ def _open_dashboard_metric_dialog() -> None:
 def _render_dashboard_surface() -> None:
     """Render the core dashboard surface using the current session context."""
     context = _dashboard_context()
+    run_dir = context["run_dir"]
     snapshot = context["snapshot"]
     results = context["results"]
     share_metrics = context["share_metrics"]
@@ -719,7 +855,7 @@ def _render_dashboard_surface() -> None:
         st.subheader("Trends")
         trend_col1, trend_col2 = st.columns(2, gap="large")
 
-        stage_frame = _dashboard_stage_frame(snapshot)
+        stage_frame = _dashboard_stage_frame(snapshot, run_dir=run_dir)
         stage_fig = px.line(stage_frame, x="Stage", y="Progress (%)", markers=True)
         stage_fig.update_traces(line={"width": 3}, marker={"size": 10})
         stage_fig.update_layout(
@@ -762,7 +898,7 @@ def _render_dashboard_surface() -> None:
     st.space("small")
 
     filtered_breakdown = _filter_dashboard_breakdown(
-        _dashboard_breakdown_frame(snapshot, stats, share_metrics)
+        _dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir)
     )
     with st.container(border=True):
         st.subheader("Breakdown Table")
@@ -1403,6 +1539,8 @@ def show_processing_page():
                 st.session_state["run_snapshot"] = (
                     final_snapshot.to_dict() if final_snapshot is not None else None
                 )
+                st.session_state.pop("curation_baseline_counts", None)
+                st.session_state.pop("last_curation_mode", None)
                 st.session_state.pop("share_report_prepared_signature", None)
                 _render_run_dashboard(final_snapshot)
 
@@ -1518,24 +1656,54 @@ def show_ml_curation_page():
                         results["energy_data"], results["vertices"], results["edges"]
                     )
 
-                    st.session_state["processing_results"]["vertices"] = curated_vertices
-                    st.session_state["processing_results"]["edges"] = curated_edges
+                    status.update(label="Rebuilding network after curation...", state="running")
+                    try:
+                        baseline_counts, current_counts = _apply_curated_results(
+                            curated_vertices,
+                            curated_edges,
+                            curation_mode="Interactive (Manual GUI)",
+                        )
+                    except Exception as exc:
+                        _update_run_task(
+                            st.session_state.get("current_run_dir"),
+                            "manual_curation",
+                            status="failed",
+                            detail=f"Interactive curation could not rebuild the network: {exc!s}",
+                        )
+                        st.error(
+                            "Curated vertices and edges were not applied because the network "
+                            f"could not be rebuilt: {exc!s}"
+                        )
+                        st.stop()
                     _update_run_task(
                         st.session_state.get("current_run_dir"),
                         "manual_curation",
                         status="completed",
-                        detail="Interactive curation saved",
+                        detail="Interactive curation saved and network rebuilt",
                     )
 
                     status.update(label="Interactive Curation complete!", state="complete")
                     st.success("✅ Interactive edits saved!")
 
+                    st.caption(
+                        "The downstream network, exports, and share report now use the curated "
+                        "vertices and edges."
+                    )
+
                     # Rerender metrics
                     c1, c2 = st.columns(2, gap="small")
                     with c1:
-                        st.metric("Curated Vertices", len(curated_vertices["positions"]))
+                        st.metric(
+                            "Vertices",
+                            current_counts["Vertices"],
+                            delta=current_counts["Vertices"] - baseline_counts["Vertices"],
+                        )
                     with c2:
-                        st.metric("Curated Edges", len(curated_edges.get("traces", [])))
+                        st.metric(
+                            "Edges",
+                            current_counts["Edges"],
+                            delta=current_counts["Edges"] - baseline_counts["Edges"],
+                        )
 
     elif curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
@@ -1631,40 +1799,53 @@ def show_ml_curation_page():
                     results["edges"], curated_vertices, auto_curation_params
                 )
 
-                st.session_state["processing_results"]["vertices"] = curated_vertices
-                st.session_state["processing_results"]["edges"] = curated_edges
+                status.update(label="Rebuilding network after curation...", state="running")
+                try:
+                    baseline_counts, current_counts = _apply_curated_results(
+                        curated_vertices,
+                        curated_edges,
+                        curation_mode="Automatic (Rule-based)",
+                    )
+                except Exception as exc:
+                    _update_run_task(
+                        st.session_state.get("current_run_dir"),
+                        "automatic_curation",
+                        status="failed",
+                        detail=f"Automatic curation could not rebuild the network: {exc!s}",
+                    )
+                    st.error(
+                        "Curated vertices and edges were not applied because the network "
+                        f"could not be rebuilt: {exc!s}"
+                    )
+                    st.stop()
                 _update_run_task(
                     st.session_state.get("current_run_dir"),
                     "automatic_curation",
                     status="completed",
-                    detail="Automatic curation complete",
+                    detail="Automatic curation complete and network rebuilt",
                 )
 
                 st.success("✅ Automatic curation complete!")
                 status.update(label="Automatic curation complete!", state="complete")
+                st.caption(
+                    "The downstream network, exports, and share report now use the curated "
+                    "vertices and edges."
+                )
 
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
-                        "Original Vertices",
-                        len(results["vertices"]["positions"]),
-                        help="Vertex count before curation",
-                    )
-                    st.metric(
-                        "Curated Vertices",
-                        len(curated_vertices["positions"]),
-                        help="Remaining vertices after automatic curation",
+                        "Vertices",
+                        current_counts["Vertices"],
+                        delta=current_counts["Vertices"] - baseline_counts["Vertices"],
+                        help="Change relative to the pre-curation baseline",
                     )
                 with col2:
                     st.metric(
-                        "Original Edges",
-                        len(results["edges"]["traces"]),
-                        help="Edge count before curation",
-                    )
-                    st.metric(
-                        "Curated Edges",
-                        len(curated_edges["traces"]),
-                        help="Remaining edges after automatic curation",
+                        "Edges",
+                        current_counts["Edges"],
+                        delta=current_counts["Edges"] - baseline_counts["Edges"],
+                        help="Change relative to the pre-curation baseline",
                     )
 
     elif curation_type == "Machine Learning (Model-based)":
@@ -1803,8 +1984,25 @@ def show_ml_curation_page():
                     edge_confidence_threshold,
                 )
 
-                st.session_state["processing_results"]["vertices"] = curated_vertices
-                st.session_state["processing_results"]["edges"] = curated_edges
+                status.update(label="Rebuilding network after curation...", state="running")
+                try:
+                    baseline_counts, current_counts = _apply_curated_results(
+                        curated_vertices,
+                        curated_edges,
+                        curation_mode="Machine Learning (Model-based)",
+                    )
+                except Exception as exc:
+                    _update_run_task(
+                        st.session_state.get("current_run_dir"),
+                        "ml_curation",
+                        status="failed",
+                        detail=f"ML curation could not rebuild the network: {exc!s}",
+                    )
+                    st.error(
+                        "Curated vertices and edges were not applied because the network "
+                        f"could not be rebuilt: {exc!s}"
+                    )
+                    st.stop()
 
                 st.success("✅ ML curation complete!")
                 status.update(label="ML curation complete!", state="complete")
@@ -1812,77 +2010,60 @@ def show_ml_curation_page():
                     st.session_state.get("current_run_dir"),
                     "ml_curation",
                     status="completed",
-                    detail="ML curation complete",
+                    detail="ML curation complete and network rebuilt",
+                )
+                st.caption(
+                    "The downstream network, exports, and share report now use the curated "
+                    "vertices and edges."
                 )
 
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
                     st.metric(
-                        "Original Vertices",
-                        len(results["vertices"]["positions"]),
-                        help="Vertex count before curation",
-                    )
-                    st.metric(
-                        "Curated Vertices",
-                        len(curated_vertices["positions"]),
-                        help="Remaining vertices after ML curation",
+                        "Vertices",
+                        current_counts["Vertices"],
+                        delta=current_counts["Vertices"] - baseline_counts["Vertices"],
+                        help="Change relative to the pre-curation baseline",
                     )
                 with col2:
                     st.metric(
-                        "Original Edges",
-                        len(results["edges"]["traces"]),
-                        help="Edge count before curation",
-                    )
-                    st.metric(
-                        "Curated Edges",
-                        len(curated_edges["traces"]),
-                        help="Remaining edges after ML curation",
+                        "Edges",
+                        current_counts["Edges"],
+                        delta=current_counts["Edges"] - baseline_counts["Edges"],
+                        help="Change relative to the pre-curation baseline",
                     )
 
     # Curation results
     if st.button("📊 Show Curation Statistics", width=250):
         st.markdown("### 📈 Curation Results")
 
-        # Get current curated counts
-        current_vertices = st.session_state["processing_results"]["vertices"]
-        current_edges = st.session_state["processing_results"]["edges"]
-        original_vertices_count = len(results["vertices"]["positions"])
-        original_edges_count = len(results["edges"]["traces"])
-        curated_vertices_count = len(current_vertices["positions"])
-        curated_edges_count = len(current_edges["traces"])
+        baseline_counts = st.session_state.get("curation_baseline_counts")
+        if baseline_counts is None:
+            st.info(
+                "No curation has been applied yet. Run a curation step to compare before/after counts."
+            )
+        else:
+            current_counts = summarize_processing_counts(st.session_state["processing_results"])
+            curation_stats = pd.DataFrame(
+                build_curation_stats_rows(baseline_counts, current_counts)
+            )
+            curation_mode = st.session_state.get("last_curation_mode")
+            if curation_mode:
+                st.caption(
+                    f"Most recent curation mode: {curation_mode}. "
+                    "The network was rebuilt after the curated vertices and edges were applied."
+                )
 
-        # Calculate percentage removed
-        vertex_removed_percent = (
-            ((original_vertices_count - curated_vertices_count) / original_vertices_count * 100)
-            if original_vertices_count > 0
-            else 0
-        )
-        edge_removed_percent = (
-            ((original_edges_count - curated_edges_count) / original_edges_count * 100)
-            if original_edges_count > 0
-            else 0
-        )
+            st.dataframe(curation_stats, use_container_width=True)
 
-        curation_stats = pd.DataFrame(
-            {
-                "Component": ["Vertices", "Edges"],
-                "Original": [original_vertices_count, original_edges_count],
-                "After Curation": [curated_vertices_count, curated_edges_count],
-                "Removed (%)": [f"{vertex_removed_percent:.2f}", f"{edge_removed_percent:.2f}"],
-            }
-        )
-
-        st.dataframe(curation_stats, use_container_width=True)
-
-        # Visualization of curation results
-        fig = px.bar(
-            curation_stats,
-            x="Component",
-            y=["Original", "After Curation"],
-            title="Curation Results",
-            barmode="group",
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            fig = px.bar(
+                curation_stats,
+                x="Component",
+                y=["Original", "Current"],
+                title="Curation Results",
+                barmode="group",
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
 
 def show_visualization_page():
