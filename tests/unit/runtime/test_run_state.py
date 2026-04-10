@@ -65,6 +65,7 @@ def test_run_context_persists_snapshot_lifecycle(tmp_path):
     assert snapshot is not None
     assert snapshot.status == STATUS_COMPLETED_TARGET
     assert snapshot.target_stage == "edges"
+    assert snapshot.stages["preprocess"].status == STATUS_COMPLETED
     assert snapshot.stages["energy"].status == STATUS_COMPLETED
     assert snapshot.stages["energy"].artifacts["checkpoint"].endswith("checkpoint_energy.pkl")
     assert snapshot.stages["energy"].artifacts["energy_field"] == "energy.npy"
@@ -121,6 +122,18 @@ def test_force_rerun_from_energy_resets_pipeline_state(tmp_path):
     assert snapshot.input_fingerprint == "input-b"
     assert snapshot.stages["energy"].status == STATUS_PENDING
     assert not energy_stage.checkpoint_path.exists()
+
+
+def test_stage_controller_rejects_unknown_stage(tmp_path):
+    context = RunContext(
+        run_dir=tmp_path / "run",
+        input_fingerprint="input-a",
+        params_fingerprint="params-a",
+        target_stage="network",
+    )
+
+    with pytest.raises(ValueError, match="stage must be one of"):
+        context.stage("preprocess")
 
 
 def test_legacy_checkpoints_bootstrap_snapshot(tmp_path):

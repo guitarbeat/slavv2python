@@ -20,9 +20,11 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+PREPROCESS_STAGE = "preprocess"
 PIPELINE_STAGES = ["energy", "vertices", "edges", "network"]
+TRACKED_RUN_STAGES = [PREPROCESS_STAGE, *PIPELINE_STAGES]
 STAGE_WEIGHTS = {
-    "preprocess": 0.05,
+    PREPROCESS_STAGE: 0.05,
     "energy": 0.35,
     "vertices": 0.15,
     "edges": 0.30,
@@ -267,10 +269,10 @@ def load_run_snapshot(path_or_dir: str | Path) -> RunSnapshot | None:
 
 
 def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[str, StageSnapshot]:
-    stages = {name: StageSnapshot(name=name) for name in PIPELINE_STAGES}
+    stages = {name: StageSnapshot(name=name) for name in TRACKED_RUN_STAGES}
     if existing:
         stages.update(existing)
-        for name in PIPELINE_STAGES:
+        for name in TRACKED_RUN_STAGES:
             stages.setdefault(name, StageSnapshot(name=name))
     return stages
 
@@ -520,6 +522,9 @@ class RunContext:
         return self.checkpoints_dir / f"checkpoint_{stage}.pkl"
 
     def stage(self, name: str) -> StageController:
+        if name not in PIPELINE_STAGES:
+            valid = ", ".join(PIPELINE_STAGES)
+            raise ValueError(f"stage must be one of: {valid}")
         return StageController(self, name)
 
     def persist(self) -> None:
@@ -607,11 +612,24 @@ class RunContext:
         self.persist()
 
     def mark_preprocess_complete(self) -> None:
+        stage_snapshot = self.snapshot.stages.setdefault(
+            PREPROCESS_STAGE,
+            StageSnapshot(name=PREPROCESS_STAGE),
+        )
+        if stage_snapshot.started_at is None:
+            stage_snapshot.started_at = _now_iso()
+        stage_snapshot.status = STATUS_COMPLETED
+        stage_snapshot.progress = 1.0
+        stage_snapshot.units_total = max(stage_snapshot.units_total, 1)
+        stage_snapshot.units_completed = stage_snapshot.units_total
+        stage_snapshot.detail = "Preprocessing complete"
+        stage_snapshot.updated_at = _now_iso()
+        stage_snapshot.completed_at = _now_iso()
         self.snapshot.artifacts["preprocess_done"] = "true"
         self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
         self.snapshot.last_event = "Preprocessing complete"
         self.persist()
-        self.emit_event("preprocess", STATUS_COMPLETED, detail="Preprocessing complete")
+        self.emit_event(PREPROCESS_STAGE, STATUS_COMPLETED, detail="Preprocessing complete")
 
     def mark_run_status(self, status: str, *, current_stage: str = "", detail: str = "") -> None:
         self.snapshot.status = status
@@ -817,13 +835,16 @@ class RunContext:
         stages: dict[str, StageSnapshot],
         preprocess_done: bool | None = None,
     ) -> float:
-        total = STAGE_WEIGHTS["preprocess"] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
+        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
         progress = 0.0
         if preprocess_done is None:
             snapshot = getattr(self, "snapshot", None)
-            preprocess_done = bool(snapshot and snapshot.artifacts.get("preprocess_done"))
+            preprocess_stage = stages.get(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
+            preprocess_done = bool(snapshot and snapshot.artifacts.get("preprocess_done")) or (
+                preprocess_stage.status == STATUS_COMPLETED
+            )
         if preprocess_done:
-            progress += STAGE_WEIGHTS["preprocess"]
+            progress += STAGE_WEIGHTS[PREPROCESS_STAGE]
         for stage_name in PIPELINE_STAGES:
             progress += (
                 STAGE_WEIGHTS[stage_name]
@@ -850,8 +871,12 @@ def target_stage_progress(snapshot: RunSnapshot) -> float:
         return snapshot.overall_progress
     index = PIPELINE_STAGES.index(snapshot.target_stage)
     selected = PIPELINE_STAGES[: index + 1]
-    total = STAGE_WEIGHTS["preprocess"] + sum(STAGE_WEIGHTS[stage] for stage in selected)
-    progress = STAGE_WEIGHTS["preprocess"] if snapshot.artifacts.get("preprocess_done") else 0.0
+    total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in selected)
+    preprocess_stage = snapshot.stages.get(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
+    preprocess_done = bool(snapshot.artifacts.get("preprocess_done")) or (
+        preprocess_stage.status == STATUS_COMPLETED
+    )
+    progress = STAGE_WEIGHTS[PREPROCESS_STAGE] if preprocess_done else 0.0
     for stage in selected:
         progress += (
             STAGE_WEIGHTS[stage]

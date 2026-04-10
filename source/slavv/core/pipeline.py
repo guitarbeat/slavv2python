@@ -13,6 +13,7 @@ from .. import utils
 from ..runtime import ProgressEvent, RunContext
 from ..runtime.run_state import (
     PIPELINE_STAGES,
+    PREPROCESS_STAGE,
     STATUS_RUNNING,
     atomic_write_json,
     fingerprint_array,
@@ -126,7 +127,7 @@ class SLAVVProcessor:
             atomic_write_json(params_path, parameters)
             run_context.mark_run_status(
                 STATUS_RUNNING,
-                current_stage="preprocess",
+                current_stage=PREPROCESS_STAGE,
                 detail="Starting SLAVV processing pipeline",
             )
 
@@ -142,12 +143,12 @@ class SLAVVProcessor:
             image = utils.preprocess_image(image, parameters)
         except Exception as exc:
             if run_context is not None:
-                run_context.fail_stage("preprocess", exc)
+                run_context.fail_stage(PREPROCESS_STAGE, exc)
             raise
         if run_context is not None:
             run_context.mark_preprocess_complete()
         if progress_callback:
-            progress_callback(0.2, "preprocess")
+            progress_callback(0.2, PREPROCESS_STAGE)
 
         energy_data = self._resolve_energy_stage(
             image, parameters, run_context, force_rerun["energy"]
