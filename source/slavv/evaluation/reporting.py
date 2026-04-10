@@ -227,9 +227,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(conflict_rejected_by_source.get('fallback', 0)):,}/"
                     f"{int(conflict_rejected_by_source.get('unknown', 0)):,}"
                 )
-            conflict_blocking_source_counts = edge_diag.get(
-                "conflict_blocking_source_counts", {}
-            )
+            conflict_blocking_source_counts = edge_diag.get("conflict_blocking_source_counts", {})
             if conflict_blocking_source_counts:
                 lines.append(
                     "Conflict blockers by source frontier/watershed/fallback/unknown: "
@@ -247,9 +245,15 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(conflict_source_pairs.get('watershed->frontier', 0)):,}/"
                     f"{int(conflict_source_pairs.get('watershed->watershed', 0)):,}"
                 )
-        final_matched_endpoint_pairs = int(report.get("edges", {}).get("matched_endpoint_pair_count", 0))
-        final_missing_endpoint_pairs = int(report.get("edges", {}).get("missing_endpoint_pair_count", 0))
-        final_extra_endpoint_pairs = int(report.get("edges", {}).get("extra_endpoint_pair_count", 0))
+        final_matched_endpoint_pairs = int(
+            report.get("edges", {}).get("matched_endpoint_pair_count", 0)
+        )
+        final_missing_endpoint_pairs = int(
+            report.get("edges", {}).get("missing_endpoint_pair_count", 0)
+        )
+        final_extra_endpoint_pairs = int(
+            report.get("edges", {}).get("extra_endpoint_pair_count", 0)
+        )
         if (
             final_matched_endpoint_pairs
             or final_missing_endpoint_pairs
@@ -332,9 +336,10 @@ def generate_summary(run_dir: Path, output_file: Path):
         if chosen_candidate_sources:
             chosen_counts = chosen_candidate_sources.get("counts", {})
             lines.append(
-                "Chosen candidate sources frontier/watershed/fallback: "
+                "Chosen candidate sources frontier/watershed/geodesic/fallback: "
                 f"{int(chosen_counts.get('frontier', 0)):,}/"
                 f"{int(chosen_counts.get('watershed', 0)):,}/"
+                f"{int(chosen_counts.get('geodesic', 0)):,}/"
                 f"{int(chosen_counts.get('fallback', 0)):,}"
             )
             watershed_pair_count = int(
@@ -347,8 +352,18 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(chosen_candidate_sources.get('watershed_matched_matlab_endpoint_pair_count', 0)):,}/"
                     f"{int(chosen_candidate_sources.get('watershed_extra_python_endpoint_pair_count', 0)):,}"
                 )
+            geodesic_pair_count = int(
+                chosen_candidate_sources.get("geodesic_endpoint_pair_count", 0)
+            )
+            if geodesic_pair_count > 0:
+                lines.append(
+                    "Chosen geodesic endpoint pairs total/matched-matlab/extra-python: "
+                    f"{geodesic_pair_count:,}/"
+                    f"{int(chosen_candidate_sources.get('geodesic_matched_matlab_endpoint_pair_count', 0)):,}/"
+                    f"{int(chosen_candidate_sources.get('geodesic_extra_python_endpoint_pair_count', 0)):,}"
+                )
             source_breakdown = chosen_candidate_sources.get("source_breakdown", {})
-            for source_label in ("frontier", "watershed", "fallback"):
+            for source_label in ("frontier", "watershed", "geodesic", "fallback"):
                 source_summary = source_breakdown.get(source_label, {})
                 if not source_summary:
                     continue
@@ -358,10 +373,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                 extra_stats = source_summary.get("extra", {})
                 if matched == 0 and extra == 0:
                     continue
-                lines.append(
-                    f"Chosen {source_label} edges matched/extra: "
-                    f"{matched:,}/{extra:,}"
-                )
+                lines.append(f"Chosen {source_label} edges matched/extra: {matched:,}/{extra:,}")
                 if matched_stats or extra_stats:
                     matched_energy = matched_stats.get("median_energy")
                     extra_energy = extra_stats.get("median_energy")
@@ -376,8 +388,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                             f"{float(extra_energy):.1f}" if extra_energy is not None else "n/a"
                         )
                         fragments.append(
-                            "median energy matched/extra "
-                            f"{matched_energy_text}/{extra_energy_text}"
+                            f"median energy matched/extra {matched_energy_text}/{extra_energy_text}"
                         )
                     if matched_length is not None or extra_length is not None:
                         matched_length_text = (
@@ -386,18 +397,13 @@ def generate_summary(run_dir: Path, output_file: Path):
                             else "n/a"
                         )
                         extra_length_text = (
-                            f"{round(float(extra_length))}"
-                            if extra_length is not None
-                            else "n/a"
+                            f"{round(float(extra_length))}" if extra_length is not None else "n/a"
                         )
                         fragments.append(
-                            "median length matched/extra "
-                            f"{matched_length_text}/{extra_length_text}"
+                            f"median length matched/extra {matched_length_text}/{extra_length_text}"
                         )
                     if fragments:
-                        lines.append(
-                            f"Chosen {source_label} profile: " + "  ".join(fragments)
-                        )
+                        lines.append(f"Chosen {source_label} profile: " + "  ".join(fragments))
         if extra_frontier_overlap:
             lines.append(
                 "Extra frontier edges sharing missing-matlab vertex total: "
@@ -443,8 +449,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                     )
                 if candidate_hits:
                     lines.append(
-                        "Top shared vertex missing-pair candidate hits: "
-                        + " ".join(candidate_hits)
+                        "Top shared vertex missing-pair candidate hits: " + " ".join(candidate_hits)
                     )
         if candidate_audit:
             lines.append(

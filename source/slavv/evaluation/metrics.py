@@ -238,7 +238,7 @@ def _normalize_candidate_connection_sources(
         return []
     if len(source_values) != candidate_connection_count:
         return []
-    allowed_sources = {"frontier", "watershed", "fallback"}
+    allowed_sources = {"frontier", "watershed", "geodesic", "fallback"}
     normalized: list[str] = []
     for value in source_values:
         source_label = str(value).strip().lower()
@@ -257,7 +257,12 @@ def _candidate_endpoint_pair_details(
     """Group candidate endpoint pairs by seed origin and provenance source."""
     connections = np.asarray(payload.get("connections", np.array([])))
     if connections.size == 0:
-        return {}, {}, {"frontier": set(), "watershed": set(), "fallback": set()}, {}
+        return (
+            {},
+            {},
+            {"frontier": set(), "watershed": set(), "geodesic": set(), "fallback": set()},
+            {},
+        )
     if connections.ndim == 1:
         connections = connections.reshape(1, -1)
 
@@ -274,6 +279,7 @@ def _candidate_endpoint_pair_details(
     pairs_by_source: dict[str, set[tuple[int, int]]] = {
         "frontier": set(),
         "watershed": set(),
+        "geodesic": set(),
         "fallback": set(),
     }
     pair_sources: dict[tuple[int, int], set[str]] = {}
@@ -321,6 +327,7 @@ def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str
             [item for item in per_origin if isinstance(item, dict)],
             key=lambda item: (
                 -int(item.get("watershed_candidate_count", 0)),
+                -int(item.get("geodesic_candidate_count", 0)),
                 -int(item.get("frontier_candidate_count", 0)),
                 -int(item.get("candidate_connection_count", 0)),
                 int(item.get("origin_index", 0)),
@@ -340,6 +347,9 @@ def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str
         ),
         "watershed_per_origin_candidate_counts": _coerce_str_int_map(
             candidate_audit.get("watershed_per_origin_candidate_counts")
+        ),
+        "geodesic_per_origin_candidate_counts": _coerce_str_int_map(
+            candidate_audit.get("geodesic_per_origin_candidate_counts")
         ),
         "pair_source_breakdown": candidate_audit.get("pair_source_breakdown", {}),
         "top_origin_summaries": top_per_origin,
@@ -389,9 +399,10 @@ def _chosen_candidate_source_summary(
     if not connection_sources:
         return None
 
-    allowed_sources = ("frontier", "watershed", "fallback")
+    allowed_sources = ("frontier", "watershed", "geodesic", "fallback")
     source_counts = dict.fromkeys(allowed_sources, 0)
     chosen_watershed_pairs: set[tuple[int, int]] = set()
+    chosen_geodesic_pairs: set[tuple[int, int]] = set()
     python_connections = np.asarray(python_edges.get("connections", np.array([])))
     if python_connections.size == 0:
         python_connections = np.empty((0, 2), dtype=np.int32)
@@ -402,10 +413,7 @@ def _chosen_candidate_source_summary(
         dtype=np.float32,
     ).reshape(-1)
     python_trace_lengths = np.array(
-        [
-            len(np.asarray(trace))
-            for trace in python_edges.get("traces", [])
-        ],
+        [len(np.asarray(trace)) for trace in python_edges.get("traces", [])],
         dtype=np.int32,
     )
     source_breakdown: dict[str, dict[str, Any]] = {}
@@ -418,12 +426,16 @@ def _chosen_candidate_source_summary(
         if source_label not in source_counts:
             continue
         source_counts[source_label] += 1
-        if source_label != "watershed":
-            continue
-        pair = [int(value) for value in np.asarray(candidate_connections[candidate_index]).tolist()[:2]]
+        pair = [
+            int(value) for value in np.asarray(candidate_connections[candidate_index]).tolist()[:2]
+        ]
         if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
             continue
-        chosen_watershed_pairs.add(tuple(sorted(pair)))
+        endpoint_pair = tuple(sorted(pair))
+        if source_label == "watershed":
+            chosen_watershed_pairs.add(endpoint_pair)
+        elif source_label == "geodesic":
+            chosen_geodesic_pairs.add(endpoint_pair)
 
     if len(python_connections) > 0:
         python_endpoint_pairs = [
@@ -500,6 +512,12 @@ def _chosen_candidate_source_summary(
         "watershed_matched_matlab_endpoint_pair_count": chosen_watershed_matched,
         "watershed_extra_python_endpoint_pair_count": len(chosen_watershed_pairs)
         - chosen_watershed_matched,
+        "geodesic_endpoint_pair_count": len(chosen_geodesic_pairs),
+        "geodesic_matched_matlab_endpoint_pair_count": len(
+            chosen_geodesic_pairs & matlab_endpoint_pairs
+        ),
+        "geodesic_extra_python_endpoint_pair_count": len(chosen_geodesic_pairs)
+        - len(chosen_geodesic_pairs & matlab_endpoint_pairs),
     }
     if source_breakdown:
         result["source_breakdown"] = source_breakdown
@@ -571,8 +589,11 @@ def _frontier_missing_vertex_overlap_summary(
     watershed_candidate_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
         candidate_pair_sets.get("watershed", set())
     )
+    geodesic_candidate_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
+        candidate_pair_sets.get("geodesic", set())
+    )
 
-    chosen_pair_sets = {"frontier": set(), "watershed": set(), "fallback": set()}
+    chosen_pair_sets = {"frontier": set(), "watershed": set(), "geodesic": set(), "fallback": set()}
     for pair, source_label in zip(python_endpoint_pairs, connection_sources):
         if source_label in chosen_pair_sets:
             chosen_pair_sets[source_label].add(pair)
@@ -582,6 +603,9 @@ def _frontier_missing_vertex_overlap_summary(
     )
     watershed_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
         chosen_pair_sets["watershed"]
+    )
+    geodesic_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
+        chosen_pair_sets["geodesic"]
     )
 
     extra_frontier_entries.sort(key=lambda item: item.get("energy", np.inf))
@@ -620,6 +644,10 @@ def _frontier_missing_vertex_overlap_summary(
                     missing_by_vertex[vertex]
                     & watershed_candidate_incident_by_vertex.get(vertex, set())
                 ),
+                "missing_matlab_pairs_present_in_geodesic_candidates": len(
+                    missing_by_vertex[vertex]
+                    & geodesic_candidate_incident_by_vertex.get(vertex, set())
+                ),
                 "candidate_incident_endpoint_pair_count": len(
                     candidate_incident_by_vertex.get(vertex, set())
                 ),
@@ -628,6 +656,9 @@ def _frontier_missing_vertex_overlap_summary(
                 ),
                 "watershed_candidate_incident_endpoint_pair_count": len(
                     watershed_candidate_incident_by_vertex.get(vertex, set())
+                ),
+                "geodesic_candidate_incident_endpoint_pair_count": len(
+                    geodesic_candidate_incident_by_vertex.get(vertex, set())
                 ),
                 "chosen_incident_endpoint_pair_count": len(
                     chosen_incident_by_vertex.get(vertex, set())
@@ -638,8 +669,13 @@ def _frontier_missing_vertex_overlap_summary(
                 "chosen_watershed_incident_endpoint_pair_count": len(
                     watershed_chosen_incident_by_vertex.get(vertex, set())
                 ),
+                "chosen_geodesic_incident_endpoint_pair_count": len(
+                    geodesic_chosen_incident_by_vertex.get(vertex, set())
+                ),
                 "missing_matlab_endpoint_pair_samples": sorted(missing_by_vertex[vertex])[:3],
-                "extra_frontier_endpoint_pair_samples": sorted(extra_frontier_by_vertex[vertex])[:3],
+                "extra_frontier_endpoint_pair_samples": sorted(extra_frontier_by_vertex[vertex])[
+                    :3
+                ],
             }
         )
     top_shared_vertices.sort(
@@ -1168,9 +1204,9 @@ def compare_edges(
             matlab_endpoint_pairs,
         )
         if frontier_overlap_summary is not None:
-            comparison["diagnostics"][
-                "extra_frontier_missing_vertex_overlap"
-            ] = frontier_overlap_summary
+            comparison["diagnostics"]["extra_frontier_missing_vertex_overlap"] = (
+                frontier_overlap_summary
+            )
     if candidate_audit is not None:
         comparison["diagnostics"]["candidate_audit"] = _candidate_audit_summary(candidate_audit)
 

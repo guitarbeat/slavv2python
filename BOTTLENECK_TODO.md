@@ -8,10 +8,10 @@ Use this file when you want to know:
 - which comparison features already exist
 - which workflow improvements are still worth building
 
-Use [docs/PARITY_HUB.md](docs/PARITY_HUB.md) for the fastest re-entry,
-[docs/PARITY_FINDINGS_2026-03-27.md](docs/PARITY_FINDINGS_2026-03-27.md) for
+Use [docs/PARITY_HUB.md](docs/chapters/imported-matlab-parity/PARITY_HUB.md) for the fastest re-entry,
+[docs/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md) for
 evidence, and
-[docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+[docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
 for the remaining edge-generation work.
 
 ## Rapid Recall
@@ -184,8 +184,8 @@ for the remaining edge-generation work.
 
 ## Related Docs
 
-- [docs/PARITY_HUB.md](docs/PARITY_HUB.md)
-- [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
-- [docs/PARITY_FINDINGS_2026-03-27.md](docs/PARITY_FINDINGS_2026-03-27.md)
-- [docs/COMPARISON_LAYOUT.md](docs/COMPARISON_LAYOUT.md)
+- [docs/PARITY_HUB.md](docs/chapters/imported-matlab-parity/PARITY_HUB.md)
+- [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+- [docs/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
+- [docs/COMPARISON_LAYOUT.md](docs/reference/COMPARISON_LAYOUT.md)
 - [workspace/reports/stage_isolated_network_parity_2026-04-07.md](workspace/reports/stage_isolated_network_parity_2026-04-07.md)

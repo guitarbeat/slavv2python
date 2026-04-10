@@ -7,5 +7,5 @@ the repository root.
 
 | File | Purpose |
 | --- | --- |
-| `check_mapped.py` | Refresh the generated appendix in `docs/MATLAB_MAPPING.md` with upstream `.m` files not called out in the maintained mapping tables |
+| `check_mapped.py` | Refresh the generated appendix in `docs/reference/MATLAB_MAPPING.md` with upstream `.m` files not called out in the maintained mapping tables |
 | `find_matlab_scripts.py` | List MATLAB `.m` files under the upstream checkout and `workspace/` that behave like scripts instead of functions |

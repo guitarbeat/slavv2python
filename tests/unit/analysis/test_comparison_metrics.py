@@ -290,7 +290,12 @@ def test_compare_edges_reports_candidate_endpoint_coverage():
         "extra_candidate_endpoint_pair_samples"
     ] == [(4, 5)]
     chosen_sources = result["diagnostics"]["chosen_candidate_sources"]
-    assert chosen_sources["counts"] == {"frontier": 1, "watershed": 1, "fallback": 0}
+    assert chosen_sources["counts"] == {
+        "frontier": 1,
+        "watershed": 1,
+        "geodesic": 0,
+        "fallback": 0,
+    }
     assert chosen_sources["watershed_endpoint_pair_count"] == 1
     assert chosen_sources["watershed_matched_matlab_endpoint_pair_count"] == 0
     assert chosen_sources["watershed_extra_python_endpoint_pair_count"] == 1
@@ -393,9 +398,7 @@ def test_compare_edges_reports_extra_frontier_missing_vertex_overlap():
     assert overlap["top_shared_vertices"][0]["missing_matlab_endpoint_pair_count"] == 1
     assert overlap["top_shared_vertices"][0]["extra_frontier_endpoint_pair_count"] == 1
     assert overlap["top_shared_vertices"][0]["missing_matlab_pairs_present_in_candidates"] == 0
-    assert overlap["top_shared_vertices"][0][
-        "frontier_candidate_incident_endpoint_pair_count"
-    ] == 2
+    assert overlap["top_shared_vertices"][0]["frontier_candidate_incident_endpoint_pair_count"] == 2
     assert overlap["top_shared_vertices"][0]["chosen_frontier_incident_endpoint_pair_count"] == 2
     assert overlap["strongest_extra_frontier_samples"][0]["pair"] == (0, 7)
     assert overlap["strongest_extra_frontier_samples"][0]["shares_missing_vertex"] is True

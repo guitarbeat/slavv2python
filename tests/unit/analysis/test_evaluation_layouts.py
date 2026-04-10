@@ -342,7 +342,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         },
                     ],
                 },
-            }
+            },
         },
     }
     (analysis_dir / "comparison_report.json").write_text(json.dumps(report), encoding="utf-8")
@@ -363,7 +363,7 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "Conflict rejects by source frontier/watershed/fallback/unknown: 3/2/0/0" in summary
     assert "Conflict blockers by source frontier/watershed/fallback/unknown: 4/1/0/0" in summary
     assert "Conflict source pairs f->f/f->w/w->f/w->w: 3/0/1/1" in summary
-    assert "Chosen candidate sources frontier/watershed/fallback: 1/1/0" in summary
+    assert "Chosen candidate sources frontier/watershed/geodesic/fallback: 1/1/0/0" in summary
     assert "Chosen watershed endpoint pairs total/matched-matlab/extra-python: 1/0/1" in summary
     assert "Chosen frontier edges matched/extra: 1/0" in summary
     assert "Chosen frontier profile: median energy matched/extra -220.5/n/a" in summary

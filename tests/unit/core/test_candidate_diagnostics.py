@@ -11,8 +11,10 @@ from slavv.core.tracing import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
     _empty_edge_diagnostics,
+    _finalize_matlab_parity_candidates,
     _generate_edge_candidates_matlab_frontier,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
+    _trace_local_geodesic_between_vertices,
     paint_vertex_center_image,
 )
 from slavv.evaluation.metrics import compare_edges
@@ -31,6 +33,121 @@ def _make_small_volume(size: int = 11):
 @pytest.mark.unit
 class TestWatershedSupplementDiagnostics:
     """Diagnostics from the watershed supplement step."""
+
+    def test_parity_all_contacts_mode_adds_negative_watershed_pair_without_frontier_seed(self):
+        """The candidate-stage parity mode should admit valid watershed contacts directly."""
+        energy = np.full((9, 9, 9), 1.0, dtype=np.float64)
+        energy[4, 1:8, 4] = -1.0
+        vertex_positions = np.array([[4.0, 1.0, 4.0], [4.0, 7.0, 4.0]], dtype=np.float32)
+        candidates = {
+            "traces": [],
+            "connections": np.zeros((0, 2), dtype=np.int32),
+            "metrics": np.zeros((0,), dtype=np.float32),
+            "energy_traces": [],
+            "scale_traces": [],
+            "origin_indices": np.zeros((0,), dtype=np.int32),
+            "connection_sources": [],
+            "diagnostics": _empty_edge_diagnostics(),
+        }
+
+        result = _finalize_matlab_parity_candidates(
+            candidates,
+            energy,
+            None,
+            vertex_positions,
+            -1.0,
+            {
+                "number_of_edges_per_vertex": 1,
+                "parity_watershed_candidate_mode": "all_contacts",
+            },
+        )
+
+        assert result["connections"].tolist() == [[0, 1]]
+        assert result["connection_sources"] == ["watershed"]
+        assert result["diagnostics"]["watershed_join_supplement_count"] == 1
+        assert result["diagnostics"]["watershed_accepted"] == 1
+
+    def test_parity_geodesic_salvage_adds_candidate_for_frontier_deficit_origin(
+        self,
+        monkeypatch,
+    ):
+        """Frontier-deficit origins should be able to contribute local geodesic candidates."""
+        energy = np.full((9, 9, 9), 1.0, dtype=np.float64)
+        energy[4, 1:8, 4] = -1.0
+        candidates = {
+            "traces": [np.array([[4, 1, 4], [4, 2, 4]], dtype=np.float32)],
+            "connections": np.array([[0, 1]], dtype=np.int32),
+            "metrics": np.array([-1.0], dtype=np.float32),
+            "energy_traces": [np.array([-1.0, -1.0], dtype=np.float32)],
+            "scale_traces": [np.zeros(2, dtype=np.int16)],
+            "origin_indices": np.array([0], dtype=np.int32),
+            "connection_sources": ["frontier"],
+            "diagnostics": {
+                **_empty_edge_diagnostics(),
+                "frontier_per_origin_candidate_counts": {0: 1},
+            },
+        }
+        vertex_positions = np.array(
+            [
+                [4.0, 1.0, 4.0],
+                [2.0, 3.0, 4.0],
+                [4.0, 7.0, 4.0],
+            ],
+            dtype=np.float32,
+        )
+
+        def fake_geodesic(*_args, **_kwargs):
+            start = np.asarray(_args[1], dtype=np.float32)
+            end = np.asarray(_args[2], dtype=np.float32)
+            if np.allclose(start, vertex_positions[0]) and np.allclose(end, vertex_positions[2]):
+                return np.array(
+                    [[4, 1, 4], [4, 2, 4], [4, 3, 4], [4, 4, 4], [4, 5, 4], [4, 6, 4], [4, 7, 4]],
+                    dtype=np.float32,
+                )
+            return None
+
+        monkeypatch.setattr(
+            "slavv.core.tracing._trace_local_geodesic_between_vertices",
+            fake_geodesic,
+        )
+
+        result = _finalize_matlab_parity_candidates(
+            candidates,
+            energy,
+            None,
+            vertex_positions,
+            -1.0,
+            {
+                "number_of_edges_per_vertex": 4,
+                "parity_watershed_candidate_mode": "legacy_supplement",
+                "parity_candidate_salvage_mode": "frontier_deficit_geodesic",
+                "parity_geodesic_salvage_k_nearest": 2,
+            },
+        )
+
+        assert [0, 2] in result["connections"].tolist()
+        assert "geodesic" in result["connection_sources"]
+        assert result["diagnostics"]["watershed_accepted"] == 0
+        assert result["diagnostics"]["geodesic_join_supplement_count"] >= 1
+        assert result["diagnostics"]["geodesic_accepted"] >= 1
+
+    def test_trace_local_geodesic_between_vertices_returns_voxel_path(self):
+        """The bounded geodesic tracer should return a simple negative-energy path."""
+        energy = np.full((7, 7, 7), 1.0, dtype=np.float64)
+        energy[3, 1:6, 3] = -1.0
+
+        trace = _trace_local_geodesic_between_vertices(
+            energy,
+            np.array([3.0, 1.0, 3.0], dtype=np.float32),
+            np.array([3.0, 5.0, 3.0], dtype=np.float32),
+            -1.0,
+            box_margin_voxels=2,
+        )
+
+        assert trace is not None
+        assert trace.shape[1] == 3
+        assert trace[0].tolist() == [3.0, 1.0, 3.0]
+        assert trace[-1].tolist() == [3.0, 5.0, 3.0]
 
     def test_supplement_diagnostics_populated_when_all_rejected(self):
         """Even when no supplements pass, rejection counters must be set."""

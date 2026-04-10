@@ -3,7 +3,7 @@
 This checklist rolls up the remaining implementation work and release
 verification:
 
-- [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+- [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
 
 Recommended order:
 
@@ -140,7 +140,7 @@ Recommended order:
 ## Verification And Release Checklist
 
 - [x] Update docs after implementation:
-  - `docs/COMPARISON_LAYOUT.md`
+  - `docs/reference/COMPARISON_LAYOUT.md`
   - `docs/README.md`
   - any parity findings note that should reference the new workflow
 - [x] Run formatting:

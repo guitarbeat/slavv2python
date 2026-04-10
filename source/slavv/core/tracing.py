@@ -16,6 +16,7 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage import feature  # Needed for Hessian
 from skimage.draw import ellipsoid
+from skimage.graph import route_through_array
 from skimage.segmentation import watershed
 
 # Imports from sibling modules
@@ -116,6 +117,7 @@ def _empty_edge_diagnostics() -> dict[str, Any]:
         "cycle_pruned_count": 0,
         "watershed_join_supplement_count": 0,
         "watershed_endpoint_degree_rejected": 0,
+        "geodesic_join_supplement_count": 0,
         "terminal_direct_hit_count": 0,
         "terminal_reverse_center_hit_count": 0,
         "terminal_reverse_near_hit_count": 0,
@@ -935,6 +937,40 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
     return energy_data.get("energy_origin") == "matlab_batch_hdf5"
 
 
+def _parity_watershed_candidate_mode(params: dict[str, Any]) -> str:
+    """Return the MATLAB-parity watershed candidate strategy."""
+    requested_mode = str(params.get("parity_watershed_candidate_mode", "all_contacts")).strip()
+    normalized_mode = requested_mode.lower()
+    allowed_modes = {"all_contacts", "remaining_origin_contacts", "legacy_supplement"}
+    return normalized_mode if normalized_mode in allowed_modes else "all_contacts"
+
+
+def _parity_watershed_metric_threshold_from_params(params: dict[str, Any]) -> float | None:
+    """Return the optional parity-only watershed metric threshold."""
+    threshold_raw = params.get("parity_watershed_metric_threshold")
+    if threshold_raw in (None, ""):
+        return None
+    return float(threshold_raw)
+
+
+def _parity_candidate_salvage_mode(
+    params: dict[str, Any],
+    candidate_mode: str,
+) -> str:
+    """Return the MATLAB-parity candidate salvage strategy."""
+    requested_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip().lower()
+    allowed_modes = {
+        "auto",
+        "none",
+        "frontier_deficit_geodesic",
+        "all_origins_geodesic",
+    }
+    normalized_mode = requested_mode if requested_mode in allowed_modes else "auto"
+    if normalized_mode == "auto":
+        return "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
+    return normalized_mode
+
+
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
     """Return MATLAB's per-origin frontier edge budget from get_edges_for_vertex.m."""
     requested_edges = int(params.get("number_of_edges_per_vertex", 4))
@@ -1006,6 +1042,107 @@ def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]
         pair: tuple[int, int] = (u, v) if u < v else (v, u)
         pairs.add(pair)
     return pairs
+
+
+def _vertex_center_linear_lookup(
+    vertex_positions: np.ndarray,
+    image_shape: tuple[int, int, int],
+) -> dict[int, int]:
+    """Map rounded vertex centers to their vertex indices."""
+    if len(vertex_positions) == 0:
+        return {}
+    coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
+    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    coords = np.clip(coords, 0, max_coord)
+    linear_indices = _matlab_linear_indices(coords, image_shape)
+    return {
+        int(linear_index): int(vertex_index)
+        for vertex_index, linear_index in enumerate(linear_indices)
+    }
+
+
+def _trace_local_geodesic_between_vertices(
+    energy: np.ndarray,
+    start: np.ndarray,
+    end: np.ndarray,
+    energy_sign: float,
+    *,
+    box_margin_voxels: int,
+) -> np.ndarray | None:
+    """Trace a local geodesic path between two vertices inside a bounded subvolume."""
+    image_shape = energy.shape
+    max_coord = np.asarray(image_shape, dtype=np.int32) - 1
+    start_coord = np.clip(
+        np.rint(np.asarray(start, dtype=np.float32)[:3]).astype(np.int32, copy=False),
+        0,
+        max_coord,
+    )
+    end_coord = np.clip(
+        np.rint(np.asarray(end, dtype=np.float32)[:3]).astype(np.int32, copy=False),
+        0,
+        max_coord,
+    )
+    if np.array_equal(start_coord, end_coord):
+        return None
+
+    delta = np.abs(end_coord - start_coord)
+    dynamic_margin = int(max(box_margin_voxels, 0) + math.ceil(float(np.max(delta)) * 0.25))
+    lower = np.maximum(np.minimum(start_coord, end_coord) - dynamic_margin, 0)
+    upper = np.minimum(np.maximum(start_coord, end_coord) + dynamic_margin + 1, image_shape)
+    patch = np.asarray(
+        energy[
+            lower[0] : upper[0],
+            lower[1] : upper[1],
+            lower[2] : upper[2],
+        ],
+        dtype=np.float64,
+    )
+    if patch.size == 0:
+        return None
+
+    if energy_sign < 0:
+        baseline = float(np.nanmin(patch))
+        cost = patch - baseline + 1e-3
+    else:
+        baseline = float(np.nanmax(patch))
+        cost = baseline - patch + 1e-3
+    if not np.all(np.isfinite(cost)):
+        return None
+
+    local_start = tuple((start_coord - lower).tolist())
+    local_end = tuple((end_coord - lower).tolist())
+    try:
+        local_coords, _weight = route_through_array(
+            cost,
+            local_start,
+            local_end,
+            fully_connected=True,
+            geometric=True,
+        )
+    except (ValueError, RuntimeError):
+        return None
+    if len(local_coords) <= 1:
+        return None
+
+    global_coords = np.asarray(local_coords, dtype=np.int32) + lower
+    deduped = [global_coords[0]]
+    for coord in global_coords[1:]:
+        if not np.array_equal(coord, deduped[-1]):
+            deduped.append(coord)
+    if len(deduped) <= 1:
+        return None
+    return np.asarray(deduped, dtype=np.float32)
+
+
+def _candidate_incident_pair_counts(
+    connections: np.ndarray,
+) -> dict[int, int]:
+    """Count unique incident endpoint pairs for each vertex."""
+    counts: dict[int, int] = {}
+    for start_vertex, end_vertex in _candidate_endpoint_pair_set(connections):
+        counts[int(start_vertex)] = counts.get(int(start_vertex), 0) + 1
+        counts[int(end_vertex)] = counts.get(int(end_vertex), 0) + 1
+    return counts
 
 
 def _rasterize_trace_segment(
@@ -1250,7 +1387,8 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         # (background) when working with cost-based tracing.
         max_energy = float(np.nanmax(energy_trace_array))
         if energy_sign < 0:
-            # For negative-is-foreground, a positive max energy means we hit background
+            # For negative-is-foreground, a non-negative max energy means we hit
+            # background.
             is_invalid = max_energy >= 0
         else:
             # For positive-is-foreground (less common in this repo's parity path),
@@ -1332,6 +1470,484 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             candidates.get("diagnostics", {}), supplement_payload["diagnostics"]
         )
     return candidates
+
+
+def _augment_matlab_frontier_candidates_with_watershed_contacts(
+    candidates: dict[str, Any],
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    energy_sign: float,
+    *,
+    max_edges_per_vertex: int = 4,
+    candidate_mode: str = "all_contacts",
+    parity_watershed_metric_threshold: float | None = None,
+) -> dict[str, Any]:
+    """Merge watershed-contact candidates into the MATLAB parity frontier payload.
+
+    This candidate-stage path is intentionally more permissive than the legacy
+    supplement. It feeds valid watershed-contact traces into the existing
+    MATLAB-style chooser and lets the chooser resolve endpoint conflicts rather
+    than pruning them up front.
+    """
+    if len(vertex_positions) < 2:
+        return candidates
+
+    image_shape = energy.shape
+    markers = np.zeros(image_shape, dtype=np.int32)
+    idxs = np.floor(vertex_positions).astype(int)
+    idxs = np.clip(idxs, 0, np.array(image_shape) - 1)
+    markers[idxs[:, 0], idxs[:, 1], idxs[:, 2]] = np.arange(1, len(vertex_positions) + 1)
+
+    labels = watershed(-energy_sign * energy, markers)
+    existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
+    contact_coords_by_pair = _best_watershed_contact_coords(labels, energy)
+
+    existing_connections = np.asarray(
+        candidates.get("connections", np.zeros((0, 2), dtype=np.int32)),
+        dtype=np.int32,
+    ).reshape(-1, 2)
+    connection_sources = _normalize_candidate_connection_sources(
+        candidates.get("connection_sources"),
+        len(existing_connections),
+        default_source="frontier",
+    )
+    origin_indices = np.asarray(
+        candidates.get("origin_indices", np.zeros((0,))), dtype=np.int32
+    ).reshape(-1)
+    frontier_origin_counts: dict[int, int] = {}
+    for index, origin_index in enumerate(origin_indices):
+        if index >= len(connection_sources) or connection_sources[index] != "frontier":
+            continue
+        frontier_origin_counts[int(origin_index)] = (
+            frontier_origin_counts.get(int(origin_index), 0) + 1
+        )
+
+    candidate_rows: list[
+        tuple[float, float, tuple[int, int], np.ndarray, np.ndarray, np.ndarray]
+    ] = []
+    n_already_existing = 0
+    n_short_trace = 0
+    n_energy_rejected = 0
+    n_metric_threshold_rejected = 0
+    n_total_watershed_pairs = len(contact_coords_by_pair)
+
+    for pair, contact_coord in sorted(contact_coords_by_pair.items()):
+        if pair in existing_pairs:
+            n_already_existing += 1
+            continue
+
+        trace = _build_watershed_join_trace(
+            vertex_positions[pair[0]],
+            contact_coord,
+            vertex_positions[pair[1]],
+            image_shape,
+        )
+        if len(trace) <= 1:
+            n_short_trace += 1
+            continue
+
+        energy_trace = _trace_energy_series(trace, energy)
+        energy_trace_array = np.asarray(energy_trace, dtype=np.float32)
+        max_energy = float(np.nanmax(energy_trace_array))
+        if energy_sign < 0:
+            is_invalid = max_energy >= 0
+        else:
+            min_energy = float(np.nanmin(energy_trace_array))
+            is_invalid = min_energy <= 0
+        if is_invalid:
+            n_energy_rejected += 1
+            continue
+
+        if parity_watershed_metric_threshold is not None:
+            if energy_sign < 0:
+                fails_metric_threshold = max_energy > parity_watershed_metric_threshold
+            else:
+                min_energy = float(np.nanmin(energy_trace_array))
+                fails_metric_threshold = min_energy < parity_watershed_metric_threshold
+            if fails_metric_threshold:
+                n_metric_threshold_rejected += 1
+                continue
+
+        scale_trace = _trace_scale_series(trace, scale_indices)
+        metric = _edge_metric_from_energy_trace(energy_trace)
+        endpoint_distance = float(
+            np.linalg.norm(vertex_positions[pair[0]] - vertex_positions[pair[1]])
+        )
+        candidate_rows.append((metric, endpoint_distance, pair, trace, energy_trace, scale_trace))
+
+    candidate_rows.sort(key=lambda row: (row[0], row[1]))
+
+    supplement_payload: dict[str, Any] = {
+        "candidate_source": "watershed",
+        "traces": [],
+        "connections": [],
+        "metrics": [],
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": [],
+        "connection_sources": [],
+        "diagnostics": {
+            "watershed_join_supplement_count": 0,
+            "watershed_per_origin_candidate_counts": {},
+            "watershed_total_pairs": n_total_watershed_pairs,
+            "watershed_already_existing": n_already_existing,
+            "watershed_short_trace_rejected": n_short_trace,
+            "watershed_energy_rejected": n_energy_rejected,
+            "watershed_metric_threshold_rejected": n_metric_threshold_rejected,
+            "watershed_origin_budget_rejected": 0,
+            "watershed_accepted": 0,
+        },
+    }
+    origin_added_counts: dict[int, int] = {}
+    for metric, _distance, pair, trace, energy_trace, scale_trace in candidate_rows:
+        if candidate_mode == "remaining_origin_contacts":
+            remaining_budget = max_edges_per_vertex - frontier_origin_counts.get(pair[0], 0)
+            if remaining_budget <= 0 or origin_added_counts.get(pair[0], 0) >= remaining_budget:
+                supplement_payload["diagnostics"]["watershed_origin_budget_rejected"] += 1
+                continue
+
+        supplement_payload["traces"].append(trace)
+        supplement_payload["connections"].append([pair[0], pair[1]])
+        supplement_payload["metrics"].append(metric)
+        supplement_payload["energy_traces"].append(energy_trace)
+        supplement_payload["scale_traces"].append(scale_trace)
+        supplement_payload["origin_indices"].append(pair[0])
+        supplement_payload["connection_sources"].append("watershed")
+        supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
+        supplement_payload["diagnostics"]["watershed_accepted"] += 1
+        origin_added_counts[pair[0]] = origin_added_counts.get(pair[0], 0) + 1
+        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][str(pair[0])] = (
+            origin_added_counts[pair[0]]
+        )
+
+    if supplement_payload["connections"]:
+        _append_candidate_unit(candidates, supplement_payload)
+    else:
+        _merge_edge_diagnostics(
+            candidates.get("diagnostics", {}), supplement_payload["diagnostics"]
+        )
+    return candidates
+
+
+def _salvage_matlab_parity_candidates_with_local_geodesics(
+    candidates: dict[str, Any],
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    energy_sign: float,
+    microns_per_voxel: np.ndarray,
+    params: dict[str, Any],
+    *,
+    salvage_mode: str,
+    parity_metric_threshold: float | None,
+) -> dict[str, Any]:
+    """Recover parity candidates via bounded local geodesic searches."""
+    if len(vertex_positions) < 2 or salvage_mode == "none":
+        return candidates
+
+    max_edges_per_vertex = int(params.get("number_of_edges_per_vertex", 4))
+    k_nearest = max(1, int(params.get("parity_geodesic_salvage_k_nearest", 10)))
+    box_margin_voxels = max(0, int(params.get("parity_geodesic_salvage_box_margin_voxels", 4)))
+    max_path_ratio = float(params.get("parity_geodesic_salvage_max_path_ratio", 2.5))
+
+    connections = np.asarray(
+        candidates.get("connections", np.zeros((0, 2), dtype=np.int32)),
+        dtype=np.int32,
+    ).reshape(-1, 2)
+    frontier_origin_counts: dict[int, int] = {}
+    for origin_index, count in (
+        candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts", {}).items()
+    ):
+        try:
+            frontier_origin_counts[int(origin_index)] = int(count)
+        except (TypeError, ValueError):
+            continue
+
+    existing_pairs = _candidate_endpoint_pair_set(connections)
+    incident_pair_counts = _candidate_incident_pair_counts(connections)
+    vertex_positions_microns = np.asarray(vertex_positions, dtype=np.float32) * np.asarray(
+        microns_per_voxel,
+        dtype=np.float32,
+    )
+    tree = cKDTree(vertex_positions_microns)
+    query_k = min(len(vertex_positions), k_nearest + 1)
+    if query_k <= 1:
+        return candidates
+
+    neighbor_distances, neighbor_indices = tree.query(vertex_positions_microns, k=query_k)
+    neighbor_distances = np.asarray(neighbor_distances, dtype=np.float32)
+    neighbor_indices = np.asarray(neighbor_indices, dtype=np.int32)
+    if neighbor_indices.ndim == 1:
+        neighbor_indices = neighbor_indices[:, np.newaxis]
+        neighbor_distances = neighbor_distances[:, np.newaxis]
+
+    vertex_linear_lookup = _vertex_center_linear_lookup(vertex_positions, energy.shape)
+    accepted_rows: list[tuple[int, float, float, int, np.ndarray, np.ndarray, np.ndarray]] = []
+    accepted_pairs: set[tuple[int, int]] = set()
+    origin_added_counts: dict[int, int] = {}
+    diagnostics = {
+        "geodesic_join_supplement_count": 0,
+        "geodesic_total_attempted_pairs": 0,
+        "geodesic_existing_pair_skipped": 0,
+        "geodesic_route_failed": 0,
+        "geodesic_short_trace_rejected": 0,
+        "geodesic_energy_rejected": 0,
+        "geodesic_metric_threshold_rejected": 0,
+        "geodesic_path_ratio_rejected": 0,
+        "geodesic_vertex_crossing_rejected": 0,
+        "geodesic_origin_budget_rejected": 0,
+        "geodesic_endpoint_degree_rejected": 0,
+        "geodesic_accepted": 0,
+        "geodesic_per_origin_candidate_counts": {},
+    }
+
+    for origin_index in range(len(vertex_positions)):
+        frontier_count = frontier_origin_counts.get(origin_index, 0)
+        if salvage_mode == "frontier_deficit_geodesic" and frontier_count >= max_edges_per_vertex:
+            diagnostics["geodesic_origin_budget_rejected"] += 1
+            continue
+
+        if salvage_mode == "frontier_deficit_geodesic":
+            max_new_pairs = max_edges_per_vertex - frontier_count
+        else:
+            max_new_pairs = max(1, min(max_edges_per_vertex, 2))
+        if max_new_pairs <= 0:
+            diagnostics["geodesic_origin_budget_rejected"] += 1
+            continue
+
+        origin_rows: list[tuple[float, float, int, np.ndarray, np.ndarray, np.ndarray]] = []
+        for neighbor_distance, neighbor_index in zip(
+            neighbor_distances[origin_index].tolist(),
+            neighbor_indices[origin_index].tolist(),
+        ):
+            neighbor_index = int(neighbor_index)
+            if neighbor_index < 0 or neighbor_index == origin_index:
+                continue
+
+            pair = (
+                (origin_index, neighbor_index)
+                if origin_index < neighbor_index
+                else (neighbor_index, origin_index)
+            )
+            if pair in existing_pairs or pair in accepted_pairs:
+                diagnostics["geodesic_existing_pair_skipped"] += 1
+                continue
+            if (
+                incident_pair_counts.get(pair[0], 0) >= max_edges_per_vertex
+                or incident_pair_counts.get(pair[1], 0) >= max_edges_per_vertex
+            ):
+                diagnostics["geodesic_endpoint_degree_rejected"] += 1
+                continue
+
+            diagnostics["geodesic_total_attempted_pairs"] += 1
+            trace = _trace_local_geodesic_between_vertices(
+                energy,
+                vertex_positions[origin_index],
+                vertex_positions[neighbor_index],
+                energy_sign,
+                box_margin_voxels=box_margin_voxels,
+            )
+            if trace is None:
+                diagnostics["geodesic_route_failed"] += 1
+                continue
+            if len(trace) <= 1:
+                diagnostics["geodesic_short_trace_rejected"] += 1
+                continue
+
+            if len(trace) > 2:
+                trace_indices = _clip_trace_indices(trace[1:-1], energy.shape)
+                trace_linear = _matlab_linear_indices(trace_indices, energy.shape)
+                crossed_vertex = False
+                for linear_index in trace_linear.tolist():
+                    vertex_index = vertex_linear_lookup.get(int(linear_index))
+                    if vertex_index is None:
+                        continue
+                    if vertex_index not in {origin_index, neighbor_index}:
+                        crossed_vertex = True
+                        break
+                if crossed_vertex:
+                    diagnostics["geodesic_vertex_crossing_rejected"] += 1
+                    continue
+
+            energy_trace = _trace_energy_series(trace, energy)
+            energy_trace_array = np.asarray(energy_trace, dtype=np.float32)
+            max_energy = float(np.nanmax(energy_trace_array))
+            if energy_sign < 0:
+                is_invalid = max_energy >= 0
+            else:
+                is_invalid = float(np.nanmin(energy_trace_array)) <= 0
+            if is_invalid:
+                diagnostics["geodesic_energy_rejected"] += 1
+                continue
+
+            if parity_metric_threshold is not None and max_energy > parity_metric_threshold:
+                diagnostics["geodesic_metric_threshold_rejected"] += 1
+                continue
+
+            straight_distance = float(
+                np.linalg.norm(
+                    vertex_positions_microns[origin_index]
+                    - vertex_positions_microns[neighbor_index]
+                )
+            )
+            if len(trace) > 1:
+                step_vectors = np.diff(np.asarray(trace, dtype=np.float32), axis=0)
+                path_length = float(
+                    np.linalg.norm(
+                        step_vectors * np.asarray(microns_per_voxel, dtype=np.float32), axis=1
+                    ).sum()
+                )
+            else:
+                path_length = 0.0
+            if straight_distance > 0 and path_length > straight_distance * max_path_ratio:
+                diagnostics["geodesic_path_ratio_rejected"] += 1
+                continue
+
+            scale_trace = _trace_scale_series(trace, scale_indices)
+            metric = _edge_metric_from_energy_trace(energy_trace)
+            origin_rows.append(
+                (
+                    metric,
+                    float(neighbor_distance),
+                    neighbor_index,
+                    trace,
+                    energy_trace,
+                    scale_trace,
+                )
+            )
+
+        origin_rows.sort(key=lambda row: (row[0], row[1], row[2]))
+        for metric, _distance, neighbor_index, trace, energy_trace, scale_trace in origin_rows:
+            if origin_added_counts.get(origin_index, 0) >= max_new_pairs:
+                break
+            pair = (
+                (origin_index, neighbor_index)
+                if origin_index < neighbor_index
+                else (neighbor_index, origin_index)
+            )
+            if pair in existing_pairs or pair in accepted_pairs:
+                continue
+            accepted_rows.append(
+                (
+                    origin_index,
+                    metric,
+                    float(_distance),
+                    neighbor_index,
+                    trace,
+                    energy_trace,
+                    scale_trace,
+                )
+            )
+            accepted_pairs.add(pair)
+            origin_added_counts[origin_index] = origin_added_counts.get(origin_index, 0) + 1
+            incident_pair_counts[pair[0]] = incident_pair_counts.get(pair[0], 0) + 1
+            incident_pair_counts[pair[1]] = incident_pair_counts.get(pair[1], 0) + 1
+            diagnostics["geodesic_per_origin_candidate_counts"][str(origin_index)] = int(
+                origin_added_counts[origin_index]
+            )
+
+    if not accepted_rows:
+        _merge_edge_diagnostics(candidates.get("diagnostics", {}), diagnostics)
+        return candidates
+
+    supplement_payload = {
+        "candidate_source": "geodesic",
+        "traces": [],
+        "connections": [],
+        "metrics": [],
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": [],
+        "connection_sources": [],
+        "diagnostics": diagnostics,
+    }
+    for (
+        origin_index,
+        metric,
+        _distance,
+        neighbor_index,
+        trace,
+        energy_trace,
+        scale_trace,
+    ) in accepted_rows:
+        supplement_payload["traces"].append(trace)
+        supplement_payload["connections"].append([origin_index, neighbor_index])
+        supplement_payload["metrics"].append(metric)
+        supplement_payload["energy_traces"].append(energy_trace)
+        supplement_payload["scale_traces"].append(scale_trace)
+        supplement_payload["origin_indices"].append(origin_index)
+        supplement_payload["connection_sources"].append("geodesic")
+
+    supplement_payload["diagnostics"]["geodesic_join_supplement_count"] = len(accepted_rows)
+    supplement_payload["diagnostics"]["geodesic_accepted"] = len(accepted_rows)
+    _append_candidate_unit(candidates, supplement_payload)
+    return candidates
+
+
+def _finalize_matlab_parity_candidates(
+    candidates: dict[str, Any],
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    energy_sign: float,
+    params: dict[str, Any],
+    microns_per_voxel: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Finalize MATLAB-parity candidates with the configured watershed strategy."""
+    candidate_mode = _parity_watershed_candidate_mode(params)
+    watershed_metric_threshold = _parity_watershed_metric_threshold_from_params(params)
+
+    if candidate_mode == "legacy_supplement":
+        enforce_frontier_reachability_gate = bool(
+            params.get("parity_frontier_reachability_gate", True)
+        )
+        require_mutual_frontier_participation = bool(
+            params.get("parity_require_mutual_frontier_participation", True)
+        )
+        finalized = _supplement_matlab_frontier_candidates_with_watershed_joins(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            enforce_frontier_reachability=enforce_frontier_reachability_gate,
+            require_mutual_frontier_participation=require_mutual_frontier_participation,
+            parity_watershed_metric_threshold=watershed_metric_threshold,
+        )
+    else:
+        finalized = _augment_matlab_frontier_candidates_with_watershed_contacts(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            candidate_mode=candidate_mode,
+            parity_watershed_metric_threshold=watershed_metric_threshold,
+        )
+
+    salvage_mode = _parity_candidate_salvage_mode(params, candidate_mode)
+    if salvage_mode == "none":
+        return finalized
+
+    microns_per_voxel_value = (
+        np.asarray(microns_per_voxel, dtype=np.float32)
+        if microns_per_voxel is not None
+        else np.ones((3,), dtype=np.float32)
+    )
+    return _salvage_matlab_parity_candidates_with_local_geodesics(
+        finalized,
+        energy,
+        scale_indices,
+        vertex_positions,
+        energy_sign,
+        microns_per_voxel_value,
+        params,
+        salvage_mode=salvage_mode,
+        parity_metric_threshold=watershed_metric_threshold,
+    )
 
 
 def _prune_frontier_indices_beyond_found_vertices(
@@ -1572,8 +2188,6 @@ def _trace_origin_edges_matlab_frontier(
                     int(pointer_index_map[tracing_linear]) - 1
                 ]
                 path_linear.append(tracing_linear)
-            for path_index in path_linear[:-1]:
-                pointer_index_map[path_index] = -(len(edge_paths_linear) + 1)
 
             origin_idx, terminal_idx = _resolve_frontier_edge_connection(
                 path_linear,
@@ -1586,21 +2200,20 @@ def _trace_origin_edges_matlab_frontier(
                 shape,
             )
 
-            edge_paths_linear.append(path_linear)
-            edge_pairs.append(
-                (
-                    int(terminal_idx) if terminal_idx is not None else -1,
-                    int(origin_idx) if origin_idx is not None else -1,
-                )
-            )
-
-            current_position = current_coord.astype(np.float64) * microns_per_voxel
-            displacement = current_position - origin_position_microns
-            displacement_norm_sq = float(np.sum(displacement**2))
-            if displacement_norm_sq > 0:
-                displacement_vectors.append(displacement / displacement_norm_sq)
-
             if origin_idx is not None and terminal_idx is not None:
+                path_record_index = len(edge_paths_linear) + 1
+                for path_index in path_linear[:-1]:
+                    pointer_index_map[path_index] = -path_record_index
+
+                edge_paths_linear.append(path_linear)
+                edge_pairs.append((int(terminal_idx), int(origin_idx)))
+
+                current_position = current_coord.astype(np.float64) * microns_per_voxel
+                displacement = current_position - origin_position_microns
+                displacement_norm_sq = float(np.sum(displacement**2))
+                if displacement_norm_sq > 0:
+                    displacement_vectors.append(displacement / displacement_norm_sq)
+
                 has_valid_terminal_edge = True
                 edge_trace = _path_coords_from_linear_indices(path_linear, shape)
                 energy_trace = _trace_energy_series(edge_trace, energy)
@@ -1735,7 +2348,7 @@ def _normalize_candidate_connection_sources(
     else:
         source_values = []
 
-    allowed_sources = {"frontier", "watershed", "fallback", "unknown"}
+    allowed_sources = {"frontier", "watershed", "geodesic", "fallback", "unknown"}
     default_label = default_source if default_source in allowed_sources else "unknown"
     normalized: list[str] = []
     for index in range(candidate_connection_count):
@@ -1780,17 +2393,20 @@ def _build_edge_candidate_audit(
     source_pair_sets: dict[str, set[tuple[int, int]]] = {
         "frontier": set(),
         "watershed": set(),
+        "geodesic": set(),
         "fallback": set(),
     }
     pair_sources: dict[tuple[int, int], set[str]] = {}
     source_origin_pair_sets: dict[str, dict[int, set[tuple[int, int]]]] = {
         "frontier": {},
         "watershed": {},
+        "geodesic": {},
         "fallback": {},
     }
     source_origin_sets: dict[str, set[int]] = {
         "frontier": set(),
         "watershed": set(),
+        "geodesic": set(),
         "fallback": set(),
     }
     for index, origin_index in enumerate(origin_indices):
@@ -1825,56 +2441,82 @@ def _build_edge_candidate_audit(
     supplement_origin_counts = {
         int(origin): int(count) for origin, count in (supplement_origin_counts or {}).items()
     }
-    if frontier_origin_counts or supplement_origin_counts:
-        frontier_connection_count = sum(frontier_origin_counts.values())
-        supplement_connection_count = sum(supplement_origin_counts.values())
-        fallback_connection_count = max(
-            0, candidate_connection_count - frontier_connection_count - supplement_connection_count
-        )
-        frontier_origin_count = len(frontier_origin_counts)
-        supplement_origin_count = len(supplement_origin_counts)
-        origin_count_union = set(frontier_origin_counts.keys()) | set(
-            supplement_origin_counts.keys()
-        )
-        fallback_origin_count = max(0, len(total_origin_counts) - len(origin_count_union))
-    else:
-        frontier_connection_count = len(
-            [source for source in connection_sources if source == "frontier"]
-        )
-        supplement_connection_count = len(
-            [source for source in connection_sources if source == "watershed"]
-        )
-        fallback_connection_count = max(
-            0, candidate_connection_count - frontier_connection_count - supplement_connection_count
-        )
-        frontier_origin_count = len(source_origin_sets["frontier"])
-        supplement_origin_count = len(source_origin_sets["watershed"])
-        fallback_origin_count = max(
-            0,
-            len(total_origin_counts)
-            - len(source_origin_sets["frontier"] | source_origin_sets["watershed"]),
-        )
+    diag = candidates.get("diagnostics", {})
+    geodesic_origin_counts = _normalize_candidate_origin_counts(
+        diag.get("geodesic_per_origin_candidate_counts") if isinstance(diag, dict) else None
+    )
+    geodesic_origin_counts_int = {
+        int(origin): int(count) for origin, count in geodesic_origin_counts.items()
+    }
+    frontier_connection_count = (
+        sum(frontier_origin_counts.values())
+        if frontier_origin_counts
+        else len([source for source in connection_sources if source == "frontier"])
+    )
+    supplement_connection_count = (
+        sum(supplement_origin_counts.values())
+        if supplement_origin_counts
+        else len([source for source in connection_sources if source == "watershed"])
+    )
+    geodesic_connection_count = len(
+        [source for source in connection_sources if source == "geodesic"]
+    )
+    fallback_connection_count = max(
+        0,
+        candidate_connection_count
+        - frontier_connection_count
+        - supplement_connection_count
+        - geodesic_connection_count,
+    )
+    frontier_origin_count = (
+        len(frontier_origin_counts)
+        if frontier_origin_counts
+        else len(source_origin_sets["frontier"])
+    )
+    supplement_origin_count = (
+        len(supplement_origin_counts)
+        if supplement_origin_counts
+        else len(source_origin_sets["watershed"])
+    )
+    geodesic_origin_count = (
+        len(geodesic_origin_counts_int)
+        if geodesic_origin_counts_int
+        else len(source_origin_sets["geodesic"])
+    )
+    fallback_origin_count = max(
+        0,
+        len(total_origin_counts)
+        - len(
+            source_origin_sets["frontier"]
+            | source_origin_sets["watershed"]
+            | source_origin_sets["geodesic"]
+        ),
+    )
 
     per_origin_payload: list[dict[str, Any]] = []
     all_origins = (
         set(total_origin_counts.keys())
         | set(frontier_origin_counts.keys())
         | set(supplement_origin_counts.keys())
+        | set(geodesic_origin_counts_int.keys())
     )
     for origin_index in sorted(all_origins):
         frontier_count = int(frontier_origin_counts.get(origin_index, 0))
         supplement_count = int(supplement_origin_counts.get(origin_index, 0))
+        geodesic_count = int(geodesic_origin_counts_int.get(origin_index, 0))
         total_count = int(total_origin_counts.get(origin_index, 0))
-        fallback_count = max(0, total_count - frontier_count - supplement_count)
+        fallback_count = max(0, total_count - frontier_count - supplement_count - geodesic_count)
         candidate_pairs = total_origin_pairs.get(origin_index, set())
         frontier_pairs = source_origin_pair_sets["frontier"].get(origin_index, set())
         watershed_pairs = source_origin_pair_sets["watershed"].get(origin_index, set())
+        geodesic_pairs = source_origin_pair_sets["geodesic"].get(origin_index, set())
         fallback_pairs = source_origin_pair_sets["fallback"].get(origin_index, set())
         per_origin_payload.append(
             {
                 "origin_index": origin_index,
                 "frontier_candidate_count": frontier_count,
                 "watershed_candidate_count": supplement_count,
+                "geodesic_candidate_count": geodesic_count,
                 "fallback_candidate_count": fallback_count,
                 "candidate_connection_count": total_count,
                 "candidate_endpoint_pair_count": len(candidate_pairs),
@@ -1883,12 +2525,12 @@ def _build_edge_candidate_audit(
                 "frontier_endpoint_pair_samples": sorted(frontier_pairs)[:3],
                 "watershed_endpoint_pair_count": len(watershed_pairs),
                 "watershed_endpoint_pair_samples": sorted(watershed_pairs)[:3],
+                "geodesic_endpoint_pair_count": len(geodesic_pairs),
+                "geodesic_endpoint_pair_samples": sorted(geodesic_pairs)[:3],
                 "fallback_endpoint_pair_count": len(fallback_pairs),
                 "fallback_endpoint_pair_samples": sorted(fallback_pairs)[:3],
             }
         )
-
-    diag = candidates.get("diagnostics", {})
     candidate_diagnostics: dict[str, int] = {
         "candidate_traced_edge_count": int(diag.get("candidate_traced_edge_count", 0)),
         "terminal_edge_count": int(diag.get("terminal_edge_count", 0)),
@@ -1910,6 +2552,17 @@ def _build_edge_candidate_audit(
         ),
         "watershed_cap_rejected": int(diag.get("watershed_cap_rejected", 0)),
         "watershed_accepted": int(diag.get("watershed_accepted", 0)),
+        "geodesic_join_supplement_count": int(diag.get("geodesic_join_supplement_count", 0)),
+        "geodesic_route_failed": int(diag.get("geodesic_route_failed", 0)),
+        "geodesic_energy_rejected": int(diag.get("geodesic_energy_rejected", 0)),
+        "geodesic_metric_threshold_rejected": int(
+            diag.get("geodesic_metric_threshold_rejected", 0)
+        ),
+        "geodesic_path_ratio_rejected": int(diag.get("geodesic_path_ratio_rejected", 0)),
+        "geodesic_vertex_crossing_rejected": int(diag.get("geodesic_vertex_crossing_rejected", 0)),
+        "geodesic_endpoint_degree_rejected": int(diag.get("geodesic_endpoint_degree_rejected", 0)),
+        "geodesic_origin_budget_rejected": int(diag.get("geodesic_origin_budget_rejected", 0)),
+        "geodesic_accepted": int(diag.get("geodesic_accepted", 0)),
         "frontier_origins_with_candidates": int(diag.get("frontier_origins_with_candidates", 0)),
         "frontier_origins_without_candidates": int(
             diag.get("frontier_origins_without_candidates", 0)
@@ -1953,19 +2606,32 @@ def _build_edge_candidate_audit(
                 "candidate_endpoint_pair_count": len(source_pair_sets["watershed"]),
                 "candidate_endpoint_pair_samples": sorted(source_pair_sets["watershed"])[:5],
             },
+            "geodesic": {
+                "candidate_connection_count": geodesic_connection_count,
+                "candidate_origin_count": geodesic_origin_count,
+                "candidate_endpoint_pair_count": len(source_pair_sets["geodesic"]),
+                "candidate_endpoint_pair_samples": sorted(source_pair_sets["geodesic"])[:5],
+            },
             "fallback": fallback_source_total,
         },
         "frontier_per_origin_candidate_counts": frontier_origin_counts,
         "watershed_per_origin_candidate_counts": _normalize_candidate_origin_counts(
             diag.get("watershed_per_origin_candidate_counts")
         ),
+        "geodesic_per_origin_candidate_counts": geodesic_origin_counts,
         "pair_source_breakdown": {
             "frontier_only_pair_count": len(frontier_only_pairs),
             "watershed_only_pair_count": len(watershed_only_pairs),
+            "geodesic_only_pair_count": len(
+                [pair for pair, sources in pair_sources.items() if sources == {"geodesic"}]
+            ),
             "fallback_only_pair_count": len(fallback_only_pairs),
             "multi_source_pair_count": len(multi_source_pairs),
             "frontier_only_endpoint_pair_samples": frontier_only_pairs[:5],
             "watershed_only_endpoint_pair_samples": watershed_only_pairs[:5],
+            "geodesic_only_endpoint_pair_samples": [
+                pair for pair, sources in pair_sources.items() if sources == {"geodesic"}
+            ][:5],
             "fallback_only_endpoint_pair_samples": fallback_only_pairs[:5],
         },
         "per_origin_summary": per_origin_payload,
@@ -2315,7 +2981,7 @@ def _choose_edges_matlab_style(
     compensate for upstream semantic drift in the frontier tracer or watershed
     supplement. If parity is failing here, the root cause is almost certainly
     in ``_trace_origin_edges_matlab_frontier`` or
-    ``_supplement_matlab_frontier_candidates_with_watershed_joins``.
+    ``_finalize_matlab_parity_candidates``.
 
     MATLAB-parity-critical steps (in order):
         1. **Self-edge / dangling removal** — Filters edges where start == end
@@ -2436,9 +3102,7 @@ def _choose_edges_matlab_style(
     chosen_indices: list[int] = []
     for index in antiparallel_indices_u:
         start_vertex, end_vertex = (int(value) for value in connections[index])
-        current_source = (
-            connection_sources[index] if index < len(connection_sources) else "unknown"
-        )
+        current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
         current_source_code = source_code_by_label.get(current_source, 0)
         endpoint_snapshots: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
 
@@ -2449,9 +3113,7 @@ def _choose_edges_matlab_style(
                 image_shape,
             )
             snapshot = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
-            source_snapshot = painted_source_image[
-                coords[:, 0], coords[:, 1], coords[:, 2]
-            ].copy()
+            source_snapshot = painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
             painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
             painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
             endpoint_snapshots.append((coords, snapshot, source_snapshot))
@@ -2473,28 +3135,29 @@ def _choose_edges_matlab_style(
                 diagnostics["conflict_rejected_count"] += 1
                 blocking_sources = {
                     source_label_by_code.get(int(value), "unknown")
-                    for value in painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]]
-                    .tolist()
+                    for value in painted_source_image[
+                        coords[:, 0], coords[:, 1], coords[:, 2]
+                    ].tolist()
                     if int(value) != 0
                 }
                 conflict_rejected_by_source = diagnostics.setdefault(
                     "conflict_rejected_by_source", {}
                 )
-                conflict_rejected_by_source[current_source] = int(
-                    conflict_rejected_by_source.get(current_source, 0)
-                ) + 1
+                conflict_rejected_by_source[current_source] = (
+                    int(conflict_rejected_by_source.get(current_source, 0)) + 1
+                )
                 conflict_blocking_source_counts = diagnostics.setdefault(
                     "conflict_blocking_source_counts", {}
                 )
                 conflict_source_pairs = diagnostics.setdefault("conflict_source_pairs", {})
                 for blocking_source in blocking_sources:
-                    conflict_blocking_source_counts[blocking_source] = int(
-                        conflict_blocking_source_counts.get(blocking_source, 0)
-                    ) + 1
+                    conflict_blocking_source_counts[blocking_source] = (
+                        int(conflict_blocking_source_counts.get(blocking_source, 0)) + 1
+                    )
                     pair_key = f"{current_source}->{blocking_source}"
-                    conflict_source_pairs[pair_key] = int(
-                        conflict_source_pairs.get(pair_key, 0)
-                    ) + 1
+                    conflict_source_pairs[pair_key] = (
+                        int(conflict_source_pairs.get(pair_key, 0)) + 1
+                    )
                 chosen = False
                 break
 
@@ -2503,16 +3166,12 @@ def _choose_edges_matlab_style(
                 (start_vertex, end_vertex), endpoint_snapshots
             ):
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
-                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = (
-                    current_source_code
-                )
+                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = current_source_code
             chosen_indices.append(index)
         else:
             for coords, snapshot, source_snapshot in endpoint_snapshots:
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = snapshot
-                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = (
-                    source_snapshot
-                )
+                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = source_snapshot
 
     if not chosen_indices:
         empty = _empty_edges_result(vertex_positions)
@@ -2917,18 +3576,6 @@ def extract_edges(
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
     if _use_matlab_frontier_tracer(energy_data, params):
-        enforce_frontier_reachability_gate = bool(
-            params.get("parity_frontier_reachability_gate", True)
-        )
-        require_mutual_frontier_participation = bool(
-            params.get("parity_require_mutual_frontier_participation", True)
-        )
-        watershed_metric_threshold_raw = params.get("parity_watershed_metric_threshold")
-        watershed_metric_threshold = (
-            None
-            if watershed_metric_threshold_raw in (None, "")
-            else float(watershed_metric_threshold_raw)
-        )
         candidates = _generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -2939,16 +3586,14 @@ def extract_edges(
             vertex_center_image,
             params,
         )
-        candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
+        candidates = _finalize_matlab_parity_candidates(
             candidates,
             energy,
             scale_indices,
             vertex_positions,
             energy_sign,
-            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
-            enforce_frontier_reachability=enforce_frontier_reachability_gate,
-            require_mutual_frontier_participation=require_mutual_frontier_participation,
-            parity_watershed_metric_threshold=watershed_metric_threshold,
+            params,
+            microns_per_voxel,
         )
     else:
         candidates = _generate_edge_candidates(
@@ -3471,28 +4116,14 @@ def extract_edges_resumable(
         )
 
     if use_frontier_tracer:
-        enforce_frontier_reachability_gate = bool(
-            params.get("parity_frontier_reachability_gate", True)
-        )
-        require_mutual_frontier_participation = bool(
-            params.get("parity_require_mutual_frontier_participation", True)
-        )
-        watershed_metric_threshold_raw = params.get("parity_watershed_metric_threshold")
-        watershed_metric_threshold = (
-            None
-            if watershed_metric_threshold_raw in (None, "")
-            else float(watershed_metric_threshold_raw)
-        )
-        candidates = _supplement_matlab_frontier_candidates_with_watershed_joins(
+        candidates = _finalize_matlab_parity_candidates(
             candidates,
             energy,
             scale_indices,
             vertex_positions,
             energy_sign,
-            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
-            enforce_frontier_reachability=enforce_frontier_reachability_gate,
-            require_mutual_frontier_participation=require_mutual_frontier_participation,
-            parity_watershed_metric_threshold=watershed_metric_threshold,
+            params,
+            microns_per_voxel,
         )
         supplement_origin_counts = _normalize_candidate_origin_counts(
             candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")

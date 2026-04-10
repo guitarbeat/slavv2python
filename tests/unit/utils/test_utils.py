@@ -52,13 +52,23 @@ def test_validate_parameters_preserves_parity_specific_overrides():
         {
             "parity_frontier_reachability_gate": False,
             "parity_require_mutual_frontier_participation": False,
+            "parity_watershed_candidate_mode": "legacy_supplement",
             "parity_watershed_metric_threshold": -90.0,
+            "parity_candidate_salvage_mode": "none",
+            "parity_geodesic_salvage_k_nearest": 8,
+            "parity_geodesic_salvage_box_margin_voxels": 5,
+            "parity_geodesic_salvage_max_path_ratio": 3.0,
         }
     )
 
     assert validated["parity_frontier_reachability_gate"] is False
     assert validated["parity_require_mutual_frontier_participation"] is False
+    assert validated["parity_watershed_candidate_mode"] == "legacy_supplement"
     assert validated["parity_watershed_metric_threshold"] == -90.0
+    assert validated["parity_candidate_salvage_mode"] == "none"
+    assert validated["parity_geodesic_salvage_k_nearest"] == 8
+    assert validated["parity_geodesic_salvage_box_margin_voxels"] == 5
+    assert validated["parity_geodesic_salvage_max_path_ratio"] == 3.0
 
 
 def test_validate_parameters_coerces_integer_like_matlab_settings():

@@ -57,7 +57,7 @@ Python files inspected:
 - `source/slavv/core/tracing.py`
 - `source/slavv/core/pipeline.py`
 - `source/slavv/evaluation/comparison.py`
-- `docs/MATLAB_MAPPING.md`
+- `docs/reference/MATLAB_MAPPING.md`
 
 Reference parity run used while auditing:
 

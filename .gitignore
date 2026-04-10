@@ -156,6 +156,10 @@ comparison_output/
 comparison_output_*/
 comparisons/*
 !comparisons/README.md
+comparison_results/
+comparison_results_test_run/
+workspace/tmp_parity_current_venv/
+workspace/tmp_comparison_params_*.json
 
 
 

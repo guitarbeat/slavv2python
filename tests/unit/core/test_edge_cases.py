@@ -636,7 +636,11 @@ def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypat
     edges = processor.extract_edges(
         energy_data,
         vertices,
-        {"comparison_exact_network": True, "number_of_edges_per_vertex": 1},
+        {
+            "comparison_exact_network": True,
+            "number_of_edges_per_vertex": 1,
+            "parity_watershed_candidate_mode": "legacy_supplement",
+        },
     )
 
     # Phase 2+: with empty frontier candidates, reachability gate blocks supplements
@@ -681,7 +685,11 @@ def test_extract_edges_parity_requires_mutual_frontier_participation(monkeypatch
     edges = processor.extract_edges(
         energy_data,
         vertices,
-        {"comparison_exact_network": True, "number_of_edges_per_vertex": 1},
+        {
+            "comparison_exact_network": True,
+            "number_of_edges_per_vertex": 1,
+            "parity_watershed_candidate_mode": "legacy_supplement",
+        },
     )
 
     assert edges["connections"].size == 0
@@ -805,6 +813,62 @@ def test_frontier_tracer_does_not_prune_from_invalid_terminal_before_valid_edge(
 
     assert resolve_calls["count"] >= 1
     assert payload["connections"] == []
+
+
+def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypatch):
+    energy = np.full((9, 9, 9), 1.0, dtype=np.float32)
+    energy[4, 4, 4] = -9.0
+
+    # First branch reaches an invalid terminal, the next two are valid.
+    energy[4, 5, 4] = -8.0
+    energy[4, 6, 4] = -7.0
+    energy[5, 4, 4] = -6.0
+    energy[6, 4, 4] = -5.0
+    energy[4, 3, 4] = -4.0
+    energy[4, 2, 4] = -3.0
+
+    vertex_positions = np.array(
+        [
+            [4.0, 4.0, 4.0],
+            [4.0, 6.0, 4.0],
+            [6.0, 4.0, 4.0],
+            [4.0, 2.0, 4.0],
+        ],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(4, dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    resolve_calls = {"count": 0}
+
+    def fake_resolve(*_args, **_kwargs):
+        resolve_calls["count"] += 1
+        if resolve_calls["count"] == 1:
+            return None, None
+        if resolve_calls["count"] == 2:
+            return 0, 2
+        return 0, 3
+
+    monkeypatch.setattr("slavv.core.tracing._resolve_frontier_edge_connection", fake_resolve)
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 2,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 8.0,
+        },
+    )
+
+    assert resolve_calls["count"] >= 3
+    assert payload["connections"] == [[0, 2], [0, 3]]
 
 
 def test_prune_frontier_indices_beyond_found_vertices_removes_forward_voxels():

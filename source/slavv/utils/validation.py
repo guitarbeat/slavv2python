@@ -143,12 +143,54 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["parity_require_mutual_frontier_participation"] = bool(
         params.get("parity_require_mutual_frontier_participation", True)
     )
+    parity_watershed_candidate_mode = str(
+        params.get("parity_watershed_candidate_mode", "all_contacts")
+    ).strip()
+    allowed_parity_watershed_candidate_modes = {
+        "all_contacts",
+        "remaining_origin_contacts",
+        "legacy_supplement",
+    }
+    if parity_watershed_candidate_mode not in allowed_parity_watershed_candidate_modes:
+        raise ValueError(
+            "parity_watershed_candidate_mode must be one of "
+            "'all_contacts', 'remaining_origin_contacts', or 'legacy_supplement'"
+        )
+    validated["parity_watershed_candidate_mode"] = parity_watershed_candidate_mode
     parity_watershed_metric_threshold = params.get("parity_watershed_metric_threshold")
     validated["parity_watershed_metric_threshold"] = (
         None
         if parity_watershed_metric_threshold in (None, "")
         else float(parity_watershed_metric_threshold)
     )
+    parity_candidate_salvage_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip()
+    allowed_parity_candidate_salvage_modes = {
+        "auto",
+        "none",
+        "frontier_deficit_geodesic",
+        "all_origins_geodesic",
+    }
+    if parity_candidate_salvage_mode not in allowed_parity_candidate_salvage_modes:
+        raise ValueError(
+            "parity_candidate_salvage_mode must be one of "
+            "'auto', 'none', 'frontier_deficit_geodesic', or 'all_origins_geodesic'"
+        )
+    validated["parity_candidate_salvage_mode"] = parity_candidate_salvage_mode
+    validated["parity_geodesic_salvage_k_nearest"] = int(
+        params.get("parity_geodesic_salvage_k_nearest", 10)
+    )
+    validated["parity_geodesic_salvage_box_margin_voxels"] = int(
+        params.get("parity_geodesic_salvage_box_margin_voxels", 4)
+    )
+    validated["parity_geodesic_salvage_max_path_ratio"] = float(
+        params.get("parity_geodesic_salvage_max_path_ratio", 2.5)
+    )
+    if validated["parity_geodesic_salvage_k_nearest"] < 1:
+        raise ValueError("parity_geodesic_salvage_k_nearest must be at least 1")
+    if validated["parity_geodesic_salvage_box_margin_voxels"] < 0:
+        raise ValueError("parity_geodesic_salvage_box_margin_voxels cannot be negative")
+    if validated["parity_geodesic_salvage_max_path_ratio"] < 1.0:
+        raise ValueError("parity_geodesic_salvage_max_path_ratio must be at least 1.0")
 
     for key in (
         "max_voxels_per_node_energy",
