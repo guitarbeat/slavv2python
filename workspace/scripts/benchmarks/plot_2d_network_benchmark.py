@@ -13,7 +13,7 @@ import numpy as np
 from slavv.visualization import NetworkVisualizer
 
 
-def generate_large_network(n_edges: int = 5000):
+def build_synthetic_network(n_edges: int = 5000):
     """Generate a large synthetic network payload for plotting benchmarks."""
     vertices = {
         "positions": np.random.rand(n_edges * 2, 3) * 100,
@@ -43,9 +43,9 @@ def generate_large_network(n_edges: int = 5000):
     return vertices, edges, network, parameters
 
 
-def benchmark_plot_2d_network():
+def run_plot_2d_network_benchmark():
     visualizer = NetworkVisualizer()
-    vertices, edges, network, parameters = generate_large_network(n_edges=5000)
+    vertices, edges, network, parameters = build_synthetic_network(n_edges=5000)
 
     print(f"[Benchmark]: Benchmarking plot_2d_network with {len(edges['traces'])} edges...")
 
@@ -70,4 +70,4 @@ def benchmark_plot_2d_network():
 
 
 if __name__ == "__main__":
-    benchmark_plot_2d_network()
+    run_plot_2d_network_benchmark()

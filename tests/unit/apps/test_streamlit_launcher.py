@@ -20,7 +20,7 @@ def test_main_reports_missing_streamlit(monkeypatch, capsys):
 
 def test_main_delegates_to_streamlit_cli(monkeypatch):
     @contextmanager
-    def fake_resolve_app_path():
+    def fake_resolve_web_app_path():
         yield Path("C:/tmp/web_app.py")
 
     commands: list[list[str]] = []
@@ -38,7 +38,9 @@ def test_main_delegates_to_streamlit_cli(monkeypatch):
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(streamlit_launcher.util, "find_spec", lambda name: object())
-    monkeypatch.setattr(streamlit_launcher, "_resolve_app_path", fake_resolve_app_path)
+    monkeypatch.setattr(
+        streamlit_launcher, "_resolve_web_app_path", fake_resolve_web_app_path
+    )
     monkeypatch.setattr(streamlit_launcher.subprocess, "run", fake_run)
 
     exit_code = streamlit_launcher.main(

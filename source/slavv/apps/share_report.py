@@ -21,12 +21,12 @@ if TYPE_CHECKING:
 DEFAULT_SHARE_REPORT_EVENT_LOG = Path(tempfile.gettempdir()) / "slavv_share_report_events.jsonl"
 
 
-def _format_value(value: Any) -> str:
+def _format_share_report_value(value: Any) -> str:
     """Format values for compact HTML display."""
     if isinstance(value, bool):
         return "Enabled" if value else "Disabled"
     if isinstance(value, (list, tuple)):
-        return ", ".join(_format_value(item) for item in value)
+        return ", ".join(_format_share_report_value(item) for item in value)
     if isinstance(value, float):
         if value.is_integer():
             return str(int(value))
@@ -34,7 +34,9 @@ def _format_value(value: Any) -> str:
     return str(value)
 
 
-def _parameter_rows(parameters: Mapping[str, Any]) -> list[tuple[str, str]]:
+def _build_share_report_parameter_rows(
+    parameters: Mapping[str, Any],
+) -> list[tuple[str, str]]:
     """Return a compact subset of processing parameters for the report."""
     selected_keys = [
         ("Voxel size (um)", parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])),
@@ -50,7 +52,7 @@ def _parameter_rows(parameters: Mapping[str, Any]) -> list[tuple[str, str]]:
         ("PSF correction", parameters.get("approximating_PSF", False)),
         ("Edges per vertex", parameters.get("number_of_edges_per_vertex", "n/a")),
     ]
-    return [(label, _format_value(value)) for label, value in selected_keys]
+    return [(label, _format_share_report_value(value)) for label, value in selected_keys]
 
 
 def compute_shareable_stats(
@@ -97,7 +99,9 @@ def make_share_report_filename(dataset_name: str) -> str:
     return f"{safe or 'slavv_run'}_share_report.html"
 
 
-def _build_distribution_figure(visualizer: NetworkVisualizer, results: Mapping[str, Any]):
+def _build_share_report_distribution_figure(
+    visualizer: NetworkVisualizer, results: Mapping[str, Any]
+):
     """Build a secondary figure for the report, with a resilient fallback."""
     try:
         return visualizer.plot_length_weighted_histograms(
@@ -131,7 +135,7 @@ def build_share_report_html(
         show_edges=True,
         show_bifurcations=True,
     )
-    distribution_fig = _build_distribution_figure(visualizer, results)
+    distribution_fig = _build_share_report_distribution_figure(visualizer, results)
 
     network_html = to_html(
         network_fig,
@@ -161,7 +165,7 @@ def build_share_report_html(
             f"{float(stats.get('bifurcation_density', 0.0)):.2f} /mm^3",
         ),
     ]
-    parameter_rows = _parameter_rows(parameters)
+    parameter_rows = _build_share_report_parameter_rows(parameters)
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     dataset_title = escape(dataset_name or "SLAVV dataset")
 
@@ -345,7 +349,7 @@ def build_share_report_html(
     }
 
 
-def get_share_event_log_path(state: Mapping[str, Any] | None = None) -> Path:
+def _resolve_share_event_log_path(state: Mapping[str, Any] | None = None) -> Path:
     """Resolve the local JSONL log path, allowing tests to override it."""
     custom_path = None if state is None else state.get("share_report_event_log_path")
     return Path(custom_path) if custom_path else DEFAULT_SHARE_REPORT_EVENT_LOG
@@ -372,7 +376,7 @@ def record_share_event(
     if extra:
         event.update(dict(extra))
 
-    log_path = get_share_event_log_path(state)
+    log_path = _resolve_share_event_log_path(state)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, sort_keys=True) + "\n")

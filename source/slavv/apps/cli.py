@@ -27,7 +27,7 @@ _EXPORT_FILE_NAMES = {
 }
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _build_cli_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser."""
     parser = argparse.ArgumentParser(
         prog="slavv",
@@ -159,7 +159,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _args_to_parameters(args: argparse.Namespace) -> dict:
+def _build_pipeline_parameters(args: argparse.Namespace) -> dict:
     """Convert parsed CLI arguments to a SLAVV parameters dict."""
     return {
         "energy_method": args.energy_method,
@@ -169,7 +169,7 @@ def _args_to_parameters(args: argparse.Namespace) -> dict:
     }
 
 
-def _cmd_info() -> None:
+def _handle_info_command() -> None:
     """Print version and system information."""
     from slavv import __version__
     from slavv.utils import get_system_info
@@ -259,10 +259,10 @@ def _load_exported_results(input_path: str) -> dict:
     """Validate and load exported JSON results for analyze/plot commands."""
     _require_existing_file(input_path)
     logger.info("Loading network from %s", input_path)
-    return _load_dict_from_json(input_path)
+    return _load_exported_network_json(input_path)
 
 
-def _cmd_run(args: argparse.Namespace) -> None:
+def _handle_run_command(args: argparse.Namespace) -> None:
     """Execute the SLAVV processing pipeline."""
     from slavv import SLAVVProcessor
     from slavv.io import load_tiff_volume
@@ -279,7 +279,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     image = load_tiff_volume(args.input)
 
     # Build parameters
-    parameters = _args_to_parameters(args)
+    parameters = _build_pipeline_parameters(args)
     effective_run_dir = args.run_dir or (
         None if args.checkpoint_dir else os.path.join(args.output, "_slavv_run")
     )
@@ -379,7 +379,7 @@ def _cmd_run(args: argparse.Namespace) -> None:
     print(f"Done. Results in {args.output}")
 
 
-def _cmd_import_matlab(args: argparse.Namespace) -> None:
+def _handle_import_matlab_command(args: argparse.Namespace) -> None:
     """Import MATLAB batch output as Python checkpoints."""
     from slavv.io.matlab_bridge import import_matlab_batch
     from slavv.runtime import RunContext
@@ -416,7 +416,7 @@ def _cmd_import_matlab(args: argparse.Namespace) -> None:
         print("No MATLAB data files found. Check that the batch folder path is correct.")
 
 
-def _cmd_status(args: argparse.Namespace) -> None:
+def _handle_status_command(args: argparse.Namespace) -> None:
     """Render run status from a run directory or legacy checkpoint directory."""
     from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
 
@@ -435,7 +435,7 @@ def _cmd_status(args: argparse.Namespace) -> None:
         print(line)
 
 
-def _load_dict_from_json(path: str) -> dict:
+def _load_exported_network_json(path: str) -> dict:
     import json
 
     with open(path) as f:
@@ -460,7 +460,7 @@ def _load_dict_from_json(path: str) -> dict:
     }
 
 
-def _cmd_analyze(args: argparse.Namespace) -> None:
+def _handle_analyze_command(args: argparse.Namespace) -> None:
     """Analyze an exported network JSON file and print statistics."""
     from slavv.analysis import calculate_network_statistics
 
@@ -490,7 +490,7 @@ def _cmd_analyze(args: argparse.Namespace) -> None:
         print(f"  Mean Edge Radius: {np.mean(radii):.2f} um")
 
 
-def _cmd_plot(args: argparse.Namespace) -> None:
+def _handle_plot_command(args: argparse.Namespace) -> None:
     """Generate interactive plots from exported network JSON."""
     from slavv.visualization.network_plots import NetworkVisualizer
 
@@ -515,7 +515,7 @@ def _cmd_plot(args: argparse.Namespace) -> None:
 
 def main(argv=None):
     """CLI entry point."""
-    parser = _build_parser()
+    parser = _build_cli_parser()
     args = parser.parse_args(argv)
 
     if args.version:
@@ -525,17 +525,17 @@ def main(argv=None):
         return
 
     if args.command == "info":
-        _cmd_info()
+        _handle_info_command()
     elif args.command == "run":
-        _cmd_run(args)
+        _handle_run_command(args)
     elif args.command == "import-matlab":
-        _cmd_import_matlab(args)
+        _handle_import_matlab_command(args)
     elif args.command == "status":
-        _cmd_status(args)
+        _handle_status_command(args)
     elif args.command == "analyze":
-        _cmd_analyze(args)
+        _handle_analyze_command(args)
     elif args.command == "plot":
-        _cmd_plot(args)
+        _handle_plot_command(args)
     else:
         parser.print_help()
         sys.exit(0 if args.command is None else 1)

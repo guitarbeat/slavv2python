@@ -14,20 +14,20 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
 _APP_PACKAGE = "slavv.apps"
-_APP_SCRIPT = "web_app.py"
+_WEB_APP_SCRIPT = "web_app.py"
 
 
 @contextmanager
-def _resolve_app_path() -> Iterator[Path]:
+def _resolve_web_app_path() -> Iterator[Path]:
     """Yield a filesystem path to the packaged Streamlit app script."""
-    app_resource = resources.files(_APP_PACKAGE).joinpath(_APP_SCRIPT)
-    with resources.as_file(app_resource) as app_path:
-        yield Path(app_path)
+    web_app_resource = resources.files(_APP_PACKAGE).joinpath(_WEB_APP_SCRIPT)
+    with resources.as_file(web_app_resource) as web_app_path:
+        yield Path(web_app_path)
 
 
-def _build_command(app_path: Path, argv: Sequence[str]) -> list[str]:
+def _build_streamlit_command(web_app_path: Path, argv: Sequence[str]) -> list[str]:
     """Build the delegated `python -m streamlit run ...` command."""
-    return [sys.executable, "-m", "streamlit", "run", str(app_path), *argv]
+    return [sys.executable, "-m", "streamlit", "run", str(web_app_path), *argv]
 
 
 def _build_env() -> dict[str, str]:
@@ -50,9 +50,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     streamlit_args = list(sys.argv[1:] if argv is None else argv)
 
-    with _resolve_app_path() as app_path:
+    with _resolve_web_app_path() as web_app_path:
         completed = subprocess.run(
-            _build_command(app_path, streamlit_args),
+            _build_streamlit_command(web_app_path, streamlit_args),
             check=False,
             env=_build_env(),
         )

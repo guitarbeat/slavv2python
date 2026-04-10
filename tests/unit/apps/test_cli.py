@@ -6,11 +6,11 @@ import numpy as np
 import pytest
 
 from slavv.apps.cli import (
-    _args_to_parameters,
+    _build_cli_parser,
     _build_export_artifacts,
-    _build_parser,
+    _build_pipeline_parameters,
     _expand_export_formats,
-    _load_dict_from_json,
+    _load_exported_network_json,
     _require_existing_file,
     main,
 )
@@ -21,7 +21,7 @@ class TestBuildParser:
     """Parser construction and basic argument parsing."""
 
     def test_help_flag(self, capsys):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         with pytest.raises(SystemExit) as exc:
             parser.parse_args(["--help"])
         assert exc.value.code == 0
@@ -29,18 +29,18 @@ class TestBuildParser:
         assert "SLAVV" in captured.out
 
     def test_version_flag(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(["--version"])
         assert args.version is True
 
     def test_run_subcommand_requires_input(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         with pytest.raises(SystemExit) as exc:
             parser.parse_args(["run"])
         assert exc.value.code != 0
 
     def test_run_subcommand_defaults(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(["run", "-i", "volume.tif"])
         assert args.input == "volume.tif"
         assert args.output == "./slavv_output"
@@ -52,7 +52,7 @@ class TestBuildParser:
         assert args.verbose is False
 
     def test_run_subcommand_full_options(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(
             [
                 "run",
@@ -84,12 +84,12 @@ class TestBuildParser:
         assert args.verbose is True
 
     def test_info_subcommand(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(["info"])
         assert args.command == "info"
 
     def test_status_subcommand(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(["status", "--run-dir", "run_dir"])
         assert args.command == "status"
         assert args.run_dir == "run_dir"
@@ -99,9 +99,9 @@ class TestArgsToParameters:
     """Verify CLI args convert correctly to SLAVV parameter dicts."""
 
     def test_default_conversion(self):
-        parser = _build_parser()
+        parser = _build_cli_parser()
         args = parser.parse_args(["run", "-i", "test.tif"])
-        params = _args_to_parameters(args)
+        params = _build_pipeline_parameters(args)
         assert params["energy_method"] == "hessian"
         assert params["edge_method"] == "tracing"
         assert params["radius_of_smallest_vessel_in_microns"] == 1.5
@@ -212,7 +212,7 @@ class TestMainEntryPoint:
         assert "Python rerun from: edges" in captured.out
 
 
-def test_load_dict_from_json_preserves_parameters(tmp_path):
+def test_load_exported_network_json_preserves_parameters(tmp_path):
     path = tmp_path / "network.json"
     path.write_text(
         json.dumps(
@@ -225,7 +225,7 @@ def test_load_dict_from_json_preserves_parameters(tmp_path):
         encoding="utf-8",
     )
 
-    result = _load_dict_from_json(str(path))
+    result = _load_exported_network_json(str(path))
 
     np.testing.assert_array_equal(result["vertices"]["positions"], np.array([[1, 2, 3]]))
     assert result["parameters"]["microns_per_voxel"] == [0.5, 0.5, 2.0]

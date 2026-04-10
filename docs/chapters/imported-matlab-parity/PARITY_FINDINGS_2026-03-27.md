@@ -80,7 +80,7 @@ start from [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
 
 ### Canonical parity rerun
 
-- Run root: `comparison_output_live_parity`
+- Historical run root: `comparison_output_live_parity`
 - Source run root: `D:\slavv_comparisons\20260327_150656_clean_parity`
 - MATLAB batch: `batch_260327-150756`
 - Python energy source: `matlab_batch_hdf5`

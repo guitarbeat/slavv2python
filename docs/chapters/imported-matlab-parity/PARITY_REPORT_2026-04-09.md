@@ -10,6 +10,11 @@ For the active chapter, start with
 and the maintained
 [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 
+Concrete `comparison_output_*` paths below are retained Chapter 1 evidence
+artifacts. They preserve the original run layout and path names used during
+that work; for current staged layout guidance, use
+[COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+
 ## Purpose
 
 This report summarizes what was discovered during the recent MATLAB-vs-Python parity work in `slavv2python`, what experiments were run, where parity was achieved, where it was not achieved, and which local and external sources informed the conclusions.
@@ -46,13 +51,14 @@ The main question was:
 
 ## Scope And Test Surface
 
-The main comparison surface used in this round was the saved MATLAB batch rooted at:
+The main historical comparison surface used in this round was the saved MATLAB
+batch rooted at:
 
 - `comparison_output_synthetic_final_20260409_rerun`
 
 This allowed repeated Python parity reruns without relaunching MATLAB, using imported MATLAB energy and exact MATLAB vertices.
 
-Primary comparison input:
+Primary comparison input preserved from that run:
 
 - `comparison_output_synthetic_final_20260409/00_InputFixtures/synthetic_branch_volume.tif`
 
@@ -376,6 +382,9 @@ Compare the retained Python parity candidate bookkeeping more directly against t
 Both were useful experiments, but both worsened aggregate parity.
 
 ## Sources
+
+The local evidence links below intentionally preserve the original Chapter 1
+artifact paths.
 
 ### Local Evidence
 
