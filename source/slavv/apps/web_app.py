@@ -6,6 +6,7 @@ import tempfile
 import warnings
 import zipfile
 from datetime import datetime
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ from slavv.apps.share_report import (
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
-from slavv.runtime import RunContext, load_run_snapshot
+from slavv.runtime import RunContext, RunSnapshot, load_run_snapshot
 from slavv.runtime.run_state import fingerprint_jsonable, target_stage_progress
 from slavv.utils import validate_parameters
 from slavv.utils.formatting import format_time
@@ -802,12 +803,12 @@ def _open_dashboard_metric_dialog() -> None:
 def _render_dashboard_surface() -> None:
     """Render the core dashboard surface using the current session context."""
     context = _dashboard_context()
-    run_dir = context["run_dir"]
-    snapshot = context["snapshot"]
-    results = context["results"]
-    share_metrics = context["share_metrics"]
-    dataset_name = context["dataset_name"]
-    stats = context["stats"]
+    run_dir = cast("str | None", context["run_dir"])
+    snapshot = cast("RunSnapshot | None", context["snapshot"])
+    results = cast("dict[str, Any] | None", context["results"])
+    share_metrics = cast("dict[str, object]", context["share_metrics"])
+    dataset_name = cast("str", context["dataset_name"])
+    stats = cast("dict[str, Any] | None", context["stats"])
 
     source_mode = "Live run" if snapshot is not None else "Shell only"
     data_mode = "Network loaded" if stats is not None else "Awaiting metrics"
@@ -1964,12 +1965,12 @@ def show_ml_curation_page():
                 "Performing ML curation...",
                 expanded=True,
             ) as status:
-                ml_curator = st.session_state.get("ml_curator")
+                ml_curator = cast("MLCurator | None", st.session_state.get("ml_curator"))
                 if ml_curator is None:
                     ml_curator = MLCurator()
                     ml_curator.load_models(vertex_model_file, edge_model_file)
 
-                if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:  # type: ignore[union-attr]
+                if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:
                     st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
                     _update_run_task(
                         st.session_state.get("current_run_dir"),
@@ -1979,14 +1980,14 @@ def show_ml_curation_page():
                     )
                     st.stop()
 
-                curated_vertices = ml_curator.curate_vertices(  # type: ignore[union-attr]
+                curated_vertices = ml_curator.curate_vertices(
                     results["vertices"],
                     results["energy_data"],
                     st.session_state["image_shape"],
                     vertex_confidence_threshold,
                 )
 
-                curated_edges = ml_curator.curate_edges(  # type: ignore[union-attr]
+                curated_edges = ml_curator.curate_edges(
                     results["edges"],
                     curated_vertices,
                     results["energy_data"],

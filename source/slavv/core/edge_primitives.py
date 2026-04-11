@@ -315,7 +315,8 @@ def _record_trace_diagnostics(
 def _trace_scale_series(edge_trace: np.ndarray, scale_indices: np.ndarray | None) -> np.ndarray:
     """Sample projected scale indices along an edge trace."""
     if scale_indices is None:
-        return np.zeros((len(edge_trace),), dtype=np.int16)
+        empty_scale_trace: np.ndarray = np.zeros((len(edge_trace),), dtype=np.int16)
+        return empty_scale_trace
     idx = _clip_trace_indices(edge_trace, scale_indices.shape)
     scale_trace: Int16Array = scale_indices[idx[:, 0], idx[:, 1], idx[:, 2]].astype(
         np.int16,

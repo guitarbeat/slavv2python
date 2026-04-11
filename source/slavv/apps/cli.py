@@ -420,18 +420,16 @@ def _handle_import_matlab_command(args: argparse.Namespace) -> None:
 
 def _handle_status_command(args: argparse.Namespace) -> None:
     """Render run status from a run directory or legacy checkpoint directory."""
-    from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
+    from slavv.runtime import build_status_lines, load_legacy_run_snapshot, load_run_snapshot
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
 
     snapshot = load_run_snapshot(args.run_dir)
     if snapshot is None:
-        legacy_context = RunContext(
-            checkpoint_dir=args.run_dir,
-            target_stage="network",
-            legacy=True,
-        )
-        snapshot = legacy_context.snapshot
+        snapshot = load_legacy_run_snapshot(args.run_dir)
+    if snapshot is None:
+        print(f"Error: no run snapshot or legacy checkpoints found in {args.run_dir}", file=sys.stderr)
+        sys.exit(1)
 
     for line in build_status_lines(snapshot):
         print(line)
@@ -441,10 +439,12 @@ def _normalize_exported_edge_connections(raw_connections: object) -> np.ndarray:
     """Normalize exported edge connections into a 2-column integer array."""
     connections = np.asarray(raw_connections, dtype=int)
     if connections.size == 0:
-        return np.empty((0, 2), dtype=int)
+        empty_connections: np.ndarray = np.empty((0, 2), dtype=int)
+        return empty_connections
     connections = np.atleast_2d(connections)
     if connections.shape[1] < 2:
-        return np.empty((0, 2), dtype=int)
+        insufficient_connections: np.ndarray = np.empty((0, 2), dtype=int)
+        return insufficient_connections
     return cast("np.ndarray", np.asarray(connections[:, :2], dtype=int))
 
 

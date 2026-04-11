@@ -95,6 +95,10 @@ def test_validate_parameters_warns_for_unusual_excitation_wavelength():
             "microns_per_voxel must be a 3-element array",
         ),
         (
+            {"microns_per_voxel": [0.0, 1.0, 1.0]},
+            "microns_per_voxel values must be positive",
+        ),
+        (
             {"number_of_edges_per_vertex": 4.5},
             "number_of_edges_per_vertex must be an integer value",
         ),

@@ -18,6 +18,8 @@ from typing import Any, Callable, cast
 import joblib
 import numpy as np
 
+from slavv.utils.safe_unpickle import safe_load
+
 logger = logging.getLogger(__name__)
 
 PREPROCESS_STAGE = "preprocess"
@@ -268,6 +270,42 @@ def load_run_snapshot(path_or_dir: str | Path) -> RunSnapshot | None:
     return None
 
 
+def load_legacy_run_snapshot(
+    checkpoint_dir: str | Path, *, target_stage: str = "network"
+) -> RunSnapshot | None:
+    """Inspect legacy checkpoint directories without mutating them."""
+    checkpoints_dir = Path(checkpoint_dir)
+    checkpoint_paths = {
+        stage: checkpoints_dir / f"checkpoint_{stage}.pkl" for stage in PIPELINE_STAGES
+    }
+    if not any(path.exists() for path in checkpoint_paths.values()):
+        return None
+
+    snapshot = RunSnapshot(
+        run_id=uuid.uuid4().hex[:12],
+        target_stage=target_stage,
+        status=STATUS_PENDING,
+        stages=_ensure_stage_map(),
+        provenance={"layout": "legacy"},
+    )
+    for stage, path in checkpoint_paths.items():
+        if not path.exists():
+            continue
+        stage_snapshot = snapshot.stages[stage]
+        stage_snapshot.status = STATUS_COMPLETED
+        stage_snapshot.progress = 1.0
+        stage_snapshot.units_total = 1
+        stage_snapshot.units_completed = 1
+        stage_snapshot.resumed = True
+        stage_snapshot.artifacts["checkpoint"] = str(path)
+        stage_snapshot.completed_at = _now_iso()
+    total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
+    snapshot.overall_progress = sum(
+        STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in PIPELINE_STAGES
+    ) / total
+    return snapshot
+
+
 def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[str, StageSnapshot]:
     stages = {name: StageSnapshot(name=name) for name in TRACKED_RUN_STAGES}
     if existing:
@@ -312,7 +350,7 @@ class StageController:
             loaded_state = json.load(handle)
         if not isinstance(loaded_state, dict):
             raise ValueError(f"Expected JSON object in {self.state_path}")
-        return cast(dict[str, Any], loaded_state)
+        return cast("dict[str, Any]", loaded_state)
 
     def save_state(self, state: dict[str, Any]) -> None:
         atomic_write_json(self.state_path, state)
@@ -322,7 +360,7 @@ class StageController:
             self.state_path.unlink()
 
     def load_checkpoint(self) -> Any:
-        return joblib.load(self.checkpoint_path)
+        return safe_load(self.checkpoint_path)
 
     def save_checkpoint(self, data: Any) -> None:
         atomic_joblib_dump(data, self.checkpoint_path)
@@ -398,7 +436,7 @@ class RunContext:
         checkpoint_dir: str | Path | None = None,
         input_fingerprint: str = "",
         params_fingerprint: str = "",
-        target_stage: str = "network",
+        target_stage: str | None = "network",
         provenance: dict[str, Any] | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
         legacy: bool = False,
@@ -439,11 +477,13 @@ class RunContext:
         *,
         legacy: bool = False,
         checkpoint_dir: str | Path | None = None,
+        target_stage: str | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
     ) -> RunContext:
         return cls(
             run_dir=None if legacy else run_dir,
-            checkpoint_dir=checkpoint_dir if legacy else None,
+            checkpoint_dir=(checkpoint_dir or run_dir) if legacy else None,
+            target_stage=target_stage,
             event_callback=event_callback,
             legacy=legacy,
         )
@@ -453,7 +493,7 @@ class RunContext:
         *,
         input_fingerprint: str,
         params_fingerprint: str,
-        target_stage: str,
+        target_stage: str | None,
         provenance: dict[str, Any],
     ) -> RunSnapshot:
         self.metadata_dir.mkdir(parents=True, exist_ok=True)
@@ -463,7 +503,7 @@ class RunContext:
 
         existing = load_run_snapshot(self.snapshot_path)
         if existing is None and self.legacy:
-            existing = self._bootstrap_legacy_snapshot(target_stage=target_stage)
+            existing = self._bootstrap_legacy_snapshot(target_stage=target_stage or "network")
 
         if existing is not None:
             existing.stages = _ensure_stage_map(existing.stages)
@@ -474,7 +514,7 @@ class RunContext:
                 existing.input_fingerprint = input_fingerprint
             if params_fingerprint and not existing.params_fingerprint:
                 existing.params_fingerprint = params_fingerprint
-            if target_stage:
+            if target_stage is not None:
                 existing.target_stage = target_stage
             if provenance:
                 existing.provenance.update(_normalize_for_json(provenance))
@@ -486,7 +526,7 @@ class RunContext:
             input_fingerprint=input_fingerprint,
             params_fingerprint=params_fingerprint,
             status=STATUS_PENDING,
-            target_stage=target_stage,
+            target_stage=target_stage or "network",
             stages=_ensure_stage_map(),
             provenance=_normalize_for_json(
                 {
@@ -497,27 +537,9 @@ class RunContext:
         )
 
     def _bootstrap_legacy_snapshot(self, *, target_stage: str) -> RunSnapshot | None:
-        checkpoint_paths = {stage: self.checkpoint_path(stage) for stage in PIPELINE_STAGES}
-        if not any(path.exists() for path in checkpoint_paths.values()):
+        snapshot = load_legacy_run_snapshot(self.checkpoints_dir, target_stage=target_stage)
+        if snapshot is None:
             return None
-
-        snapshot = RunSnapshot(
-            run_id=uuid.uuid4().hex[:12],
-            target_stage=target_stage,
-            status=STATUS_PENDING,
-            stages=_ensure_stage_map(),
-            provenance={"layout": "legacy"},
-        )
-        for stage, path in checkpoint_paths.items():
-            if path.exists():
-                stage_snapshot = snapshot.stages[stage]
-                stage_snapshot.status = STATUS_COMPLETED
-                stage_snapshot.progress = 1.0
-                stage_snapshot.units_total = 1
-                stage_snapshot.units_completed = 1
-                stage_snapshot.resumed = True
-                stage_snapshot.artifacts["checkpoint"] = str(path)
-                stage_snapshot.completed_at = _now_iso()
         snapshot.overall_progress = self._calculate_overall_progress(
             snapshot.stages,
             preprocess_done=bool(snapshot.artifacts.get("preprocess_done")),

@@ -28,9 +28,16 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated = {}
 
     # Voxel size parameters
-    validated["microns_per_voxel"] = params.get("microns_per_voxel", [1.0, 1.0, 1.0])
+    try:
+        validated["microns_per_voxel"] = [
+            float(value) for value in params.get("microns_per_voxel", [1.0, 1.0, 1.0])
+        ]
+    except (TypeError, ValueError) as exc:
+        raise ValueError("microns_per_voxel must be a 3-element array") from exc
     if len(validated["microns_per_voxel"]) != 3:
         raise ValueError("microns_per_voxel must be a 3-element array")
+    if any(value <= 0 for value in validated["microns_per_voxel"]):
+        raise ValueError("microns_per_voxel values must be positive")
 
     # Vessel size parameters
     validated["radius_of_smallest_vessel_in_microns"] = params.get(

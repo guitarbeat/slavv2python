@@ -15,6 +15,7 @@ from slavv.core.edge_selection import (
     _construct_structuring_element_offsets_matlab,
     _offset_coords_matlab,
 )
+from slavv.core.graph import _remove_short_hairs
 from slavv.core.vertices import (
     extract_vertices,
     paint_vertex_center_image,
@@ -40,6 +41,25 @@ def test_extract_handles_no_vertices():
     network = processor.construct_network(edges, vertices, {})
     assert len(network["adjacency_list"]) == 0
     assert network["orphans"].size == 0
+
+
+def test_remove_short_hairs_repeats_until_graph_is_stable():
+    adjacency_list = {
+        0: {1},
+        1: {0, 2},
+        2: {1, 3},
+        3: {2},
+    }
+    graph_edges = {
+        (0, 1): np.array([[0, 0, 0], [1, 0, 0]], dtype=np.float32),
+        (1, 2): np.array([[1, 0, 0], [2, 0, 0]], dtype=np.float32),
+        (2, 3): np.array([[2, 0, 0], [3, 0, 0]], dtype=np.float32),
+    }
+
+    _remove_short_hairs(graph_edges, adjacency_list, np.ones(3, dtype=np.float32), 1.5)
+
+    assert graph_edges == {}
+    assert adjacency_list == {0: set(), 1: set(), 2: set(), 3: set()}
 
 
 def test_process_image_requires_3d():

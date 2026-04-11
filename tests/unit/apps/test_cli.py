@@ -211,6 +211,15 @@ class TestMainEntryPoint:
         assert "restart-current-stage" in captured.out
         assert "Python rerun from: edges" in captured.out
 
+    def test_status_missing_snapshot_is_read_only(self, capsys, tmp_path):
+        with pytest.raises(SystemExit) as exc:
+            main(["status", "--run-dir", str(tmp_path)])
+
+        captured = capsys.readouterr()
+        assert exc.value.code == 1
+        assert "no run snapshot or legacy checkpoints found" in captured.err
+        assert list(tmp_path.iterdir()) == []
+
 
 def test_load_exported_network_json_preserves_parameters(tmp_path):
     path = tmp_path / "network.json"

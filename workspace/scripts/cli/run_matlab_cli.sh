@@ -100,15 +100,20 @@ if [ -n "$ONEDRIVE_WARNING" ]; then
     echo "" >> "$LOG_FILE"
 fi
 
+# Escape a filesystem path for a MATLAB single-quoted string literal.
+matlab_escape_path() {
+    printf "%s" "$1" | sed "s/'/''/g"
+}
+
 # Prepare MATLAB command
 # Escape single quotes in paths for MATLAB string literals
-INPUT_FILE_ESC="${INPUT_FILE_ABS//\'/\'\'}"
-OUTPUT_DIR_ESC="${OUTPUT_DIR_ABS//\'/\'\'}"
-VECTORIZATION_DIR_ESC="${VECTORIZATION_DIR//\'/\'\'}"
-SCRIPT_DIR_ESC="${SCRIPT_DIR//\'/\'\'}"
+INPUT_FILE_ESC="$(matlab_escape_path "$INPUT_FILE_ABS")"
+OUTPUT_DIR_ESC="$(matlab_escape_path "$OUTPUT_DIR_ABS")"
+VECTORIZATION_DIR_ESC="$(matlab_escape_path "$VECTORIZATION_DIR")"
+SCRIPT_DIR_ESC="$(matlab_escape_path "$SCRIPT_DIR")"
 
 if [ -n "$PARAMS_FILE_ABS" ]; then
-    PARAMS_FILE_ESC="${PARAMS_FILE_ABS//\'/\'\'}"
+    PARAMS_FILE_ESC="$(matlab_escape_path "$PARAMS_FILE_ABS")"
     MATLAB_SCRIPT="cd('$VECTORIZATION_DIR_ESC'); addpath('$SCRIPT_DIR_ESC'); run_matlab_vectorization('$INPUT_FILE_ESC', '$OUTPUT_DIR_ESC', '$PARAMS_FILE_ESC'); exit"
 else
     MATLAB_SCRIPT="cd('$VECTORIZATION_DIR_ESC'); addpath('$SCRIPT_DIR_ESC'); run_matlab_vectorization('$INPUT_FILE_ESC', '$OUTPUT_DIR_ESC'); exit"

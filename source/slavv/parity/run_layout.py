@@ -209,6 +209,10 @@ def list_runs(experiment_dir: Path) -> list[dict[str, Any]]:
     for results in experiment_dir.rglob("matlab_results"):
         add_run(results.parent)
 
+    # Interrupted staged runs may only have metadata persisted so far.
+    for snapshot in experiment_dir.rglob("run_snapshot.json"):
+        add_run(snapshot.parent)
+
     return sorted(runs, key=lambda x: x["name"], reverse=True)
 
 

@@ -153,7 +153,8 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
     )
     kept = offsets[distances <= 1.0]
     if kept.size == 0:
-        return np.zeros((1, 3), dtype=np.int32)
+        empty_offsets: np.ndarray = np.zeros((1, 3), dtype=np.int32)
+        return empty_offsets
     kept_offsets: Int32Array = kept.astype(np.int32, copy=False)
     return cast("np.ndarray", kept_offsets)
 
@@ -180,7 +181,8 @@ def _clean_edges_vertex_degree_excess_python(
 ) -> np.ndarray:
     """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
     if connections.size == 0 or max_edges_per_vertex <= 0:
-        return np.ones((len(connections),), dtype=bool)
+        keep_all: np.ndarray = np.ones((len(connections),), dtype=bool)
+        return keep_all
 
     # Edge cleanup
     keep: np.ndarray = np.ones((len(connections),), dtype=bool)
@@ -208,7 +210,8 @@ def _clean_edges_orphans_python(
 ) -> np.ndarray:
     """Remove edges whose endpoints do not touch a vertex or any interior edge voxel."""
     if not traces:
-        return np.zeros((0,), dtype=bool)
+        empty_keep: np.ndarray = np.zeros((0,), dtype=bool)
+        return empty_keep
 
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
         np.int32, copy=False
@@ -263,7 +266,8 @@ def _clean_edges_orphans_python(
 def _clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
     """Remove cycle-closing edges while preserving the best-to-worst order."""
     if connections.size == 0:
-        return np.zeros((0,), dtype=bool)
+        empty_keep: np.ndarray = np.zeros((0,), dtype=bool)
+        return empty_keep
 
     keep: np.ndarray = np.ones((len(connections),), dtype=bool)
     n_vertices = int(np.max(connections)) + 1

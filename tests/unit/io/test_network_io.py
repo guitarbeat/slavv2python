@@ -104,6 +104,23 @@ class TestNetworkImport:
         assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
         assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
 
+    def test_load_from_casx_remaps_explicit_vertex_ids(self, tmp_path: Path) -> None:
+        xml = (
+            "<?xml version='1.0' encoding='UTF-8'?>\n"
+            "<CasX><Network><Vertices>"
+            "<Vertex id='10' x='1.0' y='2.0' z='3.0' radius='4.0'/>"
+            "<Vertex id='42' x='4.0' y='5.0' z='6.0' radius='7.0'/>"
+            "</Vertices><Edges>"
+            "<Edge id='0' start='42' end='10'/>"
+            "</Edges></Network></CasX>"
+        )
+        casx_path = tmp_path / "network_ids.casx"
+        casx_path.write_text(xml, encoding="utf-8")
+
+        network = load_network_from_casx(casx_path)
+
+        assert np.array_equal(network.edges, np.array([[1, 0]], dtype=int))
+
     def test_load_from_casx_rejects_entity_expansion(self, tmp_path: Path) -> None:
         xml = (
             "<?xml version='1.0' encoding='UTF-8'?>\n"
@@ -175,3 +192,20 @@ class TestNetworkImport:
         assert np.allclose(network.vertices, expected_vertices)
         assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
         assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
+
+    def test_load_from_csv_remaps_vertex_ids(self, tmp_path: Path) -> None:
+        prefix = tmp_path / "net_ids"
+        prefix.with_name("net_ids_vertices.csv").write_text(
+            "vertex_id,y_position,x_position,z_position,radius_microns\n"
+            "10,1.0,2.0,3.0,4.0\n"
+            "42,4.0,5.0,6.0,7.0\n",
+            encoding="utf-8",
+        )
+        prefix.with_name("net_ids_edges.csv").write_text(
+            "edge_id,start_vertex,end_vertex\n0,42,10\n",
+            encoding="utf-8",
+        )
+
+        network = load_network_from_csv(prefix)
+
+        assert np.array_equal(network.edges, np.array([[1, 0]], dtype=int))

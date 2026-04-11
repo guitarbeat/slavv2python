@@ -662,7 +662,7 @@ class MLCurator:
             e_features = self.extract_edge_features(
                 results["edges"], results["vertices"], results["energy_data"]
             )
-            e_labels = annotations.get("edge_labels", np.ones(len(e_features)))
+            e_labels = annot.get("edge_labels", np.ones(len(e_features)))
 
             edge_features_list.append(e_features)
             edge_labels_list.append(e_labels)

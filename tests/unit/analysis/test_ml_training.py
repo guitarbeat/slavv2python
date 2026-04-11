@@ -23,3 +23,35 @@ def test_train_classifiers():
     assert isinstance(curator.edge_classifier, MLPClassifier)
     assert curator.edge_classifier.activation == "logistic"
     assert "test_accuracy" in res_e
+
+
+def test_generate_training_data_uses_annotation_edge_labels():
+    curator = MLCurator()
+    results = [
+        {
+            "vertices": {
+                "positions": np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+                "energies": np.array([0.5], dtype=np.float32),
+                "scales": np.array([0], dtype=np.int16),
+                "radii_pixels": np.array([1.0], dtype=np.float32),
+                "radii_microns": np.array([1.0], dtype=np.float32),
+            },
+            "edges": {
+                "traces": [np.array([[1.0, 1.0, 1.0], [2.0, 1.0, 1.0]], dtype=np.float32)],
+                "energies": np.array([0.25], dtype=np.float32),
+                "connections": np.array([[0, 0]], dtype=np.int32),
+            },
+            "energy_data": {
+                "energy": np.zeros((4, 4, 4), dtype=np.float32),
+                "scale_indices": np.zeros((4, 4, 4), dtype=np.int16),
+                "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
+            },
+            "image_shape": (4, 4, 4),
+        }
+    ]
+    annotations = [{"vertex_labels": np.array([1]), "edge_labels": np.array([0])}]
+
+    _, vertex_labels, _, edge_labels = curator.generate_training_data(results, annotations)
+
+    np.testing.assert_array_equal(vertex_labels, np.array([1]))
+    np.testing.assert_array_equal(edge_labels, np.array([0]))

@@ -268,22 +268,16 @@ class TestLoadMatlabBatchResults:
         test_file = tmp_path / "test.txt"
         test_file.touch()
 
-        # Current implementation just warns if vectors dir not found, does not raise error for file input unless it checks for is_dir() strictly at top level.
-        # It logs "Vectors directory not found" and returns empty results.
-        # Let's check for that behavior instead of raising.
-        result = load_matlab_batch_results(test_file)
-        assert result["vertices"]["count"] == 0
+        with pytest.raises(MATLABParseError, match="not a directory"):
+            load_matlab_batch_results(test_file)
 
     def test_load_empty_batch_folder(self, tmp_path):
         """Test loading from empty batch folder."""
         batch_folder = tmp_path / "batch_250127-120000"
         batch_folder.mkdir()
 
-        result = load_matlab_batch_results(batch_folder)
-
-        assert result["batch_folder"] == str(batch_folder)
-        assert result["vertices"]["count"] == 0
-        assert result["edges"]["count"] == 0
+        with pytest.raises(MATLABParseError, match="Vectors directory not found"):
+            load_matlab_batch_results(batch_folder)
 
     def test_load_batch_folder_structure(self, tmp_path):
         """Test loading with proper folder structure."""
@@ -365,17 +359,10 @@ class TestIntegrationScenarios:
         """Test parsing minimal MATLAB output structure."""
         # Create minimal batch folder
         batch_folder = tmp_path / "batch_250127-120000"
-        vectors_dir = batch_folder / "vectors"
         batch_folder.mkdir()
-        vectors_dir.mkdir()
 
-        # Load results (should not crash)
-        result = load_matlab_batch_results(batch_folder)
-
-        assert result is not None
-        assert isinstance(result, dict)
-        assert "vertices" in result
-        assert "edges" in result
+        with pytest.raises(MATLABParseError, match="Vectors directory not found"):
+            load_matlab_batch_results(batch_folder)
 
     def test_find_and_load_batch(self, tmp_path):
         """Test finding and loading batch folder in workflow."""

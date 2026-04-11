@@ -53,7 +53,8 @@ if _NUMBA_AVAILABLE:
         dim_z = energy.shape[2]
 
         if dim_y < 3 or dim_x < 3 or dim_z < 3:
-            return np.zeros(3, dtype=np.float64)
+            empty_gradient: np.ndarray = np.zeros(3, dtype=np.float64)
+            return empty_gradient
 
         # Manual clamping to [1, shape-2]
         pos_y = int(pos_int[0])
@@ -104,7 +105,8 @@ else:
 
         # Check for small volume
         if shape_y < 3 or shape_x < 3 or shape_z < 3:
-            return np.zeros(3, dtype=float)
+            empty_gradient: np.ndarray = np.zeros(3, dtype=float)
+            return empty_gradient
 
         # Manual clamping to [1, shape-2] to prevent out-of-bounds access
         if pos_y < 1:

@@ -65,7 +65,7 @@ def compute_shareable_stats(
     network = processing_results["network"]
 
     return cast(
-        dict[str, Any],
+        "dict[str, Any]",
         calculate_network_statistics(
             network["strands"],
             network["bifurcations"],

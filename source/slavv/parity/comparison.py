@@ -16,7 +16,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-import joblib
 import numpy as np
 
 from slavv.core import SLAVVProcessor
@@ -25,6 +24,7 @@ from slavv.io.matlab_bridge import import_matlab_batch, load_matlab_batch_params
 from slavv.io.matlab_parser import load_matlab_batch_results
 from slavv.runtime import ProgressEvent, RunContext
 from slavv.utils import format_time, get_matlab_info, get_system_info
+from slavv.utils.safe_unpickle import safe_load
 from slavv.visualization import NetworkVisualizer
 
 from .matlab_status import (
@@ -972,10 +972,10 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
         return None
 
     try:
-        energy_data = joblib.load(energy_path) if energy_path.exists() else None
-        vertices = joblib.load(vertices_path)
-        edges = joblib.load(edges_path)
-        network = joblib.load(network_path)
+        energy_data = safe_load(energy_path) if energy_path.exists() else None
+        vertices = safe_load(vertices_path)
+        edges = safe_load(edges_path)
+        network = safe_load(network_path)
     except Exception:
         return None
 
@@ -1000,7 +1000,7 @@ def _load_python_candidate_edges(python_root: Path) -> dict[str, Any] | None:
     if not candidate_path.exists():
         return None
     try:
-        return joblib.load(candidate_path)
+        return safe_load(candidate_path)
     except Exception:
         return None
 

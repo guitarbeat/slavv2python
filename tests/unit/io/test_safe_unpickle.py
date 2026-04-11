@@ -46,6 +46,19 @@ def test_safe_load_forbidden(tmp_path):
         safe_load(p)
 
 
+def test_safe_load_rejects_builtin_eval_gadget(tmp_path):
+    class Forbidden:
+        def __reduce__(self):
+            return (eval, ("1 + 1",))
+
+    p = tmp_path / "builtin_eval.pkl"
+    with open(p, "wb") as f:
+        pickle.dump(Forbidden(), f)
+
+    with pytest.raises(pickle.UnpicklingError, match="forbidden"):
+        safe_load(p)
+
+
 def test_safe_load_size_limit(tmp_path):
     p = tmp_path / "large.pkl"
     with open(p, "wb") as f:

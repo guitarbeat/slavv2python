@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from ..utils.safe_unpickle import safe_load
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -60,7 +62,8 @@ def _normalize_connections(edge_connections: Any) -> np.ndarray:
     """Normalize edge connections to an ``(N, 2)`` int32 array."""
     connections = np.asarray(edge_connections, dtype=np.int32)
     if connections.size == 0:
-        return np.empty((0, 2), dtype=np.int32)
+        empty_connections: np.ndarray = np.empty((0, 2), dtype=np.int32)
+        return empty_connections
     normalized = connections.reshape(-1, 2)
     return cast("np.ndarray", normalized)
 
@@ -105,18 +108,22 @@ def _remove_short_hairs(
     if min_hair_length <= 0:
         return
 
-    to_remove: list[tuple[int, int]] = []
-    for (v0, v1), trace in graph_edges.items():
-        length: float = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
-        if length < min_hair_length and (
-            len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
-        ):
+    while True:
+        to_remove: list[tuple[int, int]] = []
+        for (v0, v1), trace in list(graph_edges.items()):
+            length: float = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
+            if length < min_hair_length and (
+                len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
+            ):
+                to_remove.append((v0, v1))
+
+        if not to_remove:
+            return
+
+        for v0, v1 in to_remove:
             adjacency_list[v0].discard(v1)
             adjacency_list[v1].discard(v0)
-            to_remove.append((v0, v1))
-
-    for key in to_remove:
-        del graph_edges[key]
+            del graph_edges[(v0, v1)]
 
 
 def _remove_cycles(
@@ -465,9 +472,7 @@ def construct_network_resumable(
             adjacency_path,
         )
 
-    import joblib
-
-    adjacency_payload = joblib.load(adjacency_path)
+    adjacency_payload = safe_load(adjacency_path)
     adjacency_list = adjacency_payload["adjacency_list"]
     graph_edges = adjacency_payload["graph_edges"]
     dangling_edges = adjacency_payload["dangling_edges"]
@@ -480,7 +485,7 @@ def construct_network_resumable(
             pruned_path,
         )
     if pruned_path.exists():
-        pruned_payload = joblib.load(pruned_path)
+        pruned_payload = safe_load(pruned_path)
         adjacency_list = pruned_payload["adjacency_list"]
         graph_edges = pruned_payload["graph_edges"]
     stage_controller.update(units_total=5, units_completed=2, substage="hair_prune")
@@ -493,7 +498,7 @@ def construct_network_resumable(
             cycle_path,
         )
     if cycle_path.exists():
-        cycle_payload = joblib.load(cycle_path)
+        cycle_payload = safe_load(cycle_path)
         adjacency_list = cycle_payload["adjacency_list"]
         graph_edges = cycle_payload["graph_edges"]
         cycles = cycle_payload["cycles"]
@@ -510,7 +515,7 @@ def construct_network_resumable(
             else _default_network_topology(adjacency_list, n_vertices)
         )
         atomic_joblib_dump(topology, strands_path)
-    topology = joblib.load(strands_path)
+    topology = safe_load(strands_path)
     stage_controller.update(units_total=5, units_completed=4, substage="strand_trace")
 
     network = _network_payload(

@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-import joblib
 import numpy as np
 import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
+from ..utils.safe_unpickle import safe_load
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -193,7 +193,7 @@ def extract_edges_watershed(
 
     return {
         "traces": edges,
-        "connections": np.asarray(connections, dtype=np.int32),
+        "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
         "energies": np.asarray(edge_energies, dtype=np.float32),
         "vertex_positions": vertex_positions.astype(np.float32),
     }
@@ -226,7 +226,7 @@ def _load_edge_units(
     origin_indices: list[int] = []
     connection_sources: list[str] = []
     for unit_file in sorted(units_dir.glob("*.pkl")):
-        unit_payload = joblib.load(unit_file)
+        unit_payload = safe_load(unit_file)
         origin_index = int(unit_payload["origin_index"])
         completed.add(origin_index)
         unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]

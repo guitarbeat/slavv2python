@@ -54,6 +54,34 @@ def _normalize_edges_array(edges: Any) -> np.ndarray:
     return np.atleast_2d(array)
 
 
+def _build_vertex_id_map(vertex_ids: list[int]) -> dict[int, int]:
+    """Build a compact index map from explicit vertex IDs."""
+    mapping: dict[int, int] = {}
+    for index, vertex_id in enumerate(vertex_ids):
+        if vertex_id in mapping:
+            raise ValueError(f"Duplicate vertex id encountered: {vertex_id}")
+        mapping[vertex_id] = index
+    return mapping
+
+
+def _remap_edge_pairs(
+    edge_pairs: list[list[int]],
+    vertex_id_map: dict[int, int] | None,
+) -> np.ndarray:
+    """Normalize edge references against explicit vertex IDs when provided."""
+    if vertex_id_map is None:
+        return _normalize_edges_array(edge_pairs)
+
+    remapped: list[list[int]] = []
+    for start_id, end_id in edge_pairs:
+        if start_id not in vertex_id_map or end_id not in vertex_id_map:
+            raise ValueError(
+                f"Edge references unknown vertex id(s): start={start_id}, end={end_id}"
+            )
+        remapped.append([vertex_id_map[start_id], vertex_id_map[end_id]])
+    return _normalize_edges_array(remapped)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Loaders
 # ──────────────────────────────────────────────────────────────────────────────
@@ -146,7 +174,9 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
     root = ReadET.parse(Path(path)).getroot()
     vert_list: list[list[float]] = []
     radii_list: list[float] = []
+    vertex_ids: list[int] = []
     for v in root.findall(".//Vertex"):
+        vertex_ids.append(int(v.attrib.get("id", len(vertex_ids))))
         x = float(v.attrib.get("x", 0.0))
         y = float(v.attrib.get("y", 0.0))
         z = float(v.attrib.get("z", 0.0))
@@ -163,7 +193,7 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
         edge_list.append([int(start), int(end)])
 
     vertices = _normalize_vertices_array(vert_list)
-    edges = _normalize_edges_array(edge_list)
+    edges = _remap_edge_pairs(edge_list, _build_vertex_id_map(vertex_ids))
     radii = np.asarray(radii_list, dtype=float) if radii_list else None
     return Network(vertices=vertices, edges=edges, radii=radii)
 
@@ -225,7 +255,11 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
         radii = v_df["radius_pixels"].to_numpy(float)
 
     e_df = pd.read_csv(edge_path)
-    edges = _normalize_edges_array(e_df[["start_vertex", "end_vertex"]].to_numpy(int))
+    vertex_id_map = None
+    if "vertex_id" in v_df.columns:
+        vertex_id_map = _build_vertex_id_map(v_df["vertex_id"].astype(int).tolist())
+    edge_pairs = e_df[["start_vertex", "end_vertex"]].to_numpy(int).tolist()
+    edges = _remap_edge_pairs(edge_pairs, vertex_id_map)
     return Network(vertices=vertices, edges=edges, radii=radii)
 
 

@@ -19,6 +19,7 @@ from slavv.runtime.run_state import (
     STATUS_PENDING,
     atomic_write_json,
     build_status_lines,
+    load_legacy_run_snapshot,
     target_stage_progress,
 )
 
@@ -183,6 +184,34 @@ def test_legacy_checkpoints_bootstrap_snapshot(tmp_path):
     assert snapshot.stages["energy"].resumed is True
     assert snapshot.stages["edges"].status == STATUS_PENDING
     assert load_run_snapshot(checkpoint_dir) is not None
+
+
+def test_from_existing_preserves_existing_target_stage(tmp_path):
+    run_dir = tmp_path / "run"
+    RunContext(
+        run_dir=run_dir,
+        input_fingerprint="input-a",
+        params_fingerprint="params-a",
+        target_stage="edges",
+    )
+
+    reopened = RunContext.from_existing(run_dir)
+
+    assert reopened.snapshot.target_stage == "edges"
+    assert load_run_snapshot(run_dir).target_stage == "edges"
+
+
+def test_load_legacy_run_snapshot_is_read_only(tmp_path):
+    checkpoint_dir = tmp_path / "legacy_checkpoints"
+    checkpoint_dir.mkdir()
+    joblib.dump({"energy": True}, checkpoint_dir / "checkpoint_energy.pkl")
+
+    snapshot = load_legacy_run_snapshot(checkpoint_dir)
+
+    assert snapshot is not None
+    assert snapshot.stages["energy"].status == STATUS_COMPLETED
+    assert not (checkpoint_dir / "run_snapshot.json").exists()
+    assert not (checkpoint_dir / "stage_state").exists()
 
 
 def test_process_image_rejects_invalid_stop_after():

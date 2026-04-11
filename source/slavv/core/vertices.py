@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-import joblib
 import numpy as np
 from skimage.draw import ellipsoid
 from typing_extensions import TypeAlias
+
+from ..utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
     from slavv.runtime import StageController
@@ -408,7 +409,8 @@ def _ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
     """Construct centered voxel offsets for a scale-specific ellipsoid."""
     radii = np.maximum(np.rint(radii_pixels).astype(int), 0)
     if np.all(radii == 0):
-        return np.zeros((1, 3), dtype=np.int16)
+        empty_offsets: np.ndarray = np.zeros((1, 3), dtype=np.int16)
+        return empty_offsets
 
     mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
     coords = np.column_stack(np.where(mask))
@@ -711,7 +713,7 @@ def extract_vertices_resumable(
         )
     stage_controller.update(units_total=3, units_completed=1, substage="candidate_scan")
 
-    candidate_data = joblib.load(candidate_path)
+    candidate_data = safe_load(candidate_path)
     vertex_positions = candidate_data["positions"]
     vertex_scales = candidate_data["scales"]
     vertex_energies = candidate_data["energies"]
@@ -738,7 +740,7 @@ def extract_vertices_resumable(
         )
     stage_controller.update(units_total=3, units_completed=2, substage="crop_sort")
 
-    ordered = joblib.load(cropped_path)
+    ordered = safe_load(cropped_path)
     vertex_positions = ordered["positions"]
     vertex_scales = ordered["scales"]
     vertex_energies = ordered["energies"]
@@ -746,7 +748,7 @@ def extract_vertices_resumable(
         return _empty_vertices_result()
 
     if chosen_mask_path.exists():
-        chosen_mask = joblib.load(chosen_mask_path)
+        chosen_mask = safe_load(chosen_mask_path)
     else:
         chosen_mask = np.zeros(len(vertex_positions), dtype=bool)
     next_index = int(choose_state.get("next_index", 0))

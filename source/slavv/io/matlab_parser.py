@@ -319,6 +319,8 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
     batch_path = Path(batch_folder)
     if not batch_path.exists():
         raise MATLABParseError(f"Batch folder not found: {batch_folder}")
+    if not batch_path.is_dir():
+        raise MATLABParseError(f"Batch folder is not a directory: {batch_folder}")
 
     logger.info(f"Loading MATLAB results from: {batch_path}")
 
@@ -334,8 +336,7 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
 
     vectors_dir = batch_path / "vectors"
     if not vectors_dir.exists():
-        logger.warning(f"Vectors directory not found: {vectors_dir}")
-        return results
+        raise MATLABParseError(f"Vectors directory not found: {vectors_dir}")
 
     timings_file = batch_path / "timings.json"
     if timings_file.exists():

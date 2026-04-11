@@ -43,11 +43,22 @@ class SafeNumpyUnpickler(NumpyUnpickler):
         "copyreg",
         "collections",
         "types",
-        "builtins",
-        "__builtin__",
+    }
+    SAFE_BUILTIN_GLOBALS: ClassVar[set[str]] = {
+        "bytearray",
+        "complex",
+        "frozenset",
+        "range",
+        "set",
+        "slice",
     }
 
     def find_class(self, module, name):
+        if module in {"builtins", "__builtin__"}:
+            if name not in self.SAFE_BUILTIN_GLOBALS:
+                raise pickle.UnpicklingError(f"Global '{module}.{name}' is forbidden")
+            return super().find_class(module, name)
+
         # Allow safe modules and their submodules
         # e.g. 'numpy.core.multiarray' starts with 'numpy'
         is_safe = False

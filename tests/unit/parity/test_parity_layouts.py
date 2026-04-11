@@ -108,6 +108,30 @@ def test_list_runs_returns_run_roots_for_staged_layout(tmp_path: Path):
     assert "02_Output" not in names
 
 
+def test_list_runs_includes_metadata_only_runs(tmp_path: Path):
+    run_dir = tmp_path / "20260209_180000_interrupted_run"
+    metadata_dir = run_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "run_id": "abc123",
+                "target_stage": "edges",
+                "stages": {},
+                "optional_tasks": {},
+                "artifacts": {},
+                "errors": [],
+                "provenance": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    names = [run["name"] for run in list_runs(tmp_path)]
+
+    assert "20260209_180000_interrupted_run" in names
+
+
 def test_generate_summary_uses_staged_result_paths(tmp_path: Path):
     run_dir = tmp_path / "20260210_100526_full_run"
     matlab_dir = run_dir / "01_Input" / "matlab_results"
