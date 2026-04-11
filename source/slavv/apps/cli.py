@@ -12,7 +12,9 @@ import argparse
 import logging
 import os
 import sys
+from typing import cast
 
+import networkx as nx
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -435,28 +437,123 @@ def _handle_status_command(args: argparse.Namespace) -> None:
         print(line)
 
 
+def _normalize_exported_edge_connections(raw_connections: object) -> np.ndarray:
+    """Normalize exported edge connections into a 2-column integer array."""
+    connections = np.asarray(raw_connections, dtype=int)
+    if connections.size == 0:
+        return np.empty((0, 2), dtype=int)
+    connections = np.atleast_2d(connections)
+    if connections.shape[1] < 2:
+        return np.empty((0, 2), dtype=int)
+    return cast("np.ndarray", np.asarray(connections[:, :2], dtype=int))
+
+
+def _build_strands_from_edge_connections(
+    edge_connections: np.ndarray, *, vertex_count: int
+) -> list[list[int]]:
+    """Reconstruct strand-like paths from exported edge connections."""
+    if vertex_count == 0 or edge_connections.size == 0:
+        return []
+
+    graph = nx.Graph()
+    graph.add_nodes_from(range(vertex_count))
+    for origin_idx, destination_idx in edge_connections:
+        origin = int(origin_idx)
+        destination = int(destination_idx)
+        if origin == destination:
+            continue
+        if not (0 <= origin < vertex_count and 0 <= destination < vertex_count):
+            continue
+        graph.add_edge(origin, destination)
+
+    strands: list[list[int]] = []
+    visited_edges: set[tuple[int, int]] = set()
+
+    for origin, destination in graph.edges():
+        edge = tuple(sorted((origin, destination)))
+        if edge in visited_edges:
+            continue
+
+        strand = [origin, destination]
+        visited_edges.add(edge)
+
+        current = destination
+        while graph.degree(current) == 2:
+            neighbors = list(graph.neighbors(current))
+            next_node = neighbors[0] if neighbors[1] == strand[-2] else neighbors[1]
+            next_edge = tuple(sorted((current, next_node)))
+            if next_edge in visited_edges:
+                break
+            strand.append(next_node)
+            visited_edges.add(next_edge)
+            current = next_node
+
+        current = origin
+        while graph.degree(current) == 2:
+            neighbors = list(graph.neighbors(current))
+            next_node = neighbors[0] if neighbors[1] == strand[1] else neighbors[1]
+            next_edge = tuple(sorted((current, next_node)))
+            if next_edge in visited_edges:
+                break
+            strand.insert(0, next_node)
+            visited_edges.add(next_edge)
+            current = next_node
+
+        strands.append(strand)
+
+    return strands
+
+
+def _infer_image_shape_from_vertices(vertex_positions: np.ndarray) -> tuple[int, int, int]:
+    """Infer a minimal positive image shape from exported vertex positions."""
+    if vertex_positions.size == 0:
+        return (1, 1, 1)
+    maxima = np.max(vertex_positions, axis=0)
+    inferred_axes = [max(1, int(np.ceil(float(axis_max))) + 1) for axis_max in maxima[:3]]
+    while len(inferred_axes) < 3:
+        inferred_axes.append(1)
+    return (inferred_axes[0], inferred_axes[1], inferred_axes[2])
+
+
 def _load_exported_network_json(path: str) -> dict:
+    """Load exported JSON and rebuild the stats inputs expected by analysis helpers."""
     import json
 
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
-    # Reconstruct the structure that calculate_network_statistics expects, which is the internal representation.
-    # calculate_network_statistics expects `vertices` with `positions`, `edges` with `connections` and `traces`,
-    # but `extract_geometric_features` will recalculate lengths if traces don't exist.
-    # network.json doesn't export traces.
-
-    # Actually, calculate_network_statistics is fine without traces, it will compute euclidean distance.
     vertices = data.get("vertices", {})
     edges = data.get("edges", {})
+    vertex_positions = np.asarray(vertices.get("positions", []), dtype=float)
+    edge_connections = _normalize_exported_edge_connections(edges.get("connections", []))
+    vertex_radii = np.asarray(vertices.get("radii_microns", []), dtype=float)
+    if len(vertex_radii) != len(vertex_positions):
+        vertex_radii = np.zeros(len(vertex_positions), dtype=float)
+
+    strands = _build_strands_from_edge_connections(
+        edge_connections,
+        vertex_count=len(vertex_positions),
+    )
+    graph = nx.Graph()
+    graph.add_nodes_from(range(len(vertex_positions)))
+    graph.add_edges_from(edge_connections.tolist())
+    bifurcations = np.fromiter(
+        (node for node, degree in graph.degree() if degree > 2),
+        dtype=int,
+    )
 
     return {
         "vertices": {
-            "positions": np.array(vertices.get("positions", [])),
-            "radii_microns": np.array(vertices.get("radii_microns", [])),
+            "positions": vertex_positions,
+            "radii_microns": vertex_radii,
         },
-        "edges": {"connections": np.array(edges.get("connections", []))},
+        "edges": {"connections": edge_connections},
+        "network": {
+            "strands": strands,
+            "bifurcations": bifurcations,
+        },
         "parameters": data.get("parameters", {}),
+        "image_shape": tuple(data.get("image_shape", _infer_image_shape_from_vertices(vertex_positions))),
     }
 
 
@@ -468,26 +565,46 @@ def _handle_analyze_command(args: argparse.Namespace) -> None:
     results = _load_exported_results(args.input)
 
     logger.info("Calculating statistics...")
-    stats = calculate_network_statistics(results)
+    stats = calculate_network_statistics(
+        results["network"]["strands"],
+        results["network"]["bifurcations"],
+        results["vertices"]["positions"],
+        results["vertices"]["radii_microns"],
+        results["parameters"].get("microns_per_voxel", [1.0, 1.0, 1.0]),
+        results["image_shape"],
+    )
+
+    topological_metrics = (
+        ("Vertices", stats.get("num_vertices", 0)),
+        ("Edges", stats.get("num_edges", 0)),
+        ("Strands", stats.get("num_strands", 0)),
+        ("Bifurcations", stats.get("num_bifurcations", 0)),
+        ("Connected Components", stats.get("num_connected_components", 0)),
+        ("Endpoints", stats.get("num_endpoints", 0)),
+        ("Mean Degree", stats.get("mean_degree", 0.0)),
+        ("Clustering Coefficient", stats.get("clustering_coefficient", 0.0)),
+    )
+    geometric_metrics = (
+        ("Total Edge Length", f"{float(stats.get('total_length', 0.0)):.2f} um"),
+        ("Mean Strand Length", f"{float(stats.get('mean_strand_length', 0.0)):.2f} um"),
+        ("Mean Edge Length", f"{float(stats.get('mean_edge_length', 0.0)):.2f} um"),
+        ("Mean Edge Radius", f"{float(stats.get('mean_edge_radius', 0.0)):.2f} um"),
+        ("Mean Radius", f"{float(stats.get('mean_radius', 0.0)):.2f} um"),
+        ("Volume Fraction", f"{float(stats.get('volume_fraction', 0.0)):.4f}"),
+        ("Bifurcation Density", f"{float(stats.get('bifurcation_density', 0.0)):.2f} /mm^3"),
+    )
 
     print("\n--- Network Statistics ---\n")
     print("Topological Features:")
-    topo = stats.get("topological", {})
-    for k, v in topo.items():
-        if isinstance(v, float):
-            print(f"  {k}: {v:.4f}")
+    for label, value in topological_metrics:
+        if isinstance(value, float):
+            print(f"  {label}: {value:.4f}")
         else:
-            print(f"  {k}: {v}")
+            print(f"  {label}: {value}")
 
     print("\nGeometric Features (Aggregates):")
-    geom = stats.get("geometric", {})
-    if "edge_lengths_microns" in geom:
-        lengths = geom["edge_lengths_microns"]
-        print(f"  Total Edge Length: {np.sum(lengths):.2f} um")
-        print(f"  Mean Edge Length: {np.mean(lengths):.2f} um")
-    if "edge_radii_microns" in geom:
-        radii = geom["edge_radii_microns"]
-        print(f"  Mean Edge Radius: {np.mean(radii):.2f} um")
+    for label, value in geometric_metrics:
+        print(f"  {label}: {value}")
 
 
 def _handle_plot_command(args: argparse.Namespace) -> None:

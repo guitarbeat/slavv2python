@@ -217,7 +217,10 @@ def test_load_exported_network_json_preserves_parameters(tmp_path):
     path.write_text(
         json.dumps(
             {
-                "vertices": {"positions": [[1, 2, 3]], "radii_microns": [1.5]},
+                "vertices": {
+                    "positions": [[1, 2, 3], [2, 2, 3]],
+                    "radii_microns": [1.5, 1.5],
+                },
                 "edges": {"connections": [[0, 1]]},
                 "parameters": {"microns_per_voxel": [0.5, 0.5, 2.0]},
             }
@@ -227,5 +230,31 @@ def test_load_exported_network_json_preserves_parameters(tmp_path):
 
     result = _load_exported_network_json(str(path))
 
-    np.testing.assert_array_equal(result["vertices"]["positions"], np.array([[1, 2, 3]]))
+    np.testing.assert_array_equal(result["vertices"]["positions"], np.array([[1, 2, 3], [2, 2, 3]]))
     assert result["parameters"]["microns_per_voxel"] == [0.5, 0.5, 2.0]
+    assert result["network"]["strands"] == [[0, 1]]
+    assert tuple(result["image_shape"]) == (3, 3, 4)
+
+
+def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
+    path = tmp_path / "network.json"
+    path.write_text(
+        json.dumps(
+            {
+                "vertices": {
+                    "positions": [[0, 0, 0], [1, 0, 0], [2, 0, 0]],
+                    "radii_microns": [1.0, 1.0, 1.0],
+                },
+                "edges": {"connections": [[0, 1], [1, 2]]},
+                "parameters": {"microns_per_voxel": [1.0, 1.0, 1.0]},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    main(["analyze", "-i", str(path)])
+
+    captured = capsys.readouterr()
+    assert "Topological Features:" in captured.out
+    assert "Vertices: 3" in captured.out
+    assert "Total Edge Length: 2.00 um" in captured.out

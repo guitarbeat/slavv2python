@@ -28,7 +28,7 @@ from slavv.apps.share_report import (
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
 from slavv.runtime import RunContext, load_run_snapshot
-from slavv.runtime.run_state import target_stage_progress
+from slavv.runtime.run_state import fingerprint_jsonable, target_stage_progress
 from slavv.utils import validate_parameters
 from slavv.utils.formatting import format_time
 from slavv.visualization import NetworkVisualizer
@@ -253,6 +253,13 @@ def _snapshot_for_display(run_dir: str | None):
     if not run_dir:
         return None
     return load_run_snapshot(run_dir)
+
+
+def _build_processing_run_dir(upload_bytes: bytes, validated_params: dict[str, object]) -> str:
+    """Return a stable run directory per input file and validated parameter set."""
+    file_hash = hashlib.md5(upload_bytes).hexdigest()[:12]
+    params_hash = fingerprint_jsonable(validated_params)[:12]
+    return os.path.join(tempfile.gettempdir(), "slavv_runs", f"{file_hash}_{params_hash}")
 
 
 def _dashboard_snapshot_source(run_dir: str | None) -> str:
@@ -1503,8 +1510,10 @@ def show_processing_page():
                     processor = SLAVVProcessor()
 
                     dashboard_placeholder = st.empty()
-                    file_hash = hashlib.md5(uploaded_file.getvalue()).hexdigest()[:12]
-                    run_dir = os.path.join(tempfile.gettempdir(), "slavv_runs", file_hash)
+                    run_dir = _build_processing_run_dir(
+                        uploaded_file.getvalue(),
+                        validated_params,
+                    )
 
                     def event_cb(event) -> None:
                         state = "complete" if event.status.startswith("completed") else "running"

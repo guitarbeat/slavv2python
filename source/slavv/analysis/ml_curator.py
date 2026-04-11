@@ -12,8 +12,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import pickle
+import tempfile
 import warnings
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Union
 
@@ -37,6 +40,39 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _materialize_model_source(model_source: Any | None):
+    """Yield a filesystem path for a model source that may be file-like."""
+    if model_source is None:
+        yield None
+        return
+
+    if isinstance(model_source, (str, os.PathLike)):
+        yield model_source
+        return
+
+    if hasattr(model_source, "getvalue"):
+        payload = model_source.getvalue()
+    elif hasattr(model_source, "read"):
+        payload = model_source.read()
+    else:
+        raise TypeError("model source must be a path or file-like object")
+
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
+
+    source_name = getattr(model_source, "name", "uploaded-model.joblib")
+    suffix = Path(str(source_name)).suffix or ".joblib"
+    fd, temp_name = tempfile.mkstemp(suffix=suffix)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+        yield temp_name
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
 
 
 class MLCurator:
@@ -560,7 +596,8 @@ class MLCurator:
         """
         if vertex_path:
             try:
-                vertex_data = safe_load(vertex_path)
+                with _materialize_model_source(vertex_path) as materialized_vertex_path:
+                    vertex_data = safe_load(materialized_vertex_path)
                 self.vertex_classifier = vertex_data["classifier"]
                 self.vertex_scaler = vertex_data["scaler"]
                 logger.info(f"Vertex model loaded from {vertex_path}")
@@ -576,7 +613,8 @@ class MLCurator:
 
         if edge_path:
             try:
-                edge_data = safe_load(edge_path)
+                with _materialize_model_source(edge_path) as materialized_edge_path:
+                    edge_data = safe_load(materialized_edge_path)
                 self.edge_classifier = edge_data["classifier"]
                 self.edge_scaler = edge_data["scaler"]
                 logger.info(f"Edge model loaded from {edge_path}")

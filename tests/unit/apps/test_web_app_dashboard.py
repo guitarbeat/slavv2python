@@ -185,3 +185,23 @@ def test_render_export_download_uses_shared_failure_path(monkeypatch):
     assert calls["button"][1]["disabled"] is True
     assert "update" not in calls
     assert "download" not in calls
+
+
+def test_build_processing_run_dir_varies_with_validated_parameters():
+    upload_bytes = b"same-uploaded-file"
+
+    first = web_app._build_processing_run_dir(
+        upload_bytes,
+        {"radius_of_smallest_vessel_in_microns": 1.5},
+    )
+    second = web_app._build_processing_run_dir(
+        upload_bytes,
+        {"radius_of_smallest_vessel_in_microns": 2.0},
+    )
+    repeated = web_app._build_processing_run_dir(
+        upload_bytes,
+        {"radius_of_smallest_vessel_in_microns": 1.5},
+    )
+
+    assert first != second
+    assert first == repeated

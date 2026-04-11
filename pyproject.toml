@@ -146,7 +146,9 @@ python_version = "3.9"
 mypy_path = "source"
 files = [
     "source/slavv/apps/cli.py",
+    "source/slavv/apps/share_report.py",
     "source/slavv/apps/streamlit_launcher.py",
+    "source/slavv/apps/web_app.py",
     "source/slavv/core/energy.py",
     "source/slavv/core/graph.py",
     "source/slavv/core/vertices.py",
@@ -155,6 +157,7 @@ files = [
     "source/slavv/core/edge_selection.py",
     "source/slavv/core/edges.py",
     "source/slavv/core/pipeline.py",
+    "source/slavv/runtime/run_state.py",
 ]
 warn_return_any = true
 warn_unused_configs = true
@@ -162,6 +165,8 @@ warn_unused_ignores = true
 disallow_untyped_defs = false      # gradual typing: allow untyped for now
 check_untyped_defs = true          # still check bodies of untyped functions
 ignore_missing_imports = true      # don't error on 3rd-party stubs
+# Keep import following shallow for now: widening the checked entrypoints helps catch
+# app/runtime regressions without pulling the entire scientific stack into one typing pass.
 follow_imports = "skip"
 show_error_codes = true
 pretty = true

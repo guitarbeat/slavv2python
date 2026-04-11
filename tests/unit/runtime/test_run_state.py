@@ -124,6 +124,35 @@ def test_force_rerun_from_energy_resets_pipeline_state(tmp_path):
     assert not energy_stage.checkpoint_path.exists()
 
 
+def test_process_image_blocks_reuse_when_parameters_change(tmp_path):
+    processor = SLAVVProcessor()
+    image = np.zeros((4, 4, 4), dtype=np.float32)
+    run_dir = tmp_path / "run"
+
+    processor.process_image(
+        image,
+        {"radius_of_smallest_vessel_in_microns": 1.5},
+        run_dir=str(run_dir),
+        stop_after="energy",
+    )
+    first_snapshot = load_run_snapshot(run_dir)
+    assert first_snapshot is not None
+    original_params_fingerprint = first_snapshot.params_fingerprint
+
+    with pytest.raises(RuntimeError, match="Resume blocked"):
+        processor.process_image(
+            image,
+            {"radius_of_smallest_vessel_in_microns": 2.0},
+            run_dir=str(run_dir),
+            stop_after="energy",
+        )
+
+    blocked_snapshot = load_run_snapshot(run_dir)
+    assert blocked_snapshot is not None
+    assert blocked_snapshot.status == STATUS_BLOCKED
+    assert blocked_snapshot.params_fingerprint == original_params_fingerprint
+
+
 def test_stage_controller_rejects_unknown_stage(tmp_path):
     context = RunContext(
         run_dir=tmp_path / "run",

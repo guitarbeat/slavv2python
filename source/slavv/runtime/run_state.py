@@ -13,7 +13,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 import joblib
 import numpy as np
@@ -309,7 +309,10 @@ class StageController:
         if not self.state_path.exists():
             return {}
         with open(self.state_path, encoding="utf-8") as handle:
-            return json.load(handle)
+            loaded_state = json.load(handle)
+        if not isinstance(loaded_state, dict):
+            raise ValueError(f"Expected JSON object in {self.state_path}")
+        return cast(dict[str, Any], loaded_state)
 
     def save_state(self, state: dict[str, Any]) -> None:
         atomic_write_json(self.state_path, state)
@@ -464,9 +467,12 @@ class RunContext:
 
         if existing is not None:
             existing.stages = _ensure_stage_map(existing.stages)
-            if input_fingerprint:
+            # Preserve stored fingerprints until the explicit resume guard compares
+            # them against the incoming request. Overwriting them here would allow
+            # stale checkpoints to slip past mismatch detection.
+            if input_fingerprint and not existing.input_fingerprint:
                 existing.input_fingerprint = input_fingerprint
-            if params_fingerprint:
+            if params_fingerprint and not existing.params_fingerprint:
                 existing.params_fingerprint = params_fingerprint
             if target_stage:
                 existing.target_stage = target_stage

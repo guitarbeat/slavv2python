@@ -21,6 +21,13 @@ Repository guidance for coding agents working in `slavv2python`.
 - `make.ps1`: Windows helper for common dev tasks
 - `Makefile`: Unix-style helper; useful on POSIX shells, but prefer `make.ps1` on Windows
 
+## Read First When Relevant
+
+- `tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
+- `tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `workspace/tmp_tests/`.
+- `source/slavv/parity/run_layout.py`: canonical staged comparison layout and legacy-path compatibility rules.
+- `source/slavv/runtime/run_state.py`: structured run metadata, staged artifact locations, and legacy checkpoint compatibility.
+
 ## Setup
 
 Create and activate a virtual environment:
@@ -135,9 +142,10 @@ The `slavv-app` launcher requires the `app` extra.
 ### Small Code Change
 
 1. Read the impacted module and its nearest tests first.
-2. Run the smallest targeted pytest command that covers the change.
-3. Run `python -m ruff check source tests --fix` and `python -m ruff format source tests` if you touched Python files.
-4. Finish with `python -m pytest -m "unit or integration"` when the change crosses module boundaries.
+2. If you are adding or moving tests, verify placement against `tests/README.md` and the marker behavior in `tests/conftest.py`.
+3. Run the smallest targeted pytest command that covers the change.
+4. Run `python -m ruff check source tests --fix` and `python -m ruff format source tests` if you touched Python files.
+5. Finish with `python -m pytest -m "unit or integration"` when the change crosses module boundaries.
 
 ### Regression Check
 
@@ -172,13 +180,27 @@ python workspace/scripts/cli/compare_matlab_python.py --skip-matlab ...
 python workspace/scripts/cli/compare_matlab_python.py --skip-python ...
 ```
 
+Parity layout conventions to preserve:
+
+- Structured comparison runs use `01_Input/`, `02_Output/`, `03_Analysis/`, and `99_Metadata/` under the run root.
+- Python comparison artifacts belong under `02_Output/python_results/`; run snapshots and normalized comparison params belong under `99_Metadata/`.
+- Parity utilities should continue to accept both the staged layout and legacy flat layouts when existing code supports both.
+
 Expect the MATLAB workflow to require a populated `external/Vectorization-Public/` checkout and a valid local MATLAB installation.
 
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/slavv/`.
 - Keep tests under `tests/` and use the existing pytest markers: `unit`, `integration`, `ui`, `diagnostic`, `slow`, and `regression`.
+- Follow the ownership-based test layout from `tests/README.md`: `tests/unit/<owner>/`, `tests/integration/`, `tests/ui/`, `tests/diagnostic/`, and `tests/unit/workspace_scripts/` for maintained helper scripts.
+- Remember that pytest markers are assigned by folder in `tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
+- Use the repo-local `tmp_path` fixture behavior in `tests/conftest.py` when writing tests; temporary test artifacts should stay under `workspace/tmp_tests/`, not ad-hoc temp roots.
 - Use `logging` in library code instead of `print()`. CLI commands may print user-facing summaries.
+- Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings such as `encoding="utf-8"` when writing repository-managed text artifacts.
+- Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
+- Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/slavv/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
+- Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
 - Preserve MATLAB parity where practical, and add deterministic regression tests for behavior changes.
+- When touching parity or comparison code, preserve the staged run-root semantics implemented in `source/slavv/parity/run_layout.py` and `source/slavv/runtime/run_state.py`, including compatibility with legacy checkpoint directories where present.
 - Prefer searching with `rg`, but exclude noisy generated trees like `workspace/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
 - Do not treat generated outputs under `comparisons/`, `comparison_output*/`, or cache directories as source inputs for code changes.

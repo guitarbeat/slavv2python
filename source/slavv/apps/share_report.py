@@ -8,7 +8,7 @@ import tempfile
 from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from plotly.io import to_html
 
@@ -64,14 +64,17 @@ def compute_shareable_stats(
     edges = processing_results["edges"]
     network = processing_results["network"]
 
-    return calculate_network_statistics(
-        network["strands"],
-        network["bifurcations"],
-        vertices["positions"],
-        vertices.get("radii_microns", vertices.get("radii", [])),
-        parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-        image_shape or (100, 100, 50),
-        edge_energies=edges.get("energies"),
+    return cast(
+        dict[str, Any],
+        calculate_network_statistics(
+            network["strands"],
+            network["bifurcations"],
+            vertices["positions"],
+            vertices.get("radii_microns", vertices.get("radii", [])),
+            parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+            image_shape or (100, 100, 50),
+            edge_energies=edges.get("energies"),
+        ),
     )
 
 
