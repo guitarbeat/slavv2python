@@ -42,7 +42,7 @@ def collect_directory_inventory(path: Path) -> dict[str, Any]:
             total_size += size
             ext = item.suffix.lower().lstrip(".")
             inventory[ext if ext in inventory else "other"].append(item)
-    except PermissionError:
+    except OSError:
         pass
 
     return {"total_size": total_size, "inventory": inventory}

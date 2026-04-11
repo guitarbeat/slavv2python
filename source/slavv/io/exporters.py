@@ -59,6 +59,8 @@ def partition_network(
     Corresponds to ``partition_casx_by_xy_bins.m``.
     """
     ny, nx = chunks
+    if ny <= 0 or nx <= 0:
+        raise ValueError("chunks must contain positive Y/X bin counts")
     vertices = network.vertices
     if len(vertices) == 0:
         return {}

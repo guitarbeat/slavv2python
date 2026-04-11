@@ -207,9 +207,14 @@ def test_load_legacy_run_snapshot_is_read_only(tmp_path):
     joblib.dump({"energy": True}, checkpoint_dir / "checkpoint_energy.pkl")
 
     snapshot = load_legacy_run_snapshot(checkpoint_dir)
+    repeated = load_legacy_run_snapshot(checkpoint_dir)
 
     assert snapshot is not None
+    assert repeated is not None
     assert snapshot.stages["energy"].status == STATUS_COMPLETED
+    assert snapshot.stages["preprocess"].status == STATUS_COMPLETED
+    assert snapshot.overall_progress == pytest.approx(0.40)
+    assert snapshot.run_id == repeated.run_id
     assert not (checkpoint_dir / "run_snapshot.json").exists()
     assert not (checkpoint_dir / "stage_state").exists()
 

@@ -15,6 +15,7 @@ import pytest
 
 from slavv.io.matlab_parser import (
     MATLABParseError,
+    _normalize_index_array,
     extract_edges,
     extract_network_stats,
     extract_vertices,
@@ -351,6 +352,33 @@ class TestLoadMatlabBatchResults:
 
         assert any("curated_vertices_foo.mat" in path for path in result["files"])
 
+    def test_load_batch_selects_latest_sorted_vector_artifact(self, tmp_path):
+        batch_folder = tmp_path / "batch_250127-120000"
+        vectors_dir = batch_folder / "vectors"
+        batch_folder.mkdir()
+        vectors_dir.mkdir()
+        (vectors_dir / "vertices_250127-110000.mat").touch()
+        (vectors_dir / "vertices_250127-130000.mat").touch()
+
+        with ExitStack() as stack:
+            load_mock = stack.enter_context(
+                patch(
+                    "slavv.io.matlab_parser.load_mat_file_safe",
+                    return_value={"vertex_space_subscripts": np.array([[1, 2, 3]])},
+                )
+            )
+            stack.enter_context(
+                patch(
+                    "slavv.io.matlab_parser.extract_vertices",
+                    return_value={"count": 1, "positions": np.array([[2, 1, 0]])},
+                )
+            )
+            result = load_matlab_batch_results(batch_folder)
+
+        latest_file = vectors_dir / "vertices_250127-130000.mat"
+        assert any(latest_file.name in path for path in result["files"])
+        load_mock.assert_called_once_with(latest_file)
+
 
 class TestIntegrationScenarios:
     """Integration tests for common usage scenarios."""
@@ -382,6 +410,14 @@ class TestIntegrationScenarios:
         # Load results
         result = load_matlab_batch_results(found_batch)
         assert result is not None
+
+
+def test_normalize_index_array_shifts_positive_entries_but_preserves_zero_sentinels():
+    indices = np.array([[1, 2], [0, 3]], dtype=np.int32)
+
+    normalized = _normalize_index_array(indices)
+
+    np.testing.assert_array_equal(normalized, np.array([[0, 1], [0, 2]], dtype=np.int32))
 
 
 def test_matlab_parser_cli(tmp_path, capsys):

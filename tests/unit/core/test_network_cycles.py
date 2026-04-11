@@ -1,7 +1,7 @@
 import numpy as np
 
 from slavv.core import SLAVVProcessor
-from slavv.core.graph import construct_network_resumable
+from slavv.core.graph import construct_network_resumable, trace_strand_sparse
 from slavv.runtime import RunContext
 
 
@@ -131,3 +131,17 @@ def test_construct_network_resumable_reuses_parity_topology(tmp_path):
     assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
     assert network["mismatched_strands"] == []
     assert run_context.stage("network").artifact_path("strands.pkl").exists()
+
+
+def test_trace_strand_sparse_uses_sorted_neighbor_order():
+    adjacency_list = {
+        0: {3, 1},
+        1: {0, 2},
+        2: {1},
+        3: {0},
+    }
+    visited = np.zeros(4, dtype=bool)
+
+    strand = trace_strand_sparse(0, adjacency_list, visited)
+
+    assert strand == [0, 1, 2]

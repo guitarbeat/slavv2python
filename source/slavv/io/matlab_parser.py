@@ -79,8 +79,8 @@ def _normalize_index_array(value: Any) -> np.ndarray:
         normalized = array.astype(np.int32, copy=True)
     except (TypeError, ValueError):
         return np.array([])
-    if np.min(normalized) >= 1:
-        normalized -= 1
+    positive_mask = normalized >= 1
+    normalized[positive_mask] -= 1
     return normalized
 
 
@@ -365,7 +365,7 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
                 target[k] = v
 
     # 1. Load Vertices (prefer curated/final artifacts when available)
-    v_files = list(vectors_dir.glob("curated_vertices_*.mat")) or list(
+    v_files = sorted(vectors_dir.glob("curated_vertices_*.mat")) or sorted(
         vectors_dir.glob("vertices_*.mat")
     )
     if v_files:
@@ -378,7 +378,9 @@ def load_matlab_batch_results(batch_folder: Union[str, Path]) -> dict[str, Any]:
             results["files"].append(str(f))
 
     # 2. Load Edges (prefer curated/final artifacts when available)
-    e_files = list(vectors_dir.glob("curated_edges_*.mat")) or list(vectors_dir.glob("edges_*.mat"))
+    e_files = sorted(vectors_dir.glob("curated_edges_*.mat")) or sorted(
+        vectors_dir.glob("edges_*.mat")
+    )
     if e_files:
         f = e_files[-1]
         logger.info(f"Loading edges: {f.name}")

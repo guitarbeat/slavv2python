@@ -282,12 +282,18 @@ def load_legacy_run_snapshot(
         return None
 
     snapshot = RunSnapshot(
-        run_id=uuid.uuid4().hex[:12],
+        run_id=hashlib.sha1(str(checkpoints_dir.resolve()).encode("utf-8")).hexdigest()[:12],
         target_stage=target_stage,
         status=STATUS_PENDING,
         stages=_ensure_stage_map(),
         provenance={"layout": "legacy"},
     )
+    preprocess_stage = snapshot.stages[PREPROCESS_STAGE]
+    preprocess_stage.status = STATUS_COMPLETED
+    preprocess_stage.progress = 1.0
+    preprocess_stage.units_total = 1
+    preprocess_stage.units_completed = 1
+    preprocess_stage.resumed = True
     for stage, path in checkpoint_paths.items():
         if not path.exists():
             continue
@@ -301,7 +307,7 @@ def load_legacy_run_snapshot(
         stage_snapshot.completed_at = _now_iso()
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
     snapshot.overall_progress = sum(
-        STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in PIPELINE_STAGES
+        STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in TRACKED_RUN_STAGES
     ) / total
     return snapshot
 

@@ -46,7 +46,7 @@ function time_stamp = run_matlab_vectorization(input_file, output_directory, par
         addpath(source_dir);
         fprintf('Added to path: %s\n', source_dir);
     else
-        warning('Source directory not found: %s', source_dir);
+        error('Source directory not found: %s', source_dir);
     end
 
     state_file = fullfile(output_directory, 'matlab_resume_state.json');

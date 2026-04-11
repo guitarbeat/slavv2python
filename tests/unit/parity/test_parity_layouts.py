@@ -65,6 +65,21 @@ def test_collect_directory_inventory_returns_size_and_type_buckets(tmp_path: Pat
     assert inventory["inventory"]["other"] == []
 
 
+def test_collect_directory_inventory_ignores_transient_os_errors(tmp_path: Path, monkeypatch):
+    run_dir = tmp_path / "20260209_173550_full_run"
+    run_dir.mkdir(parents=True)
+
+    def broken_rglob(self: Path, _pattern: str):
+        raise FileNotFoundError("transient scan failure")
+
+    monkeypatch.setattr(Path, "rglob", broken_rglob)
+
+    inventory = collect_directory_inventory(run_dir)
+
+    assert inventory["total_size"] == 0
+    assert all(values == [] for values in inventory["inventory"].values())
+
+
 def test_load_run_info_normalizes_staged_input_path(tmp_path: Path):
     run_dir = tmp_path / "20260209_173550_full_run"
     analysis_dir = run_dir / "03_Analysis"

@@ -27,7 +27,7 @@ def trace_strand_sparse(
     current = start
 
     while True:
-        neighbors = [n for n in adjacency_list[current] if not visited[n]]
+        neighbors = sorted(n for n in adjacency_list[current] if not visited[n])
         if not neighbors:
             break
         next_vertex = neighbors[0]

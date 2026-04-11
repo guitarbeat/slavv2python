@@ -197,18 +197,12 @@ class Validator:
             return False
 
     def check_vectorization_public(self) -> bool:
-        matlab_repo_path = (
-            self.project_root / "legacy" / "Vectorization-Public"
-        )  # Or external/Vectorization-Public depending on move
-        # Check external first as that was the move target
-        external_repo_path = self.project_root / "external" / "Vectorization-Public"
-
-        repo_path = external_repo_path if external_repo_path.exists() else matlab_repo_path
+        repo_path = self._resolve_vectorization_repo_path()
 
         if not self.check_directory_exists(repo_path, "Vectorization-Public directory"):
             return False
 
-        vectorize_file = repo_path / "vectorize_V200.m"
+        vectorize_file = repo_path / "source" / "vectorize_V200.m"
         if not self.check_file_exists(vectorize_file, "vectorize_V200.m"):
             return False
 
@@ -228,10 +222,8 @@ class Validator:
             return False
 
         # Determine expected path for vectorization script
-        matlab_repo_path = self.project_root / "legacy" / "Vectorization-Public"
-        external_repo_path = self.project_root / "external" / "Vectorization-Public"
-        repo_path = external_repo_path if external_repo_path.exists() else matlab_repo_path
-        vec_script = repo_path / "vectorize_V200.m"
+        repo_path = self._resolve_vectorization_repo_path()
+        vec_script = repo_path / "source" / "vectorize_V200.m"
 
         vec_script_str = str(vec_script).replace("\\", "\\\\").replace("'", "''")
 
@@ -282,3 +274,9 @@ class Validator:
             if script_path.exists():
                 with contextlib.suppress(Exception):
                     script_path.unlink()
+
+    def _resolve_vectorization_repo_path(self) -> Path:
+        """Return the preferred local checkout path for the MATLAB repository."""
+        external_repo_path = self.project_root / "external" / "Vectorization-Public"
+        matlab_repo_path = self.project_root / "legacy" / "Vectorization-Public"
+        return external_repo_path if external_repo_path.exists() else matlab_repo_path
