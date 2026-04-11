@@ -92,6 +92,7 @@ python -m mypy
 Notes:
 
 - The current supported mypy gate is the repo-root `python -m mypy` command.
+- It currently covers the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
 
 Tests:
 
@@ -123,10 +124,17 @@ slavv import-matlab -b path\to\batch_260210-101213 -c my_checkpoints
 Useful `slavv run` options:
 
 ```powershell
+slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a
 slavv run -i volume.tif -o slavv_output --checkpoint-dir checkpoints
 slavv run -i volume.tif -o slavv_output --stop-after edges
 slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 ```
+
+Notes:
+
+- `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` and `--checkpoint-dir` are both omitted.
+- Prefer `--run-dir` for new resumable runs; `--checkpoint-dir` remains the legacy flat-checkpoint surface.
+- `slavv analyze` can operate directly on the standard exported `network.json`.
 
 Streamlit app:
 
@@ -136,6 +144,7 @@ python -m streamlit run source/slavv/apps/web_app.py
 ```
 
 The `slavv-app` launcher requires the `app` extra.
+The ML curation flow accepts uploaded `.joblib` and `.pkl` model files directly.
 
 ## Recommended Workflows
 

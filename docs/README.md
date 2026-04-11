@@ -18,7 +18,7 @@ Follow this maintained reading path:
 3. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
 4. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 5. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-6. [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
+6. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 ## Chapter Status
 
@@ -50,7 +50,7 @@ Historical support docs:
 
 Name:
 
-- Shared Candidate Generation Alignment
+- Shared Neighborhood Claim Alignment
 
 Started:
 
@@ -58,14 +58,33 @@ Started:
 
 Active chapter home:
 
-- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
+- [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 Core references for the active chapter:
 
 - [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
 - [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 - [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 - [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+
+## Historical Handoff Chapter
+
+Name:
+
+- Shared Candidate Generation Alignment
+
+What it handed off:
+
+- the problem was narrower than a generic candidate-generation gap
+- shared neighborhoods around `64`, `359`, `866`, and `1283` became the most
+  actionable artifact surfaces
+- candidate counts alone were not enough; local claim ordering and invalidation
+  stayed live suspects
+
+Historical handoff home:
+
+- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 
 ## Reference Shelf
 
@@ -84,8 +103,9 @@ These docs remain active references across chapters.
 | Question | Best file |
 | --- | --- |
 | What closed the last spec? | [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
-| What chapter is active right now? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
-| What is the next chapter trying to solve? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
+| What chapter is active right now? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What is the next chapter trying to solve? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What chapter narrowed the problem before the current one? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
 | What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
 | Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md) |
 | Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md) |

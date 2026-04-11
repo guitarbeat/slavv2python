@@ -8,7 +8,7 @@ cuts.
 
 ## Unreleased
 
-Recent work landed between 2026-03-21 and 2026-03-26.
+Recent work landed between 2026-03-21 and 2026-04-10.
 
 ### Added
 
@@ -49,6 +49,11 @@ Recent work landed between 2026-03-21 and 2026-03-26.
 
 - The Python pipeline now writes structured run metadata and checkpoints by
   default when running through resumable entry points.
+- The Streamlit app now keys structured run directories by both uploaded input
+  content and validated parameters, preventing stale checkpoint reuse across
+  parameter changes.
+- `slavv analyze` now reconstructs the topology it needs from the standard
+  exported `network.json` before computing summary statistics.
 - MATLAB wrapper execution now runs one workflow stage at a time and records
   resume state in the output directory for safer reruns.
 - Windows MATLAB launcher behavior now waits on the batch process and resolves
@@ -61,12 +66,21 @@ Recent work landed between 2026-03-21 and 2026-03-26.
   and frontier-specific tracing diagnostics during parity runs.
 - `make`, `make.ps1`, and CI now treat repo-root `python -m mypy` as the
   supported typecheck gate.
+- The repo-root `python -m mypy` gate now also covers the share-report, web
+  app, and run-state entrypoints in addition to the existing CLI/core surface.
 - CI now includes a Windows CLI-security lane and an app-enabled Ubuntu UI
   lane without expanding the full matrix.
 
 ### Fixed
 
 - Eliminated ~1,000 invalid watershed-based edge candidates that were previously crossing background areas by enforcing stricter energy-sign checks.
+- Resume guards no longer overwrite stored fingerprints before comparison, so
+  changed inputs and parameters correctly block stale resumable runs instead of
+  silently reusing old checkpoints.
+- The Streamlit ML curation flow now accepts uploaded `.joblib` and `.pkl`
+  models without requiring the files to exist on disk ahead of time.
+- `slavv analyze` no longer fails on standard `network.json` exports that only
+  contain the normal serialized vertex/edge surface.
 - Standalone comparison "0 vertices" issue caused by directory pathing artifacts in the comparison script.
 - Empty-network shape handling in exporters and visualization outputs.
 - Evaluation app import issues around share-report functionality.

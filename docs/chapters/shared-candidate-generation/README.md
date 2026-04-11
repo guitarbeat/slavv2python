@@ -1,10 +1,20 @@
 # Shared Candidate Generation Alignment
 
-Active chapter opened on April 10, 2026.
+Status: Historical Chapter 2 handoff
+
+This file is no longer the active spec entry point.
+
+Use [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+for the active chapter.
+
+This chapter was opened on April 10, 2026.
 
 This chapter continues the parity work after the imported-MATLAB chapter
 closed. The remaining gap is narrow enough to treat as a focused
 candidate-generation problem instead of a general parity chase.
+
+It successfully reframed the parity gap from a general candidate-generation
+problem into a narrower shared-neighborhood claim and ownership problem.
 
 ## Why This Chapter Exists
 

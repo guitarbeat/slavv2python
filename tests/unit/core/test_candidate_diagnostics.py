@@ -300,6 +300,14 @@ class TestFrontierCandidateDiagnostics:
                 "terminal_edge_count": 4,
                 "chosen_edge_count": 2,
                 "watershed_metric_threshold_rejected": 3,
+                "frontier_per_origin_terminal_hits": {"0": 3, "1": 1},
+                "frontier_per_origin_terminal_accepts": {"0": 2, "1": 1},
+                "frontier_per_origin_terminal_rejections": {"0": 1},
+                "frontier_terminal_resolution_counts": {
+                    "accepted_seed_origin": 2,
+                    "rejected_parent_has_child": 1,
+                },
+                "geodesic_shared_neighborhood_endpoint_relaxed": 1,
             },
         }
 
@@ -332,7 +340,14 @@ class TestFrontierCandidateDiagnostics:
             (1, 2)
         ]
         assert candidate_audit["frontier_per_origin_candidate_counts"] == {0: 2, 1: 1}
+        assert candidate_audit["frontier_per_origin_terminal_hits"] == {"0": 3, "1": 1}
+        assert candidate_audit["frontier_per_origin_terminal_rejections"] == {"0": 1}
+        assert candidate_audit["frontier_terminal_resolution_counts"] == {
+            "accepted_seed_origin": 2,
+            "rejected_parent_has_child": 1,
+        }
         assert candidate_audit["diagnostic_counters"]["watershed_metric_threshold_rejected"] == 3
+        assert candidate_audit["diagnostic_counters"]["geodesic_shared_neighborhood_endpoint_relaxed"] == 1
         assert isinstance(candidate_audit["per_origin_summary"], list)
         assert len(candidate_audit["per_origin_summary"]) == 3
         origin_zero = next(
@@ -341,6 +356,9 @@ class TestFrontierCandidateDiagnostics:
         assert origin_zero["candidate_endpoint_pair_count"] == 2
         assert origin_zero["candidate_endpoint_pair_samples"] == [(0, 1), (0, 3)]
         assert origin_zero["frontier_endpoint_pair_samples"] == [(0, 1), (0, 3)]
+        assert origin_zero["frontier_terminal_hit_count"] == 3
+        assert origin_zero["frontier_terminal_accept_count"] == 2
+        assert origin_zero["frontier_terminal_rejection_count"] == 1
 
 
 @pytest.mark.unit

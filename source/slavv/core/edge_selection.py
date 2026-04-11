@@ -82,9 +82,14 @@ def _empty_edge_diagnostics() -> dict[str, Any]:
         "watershed_join_supplement_count": 0,
         "watershed_endpoint_degree_rejected": 0,
         "geodesic_join_supplement_count": 0,
+        "geodesic_shared_neighborhood_endpoint_relaxed": 0,
         "terminal_direct_hit_count": 0,
         "terminal_reverse_center_hit_count": 0,
         "terminal_reverse_near_hit_count": 0,
+        "frontier_terminal_resolution_counts": {},
+        "frontier_per_origin_terminal_hits": {},
+        "frontier_per_origin_terminal_accepts": {},
+        "frontier_per_origin_terminal_rejections": {},
         "stop_reason_counts": _empty_stop_reason_counts(),
     }
 

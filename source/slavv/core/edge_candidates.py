@@ -778,6 +778,16 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
             frontier_origin_counts[int(origin_index)] = int(count)
         except (TypeError, ValueError):
             continue
+    frontier_terminal_rejections: dict[int, int] = {}
+    for origin_index, count in (
+        candidates.get("diagnostics", {}).get("frontier_per_origin_terminal_rejections", {}).items()
+    ):
+        try:
+            rejection_count = int(count)
+        except (TypeError, ValueError):
+            continue
+        if rejection_count > 0:
+            frontier_terminal_rejections[int(origin_index)] = rejection_count
 
     existing_pairs = _candidate_endpoint_pair_set(connections)
     incident_pair_counts = _candidate_incident_pair_counts(connections)
@@ -815,18 +825,30 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
         "geodesic_vertex_crossing_rejected": 0,
         "geodesic_origin_budget_rejected": 0,
         "geodesic_endpoint_degree_rejected": 0,
+        "geodesic_shared_neighborhood_endpoint_relaxed": 0,
         "geodesic_accepted": 0,
         "geodesic_per_origin_candidate_counts": {},
     }
 
     for origin_index in range(len(vertex_positions)):
         frontier_count = frontier_origin_counts.get(origin_index, 0)
-        if salvage_mode == "frontier_deficit_geodesic" and frontier_count >= max_edges_per_vertex:
+        rejected_terminal_hits = frontier_terminal_rejections.get(origin_index, 0)
+        shared_origin_overflow_enabled = (
+            salvage_mode == "frontier_deficit_geodesic"
+            and frontier_count >= max_edges_per_vertex
+            and rejected_terminal_hits > 0
+        )
+        if salvage_mode == "frontier_deficit_geodesic" and (
+            frontier_count >= max_edges_per_vertex and not shared_origin_overflow_enabled
+        ):
             diagnostics["geodesic_origin_budget_rejected"] += 1
             continue
 
         if salvage_mode == "frontier_deficit_geodesic":
-            max_new_pairs = max_edges_per_vertex - frontier_count
+            if shared_origin_overflow_enabled:
+                max_new_pairs = min(2, rejected_terminal_hits)
+            else:
+                max_new_pairs = max_edges_per_vertex - frontier_count
         else:
             max_new_pairs = max(1, min(max_edges_per_vertex, 2))
         if max_new_pairs <= 0:
@@ -850,12 +872,21 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
             if pair in existing_pairs or pair in accepted_pairs:
                 diagnostics["geodesic_existing_pair_skipped"] += 1
                 continue
-            if (
-                incident_pair_counts.get(pair[0], 0) >= max_edges_per_vertex
-                or incident_pair_counts.get(pair[1], 0) >= max_edges_per_vertex
-            ):
+            relaxed_endpoint_cap = False
+            blocked_by_endpoint_cap = False
+            for endpoint in pair:
+                if incident_pair_counts.get(endpoint, 0) < max_edges_per_vertex:
+                    continue
+                if endpoint == origin_index and shared_origin_overflow_enabled:
+                    relaxed_endpoint_cap = True
+                    continue
+                blocked_by_endpoint_cap = True
+                break
+            if blocked_by_endpoint_cap:
                 diagnostics["geodesic_endpoint_degree_rejected"] += 1
                 continue
+            if relaxed_endpoint_cap:
+                diagnostics["geodesic_shared_neighborhood_endpoint_relaxed"] += 1
 
             diagnostics["geodesic_total_attempted_pairs"] += 1
             trace = _trace_local_geodesic_between_vertices(
@@ -1105,12 +1136,36 @@ def _resolve_frontier_edge_connection(
     shape: tuple[int, int, int],
 ) -> tuple[int | None, int | None]:
     """Resolve MATLAB-style parent/child validity for a frontier-found terminal."""
+    origin_idx, terminal_idx, _resolution_reason = _resolve_frontier_edge_connection_details(
+        current_path_linear,
+        terminal_vertex_idx,
+        seed_origin_idx,
+        edge_paths_linear,
+        edge_pairs,
+        pointer_index_map,
+        energy,
+        shape,
+    )
+    return origin_idx, terminal_idx
+
+
+def _resolve_frontier_edge_connection_details(
+    current_path_linear: list[int],
+    terminal_vertex_idx: int,
+    seed_origin_idx: int,
+    edge_paths_linear: list[list[int]],
+    edge_pairs: list[tuple[int, int]],
+    pointer_index_map: dict[int, int],
+    energy: np.ndarray,
+    shape: tuple[int, int, int],
+) -> tuple[int | None, int | None, str]:
+    """Resolve MATLAB-style parent/child validity for a frontier-found terminal."""
     root_index = current_path_linear[-1]
     root_pointer = int(pointer_index_map.get(root_index, 0))
     parent_index = -root_pointer if root_pointer < 0 else 0
 
     if parent_index == 0:
-        return seed_origin_idx, terminal_vertex_idx
+        return seed_origin_idx, terminal_vertex_idx, "accepted_seed_origin"
 
     parent_path = edge_paths_linear[parent_index - 1]
     parent_pointers = {
@@ -1121,11 +1176,11 @@ def _resolve_frontier_edge_connection(
     parent_pointers.discard(0)
     parent_pointers.discard(parent_index)
     if parent_pointers:
-        return None, None
+        return None, None, "rejected_parent_has_child"
 
     parent_terminal, parent_origin = edge_pairs[parent_index - 1]
     if parent_terminal < 0 or parent_origin < 0:
-        return None, None
+        return None, None, "rejected_parent_invalid"
 
     parent_energy = _path_max_energy_from_linear_indices(parent_path, energy, shape)
     child_energy = _path_max_energy_from_linear_indices(current_path_linear, energy, shape)
@@ -1135,10 +1190,10 @@ def _resolve_frontier_edge_connection(
     # stealing the parent's best voxels, so the child is invalidated.
     # The strict <= comparison preserves MATLAB's exact behavior.
     if child_energy <= parent_energy:
-        return None, None
+        return None, None, "rejected_child_better_than_parent"
 
     if root_index not in parent_path:
-        return None, None
+        return None, None, "rejected_root_missing_from_parent"
 
     bifurcation_index = parent_path.index(root_index)
     parent_1 = parent_path[:bifurcation_index]
@@ -1157,8 +1212,10 @@ def _resolve_frontier_edge_connection(
         )
     origin_vertex_idx = min(half_candidates, key=lambda item: item[1])[0]
     if origin_vertex_idx < 0:
-        return None, None
-    return origin_vertex_idx, terminal_vertex_idx
+        return None, None, "rejected_parent_origin_invalid"
+    if origin_vertex_idx == parent_terminal:
+        return origin_vertex_idx, terminal_vertex_idx, "accepted_parent_terminal_half"
+    return origin_vertex_idx, terminal_vertex_idx, "accepted_parent_origin_half"
 
 
 def _trace_origin_edges_matlab_frontier(
@@ -1300,6 +1357,11 @@ def _trace_origin_edges_matlab_frontier(
 
         if terminal_vertex_idx >= 0:
             diagnostics["stop_reason_counts"]["terminal_frontier_hit"] += 1
+            diagnostics.setdefault("frontier_per_origin_terminal_hits", {})
+            diagnostics["frontier_per_origin_terminal_hits"][str(origin_vertex_idx)] = (
+                int(diagnostics["frontier_per_origin_terminal_hits"].get(str(origin_vertex_idx), 0))
+                + 1
+            )
             path_linear = [current_linear]
             tracing_linear = current_linear
             while int(pointer_index_map.get(tracing_linear, 0)) > 0:
@@ -1308,7 +1370,7 @@ def _trace_origin_edges_matlab_frontier(
                 ]
                 path_linear.append(tracing_linear)
 
-            origin_idx, terminal_idx = _resolve_frontier_edge_connection(
+            origin_idx, terminal_idx, resolution_reason = _resolve_frontier_edge_connection_details(
                 path_linear,
                 terminal_vertex_idx,
                 origin_vertex_idx,
@@ -1318,8 +1380,22 @@ def _trace_origin_edges_matlab_frontier(
                 energy,
                 shape,
             )
+            diagnostics.setdefault("frontier_terminal_resolution_counts", {})
+            diagnostics["frontier_terminal_resolution_counts"][resolution_reason] = (
+                int(diagnostics["frontier_terminal_resolution_counts"].get(resolution_reason, 0))
+                + 1
+            )
 
             if origin_idx is not None and terminal_idx is not None:
+                diagnostics.setdefault("frontier_per_origin_terminal_accepts", {})
+                diagnostics["frontier_per_origin_terminal_accepts"][str(origin_vertex_idx)] = (
+                    int(
+                        diagnostics["frontier_per_origin_terminal_accepts"].get(
+                            str(origin_vertex_idx), 0
+                        )
+                    )
+                    + 1
+                )
                 path_record_index = len(edge_paths_linear) + 1
                 for path_index in path_linear[:-1]:
                     pointer_index_map[path_index] = -path_record_index
@@ -1344,6 +1420,16 @@ def _trace_origin_edges_matlab_frontier(
                 scale_traces.append(scale_trace)
                 origin_indices.append(origin_vertex_idx)
                 diagnostics["terminal_direct_hit_count"] += 1
+            else:
+                diagnostics.setdefault("frontier_per_origin_terminal_rejections", {})
+                diagnostics["frontier_per_origin_terminal_rejections"][str(origin_vertex_idx)] = (
+                    int(
+                        diagnostics["frontier_per_origin_terminal_rejections"].get(
+                            str(origin_vertex_idx), 0
+                        )
+                    )
+                    + 1
+                )
             if len(new_coords_array):
                 # MATLAB clears the newly exposed frontier voxels after any terminal
                 # hit instead of leaving them queued for later expansion.
@@ -1445,6 +1531,23 @@ def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dic
     for key, value in raw_counts.items():
         try:
             normalized[str(int(key))] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return normalized
+
+
+def _normalize_candidate_count_map(raw_counts: dict[Any, Any] | None) -> dict[str, int]:
+    """Return a JSON-safe additive counter map with string keys."""
+    normalized: dict[str, int] = {}
+    if not raw_counts:
+        return normalized
+
+    for key, value in raw_counts.items():
+        key_text = str(key).strip()
+        if not key_text:
+            continue
+        try:
+            normalized[key_text] = int(value)
         except (TypeError, ValueError):
             continue
     return normalized
@@ -1567,6 +1670,24 @@ def _build_edge_candidate_audit(
     geodesic_origin_counts_int = {
         int(origin): int(count) for origin, count in geodesic_origin_counts.items()
     }
+    frontier_terminal_hits = _normalize_candidate_origin_counts(
+        diag.get("frontier_per_origin_terminal_hits") if isinstance(diag, dict) else None
+    )
+    frontier_terminal_accepts = _normalize_candidate_origin_counts(
+        diag.get("frontier_per_origin_terminal_accepts") if isinstance(diag, dict) else None
+    )
+    frontier_terminal_rejections = _normalize_candidate_origin_counts(
+        diag.get("frontier_per_origin_terminal_rejections") if isinstance(diag, dict) else None
+    )
+    frontier_terminal_hits_int = {
+        int(origin): int(count) for origin, count in frontier_terminal_hits.items()
+    }
+    frontier_terminal_accepts_int = {
+        int(origin): int(count) for origin, count in frontier_terminal_accepts.items()
+    }
+    frontier_terminal_rejections_int = {
+        int(origin): int(count) for origin, count in frontier_terminal_rejections.items()
+    }
     frontier_connection_count = (
         sum(frontier_origin_counts.values())
         if frontier_origin_counts
@@ -1618,11 +1739,19 @@ def _build_edge_candidate_audit(
         | set(frontier_origin_counts.keys())
         | set(supplement_origin_counts.keys())
         | set(geodesic_origin_counts_int.keys())
+        | set(frontier_terminal_hits_int.keys())
+        | set(frontier_terminal_accepts_int.keys())
+        | set(frontier_terminal_rejections_int.keys())
     )
     for origin_index in sorted(all_origins):
         frontier_count = int(frontier_origin_counts.get(origin_index, 0))
         supplement_count = int(supplement_origin_counts.get(origin_index, 0))
         geodesic_count = int(geodesic_origin_counts_int.get(origin_index, 0))
+        frontier_terminal_hit_count = int(frontier_terminal_hits_int.get(origin_index, 0))
+        frontier_terminal_accept_count = int(frontier_terminal_accepts_int.get(origin_index, 0))
+        frontier_terminal_rejection_count = int(
+            frontier_terminal_rejections_int.get(origin_index, 0)
+        )
         total_count = int(total_origin_counts.get(origin_index, 0))
         fallback_count = max(0, total_count - frontier_count - supplement_count - geodesic_count)
         candidate_pairs = total_origin_pairs.get(origin_index, set())
@@ -1637,6 +1766,9 @@ def _build_edge_candidate_audit(
                 "watershed_candidate_count": supplement_count,
                 "geodesic_candidate_count": geodesic_count,
                 "fallback_candidate_count": fallback_count,
+                "frontier_terminal_hit_count": frontier_terminal_hit_count,
+                "frontier_terminal_accept_count": frontier_terminal_accept_count,
+                "frontier_terminal_rejection_count": frontier_terminal_rejection_count,
                 "candidate_connection_count": total_count,
                 "candidate_endpoint_pair_count": len(candidate_pairs),
                 "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
@@ -1681,6 +1813,9 @@ def _build_edge_candidate_audit(
         "geodesic_vertex_crossing_rejected": int(diag.get("geodesic_vertex_crossing_rejected", 0)),
         "geodesic_endpoint_degree_rejected": int(diag.get("geodesic_endpoint_degree_rejected", 0)),
         "geodesic_origin_budget_rejected": int(diag.get("geodesic_origin_budget_rejected", 0)),
+        "geodesic_shared_neighborhood_endpoint_relaxed": int(
+            diag.get("geodesic_shared_neighborhood_endpoint_relaxed", 0)
+        ),
         "geodesic_accepted": int(diag.get("geodesic_accepted", 0)),
         "frontier_origins_with_candidates": int(diag.get("frontier_origins_with_candidates", 0)),
         "frontier_origins_without_candidates": int(
@@ -1734,10 +1869,16 @@ def _build_edge_candidate_audit(
             "fallback": fallback_source_total,
         },
         "frontier_per_origin_candidate_counts": frontier_origin_counts,
+        "frontier_per_origin_terminal_hits": frontier_terminal_hits,
+        "frontier_per_origin_terminal_accepts": frontier_terminal_accepts,
+        "frontier_per_origin_terminal_rejections": frontier_terminal_rejections,
         "watershed_per_origin_candidate_counts": _normalize_candidate_origin_counts(
             diag.get("watershed_per_origin_candidate_counts")
         ),
         "geodesic_per_origin_candidate_counts": geodesic_origin_counts,
+        "frontier_terminal_resolution_counts": _normalize_candidate_count_map(
+            diag.get("frontier_terminal_resolution_counts")
+        ),
         "pair_source_breakdown": {
             "frontier_only_pair_count": len(frontier_only_pairs),
             "watershed_only_pair_count": len(watershed_only_pairs),
