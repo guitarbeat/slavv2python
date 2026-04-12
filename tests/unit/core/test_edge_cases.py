@@ -6,6 +6,7 @@ from slavv.core.edge_candidates import (
     _best_watershed_contact_coords,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
+    _salvage_matlab_parity_candidates_with_local_geodesics,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_origin_edges_matlab_frontier,
 )
@@ -807,13 +808,13 @@ def test_frontier_tracer_does_not_prune_from_invalid_terminal_before_valid_edge(
 
     def fake_resolve(*_args, **_kwargs):
         resolve_calls["count"] += 1
-        return None, None
+        return None, None, "rejected_parent_has_child"
 
     def fail_if_pruned(*_args, **_kwargs):
         raise AssertionError("invalid terminal directions should not prune frontier yet")
 
     monkeypatch.setattr(
-        "slavv.core.edge_candidates._resolve_frontier_edge_connection",
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection_details",
         fake_resolve,
     )
     monkeypatch.setattr(
@@ -870,13 +871,13 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
     def fake_resolve(*_args, **_kwargs):
         resolve_calls["count"] += 1
         if resolve_calls["count"] == 1:
-            return None, None
+            return None, None, "rejected_parent_has_child"
         if resolve_calls["count"] == 2:
-            return 0, 2
-        return 0, 3
+            return 0, 2, "accepted_seed_origin"
+        return 0, 3, "accepted_seed_origin"
 
     monkeypatch.setattr(
-        "slavv.core.edge_candidates._resolve_frontier_edge_connection",
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection_details",
         fake_resolve,
     )
 
@@ -898,6 +899,128 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
 
     assert resolve_calls["count"] >= 3
     assert payload["connections"] == [[0, 2], [0, 3]]
+
+
+def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
+    energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
+    energy[3, 3, 3] = -9.0
+    energy[3, 4, 3] = -8.0
+    energy[3, 5, 3] = -7.0
+    energy[4, 3, 3] = -6.0
+    energy[5, 3, 3] = -5.0
+
+    vertex_positions = np.array(
+        [
+            [3.0, 3.0, 3.0],
+            [3.0, 5.0, 3.0],
+            [5.0, 3.0, 3.0],
+        ],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(3, dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    resolve_calls = {"count": 0}
+
+    def fake_resolve(*_args, **_kwargs):
+        resolve_calls["count"] += 1
+        if resolve_calls["count"] == 1:
+            return None, None, "rejected_parent_has_child"
+        return 0, 2, "accepted_seed_origin"
+
+    monkeypatch.setattr(
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection_details",
+        fake_resolve,
+    )
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 2,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 8.0,
+        },
+    )
+
+    diagnostics = payload["diagnostics"]
+    assert diagnostics["frontier_per_origin_terminal_hits"] == {"0": 2}
+    assert diagnostics["frontier_per_origin_terminal_accepts"] == {"0": 1}
+    assert diagnostics["frontier_per_origin_terminal_rejections"] == {"0": 1}
+    assert diagnostics["frontier_terminal_resolution_counts"]["rejected_parent_has_child"] == 1
+    assert diagnostics["frontier_terminal_resolution_counts"]["accepted_seed_origin"] == 1
+
+
+def test_geodesic_salvage_relaxes_origin_cap_for_shared_neighborhood_rejections():
+    energy = np.full((9, 9, 9), 1.0, dtype=np.float64)
+    energy[4, 4, 4] = -9.0
+    energy[4, 5, 4] = -8.0
+    energy[4, 6, 4] = -7.0
+    energy[5, 4, 4] = -8.0
+    energy[6, 4, 4] = -7.0
+    energy[3, 4, 4] = -8.0
+    energy[2, 4, 4] = -7.0
+
+    vertex_positions = np.array(
+        [
+            [4.0, 4.0, 4.0],
+            [4.0, 6.0, 4.0],
+            [6.0, 4.0, 4.0],
+            [2.0, 4.0, 4.0],
+        ],
+        dtype=np.float32,
+    )
+    candidates = {
+        "traces": [
+            np.array([[4.0, 4.0, 4.0], [4.0, 5.0, 4.0], [4.0, 6.0, 4.0]], dtype=np.float32),
+            np.array([[4.0, 4.0, 4.0], [5.0, 4.0, 4.0], [6.0, 4.0, 4.0]], dtype=np.float32),
+        ],
+        "connections": np.array([[0, 1], [0, 2]], dtype=np.int32),
+        "metrics": np.array([-8.0, -8.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-9.0, -8.0, -7.0], dtype=np.float32),
+            np.array([-9.0, -8.0, -7.0], dtype=np.float32),
+        ],
+        "scale_traces": [
+            np.array([0, 0, 0], dtype=np.int16),
+            np.array([0, 0, 0], dtype=np.int16),
+        ],
+        "origin_indices": np.array([0, 0], dtype=np.int32),
+        "connection_sources": ["frontier", "frontier"],
+        "diagnostics": {
+            "frontier_per_origin_candidate_counts": {"0": 2},
+            "frontier_per_origin_terminal_hits": {"0": 3},
+            "frontier_per_origin_terminal_accepts": {"0": 2},
+            "frontier_per_origin_terminal_rejections": {"0": 1},
+        },
+    }
+
+    result = _salvage_matlab_parity_candidates_with_local_geodesics(
+        candidates,
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        -1.0,
+        np.ones(3, dtype=np.float32),
+        {
+            "number_of_edges_per_vertex": 2,
+            "parity_geodesic_salvage_k_nearest": 3,
+            "parity_geodesic_salvage_box_margin_voxels": 1,
+            "parity_geodesic_salvage_max_path_ratio": 2.5,
+        },
+        salvage_mode="frontier_deficit_geodesic",
+        parity_metric_threshold=None,
+    )
+
+    assert (0, 3) in {tuple(pair) for pair in np.asarray(result["connections"]).tolist()}
+    assert result["diagnostics"]["geodesic_shared_neighborhood_endpoint_relaxed"] >= 1
+    assert result["diagnostics"]["geodesic_per_origin_candidate_counts"]["0"] == 1
 
 
 def test_prune_frontier_indices_beyond_found_vertices_removes_forward_voxels():

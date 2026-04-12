@@ -66,16 +66,23 @@ slavv info
 # Run the full pipeline on a TIFF volume
 slavv run -i volume.tif -o slavv_output --export csv json
 
-# Run with custom parameters and resume support
-slavv run -i volume.tif -o slavv_output --checkpoint-dir checkpoints --vessel-radius 2.0
+# Run with custom parameters and an explicit structured run directory
+slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a --vessel-radius 2.0
 
 # Import MATLAB results for comparison
 slavv import-matlab -b path\to\matlab_batch -c my_checkpoints
 
-# Analyze and plot results
+# Analyze and plot results from the standard JSON export
 slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
 ```
+
+Notes:
+
+- `slavv run` writes structured run metadata to `<output>\_slavv_run` by default.
+- Use `--run-dir` when you want an explicit structured run root.
+- `--checkpoint-dir` remains available for legacy flat checkpoint workflows.
+- `slavv analyze` can read the standard exported `network.json` directly and reconstruct the topology needed for summary metrics.
 
 ### Web Application
 
@@ -86,6 +93,8 @@ slavv-app
 # Or manually via streamlit:
 python -m streamlit run source/slavv/apps/web_app.py
 ```
+
+The ML curation flow accepts trained `.joblib` and `.pkl` model uploads directly from the browser.
 
 ### Programmatic Usage
 
@@ -125,6 +134,16 @@ Located in `workspace/scripts/`:
 - `workspace/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
 - `workspace/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
 - `workspace/scripts/benchmarks/`: Ad-hoc benchmark helpers that are not part of pytest collection.
+
+## Quality Gates
+
+```powershell
+python -m ruff check source tests
+python -m mypy
+python -m pytest -m "unit or integration"
+```
+
+The current `mypy` gate focuses on the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
 
 ## Testing
 
@@ -178,8 +197,9 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 ## TODOs / Known Issues
 
-- [x] Complete full-package type hint coverage (currently focused on entry points).
+- [x] Broaden entry-point type coverage across the CLI, web app, share-report, and run-state surfaces.
 - [ ] Expand documentation for custom energy computation methods.
 - [ ] Optimize peak memory usage during Hessian eigenvalue computation.
 - [x] Document advanced `slavv analyze` metrics.
+- [ ] Continue expanding typed coverage deeper into `analysis/` and other scientific modules.
 - [ ] TODO: Add detailed contributor guide for adding new extraction algorithms.

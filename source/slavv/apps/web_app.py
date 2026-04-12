@@ -5,7 +5,11 @@ import os
 import tempfile
 import zipfile
 from datetime import datetime
+<<<<<<< Updated upstream
 from typing import Any, cast
+=======
+from typing import TYPE_CHECKING, Any, TypedDict, cast
+>>>>>>> Stashed changes
 
 import numpy as np
 import pandas as pd
@@ -27,12 +31,30 @@ from slavv.apps.share_report import (
 # Import our modules
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
+<<<<<<< Updated upstream
 from slavv.runtime import RunContext, RunSnapshot, load_run_snapshot
 from slavv.runtime.run_state import fingerprint_jsonable, target_stage_progress
+=======
+from slavv.runtime import RunContext
+from slavv.runtime.run_state import (
+    RunSnapshot,
+    fingerprint_jsonable,
+    load_run_snapshot,
+    target_stage_progress,
+)
+>>>>>>> Stashed changes
 from slavv.utils import validate_parameters
 from slavv.utils.formatting import format_time
 from slavv.visualization import NetworkVisualizer
 
+<<<<<<< Updated upstream
+=======
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+warnings.filterwarnings("ignore")
+
+>>>>>>> Stashed changes
 DASHBOARD_ASSUMPTION = (
     "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
     "current network outputs, and share-report activity for the current session."
@@ -71,6 +93,17 @@ EXPORT_BUTTON_SPECS = (
         "artifact_key": "csv_archive",
     },
 )
+
+
+class DashboardContext(TypedDict):
+    """Typed session-backed inputs for the dashboard surface."""
+
+    run_dir: str | None
+    snapshot: RunSnapshot | None
+    results: dict[str, Any] | None
+    share_metrics: dict[str, Any]
+    dataset_name: str
+    stats: dict[str, Any] | None
 
 # Page configuration
 st.set_page_config(
@@ -230,23 +263,30 @@ def _render_export_download(
             )
 
 
-def _has_full_network_results(results):
+def _has_full_network_results(results: Mapping[str, Any]) -> bool:
     """Return True when a full network exists and exports can be offered."""
     required_keys = {"vertices", "edges", "network"}
     return required_keys.issubset(results)
 
 
 @st.cache_data(show_spinner=False)
-def generate_share_report_data(processing_results, dataset_name, image_shape):
+def generate_share_report_data(
+    processing_results: Mapping[str, Any],
+    dataset_name: str,
+    image_shape: tuple[int, int, int],
+) -> str:
     """Generate a self-contained HTML share report."""
-    return build_share_report_html(
-        processing_results,
-        dataset_name=dataset_name,
-        image_shape=image_shape,
+    return cast(
+        "str",
+        build_share_report_html(
+            processing_results,
+            dataset_name=dataset_name,
+            image_shape=image_shape,
+        ),
     )
 
 
-def _snapshot_for_display(run_dir: str | None):
+def _snapshot_for_display(run_dir: str | None) -> RunSnapshot | None:
     """Load the current run snapshot if one exists."""
     if not run_dir:
         return None
@@ -649,13 +689,13 @@ def _init_dashboard_state() -> None:
     st.session_state.setdefault("dashboard_metric_requests", [])
 
 
-def _dashboard_context() -> dict[str, object]:
+def _dashboard_context() -> DashboardContext:
     """Load dashboard context from session state and run metadata."""
-    run_dir = st.session_state.get("current_run_dir")
+    run_dir = cast("str | None", st.session_state.get("current_run_dir"))
     snapshot = _snapshot_for_display(run_dir)
-    results = st.session_state.get("processing_results")
-    share_metrics = st.session_state.get("share_report_metrics", {})
-    dataset_name = st.session_state.get("dataset_name", "No dataset loaded")
+    results = cast("dict[str, Any] | None", st.session_state.get("processing_results"))
+    share_metrics = cast("dict[str, Any]", st.session_state.get("share_report_metrics", {}))
+    dataset_name = str(st.session_state.get("dataset_name", "No dataset loaded"))
 
     stats = None
     if results and _has_full_network_results(results):
