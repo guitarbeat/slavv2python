@@ -3,7 +3,7 @@
 This checklist rolls up the remaining implementation work and release
 verification:
 
-- [docs/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+- [docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
 
 Recommended order:
 
@@ -13,169 +13,64 @@ Recommended order:
 3. Tackle edge parity once the operational workflow is safer and easier to
    debug.
 
-## Cross-Cutting Setup
+## Completed (Consolidated)
 
-- [x] Confirm the first-pass scope is comparison-mode first, with standalone
-  MATLAB support only where it is cheap and low-risk.
-- [x] Define the shared metadata contract for new run artifacts and snapshot
-  fields before implementing multiple features in parallel.
-- [x] Decide which findings are fatal vs warning-only for preflight and resume
-  status.
-- [x] Add or refresh reusable test fixtures for:
-  - MATLAB `batch_*` directories
-  - `matlab_resume_state.json`
-  - `matlab_run.log`
-  - run snapshots and manifests
-- [x] Document a canonical local output root for live MATLAB-enabled reruns so
-  developers do not default back to risky paths.
+- [x] Cross-cutting setup is complete:
+  - comparison-mode first scope confirmed
+  - shared metadata contract defined
+  - fatal vs warning findings policy set
+  - reusable MATLAB/run-state fixtures refreshed
+  - canonical local output root documented
+- [x] Track 1 comparison output preflight is complete:
+  - preflight module, integration, persistence, manifest/status surfacing, and launcher checks implemented
+  - preflight test matrix (healthy, low-space, unwritable, OneDrive-suspected, persisted metadata) added
+- [x] Track 2 comparison resume transparency is complete:
+  - normalized MATLAB status parsing, rerun semantics, snapshot/manifest updates, and failure summaries implemented
+  - resume behavior test matrix (fresh/no-op/stage resume/mid-stage crash/stale snapshot/imported checkpoints) added
+- [x] Track 3 edge parity work is complete:
+  - diagnostics expanded and MATLAB frontier behavior alignment completed
+  - parity-focused tests updated
+  - diagnostic reruns confirmed reduced candidate/endpoint mismatch trends
+- [x] Verification completed (non-MATLAB dependent):
+  - docs updated
+  - formatting/linting/type-checking completed
+  - targeted and broad regression tests completed
+  - `python -m compileall source workspace/scripts` completed
+- [x] Initial milestone slices complete:
+  - operational safety (preflight + metadata)
+  - transparency (status parsing + rerun prediction)
+  - parity diagnostics baseline improvements
 
-## Track 1: Comparison Output Preflight
+## Remaining For Release
 
-- [x] Create `source/slavv/evaluation/preflight.py`.
-- [x] Refactor shared validation logic out of
-  `source/slavv/evaluation/setup_checks.py` where it makes sense.
-- [x] Implement a normalized preflight report for the selected output root.
-- [x] Check:
-  - path resolution
-  - parent-directory creation
-  - writability
-  - free space
-  - OneDrive-suspected paths
-  - obviously non-local or otherwise risky roots when detectable
-- [x] Call preflight from
-  `source/slavv/evaluation/comparison.py` before MATLAB launch.
-- [x] Block fatal launches before `run_matlab_vectorization(...)` starts.
-- [x] Persist the result to `99_Metadata/output_preflight.json`.
-- [x] Mirror the high-level outcome into the shared run snapshot.
-- [x] Surface preflight warnings in the manifest and `slavv status`.
-- [x] Add minimal launcher-level safety checks in:
-  - `workspace/scripts/cli/run_matlab_cli.bat`
-  - `workspace/scripts/cli/run_matlab_cli.sh`
-- [x] Add tests for:
-  - healthy local output root
-  - low-free-space root
-  - unwritable root
-  - OneDrive-suspected root
-  - persisted preflight metadata on success and blocked launch
-
-## Track 2: Comparison Resume Transparency
-
-- [x] Create `source/slavv/evaluation/matlab_status.py`.
-- [x] Implement normalized parsing for:
-  - `matlab_resume_state.json`
-  - selected `batch_*` folder completeness
-  - partial stage artifacts
-  - `matlab_run.log` tail
-- [x] Derive and persist rerun semantics fields such as:
-  - batch folder being reused
-  - resume mode
-  - last completed stage
-  - next stage
-  - partial-artifact detection
-  - rerun prediction
-- [x] Mirror MATLAB-specific state into `99_Metadata/run_snapshot.json`.
-- [x] Capture failure summaries and log tails on MATLAB failure.
-- [x] Distinguish:
-  - fresh run
-  - completed batch no-op
-  - stage-boundary resume
-  - mid-stage restart
-  - stale running snapshot
-- [x] Update `slavv status` to show the MATLAB rerun decision clearly.
-- [x] Update the run manifest with:
-  - `Resume Semantics`
-  - `Authoritative Files`
-  - `Failure Summary`
-- [x] Add tests for:
-  - fresh run
-  - completed batch no-op
-  - stage resume from `vertices` to `edges`
-  - mid-stage `energy` crash with partial artifacts
-  - stale snapshot detection
-  - imported MATLAB checkpoints causing Python rerun from `edges`
-
-## Track 3: Edge Parity
-
-- [x] Expand parity diagnostics in:
-  - `source/slavv/evaluation/metrics.py`
-  - `source/slavv/core/tracing.py`
-- [x] Record per-origin candidate coverage so missing MATLAB endpoint pairs can
-  be traced back to specific origin vertices.
-- [x] Measure separately:
-  - raw frontier candidates
-  - watershed supplement additions
-  - cleanup rejections
-  - missing MATLAB endpoint pairs
-  - extra Python endpoint pairs
-- [x] Audit `_supplement_matlab_frontier_candidates_with_watershed_joins()`.
-- [x] Tighten supplement rules so they only add MATLAB-like joins.
-- [x] Compare `_trace_origin_edges_matlab_frontier()` against the MATLAB
-  `get_edges_for_vertex.m` and `get_edges_by_watershed.m` behavior.
-  - [x] Match MATLAB's origin-entry gate for seeds that start too close to the
-    border for the current structuring element.
-  - [x] Match MATLAB's parent-half selection when a child branches directly at
-    the parent origin/root.
-  - [x] Clamp parity frontier source fanout to MATLAB's
-    `edge_number_tolerance = 2` behavior.
-  - [x] Delay beyond-terminal pruning until at least one valid terminal edge
-    exists, so invalid terminal hits do not suppress frontier exploration
-    early.
-- [x] Align frontier behavior around:
-  - ordering
-  - parent/child resolution
-  - pruning
-  - terminal hit handling
-  - trace finalization
-- [x] Keep `_choose_edges_matlab_style()` focused on downstream dedupe/pruning
-  rather than masking upstream semantic drift.
-- [x] Add or update parity-focused tests in:
-  - `tests/unit/analysis/test_comparison_metrics.py`
-  - `tests/unit/core/test_edge_cases.py`
-  - `tests/integration/test_regression_edges.py`
-- [x] Re-run the diagnostic parity comparison and confirm:
-  - [x] missing MATLAB endpoint pairs decrease
-  - [x] extra Python candidate pairs decrease
-  - [x] final edge and strand counts converge to MATLAB (watershed joins aligned; frontier yield remaining)
-
-## Verification And Release Checklist
-
-- [x] Update docs after implementation:
-  - `docs/reference/COMPARISON_LAYOUT.md`
-  - `docs/README.md`
-  - any parity findings note that should reference the new workflow
-- [x] Run formatting:
-  - `python -m ruff format source tests`
-  - `python -m ruff check source tests`
-- [ ] Run type checking:
-  - `python -m mypy`
-- [x] Run targeted test coverage for modified modules first.
-- [x] Run broad regression coverage:
-  - `python -m pytest -m "unit or integration"`
-  - `python -m pytest tests/diagnostic/test_comparison_setup.py`
-- [x] Run `python -m compileall source workspace/scripts`.
 - [ ] If MATLAB is available, run a fresh live comparison on a high-free-space
   local output root and verify:
   - preflight metadata is written
   - rerun semantics are visible
   - parity diagnostics are generated
   - final edge/strand status is easy to interpret
-
-## Track 4: Release Readiness
-
-- [ ] Run full release validation:
-  - [ ] `python -m ruff format --check source tests`
-  - [ ] `python -m ruff check source tests`
-  - [ ] `python -m mypy`
-  - [ ] `python -m pytest -m "unit or integration"`
-  - [ ] `python -m compileall source workspace/scripts`
 - [ ] Final live comparison audit on canonical data.
 - [ ] Snapshot performance metrics for native and parity paths.
 - [ ] Prepare final parity report and findings summary.
 
-- [x] First slice for operational safety:
-  implement output-root preflight plus persisted preflight metadata.
-- [x] First slice for transparency:
-  implement normalized MATLAB status parsing plus rerun prediction in the run
-  snapshot.
-- [x] First slice for parity:
-  improve candidate coverage diagnostics before changing tracer behavior.
+### Implementation Progress (2026-04-13)
+
+- [x] Phase 1 setup/baseline gates executed:
+  - `pytest tests/diagnostic/test_comparison_setup.py` passed
+  - output-root preflight validate-only run passed on `C:\slavv_comparisons\release_verify_20260413`
+  - `compileall`, `ruff format --check`, `ruff check`, `mypy`, and `pytest -m "unit or integration"` passed
+- [x] MATLAB health check executed:
+  - `--matlab-health-check` passed (43.0s) on `C:\slavv_comparisons\release_verify_20260413`
+- [ ] Fresh canonical live comparison remains open:
+  - first attempt used a non-canonical fixture (`workspace/tmp_debug_cli_case/input.tif`) and failed because it is not a valid TIFF
+  - second attempt used a real TIFF (`skimage/data/multipage.tif`) and produced staged artifacts, but MATLAB failed in energy stage on this tiny fallback input
+  - failure evidence is captured in `C:\slavv_comparisons\release_verify_20260413\live_20260413b\99_Metadata\run_manifest.md` and `matlab_failure_summary.json`
+
+## Additional Known Issues
+
+- [x] Broaden entry-point type coverage across the CLI, web app, share-report, and run-state surfaces.
+- [ ] Expand documentation for custom energy computation methods.
+- [ ] Optimize peak memory usage during Hessian eigenvalue computation.
+- [x] Document advanced `slavv analyze` metrics.
+- [ ] Continue expanding typed coverage deeper into `analysis/` and other scientific modules.
+- [ ] Add detailed contributor guide for adding new extraction algorithms.

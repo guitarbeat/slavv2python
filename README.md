@@ -197,9 +197,4 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 ## TODOs / Known Issues
 
-- [x] Broaden entry-point type coverage across the CLI, web app, share-report, and run-state surfaces.
-- [ ] Expand documentation for custom energy computation methods.
-- [ ] Optimize peak memory usage during Hessian eigenvalue computation.
-- [x] Document advanced `slavv analyze` metrics.
-- [ ] Continue expanding typed coverage deeper into `analysis/` and other scientific modules.
-- [ ] TODO: Add detailed contributor guide for adding new extraction algorithms.
+See the canonical tracker in [todo.md](todo.md) for current TODOs, known issues, and release readiness status.
