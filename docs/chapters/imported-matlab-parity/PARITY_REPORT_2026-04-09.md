@@ -11,9 +11,9 @@ and the maintained
 [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 
 Concrete `comparison_output_*` paths below are retained Chapter 1 evidence
-artifacts. They preserve the original run layout and path names used during
-that work; for current staged layout guidance, use
-[COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+artifacts. The underlying root-level directories were removed from the repo,
+but the run names are preserved here as historical references; for current
+staged layout guidance, use [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
 
 ## Purpose
 
@@ -383,17 +383,17 @@ Both were useful experiments, but both worsened aggregate parity.
 
 ## Sources
 
-The local evidence links below intentionally preserve the original Chapter 1
-artifact paths.
+The local evidence below preserves the original Chapter 1 artifact names for
+historical reference only.
 
 ### Local Evidence
 
-- [comparison_output_synthetic_final_20260409_rerun/03_Analysis/summary.txt](../../../comparison_output_synthetic_final_20260409_rerun/03_Analysis/summary.txt)
-- [comparison_output_synthetic_final_20260409_allcontacts_manual/03_Analysis/manual_summary.txt](../../../comparison_output_synthetic_final_20260409_allcontacts_manual/03_Analysis/manual_summary.txt)
-- [comparison_output_synthetic_final_20260409_geodesic_salvage/summary.txt](../../../comparison_output_synthetic_final_20260409_geodesic_salvage/summary.txt)
-- [comparison_output_synthetic_final_20260409_geodesic_relaxed/summary.txt](../../../comparison_output_synthetic_final_20260409_geodesic_relaxed/summary.txt)
-- [comparison_output_synthetic_final_20260409_origin_owned/summary.txt](../../../comparison_output_synthetic_final_20260409_origin_owned/summary.txt)
-- [comparison_output_synthetic_final_20260409_k10only/summary.txt](../../../comparison_output_synthetic_final_20260409_k10only/summary.txt)
+- `comparison_output_synthetic_final_20260409_rerun/03_Analysis/summary.txt`
+- `comparison_output_synthetic_final_20260409_allcontacts_manual/03_Analysis/manual_summary.txt`
+- `comparison_output_synthetic_final_20260409_geodesic_salvage/summary.txt`
+- `comparison_output_synthetic_final_20260409_geodesic_relaxed/summary.txt`
+- `comparison_output_synthetic_final_20260409_origin_owned/summary.txt`
+- `comparison_output_synthetic_final_20260409_k10only/summary.txt`
 - [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
 - `external/Vectorization-Public/vectorize_V200.m`
 - `external/Vectorization-Public/source/get_edges_V300.m`
