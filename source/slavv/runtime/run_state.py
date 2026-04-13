@@ -306,9 +306,10 @@ def load_legacy_run_snapshot(
         stage_snapshot.artifacts["checkpoint"] = str(path)
         stage_snapshot.completed_at = _now_iso()
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
-    snapshot.overall_progress = sum(
-        STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in TRACKED_RUN_STAGES
-    ) / total
+    snapshot.overall_progress = (
+        sum(STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in TRACKED_RUN_STAGES)
+        / total
+    )
     return snapshot
 
 
@@ -869,7 +870,9 @@ class RunContext:
         stages: dict[str, StageSnapshot],
         preprocess_done: bool | None = None,
     ) -> float:
-        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
+        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(
+            STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES
+        )
         progress = 0.0
         if preprocess_done is None:
             snapshot = getattr(self, "snapshot", None)

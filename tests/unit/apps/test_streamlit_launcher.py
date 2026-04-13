@@ -38,9 +38,7 @@ def test_main_delegates_to_streamlit_cli(monkeypatch):
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(streamlit_launcher.util, "find_spec", lambda name: object())
-    monkeypatch.setattr(
-        streamlit_launcher, "_resolve_web_app_path", fake_resolve_web_app_path
-    )
+    monkeypatch.setattr(streamlit_launcher, "_resolve_web_app_path", fake_resolve_web_app_path)
     monkeypatch.setattr(streamlit_launcher.subprocess, "run", fake_run)
 
     exit_code = streamlit_launcher.main(

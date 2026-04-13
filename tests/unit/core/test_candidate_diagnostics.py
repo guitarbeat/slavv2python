@@ -347,7 +347,10 @@ class TestFrontierCandidateDiagnostics:
             "rejected_parent_has_child": 1,
         }
         assert candidate_audit["diagnostic_counters"]["watershed_metric_threshold_rejected"] == 3
-        assert candidate_audit["diagnostic_counters"]["geodesic_shared_neighborhood_endpoint_relaxed"] == 1
+        assert (
+            candidate_audit["diagnostic_counters"]["geodesic_shared_neighborhood_endpoint_relaxed"]
+            == 1
+        )
         assert isinstance(candidate_audit["per_origin_summary"], list)
         assert len(candidate_audit["per_origin_summary"]) == 3
         origin_zero = next(

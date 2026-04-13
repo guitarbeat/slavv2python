@@ -111,7 +111,9 @@ def _remove_short_hairs(
     while True:
         to_remove: list[tuple[int, int]] = []
         for (v0, v1), trace in list(graph_edges.items()):
-            length: float = np.sum(np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1))
+            length: float = np.sum(
+                np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1)
+            )
             if length < min_hair_length and (
                 len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
             ):

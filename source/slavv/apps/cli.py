@@ -428,7 +428,9 @@ def _handle_status_command(args: argparse.Namespace) -> None:
     if snapshot is None:
         snapshot = load_legacy_run_snapshot(args.run_dir)
     if snapshot is None:
-        print(f"Error: no run snapshot or legacy checkpoints found in {args.run_dir}", file=sys.stderr)
+        print(
+            f"Error: no run snapshot or legacy checkpoints found in {args.run_dir}", file=sys.stderr
+        )
         sys.exit(1)
 
     for line in build_status_lines(snapshot):
@@ -553,7 +555,9 @@ def _load_exported_network_json(path: str) -> dict:
             "bifurcations": bifurcations,
         },
         "parameters": data.get("parameters", {}),
-        "image_shape": tuple(data.get("image_shape", _infer_image_shape_from_vertices(vertex_positions))),
+        "image_shape": tuple(
+            data.get("image_shape", _infer_image_shape_from_vertices(vertex_positions))
+        ),
     }
 
 
