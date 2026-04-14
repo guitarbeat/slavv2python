@@ -12,6 +12,10 @@ Recent work landed between 2026-03-21 and 2026-04-10.
 
 ### Added
 
+- Canonical reference docs for energy-method selection and for adding new
+  extraction algorithms to the validated CLI/pipeline surface.
+- Release-verification notes for the canonical April 13 MATLAB/Python
+  comparison run, including preserved timing and parity findings.
 - Stricter energy rejection criteria for watershed-based edge candidates in `source/slavv/core/tracing.py`, aligning Python's candidate generation more closely with MATLAB's restrictive requirements.
 - Regression coverage in `tests/unit/core/test_watershed_supplement_regression.py` to verify watershed supplement rejection rules and prevent future regressions.
 - File-backed run state for SLAVV processing, including stage snapshots,
@@ -47,6 +51,8 @@ Recent work landed between 2026-03-21 and 2026-04-10.
 
 ### Changed
 
+- The direct Hessian energy path now uses the same lower-memory helper as the
+  resumable energy path, keeping those two execution modes aligned.
 - The Python pipeline now writes structured run metadata and checkpoints by
   default when running through resumable entry points.
 - The Streamlit app now keys structured run directories by both uploaded input
@@ -68,11 +74,15 @@ Recent work landed between 2026-03-21 and 2026-04-10.
   supported typecheck gate.
 - The repo-root `python -m mypy` gate now also covers the share-report, web
   app, and run-state entrypoints in addition to the existing CLI/core surface.
+- The repo-root `python -m mypy` gate now also covers
+  `source/slavv/analysis/geometry.py`.
 - CI now includes a Windows CLI-security lane and an app-enabled Ubuntu UI
   lane without expanding the full matrix.
 
 ### Fixed
 
+- Removed the stale duplicated Hessian-energy branch that remained after the
+  lower-memory helper became the maintained implementation.
 - Eliminated ~1,000 invalid watershed-based edge candidates that were previously crossing background areas by enforcing stricter energy-sign checks.
 - Resume guards no longer overwrite stored fingerprints before comparison, so
   changed inputs and parameters correctly block stale resumable runs instead of

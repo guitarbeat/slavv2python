@@ -495,7 +495,8 @@ def calculate_energy_field(
             energy_3d[mask] = energy_scale[mask]
             scale_indices[mask] = scale_idx
     else:
-        # Multi-scale energy calculation with per-scale PSF weighting
+        # Use the same lower-memory single-scale helper as resumable runs so the
+        # direct and resumable paths stay behaviorally aligned.
         if return_all_scales:
             energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
         if energy_sign < 0:
@@ -505,32 +506,27 @@ def calculate_energy_field(
         scale_indices = np.zeros(image.shape, dtype=np.int16)
 
         for scale_idx, _ in enumerate(lumen_radius_pixels):
-            # Calculate Gaussian sigmas at this scale using physical voxel spacing
             radius_microns = lumen_radius_microns[scale_idx]
             sigma_scale = (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
             sigma_scale = np.asarray(sigma_scale, dtype=float)
-
             if approximating_PSF:
                 sigma_object = np.sqrt(sigma_scale**2 + pixels_per_sigma_PSF**2)
             else:
                 sigma_object = sigma_scale
-
-            if spherical_to_annular_ratio < 1.0:
-                annular_scale = sigma_scale * 1.5
-                if approximating_PSF:
-                    sigma_background = np.sqrt(annular_scale**2 + pixels_per_sigma_PSF**2)
-                else:
-                    sigma_background = annular_scale
-            else:
-                sigma_background = None
-
-            energy_scale = _matlab_hessian_energy(
+            energy_scale = _compute_energy_scale(
                 image,
-                sigma_object,
-                sigma_background,
-                spherical_to_annular_ratio,
-                voxel_size,
-                energy_sign,
+                {
+                    "approximating_PSF": approximating_PSF,
+                    "energy_method": "hessian",
+                    "energy_sign": energy_sign,
+                    "gaussian_to_ideal_ratio": gaussian_to_ideal_ratio,
+                    "lumen_radius_microns": lumen_radius_microns,
+                    "lumen_radius_pixels": lumen_radius_pixels,
+                    "microns_per_voxel": voxel_size,
+                    "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
+                    "spherical_to_annular_ratio": spherical_to_annular_ratio,
+                },
+                scale_idx,
             )
             if return_all_scales:
                 energy_4d[:, :, :, scale_idx] = energy_scale
@@ -790,58 +786,6 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
         config["microns_per_voxel"],
         energy_sign,
     )
-
-    smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
-    if config["spherical_to_annular_ratio"] < 1.0:
-        annular_scale = sigma_scale * 1.5
-        if config["approximating_PSF"]:
-            sigma_background = np.sqrt(annular_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
-        else:
-            sigma_background = annular_scale
-        smoothed_background = gaussian_filter(image, sigma=tuple(sigma_background))
-        dog = smoothed_object - smoothed_background
-        smoothed = (1.0 - config["spherical_to_annular_ratio"]) * dog + config[
-            "spherical_to_annular_ratio"
-        ] * smoothed_object
-    else:
-        smoothed = smoothed_object
-
-    hessian = feature.hessian_matrix(smoothed, sigma=tuple(sigma_object))
-    Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = hessian
-    shape_3d = smoothed.shape
-    lambda1 = np.empty(shape_3d, dtype=np.float32)
-    lambda2 = np.empty(shape_3d, dtype=np.float32)
-    lambda3 = np.empty(shape_3d, dtype=np.float32)
-    for z_idx in range(shape_3d[0]):
-        H = np.array(
-            [
-                [Hxx[z_idx], Hxy[z_idx], Hxz[z_idx]],
-                [Hxy[z_idx], Hyy[z_idx], Hyz[z_idx]],
-                [Hxz[z_idx], Hyz[z_idx], Hzz[z_idx]],
-            ]
-        )
-        H = np.moveaxis(H, [0, 1], [-2, -1])
-        eigs = np.linalg.eigvalsh(H)
-        lambda1[z_idx] = eigs[..., 2]
-        lambda2[z_idx] = eigs[..., 1]
-        lambda3[z_idx] = eigs[..., 0]
-
-    vesselness = np.zeros_like(lambda1)
-    if energy_sign < 0:
-        mask = (lambda2 < 0) | (lambda3 < 0)
-    else:
-        mask = (lambda2 > 0) | (lambda3 > 0)
-    if np.any(mask):
-        Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
-        Rb = np.abs(lambda1[mask]) / (np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12)
-        S = np.sqrt(lambda1[mask] ** 2 + lambda2[mask] ** 2 + lambda3[mask] ** 2)
-        alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
-        vesselness[mask] = (
-            (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2))))
-            * np.exp(-(Rb**2) / (2 * (beta**2)))
-            * (1.0 - np.exp(-(S**2) / (2 * (c**2))))
-        )
-    return (energy_sign * vesselness).astype(np.float32)
 
 
 def calculate_energy_field_resumable(

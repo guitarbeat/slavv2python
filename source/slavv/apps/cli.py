@@ -472,7 +472,7 @@ def _build_strands_from_edge_connections(
     visited_edges: set[tuple[int, int]] = set()
 
     for origin, destination in graph.edges():
-        edge = tuple(sorted((origin, destination)))
+        edge = (min(origin, destination), max(origin, destination))
         if edge in visited_edges:
             continue
 
@@ -482,8 +482,8 @@ def _build_strands_from_edge_connections(
         current = destination
         while graph.degree(current) == 2:
             neighbors = list(graph.neighbors(current))
-            next_node = neighbors[0] if neighbors[1] == strand[-2] else neighbors[1]
-            next_edge = tuple(sorted((current, next_node)))
+            next_node = int(neighbors[0] if neighbors[1] == strand[-2] else neighbors[1])
+            next_edge = (min(current, next_node), max(current, next_node))
             if next_edge in visited_edges:
                 break
             strand.append(next_node)
@@ -493,8 +493,8 @@ def _build_strands_from_edge_connections(
         current = origin
         while graph.degree(current) == 2:
             neighbors = list(graph.neighbors(current))
-            next_node = neighbors[0] if neighbors[1] == strand[1] else neighbors[1]
-            next_edge = tuple(sorted((current, next_node)))
+            next_node = int(neighbors[0] if neighbors[1] == strand[1] else neighbors[1])
+            next_edge = (min(current, next_node), max(current, next_node))
             if next_edge in visited_edges:
                 break
             strand.insert(0, next_node)

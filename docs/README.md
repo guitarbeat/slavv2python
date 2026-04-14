@@ -17,8 +17,9 @@ Follow this maintained reading path:
 2. [Contributor workflow commands](../AGENTS.md)
 3. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
 4. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
-5. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-6. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+5. [Energy Computation Methods](reference/ENERGY_METHODS.md)
+6. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+7. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 ## Chapter Status
 
@@ -94,9 +95,10 @@ These docs remain active references across chapters.
 | --- | --- |
 | `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
 | `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
+| `reference/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
+| `reference/ADDING_EXTRACTION_ALGORITHMS.md` | Contributor guide for wiring new extraction modes into validation, CLI, pipeline, tests, and docs |
 | `reference/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
 | `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | External package survey and context |
-| `reference/ARNIS_CROSS_PLATFORM_ARCHITECTURE_2026-04-08.md` | Architecture reference unrelated to the parity chapter split |
 
 ## By Question
 
@@ -131,5 +133,6 @@ These are not chapter control docs, but they remain useful evidence.
 | --- | --- |
 | `workspace/reports/stage_isolated_network_parity_2026-04-07.md` | Proof that exact MATLAB `edges` plus Python `network` can converge exactly |
 | `workspace/reports/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the closed parity chapter |
+| `workspace/reports/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
 | `workspace/reports/python_matlab_parity_postfix_2026-03-30.md` | Historical parity checkpoint |
 | `workspace/reports/python_standalone_consistency_postfix_2026-03-30.md` | Python repeatability context |

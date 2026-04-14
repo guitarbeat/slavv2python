@@ -149,6 +149,7 @@ files = [
     "source/slavv/apps/share_report.py",
     "source/slavv/apps/streamlit_launcher.py",
     "source/slavv/apps/web_app.py",
+    "source/slavv/analysis/geometry.py",
     "source/slavv/core/energy.py",
     "source/slavv/core/graph.py",
     "source/slavv/core/vertices.py",

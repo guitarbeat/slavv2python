@@ -6,12 +6,15 @@ Handles registration, spatial metrics, and statistical analysis of the vascular 
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import networkx as nx
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 from scipy.spatial import cKDTree
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +91,7 @@ def calculate_branching_angles(
     """Compute pairwise angles at each bifurcation."""
     vertex_positions = np.asarray(vertex_positions, dtype=float)
     scale = np.asarray(microns_per_voxel, dtype=float)
-    bifurcations = {int(b) for b in np.asarray(bifurcations, dtype=int)}
+    bifurcation_ids = {int(b) for b in np.asarray(bifurcations, dtype=int)}
     directions: dict[int, list[np.ndarray]] = {}
 
     for strand in strands:
@@ -100,9 +103,9 @@ def calculate_branching_angles(
         vec_start = (vertex_positions[next_idx] - vertex_positions[start]) * scale
         vec_end = (vertex_positions[prev_idx] - vertex_positions[end]) * scale
 
-        if start in bifurcations:
+        if start in bifurcation_ids:
             directions.setdefault(start, []).append(vec_start)
-        if end in bifurcations:
+        if end in bifurcation_ids:
             directions.setdefault(end, []).append(vec_end)
 
     angles: list[float] = []
@@ -177,7 +180,7 @@ def _iter_segment_lengths_and_radii(
     vertex_positions: np.ndarray,
     radii: np.ndarray,
     scale: np.ndarray,
-):
+) -> Iterator[tuple[float, float]]:
     """Yield scaled segment lengths with their midpoint radii."""
     for strand in strands:
         if len(strand) < 2:
@@ -238,7 +241,7 @@ def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
     arclen = np.concatenate([[0.0], np.cumsum(seg)])
     total = arclen[-1]
     if total == 0:
-        return pts[[0]].copy()
+        return cast("np.ndarray", pts[[0]].copy())
     num = max(2, int(np.floor(total / step)) + 1)
     targets = np.linspace(0.0, total, num)
     out = np.empty((len(targets), pts.shape[1]), dtype=float)
@@ -280,7 +283,7 @@ def transform_vector_set(
             raise ValueError("matrix must be 4x4")
         homo = np.c_[pts, np.ones((pts.shape[0], 1))]
         out = homo @ M.T
-        return out[:, :3]
+        return cast("np.ndarray", out[:, :3])
     out = pts.copy()
     if scale is not None:
         s = np.asarray(scale, dtype=float)
@@ -297,7 +300,7 @@ def transform_vector_set(
         if t.shape != (3,):
             raise ValueError("translate must be length-3")
         out = out + t
-    return out
+    return cast("np.ndarray", out)
 
 
 def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
@@ -308,7 +311,7 @@ def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
     idx = np.arange(0, arr.shape[0], step, dtype=int)
     if idx[-1] != arr.shape[0] - 1:
         idx = np.r_[idx, arr.shape[0] - 1]
-    return arr[idx]
+    return cast("np.ndarray", arr[idx])
 
 
 def icp_register_rigid(
@@ -522,7 +525,7 @@ def calculate_network_statistics(
     edge_energies: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Calculate aggregate metrics for a traced vascular network."""
-    stats = {}
+    stats: dict[str, Any] = {}
 
     stats["num_strands"] = len(strands)
     stats["num_bifurcations"] = len(bifurcations)
@@ -690,24 +693,24 @@ def crop_vertices(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Crop vertices to an axis-aligned bounding box."""
     vertex_positions = np.asarray(vertex_positions)
-    bounds = np.asarray(bounds, dtype=float)
+    bounds_array = np.asarray(bounds, dtype=float)
 
     mask = (
-        (vertex_positions[:, 0] >= bounds[0, 0])
-        & (vertex_positions[:, 0] <= bounds[0, 1])
-        & (vertex_positions[:, 1] >= bounds[1, 0])
-        & (vertex_positions[:, 1] <= bounds[1, 1])
-        & (vertex_positions[:, 2] >= bounds[2, 0])
-        & (vertex_positions[:, 2] <= bounds[2, 1])
+        (vertex_positions[:, 0] >= bounds_array[0, 0])
+        & (vertex_positions[:, 0] <= bounds_array[0, 1])
+        & (vertex_positions[:, 1] >= bounds_array[1, 0])
+        & (vertex_positions[:, 1] <= bounds_array[1, 1])
+        & (vertex_positions[:, 2] >= bounds_array[2, 0])
+        & (vertex_positions[:, 2] <= bounds_array[2, 1])
     )
-    return vertex_positions[mask], mask
+    return cast("np.ndarray", vertex_positions[mask]), mask
 
 
 def crop_edges(edge_indices: np.ndarray, vertex_mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Remove edges whose endpoints are not both retained in ``vertex_mask``."""
     vertex_mask = np.asarray(vertex_mask, dtype=bool)
     keep = vertex_mask[edge_indices[:, 0]] & vertex_mask[edge_indices[:, 1]]
-    return edge_indices[keep], keep
+    return cast("np.ndarray", edge_indices[keep]), keep
 
 
 def crop_vertices_by_mask(
@@ -731,7 +734,7 @@ def crop_vertices_by_mask(
     valid_indices = np.where(in_bounds)[0]
     valid_coords = coords[in_bounds]
     mask[valid_indices] = mask_volume[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
-    return vertex_positions[mask], mask
+    return cast("np.ndarray", vertex_positions[mask]), mask
 
 
 __all__ = [
