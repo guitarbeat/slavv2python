@@ -1,94 +1,92 @@
 # Parity Decision Memo 2026-04-08
 
-This is the shortest high-signal summary of the April 8, 2026 parity work.
+## What this file is for
 
-Read this first.
+This is the shortest current summary of the parity story. It is the canonical
+orientation note for the April 7 to April 8 investigation set.
 
-Appendices:
+## Read this when
 
-- [Imported-MATLAB Parity Evidence 2026-04-08](parity_investigation_notes_2026-04-08.md)
-- [MATLAB/Python Code Audit 2026-04-08](matlab_python_code_audit_2026-04-08.md)
-- [Parity Report Index 2026-04-08](parity_report_index_2026-04-08.md)
+- you want the current parity blocker in one page
+- you need to know what is already solved versus still open
+- you want the next implementation target before opening the longer audit
 
-## Decision
+## Executive Summary
 
-The parity problem is not just an upstream frontier issue anymore.
-
-There are now two concrete problems on the imported-MATLAB parity surface:
-
-1. the candidate pool is still wrong upstream
-2. the Python cleanup path is modeling the wrong MATLAB cleanup surface
-
-The cleanup mismatch should be fixed first so that the remaining gap reflects
-the real frontier-generation divergence rather than a mixed cleanup model.
+- Full imported-MATLAB parity still fails on the April 8 rerun:
+  MATLAB edges `1379` vs Python edges `1425`, and MATLAB strands `682` vs
+  Python strands `681`.
+- Vertex parity is already exact.
+- Network parity is already exact when Python reruns from `network` using exact
+  MATLAB `edges` with `comparison_exact_network=True`.
+- The remaining parity gap is not just an upstream frontier issue anymore.
+  There are two active problems: the candidate pool is still wrong upstream,
+  and the Python cleanup path is modeling the wrong MATLAB cleanup surface.
+- The next implementation target should be the cleanup mismatch first, because
+  that removes a major confounder from the remaining edge-parity work.
 
 ## Current Status
 
-- Vertices: exact
-- Network: exact when exact MATLAB `edges` are imported and Python reruns from
-  `network`
-- Edges: still failing
-- Strands: still failing by a narrow margin
+### Solved enough to trust
 
-Fresh April 8 rerun:
+- Vertices are exact on the imported-MATLAB parity surface.
+- Stage-isolated `network` parity is exact when exact MATLAB `edges` are
+  supplied and Python reruns from `network` in parity mode.
+- The saved `chosen_edges.pkl` artifact from the fresh April 8 rerun is
+  internally consistent when recomputed with `validated_params.json`, so the
+  saved edge artifact is trustworthy.
 
-- MATLAB edges `1379`
-- Python edges `1425`
-- MATLAB strands `682`
-- Python strands `681`
+### Active blocker
 
-## What Changed In The Diagnosis
+- The fresh imported-MATLAB rerun still lands at `+46` Python edges and `-1`
+  Python strands relative to MATLAB.
+- Python still misses many MATLAB endpoint pairs before cleanup begins, so the
+  candidate pool remains wrong upstream.
+- The Python cleanup path also injects a MATLAB helper surface that the active
+  `vectorize_V200.m` cleanup chain does not use.
 
-Before this audit, the standing diagnosis emphasized upstream frontier
-candidate generation and local partner choice.
+### Superseded conclusions
 
-That is still true, but the code audit adds a second concrete finding:
+- Generic downstream graph assembly is not the main blocker anymore.
+- A frontier-only diagnosis is incomplete; cleanup-surface mismatch is now a
+  confirmed part of the problem.
+- Reopening network-stage debugging before cleanup alignment would be low
+  leverage.
 
-- the active MATLAB `vectorize_V200.m` edge-cleaning path uses
-  `clean_edge_pairs`, `clean_edges_vertex_degree_excess`,
-  `clean_edges_orphans`, and `clean_edges_cycles`
-- the Python parity path currently mixes in `choose_edges_V200`-style conflict
-  painting inside `_choose_edges_matlab_style()`
+## Why the diagnosis changed
 
-So Python is not only generating the wrong candidates in places; it is also
-cleaning them with the wrong MATLAB model.
+Two results changed the picture:
 
-## Why This Matters
+1. The stage-isolated network probe showed that Python `network` assembly can
+   already converge exactly when exact MATLAB `edges` are imported and rerun
+   with `comparison_exact_network=True`.
+2. The code audit showed that the active MATLAB V200 cleanup path uses
+   `clean_edge_pairs`, `clean_edges_vertex_degree_excess`,
+   `clean_edges_orphans`, and `clean_edges_cycles`, while Python still mixes in
+   `choose_edges_V200`-style conflict painting.
 
-If the downstream cleanup model is wrong, frontier debugging is harder to trust
-because the final edge set is being transformed by a path MATLAB does not use
-in the active V200 flow.
+That means the remaining work should be interpreted as an edge-surface problem,
+not a generic whole-graph problem.
 
-That means:
+## Current decision
 
-- some apparent frontier failures may actually be cleanup-model failures
-- parity work will be easier to interpret once cleanup matches the active
-  MATLAB code path
+Treat the current parity gap as a two-part edge-surface problem:
 
-## Best Next Step
+1. upstream candidate generation still diverges from MATLAB
+2. downstream cleanup is still modeled against the wrong MATLAB surface
 
-Replace the current Python cleanup path with the active MATLAB V200 cleanup
-chain:
+Fix the cleanup mismatch first so the next rerun measures the real residual
+frontier-generation gap instead of a mixed cleanup model.
 
-1. `clean_edge_pairs`
-2. `clean_edges_vertex_degree_excess`
-3. `clean_edges_orphans`
-4. `clean_edges_cycles`
+## Recommended next actions
 
-Then rerun the imported-MATLAB parity loop and measure what mismatch remains.
-
-Whatever remains after that is the real upstream frontier-generation gap.
-
-## What Not To Do Next
-
-- Do not keep tuning shared-vertex tracing behavior while the cleanup model is
-  still mismatched.
-- Do not treat cleanup alone as the full fix; the candidate pool is still wrong
-  upstream.
-- Do not broaden heuristic filtering just to force count agreement.
-
-## Read Order
-
-1. This file
-2. [MATLAB/Python Code Audit 2026-04-08](matlab_python_code_audit_2026-04-08.md)
-3. [Imported-MATLAB Parity Evidence 2026-04-08](parity_investigation_notes_2026-04-08.md)
+1. Replace the current Python cleanup path with the active MATLAB V200 cleanup
+   chain:
+   `clean_edge_pairs`, `clean_edges_vertex_degree_excess`,
+   `clean_edges_orphans`, and `clean_edges_cycles`.
+2. Rerun the imported-MATLAB parity loop after that cleanup change and measure
+   the remaining edge and strand gap.
+3. Treat the post-cleanup residual as the true upstream frontier/candidate
+   generation problem.
+4. Do not spend more time on network-stage debugging or broad heuristic tuning
+   until the cleanup model matches the active MATLAB path.

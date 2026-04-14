@@ -79,7 +79,7 @@ human-facing ledger for orchestration decisions:
 | Artifact | Purpose |
 | --- | --- |
 | `comparison_params.normalized.json` | Normalized parameter payload passed to both MATLAB and Python so reruns can inspect the exact effective settings |
-| `run_snapshot.json` | Shared run-state ledger with overall status, current stage, and optional-task artifacts such as `output_preflight` and `matlab_status` |
+| `run_snapshot.json` | Shared run-state ledger with overall status, current stage, and optional-task artifacts such as `output_preflight`, `matlab_status`, and `matlab_pipeline` launch/reuse decisions |
 | `output_preflight.json` | Authoritative preflight decision for the selected output root, including warnings, fatal errors, free-space estimates, and recommended action |
 | `matlab_status.json` | Normalized MATLAB rerun semantics such as selected `batch_*` folder, resume mode, next stage, partial-artifact detection, and predicted rerun behavior |
 | `matlab_failure_summary.json` | Concise failure summary and log-tail evidence persisted when MATLAB exits unsuccessfully |
@@ -94,6 +94,17 @@ human-facing ledger for orchestration decisions:
 - `slavv import-matlab` imports a MATLAB batch into checkpoint-compatible
   artifacts that can then be consumed by parity reruns from the `edges` or
   `network` stage.
+- Full-comparison reruns now default to safe reuse when
+  `99_Metadata/matlab_status.json` reports a completed reusable batch
+  (`matlab_batch_complete=true` / `complete-noop`):
+  - if reusable Python outputs already exist, orchestration performs
+    analysis-only comparison and skips MATLAB launch
+  - if Python outputs are missing or incomplete, orchestration reuses the
+    existing imported-MATLAB bootstrap flow (`--skip-matlab` behavior) and
+    continues Python from the requested parity stage
+  - `run_snapshot.json` and `run_manifest.md` record that MATLAB launch was
+    skipped due to a completed reusable batch, including the selected reuse
+    mode (`analysis-only` or `python-rerun`)
 - Low-level standalone comparison helpers may still emit analysis artifacts at
   the caller-selected root when invoked directly. Prefer the staged layout when
   building durable comparison outputs for inspection.

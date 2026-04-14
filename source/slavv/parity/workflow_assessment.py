@@ -151,12 +151,14 @@ def assess_loop_request(
     )
 
     has_matlab_batch = _has_reusable_matlab_batch(layout["matlab_dir"])
+    has_completed_matlab_batch = _has_completed_matlab_batch(metadata_dir, layout["matlab_dir"])
     has_python_checkpoints = _has_python_checkpoint_surface(layout["python_dir"])
     has_python_results = _has_python_results_surface(layout["python_dir"])
     has_analysis_artifacts = _has_analysis_surface(layout["analysis_dir"])
     has_matlab_results = _has_matlab_results_surface(layout["matlab_dir"])
     report.artifact_checks = {
         "matlab_batch_present": has_matlab_batch,
+        "completed_matlab_batch_present": has_completed_matlab_batch,
         "python_checkpoints_present": has_python_checkpoints,
         "python_results_present": has_python_results,
         "analysis_artifacts_present": has_analysis_artifacts,
@@ -242,9 +244,34 @@ def assess_loop_request(
             )
         return report
 
-    if loop_kind in {"skip_python_matlab_only", "full_comparison"}:
+    if loop_kind == "skip_python_matlab_only":
         report.has_required_artifacts = True
         report.artifact_reason = "this loop can run against the selected run root"
+        report.verdict = LOOP_FRESH_MATLAB_REQUIRED
+        report.requires_fresh_matlab = True
+        report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
+        return report
+
+    if loop_kind == "full_comparison":
+        report.has_required_artifacts = True
+        if has_completed_matlab_batch and has_python_results:
+            report.artifact_reason = (
+                "completed MATLAB batch and reusable Python outputs are available"
+            )
+            report.verdict = LOOP_ANALYSIS_READY
+            report.safe_to_reuse = True
+            report.safe_to_analyze_only = True
+            report.requires_fresh_matlab = False
+            report.recommended_action = "Reuse the completed MATLAB batch and existing Python outputs for analysis-only comparison."
+            return report
+        if has_completed_matlab_batch:
+            report.artifact_reason = "completed MATLAB batch is available for Python rerun reuse"
+            report.verdict = LOOP_REUSE_READY
+            report.safe_to_reuse = True
+            report.requires_fresh_matlab = False
+            report.recommended_action = "Skip MATLAB launch and reuse the completed batch for the imported-MATLAB Python rerun."
+            return report
+        report.artifact_reason = "no reusable completed MATLAB batch is available"
         report.verdict = LOOP_FRESH_MATLAB_REQUIRED
         report.requires_fresh_matlab = True
         report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
@@ -498,6 +525,26 @@ def _has_reusable_matlab_batch(matlab_dir: Path) -> bool:
     if not matlab_dir.exists():
         return False
     return any(child.is_dir() and child.name.startswith("batch_") for child in matlab_dir.iterdir())
+
+
+def _has_completed_matlab_batch(metadata_dir: Path, matlab_dir: Path) -> bool:
+    payload = load_matlab_status(metadata_dir)
+    if not isinstance(payload, dict):
+        return False
+
+    resume_mode = str(payload.get("matlab_resume_mode", "") or "").strip().lower()
+    batch_complete = bool(payload.get("matlab_batch_complete", False))
+    if not (batch_complete or resume_mode == "complete-noop"):
+        return False
+
+    batch_folder_text = str(payload.get("matlab_batch_folder", "") or "").strip()
+    if batch_folder_text:
+        try:
+            return Path(batch_folder_text).exists()
+        except OSError:
+            return False
+
+    return _has_reusable_matlab_batch(matlab_dir)
 
 
 def _has_python_checkpoint_surface(python_dir: Path) -> bool:

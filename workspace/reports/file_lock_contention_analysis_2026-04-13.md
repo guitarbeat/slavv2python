@@ -1,87 +1,98 @@
 # File Lock Contention Incident Analysis (2026-04-13)
 
-## Scope
+## What this file is for
 
-This document explains the file lock contention issue observed during MATLAB/Python parity workflows in the canonical run root:
+This is the canonical April 13 release-operations incident note. It combines
+the useful timeline from the release attempt with the later lock-contention
+analysis into one operator-focused runbook.
 
-- `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+## Read this when
 
-It captures symptoms, likely causes, impact, and an operational recovery/prevention runbook.
+- a parity rerun fails on Windows with file-access errors
+- you need to know whether a failure is an operational incident or a parity bug
+- you need the safe recovery path for a run root that already contains a
+  completed MATLAB batch
+- you need the April 13 release execution timeline in one place
 
 ## Executive Summary
 
-A rerun of the canonical parity command reported MATLAB failure almost immediately, with stderr messages indicating file access conflicts:
+- April 13 setup work succeeded: the diagnostic setup gate, output-root
+  preflight, baseline quality gate, and MATLAB health check all passed.
+- A fallback live run on `skimage.data.multipage.tif` is not release-grade
+  evidence. It showed a tiny-input energy failure and zero graph outputs, and
+  it should not be used for release-readiness claims.
+- The later canonical run root
+  `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+  already contained a completed MATLAB batch and `complete-noop` resume status.
+- A subsequent rerun then failed with repeated Windows file-access errors:
+  `The process cannot access the file because it is being used by another process.`
+- This is best classified as rerun orchestration/file-lock contention, not as a
+  parity algorithm regression.
+- The safe recovery path is to stop relaunching MATLAB and generate the final
+  comparison from the existing MATLAB and Python artifacts in standalone mode.
 
-- `The process cannot access the file because it is being used by another process.`
+## Current Status
 
-At the same time, the run root already contained a complete MATLAB batch (`batch_260413-144432`) and successful resume metadata (`matlab_resume_state.json` status `completed`). This means the failure was not due to missing data; it was a coordination/locking conflict during rerun execution and/or log/metadata updates.
+### Confirmed and usable
 
-## What File Lock Contention Means Here
+- The environment/setup gates passed on April 13.
+- The MATLAB health check passed in about `43s`.
+- The canonical run root contains a completed MATLAB batch and interpretable
+  metadata.
+- A safe standalone-analysis recovery path exists for completed runs.
 
-On Windows, if one process has an open handle with restrictive sharing flags, another process may be blocked from opening/writing/deleting the same file.
+### Active risk
 
-In this workflow, lock contention can occur when these actors overlap on the same run root:
+- Reusing the same output root for another full orchestration attempt can
+  produce false-negative failure states or contradictory metadata while handles
+  are still active.
+- Windows file-lock semantics make same-root reruns riskier than a fresh-root
+  launch or standalone analysis from completed artifacts.
 
-1. `compare_matlab_python.py`
-2. `run_matlab_cli.bat`
-3. MATLAB process writing batch artifacts
-4. Python process writing checkpoints/exports
-5. manifest/status writers reading/writing metadata files
+### Superseded conclusions
 
-## Observed Evidence
+- The fallback `multipage.tif` run is not evidence of release readiness or
+  parity behavior on canonical data.
+- A rerun failure on this completed canonical root should not be treated as an
+  automatic parity regression.
 
-### 1) Canonical run root metadata and manifests
+## April 13 execution timeline
 
-- `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\99_Metadata\run_manifest.md`
-- `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\99_Metadata\matlab_status.json`
+1. Diagnostic setup gate passed:
+   `python -m pytest tests/diagnostic/test_comparison_setup.py`
+2. Output-root preflight passed against
+   `C:\slavv_comparisons\release_verify_20260413`.
+3. Baseline quality gate passed:
+   `compileall`, `ruff format --check`, `ruff check`, `mypy`, and
+   `pytest -m "unit or integration"`.
+4. MATLAB health check passed.
+5. A fallback live run at
+   `C:\slavv_comparisons\release_verify_20260413\live_20260413b` produced
+   staged artifacts, but the tiny fallback TIFF caused a MATLAB energy-stage
+   dimension mismatch and both sides produced zero graph outputs.
+6. A later canonical run root completed MATLAB successfully.
+7. A subsequent rerun against that canonical root hit file-lock contention.
 
-Notable details:
+## Classification and evidence
 
-- Preflight passed.
-- `matlab_resume_mode` eventually reports `complete-noop`.
-- `matlab_last_completed_stage` reports `network`.
-- batch folder exists and is complete.
+The later rerun should be classified as a Windows coordination issue because
+the authoritative artifacts already indicated successful completion:
 
-### 2) MATLAB batch/log indicates successful full completion
+- `99_Metadata/matlab_status.json` reported `matlab_resume_mode=complete-noop`
+  and `matlab_last_completed_stage=network`
+- the batch folder existed and was complete
+- `01_Input/matlab_results/matlab_run.log` showed successful energy, vertices,
+  edges, and network completion, including `Vectorization completed successfully!`
+- the rerun stderr showed repeated file-access errors instead of a parity logic
+  mismatch
 
-- `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\01_Input\matlab_results\matlab_run.log`
+That evidence points to a completed batch plus an unsafe same-root rerun, not a
+missing-data or algorithmic failure.
 
-Notable details:
+## Safe recovery path
 
-- Energy, vertices, edges, and network stages completed.
-- `Vectorization completed successfully!`
-- Timing JSON written under batch folder.
-
-### 3) Rerun command stderr showed lock conflict
-
-During a subsequent canonical rerun, the CLI reported MATLAB exit code `1` with repeated stderr lines:
-
-- `The process cannot access the file because it is being used by another process.`
-
-This pattern is consistent with a file-handle conflict rather than a pure algorithmic/parity failure.
-
-## Why This Happened (Likely Root Cause)
-
-Most likely: a rerun was launched while artifacts and logs under the same run root were still being handled by another process (or rapidly re-opened by multiple workflow components). The rerun attempted to write/read files that were still locked.
-
-Contributing factors:
-
-1. Reusing a single output root for multiple sequential attempts with mixed failure/success states.
-2. Running full orchestration (`--input ... --output-dir ...`) again after a complete MATLAB batch already existed.
-3. Windows file-lock semantics being stricter than POSIX for concurrent writes and some read/write combinations.
-
-## Impact Assessment
-
-1. False-negative run status in some generated summaries/manifests during rerun windows.
-2. MATLAB stage reports can look contradictory across artifacts if rerun fails before metadata converges.
-3. Delays release verification and parity audit steps if operators rerun blindly against the same root.
-
-## Recovery Runbook (Recommended)
-
-### Preferred recovery path (already validated)
-
-1. Do not relaunch MATLAB immediately when batch is complete.
-2. Recompute comparison in standalone mode using completed artifacts:
+If the batch is already complete, do not relaunch MATLAB. Recompute the final
+comparison from the completed artifacts:
 
 ```powershell
 python workspace/scripts/cli/compare_matlab_python.py \
@@ -91,49 +102,31 @@ python workspace/scripts/cli/compare_matlab_python.py \
   --comparison-depth deep
 ```
 
-3. Verify final artifacts:
+Then verify:
 
-- `comparison_report.json`
-- `summary.txt`
+- `03_Analysis/comparison_report.json`
+- `03_Analysis/summary.txt`
 - `99_Metadata/run_manifest.md`
 - `99_Metadata/matlab_status.json`
 
-### If MATLAB must be relaunched
+## Rerun prevention checklist
 
-1. Ensure no stale MATLAB/process handles remain.
-2. Use a fresh output root for each new launch attempt.
-3. Avoid overlapping runs against the same root.
+1. Check `99_Metadata/matlab_status.json` before relaunching anything.
+2. If `matlab_batch_complete=true` or the resume mode is `complete-noop`, do
+   standalone analysis instead of a full MATLAB relaunch.
+3. Enforce a one-writer rule per output root.
+4. Use a fresh output root for any genuinely new MATLAB launch attempt.
+5. If a relaunch is unavoidable, make sure no stale MATLAB or workflow handles
+   still target the same files.
 
-## Prevention Controls
+## Operator guidance
 
-### Operational controls
+Treat this as an operational execution issue, not a parity regression, when all
+three of the following are true:
 
-1. One-writer rule: only one active parity run per output root.
-2. Fresh-root policy for new launch attempts (timestamped run roots).
-3. If a batch is complete, switch to standalone analysis mode instead of rerunning MATLAB.
+1. the batch/log artifacts show full MATLAB stage completion
+2. the resume metadata is present and interpretable
+3. standalone comparison can be generated from the existing artifacts
 
-### Workflow controls
-
-1. Gate rerun behavior on `matlab_status.json`:
-   - if `matlab_batch_complete=true`, default to analysis-only path.
-2. Add a lock/lease marker under `99_Metadata/` to signal active orchestration.
-3. Add short retry/backoff for metadata writes where safe.
-
-## Release Checklist Guidance
-
-For release readiness, treat this as an operational execution issue (not a parity algorithm regression) when:
-
-1. MATLAB batch artifacts indicate complete stage progression.
-2. Standalone comparison can be generated from existing artifacts.
-3. Preflight and resume semantics files are present and interpretable.
-
-## Quick Triage Checklist
-
-1. Inspect `99_Metadata/matlab_status.json` for completion and resume mode.
-2. Inspect `01_Input/matlab_results/matlab_run.log` tail for full-stage completion.
-3. If complete, run standalone comparison instead of relaunching MATLAB.
-4. If incomplete, rerun with a fresh output root and no concurrent processes.
-
-## Conclusion
-
-The incident is best classified as file access contention during rerun orchestration on Windows, not a direct model/parity logic failure. The established safe path is to avoid redundant MATLAB relaunches once a batch is complete and use standalone comparison generation for final reports.
+If those conditions are not met, then fall back to the normal preflight logic
+and use a fresh output root for the next launch attempt.

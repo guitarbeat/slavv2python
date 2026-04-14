@@ -1,41 +1,77 @@
 # Python Nondeterminism Investigation
 
-Date: 2026-03-28
+## What this file is for
 
-## Question
+This is the canonical repeatability baseline for the March 28 to March 30
+investigation set. It combines the original nondeterminism diagnosis, the
+Python and MATLAB standalone consistency checks, and the immediate post-fix
+parity outcome.
 
-Why do fresh standalone Python runs produce stable vertices but unstable edges and strands?
+## Read this when
 
-## Working Hypotheses
+- you want to know whether Python repeatability is still an open blocker
+- you need the root cause of the old Python-only graph drift
+- you want the standalone MATLAB and Python consistency baselines in one place
+- you need to separate solved repeatability work from the still-open semantic
+  parity gap
 
-1. The standalone comparison-mode Python run might already be using the MATLAB parity tracer, so the instability could be in the parity path.
-2. The instability might come from checkpoint merge order, file ordering, or resumable edge-unit consolidation.
-3. The instability might come from the standard Python edge tracer itself, especially from direction generation or tie-breaking.
+## Executive Summary
 
-## What I Checked
+- On March 28, standalone MATLAB runs were repeatable at the parsed-data level:
+  `1682` vertices, `1379` edges, and `682` strands across all three runs.
+- On March 28, standalone Python runs were not repeatable after vertices:
+  vertices stayed at `292`, but edges drifted across `9`, `6`, and `11`, and
+  strands drifted across `7`, `5`, and `10`.
+- The strongest root-cause finding was unseeded fallback direction padding in
+  the standard Python edge tracer. On this workload, all `292 / 292` vertices
+  needed padded directions.
+- After the deterministic padding fix on March 30, standalone Python runs were
+  repeatable: `292` vertices, `8` edges, `8` strands, and identical normalized
+  digests across runs.
+- The post-fix full parity run still failed at MATLAB `1379 / 682` versus
+  Python `1560 / 820`, so repeatability is solved but semantic parity is not.
 
-### Hypothesis 1: standalone Python uses the MATLAB parity tracer
+## Current Status
 
-Result: rejected.
+### Solved
 
-Evidence:
+- Standalone MATLAB output is stable enough on this workload to treat it as a
+  reproducible reference surface.
+- Standalone Python output is now repeatable on this workload after the
+  deterministic edge-padding fix.
+- Checkpoint merge order, file ordering, and final export formatting are no
+  longer the best explanation for the old Python-only drift.
 
-- [comparison.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/evaluation/comparison.py#L291) enables `comparison_exact_network` by default for comparison-mode Python runs.
-- But [tracing.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/core/tracing.py#L906) only enables the MATLAB frontier tracer when `energy_origin == "matlab_batch_hdf5"`.
-- The saved native-Python checkpoint energy payload had `energy_origin = null`, so the standalone Python runs stayed on the standard tracer, not the MATLAB frontier tracer.
+### Active concern
 
-Conclusion:
+- The remaining imported-MATLAB parity gap is semantic, not random-run noise.
+- Edge candidate generation and edge cleanup semantics remain the live parity
+  problem surfaces.
 
-- The repeatability failure is in the native Python edge path, not the parity-only MATLAB frontier path.
+### Superseded conclusions
 
-### Hypothesis 2: variability comes from checkpoint merge order or resumable state
+- Python repeatability is no longer the primary blocker.
+- Broad suspicion of resumable state or export-only drift should not lead the
+  next debugging round.
 
-Result: strongly disfavored.
+## Evidence Timeline
 
-Evidence:
+### March 28: pre-fix Python instability
 
-- I reran `extract_edges(...)` three times directly on the exact same saved `checkpoint_energy.pkl` and `checkpoint_vertices.pkl` from `run_01`.
-- Those replays produced different outputs even without rerunning energy or vertices:
+Three fresh standalone Python runs produced:
+
+| Run | Vertices | Edges | Strands |
+| --- | ---: | ---: | ---: |
+| 1 | 292 | 9 | 7 |
+| 2 | 292 | 6 | 5 |
+| 3 | 292 | 11 | 10 |
+
+The run layout stayed consistent, but graph-level artifacts did not. Vertex
+positions and scales matched; edge connectivity, edge traces, and network
+strands did not.
+
+Direct replay on the exact same saved `checkpoint_energy.pkl` and
+`checkpoint_vertices.pkl` also drifted:
 
 | Replay | Candidate traced edges | Terminal edges | Final edges |
 | --- | ---: | ---: | ---: |
@@ -43,109 +79,89 @@ Evidence:
 | 2 | 718 | 13 | 11 |
 | 3 | 738 | 14 | 12 |
 
-Conclusion:
+That ruled out checkpoint merge order and cross-run directory reuse as the main
+cause.
 
-- The nondeterminism is already present inside edge extraction itself.
-- It is not caused by cross-run checkpoint reuse, edge-unit file ordering, or final export formatting.
+### Root cause: unseeded filler directions
 
-### Hypothesis 3: the standard Python edge tracer injects randomness
+The standard Python tracer was the real culprit:
 
-Result: supported very strongly.
+- standalone comparison-mode Python runs did not use the MATLAB frontier tracer
+- `estimate_vessel_directions(...)` returned only the axis pair on this
+  workload
+- the active parameters requested `number_of_edges_per_vertex = 4`
+- `generate_edge_directions(...)` filled the missing directions with fresh
+  entropy when `seed=None`
 
-Evidence from code:
+On the saved run, all `292` vertices needed padding. That meant every fresh
+Python run injected new direction samples at every vertex before edge tracing.
 
-- [tracing.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/core/tracing.py#L1957) `estimate_vessel_directions(...)` returns only the local vessel axis and its reverse, so at most 2 directions.
-- The active params request `number_of_edges_per_vertex = 4`.
-- In [tracing.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/core/tracing.py#L1482) and specifically [tracing.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/core/tracing.py#L1525), the standard tracer pads any missing directions with `generate_edge_directions(...)`.
-- [tracing.py](C:/Users/alw4834/OneDrive%20-%20The%20University%20of%20Texas%20at%20Austin/Documents%201/GitHub/slavv2python/source/slavv/core/tracing.py#L474) uses `np.random.default_rng(seed)` and defaults to `seed=None`, which means fresh entropy each call.
+Fixed-seed confirmation replays made the result perfectly repeatable, which
+proved the topology drift was tied to the padding randomness.
 
-Evidence from run data:
+### March 30: post-fix Python consistency
 
-- All 292 vertices in the saved run returned exactly 2 Hessian directions.
-- That means all 292 vertices needed random padding to reach the requested 4 directions.
+After the deterministic edge-padding fix, three fresh standalone Python runs
+produced:
 
-Summary:
+| Run | Vertices | Edges | Strands | Candidate edges |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 292 | 8 | 8 | 711 |
+| 2 | 292 | 8 | 8 | 711 |
+| 3 | 292 | 8 | 8 | 711 |
 
-- `292 / 292` vertices required random padding.
-- So every standalone Python edge run injected fresh random directions at every vertex.
+Normalized digests were identical across all three runs:
 
-### Confirmation test: force deterministic padding
+- vertex digest: `27f14bd67c5573124a493f203bd9db499ee21fd301f284775166d8d0e849084c`
+- edge digest: `4174d958303b559964434ce7ccedf9e066b7be182e9b91fdc2722fc9effbbe10`
+- network digest: `8e438e82efee45453fdf7ba6b493a758044bc45a79701eff95755ebb40afefd3`
 
-I monkeypatched `generate_edge_directions` to use a fixed seed on the same saved energy and vertices and reran `extract_edges(...)` three times.
+One of the three runs completed via resume, but the final outputs still matched
+exactly, which is a useful confidence check for the fixed path.
 
-With fixed seed `0`:
+### March 28 MATLAB standalone baseline
 
-| Replay | Candidate traced edges | Final edges | Digest |
-| --- | ---: | ---: | --- |
-| 1 | 654 | 7 | `b87f1289f5856534911da3cef7803007908e499bf1451cb70989bb2c07824035` |
-| 2 | 654 | 7 | `b87f1289f5856534911da3cef7803007908e499bf1451cb70989bb2c07824035` |
-| 3 | 654 | 7 | `b87f1289f5856534911da3cef7803007908e499bf1451cb70989bb2c07824035` |
+Three fresh standalone MATLAB runs were stable at the parsed-data level:
 
-With fixed seed `1`:
+| Run | Vertices | Edges | Strands |
+| --- | ---: | ---: | ---: |
+| 1 | 1682 | 1379 | 682 |
+| 2 | 1682 | 1379 | 682 |
+| 3 | 1682 | 1379 | 682 |
 
-| Replay | Candidate traced edges | Final edges | Digest |
-| --- | ---: | ---: | --- |
-| 1 | 840 | 9 | `958bebdcde783628bec11cc4891f0a973669370189b31904e0a86189d45952ab` |
-| 2 | 840 | 9 | `958bebdcde783628bec11cc4891f0a973669370189b31904e0a86189d45952ab` |
-| 3 | 840 | 9 | `958bebdcde783628bec11cc4891f0a973669370189b31904e0a86189d45952ab` |
+Parsed digests for vertices, edges, and strands matched across all three runs.
+Small raw timestamped file differences existed, but they did not change the
+normalized graph outputs.
 
-Interpretation:
+### March 30 post-fix parity implication
 
-- Once the random padding is made deterministic, repeated edge extraction on fixed inputs becomes perfectly repeatable.
-- Different fixed seeds produce different but internally consistent graphs.
-- So the topology drift is causally tied to the unseeded random direction filler.
+The immediate post-fix full parity rerun still failed:
 
-## What Changes Across Fresh Standalone Runs
+| Metric | MATLAB | Python | Delta |
+| --- | ---: | ---: | ---: |
+| Vertices | 1682 | 1682 | 0 |
+| Edges | 1379 | 1560 | +181 |
+| Strands | 682 | 820 | +138 |
 
-Across the 3 full standalone Python runs:
+That is the key framing point for today: the repeatability fix mattered, but it
+did not solve semantic parity.
 
-- only 4 undirected endpoint pairs were common to all three runs:
-  - `(71, 138)`
-  - `(90, 176)`
-  - `(122, 135)`
-  - `(143, 207)`
-- the union across the three runs contained 17 distinct undirected pairs
-- run-specific extra undirected pairs were:
-  - `run_01`: 5 extra pairs
-  - `run_02`: 2 extra pairs
-  - `run_03`: 7 extra pairs
+## What this means for parity work now
 
-That is consistent with a small stable core plus a larger seed-sensitive fringe created by random filler traces.
+- MATLAB output is a stable reference on this workload.
+- Python standalone behavior is now stable enough to compare meaningfully.
+- Any remaining imported-MATLAB parity mismatch should be treated as a semantic
+  algorithm mismatch, not as nondeterministic noise.
+- Repeatability work should stay closed unless a new regression test or new run
+  evidence reopens it.
 
-## Conclusion
+## Recommended next actions
 
-The most likely root cause is:
-
-- the standalone Python path is using the standard edge tracer
-- the standard tracer always needs to pad Hessian directions from 2 up to 4 on this workload
-- that padding uses unseeded random directions
-- those random traces materially change candidate generation and final chosen graph topology
-
-In short:
-
-- the instability is real
-- it is downstream of vertices
-- it is reproducibly explained by unseeded random direction padding in the standard Python edge tracer
-
-## Most Likely Next Fix Options
-
-1. Make the fallback direction padding deterministic.
-2. Replace random filler directions with a fixed low-discrepancy or hard-coded direction set.
-3. Reduce or remove filler directions when Hessian only yields the principal axis pair.
-4. Route standalone comparison-mode runs through a deterministic parity edge tracer when that is the intended behavior.
-
-Option 1 is the smallest change if the goal is repeatability first.
-
-## Status After Fix
-
-I updated the edge tracer so the fallback direction padding is seeded deterministically per vertex, and the new regression test passes.
-
-I also replayed the exact same saved Python `checkpoint_energy.pkl` and `checkpoint_vertices.pkl` three times after the change:
-
-| Replay | Candidate traced edges | Final edges | Digest |
-| --- | ---: | ---: | --- |
-| 1 | 711 | 8 | `4174d958303b559964434ce7ccedf9e066b7be182e9b91fdc2722fc9effbbe10` |
-| 2 | 711 | 8 | `4174d958303b559964434ce7ccedf9e066b7be182e9b91fdc2722fc9effbbe10` |
-| 3 | 711 | 8 | `4174d958303b559964434ce7ccedf9e066b7be182e9b91fdc2722fc9effbbe10` |
-
-That confirms the nondeterminism was addressed at the edge-padding layer.
+1. Use the post-fix Python path as the repeatable baseline for future parity
+   investigations.
+2. Focus current debugging on edge candidate generation and cleanup semantics,
+   not on repeatability plumbing.
+3. Keep the deterministic padding regression coverage in place so this class of
+   issue stays closed.
+4. Reopen nondeterminism investigation only if a new workload or regression
+   test shows graph-level drift again.

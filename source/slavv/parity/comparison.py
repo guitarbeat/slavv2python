@@ -48,8 +48,10 @@ from .preflight import (
 from .reporting import generate_summary
 from .run_layout import generate_manifest, resolve_run_layout
 from .workflow_assessment import (
+    LOOP_ANALYSIS_READY,
     LOOP_BLOCKED,
     LOOP_FRESH_MATLAB_REQUIRED,
+    LOOP_REUSE_READY,
     LoopAssessmentReport,
     MatlabHealthCheckReport,
     assess_loop_request,
@@ -157,6 +159,50 @@ def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> P
         )
     print(f"\nComparison report saved to: {report_file}")
     return report_file
+
+
+def _run_comparison_analysis(
+    *,
+    matlab_results: dict[str, Any],
+    python_results: dict[str, Any],
+    analysis_dir: Path,
+    comparison_depth: str,
+    comparison_context: RunContext | None = None,
+) -> None:
+    """Run the shared MATLAB-vs-Python analysis path and persist the report."""
+    if comparison_context is not None:
+        comparison_context.update_optional_task(
+            "comparison_analysis",
+            status="running",
+            detail="Comparing MATLAB and Python results",
+        )
+
+    matlab_parsed = None
+    if matlab_results.get("success") and matlab_results.get("batch_folder"):
+        print("\nLoading MATLAB output data...")
+        if _should_load_deep_matlab_results(comparison_depth):
+            try:
+                matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
+                print(f"Successfully loaded MATLAB data from {matlab_results['batch_folder']}")
+            except Exception as e:
+                print(f"Warning: Could not load MATLAB output data: {e}")
+                print("Comparison will proceed with basic metrics only.")
+        else:
+            print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
+
+    comparison = compare_results(matlab_results, python_results, matlab_parsed)
+    report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
+
+    if comparison_context is not None:
+        comparison_context.update_optional_task(
+            "comparison_analysis",
+            status="completed",
+            detail="Comparison report generated",
+            artifacts={
+                "comparison_report": str(report_file),
+                "comparison_depth": comparison_depth,
+            },
+        )
 
 
 def _generate_post_comparison_artifacts(
@@ -509,6 +555,8 @@ def _record_matlab_status_task(
     failure_summary_path: Path | None = None,
     *,
     python_force_rerun_from: str | None = None,
+    matlab_launch_skipped_reason: str | None = None,
+    matlab_reuse_mode: str | None = None,
 ) -> None:
     """Mirror normalized MATLAB resume semantics into the shared run snapshot."""
     task_status = "failed" if report.failure_summary else "completed"
@@ -530,6 +578,11 @@ def _record_matlab_status_task(
         artifacts["failure_summary_file"] = str(failure_summary_path)
     if python_force_rerun_from is not None:
         artifacts["python_force_rerun_from"] = python_force_rerun_from
+    if matlab_launch_skipped_reason is not None:
+        artifacts["matlab_launch"] = "skipped"
+        artifacts["matlab_launch_skip_reason"] = matlab_launch_skipped_reason
+    if matlab_reuse_mode is not None:
+        artifacts["matlab_reuse_mode"] = matlab_reuse_mode
 
     comparison_context.update_optional_task(
         "matlab_status",
@@ -1067,6 +1120,7 @@ def orchestrate_comparison(
     python_force_rerun_from: str | None = None
     preflight_report: OutputRootPreflightReport | None = None
     matlab_status_report: MatlabStatusReport | None = None
+    auto_matlab_reuse_mode: str | None = None
 
     if validate_only:
         preflight_report = _evaluate_output_root_preflight_for_workflow(run_root, metadata_dir)
@@ -1168,9 +1222,46 @@ def orchestrate_comparison(
         print("=" * 60)
         print(summarize_matlab_status(matlab_status_report))
 
+        completed_matlab_batch = (
+            bool(matlab_status_report.matlab_batch_complete)
+            or matlab_status_report.matlab_resume_mode == "complete-noop"
+        ) and bool(matlab_status_report.matlab_batch_folder)
+        if completed_matlab_batch:
+            if loop_assessment.verdict == LOOP_ANALYSIS_READY and not skip_python:
+                auto_matlab_reuse_mode = "analysis-only"
+            elif loop_assessment.verdict == LOOP_REUSE_READY:
+                auto_matlab_reuse_mode = "python-rerun"
+
+        if auto_matlab_reuse_mode is not None:
+            comparison_context.update_optional_task(
+                "matlab_pipeline",
+                status="completed",
+                detail=(
+                    "MATLAB launch skipped due to completed reusable batch "
+                    f"({auto_matlab_reuse_mode})."
+                ),
+                artifacts={
+                    "launch": "skipped",
+                    "skip_reason": "completed_reusable_batch",
+                    "reuse_mode": auto_matlab_reuse_mode,
+                    "batch_folder": matlab_status_report.matlab_batch_folder or "",
+                },
+            )
+            _record_matlab_status_task(
+                comparison_context,
+                matlab_status_report,
+                matlab_status_report_path,
+                matlab_launch_skipped_reason="completed_reusable_batch",
+                matlab_reuse_mode=auto_matlab_reuse_mode,
+            )
+
+    effective_skip_matlab = skip_matlab or auto_matlab_reuse_mode is not None
+    analysis_only_reuse = auto_matlab_reuse_mode == "analysis-only"
+    effective_skip_python = skip_python or analysis_only_reuse
+
     # Run MATLAB
     matlab_results = None
-    if not skip_matlab:
+    if not effective_skip_matlab:
         os.makedirs(matlab_output, exist_ok=True)
         comparison_context.update_optional_task(
             "matlab_pipeline",
@@ -1296,8 +1387,19 @@ def orchestrate_comparison(
                     failure_summary_path,
                     python_force_rerun_from=python_force_rerun_from,
                 )
+    elif auto_matlab_reuse_mode == "analysis-only" and matlab_status_report is not None:
+        matlab_results = {
+            "success": True,
+            "elapsed_time": 0.0,
+            "output_dir": str(matlab_output),
+            "batch_folder": matlab_status_report.matlab_batch_folder,
+            "matlab_status": matlab_status_report.to_dict(),
+        }
     else:
-        print("\nSkipping MATLAB execution (--skip-matlab)")
+        if auto_matlab_reuse_mode == "python-rerun":
+            print("\nSkipping MATLAB execution (completed reusable batch detected)")
+        else:
+            print("\nSkipping MATLAB execution (--skip-matlab)")
         matlab_results, python_force_rerun_from = (
             _bootstrap_existing_matlab_batch_for_python_parity(
                 matlab_output=matlab_output,
@@ -1312,7 +1414,7 @@ def orchestrate_comparison(
 
     # Run Python
     python_results = None
-    if not skip_python:
+    if not effective_skip_python:
         os.makedirs(python_output, exist_ok=True)
         comparison_context.update_optional_task(
             "python_pipeline",
@@ -1348,11 +1450,17 @@ def orchestrate_comparison(
                 ),
             },
         )
-    elif skip_python and python_output.exists():
+    elif effective_skip_python and python_output.exists():
         # Even if we skip execution, we can still load existing results for comparison
-        print(
-            f"\nSkipping Python execution (--skip-python); attempting to load results from {python_output}"
-        )
+        if analysis_only_reuse:
+            print(
+                "\nReusing existing Python outputs for analysis-only comparison; "
+                f"loading results from {python_output}"
+            )
+        else:
+            print(
+                f"\nSkipping Python execution (--skip-python); attempting to load results from {python_output}"
+            )
         try:
             python_results = _load_python_results_from_source(python_output, python_result_source)
         except Exception as e:
@@ -1363,36 +1471,12 @@ def orchestrate_comparison(
 
     # Compare results
     if matlab_results and python_results:
-        comparison_context.update_optional_task(
-            "comparison_analysis",
-            status="running",
-            detail="Comparing MATLAB and Python results",
-        )
-        # Try to load parsed MATLAB data
-        matlab_parsed = None
-        if matlab_results.get("success") and matlab_results.get("batch_folder"):
-            print("\nLoading MATLAB output data...")
-            if _should_load_deep_matlab_results(comparison_depth):
-                try:
-                    matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
-                    print(f"Successfully loaded MATLAB data from {matlab_results['batch_folder']}")
-                except Exception as e:
-                    print(f"Warning: Could not load MATLAB output data: {e}")
-                    print("Comparison will proceed with basic metrics only.")
-            else:
-                print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
-
-        comparison = compare_results(matlab_results, python_results, matlab_parsed)
-
-        report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
-        comparison_context.update_optional_task(
-            "comparison_analysis",
-            status="completed",
-            detail="Comparison report generated",
-            artifacts={
-                "comparison_report": str(report_file),
-                "comparison_depth": comparison_depth,
-            },
+        _run_comparison_analysis(
+            matlab_results=matlab_results,
+            python_results=python_results,
+            analysis_dir=analysis_dir,
+            comparison_depth=comparison_depth,
+            comparison_context=comparison_context,
         )
 
     _generate_post_comparison_artifacts(
@@ -1708,23 +1792,12 @@ def run_standalone_comparison(
         print(f"Error loading Python results: {python_results.get('error', 'unknown error')}")
         return 1
 
-    # 3. Compare
-    # Try to load parsed MATLAB data
-    matlab_parsed = None
-    if matlab_results.get("batch_folder"):
-        print("\nLoading MATLAB output data...")
-        if _should_load_deep_matlab_results(comparison_depth):
-            try:
-                matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
-                print("Successfully loaded MATLAB data")
-            except Exception as e:
-                print(f"Warning: Could not load MATLAB output data: {e}")
-        else:
-            print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
-
-    comparison = compare_results(matlab_results, python_results, matlab_parsed)
-
-    _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
+    _run_comparison_analysis(
+        matlab_results=matlab_results,
+        python_results=python_results,
+        analysis_dir=analysis_dir,
+        comparison_depth=comparison_depth,
+    )
     _generate_post_comparison_artifacts(
         run_dir=run_root,
         analysis_dir=analysis_dir,

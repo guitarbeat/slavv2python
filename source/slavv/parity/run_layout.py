@@ -305,6 +305,20 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         lines.append(f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%")
         lines.append(f"- **Target stage:** {run_snapshot.target_stage}")
         lines.append(f"- **Current stage:** {run_snapshot.current_stage or 'idle'}")
+        matlab_pipeline_task = run_snapshot.optional_tasks.get("matlab_pipeline")
+        if matlab_pipeline_task is not None:
+            launch_mode = str(matlab_pipeline_task.artifacts.get("launch", "") or "").strip()
+            if launch_mode == "skipped":
+                skip_reason = str(
+                    matlab_pipeline_task.artifacts.get("skip_reason", "completed_reusable_batch")
+                )
+                reuse_mode = str(matlab_pipeline_task.artifacts.get("reuse_mode", "") or "").strip()
+                lines.append(
+                    "- **MATLAB launch:** "
+                    "skipped due to completed reusable batch"
+                    + (f" ({reuse_mode})" if reuse_mode else "")
+                )
+                lines.append(f"- **MATLAB skip reason:** {skip_reason}")
         lines.append("")
 
     if loop_assessment:

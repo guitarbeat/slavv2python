@@ -495,6 +495,46 @@ def test_generate_summary_and_manifest_include_workflow_decision(tmp_path: Path)
     assert "## MATLAB Health Check" in manifest
 
 
+def test_generate_manifest_reports_skipped_matlab_launch_reuse_mode(tmp_path: Path):
+    run_dir = tmp_path / "20260210_104500_full_run"
+    metadata_dir = run_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (run_dir / "01_Input" / "matlab_results" / "batch_260210-104500").mkdir(parents=True)
+    (run_dir / "02_Output" / "python_results").mkdir(parents=True)
+    (run_dir / "03_Analysis").mkdir(parents=True)
+
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-1",
+                "status": "completed",
+                "target_stage": "network",
+                "current_stage": "network",
+                "overall_progress": 1.0,
+                "optional_tasks": {
+                    "matlab_pipeline": {
+                        "status": "completed",
+                        "detail": "MATLAB launch skipped due to completed reusable batch (analysis-only).",
+                        "artifacts": {
+                            "launch": "skipped",
+                            "skip_reason": "completed_reusable_batch",
+                            "reuse_mode": "analysis-only",
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manifest = generate_manifest(run_dir)
+
+    assert (
+        "- **MATLAB launch:** skipped due to completed reusable batch (analysis-only)" in manifest
+    )
+    assert "- **MATLAB skip reason:** completed_reusable_batch" in manifest
+
+
 def test_generate_manifest_normalizes_staged_run_root(tmp_path: Path):
     run_dir = tmp_path / "20260210_100526_full_run"
     analysis_dir = run_dir / "03_Analysis"

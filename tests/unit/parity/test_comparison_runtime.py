@@ -358,6 +358,261 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert (output_dir / "99_Metadata" / "output_preflight.json").exists()
 
 
+def test_orchestrate_comparison_full_reuse_analysis_only_skips_matlab_launch(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.parity.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+    batch_folder.mkdir(parents=True)
+    metadata_dir = output_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_complete": True,
+                "matlab_batch_folder": str(batch_folder),
+            }
+        ),
+        encoding="utf-8",
+    )
+    python_output = output_dir / "02_Output" / "python_results"
+    python_output.mkdir(parents=True)
+    (python_output / "network.json").write_text("{}", encoding="utf-8")
+
+    def fail_run_matlab_vectorization(*_args, **_kwargs):
+        raise AssertionError("MATLAB should not be launched when a completed reusable batch exists")
+
+    def fail_run_python_vectorization(*_args, **_kwargs):
+        raise AssertionError("Python should not rerun in analysis-only reuse mode")
+
+    def fail_import_matlab_batch(*_args, **_kwargs):
+        raise AssertionError("MATLAB import should not run in analysis-only reuse mode")
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {"timings": {"total": 12.0}}
+
+    def fake_compare_results(_matlab_results, python_results, matlab_parsed):
+        assert python_results.get("success") is True
+        assert matlab_parsed == {"timings": {"total": 12.0}}
+        return {
+            "matlab": {"elapsed_time": 0.0},
+            "python": {"elapsed_time": 0.0},
+            "performance": {"speedup": 1.0, "faster": "equal"},
+            "vertices": {"matlab_count": 10, "python_count": 10},
+            "edges": {"matlab_count": 5, "python_count": 5},
+            "network": {"strand_delta": 0},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fail_run_matlab_vectorization
+    )
+    monkeypatch.setattr(
+        comparison_module, "run_python_vectorization", fail_run_python_vectorization
+    )
+    monkeypatch.setattr(comparison_module, "import_matlab_batch", fail_import_matlab_batch)
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_summary",
+        lambda _output_dir, summary_file: (
+            summary_file.parent.mkdir(parents=True, exist_ok=True)
+            or summary_file.write_text("summary", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_manifest",
+        lambda _output_dir, manifest_file: (
+            manifest_file.parent.mkdir(parents=True, exist_ok=True)
+            or manifest_file.write_text("# manifest", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: _make_matlab_status_report(
+            output_dir,
+            resume_mode="complete-noop",
+            batch_folder=batch_folder,
+            last_completed_stage="network",
+            next_stage="",
+        ),
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+    )
+
+    snapshot = load_run_snapshot(output_dir)
+
+    assert result == 0
+    assert snapshot is not None
+    assert snapshot.optional_tasks["matlab_pipeline"].artifacts["launch"] == "skipped"
+    assert snapshot.optional_tasks["matlab_pipeline"].artifacts["reuse_mode"] == "analysis-only"
+    assert (
+        snapshot.optional_tasks["matlab_status"].artifacts["matlab_launch_skip_reason"]
+        == "completed_reusable_batch"
+    )
+    assert snapshot.optional_tasks["comparison_analysis"].status == "completed"
+    assert Path(
+        snapshot.optional_tasks["comparison_analysis"].artifacts["comparison_report"]
+    ).exists()
+
+
+def test_orchestrate_comparison_full_reuse_python_rerun_skips_matlab_launch(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.parity.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+    batch_folder.mkdir(parents=True)
+    metadata_dir = output_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_complete": True,
+                "matlab_batch_folder": str(batch_folder),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fail_run_matlab_vectorization(*_args, **_kwargs):
+        raise AssertionError("MATLAB should not be relaunched for completed reusable batches")
+
+    def fake_import_matlab_batch(batch, checkpoints, stages=None):
+        captured["batch"] = batch
+        captured["checkpoints"] = Path(checkpoints)
+        captured["stages"] = stages
+        Path(checkpoints).mkdir(parents=True, exist_ok=True)
+        return {
+            "energy": str(Path(checkpoints) / "checkpoint_energy.pkl"),
+            "vertices": str(Path(checkpoints) / "checkpoint_vertices.pkl"),
+        }
+
+    def fake_load_matlab_batch_params(_batch_folder):
+        return {"sigma_per_influence_vertices": 2.0}
+
+    def fake_run_python_vectorization(_input, output, _params, run_dir=None, force_rerun_from=None):
+        captured["python_output"] = Path(output)
+        captured["python_run_dir"] = run_dir
+        captured["force_rerun_from"] = force_rerun_from
+        return {
+            "success": True,
+            "elapsed_time": 3.0,
+            "run_dir": run_dir,
+            "force_rerun_from": force_rerun_from,
+        }
+
+    def fake_load_matlab_batch_results(_batch_folder):
+        return {"timings": {"total": 12.0}}
+
+    def fake_compare_results(_matlab_results, _python_results, matlab_parsed):
+        assert matlab_parsed == {"timings": {"total": 12.0}}
+        return {
+            "matlab": {"elapsed_time": 0.0},
+            "python": {"elapsed_time": 3.0},
+            "performance": {"speedup": 0.0, "faster": "MATLAB"},
+            "vertices": {"matlab_count": 10, "python_count": 9},
+            "edges": {"matlab_count": 5, "python_count": 5},
+            "network": {"strand_delta": 0},
+        }
+
+    monkeypatch.setattr(
+        comparison_module, "run_matlab_vectorization", fail_run_matlab_vectorization
+    )
+    monkeypatch.setattr(comparison_module, "import_matlab_batch", fake_import_matlab_batch)
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_params", fake_load_matlab_batch_params
+    )
+    monkeypatch.setattr(
+        comparison_module, "run_python_vectorization", fake_run_python_vectorization
+    )
+    monkeypatch.setattr(
+        comparison_module, "load_matlab_batch_results", fake_load_matlab_batch_results
+    )
+    monkeypatch.setattr(comparison_module, "compare_results", fake_compare_results)
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_summary",
+        lambda _output_dir, summary_file: (
+            summary_file.parent.mkdir(parents=True, exist_ok=True)
+            or summary_file.write_text("summary", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_manifest",
+        lambda _output_dir, manifest_file: (
+            manifest_file.parent.mkdir(parents=True, exist_ok=True)
+            or manifest_file.write_text("# manifest", encoding="utf-8")
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: _make_matlab_status_report(
+            output_dir,
+            resume_mode="complete-noop",
+            batch_folder=batch_folder,
+            last_completed_stage="network",
+            next_stage="",
+        ),
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+    )
+
+    snapshot = load_run_snapshot(output_dir)
+
+    assert result == 0
+    assert captured["batch"] == str(batch_folder)
+    assert captured["stages"] == ["energy", "vertices"]
+    assert captured["force_rerun_from"] == "edges"
+    assert snapshot is not None
+    assert snapshot.optional_tasks["matlab_pipeline"].artifacts["launch"] == "skipped"
+    assert snapshot.optional_tasks["matlab_pipeline"].artifacts["reuse_mode"] == "python-rerun"
+    assert snapshot.optional_tasks["matlab_import"].status == "completed"
+
+
 def test_orchestrate_comparison_shallow_mode_skips_matlab_parse(tmp_path: Path, monkeypatch):
     import slavv.parity.comparison as comparison_module
 

@@ -126,3 +126,137 @@ def test_inspect_matlab_status_cached_reuses_when_mtimes_match(tmp_path: Path, m
 
     assert cached.cache_used is True
     assert cached.matlab_rerun_prediction == "Rerun will start at energy."
+
+
+def test_assess_full_comparison_analysis_ready_with_completed_matlab_and_python_results(
+    tmp_path: Path,
+):
+    run_root = tmp_path / "20260413_120000_comparison"
+    metadata_dir = run_root / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "comparison_params.normalized.json").write_text(
+        json.dumps(
+            {
+                "edge_method": "tracing",
+                "comparison_exact_network": True,
+                "python_parity_rerun_from": "edges",
+            }
+        ),
+        encoding="utf-8",
+    )
+    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260413-120000"
+    batch_dir.mkdir(parents=True)
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_complete": True,
+                "matlab_batch_folder": str(batch_dir),
+            }
+        ),
+        encoding="utf-8",
+    )
+    python_dir = run_root / "02_Output" / "python_results"
+    python_dir.mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+
+    report = assess_loop_request(
+        run_root,
+        loop_kind="full_comparison",
+        input_path=tmp_path / "input.tif",
+        params={
+            "edge_method": "tracing",
+            "comparison_exact_network": True,
+            "python_parity_rerun_from": "edges",
+        },
+    )
+
+    assert report.verdict == "analysis_ready"
+    assert report.safe_to_reuse is True
+    assert report.safe_to_analyze_only is True
+    assert report.requires_fresh_matlab is False
+
+
+def test_assess_full_comparison_reuse_ready_with_completed_matlab_only(tmp_path: Path):
+    run_root = tmp_path / "20260413_121500_comparison"
+    metadata_dir = run_root / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "comparison_params.normalized.json").write_text(
+        json.dumps(
+            {
+                "edge_method": "tracing",
+                "comparison_exact_network": True,
+                "python_parity_rerun_from": "edges",
+            }
+        ),
+        encoding="utf-8",
+    )
+    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260413-121500"
+    batch_dir.mkdir(parents=True)
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_complete": True,
+                "matlab_batch_folder": str(batch_dir),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = assess_loop_request(
+        run_root,
+        loop_kind="full_comparison",
+        input_path=tmp_path / "input.tif",
+        params={
+            "edge_method": "tracing",
+            "comparison_exact_network": True,
+            "python_parity_rerun_from": "edges",
+        },
+    )
+
+    assert report.verdict == "reuse_ready"
+    assert report.safe_to_reuse is True
+    assert report.requires_fresh_matlab is False
+
+
+def test_assess_full_comparison_requires_fresh_matlab_without_completed_status(tmp_path: Path):
+    run_root = tmp_path / "20260413_123000_comparison"
+    metadata_dir = run_root / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "comparison_params.normalized.json").write_text(
+        json.dumps(
+            {
+                "edge_method": "tracing",
+                "comparison_exact_network": True,
+                "python_parity_rerun_from": "edges",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = assess_loop_request(
+        run_root,
+        loop_kind="full_comparison",
+        input_path=tmp_path / "input.tif",
+        params={
+            "edge_method": "tracing",
+            "comparison_exact_network": True,
+            "python_parity_rerun_from": "edges",
+        },
+    )
+
+    assert report.verdict == "fresh_matlab_required"
+    assert report.requires_fresh_matlab is True

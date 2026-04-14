@@ -364,7 +364,7 @@ def _resolve_output_dir(
         elif loop_kind in {"standalone_analysis", "validate_only"}:
             reusable_verdicts = {"analysis_ready"}
         else:
-            reusable_verdicts = {"reuse_ready", "fresh_matlab_required"}
+            reusable_verdicts = {"analysis_ready", "reuse_ready", "fresh_matlab_required"}
         for index, entry in enumerate(list_runs(base_dir)):
             candidate = entry.get("path")
             if not isinstance(candidate, Path):
