@@ -23,8 +23,11 @@ Repository guidance for coding agents working in `slavv2python`.
 
 ## Read First When Relevant
 
+- `docs/README.md`: index for maintained reference docs and active chapter status.
 - `tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `workspace/tmp_tests/`.
+- `docs/reference/COMPARISON_LAYOUT.md`: canonical staged comparison layout details and naming conventions.
+- `docs/reference/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
 - `source/slavv/parity/run_layout.py`: canonical staged comparison layout and legacy-path compatibility rules.
 - `source/slavv/runtime/run_state.py`: structured run metadata, staged artifact locations, and legacy checkpoint compatibility.
 
@@ -194,15 +197,15 @@ Parity layout conventions to preserve:
 - Structured comparison runs use `01_Input/`, `02_Output/`, `03_Analysis/`, and `99_Metadata/` under the run root.
 - Python comparison artifacts belong under `02_Output/python_results/`; run snapshots and normalized comparison params belong under `99_Metadata/`.
 - Parity utilities should continue to accept both the staged layout and legacy flat layouts when existing code supports both.
+- See `docs/reference/COMPARISON_LAYOUT.md` for the full layout reference and examples.
 
 Expect the MATLAB workflow to require a populated `external/Vectorization-Public/` checkout and a valid local MATLAB installation.
 
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/slavv/`.
-- Keep tests under `tests/` and use the existing pytest markers: `unit`, `integration`, `ui`, `diagnostic`, `slow`, and `regression`.
-- Follow the ownership-based test layout from `tests/README.md`: `tests/unit/<owner>/`, `tests/integration/`, `tests/ui/`, `tests/diagnostic/`, and `tests/unit/workspace_scripts/` for maintained helper scripts.
-- Remember that pytest markers are assigned by folder in `tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
+- Keep tests under `tests/`; follow `tests/README.md` for ownership-based placement and marker usage.
+- Pytest markers are assigned by folder in `tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
 - Use the repo-local `tmp_path` fixture behavior in `tests/conftest.py` when writing tests; temporary test artifacts should stay under `workspace/tmp_tests/`, not ad-hoc temp roots.
 - Use `logging` in library code instead of `print()`. CLI commands may print user-facing summaries.
 - Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings such as `encoding="utf-8"` when writing repository-managed text artifacts.

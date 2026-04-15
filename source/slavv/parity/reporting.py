@@ -243,9 +243,10 @@ def generate_summary(run_dir: Path, output_file: Path):
     edge_diag = edge_diagnostics.get("python", {})
     candidate_coverage = edge_diagnostics.get("candidate_endpoint_coverage", {})
     candidate_audit = edge_diagnostics.get("candidate_audit", {})
+    shared_neighborhood_audit = edge_diagnostics.get("shared_neighborhood_audit", {})
     chosen_candidate_sources = edge_diagnostics.get("chosen_candidate_sources", {})
     extra_frontier_overlap = edge_diagnostics.get("extra_frontier_missing_vertex_overlap", {})
-    if edge_diag or candidate_coverage or candidate_audit:
+    if edge_diag or candidate_coverage or candidate_audit or shared_neighborhood_audit:
         lines.append("Edge Diagnostics")
         lines.append("-" * 70)
         if edge_diag:
@@ -558,6 +559,26 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(audit_diag.get('watershed_cap_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_short_trace_rejected', 0)):,}/"
                     f"{int(audit_diag.get('watershed_accepted', 0)):,}"
+                )
+        if shared_neighborhood_audit:
+            shared_neighborhood_audit_path = (
+                layout["analysis_dir"] / "shared_neighborhood_audit.json"
+            )
+            lines.append(f"Shared neighborhood audit artifact: {shared_neighborhood_audit_path}")
+            top_neighborhood = shared_neighborhood_audit.get("top_neighborhood", {})
+            if isinstance(top_neighborhood, dict) and top_neighborhood:
+                lines.append(
+                    "Top shared neighborhood "
+                    f"{int(top_neighborhood.get('origin_index', -1))}: "
+                    f"missing/candidate/final "
+                    f"{int(top_neighborhood.get('missing_matlab_incident_endpoint_pair_count', 0)):,}/"
+                    f"{int(top_neighborhood.get('candidate_endpoint_pair_count', 0)):,}/"
+                    f"{int(top_neighborhood.get('final_chosen_endpoint_pair_count', 0)):,}"
+                )
+                lines.append(
+                    "First divergence point: "
+                    f"{top_neighborhood.get('first_divergence_stage', 'unknown')} - "
+                    f"{top_neighborhood.get('first_divergence_reason', 'unknown')}"
                 )
         if any(
             key in edge_diag

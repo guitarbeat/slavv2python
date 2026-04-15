@@ -36,7 +36,7 @@ from .matlab_status import (
 from .matlab_status import (
     inspect_matlab_status as _inspect_matlab_status_direct,
 )
-from .metrics import compare_results
+from .metrics import build_shared_neighborhood_audit, compare_results
 from .preflight import (
     OutputRootPreflightReport,
     persist_output_preflight,
@@ -191,6 +191,25 @@ def _run_comparison_analysis(
             print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
 
     comparison = compare_results(matlab_results, python_results, matlab_parsed)
+    python_data = python_results.get("results") or {}
+    shared_neighborhood_audit = None
+    if matlab_parsed and "edges" in comparison:
+        shared_neighborhood_audit = build_shared_neighborhood_audit(
+            matlab_parsed.get("edges", {}),
+            python_data.get("edges", {}),
+            python_results.get("candidate_edges") or python_data.get("candidate_edges"),
+            comparison["edges"],
+            python_results.get("candidate_audit") or python_data.get("candidate_audit"),
+            python_results.get("candidate_lifecycle") or python_data.get("candidate_lifecycle"),
+        )
+    if shared_neighborhood_audit is not None:
+        comparison.setdefault("edges", {}).setdefault("diagnostics", {})[
+            "shared_neighborhood_audit"
+        ] = shared_neighborhood_audit
+        (analysis_dir / "shared_neighborhood_audit.json").write_text(
+            json.dumps(shared_neighborhood_audit, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
     report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
 
     if comparison_context is not None:
@@ -996,6 +1015,10 @@ def run_python_vectorization(
         if candidate_audit is not None:
             results["candidate_audit"] = candidate_audit
             python_results["candidate_audit"] = candidate_audit
+        candidate_lifecycle = _load_python_candidate_lifecycle(Path(output_dir))
+        if candidate_lifecycle is not None:
+            results["candidate_lifecycle"] = candidate_lifecycle
+            python_results["candidate_lifecycle"] = candidate_lifecycle
 
         return python_results
 
@@ -1044,6 +1067,9 @@ def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] |
     candidate_audit = _load_python_candidate_audit(python_root)
     if candidate_audit is not None:
         results["candidate_audit"] = candidate_audit
+    candidate_lifecycle = _load_python_candidate_lifecycle(python_root)
+    if candidate_lifecycle is not None:
+        results["candidate_lifecycle"] = candidate_lifecycle
     return results
 
 
@@ -1065,6 +1091,18 @@ def _load_python_candidate_audit(python_root: Path) -> dict[str, Any] | None:
         return None
     try:
         with open(candidate_audit_path, encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception:
+        return None
+
+
+def _load_python_candidate_lifecycle(python_root: Path) -> dict[str, Any] | None:
+    """Load the persisted frontier lifecycle artifact when available."""
+    candidate_lifecycle_path = python_root / "stages" / "edges" / "candidate_lifecycle.json"
+    if not candidate_lifecycle_path.exists():
+        return None
+    try:
+        with open(candidate_lifecycle_path, encoding="utf-8") as handle:
             return json.load(handle)
     except Exception:
         return None

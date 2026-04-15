@@ -96,6 +96,50 @@ python -m streamlit run source/slavv/apps/web_app.py
 
 The ML curation flow accepts trained `.joblib` and `.pkl` model uploads directly from the browser.
 
+### MATLAB Parity And Comparison Workflow
+
+Use the backward-compatible wrapper at `workspace/scripts/cli/compare_matlab_python.py`
+for MATLAB/Python parity loops. The packaged implementation lives in
+`source/slavv/apps/parity_cli.py`.
+
+```powershell
+# Output-root preflight only
+python workspace/scripts/cli/compare_matlab_python.py `
+  --input data/slavv_test_volume.tif `
+  --validate-only
+
+# Lightweight MATLAB launch probe after preflight
+python workspace/scripts/cli/compare_matlab_python.py `
+  --matlab-health-check `
+  --output-dir comparisons\health_check `
+  --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
+
+# Default imported-MATLAB edge loop
+python workspace/scripts/cli/compare_matlab_python.py `
+  --input data/slavv_test_volume.tif `
+  --skip-matlab `
+  --resume-latest `
+  --python-parity-rerun-from edges
+
+# Stage-isolated downstream network gate
+python workspace/scripts/cli/compare_matlab_python.py `
+  --input data/slavv_test_volume.tif `
+  --skip-matlab `
+  --resume-latest `
+  --python-parity-rerun-from network `
+  --comparison-depth deep
+```
+
+Notes:
+
+- `--validate-only` and `--matlab-health-check` are the cheapest workflow loops
+  for output-root and launch sanity checks.
+- `--resume-latest` reuses the newest compatible staged run root rather than
+  always creating a fresh timestamped directory.
+- For the active investigation framing, start with
+  [docs/README.md](docs/README.md) and
+  [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md).
+
 ### Programmatic Usage
 
 ```python
@@ -186,10 +230,12 @@ For maintained project context, read in this order:
 
 1. [Repository overview](README.md)
 2. [Contributor workflow commands](AGENTS.md)
-3. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
-4. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
-5. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
-6. [Shared Candidate Generation Alignment](docs/chapters/shared-candidate-generation/README.md)
+3. [Documentation index](docs/README.md)
+4. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
+5. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
+6. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
+7. [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+8. [Parity backlog and workflow tracker](BOTTLENECK_TODO.md)
 
 ## License
 
@@ -197,4 +243,5 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 ## TODOs / Known Issues
 
-See the canonical tracker in [todo.md](todo.md) for current TODOs, known issues, and release readiness status.
+See [BOTTLENECK_TODO.md](BOTTLENECK_TODO.md) for the active parity backlog and
+workflow tracker, and [CHANGELOG.md](CHANGELOG.md) for recent shipped changes.

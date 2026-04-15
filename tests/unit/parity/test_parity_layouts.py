@@ -292,6 +292,17 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
                         "watershed_accepted": 9,
                     },
                 },
+                "shared_neighborhood_audit": {
+                    "schema_version": 1,
+                    "top_neighborhood": {
+                        "origin_index": 866,
+                        "missing_matlab_incident_endpoint_pair_count": 3,
+                        "candidate_endpoint_pair_count": 1,
+                        "final_chosen_endpoint_pair_count": 1,
+                        "first_divergence_stage": "pre_manifest_rejection",
+                        "first_divergence_reason": "rejected_parent_has_child at terminal 1023",
+                    },
+                },
                 "python": {
                     "candidate_traced_edge_count": 10,
                     "terminal_edge_count": 3,
@@ -437,6 +448,15 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     assert "First extra pair at top seed origin: [12, 88]" in summary
     assert (
         "Audit rejections reachability/mutual/endpoint-degree/energy/metric-threshold/cap/short/accepted: 1/2/3/4/5/6/7/9"
+        in summary
+    )
+    assert (
+        f"Shared neighborhood audit artifact: {analysis_dir / 'shared_neighborhood_audit.json'}"
+        in summary
+    )
+    assert "Top shared neighborhood 866: missing/candidate/final 3/1/1" in summary
+    assert (
+        "First divergence point: pre_manifest_rejection - rejected_parent_has_child at terminal 1023"
         in summary
     )
     assert "Python energy source: matlab_batch_hdf5" in summary

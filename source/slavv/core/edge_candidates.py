@@ -1218,6 +1218,70 @@ def _resolve_frontier_edge_connection_details(
     return origin_vertex_idx, terminal_vertex_idx, "accepted_parent_origin_half"
 
 
+def _frontier_parent_child_outcome_from_reason(resolution_reason: str) -> str | None:
+    """Map a frontier resolution reason onto parent/child lifecycle language."""
+    if resolution_reason == "rejected_parent_has_child":
+        return "parent_has_child"
+    if resolution_reason == "rejected_child_better_than_parent":
+        return "child_better_than_parent"
+    if resolution_reason.startswith("accepted_parent_"):
+        return "accepted_parent_child_resolution"
+    return None
+
+
+def _frontier_bifurcation_choice_from_reason(resolution_reason: str) -> str | None:
+    """Map a frontier resolution reason onto the chosen parent half."""
+    if resolution_reason == "accepted_parent_terminal_half":
+        return "parent_terminal_half"
+    if resolution_reason == "accepted_parent_origin_half":
+        return "parent_origin_half"
+    return None
+
+
+def _build_frontier_lifecycle_event(
+    *,
+    seed_origin_idx: int,
+    terminal_vertex_idx: int,
+    origin_idx: int | None,
+    terminal_idx: int | None,
+    resolution_reason: str,
+    terminal_hit_sequence: int,
+    local_candidate_index: int | None = None,
+) -> dict[str, Any]:
+    """Create a serializable frontier lifecycle event entry."""
+    emitted_endpoint_pair: list[int] | None = None
+    if (
+        origin_idx is not None
+        and terminal_idx is not None
+        and origin_idx >= 0
+        and terminal_idx >= 0
+    ):
+        start_vertex, end_vertex = int(origin_idx), int(terminal_idx)
+        emitted_endpoint_pair = (
+            [start_vertex, end_vertex] if start_vertex < end_vertex else [end_vertex, start_vertex]
+        )
+
+    survived_candidate_manifest = emitted_endpoint_pair is not None
+    return {
+        "seed_origin_index": int(seed_origin_idx),
+        "terminal_vertex_index": int(terminal_vertex_idx),
+        "resolved_origin_index": None if origin_idx is None else int(origin_idx),
+        "resolved_terminal_index": None if terminal_idx is None else int(terminal_idx),
+        "emitted_endpoint_pair": emitted_endpoint_pair,
+        "resolution_reason": str(resolution_reason),
+        "rejection_reason": None if survived_candidate_manifest else str(resolution_reason),
+        "parent_child_outcome": _frontier_parent_child_outcome_from_reason(str(resolution_reason)),
+        "bifurcation_choice": _frontier_bifurcation_choice_from_reason(str(resolution_reason)),
+        "survived_candidate_manifest": bool(survived_candidate_manifest),
+        "origin_candidate_local_index": (
+            None if local_candidate_index is None else int(local_candidate_index)
+        ),
+        "manifest_candidate_index": None,
+        "chosen_final_edge": False,
+        "terminal_hit_sequence": int(terminal_hit_sequence),
+    }
+
+
 def _trace_origin_edges_matlab_frontier(
     energy: np.ndarray,
     scale_indices: np.ndarray | None,
@@ -1264,6 +1328,7 @@ def _trace_origin_edges_matlab_frontier(
     energy_traces: list[np.ndarray] = []
     scale_traces: list[np.ndarray] = []
     origin_indices: list[int] = []
+    frontier_lifecycle_events: list[dict[str, Any]] = []
     edge_paths_linear: list[list[int]] = []
     edge_pairs: list[tuple[int, int]] = []
     displacement_vectors: list[np.ndarray] = []
@@ -1362,6 +1427,9 @@ def _trace_origin_edges_matlab_frontier(
                 int(diagnostics["frontier_per_origin_terminal_hits"].get(str(origin_vertex_idx), 0))
                 + 1
             )
+            terminal_hit_sequence = int(
+                diagnostics["frontier_per_origin_terminal_hits"].get(str(origin_vertex_idx), 0)
+            )
             path_linear = [current_linear]
             tracing_linear = current_linear
             while int(pointer_index_map.get(tracing_linear, 0)) > 0:
@@ -1420,6 +1488,17 @@ def _trace_origin_edges_matlab_frontier(
                 scale_traces.append(scale_trace)
                 origin_indices.append(origin_vertex_idx)
                 diagnostics["terminal_direct_hit_count"] += 1
+                frontier_lifecycle_events.append(
+                    _build_frontier_lifecycle_event(
+                        seed_origin_idx=origin_vertex_idx,
+                        terminal_vertex_idx=terminal_vertex_idx,
+                        origin_idx=int(origin_idx),
+                        terminal_idx=int(terminal_idx),
+                        resolution_reason=resolution_reason,
+                        terminal_hit_sequence=terminal_hit_sequence,
+                        local_candidate_index=len(connections) - 1,
+                    )
+                )
             else:
                 diagnostics.setdefault("frontier_per_origin_terminal_rejections", {})
                 diagnostics["frontier_per_origin_terminal_rejections"][str(origin_vertex_idx)] = (
@@ -1430,9 +1509,25 @@ def _trace_origin_edges_matlab_frontier(
                     )
                     + 1
                 )
-            if len(new_coords_array):
+                frontier_lifecycle_events.append(
+                    _build_frontier_lifecycle_event(
+                        seed_origin_idx=origin_vertex_idx,
+                        terminal_vertex_idx=terminal_vertex_idx,
+                        origin_idx=None,
+                        terminal_idx=None,
+                        resolution_reason=resolution_reason,
+                        terminal_hit_sequence=terminal_hit_sequence,
+                    )
+                )
+                for coord in new_coords_array:
+                    linear_index = _coord_to_matlab_linear_index(coord, shape)
+                    available_energy = float(energy[coord[0], coord[1], coord[2]])
+                    available_map[linear_index] = available_energy
+                    heappush(available_heap, (available_energy, linear_index))
+            if origin_idx is not None and terminal_idx is not None and len(new_coords_array):
                 # MATLAB clears the newly exposed frontier voxels after any terminal
-                # hit instead of leaving them queued for later expansion.
+                # hit that survives parent/child resolution instead of leaving
+                # them queued for later expansion.
                 for coord in new_coords_array:
                     linear_index = _coord_to_matlab_linear_index(coord, shape)
                     available_map.pop(linear_index, None)
@@ -1480,6 +1575,7 @@ def _trace_origin_edges_matlab_frontier(
         "scale_traces": scale_traces,
         "origin_indices": [origin_vertex_idx] * len(traces),
         "connection_sources": ["frontier"] * len(traces),
+        "frontier_lifecycle_events": frontier_lifecycle_events,
         "diagnostics": diagnostics,
     }
 
@@ -1497,6 +1593,19 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         len(unit_connections),
         default_source=str(unit_payload.get("candidate_source", "unknown")),
     )
+    target.setdefault("frontier_lifecycle_events", [])
+    base_candidate_index = len(target["traces"])
+    emitted_frontier_count = 0
+    for raw_event in unit_payload.get("frontier_lifecycle_events", []):
+        if not isinstance(raw_event, dict):
+            continue
+        event = dict(raw_event)
+        if event.get("survived_candidate_manifest"):
+            event["manifest_candidate_index"] = base_candidate_index + emitted_frontier_count
+            emitted_frontier_count += 1
+        else:
+            event["manifest_candidate_index"] = None
+        target["frontier_lifecycle_events"].append(event)
 
     target["traces"].extend(unit_traces)
     target["energy_traces"].extend(
@@ -1520,6 +1629,107 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         cast("dict[str, Any]", target["diagnostics"]),
         cast("dict[str, Any]", unit_payload.get("diagnostics", {})),
     )
+
+
+def _build_frontier_candidate_lifecycle(
+    candidates: dict[str, Any],
+    chosen_candidate_indices: np.ndarray | list[int] | None = None,
+) -> dict[str, Any]:
+    """Build a JSON-friendly frontier lifecycle artifact for shared-neighborhood audits."""
+    raw_events = candidates.get("frontier_lifecycle_events", [])
+    chosen_indices = {
+        int(index)
+        for index in np.asarray(
+            chosen_candidate_indices if chosen_candidate_indices is not None else [], dtype=np.int32
+        ).reshape(-1)
+    }
+    events: list[dict[str, Any]] = []
+    per_origin_summary: dict[int, dict[str, Any]] = {}
+
+    for raw_event in raw_events:
+        if not isinstance(raw_event, dict):
+            continue
+        event = dict(raw_event)
+        seed_origin_index = int(event.get("seed_origin_index", -1))
+        manifest_candidate_index_raw = event.get("manifest_candidate_index")
+        manifest_candidate_index = (
+            int(manifest_candidate_index_raw)
+            if manifest_candidate_index_raw not in (None, "")
+            else None
+        )
+        chosen_final_edge = (
+            manifest_candidate_index is not None and manifest_candidate_index in chosen_indices
+        )
+        event["seed_origin_index"] = seed_origin_index
+        event["terminal_vertex_index"] = int(event.get("terminal_vertex_index", -1))
+        event["terminal_hit_sequence"] = int(event.get("terminal_hit_sequence", 0))
+        event["survived_candidate_manifest"] = bool(event.get("survived_candidate_manifest", False))
+        event["manifest_candidate_index"] = manifest_candidate_index
+        event["chosen_final_edge"] = bool(chosen_final_edge)
+        events.append(event)
+
+        summary = per_origin_summary.setdefault(
+            seed_origin_index,
+            {
+                "origin_index": seed_origin_index,
+                "terminal_hit_count": 0,
+                "emitted_candidate_count": 0,
+                "rejected_terminal_count": 0,
+                "chosen_final_edge_count": 0,
+                "resolution_counts": {},
+                "emitted_endpoint_pair_samples": [],
+                "rejection_reason_samples": [],
+            },
+        )
+        summary["terminal_hit_count"] += 1
+        resolution_reason = str(event.get("resolution_reason", "unknown"))
+        resolution_counts = cast("dict[str, int]", summary["resolution_counts"])
+        resolution_counts[resolution_reason] = int(resolution_counts.get(resolution_reason, 0)) + 1
+        if event["survived_candidate_manifest"]:
+            summary["emitted_candidate_count"] += 1
+            if chosen_final_edge:
+                summary["chosen_final_edge_count"] += 1
+            endpoint_pair = event.get("emitted_endpoint_pair")
+            if (
+                isinstance(endpoint_pair, list)
+                and endpoint_pair not in summary["emitted_endpoint_pair_samples"]
+                and len(summary["emitted_endpoint_pair_samples"]) < 3
+            ):
+                summary["emitted_endpoint_pair_samples"].append(endpoint_pair)
+        else:
+            summary["rejected_terminal_count"] += 1
+            rejection_reason = event.get("rejection_reason")
+            if (
+                isinstance(rejection_reason, str)
+                and rejection_reason
+                and rejection_reason not in summary["rejection_reason_samples"]
+                and len(summary["rejection_reason_samples"]) < 3
+            ):
+                summary["rejection_reason_samples"].append(rejection_reason)
+
+    per_origin_payload = [
+        per_origin_summary[origin_index] for origin_index in sorted(per_origin_summary)
+    ]
+    per_origin_payload.sort(
+        key=lambda item: (
+            -int(item["terminal_hit_count"]),
+            -int(item["rejected_terminal_count"]),
+            int(item["origin_index"]),
+        )
+    )
+    return {
+        "schema_version": 1,
+        "frontier_terminal_hit_event_count": len(events),
+        "frontier_terminal_accept_event_count": len(
+            [event for event in events if event.get("survived_candidate_manifest")]
+        ),
+        "frontier_terminal_reject_event_count": len(
+            [event for event in events if not event.get("survived_candidate_manifest")]
+        ),
+        "events": events,
+        "per_origin_summary": per_origin_payload,
+        "top_origin_summaries": per_origin_payload[:5],
+    }
 
 
 def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dict[str, int]:

@@ -14,10 +14,10 @@ from ..utils.safe_unpickle import safe_load
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
+    _build_frontier_candidate_lifecycle,
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,
-    _normalize_candidate_connection_sources,
     _normalize_candidate_origin_counts,
     _trace_origin_edges_matlab_frontier,
     _use_matlab_frontier_tracer,
@@ -34,9 +34,9 @@ from .edge_primitives import (
 )
 from .edge_selection import (
     _choose_edges_matlab_style,
+    _choose_edges_matlab_v200_cleanup,
     _empty_edge_diagnostics,
     _empty_edges_result,
-    _merge_edge_diagnostics,
 )
 from .vertices import paint_vertex_center_image
 
@@ -115,14 +115,22 @@ def extract_edges(
             params,
             energy_sign,
         )
-    chosen = _choose_edges_matlab_style(
-        candidates,
-        vertex_positions.astype(np.float32),
-        vertex_scales,
-        lumen_radius_pixels_axes,
-        energy.shape,
-        params,
-    )
+    if bool(params.get("comparison_exact_network", False)):
+        chosen = _choose_edges_matlab_v200_cleanup(
+            candidates,
+            vertex_positions.astype(np.float32),
+            energy.shape,
+            params,
+        )
+    else:
+        chosen = _choose_edges_matlab_style(
+            candidates,
+            vertex_positions.astype(np.float32),
+            vertex_scales,
+            lumen_radius_pixels_axes,
+            energy.shape,
+            params,
+        )
     logger.info(
         "Extracted %d chosen edges from %d traced candidates",
         len(chosen["traces"]),
@@ -211,6 +219,7 @@ def _load_edge_units(
         "scale_traces": [],
         "origin_indices": np.zeros((0,), dtype=np.int32),
         "connection_sources": [],
+        "frontier_lifecycle_events": [],
         "diagnostics": _empty_edge_diagnostics(),
     }
     completed: set[int] = set()
@@ -218,50 +227,11 @@ def _load_edge_units(
     if not units_dir.exists():
         return payload, completed
 
-    traces: list[np.ndarray] = []
-    connections: list[list[int]] = []
-    metrics: list[float] = []
-    energy_traces: list[np.ndarray] = []
-    scale_traces: list[np.ndarray] = []
-    origin_indices: list[int] = []
-    connection_sources: list[str] = []
     for unit_file in sorted(units_dir.glob("*.pkl")):
         unit_payload = safe_load(unit_file)
         origin_index = int(unit_payload["origin_index"])
         completed.add(origin_index)
-        unit_traces = [np.asarray(trace, dtype=np.float32) for trace in unit_payload["traces"]]
-        unit_connections = np.asarray(unit_payload["connections"], dtype=np.int32).reshape(-1, 2)
-        traces.extend(unit_traces)
-        connections.extend(
-            [int(connection[0]), int(connection[1])] for connection in unit_connections
-        )
-        metrics.extend(float(metric) for metric in unit_payload["metrics"])
-        energy_traces.extend(
-            np.asarray(trace, dtype=np.float32) for trace in unit_payload["energy_traces"]
-        )
-        scale_traces.extend(
-            np.asarray(trace, dtype=np.int16) for trace in unit_payload["scale_traces"]
-        )
-        origin_indices.extend(int(value) for value in unit_payload.get("origin_indices", []))
-        connection_sources.extend(
-            _normalize_candidate_connection_sources(
-                unit_payload.get("connection_sources"),
-                len(unit_connections),
-                default_source=str(unit_payload.get("candidate_source", "unknown")),
-            )
-        )
-        _merge_edge_diagnostics(
-            cast("dict[str, Any]", payload["diagnostics"]),
-            cast("dict[str, Any]", unit_payload.get("diagnostics", {})),
-        )
-
-    payload["traces"] = traces
-    payload["connections"] = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    payload["metrics"] = np.asarray(metrics, dtype=np.float32)
-    payload["energy_traces"] = energy_traces
-    payload["scale_traces"] = scale_traces
-    payload["origin_indices"] = np.asarray(origin_indices, dtype=np.int32)
-    payload["connection_sources"] = connection_sources
+        _append_candidate_unit(payload, unit_payload)
     return payload, completed
 
 
@@ -296,6 +266,7 @@ def extract_edges_resumable(
     units_dir.mkdir(parents=True, exist_ok=True)
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
+    candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
     candidates, completed = _load_edge_units(units_dir, len(vertex_positions))
 
@@ -448,6 +419,9 @@ def extract_edges_resumable(
                 "scale_traces": unit_scale_traces,
                 "origin_indices": list(frontier_payload.get("origin_indices", [])),
                 "connection_sources": list(frontier_payload.get("connection_sources", [])),
+                "frontier_lifecycle_events": list(
+                    frontier_payload.get("frontier_lifecycle_events", [])
+                ),
                 "diagnostics": unit_diagnostics,
             }
         else:
@@ -511,14 +485,28 @@ def extract_edges_resumable(
         detail="Consolidated edge candidates",
         resumed=bool(completed),
     )
-    chosen = _choose_edges_matlab_style(
-        candidates,
-        vertex_positions.astype(np.float32),
-        vertex_scales,
-        lumen_radius_pixels_axes,
-        energy.shape,
-        params,
-    )
+    if bool(params.get("comparison_exact_network", False)):
+        chosen = _choose_edges_matlab_v200_cleanup(
+            candidates,
+            vertex_positions.astype(np.float32),
+            energy.shape,
+            params,
+        )
+    else:
+        chosen = _choose_edges_matlab_style(
+            candidates,
+            vertex_positions.astype(np.float32),
+            vertex_scales,
+            lumen_radius_pixels_axes,
+            energy.shape,
+            params,
+        )
+    if use_frontier_tracer:
+        candidate_lifecycle = _build_frontier_candidate_lifecycle(
+            candidates,
+            chosen.get("chosen_candidate_indices"),
+        )
+        atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
     atomic_joblib_dump(chosen, chosen_manifest_path)
     stage_controller.update(
         units_total=len(vertex_positions) + 2,

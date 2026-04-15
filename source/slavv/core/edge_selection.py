@@ -136,6 +136,120 @@ def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str,
     }
 
 
+def _initialize_edge_selection_diagnostics(
+    candidates: dict[str, Any],
+    connections: np.ndarray,
+    traces: list[np.ndarray],
+) -> dict[str, Any]:
+    """Initialize chooser diagnostics from candidate-stage counters and counts."""
+    diagnostics = _empty_edge_diagnostics()
+    candidate_diagnostics = candidates.get("diagnostics", {})
+    for key, value in candidate_diagnostics.items():
+        diagnostics[key] = value.copy() if key == "stop_reason_counts" else value
+    diagnostics["candidate_traced_edge_count"] = len(traces)
+    diagnostics["terminal_edge_count"] = (
+        int(np.sum(connections[:, 1] >= 0)) if len(connections) else 0
+    )
+    diagnostics["self_edge_count"] = (
+        int(np.sum(connections[:, 0] == connections[:, 1])) if len(connections) else 0
+    )
+    diagnostics["dangling_edge_count"] = (
+        int(np.sum(connections[:, 1] < 0)) if len(connections) else 0
+    )
+    return diagnostics
+
+
+def _prepare_candidate_indices_for_cleanup(
+    connections: np.ndarray,
+    metrics: np.ndarray,
+    energy_traces: list[np.ndarray],
+    diagnostics: dict[str, Any],
+) -> list[int]:
+    """Apply MATLAB-shaped pair filtering before downstream cleanup."""
+    valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
+    filtered_indices = np.flatnonzero(valid)
+
+    if filtered_indices.size:
+        nonnegative_max = np.array(
+            [
+                np.nanmax(np.asarray(energy_traces[index], dtype=np.float32)) >= 0
+                for index in filtered_indices
+            ],
+            dtype=bool,
+        )
+        diagnostics["negative_energy_rejected_count"] = int(np.sum(nonnegative_max))
+        filtered_indices = filtered_indices[~nonnegative_max]
+    else:
+        diagnostics["negative_energy_rejected_count"] = 0
+
+    if filtered_indices.size == 0:
+        return []
+
+    edge_lengths = np.asarray(
+        [len(np.asarray(energy_traces[index])) for index in filtered_indices],
+        dtype=np.int32,
+    )
+    length_sorted = filtered_indices[np.argsort(edge_lengths, kind="stable")]
+    ordered = length_sorted[np.argsort(metrics[length_sorted], kind="stable")]
+
+    directed_seen: set[tuple[int, int]] = set()
+    directed_indices: list[int] = []
+    for index in ordered:
+        pair_d = (int(connections[index, 0]), int(connections[index, 1]))
+        if pair_d in directed_seen:
+            diagnostics["duplicate_directed_pair_count"] += 1
+            continue
+        directed_seen.add(pair_d)
+        directed_indices.append(int(index))
+
+    undirected_seen: set[tuple[int, int]] = set()
+    filtered_unique_indices: list[int] = []
+    for index in directed_indices:
+        start_vertex, end_vertex = int(connections[index, 0]), int(connections[index, 1])
+        pair_u = (
+            (start_vertex, end_vertex) if start_vertex < end_vertex else (end_vertex, start_vertex)
+        )
+        if pair_u in undirected_seen:
+            diagnostics["antiparallel_pair_count"] += 1
+            continue
+        undirected_seen.add(pair_u)
+        filtered_unique_indices.append(int(index))
+
+    return filtered_unique_indices
+
+
+def _build_selected_edges_result(
+    final_indices: list[int],
+    traces: list[np.ndarray],
+    connections: np.ndarray,
+    metrics: np.ndarray,
+    energy_traces: list[np.ndarray],
+    scale_traces: list[np.ndarray],
+    connection_sources: list[str],
+    vertex_positions: np.ndarray,
+    diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the canonical chosen-edge payload from candidate indices."""
+    result: dict[str, Any] = _empty_edges_result(vertex_positions)
+    result["traces"] = [np.asarray(traces[index], dtype=np.float32) for index in final_indices]
+    result["connections"] = np.asarray(connections[final_indices], dtype=np.int32).reshape(-1, 2)
+    result["energies"] = np.asarray(metrics[final_indices], dtype=np.float32)
+    result["energy_traces"] = [
+        np.asarray(energy_traces[index], dtype=np.float32) for index in final_indices
+    ]
+    result["scale_traces"] = [
+        np.asarray(scale_traces[index], dtype=np.int16) for index in final_indices
+    ]
+    result["connection_sources"] = [
+        connection_sources[index] if index < len(connection_sources) else "unknown"
+        for index in final_indices
+    ]
+    result["chosen_candidate_indices"] = np.asarray(final_indices, dtype=np.int32)
+    diagnostics["chosen_edge_count"] = len(final_indices)
+    result["diagnostics"] = diagnostics
+    return result
+
+
 def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
     """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
     radii = np.asarray(radii, dtype=np.float32).reshape(3)
@@ -331,79 +445,28 @@ def _choose_edges_matlab_style(
     metrics = np.asarray(candidates["metrics"], dtype=np.float32).reshape(-1)
     energy_traces = candidates["energy_traces"]
     scale_traces = candidates["scale_traces"]
-    diagnostics = _empty_edge_diagnostics()
-    candidate_diagnostics = candidates.get("diagnostics", {})
-    for key, value in candidate_diagnostics.items():
-        diagnostics[key] = value.copy() if key == "stop_reason_counts" else value
-    diagnostics["candidate_traced_edge_count"] = len(traces)
-    diagnostics["terminal_edge_count"] = (
-        int(np.sum(connections[:, 1] >= 0)) if len(connections) else 0
-    )
-    diagnostics["self_edge_count"] = (
-        int(np.sum(connections[:, 0] == connections[:, 1])) if len(connections) else 0
-    )
-    diagnostics["dangling_edge_count"] = (
-        int(np.sum(connections[:, 1] < 0)) if len(connections) else 0
-    )
+    diagnostics = _initialize_edge_selection_diagnostics(candidates, connections, traces)
 
     if len(traces) == 0:
         empty = _empty_edges_result(vertex_positions)
         empty["diagnostics"] = diagnostics
         return empty
 
-    valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
-    filtered_indices = np.flatnonzero(valid)
-
-    if filtered_indices.size:
-        nonnegative_max = np.array(
-            [
-                np.nanmax(np.asarray(energy_traces[index], dtype=np.float32)) >= 0
-                for index in filtered_indices
-            ],
-            dtype=bool,
-        )
-        diagnostics["negative_energy_rejected_count"] = int(np.sum(nonnegative_max))
-        filtered_indices = filtered_indices[~nonnegative_max]
-    else:
-        diagnostics["negative_energy_rejected_count"] = 0
-
-    if filtered_indices.size == 0:
+    filtered_indices = _prepare_candidate_indices_for_cleanup(
+        connections,
+        metrics,
+        energy_traces,
+        diagnostics,
+    )
+    if not filtered_indices:
         empty = _empty_edges_result(vertex_positions)
         empty["diagnostics"] = diagnostics
         return empty
 
-    edge_lengths = np.asarray(
-        [len(np.asarray(energy_traces[index])) for index in filtered_indices],
-        dtype=np.int32,
-    )
-    length_sorted = filtered_indices[np.argsort(edge_lengths, kind="stable")]
-    ordered = length_sorted[np.argsort(metrics[length_sorted], kind="stable")]
     connection_sources = _normalize_candidate_connection_sources(
         candidates.get("connection_sources"),
         len(connections),
     )
-
-    directed_seen: set[tuple[int, int]] = set()
-    directed_indices: list[int] = []
-    for index in ordered:
-        pair_d = (int(connections[index, 0]), int(connections[index, 1]))
-        if pair_d in directed_seen:
-            diagnostics["duplicate_directed_pair_count"] += 1
-            continue
-        directed_seen.add(pair_d)
-        directed_indices.append(int(index))
-
-    # Conflict painting
-    undirected_seen_u: set[tuple[int, int]] = set()
-    antiparallel_indices_u: list[int] = []
-    for index in directed_indices:
-        u, v = int(connections[index, 0]), int(connections[index, 1])
-        pair_u: tuple[int, int] = (u, v) if u < v else (v, u)
-        if pair_u in undirected_seen_u:
-            diagnostics["antiparallel_pair_count"] += 1
-            continue
-        undirected_seen_u.add(pair_u)
-        antiparallel_indices_u.append(int(index))
 
     sigma_per_influence_vertices = float(params.get("sigma_per_influence_vertices", 1.0))
     sigma_per_influence_edges = float(params.get("sigma_per_influence_edges", 0.5))
@@ -427,7 +490,7 @@ def _choose_edges_matlab_style(
         return edge_offset_cache[scale]
 
     chosen_indices: list[int] = []
-    for index in antiparallel_indices_u:
+    for index in filtered_indices:
         start_vertex, end_vertex = (int(value) for value in connections[index])
         current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
         current_source_code = source_code_by_label.get(current_source, 0)
@@ -542,21 +605,97 @@ def _choose_edges_matlab_style(
         index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep
     ]
 
-    result: dict[str, Any] = _empty_edges_result(vertex_positions)
-    result["traces"] = [np.asarray(traces[index], dtype=np.float32) for index in final_indices]
-    result["connections"] = np.asarray(connections[final_indices], dtype=np.int32).reshape(-1, 2)
-    result["energies"] = np.asarray(metrics[final_indices], dtype=np.float32)
-    result["energy_traces"] = [
-        np.asarray(energy_traces[index], dtype=np.float32) for index in final_indices
+    return _build_selected_edges_result(
+        final_indices,
+        traces,
+        connections,
+        metrics,
+        energy_traces,
+        scale_traces,
+        connection_sources,
+        vertex_positions,
+        diagnostics,
+    )
+
+
+def _choose_edges_matlab_v200_cleanup(
+    candidates: dict[str, Any],
+    vertex_positions: np.ndarray,
+    image_shape: tuple[int, int, int],
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Choose final edges using the active MATLAB V200 cleanup chain only."""
+    traces = candidates["traces"]
+    connections = np.asarray(candidates["connections"], dtype=np.int32).reshape(-1, 2)
+    metrics = np.asarray(candidates["metrics"], dtype=np.float32).reshape(-1)
+    energy_traces = candidates["energy_traces"]
+    scale_traces = candidates["scale_traces"]
+    diagnostics = _initialize_edge_selection_diagnostics(candidates, connections, traces)
+
+    if len(traces) == 0:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    filtered_indices = _prepare_candidate_indices_for_cleanup(
+        connections,
+        metrics,
+        energy_traces,
+        diagnostics,
+    )
+    if not filtered_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    connection_sources = _normalize_candidate_connection_sources(
+        candidates.get("connection_sources"),
+        len(connections),
+    )
+
+    filtered_connections = connections[filtered_indices]
+    filtered_metrics = metrics[filtered_indices]
+    keep_degree = _clean_edges_vertex_degree_excess_python(
+        filtered_connections,
+        filtered_metrics,
+        int(params.get("number_of_edges_per_vertex", 4)),
+    )
+    diagnostics["degree_pruned_count"] = int(np.sum(~keep_degree))
+    after_degree_indices = [
+        index for keep, index in zip(keep_degree.tolist(), filtered_indices) if keep
     ]
-    result["scale_traces"] = [
-        np.asarray(scale_traces[index], dtype=np.int16) for index in final_indices
+    if not after_degree_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    keep_orphans = _clean_edges_orphans_python(
+        [traces[index] for index in after_degree_indices],
+        image_shape,
+        vertex_positions,
+    )
+    diagnostics["orphan_pruned_count"] = int(np.sum(~keep_orphans))
+    after_orphan_indices = [
+        index for keep, index in zip(keep_orphans.tolist(), after_degree_indices) if keep
     ]
-    result["connection_sources"] = [
-        connection_sources[index] if index < len(connection_sources) else "unknown"
-        for index in final_indices
+    if not after_orphan_indices:
+        empty = _empty_edges_result(vertex_positions)
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    keep_cycles = _clean_edges_cycles_python(connections[after_orphan_indices])
+    diagnostics["cycle_pruned_count"] = int(np.sum(~keep_cycles))
+    final_indices = [
+        index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep
     ]
-    result["chosen_candidate_indices"] = np.asarray(final_indices, dtype=np.int32)
-    diagnostics["chosen_edge_count"] = len(final_indices)
-    result["diagnostics"] = diagnostics
-    return result
+    return _build_selected_edges_result(
+        final_indices,
+        traces,
+        connections,
+        metrics,
+        energy_traces,
+        scale_traces,
+        connection_sources,
+        vertex_positions,
+        diagnostics,
+    )

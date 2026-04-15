@@ -3,6 +3,7 @@
 import numpy as np
 
 from slavv.parity.metrics import (
+    build_shared_neighborhood_audit,
     compare_edges,
     compare_networks,
     compare_results,
@@ -425,6 +426,77 @@ def test_compare_edges_uses_candidate_audit_source_pair_counts_when_payload_lack
     assert coverage["frontier_candidate_endpoint_pair_count"] == 1
     assert coverage["supplement_candidate_endpoint_pair_count"] == 1
     assert coverage["supplement_candidate_endpoint_pair_samples"] == [(4, 5)]
+
+
+def test_build_shared_neighborhood_audit_reports_first_divergence():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [0, 2]], dtype=np.int32),
+        "traces": [],
+    }
+    python_edges = {
+        "connections": np.array([[0, 1]], dtype=np.int32),
+        "traces": [],
+        "chosen_candidate_indices": np.array([0], dtype=np.int32),
+    }
+    candidate_edges = {
+        "connections": np.array([[0, 1], [0, 4]], dtype=np.int32),
+        "origin_indices": np.array([0, 0], dtype=np.int32),
+        "connection_sources": ["frontier", "frontier"],
+        "traces": [],
+    }
+    candidate_audit = {
+        "schema_version": 1,
+        "vertex_count": 100,
+        "per_origin_summary": [{"origin_index": 0}],
+    }
+    candidate_lifecycle = {
+        "schema_version": 1,
+        "events": [
+            {
+                "seed_origin_index": 0,
+                "terminal_vertex_index": 2,
+                "resolution_reason": "rejected_parent_has_child",
+                "rejection_reason": "rejected_parent_has_child",
+                "parent_child_outcome": "parent_has_child",
+                "bifurcation_choice": None,
+                "survived_candidate_manifest": False,
+                "manifest_candidate_index": None,
+                "chosen_final_edge": False,
+                "terminal_hit_sequence": 1,
+            },
+            {
+                "seed_origin_index": 0,
+                "terminal_vertex_index": 1,
+                "emitted_endpoint_pair": [0, 1],
+                "resolution_reason": "accepted_seed_origin",
+                "rejection_reason": None,
+                "parent_child_outcome": None,
+                "bifurcation_choice": None,
+                "survived_candidate_manifest": True,
+                "manifest_candidate_index": 0,
+                "chosen_final_edge": True,
+                "terminal_hit_sequence": 2,
+            },
+        ],
+    }
+
+    edge_comparison = compare_edges(matlab_edges, python_edges, candidate_edges, candidate_audit)
+    audit = build_shared_neighborhood_audit(
+        matlab_edges,
+        python_edges,
+        candidate_edges,
+        edge_comparison,
+        candidate_audit,
+        candidate_lifecycle,
+    )
+
+    assert audit is not None
+    assert audit["analyzed_origin_indices"][0] == 0
+    assert 64 in audit["analyzed_origin_indices"]
+    assert audit["top_neighborhood"]["origin_index"] == 0
+    assert audit["top_neighborhood"]["first_divergence_stage"] == "pre_manifest_rejection"
+    assert "rejected_parent_has_child" in audit["top_neighborhood"]["first_divergence_reason"]
+    assert audit["top_neighborhood"]["missing_matlab_incident_endpoint_pair_samples"] == [[0, 2]]
 
 
 def test_compare_networks_computes_strand_differences():

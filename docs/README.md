@@ -131,7 +131,6 @@ These are not chapter control docs, but they remain useful evidence.
 
 | File | Purpose |
 | --- | --- |
-| `workspace/reports/stage_isolated_network_parity_2026-04-07.md` | Proof that exact MATLAB `edges` plus Python `network` can converge exactly |
 | `workspace/reports/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the closed parity chapter |
 | `workspace/reports/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
 | `workspace/reports/python_matlab_parity_postfix_2026-03-30.md` | Historical parity checkpoint |

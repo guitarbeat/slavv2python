@@ -13,6 +13,7 @@ from slavv.core.edge_candidates import (
 from slavv.core.edge_primitives import _finalize_traced_edge
 from slavv.core.edge_selection import (
     _choose_edges_matlab_style,
+    _choose_edges_matlab_v200_cleanup,
     _construct_structuring_element_offsets_matlab,
     _offset_coords_matlab,
 )
@@ -325,6 +326,58 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
     assert chosen["diagnostics"]["conflict_rejected_by_source"] == {"watershed": 1}
     assert chosen["diagnostics"]["conflict_blocking_source_counts"] == {"frontier": 1}
     assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
+
+
+def test_parity_cleanup_bypasses_conflict_painting_but_keeps_pair_ordering():
+    vertex_positions = np.array(
+        [[1, 1, 1], [1, 5, 1], [1, 3, 1], [3, 5, 1]],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(4, dtype=np.int16)
+    long_frontier = np.array([[1, 1, 1], [1, 2, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
+    short_frontier = np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
+    overlapping_watershed = np.array(
+        [[1, 3, 1], [1, 4, 1], [1, 5, 1], [2, 5, 1], [3, 5, 1]],
+        dtype=np.float32,
+    )
+    candidates = {
+        "traces": [long_frontier, short_frontier, overlapping_watershed],
+        "connections": np.array([[0, 1], [0, 1], [2, 3]], dtype=np.int32),
+        "metrics": np.array([-5.0, -5.0, -4.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-4.0, -4.0, -4.0, -4.0, -4.0], dtype=np.float32),
+        ],
+        "scale_traces": [
+            np.zeros(4, dtype=np.int16),
+            np.zeros(3, dtype=np.int16),
+            np.zeros(5, dtype=np.int16),
+        ],
+        "origin_indices": np.array([0, 0, 2], dtype=np.int32),
+        "connection_sources": ["frontier", "frontier", "watershed"],
+    }
+
+    chosen_default = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+    chosen_parity = _choose_edges_matlab_v200_cleanup(
+        candidates,
+        vertex_positions,
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+
+    assert chosen_default["connections"].tolist() == [[0, 1]]
+    assert chosen_parity["connections"].tolist() == [[0, 1], [2, 3]]
+    assert np.array_equal(chosen_parity["traces"][0], short_frontier)
+    assert chosen_parity["diagnostics"]["conflict_rejected_count"] == 0
+    assert chosen_parity["diagnostics"]["duplicate_directed_pair_count"] == 1
 
 
 def test_offset_coords_matlab_snaps_out_of_bounds_axes_back_to_center():
@@ -901,19 +954,19 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
     assert payload["connections"] == [[0, 2], [0, 3]]
 
 
-def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
-    energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
-    energy[3, 3, 3] = -9.0
-    energy[3, 4, 3] = -8.0
-    energy[3, 5, 3] = -7.0
-    energy[4, 3, 3] = -6.0
-    energy[5, 3, 3] = -5.0
+def test_frontier_tracer_keeps_new_frontier_after_rejected_terminal(monkeypatch):
+    energy = np.full((11, 11, 11), 1.0, dtype=np.float32)
+    energy[5, 4, 5] = -9.0
+    energy[5, 5, 5] = -8.0
+    energy[5, 6, 5] = -7.0
+    energy[5, 7, 5] = -6.0
+    energy[5, 8, 5] = -5.0
 
     vertex_positions = np.array(
         [
-            [3.0, 3.0, 3.0],
-            [3.0, 5.0, 3.0],
-            [5.0, 3.0, 3.0],
+            [5.0, 4.0, 5.0],
+            [5.0, 6.0, 5.0],
+            [5.0, 8.0, 5.0],
         ],
         dtype=np.float32,
     )
@@ -949,12 +1002,72 @@ def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
         },
     )
 
+    assert resolve_calls["count"] == 2
+    assert payload["connections"] == [[0, 2]]
+
+
+def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
+    energy = np.full((7, 7, 7), 1.0, dtype=np.float32)
+    energy[3, 3, 3] = -9.0
+    energy[3, 4, 3] = -8.0
+    energy[3, 5, 3] = -7.0
+    energy[4, 3, 3] = -6.0
+    energy[5, 3, 3] = -5.0
+
+    vertex_positions = np.array(
+        [
+            [3.0, 3.0, 3.0],
+            [3.0, 5.0, 3.0],
+            [5.0, 3.0, 3.0],
+        ],
+        dtype=np.float32,
+    )
+    vertex_scales = np.zeros(3, dtype=np.int16)
+    center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    resolve_calls = {"count": 0}
+
+    def fake_resolve(*_args, **_kwargs):
+        resolve_calls["count"] += 1
+        if resolve_calls["count"] == 1:
+            return None, None, "rejected_parent_has_child"
+        return 0, 2, "accepted_parent_origin_half"
+
+    monkeypatch.setattr(
+        "slavv.core.edge_candidates._resolve_frontier_edge_connection_details",
+        fake_resolve,
+    )
+
+    payload = _trace_origin_edges_matlab_frontier(
+        energy,
+        np.zeros_like(energy, dtype=np.int16),
+        vertex_positions,
+        vertex_scales,
+        np.array([1.0], dtype=np.float32),
+        np.ones(3, dtype=np.float32),
+        center_image,
+        0,
+        {
+            "number_of_edges_per_vertex": 2,
+            "space_strel_apothem": 1,
+            "max_edge_length_per_origin_radius": 8.0,
+        },
+    )
+
     diagnostics = payload["diagnostics"]
     assert diagnostics["frontier_per_origin_terminal_hits"] == {"0": 2}
     assert diagnostics["frontier_per_origin_terminal_accepts"] == {"0": 1}
     assert diagnostics["frontier_per_origin_terminal_rejections"] == {"0": 1}
     assert diagnostics["frontier_terminal_resolution_counts"]["rejected_parent_has_child"] == 1
-    assert diagnostics["frontier_terminal_resolution_counts"]["accepted_seed_origin"] == 1
+    assert diagnostics["frontier_terminal_resolution_counts"]["accepted_parent_origin_half"] == 1
+    lifecycle_events = payload["frontier_lifecycle_events"]
+    assert len(lifecycle_events) == 2
+    assert lifecycle_events[0]["survived_candidate_manifest"] is False
+    assert lifecycle_events[0]["rejection_reason"] == "rejected_parent_has_child"
+    assert lifecycle_events[0]["parent_child_outcome"] == "parent_has_child"
+    assert lifecycle_events[1]["survived_candidate_manifest"] is True
+    assert lifecycle_events[1]["emitted_endpoint_pair"] == [0, 2]
+    assert lifecycle_events[1]["bifurcation_choice"] == "parent_origin_half"
 
 
 def test_geodesic_salvage_relaxes_origin_cap_for_shared_neighborhood_rejections():

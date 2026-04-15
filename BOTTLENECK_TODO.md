@@ -11,11 +11,14 @@ Use this file when you want to know:
 - which comparison features already exist
 - which workflow improvements are still worth building
 
-Use [docs/chapters/imported-matlab-parity/PARITY_HUB.md](docs/chapters/imported-matlab-parity/PARITY_HUB.md) for the fastest re-entry,
-[docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md) for
-evidence, and
-[docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
-for the remaining edge-generation work.
+Use [docs/chapters/shared-neighborhood-claim-alignment/README.md](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+for the active chapter framing,
+[docs/chapters/shared-candidate-generation/README.md](docs/chapters/shared-candidate-generation/README.md)
+for the Chapter 2 handoff,
+[docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
+for supporting evidence, and
+[docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md](docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+for the Chapter 1 closeout.
 
 ## Rapid Recall
 
@@ -34,8 +37,10 @@ for the remaining edge-generation work.
   - rerun Python from `network`
 - Current best diagnosis:
   - the remaining gap is systematic
-  - the active problem surface is frontier candidate generation and local
-    partner selection
+  - the active problem surface is neighborhood-level claim ordering, branch
+    invalidation, and local partner choice
+  - candidate coverage is still the first triage signal, but counts alone are
+    not enough
   - generic downstream network assembly is no longer the primary suspect
 
 ## Goal And Constraint
@@ -114,12 +119,15 @@ for the remaining edge-generation work.
 ## Implemented Workflow Features
 
 - `--validate-only` output-root preflight
+- `--matlab-health-check` for lightweight MATLAB launch probes after preflight
 - `--minimal-exports` for lighter Python comparison runs
 - `--resume-latest` with provenance and params compatibility checks
 - loop-specific staged-artifact checks for reuse decisions
 - `--comparison-depth shallow|deep`
 - analysis-only standalone comparison with explicit Python result-source choice
 - explicit reuse guidance after successful runs
+- cached output-root preflight and MATLAB-status inspection for repeated reuse
+  loops
 - persisted `99_Metadata` preflight and MATLAB-status reports
 - shared filesystem inventory pass for manifest and size reporting
 - imported-MATLAB reruns from `edges`
@@ -131,10 +139,6 @@ for the remaining edge-generation work.
 
 ## Open Workflow And Tooling Work
 
-- Add a lightweight MATLAB warm-up or health-check command before long live
-  runs.
-- Cache repeated metadata and preflight inspections when the output root and
-  inputs have not changed.
 - Extend `--resume-latest` artifact checks so reuse decisions can distinguish
   more loop-specific surfaces more explicitly.
 - Improve CLI messaging so runs clearly say:
@@ -162,11 +166,13 @@ for the remaining edge-generation work.
 ## Completed Work
 
 - [x] `--validate-only`
+- [x] `--matlab-health-check`
 - [x] `--minimal-exports`
 - [x] `--resume-latest`
 - [x] shallow versus deep comparison control
 - [x] explicit standalone Python result-source selection
 - [x] persisted preflight and MATLAB-status metadata
+- [x] cached preflight and MATLAB-status inspection for repeated reuse loops
 - [x] imported-MATLAB reruns from `edges`
 - [x] stage-isolated imported-MATLAB reruns from `network`
 - [x] reuse guidance after successful runs
@@ -177,18 +183,20 @@ for the remaining edge-generation work.
 
 ## Immediate Next Actions
 
-- [ ] Add a MATLAB warm-up or health-check command.
-- [ ] Add cached metadata and preflight inspection for repeated reuse loops.
 - [ ] Improve CLI summaries for reuse eligibility.
 - [ ] Keep the stage-isolated `network` gate cheap and reliable while edge work
       continues.
-- [ ] Continue using the shared-vertex diagnostics to drive the next
-      `tracing.py` iteration.
+- [ ] Continue using shared-neighborhood diagnostics to drive the next
+      `edge_candidates.py` or `tracing.py` iteration.
+- [ ] Promote a maintained proof artifact or report path for the stage-isolated
+      `network` gate.
 
 ## Related Docs
 
-- [docs/chapters/imported-matlab-parity/PARITY_HUB.md](docs/chapters/imported-matlab-parity/PARITY_HUB.md)
-- [docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md](docs/chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+- [docs/README.md](docs/README.md)
+- [docs/chapters/shared-neighborhood-claim-alignment/README.md](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+- [docs/chapters/shared-candidate-generation/README.md](docs/chapters/shared-candidate-generation/README.md)
+- [docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md](docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 - [docs/reference/COMPARISON_LAYOUT.md](docs/reference/COMPARISON_LAYOUT.md)
-- [workspace/reports/stage_isolated_network_parity_2026-04-07.md](workspace/reports/stage_isolated_network_parity_2026-04-07.md)
+- [workspace/reports/parity_decision_memo_2026-04-08.md](workspace/reports/parity_decision_memo_2026-04-08.md)

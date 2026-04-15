@@ -48,6 +48,24 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
             "scale_traces": [np.array([0, 0], dtype=np.int16)],
             "origin_indices": [origin_index],
             "connection_sources": ["frontier"],
+            "frontier_lifecycle_events": [
+                {
+                    "seed_origin_index": origin_index,
+                    "terminal_vertex_index": 1 - origin_index,
+                    "resolved_origin_index": origin_index,
+                    "resolved_terminal_index": 1 - origin_index,
+                    "emitted_endpoint_pair": [origin_index, 1 - origin_index],
+                    "resolution_reason": "accepted_seed_origin",
+                    "rejection_reason": None,
+                    "parent_child_outcome": None,
+                    "bifurcation_choice": None,
+                    "survived_candidate_manifest": True,
+                    "origin_candidate_local_index": 0,
+                    "manifest_candidate_index": None,
+                    "chosen_final_edge": False,
+                    "terminal_hit_sequence": 1,
+                }
+            ],
             "diagnostics": {
                 "candidate_traced_edge_count": 0,
                 "terminal_edge_count": 0,
@@ -94,7 +112,7 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
         "slavv.core.edges._finalize_matlab_parity_candidates",
         fake_supplement,
     )
-    monkeypatch.setattr("slavv.core.edges._choose_edges_matlab_style", fake_choose)
+    monkeypatch.setattr("slavv.core.edges._choose_edges_matlab_v200_cleanup", fake_choose)
 
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     edges = extract_edges_resumable(energy_data, vertices, params, run_context.stage("edges"))
@@ -109,3 +127,10 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
     )
     assert '"frontier_only_pair_count": 1' in candidate_audit
     assert '"fallback_only_pair_count": 0' in candidate_audit
+    candidate_lifecycle = (
+        run_context.stage("edges")
+        .artifact_path("candidate_lifecycle.json")
+        .read_text(encoding="utf-8")
+    )
+    assert '"frontier_terminal_hit_event_count": 2' in candidate_lifecycle
+    assert '"survived_candidate_manifest": true' in candidate_lifecycle

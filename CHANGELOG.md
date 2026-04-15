@@ -8,10 +8,17 @@ cuts.
 
 ## Unreleased
 
-Recent work landed between 2026-03-21 and 2026-04-10.
+Recent work landed between 2026-03-21 and 2026-04-14.
 
 ### Added
 
+- Lightweight MATLAB health-check support for the parity comparison CLI,
+  including persisted `matlab_health_check.json` metadata under staged run
+  roots.
+- Workflow-assessment reports that classify staged comparison roots as
+  reusable, analysis-ready, blocked, or requiring a fresh MATLAB run.
+- Cached output-root preflight and MATLAB-status inspection for repeated parity
+  reuse loops.
 - Canonical reference docs for energy-method selection and for adding new
   extraction algorithms to the validated CLI/pipeline surface.
 - Release-verification notes for the canonical April 13 MATLAB/Python
@@ -51,6 +58,9 @@ Recent work landed between 2026-03-21 and 2026-04-10.
 
 ### Changed
 
+- Root documentation now points to the active Shared Neighborhood chapter, the
+  maintained docs index, and `BOTTLENECK_TODO.md` as the parity backlog instead
+  of older historical chapter entry points or missing TODO links.
 - The direct Hessian energy path now uses the same lower-memory helper as the
   resumable energy path, keeping those two execution modes aligned.
 - The Python pipeline now writes structured run metadata and checkpoints by
@@ -119,8 +129,15 @@ Recent work landed between 2026-03-21 and 2026-04-10.
 - Commit `11f8445` on 2026-03-24 mostly expands test coverage for the MATLAB
   restart flow; the primary implementation work for restartable MATLAB
   comparison runs landed in `afed6e1` on 2026-03-23.
-- Exact vertex parity established under MATLAB-energy control.
-- Edge and strand parity improved to >95% (1421/1379 edges, 678/682 strands) through Phase 2/3 parity refinements.
+- Exact vertex parity remains established on the imported-MATLAB saved-batch
+  surface.
+- The best retained saved-batch closeout result is `110/110` vertices,
+  `94/93` edges, and `49/54` strands.
+- The stage-isolated MATLAB-edges-to-Python-network gate remains exact on the
+  imported-MATLAB parity surface.
+- The active post-Chapter-2 parity work is now focused on neighborhood-level
+  claim ordering and branch invalidation rather than generic downstream network
+  assembly.
 - Stricter Phase 2 watershed gates (frontier reachability and per-origin caps) implemented in `source/slavv/core/tracing.py`.
 - MATLAB-style best-first frontier tracing tightened around ordering and pruning semantics.
 - Staged comparison layouts and metadata persistence (preflight, MATLAB status) verified across canonical reruns.
