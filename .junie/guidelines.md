@@ -24,12 +24,16 @@ This document provides project-specific guidelines for advanced developers worki
     ```
 
 ### Windows Helper
-Windows developers can use `.\make.ps1` as a shortcut for common tasks:
+There is no checked-in `.\make.ps1` helper in this repository. Use the direct PowerShell commands below instead:
+
 ```powershell
-.\make.ps1 install
-.\make.ps1 format
-.\make.ps1 lint
-.\make.ps1 test
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -e ".[app,dev]"
+pre-commit install
+python -m ruff format source dev/tests
+python -m ruff check source dev/tests --fix
+python -m pytest dev/tests/
 ```
 
 ## Testing Information
@@ -71,8 +75,8 @@ To verify the testing environment and demonstrate the process, you can create a 
 
 ### Code Style & Quality
 The project strictly follows `ruff` for formatting and linting, and `mypy` for type checking.
-- **Format**: `python -m ruff format source tests`
-- **Lint**: `python -m ruff check source tests --fix`
+- **Format**: `python -m ruff format source dev/tests`
+- **Lint**: `python -m ruff check source dev/tests --fix`
 - **Type Checking**: `python -m mypy`
 
 ### Architecture & Best Practices
@@ -83,7 +87,7 @@ The project strictly follows `ruff` for formatting and linting, and `mypy` for t
 - **App Launcher**: Use `slavv-app` or `python -m streamlit run source/slavv/apps/web_app.py` for the UI.
 
 ### Guardrails
-- Keep package code under `source/slavv/` and tests under `tests/`.
+- Keep package code under `source/slavv/` and tests under `dev/tests/`.
 - Do not treat generated outputs under `comparisons/` or `comparison_output*/` as source inputs.
 - Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/`.
 
