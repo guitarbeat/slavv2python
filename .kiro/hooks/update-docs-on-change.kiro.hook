@@ -7,14 +7,15 @@
     "type": "fileEdited",
     "patterns": [
       "source/**/*.py",
-      "tests/**/*.py",
+      "dev/tests/**/*.py",
+      "dev/scripts/**/*.py",
       "pyproject.toml",
-      "*.md",
-      "workspace/scripts/**/*.py"
+      "README.md",
+      "docs/**/*.md"
     ]
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A source file or configuration has been modified. Review the changes and update the relevant documentation in README.md or the docs/ folder to reflect any new features, API changes, or workflow updates. Focus on user-facing changes and maintain consistency with existing documentation style."
+    "prompt": "A source file or configuration has been modified. Review the changes and update the relevant documentation in README.md or the docs/ folder to reflect any new features, API changes, or workflow updates. Do not edit documentation files that would re-trigger this hook unless the hook engine supports an explicit exclusion or debounce. Focus on user-facing changes and maintain consistency with existing documentation style."
   }
 }
