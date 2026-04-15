@@ -81,7 +81,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 1. [BOTTLENECK_TODO.md](../../../BOTTLENECK_TODO.md)
    Current workflow surface, what is implemented, and what the next iteration
    should optimize.
-2. [parity_decision_memo_2026-04-08.md](../../../dev/reports/parity_decision_memo_2026-04-08.md)
+2. [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md)
    Current short decision memo for the April 8 code-and-artifact audit.
 3. [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
    Current parity plan focused on the remaining edge-generation gap.
@@ -93,7 +93,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 | Question | Best file |
 | --- | --- |
 | What is true right now, quickly? | [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md) |
-| What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](../../../dev/reports/parity_decision_memo_2026-04-08.md) |
+| What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md) |
 | What evidence supports the current diagnosis? | [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) |
 | What should I run next? | [BOTTLENECK_TODO.md](../../../BOTTLENECK_TODO.md) |
 | What is the current edge-specific plan? | [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md) |

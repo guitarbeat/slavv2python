@@ -18,7 +18,7 @@ Use this file when you want to know:
 - what acceptance looks like for edge convergence
 
 Use [PARITY_HUB.md](PARITY_HUB.md) for quick re-entry,
-[parity_decision_memo_2026-04-08.md](../../../dev/reports/parity_decision_memo_2026-04-08.md)
+[parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md)
 for the current implementation decision, and
 [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) for the longer
 evidence behind this plan.
@@ -81,7 +81,7 @@ Current evidence, consolidated:
 
 Detailed metrics and experiment history live in:
 
-- [parity_decision_memo_2026-04-08.md](../../../dev/reports/parity_decision_memo_2026-04-08.md)
+- [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md)
 - [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
 - [stage_isolated_network_parity_2026-04-07.md](../../../dev/reports/stage_isolated_network_parity_2026-04-07.md)
 
@@ -203,7 +203,7 @@ Run the cheaper checks first:
 ## Related Docs
 
 - [PARITY_HUB.md](PARITY_HUB.md)
-- [parity_decision_memo_2026-04-08.md](../../../dev/reports/parity_decision_memo_2026-04-08.md)
+- [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md)
 - [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
 - [dev/reports/stage_isolated_network_parity_2026-04-07.md](../../../dev/reports/stage_isolated_network_parity_2026-04-07.md)

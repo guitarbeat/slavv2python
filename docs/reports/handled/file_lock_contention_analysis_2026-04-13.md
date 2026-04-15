@@ -37,7 +37,7 @@ analysis into one operator-focused runbook.
 - Why: This document records a resolved operations incident with a stable
   recovery path and prevention checklist.
 - Open algorithmic parity work is tracked separately in
-  `dev/reports/unhandled/` and is not reopened by this report.
+  `docs/reports/unhandled/` and is not reopened by this report.
 
 ## Current Status
 

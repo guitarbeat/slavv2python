@@ -15,8 +15,8 @@ Repository guidance for coding agents working in `slavv2python`.
 - `dev/tests/`: unit, integration, UI, and diagnostic coverage
 - `dev/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
 - `dev/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
-- `dev/reports/`: archived tooling snapshots and other non-source reference artifacts
-- `docs/`: maintained reference docs for MATLAB mapping, parity notes, and comparison run layout
+- `dev/reports/`: legacy redirect location (reports are maintained under `docs/reports/`)
+- `docs/`: maintained reference docs for MATLAB mapping, parity notes, report catalogs, and comparison run layout
 - `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
 
 ## Read First When Relevant

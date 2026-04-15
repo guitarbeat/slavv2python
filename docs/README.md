@@ -4,10 +4,12 @@ This directory now stays intentionally small at the top level:
 
 - `README.md`
 - `chapters/`
+- `reports/`
 - `reference/`
 
 Chapter-specific history lives under `chapters/`, and cross-chapter reference
-material lives under `reference/`.
+material lives under `reference/`. Report catalogs and operational/parity
+report artifacts live under `reports/`.
 
 ## Start Here
 
@@ -125,14 +127,16 @@ project metadata:
 | `BOTTLENECK_TODO.md` | Active parity backlog and investigation log; not the canonical workflow guide |
 | `AGENTS.md` | Repository instructions for coding agents and the canonical developer-command reference |
 
-## High-Value Reports Outside `docs/`
+## Reports Catalog
 
-These are not chapter control docs, but they remain useful evidence.
+Reports now live under `docs/reports/`.
 
 | File | Purpose |
 | --- | --- |
-| `dev/reports/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the closed parity chapter |
-| `dev/reports/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
-| `dev/reports/python_matlab_parity_postfix_2026-03-30.md` | Historical parity checkpoint |
-| `dev/reports/python_standalone_consistency_postfix_2026-03-30.md` | Python repeatability context |
+| `reports/README.md` | Report index, handled/unhandled status table, and triage read order |
+| `reports/handled/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the parity diagnosis set |
+| `reports/handled/matlab_python_code_audit_2026-04-08.md` | Technical appendix for cleanup-path and candidate-coverage evidence |
+| `reports/handled/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
+| `reports/handled/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
+| `reports/handled/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |
 
