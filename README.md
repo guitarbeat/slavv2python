@@ -128,6 +128,9 @@ python workspace/scripts/cli/compare_matlab_python.py `
   --resume-latest `
   --python-parity-rerun-from network `
   --comparison-depth deep
+
+# Display latest proof artifact summary
+slavv parity-proof --run-dir path\to\comparison_output
 ```
 
 Notes:
@@ -136,6 +139,14 @@ Notes:
   for output-root and launch sanity checks.
 - `--resume-latest` reuses the newest compatible staged run root rather than
   always creating a fresh timestamped directory.
+- After each comparison run, the CLI displays a reuse eligibility summary with
+  safe rerun commands and recommended next actions.
+- The stage-isolated network gate validates parity in under 30 seconds by
+  importing exact MATLAB edges and rerunning only Python network assembly.
+- When edge parity gaps are detected, the workflow recommends running
+  shared-neighborhood diagnostics for evidence-based insights.
+- Successful network gate runs generate proof artifacts that document exact
+  parity achievement with full provenance tracking.
 - For the active investigation framing, start with
   [docs/README.md](docs/README.md) and
   [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md).

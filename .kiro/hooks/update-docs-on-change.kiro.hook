@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Update Docs on Source Change",
+  "description": "Monitors Python source files and configuration files for changes and prompts the agent to update relevant documentation in README.md or the docs/ folder",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "source/**/*.py",
+      "tests/**/*.py",
+      "pyproject.toml",
+      "*.md",
+      "workspace/scripts/**/*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file or configuration has been modified. Review the changes and update the relevant documentation in README.md or the docs/ folder to reflect any new features, API changes, or workflow updates. Focus on user-facing changes and maintain consistency with existing documentation style."
+  }
+}

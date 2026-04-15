@@ -12,6 +12,13 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 
 ### Added
 
+- **Parity Workflow Completion** (Planned):
+  - CLI reuse eligibility summaries that display safe rerun commands, missing artifacts, and recommended next actions after each comparison run.
+  - Stage-isolated network gate reliability enhancements with fast-fail validation, timing measurement (<30s target), and execution metadata persistence.
+  - Shared-neighborhood diagnostic integration that generates actionable reports identifying claim ordering differences, branch invalidation differences, and partner choice divergences between MATLAB and Python.
+  - Proof artifact promotion system that maintains evidence of exact network parity achievement, including full provenance tracking, input/output fingerprints, and a maintained proof artifact index.
+  - New CLI command `slavv parity-proof --run-dir <path>` to display latest proof artifact summaries.
+  - Enhanced staged layout with new artifacts under `03_Analysis/` (diagnostics, proof artifacts) and `99_Metadata/` (loop assessment, network gate validation/execution).
 - Lightweight MATLAB health-check support for the parity comparison CLI,
   including persisted `matlab_health_check.json` metadata under staged run
   roots.
