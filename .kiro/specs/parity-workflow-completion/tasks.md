@@ -2,327 +2,234 @@
 
 ## Overview
 
-This implementation follows a 4-phase migration path that builds on existing workflow assessment infrastructure to deliver CLI reuse eligibility summaries, stage-isolated network gate reliability, shared-neighborhood diagnostic integration, and proof artifact promotion. Each phase delivers incremental value while maintaining backward compatibility with existing parity workflow tooling.
+This spec now focuses on the last two unfinished backlog items from
+`BOTTLENECK_TODO.md`:
+
+1. Continue using shared-neighborhood diagnostics to drive the next
+   `edge_candidates.py` or `tracing.py` iteration.
+2. Promote a maintained proof artifact or report path for the stage-isolated
+   `network` gate.
+
+CLI reuse summaries and the stage-isolated `network` gate already exist in the
+repo and are treated here as baseline dependencies. The remaining work is to
+wire evidence-producing diagnostics into the current comparison flow and to
+persist a durable proof surface for successful `network`-gate runs.
+
+## Baseline Already In Place
+
+- [x] Reuse-eligibility summaries are implemented in
+      `source/slavv/parity/cli_summaries.py` and surfaced from the parity CLI.
+- [x] Stage-isolated `network` gate validation and execution are implemented in
+      `source/slavv/parity/network_gate.py`.
+- [x] Comparison-mode reruns already force `comparison_exact_network=True` and
+      persist network-gate execution metadata under `99_Metadata/`.
+- [x] The staged run-root layout and replay-safe normalized params are already
+      persisted and should remain the source of truth for new artifacts.
+- [x] `workspace/reports/tooling/README.md` classifies the March 23, 2026
+      Ruff, mypy, and pytest outputs as archival snapshots rather than live
+      repo status.
 
 ## Tasks
 
-### Phase 1: CLI Reuse Eligibility Summaries
+### Phase 1: Shared-Neighborhood Diagnostic Integration
 
-- [ ] 1. Extend workflow assessment data model
-  - [x] 1.1 Add new fields to LoopAssessmentReport dataclass
-    - Add `reuse_commands`, `missing_artifacts`, `artifact_explanations`, and `next_action_commands` fields with default factories
-    - Ensure backward compatibility with existing LoopAssessmentReport usage
-    - _Requirements: 1.2, 1.3, 1.4, 1.6, 1.7_
-
-  - [ ]* 1.2 Write unit tests for enhanced LoopAssessmentReport
-    - Test dataclass instantiation with new fields
-    - Test default factory behavior
-    - Test serialization/deserialization if applicable
-    - _Requirements: 1.2, 1.3, 1.4_
-
-- [ ] 2. Implement CLI summary formatting module
-  - [x] 2.1 Create source/slavv/parity/cli_summaries.py module
-    - Implement `format_reuse_eligibility_summary()` function
-    - Implement `generate_reuse_commands()` function
-    - Implement missing artifact explanation formatting
-    - Implement next action command generation
-    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
-
-  - [ ]* 2.2 Write unit tests for CLI summary formatting
-    - Test summary formatting with various loop assessment states
-    - Test command generation for analysis-only comparison
-    - Test command generation for imported-MATLAB edge rerun
-    - Test command generation for stage-isolated network gate
-    - Test missing artifact explanation formatting
-    - Test next action recommendation generation
-    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8_
-
-- [ ] 3. Integrate CLI summaries into parity CLI
-  - [x] 3.1 Modify source/slavv/apps/parity_cli.py to display summaries
-    - Add summary display after successful comparison run
-    - Add summary display after --validate-only run
-    - Add summary display after --resume-latest compatibility check
-    - _Requirements: 1.1, 1.5, 1.7, 1.8_
-
-  - [ ]* 3.2 Write integration tests for CLI summary display
-    - Test complete flow from loop assessment to CLI summary display
-    - Test reuse command generation with actual run root
-    - Test missing artifact detection with partial run state
-    - Test next action recommendation with various workflow states
-    - _Requirements: 1.1, 1.5, 1.7, 1.8_
-
-- [x] 4. Phase 1 Checkpoint
-  - Ensure all Phase 1 tests pass
-  - Verify CLI summaries display correctly for various workflow states
-  - Ask the user if questions arise
-
-### Phase 2: Stage-Isolated Network Gate Reliability
-
-- [ ] 5. Implement network gate validation module
-  - [x] 5.1 Create source/slavv/parity/network_gate.py module
-    - Implement `NetworkGateValidation` dataclass
-    - Implement `validate_network_gate_artifacts()` function
-    - Implement artifact fingerprint generation using hashlib
-    - Implement fast-fail validation with specific error messages
-    - _Requirements: 2.2, 2.3, 2.8_
-
-  - [ ]* 5.2 Write unit tests for network gate validation
-    - Test validation with complete artifacts
-    - Test validation failure with missing MATLAB edges
-    - Test validation failure with missing MATLAB vertices
-    - Test validation failure with missing MATLAB energy
-    - Test fingerprint generation for artifacts
-    - Test validation error message formatting
-    - _Requirements: 2.2, 2.3, 2.8_
-
-- [ ] 6. Implement network gate execution logic
-  - [x] 6.1 Add network gate executor to source/slavv/parity/network_gate.py
-    - Implement `NetworkGateExecution` dataclass
-    - Implement `execute_stage_isolated_network_gate()` function
-    - Add timing measurement for execution phases
-    - Force comparison_exact_network=True mode
-    - Import MATLAB edges/vertices/energy artifacts
-    - Rerun Python from network stage
-    - Compare results and record parity status
-    - Persist execution metadata to 99_Metadata/network_gate_execution.json
-    - _Requirements: 2.1, 2.4, 2.5, 2.6, 2.7, 2.8_
-
-  - [ ]* 6.2 Write unit tests for network gate execution components
-    - Test NetworkGateExecution dataclass
-    - Test timing measurement logic
-    - Test parity status recording
-    - Test execution metadata serialization
-    - _Requirements: 2.1, 2.5, 2.6_
-
-- [ ] 7. Integrate network gate into comparison workflow
-  - [ ] 7.1 Modify source/slavv/parity/comparison.py for network gate integration
-    - Add validation call before network gate execution
-    - Add network gate execution for --python-parity-rerun-from network
-    - Add parity status reporting to CLI output
-    - _Requirements: 2.2, 2.3, 2.5, 2.7_
-
-  - [ ]* 7.2 Write integration tests for network gate flow
-    - Test complete network gate execution with imported MATLAB artifacts
-    - Test fast-fail validation with missing artifacts
-    - Test timing measurement and 30s performance target
-    - Test parity status reporting
-    - Test execution metadata persistence
-    - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
-
-- [ ] 8. Add network gate performance validation
-  - [ ]* 8.1 Write diagnostic tests for network gate performance
-    - Test network gate completes in <30s for standard test volume
-    - Test validation overhead is <1s
-    - Test execution remains isolated from edge candidate changes
-    - _Requirements: 2.1, 2.7_
-
-- [ ] 9. Phase 2 Checkpoint
-  - Ensure all Phase 2 tests pass
-  - Verify network gate executes reliably and meets performance targets
-  - Ask the user if questions arise
-
-### Phase 3: Shared-Neighborhood Diagnostic Integration
-
-- [ ] 10. Implement diagnostic data models
-  - [ ] 10.1 Create source/slavv/parity/diagnostics.py module
-    - Implement `NeighborhoodDivergence` dataclass
-    - Implement `SharedNeighborhoodDiagnosticReport` dataclass
-    - Add divergence type classification (claim_ordering, branch_invalidation, partner_choice)
-    - Add severity classification (high, medium, low)
-    - _Requirements: 3.2, 3.3, 3.4, 3.5_
-
-  - [ ]* 10.2 Write unit tests for diagnostic data models
-    - Test NeighborhoodDivergence dataclass
-    - Test SharedNeighborhoodDiagnosticReport dataclass
-    - Test divergence type classification
-    - Test severity classification
-    - _Requirements: 3.2, 3.3, 3.4, 3.5_
-
-- [ ] 11. Implement diagnostic report generation
-  - [ ] 11.1 Add diagnostic generator to source/slavv/parity/diagnostics.py
-    - Implement `generate_shared_neighborhood_diagnostics()` function
-    - Implement neighborhood-level claim ordering comparison
-    - Implement branch invalidation difference detection
-    - Implement partner choice divergence detection
-    - Implement candidate coverage delta calculation
-    - Generate actionable recommendations from divergence patterns
-    - Identify specific edge_candidates.py and tracing.py code to review
+- [ ] 1. Define diagnostic report models and persistence contract
+  - [ ] 1.1 Create `source/slavv/parity/diagnostics.py`
+    - Implement `NeighborhoodDivergence` dataclass for a single divergent
+      neighborhood.
+    - Implement `SharedNeighborhoodDiagnosticReport` dataclass for the complete
+      report.
+    - Include divergence categories aligned with the active backlog diagnosis:
+      `claim_ordering`, `branch_invalidation`, and `partner_choice`.
+    - Include severity classification, candidate-coverage deltas, and
+      actionable recommendation fields.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.9_
 
-  - [ ]* 11.2 Write unit tests for diagnostic generation
-    - Test neighborhood divergence detection logic
-    - Test claim ordering comparison
-    - Test branch invalidation detection
-    - Test partner choice divergence detection
-    - Test candidate coverage delta calculation
-    - Test recommendation generation from divergence patterns
-    - Test diagnostic report serialization
+  - [ ]* 1.2 Add unit tests for diagnostic models
+    - Verify dataclass defaults and serialization-friendly structure.
+    - Verify divergence-category and severity handling.
+    - _Requirements: 3.2, 3.3, 3.4, 3.5_
+
+- [ ] 2. Implement shared-neighborhood report generation
+  - [ ] 2.1 Add `generate_shared_neighborhood_diagnostics()`
+    - Load the existing MATLAB and Python edge/candidate artifacts from the
+      staged run root.
+    - Compare neighborhood-level claim ordering, branch invalidation behavior,
+      and local partner choice.
+    - Quantify candidate-coverage deltas so counts remain a first triage
+      signal without becoming the only signal.
+    - Produce recommendation text that points investigators at likely
+      `source/slavv/core/edge_candidates.py` and
+      `source/slavv/core/tracing.py` surfaces.
     - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.9_
 
-- [ ] 12. Implement diagnostic persistence and CLI integration
-  - [ ] 12.1 Add diagnostic persistence to source/slavv/parity/diagnostics.py
-    - Persist diagnostic reports to 03_Analysis/shared_neighborhood_diagnostics.json
-    - Generate human-readable markdown report at 03_Analysis/shared_neighborhood_diagnostics.md
-    - Implement `recommend_diagnostics_if_needed()` function
+  - [ ]* 2.2 Add unit tests for diagnostic generation
+    - Cover claim-ordering, branch-invalidation, and partner-choice detection.
+    - Cover candidate-coverage delta calculation.
+    - Cover recommendation generation from representative divergence patterns.
+    - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.9_
+
+- [ ] 3. Persist diagnostics and surface them in the current workflow
+  - [ ] 3.1 Persist canonical report artifacts
+    - Write JSON to
+      `03_Analysis/shared_neighborhood_diagnostics.json`.
+    - Write a human-readable markdown companion to
+      `03_Analysis/shared_neighborhood_diagnostics.md`.
+    - Keep filenames stable so downstream docs and investigators can reference
+      them consistently.
+    - _Requirements: 3.7, 3.8_
+
+  - [ ] 3.2 Integrate diagnostic recommendation and summary into
+          `source/slavv/parity/comparison.py`
+    - Recommend diagnostics when edge parity fails and the current workflow
+      state makes the shared-neighborhood report actionable.
+    - Prefer the recommendation when the stage-isolated `network` gate
+      succeeds, because that isolates the remaining gap to `edges`.
+    - Print a compact CLI summary of the top divergence patterns when a report
+      already exists for the run root.
     - _Requirements: 3.1, 3.7, 3.8, 3.9_
 
-  - [ ] 12.2 Integrate diagnostics into comparison workflow
-    - Add diagnostic recommendation after edge parity gap detection
-    - Display diagnostic command when edges parity fails but network parity succeeds
-    - Display diagnostic summary when reports are available
-    - _Requirements: 3.1, 3.7_
-
-  - [ ]* 12.3 Write integration tests for diagnostic integration
-    - Test diagnostic recommendation after parity gap detection
-    - Test diagnostic report generation with real edge artifacts
-    - Test diagnostic report persistence to 03_Analysis/
-    - Test CLI diagnostic summary display
+  - [ ]* 3.3 Add integration tests for diagnostic workflow behavior
+    - Verify recommendation text after an edge parity gap.
+    - Verify report persistence into `03_Analysis/`.
+    - Verify CLI summary rendering from an existing report.
     - _Requirements: 3.1, 3.7, 3.8_
 
-- [ ] 13. Phase 3 Checkpoint
-  - Ensure all Phase 3 tests pass
-  - Verify diagnostic reports generate actionable insights
-  - Ask the user if questions arise
+- [ ] 4. Phase 1 checkpoint
+  - Confirm diagnostics produce actionable, neighborhood-level evidence rather
+    than only downstream noise.
+  - Confirm the report points investigators at concrete next code surfaces.
+  - Ask the user if questions arise.
 
-### Phase 4: Proof Artifact Promotion
+### Phase 2: Maintained Network-Gate Proof Artifacts
 
-- [ ] 14. Implement proof artifact data models
-  - [ ] 14.1 Create source/slavv/parity/proof_artifacts.py module
-    - Implement `StageIsolatedNetworkProof` dataclass
-    - Implement `ProofArtifactIndex` dataclass
-    - Add provenance tracking fields (MATLAB batch, timestamps)
-    - Add fingerprint fields for inputs and outputs
-    - Add execution metadata fields (timing, resources)
-    - Add parity status fields (vertices, edges, strands)
+- [ ] 5. Define proof artifact models around existing network-gate metadata
+  - [ ] 5.1 Create `source/slavv/parity/proof_artifacts.py`
+    - Implement `StageIsolatedNetworkProof` dataclass.
+    - Implement `ProofArtifactIndex` dataclass.
+    - Model provenance from the staged MATLAB batch plus fingerprints from the
+      existing network-gate execution flow.
+    - Record exact parity status for vertices, edges, and strands.
+    - Keep resource usage optional so the proof format is portable on Windows.
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.8, 4.9_
+
+  - [ ]* 5.2 Add unit tests for proof models
+    - Verify serialization-friendly structure and optional resource fields.
+    - Verify parity-status and provenance fields.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-  - [ ]* 14.2 Write unit tests for proof artifact data models
-    - Test StageIsolatedNetworkProof dataclass
-    - Test ProofArtifactIndex dataclass
-    - Test serialization/deserialization
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
-
-- [ ] 15. Implement proof artifact generation
-  - [ ] 15.1 Add proof generator to source/slavv/parity/proof_artifacts.py
-    - Implement `generate_proof_artifact()` function
-    - Capture complete provenance chain from network gate execution
-    - Generate input/output fingerprints using hashlib
-    - Capture execution timing and resource usage
-    - Record exact parity status for vertices, edges, and strands
-    - Persist proof as JSON to 03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json
-    - Generate human-readable markdown to 03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.md
+- [ ] 6. Generate proof artifacts from successful `network`-gate runs
+  - [ ] 6.1 Implement `generate_proof_artifact()`
+    - Consume the persisted `network_gate_execution.json` data and the current
+      run layout instead of duplicating gate logic.
+    - Persist a canonical JSON proof artifact under
+      `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json`.
+    - Persist a matching markdown proof artifact under
+      `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.md`.
+    - Include provenance, input/output fingerprints, exact parity status, and
+      elapsed timing.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.11_
 
-  - [ ]* 15.2 Write unit tests for proof artifact generation
-    - Test proof artifact generation from execution metadata
-    - Test provenance chain capture
-    - Test fingerprint generation
-    - Test timing and resource capture
-    - Test parity status recording
-    - Test JSON and markdown formatting
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.11_
-
-- [ ] 16. Implement proof artifact index maintenance
-  - [ ] 16.1 Add index manager to source/slavv/parity/proof_artifacts.py
-    - Implement `maintain_proof_artifact_index()` function
-    - Maintain chronological list of all proof artifacts
-    - Track latest proof reference
-    - Track total proof count
-    - Persist index to 03_Analysis/proof_artifact_index.json
-    - Implement index rebuild from existing artifacts on corruption
+  - [ ] 6.2 Implement `maintain_proof_artifact_index()`
+    - Persist `03_Analysis/proof_artifact_index.json`.
+    - Track all successful proofs chronologically plus the latest proof
+      reference.
+    - Rebuild the index from existing proof artifacts if the index is missing
+      or corrupt.
     - _Requirements: 4.8, 4.9_
 
-  - [ ]* 16.2 Write unit tests for proof artifact index
-    - Test proof artifact index maintenance
-    - Test index update with new proof
-    - Test latest proof tracking
-    - Test index rebuild from existing artifacts
-    - _Requirements: 4.8, 4.9_
+  - [ ]* 6.3 Add unit tests for proof generation and indexing
+    - Verify proof generation from network-gate execution metadata.
+    - Verify index updates and rebuild behavior.
+    - _Requirements: 4.1, 4.7, 4.8, 4.9, 4.11_
 
-- [ ] 17. Implement proof artifact CLI commands
-  - [ ] 17.1 Add proof display to source/slavv/parity/proof_artifacts.py
-    - Implement `display_latest_proof_summary()` function
-    - Display proof timestamp
-    - Display parity status (vertices/edges/strands)
-    - Display execution timing
-    - Display MATLAB batch provenance
-    - _Requirements: 4.10_
-
-  - [ ] 17.2 Add CLI command for proof artifact display
-    - Add `slavv parity-proof --run-dir <path>` command to parity CLI
-    - Display latest proof summary
-    - List all proof artifacts with timestamps
-    - _Requirements: 4.10_
-
-  - [ ]* 17.3 Write integration tests for proof artifact workflow
-    - Test proof artifact generation after successful network gate
-    - Test proof artifact index update
-    - Test proof artifact display command
-    - Test proof artifact persistence in both JSON and Markdown
-    - _Requirements: 4.1, 4.7, 4.8, 4.10, 4.11_
-
-- [ ] 18. Integrate proof artifacts into network gate workflow
-  - [ ] 18.1 Modify source/slavv/parity/network_gate.py for proof generation
-    - Add automatic proof artifact generation after successful network gate execution
-    - Add proof artifact index update
-    - Add proof summary display to CLI output
+- [ ] 7. Integrate proof generation into the existing `network`-gate workflow
+  - [ ] 7.1 Update `source/slavv/parity/network_gate.py`
+    - Generate proof artifacts only after successful stage-isolated
+      `network`-gate execution.
+    - Skip proof generation when the gate fails or does not achieve the proof
+      preconditions.
+    - Surface a compact proof summary back to the CLI output.
     - _Requirements: 4.1, 4.7, 4.8_
 
-  - [ ]* 18.2 Write integration tests for proof artifact integration
-    - Test automatic proof generation after network gate success
-    - Test proof not generated on network gate failure
-    - Test proof index maintenance across multiple runs
-    - _Requirements: 4.1, 4.8_
+  - [ ] 7.2 Add CLI proof display support
+    - Implement `display_latest_proof_summary()` in
+      `source/slavv/parity/proof_artifacts.py`.
+    - Add `slavv parity-proof --run-dir <path>` to
+      `source/slavv/apps/parity_cli.py`.
+    - Display the latest proof summary and list known proof artifacts with
+      timestamps.
+    - _Requirements: 4.10_
 
-- [ ] 19. Phase 4 Checkpoint
-  - Ensure all Phase 4 tests pass
-  - Verify proof artifacts persist correctly and display properly
-  - Ask the user if questions arise
+  - [ ]* 7.3 Add integration tests for proof workflow behavior
+    - Verify proof generation after successful `network`-gate runs.
+    - Verify proof suppression on failed gate runs.
+    - Verify CLI proof display against persisted artifacts.
+    - _Requirements: 4.1, 4.7, 4.8, 4.10, 4.11_
+
+- [ ] 8. Phase 2 checkpoint
+  - Confirm a maintained proof path exists under `03_Analysis/`.
+  - Confirm repeated successful gate runs update the proof index cleanly.
+  - Ask the user if questions arise.
 
 ### End-to-End Validation
 
-- [ ] 20. End-to-end workflow validation
-  - [ ]* 20.1 Write diagnostic test for complete workflow
-    - Test complete workflow from fresh run to reuse eligibility summary
-    - Test stage-isolated network gate with imported MATLAB batch
-    - Test diagnostic generation after edge parity gap
-    - Test proof artifact generation after network parity success
-    - Verify all artifacts persist to correct locations (01_Input/, 02_Output/, 03_Analysis/, 99_Metadata/)
-    - Verify CLI summaries display correctly at each stage
-    - _Requirements: 1.1, 2.5, 3.1, 4.1_
+- [ ] 9. Validate the remaining parity workflow end to end
+  - [ ]* 9.1 Add a diagnostic workflow test
+    - Start from a run root that exhibits an `edges` parity gap.
+    - Verify diagnostic recommendation, report generation, and report
+      persistence.
+    - Verify the stage-isolated `network` gate can still produce a proof
+      artifact when exact MATLAB edges are imported.
+    - _Requirements: 3.1, 4.1_
 
-- [ ] 21. Final integration and documentation
-  - [ ] 21.1 Verify all modules integrate correctly
-    - Verify CLI summaries work with all workflow states
-    - Verify network gate integrates with comparison workflow
-    - Verify diagnostics integrate with parity gap detection
-    - Verify proof artifacts integrate with network gate success
-    - _Requirements: 1.1, 2.5, 3.1, 4.1_
+  - [ ] 9.2 Run final verification for the narrowed scope
+    - Run the relevant unit/integration tests for diagnostics and proof
+      artifacts.
+    - Run `python -m pytest -m "unit or integration"` if the change crosses
+      module boundaries.
+    - Run `python -m ruff format source tests`, `python -m ruff check source tests --fix`,
+      and `python -m mypy`.
+    - Verify staged artifact persistence stays within `03_Analysis/` and
+      `99_Metadata/` conventions.
+    - _Requirements: 3.1, 4.1_
 
-  - [ ] 21.2 Run full test suite
-    - Run `python -m pytest -m "unit or integration"` for all new tests
-    - Run diagnostic tests for end-to-end validation
-    - Verify performance targets met (network gate <30s, diagnostics <10s, proof <2s)
-    - _Requirements: 2.1_
+- [ ] 10. Reconcile archived tooling context for touched scope
+  - [ ] 10.1 Review `workspace/reports/tooling/`
+    - Treat the archived Ruff, mypy, and pytest outputs as historical context,
+      not as current pass/fail gates.
+    - Note any overlap between touched files and archived findings before
+      implementation is treated as complete.
+    - _Requirements: 5.1, 5.3_
 
-  - [ ] 21.3 Format and lint all new code
-    - Run `python -m ruff format source tests`
-    - Run `python -m ruff check source tests --fix`
-    - Run `python -m mypy` to verify type checking
-    - _Requirements: All_
+  - [ ] 10.2 Verify touched modules do not widen historical tooling debt
+    - Confirm new diagnostics/proof files are Ruff- and mypy-clean.
+    - Confirm touched integration points do not introduce new pytest collection
+      issues.
+    - Narrow historical issues opportunistically only where the implementation
+      already touches the file.
+    - _Requirements: 5.2, 5.3, 5.4_
 
-- [ ] 22. Final Checkpoint
-  - Ensure all tests pass
-  - Verify all four workflow improvements are complete and functional
-  - Ask the user if questions arise
+- [ ] 11. Final checkpoint
+  - Ensure the last two backlog items from `BOTTLENECK_TODO.md` are covered by
+    implemented code, persisted artifacts, and regression tests.
+  - Verify the spec no longer treats already-landed CLI summary and
+    `network`-gate foundations as unfinished primary work.
+  - Verify the archived tooling snapshots were accounted for without expanding
+    the scope into a repo-wide cleanup project.
+  - Ask the user if questions arise.
 
 ## Notes
 
-- Tasks marked with `*` are optional testing tasks and can be skipped for faster MVP
-- Each task references specific requirements for traceability
-- Checkpoints ensure incremental validation at phase boundaries
-- The phased approach allows each workflow improvement to be developed and tested independently
-- All new modules follow existing repository conventions (pathlib.Path, logging, from __future__ import annotations)
-- All artifacts persist to canonical staged layout locations (01_Input/, 02_Output/, 03_Analysis/, 99_Metadata/)
-- Performance targets: network gate <30s, diagnostics <10s, proof artifacts <2s
-- Backward compatibility maintained throughout all phases
+- Tasks marked with `*` are optional testing tasks and can be skipped for a
+  narrower MVP, but the comparison and proof integrations should still receive
+  at least one integration-level verification pass before the work is treated
+  as complete.
+- The active parity diagnosis still lives at the `edges` stage. These tasks are
+  intended to improve evidence and iteration speed, not to replace the actual
+  `edge_candidates.py` / `tracing.py` convergence work.
+- All new artifacts must preserve the canonical staged layout:
+  `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`.
+- New modules should follow existing repository conventions:
+  `from __future__ import annotations`, `pathlib.Path`, explicit encodings, and
+  `logging` instead of `print()` in library code.

@@ -174,13 +174,9 @@ print(f"Edges: {len(results['edges']['traces'])}")
 
 ### Helper Scripts
 
-- `.\make.ps1`: Windows PowerShell helper for common tasks.
-  - `.\make.ps1 install`: Install the full contributor toolchain with `.[app,dev]`.
-  - `.\make.ps1 format`: Format code using Ruff.
-  - `.\make.ps1 lint`: Run non-mutating Ruff lint checks.
-  - `.\make.ps1 typecheck`: Run MyPy.
-  - `.\make.ps1 test`: Run all tests.
-- `Makefile`: POSIX-style helper for Unix systems.
+Use the direct `python -m ...` and `pip ...` commands in this README and
+[AGENTS.md](AGENTS.md). There are no repo-local wrapper scripts for formatting,
+linting, type checking, or tests.
 
 ### Maintenance and Utility Scripts
 

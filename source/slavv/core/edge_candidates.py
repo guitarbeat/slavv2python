@@ -1652,11 +1652,12 @@ def _build_frontier_candidate_lifecycle(
         event = dict(raw_event)
         seed_origin_index = int(event.get("seed_origin_index", -1))
         manifest_candidate_index_raw = event.get("manifest_candidate_index")
-        manifest_candidate_index = (
-            int(manifest_candidate_index_raw)
-            if manifest_candidate_index_raw not in (None, "")
-            else None
-        )
+        if isinstance(manifest_candidate_index_raw, (int, np.integer)):
+            manifest_candidate_index: int | None = int(manifest_candidate_index_raw)
+        elif isinstance(manifest_candidate_index_raw, str) and manifest_candidate_index_raw != "":
+            manifest_candidate_index = int(manifest_candidate_index_raw)
+        else:
+            manifest_candidate_index = None
         chosen_final_edge = (
             manifest_candidate_index is not None and manifest_candidate_index in chosen_indices
         )

@@ -2,822 +2,451 @@
 
 ## Overview
 
-This design completes the MATLAB vs Python parity workflow tooling by implementing four critical workflow improvements: CLI reuse eligibility summaries, stage-isolated network gate reliability, shared-neighborhood diagnostic integration, and proof artifact promotion. These enhancements build on the existing workflow assessment infrastructure (`source/slavv/parity/workflow_assessment.py`) and staged run layout (`source/slavv/parity/run_layout.py`) to provide developers with clear guidance, fast validation loops, evidence-based diagnostics, and maintained proof artifacts.
+This design finishes the remaining two backlog items from
+`BOTTLENECK_TODO.md` by layering new evidence-producing workflows on top of the
+existing parity infrastructure:
 
-The design focuses on minimizing expensive MATLAB reruns while maximizing diagnostic utility. The stage-isolated network gate remains the key validation mechanism for isolating parity issues between edge generation and network assembly. The CLI summaries provide actionable next steps based on workflow state, while diagnostic integration drives systematic edge candidate improvements. Proof artifacts maintain evidence that network assembly achieves exact parity when given exact MATLAB edges.
+1. shared-neighborhood diagnostics for the still-open `edges` parity gap
+2. maintained proof artifacts for successful stage-isolated `network`-gate runs
+
+The design assumes the repo already has working reuse-eligibility summaries,
+stage-isolated `network`-gate execution, staged run-layout persistence, and
+replay-safe normalized comparison params. Those pieces remain the baseline that
+the new work plugs into.
+
+The design also treats `workspace/reports/tooling/` as archival context. Those
+files document a March 23, 2026 snapshot of Ruff, mypy, and pytest findings,
+but they are not the live source of truth for current repo health.
+
+## Current Baseline
+
+### Existing Components We Build On
+
+- `source/slavv/parity/workflow_assessment.py`
+  - current loop assessment and reuse guidance
+- `source/slavv/parity/cli_summaries.py`
+  - current CLI reuse-eligibility formatting
+- `source/slavv/parity/comparison.py`
+  - current comparison orchestration, parity reporting, and network-gate entry
+    points
+- `source/slavv/parity/network_gate.py`
+  - current stage-isolated `network`-gate validation and execution
+- `source/slavv/parity/run_layout.py`
+  - canonical staged artifact layout and path resolution
+- `source/slavv/runtime/run_state.py`
+  - existing persisted run metadata and compatibility behavior
+- `workspace/reports/tooling/README.md`
+  - confirms the tooling snapshots are archival reference artifacts
+
+### Design Goal
+
+The active parity diagnosis is no longer "is downstream network assembly
+broken?" The backlog says the remaining issue is neighborhood-level claim
+ordering, branch invalidation, and local partner choice inside the `edges`
+surface. So the design should:
+
+- surface evidence that points investigators at that neighborhood-level gap
+- preserve the current `network` gate as the proof that downstream assembly is
+  still behaving when fed exact MATLAB edges
+- avoid introducing a new heavyweight loop that would slow daily iteration
+- avoid turning this workflow-completion spec into a repo-wide cleanup of
+  unrelated historical tooling debt
 
 ## Architecture
 
 ### Component Overview
 
-The implementation extends four existing subsystems:
+The remaining work adds two new modules and two small integration layers:
 
-1. **Workflow Assessment** (`source/slavv/parity/workflow_assessment.py`)
-   - Extends `LoopAssessmentReport` with reuse command generation
-   - Adds CLI summary formatting for reuse eligibility
-   - Implements missing artifact detection and explanation
+1. **Diagnostics Module** (`source/slavv/parity/diagnostics.py`)
+   - analyzes staged MATLAB/Python artifacts for neighborhood-level divergence
+   - persists JSON/Markdown reports under `03_Analysis/`
+   - emits actionable next-investigation guidance
 
-2. **Stage-Isolated Network Gate** (`source/slavv/parity/comparison.py`)
-   - Enhances network-stage validation with timing and fingerprinting
-   - Adds fast-fail artifact verification before execution
-   - Persists execution metadata and parity status
+2. **Diagnostics Integration** (`source/slavv/parity/comparison.py`)
+   - recommends diagnostics after an `edges` parity gap
+   - displays a compact summary when a diagnostic report already exists
 
-3. **Diagnostic Integration** (`source/slavv/parity/diagnostics.py` - new module)
-   - Implements shared-neighborhood diagnostic report generation
-   - Provides CLI integration for diagnostic recommendations
-   - Persists reports under `03_Analysis/` with actionable insights
+3. **Proof Artifact Module** (`source/slavv/parity/proof_artifacts.py`)
+   - generates proof artifacts from successful `network`-gate execution data
+   - maintains a proof index under `03_Analysis/`
+   - formats the latest proof summary for CLI display
 
-4. **Proof Artifact System** (`source/slavv/parity/proof_artifacts.py` - new module)
-   - Generates stage-isolated network proof reports
-   - Maintains proof artifact index across multiple runs
-   - Provides CLI commands for proof artifact display
+4. **Proof Integration** (`source/slavv/parity/network_gate.py` and
+   `source/slavv/apps/parity_cli.py`)
+   - generates proof artifacts after successful `network`-gate runs
+   - exposes `slavv parity-proof --run-dir <path>` for proof inspection
 
 ### Data Flow
 
-```
-User Request
-    ↓
-Workflow Assessment (assess_loop_request)
-    ↓
-CLI Summary Generation (format_reuse_eligibility_summary)
-    ↓
-[If network gate requested]
-    ↓
-Stage-Isolated Network Gate Execution
-    ↓
-Proof Artifact Generation
-    ↓
-[If parity gap detected]
-    ↓
-Diagnostic Recommendation
-    ↓
-Shared-Neighborhood Diagnostic Execution
-    ↓
-Diagnostic Report Persistence
-```
+```text
+Comparison run completes
+    ->
+Existing parity summary and workflow assessment
+    ->
+[If edges parity gap remains actionable]
+    ->
+Generate or recommend shared-neighborhood diagnostics
+    ->
+Persist report to 03_Analysis/
+    ->
+Guide next edge_candidates.py / tracing.py iteration
 
-### Integration Points
-
-- **Existing**: `LoopAssessmentReport` provides workflow decision surface
-- **Existing**: `resolve_run_layout()` provides canonical path resolution
-- **Existing**: `RunContext` provides structured run state management
-- **New**: CLI summary formatter consumes `LoopAssessmentReport`
-- **New**: Network gate validator checks artifact fingerprints
-- **New**: Diagnostic module generates neighborhood-level reports
-- **New**: Proof artifact system maintains validation evidence
+Stage-isolated network gate succeeds
+    ->
+Read existing network-gate execution metadata
+    ->
+Generate proof artifact + update proof index
+    ->
+Persist under 03_Analysis/proof_artifacts/
+    ->
+Expose latest proof summary through CLI
+```
 
 ## Components and Interfaces
 
-### 1. CLI Reuse Eligibility Summaries
+### 1. Shared-Neighborhood Diagnostics
 
-#### Enhanced LoopAssessmentReport
-
-```python
-@dataclass
-class LoopAssessmentReport:
-    # ... existing fields ...
-    
-    # New fields for CLI summaries
-    reuse_commands: list[str] = field(default_factory=list)
-    missing_artifacts: list[str] = field(default_factory=list)
-    artifact_explanations: dict[str, str] = field(default_factory=dict)
-    next_action_commands: list[str] = field(default_factory=list)
-```
-
-#### CLI Summary Formatter
-
-```python
-def format_reuse_eligibility_summary(
-    report: LoopAssessmentReport,
-    *,
-    run_root: Path,
-    input_file: Path,
-) -> str:
-    """
-    Generate human-readable CLI summary from loop assessment.
-    
-    Returns formatted text with:
-    - Reuse eligibility status
-    - Safe workflow loops with specific commands
-    - Missing artifacts with explanations
-    - Recommended next action
-    """
-```
-
-#### Command Generator
-
-```python
-def generate_reuse_commands(
-    report: LoopAssessmentReport,
-    *,
-    run_root: Path,
-    input_file: Path,
-) -> list[str]:
-    """
-    Generate specific rerun commands based on workflow state.
-    
-    Returns commands for:
-    - Analysis-only comparison (--standalone-matlab-dir / --standalone-python-dir)
-    - Imported-MATLAB edge rerun (--skip-matlab --python-parity-rerun-from edges)
-    - Stage-isolated network gate (--skip-matlab --python-parity-rerun-from network)
-    """
-```
-
-### 2. Stage-Isolated Network Gate Reliability
-
-#### Network Gate Validator
-
-```python
-@dataclass
-class NetworkGateValidation:
-    """Pre-execution validation for stage-isolated network gate."""
-    
-    has_matlab_edges: bool
-    has_matlab_vertices: bool
-    has_matlab_energy: bool
-    matlab_edges_fingerprint: str
-    matlab_vertices_fingerprint: str
-    validation_passed: bool
-    validation_errors: list[str]
-    validation_timestamp: str
-```
-
-```python
-def validate_network_gate_artifacts(
-    run_root: Path,
-) -> NetworkGateValidation:
-    """
-    Fast-fail validation before network gate execution.
-    
-    Checks:
-    - Required MATLAB edge artifacts present
-    - Required MATLAB vertex artifacts present
-    - Required MATLAB energy artifacts present
-    - Artifact fingerprints for provenance tracking
-    
-    Returns validation result with specific errors if failed.
-    """
-```
-
-#### Network Gate Executor
-
-```python
-@dataclass
-class NetworkGateExecution:
-    """Execution metadata for stage-isolated network gate."""
-    
-    validation: NetworkGateValidation
-    started_at: str
-    completed_at: str
-    elapsed_seconds: float
-    comparison_exact_network_forced: bool
-    parity_achieved: bool
-    vertices_match: bool
-    edges_match: bool
-    strands_match: bool
-    python_network_fingerprint: str
-    execution_errors: list[str]
-```
-
-```python
-def execute_stage_isolated_network_gate(
-    run_root: Path,
-    *,
-    input_file: Path,
-    params: dict[str, Any],
-) -> NetworkGateExecution:
-    """
-    Execute stage-isolated network gate with timing and validation.
-    
-    Process:
-    1. Validate required artifacts (fast-fail)
-    2. Force comparison_exact_network=True
-    3. Import MATLAB edges/vertices/energy
-    4. Rerun Python from network stage
-    5. Compare results and record parity status
-    6. Persist execution metadata
-    
-    Returns execution result with timing and parity status.
-    """
-```
-
-### 3. Shared-Neighborhood Diagnostic Integration
-
-#### Diagnostic Report Structure
+#### Report Models
 
 ```python
 @dataclass
 class NeighborhoodDivergence:
-    """Single neighborhood-level divergence."""
-    
-    vertex_id: int
-    matlab_claim_count: int
-    python_claim_count: int
-    matlab_partner_choices: list[int]
-    python_partner_choices: list[int]
-    divergence_type: str  # "claim_ordering" | "branch_invalidation" | "partner_choice"
-    severity: str  # "high" | "medium" | "low"
-```
+    vertex_id: int | str
+    divergence_type: str  # claim_ordering | branch_invalidation | partner_choice
+    severity: str  # high | medium | low
+    matlab_partner_choices: list[int] = field(default_factory=list)
+    python_partner_choices: list[int] = field(default_factory=list)
+    matlab_claim_count: int = 0
+    python_claim_count: int = 0
+    notes: list[str] = field(default_factory=list)
 
-```python
+
 @dataclass
 class SharedNeighborhoodDiagnosticReport:
-    """Complete diagnostic report for edge parity gaps."""
-    
     run_root: str
     generated_at: str
     matlab_edges_count: int
     python_edges_count: int
     edge_count_delta: int
-    
-    # Neighborhood-level analysis
-    divergent_neighborhoods: list[NeighborhoodDivergence]
     claim_ordering_differences: int
     branch_invalidation_differences: int
     partner_choice_differences: int
-    
-    # Candidate coverage analysis
+    divergent_neighborhoods: list[NeighborhoodDivergence]
     matlab_candidate_coverage: dict[str, int]
     python_candidate_coverage: dict[str, int]
     coverage_delta: dict[str, int]
-    
-    # Actionable recommendations
     top_divergence_patterns: list[str]
     recommended_investigations: list[str]
     edge_candidates_to_review: list[str]
     tracing_logic_to_review: list[str]
 ```
 
-#### Diagnostic Generator
+#### Generation Interface
 
 ```python
 def generate_shared_neighborhood_diagnostics(
     run_root: Path,
     *,
-    matlab_edges_path: Path,
-    python_edges_path: Path,
+    matlab_edges_path: Path | None = None,
+    python_edges_path: Path | None = None,
 ) -> SharedNeighborhoodDiagnosticReport:
-    """
-    Generate neighborhood-level diagnostic report.
-    
-    Analysis:
-    - Compare claim ordering per neighborhood
-    - Identify branch invalidation differences
-    - Detect partner choice divergences
-    - Quantify candidate coverage gaps
-    - Generate actionable recommendations
-    
-    Returns complete diagnostic report.
-    """
+    """Generate the canonical shared-neighborhood diagnostic report."""
 ```
 
-#### CLI Integration
+#### Design Notes
+
+- The generator should resolve artifact paths from the staged run root first,
+  not require ad hoc paths from the caller unless needed for tests.
+- Counts remain important, but the design explicitly treats candidate-coverage
+  counts as triage input rather than the final answer.
+- Recommendations should point to likely code surfaces, not pretend to identify
+  a single exact bug.
+- The report should be stable enough to compare across repeated runs on the
+  same run root.
+
+#### Persistence Contract
+
+- JSON: `03_Analysis/shared_neighborhood_diagnostics.json`
+- Markdown: `03_Analysis/shared_neighborhood_diagnostics.md`
+
+The Markdown report should prioritize:
+
+- top divergence patterns
+- a short list of highest-severity neighborhoods
+- next code surfaces to inspect in `source/slavv/core/edge_candidates.py` and
+  `source/slavv/core/tracing.py`
+
+### 2. Comparison-Flow Diagnostics Integration
+
+#### Recommendation Interface
 
 ```python
 def recommend_diagnostics_if_needed(
-    parity_status: dict[str, bool],
+    *,
     run_root: Path,
+    edges_parity_ok: bool,
+    network_gate_parity_ok: bool | None,
 ) -> str | None:
-    """
-    Recommend diagnostic execution when parity gaps detected.
-    
-    Returns CLI message with diagnostic command if:
-    - Edges parity failed
-    - Network parity succeeded (isolates issue to edges)
-    """
+    """Return a CLI recommendation when diagnostics are the next useful step."""
 ```
 
-### 4. Proof Artifact Promotion
+#### Integration Rules
 
-#### Proof Report Structure
+- If `edges` parity succeeded, do not recommend diagnostics.
+- If `edges` parity failed and the stage-isolated `network` gate succeeded, the
+  recommendation should strongly prefer diagnostics because the remaining gap is
+  isolated to the `edges` surface.
+- If an existing diagnostic report is already present, `comparison.py` should
+  print a compact summary rather than only telling the user to generate one.
+- The integration should not block or slow normal comparison runs when no
+  diagnostic report is requested.
+
+### 3. Maintained Proof Artifacts
+
+#### Proof Models
 
 ```python
 @dataclass
 class StageIsolatedNetworkProof:
-    """Proof artifact for stage-isolated network gate."""
-    
-    # Provenance
     run_root: str
     generated_at: str
     matlab_batch_folder: str
-    matlab_batch_timestamp: str
-    
-    # Input fingerprints
+    matlab_batch_timestamp: str | None
     matlab_edges_fingerprint: str
-    matlab_vertices_fingerprint: str
-    matlab_energy_fingerprint: str
-    
-    # Execution details
+    matlab_vertices_fingerprint: str | None
+    matlab_energy_fingerprint: str | None
+    python_network_fingerprint: str | None
+    python_vertices_fingerprint: str | None
+    python_edges_fingerprint: str | None
     execution_timestamp: str
     elapsed_seconds: float
     comparison_exact_network_forced: bool
-    
-    # Parity status
     vertices_exact_parity: bool
     edges_exact_parity: bool
     strands_exact_parity: bool
     overall_parity_achieved: bool
-    
-    # Output fingerprints
-    python_network_fingerprint: str
-    python_vertices_fingerprint: str
-    python_edges_fingerprint: str
-    
-    # Resource usage
-    peak_memory_mb: float | None
-    cpu_time_seconds: float | None
-```
+    peak_memory_mb: float | None = None
+    cpu_time_seconds: float | None = None
 
-#### Proof Artifact Manager
 
-```python
-def generate_proof_artifact(
-    execution: NetworkGateExecution,
-    *,
-    run_root: Path,
-    matlab_batch_folder: Path,
-) -> StageIsolatedNetworkProof:
-    """
-    Generate proof artifact from network gate execution.
-    
-    Captures:
-    - Complete provenance chain
-    - Input/output fingerprints
-    - Execution timing and resources
-    - Exact parity status
-    
-    Persists as both JSON and Markdown.
-    """
-```
-
-```python
 @dataclass
 class ProofArtifactIndex:
-    """Index of all proof artifacts for a run root."""
-    
     run_root: str
-    proof_artifacts: list[dict[str, Any]]  # Sorted by timestamp
+    proof_artifacts: list[dict[str, Any]]
     latest_proof: dict[str, Any] | None
     total_proofs: int
 ```
 
+#### Generation Interface
+
 ```python
+def generate_proof_artifact(
+    execution_metadata_path: Path,
+    *,
+    run_root: Path,
+) -> StageIsolatedNetworkProof:
+    """Generate a proof artifact from persisted network-gate execution data."""
+
+
 def maintain_proof_artifact_index(
     run_root: Path,
     new_proof: StageIsolatedNetworkProof,
 ) -> ProofArtifactIndex:
-    """
-    Update proof artifact index with new proof.
-    
-    Maintains:
-    - Chronological list of all proofs
-    - Latest proof reference
-    - Proof count
-    
-    Persists index to 03_Analysis/proof_artifact_index.json
-    """
-```
+    """Update or rebuild the canonical proof index for a run root."""
 
-#### CLI Commands
 
-```python
 def display_latest_proof_summary(run_root: Path) -> str:
-    """
-    Display summary of latest proof artifact.
-    
-    Shows:
-    - Proof timestamp
-    - Parity status (vertices/edges/strands)
-    - Execution timing
-    - MATLAB batch provenance
-    """
+    """Render the latest proof artifact summary for CLI display."""
 ```
 
-## Data Models
+#### Design Notes
 
-### Enhanced Workflow Assessment
+- Proof generation should consume the existing
+  `99_Metadata/network_gate_execution.json` artifact rather than re-executing
+  any gate logic.
+- Resource usage should be optional because the repo runs on Windows and may
+  not always have portable metrics available.
+- Proof generation should only happen after successful stage-isolated
+  `network`-gate runs; failed gates are evidence, but not proof artifacts.
+- The proof index is a convenience and durability layer, not the primary source
+  of truth; it must be rebuildable from the individual proof files.
 
-```python
-# Extension to existing LoopAssessmentReport
-reuse_commands: list[str]
-# Example: [
-#     "python workspace/scripts/cli/compare_matlab_python.py --skip-matlab --resume-latest --python-parity-rerun-from edges",
-#     "python workspace/scripts/cli/compare_matlab_python.py --skip-matlab --resume-latest --python-parity-rerun-from network"
-# ]
+#### Persistence Contract
 
-missing_artifacts: list[str]
-# Example: ["MATLAB edges checkpoint", "Python network.json"]
+- JSON proofs:
+  `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json`
+- Markdown proofs:
+  `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.md`
+- Index:
+  `03_Analysis/proof_artifact_index.json`
 
-artifact_explanations: dict[str, str]
-# Example: {
-#     "MATLAB edges checkpoint": "Required for stage-isolated network gate validation",
-#     "Python network.json": "Required for analysis-only comparison"
-# }
+### 4. CLI Proof Display
 
-next_action_commands: list[str]
-# Example: ["python workspace/scripts/cli/compare_matlab_python.py --input data/slavv_test_volume.tif --output-dir comparison_output"]
+#### User Surface
+
+Add:
+
+```text
+slavv parity-proof --run-dir <path>
 ```
 
-### Network Gate Validation
+This command should:
 
-```python
-{
-    "has_matlab_edges": true,
-    "has_matlab_vertices": true,
-    "has_matlab_energy": true,
-    "matlab_edges_fingerprint": "sha256:abc123...",
-    "matlab_vertices_fingerprint": "sha256:def456...",
-    "validation_passed": true,
-    "validation_errors": [],
-    "validation_timestamp": "2026-04-15T10:30:00Z"
-}
-```
+- load `03_Analysis/proof_artifact_index.json` if it exists
+- rebuild from proof files if the index is missing or invalid
+- display the latest proof summary
+- list known proof timestamps and parity status in a compact form
 
-### Diagnostic Report
+## Tooling Snapshot Handling
 
-```python
-{
-    "run_root": "/path/to/comparison_output",
-    "generated_at": "2026-04-15T10:35:00Z",
-    "matlab_edges_count": 1234,
-    "python_edges_count": 1198,
-    "edge_count_delta": -36,
-    "divergent_neighborhoods": [
-        {
-            "vertex_id": 42,
-            "matlab_claim_count": 8,
-            "python_claim_count": 6,
-            "matlab_partner_choices": [10, 15, 23],
-            "python_partner_choices": [10, 15],
-            "divergence_type": "partner_choice",
-            "severity": "high"
-        }
-    ],
-    "claim_ordering_differences": 12,
-    "branch_invalidation_differences": 5,
-    "partner_choice_differences": 19,
-    "matlab_candidate_coverage": {
-        "forward_trace": 856,
-        "backward_trace": 378
-    },
-    "python_candidate_coverage": {
-        "forward_trace": 820,
-        "backward_trace": 378
-    },
-    "coverage_delta": {
-        "forward_trace": -36,
-        "backward_trace": 0
-    },
-    "top_divergence_patterns": [
-        "Partner choice divergence in high-degree vertices (19 cases)",
-        "Claim ordering differences in branching neighborhoods (12 cases)"
-    ],
-    "recommended_investigations": [
-        "Review edge_candidates.py forward trace logic for high-degree vertices",
-        "Investigate tracing.py claim ordering in branching scenarios"
-    ],
-    "edge_candidates_to_review": [
-        "source/slavv/processing/edge_candidates.py:forward_trace_candidates"
-    ],
-    "tracing_logic_to_review": [
-        "source/slavv/processing/tracing.py:select_best_partner"
-    ]
-}
-```
+### Archived Snapshot Summary
 
-### Proof Artifact
+The archived tooling folder currently records:
 
-```python
-{
-    "run_root": "/path/to/comparison_output",
-    "generated_at": "2026-04-15T10:40:00Z",
-    "matlab_batch_folder": "01_Input/matlab_results/batch_260415_103000",
-    "matlab_batch_timestamp": "2026-04-15T10:30:00Z",
-    "matlab_edges_fingerprint": "sha256:abc123...",
-    "matlab_vertices_fingerprint": "sha256:def456...",
-    "matlab_energy_fingerprint": "sha256:ghi789...",
-    "execution_timestamp": "2026-04-15T10:40:00Z",
-    "elapsed_seconds": 18.5,
-    "comparison_exact_network_forced": true,
-    "vertices_exact_parity": true,
-    "edges_exact_parity": true,
-    "strands_exact_parity": true,
-    "overall_parity_achieved": true,
-    "python_network_fingerprint": "sha256:jkl012...",
-    "python_vertices_fingerprint": "sha256:mno345...",
-    "python_edges_fingerprint": "sha256:pqr678...",
-    "peak_memory_mb": 512.3,
-    "cpu_time_seconds": 17.2
-}
-```
+- one historical pytest collection failure in
+  `tests/diagnostic/test_comparison_setup.py` caused by Python 3.7 evaluating
+  built-in generic type syntax
+- a small Ruff snapshot covering a mix of test-style issues plus one real
+  application error in `source/slavv/apps/web_app.py`
+- a large mypy snapshot spanning unrelated modules across the repo
+
+### Design Decision
+
+The diagnostics/proof-artifact work should not absorb that entire backlog.
+Instead:
+
+- use the archived reports as awareness for touched files
+- keep new modules and tests clean under current repo standards
+- narrow tooling debt opportunistically only in files touched by this work
+- continue to use the canonical commands from `AGENTS.md` for current
+  verification
+
+### Implementation Impact
+
+- New modules `source/slavv/parity/diagnostics.py` and
+  `source/slavv/parity/proof_artifacts.py` should be written to pass Ruff and
+  mypy cleanly from the start.
+- New tests should use modern typing compatible with the repo's supported
+  Python version targets for current development, while not relying on the
+  archived Python 3.7 collection behavior.
+- If comparison or CLI integration touches a file that already appears in the
+  archived tooling snapshots, keep edits narrow and avoid expanding unrelated
+  lint/type debt.
 
 ## Error Handling
 
-### CLI Summary Generation
+### Diagnostics
 
-**Error**: Loop assessment report missing or incomplete
-- **Handling**: Generate minimal summary with warning
-- **User Message**: "Workflow assessment incomplete. Run with --validate-only to refresh."
+- Missing required MATLAB or Python artifacts:
+  - emit a clear message that diagnostics cannot run yet
+  - do not create partial reports unless there is still useful structured
+    evidence to persist
+- Incompatible or partial edge/candidate artifact content:
+  - persist a report with error notes only if the resulting output still helps
+    the next investigation
+- Recommendation path:
+  - if the report cannot be generated, still print the intended next step and
+    the artifact that is missing
 
-**Error**: Run root not found or inaccessible
-- **Handling**: Return error message with path resolution guidance
-- **User Message**: "Run root not found: {path}. Verify path and permissions."
+### Proof Artifacts
 
-### Network Gate Validation
-
-**Error**: Required MATLAB artifacts missing
-- **Handling**: Fast-fail before execution with specific artifact list
-- **User Message**: "Stage-isolated network gate blocked. Missing artifacts: {list}. Run imported-MATLAB edge rerun first."
-
-**Error**: Artifact fingerprint mismatch
-- **Handling**: Warn about potential stale artifacts
-- **User Message**: "Warning: MATLAB artifact fingerprints changed since last validation. Results may not be comparable."
-
-**Error**: Network gate execution timeout (>60s)
-- **Handling**: Terminate execution and log timing issue
-- **User Message**: "Network gate exceeded 60s timeout. Investigate performance regression."
-
-### Diagnostic Generation
-
-**Error**: MATLAB or Python edges not found
-- **Handling**: Return error with artifact location guidance
-- **User Message**: "Cannot generate diagnostics. Missing edge artifacts at: {paths}"
-
-**Error**: Edge format incompatible
-- **Handling**: Log format version and skip incompatible analysis
-- **User Message**: "Edge format version mismatch. Diagnostics may be incomplete."
-
-**Error**: Diagnostic computation failure
-- **Handling**: Persist partial results with error annotation
-- **User Message**: "Diagnostic generation partially failed: {error}. Partial results saved."
-
-### Proof Artifact Generation
-
-**Error**: Network gate execution failed
-- **Handling**: Do not generate proof artifact
-- **User Message**: "Proof artifact not generated due to execution failure."
-
-**Error**: Proof artifact persistence failure
-- **Handling**: Log error but continue workflow
-- **User Message**: "Warning: Could not persist proof artifact: {error}"
-
-**Error**: Proof index corruption
-- **Handling**: Rebuild index from existing proof artifacts
-- **User Message**: "Proof index rebuilt from {count} existing artifacts."
+- Missing `network_gate_execution.json`:
+  - do not create proof artifacts
+  - surface a message that a successful stage-isolated `network`-gate run is
+    required first
+- Index corruption:
+  - rebuild from existing proof files
+- Proof persistence failure:
+  - log a warning and allow the main comparison workflow to continue
 
 ## Testing Strategy
 
-This feature involves workflow orchestration, file I/O, subprocess execution, and CLI integration. Testing will use a combination of unit tests for pure logic, integration tests for workflow coordination, and diagnostic tests for end-to-end validation.
-
 ### Unit Tests
 
-**CLI Summary Formatting** (`tests/unit/parity/test_cli_summaries.py`)
-- Test `format_reuse_eligibility_summary()` with various loop assessment states
-- Test `generate_reuse_commands()` command generation for each workflow loop
-- Test missing artifact explanation formatting
-- Test next action command generation
+**Diagnostics** (`tests/unit/parity/test_diagnostics.py`)
 
-**Network Gate Validation** (`tests/unit/parity/test_network_gate_validation.py`)
-- Test `validate_network_gate_artifacts()` with complete artifacts
-- Test validation failure with missing MATLAB edges
-- Test validation failure with missing MATLAB vertices
-- Test fingerprint generation for artifacts
-- Test validation error message formatting
+- divergence model serialization
+- claim-ordering, branch-invalidation, and partner-choice classification
+- candidate-coverage delta calculation
+- recommendation generation
 
-**Diagnostic Report Generation** (`tests/unit/parity/test_diagnostic_generation.py`)
-- Test neighborhood divergence detection logic
-- Test candidate coverage delta calculation
-- Test recommendation generation from divergence patterns
-- Test diagnostic report serialization
+**Proof Artifacts** (`tests/unit/parity/test_proof_artifacts.py`)
 
-**Proof Artifact Management** (`tests/unit/parity/test_proof_artifacts.py`)
-- Test proof artifact generation from execution metadata
-- Test proof artifact index maintenance
-- Test proof artifact index rebuild from existing artifacts
-- Test latest proof summary formatting
+- proof generation from persisted network-gate execution metadata
+- optional resource-usage handling
+- proof-index updates
+- proof-index rebuilds
+- latest-proof summary formatting
 
 ### Integration Tests
 
-**CLI Reuse Eligibility Flow** (`tests/integration/parity/test_reuse_eligibility_integration.py`)
-- Test complete flow from loop assessment to CLI summary display
-- Test reuse command generation with actual run root
-- Test missing artifact detection with partial run state
-- Test next action recommendation with various workflow states
+**Diagnostics Integration** (`tests/integration/parity/test_diagnostic_integration.py`)
 
-**Stage-Isolated Network Gate Flow** (`tests/integration/parity/test_network_gate_integration.py`)
-- Test complete network gate execution with imported MATLAB artifacts
-- Test fast-fail validation with missing artifacts
-- Test timing measurement and 30s performance target
-- Test parity status reporting
-- Test execution metadata persistence
+- recommendation when `edges` parity fails
+- stronger recommendation when the `network` gate succeeds
+- report persistence to `03_Analysis/`
+- CLI summary rendering from a persisted report
 
-**Diagnostic Integration Flow** (`tests/integration/parity/test_diagnostic_integration.py`)
-- Test diagnostic recommendation after parity gap detection
-- Test diagnostic report generation with real edge artifacts
-- Test diagnostic report persistence to 03_Analysis/
-- Test CLI diagnostic summary display
+**Proof Integration** (`tests/integration/parity/test_proof_artifact_integration.py`)
 
-**Proof Artifact Flow** (`tests/integration/parity/test_proof_artifact_integration.py`)
-- Test proof artifact generation after successful network gate
-- Test proof artifact index update
-- Test proof artifact display command
-- Test proof artifact persistence in both JSON and Markdown
+- proof generation after successful `network`-gate runs
+- no proof generation after failed gate runs
+- CLI proof display against persisted proof artifacts
 
-### Diagnostic Tests
+### Diagnostic / Workflow Tests
 
-**End-to-End Workflow** (`tests/diagnostic/test_parity_workflow_completion.py`)
-- Test complete workflow from fresh run to reuse eligibility summary
-- Test stage-isolated network gate with imported MATLAB batch
-- Test diagnostic generation after edge parity gap
-- Test proof artifact generation after network parity success
-- Verify all artifacts persist to correct locations
-- Verify CLI summaries display correctly
+Use at least one workflow-level validation that:
 
-**Performance Validation** (`tests/diagnostic/test_network_gate_performance.py`)
-- Test network gate completes in <30s for standard test volume
-- Test validation overhead is <1s
-- Test proof artifact generation overhead is <2s
+- starts from a run root with an `edges` parity gap
+- exercises the diagnostic recommendation/report path
+- exercises the successful stage-isolated `network` gate proof path
+- verifies artifact placement under the canonical staged layout
+- verifies touched-scope tests collect and run under the current environment
 
-### Test Data Requirements
+## File Changes
 
-- **Staged run root** with complete MATLAB batch and Python checkpoints
-- **Partial run root** with missing artifacts for validation testing
-- **Edge parity gap scenario** with known divergences for diagnostic testing
-- **Network parity success scenario** for proof artifact testing
-- **Standard test volume** (`data/slavv_test_volume.tif`) for performance testing
+### New Modules
 
-### Test Execution
+- `source/slavv/parity/diagnostics.py`
+- `source/slavv/parity/proof_artifacts.py`
 
-```powershell
-# Unit tests
-python -m pytest tests/unit/parity/test_cli_summaries.py
-python -m pytest tests/unit/parity/test_network_gate_validation.py
-python -m pytest tests/unit/parity/test_diagnostic_generation.py
-python -m pytest tests/unit/parity/test_proof_artifacts.py
+### Modified Modules
 
-# Integration tests
-python -m pytest tests/integration/parity/test_reuse_eligibility_integration.py
-python -m pytest tests/integration/parity/test_network_gate_integration.py
-python -m pytest tests/integration/parity/test_diagnostic_integration.py
-python -m pytest tests/integration/parity/test_proof_artifact_integration.py
-
-# Diagnostic tests
-python -m pytest tests/diagnostic/test_parity_workflow_completion.py
-python -m pytest tests/diagnostic/test_network_gate_performance.py
-
-# Full parity test suite
-python -m pytest -m "unit or integration" tests/unit/parity/ tests/integration/parity/
-```
-
-## Implementation Notes
-
-### File Locations
-
-**New Modules**:
-- `source/slavv/parity/cli_summaries.py` - CLI summary formatting
-- `source/slavv/parity/network_gate.py` - Network gate validation and execution
-- `source/slavv/parity/diagnostics.py` - Diagnostic report generation
-- `source/slavv/parity/proof_artifacts.py` - Proof artifact management
-
-**Modified Modules**:
-- `source/slavv/parity/workflow_assessment.py` - Enhanced `LoopAssessmentReport`
-- `source/slavv/parity/comparison.py` - Network gate integration
-- `source/slavv/apps/parity_cli.py` - CLI summary display
-
-**New Test Files**:
-- `tests/unit/parity/test_cli_summaries.py`
-- `tests/unit/parity/test_network_gate_validation.py`
-- `tests/unit/parity/test_diagnostic_generation.py`
-- `tests/unit/parity/test_proof_artifacts.py`
-- `tests/integration/parity/test_reuse_eligibility_integration.py`
-- `tests/integration/parity/test_network_gate_integration.py`
-- `tests/integration/parity/test_diagnostic_integration.py`
-- `tests/integration/parity/test_proof_artifact_integration.py`
-- `tests/diagnostic/test_parity_workflow_completion.py`
-- `tests/diagnostic/test_network_gate_performance.py`
-
-### Artifact Persistence Locations
-
-Following the canonical staged layout from `docs/reference/COMPARISON_LAYOUT.md`:
-
-**Workflow Assessment**:
-- `99_Metadata/loop_assessment.json` (existing, enhanced)
-
-**Network Gate**:
-- `99_Metadata/network_gate_validation.json` (new)
-- `99_Metadata/network_gate_execution.json` (new)
-
-**Diagnostics**:
-- `03_Analysis/shared_neighborhood_diagnostics.json` (new)
-- `03_Analysis/shared_neighborhood_diagnostics.md` (new, human-readable)
-
-**Proof Artifacts**:
-- `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json` (new)
-- `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.md` (new)
-- `03_Analysis/proof_artifact_index.json` (new)
-
-### CLI Integration Points
-
-**Reuse Eligibility Summary**:
-- Display after successful comparison run
-- Display after `--validate-only` run
-- Display after `--resume-latest` compatibility check
-
-**Network Gate Execution**:
-- Triggered by `--python-parity-rerun-from network`
-- Automatic validation before execution
-- Automatic proof artifact generation after success
-
-**Diagnostic Recommendation**:
-- Display after edge parity gap detection
-- Provide specific diagnostic command
-- Link to diagnostic report location
-
-**Proof Artifact Display**:
-- New CLI command: `slavv parity-proof --run-dir <path>`
-- Display latest proof summary
-- List all proof artifacts with timestamps
-
-### Performance Targets
-
-**Network Gate Execution**: <30s for standard test volume
-- Validation overhead: <1s
-- Python network rerun: <25s
-- Comparison and reporting: <4s
-
-**Diagnostic Generation**: <10s for standard test volume
-- Edge loading: <2s
-- Neighborhood analysis: <6s
-- Report generation: <2s
-
-**Proof Artifact Generation**: <2s
-- Fingerprint computation: <1s
-- Report formatting: <1s
-
-### Backward Compatibility
-
-All enhancements maintain backward compatibility:
-- Existing `LoopAssessmentReport` fields unchanged
-- New fields have default values
-- Existing CLI commands unchanged
-- New CLI summaries are additive
-- Existing artifact locations preserved
-- New artifacts use new locations
-
-### Dependencies
-
-**Existing**:
-- `source/slavv/parity/workflow_assessment.py`
-- `source/slavv/parity/run_layout.py`
 - `source/slavv/parity/comparison.py`
-- `source/slavv/runtime/run_state.py`
+- `source/slavv/parity/network_gate.py`
+- `source/slavv/apps/parity_cli.py`
 
-**New**:
-- No new external dependencies required
-- Uses existing `hashlib` for fingerprinting
-- Uses existing `json` for persistence
-- Uses existing `pathlib` for file operations
+### Artifact Locations
+
+**Diagnostics**
+
+- `03_Analysis/shared_neighborhood_diagnostics.json`
+- `03_Analysis/shared_neighborhood_diagnostics.md`
+
+**Proof Artifacts**
+
+- `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json`
+- `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.md`
+- `03_Analysis/proof_artifact_index.json`
 
 ## Migration Path
 
-### Phase 1: CLI Summaries (Requirement 1)
+### Step 1: Diagnostics First
 
-1. Extend `LoopAssessmentReport` with new fields
-2. Implement `format_reuse_eligibility_summary()`
-3. Implement `generate_reuse_commands()`
-4. Integrate into `parity_cli.py` display logic
-5. Add unit tests for summary formatting
-6. Add integration tests for CLI display
+Build `source/slavv/parity/diagnostics.py`, then wire it into the existing
+comparison flow. This closes the first remaining backlog item and improves the
+quality of the next `edges`-stage investigation.
 
-### Phase 2: Network Gate Reliability (Requirement 2)
+### Step 2: Proof Artifacts Second
 
-1. Implement `validate_network_gate_artifacts()`
-2. Implement `execute_stage_isolated_network_gate()`
-3. Integrate validation into comparison workflow
-4. Add timing measurement and reporting
-5. Add unit tests for validation logic
-6. Add integration tests for execution flow
-7. Add performance diagnostic tests
+Build `source/slavv/parity/proof_artifacts.py`, then wire it into successful
+stage-isolated `network`-gate runs and the parity CLI. This closes the final
+remaining backlog item by turning current network-gate success into a durable,
+queryable proof surface.
 
-### Phase 3: Diagnostic Integration (Requirement 3)
+### Step 3: Final Validation
 
-1. Implement `SharedNeighborhoodDiagnosticReport` structure
-2. Implement `generate_shared_neighborhood_diagnostics()`
-3. Implement `recommend_diagnostics_if_needed()`
-4. Integrate into comparison workflow
-5. Add unit tests for diagnostic generation
-6. Add integration tests for CLI integration
-7. Add diagnostic tests for end-to-end flow
-
-### Phase 4: Proof Artifacts (Requirement 4)
-
-1. Implement `StageIsolatedNetworkProof` structure
-2. Implement `generate_proof_artifact()`
-3. Implement `maintain_proof_artifact_index()`
-4. Implement `display_latest_proof_summary()`
-5. Add CLI command for proof display
-6. Add unit tests for proof management
-7. Add integration tests for proof generation
-8. Add diagnostic tests for proof workflow
-
-Each phase can be developed and tested independently, with integration occurring at the end of each phase.
+Run the focused diagnostics/proof tests plus the repo's standard Ruff, mypy,
+and pytest checks needed for the touched modules. Do not use the archived
+tooling snapshots as a substitute for current validation.

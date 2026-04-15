@@ -18,8 +18,6 @@ Repository guidance for coding agents working in `slavv2python`.
 - `workspace/reports/`: archived tooling snapshots and other non-source reference artifacts
 - `docs/`: maintained reference docs for MATLAB mapping, parity notes, and comparison run layout
 - `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
-- `make.ps1`: Windows helper for common dev tasks
-- `Makefile`: Unix-style helper; useful on POSIX shells, but prefer `make.ps1` on Windows
 
 ## Read First When Relevant
 
@@ -53,22 +51,6 @@ Install pre-commit hooks when working on repo changes:
 ```powershell
 pre-commit install
 ```
-
-Windows shortcut commands are available through:
-
-```powershell
-.\make.ps1 install
-.\make.ps1 format
-.\make.ps1 lint
-.\make.ps1 typecheck
-.\make.ps1 test
-```
-
-Notes:
-
-- `.\make.ps1 install` installs the full contributor toolchain with `.[app,dev]`.
-- `.\make.ps1 lint` runs non-mutating `ruff check` only.
-- `.\make.ps1 test` is the broad full-suite shortcut; the routine boundary-crossing gate remains `python -m pytest -m "unit or integration"`.
 
 ## Canonical Commands
 
