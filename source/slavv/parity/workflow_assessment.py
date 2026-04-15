@@ -48,6 +48,10 @@ class LoopAssessmentReport:
     recommended_action: str = ""
     authoritative_files: dict[str, str] = field(default_factory=dict)
     artifact_checks: dict[str, bool] = field(default_factory=dict)
+    reuse_commands: list[str] = field(default_factory=list)
+    missing_artifacts: list[str] = field(default_factory=list)
+    artifact_explanations: dict[str, str] = field(default_factory=dict)
+    next_action_commands: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""

@@ -377,6 +377,27 @@ def _resolve_output_dir(
             )
             if assessment.verdict in reusable_verdicts:
                 print(f"Reusing latest compatible run root: {candidate}")
+                
+                # Display reuse eligibility summary after resume-latest compatibility check
+                from slavv.parity.cli_summaries import (
+                    format_reuse_eligibility_summary,
+                    generate_reuse_commands,
+                )
+                
+                if input_path:
+                    assessment.reuse_commands = generate_reuse_commands(
+                        assessment,
+                        run_root=candidate,
+                        input_file=input_path,
+                    )
+                
+                summary = format_reuse_eligibility_summary(
+                    assessment,
+                    run_root=candidate,
+                    input_file=input_path if input_path else Path(""),
+                )
+                print("\n" + summary)
+                
                 return candidate
             if index == 0:
                 latest_blocking_reason = (

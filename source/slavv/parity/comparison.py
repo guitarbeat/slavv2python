@@ -279,15 +279,40 @@ def _should_load_deep_matlab_results(comparison_depth: str) -> bool:
     return normalized == "deep"
 
 
-def _print_reuse_guidance(run_root: Path) -> None:
-    """Print a concise reminder that the current run root is reusable."""
-    print("\n" + "=" * 60)
-    print("Reuse Guidance")
-    print("=" * 60)
-    print(f"Reuse this output dir for the next parity rerun: {run_root}")
-    print(
-        "Prefer reusing this staged run root for imported-MATLAB parity loops before launching MATLAB again."
+def _print_reuse_guidance(
+    run_root: Path,
+    *,
+    input_file: str | None = None,
+    params: dict[str, Any] | None = None,
+    loop_kind: str | None = None,
+) -> None:
+    """Print reuse eligibility summary using CLI summaries module."""
+    from .cli_summaries import format_reuse_eligibility_summary, generate_reuse_commands
+    from .workflow_assessment import assess_loop_request
+
+    # Assess the current run root for reuse eligibility
+    assessment = assess_loop_request(
+        run_root,
+        loop_kind=loop_kind or "skip_matlab_edges",
+        input_path=Path(input_file) if input_file else None,
+        params=params,
     )
+
+    # Generate reuse commands and populate the report
+    if input_file:
+        assessment.reuse_commands = generate_reuse_commands(
+            assessment,
+            run_root=run_root,
+            input_file=Path(input_file),
+        )
+
+    # Display the formatted summary
+    summary = format_reuse_eligibility_summary(
+        assessment,
+        run_root=run_root,
+        input_file=Path(input_file) if input_file else Path(""),
+    )
+    print("\n" + summary)
 
 
 def _resolve_python_parity_import_plan(
@@ -1197,6 +1222,15 @@ def orchestrate_comparison(
             include_summary=False,
             announce_manifest=True,
         )
+
+        # Display reuse eligibility summary after validation
+        _print_reuse_guidance(
+            run_root,
+            input_file=input_file,
+            params=params_for_python,
+            loop_kind=loop_kind,
+        )
+
         return 0
 
     if not skip_matlab:
@@ -1454,40 +1488,210 @@ def orchestrate_comparison(
     python_results = None
     if not effective_skip_python:
         os.makedirs(python_output, exist_ok=True)
-        comparison_context.update_optional_task(
-            "python_pipeline",
-            status="running",
-            detail=(
-                f"Running Python pipeline from {python_force_rerun_from}"
-                if python_force_rerun_from is not None
-                else "Running Python pipeline"
-            ),
+
+        # Check if this is a network gate execution (network rerun with MATLAB artifacts present)
+        is_network_gate_candidate = (
+            python_force_rerun_from == "network" and requested_python_rerun_from == "network"
         )
-        python_kwargs: dict[str, Any] = {
-            "run_dir": str(run_root),
-            "force_rerun_from": python_force_rerun_from,
-        }
-        if minimal_exports:
-            python_kwargs["minimal_exports"] = True
-        python_results = run_python_vectorization(
-            input_file,
-            str(python_output),
-            params_for_python,
-            **python_kwargs,
-        )
-        comparison_context.update_optional_task(
-            "python_pipeline",
-            status="completed" if python_results.get("success") else "failed",
-            detail="Python pipeline finished",
-            artifacts={
-                "output_dir": str(python_output),
-                **(
-                    {"force_rerun_from": python_force_rerun_from}
+
+        # Only attempt network gate if we're rerunning from network
+        # The network gate will validate artifacts and fall back if needed
+        if is_network_gate_candidate:
+            from .network_gate import validate_network_gate_artifacts
+
+            # Quick validation check to see if network gate is possible
+            validation = validate_network_gate_artifacts(run_root)
+
+            if validation.validation_passed:
+                # Stage-isolated network gate workflow with full artifacts
+                from .network_gate import execute_stage_isolated_network_gate
+
+                print("\n" + "=" * 60)
+                print("Stage-Isolated Network Gate Validation")
+                print("=" * 60)
+                print("Network gate validation PASSED:")
+                print("  ✓ MATLAB edges artifact present")
+                print("  ✓ MATLAB vertices artifact present")
+                print("  ✓ MATLAB energy artifact present")
+                print(f"  Edges fingerprint: {validation.matlab_edges_fingerprint[:16]}...")
+                print(f"  Vertices fingerprint: {validation.matlab_vertices_fingerprint[:16]}...")
+
+                comparison_context.update_optional_task(
+                    "network_gate_validation",
+                    status="completed",
+                    detail="Network gate validation passed",
+                    artifacts={
+                        "matlab_edges_fingerprint": validation.matlab_edges_fingerprint,
+                        "matlab_vertices_fingerprint": validation.matlab_vertices_fingerprint,
+                    },
+                )
+
+                # Execute stage-isolated network gate
+                print("\n" + "=" * 60)
+                print("Stage-Isolated Network Gate Execution")
+                print("=" * 60)
+
+                comparison_context.update_optional_task(
+                    "network_gate_execution",
+                    status="running",
+                    detail="Executing stage-isolated network gate",
+                )
+
+                execution = execute_stage_isolated_network_gate(
+                    run_root,
+                    input_file=Path(input_file),
+                    params=params_for_python,
+                )
+
+                if execution.execution_errors:
+                    print("\nNetwork gate execution encountered errors:")
+                    for error in execution.execution_errors:
+                        print(f"  - {error}")
+
+                    comparison_context.update_optional_task(
+                        "network_gate_execution",
+                        status="failed",
+                        detail="Network gate execution failed",
+                        artifacts={
+                            "elapsed_seconds": execution.elapsed_seconds,
+                            "execution_errors": execution.execution_errors,
+                        },
+                    )
+                    comparison_context.mark_run_status(
+                        "failed",
+                        current_stage="network_gate_execution",
+                        detail=f"Network gate execution failed: {execution.execution_errors[0]}",
+                    )
+                    return 1
+
+                # Report parity status
+                print(
+                    f"\nNetwork gate execution completed in {execution.elapsed_seconds:.2f} seconds"
+                )
+                print("\nParity Status:")
+                print(f"  Vertices: {'✓ PASS' if execution.vertices_match else '✗ FAIL'}")
+                print(f"  Edges:    {'✓ PASS' if execution.edges_match else '✗ FAIL'}")
+                print(f"  Strands:  {'✓ PASS' if execution.strands_match else '✗ FAIL'}")
+                print(
+                    f"  Overall:  {'✓ PARITY ACHIEVED' if execution.parity_achieved else '✗ PARITY NOT ACHIEVED'}"
+                )
+
+                comparison_context.update_optional_task(
+                    "network_gate_execution",
+                    status="completed",
+                    detail=(
+                        "Network gate execution completed - parity achieved"
+                        if execution.parity_achieved
+                        else "Network gate execution completed - parity not achieved"
+                    ),
+                    artifacts={
+                        "elapsed_seconds": execution.elapsed_seconds,
+                        "parity_achieved": execution.parity_achieved,
+                        "vertices_match": execution.vertices_match,
+                        "edges_match": execution.edges_match,
+                        "strands_match": execution.strands_match,
+                        "python_network_fingerprint": execution.python_network_fingerprint,
+                    },
+                )
+
+                # Mark overall run status
+                if execution.parity_achieved:
+                    comparison_context.mark_run_status(
+                        "completed",
+                        current_stage="network_gate",
+                        detail="Stage-isolated network gate achieved exact parity",
+                    )
+                else:
+                    comparison_context.mark_run_status(
+                        "completed",
+                        current_stage="network_gate",
+                        detail="Stage-isolated network gate completed but parity not achieved",
+                    )
+
+                # Network gate execution already persists metadata and loads results
+                # We don't need to run the standard Python pipeline
+                python_results = {
+                    "success": True,
+                    "elapsed_time": execution.elapsed_seconds,
+                    "output_dir": str(python_output),
+                    "network_gate_execution": True,
+                    "parity_achieved": execution.parity_achieved,
+                }
+            else:
+                # Network gate artifacts not available, fall back to standard Python pipeline
+                print(
+                    "\nNote: Network gate artifacts not available, running standard Python pipeline"
+                )
+                comparison_context.update_optional_task(
+                    "python_pipeline",
+                    status="running",
+                    detail=(
+                        f"Running Python pipeline from {python_force_rerun_from}"
+                        if python_force_rerun_from is not None
+                        else "Running Python pipeline"
+                    ),
+                )
+                python_kwargs: dict[str, Any] = {
+                    "run_dir": str(run_root),
+                    "force_rerun_from": python_force_rerun_from,
+                }
+                if minimal_exports:
+                    python_kwargs["minimal_exports"] = True
+                python_results = run_python_vectorization(
+                    input_file,
+                    str(python_output),
+                    params_for_python,
+                    **python_kwargs,
+                )
+                comparison_context.update_optional_task(
+                    "python_pipeline",
+                    status="completed" if python_results.get("success") else "failed",
+                    detail="Python pipeline finished",
+                    artifacts={
+                        "output_dir": str(python_output),
+                        **(
+                            {"force_rerun_from": python_force_rerun_from}
+                            if python_force_rerun_from is not None
+                            else {}
+                        ),
+                    },
+                )
+        else:
+            # Standard Python pipeline execution
+            comparison_context.update_optional_task(
+                "python_pipeline",
+                status="running",
+                detail=(
+                    f"Running Python pipeline from {python_force_rerun_from}"
                     if python_force_rerun_from is not None
-                    else {}
+                    else "Running Python pipeline"
                 ),
-            },
-        )
+            )
+            python_kwargs: dict[str, Any] = {
+                "run_dir": str(run_root),
+                "force_rerun_from": python_force_rerun_from,
+            }
+            if minimal_exports:
+                python_kwargs["minimal_exports"] = True
+            python_results = run_python_vectorization(
+                input_file,
+                str(python_output),
+                params_for_python,
+                **python_kwargs,
+            )
+            comparison_context.update_optional_task(
+                "python_pipeline",
+                status="completed" if python_results.get("success") else "failed",
+                detail="Python pipeline finished",
+                artifacts={
+                    "output_dir": str(python_output),
+                    **(
+                        {"force_rerun_from": python_force_rerun_from}
+                        if python_force_rerun_from is not None
+                        else {}
+                    ),
+                },
+            )
     elif effective_skip_python and python_output.exists():
         # Even if we skip execution, we can still load existing results for comparison
         if analysis_only_reuse:
@@ -1529,7 +1733,12 @@ def orchestrate_comparison(
     if matlab_results and python_results:
         success = matlab_results.get("success") and python_results.get("success")
         if success:
-            _print_reuse_guidance(run_root)
+            _print_reuse_guidance(
+                run_root,
+                input_file=input_file,
+                params=params_for_python,
+                loop_kind=loop_kind,
+            )
         return 0 if success else 1
     return 0
 
@@ -1842,5 +2051,10 @@ def run_standalone_comparison(
         metadata_dir=metadata_dir,
     )
 
-    _print_reuse_guidance(run_root)
+    _print_reuse_guidance(
+        run_root,
+        input_file=None,
+        params=None,
+        loop_kind="standalone_analysis",
+    )
     return 0
