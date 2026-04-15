@@ -1,4 +1,4 @@
----
+﻿---
 description: "Use when changing MATLAB parity logic, comparison workflows, or run-state behavior in source/slavv/parity and source/slavv/runtime. Enforces staged layout and legacy checkpoint compatibility checks."
 applyTo: "source/slavv/{parity,runtime}/**/*.py"
 ---
@@ -18,7 +18,7 @@ applyTo: "source/slavv/{parity,runtime}/**/*.py"
 ## Validation Expectations
 
 - Run parity diagnostic coverage when parity/comparison behavior changes:
-  - `python -m pytest tests/diagnostic/test_comparison_setup.py`
+  - `python -m pytest dev/tests/diagnostic/test_comparison_setup.py`
 - Run at least the standard boundary-crossing gate when changes cross module boundaries:
   - `python -m pytest -m "unit or integration"`
 - Use lint/type checks when editing Python modules:
@@ -36,4 +36,5 @@ applyTo: "source/slavv/{parity,runtime}/**/*.py"
 - `docs/reference/COMPARISON_LAYOUT.md`
 - `source/slavv/parity/run_layout.py`
 - `source/slavv/runtime/run_state.py`
-- `tests/diagnostic/test_comparison_setup.py`
+- `dev/tests/diagnostic/test_comparison_setup.py`
+

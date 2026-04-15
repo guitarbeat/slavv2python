@@ -1,4 +1,4 @@
-# File Lock Contention Incident Analysis (2026-04-13)
+﻿# File Lock Contention Incident Analysis (2026-04-13)
 
 ## What this file is for
 
@@ -59,7 +59,7 @@ analysis into one operator-focused runbook.
 ## April 13 execution timeline
 
 1. Diagnostic setup gate passed:
-   `python -m pytest tests/diagnostic/test_comparison_setup.py`
+   `python -m pytest dev/tests/diagnostic/test_comparison_setup.py`
 2. Output-root preflight passed against
    `C:\slavv_comparisons\release_verify_20260413`.
 3. Baseline quality gate passed:
@@ -95,7 +95,7 @@ If the batch is already complete, do not relaunch MATLAB. Recompute the final
 comparison from the completed artifacts:
 
 ```powershell
-python workspace/scripts/cli/compare_matlab_python.py \
+python dev/scripts/cli/compare_matlab_python.py \
   --standalone-matlab-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\01_Input\matlab_results \
   --standalone-python-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\02_Output\python_results \
   --output-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413 \
@@ -130,3 +130,4 @@ three of the following are true:
 
 If those conditions are not met, then fall back to the normal preflight logic
 and use a fresh output root for the next launch attempt.
+

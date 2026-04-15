@@ -1,6 +1,6 @@
-"""Ad-hoc benchmark for large 2D network plotting.
+﻿"""Ad-hoc benchmark for large 2D network plotting.
 
-This helper is intentionally kept out of ``tests/`` because it is a manual
+This helper is intentionally kept out of ``dev/tests/`` because it is a manual
 performance probe rather than collected pytest coverage.
 """
 
@@ -71,3 +71,4 @@ def run_plot_2d_network_benchmark():
 
 if __name__ == "__main__":
     run_plot_2d_network_benchmark()
+

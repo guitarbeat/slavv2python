@@ -28,7 +28,7 @@ np.float = float
 np.bool = np.bool_
 
 # Add source/ to path so slavv is importable
-repo_root = Path(__file__).resolve().parent.parent
+repo_root = Path(__file__).resolve().parents[2]
 source_dir = repo_root / "source"
 if source_dir.exists() and str(source_dir) not in sys.path:
     sys.path.insert(0, str(source_dir))
@@ -38,16 +38,16 @@ def pytest_collection_modifyitems(items):
     """Auto-tag tests by folder so CI can select fast/full lanes."""
     for item in items:
         nodeid = item.nodeid.replace("\\", "/")
-        if "tests/unit/" in nodeid:
+        if "dev/tests/unit/" in nodeid:
             item.add_marker("unit")
-        elif "tests/integration/" in nodeid:
+        elif "dev/tests/integration/" in nodeid:
             item.add_marker("integration")
-        elif "tests/ui/" in nodeid:
+        elif "dev/tests/ui/" in nodeid:
             item.add_marker("ui")
-        elif "tests/diagnostic/" in nodeid:
+        elif "dev/tests/diagnostic/" in nodeid:
             item.add_marker("diagnostic")
 
-        if "tests/benchmarks/" in nodeid:
+        if "dev/tests/benchmarks/" in nodeid:
             item.add_marker("slow")
         if "regression" in nodeid:
             item.add_marker("regression")
@@ -56,9 +56,9 @@ def pytest_collection_modifyitems(items):
 @pytest.fixture
 def tmp_path():
     """Provide a writable temp directory without relying on pytest's lock-based tmpdir."""
-    workspace_tmp_root = repo_root / "workspace" / "tmp_tests"
-    workspace_tmp_root.mkdir(parents=True, exist_ok=True)
-    path = workspace_tmp_root / f"run-{uuid4().hex}"
+    dev_tmp_root = repo_root / "dev" / "tmp_tests"
+    dev_tmp_root.mkdir(parents=True, exist_ok=True)
+    path = dev_tmp_root / f"run-{uuid4().hex}"
     path.mkdir(parents=True, exist_ok=False)
     try:
         yield path

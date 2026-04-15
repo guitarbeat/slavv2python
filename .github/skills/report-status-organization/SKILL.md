@@ -1,4 +1,4 @@
----
+﻿---
 name: report-status-organization
 description: 'Organize report documents into handled vs unhandled buckets, update report index links, and add a status table for quick triage. Use when: cleaning report folders, closing investigation notes, maintaining report catalogs, or making handled/unhandled state explicit.'
 argument-hint: 'Reports folder path and handled/unhandled criteria'
@@ -21,12 +21,12 @@ Default scope: workspace-shared skill under `.github/skills/`.
 
 ## Inputs
 
-- Reports root directory (example: `workspace/reports/`)
+- Reports root directory (example: `dev/reports/`)
 - Classification rule for status:
   - `Handled`: report documents resolved incidents, closed audits, or baseline work
     that is explicitly complete.
   - `Unhandled`: report tracks active blockers, open actions, or unresolved parity gaps.
-- Index file to update (example: `workspace/reports/README.md`)
+- Index file to update (example: `dev/reports/README.md`)
 
 ## Procedure
 
@@ -79,6 +79,7 @@ Default scope: workspace-shared skill under `.github/skills/`.
 
 ## Example prompts
 
-- "Organize `workspace/reports` into handled and unhandled, then fix the README links."
+- "Organize `dev/reports` into handled and unhandled, then fix the README links."
 - "Classify these investigation notes by completion status and add a triage table."
 - "Move closed reports to handled and leave active blockers in unhandled."
+

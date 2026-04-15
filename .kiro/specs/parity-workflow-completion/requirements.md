@@ -1,4 +1,4 @@
-# Requirements Document
+﻿# Requirements Document
 
 ## Introduction
 
@@ -6,7 +6,7 @@ This specification now covers the remaining two unfinished workflow
 improvements from `BOTTLENECK_TODO.md`:
 
 1. Continued use of shared-neighborhood diagnostics to drive the next
-   `edge_candidates.py` or `tracing.py` iteration.
+   `edge_candidates.py` or `edge_selection.py` iteration.
 2. Promotion of a maintained proof artifact or report path for the
    stage-isolated `network` gate.
 
@@ -22,7 +22,7 @@ than primary unfinished scope.
   should remain the current source of downstream isolation evidence.
 - Staged-layout persistence under `01_Input/`, `02_Output/`, `03_Analysis/`,
   and `99_Metadata/` remains the canonical artifact contract.
-- `workspace/reports/tooling/` contains archived March 23, 2026 Ruff, mypy,
+- `dev/reports/tooling/` contains archived March 23, 2026 Ruff, mypy,
   and pytest snapshots. These are reference artifacts, not live status.
 
 ## Glossary
@@ -36,7 +36,7 @@ than primary unfinished scope.
   MATLAB and Python
 - **Edge_Candidates**: Python module responsible for candidate-edge generation
   during tracing
-- **Tracing**: Python module responsible for edge selection and tracing logic
+- **Edge_Selection**: Python module responsible for edge selection and cleanup
 - **Proof_Artifact**: A maintained report or evidence file demonstrating that
   the stage-isolated `network` gate produces exact parity
 - **MATLAB_Batch**: A completed MATLAB run output that can be imported and
@@ -47,7 +47,7 @@ than primary unfinished scope.
 ### Requirement 1: Shared-Neighborhood Diagnostic Integration
 
 **User Story:** As a developer, I want shared-neighborhood diagnostics to drive
-the next iteration of `edge_candidates.py` or `tracing.py`, so that I can
+the next iteration of `edge_candidates.py` or `edge_selection.py`, so that I can
 systematically address parity gaps using evidence-based insights instead of
 relying on downstream noise.
 
@@ -70,7 +70,7 @@ relying on downstream noise.
 8. THE Diagnostic_Report SHALL persist under `03_Analysis/` in the staged run
    layout as both machine-readable and human-readable artifacts
 9. THE Diagnostic_Report SHALL include actionable recommendations for which
-   `Edge_Candidates` or `Tracing` code surfaces to investigate next
+   `Edge_Candidates` or `Edge_Selection` code surfaces to investigate next
 
 ### Requirement 2: Maintained Stage-Isolated Network Proof Artifacts
 
@@ -112,7 +112,7 @@ project, so that diagnostics and proof artifacts can land cleanly.
 #### Acceptance Criteria
 
 1. THE Parity_Workflow completion work SHALL treat
-   `workspace/reports/tooling/` as historical reference only, not as the
+   `dev/reports/tooling/` as historical reference only, not as the
    canonical source of current repo health
 2. THE implementation for diagnostics and proof artifacts SHALL avoid
    introducing new Ruff, mypy, or pytest issues in touched modules and tests
@@ -132,3 +132,4 @@ project, so that diagnostics and proof artifacts can land cleanly.
   changes are required to support diagnostics or proof generation
 - Solving the underlying `edges` parity gap directly inside this spec; this
   spec improves iteration evidence and proof surfaces around that work
+

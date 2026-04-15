@@ -70,10 +70,10 @@ def test_format_reuse_eligibility_summary_with_commands():
         verdict="reuse_ready",
         safe_to_reuse=True,
         reuse_commands=[
-            "python workspace/scripts/cli/compare_matlab_python.py --skip-matlab --resume-latest",
+            "python dev/scripts/cli/compare_matlab_python.py --skip-matlab --resume-latest",
         ],
         next_action_commands=[
-            "python workspace/scripts/cli/compare_matlab_python.py --input data/volume.tif",
+            "python dev/scripts/cli/compare_matlab_python.py --input data/volume.tif",
         ],
         recommended_action="Reuse this run root for the imported-MATLAB parity rerun.",
     )

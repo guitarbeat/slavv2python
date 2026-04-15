@@ -1,4 +1,4 @@
-%% run_matlab_vectorization.m
+﻿%% run_matlab_vectorization.m
 % Non-interactive, restartable wrapper script for vectorize_V200.
 %
 % Re-running the same command in the same output directory resumes the most
@@ -9,7 +9,7 @@
 %   run_matlab_vectorization('input_file.tif', 'output_directory', 'params.json')
 %
 % Usage from Windows batch:
-%   matlab -wait -batch "cd('path/to/Vectorization-Public'); addpath('path/to/workspace/scripts/cli'); run_matlab_vectorization('input.tif', 'output_dir');"
+%   matlab -wait -batch "cd('path/to/Vectorization-Public'); addpath('path/to/dev/scripts/cli'); run_matlab_vectorization('input.tif', 'output_dir');"
 
 function time_stamp = run_matlab_vectorization(input_file, output_directory, params_json_path)
     workflow_stages = {'energy', 'vertices', 'edges', 'network'};
@@ -659,3 +659,4 @@ function normalized = normalize_compare_path(path_value)
         normalized = lower(normalized);
     end
 end
+

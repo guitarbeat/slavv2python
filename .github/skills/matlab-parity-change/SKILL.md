@@ -1,4 +1,4 @@
----
+﻿---
 name: matlab-parity-change
 description: "Implement MATLAB parity or comparison behavior changes safely. Use for run_layout/run_state updates, import-matlab behavior, staged-vs-legacy compatibility, and parity regression hardening."
 argument-hint: "Describe the parity behavior to change and expected compatibility constraints"
@@ -40,7 +40,7 @@ user-invocable: true
 - Cover both staged layout and legacy-layout compatibility when behavior touches either path.
 
 5. Run validation gate
-- `python -m pytest tests/diagnostic/test_comparison_setup.py`
+- `python -m pytest dev/tests/diagnostic/test_comparison_setup.py`
 - `python -m pytest -m "unit or integration"`
 - `python -m ruff check source tests`
 - `python -m mypy`
@@ -57,3 +57,4 @@ user-invocable: true
 - [ ] Diagnostic parity test coverage updated
 - [ ] Unit/integration boundary gate executed
 - [ ] Lint and type checks completed
+

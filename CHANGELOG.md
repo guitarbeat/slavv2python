@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 This file summarizes notable repository changes for the SLAVV Python port.
 
@@ -31,7 +31,7 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 - Release-verification notes for the canonical April 13 MATLAB/Python
   comparison run, including preserved timing and parity findings.
 - Stricter energy rejection criteria for watershed-based edge candidates in `source/slavv/core/tracing.py`, aligning Python's candidate generation more closely with MATLAB's restrictive requirements.
-- Regression coverage in `tests/unit/core/test_watershed_supplement_regression.py` to verify watershed supplement rejection rules and prevent future regressions.
+- Regression coverage in `dev/tests/unit/core/test_watershed_supplement_regression.py` to verify watershed supplement rejection rules and prevent future regressions.
 - File-backed run state for SLAVV processing, including stage snapshots,
   structured artifacts, progress events, ETA tracking, and fingerprint-based
   resume guards.
@@ -59,7 +59,7 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 - Repository reference docs under `docs/`, including the refreshed MATLAB
   mapping and comparison layout guides.
 - Workspace-local maintenance scripts and tooling snapshots grouped under
-  `workspace/scripts/maintenance/` and `workspace/reports/tooling/`.
+  `dev/scripts/maintenance/` and `dev/reports/tooling/`.
 - Targeted regression coverage for parity-mode edge cleanup tie-breaking and
   shared fresh/resumable MATLAB-shaped strand construction.
 
@@ -148,3 +148,4 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 - Stricter Phase 2 watershed gates (frontier reachability and per-origin caps) implemented in `source/slavv/core/tracing.py`.
 - MATLAB-style best-first frontier tracing tightened around ordering and pruning semantics.
 - Staged comparison layouts and metadata persistence (preflight, MATLAB status) verified across canonical reruns.
+

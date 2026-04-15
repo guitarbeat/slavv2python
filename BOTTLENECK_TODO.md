@@ -1,4 +1,4 @@
-# MATLAB vs Python Parity Workflow Plan
+﻿# MATLAB vs Python Parity Workflow Plan
 
 This file is the active parity backlog and investigation log.
 
@@ -199,4 +199,5 @@ for the Chapter 1 closeout.
 - [docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md](docs/chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md](docs/chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 - [docs/reference/COMPARISON_LAYOUT.md](docs/reference/COMPARISON_LAYOUT.md)
-- [workspace/reports/parity_decision_memo_2026-04-08.md](workspace/reports/parity_decision_memo_2026-04-08.md)
+- [dev/reports/parity_decision_memo_2026-04-08.md](dev/reports/parity_decision_memo_2026-04-08.md)
+

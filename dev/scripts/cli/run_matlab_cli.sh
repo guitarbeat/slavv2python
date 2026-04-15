@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # run_matlab_cli.sh
 # Bash script to invoke MATLAB from command line
 #
@@ -61,7 +61,7 @@ fi
 # Get script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Get project root (parent of workspace/scripts/cli)
+# Get project root (parent of dev/scripts/cli)
 PROJECT_ROOT="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
 VECTORIZATION_DIR="$PROJECT_ROOT/external/Vectorization-Public"
 
@@ -141,3 +141,4 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 
 exit 0
+

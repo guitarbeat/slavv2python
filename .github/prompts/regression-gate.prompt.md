@@ -1,4 +1,4 @@
----
+﻿---
 description: "Run the repository regression gate (compileall, ruff format check, ruff check, mypy, pytest unit/integration) and summarize failures by severity and likely fix order."
 argument-hint: "Optional scope or changed files to emphasize"
 agent: "agent"
@@ -7,7 +7,7 @@ Run the standard regression gate for this repository and summarize results by pr
 
 ## Commands
 
-1. `python -m compileall source workspace/scripts`
+1. `python -m compileall source dev/scripts`
 2. `python -m ruff format --check source tests`
 3. `python -m ruff check source tests`
 4. `python -m mypy`
@@ -26,3 +26,4 @@ Run the standard regression gate for this repository and summarize results by pr
   - Probable root cause
   - Smallest practical fix direction
 - End with a concise pass/fail matrix for all five commands.
+

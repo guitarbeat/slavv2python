@@ -22,9 +22,7 @@ from slavv.runtime import load_run_snapshot
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 project_root = Path(__file__).resolve().parents[3]
-DEFAULT_COMPARISON_PARAMS = (
-    project_root / "workspace" / "scripts" / "cli" / "comparison_params.json"
-)
+DEFAULT_COMPARISON_PARAMS = project_root / "dev" / "scripts" / "cli" / "comparison_params.json"
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -42,7 +40,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--params",
-        help="JSON file with parameters (default: workspace/scripts/cli/comparison_params.json)",
+        help="JSON file with parameters (default: dev/scripts/cli/comparison_params.json)",
     )
     parser.add_argument(
         "--standalone-matlab-dir",
@@ -377,27 +375,27 @@ def _resolve_output_dir(
             )
             if assessment.verdict in reusable_verdicts:
                 print(f"Reusing latest compatible run root: {candidate}")
-                
+
                 # Display reuse eligibility summary after resume-latest compatibility check
                 from slavv.parity.cli_summaries import (
                     format_reuse_eligibility_summary,
                     generate_reuse_commands,
                 )
-                
+
                 if input_path:
                     assessment.reuse_commands = generate_reuse_commands(
                         assessment,
                         run_root=candidate,
                         input_file=input_path,
                     )
-                
+
                 summary = format_reuse_eligibility_summary(
                     assessment,
                     run_root=candidate,
                     input_file=input_path if input_path else Path(""),
                 )
                 print("\n" + summary)
-                
+
                 return candidate
             if index == 0:
                 latest_blocking_reason = (

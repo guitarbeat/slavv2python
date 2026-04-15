@@ -1,4 +1,4 @@
----
+﻿---
 description: "Use when changing MATLAB parity, comparison workflows, import behavior, or staged run-root layout semantics in this repository. Keywords: parity, MATLAB, comparison, run_layout, run_state, import-matlab, legacy checkpoints."
 name: "MATLAB Parity Specialist"
 tools: [read, search, edit, execute, todo, agent]
@@ -22,7 +22,7 @@ Your job is to preserve and improve MATLAB-to-Python parity behavior while keepi
 3. Make minimal targeted edits in parity-related code paths.
 4. Add or update deterministic tests under ownership-aligned test folders.
 5. Validate with parity-first commands, then standard gates as needed:
-   - `python -m pytest tests/diagnostic/test_comparison_setup.py`
+   - `python -m pytest dev/tests/diagnostic/test_comparison_setup.py`
    - `python -m pytest -m "unit or integration"`
    - `python -m ruff check source tests`
    - `python -m mypy`
@@ -34,3 +34,4 @@ Return:
 2. Compatibility notes (staged layout vs legacy layout behavior).
 3. Validation commands and pass/fail summary.
 4. Remaining risks or follow-up parity checks.
+

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from .workflow_assessment import LoopAssessmentReport
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from .workflow_assessment import LoopAssessmentReport
 
 
 def format_reuse_eligibility_summary(
@@ -151,7 +154,7 @@ def generate_reuse_commands(
 
         if matlab_dir.exists() and python_dir.exists():
             cmd = (
-                f"python workspace/scripts/cli/compare_matlab_python.py "
+                f"python dev/scripts/cli/compare_matlab_python.py "
                 f"--standalone-matlab-dir {matlab_dir} "
                 f"--standalone-python-dir {python_dir} "
                 f"--output-dir {run_root}"
@@ -161,7 +164,7 @@ def generate_reuse_commands(
     # Imported-MATLAB edge rerun
     if report.safe_to_reuse and report.artifact_checks.get("matlab_batch_present", False):
         cmd = (
-            f"python workspace/scripts/cli/compare_matlab_python.py "
+            f"python dev/scripts/cli/compare_matlab_python.py "
             f"--input {input_file} "
             f"--output-dir {run_root} "
             f"--skip-matlab "
@@ -172,7 +175,7 @@ def generate_reuse_commands(
     # Stage-isolated network gate
     if report.safe_to_reuse and report.artifact_checks.get("matlab_batch_present", False):
         cmd = (
-            f"python workspace/scripts/cli/compare_matlab_python.py "
+            f"python dev/scripts/cli/compare_matlab_python.py "
             f"--input {input_file} "
             f"--output-dir {run_root} "
             f"--skip-matlab "
@@ -223,7 +226,7 @@ def generate_next_action_commands(
     # Fresh MATLAB run required
     if report.requires_fresh_matlab:
         cmd = (
-            f"python workspace/scripts/cli/compare_matlab_python.py "
+            f"python dev/scripts/cli/compare_matlab_python.py "
             f"--input {input_file} "
             f"--output-dir {run_root}"
         )
@@ -233,7 +236,7 @@ def generate_next_action_commands(
     if report.verdict == "blocked" and not report.input_compatible:
         # Suggest creating a new run root
         cmd = (
-            f"python workspace/scripts/cli/compare_matlab_python.py "
+            f"python dev/scripts/cli/compare_matlab_python.py "
             f"--input {input_file} "
             f"--output-dir <new_run_root>"
         )
@@ -249,7 +252,7 @@ def generate_next_action_commands(
 
         if matlab_dir.exists() and python_dir.exists():
             cmd = (
-                f"python workspace/scripts/cli/compare_matlab_python.py "
+                f"python dev/scripts/cli/compare_matlab_python.py "
                 f"--standalone-matlab-dir {matlab_dir} "
                 f"--standalone-python-dir {python_dir} "
                 f"--output-dir {run_root}"

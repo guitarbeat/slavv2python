@@ -1,8 +1,8 @@
-# Reports Catalog
+﻿# Reports Catalog
 
 ## What this file is for
 
-`workspace/reports/` now holds a small canonical report set for the current
+`dev/reports/` now holds a small canonical report set for the current
 parity and release-operations story. The goal is fast orientation: a reader
 should be able to tell what is broken, what is already solved, and what to do
 next without opening a long chain of overlapping notes.
@@ -103,3 +103,4 @@ redundant files were removed.
 - Add a new dated top-level report only when it introduces genuinely new
   evidence or a new operational incident that does not fit one of the current
   canonical documents.
+

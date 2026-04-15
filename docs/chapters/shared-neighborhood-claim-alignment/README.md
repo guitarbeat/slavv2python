@@ -1,4 +1,4 @@
-# Shared Neighborhood Claim Alignment
+﻿# Shared Neighborhood Claim Alignment
 
 Active chapter opened on April 10, 2026.
 
@@ -86,7 +86,7 @@ only aggregate counts.
    the stage-isolated `network` gate.
 
 ```powershell
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --input C:\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
   --skip-matlab `
   --output-dir C:\slavv_comparisons\shared_neighborhood_claim_trial `
@@ -114,3 +114,4 @@ python workspace/scripts/cli/compare_matlab_python.py `
 - [Imported-MATLAB Parity Report](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+

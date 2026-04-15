@@ -174,7 +174,7 @@ def test_format_progress_event_message_explains_energy_stage_units():
 def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path, monkeypatch):
     import slavv.parity.comparison as comparison_module
 
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[4]
     input_file = tmp_path / "input.tif"
     input_file.write_bytes(b"fake")
     output_dir = tmp_path / "matlab_results"
@@ -198,7 +198,7 @@ def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path,
         str(output_dir),
         str(mock_matlab),
         repo_root,
-        batch_script=str(repo_root / "workspace" / "scripts" / "cli" / "run_matlab_cli.bat"),
+        batch_script=str(repo_root / "dev" / "scripts" / "cli" / "run_matlab_cli.bat"),
         params_file=str(params_file),
     )
 

@@ -1,4 +1,4 @@
-"""Tests for ``workspace/scripts/maintenance/find_matlab_script_files.py``."""
+"""Tests for ``dev/scripts/maintenance/find_matlab_script_files.py``."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _load_workspace_module(relative_path: str, module_name: str):
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[4]
     module_path = repo_root / relative_path
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     module = importlib.util.module_from_spec(spec)
@@ -19,7 +19,7 @@ def _load_workspace_module(relative_path: str, module_name: str):
 
 def test_is_matlab_function_detects_case_and_spacing_variants(tmp_path):
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/find_matlab_script_files.py",
+        "dev/scripts/maintenance/find_matlab_script_files.py",
         "find_matlab_script_files_function_test",
     )
     function_file = tmp_path / "function_variant.m"
@@ -36,7 +36,7 @@ def test_is_matlab_function_detects_case_and_spacing_variants(tmp_path):
 
 def test_find_matlab_script_files_scans_all_configured_roots(tmp_path):
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/find_matlab_script_files.py",
+        "dev/scripts/maintenance/find_matlab_script_files.py",
         "find_matlab_script_files_scan_test",
     )
     upstream_root = tmp_path / "external" / "Vectorization-Public"
@@ -59,11 +59,11 @@ def test_find_matlab_script_files_scans_all_configured_roots(tmp_path):
 
 def test_main_prints_relative_script_paths(tmp_path, capsys):
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/find_matlab_script_files.py",
+        "dev/scripts/maintenance/find_matlab_script_files.py",
         "find_matlab_script_files_main_test",
     )
     module.REPO_ROOT = tmp_path
-    module.MATLAB_SEARCH_ROOTS = (tmp_path / "workspace",)
+    module.MATLAB_SEARCH_ROOTS = (tmp_path / "dev",)
     module.MATLAB_SEARCH_ROOTS[0].mkdir(parents=True)
     (module.MATLAB_SEARCH_ROOTS[0] / "script_only.m").write_text("disp('hi');\n", encoding="utf-8")
 
@@ -71,4 +71,4 @@ def test_main_prints_relative_script_paths(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "--- MATLAB SCRIPTS FOUND ---" in captured.out
-    assert "workspace\\script_only.m" in captured.out or "workspace/script_only.m" in captured.out
+    assert "dev\\script_only.m" in captured.out or "dev/script_only.m" in captured.out

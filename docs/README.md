@@ -1,4 +1,4 @@
-# Documentation
+﻿# Documentation
 
 This directory now stays intentionally small at the top level:
 
@@ -131,7 +131,8 @@ These are not chapter control docs, but they remain useful evidence.
 
 | File | Purpose |
 | --- | --- |
-| `workspace/reports/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the closed parity chapter |
-| `workspace/reports/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
-| `workspace/reports/python_matlab_parity_postfix_2026-03-30.md` | Historical parity checkpoint |
-| `workspace/reports/python_standalone_consistency_postfix_2026-03-30.md` | Python repeatability context |
+| `dev/reports/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the closed parity chapter |
+| `dev/reports/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
+| `dev/reports/python_matlab_parity_postfix_2026-03-30.md` | Historical parity checkpoint |
+| `dev/reports/python_standalone_consistency_postfix_2026-03-30.md` | Python repeatability context |
+

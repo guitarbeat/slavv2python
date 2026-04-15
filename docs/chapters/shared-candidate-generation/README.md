@@ -1,4 +1,4 @@
-# Shared Candidate Generation Alignment
+﻿# Shared Candidate Generation Alignment
 
 Status: Historical Chapter 2 handoff
 
@@ -95,7 +95,7 @@ Use a retained staged run root and keep new generated comparison outputs outside
 the package source tree when practical.
 
 ```powershell
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --input C:\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
   --skip-matlab `
   --output-dir C:\slavv_comparisons\next_chapter_run `
@@ -109,3 +109,4 @@ python workspace/scripts/cli/compare_matlab_python.py `
 - [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
 - [Imported-MATLAB Parity Report](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
+

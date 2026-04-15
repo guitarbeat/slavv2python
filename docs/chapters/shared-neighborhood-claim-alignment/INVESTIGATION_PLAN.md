@@ -1,4 +1,4 @@
-# Shared Neighborhood Claim Investigation Plan
+﻿# Shared Neighborhood Claim Investigation Plan
 
 Status: Active Chapter 3 plan
 Updated: 2026-04-10
@@ -69,9 +69,9 @@ Supporting surfaces:
   for candidate-coverage and shared-vertex reporting
 - [reporting.py](../../../source/slavv/parity/reporting.py)
   for human-readable parity summaries
-- [test_frontier_tracing.py](../../../tests/unit/core/test_frontier_tracing.py)
+- [test_frontier_tracing.py](../../../dev/tests/unit/core/test_frontier_tracing.py)
   and
-  [test_edge_cases.py](../../../tests/unit/core/test_edge_cases.py)
+  [test_edge_cases.py](../../../dev/tests/unit/core/test_edge_cases.py)
   for local tracer semantics
 
 ## Leading Hypotheses
@@ -186,3 +186,4 @@ This chapter succeeds when:
 - [NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
 - [Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+

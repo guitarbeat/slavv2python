@@ -14,8 +14,8 @@ def _load_cli_module():
 
 
 def _load_wrapper_module():
-    repo_root = Path(__file__).resolve().parents[3]
-    module_path = repo_root / "workspace" / "scripts" / "cli" / "compare_matlab_python.py"
+    repo_root = Path(__file__).resolve().parents[4]
+    module_path = repo_root / "dev" / "scripts" / "cli" / "compare_matlab_python.py"
     spec = importlib.util.spec_from_file_location("compare_matlab_python_cli_test", module_path)
     module = importlib.util.module_from_spec(spec)
     assert spec is not None
@@ -44,7 +44,7 @@ def _run_cli(monkeypatch, argv):
     monkeypatch.setattr(sys, "argv", ["compare_matlab_python.py", *argv])
 
 
-def test_workspace_script_wraps_packaged_cli(wrapper_module, monkeypatch):
+def test_dev_script_wraps_packaged_cli(wrapper_module, monkeypatch):
     monkeypatch.setattr("slavv.apps.parity_cli.main", lambda: 17)
     assert wrapper_module.main() == 17
 
@@ -256,11 +256,7 @@ def test_cli_uses_canonical_default_params_file(cli_module, tmp_path, monkeypatc
 
     assert cli_module.main() == 0
     assert Path(observed["params_path"]) == (
-        Path(__file__).resolve().parents[3]
-        / "workspace"
-        / "scripts"
-        / "cli"
-        / "comparison_params.json"
+        Path(__file__).resolve().parents[4] / "dev" / "scripts" / "cli" / "comparison_params.json"
     )
 
 

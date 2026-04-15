@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-# Assume script is at <repo_root>/workspace/scripts/cli/run_matlab_cli.sh
-REPO_ROOT = Path(__file__).parent.parent.parent
-SCRIPT_DIR = REPO_ROOT / "workspace" / "scripts" / "cli"
+# Assume script is at <repo_root>/dev/scripts/cli/run_matlab_cli.sh
+REPO_ROOT = Path(__file__).resolve().parents[3]
+SCRIPT_DIR = REPO_ROOT / "dev" / "scripts" / "cli"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Shell script only runs on Linux/Unix")
@@ -147,4 +147,4 @@ def test_run_matlab_cli_injection_bat(tmp_path):
     assert f"run_matlab_vectorization('{expected_input}'," in content
     assert expected_params in content
     assert f"cd('{expected_vectorization_dir}')" in content
-    assert "workspace/external/Vectorization-Public" not in content
+    assert "dev/external/Vectorization-Public" not in content

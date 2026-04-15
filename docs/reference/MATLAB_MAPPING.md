@@ -1,4 +1,4 @@
-# MATLAB to Python Mapping
+﻿# MATLAB to Python Mapping
 
 Cross-reference between the upstream MATLAB sources in
 `external/Vectorization-Public/source/` and the maintained Python modules in
@@ -19,7 +19,7 @@ MATLAB script.
 | MATLAB File | Python Location | Status | Notes |
 | --- | --- | --- | --- |
 | `vectorize_V200.m` | `source/slavv/core/pipeline.py` (`SLAVVProcessor`) | `Ported` | Main pipeline orchestration entry point |
-| `run_matlab_vectorization.m` | `source/slavv/apps/parity_cli.py` and `workspace/scripts/cli/compare_matlab_python.py` | `Merged` | Batch-style orchestration now lives in packaged Python CLI code plus a compatibility wrapper |
+| `run_matlab_vectorization.m` | `source/slavv/apps/parity_cli.py` and `dev/scripts/cli/compare_matlab_python.py` | `Merged` | Batch-style orchestration now lives in packaged Python CLI code plus a compatibility wrapper |
 
 ## Energy And Enhancement
 
@@ -39,8 +39,8 @@ MATLAB script.
 | --- | --- | --- | --- |
 | `choose_vertices_V200.m` | `source/slavv/core/vertices.py` | `Merged` | MATLAB-style crop/paint logic is ported |
 | `vertex_info_extractor.m` | `source/slavv/io/matlab_parser.py` | `Ported` | |
-| `vertex_feature_extractor.m` | `source/slavv/analysis/ml_curator.py` | `Merged` | |
-| `uncuratedInfoExtractor.m` | `source/slavv/analysis/ml_curator.py` | `Ported` | |
+| `vertex_feature_extractor.m` | `source/slavv/analysis/ml_curator.py` | `Merged` | Vertex feature extraction now lives in the maintained ML-curation helper |
+| `uncuratedInfoExtractor.m` | `source/slavv/analysis/ml_curator.py` | `Ported` | Maintained feature extraction helper for uncategorized vertex and edge metadata |
 | `vertex_curator.m` | `source/slavv/visualization/interactive_curator.py` | `Ported` | Interactive curation UI |
 
 ## Edge Extraction And Tracing
@@ -88,9 +88,9 @@ MATLAB script.
 
 | MATLAB File | Python Location | Status | Notes |
 | --- | --- | --- | --- |
-| `visualize_vertices_V200.m` | `source/slavv/visualization/network_plots.py` | `Ported` | |
-| `visualize_edges_V180.m` | `source/slavv/visualization/network_plots.py` | `Merged` | |
-| `visualize_strands.m` | `source/slavv/visualization/network_plots.py` | `Merged` | |
+| `visualize_vertices_V200.m` | `source/slavv/visualization/network_plots.py` | `Ported` | Maintained vertex-network plotting entry point |
+| `visualize_edges_V180.m` | `source/slavv/visualization/network_plots.py` | `Merged` | Edge and strand plotting now share the maintained network-plot surface |
+| `visualize_strands.m` | `source/slavv/visualization/network_plots.py` | `Merged` | Shared plotting implementation for strand displays |
 | `flow_field_subroutine.m` | - | `Skipped` | Archived visualization helper with no maintained Python package surface |
 | `calculate_image_stats.m` | `source/slavv/analysis/geometry.py` | `Ported` | |
 | `calculate_surface_area.m` | `source/slavv/analysis/geometry.py` | `Ported` | |
@@ -100,7 +100,9 @@ MATLAB script.
 
 ## Current Work Links
 
-Chapter-specific parity status now lives in
+The active parity chapter is
+[`docs/chapters/shared-neighborhood-claim-alignment/README.md`](../chapters/shared-neighborhood-claim-alignment/README.md).
+The previous handoff chapter remains archived at
 [`docs/chapters/shared-candidate-generation/README.md`](../chapters/shared-candidate-generation/README.md).
 Use this mapping document for maintained source correspondence, and use
 [`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md)
@@ -117,6 +119,7 @@ the scope of the maintained Python package:
 - backups and superseded variants
 - ad-hoc utilities that are replaced by the Python CLI or notebook workflows
 
-Run `python workspace/scripts/maintenance/refresh_matlab_mapping_appendix.py`
+Run `python dev/scripts/maintenance/refresh_matlab_mapping_appendix.py`
 from the repository root if you need a generated appendix of upstream `.m`
 files that are not mentioned explicitly in this document.
+

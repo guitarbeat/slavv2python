@@ -29,12 +29,18 @@ The current Python stack already covers a lot:
 - `pyvista` and `pyqtgraph` are used in
   `source/slavv/visualization/interactive_curator.py`.
 - `plotly` and `streamlit` are used in the web-facing visualization code.
+- `tifffile` already backs volume TIFF loading and writing in
+  `source/slavv/io/tiff.py`.
+- `pydicom` is already supported behind the `dicom` optional extra for DICOM
+  import in `source/slavv/io/tiff.py`.
 
 There is also a low-risk performance lever already sitting in the repo:
 
 - `numba` is already listed as an optional dependency in `pyproject.toml`.
 - `source/slavv/core/energy.py` has a Numba path stubbed out, but
   `_NUMBA_AVAILABLE = False` right now.
+- `source/slavv/utils/system_info.py` already probes for CuPy and CUDA-capable
+  devices, but CuPy is not yet a declared dependency.
 
 That means the cleanest path is not necessarily "add lots of libraries." In a
 few places, it is "finish the optional acceleration path you already started,"
@@ -46,7 +52,7 @@ then add one or two libraries where they clearly beat the current stack.
 
 | Library | Where it fits here | Recommendation | Why |
 | --- | --- | --- | --- |
-| `SimpleITK` / `ITK` | `source/slavv/core/energy.py`, `source/slavv/utils/preprocessing.py`, `source/slavv/io/tiff.py` | `High priority` | Best fit for 3D microscopy/medical-style volumes, anisotropic spacing, recursive Gaussian filtering, objectness/vesselness filters, and image I/O pipelines. |
+| `SimpleITK` / `ITK` | `source/slavv/core/energy.py`, `source/slavv/utils/preprocessing.py`, `source/slavv/io/tiff.py` | `High priority` | Best fit for 3D microscopy/medical-style volumes, anisotropic spacing, recursive Gaussian filtering, objectness/vesselness filters, and image I/O pipelines. This would complement, not replace, the existing `tifffile`/`pydicom` I/O path. |
 | `CuPy` | `source/slavv/core/energy.py`, `source/slavv/core/edge_primitives.py`, `source/slavv/core/edge_candidates.py`, `source/slavv/utils/preprocessing.py` | `High priority if you have NVIDIA GPUs` | Easiest way to move NumPy/SciPy-style array math and `ndimage`-like work onto GPU. |
 | `cuCIM` | `source/slavv/core/edge_candidates.py`, `source/slavv/core/edge_selection.py`, `source/slavv/utils/preprocessing.py`, future segmentation helpers | `High priority if you have NVIDIA GPUs` | Gives you GPU image operations in a scikit-image-shaped API, which matches this repo's current mental model better than rewriting everything around OpenCV. |
 | `Dask` + `Zarr` | `source/slavv/core/energy.py`, `source/slavv/runtime/run_state.py`, checkpoint/artifact storage | `High priority for large datasets` | Strong fit for chunked, resumable, larger-than-memory arrays and persistent chunked storage. |
@@ -305,6 +311,10 @@ would use:
    toward `Zarr`, with `Dask` only where lazy chunked computation truly helps.
 5. If manual review matters, prototype a `napari`-based curator before spending
    more effort growing the custom Qt/PyVista surface.
+
+For a parity-preserving port, I would treat `numba` and `SimpleITK` as the
+first non-UI experiments, and only move to GPU-backed options if the deployment
+environment actually has stable NVIDIA support.
 
 ## MATLAB Packages / Toolboxes Evidenced In The Upstream Repo
 

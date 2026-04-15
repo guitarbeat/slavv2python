@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 Repository guidance for coding agents working in `slavv2python`.
 
@@ -7,23 +7,23 @@ Repository guidance for coding agents working in `slavv2python`.
 - Work from the repository root.
 - Prefer PowerShell-friendly commands on Windows.
 - Treat the commands in this file as the canonical workflows for the repo.
-- Historical references to `biome` or `workspace/examples/run_tutorial.py` are stale and do not apply to this project.
+- Historical references to `biome` or `dev/examples/run_tutorial.py` are stale and do not apply to this project.
 
 ## Repository Map
 
 - `source/slavv/`: core package code, including processing, I/O, analysis, visualization, and app entry points
-- `tests/`: unit, integration, UI, and diagnostic coverage
-- `workspace/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
-- `workspace/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
-- `workspace/reports/`: archived tooling snapshots and other non-source reference artifacts
+- `dev/tests/`: unit, integration, UI, and diagnostic coverage
+- `dev/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
+- `dev/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
+- `dev/reports/`: archived tooling snapshots and other non-source reference artifacts
 - `docs/`: maintained reference docs for MATLAB mapping, parity notes, and comparison run layout
 - `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
 
 ## Read First When Relevant
 
 - `docs/README.md`: index for maintained reference docs and active chapter status.
-- `tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
-- `tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `workspace/tmp_tests/`.
+- `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
+- `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
 - `docs/reference/COMPARISON_LAYOUT.md`: canonical staged comparison layout details and naming conventions.
 - `docs/reference/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
 - `source/slavv/parity/run_layout.py`: canonical staged comparison layout and legacy-path compatibility rules.
@@ -82,15 +82,15 @@ Notes:
 Tests:
 
 ```powershell
-python -m pytest tests/
+python -m pytest dev/tests/
 python -m pytest -m "unit or integration"
-python -m pytest tests/diagnostic/test_comparison_setup.py
+python -m pytest dev/tests/diagnostic/test_comparison_setup.py
 ```
 
 Other useful checks:
 
 ```powershell
-python -m compileall source workspace/scripts
+python -m compileall source dev/scripts
 pre-commit run --all-files
 ```
 
@@ -109,7 +109,7 @@ slavv import-matlab -b path\to\batch_260210-101213 -c my_checkpoints
 Useful `slavv run` options:
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a
+slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a
 slavv run -i volume.tif -o slavv_output --checkpoint-dir checkpoints
 slavv run -i volume.tif -o slavv_output --stop-after edges
 slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
@@ -136,7 +136,7 @@ The ML curation flow accepts uploaded `.joblib` and `.pkl` model files directly.
 ### Small Code Change
 
 1. Read the impacted module and its nearest tests first.
-2. If you are adding or moving tests, verify placement against `tests/README.md` and the marker behavior in `tests/conftest.py`.
+2. If you are adding or moving tests, verify placement against `dev/tests/README.md` and the marker behavior in `dev/tests/conftest.py`.
 3. Run the smallest targeted pytest command that covers the change.
 4. Run `python -m ruff check source tests --fix` and `python -m ruff format source tests` if you touched Python files.
 5. Finish with `python -m pytest -m "unit or integration"` when the change crosses module boundaries.
@@ -146,22 +146,22 @@ The ML curation flow accepts uploaded `.joblib` and `.pkl` model files directly.
 Use this before pushing substantial package changes:
 
 ```powershell
-python -m compileall source workspace/scripts
+python -m compileall source dev/scripts
 python -m ruff format --check source tests
 python -m ruff check source tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```
 
-If the change is UI-facing, also run the relevant `tests/ui/` coverage. If the change touches diagnostics, comparison helpers, or environment setup, include the diagnostic tests as well.
+If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage. If the change touches diagnostics, comparison helpers, or environment setup, include the diagnostic tests as well.
 
 ### MATLAB Parity Workflow
 
 Run this when touching MATLAB import, comparison, or parity-sensitive logic:
 
 ```powershell
-python -m pytest tests/diagnostic/test_comparison_setup.py
-python workspace/scripts/cli/compare_matlab_python.py `
+python -m pytest dev/tests/diagnostic/test_comparison_setup.py
+python dev/scripts/cli/compare_matlab_python.py `
     --input data/slavv_test_volume.tif `
     --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" `
     --output-dir comparison_output
@@ -170,8 +170,8 @@ python workspace/scripts/cli/compare_matlab_python.py `
 Useful comparison flags:
 
 ```powershell
-python workspace/scripts/cli/compare_matlab_python.py --skip-matlab ...
-python workspace/scripts/cli/compare_matlab_python.py --skip-python ...
+python dev/scripts/cli/compare_matlab_python.py --skip-matlab ...
+python dev/scripts/cli/compare_matlab_python.py --skip-python ...
 ```
 
 Parity layout conventions to preserve:
@@ -186,9 +186,9 @@ Expect the MATLAB workflow to require a populated `external/Vectorization-Public
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/slavv/`.
-- Keep tests under `tests/`; follow `tests/README.md` for ownership-based placement and marker usage.
-- Pytest markers are assigned by folder in `tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
-- Use the repo-local `tmp_path` fixture behavior in `tests/conftest.py` when writing tests; temporary test artifacts should stay under `workspace/tmp_tests/`, not ad-hoc temp roots.
+- Keep tests under `dev/tests/`; follow `dev/tests/README.md` for ownership-based placement and marker usage.
+- Pytest markers are assigned by folder in `dev/tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
+- Use the repo-local `tmp_path` fixture behavior in `dev/tests/conftest.py` when writing tests; temporary test artifacts should stay under `dev/tmp_tests/`, not ad-hoc temp roots.
 - Use `logging` in library code instead of `print()`. CLI commands may print user-facing summaries.
 - Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings such as `encoding="utf-8"` when writing repository-managed text artifacts.
 - Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
@@ -196,5 +196,7 @@ Expect the MATLAB workflow to require a populated `external/Vectorization-Public
 - Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
 - Preserve MATLAB parity where practical, and add deterministic regression tests for behavior changes.
 - When touching parity or comparison code, preserve the staged run-root semantics implemented in `source/slavv/parity/run_layout.py` and `source/slavv/runtime/run_state.py`, including compatibility with legacy checkpoint directories where present.
-- Prefer searching with `rg`, but exclude noisy generated trees like `workspace/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
+- Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
 - Do not treat generated outputs under `comparisons/`, `comparison_output*/`, or cache directories as source inputs for code changes.
+
+

@@ -768,11 +768,11 @@ def run_matlab_vectorization(
         params_file = os.path.abspath(params_file)
 
     # Define script paths with absolute resolution.
-    # Prefer workspace/scripts (current layout), fallback to scripts (legacy layout).
+    # Prefer dev/scripts (current layout), fallback to scripts (legacy layout).
     if batch_script is None:
         script_name = "run_matlab_cli.bat" if os.name == "nt" else "run_matlab_cli.sh"
         candidates = [
-            (project_root / "workspace" / "scripts" / "cli" / script_name).resolve(),
+            (project_root / "dev" / "scripts" / "cli" / script_name).resolve(),
             (project_root / "scripts" / "cli" / script_name).resolve(),
         ]
         for candidate in candidates:
@@ -1510,9 +1510,9 @@ def orchestrate_comparison(
                 print("Stage-Isolated Network Gate Validation")
                 print("=" * 60)
                 print("Network gate validation PASSED:")
-                print("  ✓ MATLAB edges artifact present")
-                print("  ✓ MATLAB vertices artifact present")
-                print("  ✓ MATLAB energy artifact present")
+                print("  âœ“ MATLAB edges artifact present")
+                print("  âœ“ MATLAB vertices artifact present")
+                print("  âœ“ MATLAB energy artifact present")
                 print(f"  Edges fingerprint: {validation.matlab_edges_fingerprint[:16]}...")
                 print(f"  Vertices fingerprint: {validation.matlab_vertices_fingerprint[:16]}...")
 
@@ -1569,11 +1569,11 @@ def orchestrate_comparison(
                     f"\nNetwork gate execution completed in {execution.elapsed_seconds:.2f} seconds"
                 )
                 print("\nParity Status:")
-                print(f"  Vertices: {'✓ PASS' if execution.vertices_match else '✗ FAIL'}")
-                print(f"  Edges:    {'✓ PASS' if execution.edges_match else '✗ FAIL'}")
-                print(f"  Strands:  {'✓ PASS' if execution.strands_match else '✗ FAIL'}")
+                print(f"  Vertices: {'âœ“ PASS' if execution.vertices_match else 'âœ— FAIL'}")
+                print(f"  Edges:    {'âœ“ PASS' if execution.edges_match else 'âœ— FAIL'}")
+                print(f"  Strands:  {'âœ“ PASS' if execution.strands_match else 'âœ— FAIL'}")
                 print(
-                    f"  Overall:  {'✓ PARITY ACHIEVED' if execution.parity_achieved else '✗ PARITY NOT ACHIEVED'}"
+                    f"  Overall:  {'âœ“ PARITY ACHIEVED' if execution.parity_achieved else 'âœ— PARITY NOT ACHIEVED'}"
                 )
 
                 comparison_context.update_optional_task(

@@ -1,4 +1,4 @@
-# Design Document: Parity Workflow Completion
+﻿# Design Document: Parity Workflow Completion
 
 ## Overview
 
@@ -14,7 +14,13 @@ stage-isolated `network`-gate execution, staged run-layout persistence, and
 replay-safe normalized comparison params. Those pieces remain the baseline that
 the new work plugs into.
 
-The design also treats `workspace/reports/tooling/` as archival context. Those
+This is a design for the next backlog increment, not a description of already
+implemented modules. The current codebase already emits a shared-neighborhood
+audit during comparison runs and already exposes the stage-isolated network-gate
+workflow through the parity CLI; the new work should standardize and preserve
+those behaviors while adding the more durable diagnostic and proof surfaces.
+
+The design also treats `dev/reports/tooling/` as archival context. Those
 files document a March 23, 2026 snapshot of Ruff, mypy, and pytest findings,
 but they are not the live source of truth for current repo health.
 
@@ -29,13 +35,17 @@ but they are not the live source of truth for current repo health.
 - `source/slavv/parity/comparison.py`
   - current comparison orchestration, parity reporting, and network-gate entry
     points
+- `source/slavv/parity/metrics.py`
+  - current shared-neighborhood audit construction used by comparison runs
 - `source/slavv/parity/network_gate.py`
   - current stage-isolated `network`-gate validation and execution
 - `source/slavv/parity/run_layout.py`
   - canonical staged artifact layout and path resolution
 - `source/slavv/runtime/run_state.py`
   - existing persisted run metadata and compatibility behavior
-- `workspace/reports/tooling/README.md`
+- `source/slavv/apps/parity_cli.py`
+  - current parity CLI entrypoint for comparison and network-gate workflows
+- `dev/reports/tooling/README.md`
   - confirms the tooling snapshots are archival reference artifacts
 
 ### Design Goal
@@ -59,13 +69,15 @@ surface. So the design should:
 The remaining work adds two new modules and two small integration layers:
 
 1. **Diagnostics Module** (`source/slavv/parity/diagnostics.py`)
-   - analyzes staged MATLAB/Python artifacts for neighborhood-level divergence
-   - persists JSON/Markdown reports under `03_Analysis/`
-   - emits actionable next-investigation guidance
+  - analyzes staged MATLAB/Python artifacts for neighborhood-level divergence
+  - persists JSON/Markdown reports under `03_Analysis/`
+  - emits actionable next-investigation guidance
 
 2. **Diagnostics Integration** (`source/slavv/parity/comparison.py`)
-   - recommends diagnostics after an `edges` parity gap
-   - displays a compact summary when a diagnostic report already exists
+  - recommends diagnostics after an `edges` parity gap
+  - displays a compact summary when a diagnostic report already exists
+  - upgrades the existing shared-neighborhood audit surface to the canonical
+    diagnostic report name without breaking current comparison behavior
 
 3. **Proof Artifact Module** (`source/slavv/parity/proof_artifacts.py`)
    - generates proof artifacts from successful `network`-gate execution data
@@ -90,7 +102,7 @@ Generate or recommend shared-neighborhood diagnostics
     ->
 Persist report to 03_Analysis/
     ->
-Guide next edge_candidates.py / tracing.py iteration
+    Guide next edge_candidates.py / edge_selection.py iteration
 
 Stage-isolated network gate succeeds
     ->
@@ -139,7 +151,7 @@ class SharedNeighborhoodDiagnosticReport:
     top_divergence_patterns: list[str]
     recommended_investigations: list[str]
     edge_candidates_to_review: list[str]
-    tracing_logic_to_review: list[str]
+    edge_selection_logic_to_review: list[str]
 ```
 
 #### Generation Interface
@@ -175,7 +187,7 @@ The Markdown report should prioritize:
 - top divergence patterns
 - a short list of highest-severity neighborhoods
 - next code surfaces to inspect in `source/slavv/core/edge_candidates.py` and
-  `source/slavv/core/tracing.py`
+  `source/slavv/core/edge_selection.py`
 
 ### 2. Comparison-Flow Diagnostics Integration
 
@@ -199,6 +211,8 @@ def recommend_diagnostics_if_needed(
   isolated to the `edges` surface.
 - If an existing diagnostic report is already present, `comparison.py` should
   print a compact summary rather than only telling the user to generate one.
+- Keep the legacy shared-neighborhood audit artifact readable during the
+  transition so older reports and current diagnostics can coexist.
 - The integration should not block or slow normal comparison runs when no
   diagnostic report is requested.
 
@@ -305,7 +319,7 @@ This command should:
 The archived tooling folder currently records:
 
 - one historical pytest collection failure in
-  `tests/diagnostic/test_comparison_setup.py` caused by Python 3.7 evaluating
+  `dev/tests/diagnostic/test_comparison_setup.py` caused by Python 3.7 evaluating
   built-in generic type syntax
 - a small Ruff snapshot covering a mix of test-style issues plus one real
   application error in `source/slavv/apps/web_app.py`
@@ -364,14 +378,14 @@ Instead:
 
 ### Unit Tests
 
-**Diagnostics** (`tests/unit/parity/test_diagnostics.py`)
+**Diagnostics** (`dev/tests/unit/parity/test_diagnostics.py`)
 
 - divergence model serialization
 - claim-ordering, branch-invalidation, and partner-choice classification
 - candidate-coverage delta calculation
 - recommendation generation
 
-**Proof Artifacts** (`tests/unit/parity/test_proof_artifacts.py`)
+**Proof Artifacts** (`dev/tests/unit/parity/test_proof_artifacts.py`)
 
 - proof generation from persisted network-gate execution metadata
 - optional resource-usage handling
@@ -381,14 +395,14 @@ Instead:
 
 ### Integration Tests
 
-**Diagnostics Integration** (`tests/integration/parity/test_diagnostic_integration.py`)
+**Diagnostics Integration** (`dev/tests/integration/parity/test_diagnostic_integration.py`)
 
 - recommendation when `edges` parity fails
 - stronger recommendation when the `network` gate succeeds
 - report persistence to `03_Analysis/`
 - CLI summary rendering from a persisted report
 
-**Proof Integration** (`tests/integration/parity/test_proof_artifact_integration.py`)
+**Proof Integration** (`dev/tests/integration/parity/test_proof_artifact_integration.py`)
 
 - proof generation after successful `network`-gate runs
 - no proof generation after failed gate runs
@@ -450,3 +464,4 @@ queryable proof surface.
 Run the focused diagnostics/proof tests plus the repo's standard Ruff, mypy,
 and pytest checks needed for the touched modules. Do not use the archived
 tooling snapshots as a substitute for current validation.
+

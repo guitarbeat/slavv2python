@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM run_matlab_cli.bat
 REM Windows batch script to invoke MATLAB R2019a from command line
 REM
@@ -69,7 +69,7 @@ REM Get script directory (where this batch file is located)
 set SCRIPT_DIR=%~dp0
 set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
-REM Get project root (parent of workspace/scripts/cli)
+REM Get project root (parent of dev/scripts/cli)
 for %%P in ("%SCRIPT_DIR%\..\..\..") do set PROJECT_ROOT=%%~fP
 
 REM Change to Vectorization-Public directory for MATLAB
@@ -139,3 +139,4 @@ if %MATLAB_EXIT_CODE% NEQ 0 (
 )
 
 exit /b 0
+

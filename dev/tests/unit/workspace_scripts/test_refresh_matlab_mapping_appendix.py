@@ -1,4 +1,4 @@
-"""Tests for ``workspace/scripts/maintenance/refresh_matlab_mapping_appendix.py``."""
+"""Tests for ``dev/scripts/maintenance/refresh_matlab_mapping_appendix.py``."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def _load_workspace_module(relative_path: str, module_name: str):
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[4]
     module_path = repo_root / relative_path
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     module = importlib.util.module_from_spec(spec)
@@ -19,7 +19,7 @@ def _load_workspace_module(relative_path: str, module_name: str):
 
 def test_extract_mapped_matlab_filenames_only_reads_table_entries():
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/refresh_matlab_mapping_appendix.py",
+        "dev/scripts/maintenance/refresh_matlab_mapping_appendix.py",
         "refresh_matlab_mapping_appendix_extract_test",
     )
     content = """
@@ -37,17 +37,17 @@ Intro text mentions `foo.m` but this is not a table row.
 
 def test_refresh_matlab_mapping_appendix_targets_reference_mapping_doc():
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/refresh_matlab_mapping_appendix.py",
+        "dev/scripts/maintenance/refresh_matlab_mapping_appendix.py",
         "refresh_matlab_mapping_appendix_path_test",
     )
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[4]
 
     assert repo_root / "docs" / "reference" / "MATLAB_MAPPING.md" == module.MATLAB_MAPPING_PATH
 
 
 def test_refresh_matlab_mapping_appendix_replaces_existing_appendix(tmp_path):
     module = _load_workspace_module(
-        "workspace/scripts/maintenance/refresh_matlab_mapping_appendix.py",
+        "dev/scripts/maintenance/refresh_matlab_mapping_appendix.py",
         "refresh_matlab_mapping_appendix_main_test",
     )
     mapping_path = tmp_path / "docs" / "reference" / "MATLAB_MAPPING.md"

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 # Add project root and source to path for slavv imports
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).resolve().parents[3]
 source_dir = project_root / "source"
 sys.path.insert(0, str(source_dir))
 
@@ -23,10 +23,10 @@ def _run_setup_checks() -> tuple[list[str], list[str]]:
     errors = []
     warnings = []
 
-    # Check test data file (may be in data/ or tests/data/)
+    # Check test data file (may be in data/ or dev/tests/data/)
     test_data = project_root / "data" / "slavv_test_volume.tif"
     if not test_data.exists():
-        test_data = project_root / "tests" / "data" / "slavv_test_volume.tif"
+        test_data = project_root / "dev" / "tests" / "data" / "slavv_test_volume.tif"
     if test_data.exists():
         print(f"[OK] Test data file found: {test_data}")
     else:
@@ -40,8 +40,8 @@ def _run_setup_checks() -> tuple[list[str], list[str]]:
         warnings.append(f"[WARN] MATLAB executable not found at default path: {matlab_path}")
         print("  (You can specify a different path with --matlab-path)")
 
-    # Check scripts (in workspace/scripts/cli)
-    scripts_dir = project_root / "workspace" / "scripts" / "cli"
+    # Check scripts (in dev/scripts/cli)
+    scripts_dir = project_root / "dev" / "scripts" / "cli"
     required_scripts = [
         "run_matlab_vectorization.m",
         "run_matlab_cli.bat",
@@ -108,7 +108,7 @@ def _run_setup_checks() -> tuple[list[str], list[str]]:
             for warning in warnings:
                 print(f"  {warning}")
         print("\nSetup is ready. You can now run:")
-        print("  python workspace/scripts/cli/compare_matlab_python.py \\")
+        print("  python dev/scripts/cli/compare_matlab_python.py \\")
         print('      --input "data/slavv_test_volume.tif" \\')
         print('      --matlab-path "C:\\Program Files\\MATLAB\\R2019a\\bin\\matlab.exe" \\')
         print('      --output-dir "comparison_output"')

@@ -6,7 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MATLAB_SEARCH_ROOTS = (
     REPO_ROOT / "external" / "Vectorization-Public",
-    REPO_ROOT / "workspace",
+    REPO_ROOT / "dev",
 )
 MATLAB_FUNCTION_RE = re.compile(r"^function\b", re.IGNORECASE)
 

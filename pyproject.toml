@@ -103,7 +103,7 @@ include = ["slavv*"]
 [tool.ruff]
 target-version = "py39"
 line-length = 100
-src = ["source", "tests"]
+src = ["source", "dev/tests"]
 
 [tool.ruff.lint]
 select = [

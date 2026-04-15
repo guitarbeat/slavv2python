@@ -1,4 +1,4 @@
-# SLAVV Python Port
+﻿# SLAVV Python Port
 
 Python reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network extraction from microscopy volumes. This repository contains the core package code, a Streamlit web application, a Command-Line Interface (CLI), MATLAB import helpers, and parity/comparison tooling used to validate the port against the original MATLAB implementation.
 
@@ -67,7 +67,7 @@ slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
 
 # Run with custom parameters and an explicit structured run directory
-slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a --vessel-radius 2.0
+slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a --vessel-radius 2.0
 
 # Import MATLAB results for comparison
 slavv import-matlab -b path\to\matlab_batch -c my_checkpoints
@@ -98,31 +98,31 @@ The ML curation flow accepts trained `.joblib` and `.pkl` model uploads directly
 
 ### MATLAB Parity And Comparison Workflow
 
-Use the backward-compatible wrapper at `workspace/scripts/cli/compare_matlab_python.py`
+Use the backward-compatible wrapper at `dev/scripts/cli/compare_matlab_python.py`
 for MATLAB/Python parity loops. The packaged implementation lives in
 `source/slavv/apps/parity_cli.py`.
 
 ```powershell
 # Output-root preflight only
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --input data/slavv_test_volume.tif `
   --validate-only
 
 # Lightweight MATLAB launch probe after preflight
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --matlab-health-check `
   --output-dir comparisons\health_check `
   --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
 
 # Default imported-MATLAB edge loop
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --input data/slavv_test_volume.tif `
   --skip-matlab `
   --resume-latest `
   --python-parity-rerun-from edges
 
 # Stage-isolated downstream network gate
-python workspace/scripts/cli/compare_matlab_python.py `
+python dev/scripts/cli/compare_matlab_python.py `
   --input data/slavv_test_volume.tif `
   --skip-matlab `
   --resume-latest `
@@ -180,16 +180,16 @@ linting, type checking, or tests.
 
 ### Maintenance and Utility Scripts
 
-Located in `workspace/scripts/`:
+Located in `dev/scripts/`:
 - `source/slavv/apps/parity_cli.py`: Canonical implementation of the parity comparison CLI.
-- `workspace/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
-- `workspace/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
-- `workspace/scripts/benchmarks/`: Ad-hoc benchmark helpers that are not part of pytest collection.
+- `dev/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
+- `dev/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
+- `dev/scripts/benchmarks/`: Ad-hoc benchmark helpers that are not part of pytest collection.
 
 ## Quality Gates
 
 ```powershell
-python -m ruff check source tests
+python -m ruff check source dev/tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```
@@ -208,7 +208,7 @@ python -m pytest -m "unit or integration"
 python -m pytest
 
 # Diagnostic tests for environment/MATLAB parity setup
-python -m pytest tests/diagnostic/test_comparison_setup.py
+python -m pytest dev/tests/diagnostic/test_comparison_setup.py
 ```
 
 ## Environment Variables
@@ -224,9 +224,9 @@ No manual environment variable configuration is typically required for standard 
 | Path | Description |
 | --- | --- |
 | `source/slavv/` | Core package code (processing, I/O, analysis, visualization, CLI/app). |
-| `tests/` | Unit, integration, UI, regression, and diagnostic tests. |
-| `workspace/scripts/` | MATLAB comparison wrappers and maintenance helpers. |
-| `workspace/reports/` | Archived tooling snapshots and repo-local reference artifacts. |
+| `dev/tests/` | Unit, integration, UI, regression, and diagnostic tests. |
+| `dev/scripts/` | MATLAB comparison wrappers and maintenance helpers. |
+| `dev/reports/` | Archived tooling snapshots and repo-local reference artifacts. |
 | `docs/` | Translation guide, MATLAB mapping, comparison layout references, and active chapter docs. |
 | `external/` | Optional checkouts like `Vectorization-Public` (MATLAB SLAVV). |
 | `data/` | Sample data and test volumes. |
@@ -252,3 +252,5 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 See [BOTTLENECK_TODO.md](BOTTLENECK_TODO.md) for the active parity backlog and
 workflow tracker, and [CHANGELOG.md](CHANGELOG.md) for recent shipped changes.
+
+

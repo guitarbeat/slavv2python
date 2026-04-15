@@ -1,4 +1,4 @@
-# MATLAB Parity Report
+﻿# MATLAB Parity Report
 
 Date: April 9, 2026
 Status: Chapter 1 closeout report
@@ -85,7 +85,7 @@ Evidence:
 - In the same checkout, `external/Vectorization-Public/source/get_edges_V300.m` calls `get_edges_by_watershed(...)`.
 - `external/Vectorization-Public/source/get_edges_by_watershed.m` exposes shared maps such as `energy_map`, `vertex_index_map`, `pointer_map`, and branch/distance bookkeeping, which is consistent with a shared candidate-discovery and conflict-resolution surface rather than a purely local frontier launcher.
 
-This upstream reading also fits the SLAVV paper’s framing that edge extraction operates with topological/connectivity constraints rather than only isolated local tracing.
+This upstream reading also fits the SLAVV paperâ€™s framing that edge extraction operates with topological/connectivity constraints rather than only isolated local tracing.
 
 ## Web Searches Performed
 
@@ -290,7 +290,7 @@ Primary evidence:
 
 - Geodesic salvage helped this origin the most in the informative runs.
 - It showed that local missing-candidate recovery is possible.
-- However, the recovered pairs still did not fully match MATLAB’s incident pairs.
+- However, the recovered pairs still did not fully match MATLABâ€™s incident pairs.
 
 ### Seed 49
 
@@ -342,7 +342,7 @@ Relevant files:
 
 - `source/slavv/core/edge_candidates.py`
 - `source/slavv/utils/validation.py`
-- `tests/unit/core/test_candidate_diagnostics.py`
+- `dev/tests/unit/core/test_candidate_diagnostics.py`
 - `source/slavv/parity/metrics.py`
 - `source/slavv/parity/reporting.py`
 
@@ -414,3 +414,4 @@ This round did not achieve full MATLAB network parity, but it did produce a clea
 - the remaining gap is still candidate-generation driven
 - the modern upstream MATLAB target is more watershed/shared-state oriented than the older frontier-only mapping implied
 - origin `64` remains the most actionable next debugging surface
+

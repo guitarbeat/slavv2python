@@ -1,7 +1,7 @@
-# Comparison Run Layout
+﻿# Comparison Run Layout
 
 This document describes the canonical staged layout for generated MATLAB/Python
-comparison runs. It replaces the older `workspace/experiments` note, which no
+comparison runs. It replaces the older `dev/experiments` note, which no
 longer matches the current repository structure.
 
 ## Goals
@@ -11,6 +11,8 @@ longer matches the current repository structure.
 - Separate upstream inputs, Python outputs, analysis artifacts, and run metadata.
 - Preserve a layout that works for both full comparisons and parity-focused
   reruns.
+- Keep this file focused on the durable folder contract; chapter-specific
+  workflow notes belong in the relevant chapter docs.
 
 ## Canonical Layout
 
@@ -100,7 +102,7 @@ human-facing ledger for orchestration decisions:
 ## Workflow Notes
 
 - `source/slavv/apps/parity_cli.py` is the canonical parity CLI implementation,
-  and `workspace/scripts/cli/compare_matlab_python.py` remains a thin wrapper.
+  and `dev/scripts/cli/compare_matlab_python.py` remains a thin wrapper.
 - The parity CLI should treat this staged layout as the default organization
   for generated runs.
 - `slavv import-matlab` imports a MATLAB batch into checkpoint-compatible
@@ -121,56 +123,17 @@ human-facing ledger for orchestration decisions:
   the caller-selected root when invoked directly. Prefer the staged layout when
   building durable comparison outputs for inspection.
 
-## Parity Workflow Enhancements
+## Chapter-Specific Workflow Notes
 
-The parity workflow includes four key enhancements for efficient iteration:
+The active chapter docs explain the workflow details that sit on top of this
+layout contract:
 
-### CLI Reuse Eligibility Summaries
+- [Shared Neighborhood Claim Alignment](../chapters/shared-neighborhood-claim-alignment/README.md)
+- [Shared Candidate Generation Alignment](../chapters/shared-candidate-generation/README.md)
+- [Imported-MATLAB Parity Report](../chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 
-After each comparison run, the CLI displays a reuse eligibility summary that:
-- States whether the run root is safe to reuse for imported-MATLAB parity loops
-- States whether the run root is safe for analysis-only comparison
-- Lists specific rerun commands that are safe based on workflow state
-- Explains which artifacts are missing and why they are needed
-- Recommends the next action based on the workflow state
-
-The summary is generated from `99_Metadata/loop_assessment.json` and helps developers quickly understand their options without expensive MATLAB reruns.
-
-### Stage-Isolated Network Gate
-
-The stage-isolated network gate is a fast validation mechanism that:
-- Imports exact MATLAB edges and reruns only Python network assembly
-- Completes in under 30 seconds for the standard test volume
-- Validates required MATLAB artifacts before execution (fast-fail)
-- Forces `comparison_exact_network=True` for deterministic assembly
-- Reports exact parity status for vertices, edges, and strands
-- Persists execution metadata to `99_Metadata/network_gate_execution.json`
-
-This isolates parity issues between edge generation and network assembly without expensive full reruns.
-
-### Shared-Neighborhood Diagnostics
-
-When edge parity gaps are detected, the workflow recommends running shared-neighborhood diagnostics that:
-- Identify neighborhood-level claim ordering differences
-- Detect branch invalidation differences
-- Identify local partner choice differences
-- Quantify candidate coverage gaps between MATLAB and Python
-- Generate actionable recommendations for which code to investigate
-- Persist reports to `03_Analysis/shared_neighborhood_diagnostics.json` and `.md`
-
-The diagnostic reports provide evidence-based insights for systematic edge candidate improvements.
-
-### Proof Artifacts
-
-After successful stage-isolated network gate execution, the workflow generates proof artifacts that:
-- Document the input MATLAB batch provenance
-- Record exact parity status for vertices, edges, and strands
-- Include execution timing and resource usage
-- Include checksums/fingerprints of imported MATLAB edges and resulting Python network
-- Persist to `03_Analysis/proof_artifacts/network_gate_proof_{timestamp}.json` and `.md`
-- Maintain an index at `03_Analysis/proof_artifact_index.json`
-
-Proof artifacts provide maintained evidence that network assembly achieves exact parity when given exact MATLAB edges. Use `slavv parity-proof --run-dir <path>` to display the latest proof summary.
+Those chapters cover reuse summaries, diagnostics, proof artifacts, and other
+workflow-specific outputs that still write into the staged folders above.
 
 ## Repository Guidance
 
@@ -189,3 +152,5 @@ Chapter-specific parity status now lives in
 Keep this document focused on the run-layout contract. For translation
 semantics and boundary rules, use
 [`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md).
+
+

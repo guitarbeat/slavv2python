@@ -1,4 +1,4 @@
----
+﻿---
 name: python-change-gate
 description: "Implement a Python change with the smallest safe diff, add/update ownership-aligned tests, and run the repo's standard validation gate (ruff, mypy, pytest -m 'unit or integration'). Use when: fixing bugs, refactoring, adding features, or touching CLI/app/runtime/parity code. Keywords: minimal diff, tests, pytest, ruff, mypy, validation gate."
 argument-hint: "Describe the change + where it lives; this skill will drive implementation, tests, and validation."
@@ -13,13 +13,13 @@ Codifies the repository's default workflow for making a Python change safely: mi
 - Bug fixes, refactors, or feature work in `source/slavv/`
 - CLI/app changes under `source/slavv/apps/`
 - Runtime/run-state or parity-sensitive changes
-- Any change where you want a consistent “done” definition
+- Any change where you want a consistent â€œdoneâ€ definition
 
 ## Procedure
 
 ### 1) Scope and Read First
 1. Identify the smallest set of modules impacted.
-2. Read the nearest tests first (or create them in the ownership-aligned location per `tests/README.md`).
+2. Read the nearest tests first (or create them in the ownership-aligned location per `dev/tests/README.md`).
 3. Confirm whether behavior is parity-sensitive (run layout, legacy checkpoints, MATLAB import).
 
 ### 2) Implement Minimal Diff
@@ -30,7 +30,7 @@ Codifies the repository's default workflow for making a Python change safely: mi
 ### 3) Add/Update Tests
 1. Add tests that fail before the change and pass after.
 2. Keep tests deterministic (avoid time/randomness unless controlled).
-3. Place tests under the owning surface area (see `tests/README.md`).
+3. Place tests under the owning surface area (see `dev/tests/README.md`).
 
 ### 4) Validate (Standard Gate)
 Run these from repo root:
@@ -45,7 +45,7 @@ python -m pytest -m "unit or integration"
 If the change is parity/comparison related, also run:
 
 ```powershell
-python -m pytest tests/diagnostic/test_comparison_setup.py
+python -m pytest dev/tests/diagnostic/test_comparison_setup.py
 ```
 
 ### 5) Report Results
@@ -59,3 +59,4 @@ Return:
 - Behavior change is covered by tests (or explicitly justified if not feasible).
 - Standard gate passes (or failures are explained and scoped).
 - No unrelated churn; diff is reviewable.
+

@@ -4,6 +4,10 @@ This note explains the supported `energy_method` options in the Python SLAVV
 pipeline, how they interact with the existing parameter surface, and where to
 extend the implementation when a new method is needed.
 
+The active validation surface lives in `source/slavv/utils/validation.py`, and
+the canonical comparison-layout guidance for parity-sensitive runs lives in
+`docs/reference/COMPARISON_LAYOUT.md`.
+
 ## Supported Methods
 
 | Method | Where it lives | Best use | Notes |
@@ -46,7 +50,9 @@ All three methods still respect the shared energy configuration surface in
 
 `hessian` uses the full MATLAB-style matched-filter path. `frangi` and `sato`
 reuse the scale schedule and energy-sign conventions, but they defer the
-per-scale vesselness computation to scikit-image.
+per-scale vesselness computation to scikit-image. If `sato` is unavailable in
+the installed `scikit-image`, the code falls back to `hessian` instead of
+failing the run.
 
 ## Choosing A Method
 
@@ -69,9 +75,9 @@ When adding a new energy backend, update these surfaces together:
    Allow the new `energy_method` value in parameter validation.
 3. `source/slavv/apps/cli.py`
    Expose the new choice through `slavv run --energy-method`.
-4. `tests/unit/core/test_energy_methods.py`
+4. `dev/tests/unit/core/test_energy_methods.py`
    Add focused correctness coverage for the new backend.
-5. `tests/unit/core/test_energy_field_storage.py`
+5. `dev/tests/unit/core/test_energy_field_storage.py`
    Add or extend regression coverage if the direct and resumable paths need to
    remain aligned.
 6. Documentation
@@ -84,5 +90,7 @@ When adding a new energy backend, update these surfaces together:
   `source/slavv/core/energy.py`.
 - Preserve `float32` outputs for persisted energy volumes unless there is a
   deliberate format change.
+- For parity-sensitive runs, prefer `hessian` and keep staged outputs aligned
+   with `docs/reference/COMPARISON_LAYOUT.md`.
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.

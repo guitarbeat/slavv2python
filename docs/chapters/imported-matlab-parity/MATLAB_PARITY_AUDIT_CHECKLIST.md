@@ -1,4 +1,4 @@
-# MATLAB Parity Audit Checklist
+﻿# MATLAB Parity Audit Checklist
 
 This checklist turns the current MATLAB-vs-Python parity discussion into a
 concrete audit plan we can work through and check off.
@@ -108,7 +108,7 @@ Current findings:
   which keeps the heap aligned with MATLAB's repeated `min` over the current
   frontier state rather than over historical entries.
 - Unit coverage already exists in
-  [test_frontier_tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\core\test_frontier_tracing.py)
+  [test_frontier_tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\dev\\tests\\unit\core\test_frontier_tracing.py)
   for deterministic tie-breaking and frontier-budget behavior, and those tests
   passed on April 7, 2026.
 - No tie-breaking drift has been identified yet, so this item is currently
@@ -138,7 +138,7 @@ Current findings:
   control shape MATLAB uses.
 - Unit coverage already exists for path backtracking and "terminal hit clears
   new frontier voxels" behavior in
-  [test_frontier_tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\tests\unit\core\test_frontier_tracing.py),
+  [test_frontier_tracing.py](C:\Users\alw4834\OneDrive - The University of Texas at Austin\Documents 1\GitHub\slavv2python\dev\\tests\\unit\core\test_frontier_tracing.py),
   and those tests passed on April 7, 2026.
 - The unresolved question is not whether Python backtracks at all, but exactly
   how ownership should treat the shared root or bifurcation voxel after a
@@ -346,3 +346,4 @@ Artifact-level notes from the April 6, 2026 conflict-provenance trial:
       mismatch in isolation.
 - [ ] A targeted Python change improves parity on the imported-MATLAB loop
       without causing a larger regression elsewhere.
+
