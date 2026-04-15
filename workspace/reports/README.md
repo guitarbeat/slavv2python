@@ -16,8 +16,8 @@ next without opening a long chain of overlapping notes.
 
 ## Executive Summary
 
-- The top-level report set is now reduced to four active canonical documents
-  plus this README.
+- Reports are now grouped by handling status under `handled/` and
+  `unhandled/`.
 - The parity story is split cleanly into a fast decision memo, a technical
   audit appendix, and a repeatability baseline.
 - The April 13 release/rerun incident now lives in a single operator runbook
@@ -27,41 +27,59 @@ next without opening a long chain of overlapping notes.
 
 ## Current Status
 
-- Active set: `parity_decision_memo_2026-04-08.md`,
-  `matlab_python_code_audit_2026-04-08.md`,
-  `python_nondeterminism_investigation_2026-03-28.md`, and
-  `file_lock_contention_analysis_2026-04-13.md`
+| Report | Status | Notes |
+| --- | --- | --- |
+| [unhandled/parity_decision_memo_2026-04-08.md](unhandled/parity_decision_memo_2026-04-08.md) | Unhandled | Current parity blocker summary and next implementation target. |
+| [unhandled/matlab_python_code_audit_2026-04-08.md](unhandled/matlab_python_code_audit_2026-04-08.md) | Unhandled | Technical parity evidence and cleanup-path mismatch details. |
+| [handled/python_nondeterminism_investigation_2026-03-28.md](handled/python_nondeterminism_investigation_2026-03-28.md) | Handled | Repeatability investigation and deterministic fix baseline. |
+| [handled/file_lock_contention_analysis_2026-04-13.md](handled/file_lock_contention_analysis_2026-04-13.md) | Handled | April 13 operational incident analysis and recovery runbook. |
+| [handled/release_verification_2026-04-14.md](handled/release_verification_2026-04-14.md) | Handled | Release verification closure and performance snapshot. |
+
+- Unhandled set: `unhandled/parity_decision_memo_2026-04-08.md` and
+  `unhandled/matlab_python_code_audit_2026-04-08.md`
+- Handled set: `handled/python_nondeterminism_investigation_2026-03-28.md`,
+  `handled/file_lock_contention_analysis_2026-04-13.md`, and
+  `handled/release_verification_2026-04-14.md`
 - Retired set: older overlapping parity notes, consistency checkpoints, and
-  the separate April 13 release attempt log have been folded into the active
-  set and removed from the top level.
+  the separate April 13 release attempt log have been folded into the current
+  set and removed from top-level storage.
 
-## Active reports
+## Unhandled reports
 
-1. [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md)
+1. [unhandled/parity_decision_memo_2026-04-08.md](unhandled/parity_decision_memo_2026-04-08.md)
    - Start here for the shortest current parity summary.
    - Use this when you want the main blocker, what is already solved, and what
      not to spend time on next.
-2. [matlab_python_code_audit_2026-04-08.md](matlab_python_code_audit_2026-04-08.md)
+2. [unhandled/matlab_python_code_audit_2026-04-08.md](unhandled/matlab_python_code_audit_2026-04-08.md)
    - Technical appendix for the parity diagnosis.
    - Use this when you want the cleanup-path mismatch, artifact-backed evidence,
      and the implementation consequence of the audit.
-3. [python_nondeterminism_investigation_2026-03-28.md](python_nondeterminism_investigation_2026-03-28.md)
+
+## Handled reports
+
+1. [handled/python_nondeterminism_investigation_2026-03-28.md](handled/python_nondeterminism_investigation_2026-03-28.md)
    - Canonical repeatability baseline for March 28 to March 30.
    - Use this when you need the pre-fix instability story, the deterministic
      padding fix result, or the MATLAB/Python standalone consistency baseline.
-4. [file_lock_contention_analysis_2026-04-13.md](file_lock_contention_analysis_2026-04-13.md)
+2. [handled/file_lock_contention_analysis_2026-04-13.md](handled/file_lock_contention_analysis_2026-04-13.md)
    - Canonical April 13 release-operations incident and runbook.
    - Use this when you need to classify rerun failures, recover a completed run
      safely, or avoid Windows file-lock contention.
+3. [handled/release_verification_2026-04-14.md](handled/release_verification_2026-04-14.md)
+   - Canonical release verification closure note for the April 14 audit.
+   - Use this when you need final checklist completion and performance snapshot
+     references.
 
 ## Read order
 
-1. Read the parity decision memo for the current diagnosis.
+1. Read the unhandled parity decision memo for the current diagnosis.
 2. Open the code audit if you need the engineering detail behind that
    diagnosis.
-3. Use the nondeterminism investigation to separate solved repeatability work
-   from the still-open semantic parity gap.
-4. Use the file-lock report for release execution and rerun guidance.
+3. Use the handled nondeterminism investigation to separate solved
+  repeatability work from the still-open semantic parity gap.
+4. Use the handled file-lock report for release execution and rerun guidance.
+5. Use the handled release verification audit for final checklist closure and
+  performance context.
 
 ## Retired report map
 
