@@ -33,6 +33,16 @@ current conclusion.
   still wrong, and downstream cleanup is still modeled against the wrong MATLAB
   surface.
 
+## Handling Classification
+
+- Status: Handled
+- Why: The audit scope was to establish and defend the cleanup-chain mismatch
+  diagnosis with artifact-backed evidence. That scope is complete, and the
+  cleanup-chain alignment recommendation has been implemented in code.
+- Remaining open work: Residual parity mismatch after cleanup alignment remains
+  tracked as active algorithmic work in
+  `dev/reports/handled/parity_decision_memo_2026-04-08.md`.
+
 ## Current Status
 
 ### Confirmed and stable

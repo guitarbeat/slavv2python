@@ -25,6 +25,17 @@ orientation note for the April 7 to April 8 investigation set.
 - The next implementation target should be the cleanup mismatch first, because
   that removes a major confounder from the remaining edge-parity work.
 
+## Handling Classification
+
+- Status: Handled
+- Why: This memo's scope was to provide a concise decision record for the April
+  7 to April 8 parity diagnosis and identify the next implementation target.
+  That decision and its rationale are now fully captured here and in the linked
+  technical audit.
+- Remaining open work: Ongoing algorithmic parity convergence remains active in
+  current implementation/test workflows; this memo remains a historical
+  orientation artifact.
+
 ## Current Status
 
 ### Solved enough to trust
