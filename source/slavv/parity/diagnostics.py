@@ -5,10 +5,12 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .run_layout import resolve_run_layout
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _DIAGNOSTIC_JSON_NAME = "shared_neighborhood_diagnostics.json"
 _DIAGNOSTIC_MARKDOWN_NAME = "shared_neighborhood_diagnostics.md"
@@ -104,8 +106,7 @@ def _load_shared_audit(analysis_dir: Path, comparison_report: dict[str, Any]) ->
         return _read_json(audit_path)
 
     raise FileNotFoundError(
-        "Shared-neighborhood audit is not available in the comparison report or "
-        f"at {audit_path}."
+        f"Shared-neighborhood audit is not available in the comparison report or at {audit_path}."
     )
 
 
@@ -119,16 +120,19 @@ def _classify_divergence(neighborhood: dict[str, Any]) -> str:
         token in reason for token in ("partner", "substitution", "extra candidate pair")
     ):
         return "partner_choice"
-    if any(
-        token in reason
-        for token in (
-            "parent_has_child",
-            "child_has_parent",
-            "branch",
-            "rejected_",
-            "manifest",
+    if (
+        any(
+            token in reason
+            for token in (
+                "parent_has_child",
+                "child_has_parent",
+                "branch",
+                "rejected_",
+                "manifest",
+            )
         )
-    ) or stage == "pre_manifest_rejection":
+        or stage == "pre_manifest_rejection"
+    ):
         return "branch_invalidation"
     return "claim_ordering"
 
@@ -286,8 +290,10 @@ def generate_shared_neighborhood_diagnostics(
     analysis_dir = layout["analysis_dir"]
     comparison_report = _load_comparison_payload(layout["run_root"])
     audit = _load_shared_audit(analysis_dir, comparison_report)
-    coverage = comparison_report.get("edges", {}).get("diagnostics", {}).get(
-        "candidate_endpoint_coverage", {}
+    coverage = (
+        comparison_report.get("edges", {})
+        .get("diagnostics", {})
+        .get("candidate_endpoint_coverage", {})
     )
 
     divergences = [
@@ -363,3 +369,142 @@ def persist_shared_neighborhood_diagnostics(
 
     markdown_path.write_text(render_shared_neighborhood_markdown(report), encoding="utf-8")
     return json_path, markdown_path
+
+
+def load_shared_neighborhood_diagnostics(
+    run_root: Path,
+) -> SharedNeighborhoodDiagnosticReport | None:
+    """Load a persisted shared-neighborhood diagnostic report when available."""
+    json_path = resolve_run_layout(run_root)["analysis_dir"] / _DIAGNOSTIC_JSON_NAME
+    if not json_path.exists():
+        return None
+
+    payload = _read_json(json_path)
+    divergences = [
+        NeighborhoodDivergence(**divergence)
+        for divergence in payload.get("divergent_neighborhoods", [])
+    ]
+    return SharedNeighborhoodDiagnosticReport(
+        run_root=str(payload.get("run_root", "")),
+        generated_at=str(payload.get("generated_at", "")),
+        matlab_edges_count=int(payload.get("matlab_edges_count", 0)),
+        python_edges_count=int(payload.get("python_edges_count", 0)),
+        edge_count_delta=int(payload.get("edge_count_delta", 0)),
+        claim_ordering_differences=int(payload.get("claim_ordering_differences", 0)),
+        branch_invalidation_differences=int(payload.get("branch_invalidation_differences", 0)),
+        partner_choice_differences=int(payload.get("partner_choice_differences", 0)),
+        divergent_neighborhoods=divergences,
+        matlab_candidate_coverage=dict(payload.get("matlab_candidate_coverage", {})),
+        python_candidate_coverage=dict(payload.get("python_candidate_coverage", {})),
+        coverage_delta=dict(payload.get("coverage_delta", {})),
+        top_divergence_patterns=list(payload.get("top_divergence_patterns", [])),
+        recommended_investigations=list(payload.get("recommended_investigations", [])),
+        edge_candidates_to_review=list(payload.get("edge_candidates_to_review", [])),
+        edge_selection_logic_to_review=list(payload.get("edge_selection_logic_to_review", [])),
+        source_artifacts=dict(payload.get("source_artifacts", {})),
+    )
+
+
+def render_shared_neighborhood_markdown(report: SharedNeighborhoodDiagnosticReport) -> str:
+    """Render a human-readable Markdown report."""
+    lines = [
+        "# Shared Neighborhood Diagnostics",
+        "",
+        f"- Run root: `{report.run_root}`",
+        f"- Generated at: `{report.generated_at}`",
+        f"- MATLAB/Python edge counts: `{report.matlab_edges_count}/{report.python_edges_count}`",
+        f"- Edge count delta: `{report.edge_count_delta}`",
+        "",
+        "## Top Divergence Patterns",
+        "",
+    ]
+    for pattern in report.top_divergence_patterns:
+        lines.append(f"- {pattern}")
+
+    lines.extend(
+        [
+            "",
+            "## Candidate Coverage",
+            "",
+            f"- MATLAB endpoint pairs: `{report.matlab_candidate_coverage.get('endpoint_pairs', 0)}`",
+            f"- Python candidate endpoint pairs: `{report.python_candidate_coverage.get('candidate_endpoint_pairs', 0)}`",
+            f"- Python final endpoint pairs: `{report.python_candidate_coverage.get('final_endpoint_pairs', 0)}`",
+            f"- Candidate minus MATLAB delta: `{report.coverage_delta.get('candidate_minus_matlab_pairs', 0)}`",
+            "",
+            "## Highest Severity Neighborhoods",
+            "",
+        ]
+    )
+    for divergence in sorted(
+        report.divergent_neighborhoods,
+        key=lambda item: (
+            {"high": 0, "medium": 1, "low": 2}.get(item.severity, 3),
+            int(item.neighborhood_id)
+            if str(item.neighborhood_id).lstrip("-").isdigit()
+            else 999999,
+        ),
+    )[:5]:
+        lines.append(
+            f"- Origin `{divergence.neighborhood_id}`: {divergence.severity} "
+            f"{divergence.divergence_type.replace('_', ' ')}; "
+            f"MATLAB/Python claims `{divergence.matlab_claim_count}/{divergence.python_claim_count}`; "
+            f"reason `{divergence.first_divergence_reason}`"
+        )
+
+    lines.extend(["", "## Recommended Investigation Order", ""])
+    for recommendation in report.recommended_investigations:
+        lines.append(f"- {recommendation}")
+
+    lines.extend(["", "## Code Surfaces", ""])
+    for surface in report.edge_candidates_to_review + report.edge_selection_logic_to_review:
+        lines.append(f"- {surface}")
+
+    return "\n".join(lines) + "\n"
+
+
+def format_shared_neighborhood_summary(report: SharedNeighborhoodDiagnosticReport) -> str:
+    """Render a compact CLI summary for an existing diagnostic report."""
+    top_origins = ", ".join(
+        f"{divergence.neighborhood_id} ({divergence.divergence_type}/{divergence.severity})"
+        for divergence in report.divergent_neighborhoods[:3]
+    )
+    if not top_origins:
+        top_origins = "none"
+    return (
+        "Shared-neighborhood diagnostics ready: "
+        f"{len(report.divergent_neighborhoods)} divergent neighborhood(s); "
+        f"claim-ordering={report.claim_ordering_differences}, "
+        f"branch-invalidation={report.branch_invalidation_differences}, "
+        f"partner-choice={report.partner_choice_differences}. "
+        f"Top origins: {top_origins}."
+    )
+
+
+def recommend_diagnostics_if_needed(
+    *,
+    run_root: Path,
+    edges_parity_ok: bool,
+    network_gate_parity_ok: bool | None,
+) -> str | None:
+    """Return the next diagnostic step when the remaining gap is still in edges."""
+    if edges_parity_ok:
+        return None
+
+    analysis_dir = resolve_run_layout(run_root)["analysis_dir"]
+    report_path = analysis_dir / _DIAGNOSTIC_JSON_NAME
+    if report_path.exists():
+        report = load_shared_neighborhood_diagnostics(run_root)
+        if report is not None:
+            return format_shared_neighborhood_summary(report)
+
+    message = (
+        "Edges parity still diverges. Generate shared-neighborhood diagnostics in "
+        "`03_Analysis/shared_neighborhood_diagnostics.{json,md}` to inspect claim ordering, "
+        "branch invalidation, and partner choice."
+    )
+    if network_gate_parity_ok:
+        message += (
+            " The stage-isolated network gate already achieved exact parity, so the remaining "
+            "gap is isolated to edge candidate generation/selection."
+        )
+    return message

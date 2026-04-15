@@ -12,6 +12,7 @@ import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import cast
 
 import networkx as nx
@@ -157,6 +158,20 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Run directory or legacy checkpoint directory containing run metadata",
     )
     status_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+
+    # --- slavv parity-proof -----------------------------------------------
+    parity_proof_parser = subparsers.add_parser(
+        "parity-proof",
+        help="Display the latest stage-isolated network proof artifact for a comparison run",
+    )
+    parity_proof_parser.add_argument(
+        "--run-dir",
+        required=True,
+        help="Run directory containing staged comparison artifacts",
+    )
+    parity_proof_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable debug logging"
+    )
 
     return parser
 
@@ -437,6 +452,14 @@ def _handle_status_command(args: argparse.Namespace) -> None:
         print(line)
 
 
+def _handle_parity_proof_command(args: argparse.Namespace) -> None:
+    """Render the latest maintained network-gate proof artifact summary."""
+    from slavv.apps.parity_cli import print_latest_proof_summary
+
+    _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
+    print_latest_proof_summary(Path(args.run_dir))
+
+
 def _normalize_exported_edge_connections(raw_connections: object) -> np.ndarray:
     """Normalize exported edge connections into a 2-column integer array."""
     connections = np.asarray(raw_connections, dtype=int)
@@ -653,6 +676,8 @@ def main(argv=None):
         _handle_import_matlab_command(args)
     elif args.command == "status":
         _handle_status_command(args)
+    elif args.command == "parity-proof":
+        _handle_parity_proof_command(args)
     elif args.command == "analyze":
         _handle_analyze_command(args)
     elif args.command == "plot":

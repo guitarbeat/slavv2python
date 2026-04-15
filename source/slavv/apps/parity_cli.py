@@ -16,6 +16,7 @@ from slavv.parity.comparison import (
     run_matlab_health_check_workflow,
     run_standalone_comparison,
 )
+from slavv.parity.proof_artifacts import display_latest_proof_summary
 from slavv.parity.run_layout import list_runs
 from slavv.parity.workflow_assessment import assess_loop_request, determine_loop_kind
 from slavv.runtime import load_run_snapshot
@@ -23,6 +24,12 @@ from slavv.runtime import load_run_snapshot
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 project_root = Path(__file__).resolve().parents[3]
 DEFAULT_COMPARISON_PARAMS = project_root / "dev" / "scripts" / "cli" / "comparison_params.json"
+
+
+def print_latest_proof_summary(run_dir: Path) -> int:
+    """Render the latest maintained network-gate proof artifact summary."""
+    print(display_latest_proof_summary(run_dir))
+    return 0
 
 
 def _build_parser() -> argparse.ArgumentParser:

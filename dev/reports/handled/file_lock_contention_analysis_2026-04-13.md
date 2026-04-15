@@ -31,6 +31,14 @@ analysis into one operator-focused runbook.
 - The safe recovery path is to stop relaunching MATLAB and generate the final
   comparison from the existing MATLAB and Python artifacts in standalone mode.
 
+## Handling Classification
+
+- Status: Handled
+- Why: This document records a resolved operations incident with a stable
+  recovery path and prevention checklist.
+- Open algorithmic parity work is tracked separately in
+  `dev/reports/unhandled/` and is not reopened by this report.
+
 ## Current Status
 
 ### Confirmed and usable

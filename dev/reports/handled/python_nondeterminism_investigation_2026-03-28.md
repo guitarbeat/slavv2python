@@ -31,6 +31,14 @@ parity outcome.
 - The post-fix full parity run still failed at MATLAB `1379 / 682` versus
   Python `1560 / 820`, so repeatability is solved but semantic parity is not.
 
+## Handling Classification
+
+- Status: Handled
+- Why: The nondeterminism investigation is complete and its root cause plus
+  deterministic fix baseline are closed.
+- Remaining semantic parity gaps are tracked in
+  `dev/reports/unhandled/` and are intentionally out of scope for this report.
+
 ## Current Status
 
 ### Solved

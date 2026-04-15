@@ -141,6 +141,11 @@ class NetworkGateExecution:
     edges_match: bool
     strands_match: bool
     python_network_fingerprint: str
+    proof_artifact_json_path: str = ""
+    proof_artifact_markdown_path: str = ""
+    proof_index_path: str = ""
+    peak_memory_mb: float | None = None
+    cpu_time_seconds: float | None = None
     execution_errors: list[str] = field(default_factory=list)
 
 
@@ -173,17 +178,21 @@ def execute_stage_isolated_network_gate(
     import json
     import time
 
+    import psutil
+
     from slavv.core import SLAVVProcessor
     from slavv.io import load_tiff_volume
     from slavv.io.matlab_bridge import import_matlab_batch
     from slavv.utils.safe_unpickle import safe_load
 
     from .metrics import compare_results
+    from .proof_artifacts import generate_proof_artifact, maintain_proof_artifact_index
     from .run_layout import resolve_run_layout
 
     # Start timing
     started_at = datetime.now().isoformat()
     start_time = time.time()
+    start_cpu_time = time.process_time()
 
     # Step 1: Validate required artifacts (fast-fail)
     validation = validate_network_gate_artifacts(run_root)
@@ -333,6 +342,12 @@ def execute_stage_isolated_network_gate(
             )
 
         elapsed_seconds = time.time() - start_time
+        cpu_time_seconds = time.process_time() - start_cpu_time
+        peak_memory_mb = None
+        try:
+            peak_memory_mb = psutil.Process().memory_info().rss / (1024 * 1024)
+        except (OSError, psutil.Error):
+            peak_memory_mb = None
 
         # Step 6: Persist execution metadata
         execution_metadata = {
@@ -350,11 +365,14 @@ def execute_stage_isolated_network_gate(
             "completed_at": datetime.now().isoformat(),
             "elapsed_seconds": elapsed_seconds,
             "comparison_exact_network_forced": True,
+            "matlab_batch_folder": str(matlab_batch_folder),
             "parity_achieved": parity_achieved,
             "vertices_match": vertices_match,
             "edges_match": edges_match,
             "strands_match": strands_match,
             "python_network_fingerprint": python_network_fingerprint,
+            "peak_memory_mb": peak_memory_mb,
+            "cpu_time_seconds": cpu_time_seconds,
             "execution_errors": execution_errors,
         }
 
@@ -364,6 +382,21 @@ def execute_stage_isolated_network_gate(
             json.dump(execution_metadata, f, indent=2)
 
         logger.info(f"Network gate execution metadata persisted to {execution_file}")
+
+        proof_artifact_json_path = ""
+        proof_artifact_markdown_path = ""
+        proof_index_path = ""
+        if parity_achieved:
+            try:
+                proof = generate_proof_artifact(execution_file, run_root=run_root)
+                maintain_proof_artifact_index(run_root, proof)
+                proof_artifact_json_path = proof.artifact_json_path
+                proof_artifact_markdown_path = proof.artifact_markdown_path
+                proof_index_path = str(
+                    resolve_run_layout(run_root)["analysis_dir"] / "proof_artifact_index.json"
+                )
+            except (OSError, ValueError, FileNotFoundError) as exc:
+                logger.warning("Failed to generate proof artifacts for %s: %s", run_root, exc)
 
         return NetworkGateExecution(
             validation=validation,
@@ -376,6 +409,11 @@ def execute_stage_isolated_network_gate(
             edges_match=edges_match,
             strands_match=strands_match,
             python_network_fingerprint=python_network_fingerprint,
+            proof_artifact_json_path=proof_artifact_json_path,
+            proof_artifact_markdown_path=proof_artifact_markdown_path,
+            proof_index_path=proof_index_path,
+            peak_memory_mb=peak_memory_mb,
+            cpu_time_seconds=cpu_time_seconds,
             execution_errors=execution_errors,
         )
 

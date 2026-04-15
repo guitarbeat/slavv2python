@@ -358,6 +358,123 @@ def test_orchestrate_comparison_updates_shared_run_snapshot(tmp_path: Path, monk
     assert (output_dir / "99_Metadata" / "output_preflight.json").exists()
 
 
+def test_orchestrate_comparison_persists_shared_neighborhood_diagnostics(
+    tmp_path: Path, monkeypatch
+):
+    import slavv.parity.comparison as comparison_module
+
+    input_file = tmp_path / "input_volume.tif"
+    input_file.write_bytes(b"fake-tiff")
+    output_dir = tmp_path / "comparison_run"
+    project_root = tmp_path / "project_root"
+    project_root.mkdir()
+    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
+
+    monkeypatch.setattr(
+        comparison_module,
+        "run_matlab_vectorization",
+        lambda *_args, **_kwargs: {
+            "success": True,
+            "batch_folder": str(batch_folder),
+            "elapsed_time": 12.0,
+        },
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "run_python_vectorization",
+        lambda *_args, **_kwargs: {
+            "success": True,
+            "elapsed_time": 3.0,
+            "results": {},
+        },
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "load_matlab_batch_results",
+        lambda _batch_folder: {"timings": {"total": 12.0}},
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_summary",
+        lambda _output_dir, summary_file: summary_file.write_text("summary", encoding="utf-8"),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "generate_manifest",
+        lambda _output_dir, manifest_file: manifest_file.write_text("# manifest", encoding="utf-8"),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "evaluate_output_root_preflight",
+        lambda _output_root: _make_preflight_report(output_dir),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "inspect_matlab_status",
+        lambda *_args, **_kwargs: _make_matlab_status_report(
+            output_dir,
+            resume_mode="complete-noop",
+            batch_folder=batch_folder,
+            last_completed_stage="network",
+            next_stage="",
+        ),
+    )
+    monkeypatch.setattr(
+        comparison_module,
+        "compare_results",
+        lambda *_args, **_kwargs: {
+            "matlab": {"elapsed_time": 12.0},
+            "python": {"elapsed_time": 3.0},
+            "performance": {"speedup": 4.0, "faster": "Python"},
+            "edges": {
+                "matlab_count": 5,
+                "python_count": 3,
+                "exact_match": False,
+                "diagnostics": {
+                    "candidate_endpoint_coverage": {
+                        "matlab_endpoint_pair_count": 5,
+                        "matched_matlab_endpoint_pair_count": 2,
+                        "missing_matlab_endpoint_pair_count": 3,
+                        "candidate_endpoint_pair_count": 4,
+                        "python_endpoint_pair_count": 3,
+                        "extra_candidate_endpoint_pair_count": 1,
+                    },
+                    "shared_neighborhood_audit": {
+                        "neighborhoods": [
+                            {
+                                "origin_index": 866,
+                                "selection_sources": ["tracked_hotspot"],
+                                "matlab_incident_endpoint_pair_count": 4,
+                                "candidate_endpoint_pair_count": 1,
+                                "final_chosen_endpoint_pair_count": 1,
+                                "missing_matlab_incident_endpoint_pair_count": 3,
+                                "extra_candidate_endpoint_pair_count": 0,
+                                "missing_final_endpoint_pair_count": 3,
+                                "missing_matlab_incident_endpoint_pair_samples": [[866, 10]],
+                                "candidate_endpoint_pair_samples": [[866, 22]],
+                                "first_divergence_stage": "pre_manifest_rejection",
+                                "first_divergence_reason": "rejected_parent_has_child",
+                            }
+                        ]
+                    },
+                },
+            },
+        },
+    )
+
+    result = orchestrate_comparison(
+        str(input_file),
+        output_dir,
+        "matlab.exe",
+        project_root,
+        params={"edge_method": "tracing"},
+    )
+
+    assert result == 0
+    assert (output_dir / "03_Analysis" / "shared_neighborhood_diagnostics.json").exists()
+    assert (output_dir / "03_Analysis" / "shared_neighborhood_diagnostics.md").exists()
+
+
 def test_orchestrate_comparison_full_reuse_analysis_only_skips_matlab_launch(
     tmp_path: Path, monkeypatch
 ):

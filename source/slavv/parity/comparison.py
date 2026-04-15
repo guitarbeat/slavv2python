@@ -27,6 +27,12 @@ from slavv.utils import format_time, get_matlab_info, get_system_info
 from slavv.utils.safe_unpickle import safe_load
 from slavv.visualization import NetworkVisualizer
 
+from .diagnostics import (
+    format_shared_neighborhood_summary,
+    generate_shared_neighborhood_diagnostics,
+    load_shared_neighborhood_diagnostics,
+    recommend_diagnostics_if_needed,
+)
 from .matlab_status import (
     MatlabStatusReport,
     persist_matlab_failure_summary,
@@ -161,11 +167,66 @@ def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> P
     return report_file
 
 
+def _load_network_gate_parity_status(metadata_dir: Path) -> bool | None:
+    """Return the latest persisted network-gate parity status when available."""
+    execution_path = metadata_dir / "network_gate_execution.json"
+    if not execution_path.exists():
+        return None
+
+    try:
+        with open(execution_path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return bool(payload.get("parity_achieved"))
+
+
+def _surface_shared_neighborhood_diagnostics(
+    *,
+    run_root: Path,
+    comparison: dict[str, Any],
+    analysis_dir: Path,
+    metadata_dir: Path,
+) -> None:
+    """Persist or summarize the canonical shared-neighborhood diagnostic report."""
+    edges_parity_ok = bool(comparison.get("edges", {}).get("exact_match"))
+    if edges_parity_ok:
+        return
+
+    network_gate_parity_ok = _load_network_gate_parity_status(metadata_dir)
+    diagnostic_report = None
+    try:
+        diagnostic_report = generate_shared_neighborhood_diagnostics(run_root)
+    except FileNotFoundError:
+        diagnostic_report = load_shared_neighborhood_diagnostics(run_root)
+
+    if diagnostic_report is not None:
+        print("\nShared-Neighborhood Diagnostics")
+        print(format_shared_neighborhood_summary(diagnostic_report))
+        print(
+            "Artifacts: "
+            f"{analysis_dir / 'shared_neighborhood_diagnostics.json'} and "
+            f"{analysis_dir / 'shared_neighborhood_diagnostics.md'}"
+        )
+        return
+
+    recommendation = recommend_diagnostics_if_needed(
+        run_root=run_root,
+        edges_parity_ok=edges_parity_ok,
+        network_gate_parity_ok=network_gate_parity_ok,
+    )
+    if recommendation:
+        print("\nTriage Recommendation")
+        print(recommendation)
+
+
 def _run_comparison_analysis(
     *,
     matlab_results: dict[str, Any],
     python_results: dict[str, Any],
+    run_root: Path,
     analysis_dir: Path,
+    metadata_dir: Path,
     comparison_depth: str,
     comparison_context: RunContext | None = None,
 ) -> None:
@@ -211,6 +272,12 @@ def _run_comparison_analysis(
             encoding="utf-8",
         )
     report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
+    _surface_shared_neighborhood_diagnostics(
+        run_root=run_root,
+        comparison=comparison,
+        analysis_dir=analysis_dir,
+        metadata_dir=metadata_dir,
+    )
 
     if comparison_context is not None:
         comparison_context.update_optional_task(
@@ -1576,6 +1643,12 @@ def orchestrate_comparison(
                     f"  Overall:  {'âœ“ PARITY ACHIEVED' if execution.parity_achieved else 'âœ— PARITY NOT ACHIEVED'}"
                 )
 
+                if execution.proof_artifact_json_path:
+                    print("\nProof Artifact:")
+                    print(f"  JSON: {execution.proof_artifact_json_path}")
+                    if execution.proof_index_path:
+                        print(f"  Index: {execution.proof_index_path}")
+
                 comparison_context.update_optional_task(
                     "network_gate_execution",
                     status="completed",
@@ -1591,6 +1664,8 @@ def orchestrate_comparison(
                         "edges_match": execution.edges_match,
                         "strands_match": execution.strands_match,
                         "python_network_fingerprint": execution.python_network_fingerprint,
+                        "proof_artifact_json_path": execution.proof_artifact_json_path,
+                        "proof_index_path": execution.proof_index_path,
                     },
                 )
 
@@ -1716,7 +1791,9 @@ def orchestrate_comparison(
         _run_comparison_analysis(
             matlab_results=matlab_results,
             python_results=python_results,
+            run_root=run_root,
             analysis_dir=analysis_dir,
+            metadata_dir=metadata_dir,
             comparison_depth=comparison_depth,
             comparison_context=comparison_context,
         )
@@ -2042,7 +2119,9 @@ def run_standalone_comparison(
     _run_comparison_analysis(
         matlab_results=matlab_results,
         python_results=python_results,
+        run_root=run_root,
         analysis_dir=analysis_dir,
+        metadata_dir=metadata_dir,
         comparison_depth=comparison_depth,
     )
     _generate_post_comparison_artifacts(

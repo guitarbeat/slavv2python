@@ -94,6 +94,12 @@ class TestBuildParser:
         assert args.command == "status"
         assert args.run_dir == "run_dir"
 
+    def test_parity_proof_subcommand(self):
+        parser = _build_cli_parser()
+        args = parser.parse_args(["parity-proof", "--run-dir", "run_dir"])
+        assert args.command == "parity-proof"
+        assert args.run_dir == "run_dir"
+
 
 class TestArgsToParameters:
     """Verify CLI args convert correctly to SLAVV parameter dicts."""
@@ -219,6 +225,17 @@ class TestMainEntryPoint:
         assert exc.value.code == 1
         assert "no run snapshot or legacy checkpoints found" in captured.err
         assert list(tmp_path.iterdir()) == []
+
+    def test_parity_proof_prints_latest_summary(self, capsys, monkeypatch, tmp_path):
+        monkeypatch.setattr(
+            "slavv.apps.parity_cli.print_latest_proof_summary",
+            lambda run_dir: print(f"proof-summary:{run_dir.name}") or 0,
+        )
+
+        main(["parity-proof", "--run-dir", str(tmp_path)])
+
+        captured = capsys.readouterr()
+        assert "proof-summary" in captured.out
 
 
 def test_load_exported_network_json_preserves_parameters(tmp_path):

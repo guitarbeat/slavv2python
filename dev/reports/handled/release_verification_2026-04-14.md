@@ -18,6 +18,14 @@ tracked in the temporary repo-root `todo.md`.
 - Performance snapshot for native and parity paths: complete
 - Final parity findings summary for the release audit: complete
 
+## Handling Classification
+
+- Status: Handled
+- Why: Release-verification documentation and checklist closure for this audit
+  are complete.
+- Remaining parity algorithm work is tracked in
+  `dev/reports/unhandled/` and is not a blocker for this report's closed scope.
+
 ## Operational Verification
 
 The canonical run root satisfies the operational checks that were still open:
