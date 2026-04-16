@@ -26,13 +26,27 @@ run root, keep the following staged folders:
 | `03_Analysis/` | Comparison summaries, `comparison_report.json`, rendered tables, and other human-facing analysis |
 | `99_Metadata/` | Run manifests, resume state, status snapshots, and other orchestration metadata |
 
+## Run Root Naming
+
+Use date-first names so roots sort naturally and are easy to scan.
+
+- Preferred full timestamp form: `YYYYMMDD_HHMMSS_<label>`
+  - example: `20260327_150656_clean_parity`
+- Preferred date-only form: `YYYYMMDD_<label>`
+  - example: `20260413_release_verify`
+- Avoid suffix-date form for new roots.
+  - use `20260413_release_verify`, not `release_verify_20260413`
+
+For one-off historical cleanup, rename only when it improves discoverability and
+does not break active external references.
+
 ## Recommended Output Root
 
 For live MATLAB-enabled comparisons, prefer a local non-synced drive with
 comfortable free space. Good examples are:
 
-- Windows: `D:\slavv_comparisons\20260401_parity`
-- POSIX: `/tmp/slavv_comparisons/20260401_parity`
+- Windows: `D:\slavv_comparisons\20260413_release_verify`
+- POSIX: `/tmp/slavv_comparisons/20260413_release_verify`
 
 Avoid placing fresh MATLAB outputs under OneDrive-synced folders, network
 mounts, or repo-local scratch paths unless you are intentionally debugging a
@@ -145,10 +159,35 @@ workflow-specific outputs that still write into the staged folders above.
 - If a workflow produces a new durable output convention, update this document
   and the relevant tests before relying on it.
 
+## Cleanup And Retention
+
+Use this policy when consolidating comparison outputs for faster reference and
+lower noise:
+
+- Keep roots with completed `03_Analysis/comparison_report.json` and
+  `03_Analysis/summary.txt`.
+- Keep roots that are canonical acceptance surfaces, release-audit references,
+  or active chapter evidence.
+- Remove roots explicitly marked failed in `99_Metadata/run_snapshot.json` when
+  a completed replacement run exists.
+- Remove empty folders after artifact moves.
+- Do not delete canonical run roots referenced by active docs without first
+  updating those links.
+
+## Quick Validation Checklist
+
+After any manual normalization pass:
+
+1. Verify analysis artifacts are under `03_Analysis/`, not at run-root level.
+2. Verify MATLAB batch folders live under `01_Input/matlab_results/`.
+3. Verify status and manifest files live under `99_Metadata/`.
+4. Verify run-root naming matches date-first convention.
+5. Verify chapter/docs links still resolve to existing run roots.
+
 ## Current Work
 
 Chapter-specific parity status now lives in
-[`docs/chapters/shared-candidate-generation/README.md`](../chapters/shared-candidate-generation/README.md).
+[`docs/chapters/shared-neighborhood-claim-alignment/README.md`](../chapters/shared-neighborhood-claim-alignment/README.md).
 Keep this document focused on the run-layout contract. For translation
 semantics and boundary rules, use
 [`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md).

@@ -58,9 +58,12 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument(
         "--energy-method",
-        choices=["hessian", "frangi", "sato"],
+        choices=["hessian", "frangi", "sato", "simpleitk_objectness"],
         default="hessian",
-        help="Energy computation method (default: hessian)",
+        help=(
+            "Energy computation method (default: hessian). "
+            "'simpleitk_objectness' is experimental and spacing-aware."
+        ),
     )
     run_parser.add_argument(
         "--edge-method",

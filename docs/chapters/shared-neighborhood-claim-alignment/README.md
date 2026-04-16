@@ -25,7 +25,7 @@ ordering, and branch invalidation around shared active neighborhoods.
 - Current best retained saved-batch result is `vertices 110/110`,
   `edges 94/93`, `strands 49/54`.
 - The canonical live imported-MATLAB rerun at
-  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\20260413_release_verify\live_canonical_20260413`
   is still farther off: `2577/2577` vertices, `2533/2463` edges, and
   `1120/1006` strands.
 - The imported-MATLAB workflow is the active finish line for exact parity in
@@ -132,7 +132,7 @@ Canonical live acceptance rerun:
 python dev/scripts/cli/compare_matlab_python.py `
   --input data/slavv_test_volume.tif `
   --skip-matlab `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413 `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\20260413_release_verify\live_canonical_20260413 `
   --python-parity-rerun-from edges `
   --comparison-depth deep
 ```

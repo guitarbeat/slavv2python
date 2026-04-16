@@ -44,6 +44,19 @@ Each chapter should expose:
 3. [Historical handoff chapter](shared-candidate-generation/README.md)
 4. [Chapter 1 closeout](imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 
+## Reference Shortcuts
+
+Use this table for the most common jump targets without scanning each chapter.
+
+| Item | Path | Purpose |
+| --- | --- | --- |
+| Active chapter entry | [shared-neighborhood-claim-alignment/README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
+| Release verification note | [shared-neighborhood-claim-alignment/release_verification_2026-04-14.md](shared-neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
+| Lock-contention incident note | [shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
+| Canonical live acceptance run root | [../../slavv_comparisons/20260413_release_verify/live_canonical_20260413](../../slavv_comparisons/20260413_release_verify/live_canonical_20260413) | Canonical release-grade imported-MATLAB acceptance artifacts |
+| Latest completed live parity rerun | [../../slavv_comparisons/20260401_live_parity_retry](../../slavv_comparisons/20260401_live_parity_retry) | Completed live parity rerun with staged metadata and analysis |
+| Best retained saved-batch parity run | [../../slavv_comparisons/20260327_150656_clean_parity](../../slavv_comparisons/20260327_150656_clean_parity) | Stable saved-batch reference used by chapter diagnostics |
+
 ## Chapter Conventions
 
 For consistency, chapter entry docs should include these sections when useful:

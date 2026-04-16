@@ -83,6 +83,14 @@ class TestBuildParser:
         assert args.export == ["csv", "json"]
         assert args.verbose is True
 
+    def test_run_subcommand_accepts_simpleitk_energy_method(self):
+        parser = _build_cli_parser()
+        args = parser.parse_args(
+            ["run", "-i", "vol.tif", "--energy-method", "simpleitk_objectness"]
+        )
+
+        assert args.energy_method == "simpleitk_objectness"
+
     def test_info_subcommand(self):
         parser = _build_cli_parser()
         args = parser.parse_args(["info"])

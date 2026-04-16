@@ -22,7 +22,7 @@ analysis into one operator-focused runbook.
   evidence. It showed a tiny-input energy failure and zero graph outputs, and
   it should not be used for release-readiness claims.
 - The later canonical run root
-  `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+  `C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413`
   already contained a completed MATLAB batch and `complete-noop` resume status.
 - A subsequent rerun then failed with repeated Windows file-access errors:
   `The process cannot access the file because it is being used by another process.`
@@ -69,13 +69,13 @@ analysis into one operator-focused runbook.
 1. Diagnostic setup gate passed:
    `python -m pytest dev/tests/diagnostic/test_comparison_setup.py`
 2. Output-root preflight passed against
-   `C:\slavv_comparisons\release_verify_20260413`.
+  `C:\slavv_comparisons\20260413_release_verify`.
 3. Baseline quality gate passed:
    `compileall`, `ruff format --check`, `ruff check`, `mypy`, and
    `pytest -m "unit or integration"`.
 4. MATLAB health check passed.
 5. A fallback live run at
-   `C:\slavv_comparisons\release_verify_20260413\live_20260413b` produced
+  `C:\slavv_comparisons\20260413_release_verify\live_20260413b` produced
    staged artifacts, but the tiny fallback TIFF caused a MATLAB energy-stage
    dimension mismatch and both sides produced zero graph outputs.
 6. A later canonical run root completed MATLAB successfully.
@@ -104,9 +104,9 @@ comparison from the completed artifacts:
 
 ```powershell
 python dev/scripts/cli/compare_matlab_python.py \
-  --standalone-matlab-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\01_Input\matlab_results \
-  --standalone-python-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413\02_Output\python_results \
-  --output-dir C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413 \
+  --standalone-matlab-dir C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413\01_Input\matlab_results \
+  --standalone-python-dir C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413\02_Output\python_results \
+  --output-dir C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413 \
   --comparison-depth deep
 ```
 

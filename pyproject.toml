@@ -60,6 +60,9 @@ notebooks = [
 dicom = [
     "pydicom>=2.0.0",
 ]
+sitk = [
+    "SimpleITK>=2.4.0",
+]
 accel = [
     "numba>=0.58.0",
 ]

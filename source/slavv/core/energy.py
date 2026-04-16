@@ -28,6 +28,11 @@ except ImportError:
         frangi = None
         sato = None
 
+try:
+    import SimpleITK as sitk  # noqa: N813
+except ImportError:
+    sitk = None
+
 # Optional Numba acceleration
 # Currently disabled: Numba 0.43.1 is incompatible with NumPy 1.21.6+
 # To enable, upgrade Numba to 0.50+ or set _NUMBA_AVAILABLE = True after verifying compatibility
@@ -38,6 +43,12 @@ except ImportError:
     njit = None
 
 logger = logging.getLogger(__name__)
+
+_SIMPLEITK_INSTALL_HINT = (
+    "SimpleITK is required for energy_method='simpleitk_objectness'. "
+    "Install it with `pip install -e \".[sitk]\"`, `pip install slavv[sitk]`, "
+    "or `pip install SimpleITK>=2.4.0`."
+)
 
 # --- Numba Accelerated Gradient Computation ---
 
@@ -325,6 +336,62 @@ def _matlab_hessian_energy(
     return cast("np.ndarray", energy)
 
 
+def _warn_simpleitk_parameter_mismatches(params: dict[str, Any]) -> None:
+    """Warn when SimpleITK backend ignores MATLAB-style tuning controls."""
+    if (
+        not bool(params.get("approximating_PSF", True))
+        or float(params.get("spherical_to_annular_ratio", 1.0)) != 1.0
+        or float(params.get("gaussian_to_ideal_ratio", 1.0)) != 1.0
+    ):
+        logger.warning(
+            "SimpleITK objectness backend uses its own objectness path; "
+            "approximating_PSF, spherical_to_annular_ratio, and gaussian_to_ideal_ratio "
+            "are not applied in this mode."
+        )
+
+
+def _require_simpleitk_backend() -> Any:
+    """Return the SimpleITK module or raise a clear install error."""
+    if sitk is None:
+        raise RuntimeError(_SIMPLEITK_INSTALL_HINT)
+    return sitk
+
+
+def _simpleitk_objectness_energy(
+    image: np.ndarray,
+    sigma_world: float,
+    microns_per_voxel: np.ndarray,
+    energy_sign: float,
+) -> np.ndarray:
+    """Compute one scale of spacing-aware vessel objectness with SimpleITK."""
+    sitk_module = _require_simpleitk_backend()
+    sitk_image = sitk_module.GetImageFromArray(np.transpose(image, (2, 0, 1)))
+    sitk_image.SetSpacing(
+        (
+            float(microns_per_voxel[1]),
+            float(microns_per_voxel[0]),
+            float(microns_per_voxel[2]),
+        )
+    )
+
+    hessian_filter = sitk_module.HessianRecursiveGaussianImageFilter()
+    hessian_filter.SetSigma(float(sigma_world))
+    hessian_filter.SetNormalizeAcrossScale(True)
+    hessian_image = hessian_filter.Execute(sitk_image)
+
+    objectness_filter = sitk_module.ObjectnessMeasureImageFilter()
+    objectness_filter.SetObjectDimension(1)
+    objectness_filter.SetBrightObject(bool(energy_sign < 0))
+    objectness_filter.SetScaleObjectnessMeasure(False)
+    objectness = objectness_filter.Execute(hessian_image)
+
+    response = sitk_module.GetArrayFromImage(objectness).astype(np.float32, copy=False)
+    return cast(
+        "np.ndarray",
+        energy_sign * np.transpose(response, (1, 2, 0)),
+    )
+
+
 def calculate_energy_field(
     image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
 ) -> dict[str, Any]:
@@ -350,6 +417,9 @@ def calculate_energy_field(
     energy_sign = params.get("energy_sign", -1.0)  # -1 for bright vessels
     return_all_scales = params.get("return_all_scales", False)
     energy_method = params.get("energy_method", "hessian")
+    if energy_method == "simpleitk_objectness":
+        _require_simpleitk_backend()
+        _warn_simpleitk_parameter_mismatches(params)
 
     # Cache voxel spacing for anisotropy handling
     voxel_size = np.array(microns_per_voxel, dtype=float)
@@ -465,6 +535,8 @@ def calculate_energy_field(
     if energy_method == "frangi" and frangi is None:
         logger.warning("Frangi filter unavailable. Falling back to Hessian.")
         energy_method = "hessian"
+    if energy_method == "simpleitk_objectness":
+        _require_simpleitk_backend()
 
     if energy_method in ("frangi", "sato"):
         if return_all_scales:
@@ -517,7 +589,7 @@ def calculate_energy_field(
                 image,
                 {
                     "approximating_PSF": approximating_PSF,
-                    "energy_method": "hessian",
+                    "energy_method": energy_method,
                     "energy_sign": energy_sign,
                     "gaussian_to_ideal_ratio": gaussian_to_ideal_ratio,
                     "lumen_radius_microns": lumen_radius_microns,
@@ -674,6 +746,9 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
     energy_method = params.get("energy_method", "hessian")
     return_all_scales = bool(params.get("return_all_scales", False))
     max_voxels = int(params.get("max_voxels_per_node_energy", 1e5))
+    if energy_method == "simpleitk_objectness":
+        _require_simpleitk_backend()
+        _warn_simpleitk_parameter_mismatches(params)
 
     if approximating_PSF:
         numerical_aperture = params.get("numerical_aperture", 0.95)
@@ -768,6 +843,14 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
         else:
             vesselness = sato(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
         return energy_sign * vesselness.astype(np.float32)  # type: ignore[no-any-return]
+
+    if energy_method == "simpleitk_objectness":
+        return _simpleitk_objectness_energy(
+            image,
+            float(config["lumen_radius_microns"][scale_idx]),
+            np.asarray(config["microns_per_voxel"], dtype=float),
+            float(energy_sign),
+        )
 
     if config["spherical_to_annular_ratio"] < 1.0:
         annular_scale = sigma_scale * 1.5

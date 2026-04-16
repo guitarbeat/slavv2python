@@ -59,6 +59,25 @@ For edge extraction specifically, the maintained split today is:
    Add or refresh a focused reference note instead of leaving behavior only in
    code comments or TODO files.
 
+## Example: Adding An Energy Backend
+
+Recent energy backends follow the existing `energy_method` surface instead of
+introducing a second registry.
+
+For example, the experimental `simpleitk_objectness` mode is integrated by:
+
+- extending validation in `source/slavv/utils/validation.py`
+- extending `slavv run --energy-method` choices in `source/slavv/apps/cli.py`
+- routing both direct and resumable execution through
+  `source/slavv/core/energy.py`
+- keeping the default `hessian` path unchanged unless the new backend is
+  explicitly selected
+- documenting any parameter differences when the backend cannot or should not
+  emulate all MATLAB-style controls
+
+Treat new energy backends the same way: opt-in, deterministic where practical,
+and covered in both direct and resumable tests.
+
 ## Parity And Layout Guardrails
 
 When a change touches MATLAB parity or comparison-facing behavior, preserve the
@@ -110,4 +129,3 @@ Before considering the algorithm integrated, make sure all of these are true:
   outputs
 - parity-sensitive changes cite the right chapter or report if they alter the
   MATLAB investigation surface
-

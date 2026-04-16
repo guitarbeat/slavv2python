@@ -114,8 +114,16 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     if validated["edge_method"] not in ("tracing", "watershed"):
         raise ValueError("edge_method must be 'tracing' or 'watershed'")
     validated["energy_method"] = params.get("energy_method", "hessian")
-    if validated["energy_method"] not in ("hessian", "frangi", "sato"):
-        raise ValueError("energy_method must be 'hessian', 'frangi', or 'sato'")
+    if validated["energy_method"] not in (
+        "hessian",
+        "frangi",
+        "sato",
+        "simpleitk_objectness",
+    ):
+        raise ValueError(
+            "energy_method must be 'hessian', 'frangi', 'sato', "
+            "or 'simpleitk_objectness'"
+        )
     validated["direction_method"] = params.get("direction_method", "hessian")
     if validated["direction_method"] not in ("hessian", "uniform"):
         raise ValueError("direction_method must be 'hessian' or 'uniform'")

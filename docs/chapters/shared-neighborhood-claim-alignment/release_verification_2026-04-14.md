@@ -7,7 +7,7 @@ tracked in the temporary repo-root `todo.md`.
 
 - Canonical comparison input: `data/slavv_test_volume.tif`
 - Canonical live run root:
-  `C:\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+  `C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413`
 - MATLAB batch:
   `01_Input\matlab_results\batch_260413-144432`
 

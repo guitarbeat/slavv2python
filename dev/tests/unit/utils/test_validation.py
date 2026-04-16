@@ -26,6 +26,12 @@ def test_validate_parameters_preserves_edge_influence_overrides():
     assert validated["sigma_per_influence_edges"] == 2.0 / 3.0
 
 
+def test_validate_parameters_accepts_simpleitk_objectness_energy_method():
+    validated = validate_parameters({"energy_method": "simpleitk_objectness"})
+
+    assert validated["energy_method"] == "simpleitk_objectness"
+
+
 def test_validate_parameters_preserves_parity_specific_overrides():
     validated = validate_parameters(
         {
