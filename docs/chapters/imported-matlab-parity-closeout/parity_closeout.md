@@ -68,7 +68,7 @@ Primary comparison input preserved from that run:
 - The earlier frontier fix prevented invalid terminal hits from consuming origin ownership or budget too early.
 - The remaining gap was already strongly suspected to be in edge candidate generation rather than in vertex extraction or MATLAB batch handling.
 
-This aligned with the internal note in [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md), especially the recommendation to investigate shared claim-map / watershed join behavior instead of continuing to only tune frontier termination heuristics.
+This aligned with the internal note in [parity_findings.md](parity_findings.md), especially the recommendation to investigate shared claim-map / watershed join behavior instead of continuing to only tune frontier termination heuristics.
 
 ## External Source Findings
 
@@ -394,7 +394,7 @@ historical reference only.
 - `comparison_output_synthetic_final_20260409_geodesic_relaxed/summary.txt`
 - `comparison_output_synthetic_final_20260409_origin_owned/summary.txt`
 - `comparison_output_synthetic_final_20260409_k10only/summary.txt`
-- [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
+- [parity_findings.md](parity_findings.md)
 - `external/Vectorization-Public/vectorize_V200.m`
 - `external/Vectorization-Public/source/get_edges_V300.m`
 - `external/Vectorization-Public/source/get_edges_by_watershed.m`

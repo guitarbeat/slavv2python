@@ -49,14 +49,14 @@ Each chapter should expose:
 | Active working docs | `working/` | Active support docs | [README.md](neighborhood-claim-alignment/working/README.md) | Live loop, checklist, and chapter entry shortcuts |
 | Archived notes | `archive/` | Historical support docs | [README.md](neighborhood-claim-alignment/archive/README.md) | Completed specs and retrospective notes |
 | Historical handoff | `Candidate Generation Handoff` | Historical handoff | [README.md](candidate-generation-handoff/README.md) | Why the problem stopped being a generic candidate-generation chase |
-| Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [PARITY_REPORT_2026-04-09.md](imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md) | What Chapter 1 established and what it handed off |
+| Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [parity_closeout.md](imported-matlab-parity-closeout/parity_closeout.md) | What Chapter 1 established and what it handed off |
 
 ## Recommended Read Order
 
 1. [Neighborhood Claim Alignment](neighborhood-claim-alignment/README.md)
 2. [Root backlog](../../TODO.md)
 3. [Candidate Generation Handoff](candidate-generation-handoff/README.md)
-4. [Imported-MATLAB Parity Closeout](imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+4. [Imported-MATLAB Parity Closeout](imported-matlab-parity-closeout/parity_closeout.md)
 
 ## Common Jump Targets
 

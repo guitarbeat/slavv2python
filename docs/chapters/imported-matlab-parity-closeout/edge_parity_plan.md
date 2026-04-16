@@ -1,4 +1,4 @@
-﻿# Edge Parity Implementation Plan
+﻿# Edge Parity Plan
 
 Status: Historical Chapter 1 plan
 Updated: 2026-04-08
@@ -20,8 +20,8 @@ Use this file when you want to know:
 Use [PARITY_HUB.md](PARITY_HUB.md) for quick re-entry,
 [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md)
 for the current implementation decision, and
-[PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) for the longer
-evidence behind this plan.
+[parity_findings.md](parity_findings.md) for the longer evidence behind this
+plan.
 
 ## Rapid Recall
 
@@ -82,7 +82,7 @@ Current evidence, consolidated:
 Detailed metrics and experiment history live in:
 
 - [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md)
-- [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
+- [parity_findings.md](parity_findings.md)
 - [stage_isolated_network_parity_2026-04-07.md](../../../dev/reports/stage_isolated_network_parity_2026-04-07.md)
 
 ## Active Code Surface
@@ -204,7 +204,7 @@ Run the cheaper checks first:
 
 - [PARITY_HUB.md](PARITY_HUB.md)
 - [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md)
-- [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
+- [parity_findings.md](parity_findings.md)
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
 - [dev/reports/stage_isolated_network_parity_2026-04-07.md](../../../dev/reports/stage_isolated_network_parity_2026-04-07.md)
 

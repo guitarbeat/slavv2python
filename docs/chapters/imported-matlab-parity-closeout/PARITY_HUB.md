@@ -14,8 +14,7 @@ This file is no longer the active spec entry point.
 Use [README.md](../../README.md) for chapter status,
 [Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md)
 for the active chapter, and
-[PARITY_REPORT_2026-04-09.md](PARITY_REPORT_2026-04-09.md) for the Chapter 1
-closeout.
+[parity_closeout.md](parity_closeout.md) for the Chapter 1 closeout.
 
 This was the fastest re-entry point during Chapter 1.
 
@@ -90,10 +89,10 @@ python dev/scripts/cli/compare_matlab_python.py `
    the next iteration should optimize.
 2. [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md)
    Current short decision memo for the April 8 code-and-artifact audit.
-3. [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
-   Current parity plan focused on the remaining edge-generation gap.
-4. [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md)
-   Verified findings and the longer evidence behind the standing diagnosis.
+3. [edge_parity_plan.md](edge_parity_plan.md)
+  Current parity plan focused on the remaining edge-generation gap.
+4. [parity_findings.md](parity_findings.md)
+  Verified findings and the longer evidence behind the standing diagnosis.
 
 ## Which File Answers Which Question
 
@@ -101,9 +100,9 @@ python dev/scripts/cli/compare_matlab_python.py `
 | --- | --- |
 | What is true right now, quickly? | [Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md) |
 | What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md) |
-| What evidence supports the current diagnosis? | [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) |
+| What evidence supports the current diagnosis? | [parity_findings.md](parity_findings.md) |
 | What should I run next? | [TODO.md](../../../TODO.md) |
-| What is the current edge-specific plan? | [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md) |
+| What is the current edge-specific plan? | [edge_parity_plan.md](edge_parity_plan.md) |
 | Where should I audit MATLAB vs Python tracer semantics? | [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md) |
 | How do staged comparison run roots work? | [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md) |
 | Where is the MATLAB-to-Python module map? | [MATLAB_MAPPING.md](../../reference/MATLAB_MAPPING.md) |

@@ -47,7 +47,7 @@ Name:
 
 Closure document:
 
-- [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+- [parity_closeout.md](chapters/imported-matlab-parity-closeout/parity_closeout.md)
 
 What it closed:
 
@@ -59,8 +59,8 @@ What it closed:
 Historical support docs:
 
 - [PARITY_HUB.md](chapters/imported-matlab-parity-closeout/PARITY_HUB.md)
-- [EDGE_PARITY_IMPLEMENTATION_PLAN.md](chapters/imported-matlab-parity-closeout/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
-- [PARITY_FINDINGS_2026-03-27.md](chapters/imported-matlab-parity-closeout/PARITY_FINDINGS_2026-03-27.md)
+- [edge_parity_plan.md](chapters/imported-matlab-parity-closeout/edge_parity_plan.md)
+- [parity_findings.md](chapters/imported-matlab-parity-closeout/parity_findings.md)
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](chapters/imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
 ### Active Chapter
@@ -83,7 +83,7 @@ Core references for the active chapter:
 - [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 - [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
 - [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md)
-- [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+- [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Workflow Completion Spec Archive](chapters/neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
 - [Comparison Layout Smoothing Spec Archive](chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
@@ -147,7 +147,7 @@ These docs remain active references across chapters.
 | Question | Best file |
 | --- | --- |
 | What does this term mean? | [Glossary](reference/GLOSSARY.md) |
-| What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md) |
+| What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/parity_closeout.md) |
 | What chapter is active right now? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |

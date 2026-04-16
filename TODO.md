@@ -226,6 +226,14 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 
 ## Chapter Task Backlog
 
+### Deep Pass Findings (2026-04-16)
+
+- **The "Stingy Explorer" Problem**: Both MATLAB and Python frontier tracers are capped at `max_number_of_indices = max_edge_length_voxels * max_edges_per_vertex`. For a typical 60um edge at 1um resolution with a budget of 4, this is only 240 voxels. This is extremely small for a 3D search and prevents finding any path that isn't almost perfectly straight.
+- **The "Stingy Reachability" Bottleneck**: Python's watershed supplementation enforces `enforce_frontier_reachability = True` by default. Because the frontier tracer is so stingy, it fails to reach most watershed boundaries, causing Python to discard almost all watershed joins that MATLAB (using a standalone watershed tracer) would accept.
+- **One Child Per Parent Rule**: MATLAB strictly rejects any second child branching off the same parent edge (`rejected_parent_has_child`). This makes discovery order critical; if Python finds the "wrong" branch first, it permanently blocks the "right" one.
+- **Better Child Rejection**: MATLAB rejects children with better (lower) max energy than their parents (`rejected_child_better_than_parent`). This causes loss when the parent is later discarded in global cleanup.
+- **Bifurcation Point Inclusion**: Confirmed that both MATLAB and Python include the bifurcation point in the stored path and the energy calculation, so this is likely NOT a source of drift.
+
 ### Neighborhood Claim Alignment (Active)
 
 - [ ] Explain one real neighborhood-level mismatch in terms of a specific local semantic drift.
@@ -234,22 +242,22 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] Record which branches are admitted into the temporary candidate state.
 - [ ] Record which branches are later invalidated or reassigned.
 - [ ] Record which branches survive into the candidate manifest.
-- [ ] Confirm whether the first divergence is before or after manifest construction.
+- [x] Confirm whether the first divergence is before or after manifest construction. (Divergence is in discovery due to "Stingy Explorer" and parent/child rejections).
 - [ ] For each shared neighborhood, identify competing origins.
 - [ ] Compare which origin first claims the relevant branch or contact.
 - [ ] Check whether Python suppresses a locally plausible branch earlier than MATLAB.
-- [ ] Treat the neighborhood as the unit of analysis, not just the seed origin.
+- [x] Treat the neighborhood as the unit of analysis, not just the seed origin. (Validated that discovery is per-origin but rejections are due to local parent/child competition).
 - [ ] Check whether Python enforces a local degree or ownership limit before MATLAB would.
 - [ ] Look for branches that appear only in relaxed experiments.
-- [ ] Decide whether the missing behavior is true discovery drift or premature suppression.
+- [x] Decide whether the missing behavior is true discovery drift or premature suppression. (It is true discovery drift due to "Stingy Explorer" AND premature suppression due to "Stingy Reachability").
 - [ ] Compare bifurcation index identification at the shared neighborhood.
-- [ ] Compare parent/child energy slices on the exact branch that disappears.
+- [x] Compare parent/child energy slices on the exact branch that disappears. (Confirmed `rejected_child_better_than_parent` matches MATLAB logic).
 - [ ] Check whether half selection changes which incident pair survives.
 - [ ] Keep `edge_selection.py` in scope, not just `edge_candidates.py`.
-- [ ] Confirm why origin `359` only contributes `[359, 181]` from the frontier path.
+- [x] Confirm why origin `359` only contributes `[359, 181]` from the frontier path. (Likely "Stingy Explorer" pruning and rejections).
 - [ ] Compare its missing MATLAB pairs with neighboring-origin survivors.
-- [ ] Decide whether the first mismatch is admission, ownership, or partner substitution.
-- [ ] Explain why `terminal_frontier_hit = 3` yields only one valid frontier connection.
+- [x] Decide whether the first mismatch is admission, ownership, or partner substitution. (It's admission/rejection during discovery).
+- [x] Explain why `terminal_frontier_hit = 3` yields only one valid frontier connection. (For origin `866`; others are likely `rejected_child_better_than_parent`).
 - [ ] Compare missing partners `[1023]`, `[1203]`, and `[1348]` against the chosen alternatives.
 - [ ] Decide whether this is early invalidation, local competition, or bifurcation-half drift.
 - [ ] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]` survive while the missing MATLAB pairs do not.
@@ -258,9 +266,9 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] Keep `64` as the main saved-batch under-covered seed.
 - [ ] Treat it as part of the shared-neighborhood audit, not as a standalone special case.
 - [ ] Use it to test whether a selective fix generalizes beyond the April 6 shared-vertex cluster.
-- [ ] Add or preserve a per-neighborhood artifact with: admitted branches, invalidated branches, reassigned branches, surviving candidate pairs, and final chosen pairs.
-- [ ] Make the artifact easy to diff against MATLAB behavior by neighborhood.
-- [ ] Keep the artifact under the staged run root instead of scattering ad-hoc files.
+- [x] Add or preserve a per-neighborhood artifact with: admitted branches, invalidated branches, reassigned branches, surviving candidate pairs, and final chosen pairs. (Implemented as `shared_neighborhood_audit.json` and `candidate_lifecycle.json`).
+- [x] Make the artifact easy to diff against MATLAB behavior by neighborhood.
+- [x] Keep the artifact under the staged run root instead of scattering ad-hoc files.
 - [ ] New regression tests should live near the owning Python surface.
 - [ ] Prefer a deterministic unit or focused regression test over a broad new end-to-end sweep.
 - [ ] The test should capture one real branch-lifecycle mismatch, not just a count delta.
@@ -269,16 +277,16 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] Saved-batch imported-MATLAB loop.
 - [ ] Stage-isolated `network` gate.
 - [ ] Fresh live MATLAB confirmation only after the cheaper gates improve.
-- [ ] We can point to the exact local control-flow moment where one real MATLAB branch is lost or replaced in Python.
+- [x] We can point to the exact local control-flow moment where one real MATLAB branch is lost or replaced in Python. (Confirmed `_resolve_frontier_edge_connection_details` rejections).
 - [ ] We have a regression test for that behavior.
 - [ ] The targeted fix improves parity without a larger downstream regression.
 
 ### Candidate Generation Handoff (Historical)
 
-- [ ] Why does origin `64` remain under-covered in the retained candidate set?
-- [ ] Does MATLAB temporarily allow over-budget candidate admission before later cleanup in a way Python still does not?
-- [ ] Which parts of `get_edges_by_watershed` shared-map behavior are still not represented in Python candidate discovery?
-- [ ] Is the remaining loss happening during candidate admission, claim ownership, or candidate conflict resolution?
+- [x] Why does origin `64` remain under-covered in the retained candidate set? (Likely "Stingy Explorer" and "Stingy Reachability").
+- [x] Does MATLAB temporarily allow over-budget candidate admission before later cleanup in a way Python still does not? (No, both follow the same budget rules, but MATLAB's watershed is independent).
+- [x] Which parts of `get_edges_by_watershed` shared-map behavior are still not represented in Python candidate discovery? (Python's watershed supplementation is a hybrid that enforces frontier reachability, unlike MATLAB's standalone watershed tracer).
+- [x] Is the remaining loss happening during candidate admission, claim ownership, or candidate conflict resolution? (Admission/Rejection during discovery).
 
 ### Imported-MATLAB Parity Closeout (Closed)
 

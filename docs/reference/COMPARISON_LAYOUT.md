@@ -197,7 +197,7 @@ layout contract:
 
 - [Neighborhood Claim Alignment](../chapters/neighborhood-claim-alignment/README.md)
 - [Candidate Generation Handoff](../chapters/candidate-generation-handoff/README.md)
-- [Imported-MATLAB Parity Closeout](../chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+- [Imported-MATLAB Parity Closeout](../chapters/imported-matlab-parity-closeout/parity_closeout.md)
 
 Those chapters cover reuse summaries, diagnostics, proof artifacts, and other
 workflow-specific outputs that still write into the staged folders above.

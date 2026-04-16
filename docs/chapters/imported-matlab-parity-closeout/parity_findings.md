@@ -1,4 +1,4 @@
-# Parity Findings 2026-03-27
+# Parity Findings
 
 This note captures what the fresh March 27, 2026 MATLAB/Python reruns taught us
 so the next parity phase can start from verified facts instead of chat history.
@@ -22,7 +22,7 @@ This file is intentionally the evidence log, not the workflow plan.
   - `source/slavv/core/edge_candidates.py`
 - Best companion docs:
   - [PARITY_HUB.md](PARITY_HUB.md)
-  - [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+  - [edge_parity_plan.md](edge_parity_plan.md)
   - [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
 ## Read This File When
