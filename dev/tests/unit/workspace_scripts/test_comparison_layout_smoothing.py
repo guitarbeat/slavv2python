@@ -133,3 +133,61 @@ def test_apply_migration_report_requires_allow_list_for_non_empty_deletes(tmp_pa
     assert any(item["path"] for item in applied["skipped_deletions"])
     grouped_target = comparisons_root / "experiments" / "failed-verify" / "runs" / "20260413_failed_verify"
     assert grouped_target.exists()
+
+
+def test_build_migration_report_uses_parent_slug_and_unique_names_for_aggregate_children(tmp_path):
+    module = _load_workspace_module(
+        "dev/scripts/maintenance/comparison_layout_smoothing.py",
+        "comparison_layout_smoothing_aggregate_slug_test",
+    )
+    comparisons_root = tmp_path / "slavv_comparisons"
+    matlab_run = comparisons_root / "20260328_023500_matlab_consistency" / "run_01"
+    python_run = comparisons_root / "20260328_142659_python_consistency" / "run_01"
+    _write_report(matlab_run)
+    _write_report(python_run)
+
+    report = module.build_migration_report(comparisons_root, repo_root=tmp_path)
+
+    by_source = {entry["source_relative_path"]: entry for entry in report["runs"]}
+    matlab_entry = by_source["20260328_023500_matlab_consistency/run_01"]
+    python_entry = by_source["20260328_142659_python_consistency/run_01"]
+
+    assert matlab_entry["slug"] == "matlab-consistency"
+    assert python_entry["slug"] == "python-consistency"
+    assert matlab_entry["normalized_name"] == "20260328_023500_matlab_consistency_run_01"
+    assert python_entry["normalized_name"] == "20260328_142659_python_consistency_run_01"
+    assert matlab_entry["target_relative_path"] != python_entry["target_relative_path"]
+
+
+def test_apply_migration_report_skips_missing_sources_when_target_exists(tmp_path):
+    module = _load_workspace_module(
+        "dev/scripts/maintenance/comparison_layout_smoothing.py",
+        "comparison_layout_smoothing_missing_source_test",
+    )
+    comparisons_root = tmp_path / "slavv_comparisons"
+    target_run = comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    _write_report(target_run)
+
+    report = {
+        "runs": [
+            {
+                "source_path": str(comparisons_root / "20260413_release_verify"),
+                "target_path": str(target_run),
+                "target_relative_path": "experiments/release-verify/runs/20260413_release_verify",
+                "action": "move",
+                "conflict": False,
+            }
+        ],
+        "pointer_proposals": {
+            "latest_completed.txt": "experiments/release-verify/runs/20260413_release_verify",
+            "canonical_acceptance.txt": "experiments/release-verify/runs/20260413_release_verify",
+            "best_saved_batch.txt": "experiments/release-verify/runs/20260413_release_verify",
+        },
+        "cleanup_candidates": [],
+    }
+
+    applied = module.apply_migration_report(report, comparisons_root=comparisons_root, repo_root=tmp_path)
+
+    assert applied["applied_moves"] == []
+    assert applied["skipped_moves"]
+    assert applied["skipped_moves"][0]["reason"] == "source missing, target already exists"

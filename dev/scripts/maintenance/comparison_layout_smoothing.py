@@ -29,9 +29,32 @@ DEFAULT_COMPARISONS_ROOT = REPO_ROOT / "slavv_comparisons"
 DEFAULT_REPORT_NAME = "comparison_layout_migration_report.json"
 POINTER_ORDER = ("latest_completed.txt", "canonical_acceptance.txt", "best_saved_batch.txt")
 
+_KNOWN_ROOT_SLUGS = {
+    "20260327_150656_clean_parity": "saved-batch",
+    "20260327_161610_clean_python_full": "python-full",
+    "20260330_parity_full_postfix": "postfix-parity",
+    "20260330_cross_compare_postfix": "postfix-cross-compare",
+    "20260328_023500_matlab_consistency": "matlab-consistency",
+    "20260328_142659_python_consistency": "python-consistency",
+    "20260330_python_consistency_postfix": "python-consistency",
+    "20260401_live_parity_retry": "live-parity",
+    "20260413_release_verify": "release-verify",
+    "20260413_live": "20260413",
+    "live_20260413b": "20260413b",
+    "20260413_live_canonical": "canonical-20260413",
+}
+
 
 def infer_experiment_slug(run_root: Path) -> str:
     """Infer a stable experiment slug from a run-root name."""
+    if run_root.name in _KNOWN_ROOT_SLUGS:
+        return _KNOWN_ROOT_SLUGS[run_root.name]
+
+    if run_root.name.startswith("run_"):
+        parent = run_root.parent
+        if parent.name in _KNOWN_ROOT_SLUGS:
+            return _KNOWN_ROOT_SLUGS[parent.name]
+
     tokens = run_root.name.split("_")
     label_tokens = tokens[2:] if len(tokens) >= 3 and tokens[0].isdigit() and tokens[1].isdigit() else tokens[1:]
     label = "-".join(label_tokens) if label_tokens else run_root.name
@@ -49,10 +72,19 @@ def infer_experiment_slug(run_root: Path) -> str:
     return slugify_experiment_name(label)
 
 
+def infer_target_run_name(run_root: Path) -> str:
+    """Infer a normalized target run-root name while avoiding aggregate child collisions."""
+    if run_root.name.startswith("run_") and run_root.parent.name in _KNOWN_ROOT_SLUGS:
+        # Aggregate child names are often reused across containers (run_01, run_02).
+        # Prefix with the date-first parent to keep each run path unique and traceable.
+        return normalize_run_root_name(f"{run_root.parent.name}_{run_root.name}")
+    return normalize_run_root_name(run_root.name)
+
+
 def build_target_run_path(comparisons_root: Path, run_root: Path, slug: str | None = None) -> Path:
     """Return the grouped target path for a run root."""
     experiment_slug = slug or infer_experiment_slug(run_root)
-    return comparisons_root / "experiments" / experiment_slug / "runs" / normalize_run_root_name(run_root.name)
+    return comparisons_root / "experiments" / experiment_slug / "runs" / infer_target_run_name(run_root)
 
 
 def find_doc_references_to_paths(repo_root: Path, paths: list[str]) -> list[dict[str, Any]]:
@@ -141,7 +173,7 @@ def build_migration_report(comparisons_root: Path, repo_root: Path | None = None
                 "target_path": str(target_path),
                 "target_relative_path": target_relative,
                 "slug": slug,
-                "normalized_name": normalize_run_root_name(run_root.name),
+                "normalized_name": infer_target_run_name(run_root),
                 "status": status,
                 "conflict": target_path.exists() and target_path.resolve() != run_root.resolve(),
                 "action": (
@@ -215,6 +247,7 @@ def apply_migration_report(
     conflicts: list[dict[str, Any]] = []
     removed_empty_dirs: list[str] = []
     skipped_deletions: list[dict[str, Any]] = []
+    skipped_moves: list[dict[str, Any]] = []
 
     for run in report.get("runs", []):
         source_path = Path(run["source_path"])
@@ -222,6 +255,25 @@ def apply_migration_report(
         if run.get("conflict"):
             conflicts.append({"source": str(source_path), "target": str(target_path)})
             continue
+        if not source_path.exists():
+            if target_path.exists():
+                skipped_moves.append(
+                    {
+                        "source": str(source_path),
+                        "target": str(target_path),
+                        "reason": "source missing, target already exists",
+                    }
+                )
+                continue
+            else:
+                skipped_moves.append(
+                    {
+                        "source": str(source_path),
+                        "target": str(target_path),
+                        "reason": "source missing and target absent",
+                    }
+                )
+                continue
         if run.get("action") == "move" and source_path.resolve() != target_path.resolve():
             target_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(source_path), str(target_path))
@@ -271,6 +323,7 @@ def apply_migration_report(
     updated_report["conflicts"] = conflicts
     updated_report["removed_empty_dirs"] = sorted(set(removed_empty_dirs))
     updated_report["skipped_deletions"] = skipped_deletions
+    updated_report["skipped_moves"] = skipped_moves
     return updated_report
 
 
