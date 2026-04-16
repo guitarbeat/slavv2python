@@ -105,6 +105,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 - [Shared Neighborhood Claim Investigation Plan](INVESTIGATION_PLAN.md)
 - [Shared Neighborhood Audit Checklist](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
+- [Parity Workflow Completion Spec Archive](parity-workflow-completion-spec/tasks.md)
 
 ## Core References
 

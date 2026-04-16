@@ -70,6 +70,7 @@ Core references for the active chapter:
 - [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
 - [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 - [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
 
 ## Historical Handoff Chapter
 
