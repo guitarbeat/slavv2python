@@ -1,5 +1,7 @@
 ﻿# Adding Extraction Algorithms
 
+[Up: Documentation Index](../README.md)
+
 This guide is the maintained contributor note for introducing a new extraction
 algorithm to the Python SLAVV pipeline. It applies to new edge-generation
 methods, new energy backends, and similar algorithmic additions that should be
@@ -134,3 +136,4 @@ Before considering the algorithm integrated, make sure all of these are true:
   outputs
 - parity-sensitive changes cite the right chapter or report if they alter the
   MATLAB investigation surface
+

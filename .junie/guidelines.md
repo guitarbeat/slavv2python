@@ -1,93 +1,56 @@
-﻿# SLAVV Development Guidelines
+﻿# SLAVV Development Guidelines (Junie)
 
-This document provides project-specific guidelines for advanced developers working on the `slavv2python` repository.
+This document provides project-specific guidelines for Junie (AI Agent) working on the `slavv2python` repository.
 
-## Build/Configuration Instructions
+## Core Context & Navigation
+
+Before starting any task, review these sources in order:
+1.  **[README.md](README.md)**: Project overview and quick start.
+2.  **[AGENTS.md](AGENTS.md)**: **Canonical workflow commands** and repository-wide guardrails.
+3.  **[docs/README.md](docs/README.md)**: Index for reference docs and **Active Chapter** status.
+4.  **[TODO.md](TODO.md)**: Current technical blockers and canonical run roots for parity work.
+
+## Build & Configuration
 
 ### Environment Setup
+1.  **Virtual Environment**: `python -m venv .venv` and `.\.venv\Scripts\Activate.ps1`.
+2.  **Installation**: `pip install -e ".[app,dev]"` (includes all extras).
+3.  **Pre-commit**: `pre-commit install`.
 
-1.  **Virtual Environment**: Create and activate a Python virtual environment (Python 3.9+ recommended).
-    ```powershell
-    python -m venv .venv
-    .\.venv\Scripts\Activate.ps1
-    ```
-2.  **Installation**: Install the package with the necessary extras. For development and UI support:
-    ```powershell
-    pip install -e ".[app,dev]"
-    ```
-    Extras include:
-    - `[app]`: Streamlit-based web interface (`slavv-app`).
-    - `[dev]`: Testing and linting tools (`pytest`, `ruff`, `mypy`).
-3.  **Pre-commit**: Install pre-commit hooks to ensure code quality:
-    ```powershell
-    pre-commit install
-    ```
-
-### Windows Helper
-There is no checked-in `.\make.ps1` helper in this repository. Use the direct PowerShell commands below instead:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[app,dev]"
-pre-commit install
-python -m ruff format source dev/tests
-python -m ruff check source dev/tests --fix
-python -m pytest dev/tests/
-```
-
-## Testing Information
-
-### Running Tests
-The project uses `pytest` with specific markers to categorize tests.
-- **Unit & Integration**: `python -m pytest -m "unit or integration"`
-- **Diagnostic Tests**: `python -m pytest dev/tests/diagnostic/test_comparison_setup.py` (Verify MATLAB/Python comparison environment).
-- **All Tests**: `python -m pytest dev/tests/`
-
-### Adding and Executing New Tests
-- **Location**: Place unit tests under `dev/tests/unit/` mirroring the `source/slavv/` structure.
-- **Markers**: Use `@pytest.mark.<type>` (e.g., `unit`, `integration`, `slow`, `regression`).
-- **Numpy Integration**: Most tests involve numerical data; use `np.array` for path data or volume mocks.
-
-### Testing Demonstration
-To verify the testing environment and demonstrate the process, you can create a simple test for `slavv.utils.calculate_path_length`.
-
-1.  **Create a test file** (e.g., `dev/tests/unit/test_demo.py`):
-    ```python
-    import pytest
-    from slavv.utils import calculate_path_length
-    import numpy as np
-
-    @pytest.mark.unit
-    def test_demo_path_length():
-        """A simple demo test to verify the testing environment."""
-        # (0,0,0) -> (3,0,0) -> (3,4,0) => Expected length = 7.0
-        path = np.array([[0, 0, 0], [3, 0, 0], [3, 4, 0]], dtype=float)
-        assert calculate_path_length(path) == 7.0
-    ```
-
-2.  **Run the test**:
-    ```powershell
-    python -m pytest dev/tests/unit/test_demo.py
-    ```
-
-## Additional Development Information
-
-### Code Style & Quality
-The project strictly follows `ruff` for formatting and linting, and `mypy` for type checking.
+### Common Commands
+Always prefer `python -m` for tool execution:
 - **Format**: `python -m ruff format source dev/tests`
 - **Lint**: `python -m ruff check source dev/tests --fix`
-- **Type Checking**: `python -m mypy`
+- **Type-check**: `python -m mypy`
+- **Tests**: `python -m pytest dev/tests/`
 
-### Architecture & Best Practices
-- **Package Core**: Library code resides in `source/slavv/`.
-- **Logging**: Use the standard `logging` module in library code. Avoid `print()` except in CLI output or apps.
-- **MATLAB Parity**: When modifying core algorithms, maintain parity with the original MATLAB implementation. Use `dev/scripts/cli/compare_matlab_python.py` for validation.
-- **CLI Workflows**: Use `slavv run`, `slavv analyze`, and `slavv plot` for processing and visualization.
-- **App Launcher**: Use `slavv-app` or `python -m streamlit run source/slavv/apps/web_app.py` for the UI.
+## Repo-Specific Guardrails
 
-### Guardrails
-- Keep package code under `source/slavv/` and tests under `dev/tests/`.
-- Do not treat generated outputs under `comparisons/` or `comparison_output*/` as source inputs.
-- Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/`.
+- **Package Root**: Keep package code under `source/slavv/`.
+- **Test Placement**: Follow `dev/tests/README.md`; mirror the `source/slavv/` structure.
+- **Logging**: Use the standard `logging` module in library code; avoid `print()`.
+- **Path Handling**: Prefer `pathlib.Path` and explicit `encoding="utf-8"`.
+- **Code Style**: Use `from __future__ import annotations` in new modules.
+- **CLI**: Align with `argparse`-based entrypoints in `source/slavv/apps/`.
+- **Imports**: Preserve the `source/` package layout and existing console entrypoints (`slavv`, `slavv-app`).
+
+## MATLAB Parity & Comparison
+
+When working on parity-sensitive logic:
+- **Staged Layout**: Respect the `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` structure.
+- **Comparison Tool**: Use `dev/scripts/cli/compare_matlab_python.py`.
+- **Evidence**: Cite artifacts from canonical run roots defined in `TODO.md`.
+- **Validation**: Use the `slavv parity-proof` command to verify exact parity.
+
+## Testing Strategy
+
+- **Markers**: Use folder-based markers (`unit`, `integration`, `diagnostic`) as defined in `dev/tests/conftest.py`.
+- **Regression**: Add targeted tests for every bug fix (e.g., `dev/tests/unit/core/test_watershed_supplement_regression.py`).
+- **Temporary Files**: Use the repo-local `tmp_path` fixture which roots under `dev/tmp_tests/`.
+
+### Setup Verification
+To verify your environment, run the diagnostic suite:
+```powershell
+python -m pytest dev/tests/diagnostic/test_comparison_setup.py
+```
 

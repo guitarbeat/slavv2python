@@ -1,0 +1,77 @@
+﻿C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:31:- [ ] Confirm that Python makes the same local frontier decisions as MATLAB in
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:33:- [ ] Narrow the remaining parity gap by auditing implementation semantics, not
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:38:- [ ] Remember that the MATLAB code is a control implementation, not a formal
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:41:- [ ] Treat parity as an implementation-emulation problem, not just an
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:43:- [ ] Keep in mind that small early differences in frontier expansion can
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:46:- [ ] Assume library-level equivalence is not enough. MATLAB and Python can use
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:58:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:62:- [ ] Add a focused parity note here if any admission or overwrite mismatch is
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:92:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:121:- [ ] Verify the exact role of the root or bifurcation voxel after a terminal
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:123:- [ ] Confirm which voxels should remain claimable by later paths and which
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:127:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:131:- [ ] Record whether the next fix needs selective ownership or selective claim
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:170:- [ ] Verify that the bifurcation point is identified at the same path index.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:171:- [ ] Verify that the origin-half selection rule matches MATLAB when one half
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:173:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:177:- [ ] Add a parity note if the drift is really in half selection rather than in
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:204:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:208:- [ ] Note whether the missing MATLAB pairs are being suppressed here before
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:239:- [ ] Verify that scale-derived edge-length budgets are computed from the same
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:241:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:245:- [ ] Log any vertex-specific cases where Python stops early or explores too
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:271:- [ ] Confirm globally that imported Python `vertex_scales` match the raw
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:273:- [ ] Confirm that any rounding or clipping of vertex positions happens the
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:275:- [ ] Keep this lower priority unless new evidence says otherwise, because the
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:277:- [ ] Compare:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:293:- [ ] Do not start with neighborhood offset order or MATLAB linear-index
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:300:- [ ] Top shared vertices from the current parity investigations:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:302:- [ ] Current working hypothesis: the remaining mismatch is upstream in frontier
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:304:- [ ] Current practical goal: prove that Python makes the same local frontier
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:343:- [ ] We can explain the missing MATLAB candidate pairs at the worst shared
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:345:- [ ] We have at least one regression test that reproduces the discovered
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\imported-matlab-parity-closeout\MATLAB_PARITY_AUDIT_CHECKLIST.md:347:- [ ] A targeted Python change improves parity on the imported-MATLAB loop
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:20:- [ ] Explain one real neighborhood-level mismatch in terms of a specific local
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:22:- [ ] Reduce that mismatch to an isolated regression test.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:23:- [ ] Land one targeted Python fix without regressing the stage-isolated
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:30:- [ ] Record which branches are admitted into the temporary candidate state.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:31:- [ ] Record which branches are later invalidated or reassigned.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:32:- [ ] Record which branches survive into the candidate manifest.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:33:- [ ] Confirm whether the first divergence is before or after manifest
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:43:- [ ] For each shared neighborhood, identify competing origins.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:44:- [ ] Compare which origin first claims the relevant branch or contact.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:45:- [ ] Check whether Python suppresses a locally plausible branch earlier than
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:47:- [ ] Treat the neighborhood as the unit of analysis, not just the seed origin.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:51:- [ ] Check whether Python enforces a local degree or ownership limit before
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:53:- [ ] Look for branches that appear only in relaxed experiments.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:54:- [ ] Decide whether the missing behavior is true discovery drift or premature
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:59:- [ ] Compare bifurcation index identification at the shared neighborhood.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:60:- [ ] Compare parent/child energy slices on the exact branch that disappears.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:61:- [ ] Check whether half selection changes which incident pair survives.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:62:- [ ] Keep `edge_selection.py` in scope, not just `edge_candidates.py`.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:68:- [ ] Confirm why origin `359` only contributes `[359, 181]` from the frontier
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:70:- [ ] Compare its missing MATLAB pairs with neighboring-origin survivors.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:71:- [ ] Decide whether the first mismatch is admission, ownership, or partner
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:76:- [ ] Explain why `terminal_frontier_hit = 3` yields only one valid frontier
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:78:- [ ] Compare missing partners `[1023]`, `[1203]`, and `[1348]` against the
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:80:- [ ] Decide whether this is early invalidation, local competition, or
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:85:- [ ] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]`
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:87:- [ ] Check whether `1319` is lost because of partner substitution rather than
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:89:- [ ] Compare the local branch lifecycle against the MATLAB artifact.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:93:- [ ] Keep `64` as the main saved-batch under-covered seed.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:94:- [ ] Treat it as part of the shared-neighborhood audit, not as a standalone
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:96:- [ ] Use it to test whether a selective fix generalizes beyond the April 6
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:101:- [ ] Add or preserve a per-neighborhood artifact with:
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:104:- [ ] Make the artifact easy to diff against MATLAB behavior by neighborhood.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:105:- [ ] Keep the artifact under the staged run root instead of scattering ad-hoc
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:110:- [ ] New regression tests should live near the owning Python surface.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:111:- [ ] Prefer a deterministic unit or focused regression test over a broad new
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:113:- [ ] The test should capture one real branch-lifecycle mismatch, not just a
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:118:- [ ] Targeted pytest for the new local regression
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:119:- [ ] `python -m pytest -m "unit or integration"`
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:120:- [ ] Saved-batch imported-MATLAB loop
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:121:- [ ] Stage-isolated `network` gate
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:122:- [ ] Fresh live MATLAB confirmation only after the cheaper gates improve
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:126:- [ ] We can point to the exact local control-flow moment where one real MATLAB
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:128:- [ ] We have a regression test for that behavior.
+C:\Users\alw4834\Documents\slavv2python\docs\chapters\neighborhood-claim-alignment\NEIGHBORHOOD_AUDIT_CHECKLIST.md:129:- [ ] The targeted fix improves parity without a larger downstream regression.

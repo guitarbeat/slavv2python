@@ -1,4 +1,6 @@
-# Energy Computation Methods
+﻿# Energy Computation Methods
+
+[Up: Documentation Index](../README.md)
 
 This note explains the supported `energy_method` options in the Python SLAVV
 pipeline, how they interact with the existing parameter surface, and where to
@@ -94,3 +96,4 @@ When adding a new energy backend, update these surfaces together:
    with `docs/reference/COMPARISON_LAYOUT.md`.
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.
+

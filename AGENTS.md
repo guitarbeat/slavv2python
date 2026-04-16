@@ -15,13 +15,13 @@ Repository guidance for coding agents working in `slavv2python`.
 - `dev/tests/`: unit, integration, UI, and diagnostic coverage
 - `dev/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
 - `dev/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
-- `dev/reports/`: legacy redirect location (reports are maintained under `docs/reports/`)
 - `docs/`: maintained reference docs for MATLAB mapping, parity notes, report catalogs, and comparison run layout
 - `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
 
 ## Read First When Relevant
 
 - `docs/README.md`: index for maintained reference docs and active chapter status.
+- `TODO.md`: active imported-MATLAB parity backlog and current canonical run roots.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
 - `docs/reference/COMPARISON_LAYOUT.md`: canonical staged comparison layout details and naming conventions.
@@ -157,7 +157,7 @@ If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage. If t
 
 ### MATLAB Parity Workflow
 
-Run this when touching MATLAB import, comparison, or parity-sensitive logic:
+Run this when touching MATLAB import, comparison, or parity-sensitive logic. Check `TODO.md` for current canonical run roots and recommended rerun commands.
 
 ```powershell
 python -m pytest dev/tests/diagnostic/test_comparison_setup.py

@@ -1,5 +1,7 @@
 ﻿# Comparison Run Layout
 
+[Up: Documentation Index](../README.md)
+
 This document describes the canonical staged layout for generated MATLAB/Python
 comparison runs. It replaces the older `dev/experiments` note, which no
 longer matches the current repository structure.
@@ -242,5 +244,6 @@ Chapter-specific parity status now lives in
 Keep this document focused on the run-layout contract. For translation
 semantics and boundary rules, use
 [`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md).
+
 
 

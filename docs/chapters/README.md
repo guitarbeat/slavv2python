@@ -1,5 +1,7 @@
 # Chapters
 
+[Up: Documentation Index](../README.md)
+
 This directory holds long-running investigation chapters for the imported-MATLAB
 parity effort and related follow-on work.
 

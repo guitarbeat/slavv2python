@@ -1,4 +1,6 @@
-# External Library Survey For The Python Port
+﻿# External Library Survey For The Python Port
+
+[Up: Documentation Index](../README.md)
 
 Date: 2026-04-06
 
@@ -382,3 +384,4 @@ real revisit of the disabled `numba` path that is already in the codebase.
   [docs.opencv.org/4.x/d9/d61/tutorial_py_morphological_ops.html](https://docs.opencv.org/4.x/d9/d61/tutorial_py_morphological_ops.html)
 - OpenCV watershed tutorial:
   [docs.opencv.org/4.x/d3/db4/tutorial_py_watershed.html](https://docs.opencv.org/4.x/d3/db4/tutorial_py_watershed.html)
+

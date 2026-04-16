@@ -19,12 +19,23 @@ Follow this maintained reading path:
 
 1. [Repository README](../README.md)
 2. [Contributor workflow commands](../AGENTS.md)
-3. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
-4. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
-5. [Energy Computation Methods](reference/ENERGY_METHODS.md)
-6. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-7. [Chapter index](chapters/README.md)
-8. [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md)
+3. [Project Glossary](reference/GLOSSARY.md)
+4. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
+5. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
+6. [Energy Computation Methods](reference/ENERGY_METHODS.md)
+7. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+8. [Chapter index](chapters/README.md)
+9. [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md)
+
+## New Contributor Guide
+
+If you are new to the project:
+
+- Read the [Glossary](reference/GLOSSARY.md) to understand project terminology.
+- Follow the **Setup** instructions in the [Root README](../README.md).
+- Use `slavv info` to verify your installation.
+- Check the [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) before touching any core algorithmic code.
+- Read the [Active Chapter](chapters/neighborhood-claim-alignment/README.md) to see what is currently being worked on.
 
 ## Chapter Status
 
@@ -121,6 +132,7 @@ These docs remain active references across chapters.
 
 | File | Purpose |
 | --- | --- |
+| `reference/GLOSSARY.md` | Domain-specific and project-specific terms |
 | `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
 | `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
 | `reference/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
@@ -134,6 +146,7 @@ These docs remain active references across chapters.
 
 | Question | Best file |
 | --- | --- |
+| What does this term mean? | [Glossary](reference/GLOSSARY.md) |
 | What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md) |
 | What chapter is active right now? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |

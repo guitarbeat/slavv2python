@@ -1,5 +1,7 @@
 ﻿# Candidate Generation Handoff
 
+[Up: Chapter Index](../README.md)
+
 Status: Historical Chapter 2 handoff
 
 Successor:
@@ -125,4 +127,5 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity-closeout/PARITY_FINDINGS_2026-03-27.md)
+
 

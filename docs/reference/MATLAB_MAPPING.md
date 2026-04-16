@@ -1,5 +1,7 @@
 ﻿# MATLAB to Python Mapping
 
+[Up: Documentation Index](../README.md)
+
 Cross-reference between the upstream MATLAB sources in
 `external/Vectorization-Public/source/` and the maintained Python modules in
 `source/slavv/`. This document is intentionally focused on maintained surfaces
@@ -122,4 +124,5 @@ the scope of the maintained Python package:
 Run `python dev/scripts/maintenance/refresh_matlab_mapping_appendix.py`
 from the repository root if you need a generated appendix of upstream `.m`
 files that are not mentioned explicitly in this document.
+
 

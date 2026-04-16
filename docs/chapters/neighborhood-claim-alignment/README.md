@@ -1,5 +1,7 @@
 ﻿# Neighborhood Claim Alignment
 
+[Up: Chapter Index](../README.md)
+
 Status: Active chapter
 
 Successor:
@@ -178,4 +180,5 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity-closeout/PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+
 

@@ -245,7 +245,7 @@ For maintained project context, read in this order:
 6. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
 7. [Neighborhood Claim Alignment](docs/chapters/neighborhood-claim-alignment/README.md)
 8. [Current parity backlog and lessons learned](TODO.md)
-9. [Release verification notes](docs/reports/handled/release_verification_2026-04-14.md)
+9. [Release verification notes](docs/chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
 
 ## License
 

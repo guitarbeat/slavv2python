@@ -223,3 +223,90 @@ Proof artifact summary:
 ```powershell
 slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413
 ```
+
+## Chapter Task Backlog
+
+### Neighborhood Claim Alignment (Active)
+
+- [ ] Explain one real neighborhood-level mismatch in terms of a specific local semantic drift.
+- [ ] Reduce that mismatch to an isolated regression test.
+- [ ] Land one targeted Python fix without regressing the stage-isolated `network` gate.
+- [ ] Record which branches are admitted into the temporary candidate state.
+- [ ] Record which branches are later invalidated or reassigned.
+- [ ] Record which branches survive into the candidate manifest.
+- [ ] Confirm whether the first divergence is before or after manifest construction.
+- [ ] For each shared neighborhood, identify competing origins.
+- [ ] Compare which origin first claims the relevant branch or contact.
+- [ ] Check whether Python suppresses a locally plausible branch earlier than MATLAB.
+- [ ] Treat the neighborhood as the unit of analysis, not just the seed origin.
+- [ ] Check whether Python enforces a local degree or ownership limit before MATLAB would.
+- [ ] Look for branches that appear only in relaxed experiments.
+- [ ] Decide whether the missing behavior is true discovery drift or premature suppression.
+- [ ] Compare bifurcation index identification at the shared neighborhood.
+- [ ] Compare parent/child energy slices on the exact branch that disappears.
+- [ ] Check whether half selection changes which incident pair survives.
+- [ ] Keep `edge_selection.py` in scope, not just `edge_candidates.py`.
+- [ ] Confirm why origin `359` only contributes `[359, 181]` from the frontier path.
+- [ ] Compare its missing MATLAB pairs with neighboring-origin survivors.
+- [ ] Decide whether the first mismatch is admission, ownership, or partner substitution.
+- [ ] Explain why `terminal_frontier_hit = 3` yields only one valid frontier connection.
+- [ ] Compare missing partners `[1023]`, `[1203]`, and `[1348]` against the chosen alternatives.
+- [ ] Decide whether this is early invalidation, local competition, or bifurcation-half drift.
+- [ ] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]` survive while the missing MATLAB pairs do not.
+- [ ] Check whether `1319` is lost because of partner substitution rather than geometric impossibility.
+- [ ] Compare the local branch lifecycle against the MATLAB artifact.
+- [ ] Keep `64` as the main saved-batch under-covered seed.
+- [ ] Treat it as part of the shared-neighborhood audit, not as a standalone special case.
+- [ ] Use it to test whether a selective fix generalizes beyond the April 6 shared-vertex cluster.
+- [ ] Add or preserve a per-neighborhood artifact with: admitted branches, invalidated branches, reassigned branches, surviving candidate pairs, and final chosen pairs.
+- [ ] Make the artifact easy to diff against MATLAB behavior by neighborhood.
+- [ ] Keep the artifact under the staged run root instead of scattering ad-hoc files.
+- [ ] New regression tests should live near the owning Python surface.
+- [ ] Prefer a deterministic unit or focused regression test over a broad new end-to-end sweep.
+- [ ] The test should capture one real branch-lifecycle mismatch, not just a count delta.
+- [ ] Targeted pytest for the new local regression.
+- [ ] `python -m pytest -m "unit or integration"`.
+- [ ] Saved-batch imported-MATLAB loop.
+- [ ] Stage-isolated `network` gate.
+- [ ] Fresh live MATLAB confirmation only after the cheaper gates improve.
+- [ ] We can point to the exact local control-flow moment where one real MATLAB branch is lost or replaced in Python.
+- [ ] We have a regression test for that behavior.
+- [ ] The targeted fix improves parity without a larger downstream regression.
+
+### Candidate Generation Handoff (Historical)
+
+- [ ] Why does origin `64` remain under-covered in the retained candidate set?
+- [ ] Does MATLAB temporarily allow over-budget candidate admission before later cleanup in a way Python still does not?
+- [ ] Which parts of `get_edges_by_watershed` shared-map behavior are still not represented in Python candidate discovery?
+- [ ] Is the remaining loss happening during candidate admission, claim ownership, or candidate conflict resolution?
+
+### Imported-MATLAB Parity Closeout (Closed)
+
+- [ ] Confirm that Python makes the same local frontier decisions as MATLAB in the edge-building path.
+- [ ] Narrow the remaining parity gap by auditing implementation semantics, not by rewriting the high-level algorithm again.
+- [ ] Remember that the MATLAB code is a control implementation, not a formal spec.
+- [ ] Treat parity as an implementation-emulation problem, not just an algorithm-translation problem.
+- [ ] Keep in mind that small early differences in frontier expansion can change which candidate edges are ever generated.
+- [ ] Assume library-level equivalence is not enough.
+- [ ] Compare `get_edges_for_vertex.m` around line 202 and the frontier-admission logic in `source/slavv/core/edge_candidates.py`.
+- [ ] Add a focused parity note if any admission or overwrite mismatch is found.
+- [ ] Compare `get_edges_for_vertex.m` around line 425 and the frontier-selection logic in `source/slavv/core/edge_candidates.py`.
+- [ ] Verify the exact role of the root or bifurcation voxel after a terminal hit.
+- [ ] Confirm which voxels should remain claimable by later paths and which should become owned immediately.
+- [ ] Compare `get_edges_for_vertex.m` around line 271 and the terminal-hit ownership flow in `source/slavv/core/edge_candidates.py`.
+- [ ] Record whether the next fix needs selective ownership or selective claim ordering rather than broader ownership.
+- [ ] Verify that the bifurcation point is identified at the same path index.
+- [ ] Verify that the origin-half selection rule matches MATLAB when one half is empty or when half energies tie.
+- [ ] Compare `get_edges_for_vertex.m` around line 308 and the parent/child cleanup logic in `source/slavv/core/edge_selection.py`.
+- [ ] Add a parity note if the drift is really in half selection rather than in path generation.
+- [ ] Compare `get_edges_for_vertex.m` around line 221 and the post-hit frontier-pruning logic in `source/slavv/core/edge_candidates.py`.
+- [ ] Note whether the missing MATLAB pairs are being suppressed here before cleanup ever sees them.
+- [ ] Verify that scale-derived edge-length budgets are computed from the same scale source and the same rounding rules.
+- [ ] Compare `get_edges_for_vertex.m` around lines 35, 91, and 104 and the border/length cutoff handling in `source/slavv/core/edge_candidates.py`.
+- [ ] Log any vertex-specific cases where Python stops early or explores too long.
+- [ ] Confirm globally that imported Python `vertex_scales` match the raw MATLAB HDF5 scale channel after the expected normalization.
+- [ ] Confirm that any rounding or clipping of vertex positions happens the same way before scale lookup.
+- [ ] Compare `get_edges_for_vertex.m` around line 24 and the scale-sourcing path in `source/slavv/core/edge_candidates.py`.
+- [ ] We can explain the missing MATLAB candidate pairs at the worst shared vertices in terms of a specific local semantic mismatch.
+- [ ] We have at least one regression test that reproduces the discovered mismatch in isolation.
+- [ ] A targeted Python change improves parity on the imported-MATLAB loop without causing a larger regression elsewhere.
