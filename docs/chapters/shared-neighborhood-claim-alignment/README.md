@@ -153,6 +153,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Shared Neighborhood Claim Investigation Plan](INVESTIGATION_PLAN.md)
 - [Shared Neighborhood Audit Checklist](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
 - [Parity Workflow Completion Spec Archive](parity-workflow-completion-spec/tasks.md)
+- [Comparison Layout Smoothing Spec Archive](comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](release_verification_2026-04-14.md)
 - [File Lock Contention Analysis 2026-04-13](file_lock_contention_analysis_2026-04-13.md)
 

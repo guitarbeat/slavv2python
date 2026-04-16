@@ -74,6 +74,7 @@ Core references for the active chapter:
 - [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 - [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
+- [Comparison Layout Smoothing Spec Archive](chapters/shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md)
 
 Current live-run lessons:

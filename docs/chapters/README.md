@@ -51,6 +51,7 @@ Use this table for the most common jump targets without scanning each chapter.
 | Item | Path | Purpose |
 | --- | --- | --- |
 | Active chapter entry | [shared-neighborhood-claim-alignment/README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
+| Comparison layout smoothing spec archive | [shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
 | Release verification note | [shared-neighborhood-claim-alignment/release_verification_2026-04-14.md](shared-neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
 | Lock-contention incident note | [shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
 | Canonical acceptance pointer | [../../slavv_comparisons/pointers/canonical_acceptance.txt](../../slavv_comparisons/pointers/canonical_acceptance.txt) | Authoritative pointer to the current acceptance run root |
