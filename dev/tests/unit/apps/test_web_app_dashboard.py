@@ -1,9 +1,39 @@
+import sys
+import types
+
 import pytest
 
 pytest.importorskip("streamlit")
 
 from slavv.apps import web_app
 from slavv.runtime.run_state import RunSnapshot, StageSnapshot, TaskSnapshot
+
+
+def test_run_interactive_curator_dispatches_qt_backend(monkeypatch):
+    fake_module = types.SimpleNamespace(
+        run_curator=lambda energy, vertices, edges: ("qt-vertices", "qt-edges")
+    )
+    monkeypatch.setitem(sys.modules, "slavv.visualization.interactive_curator", fake_module)
+
+    result = web_app._run_interactive_curator("energy", "vertices", "edges")
+
+    assert result == ("qt-vertices", "qt-edges")
+
+
+def test_run_interactive_curator_dispatches_napari_backend(monkeypatch):
+    fake_module = types.SimpleNamespace(
+        run_curator_napari=lambda energy, vertices, edges: ("napari-vertices", "napari-edges")
+    )
+    monkeypatch.setitem(sys.modules, "slavv.visualization.napari_curator", fake_module)
+
+    result = web_app._run_interactive_curator("energy", "vertices", "edges", backend="napari")
+
+    assert result == ("napari-vertices", "napari-edges")
+
+
+def test_run_interactive_curator_rejects_unknown_backend():
+    with pytest.raises(ValueError, match="curator backend"):
+        web_app._run_interactive_curator("energy", "vertices", "edges", backend="unknown")
 
 
 def test_dashboard_stage_frame_uses_placeholders_without_snapshot():

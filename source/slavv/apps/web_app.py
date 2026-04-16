@@ -1074,11 +1074,18 @@ def _log_share_report_prepared_once(dataset_name, report_data, results):
     )
 
 
-def _run_interactive_curator(energy_data, vertices_data, edges_data):
-    """Import the desktop curator lazily so the web app can load without Qt deps."""
-    from slavv.visualization.interactive_curator import run_curator
+def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt"):
+    """Import desktop curator backends lazily so the web app can load without GUI deps."""
+    backend_name = str(backend).strip().lower()
+    if backend_name in ("qt", "qt_pyvista", "pyvista"):
+        from slavv.visualization.interactive_curator import run_curator
 
-    return run_curator(energy_data, vertices_data, edges_data)
+        return run_curator(energy_data, vertices_data, edges_data)
+    if backend_name == "napari":
+        from slavv.visualization.napari_curator import run_curator_napari
+
+        return run_curator_napari(energy_data, vertices_data, edges_data)
+    raise ValueError("curator backend must be 'qt' or 'napari'")
 
 
 def main():
@@ -1665,6 +1672,16 @@ def show_ml_curation_page():
             "Launch the 3D Graphical Curator Interface to manually add or delete vertices and edges."
         )
 
+        curator_backend_label = st.selectbox(
+            "Interactive curator backend",
+            ("Qt/PyVista (default)", "napari (experimental)"),
+            help=(
+                "Qt/PyVista preserves the current curator. napari is an experimental "
+                "prototype with simpler image, point, and path editing."
+            ),
+        )
+        curator_backend = "napari" if curator_backend_label.startswith("napari") else "qt"
+
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🚀 Launch Interactive Curator", type="primary", width=250):
@@ -1682,9 +1699,12 @@ def show_ml_curation_page():
                         "⚠️ Please check your taskbar for the new 3D window. Closing the window will save and continue."
                     )
 
-                    # Launch the blocking PyQt5 Application
+                    # Launch the blocking desktop curator window.
                     curated_vertices, curated_edges = _run_interactive_curator(
-                        results["energy_data"], results["vertices"], results["edges"]
+                        results["energy_data"],
+                        results["vertices"],
+                        results["edges"],
+                        backend=curator_backend,
                     )
 
                     status.update(label="Rebuilding network after curation...", state="running")

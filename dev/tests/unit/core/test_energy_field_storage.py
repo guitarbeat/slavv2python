@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from slavv.core import SLAVVProcessor
 from slavv.core import energy as energy_module
@@ -71,8 +72,62 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
     )
 
     npt.assert_allclose(direct["energy"], resumable["energy"])
-    finite_mask = np.isfinite(direct["energy"])
-    npt.assert_array_equal(
-        direct["scale_indices"][finite_mask],
-        resumable["scale_indices"][finite_mask],
+    npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+
+
+def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
+    image = np.zeros((7, 7, 7), dtype=np.float32)
+    image[3, :, 3] = 1.0
+    params = validate_parameters(
+        {
+            "energy_method": "hessian",
+            "energy_storage_format": "zarr",
+            "radius_of_smallest_vessel_in_microns": 1.0,
+            "radius_of_largest_vessel_in_microns": 2.0,
+            "scales_per_octave": 1.0,
+            "approximating_PSF": False,
+            "return_all_scales": True,
+        }
     )
+
+    direct = SLAVVProcessor().calculate_energy_field(image, params)
+    run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
+    resumable = energy_module.calculate_energy_field_resumable(
+        image,
+        params,
+        run_context.stage("energy"),
+        get_chunking_lattice,
+    )
+
+    stage_dir = run_context.stage("energy").stage_dir
+    assert (stage_dir / "best_energy.zarr").exists()
+    assert (stage_dir / "best_scale.zarr").exists()
+    assert (stage_dir / "energy_4d.zarr").exists()
+    assert not (stage_dir / "best_energy.npy").exists()
+    npt.assert_allclose(direct["energy"], resumable["energy"])
+    npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+    npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])
+
+
+def test_resumable_energy_zarr_storage_requires_optional_dependency(monkeypatch, tmp_path):
+    image = np.zeros((7, 7, 7), dtype=np.float32)
+    params = validate_parameters(
+        {
+            "energy_method": "hessian",
+            "energy_storage_format": "zarr",
+            "radius_of_smallest_vessel_in_microns": 1.0,
+            "radius_of_largest_vessel_in_microns": 2.0,
+            "scales_per_octave": 1.0,
+            "approximating_PSF": False,
+        }
+    )
+    monkeypatch.setattr(energy_module, "zarr", None)
+    run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
+
+    with pytest.raises(RuntimeError, match="slavv\\[zarr\\]"):
+        energy_module.calculate_energy_field_resumable(
+            image,
+            params,
+            run_context.stage("energy"),
+            get_chunking_lattice,
+        )

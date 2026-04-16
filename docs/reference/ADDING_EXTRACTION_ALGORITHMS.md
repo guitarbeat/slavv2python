@@ -78,6 +78,11 @@ For example, the experimental `simpleitk_objectness` mode is integrated by:
 Treat new energy backends the same way: opt-in, deterministic where practical,
 and covered in both direct and resumable tests.
 
+The same pattern also applies to performance-oriented backends such as the
+experimental `cupy_hessian` mode: keep the existing parameter and resumable
+surfaces, document hardware/runtime requirements clearly, and avoid changing
+the default CPU behavior unless the new backend is explicitly selected.
+
 ## Parity And Layout Guardrails
 
 When a change touches MATLAB parity or comparison-facing behavior, preserve the

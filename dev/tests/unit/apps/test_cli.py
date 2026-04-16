@@ -44,6 +44,7 @@ class TestBuildParser:
         args = parser.parse_args(["run", "-i", "volume.tif"])
         assert args.input == "volume.tif"
         assert args.output == "./slavv_output"
+        assert args.energy_storage_format == "auto"
         assert args.energy_method == "hessian"
         assert args.edge_method == "tracing"
         assert args.vessel_radius == 1.5
@@ -60,6 +61,8 @@ class TestBuildParser:
                 "vol.tif",
                 "-o",
                 "out/",
+                "--energy-storage-format",
+                "zarr",
                 "--energy-method",
                 "frangi",
                 "--edge-method",
@@ -76,6 +79,7 @@ class TestBuildParser:
                 "-v",
             ]
         )
+        assert args.energy_storage_format == "zarr"
         assert args.energy_method == "frangi"
         assert args.edge_method == "watershed"
         assert args.vessel_radius == 2.0
@@ -90,6 +94,12 @@ class TestBuildParser:
         )
 
         assert args.energy_method == "simpleitk_objectness"
+
+    def test_run_subcommand_accepts_cupy_energy_method(self):
+        parser = _build_cli_parser()
+        args = parser.parse_args(["run", "-i", "vol.tif", "--energy-method", "cupy_hessian"])
+
+        assert args.energy_method == "cupy_hessian"
 
     def test_info_subcommand(self):
         parser = _build_cli_parser()
@@ -117,6 +127,7 @@ class TestArgsToParameters:
         args = parser.parse_args(["run", "-i", "test.tif"])
         params = _build_pipeline_parameters(args)
         assert params["energy_method"] == "hessian"
+        assert params["energy_storage_format"] == "auto"
         assert params["edge_method"] == "tracing"
         assert params["radius_of_smallest_vessel_in_microns"] == 1.5
         assert params["microns_per_voxel"] == [1.0, 1.0, 1.0]

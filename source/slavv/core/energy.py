@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import shutil
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -33,14 +34,25 @@ try:
 except ImportError:
     sitk = None
 
-# Optional Numba acceleration
-# Currently disabled: Numba 0.43.1 is incompatible with NumPy 1.21.6+
-# To enable, upgrade Numba to 0.50+ or set _NUMBA_AVAILABLE = True after verifying compatibility
-_NUMBA_AVAILABLE = False
+try:
+    import cupy as cp
+    from cupyx.scipy import ndimage as cupy_ndimage
+except ImportError:
+    cp = None
+    cupy_ndimage = None
+
+try:
+    import zarr
+except ImportError:
+    zarr = None
+
+# Optional Numba acceleration for hot gradient helpers.
 try:
     from numba import njit
 except ImportError:
     njit = None
+
+_NUMBA_AVAILABLE = njit is not None
 
 logger = logging.getLogger(__name__)
 
@@ -49,104 +61,145 @@ _SIMPLEITK_INSTALL_HINT = (
     "Install it with `pip install -e \".[sitk]\"`, `pip install slavv[sitk]`, "
     "or `pip install SimpleITK>=2.4.0`."
 )
+_CUPY_INSTALL_HINT = (
+    "CuPy with a matching CUDA build is required for energy_method='cupy_hessian'. "
+    "Install a compatible package such as `pip install cupy-cuda12x` or add an "
+    "appropriate CuPy wheel for the target GPU runtime."
+)
+_ZARR_INSTALL_HINT = (
+    "Zarr is required for energy_storage_format='zarr'. "
+    "Install it with `pip install -e \".[zarr]\"`, `pip install slavv[zarr]`, "
+    "or `pip install zarr>=2.12.0`."
+)
+_NUMBA_FAILURE_MESSAGE = (
+    "Numba gradient acceleration is unavailable in this environment; "
+    "falling back to the pure-Python helpers."
+)
+_CUPY_PARAMETER_WARNING = (
+    "CuPy Hessian backend accelerates the Gaussian/Hessian derivative work; "
+    "remaining eigendecomposition and aggregation stay on CPU in this v1 path."
+)
 
-# --- Numba Accelerated Gradient Computation ---
+def _compute_gradient_impl_python(energy, pos_int, microns_per_voxel):
+    """Compute local energy gradient via central differences."""
+    grad = np.zeros(3)
+
+    pos_y, pos_x, pos_z = pos_int
+    shape_y, shape_x, shape_z = energy.shape
+
+    if shape_y < 3 or shape_x < 3 or shape_z < 3:
+        empty_gradient = np.zeros(3)
+        return empty_gradient
+
+    if pos_y < 1:
+        pos_y = 1
+    elif pos_y > shape_y - 2:
+        pos_y = shape_y - 2
+
+    if pos_x < 1:
+        pos_x = 1
+    elif pos_x > shape_x - 2:
+        pos_x = shape_x - 2
+
+    if pos_z < 1:
+        pos_z = 1
+    elif pos_z > shape_z - 2:
+        pos_z = shape_z - 2
+
+    grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
+        2.0 * microns_per_voxel[0]
+    )
+    grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
+        2.0 * microns_per_voxel[1]
+    )
+    grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
+        2.0 * microns_per_voxel[2]
+    )
+
+    return grad
+
+
+def _compute_gradient_fast_python(energy, p0, p1, p2, inv_mpv_2x):
+    """Optimized gradient computation avoiding position-array allocations."""
+    s0, s1, s2 = energy.shape
+
+    if s0 < 3 or s1 < 3 or s2 < 3:
+        return np.zeros(3)
+
+    if p0 < 1:
+        p0 = 1
+    elif p0 > s0 - 2:
+        p0 = s0 - 2
+
+    if p1 < 1:
+        p1 = 1
+    elif p1 > s1 - 2:
+        p1 = s1 - 2
+
+    if p2 < 1:
+        p2 = 1
+    elif p2 > s2 - 2:
+        p2 = s2 - 2
+
+    grad = np.empty(3)
+    grad[0] = (energy[p0 + 1, p1, p2] - energy[p0 - 1, p1, p2]) * inv_mpv_2x[0]
+    grad[1] = (energy[p0, p1 + 1, p2] - energy[p0, p1 - 1, p2]) * inv_mpv_2x[1]
+    grad[2] = (energy[p0, p1, p2 + 1] - energy[p0, p1, p2 - 1]) * inv_mpv_2x[2]
+
+    return grad
+
 
 if _NUMBA_AVAILABLE:
-
-    @njit
-    def compute_gradient_impl(
-        energy: np.ndarray, pos_int: np.ndarray | tuple[int, int, int], mpv: np.ndarray
-    ) -> np.ndarray:
-        """Compute local energy gradient via central differences (Numba accelerated)."""
-        dim_y = energy.shape[0]
-        dim_x = energy.shape[1]
-        dim_z = energy.shape[2]
-
-        if dim_y < 3 or dim_x < 3 or dim_z < 3:
-            empty_gradient: np.ndarray = np.zeros(3, dtype=np.float64)
-            return empty_gradient
-
-        # Manual clamping to [1, shape-2]
-        pos_y = int(pos_int[0])
-        if pos_y < 1:
-            pos_y = 1
-        elif pos_y > dim_y - 2:
-            pos_y = dim_y - 2
-
-        pos_x = int(pos_int[1])
-        if pos_x < 1:
-            pos_x = 1
-        elif pos_x > dim_x - 2:
-            pos_x = dim_x - 2
-
-        pos_z = int(pos_int[2])
-        if pos_z < 1:
-            pos_z = 1
-        elif pos_z > dim_z - 2:
-            pos_z = dim_z - 2
-
-        grad: np.ndarray = np.zeros(3, dtype=np.float64)
-        # Use explicit indexing for speed and clarity
-        grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
-            2.0 * mpv[0]
-        )
-        grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
-            2.0 * mpv[1]
-        )
-        grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
-            2.0 * mpv[2]
-        )
-
-        return grad
-
+    _compute_gradient_impl_numba = cast("Any", njit(cache=False)(_compute_gradient_impl_python))
+    _compute_gradient_fast_numba = cast("Any", njit(cache=False)(_compute_gradient_fast_python))
 else:
+    _compute_gradient_impl_numba = None
+    _compute_gradient_fast_numba = None
 
-    def compute_gradient_impl(
-        energy: np.ndarray,
-        pos_int: np.ndarray | tuple[int, int, int],
-        microns_per_voxel: np.ndarray,
-    ) -> np.ndarray:
-        """Compute local energy gradient via central differences."""
-        grad: np.ndarray = np.zeros(3, dtype=float)
+_NUMBA_ACCELERATION_ENABLED = _NUMBA_AVAILABLE
 
-        # Unpack position and shape
-        pos_y, pos_x, pos_z = pos_int
-        shape_y, shape_x, shape_z = energy.shape
 
-        # Check for small volume
-        if shape_y < 3 or shape_x < 3 or shape_z < 3:
-            empty_gradient: np.ndarray = np.zeros(3, dtype=float)
-            return empty_gradient
+def compute_gradient_impl(
+    energy: np.ndarray,
+    pos_int: np.ndarray | tuple[int, int, int],
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Compute a local energy gradient with optional Numba acceleration."""
+    global _NUMBA_ACCELERATION_ENABLED
 
-        # Manual clamping to [1, shape-2] to prevent out-of-bounds access
-        if pos_y < 1:
-            pos_y = 1
-        elif pos_y > shape_y - 2:
-            pos_y = shape_y - 2
+    if _NUMBA_ACCELERATION_ENABLED and _compute_gradient_impl_numba is not None:
+        try:
+            return cast("np.ndarray", _compute_gradient_impl_numba(energy, pos_int, microns_per_voxel))
+        except Exception as exc:  # pragma: no cover - depends on local numba build
+            logger.warning("%s Detail: %s", _NUMBA_FAILURE_MESSAGE, exc)
+            _NUMBA_ACCELERATION_ENABLED = False
 
-        if pos_x < 1:
-            pos_x = 1
-        elif pos_x > shape_x - 2:
-            pos_x = shape_x - 2
+    return cast("np.ndarray", _compute_gradient_impl_python(energy, pos_int, microns_per_voxel))
 
-        if pos_z < 1:
-            pos_z = 1
-        elif pos_z > shape_z - 2:
-            pos_z = shape_z - 2
 
-        # Direct indexing for speed (avoids allocations and tuple overhead)
-        grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
-            2.0 * microns_per_voxel[0]
-        )
-        grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
-            2.0 * microns_per_voxel[1]
-        )
-        grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
-            2.0 * microns_per_voxel[2]
-        )
+def compute_gradient_fast(
+    energy: np.ndarray,
+    p0: int,
+    p1: int,
+    p2: int,
+    inv_mpv_2x: np.ndarray,
+) -> np.ndarray:
+    """Compute a local energy gradient without allocating a position array."""
+    global _NUMBA_ACCELERATION_ENABLED
 
-        return grad
+    if _NUMBA_ACCELERATION_ENABLED and _compute_gradient_fast_numba is not None:
+        try:
+            return cast("np.ndarray", _compute_gradient_fast_numba(energy, p0, p1, p2, inv_mpv_2x))
+        except Exception as exc:  # pragma: no cover - depends on local numba build
+            logger.warning("%s Detail: %s", _NUMBA_FAILURE_MESSAGE, exc)
+            _NUMBA_ACCELERATION_ENABLED = False
+
+    return cast("np.ndarray", _compute_gradient_fast_python(energy, p0, p1, p2, inv_mpv_2x))
+
+
+def is_numba_acceleration_enabled() -> bool:
+    """Return whether gradient helpers are currently using Numba-compiled paths."""
+    return _NUMBA_ACCELERATION_ENABLED
 
 # --- Helper Functions ---
 
@@ -350,6 +403,258 @@ def _warn_simpleitk_parameter_mismatches(params: dict[str, Any]) -> None:
         )
 
 
+def _require_cupy_backend() -> Any:
+    """Return the CuPy module after validating GPU availability."""
+    if cp is None or cupy_ndimage is None:
+        raise RuntimeError(_CUPY_INSTALL_HINT)
+
+    try:
+        if not bool(cp.cuda.is_available()):
+            raise RuntimeError(
+                "CuPy is installed but no CUDA-capable NVIDIA GPU is available for "
+                "energy_method='cupy_hessian'."
+            )
+    except Exception as exc:
+        if isinstance(exc, RuntimeError):
+            raise
+        raise RuntimeError(
+            "CuPy is installed, but CUDA runtime initialization failed for "
+            "energy_method='cupy_hessian'."
+        ) from exc
+
+    return cp
+
+
+def _warn_cupy_parameter_mismatches(params: dict[str, Any]) -> None:
+    """Warn about the current CuPy backend scope."""
+    logger.info(_CUPY_PARAMETER_WARNING)
+    if params.get("energy_method") == "cupy_hessian" and params.get("return_all_scales", False):
+        logger.debug("CuPy Hessian backend stores per-scale outputs after transferring chunk results back to CPU.")
+
+
+def _require_zarr_backend() -> Any:
+    """Return the Zarr module or raise a clear install error."""
+    if zarr is None:
+        raise RuntimeError(_ZARR_INSTALL_HINT)
+    return zarr
+
+
+def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
+    """Choose the resumable energy array storage backend."""
+    storage_format = str(config.get("energy_storage_format", "auto"))
+    if storage_format == "auto":
+        return "zarr" if total_voxels > int(config["max_voxels"]) else "npy"
+    if storage_format == "zarr":
+        _require_zarr_backend()
+    return storage_format
+
+
+def _remove_storage_path(path: Any) -> None:
+    """Remove a file or directory-backed storage artifact."""
+    if path.exists():
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+
+def _zarr_chunks_for_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
+    """Return conservative chunk sizes for energy arrays."""
+    if len(shape) == 3:
+        return tuple(min(int(axis), 64) for axis in shape)
+    if len(shape) == 4:
+        return (
+            min(int(shape[0]), 64),
+            min(int(shape[1]), 64),
+            min(int(shape[2]), 64),
+            min(int(shape[3]), 4),
+        )
+    return tuple(min(int(axis), 64) for axis in shape)
+
+
+def _open_energy_storage_array(
+    path: Any,
+    *,
+    mode: str,
+    dtype: Any,
+    shape: tuple[int, ...],
+    fill_value: float | int | None = None,
+    storage_format: str,
+) -> Any:
+    """Open a resumable energy array in either NPY memmap or Zarr format."""
+    if storage_format == "zarr":
+        zarr_module = _require_zarr_backend()
+        if mode == "r+":
+            return zarr_module.open(str(path), mode="r+")
+        return zarr_module.open(
+            str(path),
+            mode="w",
+            shape=shape,
+            dtype=dtype,
+            chunks=_zarr_chunks_for_shape(shape),
+            fill_value=fill_value,
+        )
+
+    if mode == "r+":
+        return np.lib.format.open_memmap(path, mode="r+")
+    array = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
+    if fill_value is not None:
+        array[...] = fill_value
+    return array
+
+
+def _cupy_matched_filter_derivative(
+    image: np.ndarray,
+    sigma_object: np.ndarray,
+    sigma_background: np.ndarray | None,
+    spherical_to_annular_ratio: float,
+    order: tuple[int, int, int],
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Evaluate matched-kernel derivatives with CuPy ndimage kernels."""
+    cupy_module = _require_cupy_backend()
+    image_gpu = cupy_module.asarray(image, dtype=cupy_module.float32)
+    derivative_gpu = cupy_ndimage.gaussian_filter(image_gpu, sigma=tuple(sigma_object), order=order)
+    if sigma_background is not None and spherical_to_annular_ratio < 1.0:
+        background_gpu = cupy_ndimage.gaussian_filter(
+            image_gpu,
+            sigma=tuple(sigma_background),
+            order=order,
+        )
+        derivative_gpu = spherical_to_annular_ratio * derivative_gpu + (
+            1.0 - spherical_to_annular_ratio
+        ) * (derivative_gpu - background_gpu)
+    scale = np.prod(np.power(microns_per_voxel, order))
+    if scale > 0:
+        derivative_gpu = derivative_gpu / scale
+    derivative = cupy_module.asnumpy(derivative_gpu)
+    return derivative.astype(np.float32, copy=False)  # type: ignore[no-any-return]
+
+
+def _cupy_matlab_hessian_energy(
+    image: np.ndarray,
+    sigma_object: np.ndarray,
+    sigma_background: np.ndarray | None,
+    spherical_to_annular_ratio: float,
+    microns_per_voxel: np.ndarray,
+    energy_sign: float,
+) -> np.ndarray:
+    """Approximate MATLAB Hessian energy using CuPy for derivative kernels."""
+    grad_y = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 0),
+        microns_per_voxel,
+    )
+    grad_x = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 0),
+        microns_per_voxel,
+    )
+    grad_z = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 1),
+        microns_per_voxel,
+    )
+    h_yy = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (2, 0, 0),
+        microns_per_voxel,
+    )
+    h_xx = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 2, 0),
+        microns_per_voxel,
+    )
+    h_zz = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 2),
+        microns_per_voxel,
+    )
+    h_yx = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 1, 0),
+        microns_per_voxel,
+    )
+    h_xz = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 1),
+        microns_per_voxel,
+    )
+    h_yz = _cupy_matched_filter_derivative(
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 1),
+        microns_per_voxel,
+    )
+
+    laplacian: np.ndarray = h_yy + h_xx + h_zz
+    if energy_sign < 0:
+        valid: np.ndarray = laplacian < 0
+        energy = np.full(image.shape, np.inf, dtype=np.float32)
+    else:
+        valid = laplacian > 0
+        energy = np.full(image.shape, -np.inf, dtype=np.float32)
+    if not np.any(valid):
+        return cast("np.ndarray", energy)
+
+    grad_valid = np.stack([grad_y[valid], grad_x[valid], grad_z[valid]], axis=1).astype(np.float64)
+    hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
+    hessian_valid[:, 0, 0] = h_yy[valid]
+    hessian_valid[:, 0, 1] = h_yx[valid]
+    hessian_valid[:, 0, 2] = h_yz[valid]
+    hessian_valid[:, 1, 0] = h_yx[valid]
+    hessian_valid[:, 1, 1] = h_xx[valid]
+    hessian_valid[:, 1, 2] = h_xz[valid]
+    hessian_valid[:, 2, 0] = h_yz[valid]
+    hessian_valid[:, 2, 1] = h_xz[valid]
+    hessian_valid[:, 2, 2] = h_zz[valid]
+
+    eigvals, eigvecs = np.linalg.eigh(hessian_valid)
+    projections = np.einsum("ni,nik->nk", grad_valid, eigvecs)
+    denom = np.where(np.abs(eigvals) > 1e-12, eigvals, np.where(eigvals >= 0, 1e-12, -1e-12))
+    principal_energy = eigvals * np.exp(-0.5 * np.square(projections / denom))
+
+    if energy_sign < 0:
+        principal_energy[:, 2] = np.minimum(principal_energy[:, 2], 0.0)
+        energy_valid = principal_energy.sum(axis=1)
+        energy_valid[~np.isfinite(energy_valid)] = np.inf
+        energy_valid[energy_valid >= 0] = np.inf
+    else:
+        principal_energy[:, 0] = np.maximum(principal_energy[:, 0], 0.0)
+        energy_valid = principal_energy.sum(axis=1)
+        energy_valid[~np.isfinite(energy_valid)] = -np.inf
+        energy_valid[energy_valid <= 0] = -np.inf
+
+    energy[valid] = energy_valid.astype(np.float32, copy=False)
+    return cast("np.ndarray", energy)
+
+
 def _require_simpleitk_backend() -> Any:
     """Return the SimpleITK module or raise a clear install error."""
     if sitk is None:
@@ -420,6 +725,9 @@ def calculate_energy_field(
     if energy_method == "simpleitk_objectness":
         _require_simpleitk_backend()
         _warn_simpleitk_parameter_mismatches(params)
+    if energy_method == "cupy_hessian":
+        _require_cupy_backend()
+        _warn_cupy_parameter_mismatches(params)
 
     # Cache voxel spacing for anisotropy handling
     voxel_size = np.array(microns_per_voxel, dtype=float)
@@ -537,6 +845,8 @@ def calculate_energy_field(
         energy_method = "hessian"
     if energy_method == "simpleitk_objectness":
         _require_simpleitk_backend()
+    if energy_method == "cupy_hessian":
+        _require_cupy_backend()
 
     if energy_method in ("frangi", "sato"):
         if return_all_scales:
@@ -749,6 +1059,9 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
     if energy_method == "simpleitk_objectness":
         _require_simpleitk_backend()
         _warn_simpleitk_parameter_mismatches(params)
+    if energy_method == "cupy_hessian":
+        _require_cupy_backend()
+        _warn_cupy_parameter_mismatches(params)
 
     if approximating_PSF:
         numerical_aperture = params.get("numerical_aperture", 0.95)
@@ -805,6 +1118,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "image_shape": tuple(image.shape),
         "image_dtype": str(image.dtype),
         "microns_per_voxel": microns_per_voxel,
+        "energy_storage_format": str(params.get("energy_storage_format", "auto")).strip(),
         "gaussian_to_ideal_ratio": gaussian_to_ideal_ratio,
         "spherical_to_annular_ratio": spherical_to_annular_ratio,
         "approximating_PSF": approximating_PSF,
@@ -848,6 +1162,23 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
         return _simpleitk_objectness_energy(
             image,
             float(config["lumen_radius_microns"][scale_idx]),
+            np.asarray(config["microns_per_voxel"], dtype=float),
+            float(energy_sign),
+        )
+    if energy_method == "cupy_hessian":
+        if config["spherical_to_annular_ratio"] < 1.0:
+            annular_scale = sigma_scale * 1.5
+            if config["approximating_PSF"]:
+                sigma_background = np.sqrt(annular_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
+            else:
+                sigma_background = annular_scale
+        else:
+            sigma_background = None
+        return _cupy_matlab_hessian_energy(
+            image,
+            sigma_object,
+            sigma_background,
+            float(config["spherical_to_annular_ratio"]),
             np.asarray(config["microns_per_voxel"], dtype=float),
             float(energy_sign),
         )
@@ -895,6 +1226,7 @@ def calculate_energy_field_resumable(
 
     total_voxels = int(np.prod(image.shape))
     max_voxels = int(config["max_voxels"])
+    storage_format = _select_energy_storage_format(config, total_voxels)
     if total_voxels > max_voxels:
         lattice = get_chunking_lattice_func(image.shape, max_voxels, int(config["margin"]))
     else:
@@ -906,16 +1238,26 @@ def calculate_energy_field_resumable(
             )
         ]
 
-    energy_path = stage_controller.artifact_path("best_energy.npy")
-    scale_path = stage_controller.artifact_path("best_scale.npy")
-    energy4d_path = stage_controller.artifact_path("energy_4d.npy")
+    energy_suffix = ".zarr" if storage_format == "zarr" else ".npy"
+    energy_path = stage_controller.artifact_path(f"best_energy{energy_suffix}")
+    scale_path = stage_controller.artifact_path(f"best_scale{energy_suffix}")
+    energy4d_path = stage_controller.artifact_path(f"energy_4d{energy_suffix}")
     state = stage_controller.load_state()
     completed_units = set(state.get("completed_units", []))
     if state.get("config_hash") not in (None, config_hash):
         completed_units = set()
         for stale_path in (energy_path, scale_path, energy4d_path):
-            if stale_path.exists():
-                stale_path.unlink()
+            _remove_storage_path(stale_path)
+    for legacy_path in (
+        stage_controller.artifact_path("best_energy.npy"),
+        stage_controller.artifact_path("best_scale.npy"),
+        stage_controller.artifact_path("energy_4d.npy"),
+        stage_controller.artifact_path("best_energy.zarr"),
+        stage_controller.artifact_path("best_scale.zarr"),
+        stage_controller.artifact_path("energy_4d.zarr"),
+    ):
+        if legacy_path not in (energy_path, scale_path, energy4d_path):
+            _remove_storage_path(legacy_path)
 
     n_scales = len(config["lumen_radius_microns"])
     total_units = len(lattice) * n_scales
@@ -928,41 +1270,34 @@ def calculate_energy_field_resumable(
         resumed=resumed,
     )
 
-    if energy_path.exists():
-        best_energy = np.lib.format.open_memmap(energy_path, mode="r+")
-    else:
-        best_energy = np.lib.format.open_memmap(
-            energy_path,
-            mode="w+",
-            dtype=np.float32,
-            shape=image.shape,
-        )
-        fill_value = np.inf if config["energy_sign"] < 0 else -np.inf
-        best_energy[...] = fill_value
+    best_energy = _open_energy_storage_array(
+        energy_path,
+        mode="r+" if energy_path.exists() else "w",
+        dtype=np.float32,
+        shape=tuple(image.shape),
+        fill_value=np.inf if config["energy_sign"] < 0 else -np.inf,
+        storage_format=storage_format,
+    )
 
-    if scale_path.exists():
-        best_scale = np.lib.format.open_memmap(scale_path, mode="r+")
-    else:
-        best_scale = np.lib.format.open_memmap(
-            scale_path,
-            mode="w+",
-            dtype=np.int16,
-            shape=image.shape,
-        )
-        best_scale[...] = -1
+    best_scale = _open_energy_storage_array(
+        scale_path,
+        mode="r+" if scale_path.exists() else "w",
+        dtype=np.int16,
+        shape=tuple(image.shape),
+        fill_value=0,
+        storage_format=storage_format,
+    )
 
     energy_4d = None
     if config["return_all_scales"]:
-        if energy4d_path.exists():
-            energy_4d = np.lib.format.open_memmap(energy4d_path, mode="r+")
-        else:
-            energy_4d = np.lib.format.open_memmap(
-                energy4d_path,
-                mode="w+",
-                dtype=np.float32,
-                shape=(*image.shape, n_scales),
-            )
-            energy_4d[...] = 0.0
+        energy_4d = _open_energy_storage_array(
+            energy4d_path,
+            mode="r+" if energy4d_path.exists() else "w",
+            dtype=np.float32,
+            shape=(*image.shape, n_scales),
+            fill_value=0.0,
+            storage_format=storage_format,
+        )
 
     for chunk_idx, (chunk_slice, out_slice, inner_slice) in enumerate(lattice):
         chunk_img = image[chunk_slice]
@@ -993,6 +1328,7 @@ def calculate_energy_field_resumable(
                 "total_units": total_units,
                 "n_chunks": len(lattice),
                 "n_scales": n_scales,
+                "storage_format": storage_format,
             }
             stage_controller.save_state(state)
             stage_controller.update(
@@ -1022,44 +1358,10 @@ def calculate_energy_field_resumable(
     return result
 
 
-def compute_gradient_fast(energy, p0, p1, p2, inv_mpv_2x):
-    """
-    Optimized gradient computation avoiding array allocations for position.
-    inv_mpv_2x should be 1.0 / (2.0 * microns_per_voxel)
-    """
-    s0, s1, s2 = energy.shape
-
-    if s0 < 3 or s1 < 3 or s2 < 3:
-        return np.zeros(3, dtype=float)
-
-    # Manual clamping to [1, shape-2] to prevent out-of-bounds access
-    if p0 < 1:
-        p0 = 1
-    elif p0 > s0 - 2:
-        p0 = s0 - 2
-
-    if p1 < 1:
-        p1 = 1
-    elif p1 > s1 - 2:
-        p1 = s1 - 2
-
-    if p2 < 1:
-        p2 = 1
-    elif p2 > s2 - 2:
-        p2 = s2 - 2
-
-    # We still allocate grad, but we avoid pos_int allocation and unpacking
-    grad: np.ndarray = np.empty(3, dtype=float)
-    grad[0] = (energy[p0 + 1, p1, p2] - energy[p0 - 1, p1, p2]) * inv_mpv_2x[0]
-    grad[1] = (energy[p0, p1 + 1, p2] - energy[p0, p1 - 1, p2]) * inv_mpv_2x[1]
-    grad[2] = (energy[p0, p1, p2 + 1] - energy[p0, p1, p2 - 1]) * inv_mpv_2x[2]
-
-    return grad
-
-
 __all__ = [
     "calculate_energy_field",
     "compute_gradient_fast",
     "compute_gradient_impl",
+    "is_numba_acceleration_enabled",
     "spherical_structuring_element",
 ]

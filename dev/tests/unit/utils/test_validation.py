@@ -32,6 +32,18 @@ def test_validate_parameters_accepts_simpleitk_objectness_energy_method():
     assert validated["energy_method"] == "simpleitk_objectness"
 
 
+def test_validate_parameters_accepts_cupy_hessian_energy_method():
+    validated = validate_parameters({"energy_method": "cupy_hessian"})
+
+    assert validated["energy_method"] == "cupy_hessian"
+
+
+def test_validate_parameters_accepts_zarr_energy_storage_format():
+    validated = validate_parameters({"energy_storage_format": "zarr"})
+
+    assert validated["energy_storage_format"] == "zarr"
+
+
 def test_validate_parameters_preserves_parity_specific_overrides():
     validated = validate_parameters(
         {

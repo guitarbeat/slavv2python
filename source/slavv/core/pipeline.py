@@ -217,7 +217,9 @@ class SLAVVProcessor:
         artifacts = {}
         if stage_controller.stage_dir.exists():
             for artifact in stage_controller.stage_dir.iterdir():
-                if artifact.is_file() and artifact.name != "resume_state.json":
+                if artifact.name == "resume_state.json":
+                    continue
+                if artifact.is_file() or artifact.is_dir():
                     artifacts[artifact.name] = str(artifact)
         return artifacts
 

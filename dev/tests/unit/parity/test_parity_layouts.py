@@ -5,11 +5,15 @@ from pathlib import Path
 
 from slavv.parity.reporting import generate_summary
 from slavv.parity.run_layout import (
+    build_experiment_index_entry,
     collect_directory_inventory,
     generate_manifest,
+    infer_run_status,
     list_runs,
     load_run_info,
     resolve_run_layout,
+    write_pointer_file,
+    write_run_status,
 )
 
 
@@ -672,3 +676,98 @@ def test_generate_manifest_includes_matlab_resume_semantics(
     assert "`99_Metadata/matlab_status.json`" in content
     assert "## Failure Summary" in content
     assert "ERROR: MATLAB error Exit Status: 0x00000001" in content
+
+
+def test_list_runs_discovers_grouped_experiment_runs(tmp_path: Path):
+    comparisons_root = tmp_path / "slavv_comparisons"
+    run_dir = comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    (run_dir / "03_Analysis").mkdir(parents=True)
+    (run_dir / "03_Analysis" / "comparison_report.json").write_text("{}", encoding="utf-8")
+
+    runs = list_runs(comparisons_root)
+
+    assert [run["name"] for run in runs] == ["20260413_release_verify"]
+    assert runs[0]["run_shape"] == "grouped_run_root"
+
+
+def test_infer_run_status_prefers_explicit_status_json(tmp_path: Path, comparison_metadata_builder):
+    run_dir = tmp_path / "20260413_release_verify"
+    metadata_dir = comparison_metadata_builder(
+        run_dir,
+        run_snapshot={
+            "run_id": "run123",
+            "status": "completed",
+            "target_stage": "network",
+            "stages": {},
+            "optional_tasks": {},
+            "artifacts": {},
+            "errors": [],
+            "provenance": {},
+        },
+    )
+    write_run_status(
+        run_dir,
+        {
+            "state": "failed",
+            "retention": "archive",
+            "quality_gate": "fail",
+            "notes": "authoritative lifecycle metadata",
+        },
+    )
+
+    status = infer_run_status(run_dir)
+
+    assert metadata_dir.exists()
+    assert status["state"] == "failed"
+    assert status["retention"] == "archive"
+    assert status["quality_gate"] == "fail"
+
+
+def test_list_runs_uses_pointer_targets_to_force_keep_retention(tmp_path: Path):
+    comparisons_root = tmp_path / "slavv_comparisons"
+    run_dir = comparisons_root / "experiments" / "saved-batch" / "runs" / "20260327_150656_clean_parity"
+    (run_dir / "03_Analysis").mkdir(parents=True)
+    (run_dir / "03_Analysis" / "comparison_report.json").write_text("{}", encoding="utf-8")
+    write_pointer_file(
+        comparisons_root / "pointers" / "best_saved_batch.txt",
+        "experiments/saved-batch/runs/20260327_150656_clean_parity",
+    )
+
+    runs = list_runs(comparisons_root)
+
+    assert runs[0]["retention"] == "keep"
+
+
+def test_build_experiment_index_entry_tolerates_missing_optional_artifacts(tmp_path: Path):
+    comparisons_root = tmp_path / "slavv_comparisons"
+    run_dir = comparisons_root / "experiments" / "python-consistency" / "runs" / "20260328_142659_python_consistency"
+    (run_dir / "02_Output" / "python_results").mkdir(parents=True)
+
+    entry = build_experiment_index_entry(run_dir, comparisons_root=comparisons_root)
+
+    assert entry["run_path"] == "experiments/python-consistency/runs/20260328_142659_python_consistency"
+    assert entry["quality_gate"] == "unknown"
+    assert "parity" not in entry
+
+
+def test_generate_manifest_includes_status_json_summary(tmp_path: Path):
+    run_dir = tmp_path / "20260413_release_verify"
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    write_run_status(
+        run_dir,
+        {
+            "state": "completed",
+            "retention": "keep",
+            "quality_gate": "partial",
+            "notes": "Canonical release verification run",
+        },
+    )
+
+    content = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
+
+    assert "## Lifecycle Status" in content
+    assert "- **Artifact:** `99_Metadata/status.json`" in content
+    assert "- **Retention:** keep" in content

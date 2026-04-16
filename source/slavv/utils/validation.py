@@ -119,15 +119,19 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         "frangi",
         "sato",
         "simpleitk_objectness",
+        "cupy_hessian",
     ):
         raise ValueError(
             "energy_method must be 'hessian', 'frangi', 'sato', "
-            "or 'simpleitk_objectness'"
+            "'simpleitk_objectness', or 'cupy_hessian'"
         )
     validated["direction_method"] = params.get("direction_method", "hessian")
     if validated["direction_method"] not in ("hessian", "uniform"):
         raise ValueError("direction_method must be 'hessian' or 'uniform'")
     validated["return_all_scales"] = params.get("return_all_scales", False)
+    validated["energy_storage_format"] = str(params.get("energy_storage_format", "auto")).strip()
+    if validated["energy_storage_format"] not in ("auto", "npy", "zarr"):
+        raise ValueError("energy_storage_format must be 'auto', 'npy', or 'zarr'")
     if validated["max_voxels_per_node_energy"] <= 0:
         raise ValueError(
             "max_voxels_per_node_energy must be positive; increase to process larger volumes"

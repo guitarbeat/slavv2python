@@ -81,6 +81,45 @@ class _FakeSimpleITK:
         return _FakeObjectnessMeasureImageFilter()
 
 
+class _FakeCuPyCuda:
+    @staticmethod
+    def is_available() -> bool:
+        return True
+
+
+class _FakeCuPy:
+    float32 = np.float32
+    cuda = _FakeCuPyCuda()
+
+    @staticmethod
+    def asarray(array: np.ndarray, dtype=None) -> np.ndarray:
+        return np.asarray(array, dtype=dtype)
+
+    @staticmethod
+    def asnumpy(array: np.ndarray) -> np.ndarray:
+        return np.asarray(array)
+
+
+class _FakeCuPyNdimage:
+    @staticmethod
+    def gaussian_filter(image: np.ndarray, sigma, order) -> np.ndarray:
+        return np.asarray(image, dtype=np.float32)
+
+
+def _fake_cupy_energy_scale(
+    image: np.ndarray,
+    sigma_object: np.ndarray,
+    sigma_background: np.ndarray | None,
+    spherical_to_annular_ratio: float,
+    microns_per_voxel: np.ndarray,
+    energy_sign: float,
+) -> np.ndarray:
+    energy = np.zeros(image.shape, dtype=np.float32)
+    center = tuple(int(axis // 2) for axis in image.shape)
+    energy[center] = float(energy_sign)
+    return energy
+
+
 @pytest.mark.parametrize("method", ["frangi", "sato"])
 def test_alternative_energy_methods(method):
     """Test that Frangi and Sato energy methods produce valid output."""
@@ -194,3 +233,68 @@ def test_simpleitk_energy_method_preserves_axis_alignment_for_anisotropic_spacin
     assert result["energy"][2, 3, 4] < 0
     assert result["energy"][2, 1, 4] < 0
     assert result["energy"][0, 0, 0] == 0.0
+
+
+def test_cupy_energy_method_requires_optional_dependency(monkeypatch):
+    image = np.zeros((7, 7, 7), dtype=np.float32)
+    params = {
+        "energy_method": "cupy_hessian",
+        "radius_of_smallest_vessel_in_microns": 1.0,
+        "radius_of_largest_vessel_in_microns": 2.0,
+        "scales_per_octave": 1.0,
+    }
+    monkeypatch.setattr(energy_module, "cp", None)
+    monkeypatch.setattr(energy_module, "cupy_ndimage", None)
+
+    with pytest.raises(RuntimeError, match="CuPy"):
+        SLAVVProcessor().calculate_energy_field(image, params)
+
+
+def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
+    image = np.zeros((9, 9, 9), dtype=np.float32)
+    image[4, :, 4] = 1.0
+    params = {
+        "energy_method": "cupy_hessian",
+        "radius_of_smallest_vessel_in_microns": 1.0,
+        "radius_of_largest_vessel_in_microns": 2.0,
+        "scales_per_octave": 1.0,
+        "approximating_PSF": False,
+    }
+    monkeypatch.setattr(energy_module, "cp", _FakeCuPy)
+    monkeypatch.setattr(energy_module, "cupy_ndimage", _FakeCuPyNdimage)
+    monkeypatch.setattr(energy_module, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
+
+    result = SLAVVProcessor().calculate_energy_field(image, params)
+
+    assert result["energy"].shape == image.shape
+    assert result["scale_indices"].shape == image.shape
+    assert result["energy"][4, 4, 4] < 0
+
+
+def test_cupy_direct_and_resumable_paths_match(monkeypatch, tmp_path):
+    image = np.zeros((7, 7, 7), dtype=np.float32)
+    image[3, :, 3] = 1.0
+    params = {
+        "energy_method": "cupy_hessian",
+        "radius_of_smallest_vessel_in_microns": 1.0,
+        "radius_of_largest_vessel_in_microns": 2.0,
+        "scales_per_octave": 1.0,
+        "approximating_PSF": False,
+        "return_all_scales": True,
+    }
+    monkeypatch.setattr(energy_module, "cp", _FakeCuPy)
+    monkeypatch.setattr(energy_module, "cupy_ndimage", _FakeCuPyNdimage)
+    monkeypatch.setattr(energy_module, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
+
+    direct = SLAVVProcessor().calculate_energy_field(image, params)
+    run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
+    resumable = energy_module.calculate_energy_field_resumable(
+        image,
+        params,
+        run_context.stage("energy"),
+        get_chunking_lattice,
+    )
+
+    npt.assert_allclose(direct["energy"], resumable["energy"])
+    npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+    npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])

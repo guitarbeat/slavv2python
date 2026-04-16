@@ -121,6 +121,8 @@ These docs remain active references across chapters.
 | `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
 | `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
 | `reference/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
+| `reference/ZARR_ENERGY_STORAGE.md` | Optional Zarr-backed storage for resumable energy artifacts |
+| `reference/NAPARI_CURATOR.md` | Experimental napari-based manual curation prototype |
 | `reference/ADDING_EXTRACTION_ALGORITHMS.md` | Contributor guide for wiring new extraction modes into validation, CLI, pipeline, tests, and docs |
 | `reference/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
 | `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | External package survey and context |
@@ -135,6 +137,8 @@ These docs remain active references across chapters.
 | What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |
 | What chapter narrowed the problem before the current one? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
 | What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
+| How do large resumable energy arrays get stored? | [ZARR_ENERGY_STORAGE.md](reference/ZARR_ENERGY_STORAGE.md) |
+| How does the experimental napari curator fit in? | [NAPARI_CURATOR.md](reference/NAPARI_CURATOR.md) |
 | Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md) |
 | Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md) |
 | How do staged comparison outputs work? | [COMPARISON_LAYOUT.md](reference/COMPARISON_LAYOUT.md) |

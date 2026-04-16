@@ -88,6 +88,7 @@ explicit local output root outside the repository.
 
 - `comparison_params.normalized.json`
 - `run_snapshot.json`
+- `status.json` - optional lifecycle metadata for managed runs grouped by comparison-layout smoothing
 - `output_preflight.json`
 - `matlab_status.json`
 - `matlab_failure_summary.json` when MATLAB fails
@@ -105,6 +106,7 @@ human-facing ledger for orchestration decisions:
 | --- | --- |
 | `comparison_params.normalized.json` | Normalized parameter payload passed to both MATLAB and Python so reruns can inspect the exact effective settings |
 | `run_snapshot.json` | Shared run-state ledger with overall status, current stage, and optional-task artifacts such as `output_preflight`, `matlab_status`, and `matlab_pipeline` launch/reuse decisions |
+| `status.json` | Optional lifecycle metadata for managed runs, including `state`, `retention`, `quality_gate`, and optional supersession links used by comparison-layout smoothing |
 | `output_preflight.json` | Authoritative preflight decision for the selected output root, including warnings, fatal errors, free-space estimates, and recommended action |
 | `matlab_status.json` | Normalized MATLAB rerun semantics such as selected `batch_*` folder, resume mode, next stage, partial-artifact detection, and predicted rerun behavior |
 | `matlab_failure_summary.json` | Concise failure summary and log-tail evidence persisted when MATLAB exits unsuccessfully |
@@ -114,6 +116,55 @@ human-facing ledger for orchestration decisions:
 | `network_gate_execution.json` | Execution metadata for stage-isolated network gate runs, including timing, parity status, and resource usage |
 
 ## Workflow Notes
+
+## Optional Organization Layer
+
+Managed comparison archives may add an organization layer above the staged run
+root without changing the staged folders inside each run:
+
+| Path | Purpose |
+| --- | --- |
+| `experiments/<experiment_slug>/runs/<run_root>/` | Optional grouping for related runs; the run root under `runs/` still owns the canonical staged folders |
+| `experiments/<experiment_slug>/index.json` | Machine-readable summary of grouped runs for quick comparisons |
+| `pointers/latest_completed.txt` | Repo-relative path to the latest completed managed run |
+| `pointers/canonical_acceptance.txt` | Repo-relative path to the preferred acceptance/reference run |
+| `pointers/best_saved_batch.txt` | Repo-relative path to the preferred reusable saved-batch run |
+
+Notes:
+
+- This grouping layer is optional and backward compatible. Legacy top-level run
+  roots remain valid, and the staged layout above remains authoritative.
+- Pointer files store exactly one path relative to the comparison root, not an
+  absolute filesystem path.
+- Aggregate roots that contain `run_*` children are treated as containers only.
+  Each `run_*` child is the authoritative managed run; the container itself is
+  used only for reporting and migration rollups.
+
+## Lifecycle Status Metadata
+
+When comparison-layout smoothing manages a run, it persists
+`99_Metadata/status.json` with this contract:
+
+```json
+{
+  "state": "completed",
+  "retention": "keep",
+  "quality_gate": "partial",
+  "supersedes": null,
+  "superseded_by": null,
+  "notes": "Optional human note"
+}
+```
+
+Allowed values:
+
+- `state`: `completed`, `failed`, `incomplete`, `superseded`, `archived`
+- `retention`: `keep`, `eligible_for_cleanup`, `archive`
+- `quality_gate`: `pass`, `fail`, `partial`, `unknown`
+
+Readers prefer explicit `status.json` metadata over `run_snapshot.json` or
+artifact heuristics when both exist. Runs targeted by a pointer file should be
+kept with `retention=keep`.
 
 - `source/slavv/apps/parity_cli.py` is the canonical parity CLI implementation,
   and `dev/scripts/cli/compare_matlab_python.py` remains a thin wrapper.

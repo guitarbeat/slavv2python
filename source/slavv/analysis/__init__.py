@@ -35,8 +35,9 @@ from .ml_curator import (
     extract_uncurated_info,
 )
 
-# InteractiveCurator requires PyQt5/PyVista/VTK — import directly when needed:
+# Interactive curation is optional GUI code — import directly when needed:
 #   from slavv.visualization.interactive_curator import InteractiveCurator, run_curator
+#   from slavv.visualization.napari_curator import run_curator_napari
 
 __all__ = [
     "AutomaticCurator",

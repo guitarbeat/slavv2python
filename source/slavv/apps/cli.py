@@ -57,12 +57,22 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         "--checkpoint-dir", default=None, help="Checkpoint directory for resume support"
     )
     run_parser.add_argument(
+        "--energy-storage-format",
+        choices=["auto", "npy", "zarr"],
+        default="auto",
+        help=(
+            "Storage format for resumable energy arrays (default: auto). "
+            "'zarr' is useful for larger persisted energy volumes."
+        ),
+    )
+    run_parser.add_argument(
         "--energy-method",
-        choices=["hessian", "frangi", "sato", "simpleitk_objectness"],
+        choices=["hessian", "frangi", "sato", "simpleitk_objectness", "cupy_hessian"],
         default="hessian",
         help=(
             "Energy computation method (default: hessian). "
-            "'simpleitk_objectness' is experimental and spacing-aware."
+            "'simpleitk_objectness' is experimental and spacing-aware; "
+            "'cupy_hessian' is experimental and requires an NVIDIA GPU."
         ),
     )
     run_parser.add_argument(
@@ -183,6 +193,7 @@ def _build_pipeline_parameters(args: argparse.Namespace) -> dict:
     """Convert parsed CLI arguments to a SLAVV parameters dict."""
     return {
         "energy_method": args.energy_method,
+        "energy_storage_format": args.energy_storage_format,
         "edge_method": args.edge_method,
         "radius_of_smallest_vessel_in_microns": args.vessel_radius,
         "microns_per_voxel": list(args.microns_per_voxel),
