@@ -188,3 +188,4 @@ workspace/tmp_network_stage_probe/
 .ruff_cache/
 .agent/
 .jules/
+slavv_comparisons/

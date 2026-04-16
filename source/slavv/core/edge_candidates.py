@@ -1136,17 +1136,33 @@ def _resolve_frontier_edge_connection(
     shape: tuple[int, int, int],
 ) -> tuple[int | None, int | None]:
     """Resolve MATLAB-style parent/child validity for a frontier-found terminal."""
-    origin_idx, terminal_idx, _resolution_reason = _resolve_frontier_edge_connection_details(
-        current_path_linear,
-        terminal_vertex_idx,
-        seed_origin_idx,
-        edge_paths_linear,
-        edge_pairs,
-        pointer_index_map,
-        energy,
-        shape,
+    origin_idx, terminal_idx, _resolution_reason, _resolution_debug = (
+        _normalize_frontier_resolution_result(
+            _resolve_frontier_edge_connection_details(
+                current_path_linear,
+                terminal_vertex_idx,
+                seed_origin_idx,
+                edge_paths_linear,
+                edge_pairs,
+                pointer_index_map,
+                energy,
+                shape,
+            )
+        )
     )
     return origin_idx, terminal_idx
+
+
+def _normalize_frontier_resolution_result(
+    result: tuple[int | None, int | None, str]
+    | tuple[int | None, int | None, str, dict[str, Any]]
+) -> tuple[int | None, int | None, str, dict[str, Any]]:
+    """Normalize frontier-resolution returns to the enriched four-field form."""
+    if len(result) == 4:
+        origin_idx, terminal_idx, resolution_reason, resolution_debug = result
+        return origin_idx, terminal_idx, resolution_reason, dict(resolution_debug)
+    origin_idx, terminal_idx, resolution_reason = result
+    return origin_idx, terminal_idx, resolution_reason, {}
 
 
 def _resolve_frontier_edge_connection_details(
@@ -1158,16 +1174,23 @@ def _resolve_frontier_edge_connection_details(
     pointer_index_map: dict[int, int],
     energy: np.ndarray,
     shape: tuple[int, int, int],
-) -> tuple[int | None, int | None, str]:
+) -> tuple[int | None, int | None, str, dict[str, Any]]:
     """Resolve MATLAB-style parent/child validity for a frontier-found terminal."""
     root_index = current_path_linear[-1]
     root_pointer = int(pointer_index_map.get(root_index, 0))
     parent_index = -root_pointer if root_pointer < 0 else 0
+    resolution_debug: dict[str, Any] = {
+        "root_linear_index": int(root_index),
+        "root_pointer": int(root_pointer),
+        "parent_edge_index": int(parent_index),
+        "current_path_length": len(current_path_linear),
+    }
 
     if parent_index == 0:
-        return seed_origin_idx, terminal_vertex_idx, "accepted_seed_origin"
+        return seed_origin_idx, terminal_vertex_idx, "accepted_seed_origin", resolution_debug
 
     parent_path = edge_paths_linear[parent_index - 1]
+    resolution_debug["parent_path_length"] = len(parent_path)
     parent_pointers = {
         -int(pointer_index_map.get(index, 0))
         for index in parent_path
@@ -1175,47 +1198,75 @@ def _resolve_frontier_edge_connection_details(
     }
     parent_pointers.discard(0)
     parent_pointers.discard(parent_index)
+    resolution_debug["parent_child_edge_indices"] = sorted(int(pointer) for pointer in parent_pointers)
     if parent_pointers:
-        return None, None, "rejected_parent_has_child"
+        return None, None, "rejected_parent_has_child", resolution_debug
 
     parent_terminal, parent_origin = edge_pairs[parent_index - 1]
+    resolution_debug["parent_terminal_vertex_index"] = int(parent_terminal)
+    resolution_debug["parent_origin_vertex_index"] = int(parent_origin)
     if parent_terminal < 0 or parent_origin < 0:
-        return None, None, "rejected_parent_invalid"
+        return None, None, "rejected_parent_invalid", resolution_debug
 
     parent_energy = _path_max_energy_from_linear_indices(parent_path, energy, shape)
     child_energy = _path_max_energy_from_linear_indices(current_path_linear, energy, shape)
+    resolution_debug["parent_path_max_energy"] = float(parent_energy)
+    resolution_debug["child_path_max_energy"] = float(child_energy)
     # MATLAB parity note: This mirrors get_edges_for_vertex.m's "child is better
     # than parent" rejection. In MATLAB, when a child path has a better (lower,
     # more negative) energy than its parent, the child is considered to be
     # stealing the parent's best voxels, so the child is invalidated.
     # The strict <= comparison preserves MATLAB's exact behavior.
     if child_energy <= parent_energy:
-        return None, None, "rejected_child_better_than_parent"
+        return None, None, "rejected_child_better_than_parent", resolution_debug
 
     if root_index not in parent_path:
-        return None, None, "rejected_root_missing_from_parent"
+        return None, None, "rejected_root_missing_from_parent", resolution_debug
 
     bifurcation_index = parent_path.index(root_index)
+    resolution_debug["bifurcation_path_index"] = int(bifurcation_index)
     parent_1 = parent_path[:bifurcation_index]
     parent_2 = parent_path[bifurcation_index + 1 :]
+    parent_1_energy = (
+        _path_max_energy_from_linear_indices(parent_1, energy, shape)
+        if parent_1
+        else float("-inf")
+    )
+    resolution_debug["parent_terminal_half_length"] = len(parent_1)
+    resolution_debug["parent_terminal_half_max_energy"] = float(parent_1_energy)
     half_candidates: list[tuple[int, float]] = [
         (
             parent_terminal,
-            _path_max_energy_from_linear_indices(parent_1, energy, shape)
-            if parent_1
-            else float("-inf"),
+            parent_1_energy,
         )
     ]
     if parent_2:
+        parent_2_energy = _path_max_energy_from_linear_indices(parent_2, energy, shape)
+        resolution_debug["parent_origin_half_length"] = len(parent_2)
+        resolution_debug["parent_origin_half_max_energy"] = float(parent_2_energy)
         half_candidates.append(
-            (parent_origin, _path_max_energy_from_linear_indices(parent_2, energy, shape))
+            (parent_origin, parent_2_energy)
         )
+    else:
+        resolution_debug["parent_origin_half_length"] = 0
+        resolution_debug["parent_origin_half_max_energy"] = None
     origin_vertex_idx = min(half_candidates, key=lambda item: item[1])[0]
+    resolution_debug["resolved_origin_vertex_index"] = int(origin_vertex_idx)
     if origin_vertex_idx < 0:
-        return None, None, "rejected_parent_origin_invalid"
+        return None, None, "rejected_parent_origin_invalid", resolution_debug
     if origin_vertex_idx == parent_terminal:
-        return origin_vertex_idx, terminal_vertex_idx, "accepted_parent_terminal_half"
-    return origin_vertex_idx, terminal_vertex_idx, "accepted_parent_origin_half"
+        return (
+            origin_vertex_idx,
+            terminal_vertex_idx,
+            "accepted_parent_terminal_half",
+            resolution_debug,
+        )
+    return (
+        origin_vertex_idx,
+        terminal_vertex_idx,
+        "accepted_parent_origin_half",
+        resolution_debug,
+    )
 
 
 def _frontier_parent_child_outcome_from_reason(resolution_reason: str) -> str | None:
@@ -1254,6 +1305,7 @@ def _build_frontier_lifecycle_event(
     origin_idx: int | None,
     terminal_idx: int | None,
     resolution_reason: str,
+    resolution_debug: dict[str, Any] | None,
     terminal_hit_sequence: int,
     local_candidate_index: int | None = None,
 ) -> dict[str, Any]:
@@ -1282,6 +1334,7 @@ def _build_frontier_lifecycle_event(
         "resolved_terminal_index": None if terminal_idx is None else int(terminal_idx),
         "emitted_endpoint_pair": emitted_endpoint_pair,
         "resolution_reason": str(resolution_reason),
+        "resolution_debug": dict(resolution_debug or {}),
         "rejection_reason": None if survived_candidate_manifest else str(resolution_reason),
         "parent_child_outcome": _frontier_parent_child_outcome_from_reason(str(resolution_reason)),
         "bifurcation_choice": _frontier_bifurcation_choice_from_reason(str(resolution_reason)),
@@ -1456,15 +1509,19 @@ def _trace_origin_edges_matlab_frontier(
                 ]
                 path_linear.append(tracing_linear)
 
-            origin_idx, terminal_idx, resolution_reason = _resolve_frontier_edge_connection_details(
-                path_linear,
-                terminal_vertex_idx,
-                origin_vertex_idx,
-                edge_paths_linear,
-                edge_pairs,
-                pointer_index_map,
-                energy,
-                shape,
+            origin_idx, terminal_idx, resolution_reason, resolution_debug = (
+                _normalize_frontier_resolution_result(
+                    _resolve_frontier_edge_connection_details(
+                        path_linear,
+                        terminal_vertex_idx,
+                        origin_vertex_idx,
+                        edge_paths_linear,
+                        edge_pairs,
+                        pointer_index_map,
+                        energy,
+                        shape,
+                    )
+                )
             )
             diagnostics.setdefault("frontier_terminal_resolution_counts", {})
             diagnostics["frontier_terminal_resolution_counts"][resolution_reason] = (
@@ -1513,6 +1570,7 @@ def _trace_origin_edges_matlab_frontier(
                         origin_idx=int(origin_idx),
                         terminal_idx=int(terminal_idx),
                         resolution_reason=resolution_reason,
+                        resolution_debug=resolution_debug,
                         terminal_hit_sequence=terminal_hit_sequence,
                         local_candidate_index=len(connections) - 1,
                     )
@@ -1534,6 +1592,7 @@ def _trace_origin_edges_matlab_frontier(
                         origin_idx=None,
                         terminal_idx=None,
                         resolution_reason=resolution_reason,
+                        resolution_debug=resolution_debug,
                         terminal_hit_sequence=terminal_hit_sequence,
                     )
                 )

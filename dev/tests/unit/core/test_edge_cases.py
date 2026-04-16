@@ -7,6 +7,7 @@ from slavv.core.edge_candidates import (
     _build_frontier_candidate_lifecycle,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
+    _resolve_frontier_edge_connection_details,
     _salvage_matlab_parity_candidates_with_local_geodesics,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_origin_edges_matlab_frontier,
@@ -901,6 +902,51 @@ def test_resolve_frontier_edge_connection_invalidates_better_child_than_parent()
     assert terminal_idx is None
 
 
+def test_resolve_frontier_edge_connection_details_report_parent_child_debug():
+    energy = np.full((5, 5, 5), 1.0, dtype=np.float32)
+    shape = energy.shape
+
+    def set_energy(coord, value):
+        energy[coord] = value
+        return int(coord[0] + coord[1] * shape[0] + coord[2] * shape[0] * shape[1])
+
+    root = set_energy((2, 2, 2), -6.0)
+    parent_mid = set_energy((2, 3, 2), -5.0)
+    parent_terminal = set_energy((2, 4, 2), -4.0)
+    child_terminal = set_energy((3, 2, 2), -7.0)
+
+    current_path = [child_terminal, root]
+    parent_path = [parent_terminal, parent_mid, root]
+    pointer_index_map = {
+        root: -1,
+        parent_terminal: -1,
+        parent_mid: -1,
+    }
+
+    origin_idx, terminal_idx, resolution_reason, resolution_debug = (
+        _resolve_frontier_edge_connection_details(
+            current_path,
+            terminal_vertex_idx=2,
+            seed_origin_idx=0,
+            edge_paths_linear=[parent_path],
+            edge_pairs=[(1, 0)],
+            pointer_index_map=pointer_index_map,
+            energy=energy,
+            shape=shape,
+        )
+    )
+
+    assert origin_idx is None
+    assert terminal_idx is None
+    assert resolution_reason == "rejected_child_better_than_parent"
+    assert resolution_debug["parent_edge_index"] == 1
+    assert resolution_debug["root_linear_index"] == root
+    assert resolution_debug["parent_terminal_vertex_index"] == 1
+    assert resolution_debug["parent_origin_vertex_index"] == 0
+    assert resolution_debug["parent_path_max_energy"] == -4.0
+    assert resolution_debug["child_path_max_energy"] == -6.0
+
+
 def test_resolve_frontier_edge_connection_matches_matlab_origin_side_for_root_bifurcation():
     energy = np.full((5, 5, 5), 1.0, dtype=np.float32)
     shape = energy.shape
@@ -1157,11 +1203,13 @@ def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
     assert lifecycle_events[0]["survived_candidate_manifest"] is False
     assert lifecycle_events[0]["rejection_reason"] == "rejected_parent_has_child"
     assert lifecycle_events[0]["parent_child_outcome"] == "parent_has_child"
+    assert lifecycle_events[0]["resolution_debug"] == {}
     assert lifecycle_events[0]["claim_reassigned"] is False
     assert lifecycle_events[0]["final_survival_stage"] == "pre_manifest_rejection"
     assert lifecycle_events[1]["survived_candidate_manifest"] is True
     assert lifecycle_events[1]["emitted_endpoint_pair"] == [0, 2]
     assert lifecycle_events[1]["bifurcation_choice"] == "parent_origin_half"
+    assert lifecycle_events[1]["resolution_debug"] == {}
     assert lifecycle_events[1]["claim_reassigned"] is False
     assert lifecycle_events[1]["claim_reassignment_reason"] is None
     assert lifecycle_events[1]["final_survival_stage"] == "candidate_manifest"
