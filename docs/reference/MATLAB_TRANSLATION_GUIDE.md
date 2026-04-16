@@ -16,7 +16,7 @@ Python adaptation or a parity regression.
 For file-to-file correspondence, use
 [MATLAB_MAPPING.md](./MATLAB_MAPPING.md). For run layout and staged outputs, use
 [COMPARISON_LAYOUT.md](./COMPARISON_LAYOUT.md). For the active parity work, use
-[the shared neighborhood claim alignment chapter](../chapters/shared-neighborhood-claim-alignment/README.md).
+[the Neighborhood Claim Alignment chapter](../chapters/neighborhood-claim-alignment/README.md).
 
 ## Semantic Traps That Matter In This Repo
 

@@ -24,7 +24,7 @@ Follow this maintained reading path:
 5. [Energy Computation Methods](reference/ENERGY_METHODS.md)
 6. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
 7. [Chapter index](chapters/README.md)
-8. [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+8. [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md)
 
 ## Chapter Status
 
@@ -36,7 +36,7 @@ Name:
 
 Closure document:
 
-- [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
 
 What it closed:
 
@@ -47,10 +47,10 @@ What it closed:
 
 Historical support docs:
 
-- [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md)
-- [EDGE_PARITY_IMPLEMENTATION_PLAN.md](chapters/imported-matlab-parity/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
-- [PARITY_FINDINGS_2026-03-27.md](chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
-- [MATLAB_PARITY_AUDIT_CHECKLIST.md](chapters/imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+- [PARITY_HUB.md](chapters/imported-matlab-parity-closeout/PARITY_HUB.md)
+- [EDGE_PARITY_IMPLEMENTATION_PLAN.md](chapters/imported-matlab-parity-closeout/EDGE_PARITY_IMPLEMENTATION_PLAN.md)
+- [PARITY_FINDINGS_2026-03-27.md](chapters/imported-matlab-parity-closeout/PARITY_FINDINGS_2026-03-27.md)
+- [MATLAB_PARITY_AUDIT_CHECKLIST.md](chapters/imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
 ### Active Chapter
 
@@ -64,20 +64,20 @@ Started:
 
 Active chapter home:
 
-- [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+- [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md)
 
 Core references for the active chapter:
 
 - [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
 - [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 - [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-- [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md)
-- [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
-- [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
-- [Comparison Layout Smoothing Spec Archive](chapters/shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
-- [Release Verification 2026-04-14](chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md)
-- [Working docs index](chapters/shared-neighborhood-claim-alignment/working/README.md)
-- [Archived notes index](chapters/shared-neighborhood-claim-alignment/archive/README.md)
+- [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md)
+- [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+- [Parity Workflow Completion Spec Archive](chapters/neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
+- [Comparison Layout Smoothing Spec Archive](chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
+- [Release Verification 2026-04-14](chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
+- [Working docs index](chapters/neighborhood-claim-alignment/working/README.md)
+- [Archived notes index](chapters/neighborhood-claim-alignment/archive/README.md)
 
 Current live-run lessons:
 
@@ -113,7 +113,7 @@ What it handed off:
 
 Historical handoff home:
 
-- [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md)
+- [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md)
 
 ## Reference Shelf
 
@@ -134,15 +134,15 @@ These docs remain active references across chapters.
 
 | Question | Best file |
 | --- | --- |
-| What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
-| What chapter is active right now? | [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
-| What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md) |
+| What chapter is active right now? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
+| What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |
-| What chapter narrowed the problem before the current one? | [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md) |
+| What chapter narrowed the problem before the current one? | [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md) |
 | What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
 | How do large resumable energy arrays get stored? | [ZARR_ENERGY_STORAGE.md](reference/ZARR_ENERGY_STORAGE.md) |
 | How does the experimental napari curator fit in? | [NAPARI_CURATOR.md](reference/NAPARI_CURATOR.md) |
-| Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md) |
+| Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity-closeout/PARITY_HUB.md) |
 | Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md) |
 | How do staged comparison outputs work? | [COMPARISON_LAYOUT.md](reference/COMPARISON_LAYOUT.md) |
 
@@ -163,8 +163,8 @@ Historical parity and release notes now live inside the chapters that use them.
 
 | File | Purpose |
 | --- | --- |
-| `chapters/imported-matlab-parity/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the Chapter 1 parity diagnosis set |
-| `chapters/imported-matlab-parity/matlab_python_code_audit_2026-04-08.md` | Technical appendix for cleanup-path and candidate-coverage evidence |
-| `chapters/imported-matlab-parity/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
-| `chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
-| `chapters/shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |
+| `chapters/imported-matlab-parity-closeout/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the Chapter 1 parity diagnosis set |
+| `chapters/imported-matlab-parity-closeout/matlab_python_code_audit_2026-04-08.md` | Technical appendix for cleanup-path and candidate-coverage evidence |
+| `chapters/imported-matlab-parity-closeout/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
+| `chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
+| `chapters/neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |

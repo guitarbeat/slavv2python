@@ -101,9 +101,9 @@ MATLAB script.
 ## Current Work Links
 
 The active parity chapter is
-[`docs/chapters/shared-neighborhood-claim-alignment/README.md`](../chapters/shared-neighborhood-claim-alignment/README.md).
+[`docs/chapters/neighborhood-claim-alignment/README.md`](../chapters/neighborhood-claim-alignment/README.md).
 The previous handoff chapter remains archived at
-[`docs/chapters/shared-candidate-generation/README.md`](../chapters/shared-candidate-generation/README.md).
+[`docs/chapters/candidate-generation-handoff/README.md`](../chapters/candidate-generation-handoff/README.md).
 Use this mapping document for maintained source correspondence, and use
 [`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md)
 for semantic differences, boundary rules, and intentional divergences.

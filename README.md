@@ -149,7 +149,7 @@ Notes:
   parity achievement with full provenance tracking.
 - For the active investigation framing, start with
   [docs/README.md](docs/README.md) and
-  [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md).
+  [Neighborhood Claim Alignment](docs/chapters/neighborhood-claim-alignment/README.md).
 - For the current remaining imported-MATLAB parity backlog and the condensed
   lessons learned from previous runs, see [TODO.md](TODO.md).
 
@@ -243,7 +243,7 @@ For maintained project context, read in this order:
 4. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
 5. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
 6. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
-7. [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+7. [Neighborhood Claim Alignment](docs/chapters/neighborhood-claim-alignment/README.md)
 8. [Current parity backlog and lessons learned](TODO.md)
 9. [Release verification notes](docs/reports/handled/release_verification_2026-04-14.md)
 
@@ -254,7 +254,7 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 ## TODOs / Known Issues
 
 See [TODO.md](TODO.md) for the active imported-MATLAB parity backlog,
-[docs/chapters/shared-neighborhood-claim-alignment/README.md](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+[docs/chapters/neighborhood-claim-alignment/README.md](docs/chapters/neighborhood-claim-alignment/README.md)
 for the chapter framing and investigation loop, and [CHANGELOG.md](CHANGELOG.md)
 for recent shipped changes.
 

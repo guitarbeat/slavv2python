@@ -174,8 +174,8 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 - [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
 - [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
-- [Candidate Generation Handoff](../shared-candidate-generation/README.md)
-- [Imported-MATLAB Parity Closeout](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
-- [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
-- [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+- [Candidate Generation Handoff](../candidate-generation-handoff/README.md)
+- [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
+- [Parity Findings 2026-03-27](../imported-matlab-parity-closeout/PARITY_FINDINGS_2026-03-27.md)
+- [MATLAB Parity Audit Checklist](../imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 

@@ -4,7 +4,7 @@ Status: Historical Chapter 1 hub
 
 Successor:
 
-- [Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+- [Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md)
 
 Use [chapters/README.md](../README.md) for chapter-system navigation and
 [TODO.md](../../../TODO.md) for the current root-level parity backlog.
@@ -12,7 +12,7 @@ Use [chapters/README.md](../README.md) for chapter-system navigation and
 This file is no longer the active spec entry point.
 
 Use [README.md](../../README.md) for chapter status,
-[Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+[Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md)
 for the active chapter, and
 [PARITY_REPORT_2026-04-09.md](PARITY_REPORT_2026-04-09.md) for the Chapter 1
 closeout.
@@ -20,7 +20,7 @@ closeout.
 This was the fastest re-entry point during Chapter 1.
 
 If you need the active starting point now, read
-[Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+[Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md)
 and the maintained
 [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 
@@ -99,7 +99,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 | Question | Best file |
 | --- | --- |
-| What is true right now, quickly? | [Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md) |
+| What is true right now, quickly? | [Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md) |
 | What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](parity_decision_memo_2026-04-08.md) |
 | What evidence supports the current diagnosis? | [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) |
 | What should I run next? | [TODO.md](../../../TODO.md) |

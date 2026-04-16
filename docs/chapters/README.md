@@ -43,18 +43,18 @@ Each chapter should expose:
 
 | Role | Chapter | Status | Entry | Best use |
 | --- | --- | --- | --- | --- |
-| Active chapter | `Neighborhood Claim Alignment` | Active | [README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation, live blockers, and next loop |
-| Active working docs | `working/` | Active support docs | [README.md](shared-neighborhood-claim-alignment/working/README.md) | Live loop, checklist, and chapter entry shortcuts |
-| Archived notes | `archive/` | Historical support docs | [README.md](shared-neighborhood-claim-alignment/archive/README.md) | Completed specs and retrospective notes |
-| Historical handoff | `Candidate Generation Handoff` | Historical handoff | [README.md](shared-candidate-generation/README.md) | Why the problem stopped being a generic candidate-generation chase |
-| Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [PARITY_REPORT_2026-04-09.md](imported-matlab-parity/PARITY_REPORT_2026-04-09.md) | What Chapter 1 established and what it handed off |
+| Active chapter | `Neighborhood Claim Alignment` | Active | [README.md](neighborhood-claim-alignment/README.md) | Current parity investigation, live blockers, and next loop |
+| Active working docs | `working/` | Active support docs | [README.md](neighborhood-claim-alignment/working/README.md) | Live loop, checklist, and chapter entry shortcuts |
+| Archived notes | `archive/` | Historical support docs | [README.md](neighborhood-claim-alignment/archive/README.md) | Completed specs and retrospective notes |
+| Historical handoff | `Candidate Generation Handoff` | Historical handoff | [README.md](candidate-generation-handoff/README.md) | Why the problem stopped being a generic candidate-generation chase |
+| Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [PARITY_REPORT_2026-04-09.md](imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md) | What Chapter 1 established and what it handed off |
 
 ## Recommended Read Order
 
-1. [Neighborhood Claim Alignment](shared-neighborhood-claim-alignment/README.md)
+1. [Neighborhood Claim Alignment](neighborhood-claim-alignment/README.md)
 2. [Root backlog](../../TODO.md)
-3. [Candidate Generation Handoff](shared-candidate-generation/README.md)
-4. [Imported-MATLAB Parity Closeout](imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+3. [Candidate Generation Handoff](candidate-generation-handoff/README.md)
+4. [Imported-MATLAB Parity Closeout](imported-matlab-parity-closeout/PARITY_REPORT_2026-04-09.md)
 
 ## Common Jump Targets
 
@@ -62,14 +62,14 @@ Use this table for the most common jump targets without scanning each chapter.
 
 | Item | Path | Purpose |
 | --- | --- | --- |
-| Chapter entry | [shared-neighborhood-claim-alignment/README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
-| Active chapter plan | [shared-neighborhood-claim-alignment/INVESTIGATION_PLAN.md](shared-neighborhood-claim-alignment/INVESTIGATION_PLAN.md) | Working hypotheses and active loop |
-| Active chapter checklist | [shared-neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md](shared-neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md) | Checkoff surface for the neighborhood audit |
-| Working docs index | [shared-neighborhood-claim-alignment/working/README.md](shared-neighborhood-claim-alignment/working/README.md) | Entry point for the live chapter loop |
-| Archive index | [shared-neighborhood-claim-alignment/archive/README.md](shared-neighborhood-claim-alignment/archive/README.md) | Entry point for completed chapter notes |
-| Comparison layout smoothing spec archive | [shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
-| Release verification note | [shared-neighborhood-claim-alignment/release_verification_2026-04-14.md](shared-neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
-| Lock-contention incident note | [shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
+| Chapter entry | [neighborhood-claim-alignment/README.md](neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
+| Active chapter plan | [neighborhood-claim-alignment/INVESTIGATION_PLAN.md](neighborhood-claim-alignment/INVESTIGATION_PLAN.md) | Working hypotheses and active loop |
+| Active chapter checklist | [neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md](neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md) | Checkoff surface for the neighborhood audit |
+| Working docs index | [neighborhood-claim-alignment/working/README.md](neighborhood-claim-alignment/working/README.md) | Entry point for the live chapter loop |
+| Archive index | [neighborhood-claim-alignment/archive/README.md](neighborhood-claim-alignment/archive/README.md) | Entry point for completed chapter notes |
+| Comparison layout smoothing spec archive | [neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
+| Release verification note | [neighborhood-claim-alignment/release_verification_2026-04-14.md](neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
+| Lock-contention incident note | [neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
 | Canonical acceptance pointer | [../../slavv_comparisons/pointers/canonical_acceptance.txt](../../slavv_comparisons/pointers/canonical_acceptance.txt) | Authoritative pointer to the current acceptance run root |
 | Latest completed pointer | [../../slavv_comparisons/pointers/latest_completed.txt](../../slavv_comparisons/pointers/latest_completed.txt) | Authoritative pointer to the latest completed managed run |
 | Best saved-batch pointer | [../../slavv_comparisons/pointers/best_saved_batch.txt](../../slavv_comparisons/pointers/best_saved_batch.txt) | Authoritative pointer to the preferred reusable saved-batch run |

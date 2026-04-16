@@ -184,6 +184,6 @@ This chapter succeeds when:
 
 - [README.md](README.md)
 - [NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
-- [Candidate Generation Handoff](../shared-candidate-generation/README.md)
-- [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
+- [Candidate Generation Handoff](../candidate-generation-handoff/README.md)
+- [MATLAB Parity Audit Checklist](../imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
