@@ -1,5 +1,11 @@
 # Shared Neighborhood Audit Checklist
 
+Status: Working checklist
+Started: 2026-04-10
+
+Use [README.md](README.md) for chapter framing and
+[INVESTIGATION_PLAN.md](INVESTIGATION_PLAN.md) for the active loop.
+
 This checklist turns the new chapter goal into a concrete local audit loop.
 
 Use this file when:

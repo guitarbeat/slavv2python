@@ -3,7 +3,17 @@
 This directory holds long-running investigation chapters for the imported-MATLAB
 parity effort and related follow-on work.
 
-Use this file when you want the chapter system itself:
+Use this file when you want the chapter system itself, not the chapter content.
+The documentation stack has three layers:
+
+- chapter index: this file, which says which chapter is active and where each
+  chapter lives
+- chapter entry: the chapter README, which gives the current framing and main
+  goal
+- working docs: the plan and checklist files, which carry the active loop and
+  checkoff surface
+
+Use this file for:
 
 - which chapter is active
 - which chapters are historical
@@ -29,28 +39,34 @@ Each chapter should expose:
 - a clear successor or closeout link
 - the smallest set of working docs needed for that chapter
 
-## Current Map
+## Chapter Map
 
-| Chapter | Status | Entry | Best use |
-| --- | --- | --- | --- |
-| `shared-neighborhood-claim-alignment` | Active | [README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation, live blockers, and next loop |
-| `shared-candidate-generation` | Historical handoff | [README.md](shared-candidate-generation/README.md) | Why the problem stopped being a generic candidate-generation chase |
-| `imported-matlab-parity` | Closed / historical hub | [PARITY_REPORT_2026-04-09.md](imported-matlab-parity/PARITY_REPORT_2026-04-09.md) | What Chapter 1 established and what it handed off |
+| Role | Chapter | Status | Entry | Best use |
+| --- | --- | --- | --- | --- |
+| Active chapter | `Neighborhood Claim Alignment` | Active | [README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation, live blockers, and next loop |
+| Active working docs | `working/` | Active support docs | [README.md](shared-neighborhood-claim-alignment/working/README.md) | Live loop, checklist, and chapter entry shortcuts |
+| Archived notes | `archive/` | Historical support docs | [README.md](shared-neighborhood-claim-alignment/archive/README.md) | Completed specs and retrospective notes |
+| Historical handoff | `Candidate Generation Handoff` | Historical handoff | [README.md](shared-candidate-generation/README.md) | Why the problem stopped being a generic candidate-generation chase |
+| Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [PARITY_REPORT_2026-04-09.md](imported-matlab-parity/PARITY_REPORT_2026-04-09.md) | What Chapter 1 established and what it handed off |
 
 ## Recommended Read Order
 
-1. [Active chapter](shared-neighborhood-claim-alignment/README.md)
+1. [Neighborhood Claim Alignment](shared-neighborhood-claim-alignment/README.md)
 2. [Root backlog](../../TODO.md)
-3. [Historical handoff chapter](shared-candidate-generation/README.md)
-4. [Chapter 1 closeout](imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+3. [Candidate Generation Handoff](shared-candidate-generation/README.md)
+4. [Imported-MATLAB Parity Closeout](imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 
-## Reference Shortcuts
+## Common Jump Targets
 
 Use this table for the most common jump targets without scanning each chapter.
 
 | Item | Path | Purpose |
 | --- | --- | --- |
-| Active chapter entry | [shared-neighborhood-claim-alignment/README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
+| Chapter entry | [shared-neighborhood-claim-alignment/README.md](shared-neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
+| Active chapter plan | [shared-neighborhood-claim-alignment/INVESTIGATION_PLAN.md](shared-neighborhood-claim-alignment/INVESTIGATION_PLAN.md) | Working hypotheses and active loop |
+| Active chapter checklist | [shared-neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md](shared-neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md) | Checkoff surface for the neighborhood audit |
+| Working docs index | [shared-neighborhood-claim-alignment/working/README.md](shared-neighborhood-claim-alignment/working/README.md) | Entry point for the live chapter loop |
+| Archive index | [shared-neighborhood-claim-alignment/archive/README.md](shared-neighborhood-claim-alignment/archive/README.md) | Entry point for completed chapter notes |
 | Comparison layout smoothing spec archive | [shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
 | Release verification note | [shared-neighborhood-claim-alignment/release_verification_2026-04-14.md](shared-neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
 | Lock-contention incident note | [shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
@@ -78,6 +94,7 @@ Historical chapter docs should also include:
 - successor chapter
 - what the chapter handed off
 - what no longer belongs in that chapter
+- the closeout report or archive that superseded the working entry
 
 ## Template
 

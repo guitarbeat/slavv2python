@@ -1,10 +1,10 @@
-﻿# Shared Candidate Generation Alignment
+﻿# Candidate Generation Handoff
 
 Status: Historical Chapter 2 handoff
 
 Successor:
 
-- [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+- [Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
 
 Use [chapters/README.md](../README.md) for chapter-system navigation and
 [TODO.md](../../../TODO.md) for the current root-level parity backlog.
@@ -123,6 +123,6 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
 - [MATLAB Mapping](../../reference/MATLAB_MAPPING.md)
 - [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
-- [Imported-MATLAB Parity Report](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [Imported-MATLAB Parity Closeout](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 

@@ -1,6 +1,14 @@
-﻿# Shared Neighborhood Claim Alignment
+﻿# Neighborhood Claim Alignment
 
-Active chapter opened on April 10, 2026.
+Status: Active chapter
+
+Successor:
+
+- none yet
+
+Started:
+
+- 2026-04-10
 
 This chapter starts from a narrower parity framing than the previous one.
 The recurring artifact-level clue is no longer just "Python is missing some
@@ -157,12 +165,17 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Release Verification 2026-04-14](release_verification_2026-04-14.md)
 - [File Lock Contention Analysis 2026-04-13](file_lock_contention_analysis_2026-04-13.md)
 
+## Subdirectories
+
+- [Working docs index](working/README.md)
+- [Archived notes index](archive/README.md)
+
 ## Core References
 
 - [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
 - [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
-- [Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
-- [Imported-MATLAB Parity Report](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [Candidate Generation Handoff](../shared-candidate-generation/README.md)
+- [Imported-MATLAB Parity Closeout](../imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Findings 2026-03-27](../imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 

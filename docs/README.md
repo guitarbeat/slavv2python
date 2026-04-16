@@ -1,4 +1,4 @@
-﻿# Documentation
+# Documentation
 
 This directory now stays intentionally small at the top level:
 
@@ -24,7 +24,7 @@ Follow this maintained reading path:
 5. [Energy Computation Methods](reference/ENERGY_METHODS.md)
 6. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
 7. [Chapter index](chapters/README.md)
-8. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+8. [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 ## Chapter Status
 
@@ -32,7 +32,7 @@ Follow this maintained reading path:
 
 Name:
 
-- Imported-MATLAB Parity Investigation
+- Imported-MATLAB Parity Closeout
 
 Closure document:
 
@@ -52,11 +52,11 @@ Historical support docs:
 - [PARITY_FINDINGS_2026-03-27.md](chapters/imported-matlab-parity/PARITY_FINDINGS_2026-03-27.md)
 - [MATLAB_PARITY_AUDIT_CHECKLIST.md](chapters/imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
-## Active Chapter
+### Active Chapter
 
 Name:
 
-- Shared Neighborhood Claim Alignment
+- Neighborhood Claim Alignment
 
 Started:
 
@@ -64,18 +64,20 @@ Started:
 
 Active chapter home:
 
-- [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+- [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 Core references for the active chapter:
 
 - [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
 - [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 - [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
-- [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
+- [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md)
+- [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
 - [Comparison Layout Smoothing Spec Archive](chapters/shared-neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md)
+- [Working docs index](chapters/shared-neighborhood-claim-alignment/working/README.md)
+- [Archived notes index](chapters/shared-neighborhood-claim-alignment/archive/README.md)
 
 Current live-run lessons:
 
@@ -95,11 +97,11 @@ Current live-run lessons:
   suggest that some missing neighborhoods share one branch-ownership or
   parent/child invalidation rule instead of being unrelated local accidents
 
-## Historical Handoff Chapter
+### Historical Handoff Chapter
 
 Name:
 
-- Shared Candidate Generation Alignment
+- Candidate Generation Handoff
 
 What it handed off:
 
@@ -111,7 +113,7 @@ What it handed off:
 
 Historical handoff home:
 
-- [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
+- [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md)
 
 ## Reference Shelf
 
@@ -132,11 +134,11 @@ These docs remain active references across chapters.
 
 | Question | Best file |
 | --- | --- |
-| What closed the last spec? | [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
-| What chapter is active right now? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
-| What is the next chapter trying to solve? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
+| What chapter is active right now? | [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
 | What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |
-| What chapter narrowed the problem before the current one? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
+| What chapter narrowed the problem before the current one? | [Candidate Generation Handoff](chapters/shared-candidate-generation/README.md) |
 | What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
 | How do large resumable energy arrays get stored? | [ZARR_ENERGY_STORAGE.md](reference/ZARR_ENERGY_STORAGE.md) |
 | How does the experimental napari curator fit in? | [NAPARI_CURATOR.md](reference/NAPARI_CURATOR.md) |
@@ -166,4 +168,3 @@ Historical parity and release notes now live inside the chapters that use them.
 | `chapters/imported-matlab-parity/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
 | `chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
 | `chapters/shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |
-

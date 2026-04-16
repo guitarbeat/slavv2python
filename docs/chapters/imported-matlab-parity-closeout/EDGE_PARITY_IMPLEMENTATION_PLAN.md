@@ -6,7 +6,7 @@ Updated: 2026-04-08
 This file is retained as a historical implementation plan from Chapter 1.
 
 For the active chapter, use
-[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md).
+[Candidate Generation Handoff](../shared-candidate-generation/README.md).
 
 During Chapter 1, this file was the edge-generation source of truth for the
 active parity implementation plan.

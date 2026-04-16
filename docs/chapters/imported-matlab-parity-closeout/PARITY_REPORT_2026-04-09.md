@@ -1,4 +1,4 @@
-﻿# MATLAB Parity Report
+﻿# Imported-MATLAB Parity Closeout
 
 Date: April 9, 2026
 Status: Chapter 1 closeout report
@@ -6,7 +6,7 @@ Status: Chapter 1 closeout report
 This report closes Chapter 1 of the MATLAB parity work.
 
 For the active chapter, start with
-[Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
+[Candidate Generation Handoff](../shared-candidate-generation/README.md)
 and the maintained
 [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
 

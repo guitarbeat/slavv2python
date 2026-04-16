@@ -3,15 +3,15 @@
 Status: Active Chapter 3 plan
 Updated: 2026-04-10
 
+Use [README.md](README.md) for chapter framing and
+[NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md) for the
+working audit checklist.
+
 Use this file when you want to know:
 
 - which Python surfaces should change next
 - what the current leading hypotheses are
 - what counts as progress for the new chapter
-
-Use [README.md](README.md) for chapter framing and
-[NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md) for the
-working audit checklist.
 
 ## Rapid Recall
 
@@ -184,6 +184,6 @@ This chapter succeeds when:
 
 - [README.md](README.md)
 - [NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
-- [Shared Candidate Generation Alignment](../shared-candidate-generation/README.md)
+- [Candidate Generation Handoff](../shared-candidate-generation/README.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity/MATLAB_PARITY_AUDIT_CHECKLIST.md)
 
