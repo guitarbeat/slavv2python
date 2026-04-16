@@ -170,8 +170,8 @@ def test_format_progress_event_message_explains_energy_stage_units():
     assert "ETA" in message
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows batch launcher only runs on Windows")
-def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path, monkeypatch):
+@pytest.mark.skipif(sys.platform != "win32", reason="MATLAB CLI command shape asserted on Windows")
+def test_run_matlab_vectorization_builds_direct_matlab_cli_command(tmp_path: Path, monkeypatch):
     import slavv.parity.comparison as comparison_module
 
     repo_root = Path(__file__).resolve().parents[4]
@@ -198,7 +198,7 @@ def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path,
         str(output_dir),
         str(mock_matlab),
         repo_root,
-        batch_script=str(repo_root / "dev" / "scripts" / "cli" / "run_matlab_cli.bat"),
+        batch_script=str(repo_root / "dev" / "scripts" / "cli" / "run_matlab_vectorization.m"),
         params_file=str(params_file),
     )
 
@@ -208,6 +208,7 @@ def test_run_matlab_vectorization_launches_batch_wrapper_via_cmd(tmp_path: Path,
     content = log_file.read_text(encoding="utf-8")
     assert "MOCK MATLAB CALLED WITH:" in content
     assert "-wait -batch" in content
+    assert "run_matlab_vectorization('" in content
 
 
 def test_generate_manifest_includes_run_status(tmp_path: Path):

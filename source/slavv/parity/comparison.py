@@ -788,6 +788,122 @@ def _run_command_with_timeout(
         return returncode, stdout, stderr, True
 
 
+def _escape_matlab_string(value: str) -> str:
+    """Escape a Python path for a MATLAB single-quoted string literal."""
+    return value.replace("\\", "/").replace("'", "''")
+
+
+def _resolve_matlab_wrapper_script(
+    project_root: Path, batch_script: str | None
+) -> tuple[Path, Path]:
+    """Resolve the MATLAB wrapper script and the upstream MATLAB checkout root."""
+    if batch_script is None:
+        candidates = [
+            (project_root / "dev" / "scripts" / "cli" / "run_matlab_vectorization.m").resolve(),
+            (project_root / "scripts" / "cli" / "run_matlab_vectorization.m").resolve(),
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                wrapper_script = candidate
+                break
+        else:
+            raise FileNotFoundError(
+                "Could not find MATLAB wrapper script 'run_matlab_vectorization.m' "
+                f"in any known location: {candidates}"
+            )
+    else:
+        wrapper_script = Path(batch_script).resolve()
+        if not wrapper_script.exists():
+            raise FileNotFoundError(f"Custom MATLAB wrapper script not found: {wrapper_script}")
+
+    vectorization_candidates = [
+        (project_root / "external" / "Vectorization-Public").resolve(),
+        (project_root / "external" / "Vectorization-Public" / "source").resolve().parent,
+    ]
+    for candidate in vectorization_candidates:
+        if candidate.exists():
+            return wrapper_script, candidate
+
+    raise FileNotFoundError(
+        "Could not find upstream MATLAB checkout 'external/Vectorization-Public'."
+    )
+
+
+def _build_matlab_cli_command(
+    *,
+    matlab_path: str,
+    vectorization_dir: Path,
+    wrapper_script: Path,
+    input_file: str,
+    output_dir: str,
+    params_file: str | None,
+) -> list[str]:
+    """Build a direct MATLAB CLI invocation without shell-specific wrapper scripts."""
+    escaped_vectorization_dir = _escape_matlab_string(str(vectorization_dir))
+    escaped_wrapper_dir = _escape_matlab_string(str(wrapper_script.parent))
+    escaped_input = _escape_matlab_string(input_file)
+    escaped_output = _escape_matlab_string(output_dir)
+
+    matlab_script = (
+        f"cd('{escaped_vectorization_dir}'); "
+        f"addpath('{escaped_wrapper_dir}'); "
+        f"run_matlab_vectorization('{escaped_input}', '{escaped_output}'"
+    )
+    if params_file is not None:
+        matlab_script += f", '{_escape_matlab_string(params_file)}'"
+    matlab_script += "); exit"
+
+    cmd = [matlab_path]
+    if os.name == "nt":
+        cmd.append("-wait")
+    cmd.extend(["-batch", matlab_script])
+    return cmd
+
+
+def _write_matlab_log_prelude(
+    *,
+    log_file: Path,
+    input_file: str,
+    output_dir: str,
+    matlab_path: str,
+    rendered_command: str,
+    params_file: str | None,
+) -> None:
+    """Create the MATLAB log file with stable preamble metadata."""
+    warning = ""
+    if "onedrive" in output_dir.lower():
+        warning = (
+            "WARNING: Output directory appears to be under OneDrive sync; "
+            "prefer a local non-synced drive for MATLAB outputs."
+        )
+
+    with log_file.open("w", encoding="utf-8") as handle:
+        handle.write("MATLAB CLI Run Log\n")
+        handle.write("===================\n")
+        handle.write(f"Input file: {input_file}\n")
+        handle.write(f"Output directory: {output_dir}\n")
+        handle.write(f"MATLAB path: {matlab_path}\n")
+        if params_file is not None:
+            handle.write(f"Parameters file: {params_file}\n")
+        handle.write(f"Command: {rendered_command}\n")
+        handle.write(f"Start time: {time.ctime()}\n\n")
+        if warning:
+            handle.write(f"{warning}\n\n")
+
+
+def _append_matlab_log_output(log_file: Path, stdout: str, stderr: str) -> None:
+    """Append captured MATLAB stdout/stderr to the canonical run log."""
+    with log_file.open("a", encoding="utf-8") as handle:
+        if stdout:
+            handle.write(stdout)
+            if not stdout.endswith("\n"):
+                handle.write("\n")
+        if stderr:
+            handle.write(stderr)
+            if not stderr.endswith("\n"):
+                handle.write("\n")
+
+
 def _format_progress_event_message(event: ProgressEvent) -> str:
     """Render progress events into concise, human-readable console output."""
     stage_snapshot = event.snapshot.stages.get(event.stage)
@@ -834,54 +950,29 @@ def run_matlab_vectorization(
             raise FileNotFoundError(f"Parameters file not found: {params_file}")
         params_file = os.path.abspath(params_file)
 
-    # Define script paths with absolute resolution.
-    # Prefer dev/scripts (current layout), fallback to scripts (legacy layout).
-    if batch_script is None:
-        script_name = "run_matlab_cli.bat" if os.name == "nt" else "run_matlab_cli.sh"
-        candidates = [
-            (project_root / "dev" / "scripts" / "cli" / script_name).resolve(),
-            (project_root / "scripts" / "cli" / script_name).resolve(),
-        ]
-        for candidate in candidates:
-            if candidate.exists():
-                batch_script = str(candidate)
-                break
-        if batch_script is None:
-            raise FileNotFoundError(
-                f"Could not find MATLAB CLI script '{script_name}' in any known location: {candidates}"
-            )
-    else:
-        # Use provided script directly, but validate existence first
-        if not os.path.exists(batch_script):
-            raise FileNotFoundError(f"Custom batch script not found: {batch_script}")
-        batch_script = os.path.abspath(batch_script)
+    wrapper_script, vectorization_dir = _resolve_matlab_wrapper_script(project_root, batch_script)
 
-    # Ensure executable permissions on POSIX
-    if os.name != "nt" and not os.access(batch_script, os.X_OK):
-        try:
-            current_permissions = os.stat(batch_script).st_mode
-            os.chmod(batch_script, current_permissions | 0o111)
-        except Exception as e:
-            print(f"Warning: Could not set executable permission on {batch_script}: {e}")
-
-    # Build command list
-    if os.name == "nt" and batch_script.lower().endswith((".bat", ".cmd")):
-        script_args = [batch_script, input_file, output_dir, matlab_path]
-        if params_file is not None:
-            script_args.append(params_file)
-        cmd: list[str] | str = subprocess.list2cmdline(script_args)
-        use_shell = True
-    else:
-        cmd = [batch_script, input_file, output_dir, matlab_path]
-        if params_file is not None:
-            cmd.append(params_file)
-        use_shell = False
-    log_file = os.path.join(output_dir, "matlab_run.log")
-
-    # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
+    log_file = Path(output_dir) / "matlab_run.log"
 
-    rendered_command = cmd if isinstance(cmd, str) else " ".join(cmd)
+    cmd = _build_matlab_cli_command(
+        matlab_path=matlab_path,
+        vectorization_dir=vectorization_dir,
+        wrapper_script=wrapper_script,
+        input_file=input_file,
+        output_dir=output_dir,
+        params_file=params_file,
+    )
+    rendered_command = subprocess.list2cmdline(cmd)
+    _write_matlab_log_prelude(
+        log_file=log_file,
+        input_file=input_file,
+        output_dir=output_dir,
+        matlab_path=matlab_path,
+        rendered_command=rendered_command,
+        params_file=params_file,
+    )
+
     print(f"Command: {rendered_command}")
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
@@ -897,8 +988,9 @@ def run_matlab_vectorization(
     timeout_seconds = 3600
 
     returncode, stdout, stderr, timed_out = _run_command_with_timeout(
-        cmd, project_root, timeout_seconds, shell=use_shell
+        cmd, vectorization_dir, timeout_seconds, shell=False
     )
+    _append_matlab_log_output(log_file, stdout, stderr)
     elapsed_time = time.time() - start_time
     artifacts = discover_matlab_artifacts(output_dir)
 
@@ -918,7 +1010,7 @@ def run_matlab_vectorization(
             "system_info": system_info,
             "output_dir": output_dir,
             "params_file": params_file or "",
-            "log_file": log_file,
+            "log_file": str(log_file),
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -940,7 +1032,7 @@ def run_matlab_vectorization(
             "system_info": system_info,
             "output_dir": output_dir,
             "params_file": params_file or "",
-            "log_file": log_file,
+            "log_file": str(log_file),
         }
         matlab_results.update(artifacts)
         return matlab_results
@@ -961,7 +1053,7 @@ def run_matlab_vectorization(
         "stdout": stdout,
         "stderr": stderr,
         "system_info": system_info,
-        "log_file": log_file,
+        "log_file": str(log_file),
     }
     matlab_results.update(artifacts)
     return matlab_results

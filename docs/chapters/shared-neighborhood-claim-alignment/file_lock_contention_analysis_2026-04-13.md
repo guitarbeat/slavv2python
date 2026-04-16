@@ -37,7 +37,7 @@ analysis into one operator-focused runbook.
 - Why: This document records a resolved operations incident with a stable
   recovery path and prevention checklist.
 - Open algorithmic parity work is tracked separately in
-  `docs/reports/unhandled/` and is not reopened by this report.
+  the active parity chapter and is not reopened by this report.
 
 ## Current Status
 
@@ -138,4 +138,3 @@ three of the following are true:
 
 If those conditions are not met, then fall back to the normal preflight logic
 and use a fresh output root for the next launch attempt.
-

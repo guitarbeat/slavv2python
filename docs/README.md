@@ -4,12 +4,11 @@ This directory now stays intentionally small at the top level:
 
 - `README.md`
 - `chapters/`
-- `reports/`
 - `reference/`
 
 Chapter-specific history lives under `chapters/`, and cross-chapter reference
-material lives under `reference/`. Report catalogs and operational/parity
-report artifacts live under `reports/`.
+material lives under `reference/`. Historical operational and parity writeups
+now live directly inside the relevant chapter folders under `chapters/`.
 
 Use [chapters/README.md](chapters/README.md) as the entry point for the
 chapter system itself.
@@ -75,7 +74,7 @@ Core references for the active chapter:
 - [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 - [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
-- [Release Verification 2026-04-14](reports/handled/release_verification_2026-04-14.md)
+- [Release Verification 2026-04-14](chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md)
 
 Current live-run lessons:
 
@@ -151,16 +150,15 @@ project metadata:
 | `CHANGELOG.md` | Notable recent development changes |
 | `AGENTS.md` | Repository instructions for coding agents and the canonical developer-command reference |
 
-## Reports Catalog
+## Historical Investigation Notes
 
-Reports now live under `docs/reports/`.
+Historical parity and release notes now live inside the chapters that use them.
 
 | File | Purpose |
 | --- | --- |
-| `reports/README.md` | Report index, handled/unhandled status table, and triage read order |
-| `reports/handled/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the parity diagnosis set |
-| `reports/handled/matlab_python_code_audit_2026-04-08.md` | Technical appendix for cleanup-path and candidate-coverage evidence |
-| `reports/handled/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
-| `reports/handled/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
-| `reports/handled/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |
+| `chapters/imported-matlab-parity/parity_decision_memo_2026-04-08.md` | Decision memo near the end of the Chapter 1 parity diagnosis set |
+| `chapters/imported-matlab-parity/matlab_python_code_audit_2026-04-08.md` | Technical appendix for cleanup-path and candidate-coverage evidence |
+| `chapters/imported-matlab-parity/python_nondeterminism_investigation_2026-03-28.md` | Repeatability baseline and deterministic-fix context |
+| `chapters/shared-neighborhood-claim-alignment/release_verification_2026-04-14.md` | Canonical-data release audit, staged metadata verification, and timing snapshot |
+| `chapters/shared-neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md` | April 13 operational incident analysis and recovery runbook |
 

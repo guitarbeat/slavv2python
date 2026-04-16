@@ -88,7 +88,7 @@ Run the smallest set that matches your change scope, then expand to the
 boundary-crossing gate when needed:
 
 ```powershell
-python -m ruff check source tests
+python -m ruff check source dev/tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```

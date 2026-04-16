@@ -41,7 +41,7 @@ current conclusion.
   cleanup-chain alignment recommendation has been implemented in code.
 - Remaining open work: Residual parity mismatch after cleanup alignment remains
   tracked as active algorithmic work in
-  `docs/reports/handled/parity_decision_memo_2026-04-08.md`.
+  `docs/chapters/imported-matlab-parity/parity_decision_memo_2026-04-08.md`.
 
 ## Current Status
 

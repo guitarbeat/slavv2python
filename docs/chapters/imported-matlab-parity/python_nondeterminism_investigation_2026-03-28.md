@@ -37,7 +37,8 @@ parity outcome.
 - Why: The nondeterminism investigation is complete and its root cause plus
   deterministic fix baseline are closed.
 - Remaining semantic parity gaps are tracked in
-  `docs/reports/unhandled/` and are intentionally out of scope for this report.
+  the active chapter workflow and are intentionally out of scope for this
+  historical report.
 
 ## Current Status
 

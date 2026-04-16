@@ -24,7 +24,8 @@ tracked in the temporary repo-root `todo.md`.
 - Why: Release-verification documentation and checklist closure for this audit
   are complete.
 - Remaining parity algorithm work is tracked in
-  `docs/reports/unhandled/` and is not a blocker for this report's closed scope.
+  the active parity chapter and is not a blocker for this report's closed
+  scope.
 
 ## Operational Verification
 

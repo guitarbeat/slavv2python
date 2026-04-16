@@ -44,7 +44,6 @@ def _run_setup_checks() -> tuple[list[str], list[str]]:
     scripts_dir = project_root / "dev" / "scripts" / "cli"
     required_scripts = [
         "run_matlab_vectorization.m",
-        "run_matlab_cli.bat",
     ]
 
     print(f"\nChecking scripts in {scripts_dir}:")
