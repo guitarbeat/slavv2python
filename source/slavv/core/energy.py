@@ -58,7 +58,7 @@ logger = logging.getLogger(__name__)
 
 _SIMPLEITK_INSTALL_HINT = (
     "SimpleITK is required for energy_method='simpleitk_objectness'. "
-    "Install it with `pip install -e \".[sitk]\"`, `pip install slavv[sitk]`, "
+    'Install it with `pip install -e ".[sitk]"`, `pip install slavv[sitk]`, '
     "or `pip install SimpleITK>=2.4.0`."
 )
 _CUPY_INSTALL_HINT = (
@@ -68,7 +68,7 @@ _CUPY_INSTALL_HINT = (
 )
 _ZARR_INSTALL_HINT = (
     "Zarr is required for energy_storage_format='zarr'. "
-    "Install it with `pip install -e \".[zarr]\"`, `pip install slavv[zarr]`, "
+    'Install it with `pip install -e ".[zarr]"`, `pip install slavv[zarr]`, '
     "or `pip install zarr>=2.12.0`."
 )
 _NUMBA_FAILURE_MESSAGE = (
@@ -79,6 +79,7 @@ _CUPY_PARAMETER_WARNING = (
     "CuPy Hessian backend accelerates the Gaussian/Hessian derivative work; "
     "remaining eigendecomposition and aggregation stay on CPU in this v1 path."
 )
+
 
 def _compute_gradient_impl_python(energy, pos_int, microns_per_voxel):
     """Compute local energy gradient via central differences."""
@@ -169,7 +170,9 @@ def compute_gradient_impl(
 
     if _NUMBA_ACCELERATION_ENABLED and _compute_gradient_impl_numba is not None:
         try:
-            return cast("np.ndarray", _compute_gradient_impl_numba(energy, pos_int, microns_per_voxel))
+            return cast(
+                "np.ndarray", _compute_gradient_impl_numba(energy, pos_int, microns_per_voxel)
+            )
         except Exception as exc:  # pragma: no cover - depends on local numba build
             logger.warning("%s Detail: %s", _NUMBA_FAILURE_MESSAGE, exc)
             _NUMBA_ACCELERATION_ENABLED = False
@@ -200,6 +203,7 @@ def compute_gradient_fast(
 def is_numba_acceleration_enabled() -> bool:
     """Return whether gradient helpers are currently using Numba-compiled paths."""
     return _NUMBA_ACCELERATION_ENABLED
+
 
 # --- Helper Functions ---
 
@@ -429,7 +433,9 @@ def _warn_cupy_parameter_mismatches(params: dict[str, Any]) -> None:
     """Warn about the current CuPy backend scope."""
     logger.info(_CUPY_PARAMETER_WARNING)
     if params.get("energy_method") == "cupy_hessian" and params.get("return_all_scales", False):
-        logger.debug("CuPy Hessian backend stores per-scale outputs after transferring chunk results back to CPU.")
+        logger.debug(
+            "CuPy Hessian backend stores per-scale outputs after transferring chunk results back to CPU."
+        )
 
 
 def _require_zarr_backend() -> Any:

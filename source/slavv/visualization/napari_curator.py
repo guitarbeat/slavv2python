@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 _NAPARI_INSTALL_HINT = (
     "napari is required for the experimental napari curator. "
-    "Install it with `pip install -e \".[napari]\"`, `pip install slavv[napari]`, "
-    "or `pip install \"napari[all]>=0.5.0\"`."
+    'Install it with `pip install -e ".[napari]"`, `pip install slavv[napari]`, '
+    'or `pip install "napari[all]>=0.5.0"`.'
 )
 
 

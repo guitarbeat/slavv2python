@@ -58,7 +58,9 @@ def test_build_migration_report_includes_conflicts_and_pointer_proposals(tmp_pat
     comparisons_root = tmp_path / "slavv_comparisons"
     run_root = comparisons_root / "20260413_release_verify"
     _write_report(run_root)
-    conflict_target = comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    conflict_target = (
+        comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    )
     _write_report(conflict_target)
 
     report = module.build_migration_report(comparisons_root, repo_root=tmp_path)
@@ -81,9 +83,13 @@ def test_apply_migration_report_is_idempotent(tmp_path):
     _write_report(run_root)
 
     first_report = module.build_migration_report(comparisons_root, repo_root=tmp_path)
-    module.apply_migration_report(first_report, comparisons_root=comparisons_root, repo_root=tmp_path)
+    module.apply_migration_report(
+        first_report, comparisons_root=comparisons_root, repo_root=tmp_path
+    )
     second_report = module.build_migration_report(comparisons_root, repo_root=tmp_path)
-    applied = module.apply_migration_report(second_report, comparisons_root=comparisons_root, repo_root=tmp_path)
+    applied = module.apply_migration_report(
+        second_report, comparisons_root=comparisons_root, repo_root=tmp_path
+    )
 
     assert applied["mode"] == "apply"
     assert applied["applied_moves"] == []
@@ -128,10 +134,14 @@ def test_apply_migration_report_requires_allow_list_for_non_empty_deletes(tmp_pa
     )
 
     report = module.build_migration_report(comparisons_root, repo_root=tmp_path)
-    applied = module.apply_migration_report(report, comparisons_root=comparisons_root, repo_root=tmp_path)
+    applied = module.apply_migration_report(
+        report, comparisons_root=comparisons_root, repo_root=tmp_path
+    )
 
     assert any(item["path"] for item in applied["skipped_deletions"])
-    grouped_target = comparisons_root / "experiments" / "failed-verify" / "runs" / "20260413_failed_verify"
+    grouped_target = (
+        comparisons_root / "experiments" / "failed-verify" / "runs" / "20260413_failed_verify"
+    )
     assert grouped_target.exists()
 
 
@@ -165,7 +175,9 @@ def test_apply_migration_report_skips_missing_sources_when_target_exists(tmp_pat
         "comparison_layout_smoothing_missing_source_test",
     )
     comparisons_root = tmp_path / "slavv_comparisons"
-    target_run = comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    target_run = (
+        comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    )
     _write_report(target_run)
 
     report = {
@@ -186,7 +198,9 @@ def test_apply_migration_report_skips_missing_sources_when_target_exists(tmp_pat
         "cleanup_candidates": [],
     }
 
-    applied = module.apply_migration_report(report, comparisons_root=comparisons_root, repo_root=tmp_path)
+    applied = module.apply_migration_report(
+        report, comparisons_root=comparisons_root, repo_root=tmp_path
+    )
 
     assert applied["applied_moves"] == []
     assert applied["skipped_moves"]

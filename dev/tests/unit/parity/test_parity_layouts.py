@@ -680,7 +680,9 @@ def test_generate_manifest_includes_matlab_resume_semantics(
 
 def test_list_runs_discovers_grouped_experiment_runs(tmp_path: Path):
     comparisons_root = tmp_path / "slavv_comparisons"
-    run_dir = comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    run_dir = (
+        comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    )
     (run_dir / "03_Analysis").mkdir(parents=True)
     (run_dir / "03_Analysis" / "comparison_report.json").write_text("{}", encoding="utf-8")
 
@@ -725,7 +727,9 @@ def test_infer_run_status_prefers_explicit_status_json(tmp_path: Path, compariso
 
 def test_list_runs_uses_pointer_targets_to_force_keep_retention(tmp_path: Path):
     comparisons_root = tmp_path / "slavv_comparisons"
-    run_dir = comparisons_root / "experiments" / "saved-batch" / "runs" / "20260327_150656_clean_parity"
+    run_dir = (
+        comparisons_root / "experiments" / "saved-batch" / "runs" / "20260327_150656_clean_parity"
+    )
     (run_dir / "03_Analysis").mkdir(parents=True)
     (run_dir / "03_Analysis" / "comparison_report.json").write_text("{}", encoding="utf-8")
     write_pointer_file(
@@ -740,12 +744,21 @@ def test_list_runs_uses_pointer_targets_to_force_keep_retention(tmp_path: Path):
 
 def test_build_experiment_index_entry_tolerates_missing_optional_artifacts(tmp_path: Path):
     comparisons_root = tmp_path / "slavv_comparisons"
-    run_dir = comparisons_root / "experiments" / "python-consistency" / "runs" / "20260328_142659_python_consistency"
+    run_dir = (
+        comparisons_root
+        / "experiments"
+        / "python-consistency"
+        / "runs"
+        / "20260328_142659_python_consistency"
+    )
     (run_dir / "02_Output" / "python_results").mkdir(parents=True)
 
     entry = build_experiment_index_entry(run_dir, comparisons_root=comparisons_root)
 
-    assert entry["run_path"] == "experiments/python-consistency/runs/20260328_142659_python_consistency"
+    assert (
+        entry["run_path"]
+        == "experiments/python-consistency/runs/20260328_142659_python_consistency"
+    )
     assert entry["quality_gate"] == "unknown"
     assert "parity" not in entry
 

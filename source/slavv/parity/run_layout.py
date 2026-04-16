@@ -94,7 +94,12 @@ def is_legacy_flat_run_root(path: Path) -> bool:
         return False
     return any(
         (path / child).exists()
-        for child in ("matlab_results", "python_results", "comparison_report.json", "run_snapshot.json")
+        for child in (
+            "matlab_results",
+            "python_results",
+            "comparison_report.json",
+            "run_snapshot.json",
+        )
     )
 
 
@@ -113,7 +118,11 @@ def is_aggregate_run_container(path: Path) -> bool:
     if not path.exists() or not path.is_dir() or is_authoritative_managed_run_root(path):
         return False
     for child in path.iterdir():
-        if child.is_dir() and child.name.startswith("run_") and is_authoritative_managed_run_root(child):
+        if (
+            child.is_dir()
+            and child.name.startswith("run_")
+            and is_authoritative_managed_run_root(child)
+        ):
             return True
     return False
 
@@ -126,7 +135,9 @@ def list_aggregate_child_runs(path: Path) -> list[Path]:
         [
             child
             for child in path.iterdir()
-            if child.is_dir() and child.name.startswith("run_") and is_authoritative_managed_run_root(child)
+            if child.is_dir()
+            and child.name.startswith("run_")
+            and is_authoritative_managed_run_root(child)
         ]
     )
 
@@ -170,7 +181,10 @@ def resolve_run_layout(run_dir: Path) -> dict[str, Path]:
     analysis_dir = _first_existing(analysis_candidates) or analysis_candidates[0]
     metadata_dir = _first_existing(metadata_candidates) or metadata_candidates[0]
 
-    report_candidates = [analysis_dir / "comparison_report.json", run_root / "comparison_report.json"]
+    report_candidates = [
+        analysis_dir / "comparison_report.json",
+        run_root / "comparison_report.json",
+    ]
     summary_candidates = [analysis_dir / "summary.txt", run_root / "summary.txt"]
     plots_candidates = [analysis_dir / "visualizations", run_root / "visualizations"]
     manifest_candidates = [metadata_dir / "run_manifest.md", run_root / "MANIFEST.md"]
@@ -256,7 +270,9 @@ def infer_quality_gate(run_dir: Path) -> str:
             comparisons.append(payload)
 
     if any("matches_exactly" in item for item in comparisons):
-        if all(bool(item.get("matches_exactly")) for item in comparisons if "matches_exactly" in item):
+        if all(
+            bool(item.get("matches_exactly")) for item in comparisons if "matches_exactly" in item
+        ):
             return "pass"
         return "partial"
     return "unknown"
@@ -323,7 +339,9 @@ def infer_run_status(run_dir: Path, *, pointer_targeted: bool = False) -> dict[s
         inferred = aggregate_container_rollup(run_dir)
     else:
         inferred = {
-            "state": _infer_state_from_snapshot(run_dir) or _infer_state_from_artifacts(run_dir) or "incomplete",
+            "state": _infer_state_from_snapshot(run_dir)
+            or _infer_state_from_artifacts(run_dir)
+            or "incomplete",
             "retention": "eligible_for_cleanup",
             "quality_gate": infer_quality_gate(run_dir),
         }
@@ -736,7 +754,9 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
             "- **Last completed MATLAB stage:** "
             f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
         )
-        lines.append(f"- **Next MATLAB stage:** {matlab_status.get('matlab_next_stage') or '(none)'}")
+        lines.append(
+            f"- **Next MATLAB stage:** {matlab_status.get('matlab_next_stage') or '(none)'}"
+        )
         lines.append(
             f"- **Rerun prediction:** {matlab_status.get('matlab_rerun_prediction', 'unknown')}"
         )
@@ -762,7 +782,9 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
             lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
         lines.append("")
         if matlab_status.get("failure_summary"):
-            lines.extend(["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"])
+            lines.extend(
+                ["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"]
+            )
             log_tail = matlab_status.get("matlab_log_tail") or []
             if log_tail:
                 lines.extend(["", "```text"])
@@ -851,19 +873,27 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         lines.extend(["### Data Files", ""])
         if csv_files:
             lines.append("**CSV Files:**")
-            lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(csv_files))
+            lines.extend(
+                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(csv_files)
+            )
             lines.append("")
         if json_files:
             lines.append("**JSON Files:**")
-            lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(json_files))
+            lines.extend(
+                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(json_files)
+            )
             lines.append("")
         if mat_files:
             lines.append("**MATLAB Files:**")
-            lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(mat_files))
+            lines.extend(
+                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(mat_files)
+            )
             lines.append("")
         if pkl_files:
             lines.append("**Checkpoint Files:**")
-            lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(pkl_files))
+            lines.extend(
+                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(pkl_files)
+            )
             lines.append("")
 
     png_files = inventory.get("png", [])

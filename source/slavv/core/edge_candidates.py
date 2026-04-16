@@ -1154,8 +1154,7 @@ def _resolve_frontier_edge_connection(
 
 
 def _normalize_frontier_resolution_result(
-    result: tuple[int | None, int | None, str]
-    | tuple[int | None, int | None, str, dict[str, Any]]
+    result: tuple[int | None, int | None, str] | tuple[int | None, int | None, str, dict[str, Any]],
 ) -> tuple[int | None, int | None, str, dict[str, Any]]:
     """Normalize frontier-resolution returns to the enriched four-field form."""
     if len(result) == 4:
@@ -1198,7 +1197,9 @@ def _resolve_frontier_edge_connection_details(
     }
     parent_pointers.discard(0)
     parent_pointers.discard(parent_index)
-    resolution_debug["parent_child_edge_indices"] = sorted(int(pointer) for pointer in parent_pointers)
+    resolution_debug["parent_child_edge_indices"] = sorted(
+        int(pointer) for pointer in parent_pointers
+    )
     if parent_pointers:
         return None, None, "rejected_parent_has_child", resolution_debug
 
@@ -1228,9 +1229,7 @@ def _resolve_frontier_edge_connection_details(
     parent_1 = parent_path[:bifurcation_index]
     parent_2 = parent_path[bifurcation_index + 1 :]
     parent_1_energy = (
-        _path_max_energy_from_linear_indices(parent_1, energy, shape)
-        if parent_1
-        else float("-inf")
+        _path_max_energy_from_linear_indices(parent_1, energy, shape) if parent_1 else float("-inf")
     )
     resolution_debug["parent_terminal_half_length"] = len(parent_1)
     resolution_debug["parent_terminal_half_max_energy"] = float(parent_1_energy)
@@ -1244,9 +1243,7 @@ def _resolve_frontier_edge_connection_details(
         parent_2_energy = _path_max_energy_from_linear_indices(parent_2, energy, shape)
         resolution_debug["parent_origin_half_length"] = len(parent_2)
         resolution_debug["parent_origin_half_max_energy"] = float(parent_2_energy)
-        half_candidates.append(
-            (parent_origin, parent_2_energy)
-        )
+        half_candidates.append((parent_origin, parent_2_energy))
     else:
         resolution_debug["parent_origin_half_length"] = 0
         resolution_debug["parent_origin_half_max_energy"] = None
@@ -1324,7 +1321,9 @@ def _build_frontier_lifecycle_event(
 
     survived_candidate_manifest = emitted_endpoint_pair is not None
     claim_reassigned = (
-        survived_candidate_manifest and origin_idx is not None and int(origin_idx) != int(seed_origin_idx)
+        survived_candidate_manifest
+        and origin_idx is not None
+        and int(origin_idx) != int(seed_origin_idx)
     )
     claim_reassignment_reason = _frontier_claim_reassignment_from_reason(str(resolution_reason))
     return {

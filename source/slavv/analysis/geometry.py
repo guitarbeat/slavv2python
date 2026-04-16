@@ -199,7 +199,7 @@ def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarr
     if connections.size == 0:
         return np.empty((0,), dtype=int)
     mask = (connections[:, 0] == vertex_index) | (connections[:, 1] == vertex_index)
-    return np.flatnonzero(mask)
+    return cast("np.ndarray", np.flatnonzero(mask))
 
 
 def get_edge_metric(
@@ -236,7 +236,7 @@ def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
     """Resample a polyline trace at approximately uniform arc-length spacing."""
     pts = np.asarray(trace, dtype=float)
     if pts.ndim != 2 or pts.shape[0] < 2 or step <= 0:
-        return pts.copy()
+        return cast("np.ndarray", pts.copy())
     seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
     arclen = np.concatenate([[0.0], np.cumsum(seg)])
     total = arclen[-1]
@@ -247,7 +247,7 @@ def resample_vectors(trace: np.ndarray, step: float) -> np.ndarray:
     out = np.empty((len(targets), pts.shape[1]), dtype=float)
     for d in range(pts.shape[1]):
         out[:, d] = np.interp(targets, arclen, pts[:, d])
-    return out
+    return cast("np.ndarray", out)
 
 
 def smooth_edge_traces(traces: list[np.ndarray], sigma: float = 1.0) -> list[np.ndarray]:
@@ -307,7 +307,7 @@ def subsample_vectors(trace: np.ndarray, step: int) -> np.ndarray:
     """Subsample a polyline by keeping every ``step``-th point."""
     arr = np.asarray(trace)
     if arr.ndim != 2 or step <= 1:
-        return arr.copy()
+        return cast("np.ndarray", arr.copy())
     idx = np.arange(0, arr.shape[0], step, dtype=int)
     if idx[-1] != arr.shape[0] - 1:
         idx = np.r_[idx, arr.shape[0] - 1]
@@ -356,7 +356,7 @@ def icp_register_rigid(
             Rk = Vt.T @ U.T
         sk = 1.0
         if with_scale:
-            denom = np.sum(Xc**2)
+            denom: float = float(np.sum(Xc**2))
             if denom > 0:
                 sk = float(np.sum(Svals) / denom)
         tk = Ym.mean(axis=0) - sk * (Rk @ Xm.mean(axis=0))
@@ -421,7 +421,7 @@ def register_vector_sets(
         R = Vt.T @ U.T
     s = 1.0
     if with_scale:
-        denom = np.sum(Xc**2)
+        denom: float = float(np.sum(Xc**2))
         if denom > 0:
             s = float(np.sum(S) / denom)
     t = muY - s * (R @ muX)
@@ -545,7 +545,7 @@ def calculate_network_statistics(
                 pos2 = vertex_positions[strand[i + 1]] * microns_per_voxel
                 seg_length = np.linalg.norm(pos2 - pos1)
                 length += seg_length
-                edge_lengths.append(seg_length)
+                edge_lengths.append(float(seg_length))
                 edge_radii.append((radii[strand[i]] + radii[strand[i + 1]]) / 2.0)
                 G.add_edge(strand[i], strand[i + 1], weight=seg_length)
             strand_lengths.append(length)
@@ -730,7 +730,7 @@ def crop_vertices_by_mask(
         & (coords[:, 2] < mask_volume.shape[2])
     )
 
-    mask = np.zeros(len(vertex_positions), dtype=bool)
+    mask: np.ndarray = np.zeros(len(vertex_positions), dtype=bool)
     valid_indices = np.where(in_bounds)[0]
     valid_coords = coords[in_bounds]
     mask[valid_indices] = mask_volume[valid_coords[:, 0], valid_coords[:, 1], valid_coords[:, 2]]
