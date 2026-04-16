@@ -105,6 +105,8 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 
 ### Fixed
 
+- Resolved the "Stingy Reachability" bottleneck by relaxing the `enforce_frontier_reachability` gate for watershed-based edge candidates, aligning the parity workflow with MATLAB's standalone watershed tracer.
+
 - Removed the stale duplicated Hessian-energy branch that remained after the
   lower-memory helper became the maintained implementation.
 - Eliminated ~1,000 invalid watershed-based edge candidates that were previously crossing background areas by enforcing stricter energy-sign checks.

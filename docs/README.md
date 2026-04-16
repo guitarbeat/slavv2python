@@ -11,7 +11,8 @@ material lives under `reference/`. Historical operational and parity writeups
 now live directly inside the relevant chapter folders under `chapters/`.
 
 Use [chapters/README.md](chapters/README.md) as the entry point for the
-chapter system itself.
+chapter system itself, and [reference/README.md](reference/README.md) as the
+entry point for maintained cross-cutting reference docs.
 
 ## Start Here
 
@@ -128,19 +129,24 @@ Historical handoff home:
 
 ## Reference Shelf
 
-These docs remain active references across chapters.
+These docs remain active references across chapters. Start with the folder
+index at [reference/README.md](reference/README.md) for a grouped view of the
+maintained material.
 
 | File | Purpose |
 | --- | --- |
+| `reference/README.md` | Entry point for the maintained reference shelf |
 | `reference/GLOSSARY.md` | Domain-specific and project-specific terms |
 | `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
 | `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
 | `reference/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
+| `reference/SIMPLEITK_ENERGY_BACKEND.md` | Spacing-aware vesselness backend |
+| `reference/CUPY_ENERGY_BACKEND.md` | GPU-accelerated energy backend |
 | `reference/ZARR_ENERGY_STORAGE.md` | Optional Zarr-backed storage for resumable energy artifacts |
 | `reference/NAPARI_CURATOR.md` | Experimental napari-based manual curation prototype |
 | `reference/ADDING_EXTRACTION_ALGORITHMS.md` | Contributor guide for wiring new extraction modes into validation, CLI, pipeline, tests, and docs |
 | `reference/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
-| `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | External package survey and context |
+| `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | Short external-package status note |
 
 ## By Question
 

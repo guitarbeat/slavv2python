@@ -122,6 +122,7 @@ class TestWatershedSupplementDiagnostics:
             {
                 "number_of_edges_per_vertex": 4,
                 "parity_watershed_candidate_mode": "legacy_supplement",
+                "parity_frontier_reachability_gate": True,
                 "parity_candidate_salvage_mode": "frontier_deficit_geodesic",
                 "parity_geodesic_salvage_k_nearest": 2,
             },

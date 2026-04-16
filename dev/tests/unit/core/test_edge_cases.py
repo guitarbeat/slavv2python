@@ -732,6 +732,7 @@ def test_watershed_join_supplement_can_require_mutual_frontier_participation():
         np.zeros_like(energy, dtype=np.int16),
         vertex_positions,
         energy_sign=-1.0,
+        enforce_frontier_reachability=True,
         require_mutual_frontier_participation=True,
     )
 
@@ -810,6 +811,7 @@ def test_extract_edges_parity_can_supplement_empty_frontier_candidates(monkeypat
             "comparison_exact_network": True,
             "number_of_edges_per_vertex": 1,
             "parity_watershed_candidate_mode": "legacy_supplement",
+            "parity_frontier_reachability_gate": True,
         },
     )
 
@@ -859,6 +861,7 @@ def test_extract_edges_parity_requires_mutual_frontier_participation(monkeypatch
             "comparison_exact_network": True,
             "number_of_edges_per_vertex": 1,
             "parity_watershed_candidate_mode": "legacy_supplement",
+            "parity_frontier_reachability_gate": True,
         },
     )
 

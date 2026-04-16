@@ -365,7 +365,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     vertex_positions: np.ndarray,
     energy_sign: float,
     max_edges_per_vertex: int = 4,
-    enforce_frontier_reachability: bool = True,
+    enforce_frontier_reachability: bool = False,
     require_mutual_frontier_participation: bool = False,
     parity_watershed_metric_threshold: float | None = None,
 ) -> dict[str, Any]:
@@ -1048,7 +1048,7 @@ def _finalize_matlab_parity_candidates(
 
     if candidate_mode == "legacy_supplement":
         enforce_frontier_reachability_gate = bool(
-            params.get("parity_frontier_reachability_gate", True)
+            params.get("parity_frontier_reachability_gate", False)
         )
         require_mutual_frontier_participation = bool(
             params.get("parity_require_mutual_frontier_participation", True)
