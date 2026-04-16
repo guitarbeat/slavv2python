@@ -1033,7 +1033,7 @@ def test_frontier_tracer_does_not_prune_from_invalid_terminal_before_valid_edge(
     assert payload["connections"] == []
 
 
-def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypatch):
+def test_frontier_tracer_invalid_terminal_consumes_edge_budget_like_matlab(monkeypatch):
     energy = np.full((9, 9, 9), 1.0, dtype=np.float32)
     energy[4, 4, 4] = -9.0
 
@@ -1088,8 +1088,8 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
         },
     )
 
-    assert resolve_calls["count"] >= 3
-    assert payload["connections"] == [[0, 2], [0, 3]]
+    assert resolve_calls["count"] == 2
+    assert payload["connections"] == [[0, 2]]
 
 
 def test_frontier_tracer_discards_new_frontier_after_rejected_terminal(monkeypatch):

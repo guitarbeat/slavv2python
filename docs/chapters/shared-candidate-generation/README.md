@@ -2,10 +2,14 @@
 
 Status: Historical Chapter 2 handoff
 
-This file is no longer the active spec entry point.
+Successor:
 
-Use [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
-for the active chapter.
+- [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+
+Use [chapters/README.md](../README.md) for chapter-system navigation and
+[TODO.md](../../../TODO.md) for the current root-level parity backlog.
+
+This file is no longer the active spec entry point.
 
 This chapter was opened on April 10, 2026.
 
@@ -33,6 +37,15 @@ problem into a narrower shared-neighborhood claim and ownership problem.
   breaking the broader suite.
 - Relaxed geodesic and origin-owned pruning experiments were informative but
   rejected.
+
+## What This Chapter Handed Off
+
+- the parity gap was narrower than a general candidate-generation chase
+- shared neighborhoods were a better unit of analysis than global edge counts
+- local claim ordering and invalidation stayed live suspects even when
+  candidate coverage improved
+- later work needed to split frontier rejection, partner substitution, and
+  cleanup loss into separate defect classes instead of one generic bucket
 
 ## Main Goal
 
@@ -91,15 +104,18 @@ Out of scope:
 
 ## Suggested First Loop
 
-Use a retained staged run root and keep new generated comparison outputs outside
-the package source tree when practical.
+Historical note:
+
+This loop is preserved for context, but the active workspace now keeps
+comparison runs under
+`C:\Users\alw4834\Documents\slavv2python\slavv_comparisons`.
 
 ```powershell
 python dev/scripts/cli/compare_matlab_python.py `
-  --input C:\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
+  --input C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
   --skip-matlab `
-  --output-dir C:\slavv_comparisons\next_chapter_run `
-  --params C:\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\next_chapter_run `
+  --params C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
 ```
 
 ## Core References

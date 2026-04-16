@@ -24,8 +24,10 @@ ordering, and branch invalidation around shared active neighborhoods.
 
 - Current best retained saved-batch result is `vertices 110/110`,
   `edges 94/93`, `strands 49/54`.
-- The live rerun is still farther off: `1379` MATLAB edges vs `1425` Python
-  edges, and `682` MATLAB strands vs `681` Python strands.
+- The canonical live imported-MATLAB rerun at
+  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+  is still farther off: `2577/2577` vertices, `2533/2463` edges, and
+  `1120/1006` strands.
 - The imported-MATLAB workflow is the active finish line for exact parity in
   this phase; native Python-from-energy parity is still out of scope.
 - Origin `64` remains useful, but it is now a neighborhood probe rather than
@@ -35,6 +37,29 @@ ordering, and branch invalidation around shared active neighborhoods.
   explanation.
 - Candidate coverage is still the first triage metric, but candidate counts
   alone are not enough to explain final parity.
+
+## Lessons From Previous Runs
+
+- March 30, 2026 and April 1, 2026 were different failure regimes.
+  March 30 over-emitted, while April 1 had already flipped into a
+  missing-edge regime.
+- Several older hotspots improved materially as candidate coverage matured.
+  Origins `64`, `359`, and `1283` now have much broader local candidate
+  coverage than they did earlier in the investigation.
+- The current live blockers now split into failure classes instead of one
+  generic candidate-generation problem:
+  - frontier pre-manifest rejection: `1482`, `1666`, `2129`, `2216`, `2424`,
+    `2459`, `2486`
+  - manifest partner substitution: `1654`, `866`, `322`, `35`, `4`, `3`, `57`
+  - candidate-admission gaps: `2305`, `2492`
+  - final cleanup loss: `1283`, `64`, `20`
+- Several frontier failures now show the same local shape:
+  one seed-origin frontier edge is accepted, one or more sibling branches are
+  rejected as `rejected_child_better_than_parent`, and the accepted parent edge
+  is later removed in final cleanup.
+- Repeated first-divergence terminals, especially terminal `1009`, suggest
+  one reusable parent/child ownership or invalidation rule may explain
+  multiple missing neighborhoods.
 
 ## Main Goal
 
@@ -80,10 +105,14 @@ Use the saved-batch surface as the lab, but inspect neighborhoods instead of
 only aggregate counts.
 
 1. Reuse a staged saved-batch run root.
-2. Record per-neighborhood candidate lifecycle artifacts for `64`, `359`,
-   `866`, and `1283`.
+2. Record per-neighborhood candidate lifecycle artifacts for `1482`, `1666`,
+   `1654`, and `866` first, then use `1283` and `64` as cleanup-loss checks.
 3. Compare those artifacts against MATLAB's shared-map semantics, not just
-   final endpoint pairs.
+   final endpoint pairs, and separate:
+   - pre-manifest rejection
+   - partner substitution
+   - final cleanup loss
+   - true candidate-admission gaps
 4. Promote a change only if the saved-batch surface improves without regressing
    the stage-isolated `network` gate.
 5. Treat the live MATLAB-backed rerun as the release-grade acceptance surface
@@ -91,10 +120,21 @@ only aggregate counts.
 
 ```powershell
 python dev/scripts/cli/compare_matlab_python.py `
-  --input C:\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
+  --input C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
   --skip-matlab `
-  --output-dir C:\slavv_comparisons\shared_neighborhood_claim_trial `
-  --params C:\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\shared_neighborhood_claim_trial `
+  --params C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
+```
+
+Canonical live acceptance rerun:
+
+```powershell
+python dev/scripts/cli/compare_matlab_python.py `
+  --input data/slavv_test_volume.tif `
+  --skip-matlab `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413 `
+  --python-parity-rerun-from edges `
+  --comparison-depth deep
 ```
 
 ## Deliverables For This Chapter

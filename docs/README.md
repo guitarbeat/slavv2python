@@ -11,6 +11,9 @@ Chapter-specific history lives under `chapters/`, and cross-chapter reference
 material lives under `reference/`. Report catalogs and operational/parity
 report artifacts live under `reports/`.
 
+Use [chapters/README.md](chapters/README.md) as the entry point for the
+chapter system itself.
+
 ## Start Here
 
 Follow this maintained reading path:
@@ -21,7 +24,8 @@ Follow this maintained reading path:
 4. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
 5. [Energy Computation Methods](reference/ENERGY_METHODS.md)
 6. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
-7. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
+7. [Chapter index](chapters/README.md)
+8. [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md)
 
 ## Chapter Status
 
@@ -73,6 +77,24 @@ Core references for the active chapter:
 - [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
 - [Release Verification 2026-04-14](reports/handled/release_verification_2026-04-14.md)
 
+Current live-run lessons:
+
+- the broad over-emission regime from March 30, 2026 is no longer the active
+  blocker
+- the repo moved into an under-emission regime by April 1, 2026, and the
+  remaining gap is now narrower and more local
+- several older hotspots such as `64`, `359`, and `1283` now have much better
+  candidate coverage than they did earlier in the investigation
+- the worst live blockers now split into distinct classes rather than one
+  generic "candidate generation gap":
+  - frontier pre-manifest rejection around origins such as `1482` and `1666`
+  - manifest partner substitution around origins such as `1654` and `866`
+  - smaller true candidate-admission gaps such as `2305` and `2492`
+  - final cleanup loss at origins such as `1283`
+- repeated failures with the same terminal ids, including terminal `1009`,
+  suggest that some missing neighborhoods share one branch-ownership or
+  parent/child invalidation rule instead of being unrelated local accidents
+
 ## Historical Handoff Chapter
 
 Name:
@@ -111,6 +133,7 @@ These docs remain active references across chapters.
 | What closed the last spec? | [PARITY_REPORT_2026-04-09.md](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md) |
 | What chapter is active right now? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
 | What is the next chapter trying to solve? | [Shared Neighborhood Claim Alignment](chapters/shared-neighborhood-claim-alignment/README.md) |
+| What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |
 | What chapter narrowed the problem before the current one? | [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md) |
 | What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
 | Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity/PARITY_HUB.md) |

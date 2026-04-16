@@ -1400,10 +1400,11 @@ def _trace_origin_edges_matlab_frontier(
     scale_traces: list[np.ndarray] = []
     origin_indices: list[int] = []
     frontier_lifecycle_events: list[dict[str, Any]] = []
-    edge_paths_linear: list[list[int]] = []
-    edge_pairs: list[tuple[int, int]] = []
+    terminal_paths_linear: list[list[int]] = []
+    terminal_pairs: list[tuple[int, int]] = []
     displacement_vectors: list[np.ndarray] = []
-    has_valid_terminal_edge = False
+    valid_terminal_count = 0
+    terminal_hit_budget_count = 0
     previous_indices_visited: list[int] = []
     pointer_index_map: dict[int, int] = {origin_linear: 0}
     pointer_energy_map: dict[int, float] = {}
@@ -1436,7 +1437,7 @@ def _trace_origin_edges_matlab_frontier(
     current_linear = origin_linear
 
     while (
-        len(edge_paths_linear) < max_edges_per_vertex
+        terminal_hit_budget_count < max_edges_per_vertex
         and len(previous_indices_visited) < max_number_of_indices
     ):
         current_coord = _matlab_linear_index_to_coord(current_linear, shape)
@@ -1483,7 +1484,7 @@ def _trace_origin_edges_matlab_frontier(
             )
             within_length: BoolArray = new_distances_array < max_edge_length_microns
             new_coords_array = new_coords_array[within_length]
-            if len(new_coords_array) and has_valid_terminal_edge:
+            if len(new_coords_array) and valid_terminal_count > 0:
                 new_coords_array = _prune_frontier_indices_beyond_found_vertices(
                     new_coords_array,
                     origin_position_microns,
@@ -1492,6 +1493,7 @@ def _trace_origin_edges_matlab_frontier(
                 )
 
         if terminal_vertex_idx >= 0:
+            terminal_hit_budget_count += 1
             diagnostics["stop_reason_counts"]["terminal_frontier_hit"] += 1
             diagnostics.setdefault("frontier_per_origin_terminal_hits", {})
             diagnostics["frontier_per_origin_terminal_hits"][str(origin_vertex_idx)] = (
@@ -1515,8 +1517,8 @@ def _trace_origin_edges_matlab_frontier(
                         path_linear,
                         terminal_vertex_idx,
                         origin_vertex_idx,
-                        edge_paths_linear,
-                        edge_pairs,
+                        terminal_paths_linear,
+                        terminal_pairs,
                         pointer_index_map,
                         energy,
                         shape,
@@ -1529,6 +1531,26 @@ def _trace_origin_edges_matlab_frontier(
                 + 1
             )
 
+            path_record_index = terminal_hit_budget_count
+            for path_index in path_linear[:-1]:
+                pointer_index_map[path_index] = -path_record_index
+
+            terminal_paths_linear.append(path_linear)
+            terminal_pairs.append(
+                (
+                    -1 if terminal_idx is None else int(terminal_idx),
+                    -1 if origin_idx is None else int(origin_idx),
+                )
+            )
+
+            current_position = current_coord.astype(np.float64) * microns_per_voxel
+            displacement = current_position - origin_position_microns
+            displacement_norm_sq = float(np.sum(displacement**2))
+            if displacement_norm_sq > 0:
+                displacement_vectors.append(displacement / displacement_norm_sq)
+            else:
+                displacement_vectors.append(np.zeros((3,), dtype=np.float64))
+
             if origin_idx is not None and terminal_idx is not None:
                 diagnostics.setdefault("frontier_per_origin_terminal_accepts", {})
                 diagnostics["frontier_per_origin_terminal_accepts"][str(origin_vertex_idx)] = (
@@ -1539,20 +1561,7 @@ def _trace_origin_edges_matlab_frontier(
                     )
                     + 1
                 )
-                path_record_index = len(edge_paths_linear) + 1
-                for path_index in path_linear[:-1]:
-                    pointer_index_map[path_index] = -path_record_index
-
-                edge_paths_linear.append(path_linear)
-                edge_pairs.append((int(terminal_idx), int(origin_idx)))
-
-                current_position = current_coord.astype(np.float64) * microns_per_voxel
-                displacement = current_position - origin_position_microns
-                displacement_norm_sq = float(np.sum(displacement**2))
-                if displacement_norm_sq > 0:
-                    displacement_vectors.append(displacement / displacement_norm_sq)
-
-                has_valid_terminal_edge = True
+                valid_terminal_count += 1
                 edge_trace = _path_coords_from_linear_indices(path_linear, shape)
                 energy_trace = _trace_energy_series(edge_trace, energy)
                 scale_trace = _trace_scale_series(edge_trace, scale_indices)

@@ -2,6 +2,13 @@
 
 Status: Historical Chapter 1 hub
 
+Successor:
+
+- [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md)
+
+Use [chapters/README.md](../README.md) for chapter-system navigation and
+[TODO.md](../../../TODO.md) for the current root-level parity backlog.
+
 This file is no longer the active spec entry point.
 
 Use [README.md](../../README.md) for chapter status,
@@ -78,9 +85,9 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 ## Read Order
 
-1. [BOTTLENECK_TODO.md](../../../BOTTLENECK_TODO.md)
-   Current workflow surface, what is implemented, and what the next iteration
-   should optimize.
+1. [TODO.md](../../../TODO.md)
+   Current workflow surface, what still blocks imported-MATLAB parity, and what
+   the next iteration should optimize.
 2. [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md)
    Current short decision memo for the April 8 code-and-artifact audit.
 3. [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md)
@@ -95,7 +102,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 | What is true right now, quickly? | [Shared Neighborhood Claim Alignment](../shared-neighborhood-claim-alignment/README.md) |
 | What is the current implementation decision from the April 8 audit? | [parity_decision_memo_2026-04-08.md](../../reports/handled/parity_decision_memo_2026-04-08.md) |
 | What evidence supports the current diagnosis? | [PARITY_FINDINGS_2026-03-27.md](PARITY_FINDINGS_2026-03-27.md) |
-| What should I run next? | [BOTTLENECK_TODO.md](../../../BOTTLENECK_TODO.md) |
+| What should I run next? | [TODO.md](../../../TODO.md) |
 | What is the current edge-specific plan? | [EDGE_PARITY_IMPLEMENTATION_PLAN.md](EDGE_PARITY_IMPLEMENTATION_PLAN.md) |
 | Where should I audit MATLAB vs Python tracer semantics? | [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md) |
 | How do staged comparison run roots work? | [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md) |
@@ -124,8 +131,9 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 ## Next Likely Move
 
-If you are resuming implementation work rather than documentation work, the
-next best target is still `source/slavv/core/edge_candidates.py`, but the first change
-should be to align Python cleanup with the active MATLAB V200 cleanup chain
-before continuing with local frontier partner-choice tuning.
+If you are resuming implementation work rather than documentation work, use
+[TODO.md](../../../TODO.md) first. The current highest-leverage target is still
+`source/slavv/core/edge_candidates.py`, but only for the repeated frontier
+parent/child invalidation pattern that now shows up across several missing
+neighborhoods.
 
