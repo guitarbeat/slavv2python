@@ -26,6 +26,8 @@ ordering, and branch invalidation around shared active neighborhoods.
   `edges 94/93`, `strands 49/54`.
 - The live rerun is still farther off: `1379` MATLAB edges vs `1425` Python
   edges, and `682` MATLAB strands vs `681` Python strands.
+- The imported-MATLAB workflow is the active finish line for exact parity in
+  this phase; native Python-from-energy parity is still out of scope.
 - Origin `64` remains useful, but it is now a neighborhood probe rather than
   the whole story.
 - Shared neighborhoods around `359`, `866`, and `1283` show stronger evidence
@@ -38,7 +40,7 @@ ordering, and branch invalidation around shared active neighborhoods.
 
 Make Python admit, retain, and resolve candidate relationships across shared
 neighborhoods the same way MATLAB `get_edges_by_watershed` does before
-`_choose_edges_matlab_style` runs.
+the parity cleanup chain runs.
 
 ## Working Questions
 
@@ -84,6 +86,8 @@ only aggregate counts.
    final endpoint pairs.
 4. Promote a change only if the saved-batch surface improves without regressing
    the stage-isolated `network` gate.
+5. Treat the live MATLAB-backed rerun as the release-grade acceptance surface
+   before claiming imported-MATLAB parity is complete.
 
 ```powershell
 python dev/scripts/cli/compare_matlab_python.py `
@@ -100,6 +104,9 @@ python dev/scripts/cli/compare_matlab_python.py `
 - At least one isolated regression test for a real neighborhood-level mismatch.
 - One targeted Python change that improves the imported-MATLAB saved-batch loop
   without causing a larger regression on the live confirmation surface.
+- Updated run docs that cite the canonical saved-batch lab, the canonical live
+  acceptance root, and the exact commands for rerun, diagnostics, and proof
+  inspection.
 
 ## Working Docs
 

@@ -1238,6 +1238,15 @@ def _frontier_bifurcation_choice_from_reason(resolution_reason: str) -> str | No
     return None
 
 
+def _frontier_claim_reassignment_from_reason(resolution_reason: str) -> str | None:
+    """Map a frontier resolution reason onto claim-reassignment language."""
+    if resolution_reason == "accepted_parent_terminal_half":
+        return "reassigned_to_parent_terminal_half"
+    if resolution_reason == "accepted_parent_origin_half":
+        return "reassigned_to_parent_origin_half"
+    return None
+
+
 def _build_frontier_lifecycle_event(
     *,
     seed_origin_idx: int,
@@ -1262,6 +1271,10 @@ def _build_frontier_lifecycle_event(
         )
 
     survived_candidate_manifest = emitted_endpoint_pair is not None
+    claim_reassigned = (
+        survived_candidate_manifest and origin_idx is not None and int(origin_idx) != int(seed_origin_idx)
+    )
+    claim_reassignment_reason = _frontier_claim_reassignment_from_reason(str(resolution_reason))
     return {
         "seed_origin_index": int(seed_origin_idx),
         "terminal_vertex_index": int(terminal_vertex_idx),
@@ -1272,12 +1285,17 @@ def _build_frontier_lifecycle_event(
         "rejection_reason": None if survived_candidate_manifest else str(resolution_reason),
         "parent_child_outcome": _frontier_parent_child_outcome_from_reason(str(resolution_reason)),
         "bifurcation_choice": _frontier_bifurcation_choice_from_reason(str(resolution_reason)),
+        "claim_reassigned": bool(claim_reassigned),
+        "claim_reassignment_reason": claim_reassignment_reason if claim_reassigned else None,
         "survived_candidate_manifest": bool(survived_candidate_manifest),
         "origin_candidate_local_index": (
             None if local_candidate_index is None else int(local_candidate_index)
         ),
         "manifest_candidate_index": None,
         "chosen_final_edge": False,
+        "final_survival_stage": (
+            "candidate_manifest" if survived_candidate_manifest else "pre_manifest_rejection"
+        ),
         "terminal_hit_sequence": int(terminal_hit_sequence),
     }
 
@@ -1519,15 +1537,11 @@ def _trace_origin_edges_matlab_frontier(
                         terminal_hit_sequence=terminal_hit_sequence,
                     )
                 )
-                for coord in new_coords_array:
-                    linear_index = _coord_to_matlab_linear_index(coord, shape)
-                    available_energy = float(energy[coord[0], coord[1], coord[2]])
-                    available_map[linear_index] = available_energy
-                    heappush(available_heap, (available_energy, linear_index))
-            if origin_idx is not None and terminal_idx is not None and len(new_coords_array):
-                # MATLAB clears the newly exposed frontier voxels after any terminal
-                # hit that survives parent/child resolution instead of leaving
-                # them queued for later expansion.
+            if len(new_coords_array):
+                # MATLAB clears the newly exposed frontier voxels after any
+                # terminal hit, even when parent/child validation later rejects
+                # the terminal. Re-queueing those voxels causes the frontier to
+                # continue down a branch that MATLAB abandons at this point.
                 for coord in new_coords_array:
                     linear_index = _coord_to_matlab_linear_index(coord, shape)
                     available_map.pop(linear_index, None)
@@ -1667,6 +1681,20 @@ def _build_frontier_candidate_lifecycle(
         event["survived_candidate_manifest"] = bool(event.get("survived_candidate_manifest", False))
         event["manifest_candidate_index"] = manifest_candidate_index
         event["chosen_final_edge"] = bool(chosen_final_edge)
+        event["claim_reassigned"] = bool(event.get("claim_reassigned", False))
+        if not event["claim_reassigned"]:
+            event["claim_reassignment_reason"] = None
+        elif not isinstance(event.get("claim_reassignment_reason"), str):
+            event["claim_reassignment_reason"] = "reassigned_from_parent_child_resolution"
+        event["final_survival_stage"] = (
+            "final_edge_retained"
+            if chosen_final_edge
+            else (
+                "final_cleanup_dropped"
+                if event["survived_candidate_manifest"]
+                else "pre_manifest_rejection"
+            )
+        )
         events.append(event)
 
         summary = per_origin_summary.setdefault(
@@ -1677,19 +1705,34 @@ def _build_frontier_candidate_lifecycle(
                 "emitted_candidate_count": 0,
                 "rejected_terminal_count": 0,
                 "chosen_final_edge_count": 0,
+                "claim_reassignment_count": 0,
+                "final_cleanup_loss_count": 0,
                 "resolution_counts": {},
                 "emitted_endpoint_pair_samples": [],
                 "rejection_reason_samples": [],
+                "claim_reassignment_samples": [],
             },
         )
         summary["terminal_hit_count"] += 1
         resolution_reason = str(event.get("resolution_reason", "unknown"))
         resolution_counts = cast("dict[str, int]", summary["resolution_counts"])
         resolution_counts[resolution_reason] = int(resolution_counts.get(resolution_reason, 0)) + 1
+        if event["claim_reassigned"]:
+            summary["claim_reassignment_count"] += 1
+            reassignment_reason = event.get("claim_reassignment_reason")
+            if (
+                isinstance(reassignment_reason, str)
+                and reassignment_reason
+                and reassignment_reason not in summary["claim_reassignment_samples"]
+                and len(summary["claim_reassignment_samples"]) < 3
+            ):
+                summary["claim_reassignment_samples"].append(reassignment_reason)
         if event["survived_candidate_manifest"]:
             summary["emitted_candidate_count"] += 1
             if chosen_final_edge:
                 summary["chosen_final_edge_count"] += 1
+            else:
+                summary["final_cleanup_loss_count"] += 1
             endpoint_pair = event.get("emitted_endpoint_pair")
             if (
                 isinstance(endpoint_pair, list)
@@ -1719,7 +1762,7 @@ def _build_frontier_candidate_lifecycle(
         )
     )
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "frontier_terminal_hit_event_count": len(events),
         "frontier_terminal_accept_event_count": len(
             [event for event in events if event.get("survived_candidate_manifest")]

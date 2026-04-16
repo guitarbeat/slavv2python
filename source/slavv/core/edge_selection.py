@@ -699,3 +699,35 @@ def _choose_edges_matlab_v200_cleanup(
         vertex_positions,
         diagnostics,
     )
+
+
+def choose_edges_for_workflow(
+    candidates: dict[str, Any],
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Route edge cleanup through the maintained workflow-specific chooser.
+
+    Imported-MATLAB parity runs must use the active MATLAB V200 cleanup chain
+    only. Non-parity runs keep the broader MATLAB-shaped chooser that includes
+    conflict painting and the richer overlap diagnostics needed outside the
+    exact-network parity workflow.
+    """
+    if bool(params.get("comparison_exact_network", False)):
+        return _choose_edges_matlab_v200_cleanup(
+            candidates,
+            vertex_positions.astype(np.float32, copy=False),
+            image_shape,
+            params,
+        )
+    return _choose_edges_matlab_style(
+        candidates,
+        vertex_positions.astype(np.float32, copy=False),
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        image_shape,
+        params,
+    )

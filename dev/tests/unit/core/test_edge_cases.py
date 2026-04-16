@@ -4,6 +4,7 @@ import pytest
 from slavv.core import SLAVVProcessor
 from slavv.core.edge_candidates import (
     _best_watershed_contact_coords,
+    _build_frontier_candidate_lifecycle,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
     _salvage_matlab_parity_candidates_with_local_geodesics,
@@ -16,6 +17,7 @@ from slavv.core.edge_selection import (
     _choose_edges_matlab_v200_cleanup,
     _construct_structuring_element_offsets_matlab,
     _offset_coords_matlab,
+    choose_edges_for_workflow,
 )
 from slavv.core.graph import _remove_short_hairs
 from slavv.core.vertices import (
@@ -378,6 +380,96 @@ def test_parity_cleanup_bypasses_conflict_painting_but_keeps_pair_ordering():
     assert np.array_equal(chosen_parity["traces"][0], short_frontier)
     assert chosen_parity["diagnostics"]["conflict_rejected_count"] == 0
     assert chosen_parity["diagnostics"]["duplicate_directed_pair_count"] == 1
+
+
+def test_choose_edges_for_workflow_routes_parity_and_standard_cleanup(monkeypatch):
+    candidates = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+    }
+    vertex_positions = np.zeros((0, 3), dtype=np.float32)
+    vertex_scales = np.zeros((0,), dtype=np.int16)
+    lumen_radius_pixels_axes = np.array([[1.0, 1.0, 1.0]], dtype=np.float32)
+
+    calls = {"style": 0, "cleanup": 0}
+
+    def fake_style(*_args, **_kwargs):
+        calls["style"] += 1
+        return {"route": "style"}
+
+    def fake_cleanup(*_args, **_kwargs):
+        calls["cleanup"] += 1
+        return {"route": "cleanup"}
+
+    monkeypatch.setattr("slavv.core.edge_selection._choose_edges_matlab_style", fake_style)
+    monkeypatch.setattr(
+        "slavv.core.edge_selection._choose_edges_matlab_v200_cleanup",
+        fake_cleanup,
+    )
+
+    assert (
+        choose_edges_for_workflow(
+            candidates,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_pixels_axes,
+            (4, 4, 4),
+            {"comparison_exact_network": True},
+        )["route"]
+        == "cleanup"
+    )
+    assert (
+        choose_edges_for_workflow(
+            candidates,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_pixels_axes,
+            (4, 4, 4),
+            {"comparison_exact_network": False},
+        )["route"]
+        == "style"
+    )
+    assert calls == {"style": 1, "cleanup": 1}
+
+
+def test_frontier_candidate_lifecycle_tracks_claim_reassignment_and_cleanup_loss():
+    lifecycle = _build_frontier_candidate_lifecycle(
+        {
+            "frontier_lifecycle_events": [
+                {
+                    "seed_origin_index": 64,
+                    "terminal_vertex_index": 76,
+                    "resolved_origin_index": 71,
+                    "resolved_terminal_index": 76,
+                    "emitted_endpoint_pair": [71, 76],
+                    "resolution_reason": "accepted_parent_terminal_half",
+                    "rejection_reason": None,
+                    "parent_child_outcome": "accepted_parent_child_resolution",
+                    "bifurcation_choice": "parent_terminal_half",
+                    "claim_reassigned": True,
+                    "claim_reassignment_reason": "reassigned_to_parent_terminal_half",
+                    "survived_candidate_manifest": True,
+                    "manifest_candidate_index": 4,
+                    "chosen_final_edge": False,
+                    "terminal_hit_sequence": 3,
+                }
+            ]
+        },
+        chosen_candidate_indices=[],
+    )
+
+    assert lifecycle["schema_version"] == 2
+    event = lifecycle["events"][0]
+    assert event["claim_reassigned"] is True
+    assert event["claim_reassignment_reason"] == "reassigned_to_parent_terminal_half"
+    assert event["final_survival_stage"] == "final_cleanup_dropped"
+    summary = lifecycle["per_origin_summary"][0]
+    assert summary["claim_reassignment_count"] == 1
+    assert summary["final_cleanup_loss_count"] == 1
+    assert summary["claim_reassignment_samples"] == ["reassigned_to_parent_terminal_half"]
 
 
 def test_offset_coords_matlab_snaps_out_of_bounds_axes_back_to_center():
@@ -954,7 +1046,7 @@ def test_frontier_tracer_invalid_terminal_does_not_consume_edge_budget(monkeypat
     assert payload["connections"] == [[0, 2], [0, 3]]
 
 
-def test_frontier_tracer_keeps_new_frontier_after_rejected_terminal(monkeypatch):
+def test_frontier_tracer_discards_new_frontier_after_rejected_terminal(monkeypatch):
     energy = np.full((11, 11, 11), 1.0, dtype=np.float32)
     energy[5, 4, 5] = -9.0
     energy[5, 5, 5] = -8.0
@@ -1002,8 +1094,8 @@ def test_frontier_tracer_keeps_new_frontier_after_rejected_terminal(monkeypatch)
         },
     )
 
-    assert resolve_calls["count"] == 2
-    assert payload["connections"] == [[0, 2]]
+    assert resolve_calls["count"] == 1
+    assert payload["connections"] == []
 
 
 def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
@@ -1065,9 +1157,14 @@ def test_frontier_tracer_records_terminal_resolution_rejections(monkeypatch):
     assert lifecycle_events[0]["survived_candidate_manifest"] is False
     assert lifecycle_events[0]["rejection_reason"] == "rejected_parent_has_child"
     assert lifecycle_events[0]["parent_child_outcome"] == "parent_has_child"
+    assert lifecycle_events[0]["claim_reassigned"] is False
+    assert lifecycle_events[0]["final_survival_stage"] == "pre_manifest_rejection"
     assert lifecycle_events[1]["survived_candidate_manifest"] is True
     assert lifecycle_events[1]["emitted_endpoint_pair"] == [0, 2]
     assert lifecycle_events[1]["bifurcation_choice"] == "parent_origin_half"
+    assert lifecycle_events[1]["claim_reassigned"] is False
+    assert lifecycle_events[1]["claim_reassignment_reason"] is None
+    assert lifecycle_events[1]["final_survival_stage"] == "candidate_manifest"
 
 
 def test_geodesic_salvage_relaxes_origin_cap_for_shared_neighborhood_rejections():

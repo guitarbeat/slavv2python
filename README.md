@@ -242,7 +242,7 @@ For maintained project context, read in this order:
 5. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
 6. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
 7. [Shared Neighborhood Claim Alignment](docs/chapters/shared-neighborhood-claim-alignment/README.md)
-8. [Parity backlog and workflow tracker](BOTTLENECK_TODO.md)
+8. [Release verification notes](docs/reports/handled/release_verification_2026-04-14.md)
 
 ## License
 
@@ -250,7 +250,8 @@ This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for d
 
 ## TODOs / Known Issues
 
-See [BOTTLENECK_TODO.md](BOTTLENECK_TODO.md) for the active parity backlog and
-workflow tracker, and [CHANGELOG.md](CHANGELOG.md) for recent shipped changes.
+See [docs/chapters/shared-neighborhood-claim-alignment/README.md](docs/chapters/shared-neighborhood-claim-alignment/README.md)
+for the active parity backlog and investigation loop, and
+[CHANGELOG.md](CHANGELOG.md) for recent shipped changes.
 
 

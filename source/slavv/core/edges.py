@@ -33,10 +33,9 @@ from .edge_primitives import (
     trace_edge,
 )
 from .edge_selection import (
-    _choose_edges_matlab_style,
-    _choose_edges_matlab_v200_cleanup,
     _empty_edge_diagnostics,
     _empty_edges_result,
+    choose_edges_for_workflow,
 )
 from .vertices import paint_vertex_center_image
 
@@ -115,22 +114,14 @@ def extract_edges(
             params,
             energy_sign,
         )
-    if bool(params.get("comparison_exact_network", False)):
-        chosen = _choose_edges_matlab_v200_cleanup(
-            candidates,
-            vertex_positions.astype(np.float32),
-            energy.shape,
-            params,
-        )
-    else:
-        chosen = _choose_edges_matlab_style(
-            candidates,
-            vertex_positions.astype(np.float32),
-            vertex_scales,
-            lumen_radius_pixels_axes,
-            energy.shape,
-            params,
-        )
+    chosen = choose_edges_for_workflow(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        energy.shape,
+        params,
+    )
     logger.info(
         "Extracted %d chosen edges from %d traced candidates",
         len(chosen["traces"]),
@@ -485,22 +476,14 @@ def extract_edges_resumable(
         detail="Consolidated edge candidates",
         resumed=bool(completed),
     )
-    if bool(params.get("comparison_exact_network", False)):
-        chosen = _choose_edges_matlab_v200_cleanup(
-            candidates,
-            vertex_positions.astype(np.float32),
-            energy.shape,
-            params,
-        )
-    else:
-        chosen = _choose_edges_matlab_style(
-            candidates,
-            vertex_positions.astype(np.float32),
-            vertex_scales,
-            lumen_radius_pixels_axes,
-            energy.shape,
-            params,
-        )
+    chosen = choose_edges_for_workflow(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_pixels_axes,
+        energy.shape,
+        params,
+    )
     if use_frontier_tracer:
         candidate_lifecycle = _build_frontier_candidate_lifecycle(
             candidates,

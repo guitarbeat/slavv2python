@@ -66,8 +66,15 @@ Recent work landed between 2026-03-21 and 2026-04-14.
 ### Changed
 
 - Root documentation now points to the active Shared Neighborhood chapter, the
-  maintained docs index, and `BOTTLENECK_TODO.md` as the parity backlog instead
-  of older historical chapter entry points or missing TODO links.
+  maintained docs index, and the active shared-neighborhood chapter or release
+  verification notes instead of older historical chapter entry points or
+  missing TODO links.
+- Parity-mode edge selection now routes through an explicit workflow chooser so
+  `comparison_exact_network=True` always uses the maintained MATLAB V200
+  cleanup chain rather than the broader conflict-painting chooser.
+- Frontier candidate lifecycle artifacts now record claim reassignment and
+  final-survival stages, making shared-neighborhood audits more explicit about
+  pre-manifest rejection versus final cleanup loss.
 - The direct Hessian energy path now uses the same lower-memory helper as the
   resumable energy path, keeping those two execution modes aligned.
 - The Python pipeline now writes structured run metadata and checkpoints by

@@ -112,7 +112,7 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
         "slavv.core.edges._finalize_matlab_parity_candidates",
         fake_supplement,
     )
-    monkeypatch.setattr("slavv.core.edges._choose_edges_matlab_v200_cleanup", fake_choose)
+    monkeypatch.setattr("slavv.core.edges.choose_edges_for_workflow", fake_choose)
 
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     edges = extract_edges_resumable(energy_data, vertices, params, run_context.stage("edges"))

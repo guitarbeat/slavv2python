@@ -1497,6 +1497,17 @@ def build_shared_neighborhood_audit(
                             if bool(event.get("chosen_final_edge"))
                         ]
                     ),
+                    "claim_reassignment_count": len(
+                        [event for event in lifecycle_events if bool(event.get("claim_reassigned"))]
+                    ),
+                    "final_cleanup_loss_count": len(
+                        [
+                            event
+                            for event in lifecycle_events
+                            if bool(event.get("survived_candidate_manifest"))
+                            and not bool(event.get("chosen_final_edge"))
+                        ]
+                    ),
                     "resolution_counts": dict(
                         Counter(
                             str(event.get("resolution_reason", "unknown"))

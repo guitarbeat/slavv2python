@@ -472,9 +472,12 @@ def test_build_shared_neighborhood_audit_reports_first_divergence():
                 "rejection_reason": None,
                 "parent_child_outcome": None,
                 "bifurcation_choice": None,
+                "claim_reassigned": False,
+                "claim_reassignment_reason": None,
                 "survived_candidate_manifest": True,
                 "manifest_candidate_index": 0,
                 "chosen_final_edge": True,
+                "final_survival_stage": "final_edge_retained",
                 "terminal_hit_sequence": 2,
             },
         ],
@@ -497,6 +500,8 @@ def test_build_shared_neighborhood_audit_reports_first_divergence():
     assert audit["top_neighborhood"]["first_divergence_stage"] == "pre_manifest_rejection"
     assert "rejected_parent_has_child" in audit["top_neighborhood"]["first_divergence_reason"]
     assert audit["top_neighborhood"]["missing_matlab_incident_endpoint_pair_samples"] == [[0, 2]]
+    assert audit["top_neighborhood"]["lifecycle_summary"]["claim_reassignment_count"] == 0
+    assert audit["top_neighborhood"]["lifecycle_summary"]["final_cleanup_loss_count"] == 0
 
 
 def test_compare_networks_computes_strand_differences():

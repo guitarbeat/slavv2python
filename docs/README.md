@@ -71,6 +71,7 @@ Core references for the active chapter:
 - [Shared Candidate Generation Alignment](chapters/shared-candidate-generation/README.md)
 - [Imported-MATLAB Parity Report](chapters/imported-matlab-parity/PARITY_REPORT_2026-04-09.md)
 - [Parity Workflow Completion Spec Archive](chapters/shared-neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
+- [Release Verification 2026-04-14](reports/handled/release_verification_2026-04-14.md)
 
 ## Historical Handoff Chapter
 
@@ -125,7 +126,6 @@ project metadata:
 | --- | --- |
 | `README.md` | Project overview, quick start, and common workflows |
 | `CHANGELOG.md` | Notable recent development changes |
-| `BOTTLENECK_TODO.md` | Active parity backlog and investigation log; not the canonical workflow guide |
 | `AGENTS.md` | Repository instructions for coding agents and the canonical developer-command reference |
 
 ## Reports Catalog
