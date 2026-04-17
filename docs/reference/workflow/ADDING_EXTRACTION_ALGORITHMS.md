@@ -1,6 +1,6 @@
-﻿# Adding Extraction Algorithms
+# Adding Extraction Algorithms
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This guide is the maintained contributor note for introducing a new extraction
 algorithm to the Python SLAVV pipeline. It applies to new edge-generation
@@ -17,8 +17,8 @@ reachable from the current `argparse` CLI and resumable pipeline.
 - Prefer deterministic defaults. If an experimental mode is added, make the
   opt-in explicit in validated parameters and CLI flags.
 - Preserve resumable behavior and inspectable run metadata. New algorithm
-   artifacts should fit existing stage directories and manifest/reporting
-   surfaces.
+  artifacts should fit existing stage directories and manifest/reporting
+  surfaces.
 
 ## Touch Points
 
@@ -132,8 +132,7 @@ Before considering the algorithm integrated, make sure all of these are true:
 - the CLI help mentions the new mode
 - the relevant reference doc explains when to use it
 - any new staged artifacts are described in
-  `docs/reference/COMPARISON_LAYOUT.md` if they become durable workflow
+  `docs/reference/core/COMPARISON_LAYOUT.md` if they become durable workflow
   outputs
 - parity-sensitive changes cite the right chapter or report if they alter the
   MATLAB investigation surface
-

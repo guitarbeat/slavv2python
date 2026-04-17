@@ -1,6 +1,6 @@
-﻿# MATLAB to Python Mapping
+# MATLAB to Python Mapping
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 Cross-reference between the upstream MATLAB sources in
 `external/Vectorization-Public/source/` and the maintained Python modules in
@@ -103,11 +103,11 @@ MATLAB script.
 ## Current Work Links
 
 The active parity chapter is
-[`docs/chapters/neighborhood-claim-alignment/README.md`](../chapters/neighborhood-claim-alignment/README.md).
+[`docs/chapters/neighborhood-claim-alignment/README.md`](../../chapters/neighborhood-claim-alignment/README.md).
 The previous handoff chapter remains archived at
-[`docs/chapters/candidate-generation-handoff/README.md`](../chapters/candidate-generation-handoff/README.md).
+[`docs/chapters/candidate-generation-handoff/README.md`](../../chapters/candidate-generation-handoff/README.md).
 Use this mapping document for maintained source correspondence, and use
-[`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md)
+[`docs/reference/core/MATLAB_TRANSLATION_GUIDE.md`](MATLAB_TRANSLATION_GUIDE.md)
 for semantic differences, boundary rules, and intentional divergences.
 
 ## Upstream Files Intentionally Not Ported
@@ -124,5 +124,3 @@ the scope of the maintained Python package:
 Run `python dev/scripts/maintenance/refresh_matlab_mapping_appendix.py`
 from the repository root if you need a generated appendix of upstream `.m`
 files that are not mentioned explicitly in this document.
-
-

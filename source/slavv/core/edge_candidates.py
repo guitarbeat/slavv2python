@@ -1158,9 +1158,15 @@ def _normalize_frontier_resolution_result(
 ) -> tuple[int | None, int | None, str, dict[str, Any]]:
     """Normalize frontier-resolution returns to the enriched four-field form."""
     if len(result) == 4:
-        origin_idx, terminal_idx, resolution_reason, resolution_debug = result
+        origin_idx, terminal_idx, resolution_reason, resolution_debug = cast(
+            "tuple[int | None, int | None, str, dict[str, Any]]",
+            result,
+        )
         return origin_idx, terminal_idx, resolution_reason, dict(resolution_debug)
-    origin_idx, terminal_idx, resolution_reason = result
+    origin_idx, terminal_idx, resolution_reason = cast(
+        "tuple[int | None, int | None, str]",
+        result,
+    )
     return origin_idx, terminal_idx, resolution_reason, {}
 
 

@@ -628,6 +628,8 @@ def generate_summary(run_dir: Path, output_file: Path):
     has_matlab = matlab_dir.exists() and any(matlab_dir.iterdir())
     has_python = python_dir.exists() and any(python_dir.iterdir())
     has_plots = layout["plots_dir"].exists()
+    quick_json = layout["analysis_dir"] / "comparison_quick_view.json"
+    quick_tsv = layout["analysis_dir"] / "comparison_quick_view.tsv"
 
     lines.append("Status")
     lines.append("-" * 70)
@@ -637,6 +639,10 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append("- Python results: Present")
     if has_plots:
         lines.append("- Visualizations: Present")
+    if quick_json.exists():
+        lines.append(f"- Quick compare JSON: {quick_json}")
+    if quick_tsv.exists():
+        lines.append(f"- Quick compare TSV: {quick_tsv}")
 
     if report:
         matlab_verts = _report_count(report, "matlab", "vertices_count", "vertices", "matlab_count")

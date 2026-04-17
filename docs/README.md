@@ -20,11 +20,11 @@ Follow this maintained reading path:
 
 1. [Repository README](../README.md)
 2. [Contributor workflow commands](../AGENTS.md)
-3. [Project Glossary](reference/GLOSSARY.md)
-4. [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
-5. [MATLAB Mapping](reference/MATLAB_MAPPING.md)
-6. [Energy Computation Methods](reference/ENERGY_METHODS.md)
-7. [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+3. [Project Glossary](reference/core/GLOSSARY.md)
+4. [MATLAB Translation Guide](reference/core/MATLAB_TRANSLATION_GUIDE.md)
+5. [MATLAB Mapping](reference/core/MATLAB_MAPPING.md)
+6. [Energy Computation Methods](reference/core/ENERGY_METHODS.md)
+7. [Comparison Run Layout](reference/core/COMPARISON_LAYOUT.md)
 8. [Chapter index](chapters/README.md)
 9. [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md)
 
@@ -32,10 +32,10 @@ Follow this maintained reading path:
 
 If you are new to the project:
 
-- Read the [Glossary](reference/GLOSSARY.md) to understand project terminology.
+- Read the [Glossary](reference/core/GLOSSARY.md) to understand project terminology.
 - Follow the **Setup** instructions in the [Root README](../README.md).
 - Use `slavv info` to verify your installation.
-- Check the [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) before touching any core algorithmic code.
+- Check the [MATLAB Translation Guide](reference/core/MATLAB_TRANSLATION_GUIDE.md) before touching any core algorithmic code.
 - Read the [Active Chapter](chapters/neighborhood-claim-alignment/README.md) to see what is currently being worked on.
 
 ## Chapter Status
@@ -80,9 +80,9 @@ Active chapter home:
 
 Core references for the active chapter:
 
-- [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md)
-- [MATLAB Mapping](reference/MATLAB_MAPPING.md)
-- [Comparison Run Layout](reference/COMPARISON_LAYOUT.md)
+- [MATLAB Translation Guide](reference/core/MATLAB_TRANSLATION_GUIDE.md)
+- [MATLAB Mapping](reference/core/MATLAB_MAPPING.md)
+- [Comparison Run Layout](reference/core/COMPARISON_LAYOUT.md)
 - [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md)
 - [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Workflow Completion Spec Archive](chapters/neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
@@ -136,34 +136,34 @@ maintained material.
 | File | Purpose |
 | --- | --- |
 | `reference/README.md` | Entry point for the maintained reference shelf |
-| `reference/GLOSSARY.md` | Domain-specific and project-specific terms |
-| `reference/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
-| `reference/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
-| `reference/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
-| `reference/SIMPLEITK_ENERGY_BACKEND.md` | Spacing-aware vesselness backend |
-| `reference/CUPY_ENERGY_BACKEND.md` | GPU-accelerated energy backend |
-| `reference/ZARR_ENERGY_STORAGE.md` | Optional Zarr-backed storage for resumable energy artifacts |
-| `reference/NAPARI_CURATOR.md` | Experimental napari-based manual curation prototype |
-| `reference/ADDING_EXTRACTION_ALGORITHMS.md` | Contributor guide for wiring new extraction modes into validation, CLI, pipeline, tests, and docs |
-| `reference/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
-| `reference/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | Short external-package status note |
+| `reference/core/GLOSSARY.md` | Domain-specific and project-specific terms |
+| `reference/core/MATLAB_TRANSLATION_GUIDE.md` | Canonical MATLAB-to-Python semantics and override guide |
+| `reference/core/MATLAB_MAPPING.md` | Maintained MATLAB-to-Python mapping reference |
+| `reference/core/ENERGY_METHODS.md` | Supported energy backends, parameter interactions, and extension points |
+| `reference/backends/SIMPLEITK_ENERGY_BACKEND.md` | Spacing-aware vesselness backend |
+| `reference/backends/CUPY_ENERGY_BACKEND.md` | GPU-accelerated energy backend |
+| `reference/backends/ZARR_ENERGY_STORAGE.md` | Optional Zarr-backed storage for resumable energy artifacts |
+| `reference/backends/NAPARI_CURATOR.md` | Experimental napari-based manual curation prototype |
+| `reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md` | Contributor guide for wiring new extraction modes into validation, CLI, pipeline, tests, and docs |
+| `reference/core/COMPARISON_LAYOUT.md` | Canonical staged comparison-run layout |
+| `reference/workflow/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md` | Short external-package status note |
 
 ## By Question
 
 | Question | Best file |
 | --- | --- |
-| What does this term mean? | [Glossary](reference/GLOSSARY.md) |
+| What does this term mean? | [Glossary](reference/core/GLOSSARY.md) |
 | What closed the last spec? | [Imported-MATLAB Parity Closeout](chapters/imported-matlab-parity-closeout/parity_closeout.md) |
 | What chapter is active right now? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What is the next chapter trying to solve? | [Neighborhood Claim Alignment](chapters/neighborhood-claim-alignment/README.md) |
 | What still blocks imported-MATLAB parity right now? | [TODO.md](../TODO.md) |
 | What chapter narrowed the problem before the current one? | [Candidate Generation Handoff](chapters/candidate-generation-handoff/README.md) |
-| What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/MATLAB_TRANSLATION_GUIDE.md) |
-| How do large resumable energy arrays get stored? | [ZARR_ENERGY_STORAGE.md](reference/ZARR_ENERGY_STORAGE.md) |
-| How does the experimental napari curator fit in? | [NAPARI_CURATOR.md](reference/NAPARI_CURATOR.md) |
+| What MATLAB-vs-Python translation rules matter here? | [MATLAB Translation Guide](reference/core/MATLAB_TRANSLATION_GUIDE.md) |
+| How do large resumable energy arrays get stored? | [ZARR_ENERGY_STORAGE.md](reference/backends/ZARR_ENERGY_STORAGE.md) |
+| How does the experimental napari curator fit in? | [NAPARI_CURATOR.md](reference/backends/NAPARI_CURATOR.md) |
 | Where is the historical parity workflow context? | [PARITY_HUB.md](chapters/imported-matlab-parity-closeout/PARITY_HUB.md) |
-| Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/MATLAB_MAPPING.md) |
-| How do staged comparison outputs work? | [COMPARISON_LAYOUT.md](reference/COMPARISON_LAYOUT.md) |
+| Where is the detailed MATLAB-to-Python map? | [MATLAB_MAPPING.md](reference/core/MATLAB_MAPPING.md) |
+| How do staged comparison outputs work? | [COMPARISON_LAYOUT.md](reference/core/COMPARISON_LAYOUT.md) |
 
 ## Root-Level Docs
 

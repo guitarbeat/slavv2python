@@ -129,7 +129,7 @@ so that current workflows and docs are not disrupted.
 2. Link-bearing docs SHALL be updated when run-root names change.
 3. Empty directories created by normalization moves SHALL be removed.
 4. The staged run contract described in
-   `docs/reference/COMPARISON_LAYOUT.md` SHALL remain authoritative.
+   `docs/reference/core/COMPARISON_LAYOUT.md` SHALL remain authoritative.
 5. Deletion of non-empty run roots SHALL require an explicit allow-list or
    equivalent positive confirmation input.
 

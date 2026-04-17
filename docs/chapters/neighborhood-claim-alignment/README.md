@@ -174,8 +174,8 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 ## Core References
 
-- [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
-- [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
+- [MATLAB Translation Guide](../../reference/core/MATLAB_TRANSLATION_GUIDE.md)
+- [Comparison Run Layout](../../reference/core/COMPARISON_LAYOUT.md)
 - [Candidate Generation Handoff](../candidate-generation-handoff/README.md)
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Findings](../imported-matlab-parity-closeout/parity_findings.md)

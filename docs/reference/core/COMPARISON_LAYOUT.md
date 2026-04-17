@@ -1,6 +1,6 @@
-﻿# Comparison Run Layout
+# Comparison Run Layout
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This document describes the canonical staged layout for generated MATLAB/Python
 comparison runs. It replaces the older `dev/experiments` note, which no
@@ -195,9 +195,9 @@ kept with `retention=keep`.
 The active chapter docs explain the workflow details that sit on top of this
 layout contract:
 
-- [Neighborhood Claim Alignment](../chapters/neighborhood-claim-alignment/README.md)
-- [Candidate Generation Handoff](../chapters/candidate-generation-handoff/README.md)
-- [Imported-MATLAB Parity Closeout](../chapters/imported-matlab-parity-closeout/parity_closeout.md)
+- [Neighborhood Claim Alignment](../../chapters/neighborhood-claim-alignment/README.md)
+- [Candidate Generation Handoff](../../chapters/candidate-generation-handoff/README.md)
+- [Imported-MATLAB Parity Closeout](../../chapters/imported-matlab-parity-closeout/parity_closeout.md)
 
 Those chapters cover reuse summaries, diagnostics, proof artifacts, and other
 workflow-specific outputs that still write into the staged folders above.
@@ -240,10 +240,7 @@ After any manual normalization pass:
 ## Current Work
 
 Chapter-specific parity status now lives in
-[`docs/chapters/neighborhood-claim-alignment/README.md`](../chapters/neighborhood-claim-alignment/README.md).
+[`docs/chapters/neighborhood-claim-alignment/README.md`](../../chapters/neighborhood-claim-alignment/README.md).
 Keep this document focused on the run-layout contract. For translation
 semantics and boundary rules, use
-[`docs/reference/MATLAB_TRANSLATION_GUIDE.md`](./MATLAB_TRANSLATION_GUIDE.md).
-
-
-
+[`docs/reference/core/MATLAB_TRANSLATION_GUIDE.md`](MATLAB_TRANSLATION_GUIDE.md).

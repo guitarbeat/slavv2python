@@ -5,6 +5,7 @@ from slavv.core import SLAVVProcessor
 from slavv.core.edge_candidates import (
     _best_watershed_contact_coords,
     _build_frontier_candidate_lifecycle,
+    _normalize_frontier_resolution_result,
     _prune_frontier_indices_beyond_found_vertices,
     _resolve_frontier_edge_connection,
     _resolve_frontier_edge_connection_details,
@@ -46,6 +47,29 @@ def test_extract_handles_no_vertices():
     network = processor.construct_network(edges, vertices, {})
     assert len(network["adjacency_list"]) == 0
     assert network["orphans"].size == 0
+
+
+def test_normalize_frontier_resolution_result_accepts_legacy_and_enriched_shapes():
+    assert _normalize_frontier_resolution_result((0, 2, "accepted_seed_origin")) == (
+        0,
+        2,
+        "accepted_seed_origin",
+        {},
+    )
+
+    assert _normalize_frontier_resolution_result(
+        (
+            None,
+            None,
+            "rejected_parent_has_child",
+            {"parent_path_length": 3},
+        )
+    ) == (
+        None,
+        None,
+        "rejected_parent_has_child",
+        {"parent_path_length": 3},
+    )
 
 
 def test_remove_short_hairs_repeats_until_graph_is_stable():

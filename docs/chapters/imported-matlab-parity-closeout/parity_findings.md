@@ -38,7 +38,7 @@ Follow-up as of April 1, 2026:
 - MATLAB rerun semantics and failure summaries now persist to
   `99_Metadata/matlab_status.json` and `99_Metadata/matlab_failure_summary.json`.
 - For current staged layout and recommended local output-root guidance, start
-  with [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+  with [COMPARISON_LAYOUT.md](../../reference/core/COMPARISON_LAYOUT.md).
 
 Further follow-up as of April 6, 2026:
 
@@ -74,7 +74,7 @@ Further follow-up as of April 7, 2026:
 
 Concrete run roots cited below are retained evidence artifacts, not standing
 source-of-truth paths for new work. For current staged layout expectations,
-start from [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+start from [COMPARISON_LAYOUT.md](../../reference/core/COMPARISON_LAYOUT.md).
 
 ## Fresh Baselines
 

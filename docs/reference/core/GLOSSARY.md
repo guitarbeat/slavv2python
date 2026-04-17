@@ -1,6 +1,6 @@
-﻿# Glossary
+# Glossary
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 Maintain this reference for domain-specific and project-specific terms used throughout the `slavv2python` repository.
 
@@ -20,7 +20,7 @@ Maintain this reference for domain-specific and project-specific terms used thro
 
 | Term | Definition |
 | --- | --- |
-| **Staged Run** | A structured run directory that follows the canonical `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` layout. See [COMPARISON_LAYOUT.md](./COMPARISON_LAYOUT.md). |
+| **Staged Run** | A structured run directory that follows the canonical `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` layout. See [COMPARISON_LAYOUT.md](COMPARISON_LAYOUT.md). |
 | **Checkpoint** | A persisted intermediate state of a run (e.g., `vertices.pkl`, `edges.pkl`). Checkpoints allow the pipeline to resume from a specific stage without recomputing earlier steps. |
 | **Energy** | A pre-processed image volume (e.g., vesselness, objectness, or Hessian map) that serves as the numerical input for vertex and edge extraction. |
 | **Imported-MATLAB Workflow** | A parity-validation mode where Python runs using energy or vertices imported directly from a MATLAB execution, isolating the downstream extraction logic. |
@@ -33,5 +33,4 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **VMV / CASX** | Legacy binary and MATLAB-native file formats used for interoperability with original SLAVV tools. |
 | **Zarr** | An optional chunked, compressed, N-dimensional array format used for storing large energy volumes during resumable runs. |
 
-## Up: [Project Docs](../README.md)
-
+## Up: [Project Docs](../../README.md)

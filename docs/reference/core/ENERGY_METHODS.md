@@ -1,6 +1,6 @@
-﻿# Energy Computation Methods
+# Energy Computation Methods
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This note explains the supported `energy_method` options in the Python SLAVV
 pipeline, how they interact with the existing parameter surface, and where to
@@ -8,7 +8,7 @@ extend the implementation when a new method is needed.
 
 The active validation surface lives in `source/slavv/utils/validation.py`, and
 the canonical comparison-layout guidance for parity-sensitive runs lives in
-`docs/reference/COMPARISON_LAYOUT.md`.
+`docs/reference/core/COMPARISON_LAYOUT.md`.
 
 ## Supported Methods
 
@@ -93,7 +93,6 @@ When adding a new energy backend, update these surfaces together:
 - Preserve `float32` outputs for persisted energy volumes unless there is a
   deliberate format change.
 - For parity-sensitive runs, prefer `hessian` and keep staged outputs aligned
-   with `docs/reference/COMPARISON_LAYOUT.md`.
+  with `docs/reference/core/COMPARISON_LAYOUT.md`.
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.
-

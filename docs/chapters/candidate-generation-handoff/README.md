@@ -122,9 +122,9 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 ## Core References
 
-- [MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md)
-- [MATLAB Mapping](../../reference/MATLAB_MAPPING.md)
-- [Comparison Run Layout](../../reference/COMPARISON_LAYOUT.md)
+- [MATLAB Translation Guide](../../reference/core/MATLAB_TRANSLATION_GUIDE.md)
+- [MATLAB Mapping](../../reference/core/MATLAB_MAPPING.md)
+- [Comparison Run Layout](../../reference/core/COMPARISON_LAYOUT.md)
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Findings](../imported-matlab-parity-closeout/parity_findings.md)
 

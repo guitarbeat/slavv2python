@@ -1,6 +1,6 @@
-﻿# MATLAB Translation Guide
+# MATLAB Translation Guide
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This document is the maintained reference for MATLAB-to-Python translation
 semantics in `slavv2python`. Use it when changing parity-sensitive code,
@@ -16,9 +16,9 @@ Python adaptation or a parity regression.
 - a short checklist for parity-sensitive edits
 
 For file-to-file correspondence, use
-[MATLAB_MAPPING.md](./MATLAB_MAPPING.md). For run layout and staged outputs, use
-[COMPARISON_LAYOUT.md](./COMPARISON_LAYOUT.md). For the active parity work, use
-[the Neighborhood Claim Alignment chapter](../chapters/neighborhood-claim-alignment/README.md).
+[MATLAB_MAPPING.md](MATLAB_MAPPING.md). For run layout and staged outputs, use
+[COMPARISON_LAYOUT.md](COMPARISON_LAYOUT.md). For the active parity work, use
+[the Neighborhood Claim Alignment chapter](../../chapters/neighborhood-claim-alignment/README.md).
 
 ## Semantic Traps That Matter In This Repo
 
@@ -136,4 +136,3 @@ Before merging a change in translated or parity-facing code:
 - [NumPy for MATLAB users](https://numpy.org/doc/2.0/user/numpy-for-matlab-users.html)
 - [SMOP](https://github.com/victorlei/smop)
 - [Motopy](https://github.com/falwat/motopy)
-

@@ -1,6 +1,6 @@
-﻿# CuPy Energy Backend
+# CuPy Energy Backend
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This note describes the experimental `cupy_hessian` energy backend for the
 Python SLAVV port.
@@ -80,4 +80,3 @@ CPU Hessian path, including:
 
 For now, `cupy_hessian` should be treated as an experimental performance path
 rather than a new default.
-

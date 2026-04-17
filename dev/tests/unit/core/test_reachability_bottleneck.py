@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from slavv.core.edge_candidates import _supplement_matlab_frontier_candidates_with_watershed_joins
+
 
 def _empty_candidates() -> dict[str, object]:
     return {
@@ -22,9 +22,11 @@ def _empty_candidates() -> dict[str, object]:
         },
     }
 
+
 def _vertex_positions() -> np.ndarray:
     # Two vertices at (2,2,2) and (2,6,2)
     return np.array([[2.0, 2.0, 2.0], [2.0, 6.0, 2.0]], dtype=np.float32)
+
 
 def test_reproduce_stingy_reachability_bottleneck() -> None:
     # Create energy such that there is a clear watershed path between vertices
@@ -45,14 +47,14 @@ def test_reproduce_stingy_reachability_bottleneck() -> None:
         energy,
         None,
         _vertex_positions(),
-        energy_sign=-1.0, # Negative energy is good
+        energy_sign=-1.0,  # Negative energy is good
         enforce_frontier_reachability=True,
     )
-    
+
     # It should REJECT the join.
     assert result_enforced["diagnostics"]["watershed_reachability_rejected"] > 0
     assert result_enforced["diagnostics"]["watershed_accepted"] == 0
-    
+
     # CASE 2: enforce_frontier_reachability=False (desired fix)
     result_relaxed = _supplement_matlab_frontier_candidates_with_watershed_joins(
         _empty_candidates(),
@@ -62,7 +64,7 @@ def test_reproduce_stingy_reachability_bottleneck() -> None:
         energy_sign=-1.0,
         enforce_frontier_reachability=False,
     )
-    
+
     # It should ACCEPT the join.
     assert result_relaxed["diagnostics"]["watershed_accepted"] == 1
     assert result_relaxed["diagnostics"]["watershed_reachability_rejected"] == 0

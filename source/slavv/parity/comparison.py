@@ -154,6 +154,79 @@ def _build_serializable_comparison_report(comparison: dict[str, Any]) -> dict[st
     }
 
 
+def _comparison_count(
+    comparison: dict[str, Any],
+    side: str,
+    top_level_key: str,
+    section: str,
+    nested_key: str,
+) -> int:
+    """Read a side-specific count with nested fallbacks."""
+    value = comparison.get(side, {}).get(top_level_key)
+    if value is not None:
+        return int(value)
+    nested = comparison.get(section, {}).get(nested_key, 0)
+    return int(nested)
+
+
+def _build_comparison_quick_view(comparison: dict[str, Any]) -> dict[str, Any]:
+    """Build a compact scalar metrics surface for quick diff comparisons."""
+    matlab_vertices = _comparison_count(
+        comparison, "matlab", "vertices_count", "vertices", "matlab_count"
+    )
+    python_vertices = _comparison_count(
+        comparison, "python", "vertices_count", "vertices", "python_count"
+    )
+    matlab_edges = _comparison_count(comparison, "matlab", "edges_count", "edges", "matlab_count")
+    python_edges = _comparison_count(comparison, "python", "edges_count", "edges", "python_count")
+    matlab_strands = _comparison_count(
+        comparison, "matlab", "strand_count", "network", "matlab_strand_count"
+    )
+    python_strands = _comparison_count(
+        comparison, "python", "network_strands_count", "network", "python_strand_count"
+    )
+
+    return {
+        "edges_diff": python_edges - matlab_edges,
+        "edges_exact": bool(comparison.get("edges", {}).get("exact_match", False)),
+        "edges_matlab": matlab_edges,
+        "edges_python": python_edges,
+        "matlab_elapsed_seconds": float(comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0),
+        "network_strands_diff": python_strands - matlab_strands,
+        "network_strands_exact": bool(comparison.get("network", {}).get("exact_match", False)),
+        "network_strands_matlab": matlab_strands,
+        "network_strands_python": python_strands,
+        "parity_gate_passed": bool(comparison.get("parity_gate", {}).get("passed", False)),
+        "python_elapsed_seconds": float(comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0),
+        "python_vs_matlab_time_delta_seconds": float(
+            (comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0)
+            - (comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0)
+        ),
+        "speedup": float(comparison.get("performance", {}).get("speedup", 0.0) or 0.0),
+        "vertices_diff": python_vertices - matlab_vertices,
+        "vertices_exact": bool(comparison.get("vertices", {}).get("exact_match", False)),
+        "vertices_matlab": matlab_vertices,
+        "vertices_python": python_vertices,
+    }
+
+
+def _write_comparison_quick_view(comparison: dict[str, Any], analysis_dir: Path) -> tuple[Path, Path]:
+    """Write compact sidecar artifacts that are easy to diff across runs."""
+    quick_view = _build_comparison_quick_view(comparison)
+    quick_json = analysis_dir / "comparison_quick_view.json"
+    quick_tsv = analysis_dir / "comparison_quick_view.tsv"
+
+    with open(quick_json, "w", encoding="utf-8") as handle:
+        json.dump(quick_view, handle, indent=2, sort_keys=True)
+
+    tsv_lines = ["metric\tvalue"]
+    for key, value in sorted(quick_view.items()):
+        tsv_lines.append(f"{key}\t{value}")
+    quick_tsv.write_text("\n".join(tsv_lines) + "\n", encoding="utf-8")
+
+    return quick_json, quick_tsv
+
+
 def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> Path:
     """Persist the normalized comparison report JSON."""
     with open(report_file, "w", encoding="utf-8") as handle:
@@ -161,6 +234,7 @@ def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> P
             _build_serializable_comparison_report(comparison),
             handle,
             indent=2,
+            sort_keys=True,
             default=_comparison_report_default,
         )
     print(f"\nComparison report saved to: {report_file}")
@@ -272,6 +346,8 @@ def _run_comparison_analysis(
             encoding="utf-8",
         )
     report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
+    quick_json, quick_tsv = _write_comparison_quick_view(comparison, analysis_dir)
+    print(f"Quick compare artifacts: {quick_json} and {quick_tsv}")
     _surface_shared_neighborhood_diagnostics(
         run_root=run_root,
         comparison=comparison,

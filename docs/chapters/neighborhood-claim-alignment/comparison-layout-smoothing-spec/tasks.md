@@ -81,7 +81,7 @@ Repository scan grounding for this plan:
 ## Phase 5: Documentation and Validation
 
 - [x] 12. Update documentation
-  - [x] 12.1 Update `docs/reference/COMPARISON_LAYOUT.md` with experiment/pointer layer
+  - [x] 12.1 Update `docs/reference/core/COMPARISON_LAYOUT.md` with experiment/pointer layer
   - [x] 12.2 Update chapter docs to prefer pointer references where appropriate
 
 - [x] 13. Validate references and integrity

@@ -27,7 +27,7 @@ without changing run-internal staged layout semantics.
 - Regression coverage for the workflow is maintained in:
   - `dev/tests/unit/workspace_scripts/test_comparison_layout_smoothing.py`
 - The run-layout reference reflects the new organization layer in:
-  - `docs/reference/COMPARISON_LAYOUT.md`
+  - `docs/reference/core/COMPARISON_LAYOUT.md`
 
 ## Operational Outcomes
 

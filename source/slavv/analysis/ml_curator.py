@@ -10,15 +10,10 @@ Based on the MATLAB MLDeployment.py and MLLibrary.py implementations.
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import pickle
-import tempfile
 import warnings
-from contextlib import contextmanager
-from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import joblib
 import numpy as np
@@ -33,46 +28,17 @@ warnings.filterwarnings("ignore")
 try:
     from ..utils import calculate_path_length
     from ..utils.safe_unpickle import safe_load
+    from .ml_curator_io import materialize_model_source
+    from .ml_curator_training import load_aggregated_training_data
 except ImportError:  # pragma: no cover - fallback for direct execution
+    from slavv.analysis.ml_curator_io import materialize_model_source
+    from slavv.analysis.ml_curator_training import load_aggregated_training_data
     from slavv.utils import calculate_path_length
     from slavv.utils.safe_unpickle import safe_load
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-@contextmanager
-def _materialize_model_source(model_source: Any | None):
-    """Yield a filesystem path for a model source that may be file-like."""
-    if model_source is None:
-        yield None
-        return
-
-    if isinstance(model_source, (str, os.PathLike)):
-        yield model_source
-        return
-
-    if hasattr(model_source, "getvalue"):
-        payload = model_source.getvalue()
-    elif hasattr(model_source, "read"):
-        payload = model_source.read()
-    else:
-        raise TypeError("model source must be a path or file-like object")
-
-    if isinstance(payload, str):
-        payload = payload.encode("utf-8")
-
-    source_name = getattr(model_source, "name", "uploaded-model.joblib")
-    suffix = Path(str(source_name)).suffix or ".joblib"
-    fd, temp_name = tempfile.mkstemp(suffix=suffix)
-    try:
-        with os.fdopen(fd, "wb") as handle:
-            handle.write(payload)
-        yield temp_name
-    finally:
-        if os.path.exists(temp_name):
-            os.unlink(temp_name)
 
 
 class MLCurator:
@@ -596,7 +562,7 @@ class MLCurator:
         """
         if vertex_path:
             try:
-                with _materialize_model_source(vertex_path) as materialized_vertex_path:
+                with materialize_model_source(vertex_path) as materialized_vertex_path:
                     vertex_data = safe_load(materialized_vertex_path)
                 self.vertex_classifier = vertex_data["classifier"]
                 self.vertex_scaler = vertex_data["scaler"]
@@ -613,7 +579,7 @@ class MLCurator:
 
         if edge_path:
             try:
-                with _materialize_model_source(edge_path) as materialized_edge_path:
+                with materialize_model_source(edge_path) as materialized_edge_path:
                     edge_data = safe_load(materialized_edge_path)
                 self.edge_classifier = edge_data["classifier"]
                 self.edge_scaler = edge_data["scaler"]
@@ -708,117 +674,10 @@ class MLCurator:
         return None
 
     def aggregate_training_data(
-        self, data_dir: Union[str, Path], file_pattern: str = "*_results.json"
+        self, data_dir: Any, file_pattern: str = "*_results.json"
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """
-        Aggregate features from multiple result snippets for training.
-
-        Corresponds to logic in `getTrainingArray.m`.
-
-        Args:
-            data_dir: Directory containing results.
-            file_pattern: Glob pattern for result files.
-
-        Returns:
-            Arrays of (v_feat, v_labels, e_feat, e_labels).
-        """
-
-        def _to_2d_array(value: Any, dtype: Any = float) -> np.ndarray | None:
-            if value is None:
-                return None
-            arr = np.asarray(value, dtype=dtype)
-            if arr.size == 0:
-                return np.empty((0, 0), dtype=dtype)
-            if arr.ndim == 1:
-                arr = arr.reshape(-1, 1)
-            return arr
-
-        def _to_1d_array(value: Any, dtype: Any = int) -> np.ndarray | None:
-            if value is None:
-                return None
-            arr = np.asarray(value, dtype=dtype).reshape(-1)
-            return arr
-
-        def _pick(data: dict[str, Any], keys: list[str]) -> Any:
-            for key in keys:
-                if key in data:
-                    return data[key]
-            return None
-
-        data_dir = Path(data_dir)
-        if not data_dir.exists():
-            logger.warning(f"Training data directory does not exist: {data_dir}")
-            return np.array([]), np.array([]), np.array([]), np.array([])
-
-        files = sorted(data_dir.rglob(file_pattern))
-        if not files:
-            logger.warning(f"No training data files matched pattern '{file_pattern}' in {data_dir}")
-            return np.array([]), np.array([]), np.array([]), np.array([])
-
-        vertex_feature_chunks: list[np.ndarray] = []
-        vertex_label_chunks: list[np.ndarray] = []
-        edge_feature_chunks: list[np.ndarray] = []
-        edge_label_chunks: list[np.ndarray] = []
-
-        for file_path in files:
-            loaded: dict[str, Any] | None = None
-            suffix = file_path.suffix.lower()
-            try:
-                if suffix == ".npz":
-                    with np.load(file_path, allow_pickle=False) as npz:
-                        loaded = {k: npz[k] for k in npz.files}
-                elif suffix == ".json":
-                    with open(file_path, encoding="utf-8-sig") as f:
-                        loaded = json.load(f)
-                elif suffix in {".pkl", ".pickle"}:
-                    maybe = safe_load(file_path)
-                    if isinstance(maybe, dict):
-                        loaded = maybe
-                else:
-                    logger.debug(f"Skipping unsupported training data file: {file_path}")
-                    continue
-            except Exception as exc:
-                logger.warning(f"Skipping unreadable training data file {file_path}: {exc}")
-                continue
-
-            if not isinstance(loaded, dict):
-                logger.warning(f"Skipping non-dictionary training payload in {file_path}")
-                continue
-
-            v_feat = _to_2d_array(_pick(loaded, ["vertex_features", "v_features", "v_feat"]), float)
-            v_lab = _to_1d_array(_pick(loaded, ["vertex_labels", "v_labels"]), int)
-            e_feat = _to_2d_array(_pick(loaded, ["edge_features", "e_features", "e_feat"]), float)
-            e_lab = _to_1d_array(_pick(loaded, ["edge_labels", "e_labels"]), int)
-
-            if v_feat is not None and v_lab is not None:
-                if len(v_feat) == len(v_lab):
-                    vertex_feature_chunks.append(v_feat)
-                    vertex_label_chunks.append(v_lab)
-                else:
-                    logger.warning(
-                        f"Skipping mismatched vertex arrays in {file_path}: "
-                        f"{len(v_feat)} features vs {len(v_lab)} labels"
-                    )
-
-            if e_feat is not None and e_lab is not None:
-                if len(e_feat) == len(e_lab):
-                    edge_feature_chunks.append(e_feat)
-                    edge_label_chunks.append(e_lab)
-                else:
-                    logger.warning(
-                        f"Skipping mismatched edge arrays in {file_path}: "
-                        f"{len(e_feat)} features vs {len(e_lab)} labels"
-                    )
-
-        v_feat = np.vstack(vertex_feature_chunks) if vertex_feature_chunks else np.array([])
-        v_lab = np.hstack(vertex_label_chunks) if vertex_label_chunks else np.array([])
-        e_feat = np.vstack(edge_feature_chunks) if edge_feature_chunks else np.array([])
-        e_lab = np.hstack(edge_label_chunks) if edge_label_chunks else np.array([])
-        logger.info(
-            f"Aggregated training data from {len(files)} files: "
-            f"{len(v_lab)} vertex labels, {len(e_lab)} edge labels"
-        )
-        return v_feat, v_lab, e_feat, e_lab
+        """Aggregate features from multiple result snippets for training."""
+        return load_aggregated_training_data(data_dir, file_pattern=file_pattern)
 
 
 class DrewsCurator:

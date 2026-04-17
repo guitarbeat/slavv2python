@@ -8,12 +8,12 @@ This report closes Chapter 1 of the MATLAB parity work.
 For the active chapter, start with
 [Candidate Generation Handoff](../candidate-generation-handoff/README.md)
 and the maintained
-[MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
+[MATLAB Translation Guide](../../reference/core/MATLAB_TRANSLATION_GUIDE.md).
 
 Concrete `comparison_output_*` paths below are retained Chapter 1 evidence
 artifacts. The underlying root-level directories were removed from the repo,
 but the run names are preserved here as historical references; for current
-staged layout guidance, use [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md).
+staged layout guidance, use [COMPARISON_LAYOUT.md](../../reference/core/COMPARISON_LAYOUT.md).
 
 ## Purpose
 

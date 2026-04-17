@@ -1,6 +1,6 @@
-﻿# Zarr Energy Storage
+# Zarr Energy Storage
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This note explains the optional `zarr` storage path for resumable energy
 artifacts in the Python SLAVV pipeline.
@@ -78,4 +78,3 @@ falling back.
   `scale_indices`, or `energy_4d` results.
 - Existing `.npy` artifacts are still supported, and config changes continue to
   clear incompatible persisted energy storage before recomputing the stage.
-

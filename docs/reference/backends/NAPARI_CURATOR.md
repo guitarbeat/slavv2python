@@ -1,6 +1,6 @@
-﻿# napari Curator Prototype
+# napari Curator Prototype
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This note documents the experimental `napari`-based curator prototype that now
 exists alongside the maintained Qt/PyVista curator.
@@ -70,4 +70,3 @@ If the answer is yes, the next steps should focus on:
 - improving edge editing beyond straight-line insertion
 - deciding whether the web app should default to the `napari` backend when it
   is available
-

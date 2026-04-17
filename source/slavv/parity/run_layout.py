@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,44 @@ _POINTER_FILES = (
     "best_saved_batch.txt",
 )
 _EXPERIMENT_RUN_ROOT_RE = re.compile(r"^\d{8}(?:_\d{6})?(?:_.+)?$")
+
+
+@dataclass
+class RunMetadata:
+    """Unified view of persisted run metadata for manifests and status readers."""
+
+    run_root: Path
+    layout_kind: str
+    run_snapshot: Any | None
+    lifecycle_status: dict[str, Any] | None
+    loop_assessment: dict[str, Any] | None
+    preflight_report: dict[str, Any] | None
+    matlab_status: dict[str, Any] | None
+    matlab_health_check: dict[str, Any] | None
+
+
+def load_run_metadata(run_dir: Path) -> RunMetadata:
+    """Load all persisted metadata for a run with a single layout resolution."""
+    layout = resolve_run_layout(run_dir)
+    run_root = layout["run_root"]
+    metadata_dir = layout["metadata_dir"]
+    if is_staged_run_root(run_root):
+        layout_kind = "staged"
+    elif is_legacy_flat_run_root(run_root):
+        layout_kind = "legacy_flat"
+    else:
+        layout_kind = "unknown"
+
+    return RunMetadata(
+        run_root=run_root,
+        layout_kind=layout_kind,
+        run_snapshot=load_run_snapshot(run_root),
+        lifecycle_status=read_run_status(run_root),
+        loop_assessment=load_loop_assessment(metadata_dir),
+        preflight_report=load_output_preflight(metadata_dir),
+        matlab_status=load_matlab_status(metadata_dir),
+        matlab_health_check=load_matlab_health_check(metadata_dir),
+    )
 
 
 def _build_empty_inventory() -> dict[str, list[Path]]:
@@ -596,11 +635,204 @@ def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
     return collect_directory_inventory(directory)["inventory"]
 
 
-def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> str:
+def _append_lifecycle_status_section(lines: list[str], lifecycle_status: dict[str, Any] | None) -> None:
+    if lifecycle_status is None:
+        return
+    lines.extend(
+        [
+            "## Lifecycle Status",
+            "",
+            f"- **State:** {lifecycle_status['state']}",
+            f"- **Retention:** {lifecycle_status['retention']}",
+            f"- **Quality gate:** {lifecycle_status['quality_gate']}",
+        ]
+    )
+    if lifecycle_status.get("supersedes"):
+        lines.append(f"- **Supersedes:** `{lifecycle_status['supersedes']}`")
+    if lifecycle_status.get("superseded_by"):
+        lines.append(f"- **Superseded by:** `{lifecycle_status['superseded_by']}`")
+    if lifecycle_status.get("notes"):
+        lines.append(f"- **Notes:** {lifecycle_status['notes']}")
+    lines.extend(["- **Artifact:** `99_Metadata/status.json`", ""])
+
+
+def _append_run_status_section(lines: list[str], run_snapshot: Any | None) -> None:
+    if run_snapshot is None:
+        return
+    lines.extend(
+        [
+            "## Run Status",
+            "",
+            f"- **Status:** {run_snapshot.status}",
+            f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%",
+            f"- **Target stage:** {run_snapshot.target_stage}",
+            f"- **Current stage:** {run_snapshot.current_stage or 'idle'}",
+        ]
+    )
+    matlab_pipeline_task = run_snapshot.optional_tasks.get("matlab_pipeline")
+    if matlab_pipeline_task is not None:
+        launch_mode = str(matlab_pipeline_task.artifacts.get("launch", "") or "").strip()
+        if launch_mode == "skipped":
+            skip_reason = str(
+                matlab_pipeline_task.artifacts.get("skip_reason", "completed_reusable_batch")
+            )
+            reuse_mode = str(matlab_pipeline_task.artifacts.get("reuse_mode", "") or "").strip()
+            lines.append(
+                "- **MATLAB launch:** skipped due to completed reusable batch"
+                + (f" ({reuse_mode})" if reuse_mode else "")
+            )
+            lines.append(f"- **MATLAB skip reason:** {skip_reason}")
+    lines.append("")
+
+
+def _append_workflow_decision_section(
+    lines: list[str],
+    loop_assessment: dict[str, Any] | None,
+) -> None:
+    if not loop_assessment:
+        return
+    lines.extend(
+        [
+            "## Workflow Decision",
+            "",
+            f"- **Verdict:** {str(loop_assessment.get('verdict', 'unknown')).replace('_', ' ')}",
+            f"- **Safe to reuse:** {bool(loop_assessment.get('safe_to_reuse', False))}",
+            "- **Safe to analyze only:** "
+            f"{bool(loop_assessment.get('safe_to_analyze_only', False))}",
+            "- **Requires fresh MATLAB:** "
+            f"{bool(loop_assessment.get('requires_fresh_matlab', False))}",
+        ]
+    )
+    recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
+    if recommended_action:
+        lines.append(f"- **Recommended action:** {recommended_action}")
+    lines.extend(["- **Artifact:** `99_Metadata/loop_assessment.json`"])
+    reasons = loop_assessment.get("reasons") or []
+    if reasons:
+        lines.extend(["", "### Assessment Reasons"])
+        lines.extend(f"- {reason}" for reason in reasons)
+    lines.append("")
+
+
+def _append_preflight_section(lines: list[str], preflight_report: dict[str, Any] | None) -> None:
+    if not preflight_report:
+        return
+    lines.extend(
+        [
+            "## Preflight",
+            "",
+            f"- **Status:** {preflight_report.get('preflight_status', 'unknown')}",
+            f"- **Allows launch:** {preflight_report.get('allows_launch', False)}",
+        ]
+    )
+    output_root = preflight_report.get("resolved_output_root") or preflight_report.get(
+        "output_root", ""
+    )
+    if output_root:
+        lines.append(f"- **Output root:** `{output_root}`")
+    free_space_gb = preflight_report.get("free_space_gb")
+    required_space_gb = preflight_report.get("required_space_gb")
+    if isinstance(free_space_gb, (int, float)) and isinstance(required_space_gb, (int, float)):
+        lines.append(
+            "- **Free space:** "
+            f"{free_space_gb:.1f} GB available / {required_space_gb:.1f} GB required"
+        )
+    recommended_action = preflight_report.get("recommended_action")
+    if recommended_action:
+        lines.append(f"- **Recommended action:** {recommended_action}")
+    lines.append("- **Artifact:** `99_Metadata/output_preflight.json`")
+    warnings = preflight_report.get("warnings") or []
+    errors = preflight_report.get("errors") or []
+    if warnings:
+        lines.extend(["", "### Preflight Warnings"])
+        lines.extend(f"- {warning}" for warning in warnings)
+    if errors:
+        lines.extend(["", "### Preflight Errors"])
+        lines.extend(f"- {error}" for error in errors)
+    lines.append("")
+
+
+def _append_matlab_status_section(
+    lines: list[str],
+    run_root: Path,
+    matlab_status: dict[str, Any] | None,
+    lifecycle_status: dict[str, Any] | None,
+) -> None:
+    if not matlab_status:
+        return
+    lines.extend(
+        [
+            "## Resume Semantics",
+            "",
+            f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}",
+        ]
+    )
+    batch_folder = matlab_status.get("matlab_batch_folder", "")
+    if batch_folder:
+        lines.append(f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`")
+    lines.append(
+        "- **Last completed MATLAB stage:** "
+        f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
+    )
+    lines.append(f"- **Next MATLAB stage:** {matlab_status.get('matlab_next_stage') or '(none)'}")
+    lines.append(
+        f"- **Rerun prediction:** {matlab_status.get('matlab_rerun_prediction', 'unknown')}"
+    )
+    if matlab_status.get("matlab_partial_stage_artifacts_present"):
+        lines.append(
+            "- **Partial stage artifacts:** "
+            f"{matlab_status.get('matlab_partial_stage_name') or 'present'}"
+        )
+    if matlab_status.get("stale_running_snapshot_suspected"):
+        lines.append("- **Stale running snapshot suspected:** True")
+    lines.extend(["", "## Authoritative Files", "", "- `99_Metadata/matlab_status.json`"])
+    if lifecycle_status is not None:
+        lines.append("- `99_Metadata/status.json`")
+    if matlab_status.get("matlab_resume_state_file"):
+        lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`")
+    if matlab_status.get("matlab_log_file"):
+        lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`")
+    if batch_folder:
+        lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
+    lines.append("")
+    if matlab_status.get("failure_summary"):
+        lines.extend(["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"])
+        log_tail = matlab_status.get("matlab_log_tail") or []
+        if log_tail:
+            lines.extend(["", "```text"])
+            lines.extend(str(line) for line in log_tail[-10:])
+            lines.extend(["```", ""])
+
+
+def _append_matlab_health_check_section(
+    lines: list[str],
+    matlab_health_check: dict[str, Any] | None,
+) -> None:
+    if not matlab_health_check:
+        return
+    lines.extend(
+        [
+            "## MATLAB Health Check",
+            "",
+            f"- **Success:** {bool(matlab_health_check.get('success', False))}",
+            f"- **Elapsed seconds:** {float(matlab_health_check.get('elapsed_seconds', 0.0)):.1f}",
+        ]
+    )
+    message = str(matlab_health_check.get("message", "") or "").strip()
+    if message:
+        lines.append(f"- **Summary:** {message}")
+    lines.extend(["- **Artifact:** `99_Metadata/matlab_health_check.json`", ""])
+
+
+def generate_manifest(
+    comparison_dir: Path,
+    output_file: Path | None = None,
+    *,
+    metadata: RunMetadata | None = None,
+) -> str:
     """Generate manifest/README for a comparison directory."""
     layout = resolve_run_layout(comparison_dir)
     run_root = layout["run_root"]
-    metadata_dir = layout["metadata_dir"]
 
     if output_file is None:
         output_file = layout["manifest_file"]
@@ -610,12 +842,13 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
 
     report_file = layout["report_file"]
     report = {}
-    run_snapshot = load_run_snapshot(run_root)
-    lifecycle_status = read_run_status(run_root)
-    loop_assessment = load_loop_assessment(metadata_dir)
-    preflight_report = load_output_preflight(metadata_dir)
-    matlab_status = load_matlab_status(metadata_dir)
-    matlab_health_check = load_matlab_health_check(metadata_dir)
+    run_metadata = metadata or load_run_metadata(run_root)
+    run_snapshot = run_metadata.run_snapshot
+    lifecycle_status = run_metadata.lifecycle_status
+    loop_assessment = run_metadata.loop_assessment
+    preflight_report = run_metadata.preflight_report
+    matlab_status = run_metadata.matlab_status
+    matlab_health_check = run_metadata.matlab_health_check
     if report_file.exists():
         try:
             with open(report_file, encoding="utf-8") as handle:
@@ -635,175 +868,12 @@ def generate_manifest(comparison_dir: Path, output_file: Path | None = None) -> 
         "",
     ]
 
-    if lifecycle_status is not None:
-        lines.extend(
-            [
-                "## Lifecycle Status",
-                "",
-                f"- **State:** {lifecycle_status['state']}",
-                f"- **Retention:** {lifecycle_status['retention']}",
-                f"- **Quality gate:** {lifecycle_status['quality_gate']}",
-            ]
-        )
-        if lifecycle_status.get("supersedes"):
-            lines.append(f"- **Supersedes:** `{lifecycle_status['supersedes']}`")
-        if lifecycle_status.get("superseded_by"):
-            lines.append(f"- **Superseded by:** `{lifecycle_status['superseded_by']}`")
-        if lifecycle_status.get("notes"):
-            lines.append(f"- **Notes:** {lifecycle_status['notes']}")
-        lines.extend(["- **Artifact:** `99_Metadata/status.json`", ""])
-
-    if run_snapshot is not None:
-        lines.extend(
-            [
-                "## Run Status",
-                "",
-                f"- **Status:** {run_snapshot.status}",
-                f"- **Overall progress:** {run_snapshot.overall_progress * 100:.1f}%",
-                f"- **Target stage:** {run_snapshot.target_stage}",
-                f"- **Current stage:** {run_snapshot.current_stage or 'idle'}",
-            ]
-        )
-        matlab_pipeline_task = run_snapshot.optional_tasks.get("matlab_pipeline")
-        if matlab_pipeline_task is not None:
-            launch_mode = str(matlab_pipeline_task.artifacts.get("launch", "") or "").strip()
-            if launch_mode == "skipped":
-                skip_reason = str(
-                    matlab_pipeline_task.artifacts.get("skip_reason", "completed_reusable_batch")
-                )
-                reuse_mode = str(matlab_pipeline_task.artifacts.get("reuse_mode", "") or "").strip()
-                lines.append(
-                    "- **MATLAB launch:** skipped due to completed reusable batch"
-                    + (f" ({reuse_mode})" if reuse_mode else "")
-                )
-                lines.append(f"- **MATLAB skip reason:** {skip_reason}")
-        lines.append("")
-
-    if loop_assessment:
-        lines.extend(
-            [
-                "## Workflow Decision",
-                "",
-                f"- **Verdict:** {str(loop_assessment.get('verdict', 'unknown')).replace('_', ' ')}",
-                f"- **Safe to reuse:** {bool(loop_assessment.get('safe_to_reuse', False))}",
-                "- **Safe to analyze only:** "
-                f"{bool(loop_assessment.get('safe_to_analyze_only', False))}",
-                "- **Requires fresh MATLAB:** "
-                f"{bool(loop_assessment.get('requires_fresh_matlab', False))}",
-            ]
-        )
-        recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
-        if recommended_action:
-            lines.append(f"- **Recommended action:** {recommended_action}")
-        lines.extend(["- **Artifact:** `99_Metadata/loop_assessment.json`"])
-        reasons = loop_assessment.get("reasons") or []
-        if reasons:
-            lines.extend(["", "### Assessment Reasons"])
-            lines.extend(f"- {reason}" for reason in reasons)
-        lines.append("")
-
-    if preflight_report:
-        lines.extend(
-            [
-                "## Preflight",
-                "",
-                f"- **Status:** {preflight_report.get('preflight_status', 'unknown')}",
-                f"- **Allows launch:** {preflight_report.get('allows_launch', False)}",
-            ]
-        )
-        output_root = preflight_report.get("resolved_output_root") or preflight_report.get(
-            "output_root", ""
-        )
-        if output_root:
-            lines.append(f"- **Output root:** `{output_root}`")
-        free_space_gb = preflight_report.get("free_space_gb")
-        required_space_gb = preflight_report.get("required_space_gb")
-        if isinstance(free_space_gb, (int, float)) and isinstance(required_space_gb, (int, float)):
-            lines.append(
-                "- **Free space:** "
-                f"{free_space_gb:.1f} GB available / {required_space_gb:.1f} GB required"
-            )
-        recommended_action = preflight_report.get("recommended_action")
-        if recommended_action:
-            lines.append(f"- **Recommended action:** {recommended_action}")
-        lines.append("- **Artifact:** `99_Metadata/output_preflight.json`")
-        warnings = preflight_report.get("warnings") or []
-        errors = preflight_report.get("errors") or []
-        if warnings:
-            lines.extend(["", "### Preflight Warnings"])
-            lines.extend(f"- {warning}" for warning in warnings)
-        if errors:
-            lines.extend(["", "### Preflight Errors"])
-            lines.extend(f"- {error}" for error in errors)
-        lines.append("")
-
-    if matlab_status:
-        lines.extend(
-            [
-                "## Resume Semantics",
-                "",
-                f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}",
-            ]
-        )
-        batch_folder = matlab_status.get("matlab_batch_folder", "")
-        if batch_folder:
-            lines.append(
-                f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`"
-            )
-        lines.append(
-            "- **Last completed MATLAB stage:** "
-            f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
-        )
-        lines.append(
-            f"- **Next MATLAB stage:** {matlab_status.get('matlab_next_stage') or '(none)'}"
-        )
-        lines.append(
-            f"- **Rerun prediction:** {matlab_status.get('matlab_rerun_prediction', 'unknown')}"
-        )
-        if matlab_status.get("matlab_partial_stage_artifacts_present"):
-            lines.append(
-                "- **Partial stage artifacts:** "
-                f"{matlab_status.get('matlab_partial_stage_name') or 'present'}"
-            )
-        if matlab_status.get("stale_running_snapshot_suspected"):
-            lines.append("- **Stale running snapshot suspected:** True")
-        lines.extend(["", "## Authoritative Files", "", "- `99_Metadata/matlab_status.json`"])
-        if lifecycle_status is not None:
-            lines.append("- `99_Metadata/status.json`")
-        if matlab_status.get("matlab_resume_state_file"):
-            lines.append(
-                f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`"
-            )
-        if matlab_status.get("matlab_log_file"):
-            lines.append(
-                f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`"
-            )
-        if batch_folder:
-            lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
-        lines.append("")
-        if matlab_status.get("failure_summary"):
-            lines.extend(
-                ["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"]
-            )
-            log_tail = matlab_status.get("matlab_log_tail") or []
-            if log_tail:
-                lines.extend(["", "```text"])
-                lines.extend(str(line) for line in log_tail[-10:])
-                lines.extend(["```", ""])
-
-    if matlab_health_check:
-        lines.extend(
-            [
-                "## MATLAB Health Check",
-                "",
-                f"- **Success:** {bool(matlab_health_check.get('success', False))}",
-                f"- **Elapsed seconds:** {float(matlab_health_check.get('elapsed_seconds', 0.0)):.1f}",
-            ]
-        )
-        message = str(matlab_health_check.get("message", "") or "").strip()
-        if message:
-            lines.append(f"- **Summary:** {message}")
-        lines.extend(["- **Artifact:** `99_Metadata/matlab_health_check.json`", ""])
+    _append_lifecycle_status_section(lines, lifecycle_status)
+    _append_run_status_section(lines, run_snapshot)
+    _append_workflow_decision_section(lines, loop_assessment)
+    _append_preflight_section(lines, preflight_report)
+    _append_matlab_status_section(lines, run_root, matlab_status, lifecycle_status)
+    _append_matlab_health_check_section(lines, matlab_health_check)
 
     if report:
         lines.extend(["## Comparison Summary", ""])

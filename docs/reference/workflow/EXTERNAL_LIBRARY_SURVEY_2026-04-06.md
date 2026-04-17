@@ -1,6 +1,6 @@
-﻿# External Library Survey For The Python Port
+# External Library Survey For The Python Port
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 Date: 2026-04-06
 
@@ -14,7 +14,7 @@ The main ideas from this survey have already been implemented in the repo:
 - `napari` is available as an optional curator backend.
 - `numba` is already present as an optional acceleration path.
 
-Relevant code now lives in [source/slavv/core/energy.py](../../source/slavv/core/energy.py), [source/slavv/runtime/run_state.py](../../source/slavv/runtime/run_state.py), and [source/slavv/visualization/napari_curator.py](../../source/slavv/visualization/napari_curator.py).
+Relevant code now lives in [source/slavv/core/energy.py](../../../source/slavv/core/energy.py), [source/slavv/runtime/run_state.py](../../../source/slavv/runtime/run_state.py), and [source/slavv/visualization/napari_curator.py](../../../source/slavv/visualization/napari_curator.py).
 
 ## Remaining Ideas
 
@@ -29,4 +29,3 @@ These are still unimplemented and are the only items that remain worth tracking 
 ## Bottom Line
 
 The survey is no longer a broad recommendation memo. The important additions are already in the codebase, and the only open question is whether any of the remaining libraries should be adopted later.
-

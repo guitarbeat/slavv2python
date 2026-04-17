@@ -1,6 +1,6 @@
-﻿# SimpleITK Energy Backend
+# SimpleITK Energy Backend
 
-[Up: Documentation Index](../README.md)
+[Up: Documentation Index](../../README.md)
 
 This note describes the experimental `simpleitk_objectness` energy backend for
 the Python SLAVV port.
@@ -76,7 +76,7 @@ for those controls.
 - `hessian`
   This is the default backend and remains the parity-oriented baseline.
 - `frangi`
-  Uses scikit-image vesselness filtering with the current pipelineâ€™s scale
+  Uses scikit-image vesselness filtering with the current pipeline's scale
   selection logic.
 - `sato`
   Uses scikit-image tubeness filtering with the same aggregation model.
@@ -86,4 +86,3 @@ for those controls.
 
 For now, `simpleitk_objectness` should be treated as an experimental comparison
 backend rather than a new default.
-

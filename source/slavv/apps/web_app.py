@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import hashlib
-import os
-import tempfile
 import warnings
-import zipfile
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import numpy as np
 import pandas as pd
@@ -19,34 +15,40 @@ from slavv.apps.curation_state import (
     summarize_processing_counts,
     sync_curated_processing_results,
 )
-from slavv.apps.share_report import (
-    build_share_report_html,
-    compute_shareable_stats,
-    record_share_event,
+from slavv.apps.share_report import compute_shareable_stats, record_share_event
+from slavv.apps.web_app_artifacts import (
+    _build_processing_run_dir,
+    _has_full_network_results,
+    _log_share_report_prepared_once,
+    _update_run_task,
+    generate_export_data,
+    generate_share_report_data,
 )
-
-# Import our modules
+from slavv.apps.web_app_dashboard import (
+    DASHBOARD_BREAKDOWN_SECTIONS,
+    DASHBOARD_PLACEHOLDER,
+    DASHBOARD_STAGE_ORDER,
+    _build_dashboard_placeholder_trend,
+    _dashboard_breakdown_frame,
+    _dashboard_stage_frame,
+    build_dashboard_backlog_frame,
+    filter_dashboard_breakdown,
+    normalize_dashboard_sections,
+)
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
-from slavv.runtime import RunContext, RunSnapshot, load_run_snapshot
-from slavv.runtime.run_state import fingerprint_jsonable, target_stage_progress
+from slavv.runtime import RunSnapshot, load_run_snapshot
+from slavv.runtime.run_state import target_stage_progress
 from slavv.utils import validate_parameters
-from slavv.utils.formatting import format_time
 from slavv.visualization import NetworkVisualizer
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 warnings.filterwarnings("ignore")
 DASHBOARD_ASSUMPTION = (
     "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
     "current network outputs, and share-report activity for the current session."
 )
-DASHBOARD_STAGE_ORDER = ("energy", "vertices", "edges", "network")
-DASHBOARD_PLACEHOLDER = "Awaiting data"
 DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
 DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
-DASHBOARD_BREAKDOWN_SECTIONS = ("Pipeline", "Network", "Share Report", "Optional Tasks")
 EXPORT_BUTTON_SPECS = (
     {
         "format_type": "vmv",
@@ -167,44 +169,6 @@ def cached_load_tiff_volume(file):
     return load_tiff_volume(file)
 
 
-@st.cache_data(show_spinner=False)
-def generate_export_data(vertices, edges, network, parameters, format_type):
-    """Generate export data and return as bytes."""
-    # Reconstruct a minimal results dict for the visualizer
-    results = {"vertices": vertices, "edges": edges, "network": network, "parameters": parameters}
-    visualizer = NetworkVisualizer()
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        base_path = os.path.join(temp_dir, "export")
-
-        if format_type == "csv":
-            visualizer.export_network_data(results, base_path, format="csv")
-            v_path = base_path + "_vertices.csv"
-            e_path = base_path + "_edges.csv"
-
-            zip_path = os.path.join(temp_dir, "network_csv.zip")
-            with zipfile.ZipFile(zip_path, "w") as zf:
-                if os.path.exists(v_path):
-                    zf.write(v_path, "vertices.csv")
-                if os.path.exists(e_path):
-                    zf.write(e_path, "edges.csv")
-
-            if os.path.exists(zip_path):
-                with open(zip_path, "rb") as f:
-                    return f.read()
-            return None
-
-        # vmv, casx
-        # Add extension to base_path
-        file_path = base_path + "." + format_type
-        visualizer.export_network_data(results, file_path, format=format_type)
-
-        if os.path.exists(file_path):
-            with open(file_path, "rb") as f:
-                return f.read()
-        return None
-
-
 def _render_export_download(
     column,
     *,
@@ -247,29 +211,6 @@ def _render_export_download(
             )
 
 
-def _has_full_network_results(results: Mapping[str, Any]) -> bool:
-    """Return True when a full network exists and exports can be offered."""
-    required_keys = {"vertices", "edges", "network"}
-    return required_keys.issubset(results)
-
-
-@st.cache_data(show_spinner=False)
-def generate_share_report_data(
-    processing_results: Mapping[str, Any],
-    dataset_name: str,
-    image_shape: tuple[int, int, int],
-) -> str:
-    """Generate a self-contained HTML share report."""
-    return cast(
-        "str",
-        build_share_report_html(
-            processing_results,
-            dataset_name=dataset_name,
-            image_shape=image_shape,
-        ),
-    )
-
-
 def _snapshot_for_display(run_dir: str | None) -> RunSnapshot | None:
     """Load the current run snapshot if one exists."""
     if not run_dir:
@@ -277,38 +218,6 @@ def _snapshot_for_display(run_dir: str | None) -> RunSnapshot | None:
     return load_run_snapshot(run_dir)
 
 
-def _build_processing_run_dir(upload_bytes: bytes, validated_params: dict[str, object]) -> str:
-    """Return a stable run directory per input file and validated parameter set."""
-    file_hash = hashlib.md5(upload_bytes).hexdigest()[:12]
-    params_hash = fingerprint_jsonable(validated_params)[:12]
-    return os.path.join(tempfile.gettempdir(), "slavv_runs", f"{file_hash}_{params_hash}")
-
-
-def _dashboard_snapshot_source(run_dir: str | None) -> str:
-    """Return the most specific snapshot source label available."""
-    if not run_dir:
-        return "No run snapshot loaded"
-    return os.path.join(run_dir, "run_snapshot.json")
-
-
-def _update_run_task(
-    run_dir: str | None,
-    task_name: str,
-    *,
-    status: str,
-    detail: str,
-    artifacts: dict[str, str] | None = None,
-) -> None:
-    """Attach optional task progress to the active run."""
-    if not run_dir:
-        return
-    context = RunContext.from_existing(run_dir)
-    context.update_optional_task(
-        task_name,
-        status=status,
-        detail=detail,
-        artifacts=artifacts,
-    )
 
 
 def _apply_curated_results(
@@ -356,7 +265,7 @@ def _render_run_dashboard(snapshot) -> None:
     )
 
     stage_rows = []
-    for stage_name in ("energy", "vertices", "edges", "network"):
+    for stage_name in DASHBOARD_STAGE_ORDER:
         stage_snapshot = snapshot.stages.get(stage_name)
         if stage_snapshot is None:
             continue
@@ -388,279 +297,6 @@ def _render_run_dashboard(snapshot) -> None:
         st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
 
 
-def _dashboard_stage_frame(snapshot, run_dir: str | None = None) -> pd.DataFrame:
-    """Return pipeline stage progress for dashboard charts and tables."""
-    rows = []
-    for stage_name in DASHBOARD_STAGE_ORDER:
-        stage_snapshot = None if snapshot is None else snapshot.stages.get(stage_name)
-        rows.append(
-            {
-                "Stage": stage_name.title(),
-                "Progress (%)": int(stage_snapshot.progress * 100) if stage_snapshot else 0,
-                "Status": stage_snapshot.status if stage_snapshot else "placeholder",
-                "Detail": (
-                    (stage_snapshot.detail or stage_snapshot.substage)
-                    if stage_snapshot
-                    else "Waiting for a processed run"
-                ),
-                "Source": "run_snapshot.json"
-                if snapshot is not None
-                else _dashboard_snapshot_source(run_dir),
-            }
-        )
-    return pd.DataFrame(rows)
-
-
-def _dashboard_run_throughput_rows(snapshot, run_dir: str | None = None) -> list[dict[str, object]]:
-    """Build per-run throughput metrics from the persisted snapshot."""
-    source = "run_snapshot.json" if snapshot is not None else _dashboard_snapshot_source(run_dir)
-    if snapshot is None:
-        return [
-            {
-                "Section": "Pipeline",
-                "Metric": "Elapsed runtime",
-                "Progress": None,
-                "Value": DASHBOARD_PLACEHOLDER,
-                "Status": "placeholder",
-                "Source": source,
-                "Notes": "Available once a run snapshot is loaded.",
-            },
-            {
-                "Section": "Pipeline",
-                "Metric": "ETA",
-                "Progress": None,
-                "Value": DASHBOARD_PLACEHOLDER,
-                "Status": "placeholder",
-                "Source": source,
-                "Notes": "Available while a persisted run is active.",
-            },
-            {
-                "Section": "Pipeline",
-                "Metric": "Resume rate",
-                "Progress": None,
-                "Value": DASHBOARD_PLACEHOLDER,
-                "Status": "placeholder",
-                "Source": source,
-                "Notes": "Tracks how often a run reuses prior stage artifacts.",
-            },
-        ]
-
-    active_or_completed = [
-        stage
-        for stage in snapshot.stages.values()
-        if stage.progress > 0.0 or stage.status not in {"pending", "placeholder"}
-    ]
-    resumed_count = sum(1 for stage in active_or_completed if stage.resumed)
-    considered_count = len(active_or_completed)
-    resume_rate = 0 if considered_count == 0 else round((resumed_count / considered_count) * 100)
-
-    if snapshot.eta_seconds is None:
-        eta_value = "Complete" if snapshot.status.startswith("completed") else "Awaiting estimate"
-        eta_status = "live" if snapshot.status.startswith("completed") else "idle"
-        eta_notes = (
-            "Run has finished all currently scheduled work."
-            if snapshot.status.startswith("completed")
-            else "ETA appears after the run has enough progress history."
-        )
-    else:
-        eta_value = format_time(snapshot.eta_seconds)
-        eta_status = "live"
-        eta_notes = "Estimated remaining time for the active run."
-
-    return [
-        {
-            "Section": "Pipeline",
-            "Metric": "Elapsed runtime",
-            "Progress": None,
-            "Value": format_time(snapshot.elapsed_seconds),
-            "Status": "live",
-            "Source": source,
-            "Notes": "Wall-clock runtime captured in the run snapshot.",
-        },
-        {
-            "Section": "Pipeline",
-            "Metric": "ETA",
-            "Progress": None,
-            "Value": eta_value,
-            "Status": eta_status,
-            "Source": source,
-            "Notes": eta_notes,
-        },
-        {
-            "Section": "Pipeline",
-            "Metric": "Resume rate",
-            "Progress": None,
-            "Value": f"{resume_rate}% ({resumed_count}/{considered_count})",
-            "Status": "live",
-            "Source": source,
-            "Notes": "Proxy for cache/reuse effectiveness across active or completed stages.",
-        },
-    ]
-
-
-def _dashboard_breakdown_frame(
-    snapshot,
-    stats,
-    share_metrics,
-    *,
-    run_dir: str | None = None,
-) -> pd.DataFrame:
-    """Return a dashboard breakdown table that is safe to render without live data."""
-    rows = []
-
-    for stage_row in _dashboard_stage_frame(snapshot, run_dir=run_dir).to_dict("records"):
-        rows.append(
-            {
-                "Section": "Pipeline",
-                "Metric": stage_row["Stage"],
-                "Progress": int(stage_row["Progress (%)"]),
-                "Value": f"{stage_row['Progress (%)']}%",
-                "Status": stage_row["Status"],
-                "Source": stage_row["Source"],
-                "Notes": stage_row["Detail"],
-            }
-        )
-    rows.extend(_dashboard_run_throughput_rows(snapshot, run_dir=run_dir))
-
-    optional_tasks = {} if snapshot is None else snapshot.optional_tasks
-    if optional_tasks:
-        for task_name, task in sorted(optional_tasks.items()):
-            rows.append(
-                {
-                    "Section": "Optional Tasks",
-                    "Metric": task_name,
-                    "Progress": int(task.progress * 100),
-                    "Value": f"{int(task.progress * 100)}%",
-                    "Status": task.status,
-                    "Source": "run_snapshot.json",
-                    "Notes": task.detail or "Tracked optional work",
-                }
-            )
-    else:
-        rows.append(
-            {
-                "Section": "Optional Tasks",
-                "Metric": "Tracked tasks",
-                "Progress": 0 if snapshot is not None else None,
-                "Value": "0 tracked" if snapshot is not None else DASHBOARD_PLACEHOLDER,
-                "Status": "idle" if snapshot is not None else "placeholder",
-                "Source": (
-                    "run_snapshot.json optional_tasks"
-                    if snapshot is not None
-                    else _dashboard_snapshot_source(run_dir)
-                ),
-                "Notes": (
-                    "No optional tasks have been tracked for this run yet."
-                    if snapshot is not None
-                    else "Optional tasks appear after a run snapshot is available."
-                ),
-            }
-        )
-
-    stat_rows = [
-        ("Strands", None if stats is None else int(stats.get("num_strands", 0)), "count"),
-        (
-            "Total Length (um)",
-            None if stats is None else float(stats.get("total_length", 0.0)),
-            "length",
-        ),
-        (
-            "Volume Fraction",
-            None if stats is None else float(stats.get("volume_fraction", 0.0)),
-            "ratio",
-        ),
-        (
-            "Mean Radius (um)",
-            None if stats is None else float(stats.get("mean_radius", 0.0)),
-            "radius",
-        ),
-    ]
-    for metric_name, value, value_type in stat_rows:
-        if value is None:
-            display_value = DASHBOARD_PLACEHOLDER
-            status = "placeholder"
-            source = "session_state.processing_results"
-            notes = "Loads when a full network result is available in session state"
-        elif value_type == "count":
-            display_value = f"{value:d}"
-            status = "live"
-            source = "session_state.processing_results"
-            notes = "Computed from the current network"
-        elif value_type == "length":
-            display_value = f"{value:.1f}"
-            status = "live"
-            source = "session_state.processing_results"
-            notes = "Computed from calculate_network_statistics"
-        else:
-            display_value = f"{value:.3f}" if value_type == "ratio" else f"{value:.2f}"
-            status = "live"
-            source = "session_state.processing_results"
-            notes = "Computed from calculate_network_statistics"
-
-        rows.append(
-            {
-                "Section": "Network",
-                "Metric": metric_name,
-                "Progress": None,
-                "Value": display_value,
-                "Status": status,
-                "Source": source,
-                "Notes": notes,
-            }
-        )
-
-    rows.append(
-        {
-            "Section": "Share Report",
-            "Metric": "Requested",
-            "Progress": None,
-            "Value": str(share_metrics.get("share_report_requested", 0)),
-            "Status": "live" if share_metrics else "idle",
-            "Source": "session_state.share_report_metrics",
-            "Notes": (
-                "Counts report generations in this session"
-                if share_metrics
-                else "No share report generations have been recorded in this session yet"
-            ),
-        }
-    )
-    rows.append(
-        {
-            "Section": "Share Report",
-            "Metric": "Downloaded",
-            "Progress": None,
-            "Value": str(share_metrics.get("share_report_downloaded", 0)),
-            "Status": "live" if share_metrics else "idle",
-            "Source": "session_state.share_report_metrics",
-            "Notes": (
-                "Counts report downloads in this session"
-                if share_metrics
-                else "No share report downloads have been recorded in this session yet"
-            ),
-        }
-    )
-
-    return pd.DataFrame(rows)
-
-
-def _build_dashboard_placeholder_trend():
-    """Build a placeholder trend chart used before network metrics exist."""
-    placeholder = pd.DataFrame(
-        {
-            "Depth Band": ["Surface", "Mid", "Deep"],
-            "Coverage": [0.0, 0.0, 0.0],
-        }
-    )
-    fig = px.line(placeholder, x="Depth Band", y="Coverage", markers=True)
-    fig.update_traces(line={"dash": "dot", "width": 3}, marker={"size": 9})
-    fig.update_layout(
-        height=320,
-        margin={"l": 20, "r": 20, "t": 40, "b": 20},
-        xaxis_title="Depth band",
-        yaxis_title="Coverage",
-        showlegend=False,
-    )
-    return fig
 
 
 def _init_dashboard_state() -> None:
@@ -700,80 +336,32 @@ def _dashboard_context() -> DashboardContext:
 
 def _normalize_dashboard_sections(selected_sections) -> list[str]:
     """Normalize the selected pills value to a stable list."""
-    if not selected_sections:
-        return list(DASHBOARD_BREAKDOWN_SECTIONS)
-    if isinstance(selected_sections, str):
-        return [selected_sections]
-    return list(selected_sections)
+    return cast(
+        "list[str]",
+        normalize_dashboard_sections(
+            selected_sections,
+            breakdown_sections=DASHBOARD_BREAKDOWN_SECTIONS,
+        ),
+    )
 
 
 def _filter_dashboard_breakdown(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply focus and section filters to the breakdown table."""
-    focus = st.session_state.get("dashboard_focus", "Overview")
-    selected_sections = _normalize_dashboard_sections(st.session_state.get("dashboard_sections"))
-    show_placeholders = st.session_state.get("dashboard_show_placeholders", True)
-
-    filtered = frame.copy()
-    if focus == "Pipeline":
-        filtered = filtered[filtered["Section"].isin(["Pipeline", "Optional Tasks"])]
-    elif focus == "Network":
-        filtered = filtered[filtered["Section"].isin(["Network", "Share Report"])]
-
-    if selected_sections:
-        filtered = filtered[filtered["Section"].isin(selected_sections)]
-
-    if not show_placeholders:
-        filtered = filtered[filtered["Status"] != "placeholder"]
-
-    if filtered.empty:
-        return frame.head(0)
-    return filtered.reset_index(drop=True)
+    return filter_dashboard_breakdown(
+        frame,
+        focus=st.session_state.get("dashboard_focus", "Overview"),
+        selected_sections=st.session_state.get("dashboard_sections"),
+        show_placeholders=st.session_state.get("dashboard_show_placeholders", True),
+    )
 
 
 def _build_dashboard_backlog_frame() -> pd.DataFrame:
     """Build an editable backlog for follow-on dashboard work."""
-    rows = [
-        {
-            "Metric": "Run throughput",
-            "Owner": "Pipeline",
-            "Priority": "High",
-            "Tracked": True,
-            "Status": "Ready",
-            "Reference": DASHBOARD_REPO_URL,
-            "Notes": "Track runtime, resume rate, and cache effectiveness per run.",
-        },
-        {
-            "Metric": "Dataset inventory",
-            "Owner": "Operations",
-            "Priority": "Medium",
-            "Tracked": False,
-            "Status": "TODO",
-            "Reference": DASHBOARD_REPO_URL,
-            "Notes": "Summarize queued, active, and completed volumes once entities are defined.",
-        },
-        {
-            "Metric": "Curation QA",
-            "Owner": "Analysis",
-            "Priority": "Medium",
-            "Tracked": False,
-            "Status": "TODO",
-            "Reference": DASHBOARD_RELEASE_URL,
-            "Notes": "Add reviewer throughput and acceptance-rate metrics when QA sources exist.",
-        },
-    ]
-    for request in st.session_state.get("dashboard_metric_requests", []):
-        rows.append(
-            {
-                "Metric": request["metric"],
-                "Owner": request["owner"],
-                "Priority": request["priority"],
-                "Tracked": False,
-                "Status": "Requested",
-                "Reference": DASHBOARD_REPO_URL,
-                "Notes": request["notes"] or "Captured from the in-app planning dialog.",
-            }
-        )
-    return pd.DataFrame(rows)
+    return build_dashboard_backlog_frame(
+        st.session_state.get("dashboard_metric_requests", []),
+        repo_url=DASHBOARD_REPO_URL,
+        release_url=DASHBOARD_RELEASE_URL,
+    )
 
 
 def _toast_dashboard_feedback() -> None:
@@ -1052,26 +640,6 @@ def show_dashboard_page():
         _render_dashboard_surface_fragment()
     else:
         _render_dashboard_surface()
-
-
-def _log_share_report_prepared_once(dataset_name, report_data, results):
-    """Track report preparation exactly once per report signature in a session."""
-    signature = report_data["signature"]
-    if st.session_state.get("share_report_prepared_signature") == signature:
-        return
-
-    st.session_state["share_report_prepared_signature"] = signature
-    record_share_event(
-        st.session_state,
-        "share_report_requested",
-        dataset_name,
-        signature,
-        extra={
-            "vertices_count": len(results["vertices"].get("positions", [])),
-            "edges_count": len(results["edges"].get("traces", [])),
-            "strands_count": len(results["network"].get("strands", [])),
-        },
-    )
 
 
 def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt"):

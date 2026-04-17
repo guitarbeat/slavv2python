@@ -5,12 +5,14 @@ from pathlib import Path
 
 from slavv.parity.reporting import generate_summary
 from slavv.parity.run_layout import (
+    RunMetadata,
     build_experiment_index_entry,
     collect_directory_inventory,
     generate_manifest,
     infer_run_status,
     list_runs,
     load_run_info,
+    load_run_metadata,
     resolve_run_layout,
     write_pointer_file,
     write_run_status,
@@ -109,6 +111,72 @@ def test_resolve_run_layout_normalizes_result_subdirectories(tmp_path: Path):
     assert matlab_layout["matlab_dir"] == matlab_dir
     assert python_layout["run_root"] == run_dir
     assert python_layout["python_dir"] == python_dir
+
+
+def test_load_run_metadata_for_staged_run(tmp_path: Path):
+    run_dir = tmp_path / "20260210_100526_full_run"
+    metadata_dir = run_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+    (run_dir / "03_Analysis").mkdir(parents=True)
+
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-1",
+                "status": "completed",
+                "target_stage": "network",
+                "current_stage": "network",
+                "overall_progress": 1.0,
+                "stages": {},
+                "optional_tasks": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (metadata_dir / "loop_assessment.json").write_text(
+        json.dumps({"verdict": "analysis_ready", "safe_to_analyze_only": True}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "output_preflight.json").write_text(
+        json.dumps({"preflight_status": "passed", "allows_launch": True}),
+        encoding="utf-8",
+    )
+
+    metadata = load_run_metadata(run_dir)
+
+    assert metadata.run_root == run_dir
+    assert metadata.layout_kind == "staged"
+    assert metadata.run_snapshot is not None
+    assert metadata.run_snapshot.status == "completed"
+    assert metadata.loop_assessment is not None
+    assert metadata.loop_assessment["verdict"] == "analysis_ready"
+    assert metadata.preflight_report is not None
+    assert metadata.preflight_report["preflight_status"] == "passed"
+
+
+def test_load_run_metadata_for_legacy_run(tmp_path: Path):
+    run_dir = tmp_path / "legacy_run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run_snapshot.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-legacy",
+                "status": "pending",
+                "target_stage": "network",
+                "stages": {},
+                "optional_tasks": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    metadata = load_run_metadata(run_dir)
+
+    assert metadata.run_root == run_dir
+    assert metadata.layout_kind == "legacy_flat"
+    assert metadata.run_snapshot is not None
+    assert metadata.run_snapshot.run_id == "run-legacy"
+    assert metadata.lifecycle_status is None
 
 
 def test_list_runs_returns_run_roots_for_staged_layout(tmp_path: Path):
@@ -784,3 +852,31 @@ def test_generate_manifest_includes_status_json_summary(tmp_path: Path):
     assert "## Lifecycle Status" in content
     assert "- **Artifact:** `99_Metadata/status.json`" in content
     assert "- **Retention:** keep" in content
+
+
+def test_generate_manifest_accepts_preloaded_metadata(tmp_path: Path):
+    run_dir = tmp_path / "20260413_release_verify"
+    metadata_dir = run_dir / "99_Metadata"
+    metadata_dir.mkdir(parents=True)
+
+    injected = RunMetadata(
+        run_root=run_dir,
+        layout_kind="staged",
+        run_snapshot=None,
+        lifecycle_status={"state": "completed", "retention": "keep", "quality_gate": "pass"},
+        loop_assessment={"verdict": "analysis_ready", "safe_to_reuse": False},
+        preflight_report={"preflight_status": "passed", "allows_launch": True},
+        matlab_status=None,
+        matlab_health_check=None,
+    )
+
+    content = generate_manifest(
+        run_dir,
+        metadata_dir / "run_manifest.md",
+        metadata=injected,
+    )
+
+    assert "## Lifecycle Status" in content
+    assert "- **State:** completed" in content
+    assert "## Workflow Decision" in content
+    assert "- **Verdict:** analysis ready" in content

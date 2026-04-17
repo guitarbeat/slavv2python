@@ -18,6 +18,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..utils import calculate_path_length
+from .network_plot_helpers import NETWORK_COLOR_SCHEMES, add_colorbar, map_values_to_colors
+from .network_plot_layout import axis_labels, plot_2d_layout, plot_slice_layout, select_plot_axes
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -30,44 +32,11 @@ class NetworkVisualizer:
     """
 
     def __init__(self):
-        self.color_schemes = {
-            "energy": "RdBu_r",
-            "depth": "Viridis",
-            "strand_id": "Set3",
-            "radius": "Plasma",
-            "length": "Cividis",
-            "random": "Set1",
-        }
+        self.color_schemes = dict(NETWORK_COLOR_SCHEMES)
 
     @staticmethod
     def _map_values_to_colors(values: np.ndarray, colorscale: str) -> list[str]:
-        """Map numeric values to colors using a Plotly colorscale.
-
-        Parameters
-        ----------
-        values : np.ndarray
-            Array of values to map to colors.
-        colorscale : str
-            Name of the Plotly colorscale to use.
-
-        Returns
-        -------
-        List[str]
-            List of color strings in hex format corresponding to the input
-            values. If ``values`` is empty or constant, the first color in the
-            colorscale is returned for all entries.
-        """
-        if len(values) == 0:
-            return []
-
-        vmin = np.nanmin(values)
-        vmax = np.nanmax(values)
-        if not np.isfinite(vmin) or not np.isfinite(vmax) or vmax == vmin:
-            normalized = np.zeros_like(values, dtype=float)
-        else:
-            normalized = (values - vmin) / (vmax - vmin)
-
-        return [px.colors.sample_colorscale(colorscale, float(v))[0] for v in normalized]
+        return map_values_to_colors(values, colorscale)
 
     @staticmethod
     def _add_colorbar(
@@ -77,61 +46,7 @@ class NetworkVisualizer:
         title: str,
         is_3d: bool = False,
     ) -> None:
-        """Add a colorbar representing the range of ``values``.
-
-        Parameters
-        ----------
-        fig : go.Figure
-            Figure to which the colorbar trace is added.
-        values : np.ndarray
-            Numeric values used for coloring edges.
-        colorscale : str
-            Plotly colorscale name.
-        title : str
-            Title for the colorbar.
-        is_3d : bool, optional
-            Whether to add a 3D scatter for the colorbar, by default False.
-        """
-        if values is None or len(values) == 0:
-            return
-
-        vmin = float(np.nanmin(values))
-        vmax = float(np.nanmax(values))
-        if vmin == vmax:
-            vmax = vmin + 1.0
-
-        marker = {
-            "colorscale": colorscale,
-            "cmin": vmin,
-            "cmax": vmax,
-            "color": [vmin],
-            "showscale": True,
-            "colorbar": {"title": title},
-        }
-
-        if is_3d:
-            fig.add_trace(
-                go.Scatter3d(
-                    x=[None],
-                    y=[None],
-                    z=[None],
-                    mode="markers",
-                    marker=marker,
-                    showlegend=False,
-                    hoverinfo="none",
-                )
-            )
-        else:
-            fig.add_trace(
-                go.Scatter(
-                    x=[None],
-                    y=[None],
-                    mode="markers",
-                    marker=marker,
-                    showlegend=False,
-                    hoverinfo="none",
-                )
-            )
+        add_colorbar(fig, values, colorscale, title, is_3d=is_3d)
 
     def plot_2d_network(
         self,
@@ -169,18 +84,8 @@ class NetworkVisualizer:
         edge_traces = edges["traces"]
         bifurcations = network.get("bifurcations", [])
 
-        # Determine projection axes
-        if projection_axis == 2:
-            # Match 3D plot convention: X->col 1, Y->col 0
-            x_axis, y_axis = 1, 0
-        else:
-            axes = [0, 1, 2]
-            axes.remove(projection_axis)
-            x_axis, y_axis = axes
-
-        axis_names = ["Y", "X", "Z"]
-        x_label = f"{axis_names[x_axis]} (μm)"
-        y_label = f"{axis_names[y_axis]} (μm)"
+        x_axis, y_axis = select_plot_axes(projection_axis)
+        x_label, y_label = axis_labels(x_axis, y_axis)
 
         # Convert to physical units
         microns_per_voxel = parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
@@ -406,15 +311,7 @@ class NetworkVisualizer:
             )
 
         # Update layout
-        fig.update_layout(
-            title=f"2D Vascular Network (Projection along {axis_names[projection_axis]})",
-            xaxis_title=x_label,
-            yaxis_title=y_label,
-            showlegend=True,
-            hovermode="closest",
-            width=800,
-            height=600,
-        )
+        fig.update_layout(**plot_2d_layout(projection_axis, x_label, y_label))
         # Ensure equal scaling so physical units are preserved
         fig.update_yaxes(scaleanchor="x", scaleratio=1)
 
@@ -627,15 +524,7 @@ class NetworkVisualizer:
                     )
                 )
 
-        fig.update_layout(
-            title=(f"Network Slice at {center_in_microns:.1f} μm along {axis_names[axis]}"),
-            xaxis_title=x_label,
-            yaxis_title=y_label,
-            showlegend=True,
-            hovermode="closest",
-            width=800,
-            height=600,
-        )
+        fig.update_layout(**plot_slice_layout(center_in_microns, axis, x_label, y_label))
         # Ensure equal scaling between axes to avoid distortion
         fig.update_yaxes(scaleanchor="x", scaleratio=1)
 

@@ -21,7 +21,7 @@ This was the fastest re-entry point during Chapter 1.
 If you need the active starting point now, read
 [Neighborhood Claim Alignment](../neighborhood-claim-alignment/README.md)
 and the maintained
-[MATLAB Translation Guide](../../reference/MATLAB_TRANSLATION_GUIDE.md).
+[MATLAB Translation Guide](../../reference/core/MATLAB_TRANSLATION_GUIDE.md).
 
 ## Historical Status At Chapter 1 Close
 
@@ -104,8 +104,8 @@ python dev/scripts/cli/compare_matlab_python.py `
 | What should I run next? | [TODO.md](../../../TODO.md) |
 | What is the current edge-specific plan? | [edge_parity_plan.md](edge_parity_plan.md) |
 | Where should I audit MATLAB vs Python tracer semantics? | [MATLAB_PARITY_AUDIT_CHECKLIST.md](MATLAB_PARITY_AUDIT_CHECKLIST.md) |
-| How do staged comparison run roots work? | [COMPARISON_LAYOUT.md](../../reference/COMPARISON_LAYOUT.md) |
-| Where is the MATLAB-to-Python module map? | [MATLAB_MAPPING.md](../../reference/MATLAB_MAPPING.md) |
+| How do staged comparison run roots work? | [COMPARISON_LAYOUT.md](../../reference/core/COMPARISON_LAYOUT.md) |
+| Where is the MATLAB-to-Python module map? | [MATLAB_MAPPING.md](../../reference/core/MATLAB_MAPPING.md) |
 | What proved stage-isolated network parity? | [stage_isolated_network_parity_2026-04-07.md](../../../dev/reports/stage_isolated_network_parity_2026-04-07.md) |
 
 ## Historical Working Model
