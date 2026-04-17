@@ -141,7 +141,9 @@ class NetworkVisualizer:
                     # Clip to valid range (searchsorted can return len(bins))
                     indices = np.clip(indices, 0, len(bins) - 1)
                     quantized_values = bins[indices]
-                    edge_colors = map_values_to_colors(quantized_values, self.color_schemes[color_by])
+                    edge_colors = map_values_to_colors(
+                        quantized_values, self.color_schemes[color_by]
+                    )
                 else:
                     edge_colors = map_values_to_colors(values, self.color_schemes[color_by])
             elif color_by == "strand_id":
@@ -225,7 +227,9 @@ class NetworkVisualizer:
 
             # Add colorbar if applicable
             if color_by in {"depth", "energy", "radius", "length"} and values is not None:
-                add_colorbar(fig, values, self.color_schemes[color_by], color_by.title(), is_3d=False)
+                add_colorbar(
+                    fig, values, self.color_schemes[color_by], color_by.title(), is_3d=False
+                )
 
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:

@@ -51,7 +51,9 @@ def export_csv(
         start_vertex = connection[0] if len(connection) > 0 else None
         end_vertex = connection[1] if len(connection) > 1 else None
         trace_arr = np.array(trace)
-        length = calculate_path_length(trace_arr * parameters.get("microns_per_voxel", [1.0, 1.0, 1.0]))
+        length = calculate_path_length(
+            trace_arr * parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
+        )
 
         edge_data.append(
             {

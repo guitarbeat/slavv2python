@@ -191,13 +191,17 @@ def _build_comparison_quick_view(comparison: dict[str, Any]) -> dict[str, Any]:
         "edges_exact": bool(comparison.get("edges", {}).get("exact_match", False)),
         "edges_matlab": matlab_edges,
         "edges_python": python_edges,
-        "matlab_elapsed_seconds": float(comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0),
+        "matlab_elapsed_seconds": float(
+            comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0
+        ),
         "network_strands_diff": python_strands - matlab_strands,
         "network_strands_exact": bool(comparison.get("network", {}).get("exact_match", False)),
         "network_strands_matlab": matlab_strands,
         "network_strands_python": python_strands,
         "parity_gate_passed": bool(comparison.get("parity_gate", {}).get("passed", False)),
-        "python_elapsed_seconds": float(comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0),
+        "python_elapsed_seconds": float(
+            comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0
+        ),
         "python_vs_matlab_time_delta_seconds": float(
             (comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0)
             - (comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0)
@@ -210,7 +214,9 @@ def _build_comparison_quick_view(comparison: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _write_comparison_quick_view(comparison: dict[str, Any], analysis_dir: Path) -> tuple[Path, Path]:
+def _write_comparison_quick_view(
+    comparison: dict[str, Any], analysis_dir: Path
+) -> tuple[Path, Path]:
     """Write compact sidecar artifacts that are easy to diff across runs."""
     quick_view = _build_comparison_quick_view(comparison)
     quick_json = analysis_dir / "comparison_quick_view.json"

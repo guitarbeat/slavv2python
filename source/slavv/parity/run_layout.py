@@ -635,7 +635,9 @@ def get_file_inventory(directory: Path) -> dict[str, list[Path]]:
     return collect_directory_inventory(directory)["inventory"]
 
 
-def _append_lifecycle_status_section(lines: list[str], lifecycle_status: dict[str, Any] | None) -> None:
+def _append_lifecycle_status_section(
+    lines: list[str], lifecycle_status: dict[str, Any] | None
+) -> None:
     if lifecycle_status is None:
         return
     lines.extend(
@@ -769,7 +771,9 @@ def _append_matlab_status_section(
     )
     batch_folder = matlab_status.get("matlab_batch_folder", "")
     if batch_folder:
-        lines.append(f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`")
+        lines.append(
+            f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`"
+        )
     lines.append(
         "- **Last completed MATLAB stage:** "
         f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
@@ -789,14 +793,18 @@ def _append_matlab_status_section(
     if lifecycle_status is not None:
         lines.append("- `99_Metadata/status.json`")
     if matlab_status.get("matlab_resume_state_file"):
-        lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`")
+        lines.append(
+            f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`"
+        )
     if matlab_status.get("matlab_log_file"):
         lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`")
     if batch_folder:
         lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
     lines.append("")
     if matlab_status.get("failure_summary"):
-        lines.extend(["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"])
+        lines.extend(
+            ["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"]
+        )
         log_tail = matlab_status.get("matlab_log_tail") or []
         if log_tail:
             lines.extend(["", "```text"])

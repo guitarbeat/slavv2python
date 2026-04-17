@@ -44,7 +44,9 @@ def add_summary_dashboard_traces(
             strand_lengths.append(length)
 
     if strand_lengths:
-        fig.add_trace(go.Histogram(x=strand_lengths, nbinsx=15, name="Strand Lengths"), row=1, col=2)
+        fig.add_trace(
+            go.Histogram(x=strand_lengths, nbinsx=15, name="Strand Lengths"), row=1, col=2
+        )
 
     radii = vertices.get("radii_microns", vertices.get("radii", []))
     if len(radii) > 0:
@@ -54,4 +56,6 @@ def add_summary_dashboard_traces(
         depths = vertex_positions[:, 2] * microns_per_voxel[2]
         depth_counts, depth_bins = np.histogram(depths, bins=10)
         bin_centers = (depth_bins[:-1] + depth_bins[1:]) / 2
-        fig.add_trace(go.Bar(x=bin_centers, y=depth_counts, name="Vertex Count by Depth"), row=2, col=2)
+        fig.add_trace(
+            go.Bar(x=bin_centers, y=depth_counts, name="Vertex Count by Depth"), row=2, col=2
+        )
