@@ -65,7 +65,7 @@ def _vertex_signatures(
     return coords_scales, coords_scales_energies
 
 
-def _sample_counter_diff(counter_a: Counter, counter_b: Counter, limit: int = 3) -> list[Any]:
+def _sample_counter_diff(counter_a: Any, counter_b: Any, limit: int = 3) -> list[Any]:
     """Return a few mismatch samples present in `counter_a` but not `counter_b`."""
     samples = []
     for item, count in (counter_a - counter_b).items():
