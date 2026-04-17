@@ -1,0 +1,3 @@
+[submodule "external/Vectorization-Public"]
+	path = external/Vectorization-Public
+	url = https://github.com/UTFOIL/Vectorization-Public.git
