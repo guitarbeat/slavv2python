@@ -66,6 +66,82 @@ __all__ = [
 ]
 
 
+def _sample_edge_energies(trace: np.ndarray, energy_field: np.ndarray) -> list[float]:
+    return [
+        energy_field[tuple(point.astype(int))]
+        for point in trace
+        if in_bounds(point.astype(int), energy_field.shape)
+    ]
+
+
+def _edge_energy_features(trace: np.ndarray, energy_field: np.ndarray) -> list[float]:
+    try:
+        edge_energies = _sample_edge_energies(trace, energy_field)
+    except Exception:
+        return [0, 0, 0, 0, 0]
+    if not edge_energies:
+        return [0, 0, 0, 0, 0]
+    return [
+        float(np.mean(edge_energies)),
+        float(np.std(edge_energies)),
+        float(np.min(edge_energies)),
+        float(np.max(edge_energies)),
+        float(np.median(edge_energies)),
+    ]
+
+
+def _connected_vertex_features(
+    start_vertex: Any,
+    end_vertex: Any,
+    vertex_energies: np.ndarray,
+    vertex_radii: Any,
+    edge_length: float,
+) -> list[float]:
+    if start_vertex is not None:
+        start_energy = vertex_energies[start_vertex]
+        start_radius = vertex_radii[start_vertex] if len(vertex_radii) > start_vertex else 0
+    else:
+        start_energy = 0
+        start_radius = 0
+    if end_vertex is not None:
+        end_energy = vertex_energies[end_vertex]
+        end_radius = vertex_radii[end_vertex] if len(vertex_radii) > end_vertex else 0
+    else:
+        end_energy = 0
+        end_radius = 0
+    avg_radius = (start_radius + end_radius) / 2
+    length_radius_ratio = edge_length / (avg_radius + 1e-10)
+    return [
+        start_energy,
+        end_energy,
+        start_radius,
+        end_radius,
+        avg_radius,
+        length_radius_ratio,
+        start_energy - end_energy,
+    ]
+
+
+def _direction_change_features(trace: np.ndarray) -> list[float]:
+    if len(trace) <= 2:
+        return [0, 0, 0]
+    directions = np.diff(trace, axis=0)
+    direction_changes = []
+    for idx in range(len(directions) - 1):
+        dot_product = np.dot(directions[idx], directions[idx + 1])
+        norm_product = np.linalg.norm(directions[idx]) * np.linalg.norm(directions[idx + 1])
+        if norm_product > 0:
+            angle = np.arccos(np.clip(dot_product / norm_product, -1, 1))
+            direction_changes.append(angle)
+    if not direction_changes:
+        return [0, 0, 0]
+    return [
+        float(np.mean(direction_changes)),
+        float(np.std(direction_changes)),
+        float(np.max(direction_changes)),
+    ]
+
+
 class MLCurator:
     """
     Machine Learning Curator for automated vertex and edge curation
@@ -223,82 +299,17 @@ class MLCurator:
                 len(trace),  # Number of points in trace
             ]
 
-            # Energy statistics along edge
-            try:
-                edge_energies = []
-                for point in trace:
-                    pos = point.astype(int)
-                    if in_bounds(pos, energy_field.shape):
-                        edge_energies.append(energy_field[tuple(pos)])
-
-                if edge_energies:
-                    edge_features.extend(
-                        [
-                            np.mean(edge_energies),
-                            np.std(edge_energies),
-                            np.min(edge_energies),
-                            np.max(edge_energies),
-                            np.median(edge_energies),
-                        ]
-                    )
-                else:
-                    edge_features.extend([0, 0, 0, 0, 0])
-            except Exception:
-                edge_features.extend([0, 0, 0, 0, 0])
-
-            # Vertex connection features
-            if start_vertex is not None:
-                start_energy = vertex_energies[start_vertex]
-                start_radius = vertex_radii[start_vertex] if len(vertex_radii) > start_vertex else 0
-            else:
-                start_energy = 0
-                start_radius = 0
-            if end_vertex is not None:
-                end_energy = vertex_energies[end_vertex]
-                end_radius = vertex_radii[end_vertex] if len(vertex_radii) > end_vertex else 0
-            else:
-                end_energy = 0
-                end_radius = 0
-
-            avg_radius = (start_radius + end_radius) / 2
-            length_radius_ratio = edge_length / (avg_radius + 1e-10)
-            energy_diff = start_energy - end_energy
-
+            edge_features.extend(_edge_energy_features(trace, energy_field))
             edge_features.extend(
-                [
-                    start_energy,
-                    end_energy,
-                    start_radius,
-                    end_radius,
-                    avg_radius,
-                    length_radius_ratio,
-                    energy_diff,
-                ]
+                _connected_vertex_features(
+                    start_vertex,
+                    end_vertex,
+                    vertex_energies,
+                    vertex_radii,
+                    edge_length,
+                )
             )
-
-            # Directional consistency
-            if len(trace) > 2:
-                directions = np.diff(trace, axis=0)
-                direction_changes = []
-                for j in range(len(directions) - 1):
-                    dot_product = np.dot(directions[j], directions[j + 1])
-                    norm_product = np.linalg.norm(directions[j]) * np.linalg.norm(directions[j + 1])
-                    if norm_product > 0:
-                        angle = np.arccos(np.clip(dot_product / norm_product, -1, 1))
-                        direction_changes.append(angle)
-
-                if direction_changes:
-                    edge_features.extend(
-                        [
-                            np.mean(direction_changes),
-                            np.std(direction_changes),
-                            np.max(direction_changes),
-                        ]
-                    )
-                else:
-                    edge_features.extend([0, 0, 0])
-            else:
-                edge_features.extend([0, 0, 0])
+            edge_features.extend(_direction_change_features(trace))
 
             features.append(edge_features)
 

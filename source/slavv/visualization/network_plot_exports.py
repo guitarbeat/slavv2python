@@ -236,60 +236,117 @@ def export_casx(
     output_path: str,
 ) -> str:
     """Export in CASX format."""
+    positions = np.asarray(vertices.get("positions", []), dtype=float)
+    radii_array = _casx_radii_array(vertices, len(positions))
+    energies = vertices.get("energies")
+    scales = vertices.get("scales")
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        f.write("<CasX>\n")
-        f.write("  <Parameters>\n")
-        for k, v in parameters.items():
-            val_str = " ".join(map(str, v)) if isinstance(v, (list, tuple, np.ndarray)) else str(v)
-            f.write(f'    <Parameter name="{k}" value="{val_str}"/>\n')
-        if "microns_per_voxel" not in parameters:
-            f.write('    <Parameter name="microns_per_voxel" value="1.0 1.0 1.0"/>\n')
-        f.write("  </Parameters>\n")
-        f.write("  <Network>\n")
-        f.write("    <Vertices>\n")
-        positions = np.asarray(vertices.get("positions", []), dtype=float)
-        radii = vertices.get("radii_microns", vertices.get("radii", []))
-        energies = vertices.get("energies")
-        scales = vertices.get("scales")
-        radii_array = np.asarray(radii, dtype=float).reshape(-1)
-        if len(radii_array) < len(positions):
-            padded = np.zeros((len(positions),), dtype=float)
-            padded[: len(radii_array)] = radii_array
-            radii_array = padded
-        for i, pos in enumerate(positions):
-            radius = radii_array[i] if i < len(radii_array) else 0.0
-            line = (
-                f'      <Vertex id="{i}" x="{pos[1]:.3f}" y="{pos[0]:.3f}" '
-                f'z="{pos[2]:.3f}" radius="{radius:.3f}"'
-            )
-            if energies is not None and i < len(energies):
-                line += f' energy="{energies[i]:.3f}"'
-            if scales is not None and i < len(scales):
-                line += f' scale="{scales[i]:.3f}"'
-            f.write(line + "/>\n")
-        f.write("    </Vertices>\n")
-        f.write("    <Edges>\n")
-        for i, connection in enumerate(edges["connections"]):
-            start_vertex, end_vertex = connection
-            if start_vertex is not None and end_vertex is not None:
-                f.write(f'      <Edge id="{i}" start="{start_vertex}" end="{end_vertex}"/>\n')
-        f.write("    </Edges>\n")
-        f.write("    <Strands>\n")
-        for i, strand in enumerate(network.get("strands", [])):
-            if len(strand) > 0:
-                f.write(f'      <Strand id="{i}">' + " ".join(map(str, strand)) + "</Strand>\n")
-        f.write("    </Strands>\n")
-        if "bifurcations" in network and len(network["bifurcations"]) > 0:
-            f.write("    <Bifurcations>\n")
-            for i, bif in enumerate(network["bifurcations"]):
-                f.write(f'      <Bifurcation id="{i}" vertex_id="{bif}"/>\n')
-            f.write("    </Bifurcations>\n")
-        f.write("  </Network>\n")
-        f.write("</CasX>\n")
+        f.write(
+            _build_casx_xml(parameters, positions, radii_array, energies, scales, edges, network)
+        )
 
     logger.info(f"CASX export complete: {output_path}")
     return output_path
+
+
+def _casx_radii_array(vertices: dict[str, Any], n_positions: int) -> np.ndarray:
+    radii = vertices.get("radii_microns", vertices.get("radii", []))
+    radii_array = np.asarray(radii, dtype=float).reshape(-1)
+    if len(radii_array) >= n_positions:
+        return radii_array
+    padded = np.zeros((n_positions,), dtype=float)
+    padded[: len(radii_array)] = radii_array
+    return padded
+
+
+def _casx_parameter_lines(parameters: dict[str, Any]) -> list[str]:
+    lines = ["  <Parameters>"]
+    for key, value in parameters.items():
+        value_str = (
+            " ".join(map(str, value))
+            if isinstance(value, (list, tuple, np.ndarray))
+            else str(value)
+        )
+        lines.append(f'    <Parameter name="{key}" value="{value_str}"/>')
+    if "microns_per_voxel" not in parameters:
+        lines.append('    <Parameter name="microns_per_voxel" value="1.0 1.0 1.0"/>')
+    lines.append("  </Parameters>")
+    return lines
+
+
+def _casx_vertex_line(
+    index: int, pos: np.ndarray, radius: float, energies: Any, scales: Any
+) -> str:
+    line = (
+        f'      <Vertex id="{index}" x="{pos[1]:.3f}" y="{pos[0]:.3f}" '
+        f'z="{pos[2]:.3f}" radius="{radius:.3f}"'
+    )
+    if energies is not None and index < len(energies):
+        line += f' energy="{energies[index]:.3f}"'
+    if scales is not None and index < len(scales):
+        line += f' scale="{scales[index]:.3f}"'
+    return line + "/>"
+
+
+def _casx_vertex_lines(
+    positions: np.ndarray, radii_array: np.ndarray, energies: Any, scales: Any
+) -> list[str]:
+    lines = ["    <Vertices>"]
+    for index, pos in enumerate(positions):
+        radius = radii_array[index] if index < len(radii_array) else 0.0
+        lines.append(_casx_vertex_line(index, pos, radius, energies, scales))
+    lines.append("    </Vertices>")
+    return lines
+
+
+def _casx_edge_lines(edges: dict[str, Any]) -> list[str]:
+    lines = ["    <Edges>"]
+    for index, connection in enumerate(edges["connections"]):
+        start_vertex, end_vertex = connection
+        if start_vertex is not None and end_vertex is not None:
+            lines.append(f'      <Edge id="{index}" start="{start_vertex}" end="{end_vertex}"/>')
+    lines.append("    </Edges>")
+    return lines
+
+
+def _casx_strand_lines(network: dict[str, Any]) -> list[str]:
+    strand_lines = [
+        f'      <Strand id="{index}">' + " ".join(map(str, strand)) + "</Strand>"
+        for index, strand in enumerate(network.get("strands", []))
+        if len(strand) > 0
+    ]
+    return ["    <Strands>", *strand_lines, "    </Strands>"]
+
+
+def _casx_bifurcation_lines(network: dict[str, Any]) -> list[str]:
+    bifurcations = network.get("bifurcations", [])
+    if len(bifurcations) == 0:
+        return []
+    bifurcation_lines = [
+        f'      <Bifurcation id="{index}" vertex_id="{bifurcation}"/>'
+        for index, bifurcation in enumerate(bifurcations)
+    ]
+    return ["    <Bifurcations>", *bifurcation_lines, "    </Bifurcations>"]
+
+
+def _build_casx_xml(
+    parameters: dict[str, Any],
+    positions: np.ndarray,
+    radii_array: np.ndarray,
+    energies: Any,
+    scales: Any,
+    edges: dict[str, Any],
+    network: dict[str, Any],
+) -> str:
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<CasX>"]
+    lines.extend(_casx_parameter_lines(parameters))
+    lines.append("  <Network>")
+    lines.extend(_casx_vertex_lines(positions, radii_array, energies, scales))
+    lines.extend(_casx_edge_lines(edges))
+    lines.extend(_casx_strand_lines(network))
+    lines.extend(_casx_bifurcation_lines(network))
+    lines.extend(("  </Network>", "</CasX>"))
+    return "\n".join(lines) + "\n"
 
 
 def sanitize_for_matlab(data: Any) -> Any:

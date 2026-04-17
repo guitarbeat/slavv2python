@@ -154,10 +154,18 @@ def _dashboard_breakdown_frame(
         for stage_row in _dashboard_stage_frame(snapshot, run_dir=run_dir).to_dict("records")
     ]
     rows.extend(_dashboard_run_throughput_rows(snapshot, run_dir=run_dir))
+    rows.extend(_dashboard_optional_task_rows(snapshot, run_dir=run_dir))
+    rows.extend(_dashboard_network_stat_rows(stats))
+    rows.extend(_dashboard_share_report_rows(share_metrics))
+    return pd.DataFrame(rows)
 
+
+def _dashboard_optional_task_rows(
+    snapshot: Any | None, *, run_dir: str | None = None
+) -> list[dict[str, Any]]:
     optional_tasks = {} if snapshot is None else snapshot.optional_tasks
     if optional_tasks:
-        rows.extend(
+        return [
             {
                 "Section": "Optional Tasks",
                 "Metric": task_name,
@@ -168,29 +176,32 @@ def _dashboard_breakdown_frame(
                 "Notes": task.detail or "Tracked optional work",
             }
             for task_name, task in sorted(optional_tasks.items())
-        )
-    else:
-        rows.append(
-            {
-                "Section": "Optional Tasks",
-                "Metric": "Tracked tasks",
-                "Progress": 0 if snapshot is not None else None,
-                "Value": "0 tracked" if snapshot is not None else DASHBOARD_PLACEHOLDER,
-                "Status": "idle" if snapshot is not None else "placeholder",
-                "Source": (
-                    "run_snapshot.json optional_tasks"
-                    if snapshot is not None
-                    else _dashboard_snapshot_source(run_dir)
-                ),
-                "Notes": (
-                    "No optional tasks have been tracked for this run yet."
-                    if snapshot is not None
-                    else "Optional tasks appear after a run snapshot is available."
-                ),
-            }
-        )
+        ]
+    return [
+        {
+            "Section": "Optional Tasks",
+            "Metric": "Tracked tasks",
+            "Progress": 0 if snapshot is not None else None,
+            "Value": "0 tracked" if snapshot is not None else DASHBOARD_PLACEHOLDER,
+            "Status": "idle" if snapshot is not None else "placeholder",
+            "Source": (
+                "run_snapshot.json optional_tasks"
+                if snapshot is not None
+                else _dashboard_snapshot_source(run_dir)
+            ),
+            "Notes": (
+                "No optional tasks have been tracked for this run yet."
+                if snapshot is not None
+                else "Optional tasks appear after a run snapshot is available."
+            ),
+        }
+    ]
 
-    stat_rows = [
+
+def _dashboard_network_stat_spec(
+    stats: dict[str, Any] | None,
+) -> list[tuple[str, float | int | None, str]]:
+    return [
         ("Strands", None if stats is None else int(stats.get("num_strands", 0)), "count"),
         (
             "Total Length (um)",
@@ -208,25 +219,30 @@ def _dashboard_breakdown_frame(
             "radius",
         ),
     ]
-    source = "session_state.processing_results"
-    for metric_name, value, value_type in stat_rows:
-        if value is None:
-            display_value = DASHBOARD_PLACEHOLDER
-            status = "placeholder"
-            notes = "Loads when a full network result is available in session state"
-        elif value_type == "count":
-            display_value = f"{value:d}"
-            status = "live"
-            notes = "Computed from the current network"
-        elif value_type == "length":
-            display_value = f"{value:.1f}"
-            status = "live"
-            notes = "Computed from calculate_network_statistics"
-        else:
-            display_value = f"{value:.3f}" if value_type == "ratio" else f"{value:.2f}"
-            status = "live"
-            notes = "Computed from calculate_network_statistics"
 
+
+def _dashboard_network_value(value: float | int | None, value_type: str) -> tuple[str, str, str]:
+    if value is None:
+        return (
+            DASHBOARD_PLACEHOLDER,
+            "placeholder",
+            "Loads when a full network result is available in session state",
+        )
+    if value_type == "count":
+        return (f"{value:d}", "live", "Computed from the current network")
+    if value_type == "length":
+        return (f"{value:.1f}", "live", "Computed from calculate_network_statistics")
+    return (
+        f"{value:.3f}" if value_type == "ratio" else f"{value:.2f}",
+        "live",
+        "Computed from calculate_network_statistics",
+    )
+
+
+def _dashboard_network_stat_rows(stats: dict[str, Any] | None) -> list[dict[str, Any]]:
+    rows = []
+    for metric_name, value, value_type in _dashboard_network_stat_spec(stats):
+        display_value, status, notes = _dashboard_network_value(value, value_type)
         rows.append(
             {
                 "Section": "Network",
@@ -234,42 +250,46 @@ def _dashboard_breakdown_frame(
                 "Progress": None,
                 "Value": display_value,
                 "Status": status,
-                "Source": source,
+                "Source": "session_state.processing_results",
                 "Notes": notes,
             }
         )
+    return rows
 
-    rows.extend(
+
+def _dashboard_share_report_rows(share_metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    live_status = "live" if share_metrics else "idle"
+    notes_suffix = (
         (
-            {
-                "Section": "Share Report",
-                "Metric": "Requested",
-                "Progress": None,
-                "Value": str(share_metrics.get("share_report_requested", 0)),
-                "Status": "live" if share_metrics else "idle",
-                "Source": "session_state.share_report_metrics",
-                "Notes": (
-                    "Counts report generations in this session"
-                    if share_metrics
-                    else "No share report generations have been recorded in this session yet"
-                ),
-            },
-            {
-                "Section": "Share Report",
-                "Metric": "Downloaded",
-                "Progress": None,
-                "Value": str(share_metrics.get("share_report_downloaded", 0)),
-                "Status": "live" if share_metrics else "idle",
-                "Source": "session_state.share_report_metrics",
-                "Notes": (
-                    "Counts report downloads in this session"
-                    if share_metrics
-                    else "No share report downloads have been recorded in this session yet"
-                ),
-            },
+            "Counts report generations in this session",
+            "Counts report downloads in this session",
+        )
+        if share_metrics
+        else (
+            "No share report generations have been recorded in this session yet",
+            "No share report downloads have been recorded in this session yet",
         )
     )
-    return pd.DataFrame(rows)
+    return [
+        {
+            "Section": "Share Report",
+            "Metric": "Requested",
+            "Progress": None,
+            "Value": str(share_metrics.get("share_report_requested", 0)),
+            "Status": live_status,
+            "Source": "session_state.share_report_metrics",
+            "Notes": notes_suffix[0],
+        },
+        {
+            "Section": "Share Report",
+            "Metric": "Downloaded",
+            "Progress": None,
+            "Value": str(share_metrics.get("share_report_downloaded", 0)),
+            "Status": live_status,
+            "Source": "session_state.share_report_metrics",
+            "Notes": notes_suffix[1],
+        },
+    ]
 
 
 def _build_dashboard_placeholder_trend() -> Any:

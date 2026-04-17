@@ -129,6 +129,171 @@ def summarize_loop_assessment(report: LoopAssessmentReport) -> str:
     return f"Workflow decision: {verdict_label}."
 
 
+def _build_loop_assessment_report(
+    run_root: Path, metadata_dir: Path, loop_kind: str
+) -> LoopAssessmentReport:
+    return LoopAssessmentReport(
+        run_root=str(run_root),
+        requested_loop=loop_kind,
+        authoritative_files={
+            "run_root": str(run_root),
+            "metadata_dir": str(metadata_dir),
+            "run_snapshot": str(run_root / "99_Metadata" / "run_snapshot.json"),
+            "comparison_params": str(metadata_dir / "comparison_params.normalized.json"),
+        },
+    )
+
+
+def _artifact_check_map(layout: dict[str, Path], metadata_dir: Path) -> dict[str, bool]:
+    has_matlab_batch = _has_reusable_matlab_batch(layout["matlab_dir"])
+    has_completed_matlab_batch = _has_completed_matlab_batch(metadata_dir, layout["matlab_dir"])
+    has_python_checkpoints = _has_python_checkpoint_surface(layout["python_dir"])
+    has_python_results = _has_python_results_surface(layout["python_dir"])
+    has_analysis_artifacts = _has_analysis_surface(layout["analysis_dir"])
+    has_matlab_results = _has_matlab_results_surface(layout["matlab_dir"])
+    return {
+        "matlab_batch_present": has_matlab_batch,
+        "completed_matlab_batch_present": has_completed_matlab_batch,
+        "python_checkpoints_present": has_python_checkpoints,
+        "python_results_present": has_python_results,
+        "analysis_artifacts_present": has_analysis_artifacts,
+        "matlab_results_present": has_matlab_results,
+    }
+
+
+def _apply_compatibility_check(
+    report: LoopAssessmentReport,
+    run_root: Path,
+    *,
+    input_path: Path | None,
+    params: dict[str, Any] | None,
+    loop_kind: str,
+) -> bool:
+    compatibility_ok, compatibility_reason, params_ok = _assess_recorded_compatibility(
+        run_root,
+        input_path=input_path,
+        params=params,
+        loop_kind=loop_kind,
+    )
+    report.input_compatible = compatibility_ok
+    report.params_compatible = params_ok
+    report.compatibility_reason = compatibility_reason
+    if compatibility_ok:
+        return True
+    report.verdict = LOOP_BLOCKED
+    report.reasons.append(compatibility_reason)
+    report.recommended_action = "Use a compatible staged run root or create a fresh run root."
+    return False
+
+
+def _assess_standalone_analysis(
+    report: LoopAssessmentReport,
+    *,
+    standalone_matlab_dir: Path | None,
+    standalone_python_dir: Path | None,
+) -> LoopAssessmentReport:
+    has_standalone_inputs = bool(
+        standalone_matlab_dir is not None
+        and standalone_matlab_dir.exists()
+        and standalone_python_dir is not None
+        and standalone_python_dir.exists()
+    )
+    report.has_required_artifacts = has_standalone_inputs
+    report.artifact_reason = (
+        "standalone MATLAB and Python inputs are available"
+        if has_standalone_inputs
+        else "standalone MATLAB and Python inputs are required"
+    )
+    report.safe_to_analyze_only = has_standalone_inputs
+    if has_standalone_inputs:
+        report.verdict = LOOP_ANALYSIS_READY
+        report.recommended_action = "Analyze the existing MATLAB and Python result directories."
+    else:
+        report.verdict = LOOP_BLOCKED
+        report.reasons.append(report.artifact_reason)
+        report.recommended_action = "Provide both standalone result directories."
+    return report
+
+
+def _assess_validate_only(report: LoopAssessmentReport) -> LoopAssessmentReport:
+    report.verdict = LOOP_ANALYSIS_READY
+    report.has_required_artifacts = True
+    report.artifact_reason = "validate-only mode needs no staged artifacts"
+    report.safe_to_analyze_only = True
+    report.recommended_action = "Run output-root preflight and inspect the persisted metadata."
+    return report
+
+
+def _assess_skip_matlab(
+    report: LoopAssessmentReport, *, has_matlab_batch: bool, has_python_checkpoints: bool
+) -> LoopAssessmentReport:
+    has_skip_matlab_surface = has_matlab_batch or has_python_checkpoints
+    report.has_required_artifacts = has_skip_matlab_surface
+    report.artifact_reason = (
+        "reusable MATLAB batch artifacts or Python checkpoints are available"
+        if has_skip_matlab_surface
+        else "missing reusable Python checkpoints or MATLAB batch artifacts for a skip-matlab parity rerun"
+    )
+    report.requires_fresh_matlab = not has_matlab_batch
+    if has_skip_matlab_surface:
+        report.verdict = LOOP_REUSE_READY
+        report.safe_to_reuse = True
+        report.recommended_action = (
+            "Reuse this run root for the imported-MATLAB parity rerun."
+            if has_matlab_batch
+            else "Reuse this run root for a Python-side rerun; refresh MATLAB if imported parity is needed."
+        )
+        return report
+    report.verdict = LOOP_FRESH_MATLAB_REQUIRED
+    report.reasons.append(report.artifact_reason)
+    report.recommended_action = (
+        "Create or refresh a MATLAB batch before relying on skip-matlab parity reuse."
+    )
+    return report
+
+
+def _assess_skip_python_matlab_only(report: LoopAssessmentReport) -> LoopAssessmentReport:
+    report.has_required_artifacts = True
+    report.artifact_reason = "this loop can run against the selected run root"
+    report.verdict = LOOP_FRESH_MATLAB_REQUIRED
+    report.requires_fresh_matlab = True
+    report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
+    return report
+
+
+def _assess_full_comparison(
+    report: LoopAssessmentReport,
+    *,
+    has_completed_matlab_batch: bool,
+    has_python_results: bool,
+) -> LoopAssessmentReport:
+    report.has_required_artifacts = True
+    if has_completed_matlab_batch:
+        if has_python_results:
+            report.artifact_reason = "completed MATLAB batch and reusable Python outputs are available"
+            report.verdict = LOOP_ANALYSIS_READY
+            report.safe_to_reuse = True
+            report.safe_to_analyze_only = True
+            report.requires_fresh_matlab = False
+            report.recommended_action = (
+                "Reuse the completed MATLAB batch and existing Python outputs for analysis-only comparison."
+            )
+            return report
+        report.artifact_reason = "completed MATLAB batch is available for Python rerun reuse"
+        report.verdict = LOOP_REUSE_READY
+        report.safe_to_reuse = True
+        report.requires_fresh_matlab = False
+        report.recommended_action = (
+            "Skip MATLAB launch and reuse the completed batch for the imported-MATLAB Python rerun."
+        )
+        return report
+    report.artifact_reason = "no reusable completed MATLAB batch is available"
+    report.verdict = LOOP_FRESH_MATLAB_REQUIRED
+    report.requires_fresh_matlab = True
+    report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
+    return report
+
+
 def assess_loop_request(
     run_root: Path,
     *,
@@ -143,143 +308,53 @@ def assess_loop_request(
 
     layout = resolve_run_layout(run_root)
     metadata_dir = layout["metadata_dir"]
-    report = LoopAssessmentReport(
-        run_root=str(layout["run_root"]),
-        requested_loop=loop_kind,
-        authoritative_files={
-            "run_root": str(layout["run_root"]),
-            "metadata_dir": str(metadata_dir),
-            "run_snapshot": str(layout["run_root"] / "99_Metadata" / "run_snapshot.json"),
-            "comparison_params": str(metadata_dir / "comparison_params.normalized.json"),
-        },
-    )
-
-    has_matlab_batch = _has_reusable_matlab_batch(layout["matlab_dir"])
-    has_completed_matlab_batch = _has_completed_matlab_batch(metadata_dir, layout["matlab_dir"])
-    has_python_checkpoints = _has_python_checkpoint_surface(layout["python_dir"])
-    has_python_results = _has_python_results_surface(layout["python_dir"])
-    has_analysis_artifacts = _has_analysis_surface(layout["analysis_dir"])
-    has_matlab_results = _has_matlab_results_surface(layout["matlab_dir"])
-    report.artifact_checks = {
-        "matlab_batch_present": has_matlab_batch,
-        "completed_matlab_batch_present": has_completed_matlab_batch,
-        "python_checkpoints_present": has_python_checkpoints,
-        "python_results_present": has_python_results,
-        "analysis_artifacts_present": has_analysis_artifacts,
-        "matlab_results_present": has_matlab_results,
-    }
+    report = _build_loop_assessment_report(layout["run_root"], metadata_dir, loop_kind)
+    report.artifact_checks = _artifact_check_map(layout, metadata_dir)
+    has_matlab_batch = report.artifact_checks["matlab_batch_present"]
+    has_completed_matlab_batch = report.artifact_checks["completed_matlab_batch_present"]
+    has_python_checkpoints = report.artifact_checks["python_checkpoints_present"]
+    has_python_results = report.artifact_checks["python_results_present"]
+    has_analysis_artifacts = report.artifact_checks["analysis_artifacts_present"]
+    has_matlab_results = report.artifact_checks["matlab_results_present"]
     report.safe_to_analyze_only = has_analysis_artifacts or (
         has_matlab_results and has_python_results
     )
 
-    compatibility_ok, compatibility_reason, params_ok = _assess_recorded_compatibility(
+    if not _apply_compatibility_check(
+        report,
         layout["run_root"],
         input_path=input_path,
         params=params,
         loop_kind=loop_kind,
-    )
-    report.input_compatible = compatibility_ok
-    report.params_compatible = params_ok
-    report.compatibility_reason = compatibility_reason
-
-    if not compatibility_ok:
-        report.verdict = LOOP_BLOCKED
-        report.reasons.append(compatibility_reason)
-        report.recommended_action = "Use a compatible staged run root or create a fresh run root."
+    ):
         return report
 
     if loop_kind == "standalone_analysis":
-        has_standalone_inputs = bool(
-            standalone_matlab_dir is not None
-            and standalone_matlab_dir.exists()
-            and standalone_python_dir is not None
-            and standalone_python_dir.exists()
+        return _assess_standalone_analysis(
+            report,
+            standalone_matlab_dir=standalone_matlab_dir,
+            standalone_python_dir=standalone_python_dir,
         )
-        report.has_required_artifacts = has_standalone_inputs
-        report.artifact_reason = (
-            "standalone MATLAB and Python inputs are available"
-            if has_standalone_inputs
-            else "standalone MATLAB and Python inputs are required"
-        )
-        report.safe_to_analyze_only = has_standalone_inputs
-        if has_standalone_inputs:
-            report.verdict = LOOP_ANALYSIS_READY
-            report.recommended_action = "Analyze the existing MATLAB and Python result directories."
-        else:
-            report.verdict = LOOP_BLOCKED
-            report.reasons.append(report.artifact_reason)
-            report.recommended_action = "Provide both standalone result directories."
-        return report
 
     if loop_kind == "validate_only":
-        report.verdict = LOOP_ANALYSIS_READY
-        report.has_required_artifacts = True
-        report.artifact_reason = "validate-only mode needs no staged artifacts"
-        report.safe_to_analyze_only = True
-        report.recommended_action = "Run output-root preflight and inspect the persisted metadata."
-        return report
+        return _assess_validate_only(report)
 
     if loop_kind in {"skip_matlab_edges", "skip_matlab_network"}:
-        has_skip_matlab_surface = has_matlab_batch or has_python_checkpoints
-        report.has_required_artifacts = has_skip_matlab_surface
-        report.artifact_reason = (
-            "reusable MATLAB batch artifacts or Python checkpoints are available"
-            if has_skip_matlab_surface
-            else (
-                "missing reusable Python checkpoints or MATLAB batch artifacts "
-                "for a skip-matlab parity rerun"
-            )
+        return _assess_skip_matlab(
+            report,
+            has_matlab_batch=has_matlab_batch,
+            has_python_checkpoints=has_python_checkpoints,
         )
-        report.requires_fresh_matlab = not has_matlab_batch
-        if has_skip_matlab_surface:
-            report.verdict = LOOP_REUSE_READY
-            report.safe_to_reuse = True
-            if has_matlab_batch:
-                report.recommended_action = (
-                    "Reuse this run root for the imported-MATLAB parity rerun."
-                )
-            else:
-                report.recommended_action = "Reuse this run root for a Python-side rerun; refresh MATLAB if imported parity is needed."
-        else:
-            report.verdict = LOOP_FRESH_MATLAB_REQUIRED
-            report.reasons.append(report.artifact_reason)
-            report.recommended_action = (
-                "Create or refresh a MATLAB batch before relying on skip-matlab parity reuse."
-            )
-        return report
 
     if loop_kind == "skip_python_matlab_only":
-        report.has_required_artifacts = True
-        report.artifact_reason = "this loop can run against the selected run root"
-        report.verdict = LOOP_FRESH_MATLAB_REQUIRED
-        report.requires_fresh_matlab = True
-        report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
-        return report
+        return _assess_skip_python_matlab_only(report)
 
     if loop_kind == "full_comparison":
-        report.has_required_artifacts = True
-        if has_completed_matlab_batch and has_python_results:
-            report.artifact_reason = (
-                "completed MATLAB batch and reusable Python outputs are available"
-            )
-            report.verdict = LOOP_ANALYSIS_READY
-            report.safe_to_reuse = True
-            report.safe_to_analyze_only = True
-            report.requires_fresh_matlab = False
-            report.recommended_action = "Reuse the completed MATLAB batch and existing Python outputs for analysis-only comparison."
-            return report
-        if has_completed_matlab_batch:
-            report.artifact_reason = "completed MATLAB batch is available for Python rerun reuse"
-            report.verdict = LOOP_REUSE_READY
-            report.safe_to_reuse = True
-            report.requires_fresh_matlab = False
-            report.recommended_action = "Skip MATLAB launch and reuse the completed batch for the imported-MATLAB Python rerun."
-            return report
-        report.artifact_reason = "no reusable completed MATLAB batch is available"
-        report.verdict = LOOP_FRESH_MATLAB_REQUIRED
-        report.requires_fresh_matlab = True
-        report.recommended_action = "Launch a fresh MATLAB run in this staged run root."
-        return report
+        return _assess_full_comparison(
+            report,
+            has_completed_matlab_batch=has_completed_matlab_batch,
+            has_python_results=has_python_results,
+        )
 
     report.verdict = LOOP_BLOCKED
     report.reasons.append(f"unsupported workflow loop '{loop_kind}'")

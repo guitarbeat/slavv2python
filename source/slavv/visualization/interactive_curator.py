@@ -261,93 +261,117 @@ class InteractiveCurator(QMainWindow):
         gy, gx, gz = self.grid_shape
 
         # -- Panel 1 - Volume Map ─────────────────────────────────────────
-        self.plotter_map.clear()
-        full_box = pv.Box(bounds=(0, gx, 0, gy, 0, gz))
-        self.plotter_map.add_mesh(full_box, style="wireframe", color="white", line_width=2)
-
-        if self.projection_axis == "X":
-            sb = (d, min(d + t, gx), 0, gy, 0, gz)
-        elif self.projection_axis == "Z":
-            sb = (0, gx, 0, gy, d, min(d + t, gz))
-        else:
-            sb = (0, gx, d, min(d + t, gy), 0, gz)
-        slice_box = pv.Box(bounds=sb)
-        self.plotter_map.add_mesh(slice_box, color="red", opacity=0.3)
-        self.plotter_map.view_isometric()
+        self._render_volume_map(d, t, gx, gy, gz)
 
         # -- Panel 2 - Volume Display ─────────────────────────────────────
-        self.plotter_display.clear()
+        self._render_volume_display(d, t)
+        self._set_display_camera()
 
-        # --- Vertices ---
+    def _slice_box_bounds(self, depth, thickness, gx, gy, gz):
+        if self.projection_axis == "X":
+            return (depth, min(depth + thickness, gx), 0, gy, 0, gz)
+        if self.projection_axis == "Z":
+            return (0, gx, 0, gy, depth, min(depth + thickness, gz))
+        return (0, gx, depth, min(depth + thickness, gy), 0, gz)
+
+    def _render_volume_map(self, depth, thickness, gx, gy, gz):
+        self.plotter_map.clear()
+        self.plotter_map.add_mesh(
+            pv.Box(bounds=(0, gx, 0, gy, 0, gz)),
+            style="wireframe",
+            color="white",
+            line_width=2,
+        )
+        self.plotter_map.add_mesh(
+            pv.Box(bounds=self._slice_box_bounds(depth, thickness, gx, gy, gz)),
+            color="red",
+            opacity=0.3,
+        )
+        self.plotter_map.view_isometric()
+
+    def _visible_vertices(self, depth, thickness):
         positions = self.vertices_data.get("positions", [])
         statuses = np.asarray(self.vertices_data.get("status", []))
-        if len(positions) > 0:
-            pos = np.asarray(positions)
-            in_slice = self._in_slice_mask(pos, d, t)
-            mask = in_slice & statuses if self.hide_false else in_slice
-            vis_pos = pos[mask]
-            vis_st = statuses[mask]
-            if len(vis_pos) > 0:
-                render_pts = self._yx2xy(vis_pos)
-                poly = pv.PolyData(render_pts)
-                poly["status"] = vis_st.astype(int)
-                self.plotter_display.add_mesh(
-                    poly,
-                    scalars="status",
-                    cmap=["red", "blue"],
-                    point_size=12,
-                    render_points_as_spheres=True,
-                    show_scalar_bar=False,
-                    name="vertices",
-                )
+        if len(positions) == 0:
+            return np.empty((0, 3)), np.asarray([], dtype=int)
+        positions_array = np.asarray(positions)
+        in_slice = self._in_slice_mask(positions_array, depth, thickness)
+        mask = in_slice & statuses if self.hide_false else in_slice
+        return positions_array[mask], statuses[mask].astype(int)
 
-        # --- Edges ---
+    def _render_vertices(self, depth, thickness):
+        visible_positions, visible_status = self._visible_vertices(depth, thickness)
+        if len(visible_positions) == 0:
+            return
+        poly = pv.PolyData(self._yx2xy(visible_positions))
+        poly["status"] = visible_status
+        self.plotter_display.add_mesh(
+            poly,
+            scalars="status",
+            cmap=["red", "blue"],
+            point_size=12,
+            render_points_as_spheres=True,
+            show_scalar_bar=False,
+            name="vertices",
+        )
+
+    def _trace_in_slice(self, trace, depth, thickness):
+        if self.projection_axis == "Z":
+            return np.any((trace[:, 2] >= depth) & (trace[:, 2] <= depth + thickness))
+        if self.projection_axis == "X":
+            return np.any((trace[:, 1] >= depth) & (trace[:, 1] <= depth + thickness))
+        return np.any((trace[:, 0] >= depth) & (trace[:, 0] <= depth + thickness))
+
+    def _edge_polydata(self, depth, thickness):
         traces = self.edges_data.get("traces", [])
-        e_statuses = np.asarray(self.edges_data.get("status", []))
-        if len(traces) > 0:
-            pts_list = []
-            lines = []
-            colors = []
-            pt_offset = 0
-            for i, trace in enumerate(traces):
-                if len(trace) < 2:
-                    continue
-                tr = np.asarray(trace, dtype=float)
-                # Filter by slice
-                if self.projection_axis == "Z":
-                    in_s = np.any((tr[:, 2] >= d) & (tr[:, 2] <= d + t))
-                elif self.projection_axis == "X":
-                    in_s = np.any((tr[:, 1] >= d) & (tr[:, 1] <= d + t))
-                else:
-                    in_s = np.any((tr[:, 0] >= d) & (tr[:, 0] <= d + t))
-                if not in_s:
-                    continue
-                if self.hide_false and not e_statuses[i]:
-                    continue
+        statuses = np.asarray(self.edges_data.get("status", []))
+        if len(traces) == 0:
+            return None
+        pts_list = []
+        lines = []
+        colors = []
+        point_offset = 0
+        for index, trace in enumerate(traces):
+            if len(trace) < 2:
+                continue
+            trace_array = np.asarray(trace, dtype=float)
+            if not self._trace_in_slice(trace_array, depth, thickness):
+                continue
+            if self.hide_false and not statuses[index]:
+                continue
+            render_trace = self._yx2xy(trace_array)
+            n_points = len(render_trace)
+            pts_list.append(render_trace)
+            lines.append(n_points)
+            lines.extend(range(point_offset, point_offset + n_points))
+            colors.extend([int(statuses[index])] * n_points)
+            point_offset += n_points
+        if not pts_list:
+            return None
+        edge_poly = pv.PolyData(np.vstack(pts_list))
+        edge_poly.lines = np.array(lines)
+        edge_poly["status"] = np.array(colors)
+        return edge_poly
 
-                render_tr = self._yx2xy(tr)
-                n = len(render_tr)
-                pts_list.append(render_tr)
-                lines.append(n)
-                lines.extend(range(pt_offset, pt_offset + n))
-                colors.extend([int(e_statuses[i])] * n)
-                pt_offset += n
+    def _render_edges(self, depth, thickness):
+        edge_poly = self._edge_polydata(depth, thickness)
+        if edge_poly is None:
+            return
+        self.plotter_display.add_mesh(
+            edge_poly,
+            scalars="status",
+            cmap=["red", "cyan"],
+            line_width=3,
+            show_scalar_bar=False,
+            name="edges",
+        )
 
-            if pts_list:
-                all_pts = np.vstack(pts_list)
-                edge_poly = pv.PolyData(all_pts)
-                edge_poly.lines = np.array(lines)
-                edge_poly["status"] = np.array(colors)
-                self.plotter_display.add_mesh(
-                    edge_poly,
-                    scalars="status",
-                    cmap=["red", "cyan"],
-                    line_width=3,
-                    show_scalar_bar=False,
-                    name="edges",
-                )
+    def _render_volume_display(self, depth, thickness):
+        self.plotter_display.clear()
+        self._render_vertices(depth, thickness)
+        self._render_edges(depth, thickness)
 
-        # Camera
+    def _set_display_camera(self):
         self.plotter_display.camera.ParallelProjectionOn()
         if self.projection_axis == "Z":
             self.plotter_display.view_xy()
@@ -426,56 +450,83 @@ class InteractiveCurator(QMainWindow):
 
         # ── Toggle mode ───────────────────────────────────────────────────
         if self.mode == "toggle":
-            if self.target_type == "vertices" and self.vertices_data.get("positions"):
-                pos = np.asarray(self.vertices_data["positions"])
-                dists = np.linalg.norm(pos - np_pt, axis=1)
-                idx = int(np.argmin(dists))
-                if dists[idx] < 5.0:
-                    self.vertices_data["status"][idx] = not self.vertices_data["status"][idx]
-                    self._update_views()
-
-            elif self.target_type == "edges" and self.edges_data.get("traces"):
-                best_idx, best_dist = -1, float("inf")
-                for i, trace in enumerate(self.edges_data["traces"]):
-                    if len(trace) == 0:
-                        continue
-                    tr = np.asarray(trace, dtype=float)
-                    d_min = float(np.min(np.linalg.norm(tr - np_pt, axis=1)))
-                    if d_min < best_dist:
-                        best_dist = d_min
-                        best_idx = i
-                if best_dist < 5.0 and best_idx >= 0:
-                    self.edges_data["status"][best_idx] = not self.edges_data["status"][best_idx]
-                    self._update_views()
+            self._handle_toggle_pick(np_pt)
 
         # ── Add-edge mode (2-click) ───────────────────────────────────────
         elif self.mode == "add":
-            if not self.vertices_data.get("positions"):
-                return
-            pos = np.asarray(self.vertices_data["positions"])
-            dists = np.linalg.norm(pos - np_pt, axis=1)
-            idx = int(np.argmin(dists))
-            if dists[idx] < 5.0:
-                self._add_edge_buffer.append(idx)
-                logger.info("Edge vertex %d selected (%d/2)", idx, len(self._add_edge_buffer))
+            self._handle_add_pick(np_pt)
 
-                if len(self._add_edge_buffer) == 2:
-                    v1, v2 = self._add_edge_buffer
-                    p1 = np.asarray(self.vertices_data["positions"][v1], dtype=float)
-                    p2 = np.asarray(self.vertices_data["positions"][v2], dtype=float)
-                    n_steps = max(int(np.linalg.norm(p2 - p1)), 2)
-                    trace = [
-                        list((p1 + (p2 - p1) * (s / (n_steps - 1))).round().astype(int))
-                        for s in range(n_steps)
-                    ]
-                    self.edges_data["traces"].append(trace)
-                    self.edges_data["status"].append(True)
-                    if "origin_indices" in self.edges_data:
-                        self.edges_data["origin_indices"].append(v1)
-                    if "terminal_indices" in self.edges_data:
-                        self.edges_data["terminal_indices"].append(v2)
-                    self._add_edge_buffer = []
-                    self._update_views()
+    def _nearest_vertex_index(self, point, max_distance=5.0):
+        if not self.vertices_data.get("positions"):
+            return None
+        positions = np.asarray(self.vertices_data["positions"], dtype=float)
+        dists = np.linalg.norm(positions - point, axis=1)
+        idx = int(np.argmin(dists))
+        return idx if dists[idx] < max_distance else None
+
+    def _nearest_edge_index(self, point, max_distance=5.0):
+        if not self.edges_data.get("traces"):
+            return None
+        best_idx, best_dist = None, float("inf")
+        for i, trace in enumerate(self.edges_data["traces"]):
+            if len(trace) == 0:
+                continue
+            trace_points = np.asarray(trace, dtype=float)
+            distance = float(np.min(np.linalg.norm(trace_points - point, axis=1)))
+            if distance < best_dist:
+                best_dist = distance
+                best_idx = i
+        return best_idx if best_dist < max_distance else None
+
+    def _toggle_vertex_status(self, point):
+        idx = self._nearest_vertex_index(point)
+        if idx is None:
+            return
+        self.vertices_data["status"][idx] = not self.vertices_data["status"][idx]
+        self._update_views()
+
+    def _toggle_edge_status(self, point):
+        idx = self._nearest_edge_index(point)
+        if idx is None:
+            return
+        self.edges_data["status"][idx] = not self.edges_data["status"][idx]
+        self._update_views()
+
+    def _handle_toggle_pick(self, point):
+        if self.target_type == "vertices":
+            self._toggle_vertex_status(point)
+            return
+        if self.target_type == "edges":
+            self._toggle_edge_status(point)
+
+    def _interpolated_edge_trace(self, start_idx, end_idx):
+        p1 = np.asarray(self.vertices_data["positions"][start_idx], dtype=float)
+        p2 = np.asarray(self.vertices_data["positions"][end_idx], dtype=float)
+        n_steps = max(int(np.linalg.norm(p2 - p1)), 2)
+        return [
+            list((p1 + (p2 - p1) * (step / (n_steps - 1))).round().astype(int))
+            for step in range(n_steps)
+        ]
+
+    def _commit_added_edge(self):
+        start_idx, end_idx = self._add_edge_buffer
+        self.edges_data["traces"].append(self._interpolated_edge_trace(start_idx, end_idx))
+        self.edges_data["status"].append(True)
+        if "origin_indices" in self.edges_data:
+            self.edges_data["origin_indices"].append(start_idx)
+        if "terminal_indices" in self.edges_data:
+            self.edges_data["terminal_indices"].append(end_idx)
+        self._add_edge_buffer = []
+        self._update_views()
+
+    def _handle_add_pick(self, point):
+        idx = self._nearest_vertex_index(point)
+        if idx is None:
+            return
+        self._add_edge_buffer.append(idx)
+        logger.info("Edge vertex %d selected (%d/2)", idx, len(self._add_edge_buffer))
+        if len(self._add_edge_buffer) == 2:
+            self._commit_added_edge()
 
 
 # ====================================================================== #
