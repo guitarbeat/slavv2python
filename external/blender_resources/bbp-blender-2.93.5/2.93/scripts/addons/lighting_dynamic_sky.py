@@ -42,9 +42,9 @@ from bpy.types import (
 # Handle error notifications
 def error_handlers(self, error, reports="ERROR"):
     if self and reports:
-        self.report({'WARNING'}, reports + " (See Console for more info)")
+        self.report({'WARNING'}, f"{reports} (See Console for more info)")
 
-    print("\n[Dynamic Sky]\nError: {}\n".format(error))
+    print(f"\n[Dynamic Sky]\nError: {error}\n")
 
 
 def check_world_name(name_id="Dynamic"):
@@ -53,7 +53,7 @@ def check_world_name(name_id="Dynamic"):
     suffix = 1
     try:
         name_list = [world.name for world in bpy.data.worlds if name_id in world.name]
-        new_name = "{}_{}".format(name_id, len(name_list) + suffix)
+        new_name = f"{name_id}_{len(name_list) + suffix}"
         if new_name in name_list:
             # KISS failed - numbering is not sequential
             # try harvesting numbers in world names, find the rightmost ones
@@ -62,12 +62,11 @@ def check_world_name(name_id="Dynamic"):
             for words in name_list:
                 test_num.append(findall("\d+", words))
 
-            suffix += max([int(l[-1]) for l in test_num])
-            new_name = "{}_{}".format(name_id, suffix)
+            suffix += max(int(l[-1]) for l in test_num)
+            new_name = f"{name_id}_{suffix}"
         return new_name
     except Exception as e:
         error_handlers(False, e)
-        pass
     return name_id
 
 
@@ -87,10 +86,7 @@ class dsky(Operator):
         return check_cycles()
 
     def get_node_types(self, node_tree, node_type):
-        for node in node_tree.nodes:
-            if node.type == node_type:
-                return node
-        return None
+        return next((node for node in node_tree.nodes if node.type == node_type), None)
 
     def execute(self, context):
         try:
@@ -399,14 +395,13 @@ def draw_world_settings(col, context):
     get_world_keys = bpy.data.worlds.keys()
 
     if stored_name not in get_world_keys or len(get_world_keys) < 1:
-        col.label(text="The {} World could not".format(stored_name),
-                 icon="INFO")
+        col.label(text=f"The {stored_name} World could not", icon="INFO")
         col.label(text="be found in the Worlds' Data", icon="BLANK1")
         return
 
     elif not (get_world and get_world.name == stored_name):
         col.label(text="Please select the World", icon="INFO")
-        col.label(text="named {}".format(stored_name), icon="BLANK1")
+        col.label(text=f"named {stored_name}", icon="BLANK1")
         col.label(text="from the Properties > World", icon="BLANK1")
         return
 
@@ -426,13 +421,13 @@ def draw_world_settings(col, context):
         bgp = pick_world.node_tree.nodes['Scene_Brightness'].inputs[1]
 
         suc = pick_world.node_tree.nodes['Sun_color'].inputs[1]
-    except:
+    except Exception:
         col.label(text="Please Create a new World", icon="INFO")
         col.label(text="seems that there was already", icon="BLANK1")
-        col.label(text="one called {}".format(stored_name), icon="BLANK1")
+        col.label(text=f"one called {stored_name}", icon="BLANK1")
         return
 
-    col.label(text="World: %s" % stored_name)
+    col.label(text=f"World: {stored_name}")
     col.separator()
 
     col.label(text="Scene Control")

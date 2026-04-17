@@ -22,11 +22,7 @@ from bpy.types import Operator
 
 def get_rig_and_cam(obj):
     if obj.type == 'ARMATURE':
-        cam = None
-        for child in obj.children:
-            if child.type == 'CAMERA':
-                cam = child
-                break
+        cam = next((child for child in obj.children if child.type == 'CAMERA'), None)
         if cam is not None:
             return obj, cam
     elif (obj.type == 'CAMERA'
@@ -78,8 +74,8 @@ class ADD_CAMERA_RIGS_OT_add_marker_bind(Operator, CameraRigMixin):
         rig, cam = get_rig_and_cam(context.active_object)
 
         marker = context.scene.timeline_markers.new(
-            "cam_" + str(context.scene.frame_current),
-            frame=context.scene.frame_current
+            f"cam_{str(context.scene.frame_current)}",
+            frame=context.scene.frame_current,
         )
         marker.camera = cam
 

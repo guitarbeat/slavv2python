@@ -36,8 +36,8 @@ bl_info = {
 
 
 def _get_depsgraph(context):
-    scene = context.scene
     if bpy.app.version < (2, 80, 0,):
+        scene = context.scene
         return scene.depsgraph
     else:
         view_layer = context.view_layer
@@ -78,9 +78,7 @@ class SCENE_OT_depsgraph_save_common:
 
     def execute(self, context):
         depsgraph = _get_depsgraph(context)
-        if not self.performSave(context, depsgraph):
-            return {'CANCELLED'}
-        return {'FINISHED'}
+        return {'FINISHED'} if self.performSave(context, depsgraph) else {'CANCELLED'}
 
     def performSave(self, context, depsgraph):
         pass
@@ -100,7 +98,9 @@ class SCENE_OT_depsgraph_relations_graphviz(
     def performSave(self, context, depsgraph):
         import os
         basename, extension = os.path.splitext(self.filepath)
-        depsgraph.debug_relations_graphviz(os.path.join(self.filepath, basename + ".dot"))
+        depsgraph.debug_relations_graphviz(
+            os.path.join(self.filepath, f"{basename}.dot")
+        )
         return True
 
 
@@ -141,9 +141,8 @@ class SCENE_OT_depsgraph_image_common:
                     continue
                 if not space.image:
                     first_none_editor = space
-                else:
-                    if space.image == image:
-                        return space
+                elif space.image == image:
+                    return space
         return first_none_editor
 
     def _createTempFile(self, suffix):
@@ -155,15 +154,12 @@ class SCENE_OT_depsgraph_image_common:
 
     def _openImageInEditor(self, context, image_filepath):
         image = self._getOrCreateImageForAbsPath(image_filepath)
-        editor = self._findBestImageEditor(context, image)
-        if editor:
+        if editor := self._findBestImageEditor(context, image):
             editor.image = image
 
     def execute(self, context):
         depsgraph = _get_depsgraph(context)
-        if not self.performSave(context, depsgraph):
-            return {'CANCELLED'}
-        return {'FINISHED'}
+        return {'FINISHED'} if self.performSave(context, depsgraph) else {'CANCELLED'}
 
     def performSave(self, context, depsgraph):
         pass
@@ -188,7 +184,7 @@ class SCENE_OT_depsgraph_relations_image(Operator,
         try:
             subprocess.run(command)
             self._openImageInEditor(context, png_filepath)
-        except:
+        except Exception:
             self.report({'ERROR'}, "Error invoking dot command")
             return False
         finally:
@@ -217,7 +213,7 @@ class SCENE_OT_depsgraph_stats_image(Operator,
         try:
             subprocess.run(command)
             self._openImageInEditor(context, png_filepath)
-        except:
+        except Exception:
             self.report({'ERROR'}, "Error invoking gnuplot command")
             return False
         finally:

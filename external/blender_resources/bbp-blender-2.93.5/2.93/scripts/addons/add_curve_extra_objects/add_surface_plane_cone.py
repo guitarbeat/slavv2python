@@ -370,7 +370,7 @@ class SmoothXtimes(Operator):
     def execute(self, context):
         # smooth times
         times = self.times
-        for i in range(1, times):
+        for _ in range(1, times):
             bpy.ops.curve.smooth()
 
         return{'FINISHED'}

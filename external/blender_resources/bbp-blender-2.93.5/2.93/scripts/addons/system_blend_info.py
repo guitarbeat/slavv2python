@@ -50,10 +50,7 @@ def quantity_string(quantity, text_single, text_plural, text_none=None):
     if quantity >= 2:
         string = str(quantity) + sep + text_plural
 
-    if quantity < 0:
-        return None
-
-    return string
+    return None if quantity < 0 else string
 
 
 class OBJECT_PT_blendinfo(bpy.types.Panel):
@@ -64,7 +61,6 @@ class OBJECT_PT_blendinfo(bpy.types.Panel):
     bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
-        ob_cols = []
         db_cols = []
 
         objects = bpy.data.objects
@@ -80,9 +76,7 @@ class OBJECT_PT_blendinfo(bpy.types.Panel):
             icon='OBJECT_DATA')
 
         l_row = layout.row()
-        ob_cols.append(l_row.column())
-        ob_cols.append(l_row.column())
-
+        ob_cols = [l_row.column(), l_row.column()]
         row = ob_cols[0].row()
         meshes = [o for o in objects.values() if o.type == 'MESH']
         num = len(meshes)
@@ -140,9 +134,7 @@ class OBJECT_PT_blendinfo(bpy.types.Panel):
         l_row.label(text="Datablocks in the scene:")
 
         l_row = layout.row()
-        db_cols.append(l_row.column())
-        db_cols.append(l_row.column())
-
+        db_cols.extend((l_row.column(), l_row.column()))
         row = db_cols[0].row()
         num = len(bpy.data.meshes)
         row.label(text=quantity_string(num, "Mesh", "Meshes"),

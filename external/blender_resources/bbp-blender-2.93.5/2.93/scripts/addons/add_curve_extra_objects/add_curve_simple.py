@@ -60,37 +60,31 @@ from math import (
 # Point:
 
 def SimplePoint():
-    newpoints = []
-
-    newpoints.append([0.0, 0.0, 0.0])
-
-    return newpoints
+    return [[0.0, 0.0, 0.0]]
 
 
 # ------------------------------------------------------------
 # Line:
 
-def SimpleLine(c1=[0.0, 0.0, 0.0], c2=[2.0, 2.0, 2.0]):
-    newpoints = []
-
+def SimpleLine(c1=None, c2=None):
+    if c1 is None:
+        c1 = [0.0, 0.0, 0.0]
+    if c2 is None:
+        c2 = [2.0, 2.0, 2.0]
     c3 = Vector(c2) - Vector(c1)
-    newpoints.append([0.0, 0.0, 0.0])
-    newpoints.append([c3[0], c3[1], c3[2]])
-
-    return newpoints
+    return [[0.0, 0.0, 0.0], [c3[0], c3[1], c3[2]]]
 
 
 # ------------------------------------------------------------
 # Angle:
 
 def SimpleAngle(length=1.0, angle=45.0):
-    newpoints = []
-
     angle = radians(angle)
-    newpoints.append([length, 0.0, 0.0])
-    newpoints.append([0.0, 0.0, 0.0])
-    newpoints.append([length * cos(angle), length * sin(angle), 0.0])
-
+    newpoints = [
+        [length, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [length * cos(angle), length * sin(angle), 0.0],
+    ]
     return newpoints
 
 
@@ -101,12 +95,9 @@ def SimpleDistance(length=1.0, center=True):
     newpoints = []
 
     if center:
-        newpoints.append([-length / 2, 0.0, 0.0])
-        newpoints.append([length / 2, 0.0, 0.0])
+        newpoints.extend(([-length / 2, 0.0, 0.0], [length / 2, 0.0, 0.0]))
     else:
-        newpoints.append([0.0, 0.0, 0.0])
-        newpoints.append([length, 0.0, 0.0])
-
+        newpoints.extend(([0.0, 0.0, 0.0], [length, 0.0, 0.0]))
     return newpoints
 
 
@@ -114,10 +105,8 @@ def SimpleDistance(length=1.0, center=True):
 # Circle:
 
 def SimpleCircle(sides=4, radius=1.0):
-    newpoints = []
-
     angle = radians(360) / sides
-    newpoints.append([radius, 0, 0])
+    newpoints = [[radius, 0, 0]]
     if radius != 0 :
         j = 1
         while j < sides:
@@ -134,22 +123,13 @@ def SimpleCircle(sides=4, radius=1.0):
 # Ellipse:
 
 def SimpleEllipse(a=2.0, b=1.0):
-    newpoints = []
-
-    newpoints.append([a, 0.0, 0.0])
-    newpoints.append([0.0, b, 0.0])
-    newpoints.append([-a, 0.0, 0.0])
-    newpoints.append([0.0, -b, 0.0])
-
-    return newpoints
+    return [[a, 0.0, 0.0], [0.0, b, 0.0], [-a, 0.0, 0.0], [0.0, -b, 0.0]]
 
 
 # ------------------------------------------------------------
 # Arc:
 
 def SimpleArc(sides=0, radius=1.0, startangle=0.0, endangle=45.0):
-    newpoints = []
-
     startangle = radians(startangle)
     endangle = radians(endangle)
     sides += 1
@@ -157,14 +137,12 @@ def SimpleArc(sides=0, radius=1.0, startangle=0.0, endangle=45.0):
     angle = (endangle - startangle) / sides
     x = cos(startangle) * radius
     y = sin(startangle) * radius
-    newpoints.append([x, y, 0])
-    j = 1
-    while j < sides:
+    newpoints = [[x, y, 0]]
+    for j in range(1, sides):
         t = angle * j
         x = cos(t + startangle) * radius
         y = sin(t + startangle) * radius
         newpoints.append([x, y, 0])
-        j += 1
     x = cos(endangle) * radius
     y = sin(endangle) * radius
     newpoints.append([x, y, 0])
@@ -176,24 +154,19 @@ def SimpleArc(sides=0, radius=1.0, startangle=0.0, endangle=45.0):
 # Sector:
 
 def SimpleSector(sides=0, radius=1.0, startangle=0.0, endangle=45.0):
-    newpoints = []
-
     startangle = radians(startangle)
     endangle = radians(endangle)
     sides += 1
 
-    newpoints.append([0, 0, 0])
     angle = (endangle - startangle) / sides
     x = cos(startangle) * radius
     y = sin(startangle) * radius
-    newpoints.append([x, y, 0])
-    j = 1
-    while j < sides:
+    newpoints = [[0, 0, 0], [x, y, 0]]
+    for j in range(1, sides):
         t = angle * j
         x = cos(t + startangle) * radius
         y = sin(t + startangle) * radius
         newpoints.append([x, y, 0])
-        j += 1
     x = cos(endangle) * radius
     y = sin(endangle) * radius
     newpoints.append([x, y, 0])
@@ -205,8 +178,6 @@ def SimpleSector(sides=0, radius=1.0, startangle=0.0, endangle=45.0):
 # Segment:
 
 def SimpleSegment(sides=0, a=2.0, b=1.0, startangle=0.0, endangle=45.0):
-    newpoints = []
-
     startangle = radians(startangle)
     endangle = radians(endangle)
     sides += 1
@@ -214,7 +185,7 @@ def SimpleSegment(sides=0, a=2.0, b=1.0, startangle=0.0, endangle=45.0):
     angle = (endangle - startangle) / sides
     x = cos(startangle) * a
     y = sin(startangle) * a
-    newpoints.append([x, y, 0])
+    newpoints = [[x, y, 0]]
     j = 1
     while j < sides:
         t = angle * j
@@ -255,14 +226,16 @@ def SimpleRectangle(width=2.0, length=2.0, rounded=0.0, center=True):
         x = width / 2
         y = length / 2
         if rounded != 0.0:
-            newpoints.append([-x + r, y, 0.0])
-            newpoints.append([x - r, y, 0.0])
-            newpoints.append([x, y - r, 0.0])
-            newpoints.append([x, -y + r, 0.0])
-            newpoints.append([x - r, -y, 0.0])
-            newpoints.append([-x + r, -y, 0.0])
-            newpoints.append([-x, -y + r, 0.0])
-            newpoints.append([-x, y - r, 0.0])
+            newpoints.extend(
+                (
+                    [-x + r, y, 0.0],
+                    [x - r, y, 0.0],
+                    [x, y - r, 0.0],
+                    [x, -y + r, 0.0],
+                )
+            )
+            newpoints.extend(([x - r, -y, 0.0], [-x + r, -y, 0.0]))
+            newpoints.extend(([-x, -y + r, 0.0], [-x, y - r, 0.0]))
         else:
             newpoints.append([-x, y, 0.0])
             newpoints.append([x, y, 0.0])
@@ -299,16 +272,12 @@ def SimpleRhomb(width=2.0, length=2.0, center=True):
     y = length / 2
 
     if center:
-        newpoints.append([-x, 0.0, 0.0])
-        newpoints.append([0.0, y, 0.0])
-        newpoints.append([x, 0.0, 0.0])
-        newpoints.append([0.0, -y, 0.0])
+        newpoints.extend(
+            ([-x, 0.0, 0.0], [0.0, y, 0.0], [x, 0.0, 0.0], [0.0, -y, 0.0])
+        )
     else:
-        newpoints.append([x, 0.0, 0.0])
-        newpoints.append([0.0, y, 0.0])
-        newpoints.append([x, length, 0.0])
-        newpoints.append([width, y, 0.0])
-
+        newpoints.extend(([x, 0.0, 0.0], [0.0, y, 0.0]))
+        newpoints.extend(([x, length, 0.0], [width, y, 0.0]))
     return newpoints
 
 
@@ -358,17 +327,10 @@ def SimpleTrapezoid(a=2.0, b=1.0, h=1.0, center=True):
     r = h / 2
 
     if center:
-        newpoints.append([-x, -r, 0.0])
-        newpoints.append([-y, r, 0.0])
-        newpoints.append([y, r, 0.0])
-        newpoints.append([x, -r, 0.0])
-
+        newpoints.extend(([-x, -r, 0.0], [-y, r, 0.0], [y, r, 0.0], [x, -r, 0.0]))
     else:
-        newpoints.append([0.0, 0.0, 0.0])
-        newpoints.append([x - y, h, 0.0])
-        newpoints.append([x + y, h, 0.0])
-        newpoints.append([a, 0.0, 0.0])
-
+        newpoints.extend(([0.0, 0.0, 0.0], [x - y, h, 0.0]))
+        newpoints.extend(([x + y, h, 0.0], [a, 0.0, 0.0]))
     return newpoints
 
 
@@ -645,13 +607,11 @@ def main(context, self, use_enter_edit_mode):
                     if self.Simple_startangle < self.Simple_endangle:
                         v1 = Vector((p1.co.x, p1.co.y, 0)) + vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) - vh2
-                        p1.handle_right = v1
-                        p2.handle_left = v2
                     else:
                         v1 = Vector((p1.co.x, p1.co.y, 0)) - vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) + vh2
-                        p1.handle_right = v1
-                        p2.handle_left = v2
+                    p1.handle_right = v1
+                    p2.handle_left = v2
                 i += 1
             all_points[0].handle_left_type = 'VECTOR'
             all_points[-1].handle_right_type = 'VECTOR'
@@ -685,13 +645,11 @@ def main(context, self, use_enter_edit_mode):
                     if self.Simple_startangle < self.Simple_endangle:
                         v1 = Vector((p1.co.x, p1.co.y, 0)) + vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) - vh2
-                        p1.handle_right = v1
-                        p2.handle_left = v2
                     else:
                         v1 = Vector((p1.co.x, p1.co.y, 0)) - vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) + vh2
-                        p1.handle_right = v1
-                        p2.handle_left = v2
+                    p1.handle_right = v1
+                    p2.handle_left = v2
                 i += 1
             all_points[0].handle_left_type = 'VECTOR'
             all_points[0].handle_right_type = 'VECTOR'
@@ -731,12 +689,11 @@ def main(context, self, use_enter_edit_mode):
                         v1 = Vector((p1.co.x, p1.co.y, 0)) + vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) - vh2
                         p1.handle_right = v1
-                        p2.handle_left = v2
                     else:
                         v1 = Vector((p1.co.x, p1.co.y, 0)) - vh1
                         v2 = Vector((p2.co.x, p2.co.y, 0)) + vh2
                         p1.handle_right = v1
-                        p2.handle_left = v2
+                    p2.handle_left = v2
                 elif i != (n / 2 - 1) and i != (n - 1):
                     p2 = all_points[i + 1]
                     u1 = asin(p1.co.y / Segment_b)
@@ -1073,7 +1030,7 @@ class Simple(Operator, object_utils.AddObjectHelper):
         if self.Simple_Type == 'Line':
             box = layout.box()
             col = box.column(align=True)
-            col.label(text=self.Simple_Type + " Options:")
+            col.label(text=f"{self.Simple_Type} Options:")
             col.prop(self, "Simple_endlocation")
             v = Vector(self.Simple_endlocation) - Vector(self.location)
             l = v.length
@@ -1081,7 +1038,7 @@ class Simple(Operator, object_utils.AddObjectHelper):
         if self.Simple_Type == 'Distance':
             box = layout.box()
             col = box.column(align=True)
-            col.label(text=self.Simple_Type + " Options:")
+            col.label(text=f"{self.Simple_Type} Options:")
             col.prop(self, "Simple_length")
             col.prop(self, "Simple_center")
             l = self.Simple_length
@@ -1089,14 +1046,14 @@ class Simple(Operator, object_utils.AddObjectHelper):
         if self.Simple_Type == 'Angle':
             box = layout.box()
             col = box.column(align=True)
-            col.label(text=self.Simple_Type + " Options:")
+            col.label(text=f"{self.Simple_Type} Options:")
             col.prop(self, "Simple_length")
             col.prop(self, "Simple_angle")
 
         if self.Simple_Type == 'Circle':
             box = layout.box()
             col = box.column(align=True)
-            col.label(text=self.Simple_Type + " Options:")
+            col.label(text=f"{self.Simple_Type} Options:")
             col.prop(self, "Simple_sides")
             col.prop(self, "Simple_radius")
 
@@ -1106,7 +1063,7 @@ class Simple(Operator, object_utils.AddObjectHelper):
         if self.Simple_Type == 'Ellipse':
             box = layout.box()
             col = box.column(align=True)
-            col.label(text=self.Simple_Type + " Options:")
+            col.label(text=f"{self.Simple_Type} Options:")
             col.prop(self, "Simple_a", text="Radius a")
             col.prop(self, "Simple_b", text="Radius b")
 
@@ -1148,7 +1105,7 @@ class Simple(Operator, object_utils.AddObjectHelper):
                    (self.Simple_endangle - self.Simple_startangle) / 180) + self.Simple_radius * 2
 
             s = pi * self.Simple_radius * self.Simple_radius * \
-                abs(self.Simple_endangle - self.Simple_startangle) / 360
+                    abs(self.Simple_endangle - self.Simple_startangle) / 360
 
         if self.Simple_Type == 'Segment':
             box = layout.box()
@@ -1170,10 +1127,10 @@ class Simple(Operator, object_utils.AddObjectHelper):
             l = abs(self.Simple_a - self.Simple_b) * 2 + la + lb
 
             sa = pi * self.Simple_a * self.Simple_a * \
-                abs(self.Simple_endangle - self.Simple_startangle) / 360
+                    abs(self.Simple_endangle - self.Simple_startangle) / 360
 
             sb = pi * self.Simple_b * self.Simple_b * \
-                abs(self.Simple_endangle - self.Simple_startangle) / 360
+                    abs(self.Simple_endangle - self.Simple_startangle) / 360
 
             s = abs(sa - sb)
 

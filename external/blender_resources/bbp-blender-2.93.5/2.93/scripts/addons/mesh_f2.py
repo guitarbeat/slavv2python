@@ -47,26 +47,11 @@ from bpy_extras import view3d_utils
 # returns a custom data layer of the UV map, or None
 def get_uv_layer(ob, bm, mat_index):
     uv = None
-    uv_layer = None
     if ob.material_slots:
         me = ob.data
         if me.uv_layers:
             uv = me.uv_layers.active.name
-    # 'material_slots' is deprecated (Blender Internal)
-    # else:
-    #     mat = ob.material_slots[mat_index].material
-    #     if mat is not None:
-    #         slot = mat.texture_slots[mat.active_texture_index]
-    #         if slot and slot.uv_layer:
-    #             uv = slot.uv_layer
-    #         else:
-    #             for tex_slot in mat.texture_slots:
-    #                 if tex_slot and tex_slot.uv_layer:
-    #                     uv = tex_slot.uv_layer
-    #                     break
-    if uv:
-        uv_layer = bm.loops.layers.uv.get(uv)
-
+    uv_layer = bm.loops.layers.uv.get(uv) if uv else None
     return (uv_layer)
 
 
@@ -114,13 +99,13 @@ def quad_from_edge(bm, edge_sel, context, event):
     normal_edge = edge_1
     if not normal_edge.link_faces:
         normal_edge = edge_2
-        if not normal_edge.link_faces:
-            normal_edge = edge_sel
-            if not normal_edge.link_faces:
-                # no connected faces, so no need to flip the face normal
-                flip_align = False
+    if not normal_edge.link_faces:
+        normal_edge = edge_sel
+    if not normal_edge.link_faces:
+        # no connected faces, so no need to flip the face normal
+        flip_align = False
     if flip_align:  # there is a face to which the normal can be aligned
-        ref_verts = [v for v in normal_edge.link_faces[0].verts]
+        ref_verts = list(normal_edge.link_faces[0].verts)
         if v3 in ref_verts and v1 in ref_verts:
             va_1 = v3
             va_2 = v1
@@ -168,7 +153,7 @@ def quad_from_edge(bm, edge_sel, context, event):
         if mat_index:
             face.material_index = mat_index
         face.smooth = smooth
-    except:
+    except Exception:
         # face already exists
         return
 
@@ -182,11 +167,9 @@ def quad_from_edge(bm, edge_sel, context, event):
     v3.select = True
     v4.select = True
 
-    # adjust uv-map
-    if __name__ != '__main__':
-        if addon_prefs.adjustuv:
-            uv_layer = get_uv_layer(ob, bm, mat_index)
-            if uv_layer:
+    if addon_prefs.adjustuv:
+        if __name__ != '__main__':
+            if uv_layer := get_uv_layer(ob, bm, mat_index):
                 uv_ori = {}
                 for vert in [v1, v2, v3, v4]:
                     for loop in vert.link_loops:
@@ -242,11 +225,11 @@ def quad_from_vertex(bm, vert_sel, context, event):
     normal_edge = edges[0]
     if not normal_edge.link_faces:
         normal_edge = edges[1]
-        if not normal_edge.link_faces:
-            # no connected faces, so no need to flip the face normal
-            flip_align = False
+    if not normal_edge.link_faces:
+        # no connected faces, so no need to flip the face normal
+        flip_align = False
     if flip_align:  # there is a face to which the normal can be aligned
-        ref_verts = [v for v in normal_edge.link_faces[0].verts]
+        ref_verts = list(normal_edge.link_faces[0].verts)
         if other_verts[0] in ref_verts:
             va_1 = other_verts[0]
             va_2 = vert_sel
@@ -286,11 +269,9 @@ def quad_from_vertex(bm, vert_sel, context, event):
     vert_new.select = True
     vert_sel.select = False
 
-    # adjust uv-map
-    if __name__ != '__main__':
-        if addon_prefs.adjustuv:
-            uv_layer = get_uv_layer(ob, bm, mat_index)
-            if uv_layer:
+    if addon_prefs.adjustuv:
+        if __name__ != '__main__':
+            if uv_layer := get_uv_layer(ob, bm, mat_index):
                 uv_others = {}
                 uv_sel = None
                 uv_new = None
@@ -342,7 +323,7 @@ def expand_vert(self, context, event):
 
     try:
         depth_location = v_active.co
-    except:
+    except Exception:
         return {'CANCELLED'}
     # create vert in mouse cursor location
 
@@ -423,9 +404,6 @@ def expand_vert(self, context, event):
             v_new = bm.verts.new(v_active.co)
             face_new = bm.faces.new((v_active, v_new, c_verts[0]))
 
-        else:
-            pass
-    # from R to L
     else:
         if (lverts[2] == v_active and lverts[3] == c_verts[1]) \
                 or (lverts[0] == v_active and lverts[1] == c_verts[1]) \
@@ -440,9 +418,6 @@ def expand_vert(self, context, event):
                 or (lverts[3] == v_active and lverts[2] == c_verts[1]):
             v_new = bm.verts.new(v_active.co)
             face_new = bm.faces.new((c_verts[1], v_new, v_active))
-
-        else:
-            pass
 
     # set smooth and mat based on starting face
     if addon_prefs.tris_from_v_mat:
@@ -558,7 +533,7 @@ class MeshF2(bpy.types.Operator):
                 addon_prefs = context.preferences.addons[__name__].preferences
                 if addon_prefs.ngons_v_mat:
                     bpy.ops.object.material_slot_assign()
-            except:
+            except Exception:
                 return {'CANCELLED'}
         elif len(sel) == 1:
             # single vertex selected -> mirror vertex and create new face
@@ -601,9 +576,7 @@ def register():
     for c in classes:
         bpy.utils.register_class(c)
 
-    # add keymap entry
-    kcfg = bpy.context.window_manager.keyconfigs.addon
-    if kcfg:
+    if kcfg := bpy.context.window_manager.keyconfigs.addon:
         km = kcfg.keymaps.new(name='Mesh', space_type='EMPTY')
         kmi = km.keymap_items.new("mesh.f2", 'F', 'PRESS')
         addon_keymaps.append((km, kmi.idname))

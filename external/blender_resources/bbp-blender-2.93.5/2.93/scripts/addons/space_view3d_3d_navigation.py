@@ -104,7 +104,7 @@ class VIEW3D_OT_PanUpViewsAll(Operator):
         except Exception as e:
             self.report({"WARNING"},
                         "Pan Views could not be completed. Operation Cancelled")
-            print("\n[3D Navigation]\nOperator: opr.pan_up_views_all\n {}\n".format(e))
+            print(f"\n[3D Navigation]\nOperator: opr.pan_up_views_all\n {e}\n")
 
             return {"CANCELLED"}
 
@@ -329,8 +329,7 @@ def update_panel(self, context):
             bpy.utils.register_class(panel)
 
     except Exception as e:
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
-        pass
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 class NavAddonPreferences(AddonPreferences):

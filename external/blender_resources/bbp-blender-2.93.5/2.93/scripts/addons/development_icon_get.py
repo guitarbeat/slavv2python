@@ -110,17 +110,13 @@ class Icons:
             self._filtered_icons = None
 
     def draw(self, layout, num_cols=0, icons=None):
-        if icons:
-            filtered_icons = reversed(icons)
-        else:
-            filtered_icons = self.filtered_icons
-
+        filtered_icons = reversed(icons) if icons else self.filtered_icons
         column = layout.column(align=True)
         row = column.row(align=True)
         row.alignment = 'CENTER'
 
         selected_icon = self.selected_icon if self.is_popup else \
-            bpy.context.window_manager.clipboard
+                bpy.context.window_manager.clipboard
         col_idx = 0
         for i, icon in enumerate(filtered_icons):
             p = row.operator(

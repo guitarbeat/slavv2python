@@ -116,7 +116,7 @@ def _fake_cupy_energy_scale(
 ) -> np.ndarray:
     energy = np.zeros(image.shape, dtype=np.float32)
     center = tuple(int(axis // 2) for axis in image.shape)
-    energy[center] = float(energy_sign)
+    energy[center] = energy_sign
     return energy
 
 

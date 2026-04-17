@@ -109,7 +109,9 @@ class PALETTE_MT_menu(Menu):
     preset_subdir = ""
     preset_operator = "palette.load_gimp_palette"
 
-    def path_menu(self, searchpaths, operator, props_default={}):
+    def path_menu(self, searchpaths, operator, props_default=None):
+        if props_default is None:
+            props_default = {}
         layout = self.layout
         # hard coded to set the operators 'filepath' to the filename.
         import os
@@ -193,54 +195,47 @@ class PALETTE_OT_load_gimp_palette(Operator):
         if filepath[-4:] != ".gpl":
             error_palette = True
         else:
-            gpl = open(filepath, "r")
-            lines = gpl.readlines()
-            palette_props.notes = ''
-            has_color = False
-            for index_0, line in enumerate(lines):
-                if not line or (line[:12] == "GIMP Palette"):
-                    pass
-                elif line[:5] == "Name:":
-                    palette_props.palette_name = line[5:]
-                elif line[:8] == "Columns:":
-                    palette_props.columns = int(line[8:])
-                elif line[0] == "#":
-                    palette_props.notes += line
-                elif line[0] == "\n":
-                    pass
-                else:
-                    has_color = True
-                    start_color_index = index_0
-                    break
-            i = -1
-            if has_color:
-                for i, ln in enumerate(lines[start_color_index:]):
-                    try:
-                        palette_props.colors[i]
-                    except IndexError:
-                        palette_props.colors.add()
-                    try:
-                        # get line - find keywords with re.split, remove the empty ones with filter
-                        get_line = list(filter(None, re.split(r'\t+|\s+', ln.rstrip('\n'))))
-                        extract_colors = get_line[:3]
-                        get_color_name = [str(name) for name in get_line[3:]]
-                        color = [float(rgb) / 255 for rgb in extract_colors]
-                        palette_props.colors[i].color = color
-                        palette_props.colors[i].name = " ".join(get_color_name) or "Color " + str(i)
-                    except Exception as e:
-                        error_palette = True
-                        error_import.append(".gpl file line: {}, error: {}".format(i + 1 + start_color_index, e))
-                        pass
+            with open(filepath, "r") as gpl:
+                lines = gpl.readlines()
+                palette_props.notes = ''
+                has_color = False
+                for index_0, line in enumerate(lines):
+                    if not line or (line[:12] == "GIMP Palette"):
+                        continue
+                    if line[:5] == "Name:":
+                        palette_props.palette_name = line[5:]
+                    elif line[:8] == "Columns:":
+                        palette_props.columns = int(line[8:])
+                    elif line[0] == "#":
+                        palette_props.notes += line
+                    elif line[0] != "\n":
+                        has_color = True
+                        start_color_index = index_0
+                        break
+                i = -1
+                if has_color:
+                    for i, ln in enumerate(lines[start_color_index:]):
+                        try:
+                            palette_props.colors[i]
+                        except IndexError:
+                            palette_props.colors.add()
+                        try:
+                            # get line - find keywords with re.split, remove the empty ones with filter
+                            get_line = list(filter(None, re.split(r'\t+|\s+', ln.rstrip('\n'))))
+                            extract_colors = get_line[:3]
+                            get_color_name = [str(name) for name in get_line[3:]]
+                            color = [float(rgb) / 255 for rgb in extract_colors]
+                            palette_props.colors[i].color = color
+                            palette_props.colors[i].name = " ".join(get_color_name) or "Color " + str(i)
+                        except Exception as e:
+                            error_palette = True
+                            error_import.append(".gpl file line: {}, error: {}".format(i + 1 + start_color_index, e))
+                exceeding = i + 1
+                while palette_props.colors.__len__() > exceeding:
+                    palette_props.colors.remove(exceeding)
 
-            exceeding = i + 1
-            while palette_props.colors.__len__() > exceeding:
-                palette_props.colors.remove(exceeding)
-
-            if has_color:
-                update_panels()
-            gpl.close()
-            pass
-
+                if has_color:
+                    update_panels()
         message = "Loaded palette from file: {}".format(filepath)
 
         if error_palette:
@@ -306,24 +301,22 @@ class WriteGimpPalette():
                 return {'FINISHED'}
 
             filename = self.as_filename(self.name)
-            filepath = os.path.join(target_path, filename) + ".gpl"
-            file_preset = open(filepath, 'wb')
-            gpl = "GIMP Palette\n"
-            gpl += "Name: %s\n" % filename
-            gpl += "Columns: %d\n" % pp.columns
-            gpl += pp.notes
-            if pp.colors.items():
-                for i, color in enumerate(pp.colors):
-                    gpl += "%3d%4d%4d %s" % (color.color.r * 255, color.color.g * 255,
-                                             color.color.b * 255, color.name + '\n')
-            file_preset.write(bytes(gpl, 'UTF-8'))
-
-            file_preset.close()
+            filepath = f"{os.path.join(target_path, filename)}.gpl"
+            with open(filepath, 'wb') as file_preset:
+                gpl = "GIMP Palette\n"
+                gpl += "Name: %s\n" % filename
+                gpl += "Columns: %d\n" % pp.columns
+                gpl += pp.notes
+                if pp.colors.items():
+                    for color in pp.colors:
+                        gpl += "%3d%4d%4d %s" % (color.color.r * 255, color.color.g * 255,
+                                                 color.color.b * 255, color.name + '\n')
+                file_preset.write(bytes(gpl, 'UTF-8'))
 
             pp.palette_name = filename
             preset_menu_class.bl_label = bpy.path.display_name(filename)
 
-            self.report({'INFO'}, "Created Palette: {}".format(filepath))
+            self.report({'INFO'}, f"Created Palette: {filepath}")
 
         else:
             preset_active = preset_menu_class.bl_label
@@ -341,8 +334,8 @@ class WriteGimpPalette():
             else:
                 try:
                     os.remove(filepath)
-                    self.report({'INFO'}, "Deleted palette: {}".format(filepath))
-                except:
+                    self.report({'INFO'}, f"Deleted palette: {filepath}")
+                except Exception:
                     import traceback
                     traceback.print_exc()
 
@@ -388,9 +381,7 @@ class PALETTE_OT_add_color(Operator):
 
     def execute(self, context):
         pp = bpy.context.scene.palette_props
-        new_index = 0
-        if pp.colors.items():
-            new_index = pp.current_color_index + 1
+        new_index = pp.current_color_index + 1 if pp.colors.items() else 0
         pp.colors.add()
 
         last = pp.colors.__len__() - 1
@@ -480,11 +471,7 @@ def color_palette_draw(self, context):
 
     laycol = layout.column(align=False)
 
-    if palette_props.columns:
-        columns = palette_props.columns
-    else:
-        columns = 16
-
+    columns = palette_props.columns if palette_props.columns else 16
     for i, color in enumerate(palette_props.colors):
         if not i % columns:
             row1 = laycol.row(align=True)
@@ -492,7 +479,7 @@ def color_palette_draw(self, context):
             row2 = laycol.row(align=True)
             row2.scale_y = 0.8
 
-        active = True if i == palette_props.current_color_index else False
+        active = i == palette_props.current_color_index
         icons = "LAYER_ACTIVE" if active else "LAYER_USED"
         row1.prop(palette_props.colors[i], "color", event=True, toggle=True)
         row2.operator("paint.select_color", text="  ",
@@ -634,9 +621,8 @@ class VIEW3D_OT_reset_weight_palette(Operator):
             current_idx = palette_props.current_weight_index
             palette_props.weight = dict_defs[current_idx]
 
-            var_name = "weight_" + str(current_idx)
-            var_to_change = getattr(palette_props, var_name, None)
-            if var_to_change:
+            var_name = f"weight_{str(current_idx)}"
+            if var_to_change := getattr(palette_props, var_name, None):
                 var_to_change = dict_defs[current_idx]
 
             return {'FINISHED'}
@@ -667,8 +653,8 @@ class VIEW3D_PT_weight_palette(PaintPanel, Panel):
 
         selected_weight = palette_props.current_weight_index
         for props in range(0, 11):
-            embossed = False if props == selected_weight else True
-            prop_name = "weight_" + str(props)
+            embossed = props != selected_weight
+            prop_name = f"weight_{str(props)}"
             prop_value = getattr(palette_props, prop_name, "")
             if props in (0, 10):
                 row = box.row(align=True)

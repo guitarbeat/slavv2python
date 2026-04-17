@@ -87,7 +87,7 @@ def test_remove_short_hairs_repeats_until_graph_is_stable():
 
     _remove_short_hairs(graph_edges, adjacency_list, np.ones(3, dtype=np.float32), 1.5)
 
-    assert graph_edges == {}
+    assert not graph_edges
     assert adjacency_list == {0: set(), 1: set(), 2: set(), 3: set()}
 
 

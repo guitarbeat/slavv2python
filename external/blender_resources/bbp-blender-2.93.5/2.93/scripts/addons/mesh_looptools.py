@@ -69,14 +69,17 @@ def get_strokes(self, context):
         try:
             strokes = bpy.data.grease_pencils[0].layers.active.active_frame.strokes
             return True
-        except:
+        except Exception:
             self.report({'WARNING'}, "active Annotation strokes not found")
             return False
-    if looptools.gstretch_use_guide == "GPencil" and not looptools.gstretch_guide == None:
+    if (
+        looptools.gstretch_use_guide == "GPencil"
+        and looptools.gstretch_guide is not None
+    ):
         try:
             strokes = looptools.gstretch_guide.data.layers.active.active_frame.strokes
             return True
-        except:
+        except Exception:
             self.report({'WARNING'}, "active GPencil strokes not found")
             return False
     else:
@@ -183,9 +186,7 @@ def calculate_cubic_splines(bm_mod, tknots, knots):
     locs = [bm_mod.verts[k].co[:] for k in knots]
     result = []
     for j in range(3):
-        a = []
-        for i in locs:
-            a.append(i[j])
+        a = [i[j] for i in locs]
         h = []
         for i in range(n - 1):
             if x[i + 1] - x[i] == 0:
@@ -206,9 +207,9 @@ def calculate_cubic_splines(bm_mod, tknots, knots):
             z.append((q[i] - h[i - 1] * z[i - 1]) / l[i])
         l.append(1.0)
         z.append(0.0)
-        b = [False for i in range(n - 1)]
-        c = [False for i in range(n)]
-        d = [False for i in range(n - 1)]
+        b = [False for _ in range(n - 1)]
+        c = [False for _ in range(n)]
+        d = [False for _ in range(n - 1)]
         c[n - 1] = 0.0
         for i in range(n - 2, -1, -1):
             c[i] = z[i] - u[i] * c[i + 1]
@@ -216,9 +217,10 @@ def calculate_cubic_splines(bm_mod, tknots, knots):
             d[i] = (c[i + 1] - c[i]) / (3 * h[i])
         for i in range(n - 1):
             result.append([a[i], b[i], c[i], d[i], x[i]])
-    splines = []
-    for i in range(len(knots) - 1):
-        splines.append([result[i], result[i + n - 1], result[i + (n - 1) * 2]])
+    splines = [
+        [result[i], result[i + n - 1], result[i + (n - 1) * 2]]
+        for i in range(len(knots) - 1)
+    ]
     if circular:  # cleaning up after hack
         knots = knots[4:-4]
         tknots = tknots[4:-4]
@@ -273,7 +275,7 @@ def calculate_plane(bm_mod, loop, method="best_fit", object=False):
         normal = False
         try:
             mat = matrix_invert(mat)
-        except:
+        except Exception:
             ax = 2
             if math.fabs(sum(mat[0])) < math.fabs(sum(mat[1])):
                 if math.fabs(sum(mat[0])) < math.fabs(sum(mat[2])):
@@ -290,7 +292,7 @@ def calculate_plane(bm_mod, loop, method="best_fit", object=False):
             # warning! this is different from .normalize()
             itermax = 500
             vec2 = mathutils.Vector((1.0, 1.0, 1.0))
-            for i in range(itermax):
+            for _ in range(itermax):
                 vec = vec2
                 vec2 = mat @ vec
                 # Calculate length with double precision to avoid problems with `inf`
@@ -326,12 +328,11 @@ def calculate_plane(bm_mod, loop, method="best_fit", object=False):
 
 # calculate splines based on given interpolation method (controller function)
 def calculate_splines(interpolation, bm_mod, tknots, knots):
-    if interpolation == 'cubic':
-        splines = calculate_cubic_splines(bm_mod, tknots, knots[:])
-    else:  # interpolations == 'linear'
-        splines = calculate_linear_splines(bm_mod, tknots, knots[:])
-
-    return(splines)
+    return (
+        calculate_cubic_splines(bm_mod, tknots, knots[:])
+        if interpolation == 'cubic'
+        else calculate_linear_splines(bm_mod, tknots, knots[:])
+    )
 
 
 # check loops and only return valid ones
@@ -343,19 +344,14 @@ def check_loops(loops, mapping, bm_mod):
             continue
         # loop needs at least 1 vertex in the original, non-mirrored mesh
         if mapping:
-            all_virtual = True
-            for vert in loop:
-                if mapping[vert] > -1:
-                    all_virtual = False
-                    break
+            all_virtual = all(mapping[vert] <= -1 for vert in loop)
             if all_virtual:
                 continue
-        # vertices can not all be at the same location
-        stacked = True
-        for i in range(len(loop) - 1):
-            if (bm_mod.verts[loop[i]].co - bm_mod.verts[loop[i + 1]].co).length > 1e-6:
-                stacked = False
-                break
+        stacked = all(
+            (bm_mod.verts[loop[i]].co - bm_mod.verts[loop[i + 1]].co).length
+            <= 1e-6
+            for i in range(len(loop) - 1)
+        )
         if stacked:
             continue
         # passed all tests, loop is valid
@@ -475,13 +471,7 @@ def get_connected_selections(edge_keys):
         # extend loop
         while growing:
             # no more connection data for current vertex
-            if loop[-1] not in vert_verts:
-                if not flipped:
-                    loop.reverse()
-                    flipped = True
-                else:
-                    growing = False
-            else:
+            if loop[-1] in vert_verts:
                 extended = False
                 for i, next_vert in enumerate(vert_verts[loop[-1]]):
                     if next_vert not in loop:
@@ -506,6 +496,11 @@ def get_connected_selections(edge_keys):
                     else:
                         growing = False
 
+            elif not flipped:
+                loop.reverse()
+                flipped = True
+            else:
+                growing = False
         # check if loop is circular
         if loop[0] in vert_verts:
             if loop[-1] in vert_verts[loop[0]]:
@@ -609,7 +604,7 @@ def get_mapping(derived, bm, bm_mod, single_vertices, full_search, loops):
     if single_vertices:
         for single in single_vertices:
             mapping[single] = -1
-    verts_mod = [bm_mod.verts[i] for i in mapping.keys()]
+    verts_mod = [bm_mod.verts[i] for i in mapping]
     for v in verts:
         for v_mod in verts_mod:
             if (v.co - v_mod.co).length < 1e-6:
@@ -622,11 +617,14 @@ def get_mapping(derived, bm, bm_mod, single_vertices, full_search, loops):
 
 # calculate the determinant of a matrix
 def matrix_determinant(m):
-    determinant = m[0][0] * m[1][1] * m[2][2] + m[0][1] * m[1][2] * m[2][0] \
-        + m[0][2] * m[1][0] * m[2][1] - m[0][2] * m[1][1] * m[2][0] \
-        - m[0][1] * m[1][0] * m[2][2] - m[0][0] * m[1][2] * m[2][1]
-
-    return(determinant)
+    return (
+        m[0][0] * m[1][1] * m[2][2]
+        + m[0][1] * m[1][2] * m[2][0]
+        + m[0][2] * m[1][0] * m[2][1]
+        - m[0][2] * m[1][1] * m[2][0]
+        - m[0][1] * m[1][0] * m[2][2]
+        - m[0][0] * m[1][2] * m[2][1]
+    )
 
 
 # custom matrix inversion, to provide higher precision than the built-in one
@@ -671,7 +669,7 @@ def get_parallel_loops(bm_mod, loops):
                 verts_used.append(edge[1])
 
         # find parallel loops
-        while len(newloops) > 0:
+        while newloops:
             side_a = []
             side_b = []
             for i in newloops[-1]:
@@ -793,15 +791,14 @@ def move_verts(object, bm, mapping, move, lock, influence):
     if lock:
         lock_x, lock_y, lock_z = lock
         orient_slot = bpy.context.scene.transform_orientation_slots[0]
-        custom = orient_slot.custom_orientation
-        if custom:
+        if custom := orient_slot.custom_orientation:
             mat = custom.matrix.to_4x4().inverted() @ object.matrix_world.copy()
         elif orient_slot.type == 'LOCAL':
             mat = mathutils.Matrix.Identity(4)
         elif orient_slot.type == 'VIEW':
             mat = bpy.context.region_data.view_matrix.copy() @ \
                 object.matrix_world.copy()
-        else:  # orientation == 'GLOBAL'
+        else:
             mat = object.matrix_world.copy()
         mat_inv = mat.inverted()
 
@@ -813,8 +810,8 @@ def move_verts(object, bm, mapping, move, lock, influence):
         mirror_Vectors.append(mathutils.Vector((1, -1, 1)))
     if object.data.use_mirror_x and object.data.use_mirror_y:
         mirror_Vectors.append(mathutils.Vector((-1, -1, 1)))
-    z_mirror_Vectors = []
     if object.data.use_mirror_z:
+        z_mirror_Vectors = []
         for v in mirror_Vectors:
             z_mirror_Vectors.append(mathutils.Vector((1, 1, -1)) * v)
         mirror_Vectors.extend(z_mirror_Vectors)
@@ -864,7 +861,7 @@ def settings_load(self):
     tool = self.name.split()[0].lower()
     keys = self.as_keywords().keys()
     for key in keys:
-        setattr(self, key, getattr(lt, tool + "_" + key))
+        setattr(self, key, getattr(lt, f"{tool}_{key}"))
 
 
 # store custom tool settings
@@ -873,7 +870,7 @@ def settings_write(self):
     tool = self.name.split()[0].lower()
     keys = self.as_keywords().keys()
     for key in keys:
-        setattr(lt, tool + "_" + key, getattr(self, key))
+        setattr(lt, f"{tool}_{key}", getattr(self, key))
 
 
 # clean up and set settings back to original state
@@ -894,12 +891,8 @@ def bridge_calculate_cubic_spline(bm, coordinates):
     x = [0, 1, 2, 3]
 
     for j in range(3):
-        a = []
-        for i in coordinates:
-            a.append(float(i[j]))
-        h = []
-        for i in range(3):
-            h.append(x[i + 1] - x[i])
+        a = [float(i[j]) for i in coordinates]
+        h = [x[i + 1] - x[i] for i in range(3)]
         q = [False]
         for i in range(1, 3):
             q.append(3.0 / h[i] * (a[i + 1] - a[i]) - 3.0 / h[i - 1] * (a[i] - a[i - 1]))
@@ -912,9 +905,9 @@ def bridge_calculate_cubic_spline(bm, coordinates):
             z.append((q[i] - h[i - 1] * z[i - 1]) / l[i])
         l.append(1.0)
         z.append(0.0)
-        b = [False for i in range(3)]
-        c = [False for i in range(4)]
-        d = [False for i in range(3)]
+        b = [False for _ in range(3)]
+        c = [False for _ in range(4)]
+        d = [False for _ in range(3)]
         c[3] = 0.0
         for i in range(2, -1, -1):
             c[i] = z[i] - u[i] * c[i + 1]
@@ -940,22 +933,20 @@ interpolation, cubic_strength, min_width, max_vert_index):
         v2 = bm.verts[lines[line][1]].co
         if interpolation == 'linear':
             return v1 + (segment / segments) * (v2 - v1)
-        else:  # interpolation == 'cubic'
-            m = (segment / segments)
-            ax, bx, cx, dx, tx = splines[line][0]
-            x = ax + bx * m + cx * m ** 2 + dx * m ** 3
-            ay, by, cy, dy, ty = splines[line][1]
-            y = ay + by * m + cy * m ** 2 + dy * m ** 3
-            az, bz, cz, dz, tz = splines[line][2]
-            z = az + bz * m + cz * m ** 2 + dz * m ** 3
-            return mathutils.Vector((x, y, z))
+        m = (segment / segments)
+        ax, bx, cx, dx, tx = splines[line][0]
+        x = ax + bx * m + cx * m ** 2 + dx * m ** 3
+        ay, by, cy, dy, ty = splines[line][1]
+        y = ay + by * m + cy * m ** 2 + dy * m ** 3
+        az, bz, cz, dz, tz = splines[line][2]
+        z = az + bz * m + cz * m ** 2 + dz * m ** 3
+        return mathutils.Vector((x, y, z))
 
     # no interpolation needed
     if segments == 1:
         for i, line in enumerate(lines):
             if i < len(lines) - 1:
                 faces.append([line[0], lines[i + 1][0], lines[i + 1][1], line[1]])
-    # more than 1 segment, interpolate
     else:
         # calculate splines (if necessary) once, so no recalculations needed
         if interpolation == 'cubic':
@@ -976,8 +967,9 @@ interpolation, cubic_strength, min_width, max_vert_index):
                           in range(len(lines) - 1)]
         new_verts = [get_location(0, seg, splines) for seg in range(1,
             segments)]
-        first_line_indices = [i for i in range(max_vert_index + 1,
-            max_vert_index + segments)]
+        first_line_indices = list(
+            range(max_vert_index + 1, max_vert_index + segments)
+        )
 
         prev_verts = new_verts[:]  # vertex locations of verts on previous line
         prev_vert_indices = first_line_indices[:]
@@ -1079,7 +1071,7 @@ def bridge_calculate_lines(bm, loops, mode, twist, reverse):
             normal_plurity = True
         try:
             mat.invert()
-        except:
+        except Exception:
             if sum(mat[0]) == 0:
                 normal = mathutils.Vector((1.0, 0.0, 0.0))
             elif sum(mat[1]) == 0:
@@ -1164,8 +1156,9 @@ def bridge_calculate_lines(bm, loops, mode, twist, reverse):
         target_angle = (bm.verts[loop2[0]].co - center2).\
             cross(bm.verts[loop2[1]].co - center2).angle(normals[1], 0)
         limit = 1.5707964  # 0.5*pi, 90 degrees
-        if not ((angle > limit and target_angle > limit) or
-          (angle < limit and target_angle < limit)):
+        if (angle <= limit or target_angle <= limit) and (
+            angle >= limit or target_angle >= limit
+        ):
             loop1.reverse()
             if circular:
                 loop1 = [loop1[-1]] + loop1[:-1]
@@ -1187,7 +1180,6 @@ def bridge_calculate_lines(bm, loops, mode, twist, reverse):
         for i in range(1, len(loop1)):
             lines.append([loop1[i], loop2[i]])
 
-    # loops of different lengths
     else:
         # make loop1 longest loop
         if len(loop2) > len(loop1):
@@ -1219,9 +1211,9 @@ def bridge_calculate_lines(bm, loops, mode, twist, reverse):
                     shifting = False
                     break
 
+        lines.append([loop1[0], loop2[0]])
         # basic shortest side first
         if mode == 'basic':
-            lines.append([loop1[0], loop2[0]])
             for i in range(1, len(loop1)):
                 if i >= len(loop2) - 1:
                     # triangles
@@ -1230,15 +1222,13 @@ def bridge_calculate_lines(bm, loops, mode, twist, reverse):
                     # quads
                     lines.append([loop1[i], loop2[i]])
 
-        # shortest edge algorithm
         else:  # mode == 'shortest'
-            lines.append([loop1[0], loop2[0]])
             prev_vert2 = 0
             for i in range(len(loop1) - 1):
                 if prev_vert2 == len(loop2) - 1 and not loop2_circular:
                     # force triangles, reached end of loop2
                     tri, quad = 0, 1
-                elif prev_vert2 == len(loop2) - 1 and loop2_circular:
+                elif prev_vert2 == len(loop2) - 1:
                     # at end of loop2, but circular, so check with first vert
                     tri, quad = [(bm.verts[loop1[i + 1]].co -
                                   bm.verts[loop2[j]].co).length
@@ -1297,9 +1287,8 @@ def bridge_calculate_segments(bm, lines, loops, segments):
     # average lengths
     average_edge_length = sum(average_edge_length) / len(average_edge_length)
     average_bridge_length = sum(
-        [(bm.verts[v1].co -
-        bm.verts[v2].co).length for v1, v2 in lines]
-        ) / len(lines)
+        (bm.verts[v1].co - bm.verts[v2].co).length for v1, v2 in lines
+    ) / len(lines)
 
     segments = max(1, round(average_bridge_length / average_edge_length))
 
@@ -1506,7 +1495,7 @@ def bridge_create_faces(object, bm, faces, twist):
     for i in range(len(faces)):
         try:
             new_faces.append(bm.faces.new([bm.verts[v] for v in faces[i]]))
-        except:
+        except Exception:
             # face already exists
             pass
     bm.normal_update()
@@ -1539,9 +1528,7 @@ def bridge_get_input(bm):
         edgekey(edge) for edge in bm.edges if edge.select and
         not edge.hide and edgekey(edge) not in internal_edges
         ]
-    loops = get_connected_selections(selected_edges)
-
-    return(loops)
+    return get_connected_selections(selected_edges)
 
 
 # return values needed by the bridge operator
@@ -1576,7 +1563,7 @@ def bridge_initialise(bm, interpolation):
     # find out if faces created by bridging should be smoothed
     smooth = False
     if bm.faces:
-        if sum([face.smooth for face in bm.faces]) / len(bm.faces) >= 0.5:
+        if sum(face.smooth for face in bm.faces) / len(bm.faces) >= 0.5:
             smooth = True
 
     return(edge_faces, edgekey_to_edge, old_selected_faces, smooth)
@@ -1586,14 +1573,9 @@ def bridge_initialise(bm, interpolation):
 def bridge_input_method(loft, loft_loop):
     method = ""
     if loft:
-        if loft_loop:
-            method = "Loft loop"
-        else:
-            method = "Loft no-loop"
+        return "Loft loop" if loft_loop else "Loft no-loop"
     else:
-        method = "Bridge"
-
-    return(method)
+        return "Bridge"
 
 
 # match up loops in pairs, used for multi-input bridging
@@ -1629,7 +1611,7 @@ def bridge_match_loops(bm, loops):
             for j in range(i + 1, len(loops)):
                 matches[i].append([(centers[i] - centers[j]).length, i, j])
                 matches[j].append([(centers[i] - centers[j]).length, j, i])
-    for key, value in matches.items():
+    for value in matches.values():
         value.sort()
 
     # matches based on distance between centers and number of vertices in loops
@@ -1742,16 +1724,19 @@ def bridge_select_new_faces(new_faces, smooth):
 def bridge_sort_loops(bm, loops, loft_loop):
     # simplify loops to single points, and prepare for pathfinding
     x, y, z = [
-        [sum([bm.verts[i].co[j] for i in loop[0]]) /
-        len(loop[0]) for loop in loops] for j in range(3)
+        [
+            (sum(bm.verts[i].co[j] for i in loop[0]) / len(loop[0]))
+            for loop in loops
         ]
+        for j in range(3)
+    ]
     nodes = [mathutils.Vector((x[i], y[i], z[i])) for i in range(len(loops))]
 
     active_node = 0
-    open = [i for i in range(1, len(loops))]
+    open = list(range(1, len(loops)))
     path = [[0, 0]]
     # connect node to path, that is shortest to active_node
-    while len(open) > 0:
+    while open:
         distances = [(nodes[active_node] - nodes[i]).length for i in open]
         active_node = open[distances.index(min(distances))]
         open.remove(active_node)
@@ -1768,7 +1753,7 @@ def bridge_sort_loops(bm, loops, loft_loop):
     loops = [loops[i[0]] for i in path]
     # if requested, duplicate first loop at last position, so loft can loop
     if loft_loop:
-        loops = loops + [loops[0]]
+        loops += [loops[0]]
 
     return(loops)
 
@@ -1827,7 +1812,7 @@ def circle_calculate_best_fit(locs_2d):
     r = 1.0
 
     # calculate center and radius (non-linear least squares solution)
-    for iter in range(500):
+    for _ in range(500):
         jmat = []
         k = []
         for v in locs_2d:
@@ -1852,7 +1837,7 @@ def circle_calculate_best_fit(locs_2d):
         jmat2[1][2] = jmat2[2][1]
         try:
             jmat2.invert()
-        except:
+        except Exception:
             pass
         dx0, dy0, dr = jmat2 @ k2
         x0 += dx0
@@ -1869,11 +1854,11 @@ def circle_calculate_best_fit(locs_2d):
 # calculate circle so no vertices have to be moved away from the center
 def circle_calculate_min_fit(locs_2d):
     # center of circle
-    x0 = (min([i[0] for i in locs_2d]) + max([i[0] for i in locs_2d])) / 2.0
-    y0 = (min([i[1] for i in locs_2d]) + max([i[1] for i in locs_2d])) / 2.0
+    x0 = (min(i[0] for i in locs_2d) + max(i[0] for i in locs_2d)) / 2.0
+    y0 = (min(i[1] for i in locs_2d) + max(i[1] for i in locs_2d)) / 2.0
     center = mathutils.Vector([x0, y0])
     # radius of circle
-    r = min([(mathutils.Vector([i[0], i[1]]) - center).length for i in locs_2d])
+    r = min((mathutils.Vector([i[0], i[1]]) - center).length for i in locs_2d)
 
     # return center of circle and radius
     return(x0, y0, r)
@@ -1914,15 +1899,15 @@ def circle_calculate_verts(flatten, bm_mod, locs_2d, com, p, q, normal):
                         else:  # assume quad
                             v1, v2, v3, v4 = verts[:4]
                         for ray in rays:
-                            intersect = mathutils.geometry.\
-                            intersect_ray_tri(v1, v2, v3, ray, loc[1])
-                            if intersect:
+                            if intersect := mathutils.geometry.intersect_ray_tri(
+                                v1, v2, v3, ray, loc[1]
+                            ):
                                 projection = intersect
                                 break
                             elif v4:
-                                intersect = mathutils.geometry.\
-                                intersect_ray_tri(v1, v3, v4, ray, loc[1])
-                                if intersect:
+                                if intersect := mathutils.geometry.intersect_ray_tri(
+                                    v1, v3, v4, ray, loc[1]
+                                ):
                                     projection = intersect
                                     break
                         if projection:
@@ -1949,22 +1934,20 @@ def circle_calculate_verts(flatten, bm_mod, locs_2d, com, p, q, normal):
                     else:  # assume quad
                         v1, v2, v3, v4 = verts[:4]
                     for ray in rays:
-                        intersect = mathutils.geometry.intersect_ray_tri(
+                        if intersect := mathutils.geometry.intersect_ray_tri(
                             v1, v2, v3, ray, loc[1]
-                            )
-                        if intersect:
+                        ):
                             hits.append([(loc[1] - intersect).length,
                                 intersect])
                             break
                         elif v4:
-                            intersect = mathutils.geometry.intersect_ray_tri(
+                            if intersect := mathutils.geometry.intersect_ray_tri(
                                 v1, v3, v4, ray, loc[1]
-                                )
-                            if intersect:
+                            ):
                                 hits.append([(loc[1] - intersect).length,
                                     intersect])
                                 break
-                if len(hits) >= 1:
+                if hits:
                     # if more than 1 hit with mesh, closest hit is new loc
                     hits.sort()
                     projection = hits[0][1]
@@ -1987,11 +1970,7 @@ def circle_check_loops(single_loops, loops, mapping, bm_mod):
             continue
         # loop needs at least 1 vertex in the original, non-mirrored mesh
         if mapping:
-            all_virtual = True
-            for vert in loop:
-                if mapping[vert] > -1:
-                    all_virtual = False
-                    break
+            all_virtual = all(mapping[vert] <= -1 for vert in loop)
             if all_virtual:
                 continue
         # loop has to be non-collinear
@@ -2036,12 +2015,7 @@ def circle_get_input(object, bm):
     # get mesh with modifiers applied
     derived, bm_mod = get_derived_bmesh(object, bm, False)
 
-    # create list of edge-keys based on selection state
-    faces = False
-    for face in bm.faces:
-        if face.select and not face.hide:
-            faces = True
-            break
+    faces = any(face.select and not face.hide for face in bm.faces)
     if faces:
         # get selected, non-hidden , non-internal edge-keys
         eks_selected = [
@@ -2146,10 +2120,7 @@ def circle_project_regular(locs_2d, x0, y0, r, angle):
         offset_angle *= -1
     x, y, j = locs_2d[1]
     locb = mathutils.Vector([x - x0, y - y0, 0.0])
-    if loca.cross(locb)[2] >= 0:
-        ccw = 1
-    else:
-        ccw = -1
+    ccw = 1 if loca.cross(locb)[2] >= 0 else -1
     # distribute vertices along the circle
     for i in range(len(locs_2d)):
         t = offset_angle + ccw * (i / len(locs_2d) * 2 * math.pi)
@@ -2183,7 +2154,7 @@ def curve_calculate_knots(loop, verts_selected):
     points = loop[0][:]
     # circular loop, potential for weird splines
     if loop[1]:
-        offset = int(len(loop[0]) / 4)
+        offset = len(loop[0]) // 4
         kpos = []
         for k in knots:
             kpos.append(loop[0].index(k))
@@ -2221,10 +2192,7 @@ def curve_calculate_knots(loop, verts_selected):
                 if k2 > len(knots) - 1:
                     k2 -= len(knots)
                 k2 = loop[0].index(knots[k2])
-                if k2 < k1:
-                    dif = len(loop[0]) - 1 - k1 + k2
-                else:
-                    dif = k2 - k1
+                dif = len(loop[0]) - 1 - k1 + k2 if k2 < k1 else k2 - k1
                 kn = k1 + int(dif / 2)
                 if kn > len(loop[0]) - 1:
                     kn -= len(loop[0])
@@ -2234,16 +2202,15 @@ def curve_calculate_knots(loop, verts_selected):
         if not krot:  # circular loop
             knots.append(knots[0])
             points = loop[0][loop[0].index(knots[0]):]
-            points += loop[0][0:loop[0].index(knots[0]) + 1]
+            points += loop[0][:loop[0].index(knots[0]) + 1]
         else:  # non-circular loop (broken by script)
             krot = knots.index(krot)
-            knots = knots[krot:] + knots[0:krot]
+            knots = knots[krot:] + knots[:krot]
             if loop[0].index(knots[0]) > loop[0].index(knots[-1]):
                 points = loop[0][loop[0].index(knots[0]):]
-                points += loop[0][0:loop[0].index(knots[-1]) + 1]
+                points += loop[0][:loop[0].index(knots[-1]) + 1]
             else:
                 points = loop[0][loop[0].index(knots[0]):loop[0].index(knots[-1]) + 1]
-    # non-circular loop, add first and last point as knots
     else:
         if loop[0][0] not in knots:
             knots.insert(0, loop[0][0])
@@ -2269,10 +2236,7 @@ def curve_calculate_t(bm_mod, knots, points, pknots, regular, circular):
         len_total += (loc - loc_prev).length
         tpoints.append(len_total)
         loc_prev = loc
-    tknots = []
-    for p in points:
-        if p in knots:
-            tknots.append(tpoints[points.index(p)])
+    tknots = [tpoints[points.index(p)] for p in points if p in knots]
     if circular:
         tknots[-1] = tpoints[-1]
 
@@ -2362,9 +2326,8 @@ def curve_cut_boundaries(bm_mod, loops):
             if last == 0:
                 if len(loop[first:]) < len(loop)/2:
                     cut_loops.append([loop[first:], False])
-            else:
-                if len(loop[first:last]) < len(loop)/2:
-                    cut_loops.append([loop[first:last], False])
+            elif len(loop[first:last]) < len(loop)/2:
+                cut_loops.append([loop[first:last], False])
             continue
         selected = [bm_mod.verts[v].select for v in loop]
         first = selected.index(True)
@@ -2392,7 +2355,7 @@ def curve_get_input(object, bm, boundaries):
     edge_faces = dict_edge_faces(bm_mod)
     correct_loops = []
     # find loops through each selected vertex
-    while len(verts_unsorted) > 0:
+    while verts_unsorted:
         loops = curve_vertex_loops(bm_mod, verts_unsorted[0], vert_edges,
             edge_faces)
         verts_unsorted.pop(0)
@@ -2557,30 +2520,22 @@ def curve_vertex_loops(bm_mod, start_vert, vert_edges, edge_faces):
                 if len(new_edges) < 3 or len(new_edges) > 4:
                     # pole
                     break
-                else:
                     # find next edge
-                    for new_edge in new_edges:
-                        if new_edge in edges_used:
-                            continue
-                        eliminate = False
-                        for new_face in edge_faces[new_edge]:
-                            if new_face in active_faces:
-                                eliminate = True
-                                break
-                        if eliminate:
-                            continue
-                        # found correct new edge
-                        active_faces = edge_faces[new_edge]
-                        v1, v2 = new_edge
-                        if v1 != new_vert:
-                            new_vert = v1
-                        else:
-                            new_vert = v2
-                        if new_vert == loop[0]:
-                            circular = True
-                        else:
-                            growing = True
-                        break
+                for new_edge in new_edges:
+                    if new_edge in edges_used:
+                        continue
+                    eliminate = any(new_face in active_faces for new_face in edge_faces[new_edge])
+                    if eliminate:
+                        continue
+                    # found correct new edge
+                    active_faces = edge_faces[new_edge]
+                    v1, v2 = new_edge
+                    new_vert = v1 if v1 != new_vert else v2
+                    if new_vert == loop[0]:
+                        circular = True
+                    else:
+                        growing = True
+                    break
             if circular:
                 break
             loop.reverse()
@@ -2605,14 +2560,11 @@ def flatten_get_input(bm):
         return([[verts, False]])
 
     loops = []
-    while len(verts) > 0:
+    while verts:
         # start of loop
         loop = [verts[0]]
         verts.pop(0)
-        if loop[-1] in vert_verts:
-            to_grow = vert_verts[loop[-1]]
-        else:
-            to_grow = []
+        to_grow = vert_verts[loop[-1]] if loop[-1] in vert_verts else []
         # grow loop
         while len(to_grow) > 0:
             new_vert = to_grow[0]
@@ -2631,12 +2583,14 @@ def flatten_get_input(bm):
 # calculate position of vertex projections on plane
 def flatten_project(bm, loop, com, normal):
     verts = [bm.verts[v] for v in loop[0]]
-    verts_projected = [
-        [v.index, mathutils.Vector(v.co[:]) -
-        (mathutils.Vector(v.co[:]) - com).dot(normal) * normal] for v in verts
+    return [
+        [
+            v.index,
+            mathutils.Vector(v.co[:])
+            - (mathutils.Vector(v.co[:]) - com).dot(normal) * normal,
         ]
-
-    return(verts_projected)
+        for v in verts
+    ]
 
 
 # ########################################
@@ -2762,12 +2716,12 @@ conversion_distance, conversion_max, conversion_min, conversion_vertices):
     for stroke in strokes:
         stroke_verts.append([stroke, []])
         min_end_point = 0
-        if conversion == 'vertices':
-            min_end_point = conversion_vertices
-            end_point = conversion_vertices
-        elif conversion == 'limit_vertices':
+        if conversion == 'limit_vertices':
             min_end_point = conversion_min
             end_point = conversion_max
+        elif conversion == 'vertices':
+            min_end_point = conversion_vertices
+            end_point = conversion_vertices
         else:
             end_point = len(stroke.points)
         # creation of new vertices at fixed user-defined distances
@@ -2789,14 +2743,13 @@ conversion_distance, conversion_max, conversion_min, conversion_vertices):
                     iteration += 1
                 distance = new_distance
                 prev_point = point
-        # creation of new vertices for other methods
         else:
             # add vertices at stroke points
             for point in stroke.points[:end_point]:
                 stroke_verts[-1][1].append(bm_mod.verts.new(mat_world @ point.co))
             # add more vertices, beyond the points that are available
             if min_end_point > min(len(stroke.points), end_point):
-                for i in range(min_end_point -
+                for _ in range(min_end_point -
                 (min(len(stroke.points), end_point))):
                     stroke_verts[-1][1].append(bm_mod.verts.new(mat_world @ point.co))
                 # force even spreading of points, so they are placed on stroke
@@ -2862,8 +2815,10 @@ def gstretch_eval_stroke(stroke, distance, stroke_lengths_cache=False):
     # use cache if available
     if not stroke_lengths_cache:
         lengths = [0]
-        for i, p in enumerate(stroke.points[1:]):
-            lengths.append((p.co - stroke.points[i].co).length + lengths[-1])
+        lengths.extend(
+            (p.co - stroke.points[i].co).length + lengths[-1]
+            for i, p in enumerate(stroke.points[1:])
+        )
         total_length = max(lengths[-1], 1e-7)
         stroke_lengths_cache = [length / total_length for length in
             lengths]
@@ -2906,7 +2861,10 @@ def gstretch_get_strokes(self, context):
         return(None)
     if looptools.gstretch_use_guide == "Annotation":
         layer = bpy.data.grease_pencils[0].layers.active
-    if looptools.gstretch_use_guide == "GPencil" and not looptools.gstretch_guide == None:
+    if (
+        looptools.gstretch_use_guide == "GPencil"
+        and looptools.gstretch_guide is not None
+    ):
         layer = looptools.gstretch_guide.data.layers.active
     if not layer:
         return(None)
@@ -2914,10 +2872,7 @@ def gstretch_get_strokes(self, context):
     if not frame:
         return(None)
     strokes = frame.strokes
-    if len(strokes) < 1:
-        return(None)
-
-    return(strokes)
+    return None if len(strokes) < 1 else strokes
 
 # returns a list with loop-stroke pairs
 def gstretch_match_loops_strokes(loops, strokes, object, bm_mod):
@@ -2947,9 +2902,10 @@ def gstretch_match_loops_strokes(loops, strokes, object, bm_mod):
     # match, first by stroke use count, then by distance
     ls_pairs = []
     for lc in loop_centers:
-        distances = []
-        for i, sc in enumerate(stroke_centers):
-            distances.append([sc[2], (lc[0] - sc[0]).length, i])
+        distances = [
+            [sc[2], (lc[0] - sc[0]).length, i]
+            for i, sc in enumerate(stroke_centers)
+        ]
         distances.sort()
         best_stroke = distances[0][2]
         ls_pairs.append([lc[1], stroke_centers[best_stroke][1]])
@@ -2964,19 +2920,18 @@ def gstretch_match_single_verts(bm_mod, strokes, mat_world):
     # calculate stroke endpoints in object space
     endpoints = []
     for stroke in strokes:
-        endpoints.append((mat_world @ stroke.points[0].co, stroke, 0))
-        endpoints.append((mat_world @ stroke.points[-1].co, stroke, -1))
-
+        endpoints.extend(
+            (
+                (mat_world @ stroke.points[0].co, stroke, 0),
+                (mat_world @ stroke.points[-1].co, stroke, -1),
+            )
+        )
     distances = []
     # find single vertices (not connected to other selected verts)
     for vert in bm_mod.verts:
         if not vert.select:
             continue
-        single = True
-        for edge in vert.link_edges:
-            if edge.other_vert(vert).select:
-                single = False
-                break
+        single = not any(edge.other_vert(vert).select for edge in vert.link_edges)
         if not single:
             continue
         # calculate distances from vertex to endpoints
@@ -3022,20 +2977,12 @@ def gstretch_relative_lengths(loop, bm_mod):
 
 # convert cache-stored strokes into usable (fake) GP strokes
 def gstretch_safe_to_true_strokes(safe_strokes):
-    strokes = []
-    for safe_stroke in safe_strokes:
-        strokes.append(gstretch_fake_stroke(safe_stroke))
-
-    return(strokes)
+    return [gstretch_fake_stroke(safe_stroke) for safe_stroke in safe_strokes]
 
 
 # convert a GP stroke into a list of points which can be stored in cache
 def gstretch_true_to_safe_strokes(strokes):
-    safe_strokes = []
-    for stroke in strokes:
-        safe_strokes.append([p.co.copy() for p in stroke.points])
-
-    return(safe_strokes)
+    return [[p.co.copy() for p in stroke.points] for stroke in strokes]
 
 
 # force consistency in GUI, max value can never be lower than min value
@@ -3081,10 +3028,7 @@ def relax_calculate_knots(loops):
             else:  # even
                 extend = [True, False, 0, 1, 1, 2]
         else:
-            if len(loop) % 2 == 1:  # odd
-                extend = [False, False, 0, 1, 1, 2]
-            else:  # even
-                extend = [False, False, 0, 1, 1, 2]
+            extend = [False, False, 0, 1, 1, 2]
         for j in range(2):
             if extend[j]:
                 loop = [loop[-1]] + loop + [loop[0]]
@@ -3140,9 +3084,7 @@ def relax_calculate_t(bm_mod, knots, points, regular):
                 tpoints.append(len_total)
             loc_prev = loc
         if regular:
-            tpoints = []
-            for p in range(len(points[i])):
-                tpoints.append((tknots[p] + tknots[p + 1]) / 2)
+            tpoints = [(tknots[p] + tknots[p + 1]) / 2 for p in range(len(points[i]))]
         all_tknots.append(tknots)
         all_tpoints.append(tpoints)
 
@@ -3153,7 +3095,6 @@ def relax_calculate_t(bm_mod, knots, points, regular):
 def relax_calculate_verts(bm_mod, interpolation, tknots, knots, tpoints,
 points, splines):
     change = []
-    move = []
     for i in range(len(knots)):
         for p in points[i]:
             m = tpoints[i][points[i].index(p)]
@@ -3182,10 +3123,7 @@ points, splines):
                 if u == 0:
                     u = 1e-8
                 change.append([p, ((m - t) / u) * d + a])
-    for c in change:
-        move.append([c[0], (bm_mod.verts[c[0]].co + c[1]) / 2])
-
-    return(move)
+    return [[c[0], (bm_mod.verts[c[0]].co + c[1]) / 2] for c in change]
 
 
 # ########################################
@@ -3873,11 +3811,7 @@ class Flatten(Operator):
             com, normal = calculate_plane(bm, loop, method=self.plane,
                 object=object)
             to_move = flatten_project(bm, loop, com, normal)
-            if self.restriction == 'none':
-                move.append(to_move)
-            else:
-                move.append(to_move)
-
+            move.append(to_move)
         # move vertices to new locations
         if self.lock_x or self.lock_y or self.lock_z:
             lock = [self.lock_x, self.lock_y, self.lock_z]
@@ -3902,7 +3836,7 @@ class RemoveAnnotation(Operator):
 
         try:
             bpy.data.grease_pencils[0].layers.active.clear()
-        except:
+        except Exception:
             self.report({'INFO'}, "No Annotation data to Unlink")
             return {'CANCELLED'}
 
@@ -3921,7 +3855,7 @@ class RemoveGPencil(Operator):
             looptools =  context.window_manager.looptools
             looptools.gstretch_guide.data.layers.data.clear()
             looptools.gstretch_guide.data.update_tag()
-        except:
+        except Exception:
             self.report({'INFO'}, "No GPencil data to Unlink")
             return {'CANCELLED'}
 
@@ -4071,7 +4005,7 @@ class GStretch(Operator):
         col.separator()
         if looptools.gstretch_use_guide == "Annotation":
             col.operator("remove.annotation", text="Delete annotation strokes")
-        if looptools.gstretch_use_guide == "GPencil":
+        elif looptools.gstretch_use_guide == "GPencil":
             col.operator("remove.gp", text="Delete GPencil strokes")
 
     def invoke(self, context, event):
@@ -4108,38 +4042,33 @@ class GStretch(Operator):
                 strokes = gstretch_get_fake_strokes(object, bm_mod, loops)
             if not straightening:
                 derived, bm_mod = get_derived_bmesh(object, bm, False)
+        elif get_strokes(self, context):
+            # find loops
+            derived, bm_mod, loops = get_connected_input(object, bm, False, input='selected')
+            mapping = get_mapping(derived, bm, bm_mod, False, False, loops)
+            loops = check_loops(loops, mapping, bm_mod)
+            # get strokes
+            strokes = gstretch_get_strokes(self, context)
         else:
-            # get loops and strokes
-            if get_strokes(self, context):
-                # find loops
-                derived, bm_mod, loops = get_connected_input(object, bm, False, input='selected')
-                mapping = get_mapping(derived, bm, bm_mod, False, False, loops)
-                loops = check_loops(loops, mapping, bm_mod)
-                # get strokes
-                strokes = gstretch_get_strokes(self, context)
-            else:
-                # straightening function (no GP) -> loops ignore modifiers
-                derived = False
-                mapping = False
-                bm_mod = bm.copy()
-                bm_mod.verts.ensure_lookup_table()
-                bm_mod.edges.ensure_lookup_table()
-                bm_mod.faces.ensure_lookup_table()
-                edge_keys = [
-                    edgekey(edge) for edge in bm_mod.edges if
-                    edge.select and not edge.hide
-                    ]
-                loops = get_connected_selections(edge_keys)
-                loops = check_loops(loops, mapping, bm_mod)
-                # create fake strokes
-                strokes = gstretch_get_fake_strokes(object, bm_mod, loops)
+            # straightening function (no GP) -> loops ignore modifiers
+            derived = False
+            bm_mod = bm.copy()
+            bm_mod.verts.ensure_lookup_table()
+            bm_mod.edges.ensure_lookup_table()
+            bm_mod.faces.ensure_lookup_table()
+            edge_keys = [
+                edgekey(edge) for edge in bm_mod.edges if
+                edge.select and not edge.hide
+                ]
+            loops = get_connected_selections(edge_keys)
+            mapping = False
+            loops = check_loops(loops, mapping, bm_mod)
+            # create fake strokes
+            strokes = gstretch_get_fake_strokes(object, bm_mod, loops)
 
         # saving cache for faster execution next time
         if not cached:
-            if strokes:
-                safe_strokes = gstretch_true_to_safe_strokes(strokes)
-            else:
-                safe_strokes = []
+            safe_strokes = gstretch_true_to_safe_strokes(strokes) if strokes else []
             cache_write("Gstretch", object, bm, False, False,
                 safe_strokes, loops, derived, mapping)
 
@@ -4271,14 +4200,14 @@ class Relax(Operator):
             cache_write("Relax", object, bm, self.input, False, False, loops,
                 derived, mapping)
 
-        for iteration in range(int(self.iterations)):
+        for _ in range(int(self.iterations)):
             # calculate splines and new positions
             tknots, tpoints = relax_calculate_t(bm_mod, knots, points,
                 self.regular)
-            splines = []
-            for i in range(len(knots)):
-                splines.append(calculate_splines(self.interpolation, bm_mod,
-                    tknots[i], knots[i]))
+            splines = [
+                calculate_splines(self.interpolation, bm_mod, tknots[i], knots[i])
+                for i in range(len(knots))
+            ]
             move = [relax_calculate_verts(bm_mod, self.interpolation,
                 tknots, knots, tpoints, points, splines)]
             move_verts(object, bm, mapping, move, False, -1)
@@ -4634,7 +4563,7 @@ class VIEW3D_PT_tools_looptools(Panel):
             col_move.prop(lt, "gstretch_influence")
             if lt.gstretch_use_guide == "Annotation":
                 box.operator("remove.annotation", text="Delete Annotation Strokes")
-            if lt.gstretch_use_guide == "GPencil":
+            elif lt.gstretch_use_guide == "GPencil":
                 box.operator("remove.gp", text="Delete GPencil Strokes")
 
         # loft - first line
@@ -5195,8 +5124,7 @@ def update_panel(self, context):
             bpy.utils.register_class(panel)
 
     except Exception as e:
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
-        pass
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 class LoopPreferences(AddonPreferences):
@@ -5256,7 +5184,6 @@ def unregister():
         del bpy.types.WindowManager.looptools
     except Exception as e:
         print('unregister fail:\n', e)
-        pass
 
 
 if __name__ == "__main__":

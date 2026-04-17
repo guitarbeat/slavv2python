@@ -91,20 +91,19 @@ def fitting_matrix(v1, v2):
 def z_up_matrix(n):
     """Get a rotation matrix that aligns given vector upwards."""
     b = n.xy.length
-    s = n.length
-    if b > 0:
-        return M.Matrix((
-            (n.x*n.z/(b*s), n.y*n.z/(b*s), -b/s),
-            (-n.y/b, n.x/b, 0),
-            (0, 0, 0)
-        ))
-    else:
+    if b <= 0:
         # no need for rotation
         return M.Matrix((
             (1, 0, 0),
             (0, (-1 if n.z < 0 else 1), 0),
             (0, 0, 0)
         ))
+    s = n.length
+    return M.Matrix((
+        (n.x*n.z/(b*s), n.y*n.z/(b*s), -b/s),
+        (-n.y/b, n.x/b, 0),
+        (0, 0, 0)
+    ))
 
 
 def cage_fit(points, aspect):
@@ -200,13 +199,13 @@ class Unfolder:
     def copy_island_names(self, island_list):
         """Copy island label and abbreviation from the best matching island in the list"""
         orig_islands = [{face.id for face in item.faces} for item in island_list]
-        matching = list()
+        matching = []
         for i, island in enumerate(self.mesh.islands):
             islfaces = {face.index for face in island.faces}
             matching.extend((len(islfaces.intersection(item)), i, j) for j, item in enumerate(orig_islands))
         matching.sort(reverse=True)
-        available_new = [True for island in self.mesh.islands]
-        available_orig = [True for item in island_list]
+        available_new = [True for _ in self.mesh.islands]
+        available_orig = [True for _ in island_list]
         for face_count, i, j in matching:
             if available_new[i] and available_orig[j]:
                 available_new[i] = available_orig[j] = False
@@ -221,7 +220,7 @@ class Unfolder:
         Exporter = Svg if properties.file_format == 'SVG' else Pdf
         filepath = properties.filepath
         extension = properties.file_format.lower()
-        filepath = bpy.path.ensure_ext(filepath, "." + extension)
+        filepath = bpy.path.ensure_ext(filepath, f".{extension}")
         # page size in meters
         page_size = M.Vector((properties.output_size_x, properties.output_size_y))
         # printable area size in meters
@@ -289,8 +288,8 @@ class Mesh:
         self.matrix = matrix.to_3x3()
         self.looptex = bmesh.loops.layers.uv.new("Unfolded")
         self.edges = {bmedge: Edge(bmedge) for bmedge in bmesh.edges}
-        self.islands = list()
-        self.pages = list()
+        self.islands = []
+        self.pages = []
         for edge in self.edges.values():
             edge.choose_main_faces()
             if edge.main_faces:
@@ -451,9 +450,11 @@ class Mesh:
         def is_index_obvious(uvedge, target):
             if uvedge in (target.neighbor_left, target.neighbor_right):
                 return True
-            if uvedge.neighbor_left.loop.edge is target.neighbor_right.loop.edge and uvedge.neighbor_right.loop.edge is target.neighbor_left.loop.edge:
-                return True
-            return False
+            return (
+                uvedge.neighbor_left.loop.edge is target.neighbor_right.loop.edge
+                and uvedge.neighbor_right.loop.edge
+                is target.neighbor_left.loop.edge
+            )
 
         for edge in self.edges.values():
             index = None
@@ -505,7 +506,7 @@ class Mesh:
     def finalize_islands(self, cage_size, title_height=0):
         for island in self.islands:
             if title_height:
-                island.title = "[{}] {}".format(island.abbreviation, island.label)
+                island.title = f"[{island.abbreviation}] {island.label}"
             points = [vertex.co for vertex in set(island.vertices.values())] + island.fake_vertices
             angle, _ = cage_fit(points, (cage_size.y - title_height) / cage_size.x)
             rot = M.Matrix.Rotation(angle, 2)
@@ -601,8 +602,8 @@ class Mesh:
 
     def save_image(self, page_size_pixels: M.Vector, filename):
         for page in self.pages:
-            image = create_blank_image("Page {}".format(page.name), page_size_pixels, alpha=1)
-            image.filepath_raw = page.image_path = "{}_{}.png".format(filename, page.name)
+            image = create_blank_image(f"Page {page.name}", page_size_pixels, alpha=1)
+            image.filepath_raw = page.image_path = f"{filename}_{page.name}.png"
             faces = [face for island in page.islands for face in island.faces]
             self.bake(faces, image)
             image.save()
@@ -611,7 +612,7 @@ class Mesh:
 
     def save_separate_images(self, scale, filepath, embed=None):
         for i, island in enumerate(self.islands):
-            image_name = "Island {}".format(i)
+            image_name = f"Island {i}"
             image = create_blank_image(image_name, island.bounding_box * scale, alpha=0)
             self.bake(island.faces.keys(), image)
             if embed:
@@ -620,7 +621,7 @@ class Mesh:
                 from os import makedirs
                 image_dir = filepath
                 makedirs(image_dir, exist_ok=True)
-                image_path = os_path.join(image_dir, "island{}.png".format(i))
+                image_path = os_path.join(image_dir, f"island{i}.png")
                 image.filepath_raw = image_path
                 image.save()
                 island.image_path = image_path
@@ -651,7 +652,7 @@ class Mesh:
             me.uv_layers.active = me.uv_layers[self.looptex.name]
             bpy.ops.object.bake(type=bake_type, margin=1, use_selected_to_active=sta, cage_extrusion=100, use_clear=False)
         except RuntimeError as e:
-            raise UnfoldError(*e.args)
+            raise UnfoldError(*e.args) from e
         finally:
             for mat, node in temp_nodes.items():
                 mat.node_tree.nodes.remove(node)
@@ -672,7 +673,7 @@ class Edge:
         self.vector = self.vb.co - self.va.co
         # if self.main_faces is set, then self.uvedges[:2] must correspond to self.main_faces, in their order
         # this constraint is assured at the time of finishing mesh.generate_cuts
-        self.uvedges = list()
+        self.uvedges = []
 
         self.force_cut = edge.seam  # such edges will always be cut
         self.main_faces = None  # two faces that may be connected in the island
@@ -752,8 +753,8 @@ class Island:
         self.faces = dict()  # face -> uvface
         self.edges = dict()  # loop -> uvedge
         self.vertices = dict()  # loop -> uvvertex
-        self.fake_vertices = list()
-        self.markers = list()
+        self.fake_vertices = []
+        self.markers = []
         self.label = None
         self.abbreviation = None
         self.title = None
@@ -765,8 +766,8 @@ class Island:
         self.sticker_numbering = 0
 
         uvface = UVFace(face, self, matrix, normal_matrix)
-        self.vertices.update(uvface.vertices)
-        self.edges.update(uvface.edges)
+        self.vertices |= uvface.vertices
+        self.edges |= uvface.edges
         self.faces[face] = uvface
         # UVEdges on the boundary
         self.boundary = list(self.edges.values())
@@ -781,7 +782,7 @@ class Island:
         # TODO: dots should be added in the last instant when outputting any text
         if is_upsidedown_wrong(abbr):
             abbr += "."
-        self.label = label or self.label or "Island {}".format(self.number)
+        self.label = label or self.label or f"Island {self.number}"
         self.abbreviation = abbr
 
     def save_uv(self, tex, cage_size):
@@ -854,10 +855,12 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
             return cross_a2 > cross_b2
         raise Intersection
 
+
+
     class QuickSweepline:
         """Efficient sweepline based on binary search, checking neighbors only"""
         def __init__(self):
-            self.children = list()
+            self.children = []
 
         def add(self, item, cmp=is_below):
             low, high = 0, len(self.children)
@@ -876,6 +879,7 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
                 # check for intersection
                 if cmp(self.children[index], self.children[index-1]):
                     raise GeometryError
+
 
     class BruteSweepline:
         """Safe sweepline which checks all its members pairwise"""
@@ -904,7 +908,7 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
     def root_find(value, tree):
         """Find the root of a given value in a forest-like dictionary
         also updates the dictionary using path compression"""
-        parent, relink = tree.get(value), list()
+        parent, relink = tree.get(value), []
         while parent is not None:
             relink.append(value)
             value, parent = parent, tree.get(parent)
@@ -955,7 +959,7 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
     distance_limit = uvedge_a.loop.edge.calc_length() * epsilon
     # try and merge UVVertices closer than sqrt(distance_limit)
     merged_uvedges = set()
-    merged_uvedge_pairs = list()
+    merged_uvedge_pairs = []
 
     # merge all uvvertices that are close enough using a union-find structure
     # uvvertices will be merged only in cases island_b->island_a and island_a->island_a
@@ -1000,7 +1004,7 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
     # TODO: if is_merged_mine, it might make sense to create a similar list from island_a.boundary as well
 
     incidence = {vertex.tup for vertex in phantoms.values()}.intersection(vertex.tup for vertex in island_a.vertices.values())
-    incidence = {position: list() for position in incidence}  # from now on, 'incidence' is a dict
+    incidence = {position: [] for position in incidence}
     for uvedge in chain(boundary_other, island_a.boundary):
         if uvedge.va.co == uvedge.vb.co:
             continue
@@ -1024,7 +1028,7 @@ def join(uvedge_a, uvedge_b, size_limit=None, epsilon=1e-6):
     try:
         try:
             sweepline = QuickSweepline() if island_a.has_safe_geometry and island_b.has_safe_geometry else BruteSweepline()
-            sweep(sweepline, (uvedge for uvedge in chain(boundary_other, island_a.boundary)))
+            sweep(sweepline, iter(chain(boundary_other, island_a.boundary)))
             island_a.has_safe_geometry &= island_b.has_safe_geometry
         except GeometryError:
             sweep(BruteSweepline(), (uvedge for uvedge in chain(boundary_other, island_a.boundary)))
@@ -1079,8 +1083,8 @@ class Page:
     __slots__ = ('islands', 'name', 'image_path')
 
     def __init__(self, num=1):
-        self.islands = list()
-        self.name = "page{}".format(num)  # note: this is only used in svg files naming
+        self.islands = []
+        self.name = f"page{num}"
         self.image_path = None
 
 
@@ -1203,11 +1207,8 @@ class Sticker:
             # Adjacent angles in the face
             cos_a = max(cos_a, -other_edge.dot(other_edge_neighbor_a) / (other_edge.length*other_edge_neighbor_a.length))
             cos_b = max(cos_b, other_edge.dot(other_edge_neighbor_b) / (other_edge.length*other_edge_neighbor_b.length))
-        except AttributeError:  # neighbor data may be missing for edges with 3+ faces
+        except (AttributeError, ZeroDivisionError):  # neighbor data may be missing for edges with 3+ faces
             pass
-        except ZeroDivisionError:
-            pass
-
         # Calculate the lengths of the glue tab edges using the possibly smaller angles
         sin_a = abs(1 - cos_a**2)**0.5
         len_b = min(len_a, (edge.length * sin_a) / (sin_a * cos_b + sin_b * cos_a))
@@ -1273,7 +1274,7 @@ class Svg:
         import tempfile
         import base64
         with tempfile.TemporaryDirectory() as directory:
-            filename = directory + "/i.png"
+            filename = f"{directory}/i.png"
             bpy_image.filepath_raw = filename
             bpy_image.save()
             return base64.encodebytes(open(filename, "rb").read()).decode('ascii')
@@ -1366,7 +1367,7 @@ class Svg:
                                 label=island.title),
                             file=f)
 
-                    data_markers, data_stickerfill = list(), list()
+                    data_markers, data_stickerfill = [], []
                     for marker in island.markers:
                         if isinstance(marker, Sticker):
                             data_stickerfill.append("M {} Z".format(
@@ -1395,10 +1396,10 @@ class Svg:
                     if data_stickerfill and self.style.sticker_color[3] > 0:
                         print("<path class='sticker' d='", rows(data_stickerfill), "'/>", file=f)
 
-                    data_outer, data_convex, data_concave, data_freestyle = (list() for i in range(4))
+                    data_outer, data_convex, data_concave, data_freestyle = ([] for i in range(4))
                     outer_edges = set(island.boundary)
                     while outer_edges:
-                        data_loop = list()
+                        data_loop = []
                         uvedge = outer_edges.pop()
                         while 1:
                             if uvedge.sticker:
@@ -1562,7 +1563,7 @@ class Pdf:
             result.append("{0:.3f} {1:.3f} {2:.3f} rg".format(*color))
         if color[3] < 1:
             style_name = "R{:03}".format(round(1000 * color[3]))
-            result.append("/{} gs".format(style_name))
+            result.append(f"/{style_name} gs")
             if style_name not in self.styles:
                 self.styles[style_name] = {"CA": color[3], "ca": color[3]}
         return result
@@ -1570,11 +1571,17 @@ class Pdf:
     @classmethod
     def encode_image(cls, bpy_image):
         data = bytes(int(255 * px) for (i, px) in enumerate(bpy_image.pixels) if i % 4 != 3)
-        image = {
-            "Type": "XObject", "Subtype": "Image", "Width": bpy_image.size[0], "Height": bpy_image.size[1],
-            "ColorSpace": "DeviceRGB", "BitsPerComponent": 8, "Interpolate": True,
-            "Filter": ["ASCII85Decode", "FlateDecode"], "stream": data}
-        return image
+        return {
+            "Type": "XObject",
+            "Subtype": "Image",
+            "Width": bpy_image.size[0],
+            "Height": bpy_image.size[1],
+            "ColorSpace": "DeviceRGB",
+            "BitsPerComponent": 8,
+            "Interpolate": True,
+            "Filter": ["ASCII85Decode", "FlateDecode"],
+            "stream": data,
+        }
 
     def write(self, mesh, filename):
         def format_dict(obj, refs=tuple()):
@@ -1626,7 +1633,11 @@ class Pdf:
 
         page_size_pt = 1000 * self.mm_to_pt * self.page_size
         reset_style = ["Q"]  # graphic command for later use
-        root = {"Type": "Pages", "MediaBox": [0, 0, page_size_pt.x, page_size_pt.y], "Kids": list()}
+        root = {
+            "Type": "Pages",
+            "MediaBox": [0, 0, page_size_pt.x, page_size_pt.y],
+            "Kids": [],
+        }
         catalog = {"Type": "Catalog", "Pages": root}
         font = {
             "Type": "Font", "Subtype": "Type1", "Name": "F1",
@@ -1656,7 +1667,7 @@ class Pdf:
                         label=island.title))
                     commands += reset_style
 
-                data_markers, data_stickerfill = list(), list()
+                data_markers, data_stickerfill = [], []
                 for marker in island.markers:
                     if isinstance(marker, Sticker):
                         data_stickerfill.append(line_through(marker.points) + "f")
@@ -1683,10 +1694,10 @@ class Pdf:
                             mat=marker.rot,
                             size=1000*marker.size))
 
-                data_outer, data_convex, data_concave, data_freestyle = (list() for i in range(4))
+                data_outer, data_convex, data_concave, data_freestyle = ([] for i in range(4))
                 outer_edges = set(island.boundary)
                 while outer_edges:
-                    data_loop = list()
+                    data_loop = []
                     uvedge = outer_edges.pop()
                     while 1:
                         if uvedge.sticker:
@@ -1833,6 +1844,8 @@ class Unfold(bpy.types.Operator):
         island_list = mesh.paper_island_list
         attributes = {item.label: (item.abbreviation, item.auto_label, item.auto_abbrev) for item in island_list}
         island_list.clear()  # remove previously defined islands
+        mesh.paper_island_index = -1
+
         for island in unfolder.mesh.islands:
             # add islands to UI list and set default descriptions
             list_item = island_list.add()
@@ -1845,8 +1858,6 @@ class Unfold(bpy.types.Operator):
                 island.label,
                 (island.abbreviation, True, True))
             island_item_changed(list_item, context)
-            mesh.paper_island_index = -1
-
         del unfolder
         bpy.ops.object.mode_set(mode=recall_mode)
         return {'FINISHED'}
@@ -2096,7 +2107,7 @@ class ExportPaperModel(bpy.types.Operator):
             if self.object.data.paper_island_list:
                 self.unfolder.copy_island_names(self.object.data.paper_island_list)
             self.unfolder.save(self.properties)
-            self.report({'INFO'}, "Saved a {}-page document".format(len(self.unfolder.mesh.pages)))
+            self.report({'INFO'}, f"Saved a {len(self.unfolder.mesh.pages)}-page document")
             return {'FINISHED'}
         except UnfoldError as error:
             self.report(type={'ERROR_INVALID_INPUT'}, message=error.args[0])
@@ -2339,8 +2350,12 @@ class DATA_PT_paper_model_islands(bpy.types.Panel):
         layout.operator("mesh.unfold", icon='FILE_REFRESH')
         if mesh and mesh.paper_island_list:
             layout.label(
-                text="1 island:" if len(mesh.paper_island_list) == 1 else
-                "{} islands:".format(len(mesh.paper_island_list)))
+                text=(
+                    "1 island:"
+                    if len(mesh.paper_island_list) == 1
+                    else f"{len(mesh.paper_island_list)} islands:"
+                )
+            )
             layout.template_list(
                 'UI_UL_list', 'paper_model_island_list', mesh,
                 'paper_island_list', mesh, 'paper_island_index', rows=1, maxrows=5)

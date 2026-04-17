@@ -144,46 +144,70 @@ def ProfileCurve(type=0, a=0.25, b=0.25):
         # H:
         a *= 0.5
         b *= 0.5
-        newpoints = [
-                [-1.0, 1.0, 0.0], [-1.0 + a, 1.0, 0.0],
-                [-1.0 + a, b, 0.0], [1.0 - a, b, 0.0], [1.0 - a, 1.0, 0.0],
-                [1.0, 1.0, 0.0], [1.0, -1.0, 0.0], [1.0 - a, -1.0, 0.0],
-                [1.0 - a, -b, 0.0], [-1.0 + a, -b, 0.0], [-1.0 + a, -1.0, 0.0],
-                [-1.0, -1.0, 0.0]
-                ]
+        return [
+            [-1.0, 1.0, 0.0],
+            [-1.0 + a, 1.0, 0.0],
+            [-1.0 + a, b, 0.0],
+            [1.0 - a, b, 0.0],
+            [1.0 - a, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [1.0, -1.0, 0.0],
+            [1.0 - a, -1.0, 0.0],
+            [1.0 - a, -b, 0.0],
+            [-1.0 + a, -b, 0.0],
+            [-1.0 + a, -1.0, 0.0],
+            [-1.0, -1.0, 0.0],
+        ]
     elif type == 2:
         # T:
         a *= 0.5
-        newpoints = [
-                [-1.0, 1.0, 0.0], [1.0, 1.0, 0.0],
-                [1.0, 1.0 - b, 0.0], [a, 1.0 - b, 0.0], [a, -1.0, 0.0],
-                [-a, -1.0, 0.0], [-a, 1.0 - b, 0.0], [-1.0, 1.0 - b, 0.0]
-                ]
+        return [
+            [-1.0, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [1.0, 1.0 - b, 0.0],
+            [a, 1.0 - b, 0.0],
+            [a, -1.0, 0.0],
+            [-a, -1.0, 0.0],
+            [-a, 1.0 - b, 0.0],
+            [-1.0, 1.0 - b, 0.0],
+        ]
     elif type == 3:
         # U:
         a *= 0.5
-        newpoints = [
-                [-1.0, 1.0, 0.0], [-1.0 + a, 1.0, 0.0],
-                [-1.0 + a, -1.0 + b, 0.0], [1.0 - a, -1.0 + b, 0.0], [1.0 - a, 1.0, 0.0],
-                [1.0, 1.0, 0.0], [1.0, -1.0, 0.0], [-1.0, -1.0, 0.0]
-                ]
+        return [
+            [-1.0, 1.0, 0.0],
+            [-1.0 + a, 1.0, 0.0],
+            [-1.0 + a, -1.0 + b, 0.0],
+            [1.0 - a, -1.0 + b, 0.0],
+            [1.0 - a, 1.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [1.0, -1.0, 0.0],
+            [-1.0, -1.0, 0.0],
+        ]
     elif type == 4:
         # Z:
         a *= 0.5
-        newpoints = [
-                [-0.5, 1.0, 0.0], [a, 1.0, 0.0],
-                [a, -1.0 + b, 0.0], [1.0, -1.0 + b, 0.0], [1.0, -1.0, 0.0],
-                [-a, -1.0, 0.0], [-a, 1.0 - b, 0.0], [-1.0, 1.0 - b, 0.0],
-                [-1.0, 1.0, 0.0]
-                ]
+        return [
+            [-0.5, 1.0, 0.0],
+            [a, 1.0, 0.0],
+            [a, -1.0 + b, 0.0],
+            [1.0, -1.0 + b, 0.0],
+            [1.0, -1.0, 0.0],
+            [-a, -1.0, 0.0],
+            [-a, 1.0 - b, 0.0],
+            [-1.0, 1.0 - b, 0.0],
+            [-1.0, 1.0, 0.0],
+        ]
     else:
         # L:
-        newpoints = [
-                [-1.0, 1.0, 0.0], [-1.0 + a, 1.0, 0.0],
-                [-1.0 + a, -1.0 + b, 0.0], [1.0, -1.0 + b, 0.0],
-                [1.0, -1.0, 0.0], [-1.0, -1.0, 0.0]
-                ]
-    return newpoints
+        return [
+            [-1.0, 1.0, 0.0],
+            [-1.0 + a, 1.0, 0.0],
+            [-1.0 + a, -1.0 + b, 0.0],
+            [1.0, -1.0 + b, 0.0],
+            [1.0, -1.0, 0.0],
+            [-1.0, -1.0, 0.0],
+        ]
 
 
 # ------------------------------------------------------------
@@ -211,19 +235,21 @@ def ArrowCurve(type=1, a=1.0, b=0.5):
         # Arrow1:
         a *= 0.5
         b *= 0.5
-        newpoints = [
-                [-1.0, b, 0.0], [-1.0 + a, b, 0.0],
-                [-1.0 + a, 1.0, 0.0], [1.0, 0.0, 0.0],
-                [-1.0 + a, -1.0, 0.0], [-1.0 + a, -b, 0.0],
-                [-1.0, -b, 0.0]
-                ]
+        return [
+            [-1.0, b, 0.0],
+            [-1.0 + a, b, 0.0],
+            [-1.0 + a, 1.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [-1.0 + a, -1.0, 0.0],
+            [-1.0 + a, -b, 0.0],
+            [-1.0, -b, 0.0],
+        ]
     elif type == 1:
         # Arrow2:
-        newpoints = [[-a, b, 0.0], [a, 0.0, 0.0], [-a, -b, 0.0], [0.0, 0.0, 0.0]]
+        return [[-a, b, 0.0], [a, 0.0, 0.0], [-a, -b, 0.0], [0.0, 0.0, 0.0]]
     else:
         # diamond:
-        newpoints = [[0.0, b, 0.0], [a, 0.0, 0.0], [0.0, -b, 0.0], [-a, 0.0, 0.0]]
-    return newpoints
+        return [[0.0, b, 0.0], [a, 0.0, 0.0], [0.0, -b, 0.0], [-a, 0.0, 0.0]]
 
 
 # ------------------------------------------------------------
@@ -268,10 +294,8 @@ def RectCurve(type=1, a=1.0, b=0.5, c=1.0):
         if r > y:
             r = y - 0.0001
         if r > 0:
-            newpoints.append([-x + r, y, 0])
-            newpoints.append([x - r, y, 0])
-            newpoints.append([x, y - r, 0])
-            newpoints.append([x, -y + r, 0])
+            newpoints.extend(([-x + r, y, 0], [x - r, y, 0]))
+            newpoints.extend(([x, y - r, 0], [x, -y + r, 0]))
             newpoints.append([x - r, -y, 0])
             newpoints.append([-x + r, -y, 0])
             newpoints.append([-x, -y + r, 0])
@@ -396,17 +420,11 @@ def ArcCurve(sides=6, startangle=0.0, endangle=90.0, innerradius=0.5, outerradiu
     angle = 2.0 * (1.0 / 360.0)
     endangle -= startangle
     step = (angle * endangle) / (sides - 1)
-    i = 0
-    while i < sides:
+    for i in range(sides):
         t = (i * step) + angle * startangle
         x1 = sin(t * pi) * outerradius
         y1 = cos(t * pi) * outerradius
         newpoints.append([x1, y1, 0])
-        i += 1
-
-    # if type == 1:
-        # Arc: turn cyclic curve flag off!
-
     # Segment:
     if type == 2:
         newpoints.append([0, 0, 0])
@@ -572,33 +590,22 @@ def CycloidCurve(number=100, type=0, R=4.0, r=1.0, d=1.0):
     newpoints = []
     step = 2.0 / (number - 1)
     i = 0
-    if type == 1:
-        # Hypotrochoid / Hypocycloid
-        while i < number:
+    while i < number:
+        z = 0
+        if type == 1:
             t = i * step
             x = ((a - b) * cos(t * pi)) + (d * cos(((a + b) / b) * t * pi))
             y = ((a - b) * sin(t * pi)) - (d * sin(((a + b) / b) * t * pi))
-            z = 0
-            newpoints.append([x, y, z])
-            i += 1
-    elif type == 2:
-        # Epitrochoid / Epycycloid
-        while i < number:
+        elif type == 2:
             t = i * step
             x = ((a + b) * cos(t * pi)) - (d * cos(((a + b) / b) * t * pi))
             y = ((a + b) * sin(t * pi)) - (d * sin(((a + b) / b) * t * pi))
-            z = 0
-            newpoints.append([x, y, z])
-            i += 1
-    else:
-        # Cycloid
-        while i < number:
+        else:
             t = (i * step * pi)
             x = (t - sin(t) * b) * a / pi
             y = (1 - cos(t) * b) * a / pi
-            z = 0
-            newpoints.append([x, y, z])
-            i += 1
+        i += 1
+        newpoints.append([x, y, z])
     return newpoints
 
 
@@ -653,8 +660,7 @@ def HelixCurve(number=100, height=2.0, startangle=0.0, endangle=360.0, width=1.0
 
 # -----------------------------------------------------------
 # 3D Noise curve
-def NoiseCurve(type=0, number=100, length=2.0, size=0.5,
-               scale=[0.5, 0.5, 0.5], octaves=2, basis=0, seed=0):
+def NoiseCurve(type=0, number=100, length=2.0, size=0.5, scale=None, octaves=2, basis=0, seed=0):
     """
     Create noise curve
 
@@ -678,39 +684,30 @@ def NoiseCurve(type=0, number=100, length=2.0, size=0.5,
         (type=list)
     """
 
+    if scale is None:
+        scale = [0.5, 0.5, 0.5]
     newpoints = []
     step = (length / number)
     i = 0
-    if type == 1:
-        # noise circle
-        while i < number:
-            t = i * step
+    while i < number:
+        t = i * step
+        if type == 1:
             v = vTurbNoise(t, t, t, 1.0, size, octaves, False, basis, seed)
             x = sin(t * pi) + (v[0] * scale[0])
             y = cos(t * pi) + (v[1] * scale[1])
             z = v[2] * scale[2]
-            newpoints.append([x, y, z])
-            i += 1
-    elif type == 2:
-        # noise knot / ball
-        while i < number:
-            t = i * step
+        elif type == 2:
             v = vTurbNoise(t, t, t, 1.0, 1.0, octaves, False, basis, seed)
             x = v[0] * scale[0] * size
             y = v[1] * scale[1] * size
             z = v[2] * scale[2] * size
-            newpoints.append([x, y, z])
-            i += 1
-    else:
-        # noise linear
-        while i < number:
-            t = i * step
+        else:
             v = vTurbNoise(t, t, t, 1.0, size, octaves, False, basis, seed)
             x = t + v[0] * scale[0]
             y = v[1] * scale[1]
             z = v[2] * scale[2]
-            newpoints.append([x, y, z])
-            i += 1
+        i += 1
+        newpoints.append([x, y, z])
     return newpoints
 
 
@@ -837,39 +834,6 @@ def main(context, self):
     outerRadius = self.outerRadius
 
     # get verts
-    if proType == 'Profile':
-        verts = ProfileCurve(
-                self.ProfileCurveType,
-                self.ProfileCurvevar1,
-                self.ProfileCurvevar2
-                )
-    if proType == 'Arrow':
-        verts = ArrowCurve(
-                self.MiscCurveType,
-                self.MiscCurvevar1,
-                self.MiscCurvevar2
-                )
-    if proType == 'Rectangle':
-        verts = RectCurve(
-                self.MiscCurveType,
-                self.MiscCurvevar1,
-                self.MiscCurvevar2,
-                self.MiscCurvevar3
-                )
-    if proType == 'Flower':
-        verts = FlowerCurve(
-                self.petals,
-                innerRadius,
-                outerRadius,
-                self.petalWidth
-                )
-    if proType == 'Star':
-        verts = StarCurve(
-                self.starPoints,
-                innerRadius,
-                outerRadius,
-                self.starTwist
-                )
     if proType == 'Arc':
         verts = ArcCurve(
                 self.arcSides,
@@ -879,7 +843,13 @@ def main(context, self):
                 outerRadius,
                 self.arcType
                 )
-    if proType == 'Cogwheel':
+    elif proType == 'Arrow':
+        verts = ArrowCurve(
+                self.MiscCurveType,
+                self.MiscCurvevar1,
+                self.MiscCurvevar2
+                )
+    elif proType == 'Cogwheel':
         verts = CogCurve(
                 self.teeth,
                 innerRadius,
@@ -887,20 +857,7 @@ def main(context, self):
                 outerRadius,
                 self.bevel
                 )
-    if proType == 'Nsided':
-        verts = nSideCurve(
-                self.Nsides,
-                outerRadius
-                )
-    if proType == 'Splat':
-        verts = SplatCurve(
-                self.splatSides,
-                self.splatScale,
-                self.seed,
-                self.basis,
-                outerRadius
-                )
-    if proType == 'Cycloid':
+    elif proType == 'Cycloid':
         verts = CycloidCurve(
                 self.cycloPoints,
                 self.cycloType,
@@ -908,7 +865,14 @@ def main(context, self):
                 self.cyclo_b,
                 self.cyclo_d
                 )
-    if proType == 'Helix':
+    elif proType == 'Flower':
+        verts = FlowerCurve(
+                self.petals,
+                innerRadius,
+                outerRadius,
+                self.petalWidth
+                )
+    elif proType == 'Helix':
         verts = HelixCurve(
                 self.helixPoints,
                 self.helixHeight,
@@ -918,7 +882,7 @@ def main(context, self):
                 self.helix_a,
                 self.helix_b
                 )
-    if proType == 'Noise':
+    elif proType == 'Noise':
         verts = NoiseCurve(
                 self.noiseType,
                 self.noisePoints,
@@ -930,6 +894,39 @@ def main(context, self):
                 self.noiseSeed
                 )
 
+    elif proType == 'Nsided':
+        verts = nSideCurve(
+                self.Nsides,
+                outerRadius
+                )
+    elif proType == 'Profile':
+        verts = ProfileCurve(
+                self.ProfileCurveType,
+                self.ProfileCurvevar1,
+                self.ProfileCurvevar2
+                )
+    elif proType == 'Rectangle':
+        verts = RectCurve(
+                self.MiscCurveType,
+                self.MiscCurvevar1,
+                self.MiscCurvevar2,
+                self.MiscCurvevar3
+                )
+    elif proType == 'Splat':
+        verts = SplatCurve(
+                self.splatSides,
+                self.splatScale,
+                self.seed,
+                self.basis,
+                outerRadius
+                )
+    elif proType == 'Star':
+        verts = StarCurve(
+                self.starPoints,
+                innerRadius,
+                outerRadius,
+                self.starTwist
+                )
     # turn verts into array
     vertArray = vertsToPoints(verts, splineType)
 
@@ -1309,7 +1306,7 @@ class Curveaceous_galore(Operator, object_utils.AddObjectHelper):
         # general options
         col = layout.column()
         col.prop(self, 'ProfileType')
-        col.label(text=self.ProfileType + " Options:")
+        col.label(text=f"{self.ProfileType} Options:")
 
         # options per ProfileType
         box = layout.box()

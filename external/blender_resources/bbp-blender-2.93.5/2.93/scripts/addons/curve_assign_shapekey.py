@@ -68,19 +68,36 @@ def vectCmpWithMargin(v1, v2, margin = DEF_ERR_MARGIN):
 class Segment():
 
     #pts[0] - start, pts[1] - ctrl1, pts[2] - ctrl2, , pts[3] - end
-    def pointAtT(pts, t):
-        return pts[0] + t * (3 * (pts[1] - pts[0]) +
-            t* (3 * (pts[0] + pts[2]) - 6 * pts[1] +
-                t * (-pts[0] + 3 * (pts[1] - pts[2]) + pts[3])))
+    def pointAtT(self, t):
+        return self[0] + (
+            t
+            * (
+                (
+                    3 * (self[1] - self[0])
+                    + (
+                        t
+                        * (
+                            (
+                                3 * (self[0] + self[2])
+                                - 6 * self[1]
+                                + t
+                                * (-self[0] + 3 * (self[1] - self[2]) + self[3])
+                            )
+                        )
+                    )
+                )
+            )
+        )
 
-    def getSegLenRecurs(pts, start, end, t1 = 0, t2 = 1, error = DEF_ERR_MARGIN):
+    def getSegLenRecurs(self, start, end, t1 = 0, t2 = 1, error = DEF_ERR_MARGIN):
         t1_5 = (t1 + t2)/2
-        mid = Segment.pointAtT(pts, t1_5)
+        mid = Segment.pointAtT(self, t1_5)
         l = (end - start).length
         l2 = (mid - start).length + (end - mid).length
         if (l2 - l > error):
-            return (Segment.getSegLenRecurs(pts, start, mid, t1, t1_5, error) +
-                    Segment.getSegLenRecurs(pts, mid, end, t1_5, t2, error))
+            return Segment.getSegLenRecurs(
+                self, start, mid, t1, t1_5, error
+            ) + Segment.getSegLenRecurs(self, mid, end, t1_5, t2, error)
         return l2
 
     def __init__(self, start, ctrl1, ctrl2, end):
@@ -95,11 +112,8 @@ class Segment():
     def partialSeg(self, t0, t1):
         pts = [self.start, self.ctrl1, self.ctrl2, self.end]
 
-        if(t0 > t1):
-            tt = t1
-            t1 = t0
-            t0 = tt
-
+        if (t0 > t1):
+            t1, t0 = t0, t1
         #Let's make at least the line segments of predictable length :)
         if(pts[0] == pts[1] and pts[2] == pts[3]):
             pt0 = Vector([(1 - t0) * pts[0][i] + t0 * pts[2][i] for i in range(0, 3)])
@@ -201,9 +215,9 @@ class Part():
         return self.segs
 
     def getSegsCopy(self, start, end):
-        if(start == None):
+        if start is None:
             start = 0
-        if(end == None):
+        if end is None:
             end = len(self.segs)
         return self.segs[start:end]
 
@@ -219,19 +233,19 @@ class Part():
 
         for seg in self.segs:
 
-            if(worldSpace):
-                bb = seg.bbox(self.parent.curve.matrix_world)
-            else:
-                bb = seg.bbox()
-
+            bb = seg.bbox(self.parent.curve.matrix_world) if worldSpace else seg.bbox()
             for i in range(0, 3):
-                if (leftBotBack_rgtTopFront[0][i] == None or \
-                    bb[0][i] < leftBotBack_rgtTopFront[0][i]):
+                if (
+                    leftBotBack_rgtTopFront[0][i] is None
+                    or bb[0][i] < leftBotBack_rgtTopFront[0][i]
+                ):
                     leftBotBack_rgtTopFront[0][i] = bb[0][i]
 
             for i in range(0, 3):
-                if (leftBotBack_rgtTopFront[1][i] == None or \
-                    bb[1][i] > leftBotBack_rgtTopFront[1][i]):
+                if (
+                    leftBotBack_rgtTopFront[1][i] is None
+                    or bb[1][i] > leftBotBack_rgtTopFront[1][i]
+                ):
                     leftBotBack_rgtTopFront[1][i] = bb[1][i]
 
         if(worldSpace):
@@ -245,8 +259,7 @@ class Part():
     def getBBDiff(self, axisIdx, worldSpace):
         obj = self.parent.curve
         bbox = self.getBBox(worldSpace)
-        diff = abs(bbox[1][axisIdx] - bbox[0][axisIdx])
-        return diff
+        return abs(bbox[1][axisIdx] - bbox[0][axisIdx])
 
     def getBBWidth(self, worldSpace):
         return self.getBBDiff(0, worldSpace)
@@ -277,11 +290,8 @@ class Part():
             pt = seg.start
             handleRight = seg.ctrl1
 
-            if(j == 0):
-                if(self.toClose):
-                    handleLeft = self.getSeg(-1).ctrl2
-                else:
-                    handleLeft = pt
+            if (j == 0):
+                handleLeft = self.getSeg(-1).ctrl2 if self.toClose else pt
             else:
                 handleLeft = prevSeg.ctrl2
 
@@ -302,10 +312,10 @@ class Part():
 class Path:
     def __init__(self, curve, objData = None, name = None):
 
-        if(objData == None):
+        if objData is None:
             objData = curve.data
 
-        if(name == None):
+        if name is None:
             name = curve.name
 
         self.name = name
@@ -317,8 +327,7 @@ class Path:
         return len(self.parts)
 
     def getPartView(self):
-        p = Part(self, [seg for part in self.parts for seg in part.getSegs()], None)
-        return p
+        return Part(self, [seg for part in self.parts for seg in part.getSegs()], None)
 
     def getPartBoundaryIdxs(self):
         cumulCntList = set()
@@ -338,22 +347,18 @@ class Path:
         self.parts.clear()
 
         for i in range(0, len(segCntsPerPart)):
-            if( i == 0):
-                currIdx = 0
-            else:
-                currIdx = segCntsPerPart[i-1]
-
+            currIdx = 0 if ( i == 0) else segCntsPerPart[i-1]
             nextIdx = segCntsPerPart[i]
             isClosed = False
 
             if(vectCmpWithMargin(monolithicSegList[currIdx].start, \
-                    currPart.getSegs()[0].start) and \
-                vectCmpWithMargin(monolithicSegList[nextIdx-1].end, \
-                    currPart.getSegs()[-1].end)):
+                        currPart.getSegs()[0].start) and \
+                    vectCmpWithMargin(monolithicSegList[nextIdx-1].end, \
+                        currPart.getSegs()[-1].end)):
                 isClosed = currPart.isClosed
 
             self.parts.append(Part(self, \
-                monolithicSegList[currIdx:nextIdx], isClosed))
+                    monolithicSegList[currIdx:nextIdx], isClosed))
 
             if(monolithicSegList[nextIdx-1] == currPart.getSegs()[-1]):
                 partIdx += 1
@@ -361,12 +366,7 @@ class Path:
                     currPart = oldParts[partIdx]
 
     def getBezierPtsBySpline(self):
-        data = []
-
-        for i, part in enumerate(self.parts):
-            data.append(part.getBezierPtsInfo())
-
-        return data
+        return [part.getBezierPtsInfo() for part in self.parts]
 
     def getNewCurveData(self):
 
@@ -587,18 +587,18 @@ def addMissingSegs(selPaths, byPart):
                     maxSegCntsByPart[j] = partSegCnt
     for i, path in enumerate(sortedPaths):
 
-        if(byPart == False):
+        if (byPart == False):
             partView = path.getPartView()
             segCnt = partView.getSegCnt()
             diff = maxSegCnt - segCnt
 
-            if(diff > 0):
+            if (diff > 0):
                 cnts = getSubdivCntPerSeg(partView, diff)
                 cumulSegIdx = 0
                 for j in range(0, len(path.parts)):
                     part = path.parts[j]
                     newSegs = []
-                    for k, seg in enumerate(part.getSegs()):
+                    for seg in part.getSegs():
                         numSubdivs = cnts[cumulSegIdx] + 1
                         newSegs += subdivideSeg(seg, numSubdivs)
                         cumulSegIdx += 1
@@ -634,7 +634,7 @@ def alignPath(path, matchParts, matchCriteria, alignBy, alignValues):
 
     parts = path.parts[:]
 
-    if(matchParts == 'custom'):
+    if (matchParts == 'custom'):
         fnMap = {'vCnt' : lambda part: -1 * part.getSegCnt(), \
                  'bbArea': lambda part: -1 * part.bboxSurfaceArea(worldSpace = True), \
                  'bbHeight' : lambda part: -1 * part.getBBHeight(worldSpace = True), \
@@ -644,7 +644,7 @@ def alignPath(path, matchParts, matchCriteria, alignBy, alignValues):
         matchPartCmpFns = []
         for criterion in matchCriteria:
             fn = fnMap.get(criterion)
-            if(fn == None):
+            if fn is None:
                 minmax = criterion[:3] == 'max' #0 if min; 1 if max
                 axisIdx = ord(criterion[3:]) - ord('X')
 
@@ -754,7 +754,7 @@ def safeRemoveObj(obj):
                 bpy.data.meshes.remove(obj.data)
 
         bpy.data.objects.remove(obj)
-    except:
+    except Exception:
         pass
 
 
@@ -787,12 +787,12 @@ class AssignShapeKeysOp(Operator):
 
         targetObj = bpy.context.active_object
         shapekeyObjs = [obj for obj in bpy.context.selected_objects if isBezier(obj) \
-            and obj != targetObj]
+                and obj != targetObj]
 
-        if(targetObj != None and isBezier(targetObj) and len(shapekeyObjs) > 0):
+        if targetObj != None and isBezier(targetObj) and shapekeyObjs:
             main(targetObj, shapekeyObjs, removeOriginal, space, \
-                    matchParts, [matchCri1, matchCri2, matchCri3], \
-                            alignBy, [alignVal1, alignVal2, alignVal3])
+                        matchParts, [matchCri1, matchCri2, matchCri3], \
+                                alignBy, [alignVal1, alignVal2, alignVal3])
 
         return {'FINISHED'}
 
@@ -829,10 +829,10 @@ class MarkerController:
 
     def createBatch(self, context):
         positions = [s[0] for cn in self.smMap.values() for s in cn.values()]
-        colors = [MarkerController.ptColor for i in range(0, len(positions))]
+        colors = [MarkerController.ptColor for _ in range(0, len(positions))]
 
         self.batch = batch_for_shader(self.shader, \
-            "POINTS", {"pos": positions, "color": colors})
+                "POINTS", {"pos": positions, "color": colors})
 
         if context.area:
             context.area.tag_redraw()
@@ -904,9 +904,9 @@ class MarkerController:
                 pts = curve.data.splines[splineIdx].bezier_points
 
                 selIdxs = [x for x in range(0, len(pts)) \
-                    if pts[x].select_control_point == True]
+                        if pts[x].select_control_point == True]
 
-                selIdx = selIdxs[0] if(len(selIdxs) > 0 ) else idx
+                selIdx = selIdxs[0] if selIdxs else idx
                 co = mw @ pts[selIdx].co
                 self.smMap[curveName][splineIdx] = [co, selIdx]
 
@@ -917,15 +917,15 @@ class MarkerController:
                 for pt in spline.bezier_points:
                     pt.select_control_point = False
 
-    def getSpaces3D(context):
+    def getSpaces3D(self):
         areas3d  = [area for area in context.window.screen.areas \
-            if area.type == 'VIEW_3D']
+                if area.type == 'VIEW_3D']
 
         return [s for a in areas3d for s in a.spaces if s.type == 'VIEW_3D']
 
-    def hideHandles(context):
+    def hideHandles(self):
         states = []
-        spaces = MarkerController.getSpaces3D(context)
+        spaces = MarkerController.getSpaces3D(self)
         for s in spaces:
             if(hasattr(s.overlay, 'show_curve_handles')):
                 states.append(s.overlay.show_curve_handles)
@@ -935,8 +935,8 @@ class MarkerController:
                 s.overlay.display_handle = 'NONE'
         return states
 
-    def resetShowHandleState(context, handleStates):
-        spaces = MarkerController.getSpaces3D(context)
+    def resetShowHandleState(self, handleStates):
+        spaces = MarkerController.getSpaces3D(self)
         for i, s in enumerate(spaces):
             if(hasattr(s.overlay, 'show_curve_handles')):
                 s.overlay.show_curve_handles = handleStates[i]

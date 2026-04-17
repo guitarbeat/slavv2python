@@ -130,11 +130,7 @@ class OBJECT_OT_TriLighting(Operator):
             collection = context.collection
             scene = context.scene
             view = context.space_data
-            if view.type == 'VIEW_3D':
-                camera = view.camera
-            else:
-                camera = scene.camera
-
+            camera = view.camera if view.type == 'VIEW_3D' else scene.camera
             if (camera is None):
                 cam_data = bpy.data.cameras.new(name='Camera')
                 cam_obj = bpy.data.objects.new(name='Camera', object_data=cam_data)
@@ -181,10 +177,10 @@ class OBJECT_OT_TriLighting(Operator):
             # Calc back position
             singleback_vector = single_vector.copy()
             singleback_vector.x = cos(radians(self.backangle)) * single_vector.x + \
-                                  (-sin(radians(self.backangle)) * single_vector.y)
+                                      (-sin(radians(self.backangle)) * single_vector.y)
 
             singleback_vector.y = sin(radians(self.backangle)) * single_vector.x + \
-                                 (cos(radians(self.backangle)) * single_vector.y)
+                                     (cos(radians(self.backangle)) * single_vector.y)
 
             backx = obj_position.x + self.distance * singleback_vector.x
             backy = obj_position.y + self.distance * singleback_vector.y
@@ -204,10 +200,10 @@ class OBJECT_OT_TriLighting(Operator):
             # Calc right position
             singleright_vector = single_vector.copy()
             singleright_vector.x = cos(radians(self.rightangle)) * single_vector.x + \
-                                  (-sin(radians(self.rightangle)) * single_vector.y)
+                                      (-sin(radians(self.rightangle)) * single_vector.y)
 
             singleright_vector.y = sin(radians(self.rightangle)) * single_vector.x + \
-                                  (cos(radians(self.rightangle)) * single_vector.y)
+                                      (cos(radians(self.rightangle)) * single_vector.y)
 
             rightx = obj_position.x + self.distance * singleright_vector.x
             righty = obj_position.y + self.distance * singleright_vector.y
@@ -225,9 +221,9 @@ class OBJECT_OT_TriLighting(Operator):
             # Calc left position
             singleleft_vector = single_vector.copy()
             singleleft_vector.x = cos(radians(-self.leftangle)) * single_vector.x + \
-                                (-sin(radians(-self.leftangle)) * single_vector.y)
+                                    (-sin(radians(-self.leftangle)) * single_vector.y)
             singleleft_vector.y = sin(radians(-self.leftangle)) * single_vector.x + \
-                                (cos(radians(-self.leftangle)) * single_vector.y)
+                                    (cos(radians(-self.leftangle)) * single_vector.y)
             leftx = obj_position.x + self.distance * singleleft_vector.x
             lefty = obj_position.y + self.distance * singleleft_vector.y
 
@@ -246,8 +242,7 @@ class OBJECT_OT_TriLighting(Operator):
             self.report({'WARNING'},
                         "Some operations could not be performed (See Console for more info)")
 
-            print("\n[Add Advanced  Objects]\nOperator: "
-                  "object.trilighting\nError: {}".format(e))
+            print(f"\n[Add Advanced  Objects]\nOperator: object.trilighting\nError: {e}")
 
             return {'CANCELLED'}
 

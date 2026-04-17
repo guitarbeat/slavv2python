@@ -151,11 +151,7 @@ class AutoMirror(bpy.types.Operator):
 
         bpy.ops.mesh.select_all(action = 'SELECT') # Select all the vertices
 
-        if automirror.orientation == 'positive':
-            orientation = 1
-        else:
-            orientation = -1
-
+        orientation = 1 if automirror.orientation == 'positive' else -1
         cut_normal = self.get_local_axis_vector(context, X, Y, Z, orientation)
 
         # Cut the mesh
@@ -295,8 +291,7 @@ def update_panel(self, context):
             bpy.utils.register_class(panel)
 
     except Exception as e:
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
-        pass
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 class AutoMirrorAddonPreferences(AddonPreferences):

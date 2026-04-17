@@ -116,7 +116,7 @@ class CelticKnotOperator(Operator):
         col.prop(self, "weave_down")
 
         col = layout.column(align=True)
-        col.active = False if self.handle_type == 'AUTO' else True
+        col.active = self.handle_type != 'AUTO'
         col.prop(self, "crossing_angle")
         col.prop(self, "crossing_strength")
 
@@ -270,7 +270,7 @@ class CelticKnotOperator(Operator):
         # apply the bevel setting since it was unused
         try:
             curve_obj.data.bevel_depth = self.geo_bDepth
-        except:
+        except Exception:
             pass
 
         bpy.context.view_layer.objects.active = orig_obj

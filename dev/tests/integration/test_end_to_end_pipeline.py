@@ -117,7 +117,7 @@ def test_end_to_end_pipeline(tmp_path):
     csv_base = str(out_dir / "network")
     save_network_to_csv(net_obj, csv_base)
     csv_files = list(out_dir.glob("*.csv"))
-    assert len(csv_files) > 0
+    assert csv_files
 
     # CASX
     casx_path = out_dir / "network.casx"

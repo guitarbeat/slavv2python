@@ -52,10 +52,11 @@ def stdlib_excludes():
     excludes = []
     std_lib = sysconfig.get_python_lib(standard_lib=True)
     for top, dirs, files in os.walk(std_lib):
-        for nm in files:
-            if nm != '__init__.py' and nm[-3:] == '.py':
-                excludes.append(os.path.join(top, nm)[len(std_lib)+1:-3].replace('\\','.'))
-
+        excludes.extend(
+            os.path.join(top, nm)[len(std_lib) + 1 : -3].replace('\\', '.')
+            for nm in files
+            if nm != '__init__.py' and nm[-3:] == '.py'
+        )
     return excludes
 
 def make_loc(prefix, c):
@@ -72,10 +73,14 @@ def make_loc(prefix, c):
     if hasattr(c, "bl_label"):
         label = c.bl_label
 
-    return prefix+": " + space + " " + region + " " + label
+    return f"{prefix}: {space} {region} " + label
 
-def walk_module(opname, mod, calls=[], exclude=[]):
+def walk_module(opname, mod, calls=None, exclude=None):
 
+    if calls is None:
+        calls = []
+    if exclude is None:
+        exclude = []
     for name, m in inspect.getmembers(mod):
         if inspect.ismodule(m):
             if m.__name__ not in exclude:
@@ -112,8 +117,7 @@ def getclazz(opname):
     op = getattr(opmod, opid[1])
     id = op.get_rna_type().bl_rna.identifier
     try:
-        clazz = getattr(bpy.types, id)
-        return clazz
+        return getattr(bpy.types, id)
     except AttributeError:
         return None
 
@@ -134,15 +138,15 @@ def getmodule(opname):
     except TypeError:
         line = -1
 
-    if modn == 'bpy.types':
-        mod = 'C operator'
-        addon = False
-    elif modn != '__main__':
-        mod = sys.modules[modn].__file__
-    else:
+    if modn == '__main__':
         addon = False
         mod = modn
 
+    elif modn == 'bpy.types':
+        mod = 'C operator'
+        addon = False
+    else:
+        mod = sys.modules[modn].__file__
     return mod, line, addon
 
 
@@ -153,7 +157,7 @@ def get_ops():
         opmod = getattr(bpy.ops, opmodname)
         opmoddir = dir(opmod)
         for o in opmoddir:
-            name = opmodname + "." + o
+            name = f"{opmodname}.{o}"
             clazz = getclazz(name)
             #if (clazz is not None) :# and clazz.__module__ != 'bpy.types'):
             allops.append(name)
@@ -227,8 +231,7 @@ class TEXT_OT_EditOperator(Operator):
                 break
 
         if (found is False):
-            self.report({'INFO'},
-                        "Opened file: " + path)
+            self.report({'INFO'}, f"Opened file: {path}")
             bpy.ops.text.open(filepath=path)
             bpy.ops.text.jump(line=line)
 
@@ -265,7 +268,6 @@ class TEXT_OT_EditOperator(Operator):
         if self.path != "" and self.line != -1:
             #invocation of one of the "found" locations
             self.show_text(context, self.path, self.line)
-            return {'FINISHED'}
         else:
             context.scene.calls.clear()
             path, line, addon = getmodule(self.op)
@@ -280,19 +282,15 @@ class TEXT_OT_EditOperator(Operator):
                 c.path = path
                 c.line = line
 
-                self.show_calls(context)
-                context.area.tag_redraw()
-
-                return {'FINISHED'}
             else:
 
-                self.report({'WARNING'},
-                            "Found no source file for " + self.op)
+                self.report({'WARNING'}, f"Found no source file for {self.op}")
 
-                self.show_calls(context)
-                context.area.tag_redraw()
 
-                return {'FINISHED'}
+            self.show_calls(context)
+            context.area.tag_redraw()
+
+        return {'FINISHED'}
 
 
 class TEXT_PT_EditOperatorPanel(Panel):
@@ -310,7 +308,7 @@ class TEXT_PT_EditOperatorPanel(Panel):
 
         if len(context.scene.calls) > 0:
             box = layout.box()
-            box.label(text="Calls of: " + context.scene.calls[0].name)
+            box.label(text=f"Calls of: {context.scene.calls[0].name}")
             box.operator_context = 'EXEC_DEFAULT'
             for c in context.scene.calls:
                 op = box.operator("text.edit_operator", text=c.label)

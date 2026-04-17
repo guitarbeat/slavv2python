@@ -29,33 +29,32 @@ bl_info = {
 
 
 def test_name(rule, needle, haystack, cache):
-    if rule.use_match_regex:
-        if not cache:
-            import re
-            re_needle = re.compile(needle)
-            cache[:] = [re_needle]
-        else:
-            re_needle = cache[0]
-        return (re_needle.match(haystack) is not None)
-    else:
+    if not rule.use_match_regex:
         return (needle in haystack)
+    if not cache:
+        import re
+        re_needle = re.compile(needle)
+        cache[:] = [re_needle]
+    else:
+        re_needle = cache[0]
+    return (re_needle.match(haystack) is not None)
 
 
 class rule_test:
     __slots__ = ()
 
     def __new__(cls, *args, **kwargs):
-        raise RuntimeError("%s should not be instantiated" % cls)
+        raise RuntimeError(f"{cls} should not be instantiated")
 
     @staticmethod
     def NAME(obj, rule, cache):
         match_name = rule.match_name
         return test_name(rule, match_name, obj.name, cache)
 
-    def DATA(obj, rule, cache):
-        match_name = rule.match_name
-        obj_data = obj.data
+    def DATA(self, rule, cache):
+        obj_data = self.data
         if obj_data is not None:
+            match_name = rule.match_name
             return test_name(rule, match_name, obj_data.name, cache)
         else:
             return False
@@ -90,7 +89,7 @@ class rule_test:
             expr = compile(match_expr, rule.name, 'eval')
 
             namespace = {}
-            namespace.update(__import__("math").__dict__)
+            namespace |= __import__("math").__dict__
 
             cache["expr"] = expr
             cache["namespace"] = namespace
@@ -100,7 +99,7 @@ class rule_test:
 
         try:
             return bool(eval(expr, {}, {"self": obj}))
-        except:
+        except Exception:
             import traceback
             traceback.print_exc()
             return False
@@ -110,7 +109,7 @@ class rule_draw:
     __slots__ = ()
 
     def __new__(cls, *args, **kwargs):
-        raise RuntimeError("%s should not be instantiated" % cls)
+        raise RuntimeError(f"{cls} should not be instantiated")
 
     @staticmethod
     def _generic_match_name(layout, rule):
@@ -153,13 +152,13 @@ def object_colors_calc(rules, objects):
     rules_cb = [getattr(rule_test, rule.type) for rule in rules]
     rules_blend = [(1.0 - rule.factor, rule.factor) for rule in rules]
     rules_color = [Color(rule.color) for rule in rules]
-    rules_cache = [{} for i in range(len(rules))]
+    rules_cache = [{} for _ in range(len(rules))]
     rules_inv = [rule.use_invert for rule in rules]
     changed_count = 0
 
     for obj in objects:
         is_set = False
-        obj_color = Color(obj.color[0:3])
+        obj_color = Color(obj.color[:3])
 
         for (rule, test_cb, color, blend, cache, use_invert) \
              in zip(rules, rules_cb, rules_color, rules_blend, rules_cache, rules_inv):
@@ -176,7 +175,7 @@ def object_colors_calc(rules, objects):
                 is_set = True
 
         if is_set:
-            obj.color[0:3] = obj_color
+            obj.color[:3] = obj_color
             changed_count += 1
     return changed_count
 
@@ -289,7 +288,7 @@ class OBJECT_UL_color_rule(UIList):
         # scene = active_data
         split = layout.split(factor=0.5)
         row = split.split(align=False)
-        row.label(text="%s (%s)" % (rule.name, rule.type.lower()))
+        row.label(text=f"{rule.name} ({rule.type.lower()})")
         split = split.split(factor=0.7)
         split.prop(rule, "factor", text="", emboss=False)
         split.prop(rule, "color", text="")
@@ -321,7 +320,9 @@ class OBJECT_OT_color_rules_assign(Operator):
                 return {'CANCELLED'}
 
         changed_count = object_colors_calc(rules, objects)
-        self.report({'INFO'}, "Set colors for {} of {} objects".format(changed_count, len(objects)))
+        self.report(
+            {'INFO'}, f"Set colors for {changed_count} of {len(objects)} objects"
+        )
         return {'FINISHED'}
 
 
@@ -366,8 +367,9 @@ class OBJECT_OT_color_rules_remove(Operator):
         scene = context.scene
         rules = scene.color_rules
         rules.remove(scene.color_rules_active_index)
-        if scene.color_rules_active_index > len(rules) - 1:
-            scene.color_rules_active_index = len(rules) - 1
+        scene.color_rules_active_index = min(
+            scene.color_rules_active_index, len(rules) - 1
+        )
         return {'FINISHED'}
 
 

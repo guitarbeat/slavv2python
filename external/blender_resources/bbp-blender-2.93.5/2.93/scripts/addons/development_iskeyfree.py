@@ -105,18 +105,18 @@ class MyChecker():
         for e in sortkeys:
             cmd = ""
             if e[2] != "":
-                cmd += e[2] + "+"
+                cmd += f"{e[2]}+"
             if e[3] != "":
-                cmd += e[3] + "+"
+                cmd += f"{e[3]}+"
             if e[4] != "":
-                cmd += e[4] + "+"
+                cmd += f"{e[4]}+"
             if e[5] != "":
-                cmd += e[5] + "+"
+                cmd += f"{e[5]}+"
 
             cmd += e[1]
 
             if e[6] != "":
-                cmd += "  " + e[6]
+                cmd += f"  {e[6]}"
             cls.mylist.append([e[0], cmd])
 
     # return context
@@ -246,7 +246,7 @@ class UIControlPanel(Panel):
             cmd = mychecker.getlast()
             if cmd is not None:
                 row = layout.row()
-                row.label(text="Current uses of " + str(cmd), icon="PARTICLE_DATA")
+                row.label(text=f"Current uses of {str(cmd)}", icon="PARTICLE_DATA")
             for e in mylist:
                 if oldcontext != e[0]:
                     box = layout.box()
@@ -260,9 +260,12 @@ class UIControlPanel(Panel):
             if cmd is not None:
                 box = layout.box()
                 if mychecker.isvalidkey(mychecker.getlastkey()) is False:
-                    box.label(text=str(mychecker.getlastkey()) + " looks not valid key", icon="ERROR")
+                    box.label(
+                        text=f"{str(mychecker.getlastkey())} looks not valid key",
+                        icon="ERROR",
+                    )
                 else:
-                    box.label(text=str(cmd) + " is free", icon="FILE_TICK")
+                    box.label(text=f"{str(cmd)} is free", icon="FILE_TICK")
 
 
 # ------------------------------------------------------
@@ -505,15 +508,15 @@ class IsKeyFreeRunExportKeys(Operator):
             list_txt = []
             data_txt = bpy.data.texts
             list_txt = [txt.name for txt in data_txt if txt.name.startswith("All_Shortcuts")]
-            new_name = "{}_{}{}".format(def_name, len(list_txt) + 1, ext)
+            new_name = f"{def_name}_{len(list_txt) + 1}{ext}"
 
             if new_name in list_txt:
                 from re import findall
                 test_num = [findall("\d+", words) for words in list_txt]
-                suffix += max([int(l[-1]) for l in test_num])
-                new_name = "{}_{}{}".format(def_name, suffix, ext)
+                suffix += max(int(l[-1]) for l in test_num)
+                new_name = f"{def_name}_{suffix}{ext}"
             return new_name
-        except:
+        except Exception:
             return None
 
     def execute(self, context):
@@ -542,7 +545,7 @@ class IsKeyFreeRunExportKeys(Operator):
                 )
                 mykeys[ctx_type].append(t)
                 padding_s = len(short_cuts) + 2
-                col_shortcuts = padding_s if padding_s > col_shortcuts else col_shortcuts
+                col_shortcuts = max(padding_s, col_shortcuts)
 
         max_line = col_shortcuts + col_width + 4
         textblock = bpy.data.texts.new(file_name)

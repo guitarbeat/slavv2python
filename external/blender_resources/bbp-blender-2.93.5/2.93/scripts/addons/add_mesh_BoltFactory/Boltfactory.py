@@ -425,8 +425,8 @@ class add_mesh_bolt(Operator, AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if context.selected_objects != [] and context.active_object and \
-                (context.active_object.data is not None) and ('Bolt' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('Bolt' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name
@@ -434,7 +434,7 @@ class add_mesh_bolt(Operator, AddObjectHelper):
                 obj.data = mesh
                 try:
                     bpy.ops.object.vertex_group_remove(all=True)
-                except:
+                except Exception:
                     pass
 
                 for material in oldmesh.materials:
@@ -511,34 +511,33 @@ def unregister():
         bpy.utils.unregister_class(cls)
 
 def BoltParameters():
-    BoltParameters = [
-    "bf_Model_Type",
-    "bf_Head_Type",
-    "bf_Bit_Type",
-    "bf_Nut_Type",
-    "bf_Shank_Length",
-    "bf_Shank_Dia",
-    "bf_Phillips_Bit_Depth",
-    "bf_Allen_Bit_Depth",
-    "bf_Allen_Bit_Flat_Distance",
-    "bf_Torx_Bit_Depth",
-    "bf_Torx_Size_Type",
-    "bf_Hex_Head_Height",
-    "bf_Hex_Head_Flat_Distance",
-    "bf_CounterSink_Head_Dia",
-    "bf_Cap_Head_Height",
-    "bf_Cap_Head_Dia",
-    "bf_Dome_Head_Dia",
-    "bf_Pan_Head_Dia",
-    "bf_Philips_Bit_Dia",
-    "bf_Thread_Length",
-    "bf_Major_Dia",
-    "bf_Pitch",
-    "bf_Minor_Dia",
-    "bf_Crest_Percent",
-    "bf_Root_Percent",
-    "bf_Div_Count",
-    "bf_Hex_Nut_Height",
-    "bf_Hex_Nut_Flat_Distance",
-        ]
-    return BoltParameters
+    return [
+        "bf_Model_Type",
+        "bf_Head_Type",
+        "bf_Bit_Type",
+        "bf_Nut_Type",
+        "bf_Shank_Length",
+        "bf_Shank_Dia",
+        "bf_Phillips_Bit_Depth",
+        "bf_Allen_Bit_Depth",
+        "bf_Allen_Bit_Flat_Distance",
+        "bf_Torx_Bit_Depth",
+        "bf_Torx_Size_Type",
+        "bf_Hex_Head_Height",
+        "bf_Hex_Head_Flat_Distance",
+        "bf_CounterSink_Head_Dia",
+        "bf_Cap_Head_Height",
+        "bf_Cap_Head_Dia",
+        "bf_Dome_Head_Dia",
+        "bf_Pan_Head_Dia",
+        "bf_Philips_Bit_Dia",
+        "bf_Thread_Length",
+        "bf_Major_Dia",
+        "bf_Pitch",
+        "bf_Minor_Dia",
+        "bf_Crest_Percent",
+        "bf_Root_Percent",
+        "bf_Div_Count",
+        "bf_Hex_Nut_Height",
+        "bf_Hex_Nut_Flat_Distance",
+    ]

@@ -410,7 +410,7 @@ def align_function(subject, active_too, consistent, self_or_active, loc_x, loc_y
 
     if subject == "0":
         # if act_obj.type == ('MESH' or 'FONT' or 'CURVE' or 'SURFACE'):
-        if act_obj.type == 'MESH' or act_obj.type == 'FONT' or act_obj.type == 'SURFACE':
+        if act_obj.type in ['MESH', 'FONT', 'SURFACE']:
             ref2_co = find_ref2_co(act_obj)
         else:
             if ref2 == "4":
@@ -772,18 +772,15 @@ class OBJECT_OT_align_tools(Operator):
             if sel_obs != 0:
                 row4 = layout.row()
                 row4.label(text="Selected: " + str(sel_obs) + " Objects", icon='OBJECT_DATA')
-        if self.subject == "1" or self.subject == "2":
+        if self.subject in ["1", "2"]:
             row5b = layout.row()
             row5b.prop(self, 'self_or_active', expand=True)
         else:
             row5 = layout.row()
             row5.prop(self, 'ref1', expand=True)
 
-        # Active Object Options: Number of select objects
-        act = bpy.context.active_object
-
-        if self.advanced is True:
-            if act:
+        if act := bpy.context.active_object:
+            if self.advanced is True:
                 row6 = layout.row()
                 row6.label(text="Active: " + act.name, icon='OBJECT_DATA')
         row7 = layout.row()
@@ -1110,8 +1107,7 @@ def update_panel(self, context):
             bpy.utils.register_class(panel)
 
     except Exception as e:
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
-        pass
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 class AlignAddonPreferences(AddonPreferences):

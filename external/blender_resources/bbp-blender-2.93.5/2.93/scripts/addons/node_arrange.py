@@ -220,12 +220,7 @@ def nodemargin(self, context):
 
     ntree = context.space_data.node_tree
 
-    #first arrange nodegroups
-    n_groups = []
-    for i in ntree.nodes:
-        if i.type == 'GROUP':
-            n_groups.append(i)
-
+    n_groups = [i for i in ntree.nodes if i.type == 'GROUP']
     while n_groups:
         j = n_groups.pop(0)
         nodes_iterate(j.node_tree)
@@ -257,14 +252,13 @@ class NA_OT_ArrangeNodesOp(bpy.types.Operator):
 
         if not mat:
             return
-        else:
-            values.mat_name = self.mat_name
-            scn = context.scene
-            scn.nodemargin_x = self.margin_x
-            scn.nodemargin_y = self.margin_y
-            nodes_iterate(mat)
-            if scn.node_center:
-                nodes_center(mat)
+        values.mat_name = self.mat_name
+        scn = context.scene
+        scn.nodemargin_x = self.margin_x
+        scn.nodemargin_y = self.margin_y
+        nodes_iterate(mat)
+        if scn.node_center:
+            nodes_center(mat)
 
     def execute(self, context):
         self.nodemargin2(context)
@@ -294,8 +288,7 @@ def nodes_iterate(ntree, arrange=True):
     if nodeoutput is None:
         #print ("nodeoutput is None")
         return None
-    a = []
-    a.append([])
+    a = [[]]
     for i in nodeoutput:
         a[0].append(i)
 
@@ -306,17 +299,11 @@ def nodes_iterate(ntree, arrange=True):
         a.append([])
 
         for node in a[level]:
-            inputlist = [i for i in node.inputs if i.is_linked]
-
-            if inputlist:
-
+            if inputlist := [i for i in node.inputs if i.is_linked]:
                 for input in inputlist:
                     for nlinks in input.links:
                         node1 = nlinks.from_node
                         a[level + 1].append(node1)
-
-            else:
-                pass
 
         level += 1
 
@@ -385,11 +372,11 @@ def nodes_iterate(ntree, arrange=True):
     while level < levelmax:
 
         values.average_y = 0
-        nodes = [x for x in a[level]]
+        nodes = list(a[level])
         #print ("level, nodes:", level, nodes)
         nodes_arrange(nodes, level)
 
-        level = level + 1
+        level += 1
 
     return None
 
@@ -419,7 +406,7 @@ def nodes_arrange(nodelist, level):
     #print ("nodes arrange def")
     # node x positions
 
-    widthmax = max([x.dimensions.x for x in nodelist])
+    widthmax = max(x.dimensions.x for x in nodelist)
     xpos = values.x_last - (widthmax + values.margin_x) if level != 0 else 0
     #print ("nodelist, xpos", nodelist,xpos)
     values.x_last = xpos
@@ -445,10 +432,6 @@ def nodes_arrange(nodelist, level):
 
     center = (0 + y) / 2
     values.average_y = center - values.average_y
-
-    #for node in nodelist:
-
-        #node.location.y -= values.average_y
 
     for i, node in enumerate(nodelist):
         node.parent =  parents[i]

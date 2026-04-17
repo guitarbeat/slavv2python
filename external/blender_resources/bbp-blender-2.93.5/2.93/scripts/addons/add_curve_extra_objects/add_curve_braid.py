@@ -61,7 +61,7 @@ def circle_hump(pos, strands, humps, radius=1, mr=1, mz=.2, resolution=2):
 
 
 def make_strands(strands, humps, radius=1, mr=1, mz=.2, resolution=2):
-    positions = [0 for x in range(humps)]
+    positions = [0 for _ in range(humps)]
     last = None
     lines = []
     at = 0
@@ -112,7 +112,7 @@ def poly_lines(objname, curvename, lines, bevel=None, joins=False, ctype='NURBS'
 
 def nurbs_circle(name, w, h):
     pts = [(-w / 2, 0, 0), (0, -h / 2, 0), (w / 2, 0, 0), (0, h / 2, 0)]
-    return poly_lines(name, name + '_curve', [pts], joins=True)
+    return poly_lines(name, f'{name}_curve', [pts], joins=True)
 
 
 def star_pts(r=1, ir=None, points=5, center=(0, 0)):
@@ -129,8 +129,12 @@ def star_pts(r=1, ir=None, points=5, center=(0, 0)):
     for i in range(points):
         t = i * dt
         ti = (i + .5) * dt
-        pts.append(angle_point(center, t, r) + (0,))
-        pts.append(angle_point(center, ti, ir) + (0,))
+        pts.extend(
+            (
+                angle_point(center, t, r) + (0,),
+                angle_point(center, ti, ir) + (0,),
+            )
+        )
     return pts
 
 

@@ -105,13 +105,12 @@ def apply_vert_coords(ob, mesh, x):
 
 def func_add_corrective_pose_shape(source, target, flag):
 
-    ob_1 = target
     mesh_1 = target.data
+    ob_1 = target
     ob_2 = source
     mesh_2 = source.data
 
-    reset_transform(target)
-
+    reset_transform(ob_1)
     # If target object doesn't have Base shape key, create it.
     if not mesh_1.shape_keys:
         basis = ob_1.shape_key_add()
@@ -126,7 +125,7 @@ def func_add_corrective_pose_shape(source, target, flag):
 
     if (flag == True):
     # Make mix shape key from currently used shape keys
-        if not key_index == 0:
+        if key_index != 0:
             ob_1.active_shape_key.value = 0
         mix_shape = ob_1.shape_key_add(from_mix = True)
         mix_shape.name = "Mix_shape"
@@ -138,7 +137,7 @@ def func_add_corrective_pose_shape(source, target, flag):
 
     if key_index == 0:
         new_shapekey = ob_1.shape_key_add()
-        new_shapekey.name = "Shape_" + ob_2.name
+        new_shapekey.name = f"Shape_{ob_2.name}"
         update_mesh(ob_1)
         keys = ob_1.data.shape_keys.key_blocks.keys()
         ob_1.active_shape_key_index = keys.index(new_shapekey.name)
@@ -157,7 +156,7 @@ def func_add_corrective_pose_shape(source, target, flag):
 
     targetx = extract_vert_coords(mesh_2.vertices)
 
-    for iteration in range(0, iterations):
+    for _ in range(0, iterations):
         dx = [[], [], [], [], [], []]
 
         mapx = extract_mapped_coords(ob_1, mesh_1_key_verts)
@@ -285,7 +284,7 @@ def func_object_duplicate_flatten_modifiers(context, ob):
     depth = bpy.context.evaluated_depsgraph_get()
     eobj = ob.evaluated_get(depth)
     mesh = bpy.data.meshes.new_from_object(eobj)
-    name = ob.name + "_clean"
+    name = f"{ob.name}_clean"
     new_object = bpy.data.objects.new(name, mesh)
     new_object.data = mesh
     bpy.context.collection.objects.link(new_object)
@@ -342,18 +341,12 @@ def unposeMesh(meshObToUnpose, obj, armatureOb):
             try:
                 name = obj.vertex_groups[n.group].name
                 weight = n.weight
-                is_bone = False
-                for i in armData.bones:
-                    if i.name == name:
-                        is_bone = True
-                        break
+                is_bone = any(i.name == name for i in armData.bones)
                 # ignore non-bone vertex groups
                 if is_bone:
                     listOfBoneNameWeightPairs.append([name, weight])
-            except:
+            except Exception:
                 print('error')
-                pass
-
         weightedAverageDictionary = {}
         totalWeight = 0
         for pair in listOfBoneNameWeightPairs:
@@ -382,10 +375,6 @@ def unposeMesh(meshObToUnpose, obj, armatureOb):
                 #m.transpose()
                 sigma += (m - I) * vertexWeight
 
-            else:
-                pass
-                #~ print("no key for bone " + pbone.name)
-
         sigma = I + sigma
         sigma.invert()
         psdMeshVert.co = sigma @ psdMeshVert.co
@@ -409,7 +398,7 @@ def func_add_corrective_pose_shape_fast(source, target):
 
         # Insert new shape key
         new_shapekey = target.shape_key_add()
-        new_shapekey.name = "Shape_" + source.name
+        new_shapekey.name = f"Shape_{source.name}"
 
         key_index = len(target.data.shape_keys.key_blocks) - 1
         target.active_shape_key_index = key_index
@@ -423,7 +412,7 @@ def func_add_corrective_pose_shape_fast(source, target):
     try:
         vgroup = target.active_shape_key.vertex_group
         target.active_shape_key.vertex_group = ''
-    except:
+    except Exception:
         pass
 
     # copy the local vertex positions to the new shape
@@ -448,7 +437,7 @@ def func_add_corrective_pose_shape_fast(source, target):
 
     try:
         target.active_shape_key.vertex_group = vgroup
-    except:
+    except Exception:
         pass
 
     target.show_only_shape_key = False

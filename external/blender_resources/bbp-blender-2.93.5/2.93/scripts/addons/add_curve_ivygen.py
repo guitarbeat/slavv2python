@@ -403,13 +403,10 @@ def adhesion(loc, bvhtree, max_l):
     if nearest_location is not None:
         # Compute the distance to the nearest point
         adhesion_vector = nearest_location - loc
-        distance = adhesion_vector.length
-        # If it's less than the maximum allowed and not 0, continue
-        if distance:
+        if distance := adhesion_vector.length:
             # Compute the direction vector between the closest point and loc
             adhesion_vector.normalize()
             adhesion_vector *= 1.0 - distance / max_l
-            # adhesion_vector *= getFaceWeight(ob.data, nearest_result[3])
     return adhesion_vector
 
 
@@ -449,10 +446,7 @@ def bvhtree_from_object(ob):
 
 def check_mesh_faces(ob):
     me = ob.data
-    if len(me.polygons) > 0:
-        return True
-
-    return False
+    return len(me.polygons) > 0
 
 
 class IvyGen(Operator):
@@ -473,7 +467,7 @@ class IvyGen(Operator):
     )
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         # Check if there's an object and whether it's a mesh
         ob = context.active_object
         return ((ob is not None) and
@@ -551,13 +545,9 @@ class IvyGen(Operator):
         # Generate first root and node
         IVY.seed(seedPoint)
 
-        checkTime = False
         maxLength = maxIvyLength  # * radius
 
-        # If we need to check time set the flag
-        if maxTime != 0.0:
-            checkTime = True
-
+        checkTime = True if maxTime != 0.0 else False
         t = time.time()
         startPercent = 0.0
         checkAliveIter = [True, ]

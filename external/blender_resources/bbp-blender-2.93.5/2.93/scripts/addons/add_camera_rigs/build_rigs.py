@@ -39,7 +39,7 @@ def create_prop_driver(rig, cam, prop_from, prop_to):
 
     # Target the custom bone property
     var.targets[0].id = rig
-    var.targets[0].data_path = 'pose.bones["Camera"]["%s"]' % prop_from
+    var.targets[0].data_path = f'pose.bones["Camera"]["{prop_from}"]'
     driver.driver.expression = 'var'
 
 
@@ -256,7 +256,7 @@ def create_2d_bones(context, rig, cam):
         var.name = corner
         var.type = 'TRANSFORMS'
         var.targets[0].id = rig
-        var.targets[0].bone_target = corner.capitalize() + '_corner'
+        var.targets[0].bone_target = f'{corner.capitalize()}_corner'
         var.targets[0].transform_type = 'LOC_X'
         var.targets[0].transform_space = 'TRANSFORM_SPACE'
 
@@ -273,16 +273,16 @@ def create_2d_bones(context, rig, cam):
             var.name = '%s_%s' % (corner, direction)
             var.type = 'TRANSFORMS'
             var.targets[0].id = rig
-            var.targets[0].bone_target = corner.capitalize() + '_corner'
-            var.targets[0].transform_type = 'LOC_' + direction.upper()
+            var.targets[0].bone_target = f'{corner.capitalize()}_corner'
+            var.targets[0].transform_type = f'LOC_{direction.upper()}'
             var.targets[0].transform_space = 'TRANSFORM_SPACE'
 
         var = driver.variables.new()
-        var.name = 'res_' + direction
+        var.name = f'res_{direction}'
         var.type = 'SINGLE_PROP'
         var.targets[0].id_type = 'SCENE'
         var.targets[0].id = scene
-        var.targets[0].data_path = 'render.resolution_' + direction
+        var.targets[0].data_path = f'render.resolution_{direction}'
 
     # Center Z driver
     driver = center_drivers[2].driver
@@ -475,16 +475,16 @@ def create_2d_bones(context, rig, cam):
 def build_camera_rig(context, mode):
     """Create stuff common to all camera rigs."""
     # Add the camera object
-    cam_name = "%s_Camera" % mode.capitalize()
+    cam_name = f"{mode.capitalize()}_Camera"
     cam_data = bpy.data.cameras.new(cam_name)
     cam = object_utils.object_data_add(context, cam_data, name=cam_name)
     context.scene.camera = cam
 
     # Add the rig object
-    rig_name = mode.capitalize() + "_Rig"
+    rig_name = f"{mode.capitalize()}_Rig"
     rig_data = bpy.data.armatures.new(rig_name)
     rig = object_utils.object_data_add(context, rig_data, name=rig_name)
-    rig["rig_id"] = "%s" % rig_name
+    rig["rig_id"] = f"{rig_name}"
     rig.location = context.scene.cursor.location
 
     bpy.ops.object.mode_set(mode='EDIT')
@@ -503,11 +503,7 @@ def build_camera_rig(context, mode):
     cam.location = (0.0, -1.0, 0.0)  # Move the camera to the correct position
     cam.parent = rig
     cam.parent_type = "BONE"
-    if mode == "2D":
-        cam.parent_bone = "Camera"
-    else:
-        cam.parent_bone = "Camera_offset"
-
+    cam.parent_bone = "Camera" if mode == "2D" else "Camera_offset"
     # Change display to BBone: it just looks nicer
     rig.data.display_type = 'BBONE'
     # Change display to wire for object

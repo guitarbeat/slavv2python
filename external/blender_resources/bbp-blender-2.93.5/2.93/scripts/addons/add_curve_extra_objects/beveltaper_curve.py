@@ -198,7 +198,7 @@ def make_path(self, context, verts):
             )
     target.data.taper_object = bpy.context.view_layer.objects.active
     taper = bpy.context.view_layer.objects.active
-    taper.name = target.name + '_Taper'
+    taper.name = f'{target.name}_Taper'
     bpy.context.view_layer.objects.active = target
     points = taper.data.splines[0].points
 
@@ -208,9 +208,7 @@ def make_path(self, context, verts):
 
 def make_curve(self, context, verts, lh, rh):
     target = bpy.context.view_layer.objects.active
-    curve_data = bpy.data.curves.new(
-                        name=target.name + '_Bevel', type='CURVE'
-                        )
+    curve_data = bpy.data.curves.new(name=f'{target.name}_Bevel', type='CURVE')
     curve_data.dimensions = '3D'
     curve_data.fill_mode = 'FULL'
 

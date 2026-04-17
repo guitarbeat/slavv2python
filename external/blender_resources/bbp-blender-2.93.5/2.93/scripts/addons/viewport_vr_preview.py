@@ -375,12 +375,8 @@ class VIEW3D_OT_vr_landmark_from_camera(Operator):
 
     @classmethod
     def poll(cls, context):
-        cam_selected = False
-
         vl_objects = bpy.context.view_layer.objects
-        if vl_objects.active and vl_objects.active.type == 'CAMERA':
-            cam_selected = True
-        return cam_selected
+        return bool(vl_objects.active and vl_objects.active.type == 'CAMERA')
 
     def execute(self, context):
         scene = context.scene
@@ -389,7 +385,7 @@ class VIEW3D_OT_vr_landmark_from_camera(Operator):
         lm = landmarks.add()
         lm.type = 'USER_CAMERA'
         lm.base_pose_camera = cam
-        lm.name = "LM_" + cam.name
+        lm.name = f"LM_{cam.name}"
 
         # select newly created set
         scene.vr_landmarks_selected = len(landmarks) - 1
@@ -534,8 +530,8 @@ class VIEW3d_OT_add_camera_from_vr_landmark(Operator):
         scene = context.scene
         lm = VRLandmark.get_selected_landmark(context)
 
-        cam = bpy.data.cameras.new("Camera_" + lm.name)
-        new_cam = bpy.data.objects.new("Camera_" + lm.name, cam)
+        cam = bpy.data.cameras.new(f"Camera_{lm.name}")
+        new_cam = bpy.data.objects.new(f"Camera_{lm.name}", cam)
         scene.collection.objects.link(new_cam)
         angle = lm.base_pose_angle
         new_cam.location = lm.base_pose_location

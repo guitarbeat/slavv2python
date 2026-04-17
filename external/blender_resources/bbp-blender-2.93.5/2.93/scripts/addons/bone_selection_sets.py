@@ -299,7 +299,7 @@ class POSE_OT_selection_set_assign(PluginOperator):
     def invoke(self, context, event):
         arm = context.object
 
-        if not (arm.active_selection_set < len(arm.selection_sets)):
+        if arm.active_selection_set >= len(arm.selection_sets):
             bpy.ops.wm.call_menu("INVOKE_DEFAULT",
                                  name="POSE_MT_selection_set_create")
         else:
@@ -497,8 +497,7 @@ def uniqify(name: str, other_names: list) -> str:
 
     # Construct the list of numbers already in use.
     offset = len(name) + 1
-    others = (n[offset:] for n in other_names
-              if n.startswith(name + '.'))
+    others = (n[offset:] for n in other_names if n.startswith(f'{name}.'))
     numbers = sorted(int(suffix) for suffix in others
                      if suffix.isdigit())
 

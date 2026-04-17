@@ -199,9 +199,10 @@ class AutoTileSizeSettings(PropertyGroup):
 
 def ats_poll(context):
     scene = context.scene
-    if scene.render.engine not in SUPPORTED_RENDER_ENGINES or not scene.ats_settings.is_enabled:
-        return False
-    return True
+    return bool(
+        scene.render.engine in SUPPORTED_RENDER_ENGINES
+        and scene.ats_settings.is_enabled
+    )
 
 
 def engine_is_gpu(engine, device, userpref):
@@ -213,10 +214,10 @@ def engine_is_gpu(engine, device, userpref):
 def get_tilesize_prop(engine, device, userpref):
     target_type = "_choice" if bpy.context.scene.ats_settings.target_type == 'po2' else "_custom"
     if engine_is_gpu(engine, device, userpref):
-        return ("gpu" + target_type)
+        return f"gpu{target_type}"
     elif engine == 'CYCLES':
-        return ("cpu" + target_type)
-    return ("bi" + target_type)
+        return f"cpu{target_type}"
+    return f"bi{target_type}"
 
 
 @persistent
@@ -392,13 +393,11 @@ class SetTileSize(Operator):
     bl_description = "The first render may not obey the tile-size set here"
 
     @classmethod
-    def poll(clss, context):
+    def poll(cls, context):
         return ats_poll(context)
 
     def execute(self, context):
-        if do_set_tile_size(context):
-            return {'FINISHED'}
-        return {'CANCELLED'}
+        return {'FINISHED'} if do_set_tile_size(context) else {'CANCELLED'}
 
 
 # ##### INTERFACE #####
@@ -431,10 +430,9 @@ def ui_layout(engine, layout, context):
         row.prop(settings, get_tilesize_prop(engine, device, userpref), expand=True)
         sub.prop(settings, "use_optimal", text="Calculate Optimal Size")
 
-        sub.label(text="Number of tiles: %s x %s (Total: %s)" %
-                 (settings.num_tiles[0], settings.num_tiles[1],
-                 settings.num_tiles[0] * settings.num_tiles[1])
-                 )
+        sub.label(
+            text=f"Number of tiles: {settings.num_tiles[0]} x {settings.num_tiles[1]} (Total: {settings.num_tiles[0] * settings.num_tiles[1]})"
+        )
 
     if settings.first_run:
         sub = layout.column(align=True)

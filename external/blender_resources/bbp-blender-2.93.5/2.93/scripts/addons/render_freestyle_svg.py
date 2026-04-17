@@ -304,7 +304,7 @@ def write_animation(filepath, frame_begin, fps):
     root = tree.getroot()
 
     linesets = find_svg_elem(tree, ".//svg:g[@inkscape:groupmode='lineset']", all=True)
-    for i, lineset in enumerate(linesets):
+    for lineset in linesets:
         name = lineset.get('id')
         frames = find_svg_elem(lineset, ".//svg:g[@inkscape:groupmode='frame']", all=True)
         n_of_frames = len(frames)
@@ -387,7 +387,7 @@ class SVGPathShader(StrokeShader):
                 pass
 
         # put style attributes into a single svg path definition
-        path = '\n<path ' + "".join('{}="{}" '.format(k, v) for k, v in style.items()) + 'd=" M '
+        path = '\n<path ' + "".join(f'{k}="{v}" ' for k, v in style.items()) + 'd=" M '
 
         it = iter(stroke)
         # start first path
@@ -397,7 +397,7 @@ class SVGPathShader(StrokeShader):
             yield '{:.3f}, {:.3f} '.format(x, height - y)
             if split_at_invisible and v.attribute.visible is False:
                 # end current and start new path;
-                yield '" />' + path
+                yield f'" />{path}'
                 # fast-forward till the next visible vertex
                 it = itertools.dropwhile(f, it)
                 # yield next visible vertex
@@ -423,7 +423,7 @@ class SVGPathShader(StrokeShader):
 
         # create <g> for lineset as a whole (don't overwrite)
         # when rendering an animation, frames will be nested in here, otherwise a group of strokes and optionally fills.
-        lineset_group = find_svg_elem(tree, ".//svg:g[@id='{}']".format(name))
+        lineset_group = find_svg_elem(tree, f".//svg:g[@id='{name}']")
         if lineset_group is None:
             lineset_group = et.XML('<g/>')
             lineset_group.attrib = {
@@ -483,22 +483,19 @@ class SVGFillBuilder:
             return stroke
 
         base_strokes = tuple(stroke for stroke in strokes if not is_poly_clockwise(stroke))
-        merged_strokes = OrderedDict((s, list()) for s in base_strokes)
+        merged_strokes = OrderedDict((s, []) for s in base_strokes)
 
         for stroke in filter(is_poly_clockwise, strokes):
             for base in base_strokes:
                 # don't merge when diffuse colors don't match
                 if diffuse_from_stroke(stroke) != diffuse_from_stroke(stroke):
                     continue
-                # only merge when the 'hole' is inside the base
                 elif stroke_inside_stroke(stroke, base):
                     merged_strokes[base].append(stroke)
                     break
-                # if it isn't a hole, it is likely that there are two strokes belonging
-                # to the same object separated by another object. let's try to join them
                 elif (get_object_name(base) == get_object_name(stroke) and
                       diffuse_from_stroke(stroke) == diffuse_from_stroke(stroke)):
-                    base = extend_stroke(base, (sv for sv in stroke))
+                    base = extend_stroke(base, iter(stroke))
                     break
             else:
                 # if all else fails, treat this stroke as a base stroke
@@ -514,14 +511,13 @@ class SVGFillBuilder:
                 'fill_rule': 'evenodd',
                 'stroke': 'none',
                 'fill-opacity': alpha,
-                'fill': 'rgb' + repr(color),
+                'fill': f'rgb{repr(color)}',
             }
-        param_str = " ".join('{}="{}"'.format(k, v) for k, v in parameters.items())
-        path = '<path {} d=" M '.format(param_str)
+        param_str = " ".join(f'{k}="{v}"' for k, v in parameters.items())
+        path = f'<path {param_str} d=" M '
         vertices = (svert.point for svert in stroke)
         s = "".join(self.pathgen(vertices, path, height))
-        result = et.XML(s)
-        return result
+        return et.XML(s)
 
     def create_fill_elements(self, strokes):
         """Creates ElementTree objects by merging stroke objects together and turning them into SVG paths."""
@@ -541,7 +537,7 @@ class SVGFillBuilder:
         scene = bpy.context.scene
         name = self._name
 
-        lineset_group = find_svg_elem(tree, ".//svg:g[@id='{}']".format(self._name))
+        lineset_group = find_svg_elem(tree, f".//svg:g[@id='{self._name}']")
         if lineset_group is None:
             lineset_group = et.XML('<g/>')
             lineset_group.attrib = {
@@ -614,8 +610,14 @@ class SVGPathShaderCallback(ParameterEditorCallback):
         split = scene.svg_export.split_at_invisible
         stroke_color_mode = lineset.linestyle.stroke_color_mode
         cls.shader = SVGPathShader.from_lineset(
-                lineset, create_path(scene),
-                render_height(scene), split, stroke_color_mode, scene.frame_current, name=layer.name + '_' + lineset.name)
+            lineset,
+            create_path(scene),
+            render_height(scene),
+            split,
+            stroke_color_mode,
+            scene.frame_current,
+            name=f'{layer.name}_{lineset.name}',
+        )
         return [cls.shader]
 
     @classmethod
@@ -657,7 +659,11 @@ class SVGFillShaderCallback(ParameterEditorCallback):
         collector = StrokeCollector()
         Operators.create(TrueUP1D(), [collector])
 
-        builder = SVGFillBuilder(create_path(scene), render_height(scene), layer.name + '_' + lineset.name)
+        builder = SVGFillBuilder(
+            create_path(scene),
+            render_height(scene),
+            f'{layer.name}_{lineset.name}',
+        )
         builder.write(collector.strokes)
         # make strokes used for filling invisible
         for stroke in collector.strokes:

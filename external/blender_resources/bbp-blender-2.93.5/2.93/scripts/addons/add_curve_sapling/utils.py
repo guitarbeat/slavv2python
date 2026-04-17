@@ -123,19 +123,17 @@ def shapeRatio(shape, ratio, pruneWidthPeak=0.0, prunePowerHigh=0.0, prunePowerL
     elif shape == 8:
         r = 1 - ratio
         if r == 1:
-            v = custom[3]
+            return custom[3]
         elif r >= custom[2]:
             pos = (r - custom[2]) / (1 - custom[2])
             # if (custom[0] >= custom[1] <= custom[3]) or (custom[0] <= custom[1] >= custom[3]):
             pos = pos * pos
-            v = (pos * (custom[3] - custom[1])) + custom[1]
+            return (pos * (custom[3] - custom[1])) + custom[1]
         else:
             pos = r / custom[2]
             # if (custom[0] >= custom[1] <= custom[3]) or (custom[0] <= custom[1] >= custom[3]):
             pos = 1 - (1 - pos) * (1 - pos)
-            v = (pos * (custom[1] - custom[0])) + custom[0]
-
-        return v
+            return (pos * (custom[1] - custom[0])) + custom[0]
 
     elif shape == 9:
         if (ratio < (1 - pruneWidthPeak)) and (ratio > 0.0):
@@ -159,20 +157,14 @@ def splits(n):
 
 def splits2(n):
     r = random()
-    if r < n:
-        return 1
-    else:
-        return 0
+    return 1 if r < n else 0
 
 
 def splits3(n):
     ni = int(n)
     nf = n - int(n)
     r = random()
-    if r < nf:
-        return ni + 1
-    else:
-        return ni + 0
+    return ni + 1 if r < nf else ni + 0
 
 
 # Determine the declination from a given quaternion
@@ -213,7 +205,7 @@ def evalBezTan(p1, h1, h2, p2, t):
 
 # Determine the range of t values along a splines length where child stems are formed
 def findChildPoints(stemList, numChild):
-    numPoints = sum([len(n.spline.bezier_points) for n in stemList])
+    numPoints = sum(len(n.spline.bezier_points) for n in stemList)
     numSplines = len(stemList)
     numSegs = numPoints - numSplines
     numPerSeg = numChild / numSegs
@@ -351,11 +343,7 @@ def growSpline(n, stem, numSplit, splitAng, splitAngV, splineList,
                hType, splineToBone, closeTip, kp, splitHeight, outAtt, stemsegL,
                lenVar, taperCrown, boneStep, rotate, rotateV):
 
-    # curv at base
-    sCurv = stem.curv
-    if (n == 0) and (kp <= splitHeight):
-        sCurv = 0.0
-
+    sCurv = 0.0 if (n == 0) and (kp <= splitHeight) else stem.curv
     # curveangle = sCurv + (uniform(-stem.curvV, stem.curvV) * kp)
     # curveVar = uniform(-stem.curvV, stem.curvV) * kp
     curveangle = sCurv + (uniform(0, stem.curvV) * kp * stem.curvSignx)
@@ -866,7 +854,7 @@ def create_armature(armAnim, leafP, cu, frameRate, leafMesh, leafObj, leafVertSi
                         swayFreq = 1 / (loopFrames / tau)
 
                     # Prevent tree base from rotating
-                    if (boneName == "bone000.000") or (boneName == "bone000.001"):
+                    if boneName in ["bone000.000", "bone000.001"]:
                         a1 = 0
                         a2 = 0
                         a3 = 0
@@ -1021,10 +1009,7 @@ def kickstart_trunk(addstem, levels, leaves, branches, cu, curve, curveRes,
     branchL = scaleVal * length[0]
     curveVal = curve[0] / curveRes[0]
     # curveVal = curveVal * (branchL / scaleVal)
-    if levels == 1:
-        childStems = leaves
-    else:
-        childStems = branches[1]
+    childStems = leaves if levels == 1 else branches[1]
     startRad = scaleVal * ratio * scale0 * uniform(1 - scaleV0, 1 + scaleV0)  # * (scale0 + uniform(-scaleV0, scaleV0))
     endRad = (startRad * (1 - taper[0])) ** ratioPower
     startRad = max(startRad, minRadius)
@@ -1125,13 +1110,12 @@ def fabricate_stems(addsplinetobone, addstem, baseSize, branches, childP, cu, cu
                     childP.append(p[randint(0, len(p)-1)])
                     rot_a.append(bRotate)# + pi)
                 """
-                childP.append(p[idx])
                 rot_a.append(a)
 
             else:
                 idx = randint(0, len(p) - 1)
-                childP.append(p[idx])
-            # childP.append(p[idx])
+            childP.append(p[idx])
+                    # childP.append(p[idx])
 
         childP.extend(childP_L)
         rot_a.extend([0] * len(childP_L))
@@ -1146,17 +1130,12 @@ def fabricate_stems(addsplinetobone, addstem, baseSize, branches, childP, cu, cu
         newPoint.co = p.co
         tempPos = zAxis.copy()
         # If the -ve flag for downAngle is used we need a special formula to find it
-        if useOldDownAngle:
-            if downAngleV[n] < 0.0:
-                downV = downAngleV[n] * (1 - 2 * (.2 + .8 * ((1 - p.offset) / (1 - baseSize))))
-            # Otherwise just find a random value
-            else:
-                downV = uniform(-downAngleV[n], downAngleV[n])
+        if useOldDownAngle and downAngleV[n] < 0.0:
+            downV = downAngleV[n] * (1 - 2 * (.2 + .8 * ((1 - p.offset) / (1 - baseSize))))
+        elif useOldDownAngle or downAngleV[n] < 0.0:
+            downV = uniform(-downAngleV[n], downAngleV[n])
         else:
-            if downAngleV[n] < 0.0:
-                downV = uniform(-downAngleV[n], downAngleV[n])
-            else:
-                downV = -downAngleV[n] * (1 - (1 - p.offset) / (1 - baseSize)) ** 2  # (110, 80) = (60, -50)
+            downV = -downAngleV[n] * (1 - (1 - p.offset) / (1 - baseSize)) ** 2  # (110, 80) = (60, -50)
 
         if p.offset == 1:
             downRotMat = Matrix.Rotation(0, 3, 'X')
@@ -1308,11 +1287,7 @@ def perform_pruning(baseSize, baseSplits, childP, cu, currentMax, currentMin, cu
             # print('Leng: ', len(tempList))
 
             # for curve variation
-            if curveRes[n] > 1:
-                kp = (k / (curveRes[n] - 1))  # * 2
-            else:
-                kp = 1.0
-
+            kp = (k / (curveRes[n] - 1)) if curveRes[n] > 1 else 1.0
             # split bias
             splitValue = segSplits[n]
             if n == 0:
@@ -1464,9 +1439,7 @@ def findtaper(length, taper, shape, shapeS, levels, customShape):
             t = 1.0
         taperT.append(t)
 
-    taperT = [t * taper[i] for i, t in enumerate(taperT)]
-
-    return taperT
+    return [t * taper[i] for i, t in enumerate(taperT)]
 
 
 def addTree(props):
@@ -1666,6 +1639,14 @@ def addTree(props):
     splineToBone = deque([''])
     addsplinetobone = splineToBone.append
 
+    startPrune = True
+    lengthTest = 0.0
+    currentMax = 1.0
+    currentMin = 0.0
+    currentScale = 1.0
+    oldMax = 1.0
+    deleteSpline = False
+    forceSprout = False
     # Each of the levels needed by the user we grow all the splines
     for n in range(levels):
         storeN = n
@@ -1705,8 +1686,6 @@ def addTree(props):
             # When using pruning, we need to ensure that the random effects
             # will be the same for each iteration to make sure the problem is linear
             randState = getstate()
-            startPrune = True
-            lengthTest = 0.0
             # Store all the original values for the stem to make sure
             # we have access after it has been modified by pruning
             originalLength = st.segL
@@ -1716,13 +1695,7 @@ def addTree(props):
             originalHandleR = st.p.handle_right.copy()
             originalHandleL = st.p.handle_left.copy()
             originalCo = st.p.co.copy()
-            currentMax = 1.0
-            currentMin = 0.0
-            currentScale = 1.0
-            oldMax = 1.0
-            deleteSpline = False
             originalSplineToBone = copy.copy(splineToBone)
-            forceSprout = False
             # Now do the iterative pruning, this uses a binary search and halts once the difference
             # between upper and lower bounds of the search are less than 0.005
             ratio, splineToBone = perform_pruning(

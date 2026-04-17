@@ -58,10 +58,7 @@ DEBUG = False
 
 # greatest common denominator
 def gcd(a, b):
-    if b == 0:
-        return a
-    else:
-        return gcd(b, a % b)
+    return a if b == 0 else gcd(b, a % b)
 
 
 # #######################################################################
@@ -163,8 +160,7 @@ def align_matrix(self, context):
     else:
         rot = Matrix()
 
-    align_matrix = userLoc @ loc @ rot @ userRot
-    return align_matrix
+    return userLoc @ loc @ rot @ userRot
 
 
 # ------------------------------------------------------------------------------
@@ -220,11 +216,7 @@ def create_torus_knot(self, context):
         addLinkColors(self, curve_data)
 
     # create torus knot link(s)
-    if self.multiple_links:
-        links = gcd(self.torus_p, self.torus_q)
-    else:
-        links = 1
-
+    links = gcd(self.torus_p, self.torus_q) if self.multiple_links else 1
     for l in range(links):
         # get vertices for the current link
         verts = Torus_Knot(self, l)
@@ -284,8 +276,8 @@ def create_torus_knot(self, context):
 def addLinkColors(self, curveData):
     # some predefined colors for the torus knot links
     colors = []
+    colors += [[0.0, 0.0, 1.0]]
     if self.colorSet == "1":  # RGBish
-        colors += [[0.0, 0.0, 1.0]]
         colors += [[0.0, 1.0, 0.0]]
         colors += [[1.0, 0.0, 0.0]]
         colors += [[1.0, 1.0, 0.0]]
@@ -295,7 +287,6 @@ def addLinkColors(self, curveData):
         colors += [[0.0, 1.0, 0.5]]
         colors += [[0.5, 0.0, 1.0]]
     else:  # RainBow
-        colors += [[0.0, 0.0, 1.0]]
         colors += [[0.0, 0.5, 1.0]]
         colors += [[0.0, 1.0, 1.0]]
         colors += [[0.0, 1.0, 0.5]]
@@ -314,7 +305,7 @@ def addLinkColors(self, curveData):
         # create the material
         if matName not in matListNames:
             if DEBUG:
-                print("Creating new material : %s" % matName)
+                print(f"Creating new material : {matName}")
             mat = bpy.data.materials.new(matName)
         else:
             if DEBUG:
@@ -593,7 +584,7 @@ class torus_knot_plus(Operator, AddObjectHelper):
         info = "Multiple Links"
 
         if links > 1:
-            info += "  ( " + str(links) + " )"
+            info += f"  ( {str(links)} )"
         box.prop(self, 'multiple_links', text=info)
 
         if self.options_plus:

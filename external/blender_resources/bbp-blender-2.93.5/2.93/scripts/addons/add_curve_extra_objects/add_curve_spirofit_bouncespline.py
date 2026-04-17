@@ -59,8 +59,7 @@ import random as r
 # http://www.kino3d.com/forum/viewtopic.php?t=5374
 # ------------------------------------------------------------
 def distance(v1, v2):
-    d = (Vector(v1) - Vector(v2)).length
-    return d
+    return (Vector(v1) - Vector(v2)).length
 
 
 def spiral_point(step, radius, z_coord, spires, waves, wave_iscale, rndm):
@@ -83,11 +82,11 @@ def spirofit_spline(obj,
 
     points = []
     bb = obj.bound_box
-    bb_xmin = min([v[0] for v in bb])
-    bb_ymin = min([v[1] for v in bb])
-    bb_zmin = min([v[2] for v in bb])
-    bb_xmax = max([v[0] for v in bb])
-    bb_ymax = max([v[1] for v in bb])
+    bb_xmin = min(v[0] for v in bb)
+    bb_ymin = min(v[1] for v in bb)
+    bb_zmin = min(v[2] for v in bb)
+    bb_xmax = max(v[0] for v in bb)
+    bb_ymax = max(v[1] for v in bb)
     bb_zmax = max([v[2] for v in bb])
 
     radius = distance([bb_xmax, bb_ymax, bb_zmin], [bb_xmin, bb_ymin, bb_zmin]) / 2.0
@@ -297,7 +296,7 @@ class SpiroFitSpline(Operator):
         draw_spline_settings(self)
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         ob = context.active_object
         return ((ob is not None) and
                 (context.mode == 'OBJECT'))
@@ -363,8 +362,7 @@ class SpiroFitSpline(Operator):
 # ------------------------------------------------------------
 def noise(var=1):
     rand = Vector((r.gauss(0, 1), r.gauss(0, 1), r.gauss(0, 1)))
-    vec = rand.normalized() * var
-    return vec
+    return rand.normalized() * var
 
 
 def bounce_spline(obj,
@@ -381,9 +379,8 @@ def bounce_spline(obj,
     if active_face:
         try:
             n = poly.active
-        except:
+        except Exception:
             print("No active face selected")
-            pass
     else:
         n = r.randint(0, len(poly) - 1)
 
@@ -391,12 +388,12 @@ def bounce_spline(obj,
     start = poly[n].center
     points.append(start + offset * end)
 
-    for i in range(number):
-        for ray in range(extra + 1):
+    for _ in range(number):
+        for _ in range(extra + 1):
             end += noise(ang_noise)
             try:
                 hit, nor, index = obj.ray_cast(start, end * dist)[-3:]
-            except:
+            except Exception:
                 index = -1
             if index != -1:
                 start = hit - nor / 10000
@@ -563,7 +560,7 @@ class BounceSpline(Operator):
         draw_spline_settings(self)
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         ob = context.active_object
         return ((ob is not None) and
                 (context.mode == 'OBJECT'))
@@ -620,13 +617,12 @@ class BounceSpline(Operator):
 # ------------------------------------------------------------
 # Hang Catenary curve between two selected objects
 # ------------------------------------------------------------
-def catenary_curve(
-            start=[-2, 0, 2],
-            end=[2, 0, 2],
-            steps=24,
-            a=2.0
-            ):
+def catenary_curve(start=None, end=None, steps=24, a=2.0):
 
+    if start is None:
+        start = [-2, 0, 2]
+    if end is None:
+        end = [2, 0, 2]
     points = []
     lx = end[0] - start[0]
     ly = end[1] - start[1]
@@ -782,7 +778,7 @@ class CatenaryCurve(Operator):
         col.prop(self, "random_seed")
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         ob = context.active_object
         return ob is not None
 
@@ -807,7 +803,7 @@ class CatenaryCurve(Operator):
                             "Objects have the same X, Y location. Operation Cancelled")
 
                 return {'CANCELLED'}
-        except:
+        except Exception:
             self.report({"WARNING"},
                         "Catenary could not be completed. Operation Cancelled")
             return {'CANCELLED'}

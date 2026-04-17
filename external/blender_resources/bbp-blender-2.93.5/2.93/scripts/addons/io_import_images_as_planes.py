@@ -291,7 +291,7 @@ def auto_align_nodes(node_tree):
     links = node_tree.links
     output_node = None
     for node in nodes:
-        if node.type == 'OUTPUT_MATERIAL' or node.type == 'GROUP_OUTPUT':
+        if node.type in ['OUTPUT_MATERIAL', 'GROUP_OUTPUT']:
             output_node = node
             break
 
@@ -317,7 +317,7 @@ def clean_node_tree(node_tree):
     """
     nodes = node_tree.nodes
     for node in list(nodes):  # copy to avoid altering the loop's data source
-        if not node.type == 'OUTPUT_MATERIAL':
+        if node.type != 'OUTPUT_MATERIAL':
             nodes.remove(node)
 
     return node_tree.nodes[0]
@@ -491,7 +491,7 @@ def register_driver(*args, **kwargs):
 def group_in_frame(node_tree, name, nodes):
     frame_node = node_tree.nodes.new("NodeFrame")
     frame_node.label = name
-    frame_node.name = name + "_frame"
+    frame_node.name = f"{name}_frame"
 
     min_pos = Vector(nodes[0].location)
     max_pos = min_pos.copy()
@@ -542,7 +542,7 @@ def setup_compositing(context, plane, img_spec):
     name = plane.name
 
     image_node = node_tree.nodes.new("CompositorNodeImage")
-    image_node.name = name + "_image"
+    image_node.name = f"{name}_image"
     image_node.image = img_spec.image
     image_node.location = Vector((0, 0))
     image_node.frame_start = img_spec.frame_start
@@ -550,14 +550,14 @@ def setup_compositing(context, plane, img_spec):
     image_node.frame_duration = img_spec.frame_duration
 
     scale_node = node_tree.nodes.new("CompositorNodeScale")
-    scale_node.name = name + "_scale"
+    scale_node.name = f"{name}_scale"
     scale_node.space = 'RENDER_SIZE'
     scale_node.location = image_node.location + \
         Vector((image_node.width + 20, 0))
     scale_node.show_options = False
 
     cornerpin_node = node_tree.nodes.new("CompositorNodeCornerPin")
-    cornerpin_node.name = name + "_cornerpin"
+    cornerpin_node.name = f"{name}_cornerpin"
     cornerpin_node.location = scale_node.location + \
         Vector((0, -scale_node.height))
 
@@ -594,7 +594,7 @@ def setup_compositing(context, plane, img_spec):
             driver.type = 'SCRIPTED'
             driver.is_valid = True
             axis_fcurve.is_valid = True
-            driver.expression = "%s" % driver.expression
+            driver.expression = f"{driver.expression}"
 
     context.view_layer.update()
 
@@ -691,12 +691,9 @@ class IMPORT_IMAGE_OT_to_plane(Operator, AddObjectHelper):
         if self.size_mode == 'CAMERA':
             self.prev_align_axis = self.align_axis
             self.align_axis = 'CAM'
-        else:
-            # if a different alignment was set revert to that when
-            # size mode is changed
-            if self.prev_align_axis != 'NONE':
-                self.align_axis = self.prev_align_axis
-                self._prev_align_axis = 'NONE'
+        elif self.prev_align_axis != 'NONE':
+            self.align_axis = self.prev_align_axis
+            self._prev_align_axis = 'NONE'
 
     SIZE_MODES = (
         ('ABSOLUTE', "Absolute", "Use absolute size"),
@@ -793,7 +790,7 @@ class IMPORT_IMAGE_OT_to_plane(Operator, AddObjectHelper):
 
         engine = context.scene.render.engine
         if engine not in ('CYCLES', 'BLENDER_EEVEE', 'BLENDER_WORKBENCH'):
-            box.label(text="%s is not supported" % engine, icon='ERROR')
+            box.label(text=f"{engine} is not supported", icon='ERROR')
 
         box.prop(self, "overwrite_material")
 
@@ -852,11 +849,16 @@ class IMPORT_IMAGE_OT_to_plane(Operator, AddObjectHelper):
         engine = context.scene.render.engine
         if engine not in {'CYCLES', 'BLENDER_EEVEE'}:
             if engine != 'BLENDER_WORKBENCH':
-                self.report({'ERROR'}, "Cannot generate materials for unknown %s render engine" % engine)
+                self.report(
+                    {'ERROR'},
+                    f"Cannot generate materials for unknown {engine} render engine",
+                )
                 return {'CANCELLED'}
             else:
-                self.report({'WARNING'},
-                            "Generating Cycles/EEVEE compatible material, but won't be visible with %s engine" % engine)
+                self.report(
+                    {'WARNING'},
+                    f"Generating Cycles/EEVEE compatible material, but won't be visible with {engine} engine",
+                )
 
         # Open file browser
         context.window_manager.fileselect_add(self)
@@ -910,7 +912,7 @@ class IMPORT_IMAGE_OT_to_plane(Operator, AddObjectHelper):
             plane.select_set(True)
 
         # all done!
-        self.report({'INFO'}, "Added {} Image Plane(s)".format(len(planes)))
+        self.report({'INFO'}, f"Added {len(planes)} Image Plane(s)")
 
     # operate on a single image
     def single_image_spec_to_plane(self, context, img_spec):

@@ -18,7 +18,6 @@
 
 bl_info = {
     "name": "Node Presets",
-    "description": "Useful and time-saving tools for node group workflow",
     "author": "Campbell Barton",
     "version": (1, 1),
     "blender": (2, 80, 0),
@@ -49,8 +48,7 @@ from bpy.props import (
 def node_center(context):
     from mathutils import Vector
     loc = Vector((0.0, 0.0))
-    node_selected = context.selected_nodes
-    if node_selected:
+    if node_selected := context.selected_nodes:
         for node in node_selected:
             loc += node.location
         loc /= len(node_selected)
@@ -100,9 +98,8 @@ def node_template_add(context, filepath, node_group, ungroup, report):
 
     if is_fail:
         node_tree.nodes.remove(node)
-    else:
-        if ungroup:
-            bpy.ops.node.group_ungroup()
+    elif ungroup:
+        bpy.ops.node.group_ungroup()
 
     # node_group.user_clear()
     # bpy.data.node_groups.remove(node_group)
@@ -114,8 +111,7 @@ def node_template_add(context, filepath, node_group, ungroup, report):
 def node_search_path(context):
     preferences = context.preferences
     addon_prefs = preferences.addons[__name__].preferences
-    dirpath = addon_prefs.search_path
-    return dirpath
+    return addon_prefs.search_path
 
 
 class NodeTemplatePrefs(AddonPreferences):
@@ -163,9 +159,7 @@ def node_template_cache(context, *, reload=False):
     if node_template_cache._node_cache_path != dirpath:
         reload = True
 
-    node_cache = node_template_cache._node_cache
-    if reload:
-        node_cache = []
+    node_cache = [] if reload else node_template_cache._node_cache
     if node_cache:
         return node_cache
 

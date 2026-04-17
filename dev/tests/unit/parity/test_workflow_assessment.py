@@ -79,7 +79,9 @@ def test_evaluate_output_root_preflight_cached_reuses_recent_report(tmp_path: Pa
     persist_output_preflight(report, metadata_dir)
     monkeypatch.setattr(
         "slavv.parity.workflow_assessment.evaluate_output_root_preflight",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("cache should be reused")),
+        lambda *_args, **_kwargs: iter(()).throw(
+            AssertionError("cache should be reused")
+        ),
     )
 
     cached = evaluate_output_root_preflight_cached(output_root, metadata_dir)
@@ -115,7 +117,9 @@ def test_inspect_matlab_status_cached_reuses_when_mtimes_match(tmp_path: Path, m
     persist_matlab_status(report, metadata_dir)
     monkeypatch.setattr(
         "slavv.parity.workflow_assessment.inspect_matlab_status",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("cache should be reused")),
+        lambda *_args, **_kwargs: iter(()).throw(
+            AssertionError("cache should be reused")
+        ),
     )
 
     cached = inspect_matlab_status_cached(

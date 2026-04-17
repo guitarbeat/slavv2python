@@ -41,7 +41,7 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
 
     monkeypatch.setattr(
         "slavv.core.edge_candidates.estimate_vessel_directions",
-        lambda *args, **kwargs: (_ for _ in ()).throw(
+        lambda *args, **kwargs: iter(()).throw(
             AssertionError("Hessian estimator should not be called")
         ),
     )

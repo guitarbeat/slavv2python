@@ -78,47 +78,41 @@ def do_export(context, props, filepath):
     headerStr = struct.pack(headerFormat, b'POINTCACHE2\0',
                             1, vertCount, start, sampling, sampleCount)
 
-    file = open(filepath, "wb")
-    file.write(headerStr)
+    with open(filepath, "wb") as file:
+        file.write(headerStr)
 
-    for frame in sampletimes:
-        # stupid modf() gives decimal part first!
-        sc.frame_set(int(frame[1]), subframe=frame[0])
+        for frame in sampletimes:
+            # stupid modf() gives decimal part first!
+            sc.frame_set(int(frame[1]), subframe=frame[0])
+            me = ob.evaluated_get(depsgraph).to_mesh() if apply_modifiers else ob.to_mesh()
+            if len(me.vertices) != vertCount:
+                bpy.data.meshes.remove(me, do_unlink=True)
+                file.close()
+                try:
+                    remove(filepath)
+                except Exception:
+                    with open(filepath, 'w') as empty:
+                        empty.write('DUMMIFILE - export failed\n')
+                print('Export failed. Vertexcount of Object is not constant')
+                return False
+
+            if props.world_space:
+                me.transform(ob.matrix_world)
+            if props.rot_x90:
+                me.transform(mat_x90)
+
+            for v in me.vertices:
+                thisVertex = struct.pack('<fff', float(v.co[0]),
+                                         float(v.co[1]),
+                                         float(v.co[2]))
+                file.write(thisVertex)
+
         if apply_modifiers:
-            me = ob.evaluated_get(depsgraph).to_mesh()
+            ob.evaluated_get(depsgraph).to_mesh_clear()
         else:
-            me = ob.to_mesh()
+            me = ob.to_mesh_clear()
 
-        if len(me.vertices) != vertCount:
-            bpy.data.meshes.remove(me, do_unlink=True)
-            file.close()
-            try:
-                remove(filepath)
-            except:
-                empty = open(filepath, 'w')
-                empty.write('DUMMIFILE - export failed\n')
-                empty.close()
-            print('Export failed. Vertexcount of Object is not constant')
-            return False
-
-        if props.world_space:
-            me.transform(ob.matrix_world)
-        if props.rot_x90:
-            me.transform(mat_x90)
-
-        for v in me.vertices:
-            thisVertex = struct.pack('<fff', float(v.co[0]),
-                                     float(v.co[1]),
-                                     float(v.co[2]))
-            file.write(thisVertex)
-
-    if apply_modifiers:
-        ob.evaluated_get(depsgraph).to_mesh_clear()
-    else:
-        me = ob.to_mesh_clear()
-
-    file.flush()
-    file.close()
+        file.flush()
     return True
 
 
@@ -184,11 +178,8 @@ class Export_pc2(bpy.types.Operator, ExportHelper):
         filepath = self.filepath
         filepath = bpy.path.ensure_ext(filepath, self.filename_ext)
 
-        exported = do_export(context, props, filepath)
-
-        if exported:
-            print('finished export in %s seconds' %
-                  ((time.time() - start_time)))
+        if exported := do_export(context, props, filepath):
+            print(f'finished export in {time.time() - start_time} seconds')
             print(filepath)
 
         return {'FINISHED'}
@@ -196,19 +187,9 @@ class Export_pc2(bpy.types.Operator, ExportHelper):
     def invoke(self, context, event):
         wm = context.window_manager
 
-        if True:
-            # File selector
-            wm.fileselect_add(self)  # will run self.execute()
-            return {'RUNNING_MODAL'}
-        elif True:
-            # search the enum
-            wm.invoke_search_popup(self)
-            return {'RUNNING_MODAL'}
-        elif False:
-            # Redo popup
-            return wm.invoke_props_popup(self, event)
-        elif False:
-            return self.execute(context)
+        # File selector
+        wm.fileselect_add(self)  # will run self.execute()
+        return {'RUNNING_MODAL'}
 
 
 def menu_func_export_button(self, context):

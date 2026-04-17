@@ -68,7 +68,7 @@ class TRACKING_OP_refine_solution(Operator):
             aspy = 1.0 / tracking.camera.pixel_aspect
             start = tracking.reconstruction.cameras[0].frame
             end = tracking.reconstruction.cameras[-1].frame
-        except:
+        except Exception:
             return {'CANCELLED'}
 
         marker_position = Vector()
@@ -111,7 +111,7 @@ class TRACKING_OP_refine_solution(Operator):
                     track.keyframe_insert("weight", frame=frame)
                     continue
                 reprojected_position = reprojected_position / -reprojected_position.z * \
-                                       tracking.camera.focal_length_pixels
+                                           tracking.camera.focal_length_pixels
                 reprojected_position = Vector(
                                         (tracking.camera.principal[0] + reprojected_position[0],
                                         tracking.camera.principal[1] * aspy + reprojected_position[1], 0)
@@ -121,10 +121,7 @@ class TRACKING_OP_refine_solution(Operator):
                 marker_position[1] = (marker.co[1] + track.offset[1]) * winy * aspy
 
                 dp = marker_position - reprojected_position
-                if dp.length == 0:
-                    track.weight = 1.0
-                else:
-                    track.weight = min(1.0, tw * error / dp.length)
+                track.weight = 1.0 if dp.length == 0 else min(1.0, tw * error / dp.length)
                 track.keyframe_insert("weight", frame=frame)
 
         bpy.ops.clip.solve_camera('INVOKE_DEFAULT')
@@ -149,7 +146,7 @@ class TRACKING_OP_reset_solution(Operator):
             tracks = tracking.tracks
             start = tracking.reconstruction.cameras[0].frame
             end = tracking.reconstruction.cameras[-1].frame
-        except:
+        except Exception:
             return {'CANCELLED'}
 
         start = tracking.reconstruction.cameras[0].frame

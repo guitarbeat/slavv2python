@@ -159,7 +159,7 @@ class CameraExporter(bpy.types.Operator, ExportHelper):
 
 def menu_export(self, context):
     import os
-    default_path = os.path.splitext(bpy.data.filepath)[0] + ".py"
+    default_path = f"{os.path.splitext(bpy.data.filepath)[0]}.py"
     self.layout.operator(CameraExporter.bl_idname, text="Cameras & Markers (.py)").filepath = default_path
 
 

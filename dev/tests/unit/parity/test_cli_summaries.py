@@ -157,7 +157,7 @@ def test_generate_reuse_commands_no_matlab_batch():
 
     # Should not generate skip-matlab commands without MATLAB batch
     skip_matlab_cmds = [cmd for cmd in commands if "--skip-matlab" in cmd]
-    assert len(skip_matlab_cmds) == 0
+    assert not skip_matlab_cmds
 
 
 def test_format_missing_artifact_explanation():

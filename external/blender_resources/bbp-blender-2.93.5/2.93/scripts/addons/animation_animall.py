@@ -111,7 +111,7 @@ def refresh_ui_keyframes():
         for area in bpy.context.screen.areas:
             if area.type in ('TIMELINE', 'GRAPH_EDITOR', 'DOPESHEET_EDITOR'):
                 area.tag_redraw()
-    except:
+    except Exception:
         pass
 
 
@@ -121,14 +121,14 @@ def insert_key(data, key, group=None):
             data.keyframe_insert(key, group=group)
         else:
             data.keyframe_insert(key)
-    except:
+    except Exception:
         pass
 
 
 def delete_key(data, key):
     try:
         data.keyframe_delete(key)
-    except:
+    except Exception:
         pass
 
 
@@ -142,7 +142,7 @@ class VIEW3D_PT_animall(Panel):
     bl_options = {'DEFAULT_CLOSED'}
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.active_object and context.active_object.type in {'MESH', 'LATTICE', 'CURVE', 'SURFACE'}
 
     def draw(self, context):
@@ -157,7 +157,14 @@ class VIEW3D_PT_animall(Panel):
 
         row = col.row()
 
-        if obj.type == 'LATTICE':
+        if obj.type in ['CURVE', 'SURFACE']:
+            row.prop(animall_properties, "key_points")
+            row.prop(animall_properties, "key_shape")
+            row = col.row()
+            row.prop(animall_properties, "key_radius")
+            row.prop(animall_properties, "key_tilt")
+
+        elif obj.type == 'LATTICE':
             row.prop(animall_properties, "key_points")
             row.prop(animall_properties, "key_shape")
 
@@ -173,20 +180,6 @@ class VIEW3D_PT_animall(Panel):
             row = col.row()
             row.prop(animall_properties, "key_vcols")
             row.prop(animall_properties, "key_vgroups")
-
-        elif obj.type == 'CURVE':
-            row.prop(animall_properties, "key_points")
-            row.prop(animall_properties, "key_shape")
-            row = col.row()
-            row.prop(animall_properties, "key_radius")
-            row.prop(animall_properties, "key_tilt")
-
-        elif obj.type == 'SURFACE':
-            row.prop(animall_properties, "key_points")
-            row.prop(animall_properties, "key_shape")
-            row = col.row()
-            row.prop(animall_properties, "key_radius")
-            row.prop(animall_properties, "key_tilt")
 
         layout.separator()
         row = layout.row(align=True)
@@ -208,7 +201,7 @@ class VIEW3D_PT_animall(Panel):
                 row.prop(obj, "show_only_shape_key", text="")
                 if shape_key.value < 1:
                     row = layout.row()
-                    row.label(text='Maybe set "%s" to 1.0?' % shape_key.name, icon="INFO")
+                    row.label(text=f'Maybe set "{shape_key.name}" to 1.0?', icon="INFO")
             elif shape_key:
                 row.label(text="Cannot key on Basis Shape", icon="ERROR")
             else:
@@ -225,7 +218,7 @@ class ANIM_OT_insert_keyframe_animall(Operator):
     bl_description = "Insert a Keyframe"
     bl_options = {'REGISTER', 'UNDO'}
 
-    def execute(op, context):
+    def execute(self, context):
         animall_properties = context.window_manager.animall_properties
 
         if context.mode == 'OBJECT':
@@ -379,7 +372,7 @@ class ANIM_OT_delete_keyframe_animall(Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
 
-    def execute(op, context):
+    def execute(self, context):
         animall_properties = context.window_manager.animall_properties
 
         if context.mode == 'OBJECT':
@@ -509,7 +502,7 @@ class ANIM_OT_clear_animation_animall(Operator):
             try:
                 data = obj.data
                 data.animation_data_clear()
-            except:
+            except Exception:
                 self.report({'WARNING'}, "Clear Animation could not be performed")
                 return {'CANCELLED'}
 
@@ -538,8 +531,7 @@ def update_panel(self, context):
             bpy.utils.register_class(panel)
 
     except Exception as e:
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
-        pass
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 class AnimallAddonPreferences(AddonPreferences):

@@ -107,7 +107,7 @@ class CAMERATURN_OT_RunAction(Operator):
                 if bpy.data.cameras[camera.name].animation_data:
                     bpy.data.cameras[camera.name].animation_data_clear()
             except Exception as e:
-                print("\n[Camera Turnaround]\nWarning: {}\n".format(e))
+                print(f"\n[Camera Turnaround]\nWarning: {e}\n")
 
         # Dolly zoom
         if turn_camera.dolly_zoom != "0":
@@ -147,11 +147,16 @@ class CAMERATURN_OT_RunAction(Operator):
         myempty.rotation_euler = (xrot, yrot, zrot)
         myempty.keyframe_insert(data_path="rotation_euler", frame=scene.frame_end)
         # Dolly zoom
-        if turn_camera.dolly_zoom != "0":
-            if turn_camera.dolly_zoom == "1":
-                bpy.data.cameras[camera.name].lens = turn_camera.camera_to_lens  # final
-            else:
-                bpy.data.cameras[camera.name].lens = turn_camera.camera_from_lens  # back to init
+        if turn_camera.dolly_zoom == "0":
+            pass
+        elif turn_camera.dolly_zoom == "1":
+            bpy.data.cameras[camera.name].lens = turn_camera.camera_to_lens  # final
+            bpy.data.cameras[camera.name].keyframe_insert(
+                "lens", frame=scene.frame_end
+            )
+
+        else:
+            bpy.data.cameras[camera.name].lens = turn_camera.camera_from_lens  # back to init
 
             bpy.data.cameras[camera.name].keyframe_insert(
                 "lens", frame=scene.frame_end
@@ -274,8 +279,6 @@ class CAMERATURN_PT_ui(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        turn_camera = scene.turn_camera
-
         try:
             scene.camera.name
         except AttributeError:
@@ -301,6 +304,8 @@ class CAMERATURN_PT_ui(Panel):
 
                 col = layout.column(align=True)
                 split = col.split(factor=0.85, align=True)
+                turn_camera = scene.turn_camera
+
                 split.prop(turn_camera, "camera_revol_x")
                 split.prop(turn_camera, "inverse_x", toggle=True)
                 split = col.split(factor=0.85, align=True)

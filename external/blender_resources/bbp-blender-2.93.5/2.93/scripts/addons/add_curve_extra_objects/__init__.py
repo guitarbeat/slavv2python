@@ -88,7 +88,7 @@ def convert_old_presets(data_path, msg_data_path, old_preset_subdir,
 
         files = [f for f in os.listdir(target_path) if f.endswith(ext)]
         if not files:
-            print("No old presets in %s" % target_path)
+            print(f"No old presets in {target_path}")
             setattr(self, msg_data_path, "No old presets")
             return None
 
@@ -97,11 +97,10 @@ def convert_old_presets(data_path, msg_data_path, old_preset_subdir,
                                               new_target_path,
                                               create=True)
         for f in files:
-            file = open(os.path.join(target_path, f))
-            for line in file:
-                if line.startswith("op."):
-                    exec(line)
-            file.close()
+            with open(os.path.join(target_path, f)) as file:
+                for line in file:
+                    if line.startswith("op."):
+                        exec(line)
             for key, items in fixdic.items():
                 if hasattr(op, key) and isinstance(getattr(op, key), int):
                     setattr(op, key, items[getattr(op, key)])
@@ -109,19 +108,18 @@ def convert_old_presets(data_path, msg_data_path, old_preset_subdir,
             new_file_path = os.path.join(new_target_path, f)
             if os.path.isfile(new_file_path):
                 # do nothing
-                print("Preset %s already exists, passing..." % f)
+                print(f"Preset {f} already exists, passing...")
                 continue
-            file_preset = open(new_file_path, 'w')
-            file_preset.write("import bpy\n")
-            file_preset.write("op = bpy.context.active_operator\n")
+            with open(new_file_path, 'w') as file_preset:
+                file_preset.write("import bpy\n")
+                file_preset.write("op = bpy.context.active_operator\n")
 
-            for prop, value in vars(op).items():
-                if isinstance(value, str):
-                    file_preset.write("op.%s = '%s'\n" % (prop, str(value)))
-                else:
-                    file_preset.write("op.%s = %s\n" % (prop, str(value)))
-            file_preset.close()
-            print("Writing new preset to %s" % new_file_path)
+                for prop, value in vars(op).items():
+                    if isinstance(value, str):
+                        file_preset.write("op.%s = '%s'\n" % (prop, str(value)))
+                    else:
+                        file_preset.write("op.%s = %s\n" % (prop, str(value)))
+            print(f"Writing new preset to {new_file_path}")
 
         setattr(self, msg_data_path, "Converted %d old presets" % len(files))
         return None

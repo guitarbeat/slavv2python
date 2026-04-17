@@ -80,8 +80,14 @@ def genops(copylist, oplist, prefix, poll_func, loopfunc):
     for op in copylist:
         exec_func = build_exec(loopfunc, op[3])
         invoke_func = build_invoke(loopfunc, op[3])
-        opclass = build_op(prefix + op[0], "Copy " + op[1], op[2],
-                           poll_func, exec_func, invoke_func)
+        opclass = build_op(
+            prefix + op[0],
+            f"Copy {op[1]}",
+            op[2],
+            poll_func,
+            exec_func,
+            invoke_func,
+        )
         oplist.append(opclass)
 
 
@@ -91,7 +97,7 @@ def generic_copy(source, target, string=""):
         if attr.find(string) > -1:
             try:
                 setattr(target, attr, getattr(source, attr))
-            except:
+            except Exception:
                 pass
     return
 
@@ -114,12 +120,10 @@ def getmat(bone, active, context, ignoreparent):
     else:
         parentposemat = parentbonemat = Matrix()
     if parentbonemat == parentposemat or ignoreparent:
-        newmat = bonemat_local.inverted() @ otherloc
-    else:
-        bonemat = parentbonemat.inverted() @ bonemat_local
+        return bonemat_local.inverted() @ otherloc
+    bonemat = parentbonemat.inverted() @ bonemat_local
 
-        newmat = bonemat.inverted() @ parentposemat.inverted() @ otherloc
-    return newmat
+    return bonemat.inverted() @ parentposemat.inverted() @ otherloc
 
 
 def rotcopy(item, mat):
@@ -287,7 +291,7 @@ class VIEW3D_MT_posecopypopup(Menu):
         layout = self.layout
         layout.operator_context = 'INVOKE_REGION_WIN'
         for op in pose_copies:
-            layout.operator("pose.copy_" + op[0])
+            layout.operator(f"pose.copy_{op[0]}")
         layout.operator("pose.copy_selected_constraints")
         layout.operator("pose.copy", text="copy pose")
 
@@ -307,8 +311,7 @@ def world_to_basis(active, ob, context):
     """put world coords of active as basis coords of ob"""
     local = ob.parent.matrix_world.inverted() @ active.matrix_world
     P = ob.matrix_basis @ ob.matrix_local.inverted()
-    mat = P @ local
-    return(mat)
+    return P @ local
 
 
 # The following functions are used to copy attributes from
@@ -453,9 +456,7 @@ def obWei(ob, active, context):
         vg = v.groups
         vi = v.index
         if len(vg) > 0:
-            vgroup_collect = []
-            for i in range(0, len(vg)):
-                vgroup_collect.append((vg[i].group, vg[i].weight))
+            vgroup_collect = [(vg[i].group, vg[i].weight) for i in range(0, len(vg))]
             data[vi] = vgroup_collect
     # write data to target
     if ob != active:
@@ -637,7 +638,7 @@ class VIEW3D_MT_copypopup(Menu):
         for entry, op in enumerate(object_copies):
             if entry and entry % 4 == 0:
                 layout.separator()
-            layout.operator("object.copy_" + op[0])
+            layout.operator(f"object.copy_{op[0]}")
         layout.operator("object.copy_selected_constraints")
         layout.operator("object.copy_selected_modifiers")
 
@@ -677,11 +678,11 @@ class MESH_MT_CopyFaceSettings(Menu):
 
         if uv or vc:
             layout.separator()
-            if uv:
-                layout.menu("MESH_MT_CopyImagesFromLayer")
-                layout.menu("MESH_MT_CopyUVCoordsFromLayer")
-            if vc:
-                layout.menu("MESH_MT_CopyVertexColorsFromLayer")
+        if uv:
+            layout.menu("MESH_MT_CopyImagesFromLayer")
+            layout.menu("MESH_MT_CopyUVCoordsFromLayer")
+        if vc:
+            layout.menu("MESH_MT_CopyVertexColorsFromLayer")
 
 
 # Data (UV map, Image and Vertex color) menus calling MESH_OT_CopyFaceSettings
@@ -719,10 +720,7 @@ class MESH_MT_CopyVertexColorsFromLayer(Menu):
 
 def _buildmenu(self, mesh, mode, icon):
     layout = self.layout
-    if mode == 'VCOL':
-        layers = mesh.vertex_colors
-    else:
-        layers = mesh.uv_layers
+    layers = mesh.vertex_colors if mode == 'VCOL' else mesh.uv_layers
     for layer in layers:
         if not layer.active:
             op = layout.operator(MESH_OT_CopyFaceSettings.bl_idname,
@@ -829,9 +827,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    # mostly to get the keymap working
-    kc = bpy.context.window_manager.keyconfigs.addon
-    if kc:
+    if kc := bpy.context.window_manager.keyconfigs.addon:
         km = kc.keymaps.new(name="Object Mode")
         kmi = km.keymap_items.new('wm.call_menu', 'C', 'PRESS', ctrl=True)
         kmi.properties.name = 'VIEW3D_MT_copypopup'
@@ -851,9 +847,7 @@ def register():
 
 
 def unregister():
-    # mostly to remove the keymap
-    kc = bpy.context.window_manager.keyconfigs.addon
-    if kc:
+    if kc := bpy.context.window_manager.keyconfigs.addon:
         kms = kc.keymaps.get('Pose')
         if kms is not None:
             for item in kms.keymap_items:

@@ -58,9 +58,7 @@ def make_spiral(props, context):
 
     step_z = props.z_scale / (steps - 1)  # z increase in one step
 
-    verts = []
-    verts.append([props.radius, 0, 0])
-
+    verts = [[props.radius, 0, 0]]
     cur_phi = 0
     cur_z = 0
 
@@ -104,9 +102,7 @@ def make_spiral_spheric(props, context):
         max_phi *= -1
     step_theta = pi / (steps - 1)  # theta increase in one step (pi == 180 deg)
 
-    verts = []
-    verts.append([0, 0, -props.radius])  # First vertex at south pole
-
+    verts = [[0, 0, -props.radius]]
     cur_phi = 0
     cur_theta = -pi / 2  # Beginning at south pole
 
@@ -185,9 +181,7 @@ def align_matrix(context, location):
         rot = context.space_data.region_3d.view_matrix.to_3x3().inverted().to_4x4()
     else:
         rot = Matrix()
-    align_matrix = loc @ rot
-
-    return align_matrix
+    return loc @ rot
 
 # ------------------------------------------------------------
 # get array of vertcoordinates according to splinetype
@@ -279,11 +273,7 @@ def draw_curve(props, context, align_matrix):
     # set curveOptions
     Curve.data.dimensions = props.shape
     Curve.data.use_path = True
-    if props.shape == '3D':
-        Curve.data.fill_mode = 'FULL'
-    else:
-        Curve.data.fill_mode = 'BOTH'
-
+    Curve.data.fill_mode = 'FULL' if props.shape == '3D' else 'BOTH'
     # move and rotate spline in edit mode
     if bpy.context.mode == 'EDIT_CURVE':
         bpy.ops.transform.translate(value = props.startlocation)

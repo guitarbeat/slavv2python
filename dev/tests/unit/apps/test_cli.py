@@ -243,7 +243,7 @@ class TestMainEntryPoint:
         captured = capsys.readouterr()
         assert exc.value.code == 1
         assert "no run snapshot or legacy checkpoints found" in captured.err
-        assert list(tmp_path.iterdir()) == []
+        assert not list(tmp_path.iterdir())
 
     def test_parity_proof_prints_latest_summary(self, capsys, monkeypatch, tmp_path):
         monkeypatch.setattr(

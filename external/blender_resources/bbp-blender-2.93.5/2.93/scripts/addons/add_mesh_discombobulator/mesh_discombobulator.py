@@ -42,11 +42,7 @@ def randVertex(a, b, c, d, Verts):
     """Return a vector of a random vertex on a quad-polygon"""
     i = random.randint(1, 2)
     A, B, C, D = 0, 0, 0, 0
-    if(a == 1):
-        A, B, C, D = a, b, c, d
-    else:
-        A, B, C, D = a, d, c, b
-
+    A, B, C, D = (a, b, c, d) if (a == 1) else (a, d, c, b)
     i = randnum(0.1, 0.9)
 
     vecAB = Verts[B] - Verts[A]
@@ -58,8 +54,7 @@ def randVertex(a, b, c, d, Verts):
     i = randnum(0.1, 0.9)
     vecEF = F - E
 
-    O = E + vecEF * i
-    return O
+    return E + vecEF * i
 
 
 # ################## Protusions #################### #
@@ -68,8 +63,7 @@ def fill_older_datas(verts, polygon):
     """ Specifically coded to be called by the function addProtusionToPolygon,
         its sets up a tuple which contains the vertices from the base and the top of the protusions.
     """
-    temp_vertices = []
-    temp_vertices.append(verts[polygon[0]].copy())
+    temp_vertices = [verts[polygon[0]].copy()]
     temp_vertices.append(verts[polygon[1]].copy())
     temp_vertices.append(verts[polygon[2]].copy())
     temp_vertices.append(verts[polygon[3]].copy())
@@ -84,13 +78,11 @@ def extrude_top(temp_vertices, normal, height):
     """ This function extrude the polygon composed of the four first members of the tuple
         temp_vertices along the normal multiplied by the height of the extrusion.
     """
-    j = 0
-    while j < 3:
+    for j in range(3):
         temp_vertices[0][j] += normal[j] * height
         temp_vertices[1][j] += normal[j] * height
         temp_vertices[2][j] += normal[j] * height
         temp_vertices[3][j] += normal[j] * height
-        j += 1
 
 
 def scale_top(temp_vertices, center, normal, height, scale_ratio):
@@ -100,8 +92,7 @@ def scale_top(temp_vertices, center, normal, height, scale_ratio):
     vec3 = [0, 0, 0]
     vec4 = [0, 0, 0]
 
-    j = 0
-    while j < 3:
+    for j in range(3):
         center[j] += normal[j] * height
         vec1[j] = temp_vertices[0][j] - center[j]
         vec2[j] = temp_vertices[1][j] - center[j]
@@ -111,7 +102,6 @@ def scale_top(temp_vertices, center, normal, height, scale_ratio):
         temp_vertices[1][j] = center[j] + vec2[j] * (1 - scale_ratio)
         temp_vertices[2][j] = center[j] + vec3[j] * (1 - scale_ratio)
         temp_vertices[3][j] = center[j] + vec4[j] * (1 - scale_ratio)
-        j += 1
 
 
 def add_prot_polygons(temp_vertices):
@@ -167,8 +157,7 @@ def addProtusionToPolygon(obpolygon, verts, minHeight, maxHeight, minTaper, maxT
 
 def divide_one(list_polygons, list_vertices, verts, polygon, findex):
     """ called by divide_polygon, to generate a polygon from one polygon, maybe I could simplify this process """
-    temp_vertices = []
-    temp_vertices.append(verts[polygon[0]].copy())
+    temp_vertices = [verts[polygon[0]].copy()]
     temp_vertices.append(verts[polygon[1]].copy())
     temp_vertices.append(verts[polygon[2]].copy())
     temp_vertices.append(verts[polygon[3]].copy())
@@ -182,8 +171,7 @@ def divide_two(list_polygons, list_vertices, verts, polygon, findex):
     """ called by divide_polygon, to generate two polygons from one polygon and
         add them to the list of polygons and vertices which form the discombobulated mesh
     """
-    temp_vertices = []
-    temp_vertices.append(verts[polygon[0]].copy())
+    temp_vertices = [verts[polygon[0]].copy()]
     temp_vertices.append(verts[polygon[1]].copy())
     temp_vertices.append(verts[polygon[2]].copy())
     temp_vertices.append(verts[polygon[3]].copy())
@@ -200,8 +188,7 @@ def divide_three(list_polygons, list_vertices, verts, polygon, findex, center):
     """ called by divide_polygon, to generate three polygons from one polygon and
         add them to the list of polygons and vertices which form the discombobulated mesh
     """
-    temp_vertices = []
-    temp_vertices.append(verts[polygon[0]].copy())
+    temp_vertices = [verts[polygon[0]].copy()]
     temp_vertices.append(verts[polygon[1]].copy())
     temp_vertices.append(verts[polygon[2]].copy())
     temp_vertices.append(verts[polygon[3]].copy())
@@ -221,8 +208,7 @@ def divide_four(list_polygons, list_vertices, verts, polygon, findex, center):
     """ called by divide_polygon, to generate four polygons from one polygon and
         add them to the list of polygons and vertices which form the discombobulated mesh
     """
-    temp_vertices = []
-    temp_vertices.append(verts[polygon[0]].copy())
+    temp_vertices = [verts[polygon[0]].copy()]
     temp_vertices.append(verts[polygon[1]].copy())
     temp_vertices.append(verts[polygon[2]].copy())
     temp_vertices.append(verts[polygon[3]].copy())
@@ -288,10 +274,7 @@ def division(obpolygons, verts, sf1, sf2, sf3, sf4):
 
 def protusion(obverts, obpolygons, minHeight, maxHeight, minTaper, maxTaper):
     """function to generate the protusions"""
-    verts = []
-    for vertex in obverts:
-        verts.append(vertex.co)
-
+    verts = [vertex.co for vertex in obverts]
     for polygon in obpolygons:
         if(polygon.select is True):
             if(len(polygon.vertices) == 4):
@@ -299,12 +282,11 @@ def protusion(obverts, obpolygons, minHeight, maxHeight, minTaper, maxTaper):
 
 
 def test_v2_near_v1(v1, v2):
-    if (v1.x - 0.1 <= v2.x <= v1.x + 0.1 and
-       v1.y - 0.1 <= v2.y <= v1.y + 0.1 and
-       v1.z - 0.1 <= v2.z <= v1.z + 0.1):
-        return True
-
-    return False
+    return (
+        v1.x - 0.1 <= v2.x <= v1.x + 0.1
+        and v1.y - 0.1 <= v2.y <= v1.y + 0.1
+        and v1.z - 0.1 <= v2.z <= v1.z + 0.1
+    )
 
 
 def angle_between_nor(nor_orig, nor_result):
@@ -327,18 +309,15 @@ def doodads(self, object1, mesh1, dmin, dmax):
     i = 0
     # on parcoure cette boucle pour ajouter des doodads a toutes les polygons
     # english translation: this loops adds doodads to all polygons
-    while(i < len(object1.data.polygons)):
+    while (i < len(object1.data.polygons)):
         if object1.data.polygons[i].select is False:
             continue
 
         doods_nbr = random.randint(dmin, dmax)
-        j = 0
-
-        while(j <= doods_nbr):
+        for _ in range(doods_nbr + 1):
             origin_dood = randVertex(object1.data.polygons[i].vertices[0], object1.data.polygons[i].vertices[1],
                                      object1.data.polygons[i].vertices[2], object1.data.polygons[i].vertices[3], Verts)
             type_dood = random.randint(0, len(self.DISC_doodads) - 1)
-            polygons_add = []
             verts_add = []
 
             # First we have to apply scaling and rotation to the mesh
@@ -346,8 +325,12 @@ def doodads(self, object1, mesh1, dmin, dmax):
             bpy.context.view_layer.objects.active = bpy.data.objects[self.DISC_doodads[type_dood]]
             bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
 
-            for polygon in bpy.data.objects[self.DISC_doodads[type_dood]].data.polygons:
-                polygons_add.append(polygon.vertices)
+            polygons_add = [
+                polygon.vertices
+                for polygon in bpy.data.objects[
+                    self.DISC_doodads[type_dood]
+                ].data.polygons
+            ]
             for vertex in bpy.data.objects[self.DISC_doodads[type_dood]].data.vertices:
                 verts_add.append(vertex.co.copy())
             normal_original_polygon = object1.data.polygons[i].normal
@@ -370,7 +353,6 @@ def doodads(self, object1, mesh1, dmin, dmax):
 
             for vertex in verts_add:
                 dVerts.append(vertex)
-            j += 1
         i += 5
 
 
@@ -391,7 +373,7 @@ def setMatProt(discObj, origObj, sideProtMat, topProtMat):
     try:
         origObj.material_slots[topProtMat]
         origObj.material_slots[sideProtMat]
-    except:
+    except Exception:
         return
 
     bpy.ops.object.material_slot_add()
@@ -401,10 +383,7 @@ def setMatProt(discObj, origObj, sideProtMat, topProtMat):
 
     # Then we assign materials to protusions
     for polygon in discObj.data.polygons:
-        if polygon.index in i_prots:
-            polygon.material_index = 0
-        else:
-            polygon.material_index = 1
+        polygon.material_index = 0 if polygon.index in i_prots else 1
 
 
 def setMatDood(self, doodObj):
@@ -418,7 +397,7 @@ def setMatDood(self, doodObj):
             for polygon in doodObj.data.polygons:
                 if i_dood_type[polygon.index] == name:
                     polygon.material_index = len(doodObj.material_slots) - 1
-        except:
+        except Exception:
             print()
 
 
@@ -456,9 +435,6 @@ def discombobulate(self, minHeight, maxHeight, minTaper, maxTaper, sf1, sf2, sf3
     nVerts = []
     Polygons = []
     Verts = []
-    dPolygons = []
-    dVerts = []
-
     origObj = bpy.context.active_object
 
     # There we collect the rotation, translation and scaling datas from the original mesh
@@ -469,10 +445,7 @@ def discombobulate(self, minHeight, maxHeight, minTaper, maxTaper, sf1, sf2, sf3
     # First, we collect all the information we will need from the previous mesh
     obverts = bpy.context.active_object.data.vertices
     obpolygons = bpy.context.active_object.data.polygons
-    verts = []
-    for vertex in obverts:
-        verts.append(vertex.co)
-
+    verts = [vertex.co for vertex in obverts]
     division(obpolygons, verts, sf1, sf2, sf3, sf4)
 
     # Fill in the discombobulated mesh with the new polygons
@@ -508,11 +481,14 @@ def discombobulate(self, minHeight, maxHeight, minTaper, maxTaper, sf1, sf2, sf3
     # if(bpy.context.scene.repeatprot):
     protusions_repeat(object1, mesh1, r_prot)
 
-    if(len(self.DISC_doodads) != 0 and self.dodoodads and isLast):
+    if (len(self.DISC_doodads) != 0 and self.dodoodads and isLast):
         doodads(self, object1, mesh1, dmin, dmax)
         mesh2 = bpy.data.meshes.new("dood_mesh")
         object2 = bpy.data.objects.new("dood_obj", mesh2)
         bpy.context.collection.objects.link(object2)
+        dPolygons = []
+        dVerts = []
+
         mesh2.from_pydata(dVerts, [], dPolygons)
         mesh2.update(calc_edges=True)
         setMatDood(self, object2)
@@ -569,7 +545,7 @@ class chooseDoodad(Operator):
 
         if obj_name not in DISC_doodads:
             DISC_doodads.append(obj_name)
-            msg = "Saved Doodad object: {}".format(obj_name)
+            msg = f"Saved Doodad object: {obj_name}"
 
         self.report({"INFO"}, message=msg)
 
@@ -597,7 +573,7 @@ class unchooseDoodad(Operator):
                 name = bpy.context.active_object.name
                 if name in DISC_doodads:
                     DISC_doodads.remove(name)
-                    msg = ("Removed Doodad object: {}".format(name))
+                    msg = f"Removed Doodad object: {name}"
             else:
                 DISC_doodads[:] = []
                 msg = "Removed all Doodads"
@@ -644,7 +620,7 @@ class discombobulator_dodads_list(Menu):
         DISC_doodads = context.scene.discombobulator.DISC_doodads
 
         doodle = len(DISC_doodads)
-        layout.label(text="Saved doodads : {}".format(doodle))
+        layout.label(text=f"Saved doodads : {doodle}")
         layout.separator()
         if doodle > 0:
             for name in DISC_doodads:
@@ -842,9 +818,11 @@ class VIEW3D_OT_tools_discombobulate(Operator):
         col = box.column(align=True)
         doodle = len(self.DISC_doodads)
 
-        col.enabled = (True if doodle > 0 else False)
-        col.menu("OBJECT_MT_discombobulator_dodad_list",
-                     text="List of saved Doodads ({})".format(doodle))
+        col.enabled = doodle > 0
+        col.menu(
+            "OBJECT_MT_discombobulator_dodad_list",
+            text=f"List of saved Doodads ({doodle})",
+        )
 
         box = layout.box()
         box.label(text="Materials settings")

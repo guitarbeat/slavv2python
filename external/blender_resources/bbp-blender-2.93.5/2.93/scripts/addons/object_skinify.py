@@ -129,9 +129,11 @@ class Idx_Store(object):
         self.hands_pretty = []
         self.root = []
 
-        if not self.rig_type == Rig_type.LEGACY and \
-                not self.rig_type == Rig_type.HUMAN and \
-                not self.rig_type == Rig_type.PITCHIPOY:
+        if self.rig_type not in [
+            Rig_type.LEGACY,
+            Rig_type.HUMAN,
+            Rig_type.PITCHIPOY,
+        ]:
             return
 
         if self.rig_type == Rig_type.LEGACY:
@@ -140,7 +142,7 @@ class Idx_Store(object):
             self.hands_pretty = [6, 29]
             self.root = [59]
 
-        if self.rig_type == Rig_type.HUMAN or self.rig_type == Rig_type.PITCHIPOY:
+        if self.rig_type in [Rig_type.HUMAN, Rig_type.PITCHIPOY]:
             self.hand_l_merge = [9, 10, 15, 19, 24, 29]
             self.hand_r_merge = [32, 33, 37, 42, 47, 52]
             self.hands_pretty = [8, 31]
@@ -268,19 +270,19 @@ def prepare_ignore_list(rig_type, bones):
     ignore_list = common_ignore_list
 
     if rig_type == Rig_type.HORSE:
-        ignore_list = ignore_list + horse_ignore_list
+        ignore_list += horse_ignore_list
         print("RIDER OF THE APOCALYPSE")
     elif rig_type == Rig_type.SHARK:
-        ignore_list = ignore_list + shark_ignore_list
+        ignore_list += shark_ignore_list
         print("DEADLY JAWS")
     elif rig_type == Rig_type.BIRD:
-        ignore_list = ignore_list + bird_ignore_list
+        ignore_list += bird_ignore_list
         print("WINGS OF LIBERTY")
     elif rig_type == Rig_type.CAT:
-        ignore_list = ignore_list + cat_ignore_list
+        ignore_list += cat_ignore_list
         print("MEOW")
     elif rig_type == Rig_type.BIPED:
-        ignore_list = ignore_list + biped_ignore_list
+        ignore_list += biped_ignore_list
         print("HUMANOID")
     elif rig_type == Rig_type.HUMAN:
         ignore_list = ignore_list + human_ignore_list
@@ -318,7 +320,7 @@ def generate_edges(mesh, shape_object, bones, scale, connect_mesh=False, connect
     verts = []
     edges = []
     idx = 0
-    alternate_scale_idx_list = list()
+    alternate_scale_idx_list = []
 
     rig_type = identify_rig()
     ignore_list = prepare_ignore_list(rig_type, bones)
@@ -364,13 +366,12 @@ def generate_edges(mesh, shape_object, bones, scale, connect_mesh=False, connect
                     continue
                 # connect the upper arm directly with chest omitting shoulders
                 if 'shoulder' in b.parent.name.lower() and connect_mesh is True:
-                    vert1 = b.head
                     vert2 = b.parent.parent.tail
 
                 else:
-                    vert1 = b.head
                     vert2 = b.parent.tail
 
+                vert1 = b.head
                 verts.append(vert1)
                 verts.append(vert2)
                 edges.append([idx, idx + 1])
@@ -391,9 +392,7 @@ def generate_edges(mesh, shape_object, bones, scale, connect_mesh=False, connect
 
         vert1 = b.head
         vert2 = b.tail
-        verts.append(vert1)
-        verts.append(vert2)
-
+        verts.extend((vert1, vert2))
         edges.append([idx, idx + 1])
 
         for a in alternate_scale_list:
@@ -414,12 +413,14 @@ def generate_edges(mesh, shape_object, bones, scale, connect_mesh=False, connect
     return alternate_scale_idx_list, rig_type
 
 
-def generate_mesh(shape_object, size, thickness=0.8, finger_thickness=0.25, sub_level=1,
-                  connect_mesh=False, connect_parents=False, generate_all=False, apply_mod=True,
-                  alternate_scale_idx_list=[], rig_type=0, bones=[]):
+def generate_mesh(shape_object, size, thickness=0.8, finger_thickness=0.25, sub_level=1, connect_mesh=False, connect_parents=False, generate_all=False, apply_mod=True, alternate_scale_idx_list=None, rig_type=0, bones=None):
     """
     This function adds modifiers for generated edges
     """
+    if alternate_scale_idx_list is None:
+        alternate_scale_idx_list = []
+    if bones is None:
+        bones = []
     total_bones_num = bpy.context.selected_pose_bones_from_active_object
     selected_bones_num = len(bones)
 
@@ -483,9 +484,13 @@ def generate_mesh(shape_object, size, thickness=0.8, finger_thickness=0.25, sub_
     idx_store = Idx_Store(rig_type)
 
     # fix rigify and pitchipoy hands topology
-    if connect_mesh and connect_parents and generate_all is False and \
-            (rig_type == Rig_type.LEGACY or rig_type == Rig_type.PITCHIPOY or rig_type == Rig_type.HUMAN) and \
-            selected_bones_num == total_bones_num:
+    if (
+        connect_mesh
+        and connect_parents
+        and generate_all is False
+        and rig_type in [Rig_type.LEGACY, Rig_type.PITCHIPOY, Rig_type.HUMAN]
+        and selected_bones_num == total_bones_num
+    ):
         # thickness will set palm vertex for both hands look pretty
         corrective_thickness = 2.5
         # left hand verts
@@ -572,8 +577,8 @@ def main(context):
     sknfy = scn.skinify
 
     # initialize the mesh object
-    mesh_name = context.selected_objects[0].name + "_mesh"
-    obj_name = context.selected_objects[0].name + "_object"
+    mesh_name = f"{context.selected_objects[0].name}_mesh"
+    obj_name = f"{context.selected_objects[0].name}_object"
     armature_object = context.object
 
     origin = context.object.location
@@ -666,7 +671,7 @@ class BONE_OT_custom_shape(Operator):
             self.report({'WARNING'}, Mesh[1])
             return {'CANCELLED'}
         else:
-            self.report({'INFO'}, Mesh[1].name + " has been created")
+            self.report({'INFO'}, f"{Mesh[1].name} has been created")
 
             return {'FINISHED'}
 

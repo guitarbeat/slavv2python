@@ -121,9 +121,7 @@ def getPresetpaths():
     """Return paths for both local and user preset folders"""
     userDir = os.path.join(bpy.utils.script_path_user(), 'presets', 'operator', 'add_curve_sapling')
 
-    if os.path.isdir(userDir):
-        pass
-    else:
+    if not os.path.isdir(userDir):
         os.makedirs(userDir)
 
     script_file = os.path.realpath(__file__)
@@ -161,8 +159,8 @@ class ExportData(Operator):
         else:
             return {'CANCELLED'}
         """
-        fpath1 = os.path.join(getPresetpaths()[0], filename + '.py')
-        fpath2 = os.path.join(getPresetpaths()[1], filename + '.py')
+        fpath1 = os.path.join(getPresetpaths()[0], f'{filename}.py')
+        fpath2 = os.path.join(getPresetpaths()[1], f'{filename}.py')
 
         if os.path.exists(fpath1):
             # If it exists in built-in presets then report an error
@@ -171,10 +169,8 @@ class ExportData(Operator):
         elif (not os.path.exists(fpath2)) or (os.path.exists(fpath2) and overwrite):
             # if (it does not exist) or (exists and overwrite) then write file
             if data:
-                # If it doesn't exist, create the file with the required data
-                f = open(os.path.join(getPresetpaths()[1], filename + '.py'), 'w')
-                f.write(data)
-                f.close()
+                with open(os.path.join(getPresetpaths()[1], f'{filename}.py'), 'w') as f:
+                    f.write(data)
                 return {'FINISHED'}
             else:
                 return {'CANCELLED'}
@@ -266,10 +262,7 @@ class AddTree(Operator):
         self.do_update = True
 
     def update_leaves(self, context):
-        if self.showLeaves:
-            self.do_update = True
-        else:
-            self.do_update = False
+        self.do_update = bool(self.showLeaves)
 
     def no_update_tree(self, context):
         self.do_update = False
@@ -912,8 +905,7 @@ class AddTree(Operator):
                 try:
                     len(b)
                     data.append((a, b[:]))
-                # Otherwise, it is fine so just add it
-                except:
+                except Exception:
                     data.append((a, b))
             # Create the dict from the list
             data = dict(data)

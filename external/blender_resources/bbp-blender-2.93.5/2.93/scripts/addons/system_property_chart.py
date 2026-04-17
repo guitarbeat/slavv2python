@@ -79,18 +79,15 @@ class SCENE_MT_properties_presets(Menu):
 
 def _property_chart_data_get(self, context):
     # eg. context.active_object
-    obj = eval("context.%s" % self.context_data_path_active)
+    obj = eval(f"context.{self.context_data_path_active}")
 
     if obj is None:
         return None, None
 
     # eg. context.selected_objects[:]
-    selected_objects = eval("context.%s" % self.context_data_path_selected)[:]
+    selected_objects = eval(f"context.{self.context_data_path_selected}")[:]
 
-    if not selected_objects:
-        return None, None
-
-    return obj, selected_objects
+    return (None, None) if not selected_objects else (obj, selected_objects)
 
 
 def _property_chart_draw(self, context):
@@ -241,8 +238,8 @@ def _property_chart_copy(self, context):
     for obj_iter in selected_objects:
         if obj != obj_iter:
             try:
-                exec("obj_iter.%s = obj.%s" % (data_path, data_path))
-            except:
+                exec(f"obj_iter.{data_path} = obj.{data_path}")
+            except Exception:
                 # just in case we need to know what went wrong!
                 import traceback
                 traceback.print_exc()
@@ -290,8 +287,9 @@ def register():
             cls._PROP_STORAGE_ID,
             StringProperty(
                 name="Properties",
-                description=cls._PROP_STORAGE_ID_DESCR + " (separated by spaces)",
-                default=cls._PROP_STORAGE_DEFAULT, maxlen=1024,
+                description=f"{cls._PROP_STORAGE_ID_DESCR} (separated by spaces)",
+                default=cls._PROP_STORAGE_DEFAULT,
+                maxlen=1024,
             ),
         )
 

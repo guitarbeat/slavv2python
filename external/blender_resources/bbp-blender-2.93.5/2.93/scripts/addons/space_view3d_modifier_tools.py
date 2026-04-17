@@ -61,12 +61,10 @@ class ApplyAllModifiers(Operator):
                                         contx,
                                         modifier=contx['modifier'].name
                                         )
-                except:
+                except Exception:
                     obj_name = getattr(obj, "name", "NO NAME")
                     collect_names.append(obj_name)
                     message_b = True
-                    pass
-
         if is_select:
             if is_mod:
                 message_a = "Applying modifiers on all Selected Objects"
@@ -80,9 +78,14 @@ class ApplyAllModifiers(Operator):
         message_obj = (",".join(collect_names) if collect_names and
                        len(collect_names) < 8 else "some objects (Check System Console)")
 
-        self.report({"INFO"},
-                    (message_a if not message_b else
-                    "Applying modifiers failed for {}".format(message_obj)))
+        self.report(
+            {"INFO"},
+            (
+                message_a
+                if not message_b
+                else f"Applying modifiers failed for {message_obj}"
+            ),
+        )
 
         if (collect_names and message_obj == "some objects (Check System Console)"):
             print("\n[Modifier Tools]\n\nApplying failed on:"
@@ -145,7 +148,7 @@ class ToggleApplyModifiersView(Operator):
 
         # check if the active object has only one non exposed modifier as the logic will fail
         if len(context.active_object.modifiers) == 1 and \
-                context.active_object.modifiers[0].type in skip_type:
+                    context.active_object.modifiers[0].type in skip_type:
 
             for obj in context.selected_objects:
                 for mod in obj.modifiers:
@@ -187,11 +190,16 @@ class ToggleApplyModifiersView(Operator):
 
                 mod.show_viewport = is_apply
 
-        message_a = "{} modifiers in the 3D View".format("Displaying" if is_apply else "Hiding")
+        message_a = (
+            f'{"Displaying" if is_apply else "Hiding"} modifiers in the 3D View'
+        )
 
         if skipped:
-            message_a = "{}, {}".format(message_a, "skipping: " + ", ".join(skipped)) if \
-                        count_modifiers > 0 else "No change of Modifiers' Visibility, all skipped"
+            message_a = (
+                f'{message_a}, {"skipping: " + ", ".join(skipped)}'
+                if count_modifiers > 0
+                else "No change of Modifiers' Visibility, all skipped"
+            )
 
         self.report({"INFO"}, message_a)
 
@@ -217,9 +225,7 @@ class ToggleAllShowExpanded(Operator):
                     vs += 1
                 else:
                     vs -= 1
-            is_close = False
-            if (0 < vs):
-                is_close = True
+            is_close = vs > 0
             for mod in obj.modifiers:
                 mod.show_expanded = not is_close
         else:

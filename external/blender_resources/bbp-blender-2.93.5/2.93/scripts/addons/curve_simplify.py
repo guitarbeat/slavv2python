@@ -53,7 +53,7 @@ def error_handlers(self, op_name, errors, reports="ERROR"):
                     reports + ": some operations could not be performed "
                     "(See Console for more info)")
 
-    print("\n[Simplify Curves]\nOperator: {}\nErrors: {}\n".format(op_name, errors))
+    print(f"\n[Simplify Curves]\nOperator: {op_name}\nErrors: {errors}\n")
 
 
 # Check for curve
@@ -62,12 +62,10 @@ def error_handlers(self, op_name, errors, reports="ERROR"):
 
 # get SplineVertIndices to keep
 def simplypoly(splineVerts, options):
-    # main vars
-    newVerts = []           # list of vertindices to keep
     points = splineVerts    # list of 3dVectors
     pointCurva = []         # table with curvatures
     curvatures = []         # averaged curvatures per vert
-    for p in points:
+    for _ in points:
         pointCurva.append([])
     order = options[3]      # order of sliding beziercurves
     k_thresh = options[2]   # curvature threshold
@@ -95,9 +93,7 @@ def simplypoly(splineVerts, options):
         distances.append(dist)
     distances.append(0.0)  # last vert is always kept
 
-    # generate list of vert indices to keep
-    # tested against averaged curvatures and distances of neighbour verts
-    newVerts.append(0)  # first vert is always kept
+    newVerts = [0]
     for i, curv in enumerate(curvatures):
         if (curv >= k_thresh * 0.01 or distances[i] >= dis_error * 0.1):
             newVerts.append(i)
@@ -125,12 +121,10 @@ def getDerivative(verts, t, nth):
     QVerts = []
 
     if nth:
-        for i in range(nth):
+        for _ in range(nth):
             if QVerts:
                 verts = QVerts
-            derivVerts = []
-            for i in range(len(verts) - 1):
-                derivVerts.append(verts[i + 1] - verts[i])
+            derivVerts = [verts[i + 1] - verts[i] for i in range(len(verts) - 1)]
             QVerts = derivVerts
     else:
         QVerts = verts
@@ -142,18 +136,14 @@ def getDerivative(verts, t, nth):
 
     for i, vert in enumerate(QVerts):
         point += binom(order, i) * pow(t, i) * pow(1 - t, order - i) * vert
-    deriv = point
-
-    return deriv
+    return point
 
 
 # get curvature from first, second derivative
 def getCurvature(deriv1, deriv2):
     if deriv1.length == 0:  # in case of points in straight line
-        curvature = 0
-        return curvature
-    curvature = (deriv1.cross(deriv2)).length / pow(deriv1.length, 3)
-    return curvature
+        return 0
+    return (deriv1.cross(deriv2)).length / pow(deriv1.length, 3)
 
 
 # ### Ramer-Douglas-Peucker algorithm ###
@@ -163,14 +153,11 @@ def altitude(point1, point2, pointn):
     edge1 = point2 - point1
     edge2 = pointn - point1
     if edge2.length == 0:
-        altitude = 0
-        return altitude
+        return 0
     if edge1.length == 0:
-        altitude = edge2.length
-        return altitude
+        return edge2.length
     alpha = edge1.angle(edge2)
-    altitude = sin(alpha) * edge2.length
-    return altitude
+    return sin(alpha) * edge2.length
 
 
 # iterate through verts
@@ -187,9 +174,7 @@ def iterate(points, newVerts, error):
                     bigVert = i + 1 + newVerts[newIndex]
         if bigVert:
             new.append(bigVert)
-    if new == []:
-        return False
-    return new
+    return False if not new else new
 
 
 # get SplineVertIndices to keep
@@ -262,11 +247,7 @@ def main(context, obj, options, curve_dimension):
         # test if spline is a long enough
         if len(spline.points) >= 3 or keepShort:
             # check what type of spline to create
-            if output == 'INPUT':
-                splineType = spline.type
-            else:
-                splineType = output
-
+            splineType = spline.type if output == 'INPUT' else output
             # get vec3 list to simplify
             if spline.type == 'BEZIER':  # get bezierverts
                 splineVerts = [splineVert.co.copy()
@@ -277,11 +258,11 @@ def main(context, obj, options, curve_dimension):
                                for splineVert in spline.points.values()]
 
             # simplify spline according to mode
-            if mode == 'DISTANCE':
-                newVerts = simplify_RDP(splineVerts, options)
-
             if mode == 'CURVATURE':
                 newVerts = simplypoly(splineVerts, options)
+
+            elif mode == 'DISTANCE':
+                newVerts = simplify_RDP(splineVerts, options)
 
             # convert indices into vectors3D
             newPoints = vertsToPoints(newVerts, splineVerts, splineType)
@@ -331,11 +312,7 @@ def getFcurveData(obj):
 
 
 def selectedfcurves(obj):
-    fcurves_sel = []
-    for i, fc in enumerate(obj.animation_data.action.fcurves):
-        if fc.select:
-            fcurves_sel.append(fc)
-    return fcurves_sel
+    return [fc for fc in obj.animation_data.action.fcurves if fc.select]
 
 
 # fCurves Main
@@ -351,19 +328,13 @@ def fcurves_simplify(context, obj, options, fcurves):
         # test if fcurve is long enough
         if len(fcurve) >= 3:
             # simplify spline according to mode
-            if mode == 'DISTANCE':
-                newVerts = simplify_RDP(fcurve, options)
-
             if mode == 'CURVATURE':
                 newVerts = simplypoly(fcurve, options)
 
-            # convert indices into vectors3D
-            newPoints = []
+            elif mode == 'DISTANCE':
+                newVerts = simplify_RDP(fcurve, options)
 
-            # this is different from the main() function for normal curves, different api...
-            for v in newVerts:
-                newPoints.append(fcurve[v])
-
+            newPoints = [fcurve[v] for v in newVerts]
             # remove all points from curve first
             for i in range(len(fcurve) - 1, 0, -1):
                 fcurve_sel[fcurve_i].keyframe_points.remove(fcurve_sel[fcurve_i].keyframe_points[i])
@@ -450,10 +421,8 @@ class GRAPH_OT_simplify(Operator):
         obj = context.active_object
         fcurves = False
         if obj:
-            animdata = obj.animation_data
-            if animdata:
-                act = animdata.action
-                if act:
+            if animdata := obj.animation_data:
+                if act := animdata.action:
                     fcurves = act.fcurves
         return (obj and fcurves)
 

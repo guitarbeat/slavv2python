@@ -59,7 +59,7 @@ def isCanvas(_obj):
     try:
         if _obj["BoolToolRoot"]:
             return True
-    except:
+    except Exception:
         return False
 
 
@@ -67,7 +67,7 @@ def isBrush(_obj):
     try:
         if _obj["BoolToolBrush"]:
             return True
-    except:
+    except Exception:
         return False
 
 
@@ -114,10 +114,7 @@ def isFTransf():
     preferences = bpy.context.preferences
     addons = preferences.addons
     addon_prefs = addons[__name__].preferences
-    if addon_prefs.fast_transform:
-        return True
-    else:
-        return False
+    return bool(addon_prefs.fast_transform)
 
 
 def ConvertToMesh(obj):
@@ -133,20 +130,16 @@ def Operation(context, _operation):
     useWire = prefs.use_wire
 
     for selObj in context.selected_objects:
-        if (
-            selObj != context.active_object and
-            (selObj.type == "MESH" or selObj.type == "CURVE")
-        ):
+        if selObj != context.active_object and selObj.type in [
+            "MESH",
+            "CURVE",
+        ]:
             if selObj.type == "CURVE":
                 ConvertToMesh(selObj)
             actObj = context.active_object
             selObj.hide_render = True
 
-            if useWire:
-                selObj.display_type = "WIRE"
-            else:
-                selObj.display_type = "BOUNDS"
-
+            selObj.display_type = "WIRE" if useWire else "BOUNDS"
             cycles_visibility_set(selObj, value=False)
 
             if _operation == "SLICE":
@@ -160,19 +153,15 @@ def Operation(context, _operation):
                 if is_local_view:
                     clone.local_view_set(space_data, True)
 
-                sliceMod = clone.modifiers.new("BTool_" + selObj.name, "BOOLEAN")  # add mod to clone obj
+                sliceMod = clone.modifiers.new(f"BTool_{selObj.name}", "BOOLEAN")
                 sliceMod.object = selObj
                 sliceMod.operation = "DIFFERENCE"
                 clone["BoolToolRoot"] = True
 
-            newMod = actObj.modifiers.new("BTool_" + selObj.name, "BOOLEAN")
+            newMod = actObj.modifiers.new(f"BTool_{selObj.name}", "BOOLEAN")
             newMod.object = selObj
 
-            if _operation == "SLICE":
-                newMod.operation = "INTERSECT"
-            else:
-                newMod.operation = _operation
-
+            newMod.operation = "INTERSECT" if _operation == "SLICE" else _operation
             actObj["BoolToolRoot"] = True
             selObj["BoolToolBrush"] = _operation
             selObj["BoolTool_FTransform"] = "False"
@@ -259,11 +248,10 @@ def EnableThisBrush(context, set):
                     else:
                         mod.show_viewport = True
                         mod.show_render = True
+                elif set == "True":
+                    mod.show_viewport = True
                 else:
-                    if set == "True":
-                        mod.show_viewport = True
-                    else:
-                        mod.show_viewport = False
+                    mod.show_viewport = False
                 return
 
 
@@ -288,7 +276,7 @@ def ApplyAll(context, list):
                     objDeleteList.append(mod.object)
                 try:
                     bpy.ops.object.modifier_apply(modifier=mod.name)
-                except:  # if fails the means it is multiuser data
+                except Exception:
                     context.active_object.data = context.active_object.data.copy()  # so just make data unique
                     bpy.ops.object.modifier_apply(modifier=mod.name)
             del selObj["BoolToolRoot"]
@@ -311,12 +299,12 @@ def ApplyThisBrush(context, brush):
     for obj in context.scene.objects:
         if isCanvas(obj):
             for mod in obj.modifiers:
-                if "BTool_" + brush.name in mod.name:
+                if f"BTool_{brush.name}" in mod.name:
                     # Apply This Brush
                     context.view_layer.objects.active = obj
                     try:
                         bpy.ops.object.modifier_apply(modifier=mod.name)
-                    except:  # if fails the means it is multiuser data
+                    except Exception:
                         context.active_object.data = context.active_object.data.copy()  # so just make data unique
                         bpy.ops.object.modifier_apply(modifier=mod.name)
                     bpy.ops.object.select_all(action="TOGGLE")
@@ -436,16 +424,12 @@ class BTool_FastTransform(Operator):
     def modal(self, context, event):
         self.count += 1
         actObj = bpy.context.active_object
-        useWire = bpy.context.preferences.addons[__name__].preferences.use_wire
         if self.count == 1:
 
+            useWire = bpy.context.preferences.addons[__name__].preferences.use_wire
             if isBrush(actObj) and actObj["BoolTool_FTransform"] == "True":
                 EnableThisBrush(bpy.context, "False")
-                if useWire:
-                    actObj.display_type = "WIRE"
-                else:
-                    actObj.display_type = "BOUNDS"
-
+                actObj.display_type = "WIRE" if useWire else "BOUNDS"
             if self.operator == "Translate":
                 bpy.ops.transform.translate("INVOKE_DEFAULT")
             if self.operator == "Rotate":
@@ -801,10 +785,7 @@ class BTool_BrushToMesh(Operator):
     @classmethod
     def poll(cls, context):
 
-        if isBrush(context.active_object):
-            return True
-        else:
-            return False
+        return bool(isBrush(context.active_object))
 
     def execute(self, context):
         ApplyThisBrush(context, bpy.context.active_object)
@@ -950,13 +931,7 @@ class VIEW3D_PT_booltool_config(Panel):
 
             row.label(text="BRUSH", icon=icon)
 
-            if actObj["BoolTool_FTransform"] == "True":
-                icon = "PMARKER_ACT"
-            else:
-                icon = "PMARKER"
-            if isFTransf():
-                pass
-
+            icon = "PMARKER_ACT" if actObj["BoolTool_FTransform"] == "True" else "PMARKER"
             if isFTransf():
                 row = layout.row(align=True)
                 row.operator(BTool_EnableFTransform.bl_idname, text="Fast Vis", icon=icon)
@@ -991,10 +966,7 @@ class VIEW3D_PT_booltool_bviewer(Panel):
     def poll(cls, context):
         actObj = bpy.context.active_object
 
-        if isCanvas(actObj):
-            return True
-        else:
-            return False
+        return bool(isCanvas(actObj))
 
     def draw(self, context):
 
@@ -1094,13 +1066,11 @@ def update_panels(self, context):
 
     except Exception as e:
         message = "Bool Tool: Updating Panel locations has failed"
-        print("\n[{}]\n{}\n\nError:\n{}".format(__name__, message, e))
+        print(f"\n[{__name__}]\n{message}\n\nError:\n{e}")
 
 
 def icon_tria(prop):
-    if prop:
-        return "TRIA_DOWN"
-    return "TRIA_RIGHT"
+    return "TRIA_DOWN" if prop else "TRIA_RIGHT"
 
 
 class PREFS_BoolTool_Props(AddonPreferences):

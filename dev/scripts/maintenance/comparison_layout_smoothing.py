@@ -98,9 +98,11 @@ def find_doc_references_to_paths(repo_root: Path, paths: list[str]) -> list[dict
             content = doc_path.read_text(encoding="utf-8")
         except OSError:
             continue
-        for needle in normalized_paths:
-            if needle in content.replace("\\", "/"):
-                hits.append({"file": str(doc_path), "path": needle})
+        hits.extend(
+            {"file": str(doc_path), "path": needle}
+            for needle in normalized_paths
+            if needle in content.replace("\\", "/")
+        )
     return hits
 
 
@@ -132,22 +134,23 @@ def _pointer_candidates(run_entries: list[dict[str, Any]]) -> dict[str, str]:
     if completed:
         pointers["latest_completed.txt"] = completed[0]["target_relative_path"]
 
-    canonical = [
+    if canonical := [
         entry
         for entry in completed
         if entry["status"]["quality_gate"] in {"pass", "partial"}
         and entry["status"]["retention"] == "keep"
-    ]
-    if canonical:
+    ]:
         canonical.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
         pointers["canonical_acceptance.txt"] = canonical[0]["target_relative_path"]
     elif completed:
         pointers["canonical_acceptance.txt"] = completed[0]["target_relative_path"]
 
-    saved_batch = [
-        entry for entry in completed if "saved-batch" in entry["target_relative_path"] or "saved" in entry["slug"]
-    ]
-    if saved_batch:
+    if saved_batch := [
+        entry
+        for entry in completed
+        if "saved-batch" in entry["target_relative_path"]
+        or "saved" in entry["slug"]
+    ]:
         saved_batch.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
         pointers["best_saved_batch.txt"] = saved_batch[0]["target_relative_path"]
     elif completed:
@@ -208,7 +211,7 @@ def build_migration_report(comparisons_root: Path, repo_root: Path | None = None
         and entry["status"]["retention"] == "eligible_for_cleanup"
     ]
 
-    report = {
+    return {
         "comparisons_root": str(comparisons_root),
         "mode": "dry-run",
         "runs": run_entries,
@@ -217,7 +220,6 @@ def build_migration_report(comparisons_root: Path, repo_root: Path | None = None
         "stale_doc_references": stale_references,
         "cleanup_candidates": cleanup_candidates,
     }
-    return report
 
 
 def _remove_empty_parents(start: Path, stop_at: Path) -> list[str]:
@@ -264,7 +266,6 @@ def apply_migration_report(
                         "reason": "source missing, target already exists",
                     }
                 )
-                continue
             else:
                 skipped_moves.append(
                     {
@@ -273,7 +274,7 @@ def apply_migration_report(
                         "reason": "source missing and target absent",
                     }
                 )
-                continue
+            continue
         if run.get("action") == "move" and source_path.resolve() != target_path.resolve():
             target_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(source_path), str(target_path))

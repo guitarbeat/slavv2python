@@ -45,20 +45,21 @@ settings = {
 
 @persistent
 def linked_file_check(context: bpy.context):
-    if settings["linked_file"] != "":
-        if os.path.samefile(settings["linked_file"], bpy.data.filepath):
-            logger.info("Editing a linked library.")
-            bpy.ops.object.select_all(action='DESELECT')
-            for ob_name in settings["linked_objects"]:
-                bpy.data.objects[ob_name].select_set(True) # XXX Assumes selected object is in the active scene
-            if len(settings["linked_objects"]) == 1:
-                context.view_layer.objects.active = bpy.data.objects[settings["linked_objects"][0]]
-        else:
-            # For some reason, the linked editing session ended
-            # (failed to find a file or opened a different file
-            # before returning to the originating .blend)
-            settings["original_file"] = ""
-            settings["linked_file"] = ""
+    if settings["linked_file"] == "":
+        return
+    if os.path.samefile(settings["linked_file"], bpy.data.filepath):
+        logger.info("Editing a linked library.")
+        bpy.ops.object.select_all(action='DESELECT')
+        for ob_name in settings["linked_objects"]:
+            bpy.data.objects[ob_name].select_set(True) # XXX Assumes selected object is in the active scene
+        if len(settings["linked_objects"]) == 1:
+            context.view_layer.objects.active = bpy.data.objects[settings["linked_objects"][0]]
+    else:
+        # For some reason, the linked editing session ended
+        # (failed to find a file or opened a different file
+        # before returning to the originating .blend)
+        settings["original_file"] = ""
+        settings["linked_file"] = ""
 
 
 class OBJECT_OT_EditLinked(bpy.types.Operator):
@@ -99,7 +100,7 @@ class OBJECT_OT_EditLinked(bpy.types.Operator):
             settings["linked_objects"].append(target.name)
 
         if targetpath:
-            logger.debug(target.name + " is linked to " + targetpath)
+            logger.debug(f"{target.name} is linked to {targetpath}")
 
             if self.use_autosave:
                 if not bpy.data.filepath:
@@ -115,7 +116,7 @@ class OBJECT_OT_EditLinked(bpy.types.Operator):
                 import subprocess
                 try:
                     subprocess.Popen([bpy.app.binary_path, settings["linked_file"]])
-                except:
+                except Exception:
                     logger.error("Error on the new Blender instance")
                     import traceback
                     logger.error(traceback.print_exc())
@@ -124,8 +125,8 @@ class OBJECT_OT_EditLinked(bpy.types.Operator):
 
             logger.info("Opened linked file!")
         else:
-            self.report({'WARNING'}, target.name + " is not linked")
-            logger.warning(target.name + " is not linked")
+            self.report({'WARNING'}, f"{target.name} is not linked")
+            logger.warning(f"{target.name} is not linked")
 
         return {'FINISHED'}
 
@@ -195,8 +196,11 @@ class VIEW3D_PT_PanelLinkedEdit(bpy.types.Panel):
                 context.active_object.library is not None):
 
             if (target is not None):
-                props = layout.operator("object.edit_linked", icon="LINK_BLEND",
-                                        text="Edit Library: %s" % target.name)
+                props = layout.operator(
+                    "object.edit_linked",
+                    icon="LINK_BLEND",
+                    text=f"Edit Library: {target.name}",
+                )
             else:
                 props = layout.operator("object.edit_linked", icon="LINK_BLEND",
                                         text="Edit Library: %s" % context.active_object.name)
