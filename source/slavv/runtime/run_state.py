@@ -85,10 +85,10 @@ def fingerprint_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
     hasher = hashlib.sha256()
     with open(path, "rb") as handle:
         while True:
-            chunk = handle.read(chunk_size)
-            if not chunk:
+            if chunk := handle.read(chunk_size):
+                hasher.update(chunk)
+            else:
                 break
-            hasher.update(chunk)
     return hasher.hexdigest()
 
 
@@ -316,7 +316,7 @@ def load_legacy_run_snapshot(
 def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[str, StageSnapshot]:
     stages = {name: StageSnapshot(name=name) for name in TRACKED_RUN_STAGES}
     if existing:
-        stages.update(existing)
+        stages |= existing
         for name in TRACKED_RUN_STAGES:
             stages.setdefault(name, StageSnapshot(name=name))
     return stages
@@ -938,8 +938,7 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
     ]
     if snapshot.eta_seconds is not None:
         lines.append(f"ETA: {snapshot.eta_seconds:.1f}s")
-    lines.append("")
-    lines.append("Stages:")
+    lines.extend(("", "Stages:"))
     for stage_name in PIPELINE_STAGES:
         stage = snapshot.stages.get(stage_name, StageSnapshot(name=stage_name))
         parts = [f"  - {stage_name}: {stage.status}", f"{stage.progress * 100:.1f}%"]
@@ -953,8 +952,7 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
             parts.append(stage.detail)
         lines.append(" | ".join(parts))
     if snapshot.optional_tasks:
-        lines.append("")
-        lines.append("Optional tasks:")
+        lines.extend(("", "Optional tasks:"))
         for name, task in sorted(snapshot.optional_tasks.items()):
             parts = [f"  - {name}: {task.status}", f"{task.progress * 100:.1f}%"]
             if task.detail:
@@ -963,8 +961,7 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
     matlab_status_task = snapshot.optional_tasks.get("matlab_status")
     if matlab_status_task is not None:
         artifacts = matlab_status_task.artifacts
-        lines.append("")
-        lines.append("MATLAB resume:")
+        lines.extend(("", "MATLAB resume:"))
         lines.append(f"  Batch folder: {artifacts.get('batch_folder') or '(none)'}")
         lines.append(
             "  Resume mode: "
@@ -974,19 +971,20 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
         )
         if artifacts.get("python_force_rerun_from"):
             lines.append(f"  Python rerun from: {artifacts.get('python_force_rerun_from')}")
-        elif snapshot.optional_tasks.get("python_pipeline") is not None:
-            python_force_rerun_from = snapshot.optional_tasks["python_pipeline"].artifacts.get(
+        elif snapshot.optional_tasks.get("python_pipeline") is not None and (
+            python_force_rerun_from := snapshot.optional_tasks["python_pipeline"].artifacts.get(
                 "force_rerun_from", ""
             )
-            if python_force_rerun_from:
-                lines.append(f"  Python rerun from: {python_force_rerun_from}")
+        ):
+            lines.append(f"  Python rerun from: {python_force_rerun_from}")
         if artifacts.get("rerun_prediction"):
             lines.append(f"  Prediction: {artifacts.get('rerun_prediction')}")
         if artifacts.get("failure_summary_file"):
             lines.append(f"  Failure summary file: {artifacts.get('failure_summary_file')}")
     if snapshot.errors:
-        lines.append("")
-        lines.append("Errors:")
-        for error in snapshot.errors[-5:]:
-            lines.append(f"  - {error.get('stage', 'run')}: {error.get('message', '')}")
+        lines.extend(("", "Errors:"))
+        lines.extend(
+            f"  - {error.get('stage', 'run')}: {error.get('message', '')}"
+            for error in snapshot.errors[-5:]
+        )
     return lines

@@ -144,7 +144,7 @@ def _remove_cycles(
         while parent[vertex] != vertex:
             parent[vertex] = parent[parent[vertex]]
             vertex = int(parent[vertex])
-        return int(vertex)
+        return vertex
 
     for v0, v1 in list(graph_edges.keys()):
         root0 = find(v0)

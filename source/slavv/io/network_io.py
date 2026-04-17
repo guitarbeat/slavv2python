@@ -49,9 +49,7 @@ def _normalize_vertices_array(vertices: Any) -> np.ndarray:
 def _normalize_edges_array(edges: Any) -> np.ndarray:
     """Return edge connections in stable ``(N, 2)`` form."""
     array = np.asarray(edges, dtype=int)
-    if array.size == 0:
-        return np.empty((0, 2), dtype=int)
-    return np.atleast_2d(array)
+    return np.empty((0, 2), dtype=int) if array.size == 0 else np.atleast_2d(array)
 
 
 def _build_vertex_id_map(vertex_ids: list[int]) -> dict[int, int]:
@@ -215,18 +213,18 @@ def load_network_from_vmv(path: Union[str, Path]) -> Network:
             if line == "[EDGES]":
                 section = "edges"
                 continue
-            if section == "vertices":
-                parts = line.split()
-                if len(parts) >= 6:
-                    _, y, x, z, radius, *_ = parts
-                    positions.append([float(y), float(x), float(z)])
-                    radii.append(float(radius))
-            elif section == "edges":
+            if section == "edges":
                 parts = line.split()
                 if len(parts) >= 3:
                     _, start, end = parts[:3]
                     edges_list.append([int(start), int(end)])
 
+            elif section == "vertices":
+                parts = line.split()
+                if len(parts) >= 6:
+                    _, y, x, z, radius, *_ = parts
+                    positions.append([float(y), float(x), float(z)])
+                    radii.append(float(radius))
     vertices = _normalize_vertices_array(positions)
     edges = _normalize_edges_array(edges_list)
     radii_arr = np.asarray(radii, dtype=float) if radii else None
@@ -336,9 +334,8 @@ def _indent_xml(elem: StdET.Element, level: int = 0) -> None:
             _indent_xml(subelem, level + 1)
         if not subelem.tail or not subelem.tail.strip():
             subelem.tail = i
-    else:
-        if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
+    elif level and (not elem.tail or not elem.tail.strip()):
+        elem.tail = i
 
 
 def save_network_to_casx(network: Network, path: Union[str, Path]) -> Path:

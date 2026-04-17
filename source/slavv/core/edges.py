@@ -305,6 +305,7 @@ def extract_edges_resumable(
         if vertex_idx in completed:
             continue
 
+        unit_trace_metadata_v = []
         if use_frontier_tracer:
             frontier_payload = _trace_origin_edges_matlab_frontier(
                 energy,
@@ -323,7 +324,6 @@ def extract_edges_resumable(
             unit_energy_traces = cast("list[np.ndarray]", frontier_payload["energy_traces"])
             unit_scale_traces = cast("list[np.ndarray]", frontier_payload["scale_traces"])
             unit_diagnostics = cast("dict[str, Any]", frontier_payload["diagnostics"])
-            unit_trace_metadata_v = []
             frontier_count = len(unit_connections)
             if frontier_count > 0:
                 frontier_origin_counts[vertex_idx] = frontier_count
@@ -333,7 +333,6 @@ def extract_edges_resumable(
             unit_metrics = []
             unit_energy_traces = []
             unit_scale_traces = []
-            unit_trace_metadata_v = []
             start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
             step_size = start_radius * step_size_ratio
             max_length = start_radius * max_length_ratio

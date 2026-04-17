@@ -27,9 +27,9 @@ class DrewsCurator:
         max_tortuosity: float = 3.5,
         max_endpoint_gap: float = 5.0,
     ):
-        self.min_length_radius_ratio = float(min_length_radius_ratio)
-        self.max_tortuosity = float(max_tortuosity)
-        self.max_endpoint_gap = float(max_endpoint_gap)
+        self.min_length_radius_ratio = min_length_radius_ratio
+        self.max_tortuosity = max_tortuosity
+        self.max_endpoint_gap = max_endpoint_gap
 
     def curate(
         self,
@@ -73,11 +73,11 @@ class DrewsCurator:
             avg_radius = 0.0
             if i < len(connections):
                 start_idx, end_idx = connections[i]
-                endpoint_radii: list[float] = []
-                for vidx in (start_idx, end_idx):
-                    if isinstance(vidx, (int, np.integer)) and 0 <= int(vidx) < len(vertex_radii):
-                        endpoint_radii.append(float(vertex_radii[int(vidx)]))
-                if endpoint_radii:
+                if endpoint_radii := [
+                    float(vertex_radii[int(vidx)])
+                    for vidx in (start_idx, end_idx)
+                    if isinstance(vidx, (int, np.integer)) and 0 <= int(vidx) < len(vertex_radii)
+                ]:
                     avg_radius = float(np.mean(endpoint_radii))
             if avg_radius <= 0:
                 avg_radius = 1.0

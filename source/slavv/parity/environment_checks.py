@@ -58,7 +58,7 @@ class Validator:
         return False
 
     def check_directory_exists(self, dir_path: Path, description: str) -> bool:
-        if dir_path.exists() and dir_path.is_dir():
+        if dir_path.is_dir():
             self.add_pass(f"{description}: {dir_path}")
             return True
         self.add_error(f"{description} not found: {dir_path}")

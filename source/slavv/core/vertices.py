@@ -26,7 +26,7 @@ BoolArray: TypeAlias = "np.ndarray"
 
 def _vertex_window_apothem(space_strel_apothem: int) -> int:
     """Normalize the MATLAB vertex neighborhood radius in voxel units."""
-    return max(int(space_strel_apothem), 0)
+    return max(space_strel_apothem, 0)
 
 
 def _vertex_neighborhood_slices(
@@ -204,7 +204,7 @@ def _chunk_lattice_dimensions(
     max_voxels_per_node: float,
 ) -> tuple[int, int, int]:
     """Approximate MATLAB's 3D chunk lattice sizing."""
-    target_voxels = max(float(max_voxels_per_node), 1.0)
+    target_voxels = max(max_voxels_per_node, 1.0)
     target_char_len = target_voxels ** (1.0 / 3.0)
     strel = np.asarray(strel_size_pixels, dtype=np.float64)
     aspect_ratio = strel / max(np.prod(strel) ** (1.0 / 3.0), 1e-12)

@@ -226,8 +226,7 @@ def _write_comparison_quick_view(
         json.dump(quick_view, handle, indent=2, sort_keys=True)
 
     tsv_lines = ["metric\tvalue"]
-    for key, value in sorted(quick_view.items()):
-        tsv_lines.append(f"{key}\t{value}")
+    tsv_lines.extend(f"{key}\t{value}" for key, value in sorted(quick_view.items()))
     quick_tsv.write_text("\n".join(tsv_lines) + "\n", encoding="utf-8")
 
     return quick_json, quick_tsv
@@ -290,12 +289,11 @@ def _surface_shared_neighborhood_diagnostics(
         )
         return
 
-    recommendation = recommend_diagnostics_if_needed(
+    if recommendation := recommend_diagnostics_if_needed(
         run_root=run_root,
         edges_parity_ok=edges_parity_ok,
         network_gate_parity_ok=network_gate_parity_ok,
-    )
-    if recommendation:
+    ):
         print("\nTriage Recommendation")
         print(recommendation)
 
@@ -560,7 +558,7 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
         python_force_rerun_from = requested_rerun_from
 
     try:
-        params_for_python.update(load_matlab_batch_params(batch_folder))
+        params_for_python |= load_matlab_batch_params(batch_folder)
     except Exception as exc:
         if comparison_context is not None:
             comparison_context.update_optional_task(
@@ -831,8 +829,7 @@ def discover_matlab_artifacts(output_dir: str | Path) -> dict[str, Any]:
     vectors_dir = batch_folder / "vectors"
     if vectors_dir.exists():
         artifacts["vectors_dir"] = str(vectors_dir)
-        network_files = sorted(vectors_dir.glob("network_*.mat"))
-        if network_files:
+        if network_files := sorted(vectors_dir.glob("network_*.mat")):
             artifacts["network_mat"] = str(network_files[-1])
 
     return artifacts
@@ -1094,7 +1091,7 @@ def run_matlab_vectorization(
             "params_file": params_file or "",
             "log_file": str(log_file),
         }
-        matlab_results.update(artifacts)
+        matlab_results |= artifacts
         return matlab_results
 
     if returncode != 0:
@@ -1116,7 +1113,7 @@ def run_matlab_vectorization(
             "params_file": params_file or "",
             "log_file": str(log_file),
         }
-        matlab_results.update(artifacts)
+        matlab_results |= artifacts
         return matlab_results
 
     print(f"\nMATLAB execution completed in {elapsed_time:.2f} seconds")
@@ -1137,8 +1134,7 @@ def run_matlab_vectorization(
         "system_info": system_info,
         "log_file": str(log_file),
     }
-    matlab_results.update(artifacts)
-    return matlab_results
+    return matlab_results | artifacts
 
 
 def run_python_vectorization(
@@ -1667,7 +1663,7 @@ def orchestrate_comparison(
                 if set(import_stages).issubset(imported_stages):
                     python_force_rerun_from = requested_python_rerun_from
                 try:
-                    params_for_python.update(load_matlab_batch_params(batch_folder))
+                    params_for_python |= load_matlab_batch_params(batch_folder)
                 except Exception as exc:
                     comparison_context.update_optional_task(
                         "matlab_import",
@@ -2087,9 +2083,7 @@ def _load_python_results_from_source(
             except Exception as e:
                 result_payload["success"] = False
                 source_errors.append(f"export_json error: {e}")
-                continue
-
-        if source_name == "network-json-only":
+        elif source_name == "network-json-only":
             network_json_paths = glob.glob(str(python_root / "network.json"))
             if not network_json_paths:
                 source_errors.append("network_json unavailable")
@@ -2133,8 +2127,6 @@ def _load_python_results_from_source(
             except Exception as e:
                 result_payload["success"] = False
                 source_errors.append(f"network_json error: {e}")
-                continue
-
     result_payload["success"] = False
     result_payload["error"] = (
         "; ".join(source_errors) if source_errors else "No result files found."
@@ -2272,11 +2264,9 @@ def run_standalone_comparison(
     # Find batch folder
     matlab_layout = resolve_run_layout(matlab_dir)
     matlab_root = matlab_layout["matlab_dir"]
-    batch_folders = [
+    if batch_folders := [
         d for d in os.listdir(matlab_root) if (matlab_root / d).is_dir() and d.startswith("batch_")
-    ]
-
-    if batch_folders:
+    ]:
         batch_folder = str(matlab_root / sorted(batch_folders)[-1])
         matlab_results["batch_folder"] = batch_folder
         print(f"Found MATLAB batch folder: {batch_folder}")

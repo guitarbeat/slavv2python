@@ -115,7 +115,7 @@ def parse_registration_file(path: Union[str, Path]) -> tuple[np.ndarray, np.ndar
     num_match = re.search(r"num\s*=\s*(\d+)", content)
     if not num_match:
         raise ValueError("Could not find 'num =' in file")
-    num_images = int(num_match.group(1))
+    num_images = int(num_match[1])
 
     matches = re.findall(r"\(([^)]+)\)", content)
     coords = []

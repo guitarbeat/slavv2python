@@ -366,9 +366,12 @@ def _clean_edges_orphans_python(
                 continue
             if edge_locations.size > 2:
                 interior.update(int(value) for value in edge_locations[1:-1].tolist())
-            exterior_locations.append((edge_index, int(edge_locations[0])))
-            exterior_locations.append((edge_index, int(edge_locations[-1])))
-
+            exterior_locations.extend(
+                (
+                    (edge_index, int(edge_locations[0])),
+                    (edge_index, int(edge_locations[-1])),
+                )
+            )
         removable: set[int] = set()
         allowed = interior | vertex_locations
         for edge_index, location in exterior_locations:
@@ -479,13 +482,13 @@ def _choose_edges_matlab_style(
 
     def vertex_offsets(scale: int) -> np.ndarray:
         if scale not in vertex_offset_cache:
-            radii = sigma_per_influence_vertices * lumen_radius_pixels_axes[int(scale)]
+            radii = sigma_per_influence_vertices * lumen_radius_pixels_axes[scale]
             vertex_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return vertex_offset_cache[scale]
 
     def edge_offsets(scale: int) -> np.ndarray:
         if scale not in edge_offset_cache:
-            radii = sigma_per_influence_edges * lumen_radius_pixels_axes[int(scale)]
+            radii = sigma_per_influence_edges * lumen_radius_pixels_axes[scale]
             edge_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return edge_offset_cache[scale]
 

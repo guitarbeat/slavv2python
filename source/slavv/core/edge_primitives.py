@@ -128,9 +128,7 @@ def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> int | None:
 
     vertex_id = vertex_image[pos_int[0], pos_int[1], pos_int[2]]
 
-    if vertex_id > 0:
-        return int(vertex_id - 1)  # Convert from 1-indexed to 0-indexed
-    return None
+    return int(vertex_id - 1) if vertex_id > 0 else None
 
 
 def near_vertex(
@@ -296,8 +294,7 @@ def _record_trace_diagnostics(
     trace_metadata: dict[str, Any],
 ) -> None:
     """Accumulate per-trace terminal-resolution and stop-reason diagnostics."""
-    stop_reason = trace_metadata.get("stop_reason")
-    if stop_reason:
+    if stop_reason := trace_metadata.get("stop_reason"):
         stop_reason_counts = diagnostics.setdefault(
             "stop_reason_counts", _empty_stop_reason_counts()
         )
@@ -341,9 +338,7 @@ def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
     if arr.size == 0:
         return 0.0
     value = float(np.nanmax(arr))
-    if math.isnan(value):
-        return -1000.0
-    return value
+    return -1000.0 if math.isnan(value) else value
 
 
 def estimate_vessel_directions(
@@ -469,9 +464,7 @@ def trace_edge(
             tree=tree,
             max_search_radius=max_search_radius,
         )
-        if return_metadata:
-            return finalized_trace, metadata
-        return finalized_trace
+        return (finalized_trace, metadata) if return_metadata else finalized_trace
 
     # Scalarize position and direction
     current_pos_y, current_pos_x, current_pos_z = (

@@ -189,9 +189,7 @@ def _validate_cli_args(args: argparse.Namespace):
 
 
 def _resolve_params_file(user_params):
-    if user_params:
-        return Path(user_params)
-    return DEFAULT_COMPARISON_PARAMS
+    return Path(user_params) if user_params else DEFAULT_COMPARISON_PARAMS
 
 
 def _is_run_root(path: Path) -> bool:
@@ -399,7 +397,7 @@ def _resolve_output_dir(
                 summary = format_reuse_eligibility_summary(
                     assessment,
                     run_root=candidate,
-                    input_file=input_path if input_path else Path(""),
+                    input_file=input_path or Path(""),
                 )
                 print("\n" + summary)
 
@@ -425,9 +423,7 @@ def _resolve_output_dir(
         if _is_run_root(requested):
             return requested
         latest = select_compatible_run(requested)
-        if latest is not None:
-            return latest
-        return _build_fresh_output_dir(requested)
+        return latest if latest is not None else _build_fresh_output_dir(requested)
     if resume_latest:
         latest = select_compatible_run(Path("comparisons"))
         if latest is not None:

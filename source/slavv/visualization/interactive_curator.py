@@ -265,10 +265,10 @@ class InteractiveCurator(QMainWindow):
         full_box = pv.Box(bounds=(0, gx, 0, gy, 0, gz))
         self.plotter_map.add_mesh(full_box, style="wireframe", color="white", line_width=2)
 
-        if self.projection_axis == "Z":
-            sb = (0, gx, 0, gy, d, min(d + t, gz))
-        elif self.projection_axis == "X":
+        if self.projection_axis == "X":
             sb = (d, min(d + t, gx), 0, gy, 0, gz)
+        elif self.projection_axis == "Z":
+            sb = (0, gx, 0, gy, d, min(d + t, gz))
         else:
             sb = (0, gx, d, min(d + t, gy), 0, gz)
         slice_box = pv.Box(bounds=sb)
@@ -284,10 +284,7 @@ class InteractiveCurator(QMainWindow):
         if len(positions) > 0:
             pos = np.asarray(positions)
             in_slice = self._in_slice_mask(pos, d, t)
-            if self.hide_false:
-                mask = in_slice & statuses
-            else:
-                mask = in_slice
+            mask = in_slice & statuses if self.hide_false else in_slice
             vis_pos = pos[mask]
             vis_st = statuses[mask]
             if len(vis_pos) > 0:
@@ -407,11 +404,11 @@ class InteractiveCurator(QMainWindow):
     def _add_mode(self, checked):
         if checked:
             self.mode = "add"
-            self._add_edge_buffer = []
             self.btn_toggle.setChecked(False)
         else:
             self.mode = "view"
-            self._add_edge_buffer = []
+
+        self._add_edge_buffer = []
 
     def _sweep_toggled(self, checked):
         self.hide_false = checked
@@ -488,9 +485,7 @@ def run_curator(energy_data, vertices_data, edges_data=None):
     """Launch the 4-panel GCI; blocks until user clicks *Save & Close*.
     Returns (curated_vertices, curated_edges) with False items stripped.
     """
-    app = QApplication.instance()
-    if not app:
-        app = QApplication(sys.argv)
+    app = QApplication.instance() or QApplication(sys.argv)
 
     win = InteractiveCurator(energy_data, vertices_data, edges_data)
     win.show()

@@ -86,9 +86,7 @@ def _convert_numpy(obj: Any) -> Any:
         return str(obj)
     if isinstance(obj, dict):
         return {str(key): _convert_numpy(value) for key, value in obj.items()}
-    if isinstance(obj, list):
-        return [_convert_numpy(item) for item in obj]
-    return obj
+    return [_convert_numpy(item) for item in obj] if isinstance(obj, list) else obj
 
 
 def export_json(processing_results: dict[str, Any], output_path: str) -> str:
@@ -304,9 +302,7 @@ def sanitize_for_matlab(data: Any) -> Any:
         return [sanitize_for_matlab(v) for v in data]
     if isinstance(data, tuple):
         return tuple(sanitize_for_matlab(v) for v in data)
-    if isinstance(data, set):
-        return list(data)
-    return data
+    return list(data) if isinstance(data, set) else data
 
 
 def export_mat(

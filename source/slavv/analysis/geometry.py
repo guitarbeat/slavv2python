@@ -525,11 +525,11 @@ def calculate_network_statistics(
     edge_energies: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Calculate aggregate metrics for a traced vascular network."""
-    stats: dict[str, Any] = {}
-
-    stats["num_strands"] = len(strands)
-    stats["num_bifurcations"] = len(bifurcations)
-    stats["num_vertices"] = len(vertex_positions)
+    stats: dict[str, Any] = {
+        "num_strands": len(strands),
+        "num_bifurcations": len(bifurcations),
+        "num_vertices": len(vertex_positions),
+    }
 
     G = nx.Graph()
     G.add_nodes_from(range(len(vertex_positions)))
@@ -573,8 +573,7 @@ def calculate_network_statistics(
         stats["tortuosity_std"] = 0
 
     stats["num_edges"] = G.number_of_edges()
-    degrees = [d for _, d in G.degree()]
-    if degrees:
+    if degrees := [d for _, d in G.degree()]:
         stats["mean_degree"] = float(np.mean(degrees))
         stats["degree_std"] = float(np.std(degrees))
     else:
@@ -582,7 +581,7 @@ def calculate_network_statistics(
         stats["degree_std"] = 0.0
 
     stats["num_connected_components"] = nx.number_connected_components(G)
-    stats["num_endpoints"] = sum(1 for _, d in G.degree() if d == 1)
+    stats["num_endpoints"] = sum(d == 1 for _, d in G.degree())
     pairwise_lengths: list[float] = []
     for comp in nx.connected_components(G):
         sub = G.subgraph(comp)
@@ -602,8 +601,7 @@ def calculate_network_statistics(
         float(nx.average_clustering(G, weight="weight")) if G.number_of_nodes() > 1 else 0.0
     )
 
-    betweenness = nx.betweenness_centrality(G, weight="weight")
-    if betweenness:
+    if betweenness := nx.betweenness_centrality(G, weight="weight"):
         vals = np.fromiter(betweenness.values(), dtype=float)
         stats["betweenness_mean"] = float(np.mean(vals))
         stats["betweenness_std"] = float(np.std(vals))
@@ -611,8 +609,7 @@ def calculate_network_statistics(
         stats["betweenness_mean"] = 0.0
         stats["betweenness_std"] = 0.0
 
-    closeness = nx.closeness_centrality(G, distance="weight")
-    if closeness:
+    if closeness := nx.closeness_centrality(G, distance="weight"):
         cvals = np.fromiter(closeness.values(), dtype=float)
         stats["closeness_mean"] = float(np.mean(cvals))
         stats["closeness_std"] = float(np.std(cvals))
@@ -649,8 +646,9 @@ def calculate_network_statistics(
         stats["mean_edge_radius"] = 0.0
         stats["edge_radius_std"] = 0.0
 
-    angles = calculate_branching_angles(strands, vertex_positions, microns_per_voxel, bifurcations)
-    if angles:
+    if angles := calculate_branching_angles(
+        strands, vertex_positions, microns_per_voxel, bifurcations
+    ):
         stats["mean_branch_angle"] = float(np.mean(angles))
         stats["branch_angle_std"] = float(np.std(angles))
     else:

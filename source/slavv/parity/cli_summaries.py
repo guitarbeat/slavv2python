@@ -33,87 +33,94 @@ def format_reuse_eligibility_summary(
     Returns:
         Formatted CLI summary text
     """
-    lines = []
-    lines.append("=" * 80)
-    lines.append("WORKFLOW REUSE ELIGIBILITY SUMMARY")
-    lines.append("=" * 80)
-    lines.append("")
-
     # Verdict and status
     verdict_label = report.verdict.replace("_", " ").title()
-    lines.append(f"Verdict: {verdict_label}")
-    lines.append(f"Run Root: {run_root}")
-    lines.append(f"Requested Loop: {report.requested_loop}")
-    lines.append("")
-
-    # Eligibility flags
-    lines.append("Eligibility:")
-    lines.append(f"  - Safe to reuse: {'Yes' if report.safe_to_reuse else 'No'}")
-    lines.append(f"  - Safe to analyze only: {'Yes' if report.safe_to_analyze_only else 'No'}")
-    lines.append(f"  - Requires fresh MATLAB: {'Yes' if report.requires_fresh_matlab else 'No'}")
-    lines.append("")
-
+    lines = [
+        "=" * 80,
+        "WORKFLOW REUSE ELIGIBILITY SUMMARY",
+        "=" * 80,
+        "",
+        *(
+            f"Verdict: {verdict_label}",
+            f"Run Root: {run_root}",
+            f"Requested Loop: {report.requested_loop}",
+            "",
+            "Eligibility:",
+            f"  - Safe to reuse: {'Yes' if report.safe_to_reuse else 'No'}",
+            f"  - Safe to analyze only: {'Yes' if report.safe_to_analyze_only else 'No'}",
+            f"  - Requires fresh MATLAB: {'Yes' if report.requires_fresh_matlab else 'No'}",
+            "",
+        ),
+    ]
     # Compatibility status
     if report.compatibility_reason:
-        lines.append("Compatibility:")
-        lines.append(f"  - Input compatible: {'Yes' if report.input_compatible else 'No'}")
-        lines.append(f"  - Params compatible: {'Yes' if report.params_compatible else 'No'}")
+        lines.extend(
+            (
+                "Compatibility:",
+                f"  - Input compatible: {'Yes' if report.input_compatible else 'No'}",
+                f"  - Params compatible: {'Yes' if report.params_compatible else 'No'}",
+            )
+        )
         if not report.input_compatible or not report.params_compatible:
             lines.append(f"  - Reason: {report.compatibility_reason}")
         lines.append("")
 
     # Artifact status
     if report.artifact_reason:
-        lines.append("Artifacts:")
-        lines.append(
-            f"  - Required artifacts present: {'Yes' if report.has_required_artifacts else 'No'}"
+        lines.extend(
+            (
+                "Artifacts:",
+                f"  - Required artifacts present: {'Yes' if report.has_required_artifacts else 'No'}",
+                f"  - Status: {report.artifact_reason}",
+                "",
+            )
         )
-        lines.append(f"  - Status: {report.artifact_reason}")
-        lines.append("")
-
     # Missing artifacts with explanations
     if report.missing_artifacts:
-        lines.append("Missing Artifacts:")
-        for artifact in report.missing_artifacts:
-            explanation = report.artifact_explanations.get(artifact, "")
-            if explanation:
-                lines.append(f"  - {artifact}: {explanation}")
-            else:
-                lines.append(f"  - {artifact}")
-        lines.append("")
+        lines.extend(
+            [
+                "Missing Artifacts:",
+                *(
+                    (
+                        f"  - {artifact}: {explanation}"
+                        if (explanation := report.artifact_explanations.get(artifact, ""))
+                        else f"  - {artifact}"
+                    )
+                    for artifact in report.missing_artifacts
+                ),
+                "",
+            ]
+        )
 
     # Reasons and warnings
     if report.reasons:
         lines.append("Assessment Reasons:")
-        for reason in report.reasons:
-            lines.append(f"  - {reason}")
+        lines.extend(f"  - {reason}" for reason in report.reasons)
         lines.append("")
 
     if report.warnings:
         lines.append("Warnings:")
-        for warning in report.warnings:
-            lines.append(f"  - {warning}")
+        lines.extend(f"  - {warning}" for warning in report.warnings)
         lines.append("")
 
     # Available reuse commands
     if report.reuse_commands:
         lines.append("Available Workflow Loops:")
-        for cmd in report.reuse_commands:
-            lines.append(f"  {cmd}")
+        lines.extend(f"  {cmd}" for cmd in report.reuse_commands)
         lines.append("")
 
     # Recommended next action
     if report.recommended_action:
-        lines.append("Recommended Next Action:")
-        lines.append(f"  {report.recommended_action}")
-        lines.append("")
-
+        lines.extend(("Recommended Next Action:", f"  {report.recommended_action}", ""))
     # Next action commands
     if report.next_action_commands:
-        lines.append("Next Action Commands:")
-        for cmd in report.next_action_commands:
-            lines.append(f"  {cmd}")
-        lines.append("")
+        lines.extend(
+            [
+                "Next Action Commands:",
+                *(f"  {cmd}" for cmd in report.next_action_commands),
+                "",
+            ]
+        )
 
     lines.append("=" * 80)
 
@@ -142,7 +149,7 @@ def generate_reuse_commands(
     Returns:
         List of executable command strings
     """
-    commands = []
+    commands: list[str] = []
 
     # Analysis-only comparison
     if report.safe_to_analyze_only:
@@ -163,25 +170,24 @@ def generate_reuse_commands(
 
     # Imported-MATLAB edge rerun
     if report.safe_to_reuse and report.artifact_checks.get("matlab_batch_present", False):
-        cmd = (
-            f"python dev/scripts/cli/compare_matlab_python.py "
-            f"--input {input_file} "
-            f"--output-dir {run_root} "
-            f"--skip-matlab "
-            f"--python-parity-rerun-from edges"
+        commands.extend(
+            [
+                (
+                    f"python dev/scripts/cli/compare_matlab_python.py "
+                    f"--input {input_file} "
+                    f"--output-dir {run_root} "
+                    f"--skip-matlab "
+                    f"--python-parity-rerun-from edges"
+                ),
+                (
+                    f"python dev/scripts/cli/compare_matlab_python.py "
+                    f"--input {input_file} "
+                    f"--output-dir {run_root} "
+                    f"--skip-matlab "
+                    f"--python-parity-rerun-from network"
+                ),
+            ]
         )
-        commands.append(cmd)
-
-    # Stage-isolated network gate
-    if report.safe_to_reuse and report.artifact_checks.get("matlab_batch_present", False):
-        cmd = (
-            f"python dev/scripts/cli/compare_matlab_python.py "
-            f"--input {input_file} "
-            f"--output-dir {run_root} "
-            f"--skip-matlab "
-            f"--python-parity-rerun-from network"
-        )
-        commands.append(cmd)
 
     return commands
 

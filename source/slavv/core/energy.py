@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
-from skimage import feature
 
 if TYPE_CHECKING:
     from slavv.runtime import StageController
@@ -89,9 +88,7 @@ def _compute_gradient_impl_python(energy, pos_int, microns_per_voxel):
     shape_y, shape_x, shape_z = energy.shape
 
     if shape_y < 3 or shape_x < 3 or shape_z < 3:
-        empty_gradient = np.zeros(3)
-        return empty_gradient
-
+        return np.zeros(3)
     if pos_y < 1:
         pos_y = 1
     elif pos_y > shape_y - 2:
@@ -686,13 +683,13 @@ def _simpleitk_objectness_energy(
     )
 
     hessian_filter = sitk_module.HessianRecursiveGaussianImageFilter()
-    hessian_filter.SetSigma(float(sigma_world))
+    hessian_filter.SetSigma(sigma_world)
     hessian_filter.SetNormalizeAcrossScale(True)
     hessian_image = hessian_filter.Execute(sitk_image)
 
     objectness_filter = sitk_module.ObjectnessMeasureImageFilter()
     objectness_filter.SetObjectDimension(1)
-    objectness_filter.SetBrightObject(bool(energy_sign < 0))
+    objectness_filter.SetBrightObject(energy_sign < 0)
     objectness_filter.SetScaleObjectnessMeasure(False)
     objectness = objectness_filter.Execute(hessian_image)
 
@@ -854,13 +851,13 @@ def calculate_energy_field(
     if energy_method == "cupy_hessian":
         _require_cupy_backend()
 
+    if return_all_scales:
+        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
+    if energy_sign < 0:
+        energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
+    else:
+        energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
     if energy_method in ("frangi", "sato"):
-        if return_all_scales:
-            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-        if energy_sign < 0:
-            energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
-        else:
-            energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
         scale_indices = np.zeros(image.shape, dtype=np.int16)
 
         for scale_idx, sigma in enumerate(lumen_radius_pixels):
@@ -883,24 +880,12 @@ def calculate_energy_field(
             energy_3d[mask] = energy_scale[mask]
             scale_indices[mask] = scale_idx
     else:
-        # Use the same lower-memory single-scale helper as resumable runs so the
-        # direct and resumable paths stay behaviorally aligned.
-        if return_all_scales:
-            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-        if energy_sign < 0:
-            energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
-        else:
-            energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
         scale_indices = np.zeros(image.shape, dtype=np.int16)
 
         for scale_idx, _ in enumerate(lumen_radius_pixels):
             radius_microns = lumen_radius_microns[scale_idx]
             sigma_scale = (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
             sigma_scale = np.asarray(sigma_scale, dtype=float)
-            if approximating_PSF:
-                sigma_object = np.sqrt(sigma_scale**2 + pixels_per_sigma_PSF**2)
-            else:
-                sigma_object = sigma_scale
             energy_scale = _compute_energy_scale(
                 image,
                 {
@@ -925,113 +910,6 @@ def calculate_energy_field(
             energy_3d[mask] = energy_scale[mask]
             scale_indices[mask] = scale_idx
             continue
-
-            # Spherical (Gaussian) component
-            smoothed_object = gaussian_filter(image, sigma=tuple(sigma_object))
-
-            # Annular (Difference of Gaussians) component
-            # When spherical_to_annular_ratio=1: 100% Gaussian, 0% DoG
-            # When spherical_to_annular_ratio=0: 0% Gaussian, 100% DoG
-            if spherical_to_annular_ratio < 1.0:
-                # Need to compute DoG component
-                # Use a larger sigma for the background (annular means larger scale)
-                annular_scale = sigma_scale * 1.5  # MATLAB uses a factor > 1 for annular
-                if approximating_PSF:
-                    sigma_background = np.sqrt(annular_scale**2 + pixels_per_sigma_PSF**2)
-                else:
-                    sigma_background = annular_scale
-                smoothed_background = gaussian_filter(image, sigma=tuple(sigma_background))
-                dog = smoothed_object - smoothed_background
-
-                # Linear combination: (1-ratio)*DoG + ratio*Gaussian
-                smoothed = (
-                    1.0 - spherical_to_annular_ratio
-                ) * dog + spherical_to_annular_ratio * smoothed_object
-            else:
-                # Pure Gaussian (no DoG component)
-                smoothed = smoothed_object
-
-            # Calculate Hessian eigenvalues with PSF-weighted sigma
-            hessian = feature.hessian_matrix(smoothed, sigma=tuple(sigma_object))
-
-            # Memory-efficient eigenvalue computation: compute directly without
-            # storing all three eigenvalue arrays at full precision
-            # Extract Hessian elements (6 components for symmetric 3x3)
-            Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = hessian
-
-            # Compute eigenvalues in batches by z-slice to reduce peak memory
-            shape_3d = smoothed.shape
-            lambda1 = np.empty(shape_3d, dtype=np.float32)
-            lambda2 = np.empty(shape_3d, dtype=np.float32)
-            lambda3 = np.empty(shape_3d, dtype=np.float32)
-
-            for z_idx in range(shape_3d[0]):
-                # Build 3x3 Hessian matrices for this z-slice
-                H = np.array(
-                    [
-                        [Hxx[z_idx], Hxy[z_idx], Hxz[z_idx]],
-                        [Hxy[z_idx], Hyy[z_idx], Hyz[z_idx]],
-                        [Hxz[z_idx], Hyz[z_idx], Hzz[z_idx]],
-                    ]
-                )  # Shape: (3, 3, Y, X)
-                # Transpose to (Y, X, 3, 3) for eigvalsh
-                H = np.moveaxis(H, [0, 1], [-2, -1])
-                # Compute eigenvalues for this slice
-                eigs = np.linalg.eigvalsh(H)  # Shape: (Y, X, 3), sorted ascending
-                # Store in descending order (largest first) like skimage
-                lambda1[z_idx] = eigs[..., 2]
-                lambda2[z_idx] = eigs[..., 1]
-                lambda3[z_idx] = eigs[..., 0]
-
-            # Free Hessian memory
-            del Hxx, Hxy, Hxz, Hyy, Hyz, Hzz, hessian
-
-            # Frangi-like vesselness measure
-            vesselness = np.zeros_like(lambda1)
-
-            # Diagnostic logging for eigenvalue distributions
-            if scale_idx == 0:  # Log only for first scale to avoid spam
-                logger.debug(f"Scale {scale_idx}: radius={radius_microns:.2f}µm")
-                logger.debug(f"  lambda1 range: [{lambda1.min():.6f}, {lambda1.max():.6f}]")
-                logger.debug(f"  lambda2 range: [{lambda2.min():.6f}, {lambda2.max():.6f}]")
-                logger.debug(f"  lambda3 range: [{lambda3.min():.6f}, {lambda3.max():.6f}]")
-                logger.debug(f"  lambda2 < 0: {(lambda2 < 0).sum():,} voxels")
-                logger.debug(f"  lambda3 < 0: {(lambda3 < 0).sum():,} voxels")
-                logger.debug(f"  Both < 0: {((lambda2 < 0) & (lambda3 < 0)).sum():,} voxels")
-
-            # For bright vessels (energy_sign < 0): we want tubular structures with
-            # at least one negative eigenvalue in the cross-section (lambda2 or lambda3)
-            # The original condition was too strict requiring BOTH to be negative
-            if energy_sign < 0:
-                mask = (lambda2 < 0) | (lambda3 < 0)  # At least one negative (more permissive)
-            else:
-                mask = (lambda2 > 0) | (lambda3 > 0)  # At least one positive for dark vessels
-
-            if np.any(mask):
-                # Ratios for tubular structure detection
-                Ra = np.abs(lambda2[mask]) / (np.abs(lambda3[mask]) + 1e-12)
-                Rb = np.abs(lambda1[mask]) / (
-                    np.sqrt(np.abs(lambda2[mask] * lambda3[mask])) + 1e-12
-                )
-                S = np.sqrt(lambda1[mask] ** 2 + lambda2[mask] ** 2 + lambda3[mask] ** 2)
-
-                # Vesselness response (Frangi-inspired)
-                alpha, beta, c = 0.5, 0.5, np.max(S) + 1e-12
-                vesselness[mask] = (
-                    (1.0 - np.exp(-(Ra**2) / (2 * (alpha**2))))
-                    * np.exp(-(Rb**2) / (2 * (beta**2)))
-                    * (1.0 - np.exp(-(S**2) / (2 * (c**2))))
-                )
-
-            energy_scale = energy_sign * vesselness
-            if return_all_scales:
-                energy_4d[:, :, :, scale_idx] = energy_scale
-            if energy_sign < 0:
-                mask = energy_scale < energy_3d
-            else:
-                mask = energy_scale > energy_3d
-            energy_3d[mask] = energy_scale[mask]
-            scale_indices[mask] = scale_idx
 
     result = {
         "energy": energy_3d,

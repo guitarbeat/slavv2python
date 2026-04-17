@@ -311,9 +311,7 @@ def evaluate_output_root_preflight_cached(
         same_output_root = str(resolved_output_root) == str(
             cached_report.resolved_output_root or cached_report.output_root
         )
-        same_required_space = float(cached_report.required_space_gb) == float(
-            required_free_space_gb
-        )
+        same_required_space = float(cached_report.required_space_gb) == required_free_space_gb
         if cache_is_fresh and same_output_root and same_required_space:
             cached_report.cache_used = True
             cached_report.cache_valid_for_seconds = cache_valid_seconds
@@ -541,8 +539,7 @@ def _has_completed_matlab_batch(metadata_dir: Path, matlab_dir: Path) -> bool:
     if not (batch_complete or resume_mode == "complete-noop"):
         return False
 
-    batch_folder_text = str(payload.get("matlab_batch_folder", "") or "").strip()
-    if batch_folder_text:
+    if batch_folder_text := str(payload.get("matlab_batch_folder", "") or "").strip():
         try:
             return Path(batch_folder_text).exists()
         except OSError:
@@ -590,7 +587,7 @@ def _hydrate_dataclass(cls: type[Any], payload: dict[str, Any] | None) -> Any | 
 def _parse_iso_datetime(value: str) -> datetime | None:
     if not value:
         return None
-    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    normalized = f"{value[:-1]}+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(normalized)
     except ValueError:

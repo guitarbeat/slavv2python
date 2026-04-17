@@ -40,9 +40,7 @@ def _count_items(value: Any) -> int:
     if isinstance(value, np.ndarray):
         if value.size == 0:
             return 0
-        if value.ndim == 0:
-            return 1
-        return int(value.shape[0])
+        return 1 if value.ndim == 0 else int(value.shape[0])
     try:
         return len(value)
     except TypeError:
@@ -86,9 +84,7 @@ def _as_position_array(positions: Any) -> np.ndarray:
     array = np.asarray(positions)
     if array.size == 0:
         return np.array([])
-    if array.ndim == 1:
-        return array.reshape(1, -1)
-    return array
+    return array.reshape(1, -1) if array.ndim == 1 else array
 
 
 def _round_positions(positions: Any) -> np.ndarray:
@@ -611,73 +607,66 @@ def _frontier_missing_vertex_overlap_summary(
     extra_frontier_entries.sort(key=lambda item: item.get("energy", np.inf))
     top_overlap_counts: dict[str, Any] = {}
     for threshold in (20, 50, 100):
-        subset = extra_frontier_entries[:threshold]
-        if not subset:
-            continue
-        top_overlap_counts[str(threshold)] = {
-            "threshold": threshold,
-            "shared_missing_vertex_count": int(
-                sum(1 for item in subset if item["shares_missing_vertex"])
-            ),
-            "evaluated_edge_count": len(subset),
-        }
+        if subset := extra_frontier_entries[:threshold]:
+            top_overlap_counts[str(threshold)] = {
+                "threshold": threshold,
+                "shared_missing_vertex_count": int(
+                    sum(bool(item["shares_missing_vertex"]) for item in subset)
+                ),
+                "evaluated_edge_count": len(subset),
+            }
 
     missing_by_vertex = _incident_endpoint_pairs_by_vertex(missing_matlab_pairs)
     extra_frontier_pairs = [entry["pair"] for entry in extra_frontier_entries]
     extra_frontier_by_vertex = _incident_endpoint_pairs_by_vertex(set(extra_frontier_pairs))
     shared_vertices = sorted(set(missing_by_vertex) & set(extra_frontier_by_vertex))
-    top_shared_vertices = []
-    for vertex in shared_vertices:
-        top_shared_vertices.append(
-            {
-                "vertex_index": int(vertex),
-                "missing_matlab_endpoint_pair_count": len(missing_by_vertex[vertex]),
-                "extra_frontier_endpoint_pair_count": len(extra_frontier_by_vertex[vertex]),
-                "missing_matlab_pairs_present_in_candidates": len(
-                    missing_by_vertex[vertex] & candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "missing_matlab_pairs_present_in_frontier_candidates": len(
-                    missing_by_vertex[vertex]
-                    & frontier_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "missing_matlab_pairs_present_in_watershed_candidates": len(
-                    missing_by_vertex[vertex]
-                    & watershed_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "missing_matlab_pairs_present_in_geodesic_candidates": len(
-                    missing_by_vertex[vertex]
-                    & geodesic_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "candidate_incident_endpoint_pair_count": len(
-                    candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "frontier_candidate_incident_endpoint_pair_count": len(
-                    frontier_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "watershed_candidate_incident_endpoint_pair_count": len(
-                    watershed_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "geodesic_candidate_incident_endpoint_pair_count": len(
-                    geodesic_candidate_incident_by_vertex.get(vertex, set())
-                ),
-                "chosen_incident_endpoint_pair_count": len(
-                    chosen_incident_by_vertex.get(vertex, set())
-                ),
-                "chosen_frontier_incident_endpoint_pair_count": len(
-                    frontier_chosen_incident_by_vertex.get(vertex, set())
-                ),
-                "chosen_watershed_incident_endpoint_pair_count": len(
-                    watershed_chosen_incident_by_vertex.get(vertex, set())
-                ),
-                "chosen_geodesic_incident_endpoint_pair_count": len(
-                    geodesic_chosen_incident_by_vertex.get(vertex, set())
-                ),
-                "missing_matlab_endpoint_pair_samples": sorted(missing_by_vertex[vertex])[:3],
-                "extra_frontier_endpoint_pair_samples": sorted(extra_frontier_by_vertex[vertex])[
-                    :3
-                ],
-            }
-        )
+    top_shared_vertices = [
+        {
+            "vertex_index": int(vertex),
+            "missing_matlab_endpoint_pair_count": len(missing_by_vertex[vertex]),
+            "extra_frontier_endpoint_pair_count": len(extra_frontier_by_vertex[vertex]),
+            "missing_matlab_pairs_present_in_candidates": len(
+                missing_by_vertex[vertex] & candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "missing_matlab_pairs_present_in_frontier_candidates": len(
+                missing_by_vertex[vertex] & frontier_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "missing_matlab_pairs_present_in_watershed_candidates": len(
+                missing_by_vertex[vertex]
+                & watershed_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "missing_matlab_pairs_present_in_geodesic_candidates": len(
+                missing_by_vertex[vertex] & geodesic_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "candidate_incident_endpoint_pair_count": len(
+                candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "frontier_candidate_incident_endpoint_pair_count": len(
+                frontier_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "watershed_candidate_incident_endpoint_pair_count": len(
+                watershed_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "geodesic_candidate_incident_endpoint_pair_count": len(
+                geodesic_candidate_incident_by_vertex.get(vertex, set())
+            ),
+            "chosen_incident_endpoint_pair_count": len(
+                chosen_incident_by_vertex.get(vertex, set())
+            ),
+            "chosen_frontier_incident_endpoint_pair_count": len(
+                frontier_chosen_incident_by_vertex.get(vertex, set())
+            ),
+            "chosen_watershed_incident_endpoint_pair_count": len(
+                watershed_chosen_incident_by_vertex.get(vertex, set())
+            ),
+            "chosen_geodesic_incident_endpoint_pair_count": len(
+                geodesic_chosen_incident_by_vertex.get(vertex, set())
+            ),
+            "missing_matlab_endpoint_pair_samples": sorted(missing_by_vertex[vertex])[:3],
+            "extra_frontier_endpoint_pair_samples": sorted(extra_frontier_by_vertex[vertex])[:3],
+        }
+        for vertex in shared_vertices
+    ]
     top_shared_vertices.sort(
         key=lambda item: (
             -int(item["missing_matlab_endpoint_pair_count"]),
@@ -689,7 +678,7 @@ def _frontier_missing_vertex_overlap_summary(
     return {
         "extra_frontier_edge_count": len(extra_frontier_entries),
         "shared_missing_vertex_edge_count": int(
-            sum(1 for entry in extra_frontier_entries if entry["shares_missing_vertex"])
+            sum(bool(entry["shares_missing_vertex"]) for entry in extra_frontier_entries)
         ),
         "missing_matlab_pair_count": len(missing_matlab_pairs),
         "shared_vertex_count": len(shared_vertices),
@@ -1085,8 +1074,7 @@ def compare_edges(
 
         # Split candidate counts by source (frontier vs watershed supplement)
         candidate_diag = candidate_edges.get("diagnostics", {})
-        source_pairs = _candidate_endpoint_pairs_by_source(candidate_edges)
-        if source_pairs:
+        if source_pairs := _candidate_endpoint_pairs_by_source(candidate_edges):
             frontier_count = len(source_pairs.get("frontier", set()))
             supplement_count = len(source_pairs.get("watershed", set()))
             fallback_count = len(source_pairs.get("fallback", set()))

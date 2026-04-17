@@ -108,9 +108,7 @@ def _find_latest_matlab_batch(matlab_dir: Path) -> Path | None:
         for child in matlab_dir.iterdir()
         if child.is_dir() and child.name.startswith("batch_")
     ]
-    if not candidates:
-        return None
-    return sorted(candidates)[-1]
+    return sorted(candidates)[-1] if candidates else None
 
 
 def _build_proof_markdown(proof: StageIsolatedNetworkProof) -> str:
@@ -141,9 +139,15 @@ def _build_proof_markdown(proof: StageIsolatedNetworkProof) -> str:
         f"- Python edges: `{proof.python_edges_fingerprint or 'n/a'}`",
     ]
     if proof.peak_memory_mb is not None or proof.cpu_time_seconds is not None:
-        lines.extend(["", "## Resource Usage", ""])
-        lines.append(f"- Peak memory MB: `{proof.peak_memory_mb}`")
-        lines.append(f"- CPU time seconds: `{proof.cpu_time_seconds}`")
+        lines.extend(
+            [
+                "",
+                "## Resource Usage",
+                "",
+                f"- Peak memory MB: `{proof.peak_memory_mb}`",
+                f"- CPU time seconds: `{proof.cpu_time_seconds}`",
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -330,11 +334,8 @@ def display_latest_proof_summary(run_root: Path) -> str:
         "",
         "Known proof artifacts:",
     ]
-    for entry in index.proof_artifacts:
-        lines.append(
-            "  - "
-            f"{entry.get('execution_timestamp', 'unknown')} | "
-            f"overall={entry.get('overall_parity_achieved')} | "
-            f"{entry.get('artifact_json_path', '')}"
-        )
+    lines.extend(
+        f"  - {entry.get('execution_timestamp', 'unknown')} | overall={entry.get('overall_parity_achieved')} | {entry.get('artifact_json_path', '')}"
+        for entry in index.proof_artifacts
+    )
     return "\n".join(lines)

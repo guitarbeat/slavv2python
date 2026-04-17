@@ -180,14 +180,13 @@ def _render_export_download(
 ) -> None:
     """Render one export button using a shared table-driven config."""
     with column:
-        export_data = generate_export_data(
+        if export_data := generate_export_data(
             vertices,
             edges,
             network,
             parameters,
             export_spec["format_type"],
-        )
-        if export_data:
+        ):
             _update_run_task(
                 run_dir,
                 "exports",
@@ -610,7 +609,7 @@ def show_dashboard_page():
 def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt"):
     """Import desktop curator backends lazily so the web app can load without GUI deps."""
     backend_name = str(backend).strip().lower()
-    if backend_name in ("qt", "qt_pyvista", "pyvista"):
+    if backend_name in {"qt", "qt_pyvista", "pyvista"}:
         from slavv.visualization.interactive_curator import run_curator
 
         return run_curator(energy_data, vertices_data, edges_data)
@@ -1635,8 +1634,7 @@ def show_ml_curation_page():
             curation_stats = pd.DataFrame(
                 build_curation_stats_rows(baseline_counts, current_counts)
             )
-            curation_mode = st.session_state.get("last_curation_mode")
-            if curation_mode:
+            if curation_mode := st.session_state.get("last_curation_mode"):
                 st.caption(
                     f"Most recent curation mode: {curation_mode}. "
                     "The network was rebuilt after the curated vertices and edges were applied."

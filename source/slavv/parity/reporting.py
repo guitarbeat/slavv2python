@@ -96,8 +96,7 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append(
             f"Requires fresh MATLAB: {bool(loop_assessment.get('requires_fresh_matlab', False))}"
         )
-        recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
-        if recommended_action:
+        if recommended_action := str(loop_assessment.get("recommended_action", "") or "").strip():
             lines.append(f"Recommended action: {recommended_action}")
         lines.append("Assessment artifact: 99_Metadata/loop_assessment.json")
         lines.append("")
@@ -106,8 +105,7 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append("Preflight Status")
         lines.append("-" * 70)
         lines.append(f"Output preflight: {preflight_report.get('preflight_status', 'unknown')}")
-        recommended_action = str(preflight_report.get("recommended_action", "") or "").strip()
-        if recommended_action:
+        if recommended_action := str(preflight_report.get("recommended_action", "") or "").strip():
             lines.append(f"Preflight action: {recommended_action}")
         lines.append("")
 
@@ -124,8 +122,7 @@ def generate_summary(run_dir: Path, output_file: Path):
         lines.append("MATLAB Health Check")
         lines.append("-" * 70)
         lines.append(f"Health check passed: {bool(matlab_health_check.get('success', False))}")
-        message = str(matlab_health_check.get("message", "") or "").strip()
-        if message:
+        if message := str(matlab_health_check.get("message", "") or "").strip():
             lines.append(message)
         lines.append("")
 
@@ -273,8 +270,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(edge_diag.get('orphan_pruned_count', 0)):,}/"
                 f"{int(edge_diag.get('cycle_pruned_count', 0)):,}"
             )
-            conflict_rejected_by_source = edge_diag.get("conflict_rejected_by_source", {})
-            if conflict_rejected_by_source:
+            if conflict_rejected_by_source := edge_diag.get("conflict_rejected_by_source", {}):
                 lines.append(
                     "Conflict rejects by source frontier/watershed/fallback/unknown: "
                     f"{int(conflict_rejected_by_source.get('frontier', 0)):,}/"
@@ -282,8 +278,9 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(conflict_rejected_by_source.get('fallback', 0)):,}/"
                     f"{int(conflict_rejected_by_source.get('unknown', 0)):,}"
                 )
-            conflict_blocking_source_counts = edge_diag.get("conflict_blocking_source_counts", {})
-            if conflict_blocking_source_counts:
+            if conflict_blocking_source_counts := edge_diag.get(
+                "conflict_blocking_source_counts", {}
+            ):
                 lines.append(
                     "Conflict blockers by source frontier/watershed/fallback/unknown: "
                     f"{int(conflict_blocking_source_counts.get('frontier', 0)):,}/"
@@ -291,8 +288,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(conflict_blocking_source_counts.get('fallback', 0)):,}/"
                     f"{int(conflict_blocking_source_counts.get('unknown', 0)):,}"
                 )
-            conflict_source_pairs = edge_diag.get("conflict_source_pairs", {})
-            if conflict_source_pairs:
+            if conflict_source_pairs := edge_diag.get("conflict_source_pairs", {}):
                 lines.append(
                     "Conflict source pairs f->f/f->w/w->f/w->w: "
                     f"{int(conflict_source_pairs.get('frontier->frontier', 0)):,}/"
@@ -346,13 +342,13 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(candidate_coverage.get('watershed_only_candidate_endpoint_pair_count', 0)):,}/"
                     f"{int(candidate_coverage.get('fallback_only_candidate_endpoint_pair_count', 0)):,}"
                 )
-            missing_candidate_pairs = candidate_coverage.get(
+            if missing_candidate_pairs := candidate_coverage.get(
                 "missing_matlab_endpoint_pair_samples", []
-            )
-            if missing_candidate_pairs:
+            ):
                 lines.append(f"First missing candidate endpoint pair: {missing_candidate_pairs[0]}")
-            missing_seed_origins = candidate_coverage.get("missing_matlab_seed_origin_samples", [])
-            if missing_seed_origins:
+            if missing_seed_origins := candidate_coverage.get(
+                "missing_matlab_seed_origin_samples", []
+            ):
                 top_seed_origin = missing_seed_origins[0]
                 lines.append(
                     "Top missing seed origin "
@@ -362,20 +358,19 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"  seed candidate pairs "
                     f"{int(top_seed_origin.get('candidate_endpoint_pair_count', 0)):,}"
                 )
-                missing_seed_pairs = top_seed_origin.get(
+                if missing_seed_pairs := top_seed_origin.get(
                     "missing_matlab_incident_endpoint_pair_samples", []
-                )
-                if missing_seed_pairs:
+                ):
                     lines.append(f"First missing pair at top seed origin: {missing_seed_pairs[0]}")
-            supplement_candidate_pairs = candidate_coverage.get(
+            if supplement_candidate_pairs := candidate_coverage.get(
                 "supplement_candidate_endpoint_pair_samples", []
-            )
-            if supplement_candidate_pairs:
+            ):
                 lines.append(
                     f"First watershed supplement candidate pair: {supplement_candidate_pairs[0]}"
                 )
-            extra_seed_origins = candidate_coverage.get("extra_candidate_seed_origin_samples", [])
-            if extra_seed_origins:
+            if extra_seed_origins := candidate_coverage.get(
+                "extra_candidate_seed_origin_samples", []
+            ):
                 top_extra_origin = extra_seed_origins[0]
                 lines.append(
                     "Top extra seed origin "
@@ -385,8 +380,9 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"  seed candidate pairs "
                     f"{int(top_extra_origin.get('candidate_endpoint_pair_count', 0)):,}"
                 )
-                extra_seed_pairs = top_extra_origin.get("extra_candidate_endpoint_pair_samples", [])
-                if extra_seed_pairs:
+                if extra_seed_pairs := top_extra_origin.get(
+                    "extra_candidate_endpoint_pair_samples", []
+                ):
                     lines.append(f"First extra pair at top seed origin: {extra_seed_pairs[0]}")
         if chosen_candidate_sources:
             chosen_counts = chosen_candidate_sources.get("counts", {})
@@ -465,8 +461,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(extra_frontier_overlap.get('shared_missing_vertex_edge_count', 0)):,}/"
                 f"{int(extra_frontier_overlap.get('extra_frontier_edge_count', 0)):,}"
             )
-            strength_overlap = extra_frontier_overlap.get("top_strength_overlap_counts", {})
-            if strength_overlap:
+            if strength_overlap := extra_frontier_overlap.get("top_strength_overlap_counts", {}):
                 segments = []
                 for threshold in ("20", "50", "100"):
                     entry = strength_overlap.get(threshold, {})
@@ -482,8 +477,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                         "Strongest extra frontier sharing missing-matlab vertex: "
                         + "  ".join(segments)
                     )
-            top_shared_vertices = extra_frontier_overlap.get("top_shared_vertices", [])
-            if top_shared_vertices:
+            if top_shared_vertices := extra_frontier_overlap.get("top_shared_vertices", []):
                 formatted_vertices = []
                 for entry in top_shared_vertices[:3]:
                     formatted_vertices.append(
@@ -520,8 +514,7 @@ def generate_summary(run_dir: Path, output_file: Path):
             candidate_manifest_path = layout["python_dir"] / "stages" / "edges" / "candidates.pkl"
             lines.append(f"Candidate audit artifact: {candidate_audit_path}")
             lines.append(f"Candidate manifest path: {candidate_manifest_path}")
-            audit_top = candidate_audit.get("top_origin_summaries", [])
-            if audit_top:
+            if audit_top := candidate_audit.get("top_origin_summaries", []):
                 lines.append("Top audit origin summaries (watershed/frontier/fallback total):")
                 for entry in audit_top[:3]:
                     if not isinstance(entry, dict):
@@ -533,8 +526,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                         f"x={int(entry.get('fallback_candidate_count', 0)):,} "
                         f"total={int(entry.get('candidate_connection_count', 0)):,}"
                     )
-            pair_source_breakdown = candidate_audit.get("pair_source_breakdown", {})
-            if pair_source_breakdown:
+            if pair_source_breakdown := candidate_audit.get("pair_source_breakdown", {}):
                 lines.append(
                     "Candidate audit pair provenance frontier-only/watershed-only/fallback-only/multi-source: "
                     f"{int(pair_source_breakdown.get('frontier_only_pair_count', 0)):,}/"
@@ -542,13 +534,11 @@ def generate_summary(run_dir: Path, output_file: Path):
                     f"{int(pair_source_breakdown.get('fallback_only_pair_count', 0)):,}/"
                     f"{int(pair_source_breakdown.get('multi_source_pair_count', 0)):,}"
                 )
-                watershed_only_pairs = pair_source_breakdown.get(
+                if watershed_only_pairs := pair_source_breakdown.get(
                     "watershed_only_endpoint_pair_samples", []
-                )
-                if watershed_only_pairs:
+                ):
                     lines.append(f"First watershed-only candidate pair: {watershed_only_pairs[0]}")
-            audit_diag = candidate_audit.get("diagnostic_counters", {})
-            if audit_diag:
+            if audit_diag := candidate_audit.get("diagnostic_counters", {}):
                 lines.append(
                     "Audit rejections reachability/mutual/endpoint-degree/energy/metric-threshold/cap/short/accepted: "
                     f"{int(audit_diag.get('watershed_reachability_rejected', 0)):,}/"
@@ -594,8 +584,7 @@ def generate_summary(run_dir: Path, output_file: Path):
                 f"{int(edge_diag.get('terminal_reverse_center_hit_count', 0)):,}/"
                 f"{int(edge_diag.get('terminal_reverse_near_hit_count', 0)):,}"
             )
-        stop_reason_counts = edge_diag.get("stop_reason_counts", {})
-        if stop_reason_counts:
+        if stop_reason_counts := edge_diag.get("stop_reason_counts", {}):
             lines.append(
                 "Stop reasons bounds/nan/threshold/rise/max-steps/direct-hit: "
                 f"{int(stop_reason_counts.get('bounds', 0)):,}/"

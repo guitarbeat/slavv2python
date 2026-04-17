@@ -85,7 +85,7 @@ def _dashboard_run_throughput_rows(
         for stage in snapshot.stages.values()
         if stage.progress > 0.0 or stage.status not in {"pending", "placeholder"}
     ]
-    resumed_count = sum(1 for stage in active_or_completed if stage.resumed)
+    resumed_count = sum(bool(stage.resumed) for stage in active_or_completed)
     considered_count = len(active_or_completed)
     resume_rate = 0 if considered_count == 0 else round((resumed_count / considered_count) * 100)
 
@@ -141,36 +141,34 @@ def _dashboard_breakdown_frame(
     run_dir: str | None = None,
 ) -> pd.DataFrame:
     """Return a dashboard breakdown table that is safe to render without live data."""
-    rows = []
-
-    for stage_row in _dashboard_stage_frame(snapshot, run_dir=run_dir).to_dict("records"):
-        rows.append(
-            {
-                "Section": "Pipeline",
-                "Metric": stage_row["Stage"],
-                "Progress": int(stage_row["Progress (%)"]),
-                "Value": f"{stage_row['Progress (%)']}%",
-                "Status": stage_row["Status"],
-                "Source": stage_row["Source"],
-                "Notes": stage_row["Detail"],
-            }
-        )
+    rows = [
+        {
+            "Section": "Pipeline",
+            "Metric": stage_row["Stage"],
+            "Progress": int(stage_row["Progress (%)"]),
+            "Value": f"{stage_row['Progress (%)']}%",
+            "Status": stage_row["Status"],
+            "Source": stage_row["Source"],
+            "Notes": stage_row["Detail"],
+        }
+        for stage_row in _dashboard_stage_frame(snapshot, run_dir=run_dir).to_dict("records")
+    ]
     rows.extend(_dashboard_run_throughput_rows(snapshot, run_dir=run_dir))
 
     optional_tasks = {} if snapshot is None else snapshot.optional_tasks
     if optional_tasks:
-        for task_name, task in sorted(optional_tasks.items()):
-            rows.append(
-                {
-                    "Section": "Optional Tasks",
-                    "Metric": task_name,
-                    "Progress": int(task.progress * 100),
-                    "Value": f"{int(task.progress * 100)}%",
-                    "Status": task.status,
-                    "Source": "run_snapshot.json",
-                    "Notes": task.detail or "Tracked optional work",
-                }
-            )
+        rows.extend(
+            {
+                "Section": "Optional Tasks",
+                "Metric": task_name,
+                "Progress": int(task.progress * 100),
+                "Value": f"{int(task.progress * 100)}%",
+                "Status": task.status,
+                "Source": "run_snapshot.json",
+                "Notes": task.detail or "Tracked optional work",
+            }
+            for task_name, task in sorted(optional_tasks.items())
+        )
     else:
         rows.append(
             {
@@ -210,26 +208,23 @@ def _dashboard_breakdown_frame(
             "radius",
         ),
     ]
+    source = "session_state.processing_results"
     for metric_name, value, value_type in stat_rows:
         if value is None:
             display_value = DASHBOARD_PLACEHOLDER
             status = "placeholder"
-            source = "session_state.processing_results"
             notes = "Loads when a full network result is available in session state"
         elif value_type == "count":
             display_value = f"{value:d}"
             status = "live"
-            source = "session_state.processing_results"
             notes = "Computed from the current network"
         elif value_type == "length":
             display_value = f"{value:.1f}"
             status = "live"
-            source = "session_state.processing_results"
             notes = "Computed from calculate_network_statistics"
         else:
             display_value = f"{value:.3f}" if value_type == "ratio" else f"{value:.2f}"
             status = "live"
-            source = "session_state.processing_results"
             notes = "Computed from calculate_network_statistics"
 
         rows.append(
@@ -244,37 +239,36 @@ def _dashboard_breakdown_frame(
             }
         )
 
-    rows.append(
-        {
-            "Section": "Share Report",
-            "Metric": "Requested",
-            "Progress": None,
-            "Value": str(share_metrics.get("share_report_requested", 0)),
-            "Status": "live" if share_metrics else "idle",
-            "Source": "session_state.share_report_metrics",
-            "Notes": (
-                "Counts report generations in this session"
-                if share_metrics
-                else "No share report generations have been recorded in this session yet"
-            ),
-        }
+    rows.extend(
+        (
+            {
+                "Section": "Share Report",
+                "Metric": "Requested",
+                "Progress": None,
+                "Value": str(share_metrics.get("share_report_requested", 0)),
+                "Status": "live" if share_metrics else "idle",
+                "Source": "session_state.share_report_metrics",
+                "Notes": (
+                    "Counts report generations in this session"
+                    if share_metrics
+                    else "No share report generations have been recorded in this session yet"
+                ),
+            },
+            {
+                "Section": "Share Report",
+                "Metric": "Downloaded",
+                "Progress": None,
+                "Value": str(share_metrics.get("share_report_downloaded", 0)),
+                "Status": "live" if share_metrics else "idle",
+                "Source": "session_state.share_report_metrics",
+                "Notes": (
+                    "Counts report downloads in this session"
+                    if share_metrics
+                    else "No share report downloads have been recorded in this session yet"
+                ),
+            },
+        )
     )
-    rows.append(
-        {
-            "Section": "Share Report",
-            "Metric": "Downloaded",
-            "Progress": None,
-            "Value": str(share_metrics.get("share_report_downloaded", 0)),
-            "Status": "live" if share_metrics else "idle",
-            "Source": "session_state.share_report_metrics",
-            "Notes": (
-                "Counts report downloads in this session"
-                if share_metrics
-                else "No share report downloads have been recorded in this session yet"
-            ),
-        }
-    )
-
     return pd.DataFrame(rows)
 
 
@@ -320,21 +314,18 @@ def filter_dashboard_breakdown(
 ) -> pd.DataFrame:
     """Apply focus and section filters to the breakdown table."""
     filtered = frame.copy()
-    if focus == "Pipeline":
-        filtered = filtered[filtered["Section"].isin(["Pipeline", "Optional Tasks"])]
-    elif focus == "Network":
+    if focus == "Network":
         filtered = filtered[filtered["Section"].isin(["Network", "Share Report"])]
 
-    normalized_sections = normalize_dashboard_sections(selected_sections)
-    if normalized_sections:
+    elif focus == "Pipeline":
+        filtered = filtered[filtered["Section"].isin(["Pipeline", "Optional Tasks"])]
+    if normalized_sections := normalize_dashboard_sections(selected_sections):
         filtered = filtered[filtered["Section"].isin(normalized_sections)]
 
     if not show_placeholders:
         filtered = filtered[filtered["Status"] != "placeholder"]
 
-    if filtered.empty:
-        return frame.head(0)
-    return filtered.reset_index(drop=True)
+    return frame.head(0) if filtered.empty else filtered.reset_index(drop=True)
 
 
 def build_dashboard_backlog_frame(
@@ -373,16 +364,16 @@ def build_dashboard_backlog_frame(
             "Notes": "Add reviewer throughput and acceptance-rate metrics when QA sources exist.",
         },
     ]
-    for request in metric_requests or []:
-        rows.append(
-            {
-                "Metric": request["metric"],
-                "Owner": request["owner"],
-                "Priority": request["priority"],
-                "Tracked": False,
-                "Status": "Requested",
-                "Reference": repo_url,
-                "Notes": request["notes"] or "Captured from the in-app planning dialog.",
-            }
-        )
+    rows.extend(
+        {
+            "Metric": request["metric"],
+            "Owner": request["owner"],
+            "Priority": request["priority"],
+            "Tracked": False,
+            "Status": "Requested",
+            "Reference": repo_url,
+            "Notes": request["notes"] or "Captured from the in-app planning dialog.",
+        }
+        for request in metric_requests or []
+    )
     return pd.DataFrame(rows)

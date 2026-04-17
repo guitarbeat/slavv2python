@@ -66,7 +66,7 @@ class SafeNumpyUnpickler(NumpyUnpickler):
             is_safe = True
         else:
             for m in self.SAFE_MODULES:
-                if module.startswith(m + "."):
+                if module.startswith(f"{m}."):
                     is_safe = True
                     break
 

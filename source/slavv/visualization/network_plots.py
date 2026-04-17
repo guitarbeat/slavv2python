@@ -106,6 +106,12 @@ class NetworkVisualizer:
                     values = np.asarray(energies)
                 else:
                     edge_colors = ["blue"] * len(valid_traces)
+            elif color_by == "length":
+                lengths = [
+                    calculate_path_length(trace * microns_per_voxel) for trace in valid_traces
+                ]
+                values = np.asarray(lengths)
+
             elif color_by == "radius":
                 connections = edges.get("connections", [])
                 if len(connections) == len(valid_traces) and len(vertex_radii) > 0:
@@ -121,12 +127,6 @@ class NetworkVisualizer:
                     values = np.asarray(radii)
                 else:
                     edge_colors = ["blue"] * len(valid_traces)
-            elif color_by == "length":
-                lengths = [
-                    calculate_path_length(trace * microns_per_voxel) for trace in valid_traces
-                ]
-                values = np.asarray(lengths)
-
             # Quantize values to reduce number of unique colors (and thus traces)
             if values is not None:
                 # Use 64 bins for high fidelity but reasonable performance
@@ -199,17 +199,12 @@ class NetworkVisualizer:
                 batched_traces[color]["customdata"].extend([edge_meta] * len(xs))
                 batched_traces[color]["customdata"].append([None, None, None])
 
+            showlegend = False
+
             # 3. Create merged traces
             for color, data in batched_traces.items():
                 # Determine legend name
                 name = "Edges"
-                showlegend = False
-
-                # Special handling for strand_id to show a few strands in legend
-                if color_by == "strand_id":
-                    # Just use generic name, as we merged strands by color
-                    pass
-
                 fig.add_trace(
                     go.Scattergl(
                         x=data["x"],
@@ -237,18 +232,15 @@ class NetworkVisualizer:
             y_coords = vertex_positions[:, y_axis] * microns_per_voxel[y_axis]
 
             # Color vertices
-            if color_by == "energy":
-                colors = vertex_energies
-                colorscale = "RdBu_r"
-            elif color_by == "depth":
+            if color_by == "depth":
                 colors = vertex_positions[:, projection_axis] * microns_per_voxel[projection_axis]
                 colorscale = "Viridis"
+            elif color_by == "energy":
+                colors = vertex_energies
+                colorscale = "RdBu_r"
             elif color_by == "radius":
                 colors = vertex_radii
                 colorscale = "Plasma"
-            elif color_by == "length":
-                colors = "red"
-                colorscale = None
             else:
                 colors = "red"
                 colorscale = None
@@ -396,11 +388,6 @@ class NetworkVisualizer:
                 # Determine color
                 # Determine color
                 if color_by == "depth":
-                    # Compute global range if not already done
-                    if "depth" not in self.color_schemes:
-                        # Should not happen as schemes are initialized in __init__
-                        pass
-
                     # To properly map a single value, we need min/max of the whole set.
                     # However, calculating it per edge is inefficient and technically valid if we assume
                     # the user wants relative coloring. But with single element, it fails in _map_values_to_colors.
@@ -417,44 +404,30 @@ class NetworkVisualizer:
                     depth = float(np.mean(arr[:, axis]))
 
                     # Normalize manually
-                    if vmax > vmin:
-                        norm = (depth - vmin) / (vmax - vmin)
-                    else:
-                        norm = 0.5
+                    norm = (depth - vmin) / (vmax - vmin) if vmax > vmin else 0.5
                     color = px.colors.sample_colorscale(self.color_schemes["depth"], norm)[0]
 
                 elif color_by == "energy":
                     energies = edges.get("energies", [])
+                    color = "blue"
                     if len(energies) == len(edge_traces):
-                        # Get global range
                         all_energies = np.array(energies)
                         vmin, vmax = np.nanmin(all_energies), np.nanmax(all_energies)
                         val = energies[i]
-                        if vmax > vmin:
-                            norm = (val - vmin) / (vmax - vmin)
-                        else:
-                            norm = 0.5
+                        norm = (val - vmin) / (vmax - vmin) if vmax > vmin else 0.5
                         color = px.colors.sample_colorscale(self.color_schemes["energy"], norm)[0]
-                    else:
-                        color = "blue"
                 elif color_by == "radius":
                     connections = edges.get("connections", [])
                     radii = vertices.get("radii_microns", vertices.get("radii", []))
+                    color = "blue"
                     if len(connections) == len(edge_traces) and len(radii) > 0:
                         v0, v1 = connections[i]
                         r0 = radii[int(v0)] if int(v0) >= 0 else 0
                         r1 = radii[int(v1)] if int(v1) >= 0 and int(v1) < len(radii) else r0
                         val = (r0 + r1) / 2.0
-
-                        # Global range for radius
                         vmin, vmax = np.nanmin(radii), np.nanmax(radii)
-                        if vmax > vmin:
-                            norm = (val - vmin) / (vmax - vmin)
-                        else:
-                            norm = 0.5
+                        norm = (val - vmin) / (vmax - vmin) if vmax > vmin else 0.5
                         color = px.colors.sample_colorscale(self.color_schemes["radius"], norm)[0]
-                    else:
-                        color = "blue"
                 elif color_by == "strand_id":
                     sid = strand_ids[i] if strand_ids else -1
                     colors = px.colors.qualitative.Set3
@@ -618,6 +591,8 @@ class NetworkVisualizer:
                 elif color_by == "energy":
                     energies = edges.get("energies", [])
                     val = energies[i] if i < len(energies) else 0.0
+                elif color_by == "length":
+                    val = calculate_path_length(trace * microns_per_voxel)
                 elif color_by == "radius":
                     connections = edges.get("connections", [])
                     if i < len(connections):
@@ -629,8 +604,6 @@ class NetworkVisualizer:
                             else r0
                         )
                         val = (r0 + r1) / 2.0
-                elif color_by == "length":
-                    val = calculate_path_length(trace * microns_per_voxel)
                 elif color_by == "strand_id":
                     val = strand_ids_map.get(i, -1)
 
@@ -699,18 +672,15 @@ class NetworkVisualizer:
             z_coords = vertex_positions[:, 2] * microns_per_voxel[2]  # Z
 
             # Color vertices
-            if color_by == "energy":
-                colors = vertex_energies
-                colorscale = "RdBu_r"
-            elif color_by == "depth":
+            if color_by == "depth":
                 colors = z_coords
                 colorscale = "Viridis"
+            elif color_by == "energy":
+                colors = vertex_energies
+                colorscale = "RdBu_r"
             elif color_by == "radius":
                 colors = vertex_radii
                 colorscale = "Plasma"
-            elif color_by == "length":
-                colors = "red"
-                colorscale = None
             else:
                 colors = "red"
                 colorscale = None
@@ -1362,7 +1332,7 @@ class NetworkVisualizer:
             horizontal_spacing=0.1,
         )
 
-        if len(lengths_mm) > 0:
+        if lengths_mm:
             lengths_arr = np.array(lengths_mm)
             depths_arr = np.array(depths)
             radii_arr = np.array(radii)

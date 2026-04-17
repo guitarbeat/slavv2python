@@ -26,16 +26,11 @@ def _to_2d_array(value: Any, dtype: Any = float) -> np.ndarray | None:
 
 
 def _to_1d_array(value: Any, dtype: Any = int) -> np.ndarray | None:
-    if value is None:
-        return None
-    return np.asarray(value, dtype=dtype).reshape(-1)
+    return None if value is None else np.asarray(value, dtype=dtype).reshape(-1)
 
 
 def _pick(data: dict[str, Any], keys: list[str]) -> Any:
-    for key in keys:
-        if key in data:
-            return data[key]
-    return None
+    return next((data[key] for key in keys if key in data), None)
 
 
 def load_aggregated_training_data(

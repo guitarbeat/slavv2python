@@ -93,12 +93,11 @@ def _load_comparison_payload(run_root: Path) -> dict[str, Any]:
 
 
 def _load_shared_audit(analysis_dir: Path, comparison_report: dict[str, Any]) -> dict[str, Any]:
-    audit = (
+    if audit := (
         comparison_report.get("edges", {})
         .get("diagnostics", {})
         .get("shared_neighborhood_audit", {})
-    )
-    if audit:
+    ):
         return audit
 
     audit_path = analysis_dir / "shared_neighborhood_audit.json"
@@ -144,9 +143,7 @@ def _classify_severity(neighborhood: dict[str, Any]) -> str:
     score = missing_candidate + missing_final + extra_candidate
     if score >= 3:
         return "high"
-    if score >= 1:
-        return "medium"
-    return "low"
+    return "medium" if score >= 1 else "low"
 
 
 def _recommend_actions(divergence_type: str) -> list[str]:
@@ -221,11 +218,10 @@ def _summarize_top_patterns(divergences: list[NeighborhoodDivergence]) -> list[s
         if count > 0
     ]
 
-    for divergence in divergences[:2]:
-        top_patterns.append(
-            f"origin {divergence.neighborhood_id}: {divergence.severity} "
-            f"{divergence.divergence_type.replace('_', ' ')}"
-        )
+    top_patterns.extend(
+        f"origin {divergence.neighborhood_id}: {divergence.severity} {divergence.divergence_type.replace('_', ' ')}"
+        for divergence in divergences[:2]
+    )
     return top_patterns
 
 
@@ -310,32 +306,36 @@ def generate_shared_neighborhood_diagnostics(
         generated_at=datetime.now().isoformat(),
         matlab_edges_count=int(
             comparison_report.get("edges", {}).get(
-                "matlab_count", comparison_report.get("matlab", {}).get("edges_count", 0)
+                "matlab_count",
+                comparison_report.get("matlab", {}).get("edges_count", 0),
             )
         ),
         python_edges_count=int(
             comparison_report.get("edges", {}).get(
-                "python_count", comparison_report.get("python", {}).get("edges_count", 0)
+                "python_count",
+                comparison_report.get("python", {}).get("edges_count", 0),
             )
         ),
         edge_count_delta=int(
             comparison_report.get("edges", {}).get(
-                "python_count", comparison_report.get("python", {}).get("edges_count", 0)
+                "python_count",
+                comparison_report.get("python", {}).get("edges_count", 0),
             )
         )
         - int(
             comparison_report.get("edges", {}).get(
-                "matlab_count", comparison_report.get("matlab", {}).get("edges_count", 0)
+                "matlab_count",
+                comparison_report.get("matlab", {}).get("edges_count", 0),
             )
         ),
         claim_ordering_differences=sum(
-            1 for divergence in divergences if divergence.divergence_type == "claim_ordering"
+            divergence.divergence_type == "claim_ordering" for divergence in divergences
         ),
         branch_invalidation_differences=sum(
-            1 for divergence in divergences if divergence.divergence_type == "branch_invalidation"
+            divergence.divergence_type == "branch_invalidation" for divergence in divergences
         ),
         partner_choice_differences=sum(
-            1 for divergence in divergences if divergence.divergence_type == "partner_choice"
+            divergence.divergence_type == "partner_choice" for divergence in divergences
         ),
         divergent_neighborhoods=divergences,
         matlab_candidate_coverage=matlab_candidate_coverage,
@@ -418,9 +418,7 @@ def render_shared_neighborhood_markdown(report: SharedNeighborhoodDiagnosticRepo
         "## Top Divergence Patterns",
         "",
     ]
-    for pattern in report.top_divergence_patterns:
-        lines.append(f"- {pattern}")
-
+    lines.extend(f"- {pattern}" for pattern in report.top_divergence_patterns)
     lines.extend(
         [
             "",
@@ -435,41 +433,39 @@ def render_shared_neighborhood_markdown(report: SharedNeighborhoodDiagnosticRepo
             "",
         ]
     )
-    for divergence in sorted(
-        report.divergent_neighborhoods,
-        key=lambda item: (
-            {"high": 0, "medium": 1, "low": 2}.get(item.severity, 3),
-            int(item.neighborhood_id)
-            if str(item.neighborhood_id).lstrip("-").isdigit()
-            else 999999,
-        ),
-    )[:5]:
-        lines.append(
-            f"- Origin `{divergence.neighborhood_id}`: {divergence.severity} "
-            f"{divergence.divergence_type.replace('_', ' ')}; "
-            f"MATLAB/Python claims `{divergence.matlab_claim_count}/{divergence.python_claim_count}`; "
-            f"reason `{divergence.first_divergence_reason}`"
-        )
-
+    lines.extend(
+        f"- Origin `{divergence.neighborhood_id}`: {divergence.severity} {divergence.divergence_type.replace('_', ' ')}; MATLAB/Python claims `{divergence.matlab_claim_count}/{divergence.python_claim_count}`; reason `{divergence.first_divergence_reason}`"
+        for divergence in sorted(
+            report.divergent_neighborhoods,
+            key=lambda item: (
+                {"high": 0, "medium": 1, "low": 2}.get(item.severity, 3),
+                (
+                    int(item.neighborhood_id)
+                    if str(item.neighborhood_id).lstrip("-").isdigit()
+                    else 999999
+                ),
+            ),
+        )[:5]
+    )
     lines.extend(["", "## Recommended Investigation Order", ""])
-    for recommendation in report.recommended_investigations:
-        lines.append(f"- {recommendation}")
-
+    lines.extend(f"- {recommendation}" for recommendation in report.recommended_investigations)
     lines.extend(["", "## Code Surfaces", ""])
-    for surface in report.edge_candidates_to_review + report.edge_selection_logic_to_review:
-        lines.append(f"- {surface}")
-
+    lines.extend(
+        f"- {surface}"
+        for surface in report.edge_candidates_to_review + report.edge_selection_logic_to_review
+    )
     return "\n".join(lines) + "\n"
 
 
 def format_shared_neighborhood_summary(report: SharedNeighborhoodDiagnosticReport) -> str:
     """Render a compact CLI summary for an existing diagnostic report."""
-    top_origins = ", ".join(
-        f"{divergence.neighborhood_id} ({divergence.divergence_type}/{divergence.severity})"
-        for divergence in report.divergent_neighborhoods[:3]
+    top_origins = (
+        ", ".join(
+            f"{divergence.neighborhood_id} ({divergence.divergence_type}/{divergence.severity})"
+            for divergence in report.divergent_neighborhoods[:3]
+        )
+        or "none"
     )
-    if not top_origins:
-        top_origins = "none"
     return (
         "Shared-neighborhood diagnostics ready: "
         f"{len(report.divergent_neighborhoods)} divergent neighborhood(s); "

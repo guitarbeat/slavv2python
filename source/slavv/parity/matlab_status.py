@@ -100,12 +100,18 @@ def inspect_matlab_status(
 
     running_stage = _running_stage_from_status(report.matlab_resume_state_status)
     partial_stage = running_stage or report.matlab_next_stage
-    if batch_folder is not None and partial_stage:
-        partial_details = _detect_partial_stage_artifacts(batch_folder, partial_stage, roi_names)
-        if partial_details:
-            report.matlab_partial_stage_artifacts_present = True
-            report.matlab_partial_stage_name = partial_stage
-            report.matlab_partial_stage_details = partial_details
+    if (
+        batch_folder is not None
+        and partial_stage
+        and (
+            partial_details := _detect_partial_stage_artifacts(
+                batch_folder, partial_stage, roi_names
+            )
+        )
+    ):
+        report.matlab_partial_stage_artifacts_present = True
+        report.matlab_partial_stage_name = partial_stage
+        report.matlab_partial_stage_details = partial_details
 
     report.matlab_log_tail = _tail_log_file(log_path, line_count=log_tail_lines)
     report.failure_summary = _extract_failure_summary(report.matlab_log_tail)
@@ -216,18 +222,21 @@ def _find_matching_batch_folder(
         if output_directory.exists()
         else []
     )
-    for batch_folder in reversed(batch_folders):
-        if _batch_matches_input(batch_folder, normalized_input):
-            return batch_folder
-    return None
+    return next(
+        (
+            batch_folder
+            for batch_folder in reversed(batch_folders)
+            if _batch_matches_input(batch_folder, normalized_input)
+        ),
+        None,
+    )
 
 
 def _preferred_state_batch_folder(
     output_directory: Path,
     resume_state: dict[str, Any],
 ) -> Path | None:
-    batch_folder = str(resume_state.get("batch_folder", "") or "").strip()
-    if batch_folder:
+    if batch_folder := str(resume_state.get("batch_folder", "") or "").strip():
         candidate = Path(batch_folder)
         if candidate.exists():
             return candidate
@@ -246,10 +255,9 @@ def _batch_matches_input(batch_folder: Path, normalized_input: str) -> bool:
         return True
 
     optional_inputs, _roi_names = _load_batch_settings(batch_folder)
-    for candidate in optional_inputs:
-        if _normalize_compare_path(candidate) == normalized_input:
-            return True
-    return False
+    return any(
+        _normalize_compare_path(candidate) == normalized_input for candidate in optional_inputs
+    )
 
 
 def _load_batch_settings(batch_folder: Path) -> tuple[list[str], list[str]]:
@@ -364,9 +372,7 @@ def _next_stage_after(last_completed_stage: str) -> str:
 
 
 def _running_stage_from_status(status: str) -> str:
-    if status.startswith("running:"):
-        return status.split(":", 1)[1]
-    return ""
+    return status.split(":", 1)[1] if status.startswith("running:") else ""
 
 
 def _detect_partial_stage_artifacts(
@@ -402,8 +408,7 @@ def _detect_partial_stage_artifacts(
                 if not chunk_file.is_file():
                     continue
                 observed_chunks += 1
-                match = _CHUNK_FILE_PATTERN.match(chunk_file.name)
-                if match:
+                if match := _CHUNK_FILE_PATTERN.match(chunk_file.name):
                     total_chunks = max(total_chunks, int(match.group("total")))
 
         details: dict[str, Any] = {
@@ -428,9 +433,7 @@ def _detect_partial_stage_artifacts(
     for roi_name in roi_names:
         for prefix in prefixes:
             artifacts.extend(vectors_dir.glob(f"{prefix}*{roi_name}.mat"))
-    if not artifacts:
-        return {}
-    return {"artifact_count": len(artifacts)}
+    return {"artifact_count": len(artifacts)} if artifacts else {}
 
 
 def _extract_failure_summary(log_tail: list[str]) -> str:
@@ -474,9 +477,7 @@ def _derive_resume_mode(report: MatlabStatusReport) -> str:
         return "complete-noop"
     if report.matlab_partial_stage_artifacts_present and report.matlab_next_stage:
         return "restart-current-stage"
-    if report.matlab_next_stage:
-        return "resume-stage"
-    return "fresh"
+    return "resume-stage" if report.matlab_next_stage else "fresh"
 
 
 def _derive_rerun_prediction(report: MatlabStatusReport) -> str:

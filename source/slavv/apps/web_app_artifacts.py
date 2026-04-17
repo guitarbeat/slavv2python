@@ -30,8 +30,8 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
 
         if format_type == "csv":
             visualizer.export_network_data(results, base_path, format="csv")
-            v_path = base_path + "_vertices.csv"
-            e_path = base_path + "_edges.csv"
+            v_path = f"{base_path}_vertices.csv"
+            e_path = f"{base_path}_edges.csv"
 
             zip_path = os.path.join(temp_dir, "network_csv.zip")
             with zipfile.ZipFile(zip_path, "w") as zf:
@@ -45,7 +45,7 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
                     return f.read()
             return None
 
-        file_path = base_path + "." + format_type
+        file_path = f"{base_path}.{format_type}"
         visualizer.export_network_data(results, file_path, format=format_type)
 
         if os.path.exists(file_path):

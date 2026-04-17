@@ -114,10 +114,7 @@ def create_experiment_path(base_dir: Path, label: str = "run") -> Path:
 
 def _first_existing(candidates: list[Path]) -> Path | None:
     """Return first existing path from candidates, else None."""
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
+    return next((candidate for candidate in candidates if candidate.exists()), None)
 
 
 def is_staged_run_root(path: Path) -> bool:
@@ -156,14 +153,14 @@ def is_aggregate_run_container(path: Path) -> bool:
     """Return True when path contains run_* child runs but is not itself a run root."""
     if not path.exists() or not path.is_dir() or is_authoritative_managed_run_root(path):
         return False
-    for child in path.iterdir():
-        if (
+    return any(
+        (
             child.is_dir()
             and child.name.startswith("run_")
             and is_authoritative_managed_run_root(child)
-        ):
-            return True
-    return False
+        )
+        for child in path.iterdir()
+    )
 
 
 def list_aggregate_child_runs(path: Path) -> list[Path]:
@@ -189,9 +186,7 @@ def classify_run_path(path: Path) -> str:
         return "grouped_run_root"
     if is_staged_run_root(path):
         return "staged_run_root"
-    if is_legacy_flat_run_root(path):
-        return "legacy_flat_run_root"
-    return "unknown"
+    return "legacy_flat_run_root" if is_legacy_flat_run_root(path) else "unknown"
 
 
 def resolve_run_root(path: Path) -> Path:
@@ -279,9 +274,7 @@ def read_run_status(run_dir: Path) -> dict[str, Any] | None:
     """Read managed lifecycle metadata from 99_Metadata/status.json when present."""
     metadata_dir = resolve_run_layout(run_dir)["metadata_dir"]
     payload = _read_json_file(metadata_dir / "status.json")
-    if payload is None:
-        return None
-    return validate_run_status_payload(payload)
+    return None if payload is None else validate_run_status_payload(payload)
 
 
 def write_run_status(run_dir: Path, status: dict[str, Any]) -> Path:
@@ -326,9 +319,7 @@ def _infer_state_from_snapshot(run_dir: Path) -> str | None:
         return "completed"
     if status in {"failed", "resume_blocked"}:
         return "failed"
-    if status in {"pending", "running"}:
-        return "incomplete"
-    return None
+    return "incomplete" if status in {"pending", "running"} else None
 
 
 def _infer_state_from_artifacts(run_dir: Path) -> str | None:
@@ -347,7 +338,7 @@ def aggregate_container_rollup(container_dir: Path) -> dict[str, Any]:
     states = [status["state"] for status in child_statuses]
     if child_statuses and all(state == "completed" for state in states):
         state = "completed"
-    elif any(state == "failed" for state in states):
+    elif "failed" in states:
         state = "failed"
     else:
         state = "incomplete"
@@ -431,11 +422,10 @@ def normalize_run_root_name(name: str) -> str:
     if _EXPERIMENT_RUN_ROOT_RE.match(safe):
         return safe
 
-    suffix_match = re.match(r"^(?P<label>.+?)_(?P<date>\d{8})(?:_(?P<time>\d{6}))?$", safe)
-    if suffix_match:
-        date = suffix_match.group("date")
-        time = suffix_match.group("time")
-        label = suffix_match.group("label")
+    if suffix_match := re.match(r"^(?P<label>.+?)_(?P<date>\d{8})(?:_(?P<time>\d{6}))?$", safe):
+        date = suffix_match["date"]
+        time = suffix_match["time"]
+        label = suffix_match["label"]
         return f"{date}_{time}_{label}" if time else f"{date}_{label}"
 
     return safe
@@ -464,8 +454,7 @@ def _load_pointer_targets(comparisons_root: Path) -> dict[str, str]:
         pointer_path = pointers_dir / file_name
         if not pointer_path.exists():
             continue
-        content = pointer_path.read_text(encoding="utf-8").strip()
-        if content:
+        if content := pointer_path.read_text(encoding="utf-8").strip():
             pointers[file_name] = content
     return pointers
 
@@ -514,8 +503,7 @@ def build_experiment_index_entry(
         "timestamp": _extract_timestamp_from_name(run_root.name),
         **status,
     }
-    parity = _extract_parity_summary(report)
-    if parity:
+    if parity := _extract_parity_summary(report):
         entry["parity"] = parity
     return entry
 
@@ -679,11 +667,13 @@ def _append_run_status_section(lines: list[str], run_snapshot: Any | None) -> No
                 matlab_pipeline_task.artifacts.get("skip_reason", "completed_reusable_batch")
             )
             reuse_mode = str(matlab_pipeline_task.artifacts.get("reuse_mode", "") or "").strip()
-            lines.append(
-                "- **MATLAB launch:** skipped due to completed reusable batch"
-                + (f" ({reuse_mode})" if reuse_mode else "")
+            lines.extend(
+                (
+                    "- **MATLAB launch:** skipped due to completed reusable batch"
+                    + (f" ({reuse_mode})" if reuse_mode else ""),
+                    f"- **MATLAB skip reason:** {skip_reason}",
+                )
             )
-            lines.append(f"- **MATLAB skip reason:** {skip_reason}")
     lines.append("")
 
 
@@ -705,12 +695,10 @@ def _append_workflow_decision_section(
             f"{bool(loop_assessment.get('requires_fresh_matlab', False))}",
         ]
     )
-    recommended_action = str(loop_assessment.get("recommended_action", "") or "").strip()
-    if recommended_action:
+    if recommended_action := str(loop_assessment.get("recommended_action", "") or "").strip():
         lines.append(f"- **Recommended action:** {recommended_action}")
     lines.extend(["- **Artifact:** `99_Metadata/loop_assessment.json`"])
-    reasons = loop_assessment.get("reasons") or []
-    if reasons:
+    if reasons := loop_assessment.get("reasons") or []:
         lines.extend(["", "### Assessment Reasons"])
         lines.extend(f"- {reason}" for reason in reasons)
     lines.append("")
@@ -727,10 +715,9 @@ def _append_preflight_section(lines: list[str], preflight_report: dict[str, Any]
             f"- **Allows launch:** {preflight_report.get('allows_launch', False)}",
         ]
     )
-    output_root = preflight_report.get("resolved_output_root") or preflight_report.get(
+    if output_root := preflight_report.get("resolved_output_root") or preflight_report.get(
         "output_root", ""
-    )
-    if output_root:
+    ):
         lines.append(f"- **Output root:** `{output_root}`")
     free_space_gb = preflight_report.get("free_space_gb")
     required_space_gb = preflight_report.get("required_space_gb")
@@ -739,8 +726,7 @@ def _append_preflight_section(lines: list[str], preflight_report: dict[str, Any]
             "- **Free space:** "
             f"{free_space_gb:.1f} GB available / {required_space_gb:.1f} GB required"
         )
-    recommended_action = preflight_report.get("recommended_action")
-    if recommended_action:
+    if recommended_action := preflight_report.get("recommended_action"):
         lines.append(f"- **Recommended action:** {recommended_action}")
     lines.append("- **Artifact:** `99_Metadata/output_preflight.json`")
     warnings = preflight_report.get("warnings") or []
@@ -805,8 +791,7 @@ def _append_matlab_status_section(
         lines.extend(
             ["## Failure Summary", "", f"- **Failure:** {matlab_status.get('failure_summary')}"]
         )
-        log_tail = matlab_status.get("matlab_log_tail") or []
-        if log_tail:
+        if log_tail := matlab_status.get("matlab_log_tail") or []:
             lines.extend(["", "```text"])
             lines.extend(str(line) for line in log_tail[-10:])
             lines.extend(["```", ""])
@@ -826,8 +811,7 @@ def _append_matlab_health_check_section(
             f"- **Elapsed seconds:** {float(matlab_health_check.get('elapsed_seconds', 0.0)):.1f}",
         ]
     )
-    message = str(matlab_health_check.get("message", "") or "").strip()
-    if message:
+    if message := str(matlab_health_check.get("message", "") or "").strip():
         lines.append(f"- **Summary:** {message}")
     lines.extend(["- **Artifact:** `99_Metadata/matlab_health_check.json`", ""])
 
@@ -928,20 +912,20 @@ def generate_manifest(
     casx_files = inventory.get("casx", [])
     if vmv_files or casx_files:
         lines.extend(["### 3D Visualization Files", ""])
-        if vmv_files:
-            lines.extend(["**VMV Files** (VessMorphoVis/Blender):"])
-            for file_path in sorted(vmv_files):
-                lines.append(
-                    f"- `{file_path.relative_to(run_root)}` ({format_size(file_path.stat().st_size)})"
-                )
-            lines.append("")
-        if casx_files:
-            lines.extend(["**CASX Files** (CASX format):"])
-            for file_path in sorted(casx_files):
-                lines.append(
-                    f"- `{file_path.relative_to(run_root)}` ({format_size(file_path.stat().st_size)})"
-                )
-            lines.append("")
+    if vmv_files:
+        lines.extend(["**VMV Files** (VessMorphoVis/Blender):"])
+        lines.extend(
+            f"- `{file_path.relative_to(run_root)}` ({format_size(file_path.stat().st_size)})"
+            for file_path in sorted(vmv_files)
+        )
+        lines.append("")
+    if casx_files:
+        lines.extend(["**CASX Files** (CASX format):"])
+        lines.extend(
+            f"- `{file_path.relative_to(run_root)}` ({format_size(file_path.stat().st_size)})"
+            for file_path in sorted(casx_files)
+        )
+        lines.append("")
 
     csv_files = inventory.get("csv", [])
     json_files = inventory.get("json", [])
@@ -949,33 +933,32 @@ def generate_manifest(
     pkl_files = inventory.get("pkl", [])
     if csv_files or json_files or mat_files or pkl_files:
         lines.extend(["### Data Files", ""])
-        if csv_files:
-            lines.append("**CSV Files:**")
-            lines.extend(
-                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(csv_files)
-            )
-            lines.append("")
-        if json_files:
-            lines.append("**JSON Files:**")
-            lines.extend(
-                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(json_files)
-            )
-            lines.append("")
-        if mat_files:
-            lines.append("**MATLAB Files:**")
-            lines.extend(
-                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(mat_files)
-            )
-            lines.append("")
-        if pkl_files:
-            lines.append("**Checkpoint Files:**")
-            lines.extend(
-                f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(pkl_files)
-            )
-            lines.append("")
+    if csv_files:
+        lines.extend(
+            [
+                "**CSV Files:**",
+                *(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(csv_files)),
+                "",
+            ]
+        )
+    if json_files:
+        lines.extend(
+            [
+                "**JSON Files:**",
+                *(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(json_files)),
+                "",
+            ]
+        )
+    if mat_files:
+        lines.append("**MATLAB Files:**")
+        lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(mat_files))
+        lines.append("")
+    if pkl_files:
+        lines.append("**Checkpoint Files:**")
+        lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(pkl_files))
+        lines.append("")
 
-    png_files = inventory.get("png", [])
-    if png_files:
+    if png_files := inventory.get("png", []):
         lines.extend(["### Visualization Images", ""])
         lines.extend(f"- `{file_path.relative_to(run_root)}`" for file_path in sorted(png_files))
         lines.append("")

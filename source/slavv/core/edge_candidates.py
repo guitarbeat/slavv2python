@@ -139,7 +139,7 @@ def _path_max_energy_from_linear_indices(
     for index in path_linear:
         coord = _matlab_linear_index_to_coord(index, shape)
         samples.append(float(energy[coord[0], coord[1], coord[2]]))
-    return max(samples) if samples else float("-inf")
+    return max(samples, default=float("-inf"))
 
 
 def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]]:
@@ -1186,7 +1186,7 @@ def _resolve_frontier_edge_connection_details(
     parent_index = -root_pointer if root_pointer < 0 else 0
     resolution_debug: dict[str, Any] = {
         "root_linear_index": int(root_index),
-        "root_pointer": int(root_pointer),
+        "root_pointer": root_pointer,
         "parent_edge_index": int(parent_index),
         "current_path_length": len(current_path_linear),
     }
@@ -1329,32 +1329,32 @@ def _build_frontier_lifecycle_event(
     claim_reassigned = (
         survived_candidate_manifest
         and origin_idx is not None
-        and int(origin_idx) != int(seed_origin_idx)
+        and int(origin_idx) != seed_origin_idx
     )
-    claim_reassignment_reason = _frontier_claim_reassignment_from_reason(str(resolution_reason))
+    claim_reassignment_reason = _frontier_claim_reassignment_from_reason(resolution_reason)
     return {
-        "seed_origin_index": int(seed_origin_idx),
-        "terminal_vertex_index": int(terminal_vertex_idx),
-        "resolved_origin_index": None if origin_idx is None else int(origin_idx),
-        "resolved_terminal_index": None if terminal_idx is None else int(terminal_idx),
+        "seed_origin_index": seed_origin_idx,
+        "terminal_vertex_index": terminal_vertex_idx,
+        "resolved_origin_index": None if origin_idx is None else origin_idx,
+        "resolved_terminal_index": None if terminal_idx is None else terminal_idx,
         "emitted_endpoint_pair": emitted_endpoint_pair,
-        "resolution_reason": str(resolution_reason),
+        "resolution_reason": resolution_reason,
         "resolution_debug": dict(resolution_debug or {}),
-        "rejection_reason": None if survived_candidate_manifest else str(resolution_reason),
-        "parent_child_outcome": _frontier_parent_child_outcome_from_reason(str(resolution_reason)),
-        "bifurcation_choice": _frontier_bifurcation_choice_from_reason(str(resolution_reason)),
-        "claim_reassigned": bool(claim_reassigned),
-        "claim_reassignment_reason": claim_reassignment_reason if claim_reassigned else None,
-        "survived_candidate_manifest": bool(survived_candidate_manifest),
+        "rejection_reason": (None if survived_candidate_manifest else resolution_reason),
+        "parent_child_outcome": _frontier_parent_child_outcome_from_reason(resolution_reason),
+        "bifurcation_choice": _frontier_bifurcation_choice_from_reason(resolution_reason),
+        "claim_reassigned": claim_reassigned,
+        "claim_reassignment_reason": (claim_reassignment_reason if claim_reassigned else None),
+        "survived_candidate_manifest": survived_candidate_manifest,
         "origin_candidate_local_index": (
-            None if local_candidate_index is None else int(local_candidate_index)
+            None if local_candidate_index is None else local_candidate_index
         ),
         "manifest_candidate_index": None,
         "chosen_final_edge": False,
         "final_survival_stage": (
             "candidate_manifest" if survived_candidate_manifest else "pre_manifest_rejection"
         ),
-        "terminal_hit_sequence": int(terminal_hit_sequence),
+        "terminal_hit_sequence": terminal_hit_sequence,
     }
 
 
@@ -1753,7 +1753,7 @@ def _build_frontier_candidate_lifecycle(
         event["terminal_hit_sequence"] = int(event.get("terminal_hit_sequence", 0))
         event["survived_candidate_manifest"] = bool(event.get("survived_candidate_manifest", False))
         event["manifest_candidate_index"] = manifest_candidate_index
-        event["chosen_final_edge"] = bool(chosen_final_edge)
+        event["chosen_final_edge"] = chosen_final_edge
         event["claim_reassigned"] = bool(event.get("claim_reassigned", False))
         if not event["claim_reassigned"]:
             event["claim_reassignment_reason"] = None
@@ -2169,8 +2169,8 @@ def _build_edge_candidate_audit(
 
     return {
         "schema_version": 1,
-        "vertex_count": int(vertex_count),
-        "use_frontier_tracer": bool(use_frontier_tracer),
+        "vertex_count": vertex_count,
+        "use_frontier_tracer": use_frontier_tracer,
         "candidate_traces": len(candidates.get("traces", [])),
         "candidate_connection_count": candidate_connection_count,
         "candidate_origin_count": len(total_origin_counts),

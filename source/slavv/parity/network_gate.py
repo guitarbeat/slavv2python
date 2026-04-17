@@ -114,7 +114,7 @@ def validate_network_gate_artifacts(run_root: Path) -> NetworkGateValidation:
         _compute_file_fingerprint(matlab_vertices_path) if has_matlab_vertices else ""
     )
 
-    validation_passed = len(validation_errors) == 0
+    validation_passed = not validation_errors
 
     return NetworkGateValidation(
         has_matlab_edges=has_matlab_edges,
@@ -229,13 +229,14 @@ def execute_stage_isolated_network_gate(
         checkpoint_dir = python_dir / "checkpoints"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        # Find MATLAB batch folder
-        matlab_batch_folder = None
-        for item in matlab_dir.iterdir():
-            if item.is_dir() and item.name.startswith("batch_"):
-                matlab_batch_folder = item
-                break
-
+        matlab_batch_folder = next(
+            (
+                item
+                for item in matlab_dir.iterdir()
+                if item.is_dir() and item.name.startswith("batch_")
+            ),
+            None,
+        )
         if matlab_batch_folder is None:
             execution_errors.append("Could not find MATLAB batch folder in matlab_dir")
             elapsed_seconds = time.time() - start_time
@@ -395,7 +396,7 @@ def execute_stage_isolated_network_gate(
                 proof_index_path = str(
                     resolve_run_layout(run_root)["analysis_dir"] / "proof_artifact_index.json"
                 )
-            except (OSError, ValueError, FileNotFoundError) as exc:
+            except (OSError, ValueError) as exc:
                 logger.warning("Failed to generate proof artifacts for %s: %s", run_root, exc)
 
         return NetworkGateExecution(

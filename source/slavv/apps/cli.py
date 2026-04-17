@@ -420,13 +420,11 @@ def _handle_import_matlab_command(args: argparse.Namespace) -> None:
 
     _configure_logging(args.verbose, format_string=_DETAILED_LOG_FORMAT)
 
-    written = import_matlab_batch(
+    if written := import_matlab_batch(
         args.batch_folder,
         args.checkpoint_dir,
         stages=args.stages,
-    )
-
-    if written:
+    ):
         print(f"Imported {len(written)} stage(s) into {args.checkpoint_dir}:")
         for stage, path in written.items():
             print(f"  {stage}: {path}")

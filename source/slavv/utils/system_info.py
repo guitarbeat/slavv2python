@@ -15,7 +15,7 @@ def get_system_info() -> dict[str, Any]:
     dict
         System information including CPU, memory, GPU, OS, and software versions.
     """
-    info = {
+    return {
         "cpu": _get_cpu_info(),
         "memory": _get_memory_info(),
         "gpu": _get_gpu_info(),
@@ -23,8 +23,6 @@ def get_system_info() -> dict[str, Any]:
         "python": _get_python_info(),
         "timestamp": datetime.now().isoformat(),
     }
-
-    return info
 
 
 def _get_cpu_info() -> dict[str, Any]:
@@ -43,9 +41,7 @@ def _get_cpu_info() -> dict[str, Any]:
         cpu_info["cores"] = psutil.cpu_count(logical=False)
         cpu_info["threads"] = psutil.cpu_count(logical=True)
 
-        # Get CPU frequency if available
-        freq = psutil.cpu_freq()
-        if freq:
+        if freq := psutil.cpu_freq():
             cpu_info["frequency_mhz"] = round(freq.current, 2)
     except ImportError:
         pass
@@ -152,8 +148,7 @@ def get_matlab_info(matlab_path: str | None = None) -> dict[str, Any]:
         # Try to extract version from path (e.g., "R2019a" from path)
         import re
 
-        match = re.search(r"R\d{4}[ab]", matlab_path)
-        if match:
+        if match := re.search(r"R\d{4}[ab]", matlab_path):
             matlab_info["version"] = match.group(0)
 
     return matlab_info

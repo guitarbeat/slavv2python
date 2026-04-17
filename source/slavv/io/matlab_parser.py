@@ -44,9 +44,7 @@ def _count_items(value: Any) -> int:
     if isinstance(value, np.ndarray):
         if value.size == 0:
             return 0
-        if value.ndim == 0:
-            return 1
-        return int(value.shape[0])
+        return 1 if value.ndim == 0 else int(value.shape[0])
     try:
         return len(value)
     except TypeError:
@@ -101,8 +99,7 @@ def _infer_strand_count(
     mat_data: dict[str, Any], network_data: dict[str, Any], network_stats: Any | None
 ) -> int:
     """Infer strand count from MATLAB network outputs when num_strands is absent."""
-    explicit_count = _get_struct_value(network_stats, "num_strands")
-    if explicit_count:
+    if explicit_count := _get_struct_value(network_stats, "num_strands"):
         return int(explicit_count)
 
     strand_lengths = _get_struct_value(network_stats, "strand_lengths")
@@ -165,10 +162,12 @@ def load_mat_file_safe(file_path: Path) -> dict[str, Any] | None:
         Dictionary containing MATLAB data, or None if loading fails
     """
     try:
-        # Load with squeeze_me=True to remove singleton dimensions
-        # struct_as_record=False to access struct fields as attributes
-        data = loadmat(str(file_path), squeeze_me=True, struct_as_record=False, mat_dtype=True)
-        return data
+        return loadmat(
+            str(file_path),
+            squeeze_me=True,
+            struct_as_record=False,
+            mat_dtype=True,
+        )
     except Exception as e:
         logger.error(f"Failed to load {file_path}: {e}")
         return None
@@ -303,9 +302,7 @@ def extract_network_stats(mat_data: dict[str, Any]) -> dict[str, Any]:
     """Extract network statistics from MATLAB data. Returns a flat stats dict."""
     net = extract_network_data(mat_data)
     stats = net.get("stats", {})
-    strand_count = stats.get("strand_count")
-    if not strand_count:
-        strand_count = len(net.get("strands", []))
+    strand_count = stats.get("strand_count") or len(net.get("strands", []))
     # Ensure expected keys with defaults
     return {
         "strand_count": strand_count,

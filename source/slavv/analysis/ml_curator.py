@@ -109,20 +109,16 @@ class MLCurator:
 
             # Basic features
             vertex_features = [
-                energy,  # Primary energy value
-                scale,  # Scale index
-                radius,  # Estimated radius
-                radius / (scale + 1e-10),  # Radius-to-scale ratio
-            ]
-
-            # Spatial features (normalized by image dimensions)
-            vertex_features.extend(
-                [
+                energy,
+                scale,
+                radius,
+                radius / (scale + 1e-10),
+                *[
                     pos[0] / image_shape[0],  # Normalized Y position
                     pos[1] / image_shape[1],  # Normalized X position
                     pos[2] / image_shape[2],  # Normalized Z position
-                ]
-            )
+                ],
+            ]
 
             # Distance from image center
             center = np.array(image_shape) / 2
