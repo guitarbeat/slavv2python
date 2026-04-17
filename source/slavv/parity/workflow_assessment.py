@@ -270,14 +270,14 @@ def _assess_full_comparison(
     report.has_required_artifacts = True
     if has_completed_matlab_batch:
         if has_python_results:
-            report.artifact_reason = "completed MATLAB batch and reusable Python outputs are available"
+            report.artifact_reason = (
+                "completed MATLAB batch and reusable Python outputs are available"
+            )
             report.verdict = LOOP_ANALYSIS_READY
             report.safe_to_reuse = True
             report.safe_to_analyze_only = True
             report.requires_fresh_matlab = False
-            report.recommended_action = (
-                "Reuse the completed MATLAB batch and existing Python outputs for analysis-only comparison."
-            )
+            report.recommended_action = "Reuse the completed MATLAB batch and existing Python outputs for analysis-only comparison."
             return report
         report.artifact_reason = "completed MATLAB batch is available for Python rerun reuse"
         report.verdict = LOOP_REUSE_READY

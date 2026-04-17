@@ -713,218 +713,24 @@ def calculate_energy_field(
     :func:`~skimage.filters.sato` vesselness filters as alternative backends.
     """
     logger.info("Calculating energy field")
-
-    # Extract parameters with defaults from MATLAB
-    microns_per_voxel = params.get("microns_per_voxel", [1.0, 1.0, 1.0])
-    radius_smallest = params.get("radius_of_smallest_vessel_in_microns", 1.5)
-    radius_largest = params.get("radius_of_largest_vessel_in_microns", 50.0)
-    scales_per_octave = params.get("scales_per_octave", 1.5)
-    gaussian_to_ideal_ratio = params.get("gaussian_to_ideal_ratio", 1.0)
-    spherical_to_annular_ratio = params.get("spherical_to_annular_ratio", 1.0)
-    approximating_PSF = params.get("approximating_PSF", True)
-    energy_sign = params.get("energy_sign", -1.0)  # -1 for bright vessels
-    return_all_scales = params.get("return_all_scales", False)
-    energy_method = params.get("energy_method", "hessian")
-    if energy_method == "simpleitk_objectness":
-        _require_simpleitk_backend()
-        _warn_simpleitk_parameter_mismatches(params)
-    if energy_method == "cupy_hessian":
-        _require_cupy_backend()
-        _warn_cupy_parameter_mismatches(params)
-
-    # Cache voxel spacing for anisotropy handling
-    voxel_size = np.array(microns_per_voxel, dtype=float)
-
-    # PSF calculation (from MATLAB implementation)
-    if approximating_PSF:
-        numerical_aperture = params.get("numerical_aperture", 0.95)
-        excitation_wavelength = params.get("excitation_wavelength_in_microns", 1.3)
-        sample_index_of_refraction = params.get("sample_index_of_refraction", 1.33)
-
-        # PSF calculation based on Zipfel et al.
-        if numerical_aperture <= 0.7:
-            coefficient, exponent = 0.320, 1.0
-        else:
-            coefficient, exponent = 0.325, 0.91
-
-        microns_per_sigma_PSF = np.array(
-            [
-                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
-                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
-                excitation_wavelength
-                / (2**0.5)
-                * 0.532
-                / (
-                    sample_index_of_refraction
-                    - (sample_index_of_refraction**2 - numerical_aperture**2) ** 0.5
-                ),
-            ],
-            dtype=float,
-        )
-    else:
-        microns_per_sigma_PSF = np.zeros(3, dtype=float)
-    pixels_per_sigma_PSF = microns_per_sigma_PSF / voxel_size
-
-    # Calculate scale range following MATLAB ordination.
-    _, lumen_radius_microns = _matlab_lumen_radius_range(
-        radius_smallest,
-        radius_largest,
-        scales_per_octave,
+    image = image.astype(np.float32, copy=False)
+    config = _prepare_energy_config(image, params)
+    lattice = _energy_lattice(
+        image.shape,
+        int(config["max_voxels"]),
+        int(config["margin"]),
+        get_chunking_lattice_func,
     )
-    n_scales = len(lumen_radius_microns)
-
-    # Convert radii to pixels per axis then average for scalar pixel radii
-    lumen_radius_pixels_axes = lumen_radius_microns[:, None] / voxel_size[None, :]
-    lumen_radius_pixels = lumen_radius_pixels_axes.mean(axis=1)
-
-    # Use float32 image once for all scales
-    image = image.astype(np.float32)
-
-    total_voxels = int(np.prod(image.shape))
-    max_voxels = int(params.get("max_voxels_per_node_energy", 1e5))
-    if total_voxels > max_voxels:
-        max_sigma = (lumen_radius_microns[-1] / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
-        if approximating_PSF:
-            max_sigma = np.sqrt(max_sigma**2 + pixels_per_sigma_PSF**2)
-        margin = int(np.ceil(np.max(max_sigma)))
-        lattice = get_chunking_lattice_func(image.shape, max_voxels, margin)
-        if return_all_scales:
-            energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-        else:
-            energy_3d = np.empty(image.shape, dtype=np.float32)
-            scale_indices = np.empty(image.shape, dtype=np.int16)
-        for chunk_slice, out_slice, inner_slice in lattice:
-            chunk_img = image[chunk_slice]
-            sub_params = params.copy()
-            sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
-            sub_params["return_all_scales"] = return_all_scales
-            chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
-            if return_all_scales:
-                energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
-                    (*inner_slice, slice(None))
-                ]
-            else:
-                energy_3d[out_slice] = chunk_data["energy"][inner_slice]
-                scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
-        if return_all_scales:
-            if energy_sign < 0:
-                energy_3d = np.min(energy_4d, axis=3)
-                scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
-            else:
-                energy_3d = np.max(energy_4d, axis=3)
-                scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
-            return {
-                "energy": energy_3d,
-                "scale_indices": scale_indices,
-                "lumen_radius_microns": lumen_radius_microns,
-                "lumen_radius_pixels": lumen_radius_pixels,
-                "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
-                "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
-                "microns_per_sigma_PSF": microns_per_sigma_PSF,
-                "energy_sign": energy_sign,
-                "energy_4d": energy_4d,
-                "image_shape": image.shape,
-            }
-        return {
-            "energy": energy_3d,
-            "scale_indices": scale_indices,
-            "lumen_radius_microns": lumen_radius_microns,
-            "lumen_radius_pixels": lumen_radius_pixels,
-            "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
-            "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
-            "microns_per_sigma_PSF": microns_per_sigma_PSF,
-            "energy_sign": energy_sign,
-            "image_shape": image.shape,
-        }
-
-    if energy_method == "sato" and sato is None:
-        logger.warning(
-            "Sato filter unavailable (requires scikit-image>=0.19). Falling back to Hessian."
+    if len(lattice) > 1:
+        return _calculate_energy_field_chunked(
+            image,
+            params,
+            config,
+            lattice,
+            get_chunking_lattice_func,
         )
-        energy_method = "hessian"
-
-    if energy_method == "frangi" and frangi is None:
-        logger.warning("Frangi filter unavailable. Falling back to Hessian.")
-        energy_method = "hessian"
-    if energy_method == "simpleitk_objectness":
-        _require_simpleitk_backend()
-    if energy_method == "cupy_hessian":
-        _require_cupy_backend()
-
-    if return_all_scales:
-        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-    if energy_sign < 0:
-        energy_3d = np.full(image.shape, np.inf, dtype=np.float32)
-    else:
-        energy_3d = np.full(image.shape, -np.inf, dtype=np.float32)
-    if energy_method in ("frangi", "sato"):
-        scale_indices = np.zeros(image.shape, dtype=np.int16)
-
-        for scale_idx, sigma in enumerate(lumen_radius_pixels):
-            if energy_method == "frangi":
-                vesselness = frangi(
-                    image,
-                    sigmas=[sigma],
-                    black_ridges=(energy_sign > 0),
-                )
-            else:
-                vesselness = sato(
-                    image,
-                    sigmas=[sigma],
-                    black_ridges=(energy_sign > 0),
-                )
-            energy_scale = energy_sign * vesselness.astype(np.float32)
-            if return_all_scales:
-                energy_4d[..., scale_idx] = energy_scale
-            mask = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
-            energy_3d[mask] = energy_scale[mask]
-            scale_indices[mask] = scale_idx
-    else:
-        scale_indices = np.zeros(image.shape, dtype=np.int16)
-
-        for scale_idx, _ in enumerate(lumen_radius_pixels):
-            radius_microns = lumen_radius_microns[scale_idx]
-            sigma_scale = (radius_microns / voxel_size) / max(gaussian_to_ideal_ratio, 1e-12)
-            sigma_scale = np.asarray(sigma_scale, dtype=float)
-            energy_scale = _compute_energy_scale(
-                image,
-                {
-                    "approximating_PSF": approximating_PSF,
-                    "energy_method": energy_method,
-                    "energy_sign": energy_sign,
-                    "gaussian_to_ideal_ratio": gaussian_to_ideal_ratio,
-                    "lumen_radius_microns": lumen_radius_microns,
-                    "lumen_radius_pixels": lumen_radius_pixels,
-                    "microns_per_voxel": voxel_size,
-                    "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
-                    "spherical_to_annular_ratio": spherical_to_annular_ratio,
-                },
-                scale_idx,
-            )
-            if return_all_scales:
-                energy_4d[:, :, :, scale_idx] = energy_scale
-            if energy_sign < 0:
-                mask = energy_scale < energy_3d
-            else:
-                mask = energy_scale > energy_3d
-            energy_3d[mask] = energy_scale[mask]
-            scale_indices[mask] = scale_idx
-            continue
-
-    result = {
-        "energy": energy_3d,
-        "scale_indices": scale_indices,
-        "lumen_radius_microns": lumen_radius_microns,
-        "lumen_radius_pixels": lumen_radius_pixels,
-        "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
-        "pixels_per_sigma_PSF": pixels_per_sigma_PSF,
-        "microns_per_sigma_PSF": microns_per_sigma_PSF,
-        "energy_sign": energy_sign,
-        "image_shape": image.shape,
-    }
-    if return_all_scales:
-        result["energy_4d"] = energy_4d
-    return result
+    energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
+    return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
 
 
 def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
@@ -1020,6 +826,142 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
     }
 
 
+def _energy_lattice(
+    image_shape: tuple[int, ...],
+    max_voxels: int,
+    margin: int,
+    get_chunking_lattice_func,
+) -> list[
+    tuple[tuple[slice, slice, slice], tuple[slice, slice, slice], tuple[slice, slice, slice]]
+]:
+    total_voxels = int(np.prod(image_shape))
+    if total_voxels > max_voxels:
+        return cast(
+            "list[tuple[tuple[slice, slice, slice], tuple[slice, slice, slice], tuple[slice, slice, slice]]]",
+            get_chunking_lattice_func(image_shape, max_voxels, margin),
+        )
+    return [
+        (
+            (slice(0, image_shape[0]), slice(0, image_shape[1]), slice(0, image_shape[2])),
+            (slice(0, image_shape[0]), slice(0, image_shape[1]), slice(0, image_shape[2])),
+            (slice(0, image_shape[0]), slice(0, image_shape[1]), slice(0, image_shape[2])),
+        )
+    ]
+
+
+def _energy_result_payload(
+    config: dict[str, Any],
+    image_shape: tuple[int, ...],
+    energy_3d: np.ndarray,
+    scale_indices: np.ndarray,
+    energy_4d: np.ndarray | None = None,
+) -> dict[str, Any]:
+    result = {
+        "energy": energy_3d,
+        "scale_indices": scale_indices,
+        "lumen_radius_microns": config["lumen_radius_microns"],
+        "lumen_radius_pixels": config["lumen_radius_pixels"],
+        "lumen_radius_pixels_axes": config["lumen_radius_pixels_axes"],
+        "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
+        "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
+        "energy_sign": config["energy_sign"],
+        "image_shape": image_shape,
+    }
+    if energy_4d is not None:
+        result["energy_4d"] = energy_4d
+    return result
+
+
+def _best_energy_outputs(
+    image_shape: tuple[int, ...],
+    energy_sign: float,
+    n_scales: int,
+    return_all_scales: bool,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    fill_value = np.inf if energy_sign < 0 else -np.inf
+    energy_3d = np.full(image_shape, fill_value, dtype=np.float32)
+    scale_indices: np.ndarray = np.zeros(image_shape, dtype=np.int16)
+    energy_4d = np.zeros((*image_shape, n_scales), dtype=np.float32) if return_all_scales else None
+    return energy_3d, scale_indices, energy_4d
+
+
+def _update_best_energy(
+    energy_3d: np.ndarray,
+    scale_indices: np.ndarray,
+    energy_scale: np.ndarray,
+    scale_idx: int,
+    energy_sign: float,
+) -> None:
+    mask = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
+    energy_3d[mask] = energy_scale[mask]
+    scale_indices[mask] = scale_idx
+
+
+def _compute_direct_energy_outputs(
+    image: np.ndarray,
+    config: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    n_scales = len(config["lumen_radius_microns"])
+    energy_3d, scale_indices, energy_4d = _best_energy_outputs(
+        image.shape,
+        float(config["energy_sign"]),
+        n_scales,
+        bool(config["return_all_scales"]),
+    )
+    for scale_idx in range(n_scales):
+        energy_scale = _compute_energy_scale(image, config, scale_idx)
+        if energy_4d is not None:
+            energy_4d[..., scale_idx] = energy_scale
+        _update_best_energy(
+            energy_3d,
+            scale_indices,
+            energy_scale,
+            scale_idx,
+            float(config["energy_sign"]),
+        )
+    return energy_3d, scale_indices, energy_4d
+
+
+def _calculate_energy_field_chunked(
+    image: np.ndarray,
+    params: dict[str, Any],
+    config: dict[str, Any],
+    lattice,
+    get_chunking_lattice_func,
+) -> dict[str, Any]:
+    if config["return_all_scales"]:
+        n_scales = len(config["lumen_radius_microns"])
+        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
+        for chunk_slice, out_slice, inner_slice in lattice:
+            chunk_img = image[chunk_slice]
+            sub_params = params.copy()
+            sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
+            sub_params["return_all_scales"] = True
+            chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
+            energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
+                (*inner_slice, slice(None))
+            ]
+        if config["energy_sign"] < 0:
+            energy_3d = np.min(energy_4d, axis=3)
+            scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
+        else:
+            energy_3d = np.max(energy_4d, axis=3)
+            scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
+        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+
+    energy_3d = np.empty(image.shape, dtype=np.float32)
+    scale_indices = np.empty(image.shape, dtype=np.int16)
+    for chunk_slice, out_slice, inner_slice in lattice:
+        chunk_img = image[chunk_slice]
+        sub_params = params.copy()
+        sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
+        sub_params["return_all_scales"] = False
+        chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
+        energy_3d[out_slice] = chunk_data["energy"][inner_slice]
+        scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
+    return _energy_result_payload(config, image.shape, energy_3d, scale_indices)
+
+
 def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: int) -> np.ndarray:
     """Compute a single-scale energy response for a chunk."""
     image = image.astype(np.float32, copy=False)
@@ -1109,18 +1051,13 @@ def calculate_energy_field_resumable(
     ).hexdigest()
 
     total_voxels = int(np.prod(image.shape))
-    max_voxels = int(config["max_voxels"])
     storage_format = _select_energy_storage_format(config, total_voxels)
-    if total_voxels > max_voxels:
-        lattice = get_chunking_lattice_func(image.shape, max_voxels, int(config["margin"]))
-    else:
-        lattice = [
-            (
-                (slice(0, image.shape[0]), slice(0, image.shape[1]), slice(0, image.shape[2])),
-                (slice(0, image.shape[0]), slice(0, image.shape[1]), slice(0, image.shape[2])),
-                (slice(0, image.shape[0]), slice(0, image.shape[1]), slice(0, image.shape[2])),
-            )
-        ]
+    lattice = _energy_lattice(
+        image.shape,
+        int(config["max_voxels"]),
+        int(config["margin"]),
+        get_chunking_lattice_func,
+    )
 
     energy_suffix = ".zarr" if storage_format == "zarr" else ".npy"
     energy_path = stage_controller.artifact_path(f"best_energy{energy_suffix}")

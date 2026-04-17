@@ -266,14 +266,7 @@ def import_matlab_batch(
     stages
         Stages to import. Defaults to ``["energy", "vertices", "edges", "network"]``.
     """
-    batch_path = Path(batch_folder)
-
-    if not (batch_path / "vectors").exists():
-        found = find_batch_folder(batch_path)
-        if found is None:
-            raise FileNotFoundError(f"No MATLAB batch_* folder found in {batch_folder}")
-        batch_path = found
-
+    batch_path = _resolve_batch_path(Path(batch_folder))
     checkpoint_path = Path(checkpoint_dir)
     checkpoint_path.mkdir(parents=True, exist_ok=True)
     vectors_dir = batch_path / "vectors"
@@ -286,64 +279,17 @@ def import_matlab_batch(
     energy_checkpoint: dict[str, Any] | None = None
 
     if "energy" in stages:
-        energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
-        output_path = checkpoint_path / "checkpoint_energy.pkl"
-        joblib.dump(energy_checkpoint, output_path)
-        written["energy"] = str(output_path)
-        logger.info("Wrote MATLAB energy checkpoint: %s", output_path)
+        energy_checkpoint = _import_energy_stage(batch_path, checkpoint_path, written)
 
-    if (
-        "vertices" in stages
-        and (
-            vertex_files := sorted(vectors_dir.glob("curated_vertices_*.mat"))
-            or sorted(vectors_dir.glob("vertices_*.mat"))
-        )
-        and (mat := load_mat_file_safe(vertex_files[-1]))
-    ):
-        if energy_checkpoint is None:
-            try:
-                energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
-            except Exception as exc:  # pragma: no cover - fallback path only
-                logger.warning("Unable to preload MATLAB energy metadata for vertices: %s", exc)
-        raw_vertices = extract_vertices(mat)
-        vertices_checkpoint = _mat_vertices_to_python(raw_vertices, energy_checkpoint)
-        output_path = checkpoint_path / "checkpoint_vertices.pkl"
-        joblib.dump(vertices_checkpoint, output_path)
-        written["vertices"] = str(output_path)
-        logger.info(
-            "Wrote vertices checkpoint (%d vertices): %s",
-            vertices_checkpoint["count"],
-            output_path,
-        )
+    if "vertices" in stages:
+        energy_checkpoint = _ensure_energy_checkpoint(batch_path, energy_checkpoint)
+        _import_vertices_stage(vectors_dir, checkpoint_path, written, energy_checkpoint)
 
-    if (
-        "edges" in stages
-        and (
-            edge_files := sorted(vectors_dir.glob("curated_edges_*.mat"))
-            or sorted(vectors_dir.glob("edges_*.mat"))
-        )
-        and (mat := load_mat_file_safe(edge_files[-1]))
-    ):
-        edges_checkpoint = _mat_edges_to_python(extract_edges(mat))
-        output_path = checkpoint_path / "checkpoint_edges.pkl"
-        joblib.dump(edges_checkpoint, output_path)
-        written["edges"] = str(output_path)
-        logger.info(
-            "Wrote edges checkpoint (%d edges): %s",
-            edges_checkpoint["count"],
-            output_path,
-        )
+    if "edges" in stages:
+        _import_edges_stage(vectors_dir, checkpoint_path, written)
 
-    if (
-        "network" in stages
-        and (network_files := sorted(vectors_dir.glob("network_*.mat")))
-        and (mat := load_mat_file_safe(network_files[-1]))
-    ):
-        network_checkpoint = extract_network_data(mat)
-        output_path = checkpoint_path / "checkpoint_network.pkl"
-        joblib.dump(network_checkpoint, output_path)
-        written["network"] = str(output_path)
-        logger.info("Wrote network checkpoint: %s", output_path)
+    if "network" in stages:
+        _import_network_stage(vectors_dir, checkpoint_path, written)
 
     if not written:
         logger.warning("No MATLAB data files found in %s", batch_path)
@@ -359,6 +305,106 @@ def import_matlab_batch(
         logger.warning("Expected MATLAB data directory missing during import: %s", data_dir)
 
     return written
+
+
+def _resolve_batch_path(batch_path: Path) -> Path:
+    if (batch_path / "vectors").exists():
+        return batch_path
+    found = find_batch_folder(batch_path)
+    if found is None:
+        raise FileNotFoundError(f"No MATLAB batch_* folder found in {batch_path}")
+    return found
+
+
+def _import_energy_stage(
+    batch_path: Path, checkpoint_path: Path, written: dict[str, str]
+) -> dict[str, Any]:
+    energy_checkpoint = _load_matlab_energy_checkpoint(batch_path)
+    output_path = checkpoint_path / "checkpoint_energy.pkl"
+    joblib.dump(energy_checkpoint, output_path)
+    written["energy"] = str(output_path)
+    logger.info("Wrote MATLAB energy checkpoint: %s", output_path)
+    return energy_checkpoint
+
+
+def _ensure_energy_checkpoint(
+    batch_path: Path, energy_checkpoint: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    if energy_checkpoint is not None:
+        return energy_checkpoint
+    try:
+        return _load_matlab_energy_checkpoint(batch_path)
+    except Exception as exc:  # pragma: no cover - fallback path only
+        logger.warning("Unable to preload MATLAB energy metadata for vertices: %s", exc)
+        return None
+
+
+def _preferred_mat_files(
+    vectors_dir: Path, curated_pattern: str, fallback_pattern: str
+) -> list[Path]:
+    return sorted(vectors_dir.glob(curated_pattern)) or sorted(vectors_dir.glob(fallback_pattern))
+
+
+def _latest_mat_payload(files: list[Path]) -> dict[str, Any] | None:
+    return load_mat_file_safe(files[-1]) if files else None
+
+
+def _import_vertices_stage(
+    vectors_dir: Path,
+    checkpoint_path: Path,
+    written: dict[str, str],
+    energy_checkpoint: dict[str, Any] | None,
+) -> None:
+    mat = _latest_mat_payload(
+        _preferred_mat_files(vectors_dir, "curated_vertices_*.mat", "vertices_*.mat")
+    )
+    if not mat:
+        return
+    vertices_checkpoint = _mat_vertices_to_python(extract_vertices(mat), energy_checkpoint)
+    output_path = checkpoint_path / "checkpoint_vertices.pkl"
+    joblib.dump(vertices_checkpoint, output_path)
+    written["vertices"] = str(output_path)
+    logger.info(
+        "Wrote vertices checkpoint (%d vertices): %s",
+        vertices_checkpoint["count"],
+        output_path,
+    )
+
+
+def _import_edges_stage(
+    vectors_dir: Path,
+    checkpoint_path: Path,
+    written: dict[str, str],
+) -> None:
+    mat = _latest_mat_payload(
+        _preferred_mat_files(vectors_dir, "curated_edges_*.mat", "edges_*.mat")
+    )
+    if not mat:
+        return
+    edges_checkpoint = _mat_edges_to_python(extract_edges(mat))
+    output_path = checkpoint_path / "checkpoint_edges.pkl"
+    joblib.dump(edges_checkpoint, output_path)
+    written["edges"] = str(output_path)
+    logger.info(
+        "Wrote edges checkpoint (%d edges): %s",
+        edges_checkpoint["count"],
+        output_path,
+    )
+
+
+def _import_network_stage(
+    vectors_dir: Path,
+    checkpoint_path: Path,
+    written: dict[str, str],
+) -> None:
+    mat = _latest_mat_payload(sorted(vectors_dir.glob("network_*.mat")))
+    if not mat:
+        return
+    network_checkpoint = extract_network_data(mat)
+    output_path = checkpoint_path / "checkpoint_network.pkl"
+    joblib.dump(network_checkpoint, output_path)
+    written["network"] = str(output_path)
+    logger.info("Wrote network checkpoint: %s", output_path)
 
 
 def load_matlab_batch_params(batch_folder: str | Path) -> dict[str, Any]:

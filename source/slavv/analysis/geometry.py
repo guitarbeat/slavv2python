@@ -530,130 +530,21 @@ def calculate_network_statistics(
         "num_bifurcations": len(bifurcations),
         "num_vertices": len(vertex_positions),
     }
+    (
+        graph_obj,
+        strand_lengths,
+        edge_lengths,
+        edge_radii,
+        tortuosities,
+    ) = _network_graph_components(strands, vertex_positions, radii, microns_per_voxel)
 
-    G = nx.Graph()
-    G.add_nodes_from(range(len(vertex_positions)))
-    strand_lengths: list[float] = []
-    edge_lengths: list[float] = []
-    edge_radii: list[float] = []
-    tortuosities: list[float] = []
-    for strand in strands:
-        if len(strand) > 1:
-            length = 0.0
-            for i in range(len(strand) - 1):
-                pos1 = vertex_positions[strand[i]] * microns_per_voxel
-                pos2 = vertex_positions[strand[i + 1]] * microns_per_voxel
-                seg_length = np.linalg.norm(pos2 - pos1)
-                length += seg_length
-                edge_lengths.append(float(seg_length))
-                edge_radii.append((radii[strand[i]] + radii[strand[i + 1]]) / 2.0)
-                G.add_edge(strand[i], strand[i + 1], weight=seg_length)
-            strand_lengths.append(length)
-
-            start = vertex_positions[strand[0]] * microns_per_voxel
-            end = vertex_positions[strand[-1]] * microns_per_voxel
-            euclidean = np.linalg.norm(end - start)
-            if euclidean > 0:
-                tortuosities.append(length / euclidean)
-
-    if strand_lengths:
-        stats["mean_strand_length"] = np.mean(strand_lengths)
-        stats["total_length"] = np.sum(strand_lengths)
-        stats["strand_length_std"] = np.std(strand_lengths)
-    else:
-        stats["mean_strand_length"] = 0
-        stats["total_length"] = 0
-        stats["strand_length_std"] = 0
-
-    if tortuosities:
-        stats["mean_tortuosity"] = np.mean(tortuosities)
-        stats["tortuosity_std"] = np.std(tortuosities)
-    else:
-        stats["mean_tortuosity"] = 0
-        stats["tortuosity_std"] = 0
-
-    stats["num_edges"] = G.number_of_edges()
-    if degrees := [d for _, d in G.degree()]:
-        stats["mean_degree"] = float(np.mean(degrees))
-        stats["degree_std"] = float(np.std(degrees))
-    else:
-        stats["mean_degree"] = 0.0
-        stats["degree_std"] = 0.0
-
-    stats["num_connected_components"] = nx.number_connected_components(G)
-    stats["num_endpoints"] = sum(d == 1 for _, d in G.degree())
-    pairwise_lengths: list[float] = []
-    for comp in nx.connected_components(G):
-        sub = G.subgraph(comp)
-        if sub.number_of_nodes() < 2:
-            continue
-        for u, dist_map in nx.all_pairs_dijkstra_path_length(sub, weight="weight"):
-            for v, dist in dist_map.items():
-                if u < v:
-                    pairwise_lengths.append(dist)
-    if pairwise_lengths:
-        stats["avg_path_length"] = float(np.mean(pairwise_lengths))
-        stats["network_diameter"] = float(np.max(pairwise_lengths))
-    else:
-        stats["avg_path_length"] = 0.0
-        stats["network_diameter"] = 0.0
-    stats["clustering_coefficient"] = (
-        float(nx.average_clustering(G, weight="weight")) if G.number_of_nodes() > 1 else 0.0
-    )
-
-    if betweenness := nx.betweenness_centrality(G, weight="weight"):
-        vals = np.fromiter(betweenness.values(), dtype=float)
-        stats["betweenness_mean"] = float(np.mean(vals))
-        stats["betweenness_std"] = float(np.std(vals))
-    else:
-        stats["betweenness_mean"] = 0.0
-        stats["betweenness_std"] = 0.0
-
-    if closeness := nx.closeness_centrality(G, distance="weight"):
-        cvals = np.fromiter(closeness.values(), dtype=float)
-        stats["closeness_mean"] = float(np.mean(cvals))
-        stats["closeness_std"] = float(np.std(cvals))
-    else:
-        stats["closeness_mean"] = 0.0
-        stats["closeness_std"] = 0.0
-
-    eigen = (
-        nx.eigenvector_centrality(G, weight="weight", max_iter=1000)
-        if G.number_of_nodes() > 0
-        else {}
-    )
-    if eigen:
-        evals = np.fromiter(eigen.values(), dtype=float)
-        stats["eigenvector_mean"] = float(np.mean(evals))
-        stats["eigenvector_std"] = float(np.std(evals))
-    else:
-        stats["eigenvector_mean"] = 0.0
-        stats["eigenvector_std"] = 0.0
-
-    stats["graph_density"] = float(nx.density(G))
-
-    if edge_lengths:
-        stats["mean_edge_length"] = float(np.mean(edge_lengths))
-        stats["edge_length_std"] = float(np.std(edge_lengths))
-    else:
-        stats["mean_edge_length"] = 0.0
-        stats["edge_length_std"] = 0.0
-
-    if edge_radii:
-        stats["mean_edge_radius"] = float(np.mean(edge_radii))
-        stats["edge_radius_std"] = float(np.std(edge_radii))
-    else:
-        stats["mean_edge_radius"] = 0.0
-        stats["edge_radius_std"] = 0.0
-
-    if angles := calculate_branching_angles(
-        strands, vertex_positions, microns_per_voxel, bifurcations
-    ):
-        stats["mean_branch_angle"] = float(np.mean(angles))
-        stats["branch_angle_std"] = float(np.std(angles))
-    else:
-        stats["mean_branch_angle"] = 0.0
-        stats["branch_angle_std"] = 0.0
+    _update_mean_std_stats(stats, strand_lengths, "mean_strand_length", "strand_length_std")
+    stats["total_length"] = float(np.sum(strand_lengths)) if strand_lengths else 0.0
+    _update_mean_std_stats(stats, tortuosities, "mean_tortuosity", "tortuosity_std")
+    _update_graph_stats(stats, graph_obj)
+    _update_mean_std_stats(stats, edge_lengths, "mean_edge_length", "edge_length_std")
+    _update_mean_std_stats(stats, edge_radii, "mean_edge_radius", "edge_radius_std")
+    _update_branch_angle_stats(stats, strands, vertex_positions, microns_per_voxel, bifurcations)
 
     if len(radii) > 0:
         stats["mean_radius"] = np.mean(radii)
@@ -683,6 +574,142 @@ def calculate_network_statistics(
     stats["edge_density"] = stats["num_edges"] / image_volume if image_volume > 0 else 0
 
     return stats
+
+
+def _network_graph_components(
+    strands: list[list[int]],
+    vertex_positions: np.ndarray,
+    radii: np.ndarray,
+    microns_per_voxel: list[float],
+) -> tuple[nx.Graph, list[float], list[float], list[float], list[float]]:
+    graph_obj = nx.Graph()
+    graph_obj.add_nodes_from(range(len(vertex_positions)))
+    strand_lengths: list[float] = []
+    edge_lengths: list[float] = []
+    edge_radii: list[float] = []
+    tortuosities: list[float] = []
+    for strand in strands:
+        if len(strand) <= 1:
+            continue
+        length = 0.0
+        for idx in range(len(strand) - 1):
+            start_idx = strand[idx]
+            end_idx = strand[idx + 1]
+            pos1 = vertex_positions[start_idx] * microns_per_voxel
+            pos2 = vertex_positions[end_idx] * microns_per_voxel
+            seg_length = np.linalg.norm(pos2 - pos1)
+            length += seg_length
+            edge_lengths.append(float(seg_length))
+            edge_radii.append((radii[start_idx] + radii[end_idx]) / 2.0)
+            graph_obj.add_edge(start_idx, end_idx, weight=seg_length)
+        strand_lengths.append(length)
+        euclidean = np.linalg.norm(
+            (vertex_positions[strand[-1]] - vertex_positions[strand[0]]) * microns_per_voxel
+        )
+        if euclidean > 0:
+            tortuosities.append(length / euclidean)
+    return graph_obj, strand_lengths, edge_lengths, edge_radii, tortuosities
+
+
+def _update_mean_std_stats(
+    stats: dict[str, Any],
+    values: list[float],
+    mean_key: str,
+    std_key: str,
+) -> None:
+    if values:
+        stats[mean_key] = float(np.mean(values))
+        stats[std_key] = float(np.std(values))
+        return
+    stats[mean_key] = 0.0
+    stats[std_key] = 0.0
+
+
+def _pairwise_path_lengths(graph_obj: nx.Graph) -> list[float]:
+    pairwise_lengths: list[float] = []
+    for component in nx.connected_components(graph_obj):
+        subgraph = graph_obj.subgraph(component)
+        if subgraph.number_of_nodes() < 2:
+            continue
+        for start_node, dist_map in nx.all_pairs_dijkstra_path_length(subgraph, weight="weight"):
+            pairwise_lengths.extend(
+                distance for end_node, distance in dist_map.items() if start_node < end_node
+            )
+    return pairwise_lengths
+
+
+def _update_centrality_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
+    if betweenness := nx.betweenness_centrality(graph_obj, weight="weight"):
+        values = np.fromiter(betweenness.values(), dtype=float)
+        stats["betweenness_mean"] = float(np.mean(values))
+        stats["betweenness_std"] = float(np.std(values))
+    else:
+        stats["betweenness_mean"] = 0.0
+        stats["betweenness_std"] = 0.0
+
+    if closeness := nx.closeness_centrality(graph_obj, distance="weight"):
+        values = np.fromiter(closeness.values(), dtype=float)
+        stats["closeness_mean"] = float(np.mean(values))
+        stats["closeness_std"] = float(np.std(values))
+    else:
+        stats["closeness_mean"] = 0.0
+        stats["closeness_std"] = 0.0
+
+    eigen = (
+        nx.eigenvector_centrality(graph_obj, weight="weight", max_iter=1000)
+        if graph_obj.number_of_nodes() > 0
+        else {}
+    )
+    if eigen:
+        values = np.fromiter(eigen.values(), dtype=float)
+        stats["eigenvector_mean"] = float(np.mean(values))
+        stats["eigenvector_std"] = float(np.std(values))
+    else:
+        stats["eigenvector_mean"] = 0.0
+        stats["eigenvector_std"] = 0.0
+
+
+def _update_graph_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
+    stats["num_edges"] = graph_obj.number_of_edges()
+    if degrees := [degree for _, degree in graph_obj.degree()]:
+        stats["mean_degree"] = float(np.mean(degrees))
+        stats["degree_std"] = float(np.std(degrees))
+    else:
+        stats["mean_degree"] = 0.0
+        stats["degree_std"] = 0.0
+
+    stats["num_connected_components"] = nx.number_connected_components(graph_obj)
+    stats["num_endpoints"] = sum(degree == 1 for _, degree in graph_obj.degree())
+    if pairwise_lengths := _pairwise_path_lengths(graph_obj):
+        stats["avg_path_length"] = float(np.mean(pairwise_lengths))
+        stats["network_diameter"] = float(np.max(pairwise_lengths))
+    else:
+        stats["avg_path_length"] = 0.0
+        stats["network_diameter"] = 0.0
+    stats["clustering_coefficient"] = (
+        float(nx.average_clustering(graph_obj, weight="weight"))
+        if graph_obj.number_of_nodes() > 1
+        else 0.0
+    )
+    stats["graph_density"] = float(nx.density(graph_obj))
+    _update_centrality_stats(stats, graph_obj)
+
+
+def _update_branch_angle_stats(
+    stats: dict[str, Any],
+    strands: list[list[int]],
+    vertex_positions: np.ndarray,
+    microns_per_voxel: list[float],
+    bifurcations: np.ndarray,
+) -> None:
+    if angles := calculate_branching_angles(
+        strands, vertex_positions, microns_per_voxel, bifurcations
+    ):
+        stats["mean_branch_angle"] = float(np.mean(angles))
+        stats["branch_angle_std"] = float(np.std(angles))
+        return
+    stats["mean_branch_angle"] = 0.0
+    stats["branch_angle_std"] = 0.0
 
 
 def crop_vertices(
