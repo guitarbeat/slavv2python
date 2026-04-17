@@ -64,32 +64,32 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
                 vertIdx2[total - 1]]
             if not fan:
                 face.append(vertIdx1[total - 1])
-            faces.append(face)
-
         else:
             face = [vertIdx2[0], vertIdx1[0]]
             if not fan:
                 face.append(vertIdx1[total - 1])
             face.append(vertIdx2[total - 1])
-            faces.append(face)
+        faces.append(face)
 
     # Bridge the rest of the faces
     for num in range(total - 1):
         if flipped:
-            if fan:
-                face = [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx2[num], vertIdx1[num],
-                    vertIdx1[num + 1], vertIdx2[num + 1]]
-            faces.append(face)
+            face = (
+                [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
+                if fan
+                else [
+                    vertIdx2[num],
+                    vertIdx1[num],
+                    vertIdx1[num + 1],
+                    vertIdx2[num + 1],
+                ]
+            )
+        elif fan:
+            face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
         else:
-            if fan:
-                face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx1[num], vertIdx2[num],
-                    vertIdx2[num + 1], vertIdx1[num + 1]]
-            faces.append(face)
-
+            face = [vertIdx1[num], vertIdx2[num],
+                vertIdx2[num + 1], vertIdx1[num + 1]]
+        faces.append(face)
     return faces
 
 
@@ -129,9 +129,13 @@ def add_gem(r1, r2, seg, h1, h2):
         c1 = cos(i * a)
         c2 = cos(offset + i * a)
 
-        verts.append((r4 * s1, r4 * c1, h4))    # Middle of pavilion
-        verts.append((r1 * s2, r1 * c2, 0.0))   # Pavilion
-        verts.append((r3 * s1, r3 * c1, h3))    # Middle crown
+        verts.extend(
+            (
+                (r4 * s1, r4 * c1, h4),
+                (r1 * s2, r1 * c2, 0.0),
+                (r3 * s1, r3 * c1, h3),
+            )
+        )
         edgeloop_flat.append(len(verts))
         verts.append((r2 * s2, r2 * c2, h2))    # Crown
 
@@ -141,12 +145,14 @@ def add_gem(r1, r2, seg, h1, h2):
         i = index * 4
         j = ((index + 1) % seg) * 4
 
-        faces.append([j + 2, vert_tip, i + 2, i + 3])  # Tip -> Middle of pav
-        faces.append([j + 2, i + 3, j + 3])            # Middle of pav -> pav
-        faces.append([j + 3, i + 3, j + 4])            # Pav -> Middle crown
-        faces.append([j + 4, i + 3, i + 4, i + 5])     # Crown quads
-        faces.append([j + 4, i + 5, j + 5])            # Middle crown -> crown
-
+        faces.extend(([j + 2, vert_tip, i + 2, i + 3], [j + 2, i + 3, j + 3]))
+        faces.extend(
+            (
+                [j + 3, i + 3, j + 4],
+                [j + 4, i + 3, i + 4, i + 5],
+                [j + 4, i + 5, j + 5],
+            )
+        )
     faces_flat = createFaces([vert_flat], edgeloop_flat, closed=True)
     faces.extend(faces_flat)
 
@@ -347,14 +353,13 @@ class AddDiamond(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def DiamondParameters():
-    DiamondParameters = [
+    return [
         "segments",
         "girdle_radius",
         "table_radius",
         "crown_height",
         "pavilion_height",
-        ]
-    return DiamondParameters
+    ]
 
 
 class AddGem(Operator, object_utils.AddObjectHelper):
@@ -497,11 +502,10 @@ class AddGem(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def GemParameters():
-    GemParameters = [
+    return [
         "segments",
         "pavilion_radius",
         "crown_radius",
         "crown_height",
         "pavilion_height",
-        ]
-    return GemParameters
+    ]

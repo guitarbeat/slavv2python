@@ -10,9 +10,9 @@ from bpy.props import (
 
 
 def centro(sel):
-    x = sum([obj.location[0] for obj in sel]) / len(sel)
-    y = sum([obj.location[1] for obj in sel]) / len(sel)
-    z = sum([obj.location[2] for obj in sel]) / len(sel)
+    x = sum(obj.location[0] for obj in sel) / len(sel)
+    y = sum(obj.location[1] for obj in sel) / len(sel)
+    z = sum(obj.location[2] for obj in sel) / len(sel)
     return (x, y, z)
 
 
@@ -65,7 +65,7 @@ class P2E(Operator):
 
         try:
             bpy.ops.object.mode_set()
-        except:
+        except Exception:
             pass
 
         if self.locat == 'CURSOR':
@@ -93,7 +93,7 @@ class P2E(Operator):
             o.select_set(False)
         for o in objs:
             if self.renom:
-                o.name = self.nombre + '_' + o.name
+                o.name = f'{self.nombre}_{o.name}'
         return {'FINISHED'}
 
 
@@ -111,19 +111,13 @@ class PreFix(Operator):
     def execute(self, context):
         act = context.object
         objs = act.children
-        prefix = act.name + '_'
-        remove = False
+        prefix = f'{act.name}_'
+        remove = any(o.name.startswith(prefix) for o in objs)
         for o in objs:
-            if o.name.startswith(prefix):
-                remove = True
-                break
-
-        if remove is True:
-            for o in objs:
+            if remove:
                 if o.name.startswith(prefix):
                     o.name = o.name.partition(prefix)[2]
-        else:
-            for o in objs:
+            else:
                 o.name = prefix + o.name
 
         return {'FINISHED'}

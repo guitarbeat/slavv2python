@@ -35,15 +35,14 @@ def beamEndVs(sRef, y_off):
         bEndZ2 = sRef.beamZ / 2
         bEndZInr = ((sRef.beamZ - thick) / 2)
 
-    endVs = []
+    endVs = [
+        (bEndX2, y_off, bEndZ2),
+        (-bEndX2, y_off, bEndZ2),
+        (-bEndX2, y_off, -bEndZ2),
+        (bEndX2, y_off, -bEndZ2),
+        (bEndXInr, y_off, bEndZInr),
+    ]
 
-    # outer ...
-    endVs.append((bEndX2, y_off, bEndZ2))
-    endVs.append((-bEndX2, y_off, bEndZ2))
-    endVs.append((-bEndX2, y_off, -bEndZ2))
-    endVs.append((bEndX2, y_off, -bEndZ2))
-    # innner ...
-    endVs.append((bEndXInr, y_off, bEndZInr))
     endVs.append((-bEndXInr, y_off, bEndZInr))
     endVs.append((-bEndXInr, y_off, -bEndZInr))
     endVs.append((bEndXInr, y_off, -bEndZInr))
@@ -67,17 +66,20 @@ def beamEndFaces(verts_list):
 
     # Create list of faces
     for index in range(num_of_verts):
-        faces_temp = []
+        faces_temp = [verts_list[index]]
 
         if index == (num_of_verts - 1):
-            faces_temp.append(verts_list[index])
-            faces_temp.append(verts_list[index - index])
-            faces_temp.append(verts_list[index + 1])
-            faces_temp.append(verts_list[index * 2 + 1])
+            faces_temp.extend(
+                (
+                    verts_list[index - index],
+                    verts_list[index + 1],
+                    verts_list[index * 2 + 1],
+                )
+            )
         else:
-            faces_temp.append(verts_list[index])
-            faces_temp.append(verts_list[index + 1])
-            faces_temp.append(verts_list[index + num_of_verts + 1])
+            faces_temp.extend(
+                (verts_list[index + 1], verts_list[index + num_of_verts + 1])
+            )
             faces_temp.append(verts_list[index + num_of_verts])
 
         beamFs.append(tuple(faces_temp))
@@ -136,10 +138,7 @@ def create_beam(sRef):
 
     # Create front face
     numofverts = len(frontVs)
-    verts_front_list = []
-    for index in range(numofverts):
-        verts_front_list.append(index)
-
+    verts_front_list = list(range(numofverts))
     frontFs = beamEndFaces(verts_front_list)
 
     # Create back face
@@ -157,9 +156,9 @@ def create_beam(sRef):
 
     # Object has thickness, create list of outside vertices
     numofverts = len(verts_front_list)
-    halfVerts = int(numofverts / 2)
-    frontVs = verts_front_list[0:halfVerts]
-    backVs = verts_back_list[0:halfVerts]
+    halfVerts = numofverts // 2
+    frontVs = verts_front_list[:halfVerts]
+    backVs = verts_back_list[:halfVerts]
 
     faces_side_temp = beamSides(frontVs, backVs)
 
@@ -188,9 +187,7 @@ def beamSlant(sRef, outV, inV):
 
     # calculate variance & adjust vertex
     deltaV = ((inV - outV) / 100)
-    adVert = outV + (deltaV * bTaper)
-
-    return adVert
+    return outV + (deltaV * bTaper)
 
 
 # #####################
@@ -267,10 +264,10 @@ def create_u_beam(sRef):
     backFtemp = backFtemp[1:4]  # Remove face
 
     # Create list vertices for outside faces
-    numofverts = int(len(frontVlist))
-    halfVerts = int(numofverts / 2)
-    frontVtemp = frontVlist[0:halfVerts]
-    backVtemp = backVlist[0:halfVerts]
+    numofverts = len(frontVlist)
+    halfVerts = numofverts // 2
+    frontVtemp = frontVlist[:halfVerts]
+    backVtemp = backVlist[:halfVerts]
 
     sideFs = beamSides(frontVtemp, backVtemp)
     sideFs = sideFs[1:]  # Remove face
@@ -280,7 +277,7 @@ def create_u_beam(sRef):
     backVtemp = backVlist[halfVerts:numofverts]
 
     sideFs += beamSides(frontVtemp, backVtemp)
-    sideFs = sideFs[0:3] + sideFs[4:]  # Remove face
+    sideFs = sideFs[:3] + sideFs[4:]
 
     # fill in faces
     sideFs.append((0, 4, 12, 8))
@@ -806,12 +803,11 @@ class addBeam(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def BeamParameters():
-    BeamParameters = [
-            "Type",
-            "beamZ",
-            "beamX",
-            "beamY",
-            "beamW",
-            "edgeA",
-            ]
-    return BeamParameters
+    return [
+        "Type",
+        "beamZ",
+        "beamX",
+        "beamY",
+        "beamW",
+        "edgeA",
+    ]

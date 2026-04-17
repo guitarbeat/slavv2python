@@ -21,7 +21,7 @@ safe_list = ['acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh',
     'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'gcd']
 
 # Use the list to filter the local namespace
-safe_dict = dict((k, globals().get(k, None)) for k in safe_list)
+safe_dict = {k: globals().get(k, None) for k in safe_list}
 safe_dict['math'] = math
 safe_dict['numpy'] = safe_dict['np'] = numpy
 safe_dict['lcm'] = numpy.lcm
@@ -88,32 +88,32 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
                 vertIdx2[total - 1]]
             if not fan:
                 face.append(vertIdx1[total - 1])
-            faces.append(face)
-
         else:
             face = [vertIdx2[0], vertIdx1[0]]
             if not fan:
                 face.append(vertIdx1[total - 1])
             face.append(vertIdx2[total - 1])
-            faces.append(face)
+        faces.append(face)
 
     # Bridge the rest of the faces
     for num in range(total - 1):
         if flipped:
-            if fan:
-                face = [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx2[num], vertIdx1[num],
-                    vertIdx1[num + 1], vertIdx2[num + 1]]
-            faces.append(face)
+            face = (
+                [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
+                if fan
+                else [
+                    vertIdx2[num],
+                    vertIdx1[num],
+                    vertIdx1[num + 1],
+                    vertIdx2[num + 1],
+                ]
+            )
+        elif fan:
+            face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
         else:
-            if fan:
-                face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx1[num], vertIdx2[num],
-                    vertIdx2[num + 1], vertIdx1[num + 1]]
-            faces.append(face)
-
+            face = [vertIdx1[num], vertIdx2[num],
+                vertIdx2[num + 1], vertIdx1[num + 1]]
+        faces.append(face)
     return faces
 
 
@@ -160,7 +160,6 @@ class AddZFunctionSurface(Operator):
                 )
 
     def execute(self, context):
-        equation = self.equation
         div_x = self.div_x
         div_y = self.div_y
         size_x = self.size_x
@@ -176,18 +175,19 @@ class AddZFunctionSurface(Operator):
 
         edgeloop_prev = []
 
-        if equation:
+        if equation := self.equation:
             try:
                 expr_args = (
                     compile(equation, __file__, 'eval'),
                     {"__builtins__": None},
                     safe_dict)
-            except:
+            except Exception:
                 import traceback
                 # WARNING is used to prevent the constant pop-up spam
-                self.report({'WARNING'},
-                            "Error parsing expression: {} "
-                            "(Check the console for more info)".format(equation))
+                self.report(
+                    {'WARNING'},
+                    f"Error parsing expression: {equation} (Check the console for more info)",
+                )
                 print("\n[Add Z Function Surface]:\n\n", traceback.format_exc(limit=1))
 
                 return {'CANCELLED'}
@@ -206,11 +206,12 @@ class AddZFunctionSurface(Operator):
                     # Try to evaluate the equation.
                     try:
                         z = float(eval(*expr_args))
-                    except:
+                    except Exception:
                         import traceback
-                        self.report({'WARNING'},
-                                    "Error evaluating expression: {} "
-                                    "(Check the console for more info)".format(equation))
+                        self.report(
+                            {'WARNING'},
+                            f"Error evaluating expression: {equation} (Check the console for more info)",
+                        )
                         print("\n[Add Z Function Surface]:\n\n", traceback.format_exc(limit=1))
 
                         return {'CANCELLED'}
@@ -294,7 +295,7 @@ def xyz_function_surface_faces(self, x_eq, y_eq, z_eq,
             compile(h_eq, __file__.replace(".py", "_h.py"), 'eval'),
             {"__builtins__": None},
             safe_dict)
-    except:
+    except Exception:
         import traceback
         self.report({'WARNING'}, "Error parsing expression(s) - "
                     "Check the console for more info")
@@ -325,7 +326,7 @@ def xyz_function_surface_faces(self, x_eq, y_eq, z_eq,
                     float(eval(*expr_args_x)),
                     float(eval(*expr_args_y)),
                     float(eval(*expr_args_z))))
-            except:
+            except Exception:
                 import traceback
                 self.report({'WARNING'}, "Error evaluating expression(s) - "
                              "Check the console for more info")
@@ -351,15 +352,20 @@ def xyz_function_surface_faces(self, x_eq, y_eq, z_eq,
 
     if close_v and wrap_u and (not wrap_v):
         for uN in range(1, range_u_step - 1):
-            faces.append([
-                range_u_step - 1,
-                range_u_step - 1 - uN,
-                range_u_step - 2 - uN])
-            faces.append([
-                range_v_step * uRange,
-                range_v_step * uRange + uN,
-                range_v_step * uRange + uN + 1])
-
+            faces.extend(
+                (
+                    [
+                        range_u_step - 1,
+                        range_u_step - 1 - uN,
+                        range_u_step - 2 - uN,
+                    ],
+                    [
+                        range_v_step * uRange,
+                        range_v_step * uRange + uN,
+                        range_v_step * uRange + uN + 1,
+                    ],
+                )
+            )
     return verts, faces
 
 

@@ -711,8 +711,7 @@ class add_mesh_wallb(Operator, object_utils.AddObjectHelper):
             radialized = 1
             # eliminate to allow user control for start/completion?
             dims['s'] = 0.0       # complete radial
-            if dims['e'] > PI * 2:
-                dims['e'] = PI * 2  # max end for circle
+            dims['e'] = min(dims['e'], PI * 2)
             if dims['b'] < settings['g']:
                 dims['b'] = settings['g']  # min bottom for grout extension
         else:
@@ -856,9 +855,8 @@ class add_mesh_wallb(Operator, object_utils.AddObjectHelper):
             # it's opening center offset relative to cursor (space between openings)...
             openingSpecs[openingIdx]['x'] = crenelW * 2 - 1  # assume standard spacing
 
-            if not radialized:  # normal wall?
-                # set indent 0 (center) if opening is 50% or more of wall width, no repeat.
-                if crenelW * 2 >= wallW:
+            if crenelW * 2 >= wallW:
+                if not radialized:
                     openingSpecs[openingIdx]['x'] = 0
                     openingSpecs[openingIdx]['rp'] = 0
             # set bottom of opening (center of hole)
@@ -876,8 +874,8 @@ class add_mesh_wallb(Operator, object_utils.AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if context.selected_objects != [] and context.active_object and \
-                (context.active_object.data is not None) and ('Wall' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('Wall' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name
@@ -923,7 +921,7 @@ class add_mesh_wallb(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def WallParameters():
-    WallParameters = [
+    return [
         "ConstructTog",
         "RadialTog",
         "SlopeTog",
@@ -991,5 +989,4 @@ def WallParameters():
         "StepLeft",
         "StepOnly",
         "StepBack",
-        ]
-    return WallParameters
+    ]

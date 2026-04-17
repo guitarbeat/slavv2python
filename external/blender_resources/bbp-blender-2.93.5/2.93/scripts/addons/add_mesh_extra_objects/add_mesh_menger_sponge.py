@@ -90,14 +90,10 @@ class MengerSponge(object):
         if depth <= 0:
             if not face_vis:
                 face_vis = [True] * 6
-            cur_point_indices = []
-            for p in cur_points:
-                cur_point_indices.append(self.__get_vindex(p))
+            cur_point_indices = [self.__get_vindex(p) for p in cur_points]
             for i, vis in enumerate(face_vis):
                 if vis:
-                    f = []
-                    for vi in self.FACE_INDICES[i]:
-                        f.append(cur_point_indices[vi])
+                    f = [cur_point_indices[vi] for vi in self.FACE_INDICES[i]]
                     self.__faces.append(f)
             return
 

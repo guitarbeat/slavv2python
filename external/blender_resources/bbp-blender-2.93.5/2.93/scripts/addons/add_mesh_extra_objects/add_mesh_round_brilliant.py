@@ -250,7 +250,7 @@ def addBrilliant(context, self, s, table_w, crown_h, girdle_t, pavi_d, bezel_f,
     sel_mode = bpy.context.tool_settings.mesh_select_mode
     bpy.context.tool_settings.mesh_select_mode = [False, False, True]
     bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-    for i, face in enumerate(obj.data.polygons):
+    for face in obj.data.polygons:
         face.select = True
     bpy.ops.object.mode_set(mode='EDIT', toggle=False)
     bpy.ops.mesh.normals_make_consistent(inside=False)
@@ -268,7 +268,7 @@ def addBrilliant(context, self, s, table_w, crown_h, girdle_t, pavi_d, bezel_f,
         dp = obj.data.polygons[:4 * s]              # only consider faces of girdle
         ov = obj.data.vertices
 
-        for i, p in enumerate(dp):
+        for p in dp:
             pls.extend(p.vertices)                  # list all verts of girdle
 
         for i, e in enumerate(obj.data.edges):      # select edges to mark sharp
@@ -479,7 +479,7 @@ class MESH_OT_primitive_brilliant_add(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def BrilliantParameters():
-    BrilliantParameters = [
+    return [
         "s",
         "table_w",
         "crown_h",
@@ -491,5 +491,4 @@ def BrilliantParameters():
         "pavi_f",
         "culet",
         "keep_lga",
-        ]
-    return BrilliantParameters
+    ]

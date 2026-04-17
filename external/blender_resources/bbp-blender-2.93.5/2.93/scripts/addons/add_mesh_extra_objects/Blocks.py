@@ -141,7 +141,7 @@ stepBack = 0
 def debug_prints(func="", text="Message", var=None):
     global DEBUG
     if DEBUG:
-        print("\n[{}]\nmessage: {}".format(func, text))
+        print(f"\n[{func}]\nmessage: {text}")
         if var:
             print("Error: ", var)
 
@@ -258,8 +258,9 @@ def fill(left, right, avedst, mindst=0.0, dev=0.0, pad=(0.0, 0.0), num=0,
 
 
 # For generating block geometry
-def MakeABlock(bounds, segsize, vll=0, Offsets=None, FaceExclude=[],
-               bevel=0, xBevScl=1):
+def MakeABlock(bounds, segsize, vll=0, Offsets=None, FaceExclude=None, bevel=0, xBevScl=1):
+    if FaceExclude is None:
+        FaceExclude = []
     __doc__ = """\
     MakeABlock returns lists of points and faces to be made into a square
             cornered block, subdivided along the length, with optional bevels.
@@ -290,22 +291,32 @@ def MakeABlock(bounds, segsize, vll=0, Offsets=None, FaceExclude=[],
     faces = []
 
     if Offsets is None:
-        points.append([slices[0], bounds[4], bounds[2]])
-        points.append([slices[0], bounds[5], bounds[2]])
-        points.append([slices[0], bounds[5], bounds[3]])
-        points.append([slices[0], bounds[4], bounds[3]])
-
+        points.extend(
+            (
+                [slices[0], bounds[4], bounds[2]],
+                [slices[0], bounds[5], bounds[2]],
+                [slices[0], bounds[5], bounds[3]],
+                [slices[0], bounds[4], bounds[3]],
+            )
+        )
         for x in slices[1:-1]:
             points.append([x, bounds[4], bounds[2]])
             points.append([x, bounds[5], bounds[2]])
             points.append([x, bounds[5], bounds[3]])
             points.append([x, bounds[4], bounds[3]])
 
-        points.append([slices[-1], bounds[4], bounds[2]])
-        points.append([slices[-1], bounds[5], bounds[2]])
-        points.append([slices[-1], bounds[5], bounds[3]])
-        points.append([slices[-1], bounds[4], bounds[3]])
-
+        points.extend(
+            (
+                [slices[-1], bounds[4], bounds[2]],
+                [slices[-1], bounds[5], bounds[2]],
+            )
+        )
+        points.extend(
+            (
+                [slices[-1], bounds[5], bounds[3]],
+                [slices[-1], bounds[4], bounds[3]],
+            )
+        )
     else:
         points.append([slices[0] + Offsets[0][0], bounds[4] + Offsets[0][1], bounds[2] + Offsets[0][2]])
         points.append([slices[0] + Offsets[1][0], bounds[5] + Offsets[1][1], bounds[2] + Offsets[1][2]])
@@ -351,7 +362,9 @@ def MakeABlock(bounds, segsize, vll=0, Offsets=None, FaceExclude=[],
 
 # For generating Keystone Geometry
 
-def MakeAKeystone(xpos, width, zpos, ztop, zbtm, thick, bevel, vll=0, FaceExclude=[], xBevScl=1):
+def MakeAKeystone(xpos, width, zpos, ztop, zbtm, thick, bevel, vll=0, FaceExclude=None, xBevScl=1):
+    if FaceExclude is None:
+        FaceExclude = []
     __doc__ = """\
     MakeAKeystone returns lists of points and faces to be made into a
     square cornered keystone, with optional bevels.
@@ -379,27 +392,17 @@ def MakeAKeystone(xpos, width, zpos, ztop, zbtm, thick, bevel, vll=0, FaceExclud
     Wid = width / 2.0
     Thk = thick / 2.0
 
-    # The front top point
-    points.append([xpos, Thk, Top])
-    # The front left point
-    points.append([xpos - Wid, Thk, zpos])
-    # The front bottom point
-    points.append([xpos, Thk, Btm])
-    # The front right point
-    points.append([xpos + Wid, Thk, zpos])
-
+    points.extend(([xpos, Thk, Top], [xpos - Wid, Thk, zpos]))
+    points.extend(([xpos, Thk, Btm], [xpos + Wid, Thk, zpos]))
     MirrorPoints = []
     for i in points:
         MirrorPoints.append([i[0], -i[1], i[2]])
     points += MirrorPoints
     points[6][2] += bevel
 
-    faces.append([3, 2, 1, 0])
-    faces.append([4, 5, 6, 7])
-    faces.append([4, 7, 3, 0])
-    faces.append([5, 4, 0, 1])
-    faces.append([6, 5, 1, 2])
-    faces.append([7, 6, 2, 3])
+    faces.extend(([3, 2, 1, 0], [4, 5, 6, 7]))
+    faces.extend(([4, 7, 3, 0], [5, 4, 0, 1]))
+    faces.extend(([6, 5, 1, 2], [7, 6, 2, 3]))
     # Offset the vertex numbers by the number of vertices already in the list
     for i in range(len(faces)):
         for j in range(len(faces[i])):
@@ -495,10 +498,7 @@ class opening:
 
         # set the row radius: 1 for standard wall (flat)
         if radialized:
-            if slope:
-                r1 = abs(dims['t'] * sin(ht * PI / (dims['t'] * 2)))
-            else:
-                r1 = abs(ht)
+            r1 = abs(dims['t'] * sin(ht * PI / (dims['t'] * 2))) if slope else abs(ht)
         else:
             r1 = 1
 
@@ -508,8 +508,6 @@ class opening:
         elif ht > self.top():  # too high
             return None
 
-        # Check for circ returning None - prevent TypeError (script failure) with float.
-        # in this range, pass the lower arch info
         elif ht <= self.z - self.h / 2 - self.cl:
             if self.vl > self.w / 2:
                 circVal = circ(ht - self.z + self.h / 2, self.rl + self.rtl)
@@ -519,12 +517,7 @@ class opening:
                     return self.x + s * (self.w / 2. - self.rl + circVal) / r1
             else:
                 circVal = circ(ht - self.z + self.h / 2 + self.vl - self.rl, self.rl + self.rtl)
-                if circVal is None:
-                    return None
-                else:
-                    return self.x + s * circVal / r1
-
-        # in this range, pass the top arch info
+                return None if circVal is None else self.x + s * circVal / r1
         elif ht >= self.z + self.h / 2 + self.c:
             if self.v > self.w / 2:
                 circVal = circ(ht - self.z - self.h / 2, self.r + self.rt)
@@ -539,7 +532,6 @@ class opening:
                 else:
                     return self.x + s * circVal / r1
 
-        # in this range pass the lower corner edge info
         elif ht <= self.z - self.h / 2:
             d = sqrt(self.rtl ** 2 - self.cl ** 2)
             if self.cl > self.rtl / sqrt(2.):
@@ -547,7 +539,6 @@ class opening:
             else:
                 return self.x + s * (self.w / 2 + d) / r1
 
-        # in this range pass the upper corner edge info
         elif ht >= self.z + self.h / 2:
             d = sqrt(self.rt ** 2 - self.c ** 2)
             if self.c > self.rt / sqrt(2.):
@@ -555,7 +546,6 @@ class opening:
             else:
                 return self.x + s * (self.w / 2 + d) / r1
 
-        # in this range, pass the middle info (straight sides)
         else:
             return self.x + s * self.w / 2 / r1
 
@@ -582,15 +572,9 @@ class opening:
             if not self.r:
                 return self.z + self.h / 2
 
-            # pointed arch on top
             elif self.v > self.w / 2:
                 circVal = circ(dist - self.w / 2 + self.r, self.r + self.rt)
-                if circVal is None:
-                    return None
-                else:
-                    return self.z + self.h / 2 + circVal
-
-            # domed arch on top
+                return None if circVal is None else self.z + self.h / 2 + circVal
             else:
                 circVal = circ(dist, self.r + self.rt)
                 if circVal is None:
@@ -636,14 +620,10 @@ class opening:
         if ht < (self.z - self.h / 2):
             return 0.0
         if radialized:
-            if slope:
-                r1 = abs(dims['t'] * sin(ht * PI / (dims['t'] * 2)))
-            else:
-                r1 = abs(ht)
+            r1 = abs(dims['t'] * sin(ht * PI / (dims['t'] * 2))) if slope else abs(ht)
         else:
             r1 = 1
-        bevel = self.b / r1
-        return bevel
+        return self.b / r1
 
     def __init__(self, xpos, zpos, width, height, archHeight=0, archThk=0,
                  archHeightLower=0, archThkLower=0, bevel=0, edgeThk=0):
@@ -807,10 +787,7 @@ def arch(ra, rt, x, z, archStart, archEnd, bevel, bevAngle, vll):
         """
         left = (0, 2, 3)
         right = (4, 6, 7)
-        if side == 1:
-            pointsToAffect = right
-        else:
-            pointsToAffect = left
+        pointsToAffect = right if side == 1 else left
         for num in pointsToAffect:
             offsets[num] = offsets[num][:]
             offsets[num][0] += -bevel * side
@@ -821,11 +798,7 @@ def arch(ra, rt, x, z, archStart, archEnd, bevel, bevAngle, vll):
     DepthBack = - SetDepth / 2 - rndc() * SetDepthVar
     DepthFront = SetDepth / 2 + rndc() * SetDepthVar
 
-    if radialized:
-        subdivision = settings['sdv']
-    else:
-        subdivision = 0.12
-
+    subdivision = settings['sdv'] if radialized else 0.12
     grt = (SetGrt + rndc() * SetGrtVar) / (2 * ra)  # init grout offset for loop
     # set up the offsets, it will be the same for every block
     offsets = ([[0] * 2 + [bevel]] + [[0] * 3] * 3) * 2
@@ -865,10 +838,7 @@ def arch(ra, rt, x, z, archStart, archEnd, bevel, bevAngle, vll):
         v2 = vert[2] * cos(vert[0]) + z
 
         if radialized == 1:
-            if slope == 1:
-                r1 = dims['t'] * (sin(v2 * PI / (dims['t'] * 2)))
-            else:
-                r1 = v2
+            r1 = dims['t'] * (sin(v2 * PI / (dims['t'] * 2))) if slope == 1 else v2
             v0 = v0 / r1
 
         avlist[i] = [v0, v1, v2]
@@ -884,11 +854,7 @@ def sketch():
     boundlist = []
     for x in openingSpecs:
         if x['rp']:
-            if radialized:
-                r1 = x['z']
-            else:
-                r1 = 1
-
+            r1 = x['z'] if radialized else 1
             if x['x'] > (x['w'] + settings['wm']):
                 spacing = x['x'] / r1
             else:
@@ -898,12 +864,23 @@ def sketch():
 
             divs = fill(dims['s'], dims['e'], spacing, minspacing, center=1)
 
-            for posidx in range(len(divs) - 2):
-                boundlist.append(opening(divs[posidx + 1], x['z'], x['w'], x['h'],
-                                        x['v'], x['t'], x['vl'], x['tl'], x['b']))
+            boundlist.extend(
+                opening(
+                    divs[posidx + 1],
+                    x['z'],
+                    x['w'],
+                    x['h'],
+                    x['v'],
+                    x['t'],
+                    x['vl'],
+                    x['tl'],
+                    x['b'],
+                )
+                for posidx in range(len(divs) - 2)
+            )
         else:
             boundlist.append(opening(x['x'], x['z'], x['w'], x['h'], x['v'], x['t'], x['vl'], x['tl'], x['b']))
-        # check for overlapping edges?
+            # check for overlapping edges?
 
     return boundlist
 
@@ -964,10 +941,7 @@ def bevelBlockOffsets(offsets, bevel, side):
     bevel = how much to offset the edge
     side = -1 for left (right side), 1 for right (left side)
     """
-    if side == 1:
-        pointsToAffect = (0, 2)  # right
-    else:
-        pointsToAffect = (4, 6)  # left
+    pointsToAffect = (0, 2) if side == 1 else (4, 6)
     for num in pointsToAffect:
         offsets[num] = offsets[num][:]
         offsets[num][0] += bevel * side
@@ -1358,7 +1332,7 @@ def archGeneration(hole, vlist, flist, sideSign):
     bev = hole.b
     sideSignInv = -sideSign
 
-    if v > w / 2:       # two arcs, to make a pointed arch
+    if v > w / 2:   # two arcs, to make a pointed arch
         # positioning
         zpos = z + (h / 2) * sideSign
         xoffset = r - w / 2
@@ -1416,18 +1390,16 @@ def archGeneration(hole, vlist, flist, sideSign):
 
             if radialized:
                 for i, vert in enumerate(avlist):
-                    if slope:
-                        r1 = dims['t'] * sin(vert[2] * PI / (dims['t'] * 2))
-                    else:
-                        r1 = vert[2]
+                    r1 = dims['t'] * sin(vert[2] * PI / (dims['t'] * 2)) if slope else vert[2]
                     avlist[i] = [((vert[0] - hole.x) / r1) + hole.x, vert[1], vert[2]]
 
             vlist += avlist
             flist += aflist
-        # remove "debug note" once bevel is finalized.
         else:
-            debug_prints(func="archGeneration",
-                         text="Keystone was too narrow - " + str(Wdth))
+            debug_prints(
+                func="archGeneration",
+                text=f"Keystone was too narrow - {str(Wdth)}",
+            )
 
     else:  # only one arc - curve not peak.
         # bottom (sideSign -1) arch has poorly sized blocks...
@@ -1435,11 +1407,7 @@ def archGeneration(hole, vlist, flist, sideSign):
         zpos = z + (sideSign * (h / 2 + v - r))  # single arc positioning
 
         # angles reference straight up, and are in radians
-        if sideSign == -1:
-            angleOffset = PI
-        else:
-            angleOffset = 0.0
-
+        angleOffset = PI if sideSign == -1 else 0.0
         if v < w / 2:
             halfangle = atan(w / (2 * (r - v)))
 
@@ -1588,11 +1556,7 @@ def build(Aplan):
                 ox, oz, ow, oh, od = blockThat[:5]
 
                 if (abs(cw - ow) < Tolerance) and (abs(cx - ox) < Tolerance):
-                    if cw > ow:
-                        BlockW = ow
-                    else:
-                        BlockW = cw
-
+                    BlockW = min(cw, ow)
                     AllBlocks.append([(cx + ox) / 2, (cz + oz + (oh - ch) / 2) / 2,
                                      BlockW, abs(cz - oz) + (ch + oh) / 2, (cd + od) / 2, None])
 

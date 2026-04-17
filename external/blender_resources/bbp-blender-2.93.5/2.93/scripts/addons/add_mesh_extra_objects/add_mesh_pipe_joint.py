@@ -56,45 +56,44 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
                 vertIdx2[total - 1]]
             if not fan:
                 face.append(vertIdx1[total - 1])
-            faces.append(face)
-
         else:
             face = [vertIdx2[0], vertIdx1[0]]
             if not fan:
                 face.append(vertIdx1[total - 1])
             face.append(vertIdx2[total - 1])
-            faces.append(face)
+        faces.append(face)
 
     # Bridge the rest of the faces.
     for num in range(total - 1):
         if flipped:
-            if fan:
-                face = [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx2[num], vertIdx1[num],
-                    vertIdx1[num + 1], vertIdx2[num + 1]]
-            faces.append(face)
+            face = (
+                [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
+                if fan
+                else [
+                    vertIdx2[num],
+                    vertIdx1[num],
+                    vertIdx1[num + 1],
+                    vertIdx2[num + 1],
+                ]
+            )
+        elif fan:
+            face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
         else:
-            if fan:
-                face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx1[num], vertIdx2[num],
-                    vertIdx2[num + 1], vertIdx1[num + 1]]
-            faces.append(face)
-
+            face = [vertIdx1[num], vertIdx2[num],
+                vertIdx2[num + 1], vertIdx1[num + 1]]
+        faces.append(face)
     return faces
 
 
 # Create the vertices and polygons for a simple elbow (bent pipe)
 def ElbowJointParameters():
-    ElbowJointParameters = [
-    "radius",
-    "div",
-    "angle",
-    "startLength",
-    "endLength",
+    return [
+        "radius",
+        "div",
+        "angle",
+        "startLength",
+        "endLength",
     ]
-    return ElbowJointParameters
 
 class AddElbowJoint(Operator, object_utils.AddObjectHelper):
     bl_idname = "mesh.primitive_elbow_joint_add"
@@ -276,15 +275,14 @@ class AddElbowJoint(Operator, object_utils.AddObjectHelper):
 # Create the vertices and polygons for a simple tee (T) joint
 # The base arm of the T can be positioned in an angle if needed though
 def TeeJointParameters():
-    TeeJointParameters = [
-    "radius",
-    "div",
-    "angle",
-    "startLength",
-    "endLength",
-    "branchLength",
+    return [
+        "radius",
+        "div",
+        "angle",
+        "startLength",
+        "endLength",
+        "branchLength",
     ]
-    return TeeJointParameters
 
 class AddTeeJoint(Operator, object_utils.AddObjectHelper):
     bl_idname = "mesh.primitive_tee_joint_add"
@@ -540,16 +538,15 @@ class AddTeeJoint(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def WyeJointParameters():
-    WyeJointParameters = [
-    "radius",
-    "div",
-    "angle1",
-    "angle2",
-    "startLength",
-    "branch1Length",
-    "branch2Length",
+    return [
+        "radius",
+        "div",
+        "angle1",
+        "angle2",
+        "startLength",
+        "branch1Length",
+        "branch2Length",
     ]
-    return WyeJointParameters
 
 class AddWyeJoint(Operator, object_utils.AddObjectHelper):
     bl_idname = "mesh.primitive_wye_joint_add"
@@ -826,18 +823,17 @@ class AddWyeJoint(Operator, object_utils.AddObjectHelper):
 
 # Create the vertices and polygons for a cross (+ or X) pipe joint
 def CrossJointParameters():
-    CrossJointParameters = [
-    "radius",
-    "div",
-    "angle1",
-    "angle2",
-    "angle3",
-    "startLength",
-    "branch1Length",
-    "branch2Length",
-    "branch3Length",
+    return [
+        "radius",
+        "div",
+        "angle1",
+        "angle2",
+        "angle3",
+        "startLength",
+        "branch1Length",
+        "branch2Length",
+        "branch3Length",
     ]
-    return CrossJointParameters
 
 class AddCrossJoint(Operator, object_utils.AddObjectHelper):
     bl_idname = "mesh.primitive_cross_joint_add"
@@ -1024,7 +1020,7 @@ class AddCrossJoint(Operator, object_utils.AddObjectHelper):
             # Skip pole vertices
             # @todo: This will possibly break if
             # we ever support odd divisions
-            if not (vertIdx == 0) and not (vertIdx == div / 2):
+            if vertIdx not in [0, div / 2]:
 
                 if (vertIdx > div / 2):
                     angleJoint = angleJoint1
@@ -1128,8 +1124,8 @@ class AddCrossJoint(Operator, object_utils.AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if (context.selected_objects != []) and context.active_object and \
-                (context.active_object.data is not None) and ('CrossJoint' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('CrossJoint' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name
@@ -1174,13 +1170,12 @@ class AddCrossJoint(Operator, object_utils.AddObjectHelper):
 
 # Create the vertices and polygons for a regular n-joint
 def NJointParameters():
-    NJointParameters = [
-    "radius",
-    "div",
-    "number",
-    "length",
+    return [
+        "radius",
+        "div",
+        "number",
+        "length",
     ]
-    return NJointParameters
 
 class AddNJoint(Operator, object_utils.AddObjectHelper):
     bl_idname = "mesh.primitive_n_joint_add"
@@ -1308,19 +1303,12 @@ class AddNJoint(Operator, object_utils.AddObjectHelper):
 
                 skipVert = False
                 # Store pole vertices
-                if vertIdx == 0:
-                    if (num == 0):
-                        vertTemp2 = len(verts)
-                    else:
-                        skipVert = True
+                if vertIdx == 0 and (num == 0):
+                    vertTemp2 = len(verts)
+                elif vertIdx == 0 or vertIdx == div / 2 and num != 0:
+                    skipVert = True
                 elif vertIdx == div / 2:
-                    # @todo: This will possibly break if we
-                    # ever support odd divisions
-                    if (num == 0):
-                        vertTemp1 = len(verts)
-                    else:
-                        skipVert = True
-
+                    vertTemp1 = len(verts)
                 if not skipVert:
                     if (vertIdx > div / 2):
                         locZ = -locX * tan((pi - angleDiv) / 2.0)
@@ -1349,11 +1337,10 @@ class AddNJoint(Operator, object_utils.AddObjectHelper):
         # Create complete loops (loopsJoints) out of the
         # double number of half loops in loopsJointsTemp
         for halfLoopIdx in range(len(loopsJointsTemp)):
+            idx1 = halfLoopIdx
             if (halfLoopIdx == len(loopsJointsTemp) - 1):
-                idx1 = halfLoopIdx
                 idx2 = 0
             else:
-                idx1 = halfLoopIdx
                 idx2 = halfLoopIdx + 1
 
             loopJoint = []
@@ -1373,8 +1360,8 @@ class AddNJoint(Operator, object_utils.AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if (context.selected_objects != []) and context.active_object and \
-                (context.active_object.data is not None) and ('NJoint' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('NJoint' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name

@@ -62,12 +62,11 @@ class honeycomb_geometry():
         if row == -1 and col == -1:
             return [0, 1]
         if self.rows % 2:
-            # left up corner
-            if row == self.rows and col == -1:
-                return [4, 5]
-            # right up corner
-            if row == self.rows and col == self.cols - 1:
-                return [3, 4]
+            if row == self.rows:
+                if col == -1:
+                    return [4, 5]
+                if col == self.cols - 1:
+                    return [3, 4]
             if row == self.rows - 1 and self.rows > 1 and col == self.cols:
                 return [2, 3, 4]
         else:
@@ -88,15 +87,9 @@ class honeycomb_geometry():
         # vertical lines
         if row >= 0 and row < self.rows:
             if col == -1:
-                if row % 2:
-                    return [0, 1, 4, 5]
-                else:
-                    return [0, 5]
+                return [0, 1, 4, 5] if row % 2 else [0, 5]
             if col == self.cols:
-                if row % 2 or self.rows == 1:
-                    return [2, 3]
-                else:
-                    return [1, 2, 3, 4]
+                return [2, 3] if row % 2 or self.rows == 1 else [1, 2, 3, 4]
         return []
 
     def cell(self, row, col, idx):
@@ -136,9 +129,7 @@ class honeycomb_geometry():
             l = cells[row][col - 1]
             u = cells[row + 1][col]
 
-            faces.append((s[1], u[5], u[4], s[2]))
-            faces.append((s[2], u[4], l[0]))
-
+            faces.extend(((s[1], u[5], u[4], s[2]), (s[2], u[4], l[0])))
         # top row
         row = len(cells) - 1
         cs = 0
@@ -148,9 +139,7 @@ class honeycomb_geometry():
             s = cells[row][col]
             l = cells[row][col - 1]
             d = cells[row - 1][col - cs]
-            faces.append((s[3], l[5], d[1]))
-            faces.append([s[3], d[1], d[0], s[4]])
-
+            faces.extend(((s[3], l[5], d[1]), [s[3], d[1], d[0], s[4]]))
         # middle rows
         for row in range(1, len(cells) - 1):
             cs = 0
@@ -162,12 +151,14 @@ class honeycomb_geometry():
                 u = cells[row + 1][col - cs]
                 d = cells[row - 1][col - cs]
 
-                faces.append((s[1], u[5], u[4], s[2]))
-                faces.append((s[2], u[4], l[0]))
-                faces.append([s[2], l[0], l[5], s[3]])
-                faces.append((s[3], l[5], d[1]))
-                faces.append([s[3], d[1], d[0], s[4]])
-
+                faces.extend(((s[1], u[5], u[4], s[2]), (s[2], u[4], l[0])))
+                faces.extend(
+                    (
+                        [s[2], l[0], l[5], s[3]],
+                        (s[3], l[5], d[1]),
+                        [s[3], d[1], d[0], s[4]],
+                    )
+                )
         # right column
         row = 0
         col = len(cells[row]) - 1
@@ -213,8 +204,7 @@ class add_mesh_honeycomb(bpy.types.Operator, object_utils.AddObjectHelper):
 
     def fix_edge(self, context):
         m = edge_max(self.diam)
-        if self.edge > m:
-            self.edge = m
+        self.edge = min(self.edge, m)
 
     HoneyComb : BoolProperty(name = "HoneyComb",
                 default = True,
@@ -326,10 +316,9 @@ class add_mesh_honeycomb(bpy.types.Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def HoneyCombParameters():
-    HoneyCombParameters = [
+    return [
         "rows",
         "cols",
         "diam",
         "edge",
-        ]
-    return HoneyCombParameters
+    ]

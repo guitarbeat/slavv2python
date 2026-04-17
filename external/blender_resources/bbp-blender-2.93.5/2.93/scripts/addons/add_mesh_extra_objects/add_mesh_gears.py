@@ -56,32 +56,32 @@ def createFaces(vertIdx1, vertIdx2, closed=False, flipped=False):
                 vertIdx2[total - 1]]
             if not fan:
                 face.append(vertIdx1[total - 1])
-            faces.append(face)
-
         else:
             face = [vertIdx2[0], vertIdx1[0]]
             if not fan:
                 face.append(vertIdx1[total - 1])
             face.append(vertIdx2[total - 1])
-            faces.append(face)
+        faces.append(face)
 
     # Bridge the rest of the faces.
     for num in range(total - 1):
         if flipped:
-            if fan:
-                face = [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx2[num], vertIdx1[num],
-                    vertIdx1[num + 1], vertIdx2[num + 1]]
-            faces.append(face)
+            face = (
+                [vertIdx2[num], vertIdx1[0], vertIdx2[num + 1]]
+                if fan
+                else [
+                    vertIdx2[num],
+                    vertIdx1[num],
+                    vertIdx1[num + 1],
+                    vertIdx2[num + 1],
+                ]
+            )
+        elif fan:
+            face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
         else:
-            if fan:
-                face = [vertIdx1[0], vertIdx2[num], vertIdx2[num + 1]]
-            else:
-                face = [vertIdx1[num], vertIdx2[num],
-                    vertIdx2[num + 1], vertIdx1[num + 1]]
-            faces.append(face)
-
+            face = [vertIdx1[num], vertIdx2[num],
+                vertIdx2[num + 1], vertIdx1[num + 1]]
+        faces.append(face)
     return faces
 
 
@@ -118,11 +118,7 @@ def add_tooth(a, t, d, radius, Ad, De, base, p_angle, rack=0, crown=0.0):
 
     # Pressure angle calc
     O = Ad * tan(p_angle)
-    if Ra != 0:
-        p_angle = atan(O / Ra)
-    else:
-        p_angle = atan(O)
-
+    p_angle = atan(O / Ra) if Ra != 0 else atan(O)
     if radius < 0:
         p_angle = -p_angle
 
@@ -267,8 +263,7 @@ def add_gear(teethNum, radius, Ad, De, base, p_angle,
 
         verts_outside_top = []
         verts_outside_bottom = []
-        for (s, d, c, top) \
-           in [(0, -width, 1, True), (skew, width, scale, False)]:
+        for (s, d, c, top) in [(0, -width, 1, True), (skew, width, scale, False)]:
 
             verts1, verts2, verts3, verts4 = add_tooth(a + s, t, d,
                 radius * c, Ad * c, De * c, base * c, p_angle,
@@ -287,9 +282,7 @@ def add_gear(teethNum, radius, Ad, De, base, p_angle,
             verts_outside.extend(vertsIdx2[:2])
             verts_outside.append(vertsIdx3[0])
             verts_outside.extend(vertsIdx4)
-            verts_outside.append(vertsIdx3[-1])
-            verts_outside.append(vertsIdx2[-1])
-
+            verts_outside.extend((vertsIdx3[-1], vertsIdx2[-1]))
             if top:
                 # verts_inside_top = vertsIdx1
                 verts_outside_top = verts_outside
@@ -393,10 +386,10 @@ def add_spokes(teethNum, radius, De, base, width=1, conangle=0, rack=0,
     c = scale   # debug
 
     fl = len(verts)
+    s = 0       # For test
+
     for toothCnt in range(teethNum):
         a = toothCnt * t
-        s = 0       # For test
-
         if toothCnt % spoke == 0:
             for d in (-width, width):
                 sv, edgefaces, edgefaces2, sf = add_spoke(a + s, t, d,
@@ -468,6 +461,8 @@ def add_worm(teethNum, rowNum, radius, Ad, De, p_angle,
     # width = width / 2.0
 
     edgeloop_prev = []
+    c = 1
+
     for Row in range(rowNum):
         edgeloop = []
 
@@ -476,8 +471,6 @@ def add_worm(teethNum, rowNum, radius, Ad, De, p_angle,
 
             s = Row * skew
             d = Row * width
-            c = 1
-
             isTooth = False
             if toothCnt % (teethNum / worm) != 0:
                 # Flat
@@ -509,9 +502,7 @@ def add_worm(teethNum, rowNum, radius, Ad, De, p_angle,
                 verts_current.extend(vertsIdx2[:2])
                 verts_current.append(vertsIdx3[0])
                 verts_current.extend(vertsIdx4)
-                verts_current.append(vertsIdx3[-1])
-                verts_current.append(vertsIdx2[-1])
-
+                verts_current.extend((vertsIdx3[-1], vertsIdx2[-1]))
                 # Valley = first 2 vertices of outer base:
                 vgroup_valley.extend(vertsIdx2[:1])
                 # Top/tip vertices:
@@ -521,9 +512,7 @@ def add_worm(teethNum, rowNum, radius, Ad, De, p_angle,
                 # Flat
                 verts_current = vertsIdx2
 
-                # Valley - all of them.
-                vgroup_valley.extend(vertsIdx2)
-
+                vgroup_valley.extend(verts_current)
             edgeloop.extend(verts_current)
 
         # Create faces between rings/rows.
@@ -684,8 +673,8 @@ class AddGear(Operator, object_utils.AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if context.selected_objects != [] and context.active_object and \
-                (context.active_object.data is not None) and ('Gear' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('Gear' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name
@@ -693,7 +682,7 @@ class AddGear(Operator, object_utils.AddObjectHelper):
                 obj.data = mesh
                 try:
                     bpy.ops.object.vertex_group_remove(all=True)
-                except:
+                except Exception:
                     pass
 
                 for material in oldmesh.materials:
@@ -752,7 +741,7 @@ class AddGear(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def GearParameters():
-    GearParameters = [
+    return [
         "number_of_teeth",
         "radius",
         "addendum",
@@ -763,8 +752,7 @@ def GearParameters():
         "skew",
         "conangle",
         "crown",
-        ]
-    return GearParameters
+    ]
 
 def AddWormGearMesh(self, context):
 
@@ -906,8 +894,8 @@ class AddWormGear(Operator, object_utils.AddObjectHelper):
 
         if bpy.context.mode == "OBJECT":
             if context.selected_objects != [] and context.active_object and \
-                (context.active_object.data is not None) and ('WormGear' in context.active_object.data.keys()) and \
-                (self.change == True):
+                    (context.active_object.data is not None) and ('WormGear' in context.active_object.data.keys()) and \
+                    (self.change == True):
                 obj = context.active_object
                 oldmesh = obj.data
                 oldmeshname = obj.data.name
@@ -916,7 +904,7 @@ class AddWormGear(Operator, object_utils.AddObjectHelper):
                 obj.data = mesh
                 try:
                     bpy.ops.object.vertex_group_remove(all=True)
-                except:
+                except Exception:
                     pass
 
                 for material in oldmesh.materials:
@@ -970,7 +958,7 @@ class AddWormGear(Operator, object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def WormGearParameters():
-    WormGearParameters = [
+    return [
         "number_of_teeth",
         "number_of_rows",
         "radius",
@@ -980,5 +968,4 @@ def WormGearParameters():
         "row_height",
         "skew",
         "crown",
-        ]
-    return WormGearParameters
+    ]

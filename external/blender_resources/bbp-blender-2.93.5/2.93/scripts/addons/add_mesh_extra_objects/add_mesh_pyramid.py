@@ -33,9 +33,7 @@ def create_step(width, base_level, step_height, num_sides):
     vectors = [quaternion @ vec for quaternion, vec in quat_vector_pairs]
     bottom_list = [(vec.x, vec.y, vec.z) for vec in vectors]
     top_list = [(vec.x, vec.y, vec.z + step_height) for vec in vectors]
-    full_list = bottom_list + top_list
-
-    return full_list
+    return bottom_list + top_list
 
 
 def split_list(l, n):
@@ -44,8 +42,7 @@ def split_list(l, n):
     http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
     """
     n *= 2
-    returned_list = [l[i: i + n] for i in range(0, len(l), n)]
-    return returned_list
+    return [l[i: i + n] for i in range(0, len(l), n)]
 
 
 def get_connector_pairs(lst, n_sides):
@@ -82,7 +79,7 @@ def pyramid_mesh(self, context):
             bm.faces.new([bvs[n - 1], bvs[(n * 2) - 1], bvs[n], bvs[0]])
 
     # get the base and cap faces done.
-    bm.faces.new(bm.verts[0:self.num_sides])
+    bm.faces.new(bm.verts[:self.num_sides])
     bm.faces.new(reversed(bm.verts[-self.num_sides:]))  # otherwise normal faces intern... T44619.
 
     # side faces
@@ -208,11 +205,10 @@ class AddPyramid(bpy.types.Operator,  object_utils.AddObjectHelper):
         return {'FINISHED'}
 
 def PyramidParameters():
-    PyramidParameters = [
+    return [
         "num_sides",
         "num_steps",
         "width",
         "height",
         "reduce_by",
-        ]
-    return PyramidParameters
+    ]
