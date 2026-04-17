@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from typing import Any
 
 import numpy as np
@@ -148,6 +147,29 @@ def _edge_endpoint_pair_set(payload: dict[str, Any]) -> set[tuple[int, int]]:
     return set(_edge_endpoint_signatures(payload))
 
 
+def _normalize_candidate_connection_sources(
+    raw_sources: Any,
+    candidate_connection_count: int,
+) -> list[str]:
+    """Return normalized connection-source labels when candidate provenance is available."""
+    if candidate_connection_count <= 0:
+        return []
+    if isinstance(raw_sources, np.ndarray):
+        source_values = np.asarray(raw_sources).reshape(-1).tolist()
+    elif isinstance(raw_sources, (list, tuple)):
+        source_values = list(raw_sources)
+    else:
+        return []
+    if len(source_values) != candidate_connection_count:
+        return []
+    allowed_sources = {"frontier", "watershed", "geodesic", "fallback"}
+    normalized: list[str] = []
+    for value in source_values:
+        source_label = str(value).strip().lower()
+        normalized.append(source_label if source_label in allowed_sources else "fallback")
+    return normalized
+
+
 def _candidate_endpoint_pair_details(
     payload: dict[str, Any],
 ) -> tuple[
@@ -203,6 +225,18 @@ def _candidate_endpoint_pair_details(
         )
 
     return pairs_by_seed_origin, source_pairs_by_seed_origin, pairs_by_source, pair_sources
+
+
+def _incident_endpoint_pairs_by_vertex(
+    endpoint_pairs: set[tuple[int, int]],
+) -> dict[int, set[tuple[int, int]]]:
+    """Group endpoint pairs by each incident vertex."""
+    grouped: dict[int, set[tuple[int, int]]] = {}
+    for pair in endpoint_pairs:
+        start_vertex, end_vertex = (int(value) for value in pair)
+        grouped.setdefault(start_vertex, set()).add(pair)
+        grouped.setdefault(end_vertex, set()).add(pair)
+    return grouped
 
 
 def _candidate_endpoint_pairs_by_source(

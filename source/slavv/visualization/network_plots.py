@@ -8,9 +8,7 @@ including 2D/3D plotting, statistical analysis, and export functionality.
 from __future__ import annotations
 
 import logging
-from typing import Any
-
-import plotly.graph_objects as go
+from typing import TYPE_CHECKING, Any
 
 from .network_plot_helpers import NETWORK_COLOR_SCHEMES
 from .network_plot_spatial_2d import plot_2d_network as _plot_2d_network_impl
@@ -28,6 +26,9 @@ from .network_plot_statistics import (
 )
 from .network_plot_statistics import plot_radius_distribution as _plot_radius_distribution_impl
 from .network_plot_statistics import plot_strand_analysis as _plot_strand_analysis_impl
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

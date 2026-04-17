@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import glob
 import json
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ..utils.safe_unpickle import safe_load
+from ...utils.safe_unpickle import safe_load
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 _PYTHON_RESULT_SOURCE_CHOICES = {
     "auto",

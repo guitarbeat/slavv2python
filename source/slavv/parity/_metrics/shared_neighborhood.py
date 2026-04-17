@@ -9,7 +9,6 @@ import numpy as np
 
 from .signatures import (
     _candidate_endpoint_pair_details,
-    _candidate_endpoint_pairs_by_source,
     _edge_endpoint_pair_set,
     _incident_endpoint_pairs_by_vertex,
 )

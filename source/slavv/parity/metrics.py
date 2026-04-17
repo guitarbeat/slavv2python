@@ -21,6 +21,7 @@ from ._metrics.counts import (
     _infer_vertices_count,
     _resolve_count,
 )
+from ._metrics.shared_neighborhood import build_shared_neighborhood_audit  # noqa: F401
 from ._metrics.signatures import (
     _as_position_array,
     _edge_endpoint_pair_set,
@@ -31,7 +32,6 @@ from ._metrics.signatures import (
     _strand_signatures,
     _vertex_signatures,
 )
-from ._metrics.shared_neighborhood import build_shared_neighborhood_audit  # noqa: F401
 
 
 def _normalize_candidate_connection_sources(

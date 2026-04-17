@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from ..matlab_status import MatlabStatusReport, summarize_matlab_status
-from ..preflight import OutputRootPreflightReport, summarize_output_preflight
-from ..runtime import ProgressEvent, RunContext
-from ..utils import format_time
-from ..workflow_assessment import (
+from ...matlab_status import MatlabStatusReport, summarize_matlab_status
+from ...preflight import OutputRootPreflightReport, summarize_output_preflight
+from ...utils import format_time
+from ...workflow_assessment import (
     LOOP_BLOCKED,
     LOOP_FRESH_MATLAB_REQUIRED,
     LoopAssessmentReport,
@@ -16,6 +15,11 @@ from ..workflow_assessment import (
     summarize_loop_assessment,
     summarize_matlab_health_check,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from ...runtime import ProgressEvent, RunContext
 
 
 def _format_progress_event_message(event: ProgressEvent) -> str:
