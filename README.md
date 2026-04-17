@@ -13,7 +13,7 @@ SLAVV provides an automated pipeline to extract vascular graphs (vertices and ed
 - **Graph Processing**: NetworkX
 - **I/O**: Tifffile, h5py, Pandas, Pillow
 - **Visualization**: Matplotlib, Plotly, Seaborn
-- **Acceleration**: Numba (optional)
+- **Acceleration**: Numba (optional via `[accel]`)
 - **Frameworks**: Streamlit (Web App), argparse (CLI)
 - **Tooling**: Ruff (formatting/linting), MyPy (type checking), Pytest (testing)
 - **Package Manager**: `pip` (with `setuptools`)
@@ -21,7 +21,7 @@ SLAVV provides an automated pipeline to extract vascular graphs (vertices and ed
 ## Requirements
 
 - **Python**: 3.9, 3.10, 3.11, or 3.12.
-- **MATLAB** (Optional): Required only for parity comparisons and MATLAB result imports.
+- **MATLAB** (Optional): Required only for parity comparisons and MATLAB result imports. Recommended version: R2019a or newer.
 
 ## Setup
 
@@ -45,6 +45,8 @@ SLAVV provides an automated pipeline to extract vascular graphs (vertices and ed
 
    # Full developer installation (includes tests, linting, and app)
    pip install -e ".[app,dev]"
+
+   # Other available extras: [ml, notebooks, dicom, sitk, cupy, zarr, napari, accel, all]
    ```
 
 3. **Install pre-commit hooks** (recommended for contributors):
@@ -77,13 +79,6 @@ slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
 ```
 
-Notes:
-
-- `slavv run` writes structured run metadata to `<output>\_slavv_run` by default.
-- Use `--run-dir` when you want an explicit structured run root.
-- `--checkpoint-dir` remains available for legacy flat checkpoint workflows.
-- `slavv analyze` can read the standard exported `network.json` directly and reconstruct the topology needed for summary metrics.
-
 ### Web Application
 
 After installing with the `[app]` extra, start the interactive UI:
@@ -94,132 +89,56 @@ slavv-app
 python -m streamlit run source/slavv/apps/web_app.py
 ```
 
-The ML curation flow accepts trained `.joblib` and `.pkl` model uploads directly from the browser.
-
 ### MATLAB Parity And Comparison Workflow
 
-Use the backward-compatible wrapper at `dev/scripts/cli/compare_matlab_python.py`
-for MATLAB/Python parity loops. The packaged implementation lives in
-`source/slavv/apps/parity_cli.py`.
+Use the backward-compatible wrapper at `dev/scripts/cli/compare_matlab_python.py` for MATLAB/Python parity loops.
 
 ```powershell
-# Output-root preflight only
+# Default parity run
 python dev/scripts/cli/compare_matlab_python.py `
   --input data/slavv_test_volume.tif `
-  --validate-only
-
-# Lightweight MATLAB launch probe after preflight
-python dev/scripts/cli/compare_matlab_python.py `
-  --matlab-health-check `
-  --output-dir comparisons\health_check `
-  --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe"
-
-# Default imported-MATLAB edge loop
-python dev/scripts/cli/compare_matlab_python.py `
-  --input data/slavv_test_volume.tif `
-  --skip-matlab `
-  --resume-latest `
-  --python-parity-rerun-from edges
-
-# Stage-isolated downstream network gate
-python dev/scripts/cli/compare_matlab_python.py `
-  --input data/slavv_test_volume.tif `
-  --skip-matlab `
-  --resume-latest `
-  --python-parity-rerun-from network `
-  --comparison-depth deep
-
-# Display latest proof artifact summary
-slavv parity-proof --run-dir path\to\comparison_output
+  --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" `
+  --output-dir comparison_output
 ```
 
-Notes:
-
-- `--validate-only` and `--matlab-health-check` are the cheapest workflow loops
-  for output-root and launch sanity checks.
-- `--resume-latest` reuses the newest compatible staged run root rather than
-  always creating a fresh timestamped directory.
-- After each comparison run, the CLI displays a reuse eligibility summary with
-  safe rerun commands and recommended next actions.
-- The stage-isolated network gate validates parity in under 30 seconds by
-  importing exact MATLAB edges and rerunning only Python network assembly.
-- When edge parity gaps are detected, the workflow recommends running
-  shared-neighborhood diagnostics for evidence-based insights.
-- Successful network gate runs generate proof artifacts that document exact
-  parity achievement with full provenance tracking.
-- For the active investigation framing, start with
-  [docs/README.md](docs/README.md) and
-  [Neighborhood Claim Alignment](docs/chapters/neighborhood-claim-alignment/README.md).
-- For the current remaining imported-MATLAB parity backlog and the condensed
-  lessons learned from previous runs, see [TODO.md](TODO.md).
-
-### Programmatic Usage
-
-```python
-from slavv import SLAVVProcessor
-
-# Initialize the processor
-processor = SLAVVProcessor()
-
-# Run the pipeline
-results = processor.process_image(
-    image_data, 
-    params={"vessel_radius": 1.5}, 
-    event_callback=lambda e: print(f"[{e.stage}] {e.detail}")
-)
-
-print(f"Vertices: {len(results['vertices']['positions'])}")
-print(f"Edges: {len(results['edges']['traces'])}")
-```
+See [AGENTS.md](AGENTS.md) for more advanced comparison flags (`--skip-matlab`, `--resume-latest`, etc.).
 
 ## Scripts and Maintenance
 
-### Helper Scripts
+Maintenance and utility scripts are located in `dev/scripts/`:
 
-Use the direct `python -m ...` and `pip ...` commands in this README and
-[AGENTS.md](AGENTS.md). There are no repo-local wrapper scripts for formatting,
-linting, type checking, or tests.
+- **CLI Wrappers**:
+  - `dev/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
+- **Maintenance**:
+  - `dev/scripts/maintenance/find_matlab_script_files.py`: Audits and locates MATLAB script dependencies.
+  - `dev/scripts/maintenance/refresh_matlab_mapping_appendix.py`: Updates documentation mapping between MATLAB and Python symbols.
+  - `dev/scripts/maintenance/comparison_layout_smoothing.py`: Normalizes and migrates legacy comparison layouts to the staged structure.
+- **Benchmarks**:
+  - `dev/scripts/benchmarks/plot_2d_network_benchmark.py`: Performance visualization for 2D network extraction.
 
-### Maintenance and Utility Scripts
+No repo-local wrapper scripts are used for formatting, linting, or tests. Use the canonical `python -m ruff`, `python -m mypy`, and `python -m pytest` commands instead.
 
-Located in `dev/scripts/`:
-- `source/slavv/apps/parity_cli.py`: Canonical implementation of the parity comparison CLI.
-- `dev/scripts/cli/compare_matlab_python.py`: Backward-compatible wrapper for parity validation workflows.
-- `dev/scripts/maintenance/`: Scripts for repo mapping and MATLAB audit helpers.
-- `dev/scripts/benchmarks/`: Ad-hoc benchmark helpers that are not part of pytest collection.
+## Environment Variables
 
-## Quality Gates
-
-```powershell
-python -m ruff check source dev/tests
-python -m mypy
-python -m pytest -m "unit or integration"
-```
-
-The current `mypy` gate focuses on the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
+- `PYTHONUTF8`: Set to `1` by `slavv-app` for UTF-8 support on Windows.
+- `PYTHONIOENCODING`: Set to `utf-8` by `slavv-app`.
+- `SLAVV_CHECKPOINT_DIR`: (Optional) Default directory for legacy flat checkpoints.
+- TODO: Document any other environment variables used for resource management or logging levels.
 
 ## Testing
 
 Run tests using `pytest`:
 
 ```powershell
-# Run unit and integration tests
+# Run unit and integration tests (recommended)
 python -m pytest -m "unit or integration"
-
-# Full suite including slow and UI tests
-python -m pytest
 
 # Diagnostic tests for environment/MATLAB parity setup
 python -m pytest dev/tests/diagnostic/test_comparison_setup.py
+
+# Full suite (includes slow regression and UI tests)
+python -m pytest
 ```
-
-## Environment Variables
-
-The application handles most environment settings internally, especially for Windows console support:
-- `PYTHONUTF8`: Set to `1` by `slavv-app` to ensure UTF-8 support on Windows.
-- `PYTHONIOENCODING`: Set to `utf-8` by `slavv-app`.
-
-No manual environment variable configuration is typically required for standard use.
 
 ## Project Structure
 
@@ -227,35 +146,20 @@ No manual environment variable configuration is typically required for standard 
 | --- | --- |
 | `source/slavv/` | Core package code (processing, I/O, analysis, visualization, CLI/app). |
 | `dev/tests/` | Unit, integration, UI, regression, and diagnostic tests. |
-| `dev/scripts/` | MATLAB comparison wrappers and maintenance helpers. |
-| `dev/reports/` | Archived tooling snapshots and repo-local reference artifacts. |
-| `docs/` | Translation guide, MATLAB mapping, comparison layout references, and active chapter docs. |
-| `external/` | Optional checkouts like `Vectorization-Public` (MATLAB SLAVV). |
+| `dev/scripts/` | MATLAB comparison wrappers, maintenance helpers, and benchmarks. |
+| `docs/` | Reference docs: translation guide, MATLAB mapping, and comparison layout. |
+| `external/` | Optional local checkouts (e.g., `Vectorization-Public` for MATLAB SLAVV). |
 | `data/` | Sample data and test volumes. |
-
-## Documentation Path
-
-For maintained project context, read in this order:
-
-1. [Repository overview](README.md)
-2. [Contributor workflow commands](AGENTS.md)
-3. [Documentation index](docs/README.md)
-4. [MATLAB Translation Guide](docs/reference/MATLAB_TRANSLATION_GUIDE.md)
-5. [MATLAB Mapping](docs/reference/MATLAB_MAPPING.md)
-6. [Comparison Run Layout](docs/reference/COMPARISON_LAYOUT.md)
-7. [Neighborhood Claim Alignment](docs/chapters/neighborhood-claim-alignment/README.md)
-8. [Current parity backlog and lessons learned](TODO.md)
-9. [Release verification notes](docs/chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
+| `slavv_comparisons/`| Default root for structured comparison outputs. |
 
 ## License
 
 This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for details.
 
-## TODOs / Known Issues
+## Documentation and TODOs
 
-See [TODO.md](TODO.md) for the active imported-MATLAB parity backlog,
-[docs/chapters/neighborhood-claim-alignment/README.md](docs/chapters/neighborhood-claim-alignment/README.md)
-for the chapter framing and investigation loop, and [CHANGELOG.md](CHANGELOG.md)
-for recent shipped changes.
+For detailed contributor guidelines, see [AGENTS.md](AGENTS.md).
+For the current parity backlog and roadmap, see [TODO.md](TODO.md).
+For a list of recent changes, see [CHANGELOG.md](CHANGELOG.md).
 
 

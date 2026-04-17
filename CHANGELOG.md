@@ -6,7 +6,55 @@ The repository does not currently use git tags or published release entries, so
 the notes below describe recent development work rather than formal release
 cuts.
 
-## Unreleased
+## [Unreleased]
+
+### Added
+
+- **New Analysis Metrics**: Extended network graph computations to include volume, surface area, densities, and edge energy statistics.
+
+### Changed
+
+- **Refactored Core Pipeline**: Major overhaul of `process_image` and `calculate_energy_field` into modular helpers to improve readability and chunked processing.
+- **Improved MATLAB Bridge**: Decomposed `import_matlab_batch` into focused helpers for better error handling and clearer stage resolution.
+- **Enhanced Curator Logic**: Refactored automatic, Drew's, and ML curators to use reusable helper functions for feature construction and boundary checks.
+- **Modularized ML Curator**: Split ML curator heuristics into dedicated analysis modules for better maintainability.
+- **Optimized UI Components**: Refactored the Streamlit dashboard and interactive curator to use smaller, more manageable rendering and interaction functions.
+- **Code Modernization**: Replaced redundant casts and explicit conversions with idiomatic Python (assignment expressions, comprehensions, f-strings) across the codebase.
+
+### Fixed
+
+- **Improved Error Handling**: Tightened control flow and improved safe file parsing in MATLAB import and export modules.
+- **UI Logic Fixes**: Simplified DataFrame construction and filtering in the dashboard to prevent potential edge-case failures.
+- **Minor Bug Fixes**: Addressed small logic issues in energy calculation and control flow initialization.
+
+---
+
+## [0.1.1] - 2026-04-17
+
+Recent work landed on 2026-04-17 (commits [07555e9](https://github.com/guitarbeat/slavv2python/commit/07555e9) through [31767b5](https://github.com/guitarbeat/slavv2python/commit/31767b5)). This update focuses on a major refactoring of the core pipeline, analysis curators, and UI components for better modularity and maintainability.
+
+### Added
+
+- **Expanded Network Metrics**: `slavv analyze` and the internal network graph components now compute additional metrics including total length, volume, surface area, densities, and edge energy statistics ([07555e9](https://github.com/guitarbeat/slavv2python/commit/07555e9)).
+- **Robust Training Loaders**: Added a new training payload loader in `ml_curator_training.py` with better handling of mismatched arrays and different file types ([822683d](https://github.com/guitarbeat/slavv2python/commit/822683d)).
+
+### Changed
+
+- **Core Pipeline Modularization**: Refactored the main `process_image` and `calculate_energy_field` functions into smaller, focused helpers for progress emission, context initialization, and chunked calculation ([07555e9](https://github.com/guitarbeat/slavv2python/commit/07555e9)).
+- **MATLAB Bridge Refactor**: Decomposed `import_matlab_batch` into stage-specific helpers (`_import_energy_stage`, `_import_vertices_stage`, etc.) to improve reliability ([07555e9](https://github.com/guitarbeat/slavv2python/commit/07555e9)).
+- **Curator Logic Extraction**: Factored out dozens of inline checks and feature construction blocks from `automatic_curator.py`, `drews_curator.py`, and `ml_curator.py` into reusable helper functions ([822683d](https://github.com/guitarbeat/slavv2python/commit/822683d)).
+- **UI Dashboard Decomposition**: Split the Streamlit dashboard and interactive curator rendering into smaller, testable functions ([822683d](https://github.com/guitarbeat/slavv2python/commit/822683d)).
+- **Idiomatic Python Refactoring**: Replaced explicit float/int casts and redundant conversions with f-strings, comprehensions, and assignment expressions across the project ([1644186](https://github.com/guitarbeat/slavv2python/commit/1644186)).
+- **Heuristic Splitting**: Moved ML curator heuristics into dedicated analysis modules ([31767b5](https://github.com/guitarbeat/slavv2python/commit/31767b5)).
+
+### Fixed
+
+- **MATLAB Import Reliability**: Unified file discovery and safe loading in `io.matlab_bridge` and `matlab_parser` ([1644186](https://github.com/guitarbeat/slavv2python/commit/1644186)).
+- **Dashboard Data Handling**: Simplified DataFrame and row construction in the web dashboard to use clearer control flow and avoid unnecessary indexing ([1644186](https://github.com/guitarbeat/slavv2python/commit/1644186)).
+
+---
+
+## Unreleased (Previous)
 
 Recent work landed between 2026-03-21 and 2026-04-14.
 

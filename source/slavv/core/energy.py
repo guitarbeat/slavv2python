@@ -8,11 +8,12 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import shutil
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
+
+from slavv.core import energy_storage as _energy_storage
 
 if TYPE_CHECKING:
     from slavv.runtime import StageController
@@ -444,35 +445,22 @@ def _require_zarr_backend() -> Any:
 
 def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
     """Choose the resumable energy array storage backend."""
-    storage_format = str(config.get("energy_storage_format", "auto"))
-    if storage_format == "auto":
-        return "zarr" if total_voxels > int(config["max_voxels"]) else "npy"
-    if storage_format == "zarr":
-        _require_zarr_backend()
-    return storage_format
+    return _energy_storage.select_energy_storage_format(
+        str(config.get("energy_storage_format", "auto")),
+        total_voxels=total_voxels,
+        max_voxels=int(config["max_voxels"]),
+        require_zarr_backend=_require_zarr_backend,
+    )
 
 
 def _remove_storage_path(path: Any) -> None:
     """Remove a file or directory-backed storage artifact."""
-    if path.exists():
-        if path.is_dir():
-            shutil.rmtree(path)
-        else:
-            path.unlink()
+    _energy_storage.remove_storage_path(path)
 
 
 def _zarr_chunks_for_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
     """Return conservative chunk sizes for energy arrays."""
-    if len(shape) == 3:
-        return tuple(min(int(axis), 64) for axis in shape)
-    if len(shape) == 4:
-        return (
-            min(int(shape[0]), 64),
-            min(int(shape[1]), 64),
-            min(int(shape[2]), 64),
-            min(int(shape[3]), 4),
-        )
-    return tuple(min(int(axis), 64) for axis in shape)
+    return _energy_storage.zarr_chunks_for_shape(shape)
 
 
 def _open_energy_storage_array(
@@ -485,25 +473,15 @@ def _open_energy_storage_array(
     storage_format: str,
 ) -> Any:
     """Open a resumable energy array in either NPY memmap or Zarr format."""
-    if storage_format == "zarr":
-        zarr_module = _require_zarr_backend()
-        if mode == "r+":
-            return zarr_module.open(str(path), mode="r+")
-        return zarr_module.open(
-            str(path),
-            mode="w",
-            shape=shape,
-            dtype=dtype,
-            chunks=_zarr_chunks_for_shape(shape),
-            fill_value=fill_value,
-        )
-
-    if mode == "r+":
-        return np.lib.format.open_memmap(path, mode="r+")
-    array = np.lib.format.open_memmap(path, mode="w+", dtype=dtype, shape=shape)
-    if fill_value is not None:
-        array[...] = fill_value
-    return array
+    return _energy_storage.open_energy_storage_array(
+        path,
+        mode=mode,
+        dtype=dtype,
+        shape=shape,
+        fill_value=fill_value,
+        storage_format=storage_format,
+        require_zarr_backend=_require_zarr_backend,
+    )
 
 
 def _cupy_matched_filter_derivative(
