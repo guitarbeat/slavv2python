@@ -28,9 +28,15 @@ warnings.filterwarnings("ignore")
 try:
     from ..utils import calculate_path_length
     from ..utils.safe_unpickle import safe_load
+    from .ml_curator_features import compute_local_gradient, feature_importance, in_bounds
     from .ml_curator_io import materialize_model_source
     from .ml_curator_training import load_aggregated_training_data
 except ImportError:  # pragma: no cover - fallback for direct execution
+    from slavv.analysis.ml_curator_features import (
+        compute_local_gradient,
+        feature_importance,
+        in_bounds,
+    )
     from slavv.analysis.ml_curator_io import materialize_model_source
     from slavv.analysis.ml_curator_training import load_aggregated_training_data
     from slavv.utils import calculate_path_length
@@ -145,7 +151,7 @@ class MLCurator:
 
             # Energy gradient features
             try:
-                gradient = self._compute_local_gradient(energy_field, pos)
+                gradient = compute_local_gradient(energy_field, pos)
                 gradient_magnitude = np.linalg.norm(gradient)
                 vertex_features.extend(
                     [
@@ -207,7 +213,7 @@ class MLCurator:
                 edge_energies = []
                 for point in trace:
                     pos = point.astype(int)
-                    if self._in_bounds(pos, energy_field.shape):
+                    if in_bounds(pos, energy_field.shape):
                         edge_energies.append(energy_field[tuple(pos)])
 
                 if edge_energies:
@@ -354,7 +360,7 @@ class MLCurator:
             "cv_std": np.std(cv_scores),
             "classification_report": classification_report(y_test, y_pred),
             "confusion_matrix": confusion_matrix(y_test, y_pred),
-            "feature_importance": self._get_feature_importance(),
+            "feature_importance": feature_importance(self.vertex_classifier),
             "n_features": features.shape[1],
             "n_samples": features.shape[0],
         }
@@ -433,7 +439,7 @@ class MLCurator:
             "cv_std": np.std(cv_scores),
             "classification_report": classification_report(y_test, y_pred),
             "confusion_matrix": confusion_matrix(y_test, y_pred),
-            "feature_importance": self._get_edge_feature_importance(),
+            "feature_importance": feature_importance(self.edge_classifier),
             "n_features": features.shape[1],
             "n_samples": features.shape[0],
         }
@@ -640,38 +646,6 @@ class MLCurator:
         edge_labels = np.hstack(edge_labels_list) if edge_labels_list else np.array([])
 
         return vertex_features, vertex_labels, edge_features, edge_labels
-
-    def _compute_local_gradient(self, energy_field: np.ndarray, pos: np.ndarray) -> np.ndarray:
-        """Compute local gradient at given position"""
-        pos_int = np.round(pos).astype(int)
-        gradient = np.zeros(3)
-
-        for i in range(3):
-            if 0 < pos_int[i] < energy_field.shape[i] - 1:
-                pos_plus = pos_int.copy()
-                pos_minus = pos_int.copy()
-                pos_plus[i] += 1
-                pos_minus[i] -= 1
-
-                gradient[i] = (energy_field[tuple(pos_plus)] - energy_field[tuple(pos_minus)]) / 2
-
-        return gradient
-
-    def _in_bounds(self, pos: np.ndarray, shape: tuple[int, ...]) -> bool:
-        """Check if position is within bounds"""
-        return all(0 <= p < s for p, s in zip(pos, shape))
-
-    def _get_feature_importance(self) -> np.ndarray | None:
-        """Get feature importance from vertex classifier if available."""
-        if hasattr(self.vertex_classifier, "feature_importances_"):
-            return self.vertex_classifier.feature_importances_
-        return None
-
-    def _get_edge_feature_importance(self) -> np.ndarray | None:
-        """Get feature importance from edge classifier if available."""
-        if hasattr(self.edge_classifier, "feature_importances_"):
-            return self.edge_classifier.feature_importances_
-        return None
 
     def aggregate_training_data(
         self, data_dir: Any, file_pattern: str = "*_results.json"

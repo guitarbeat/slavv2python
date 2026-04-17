@@ -246,12 +246,15 @@ def _save_network_export(
             from slavv.visualization import NetworkVisualizer
 
             vis = NetworkVisualizer()
-            vis._export_mat(
-                results.get("vertices", {}),
-                results.get("edges", {}),
-                results.get("network", {}),
-                results.get("parameters", {}),
+            vis.export_network_data(
+                {
+                    "vertices": results.get("vertices", {}),
+                    "edges": results.get("edges", {}),
+                    "network": results.get("network", {}),
+                    "parameters": results.get("parameters", {}),
+                },
                 export_path,
+                format="mat",
             )
             logger.info("Saved MAT to %s", export_path)
             return export_path

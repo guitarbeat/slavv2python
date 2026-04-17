@@ -8,16 +8,16 @@ including 2D/3D plotting, statistical analysis, and export functionality.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from ..utils import calculate_path_length
+from .network_plot_dashboard import add_summary_dashboard_traces
+from .network_plot_exports import export_casx, export_csv, export_json, export_mat, export_vmv
 from .network_plot_helpers import NETWORK_COLOR_SCHEMES, add_colorbar, map_values_to_colors
 from .network_plot_layout import (
     axis_labels,
@@ -42,20 +42,6 @@ class NetworkVisualizer:
 
     def __init__(self):
         self.color_schemes = dict(NETWORK_COLOR_SCHEMES)
-
-    @staticmethod
-    def _map_values_to_colors(values: np.ndarray, colorscale: str) -> list[str]:
-        return map_values_to_colors(values, colorscale)
-
-    @staticmethod
-    def _add_colorbar(
-        fig: go.Figure,
-        values: np.ndarray,
-        colorscale: str,
-        title: str,
-        is_3d: bool = False,
-    ) -> None:
-        add_colorbar(fig, values, colorscale, title, is_3d=is_3d)
 
     def plot_2d_network(
         self,
@@ -155,11 +141,9 @@ class NetworkVisualizer:
                     # Clip to valid range (searchsorted can return len(bins))
                     indices = np.clip(indices, 0, len(bins) - 1)
                     quantized_values = bins[indices]
-                    edge_colors = self._map_values_to_colors(
-                        quantized_values, self.color_schemes[color_by]
-                    )
+                    edge_colors = map_values_to_colors(quantized_values, self.color_schemes[color_by])
                 else:
-                    edge_colors = self._map_values_to_colors(values, self.color_schemes[color_by])
+                    edge_colors = map_values_to_colors(values, self.color_schemes[color_by])
             elif color_by == "strand_id":
                 connections = edges.get("connections", [])
                 pair_to_index = {
@@ -241,13 +225,7 @@ class NetworkVisualizer:
 
             # Add colorbar if applicable
             if color_by in {"depth", "energy", "radius", "length"} and values is not None:
-                self._add_colorbar(
-                    fig,
-                    values,
-                    self.color_schemes[color_by],
-                    color_by.title(),
-                    is_3d=False,
-                )
+                add_colorbar(fig, values, self.color_schemes[color_by], color_by.title(), is_3d=False)
 
         # Plot vertices
         if show_vertices and len(vertex_positions) > 0:
@@ -506,14 +484,12 @@ class NetworkVisualizer:
                 vertex_radii = vertex_radii[mask] if len(vertex_radii) > 0 else []
 
                 if color_by == "energy":
-                    colors = self._map_values_to_colors(
-                        vertex_energies, self.color_schemes["energy"]
-                    )
+                    colors = map_values_to_colors(vertex_energies, self.color_schemes["energy"])
                 elif color_by == "depth":
                     depths = positions[mask, axis]
-                    colors = self._map_values_to_colors(depths, self.color_schemes["depth"])
+                    colors = map_values_to_colors(depths, self.color_schemes["depth"])
                 elif color_by == "radius" and len(vertex_radii) > 0:
-                    colors = self._map_values_to_colors(vertex_radii, self.color_schemes["radius"])
+                    colors = map_values_to_colors(vertex_radii, self.color_schemes["radius"])
                 else:
                     colors = ["red"] * len(x_coords)
 
@@ -708,7 +684,7 @@ class NetworkVisualizer:
 
             # Add colorbar
             if color_by in {"depth", "energy", "radius", "length"}:
-                self._add_colorbar(
+                add_colorbar(
                     fig, np.array(edge_values_for_cbar), colorscale, color_by.title(), is_3d=True
                 )
 
@@ -1251,75 +1227,10 @@ class NetworkVisualizer:
             ],
         )
 
-        # Network overview (2D projection)
-        self._add_summary_dashboard_traces(vertices, parameters, fig, network)
+        add_summary_dashboard_traces(fig, vertices, network, parameters)
 
         fig.update_layout(**summary_dashboard_layout())
         return fig
-
-    def _add_summary_dashboard_traces(
-        self,
-        vertices: dict[str, Any],
-        parameters: dict[str, Any],
-        fig: go.Figure,
-        network: dict[str, Any],
-    ) -> None:
-        # Network overview (2D projection)
-        vertex_positions = vertices["positions"]
-        if len(vertex_positions) > 0:
-            microns_per_voxel = parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
-            x_coords = vertex_positions[:, 1] * microns_per_voxel[1]
-            y_coords = vertex_positions[:, 0] * microns_per_voxel[0]
-
-            fig.add_trace(
-                go.Scatter(
-                    x=x_coords,
-                    y=y_coords,
-                    mode="markers",
-                    marker={"size": 4, "color": "red"},
-                    name="Vertices",
-                ),
-                row=1,
-                col=1,
-            )
-
-        # Strand lengths
-        strands = network["strands"]
-        strand_lengths = []
-        for strand in strands:
-            if len(strand) > 1:
-                length = 0
-                for i in range(len(strand) - 1):
-                    pos1 = vertex_positions[strand[i]] * parameters.get(
-                        "microns_per_voxel", [1.0, 1.0, 1.0]
-                    )
-                    pos2 = vertex_positions[strand[i + 1]] * parameters.get(
-                        "microns_per_voxel", [1.0, 1.0, 1.0]
-                    )
-                    length += np.linalg.norm(pos2 - pos1)
-                strand_lengths.append(length)
-
-        if strand_lengths:
-            fig.add_trace(
-                go.Histogram(x=strand_lengths, nbinsx=15, name="Strand Lengths"), row=1, col=2
-            )
-
-        # Radius distribution
-        radii = vertices.get("radii_microns", vertices.get("radii", []))
-        if len(radii) > 0:
-            fig.add_trace(go.Histogram(x=radii, nbinsx=15, name="Radii"), row=2, col=1)
-
-        # Depth statistics (simplified)
-        if len(vertex_positions) > 0:
-            depths = (
-                vertex_positions[:, 2] * parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])[2]
-            )
-            depth_counts, depth_bins = np.histogram(depths, bins=10)
-            bin_centers = (depth_bins[:-1] + depth_bins[1:]) / 2
-
-            fig.add_trace(
-                go.Bar(x=bin_centers, y=depth_counts, name="Vertex Count by Depth"), row=2, col=2
-            )
 
     def export_network_data(
         self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
@@ -1343,451 +1254,16 @@ class NetworkVisualizer:
         parameters = processing_results["parameters"]
 
         if format == "csv":
-            return self._export_csv(vertices, edges, network, parameters, output_path)
+            return export_csv(vertices, edges, network, parameters, output_path)
         if format == "json":
-            return self._export_json(processing_results, output_path)
+            return export_json(processing_results, output_path)
         if format == "vmv":
-            return self._export_vmv(vertices, edges, network, parameters, output_path)
+            return export_vmv(vertices, edges, network, parameters, output_path)
         if format == "casx":
-            return self._export_casx(vertices, edges, network, parameters, output_path)
+            return export_casx(vertices, edges, network, parameters, output_path)
         if format == "mat":
-            return self._export_mat(vertices, edges, network, parameters, output_path)
+            return export_mat(vertices, edges, network, parameters, output_path)
         raise ValueError(f"Unsupported export format: {format}")
-
-    def _export_csv(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        output_path: str,
-    ) -> str:
-        """Export data as CSV files"""
-        base_path = Path(output_path).with_suffix("")
-
-        # Export vertices
-        n_vertices = len(vertices["positions"])
-
-        # Helper to ensure array length matches n_vertices
-        def _ensure_len(arr):
-            if arr is None or len(arr) != n_vertices:
-                return np.full(n_vertices, np.nan)
-            return arr
-
-        vertex_df = pd.DataFrame(
-            {
-                "vertex_id": range(n_vertices),
-                "y_position": vertices["positions"][:, 0],
-                "x_position": vertices["positions"][:, 1],
-                "z_position": vertices["positions"][:, 2],
-                "energy": _ensure_len(vertices.get("energies")),
-                "radius_microns": _ensure_len(
-                    vertices.get("radii_microns", vertices.get("radii", []))
-                ),
-                "radius_pixels": _ensure_len(
-                    vertices.get("radii_pixels", vertices.get("radii", []))
-                ),
-                "scale": _ensure_len(vertices.get("scales")),
-            }
-        )
-        vertex_path = f"{base_path}_vertices.csv"
-        vertex_df.to_csv(vertex_path, index=False)
-
-        # Export edges
-        edge_data = []
-        for i, (trace, connection) in enumerate(zip(edges["traces"], edges["connections"])):
-            start_vertex, end_vertex = connection
-            trace = np.array(trace)
-            length = calculate_path_length(
-                trace * parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
-            )
-
-            edge_data.append(
-                {
-                    "edge_id": i,
-                    "start_vertex": start_vertex,
-                    "end_vertex": end_vertex,
-                    "length": length,
-                    "n_points": len(trace),
-                }
-            )
-
-        edge_df = pd.DataFrame(edge_data)
-        edge_path = f"{base_path}_edges.csv"
-        edge_df.to_csv(edge_path, index=False)
-
-        logger.info(f"CSV export complete: {vertex_path}, {edge_path}")
-        return vertex_path
-
-    def _export_json(self, processing_results: dict[str, Any], output_path: str) -> str:
-        """Export complete results as JSON"""
-        import json
-
-        # Convert numpy arrays and other non-JSON-serializable types
-        def convert_numpy(obj):
-            if isinstance(obj, np.ndarray):
-                return convert_numpy(obj.tolist())
-            if isinstance(obj, np.generic):
-                return convert_numpy(obj.item())
-            if isinstance(obj, set):
-                return [convert_numpy(item) for item in obj]
-            if isinstance(obj, tuple):
-                return [convert_numpy(item) for item in obj]
-            if isinstance(obj, Path):
-                return str(obj)
-            if isinstance(obj, dict):
-                return {str(key): convert_numpy(value) for key, value in obj.items()}
-            if isinstance(obj, list):
-                return [convert_numpy(item) for item in obj]
-            return obj
-
-        # Filter data to export only core network structures
-        # Use whitelist to avoid massive volume data (like 'energy_data')
-        whitelist = {"vertices", "edges", "network", "parameters"}
-        data_to_export = {k: v for k, v in processing_results.items() if k in whitelist}
-
-        json_data = convert_numpy(data_to_export)
-
-        with open(output_path, "w") as f:
-            json.dump(json_data, f, indent=2)
-
-        logger.info(f"JSON export complete: {output_path}")
-        return output_path
-
-    def _export_vmv(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        output_path: str,
-    ) -> str:
-        """Export in VMV (Vascular Modeling Visualization) format.
-
-        Note: Coordinates are transformed to (X, -Y, -Z) to match VessMorphoVis requirements.
-        """
-        # Prepare parameters
-        microns_per_voxel = parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
-        vertex_positions = vertices["positions"]
-        # Prioritize radii in microns, fall back to radii (which might be in pixels or microns depending on context,
-        # usually radii_microns is explicit)
-        vertex_radii = vertices.get("radii_microns", vertices.get("radii", []))
-        if len(vertex_radii) == 0 and len(vertex_positions) > 0:
-            vertex_radii = np.ones(len(vertex_positions))
-
-        # Build edge lookup map: (start, end) -> edge_index
-        connection_to_edge_idx = {}
-        for idx, conn in enumerate(edges["connections"]):
-            if conn is not None and len(conn) >= 2:
-                u, v = conn[0], conn[1]
-                if u is not None and v is not None:
-                    connection_to_edge_idx[(int(u), int(v))] = idx
-                    connection_to_edge_idx[(int(v), int(u))] = idx
-
-        # Data structures for VMV
-        # VMV expects a list of vertices (coordinates + attributes)
-        # and a list of strands (sequences of vertex indices).
-        # We will collect all unique points from the traces that make up the strands.
-
-        vmv_points = []
-        point_to_idx = {}  # (x_um, y_um, z_um) -> 1-based index
-
-        def get_or_add_point(pos_um, radius_um):
-            # pos_um is (x, y, z)
-            # Use rounding to handle float precision issues when merging points
-            key = tuple(np.round(pos_um, 5))
-            if key in point_to_idx:
-                return point_to_idx[key]
-            idx = len(vmv_points) + 1  # 1-based indexing for VMV
-            vmv_points.append([*list(pos_um), radius_um])
-            point_to_idx[key] = idx
-            return idx
-
-        vmv_strands = []
-
-        # Process strands
-        for strand in network["strands"]:
-            strand_point_indices = []
-            if len(strand) < 2:
-                continue
-
-            # Check if strand is coordinate-based (float array) or index-based (int list/array)
-            is_coord = False
-            if isinstance(strand, np.ndarray):
-                if strand.ndim == 2 and strand.shape[1] >= 3:
-                    is_coord = True
-                elif strand.ndim == 1 and strand.dtype.kind == "f" and len(strand) >= 3:
-                    # Handle single point or flattened coordinate array
-                    is_coord = True
-                    strand = strand.reshape(1, -1)
-
-            if is_coord:
-                # Handle coordinate strands [y, x, z, r]
-                for k in range(len(strand)):
-                    pt = strand[k]
-                    # Ensure pt is indexable (handles case where reshape failed or other weirdness)
-                    if not isinstance(pt, (np.ndarray, list, tuple)):
-                        continue
-
-                    # Assume [y, x, z, r] layout based on inspection
-                    pos_vox = pt[:3]
-                    radius = pt[3] if len(pt) > 3 else 1.0
-
-                    # Convert to physical units (X, -Y, -Z) for VMV
-                    # SLAVV/MATLAB internal: (y, x, z)
-                    pos_um = np.array(
-                        [
-                            pos_vox[1] * microns_per_voxel[1],  # X
-                            -pos_vox[0] * microns_per_voxel[0],  # -Y
-                            -pos_vox[2] * microns_per_voxel[2],  # -Z
-                        ]
-                    )
-
-                    pidx = get_or_add_point(pos_um, radius)
-                    strand_point_indices.append(pidx)
-            else:
-                # Handle index-based strands (list of vertex indices)
-                for i in range(len(strand) - 1):
-                    u, v = int(strand[i]), int(strand[i + 1])
-
-                    # Find edge connecting these vertices
-                    edge_idx = connection_to_edge_idx.get((u, v))
-                    if edge_idx is None:
-                        continue
-
-                    trace = edges["traces"][edge_idx]
-                    if trace is None or len(trace) == 0:
-                        continue
-
-                    trace_arr = np.array(trace)
-
-                    # Check direction: trace usually corresponds to connection[0]->connection[1]
-                    # but we need to know if u->v matches that or is reversed.
-                    # Use distance check to robustly determine direction.
-                    pos_u = vertex_positions[u]
-
-                    d_start = np.linalg.norm(trace_arr[0] - pos_u)
-                    d_end = np.linalg.norm(trace_arr[-1] - pos_u)
-
-                    if d_end < d_start:
-                        # Trace is reversed relative to u->v (i.e. trace starts near v)
-                        trace_arr = trace_arr[::-1]
-
-                    # Radii interpolation along the edge
-                    r_u = vertex_radii[u] if u < len(vertex_radii) else 1.0
-                    r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
-
-                    # Calculate cumulative length for interpolation
-                    # SLAVV coords are (y, x, z)
-                    diffs = np.diff(trace_arr, axis=0)
-                    # Convert diffs to physical units for distance
-                    diffs_phys = diffs * microns_per_voxel
-                    seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
-                    cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
-                    total_len = cum_lens[-1]
-
-                    if total_len > 1e-6:
-                        r_interp = r_u + (r_v - r_u) * (cum_lens / total_len)
-                    else:
-                        r_interp = np.full(len(trace_arr), r_u)
-
-                    # Add points to VMV structure
-                    # For the first segment in a strand, add all points.
-                    # For subsequent segments, skip the first point (it matches the last point of the previous segment).
-                    start_k = 0 if i == 0 else 1
-
-                    for k in range(start_k, len(trace_arr)):
-                        pos_vox = trace_arr[k]
-                        # Convert to physical units (X, -Y, -Z)
-                        # SLAVV internal: (y, x, z)
-                        # Output: (x, -y, -z) matching MATLAB spec
-                        pos_um = np.array(
-                            [
-                                pos_vox[1] * microns_per_voxel[1],  # X
-                                -pos_vox[0] * microns_per_voxel[0],  # -Y
-                                -pos_vox[2] * microns_per_voxel[2],  # -Z
-                            ]
-                        )
-
-                        pidx = get_or_add_point(pos_um, r_interp[k])
-                        strand_point_indices.append(pidx)
-
-            if len(strand_point_indices) > 1:
-                vmv_strands.append(strand_point_indices)
-
-        # Write to file
-        with open(output_path, "w") as f:
-            # Header
-            f.write("$PARAM_BEGIN\n")
-            f.write(f"NUM_VERTS\t{len(vmv_points)}\n")
-            f.write(f"NUM_STRANDS\t{len(vmv_strands)}\n")
-            f.write("NUM_ATTRIB_PER_VERT\t4\n")  # X, Y, Z, Radius
-            f.write("$PARAM_END\n\n")
-
-            # Vertices
-            f.write("$VERT_LIST_BEGIN\n")
-            for i, pt in enumerate(vmv_points):
-                # Format: index x y z r
-                f.write(f"{i + 1}\t{pt[0]:.6f}\t{pt[1]:.6f}\t{pt[2]:.6f}\t{pt[3]:.6f}\n")
-            f.write("$VERT_LIST_END\n\n")
-
-            # Strands
-            f.write("$STRANDS_LIST_BEGIN\n")
-            for i, s in enumerate(vmv_strands):
-                # Format: strand_idx pt1 pt2 ...
-                pts_str = "\t".join(map(str, s))
-                f.write(f"{i + 1}\t{pts_str}\n")
-            # No newline at end to match some MATLAB writers, or newline is fine.
-            f.write("$STRANDS_LIST_END")
-
-        logger.info(f"VMV export complete: {output_path}")
-        return output_path
-
-    def _export_casx(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        output_path: str,
-    ) -> str:
-        """Export in CASX format"""
-        with open(output_path, "w") as f:
-            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-            f.write("<CasX>\n")
-
-            # Write parameters
-            f.write("  <Parameters>\n")
-            for k, v in parameters.items():
-                if isinstance(v, (list, tuple, np.ndarray)):
-                    val_str = " ".join(map(str, v))
-                else:
-                    val_str = str(v)
-                f.write(f'    <Parameter name="{k}" value="{val_str}"/>\n')
-
-            # Ensure microns_per_voxel is written if not present
-            if "microns_per_voxel" not in parameters:
-                microns_per_voxel = [1.0, 1.0, 1.0]
-                mpv_str = " ".join(map(str, microns_per_voxel))
-                f.write(f'    <Parameter name="microns_per_voxel" value="{mpv_str}"/>\n')
-            f.write("  </Parameters>\n")
-
-            f.write("  <Network>\n")
-
-            # Write vertices
-            f.write("    <Vertices>\n")
-            positions = np.asarray(vertices.get("positions", []), dtype=float)
-            radii = vertices.get("radii_microns", vertices.get("radii", []))
-            energies = vertices.get("energies")
-            scales = vertices.get("scales")
-            radii_array = np.asarray(radii, dtype=float).reshape(-1)
-            if len(radii_array) < len(positions):
-                padded_radii = np.zeros((len(positions),), dtype=float)
-                padded_radii[: len(radii_array)] = radii_array
-                radii_array = padded_radii
-
-            for i, pos in enumerate(positions):
-                radius = radii_array[i] if i < len(radii_array) else 0.0
-                # Note: Coordinate swap x=pos[1], y=pos[0] to match legacy format
-                line = f'      <Vertex id="{i}" x="{pos[1]:.3f}" y="{pos[0]:.3f}" z="{pos[2]:.3f}" radius="{radius:.3f}"'
-
-                if energies is not None and i < len(energies):
-                    line += f' energy="{energies[i]:.3f}"'
-                if scales is not None and i < len(scales):
-                    line += f' scale="{scales[i]:.3f}"'
-
-                line += "/>\n"
-                f.write(line)
-            f.write("    </Vertices>\n")
-
-            # Write edges
-            f.write("    <Edges>\n")
-            for i, connection in enumerate(edges["connections"]):
-                start_vertex, end_vertex = connection
-                if start_vertex is not None and end_vertex is not None:
-                    f.write(f'      <Edge id="{i}" start="{start_vertex}" end="{end_vertex}"/>\n')
-            f.write("    </Edges>\n")
-
-            # Write strands
-            f.write("    <Strands>\n")
-            for i, strand in enumerate(network.get("strands", [])):
-                if len(strand) > 0:
-                    # Convert list of indices to space-separated string
-                    strand_str = " ".join(map(str, strand))
-                    f.write(f'      <Strand id="{i}">{strand_str}</Strand>\n')
-            f.write("    </Strands>\n")
-
-            # Write bifurcations
-            if "bifurcations" in network and len(network["bifurcations"]) > 0:
-                f.write("    <Bifurcations>\n")
-                for i, bif in enumerate(network["bifurcations"]):
-                    f.write(f'      <Bifurcation id="{i}" vertex_id="{bif}"/>\n')
-                f.write("    </Bifurcations>\n")
-
-            f.write("  </Network>\n")
-            f.write("</CasX>\n")
-
-        logger.info(f"CASX export complete: {output_path}")
-        return output_path
-
-    def _sanitize_for_matlab(self, data: Any) -> Any:
-        """
-        Sanitize data structures for MATLAB export.
-
-        Recursively converts None to empty strings and ensures dictionaries
-        have string keys.
-        """
-        if data is None:
-            return []
-        if isinstance(data, dict):
-            return {str(k): self._sanitize_for_matlab(v) for k, v in data.items()}
-        if isinstance(data, list):
-            return [self._sanitize_for_matlab(v) for v in data]
-        if isinstance(data, tuple):
-            return tuple(self._sanitize_for_matlab(v) for v in data)
-        if isinstance(data, set):
-            return list(data)
-        return data
-
-    def _export_mat(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        output_path: str,
-    ) -> str:
-        """Export data to MATLAB .mat format using scipy.io.savemat"""
-        try:
-            from scipy.io import savemat
-        except ImportError as e:
-            raise ImportError("scipy is required for MAT export. Please install scipy.") from e
-
-        data = {
-            "vertices": {
-                "positions": np.asarray(vertices.get("positions", [])),
-                "energies": np.asarray(vertices.get("energies", [])),
-                "radii_microns": np.asarray(
-                    vertices.get("radii_microns", vertices.get("radii", []))
-                ),
-                "radii_pixels": np.asarray(vertices.get("radii_pixels", vertices.get("radii", []))),
-                "scales": np.asarray(vertices.get("scales", [])),
-            },
-            "edges": {
-                "connections": np.asarray(edges.get("connections", []), dtype=object),
-                "traces": np.array([np.asarray(t) for t in edges.get("traces", [])], dtype=object),
-            },
-            "network": {
-                "strands": np.asarray(network.get("strands", []), dtype=object),
-                "bifurcations": np.asarray(network.get("bifurcations", [])),
-                "vertex_degrees": np.asarray(network.get("vertex_degrees", [])),
-            },
-            "parameters": self._sanitize_for_matlab(parameters),
-        }
-
-        savemat(output_path, data, do_compression=True)
-        logger.info(f"MAT export complete: {output_path}")
-        return output_path
 
     def plot_length_weighted_histograms(
         self,

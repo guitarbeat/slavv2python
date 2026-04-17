@@ -33,7 +33,6 @@ from slavv.apps.web_app_dashboard import (
     _dashboard_stage_frame,
     build_dashboard_backlog_frame,
     filter_dashboard_breakdown,
-    normalize_dashboard_sections,
 )
 from slavv.core import SLAVVProcessor
 from slavv.io import load_tiff_volume
@@ -334,36 +333,6 @@ def _dashboard_context() -> DashboardContext:
     }
 
 
-def _normalize_dashboard_sections(selected_sections) -> list[str]:
-    """Normalize the selected pills value to a stable list."""
-    return cast(
-        "list[str]",
-        normalize_dashboard_sections(
-            selected_sections,
-            breakdown_sections=DASHBOARD_BREAKDOWN_SECTIONS,
-        ),
-    )
-
-
-def _filter_dashboard_breakdown(frame: pd.DataFrame) -> pd.DataFrame:
-    """Apply focus and section filters to the breakdown table."""
-    return filter_dashboard_breakdown(
-        frame,
-        focus=st.session_state.get("dashboard_focus", "Overview"),
-        selected_sections=st.session_state.get("dashboard_sections"),
-        show_placeholders=st.session_state.get("dashboard_show_placeholders", True),
-    )
-
-
-def _build_dashboard_backlog_frame() -> pd.DataFrame:
-    """Build an editable backlog for follow-on dashboard work."""
-    return build_dashboard_backlog_frame(
-        st.session_state.get("dashboard_metric_requests", []),
-        repo_url=DASHBOARD_REPO_URL,
-        release_url=DASHBOARD_RELEASE_URL,
-    )
-
-
 def _toast_dashboard_feedback() -> None:
     """Acknowledge dashboard feedback in the current session."""
     st.toast(
@@ -514,8 +483,11 @@ def _render_dashboard_surface() -> None:
 
     st.space("small")
 
-    filtered_breakdown = _filter_dashboard_breakdown(
-        _dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir)
+    filtered_breakdown = filter_dashboard_breakdown(
+        _dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir),
+        focus=st.session_state.get("dashboard_focus", "Overview"),
+        selected_sections=st.session_state.get("dashboard_sections"),
+        show_placeholders=st.session_state.get("dashboard_show_placeholders", True),
     )
     with st.container(border=True):
         st.subheader("Breakdown Table")
@@ -563,7 +535,11 @@ def _render_dashboard_surface() -> None:
     with backlog_tab:
         st.caption("Use this backlog to capture the next round of dashboard metrics and ownership.")
         st.data_editor(
-            _build_dashboard_backlog_frame(),
+            build_dashboard_backlog_frame(
+                st.session_state.get("dashboard_metric_requests", []),
+                repo_url=DASHBOARD_REPO_URL,
+                release_url=DASHBOARD_RELEASE_URL,
+            ),
             key="dashboard_backlog_editor",
             hide_index=True,
             use_container_width=True,

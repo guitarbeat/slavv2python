@@ -28,7 +28,16 @@ def test_casx_export_full(tmp_path):
     parameters = {"microns_per_voxel": [1.0, 1.0, 1.0]}
 
     output_path = tmp_path / "test_output.casx"
-    viz._export_casx(vertices, edges, network, parameters, str(output_path))
+    viz.export_network_data(
+        {
+            "vertices": vertices,
+            "edges": edges,
+            "network": network,
+            "parameters": parameters,
+        },
+        str(output_path),
+        format="casx",
+    )
 
     assert output_path.exists()
 

@@ -50,8 +50,15 @@ def test_vmv_export():
     if os.path.exists(output_path):
         os.remove(output_path)
 
+    processing_results = {
+        "vertices": vertices,
+        "edges": edges,
+        "network": network,
+        "parameters": parameters,
+    }
+
     # Run export
-    viz._export_vmv(vertices, edges, network, parameters, output_path)
+    viz.export_network_data(processing_results, output_path, format="vmv")
 
     # Read and verify content
     with open(output_path) as f:

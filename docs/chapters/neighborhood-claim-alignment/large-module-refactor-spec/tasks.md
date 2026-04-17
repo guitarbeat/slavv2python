@@ -175,8 +175,10 @@ Completed helper modules introduced so far:
 
 - `source/slavv/apps/web_app_dashboard.py`
 - `source/slavv/apps/web_app_artifacts.py`
+- `source/slavv/visualization/network_plot_dashboard.py`
 - `source/slavv/visualization/network_plot_helpers.py`
 - `source/slavv/visualization/network_plot_layout.py`
+- `source/slavv/analysis/ml_curator_features.py`
 - `source/slavv/analysis/ml_curator_io.py`
 - `source/slavv/analysis/ml_curator_training.py`
 
@@ -185,12 +187,15 @@ Resolved compatibility notes so far:
 - `source/slavv/visualization/network_plots.py` and `source/slavv/visualization/network_plot_layout.py` now use a consistent helper API for shared 3D scene and simple figure layouts (`plot_3d_scene_layout`, `figure_layout`) after an in-progress extraction briefly left import/call mismatches.
 - `source/slavv/visualization/network_plot_layout.py` now also owns the shared empty-state figure helper used by visualization methods that previously duplicated centered "no data" annotations inline.
 - `rope` was successfully used to extract the summary-dashboard trace population block in `source/slavv/visualization/network_plots.py` into a dedicated helper method, with follow-up type tightening and regression coverage added afterward.
+- `source/slavv/visualization/network_plots.py` now calls helper modules directly for color mapping, colorbars, and summary-dashboard trace assembly, with the internal wrapper methods removed to produce net LOC reduction.
+- `source/slavv/analysis/ml_curator.py` now imports gradient, bounds, and feature-importance helpers from `ml_curator_features.py`, removing internal helper methods while preserving the public curator surface.
 
 Completed focused regression tests introduced so far:
 
 - `dev/tests/unit/apps/test_web_app_dashboard_refactor.py`
 - `dev/tests/unit/apps/test_web_app_artifacts_refactor.py`
 - `dev/tests/unit/analysis/test_ml_curator_io.py`
+- `dev/tests/unit/analysis/test_ml_curator_features.py`
 - `dev/tests/unit/analysis/test_ml_curator_training.py`
 - `dev/tests/unit/visualization/test_network_plot_layout.py`
 - `dev/tests/ui/test_summary_dashboard.py`

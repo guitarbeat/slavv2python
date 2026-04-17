@@ -28,8 +28,15 @@ def test_casx_export(tmp_path):
 
     parameters = {"microns_per_voxel": [0.5, 0.5, 1.0], "threshold": 0.5, "algorithm": "SLAVV_v2"}
 
+    processing_results = {
+        "vertices": vertices,
+        "edges": edges,
+        "network": network,
+        "parameters": parameters,
+    }
+
     # Run export
-    viz._export_casx(vertices, edges, network, parameters, str(output_path))
+    viz.export_network_data(processing_results, str(output_path), format="casx")
 
     # Verify content
     tree = ET.parse(output_path)
@@ -89,7 +96,16 @@ def test_casx_export_defaults_missing_radii_to_zero(tmp_path):
     edges = {"connections": [[0, 1]], "traces": []}
     network = {"strands": [[0, 1]]}
 
-    viz._export_casx(vertices, edges, network, {}, str(output_path))
+    viz.export_network_data(
+        {
+            "vertices": vertices,
+            "edges": edges,
+            "network": network,
+            "parameters": {},
+        },
+        str(output_path),
+        format="casx",
+    )
 
     tree = ET.parse(output_path)
     verts = tree.getroot().findall(".//Vertex")
