@@ -8,7 +8,6 @@ for comparison purposes.
 from __future__ import annotations
 
 import copy
-import glob
 import json
 import os
 import subprocess
@@ -22,11 +21,34 @@ from slavv.core import SLAVVProcessor
 from slavv.io import export_pipeline_results, load_tiff_volume
 from slavv.io.matlab_bridge import import_matlab_batch, load_matlab_batch_params
 from slavv.io.matlab_parser import load_matlab_batch_results
-from slavv.runtime import ProgressEvent, RunContext
-from slavv.utils import format_time, get_matlab_info, get_system_info
-from slavv.utils.safe_unpickle import safe_load
+from slavv.runtime import RunContext
+from slavv.utils import get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
+from ._comparison.artifacts import (
+    _persist_loop_assessment_report,
+    _persist_matlab_failure_report,
+    _persist_matlab_health_check_report,
+    _persist_matlab_status_report,
+    _persist_preflight_report,
+    _write_comparison_quick_view,
+    _write_comparison_report,
+    _write_normalized_params_file,
+)
+from ._comparison.python_sources import (
+    _load_python_candidate_audit,
+    _load_python_candidate_edges,
+    _load_python_candidate_lifecycle,
+    _load_python_results_from_source,
+    _resolve_python_energy_source,
+)
+from ._comparison.task_recording import (
+    _format_progress_event_message,
+    _record_loop_assessment_task,
+    _record_matlab_health_check_task,
+    _record_matlab_status_task,
+    _record_preflight_task,
+)
 from .diagnostics import (
     format_shared_neighborhood_summary,
     generate_shared_neighborhood_diagnostics,
@@ -35,8 +57,6 @@ from .diagnostics import (
 )
 from .matlab_status import (
     MatlabStatusReport,
-    persist_matlab_failure_summary,
-    persist_matlab_status,
     summarize_matlab_status,
 )
 from .matlab_status import (
@@ -45,7 +65,6 @@ from .matlab_status import (
 from .metrics import build_shared_neighborhood_audit, compare_results
 from .preflight import (
     OutputRootPreflightReport,
-    persist_output_preflight,
     summarize_output_preflight,
 )
 from .preflight import (
@@ -55,19 +74,12 @@ from .reporting import generate_summary
 from .run_layout import generate_manifest, resolve_run_layout
 from .workflow_assessment import (
     LOOP_ANALYSIS_READY,
-    LOOP_BLOCKED,
-    LOOP_FRESH_MATLAB_REQUIRED,
     LOOP_REUSE_READY,
-    LoopAssessmentReport,
-    MatlabHealthCheckReport,
     assess_loop_request,
     determine_loop_kind,
     evaluate_output_root_preflight_cached,
     inspect_matlab_status_cached,
-    persist_loop_assessment,
-    persist_matlab_health_check,
     run_matlab_health_check,
-    summarize_loop_assessment,
     summarize_matlab_health_check,
 )
 
@@ -120,130 +132,6 @@ def _inspect_matlab_status_for_workflow(
     if status_hook is not _DEFAULT_INSPECT_MATLAB_STATUS_HOOK:
         return status_hook(output_directory, input_file=input_file)
     return inspect_matlab_status_cached(output_directory, metadata_dir, input_file=input_file)
-
-
-def _json_default(value: Any) -> Any:
-    """Serialize numpy-heavy comparison parameters to JSON."""
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, Path):
-        return str(value)
-    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
-
-
-def _comparison_report_default(value: Any) -> Any:
-    """Serialize comparison-report payloads with a string fallback."""
-    try:
-        return _json_default(value)
-    except TypeError:
-        return str(value)
-
-
-def _build_serializable_comparison_report(comparison: dict[str, Any]) -> dict[str, Any]:
-    """Normalize comparison output into the persisted report surface."""
-    return {
-        "matlab": copy.deepcopy(comparison["matlab"]),
-        "python": copy.deepcopy(comparison["python"]),
-        "performance": comparison["performance"],
-        "vertices": comparison.get("vertices", {}),
-        "edges": comparison.get("edges", {}),
-        "network": comparison.get("network", {}),
-        "parity_gate": comparison.get("parity_gate", {}),
-    }
-
-
-def _comparison_count(
-    comparison: dict[str, Any],
-    side: str,
-    top_level_key: str,
-    section: str,
-    nested_key: str,
-) -> int:
-    """Read a side-specific count with nested fallbacks."""
-    value = comparison.get(side, {}).get(top_level_key)
-    if value is not None:
-        return int(value)
-    nested = comparison.get(section, {}).get(nested_key, 0)
-    return int(nested)
-
-
-def _build_comparison_quick_view(comparison: dict[str, Any]) -> dict[str, Any]:
-    """Build a compact scalar metrics surface for quick diff comparisons."""
-    matlab_vertices = _comparison_count(
-        comparison, "matlab", "vertices_count", "vertices", "matlab_count"
-    )
-    python_vertices = _comparison_count(
-        comparison, "python", "vertices_count", "vertices", "python_count"
-    )
-    matlab_edges = _comparison_count(comparison, "matlab", "edges_count", "edges", "matlab_count")
-    python_edges = _comparison_count(comparison, "python", "edges_count", "edges", "python_count")
-    matlab_strands = _comparison_count(
-        comparison, "matlab", "strand_count", "network", "matlab_strand_count"
-    )
-    python_strands = _comparison_count(
-        comparison, "python", "network_strands_count", "network", "python_strand_count"
-    )
-
-    return {
-        "edges_diff": python_edges - matlab_edges,
-        "edges_exact": bool(comparison.get("edges", {}).get("exact_match", False)),
-        "edges_matlab": matlab_edges,
-        "edges_python": python_edges,
-        "matlab_elapsed_seconds": float(
-            comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0
-        ),
-        "network_strands_diff": python_strands - matlab_strands,
-        "network_strands_exact": bool(comparison.get("network", {}).get("exact_match", False)),
-        "network_strands_matlab": matlab_strands,
-        "network_strands_python": python_strands,
-        "parity_gate_passed": bool(comparison.get("parity_gate", {}).get("passed", False)),
-        "python_elapsed_seconds": float(
-            comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0
-        ),
-        "python_vs_matlab_time_delta_seconds": float(
-            (comparison.get("python", {}).get("elapsed_time", 0.0) or 0.0)
-            - (comparison.get("matlab", {}).get("elapsed_time", 0.0) or 0.0)
-        ),
-        "speedup": float(comparison.get("performance", {}).get("speedup", 0.0) or 0.0),
-        "vertices_diff": python_vertices - matlab_vertices,
-        "vertices_exact": bool(comparison.get("vertices", {}).get("exact_match", False)),
-        "vertices_matlab": matlab_vertices,
-        "vertices_python": python_vertices,
-    }
-
-
-def _write_comparison_quick_view(
-    comparison: dict[str, Any], analysis_dir: Path
-) -> tuple[Path, Path]:
-    """Write compact sidecar artifacts that are easy to diff across runs."""
-    quick_view = _build_comparison_quick_view(comparison)
-    quick_json = analysis_dir / "comparison_quick_view.json"
-    quick_tsv = analysis_dir / "comparison_quick_view.tsv"
-
-    with open(quick_json, "w", encoding="utf-8") as handle:
-        json.dump(quick_view, handle, indent=2, sort_keys=True)
-
-    tsv_lines = ["metric\tvalue"]
-    tsv_lines.extend(f"{key}\t{value}" for key, value in sorted(quick_view.items()))
-    quick_tsv.write_text("\n".join(tsv_lines) + "\n", encoding="utf-8")
-
-    return quick_json, quick_tsv
-
-
-def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> Path:
-    """Persist the normalized comparison report JSON."""
-    with open(report_file, "w", encoding="utf-8") as handle:
-        json.dump(
-            _build_serializable_comparison_report(comparison),
-            handle,
-            indent=2,
-            sort_keys=True,
-            default=_comparison_report_default,
-        )
-    print(f"\nComparison report saved to: {report_file}")
-    return report_file
 
 
 def _load_network_gate_parity_status(metadata_dir: Path) -> bool | None:
@@ -404,15 +292,6 @@ def _generate_post_comparison_artifacts(
                 )
         except Exception as exc:
             print(f"Note: Could not auto-generate manifest: {exc}")
-
-
-def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
-    """Infer the effective energy source label for comparison reporting."""
-    if not energy_data:
-        return "native_python"
-    return str(
-        energy_data.get("energy_source") or energy_data.get("energy_origin") or "native_python"
-    )
 
 
 def _should_load_deep_matlab_results(comparison_depth: str) -> bool:
@@ -594,193 +473,6 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
             python_force_rerun_from=python_force_rerun_from,
         )
     return matlab_results, python_force_rerun_from
-
-
-def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) -> Path:
-    """Persist the normalized comparison parameters for both MATLAB and Python runs."""
-    metadata_dir.mkdir(parents=True, exist_ok=True)
-    params_path = metadata_dir / "comparison_params.normalized.json"
-    with open(params_path, "w", encoding="utf-8") as handle:
-        json.dump(params, handle, indent=2, default=_json_default)
-    return params_path
-
-
-def _persist_preflight_report(
-    report: OutputRootPreflightReport,
-    metadata_dir: Path,
-) -> Path | None:
-    """Best-effort persistence for output-root preflight metadata."""
-    try:
-        return persist_output_preflight(report, metadata_dir)
-    except OSError as exc:
-        print(f"Warning: Could not persist output preflight report: {exc}")
-        return None
-
-
-def _persist_loop_assessment_report(
-    report: LoopAssessmentReport,
-    metadata_dir: Path,
-) -> Path | None:
-    """Best-effort persistence for workflow-loop assessments."""
-    try:
-        return persist_loop_assessment(report, metadata_dir)
-    except OSError as exc:
-        print(f"Warning: Could not persist loop assessment report: {exc}")
-        return None
-
-
-def _record_loop_assessment_task(
-    comparison_context: RunContext,
-    report: LoopAssessmentReport,
-    report_path: Path | None,
-) -> None:
-    """Mirror the workflow decision into the shared run snapshot."""
-    task_status = "completed"
-    if report.verdict == LOOP_BLOCKED:
-        task_status = "failed"
-    elif report.verdict == LOOP_FRESH_MATLAB_REQUIRED:
-        task_status = "running"
-
-    artifacts = {
-        "requested_loop": report.requested_loop,
-        "verdict": report.verdict,
-        "safe_to_reuse": str(report.safe_to_reuse).lower(),
-        "safe_to_analyze_only": str(report.safe_to_analyze_only).lower(),
-        "requires_fresh_matlab": str(report.requires_fresh_matlab).lower(),
-    }
-    if report_path is not None:
-        artifacts["report"] = str(report_path)
-
-    comparison_context.update_optional_task(
-        "workflow_assessment",
-        status=task_status,
-        detail=summarize_loop_assessment(report),
-        artifacts=artifacts,
-    )
-
-
-def _record_preflight_task(
-    comparison_context: RunContext,
-    report: OutputRootPreflightReport,
-    report_path: Path | None,
-) -> None:
-    """Mirror the preflight decision into the shared run snapshot."""
-    artifacts = {
-        "output_root": report.resolved_output_root or report.output_root,
-        "preflight_status": report.preflight_status,
-    }
-    if report_path is not None:
-        artifacts["report"] = str(report_path)
-    if report.free_space_gb is not None:
-        artifacts["free_space_gb"] = f"{report.free_space_gb:.2f}"
-    comparison_context.update_optional_task(
-        "output_preflight",
-        status="completed" if report.allows_launch else "failed",
-        detail=summarize_output_preflight(report),
-        artifacts=artifacts,
-    )
-
-
-def _persist_matlab_status_report(
-    report: MatlabStatusReport,
-    metadata_dir: Path,
-) -> Path | None:
-    """Best-effort persistence for normalized MATLAB status metadata."""
-    try:
-        return persist_matlab_status(report, metadata_dir)
-    except OSError as exc:
-        print(f"Warning: Could not persist MATLAB status report: {exc}")
-        return None
-
-
-def _persist_matlab_failure_report(
-    report: MatlabStatusReport,
-    metadata_dir: Path,
-) -> Path | None:
-    """Best-effort persistence for MATLAB failure summaries."""
-    try:
-        return persist_matlab_failure_summary(report, metadata_dir)
-    except OSError as exc:
-        print(f"Warning: Could not persist MATLAB failure summary: {exc}")
-        return None
-
-
-def _persist_matlab_health_check_report(
-    report: MatlabHealthCheckReport,
-    metadata_dir: Path,
-) -> Path | None:
-    """Best-effort persistence for MATLAB health-check metadata."""
-    try:
-        return persist_matlab_health_check(report, metadata_dir)
-    except OSError as exc:
-        print(f"Warning: Could not persist MATLAB health check report: {exc}")
-        return None
-
-
-def _record_matlab_health_check_task(
-    comparison_context: RunContext,
-    report: MatlabHealthCheckReport,
-    report_path: Path | None,
-) -> None:
-    """Mirror MATLAB health-check results into the shared run snapshot."""
-    artifacts = {
-        "matlab_path": report.matlab_path,
-        "exit_code": str(report.exit_code if report.exit_code is not None else ""),
-        "timed_out": str(report.timed_out).lower(),
-    }
-    if report_path is not None:
-        artifacts["report"] = str(report_path)
-
-    comparison_context.update_optional_task(
-        "matlab_health_check",
-        status="completed" if report.success else "failed",
-        detail=summarize_matlab_health_check(report),
-        artifacts=artifacts,
-    )
-
-
-def _record_matlab_status_task(
-    comparison_context: RunContext,
-    report: MatlabStatusReport,
-    report_path: Path | None,
-    failure_summary_path: Path | None = None,
-    *,
-    python_force_rerun_from: str | None = None,
-    matlab_launch_skipped_reason: str | None = None,
-    matlab_reuse_mode: str | None = None,
-) -> None:
-    """Mirror normalized MATLAB resume semantics into the shared run snapshot."""
-    task_status = "failed" if report.failure_summary else "completed"
-    if report.stale_running_snapshot_suspected and not report.failure_summary:
-        task_status = "failed"
-
-    artifacts = {
-        "resume_mode": report.matlab_resume_mode,
-        "last_completed_stage": report.matlab_last_completed_stage or "(none)",
-        "next_stage": report.matlab_next_stage or "(none)",
-        "rerun_prediction": report.matlab_rerun_prediction,
-        "batch_folder": report.matlab_batch_folder or "",
-        "resume_state_file": report.matlab_resume_state_file,
-        "log_file": report.matlab_log_file,
-    }
-    if report_path is not None:
-        artifacts["report"] = str(report_path)
-    if failure_summary_path is not None:
-        artifacts["failure_summary_file"] = str(failure_summary_path)
-    if python_force_rerun_from is not None:
-        artifacts["python_force_rerun_from"] = python_force_rerun_from
-    if matlab_launch_skipped_reason is not None:
-        artifacts["matlab_launch"] = "skipped"
-        artifacts["matlab_launch_skip_reason"] = matlab_launch_skipped_reason
-    if matlab_reuse_mode is not None:
-        artifacts["matlab_reuse_mode"] = matlab_reuse_mode
-
-    comparison_context.update_optional_task(
-        "matlab_status",
-        status=task_status,
-        detail=summarize_matlab_status(report),
-        artifacts=artifacts,
-    )
 
 
 def load_parameters(params_file: str | None = None) -> dict[str, Any]:
@@ -981,29 +673,6 @@ def _append_matlab_log_output(log_file: Path, stdout: str, stderr: str) -> None:
             handle.write(stderr)
             if not stderr.endswith("\n"):
                 handle.write("\n")
-
-
-def _format_progress_event_message(event: ProgressEvent) -> str:
-    """Render progress events into concise, human-readable console output."""
-    stage_snapshot = event.snapshot.stages.get(event.stage)
-    stage_label = event.stage.replace("_", " ").title()
-    detail = (event.detail or "").strip()
-    pieces = [f"{stage_label} {event.stage_progress * 100:.1f}%"]
-
-    if detail:
-        pieces.append(detail)
-
-    if stage_snapshot is not None and stage_snapshot.units_total > 0:
-        pieces.append(
-            f"{stage_snapshot.units_completed:,}/{stage_snapshot.units_total:,} work units"
-        )
-        if stage_snapshot.eta_seconds is not None:
-            pieces.append(f"ETA {format_time(stage_snapshot.eta_seconds)}")
-
-    if event.resumed:
-        pieces.append("resumed")
-
-    return " | ".join(pieces)
 
 
 def run_matlab_vectorization(
@@ -1297,77 +966,6 @@ def run_python_vectorization(
             "error": str(e),
             "system_info": system_info,
         }
-
-
-def _load_python_results_from_checkpoints(python_root: Path) -> dict[str, Any] | None:
-    """Prefer stage checkpoints over exported JSON when reconstructing comparison inputs."""
-    checkpoint_dir = python_root / "checkpoints"
-    energy_path = checkpoint_dir / "checkpoint_energy.pkl"
-    vertices_path = checkpoint_dir / "checkpoint_vertices.pkl"
-    edges_path = checkpoint_dir / "checkpoint_edges.pkl"
-    network_path = checkpoint_dir / "checkpoint_network.pkl"
-    if not (vertices_path.exists() and edges_path.exists() and network_path.exists()):
-        return None
-
-    try:
-        energy_data = safe_load(energy_path) if energy_path.exists() else None
-        vertices = safe_load(vertices_path)
-        edges = safe_load(edges_path)
-        network = safe_load(network_path)
-    except Exception:
-        return None
-
-    results = {
-        "energy_data": energy_data,
-        "vertices": vertices,
-        "edges": edges,
-        "network": network,
-    }
-    candidate_edges = _load_python_candidate_edges(python_root)
-    if candidate_edges is not None:
-        results["candidate_edges"] = candidate_edges
-    candidate_audit = _load_python_candidate_audit(python_root)
-    if candidate_audit is not None:
-        results["candidate_audit"] = candidate_audit
-    candidate_lifecycle = _load_python_candidate_lifecycle(python_root)
-    if candidate_lifecycle is not None:
-        results["candidate_lifecycle"] = candidate_lifecycle
-    return results
-
-
-def _load_python_candidate_edges(python_root: Path) -> dict[str, Any] | None:
-    """Load the persisted pre-cleanup candidate edge manifest when available."""
-    candidate_path = python_root / "stages" / "edges" / "candidates.pkl"
-    if not candidate_path.exists():
-        return None
-    try:
-        return safe_load(candidate_path)
-    except Exception:
-        return None
-
-
-def _load_python_candidate_audit(python_root: Path) -> dict[str, Any] | None:
-    """Load the persisted candidate provenance audit when available."""
-    candidate_audit_path = python_root / "stages" / "edges" / "candidate_audit.json"
-    if not candidate_audit_path.exists():
-        return None
-    try:
-        with open(candidate_audit_path, encoding="utf-8") as handle:
-            return json.load(handle)
-    except Exception:
-        return None
-
-
-def _load_python_candidate_lifecycle(python_root: Path) -> dict[str, Any] | None:
-    """Load the persisted frontier lifecycle artifact when available."""
-    candidate_lifecycle_path = python_root / "stages" / "edges" / "candidate_lifecycle.json"
-    if not candidate_lifecycle_path.exists():
-        return None
-    try:
-        with open(candidate_lifecycle_path, encoding="utf-8") as handle:
-            return json.load(handle)
-    except Exception:
-        return None
 
 
 def orchestrate_comparison(
@@ -1988,150 +1586,6 @@ def orchestrate_comparison(
             )
         return 0 if success else 1
     return 0
-
-
-def _load_python_results_from_source(
-    python_root: Path,
-    python_result_source: str,
-) -> dict[str, Any]:
-    """Load Python comparison data from the requested source."""
-    normalized_source = python_result_source.strip().lower()
-    if normalized_source not in _PYTHON_RESULT_SOURCE_CHOICES:
-        raise ValueError(
-            f"Unsupported python result source '{python_result_source}'. "
-            f"Expected one of: {sorted(_PYTHON_RESULT_SOURCE_CHOICES)}"
-        )
-
-    source_order: list[str]
-    if normalized_source == "auto":
-        source_order = ["checkpoints-only", "export-json-only", "network-json-only"]
-    else:
-        source_order = [normalized_source]
-
-    result_payload = {"success": True, "output_dir": str(python_root), "elapsed_time": 0.0}
-    source_errors: list[str] = []
-
-    for source_name in source_order:
-        if source_name == "checkpoints-only":
-            checkpoint_results = _load_python_results_from_checkpoints(python_root)
-            if checkpoint_results is None:
-                source_errors.append("checkpoints unavailable")
-                continue
-
-            print(f"Loading Python results from checkpoints in: {python_root / 'checkpoints'}")
-            result_payload["results"] = checkpoint_results
-            result_payload["vertices_count"] = len(
-                checkpoint_results.get("vertices", {}).get("positions", [])
-            )
-            result_payload["edges_count"] = len(
-                checkpoint_results.get("edges", {}).get("traces", [])
-            )
-            result_payload["network_strands_count"] = len(
-                checkpoint_results.get("network", {}).get("strands", [])
-            )
-            result_payload["comparison_mode"] = {
-                "result_source": "checkpoints",
-                "energy_source": _resolve_python_energy_source(
-                    checkpoint_results.get("energy_data")
-                ),
-            }
-            return result_payload
-
-        if source_name == "export-json-only":
-            json_files = [
-                path
-                for path in glob.glob(str(python_root / "python_comparison_*.json"))
-                if not path.endswith("_parameters.json")
-            ]
-            if not json_files:
-                source_errors.append("export_json unavailable")
-                continue
-
-            latest_json = sorted(json_files)[-1]
-            print(f"Loading Python results from: {latest_json}")
-            try:
-                with open(latest_json) as f:
-                    loaded_data = json.load(f)
-
-                if "vertices" in loaded_data and "positions" in loaded_data["vertices"]:
-                    loaded_data["vertices"]["positions"] = np.array(
-                        loaded_data["vertices"]["positions"]
-                    )
-                    if "radii" in loaded_data["vertices"]:
-                        loaded_data["vertices"]["radii"] = np.array(
-                            loaded_data["vertices"]["radii"]
-                        )
-
-                if "edges" in loaded_data and "traces" in loaded_data["edges"]:
-                    loaded_data["edges"]["traces"] = [
-                        np.array(t) for t in loaded_data["edges"]["traces"]
-                    ]
-
-                result_payload["results"] = loaded_data
-                result_payload["vertices_count"] = len(
-                    loaded_data.get("vertices", {}).get("positions", [])
-                )
-                result_payload["edges_count"] = len(loaded_data.get("edges", {}).get("traces", []))
-                result_payload["network_strands_count"] = len(
-                    loaded_data.get("network", {}).get("strands", [])
-                )
-                result_payload["comparison_mode"] = {
-                    "result_source": "export_json",
-                    "energy_source": "native_python",
-                }
-                return result_payload
-            except Exception as e:
-                result_payload["success"] = False
-                source_errors.append(f"export_json error: {e}")
-        elif source_name == "network-json-only":
-            network_json_paths = glob.glob(str(python_root / "network.json"))
-            if not network_json_paths:
-                source_errors.append("network_json unavailable")
-                continue
-
-            network_json = network_json_paths[0]
-            print(f"Loading Python results from fallback: {network_json}")
-            try:
-                with open(network_json) as f:
-                    net_data = json.load(f)
-
-                loaded_data = {
-                    "vertices": net_data.get("vertices", {}),
-                    "edges": net_data.get("edges", {}),
-                    "network": net_data.get("network", {}),
-                }
-
-                if "positions" in loaded_data["vertices"]:
-                    loaded_data["vertices"]["positions"] = np.array(
-                        loaded_data["vertices"]["positions"]
-                    )
-
-                result_payload["results"] = loaded_data
-                result_payload["vertices_count"] = len(
-                    loaded_data.get("vertices", {}).get("positions", [])
-                )
-                if "connections" in loaded_data.get("edges", {}):
-                    result_payload["edges_count"] = len(loaded_data["edges"]["connections"])
-                else:
-                    result_payload["edges_count"] = len(
-                        loaded_data.get("edges", {}).get("traces", [])
-                    )
-                result_payload["network_strands_count"] = len(
-                    loaded_data.get("network", {}).get("strands", [])
-                )
-                result_payload["comparison_mode"] = {
-                    "result_source": "network_json",
-                    "energy_source": "native_python",
-                }
-                return result_payload
-            except Exception as e:
-                result_payload["success"] = False
-                source_errors.append(f"network_json error: {e}")
-    result_payload["success"] = False
-    result_payload["error"] = (
-        "; ".join(source_errors) if source_errors else "No result files found."
-    )
-    return result_payload
 
 
 def run_matlab_health_check_workflow(

@@ -445,12 +445,13 @@ def _require_zarr_backend() -> Any:
 
 def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
     """Choose the resumable energy array storage backend."""
-    return _energy_storage.select_energy_storage_format(
+    storage_format = _energy_storage.select_energy_storage_format(
         str(config.get("energy_storage_format", "auto")),
         total_voxels=total_voxels,
         max_voxels=int(config["max_voxels"]),
         require_zarr_backend=_require_zarr_backend,
     )
+    return cast("str", storage_format)
 
 
 def _remove_storage_path(path: Any) -> None:
@@ -460,7 +461,8 @@ def _remove_storage_path(path: Any) -> None:
 
 def _zarr_chunks_for_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
     """Return conservative chunk sizes for energy arrays."""
-    return _energy_storage.zarr_chunks_for_shape(shape)
+    chunks = _energy_storage.zarr_chunks_for_shape(shape)
+    return cast("tuple[int, ...]", chunks)
 
 
 def _open_energy_storage_array(
