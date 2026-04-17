@@ -210,15 +210,6 @@ def _render_export_download(
             )
 
 
-def _snapshot_for_display(run_dir: str | None) -> RunSnapshot | None:
-    """Load the current run snapshot if one exists."""
-    if not run_dir:
-        return None
-    return load_run_snapshot(run_dir)
-
-
-
-
 def _apply_curated_results(
     curated_vertices: dict[str, object],
     curated_edges: dict[str, object],
@@ -296,8 +287,6 @@ def _render_run_dashboard(snapshot) -> None:
         st.dataframe(pd.DataFrame(task_rows), use_container_width=True, hide_index=True)
 
 
-
-
 def _init_dashboard_state() -> None:
     """Initialize local UI state for the dashboard shell."""
     st.session_state.setdefault("dashboard_focus", "Overview")
@@ -311,7 +300,7 @@ def _init_dashboard_state() -> None:
 def _dashboard_context() -> DashboardContext:
     """Load dashboard context from session state and run metadata."""
     run_dir = cast("str | None", st.session_state.get("current_run_dir"))
-    snapshot = _snapshot_for_display(run_dir)
+    snapshot = load_run_snapshot(run_dir) if run_dir else None
     results = cast("dict[str, Any] | None", st.session_state.get("processing_results"))
     share_metrics = cast("dict[str, Any]", st.session_state.get("share_report_metrics", {}))
     dataset_name = str(st.session_state.get("dataset_name", "No dataset loaded"))
@@ -1029,7 +1018,11 @@ def show_processing_page():
             help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
         )
 
-    current_snapshot = _snapshot_for_display(st.session_state.get("current_run_dir"))
+    current_snapshot = (
+        load_run_snapshot(st.session_state.get("current_run_dir"))
+        if st.session_state.get("current_run_dir")
+        else None
+    )
     if current_snapshot is not None:
         _render_run_dashboard(current_snapshot)
 
@@ -1104,7 +1097,7 @@ def show_processing_page():
                         force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
                     )
 
-                    final_snapshot = _snapshot_for_display(run_dir)
+                    final_snapshot = load_run_snapshot(run_dir) if run_dir else None
                     with dashboard_placeholder.container():
                         _render_run_dashboard(final_snapshot)
                     status.update(
