@@ -19,7 +19,16 @@ from plotly.subplots import make_subplots
 
 from ..utils import calculate_path_length
 from .network_plot_helpers import NETWORK_COLOR_SCHEMES, add_colorbar, map_values_to_colors
-from .network_plot_layout import axis_labels, plot_2d_layout, plot_slice_layout, select_plot_axes
+from .network_plot_layout import (
+    axis_labels,
+    distribution_layout,
+    empty_figure,
+    plot_2d_layout,
+    plot_3d_layout,
+    plot_slice_layout,
+    select_plot_axes,
+    summary_dashboard_layout,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -791,6 +800,7 @@ class NetworkVisualizer:
             height=600,
         )
 
+        fig.update_layout(**plot_3d_layout("3D Vascular Network", showlegend=True))
         return fig
 
     def animate_strands_3d(
@@ -876,24 +886,18 @@ class NetworkVisualizer:
         ]
 
         fig.update_layout(
-            title="Animated 3D Strands",
-            scene={
-                "xaxis_title": "X (μm)",
-                "yaxis_title": "Y (μm)",
-                "zaxis_title": "Z (μm)",
-                "aspectmode": "data",
-            },
-            showlegend=False,
-            updatemenus=[
-                {
-                    "type": "buttons",
-                    "showactive": False,
-                    "buttons": [{"label": "Play", "method": "animate", "args": [None]}],
-                }
-            ],
-            sliders=[{"active": 0, "steps": steps, "currentvalue": {"prefix": "Strand: "}}],
-            width=800,
-            height=600,
+            **plot_3d_layout(
+                "Animated 3D Strands",
+                showlegend=False,
+                updatemenus=[
+                    {
+                        "type": "buttons",
+                        "showactive": False,
+                        "buttons": [{"label": "Play", "method": "animate", "args": [None]}],
+                    }
+                ],
+                sliders=[{"active": 0, "steps": steps, "currentvalue": {"prefix": "Strand: "}}],
+            )
         )
 
         return fig
@@ -945,15 +949,7 @@ class NetworkVisualizer:
 
         cone = go.Cone(x=x, y=y, z=z, u=u, v=v, w=w, colorscale="Blues", showscale=False)
         fig = go.Figure(data=[cone])
-        fig.update_layout(
-            title="Edge Flow Field",
-            scene={
-                "xaxis_title": "X (μm)",
-                "yaxis_title": "Y (μm)",
-                "zaxis_title": "Z (μm)",
-                "aspectmode": "data",
-            },
-        )
+        fig.update_layout(**plot_3d_layout("Edge Flow Field", showlegend=False))
         return fig
 
     def plot_energy_field(
@@ -1023,10 +1019,7 @@ class NetworkVisualizer:
                 strand_lengths.append(length)
 
         if not strand_lengths:
-            # Return empty plot if no strands
-            fig = go.Figure()
-            fig.add_annotation(text="No strands found", x=0.5, y=0.5, showarrow=False)
-            return fig
+            return empty_figure("No strands found")
 
         # Create histogram
         fig = go.Figure(
@@ -1056,14 +1049,15 @@ class NetworkVisualizer:
         )
 
         fig.update_layout(
-            title="Strand Length Distribution",
-            xaxis_title="Length (μm)",
-            yaxis_title="Count",
-            showlegend=True,
-            width=600,
-            height=400,
+            **distribution_layout(
+                "Strand Length Distribution",
+                xaxis_title="Length (μm)",
+                yaxis_title="Count",
+                showlegend=True,
+                width=600,
+                height=400,
+            )
         )
-
         return fig
 
     def plot_depth_statistics(
@@ -1099,9 +1093,7 @@ class NetworkVisualizer:
             edge_lengths.append(length)
 
         if not edge_depths:
-            fig = go.Figure()
-            fig.add_annotation(text="No edges found", x=0.5, y=0.5, showarrow=False)
-            return fig
+            return empty_figure("No edges found")
 
         # Create depth bins
         min_depth = min(min(vertex_depths), min(edge_depths))
@@ -1142,9 +1134,15 @@ class NetworkVisualizer:
         fig.update_yaxes(title_text="Total Length (μm)", secondary_y=True)
 
         fig.update_layout(
-            title="Depth-Resolved Network Statistics", showlegend=True, width=700, height=400
+            **distribution_layout(
+                "Depth-Resolved Network Statistics",
+                xaxis_title="Depth (μm)",
+                yaxis_title="Vertex Count",
+                showlegend=True,
+                width=700,
+                height=400,
+            )
         )
-
         return fig
 
     def plot_radius_distribution(self, vertices: dict[str, Any]) -> go.Figure:
@@ -1182,13 +1180,14 @@ class NetworkVisualizer:
         )
 
         fig.update_layout(
-            title="Vessel Radius Distribution",
-            xaxis_title="Radius (μm)",
-            yaxis_title="Count",
-            width=600,
-            height=400,
+            **distribution_layout(
+                "Vessel Radius Distribution",
+                xaxis_title="Radius (μm)",
+                yaxis_title="Count",
+                width=600,
+                height=400,
+            )
         )
-
         return fig
 
     def plot_degree_distribution(self, network: dict[str, Any]) -> go.Figure:
@@ -1200,9 +1199,7 @@ class NetworkVisualizer:
         vertex_degrees = network.get("vertex_degrees", [])
 
         if len(vertex_degrees) == 0:
-            fig = go.Figure()
-            fig.add_annotation(text="No degree data available", x=0.5, y=0.5, showarrow=False)
-            return fig
+            return empty_figure("No degree data available")
 
         # Count degrees
         unique_degrees, counts = np.unique(vertex_degrees, return_counts=True)
@@ -1217,13 +1214,14 @@ class NetworkVisualizer:
         )
 
         fig.update_layout(
-            title="Vertex Degree Distribution",
-            xaxis_title="Degree",
-            yaxis_title="Count",
-            width=500,
-            height=400,
+            **distribution_layout(
+                "Vertex Degree Distribution",
+                xaxis_title="Degree",
+                yaxis_title="Count",
+                width=500,
+                height=400,
+            )
         )
-
         return fig
 
     def create_summary_dashboard(self, processing_results: dict[str, Any]) -> go.Figure:
@@ -1253,6 +1251,19 @@ class NetworkVisualizer:
             ],
         )
 
+        # Network overview (2D projection)
+        self._add_summary_dashboard_traces(vertices, parameters, fig, network)
+
+        fig.update_layout(**summary_dashboard_layout())
+        return fig
+
+    def _add_summary_dashboard_traces(
+        self,
+        vertices: dict[str, Any],
+        parameters: dict[str, Any],
+        fig: go.Figure,
+        network: dict[str, Any],
+    ) -> None:
         # Network overview (2D projection)
         vertex_positions = vertices["positions"]
         if len(vertex_positions) > 0:
@@ -1309,12 +1320,6 @@ class NetworkVisualizer:
             fig.add_trace(
                 go.Bar(x=bin_centers, y=depth_counts, name="Vertex Count by Depth"), row=2, col=2
             )
-
-        fig.update_layout(
-            title="SLAVV Processing Summary Dashboard", showlegend=False, height=600, width=1000
-        )
-
-        return fig
 
     def export_network_data(
         self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
