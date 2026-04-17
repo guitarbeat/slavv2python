@@ -8,6 +8,9 @@ This subpackage contains:
 
 from __future__ import annotations
 
+from .automatic_curator import AutomaticCurator
+from .curation_heuristics import choose_edges, choose_vertices, extract_uncurated_info
+from .drews_curator import DrewsCurator
 from .geometry import (
     calculate_branching_angles,
     calculate_image_stats,
@@ -28,11 +31,7 @@ from .geometry import (
     transform_vector_set,
 )
 from .ml_curator import (
-    AutomaticCurator,
     MLCurator,
-    choose_edges,
-    choose_vertices,
-    extract_uncurated_info,
 )
 
 # Interactive curation is optional GUI code — import directly when needed:
@@ -41,6 +40,7 @@ from .ml_curator import (
 
 __all__ = [
     "AutomaticCurator",
+    "DrewsCurator",
     "MLCurator",
     "calculate_branching_angles",
     "calculate_image_stats",
