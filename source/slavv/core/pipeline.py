@@ -460,7 +460,8 @@ class SLAVVProcessor:
         self, energy_data: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract vertices as local extrema. Delegates to ``vertices`` module."""
-        return vertex_ops.extract_vertices(energy_data, params)
+        result = vertex_ops.extract_vertices(energy_data, params)
+        return cast("dict[str, Any]", result)
 
     def extract_edges(
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]

@@ -8,6 +8,7 @@ import pytest
 
 from slavv.core import SLAVVProcessor
 from slavv.core import energy as energy_module
+from slavv.core._energy import backends as energy_backends
 from slavv.runtime import RunContext
 from slavv.utils import get_chunking_lattice
 
@@ -165,7 +166,7 @@ def test_simpleitk_energy_method_requires_optional_dependency(monkeypatch):
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    monkeypatch.setattr(energy_module, "sitk", None)
+    monkeypatch.setattr(energy_backends, "sitk", None)
 
     with pytest.raises(RuntimeError, match="slavv\\[sitk\\]"):
         SLAVVProcessor().calculate_energy_field(image, params)
@@ -180,7 +181,7 @@ def test_simpleitk_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    monkeypatch.setattr(energy_module, "sitk", _FakeSimpleITK)
+    monkeypatch.setattr(energy_backends, "sitk", _FakeSimpleITK)
 
     result = SLAVVProcessor().calculate_energy_field(image, params)
 
@@ -199,7 +200,7 @@ def test_simpleitk_direct_and_resumable_paths_match(monkeypatch, tmp_path):
         "scales_per_octave": 1.0,
         "return_all_scales": True,
     }
-    monkeypatch.setattr(energy_module, "sitk", _FakeSimpleITK)
+    monkeypatch.setattr(energy_backends, "sitk", _FakeSimpleITK)
 
     direct = SLAVVProcessor().calculate_energy_field(image, params)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
@@ -225,7 +226,7 @@ def test_simpleitk_energy_method_preserves_axis_alignment_for_anisotropic_spacin
         "scales_per_octave": 1.0,
         "microns_per_voxel": [2.0, 1.0, 3.0],
     }
-    monkeypatch.setattr(energy_module, "sitk", _FakeSimpleITK)
+    monkeypatch.setattr(energy_backends, "sitk", _FakeSimpleITK)
 
     result = SLAVVProcessor().calculate_energy_field(image, params)
 
@@ -243,8 +244,8 @@ def test_cupy_energy_method_requires_optional_dependency(monkeypatch):
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    monkeypatch.setattr(energy_module, "cp", None)
-    monkeypatch.setattr(energy_module, "cupy_ndimage", None)
+    monkeypatch.setattr(energy_backends, "cp", None)
+    monkeypatch.setattr(energy_backends, "cupy_ndimage", None)
 
     with pytest.raises(RuntimeError, match="CuPy"):
         SLAVVProcessor().calculate_energy_field(image, params)
@@ -260,9 +261,9 @@ def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "scales_per_octave": 1.0,
         "approximating_PSF": False,
     }
-    monkeypatch.setattr(energy_module, "cp", _FakeCuPy)
-    monkeypatch.setattr(energy_module, "cupy_ndimage", _FakeCuPyNdimage)
-    monkeypatch.setattr(energy_module, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
+    monkeypatch.setattr(energy_backends, "cp", _FakeCuPy)
+    monkeypatch.setattr(energy_backends, "cupy_ndimage", _FakeCuPyNdimage)
+    monkeypatch.setattr(energy_backends, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
 
     result = SLAVVProcessor().calculate_energy_field(image, params)
 
@@ -282,9 +283,9 @@ def test_cupy_direct_and_resumable_paths_match(monkeypatch, tmp_path):
         "approximating_PSF": False,
         "return_all_scales": True,
     }
-    monkeypatch.setattr(energy_module, "cp", _FakeCuPy)
-    monkeypatch.setattr(energy_module, "cupy_ndimage", _FakeCuPyNdimage)
-    monkeypatch.setattr(energy_module, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
+    monkeypatch.setattr(energy_backends, "cp", _FakeCuPy)
+    monkeypatch.setattr(energy_backends, "cupy_ndimage", _FakeCuPyNdimage)
+    monkeypatch.setattr(energy_backends, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
 
     direct = SLAVVProcessor().calculate_energy_field(image, params)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")

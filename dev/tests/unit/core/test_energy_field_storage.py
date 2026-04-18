@@ -4,6 +4,7 @@ import pytest
 
 from slavv.core import SLAVVProcessor
 from slavv.core import energy as energy_module
+from slavv.core._energy import backends as energy_backends
 from slavv.runtime import RunContext
 from slavv.utils import get_chunking_lattice, validate_parameters
 
@@ -121,7 +122,7 @@ def test_resumable_energy_zarr_storage_requires_optional_dependency(monkeypatch,
             "approximating_PSF": False,
         }
     )
-    monkeypatch.setattr(energy_module, "zarr", None)
+    monkeypatch.setattr(energy_backends, "zarr", None)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
 
     with pytest.raises(RuntimeError, match="slavv\\[zarr\\]"):
