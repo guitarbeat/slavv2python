@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
-from slavv.analysis import MLCurator
 from slavv.apps.curation_state import summarize_processing_counts
 from slavv.apps.web_app_artifacts import _update_run_task
 from slavv.visualization import NetworkVisualizer

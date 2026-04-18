@@ -6,6 +6,54 @@ This plan executes a conservative, spec-driven refactor of the largest
 `source/slavv/` modules. It is intentionally phased so that structural cleanup
 does not interrupt ongoing parity work or introduce broad behavioral risk.
 
+## Status Update: 2026-04-17
+
+Facade/package refactors landed and validated so far:
+
+- `source/slavv/apps/web_app.py` is now a thin facade with page logic split into:
+  - `source/slavv/apps/web_app_dashboard_page.py`
+  - `source/slavv/apps/web_app_processing_page.py`
+  - `source/slavv/apps/web_app_curation_page.py`
+  - `source/slavv/apps/web_app_visualization_page.py`
+  - `source/slavv/apps/web_app_analysis_page.py`
+  - `source/slavv/apps/web_app_static_pages.py`
+  - `source/slavv/apps/web_app_shell.py`
+- `source/slavv/visualization/network_plots.py` is now a thin facade over:
+  - `source/slavv/visualization/network_plot_spatial_2d.py`
+  - `source/slavv/visualization/network_plot_spatial_3d.py`
+  - `source/slavv/visualization/network_plot_statistics.py`
+  - plus the existing helper modules under `source/slavv/visualization/`
+- `source/slavv/core/edge_candidates.py` is now a thin facade over the private
+  package `source/slavv/core/_edge_candidates/`
+- `source/slavv/apps/cli.py` is now a thin facade over:
+  - `source/slavv/apps/cli_parser.py`
+  - `source/slavv/apps/cli_shared.py`
+  - `source/slavv/apps/cli_exported_network.py`
+  - `source/slavv/apps/cli_commands.py`
+- `source/slavv/parity/comparison.py` now delegates artifact/report,
+  Python-source, analysis, MATLAB-runner, reuse, health-check, and standalone
+  workflow logic into `source/slavv/parity/_comparison/`
+- `source/slavv/parity/metrics.py` now has an initial private-package split
+  under `source/slavv/parity/_metrics/`
+- `source/slavv/analysis/ml_curator.py` has been reduced by moving heuristic
+  curators and support helpers into sibling modules
+
+Current `source/` files still above 500 lines:
+
+- `source/slavv/parity/comparison.py` — `1120`
+- `source/slavv/parity/metrics.py` — `1054`
+- `source/slavv/core/energy.py` — `1030`
+- `source/slavv/runtime/run_state.py` — `904`
+- `source/slavv/parity/run_layout.py` — `836`
+- `source/slavv/core/vertices.py` — `697`
+- `source/slavv/analysis/geometry.py` — `677`
+- `source/slavv/core/edge_selection.py` — `653`
+- `source/slavv/parity/workflow_assessment.py` — `630`
+- `source/slavv/parity/reporting.py` — `613`
+- `source/slavv/analysis/ml_curator.py` — `579`
+- `source/slavv/core/edge_primitives.py` — `559`
+- `source/slavv/core/edges.py` — `554`
+
 ## Phase 1: Inventory And Guardrails
 
 - [x] 1. Confirm the refactor file inventory
@@ -138,36 +186,36 @@ Targets inside the current mypy-covered surface:
 
 ## Phase 2: Wave 1 Extraction Plan
 
-- [~] 3. Refactor `source/slavv/apps/web_app.py`
+- [x] 3. Refactor `source/slavv/apps/web_app.py`
   - [x] 3.1 Extract dashboard frame and placeholder helpers into `web_app_dashboard.py`
   - [x] 3.2 Extract export/share-report artifact helpers into `web_app_artifacts.py`
   - [x] 3.3 Extract dashboard filtering and backlog pure helpers into `web_app_dashboard.py`
-  - [ ] 3.4 Extract session-state initialization helpers
-  - [ ] 3.5 Extract action/callback helpers
-  - [ ] 3.6 Extract section-rendering helpers
+  - [x] 3.4 Extract session-state initialization helpers
+  - [x] 3.5 Extract action/callback helpers
+  - [x] 3.6 Extract section-rendering helpers
   - [x] 3.7 Keep `web_app.py` as the top-level entrypoint
   - [x] 3.8 Run relevant app-smoke and refactor regression tests
 
-- [~] 4. Refactor `source/slavv/visualization/network_plots.py`
-  - [ ] 4.1 Extract trace-construction helpers
+- [x] 4. Refactor `source/slavv/visualization/network_plots.py`
+  - [x] 4.1 Extract trace-construction helpers
   - [x] 4.2 Extract coloring/colorbar helpers into `network_plot_helpers.py`
   - [x] 4.3 Extract axis/layout/title helpers into `network_plot_layout.py`
   - [x] 4.4 Preserve existing plotting entrypoints
   - [x] 4.5 Run relevant visualization and UI tests
 
-- [~] 5. Refactor `source/slavv/analysis/ml_curator.py`
-  - [ ] 5.1 Extract feature engineering helpers
+- [x] 5. Refactor `source/slavv/analysis/ml_curator.py`
+  - [x] 5.1 Extract feature engineering helpers
   - [x] 5.2 Extract training-data aggregation helpers into `ml_curator_training.py`
   - [x] 5.3 Extract model I/O materialization helpers into `ml_curator_io.py`
   - [x] 5.4 Preserve current curator-facing APIs
   - [x] 5.5 Run relevant analysis and integration tests
 
-- [~] 6. Validate Wave 1
+- [x] 6. Validate Wave 1
   - [x] 6.1 Run targeted `ruff` checks for touched Wave 1 files
   - [x] 6.2 Run `python -m mypy`
   - [x] 6.3 Run focused Wave 1 pytest commands for apps, visualization, and analysis
   - [x] 6.4 Run `python -m pytest -m "unit or integration"` as a broader checkpoint
-  - [ ] 6.5 Record any circular-import or compatibility issues before Wave 2
+  - [x] 6.5 Record any circular-import or compatibility issues before Wave 2
 
 ### Wave 1 Progress Notes
 
@@ -175,12 +223,36 @@ Completed helper modules introduced so far:
 
 - `source/slavv/apps/web_app_dashboard.py`
 - `source/slavv/apps/web_app_artifacts.py`
+- `source/slavv/apps/web_app_dashboard_page.py`
+- `source/slavv/apps/web_app_processing_page.py`
+- `source/slavv/apps/web_app_curation_page.py`
+- `source/slavv/apps/web_app_visualization_page.py`
+- `source/slavv/apps/web_app_analysis_page.py`
+- `source/slavv/apps/web_app_static_pages.py`
+- `source/slavv/apps/web_app_shell.py`
 - `source/slavv/visualization/network_plot_dashboard.py`
 - `source/slavv/visualization/network_plot_helpers.py`
 - `source/slavv/visualization/network_plot_layout.py`
+- `source/slavv/visualization/network_plot_spatial_2d.py`
+- `source/slavv/visualization/network_plot_spatial_3d.py`
+- `source/slavv/visualization/network_plot_statistics.py`
 - `source/slavv/analysis/ml_curator_features.py`
 - `source/slavv/analysis/ml_curator_io.py`
 - `source/slavv/analysis/ml_curator_training.py`
+- `source/slavv/apps/cli_parser.py`
+- `source/slavv/apps/cli_shared.py`
+- `source/slavv/apps/cli_exported_network.py`
+- `source/slavv/apps/cli_commands.py`
+- `source/slavv/core/_edge_candidates/`
+- `source/slavv/parity/_comparison/analysis.py`
+- `source/slavv/parity/_comparison/artifacts.py`
+- `source/slavv/parity/_comparison/python_sources.py`
+- `source/slavv/parity/_comparison/task_recording.py`
+- `source/slavv/parity/_comparison/matlab_runner.py`
+- `source/slavv/parity/_comparison/reuse.py`
+- `source/slavv/parity/_comparison/health_check.py`
+- `source/slavv/parity/_comparison/standalone.py`
+- `source/slavv/parity/_metrics/`
 
 Resolved compatibility notes so far:
 
@@ -189,6 +261,10 @@ Resolved compatibility notes so far:
 - `rope` was successfully used to extract the summary-dashboard trace population block in `source/slavv/visualization/network_plots.py` into a dedicated helper method, with follow-up type tightening and regression coverage added afterward.
 - `source/slavv/visualization/network_plots.py` now calls helper modules directly for color mapping, colorbars, and summary-dashboard trace assembly, with the internal wrapper methods removed to produce net LOC reduction.
 - `source/slavv/analysis/ml_curator.py` now imports gradient, bounds, and feature-importance helpers from `ml_curator_features.py`, removing internal helper methods while preserving the public curator surface.
+- `source/slavv/apps/web_app.py` preserves import-time Streamlit page config and CSS injection while re-exporting the tested app/page/helper symbols from the new sibling modules.
+- `source/slavv/apps/cli.py` preserves the tested CLI entry surface while delegating parser, shared, export, and command implementations to sibling modules.
+- `source/slavv/core/edge_candidates.py` preserves the old monkeypatch/import surface while delegating implementation into `source/slavv/core/_edge_candidates/`.
+- `source/slavv/parity/comparison.py` preserves monkeypatch-sensitive facade attributes such as `run_matlab_vectorization`, `load_matlab_batch_results`, `compare_results`, `generate_summary`, and `generate_manifest` while delegating implementation into `source/slavv/parity/_comparison/`.
 
 Completed focused regression tests introduced so far:
 
@@ -199,6 +275,16 @@ Completed focused regression tests introduced so far:
 - `dev/tests/unit/analysis/test_ml_curator_training.py`
 - `dev/tests/unit/visualization/test_network_plot_layout.py`
 - `dev/tests/ui/test_summary_dashboard.py`
+
+Additional focused validation slices now exercised during the facade conversions:
+
+- `dev/tests/unit/apps/test_cli.py`
+- `dev/tests/unit/parity/test_comparison_runtime.py`
+- `dev/tests/unit/parity/test_source_selection.py`
+- `dev/tests/unit/parity/test_compare_matlab_python_cli.py`
+- `dev/tests/ui/test_app_layout.py`
+- `dev/tests/ui/test_app_integration.py`
+- `dev/tests/ui/test_share_report_entrypoint.py`
 
 ## Phase 3: Wave 2 Extraction Plan
 
@@ -242,18 +328,18 @@ Completed focused regression tests introduced so far:
   - [ ] 14.2 Extract vertex-extraction helpers
   - [ ] 14.3 Preserve current public entrypoints
 
-- [ ] 15. Refactor `source/slavv/parity/metrics.py`
-  - [ ] 15.1 Extract vertex metric helpers
-  - [ ] 15.2 Extract edge metric helpers
-  - [ ] 15.3 Extract network/strand aggregate helpers
-  - [ ] 15.4 Preserve current report-facing entrypoints
+- [~] 15. Refactor `source/slavv/parity/metrics.py`
+  - [x] 15.1 Extract vertex metric helpers
+  - [x] 15.2 Extract edge metric helpers
+  - [x] 15.3 Extract network/strand aggregate helpers
+  - [x] 15.4 Preserve current report-facing entrypoints
 
-- [ ] 16. Refactor `source/slavv/parity/comparison.py`
-  - [ ] 16.1 Extract artifact discovery/loading helpers
-  - [ ] 16.2 Extract orchestration runtime helpers
-  - [ ] 16.3 Extract manifest/report assembly helpers
-  - [ ] 16.4 Preserve current orchestration entrypoints in `comparison.py`
-  - [ ] 16.5 Run focused parity comparison tests
+- [~] 16. Refactor `source/slavv/parity/comparison.py`
+  - [x] 16.1 Extract artifact discovery/loading helpers
+  - [~] 16.2 Extract orchestration runtime helpers
+  - [x] 16.3 Extract manifest/report assembly helpers
+  - [~] 16.4 Preserve current orchestration entrypoints in `comparison.py`
+  - [x] 16.5 Run focused parity comparison tests
 
 - [ ] 17. Refactor `source/slavv/core/edge_selection.py`
   - [ ] 17.1 Extract cleanup-policy helpers

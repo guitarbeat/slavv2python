@@ -9,8 +9,8 @@ from typing import Any
 
 import numpy as np
 
-from ...preflight import OutputRootPreflightReport, persist_output_preflight
-from ...workflow_assessment import (
+from ..preflight import OutputRootPreflightReport, persist_output_preflight
+from ..workflow_assessment import (
     LoopAssessmentReport,
     MatlabHealthCheckReport,
     persist_loop_assessment,
@@ -180,7 +180,7 @@ def _persist_matlab_status_report(
     metadata_dir: Path,
 ) -> Path | None:
     """Best-effort persistence for normalized MATLAB resume metadata."""
-    from ...matlab_status import persist_matlab_status
+    from ..matlab_status import persist_matlab_status
 
     try:
         return persist_matlab_status(report, metadata_dir)
@@ -194,7 +194,7 @@ def _persist_matlab_failure_report(
     metadata_dir: Path,
 ) -> Path | None:
     """Best-effort persistence for MATLAB failure summaries."""
-    from ...matlab_status import persist_matlab_failure_summary
+    from ..matlab_status import persist_matlab_failure_summary
 
     try:
         return persist_matlab_failure_summary(report, metadata_dir)
@@ -222,7 +222,7 @@ def _record_loop_assessment_task(
 ) -> None:
     """Mirror the workflow decision into the shared run snapshot."""
     task_status = "completed"
-    from ...workflow_assessment import LOOP_BLOCKED, LOOP_FRESH_MATLAB_REQUIRED
+    from ..workflow_assessment import LOOP_BLOCKED, LOOP_FRESH_MATLAB_REQUIRED
 
     if report.verdict == LOOP_BLOCKED:
         task_status = "failed"
@@ -239,7 +239,7 @@ def _record_loop_assessment_task(
     if report_path is not None:
         artifacts["report"] = str(report_path)
 
-    from ...workflow_assessment import summarize_loop_assessment
+    from ..workflow_assessment import summarize_loop_assessment
 
     comparison_context.update_optional_task(
         "workflow_assessment",
@@ -264,7 +264,7 @@ def _record_preflight_task(
     if report.free_space_gb is not None:
         artifacts["free_space_gb"] = f"{report.free_space_gb:.2f}"
 
-    from ...preflight import summarize_output_preflight
+    from ..preflight import summarize_output_preflight
 
     comparison_context.update_optional_task(
         "output_preflight",
@@ -307,7 +307,7 @@ def _record_matlab_status_task(
     matlab_reuse_mode: str | None = None,
 ) -> None:
     """Mirror normalized MATLAB resume semantics into the shared run snapshot."""
-    from ...matlab_status import summarize_matlab_status
+    from ..matlab_status import summarize_matlab_status
 
     task_status = "failed" if report.failure_summary else "completed"
     if report.stale_running_snapshot_suspected and not report.failure_summary:
@@ -343,6 +343,6 @@ def _record_matlab_status_task(
 
 
 def _summarize_matlab_health_check(report: MatlabHealthCheckReport) -> str:
-    from ...workflow_assessment import summarize_matlab_health_check
+    from ..workflow_assessment import summarize_matlab_health_check
 
     return summarize_matlab_health_check(report)

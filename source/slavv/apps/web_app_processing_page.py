@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import numpy as np
 import streamlit as st
 
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 def show_processing_page() -> None:

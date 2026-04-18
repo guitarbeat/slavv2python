@@ -162,6 +162,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 - [Shared Neighborhood Claim Investigation Plan](INVESTIGATION_PLAN.md)
 - [Shared Neighborhood Audit Checklist](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
+- [Large Module Refactor Spec Archive](large-module-refactor-spec/tasks.md)
 - [Parity Workflow Completion Spec Archive](parity-workflow-completion-spec/tasks.md)
 - [Comparison Layout Smoothing Spec Archive](comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](release_verification_2026-04-14.md)
@@ -180,5 +181,4 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Findings](../imported-matlab-parity-closeout/parity_findings.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
-
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...matlab_status import MatlabStatusReport, summarize_matlab_status
-from ...preflight import OutputRootPreflightReport, summarize_output_preflight
 from ...utils import format_time
-from ...workflow_assessment import (
+from ..matlab_status import MatlabStatusReport, summarize_matlab_status
+from ..preflight import OutputRootPreflightReport, summarize_output_preflight
+from ..workflow_assessment import (
     LOOP_BLOCKED,
     LOOP_FRESH_MATLAB_REQUIRED,
     LoopAssessmentReport,

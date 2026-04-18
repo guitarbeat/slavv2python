@@ -30,9 +30,15 @@ def _resolve_python_energy_source(energy_data: dict[str, Any] | None) -> str:
         result_source = comparison_mode.get("result_source")
         if result_source is not None:
             return str(result_source)
+    energy_origin = energy_data.get("energy_origin")
+    if energy_origin is not None:
+        return str(energy_origin)
     source = energy_data.get("source")
     if source is not None:
         return str(source)
+    energy_source = energy_data.get("energy_source")
+    if energy_source is not None:
+        return str(energy_source)
     return "native_python"
 
 

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-import argparse
 import logging
 import os
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import argparse
 
 from .cli_parser import _EXPORT_FILE_NAMES
 

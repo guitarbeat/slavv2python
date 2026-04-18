@@ -10,8 +10,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import subprocess
-import time
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +23,16 @@ from slavv.runtime import RunContext
 from slavv.utils import get_matlab_info, get_system_info
 from slavv.visualization import NetworkVisualizer
 
+from ._comparison.analysis import (
+    _generate_post_comparison_artifacts,
+    _run_comparison_analysis,
+)
 from ._comparison.artifacts import (
+    _build_comparison_quick_view,
+    _build_serializable_comparison_report,
+    _comparison_count,
+    _comparison_report_default,
+    _json_default,
     _persist_loop_assessment_report,
     _persist_matlab_failure_report,
     _persist_matlab_health_check_report,
@@ -35,6 +42,11 @@ from ._comparison.artifacts import (
     _write_comparison_report,
     _write_normalized_params_file,
 )
+from ._comparison.health_check import (
+    run_matlab_health_check_workflow as _run_matlab_health_check_workflow_impl,
+)
+from ._comparison.matlab_runner import run_matlab_vectorization as _run_matlab_vectorization_impl
+from ._comparison.python_runner import run_python_vectorization as _run_python_vectorization_impl
 from ._comparison.python_sources import (
     _load_python_candidate_audit,
     _load_python_candidate_edges,
@@ -42,18 +54,16 @@ from ._comparison.python_sources import (
     _load_python_results_from_source,
     _resolve_python_energy_source,
 )
+from ._comparison.reuse import _print_reuse_guidance, _resolve_python_parity_import_plan
+from ._comparison.standalone import (
+    run_standalone_comparison as _run_standalone_comparison_impl,
+)
 from ._comparison.task_recording import (
     _format_progress_event_message,
     _record_loop_assessment_task,
     _record_matlab_health_check_task,
     _record_matlab_status_task,
     _record_preflight_task,
-)
-from .diagnostics import (
-    format_shared_neighborhood_summary,
-    generate_shared_neighborhood_diagnostics,
-    load_shared_neighborhood_diagnostics,
-    recommend_diagnostics_if_needed,
 )
 from .matlab_status import (
     MatlabStatusReport,
@@ -83,13 +93,47 @@ from .workflow_assessment import (
     summarize_matlab_health_check,
 )
 
+__all__ = [
+    "_build_comparison_quick_view",
+    "_build_serializable_comparison_report",
+    "_comparison_count",
+    "_comparison_report_default",
+    "_format_progress_event_message",
+    "_json_default",
+    "_load_python_candidate_audit",
+    "_load_python_candidate_edges",
+    "_load_python_candidate_lifecycle",
+    "_load_python_results_from_source",
+    "_persist_loop_assessment_report",
+    "_persist_matlab_failure_report",
+    "_persist_matlab_health_check_report",
+    "_persist_matlab_status_report",
+    "_persist_preflight_report",
+    "_record_loop_assessment_task",
+    "_record_matlab_health_check_task",
+    "_record_matlab_status_task",
+    "_record_preflight_task",
+    "_resolve_python_energy_source",
+    "_write_comparison_quick_view",
+    "_write_comparison_report",
+    "_write_normalized_params_file",
+    "discover_matlab_artifacts",
+    "evaluate_output_root_preflight",
+    "inspect_matlab_status",
+    "load_parameters",
+    "orchestrate_comparison",
+    "run_matlab_health_check_workflow",
+    "run_matlab_vectorization",
+    "run_python_vectorization",
+    "run_standalone_comparison",
+]
+
 _PYTHON_RESULT_SOURCE_CHOICES = {
     "auto",
     "checkpoints-only",
     "export-json-only",
     "network-json-only",
 }
-_COMPARISON_DEPTH_CHOICES = {"shallow", "deep"}
 
 
 def evaluate_output_root_preflight(output_root: str | Path) -> OutputRootPreflightReport:
@@ -132,223 +176,6 @@ def _inspect_matlab_status_for_workflow(
     if status_hook is not _DEFAULT_INSPECT_MATLAB_STATUS_HOOK:
         return status_hook(output_directory, input_file=input_file)
     return inspect_matlab_status_cached(output_directory, metadata_dir, input_file=input_file)
-
-
-def _load_network_gate_parity_status(metadata_dir: Path) -> bool | None:
-    """Return the latest persisted network-gate parity status when available."""
-    execution_path = metadata_dir / "network_gate_execution.json"
-    if not execution_path.exists():
-        return None
-
-    try:
-        with open(execution_path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return None
-    return bool(payload.get("parity_achieved"))
-
-
-def _surface_shared_neighborhood_diagnostics(
-    *,
-    run_root: Path,
-    comparison: dict[str, Any],
-    analysis_dir: Path,
-    metadata_dir: Path,
-) -> None:
-    """Persist or summarize the canonical shared-neighborhood diagnostic report."""
-    edges_parity_ok = bool(comparison.get("edges", {}).get("exact_match"))
-    if edges_parity_ok:
-        return
-
-    network_gate_parity_ok = _load_network_gate_parity_status(metadata_dir)
-    diagnostic_report = None
-    try:
-        diagnostic_report = generate_shared_neighborhood_diagnostics(run_root)
-    except FileNotFoundError:
-        diagnostic_report = load_shared_neighborhood_diagnostics(run_root)
-
-    if diagnostic_report is not None:
-        print("\nShared-Neighborhood Diagnostics")
-        print(format_shared_neighborhood_summary(diagnostic_report))
-        print(
-            "Artifacts: "
-            f"{analysis_dir / 'shared_neighborhood_diagnostics.json'} and "
-            f"{analysis_dir / 'shared_neighborhood_diagnostics.md'}"
-        )
-        return
-
-    if recommendation := recommend_diagnostics_if_needed(
-        run_root=run_root,
-        edges_parity_ok=edges_parity_ok,
-        network_gate_parity_ok=network_gate_parity_ok,
-    ):
-        print("\nTriage Recommendation")
-        print(recommendation)
-
-
-def _run_comparison_analysis(
-    *,
-    matlab_results: dict[str, Any],
-    python_results: dict[str, Any],
-    run_root: Path,
-    analysis_dir: Path,
-    metadata_dir: Path,
-    comparison_depth: str,
-    comparison_context: RunContext | None = None,
-) -> None:
-    """Run the shared MATLAB-vs-Python analysis path and persist the report."""
-    if comparison_context is not None:
-        comparison_context.update_optional_task(
-            "comparison_analysis",
-            status="running",
-            detail="Comparing MATLAB and Python results",
-        )
-
-    matlab_parsed = None
-    if matlab_results.get("success") and matlab_results.get("batch_folder"):
-        print("\nLoading MATLAB output data...")
-        if _should_load_deep_matlab_results(comparison_depth):
-            try:
-                matlab_parsed = load_matlab_batch_results(matlab_results["batch_folder"])
-                print(f"Successfully loaded MATLAB data from {matlab_results['batch_folder']}")
-            except Exception as e:
-                print(f"Warning: Could not load MATLAB output data: {e}")
-                print("Comparison will proceed with basic metrics only.")
-        else:
-            print("Shallow comparison mode enabled; skipping full MATLAB batch parse.")
-
-    comparison = compare_results(matlab_results, python_results, matlab_parsed)
-    python_data = python_results.get("results") or {}
-    shared_neighborhood_audit = None
-    if matlab_parsed and "edges" in comparison:
-        shared_neighborhood_audit = build_shared_neighborhood_audit(
-            matlab_parsed.get("edges", {}),
-            python_data.get("edges", {}),
-            python_results.get("candidate_edges") or python_data.get("candidate_edges"),
-            comparison["edges"],
-            python_results.get("candidate_audit") or python_data.get("candidate_audit"),
-            python_results.get("candidate_lifecycle") or python_data.get("candidate_lifecycle"),
-        )
-    if shared_neighborhood_audit is not None:
-        comparison.setdefault("edges", {}).setdefault("diagnostics", {})[
-            "shared_neighborhood_audit"
-        ] = shared_neighborhood_audit
-        (analysis_dir / "shared_neighborhood_audit.json").write_text(
-            json.dumps(shared_neighborhood_audit, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
-    report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
-    quick_json, quick_tsv = _write_comparison_quick_view(comparison, analysis_dir)
-    print(f"Quick compare artifacts: {quick_json} and {quick_tsv}")
-    _surface_shared_neighborhood_diagnostics(
-        run_root=run_root,
-        comparison=comparison,
-        analysis_dir=analysis_dir,
-        metadata_dir=metadata_dir,
-    )
-
-    if comparison_context is not None:
-        comparison_context.update_optional_task(
-            "comparison_analysis",
-            status="completed",
-            detail="Comparison report generated",
-            artifacts={
-                "comparison_report": str(report_file),
-                "comparison_depth": comparison_depth,
-            },
-        )
-
-
-def _generate_post_comparison_artifacts(
-    *,
-    run_dir: Path,
-    analysis_dir: Path,
-    metadata_dir: Path,
-    comparison_context: RunContext | None = None,
-    include_summary: bool = True,
-    include_manifest: bool = True,
-    announce_manifest: bool = False,
-) -> None:
-    """Best-effort generation of summary and manifest sidecar files."""
-    if include_summary:
-        try:
-            summary_file = analysis_dir / "summary.txt"
-            generate_summary(run_dir, summary_file)
-        except Exception as exc:
-            print(f"Note: Could not auto-generate summary: {exc}")
-
-    if include_manifest:
-        try:
-            manifest_file = metadata_dir / "run_manifest.md"
-            generate_manifest(run_dir, manifest_file)
-            if announce_manifest:
-                print(f"Manifest generated: {manifest_file}")
-            if comparison_context is not None:
-                comparison_context.update_optional_task(
-                    "manifest",
-                    status="completed",
-                    detail="Comparison manifest written",
-                    artifacts={"manifest": str(manifest_file)},
-                )
-        except Exception as exc:
-            print(f"Note: Could not auto-generate manifest: {exc}")
-
-
-def _should_load_deep_matlab_results(comparison_depth: str) -> bool:
-    """Return whether comparison should parse the full MATLAB batch surface."""
-    normalized = comparison_depth.strip().lower()
-    if normalized not in _COMPARISON_DEPTH_CHOICES:
-        raise ValueError(
-            f"Unsupported comparison depth '{comparison_depth}'. "
-            f"Expected one of: {sorted(_COMPARISON_DEPTH_CHOICES)}"
-        )
-    return normalized == "deep"
-
-
-def _print_reuse_guidance(
-    run_root: Path,
-    *,
-    input_file: str | None = None,
-    params: dict[str, Any] | None = None,
-    loop_kind: str | None = None,
-) -> None:
-    """Print reuse eligibility summary using CLI summaries module."""
-    from .cli_summaries import format_reuse_eligibility_summary, generate_reuse_commands
-    from .workflow_assessment import assess_loop_request
-
-    # Assess the current run root for reuse eligibility
-    assessment = assess_loop_request(
-        run_root,
-        loop_kind=loop_kind or "skip_matlab_edges",
-        input_path=Path(input_file) if input_file else None,
-        params=params,
-    )
-
-    # Generate reuse commands and populate the report
-    if input_file:
-        assessment.reuse_commands = generate_reuse_commands(
-            assessment,
-            run_root=run_root,
-            input_file=Path(input_file),
-        )
-
-    # Display the formatted summary
-    summary = format_reuse_eligibility_summary(
-        assessment,
-        run_root=run_root,
-        input_file=Path(input_file) if input_file else Path(""),
-    )
-    print("\n" + summary)
-
-
-def _resolve_python_parity_import_plan(
-    python_parity_rerun_from: str,
-) -> tuple[list[str], str]:
-    """Return the MATLAB stages needed to seed a Python parity rerun."""
-    normalized = str(python_parity_rerun_from or "edges").strip().lower()
-    if normalized == "network":
-        return ["energy", "vertices", "edges"], "network"
-    return ["energy", "vertices"], "edges"
 
 
 def _bootstrap_existing_matlab_batch_for_python_parity(
@@ -527,154 +354,6 @@ def discover_matlab_artifacts(output_dir: str | Path) -> dict[str, Any]:
     return artifacts
 
 
-def _run_command_with_timeout(
-    cmd: list[str] | str, cwd: Path, timeout_seconds: int, *, shell: bool = False
-) -> tuple[int, str, str, bool]:
-    """Run a command and tear down the full process tree on timeout."""
-    process = subprocess.Popen(
-        cmd,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        shell=shell,
-    )
-
-    try:
-        stdout, stderr = process.communicate(timeout=timeout_seconds)
-        return process.returncode or 0, stdout, stderr, False
-    except subprocess.TimeoutExpired:
-        if os.name == "nt":
-            subprocess.run(
-                ["taskkill", "/f", "/t", "/pid", str(process.pid)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-        else:
-            process.kill()
-
-        stdout, stderr = process.communicate()
-        returncode = process.returncode if process.returncode is not None else -9
-        return returncode, stdout, stderr, True
-
-
-def _escape_matlab_string(value: str) -> str:
-    """Escape a Python path for a MATLAB single-quoted string literal."""
-    return value.replace("\\", "/").replace("'", "''")
-
-
-def _resolve_matlab_wrapper_script(
-    project_root: Path, batch_script: str | None
-) -> tuple[Path, Path]:
-    """Resolve the MATLAB wrapper script and the upstream MATLAB checkout root."""
-    if batch_script is None:
-        candidates = [
-            (project_root / "dev" / "scripts" / "cli" / "run_matlab_vectorization.m").resolve(),
-            (project_root / "scripts" / "cli" / "run_matlab_vectorization.m").resolve(),
-        ]
-        for candidate in candidates:
-            if candidate.exists():
-                wrapper_script = candidate
-                break
-        else:
-            raise FileNotFoundError(
-                "Could not find MATLAB wrapper script 'run_matlab_vectorization.m' "
-                f"in any known location: {candidates}"
-            )
-    else:
-        wrapper_script = Path(batch_script).resolve()
-        if not wrapper_script.exists():
-            raise FileNotFoundError(f"Custom MATLAB wrapper script not found: {wrapper_script}")
-
-    vectorization_candidates = [
-        (project_root / "external" / "Vectorization-Public").resolve(),
-        (project_root / "external" / "Vectorization-Public" / "source").resolve().parent,
-    ]
-    for candidate in vectorization_candidates:
-        if candidate.exists():
-            return wrapper_script, candidate
-
-    raise FileNotFoundError(
-        "Could not find upstream MATLAB checkout 'external/Vectorization-Public'."
-    )
-
-
-def _build_matlab_cli_command(
-    *,
-    matlab_path: str,
-    vectorization_dir: Path,
-    wrapper_script: Path,
-    input_file: str,
-    output_dir: str,
-    params_file: str | None,
-) -> list[str]:
-    """Build a direct MATLAB CLI invocation without shell-specific wrapper scripts."""
-    escaped_vectorization_dir = _escape_matlab_string(str(vectorization_dir))
-    escaped_wrapper_dir = _escape_matlab_string(str(wrapper_script.parent))
-    escaped_input = _escape_matlab_string(input_file)
-    escaped_output = _escape_matlab_string(output_dir)
-
-    matlab_script = (
-        f"cd('{escaped_vectorization_dir}'); "
-        f"addpath('{escaped_wrapper_dir}'); "
-        f"run_matlab_vectorization('{escaped_input}', '{escaped_output}'"
-    )
-    if params_file is not None:
-        matlab_script += f", '{_escape_matlab_string(params_file)}'"
-    matlab_script += "); exit"
-
-    cmd = [matlab_path]
-    if os.name == "nt":
-        cmd.append("-wait")
-    cmd.extend(["-batch", matlab_script])
-    return cmd
-
-
-def _write_matlab_log_prelude(
-    *,
-    log_file: Path,
-    input_file: str,
-    output_dir: str,
-    matlab_path: str,
-    rendered_command: str,
-    params_file: str | None,
-) -> None:
-    """Create the MATLAB log file with stable preamble metadata."""
-    warning = ""
-    if "onedrive" in output_dir.lower():
-        warning = (
-            "WARNING: Output directory appears to be under OneDrive sync; "
-            "prefer a local non-synced drive for MATLAB outputs."
-        )
-
-    with log_file.open("w", encoding="utf-8") as handle:
-        handle.write("MATLAB CLI Run Log\n")
-        handle.write("===================\n")
-        handle.write(f"Input file: {input_file}\n")
-        handle.write(f"Output directory: {output_dir}\n")
-        handle.write(f"MATLAB path: {matlab_path}\n")
-        if params_file is not None:
-            handle.write(f"Parameters file: {params_file}\n")
-        handle.write(f"Command: {rendered_command}\n")
-        handle.write(f"Start time: {time.ctime()}\n\n")
-        if warning:
-            handle.write(f"{warning}\n\n")
-
-
-def _append_matlab_log_output(log_file: Path, stdout: str, stderr: str) -> None:
-    """Append captured MATLAB stdout/stderr to the canonical run log."""
-    with log_file.open("a", encoding="utf-8") as handle:
-        if stdout:
-            handle.write(stdout)
-            if not stdout.endswith("\n"):
-                handle.write("\n")
-        if stderr:
-            handle.write(stderr)
-            if not stderr.endswith("\n"):
-                handle.write("\n")
-
-
 def run_matlab_vectorization(
     input_file: str,
     output_dir: str,
@@ -684,126 +363,17 @@ def run_matlab_vectorization(
     params_file: str | None = None,
 ) -> dict[str, Any]:
     """Run MATLAB vectorization via CLI."""
-    print("\n" + "=" * 60)
-    print("Running MATLAB Implementation")
-    print("=" * 60)
-
-    # Validate input file path
-    if not os.path.exists(input_file):
-        raise FileNotFoundError(f"Input file not found: {input_file}")
-    input_file = os.path.abspath(input_file)
-    output_dir = os.path.abspath(output_dir)
-    if params_file is not None:
-        if not os.path.exists(params_file):
-            raise FileNotFoundError(f"Parameters file not found: {params_file}")
-        params_file = os.path.abspath(params_file)
-
-    wrapper_script, vectorization_dir = _resolve_matlab_wrapper_script(project_root, batch_script)
-
-    os.makedirs(output_dir, exist_ok=True)
-    log_file = Path(output_dir) / "matlab_run.log"
-
-    cmd = _build_matlab_cli_command(
-        matlab_path=matlab_path,
-        vectorization_dir=vectorization_dir,
-        wrapper_script=wrapper_script,
-        input_file=input_file,
-        output_dir=output_dir,
+    return _run_matlab_vectorization_impl(
+        input_file,
+        output_dir,
+        matlab_path,
+        project_root,
+        batch_script=batch_script,
         params_file=params_file,
+        discover_matlab_artifacts=discover_matlab_artifacts,
+        get_matlab_info_fn=get_matlab_info,
+        get_system_info_fn=get_system_info,
     )
-    rendered_command = subprocess.list2cmdline(cmd)
-    _write_matlab_log_prelude(
-        log_file=log_file,
-        input_file=input_file,
-        output_dir=output_dir,
-        matlab_path=matlab_path,
-        rendered_command=rendered_command,
-        params_file=params_file,
-    )
-
-    print(f"Command: {rendered_command}")
-    print(f"Input file: {input_file}")
-    print(f"Output directory: {output_dir}")
-    if params_file is not None:
-        print(f"Parameters file: {params_file}")
-
-    # Capture system info
-    system_info = get_system_info()
-    matlab_info = get_matlab_info(matlab_path)
-    system_info["matlab"] = matlab_info
-
-    start_time = time.time()
-    timeout_seconds = 3600
-
-    returncode, stdout, stderr, timed_out = _run_command_with_timeout(
-        cmd, vectorization_dir, timeout_seconds, shell=False
-    )
-    _append_matlab_log_output(log_file, stdout, stderr)
-    elapsed_time = time.time() - start_time
-    artifacts = discover_matlab_artifacts(output_dir)
-
-    if timed_out:
-        print(f"\nMATLAB execution timed out after {elapsed_time:.2f} seconds")
-        print("STDOUT:")
-        print(stdout)
-        print("STDERR:")
-        print(stderr)
-
-        matlab_results = {
-            "success": False,
-            "elapsed_time": elapsed_time,
-            "error": f"TimeoutExpired after {timeout_seconds} seconds",
-            "stdout": stdout,
-            "stderr": stderr,
-            "system_info": system_info,
-            "output_dir": output_dir,
-            "params_file": params_file or "",
-            "log_file": str(log_file),
-        }
-        matlab_results |= artifacts
-        return matlab_results
-
-    if returncode != 0:
-        print(f"\nMATLAB execution failed after {elapsed_time:.2f} seconds")
-        print(f"Exit code: {returncode}")
-        print("STDOUT:")
-        print(stdout)
-        print("STDERR:")
-        print(stderr)
-
-        matlab_results = {
-            "success": False,
-            "elapsed_time": elapsed_time,
-            "error": f"MATLAB exited with code {returncode}",
-            "stdout": stdout,
-            "stderr": stderr,
-            "system_info": system_info,
-            "output_dir": output_dir,
-            "params_file": params_file or "",
-            "log_file": str(log_file),
-        }
-        matlab_results |= artifacts
-        return matlab_results
-
-    print(f"\nMATLAB execution completed in {elapsed_time:.2f} seconds")
-    print("STDOUT:")
-    print(stdout)
-
-    if stderr:
-        print("STDERR:")
-        print(stderr)
-
-    matlab_results = {
-        "success": True,
-        "elapsed_time": elapsed_time,
-        "output_dir": output_dir,
-        "params_file": params_file or "",
-        "stdout": stdout,
-        "stderr": stderr,
-        "system_info": system_info,
-        "log_file": str(log_file),
-    }
-    return matlab_results | artifacts
 
 
 def run_python_vectorization(
@@ -815,157 +385,24 @@ def run_python_vectorization(
     minimal_exports: bool = False,
 ) -> dict[str, Any]:
     """Run Python vectorization."""
-    print("\n" + "=" * 60)
-    print("Running Python Implementation")
-    print("=" * 60)
-
-    print(f"Input file: {input_file}")
-    print(f"Output directory: {output_dir}")
-
-    # Capture system info
-    system_info = get_system_info()
-
-    # Load image
-    print("Loading image...")
-    image = load_tiff_volume(input_file)
-    print(f"Image shape: {image.shape}, dtype: {image.dtype}")
-
-    # Initialize processor
-    processor = SLAVVProcessor()
-    params_for_run = copy.deepcopy(params)
-    params_for_run["comparison_exact_network"] = True
-
-    # Run pipeline
-    print("Running pipeline...")
-    start_time = time.time()
-
-    def progress_callback(frac, stage):
-        stage_descriptions = {
-            "start": "Initializing pipeline...",
-            "preprocess": "Preprocessing finished. Calculating multi-scale energy field (this step takes 20-30 minutes)...",
-            "energy": "Energy calculation complete. Extracting vertices...",
-            "vertices": "Vertices extracted. Tracing edges...",
-            "edges": "Edges traced. Building final network...",
-            "network": "Network assembly complete!",
-        }
-        msg = stage_descriptions.get(stage, f"completed {stage}")
-        print(f"  Progress: {frac * 100:.1f}% - {msg}")
-
-    last_message = ""
-
-    def event_callback(event):
-        nonlocal last_message
-        # Use carriage return \r to avoid spamming the console with millions of lines,
-        # overwriting the current progress line instead of flooding the console.
-        message = _format_progress_event_message(event)
-        if message and message != last_message:
-            print(f"      -> {message:<120}", end="\r", flush=True)
-            last_message = message
-
-    try:
-        results = processor.process_image(
-            image,
-            params_for_run,
-            progress_callback=progress_callback,
-            event_callback=event_callback,
-            run_dir=run_dir,
-            checkpoint_dir=os.path.join(output_dir, "checkpoints") if run_dir is None else None,
-            force_rerun_from=force_rerun_from,
-        )
-        print()  # Add a final newline to clear the \r string
-
-        elapsed_time = time.time() - start_time
-
-        print(f"\nPython execution completed in {elapsed_time:.2f} seconds")
-
-        # Extract statistics
-        python_results = {
-            "success": True,
-            "elapsed_time": elapsed_time,
-            "output_dir": output_dir,
-            "vertices_count": len(results["vertices"]["positions"]) if "vertices" in results else 0,
-            "edges_count": len(results["edges"]["traces"]) if "edges" in results else 0,
-            "network_strands_count": len(results["network"]["strands"])
-            if "network" in results
-            else 0,
-            "results": results,
-            "system_info": system_info,
-            "comparison_mode": {
-                "network_cleanup": "bypass_python_specific_cleanup",
-                "energy_source": _resolve_python_energy_source(results.get("energy_data")),
-            },
-        }
-
-        # Export results
-        print("Exporting results...")
-        export_pipeline_results(results, output_dir, base_name="python_comparison")
-
-        if minimal_exports:
-            print("Minimal export mode enabled; skipping VMV/CASX/CSV/JSON extra exports.")
-            python_results["exports"] = {"profile": "minimal"}
-        else:
-            # Export VMV and CASX formats for visualization
-            print("Exporting VMV and CASX formats...")
-            try:
-                visualizer = NetworkVisualizer()
-                vmv_path = os.path.join(output_dir, "network.vmv")
-                casx_path = os.path.join(output_dir, "network.casx")
-                csv_base = os.path.join(output_dir, "network")
-                json_path = os.path.join(output_dir, "network.json")
-
-                visualizer.export_network_data(results, vmv_path, format="vmv")
-                print(f"  VMV export: {vmv_path}")
-
-                visualizer.export_network_data(results, casx_path, format="casx")
-                print(f"  CASX export: {casx_path}")
-
-                visualizer.export_network_data(results, csv_base, format="csv")
-                print(f"  CSV export: {csv_base}_vertices.csv, {csv_base}_edges.csv")
-
-                visualizer.export_network_data(results, json_path, format="json")
-                print(f"  JSON export: {json_path}")
-
-                python_results["exports"] = {
-                    "profile": "full",
-                    "vmv": vmv_path,
-                    "casx": casx_path,
-                    "csv": csv_base,
-                    "json": json_path,
-                }
-            except Exception as e:
-                print(f"  Warning: Export failed: {e}")
-                import traceback
-
-                traceback.print_exc()
-
-        candidate_edges = _load_python_candidate_edges(Path(output_dir))
-        if candidate_edges is not None:
-            results["candidate_edges"] = candidate_edges
-            python_results["candidate_edges"] = candidate_edges
-        candidate_audit = _load_python_candidate_audit(Path(output_dir))
-        if candidate_audit is not None:
-            results["candidate_audit"] = candidate_audit
-            python_results["candidate_audit"] = candidate_audit
-        candidate_lifecycle = _load_python_candidate_lifecycle(Path(output_dir))
-        if candidate_lifecycle is not None:
-            results["candidate_lifecycle"] = candidate_lifecycle
-            python_results["candidate_lifecycle"] = candidate_lifecycle
-
-        return python_results
-
-    except Exception as e:
-        elapsed_time = time.time() - start_time
-        print(f"\nPython execution failed after {elapsed_time:.2f} seconds")
-        import traceback
-
-        traceback.print_exc()
-
-        return {
-            "success": False,
-            "elapsed_time": elapsed_time,
-            "error": str(e),
-            "system_info": system_info,
-        }
+    return _run_python_vectorization_impl(
+        input_file,
+        output_dir,
+        params,
+        run_dir=run_dir,
+        force_rerun_from=force_rerun_from,
+        minimal_exports=minimal_exports,
+        get_system_info_fn=get_system_info,
+        load_tiff_volume_fn=load_tiff_volume,
+        processor_factory=SLAVVProcessor,
+        format_progress_event_message_fn=_format_progress_event_message,
+        resolve_python_energy_source_fn=_resolve_python_energy_source,
+        export_pipeline_results_fn=export_pipeline_results,
+        visualizer_factory=NetworkVisualizer,
+        load_python_candidate_edges_fn=_load_python_candidate_edges,
+        load_python_candidate_audit_fn=_load_python_candidate_audit,
+        load_python_candidate_lifecycle_fn=_load_python_candidate_lifecycle,
+    )
 
 
 def orchestrate_comparison(
@@ -1056,6 +493,8 @@ def orchestrate_comparison(
             comparison_context=comparison_context,
             include_summary=False,
             announce_manifest=True,
+            generate_summary_fn=generate_summary,
+            generate_manifest_fn=generate_manifest,
         )
 
         # Display reuse eligibility summary after validation
@@ -1098,6 +537,8 @@ def orchestrate_comparison(
                     comparison_context=comparison_context,
                     include_summary=False,
                     announce_manifest=True,
+                    generate_summary_fn=generate_summary,
+                    generate_manifest_fn=generate_manifest,
                 )
             print(f"Recommended action: {preflight_report.recommended_action}")
             return 1
@@ -1564,6 +1005,9 @@ def orchestrate_comparison(
             metadata_dir=metadata_dir,
             comparison_depth=comparison_depth,
             comparison_context=comparison_context,
+            load_matlab_batch_results_fn=load_matlab_batch_results,
+            compare_results_fn=compare_results,
+            build_shared_neighborhood_audit_fn=build_shared_neighborhood_audit,
         )
 
     _generate_post_comparison_artifacts(
@@ -1572,6 +1016,8 @@ def orchestrate_comparison(
         metadata_dir=metadata_dir,
         comparison_context=comparison_context,
         announce_manifest=True,
+        generate_summary_fn=generate_summary,
+        generate_manifest_fn=generate_manifest,
     )
 
     # Print final summary status
@@ -1595,75 +1041,26 @@ def run_matlab_health_check_workflow(
     project_root: Path,
 ) -> int:
     """Run a lightweight MATLAB health check and persist staged metadata."""
-    layout = resolve_run_layout(output_dir)
-    run_root = layout["run_root"]
-    analysis_dir = layout["analysis_dir"]
-    metadata_dir = layout["metadata_dir"]
-    analysis_dir.mkdir(parents=True, exist_ok=True)
-    metadata_dir.mkdir(parents=True, exist_ok=True)
-
-    comparison_context = RunContext(
-        run_dir=run_root,
-        target_stage="preflight",
-        provenance={"source": "matlab-health-check"},
-    )
-    loop_assessment = assess_loop_request(run_root, loop_kind="validate_only")
-    loop_assessment_path = _persist_loop_assessment_report(loop_assessment, metadata_dir)
-    _record_loop_assessment_task(comparison_context, loop_assessment, loop_assessment_path)
-
-    preflight_report = _evaluate_output_root_preflight_for_workflow(run_root, metadata_dir)
-    preflight_report_path = _persist_preflight_report(preflight_report, metadata_dir)
-
-    print("\n" + "=" * 60)
-    print("Output Root Preflight")
-    print("=" * 60)
-    print(summarize_output_preflight(preflight_report))
-    _record_preflight_task(comparison_context, preflight_report, preflight_report_path)
-
-    if not preflight_report.allows_launch:
-        comparison_context.mark_run_status(
-            "failed",
-            current_stage="preflight",
-            detail=summarize_output_preflight(preflight_report),
-        )
-        _generate_post_comparison_artifacts(
-            run_dir=run_root,
-            analysis_dir=analysis_dir,
-            metadata_dir=metadata_dir,
-            comparison_context=comparison_context,
-            include_summary=False,
-            announce_manifest=True,
-        )
-        print(f"Recommended action: {preflight_report.recommended_action}")
-        return 1
-
-    health_report = run_matlab_health_check(
-        output_root=run_root,
+    return _run_matlab_health_check_workflow_impl(
+        output_dir=output_dir,
         matlab_path=matlab_path,
         project_root=project_root,
+        resolve_run_layout_fn=resolve_run_layout,
+        assess_loop_request_fn=assess_loop_request,
+        persist_loop_assessment_report_fn=_persist_loop_assessment_report,
+        record_loop_assessment_task_fn=_record_loop_assessment_task,
+        evaluate_output_root_preflight_for_workflow_fn=_evaluate_output_root_preflight_for_workflow,
+        persist_preflight_report_fn=_persist_preflight_report,
+        summarize_output_preflight_fn=summarize_output_preflight,
+        record_preflight_task_fn=_record_preflight_task,
+        generate_post_comparison_artifacts_fn=_generate_post_comparison_artifacts,
+        run_matlab_health_check_fn=run_matlab_health_check,
+        persist_matlab_health_check_report_fn=_persist_matlab_health_check_report,
+        record_matlab_health_check_task_fn=_record_matlab_health_check_task,
+        summarize_matlab_health_check_fn=summarize_matlab_health_check,
+        generate_summary_fn=generate_summary,
+        generate_manifest_fn=generate_manifest,
     )
-    health_report_path = _persist_matlab_health_check_report(health_report, metadata_dir)
-    _record_matlab_health_check_task(comparison_context, health_report, health_report_path)
-
-    print("\n" + "=" * 60)
-    print("MATLAB Health Check")
-    print("=" * 60)
-    print(summarize_matlab_health_check(health_report))
-
-    comparison_context.mark_run_status(
-        "completed" if health_report.success else "failed",
-        current_stage="matlab_health_check",
-        detail=summarize_matlab_health_check(health_report),
-    )
-    _generate_post_comparison_artifacts(
-        run_dir=run_root,
-        analysis_dir=analysis_dir,
-        metadata_dir=metadata_dir,
-        comparison_context=comparison_context,
-        include_summary=False,
-        announce_manifest=True,
-    )
-    return 0 if health_report.success else 1
 
 
 def run_standalone_comparison(
@@ -1675,83 +1072,23 @@ def run_standalone_comparison(
     python_result_source: str = "auto",
     comparison_depth: str = "deep",
 ) -> int:
-    """
-    Run comparison on existing result directories.
-
-    Args:
-        matlab_dir: Directory containing MATLAB results (e.g., .../TIMESTAMP_matlab_run)
-        python_dir: Directory containing Python results (e.g., .../TIMESTAMP_python_run)
-        output_dir: Directory to save comparison results
-        project_root: Root of the repository
-
-    Returns:
-        0 if successful, 1 otherwise
-    """
-    print("\n" + "=" * 60)
-    print("Running Standalone Comparison")
-    print("=" * 60)
-    print(f"MATLAB Dir: {matlab_dir}")
-    print(f"Python Dir: {python_dir}")
-    print(f"Output Dir: {output_dir}")
-
-    layout = resolve_run_layout(output_dir)
-    run_root = layout["run_root"]
-    analysis_dir = layout["analysis_dir"]
-    metadata_dir = layout["metadata_dir"]
-    os.makedirs(analysis_dir, exist_ok=True)
-    os.makedirs(metadata_dir, exist_ok=True)
-    loop_assessment = assess_loop_request(
-        run_root,
-        loop_kind="standalone_analysis",
-        standalone_matlab_dir=matlab_dir,
-        standalone_python_dir=python_dir,
-    )
-    _persist_loop_assessment_report(loop_assessment, metadata_dir)
-
-    # 1. Reconstruct MATLAB results dict
-    matlab_results = {
-        "success": True,  # Assume success if we are selecting it
-        "output_dir": str(matlab_dir),
-        "elapsed_time": 0.0,  # Unknown
-    }
-
-    # Find batch folder
-    matlab_layout = resolve_run_layout(matlab_dir)
-    matlab_root = matlab_layout["matlab_dir"]
-    if batch_folders := [
-        d for d in os.listdir(matlab_root) if (matlab_root / d).is_dir() and d.startswith("batch_")
-    ]:
-        batch_folder = str(matlab_root / sorted(batch_folders)[-1])
-        matlab_results["batch_folder"] = batch_folder
-        print(f"Found MATLAB batch folder: {batch_folder}")
-    else:
-        print("Warning: No MATLAB batch_* folder found.")
-
-    python_layout = resolve_run_layout(python_dir)
-    python_root = python_layout["python_dir"]
-    python_results = _load_python_results_from_source(python_root, python_result_source)
-    if not python_results.get("success"):
-        print(f"Error loading Python results: {python_results.get('error', 'unknown error')}")
-        return 1
-
-    _run_comparison_analysis(
-        matlab_results=matlab_results,
-        python_results=python_results,
-        run_root=run_root,
-        analysis_dir=analysis_dir,
-        metadata_dir=metadata_dir,
+    """Run comparison on existing result directories."""
+    return _run_standalone_comparison_impl(
+        matlab_dir,
+        python_dir,
+        output_dir,
+        python_result_source=python_result_source,
         comparison_depth=comparison_depth,
+        resolve_run_layout_fn=resolve_run_layout,
+        assess_loop_request_fn=assess_loop_request,
+        persist_loop_assessment_report_fn=_persist_loop_assessment_report,
+        load_python_results_from_source_fn=_load_python_results_from_source,
+        run_comparison_analysis_fn=_run_comparison_analysis,
+        generate_post_comparison_artifacts_fn=_generate_post_comparison_artifacts,
+        print_reuse_guidance_fn=_print_reuse_guidance,
+        load_matlab_batch_results_fn=load_matlab_batch_results,
+        compare_results_fn=compare_results,
+        build_shared_neighborhood_audit_fn=build_shared_neighborhood_audit,
+        generate_summary_fn=generate_summary,
+        generate_manifest_fn=generate_manifest,
     )
-    _generate_post_comparison_artifacts(
-        run_dir=run_root,
-        analysis_dir=analysis_dir,
-        metadata_dir=metadata_dir,
-    )
-
-    _print_reuse_guidance(
-        run_root,
-        input_file=None,
-        params=None,
-        loop_kind="standalone_analysis",
-    )
-    return 0
