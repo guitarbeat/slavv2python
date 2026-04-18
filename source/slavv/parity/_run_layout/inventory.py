@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -9,6 +8,7 @@ if TYPE_CHECKING:
 
 from slavv.runtime import load_run_snapshot
 
+from .._persistence import load_json_dict_or_empty
 from ..matlab_status import load_matlab_status
 from ..preflight import load_output_preflight
 from ..workflow_assessment import load_loop_assessment, load_matlab_health_check
@@ -153,8 +153,7 @@ def load_run_info(run_dir: Path, *, pointer_targeted: bool = False) -> dict[str,
 
     if info["has_report"]:
         try:
-            with open(layout["report_file"], encoding="utf-8") as handle:
-                report = json.load(handle)
+            report = load_json_dict_or_empty(layout["report_file"])
             info["matlab_time"] = report.get("matlab", {}).get("elapsed_time", 0)
             info["python_time"] = report.get("python", {}).get("elapsed_time", 0)
             info["matlab_vertices"] = report.get("matlab", {}).get("vertices_count", 0)

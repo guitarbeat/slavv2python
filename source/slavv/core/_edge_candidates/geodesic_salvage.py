@@ -7,7 +7,6 @@ from typing import Any
 import numpy as np
 from scipy.spatial import cKDTree
 
-from .._edge_payloads import _merge_edge_diagnostics
 from .._vertices.payloads import matlab_linear_indices as _matlab_linear_indices
 from ..edge_primitives import (
     TraceMetadata,
@@ -16,12 +15,17 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
-from .candidate_manifest import _append_candidate_unit
 from .common import (
     Float32Array,
     _candidate_endpoint_pair_set,
     _candidate_incident_pair_counts,
     _vertex_center_linear_lookup,
+)
+from .supplement_workflow import (
+    _append_supplement_row,
+    _increment_origin_count,
+    _merge_or_append_supplement,
+    _new_supplement_payload,
 )
 
 
@@ -270,28 +274,23 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
                 )
             )
             accepted_pairs.add(pair)
-            origin_added_counts[origin_index] = origin_added_counts.get(origin_index, 0) + 1
+            _increment_origin_count(
+                diagnostics,
+                origin_added_counts,
+                origin_index,
+                key="geodesic_per_origin_candidate_counts",
+            )
             incident_pair_counts[pair[0]] = incident_pair_counts.get(pair[0], 0) + 1
             incident_pair_counts[pair[1]] = incident_pair_counts.get(pair[1], 0) + 1
-            diagnostics["geodesic_per_origin_candidate_counts"][str(origin_index)] = int(
-                origin_added_counts[origin_index]
-            )
 
     if not accepted_rows:
-        _merge_edge_diagnostics(candidates.get("diagnostics", {}), diagnostics)
+        _merge_or_append_supplement(
+            candidates,
+            _new_supplement_payload("geodesic", diagnostics=diagnostics),
+        )
         return candidates
 
-    supplement_payload: dict[str, Any] = {
-        "candidate_source": "geodesic",
-        "traces": [],
-        "connections": [],
-        "metrics": [],
-        "energy_traces": [],
-        "scale_traces": [],
-        "origin_indices": [],
-        "connection_sources": [],
-        "diagnostics": diagnostics,
-    }
+    supplement_payload = _new_supplement_payload("geodesic", diagnostics=diagnostics)
     for (
         origin_index,
         metric,
@@ -301,15 +300,18 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
         energy_trace,
         scale_trace,
     ) in accepted_rows:
-        supplement_payload["traces"].append(trace)
-        supplement_payload["connections"].append([origin_index, neighbor_index])
-        supplement_payload["metrics"].append(metric)
-        supplement_payload["energy_traces"].append(energy_trace)
-        supplement_payload["scale_traces"].append(scale_trace)
-        supplement_payload["origin_indices"].append(origin_index)
-        supplement_payload["connection_sources"].append("geodesic")
+        _append_supplement_row(
+            supplement_payload,
+            pair=(origin_index, neighbor_index),
+            trace=trace,
+            energy_trace=energy_trace,
+            scale_trace=scale_trace,
+            metric=metric,
+            origin_index=origin_index,
+            connection_source="geodesic",
+        )
 
     supplement_payload["diagnostics"]["geodesic_join_supplement_count"] = len(accepted_rows)
     supplement_payload["diagnostics"]["geodesic_accepted"] = len(accepted_rows)
-    _append_candidate_unit(candidates, supplement_payload)
+    _merge_or_append_supplement(candidates, supplement_payload)
     return candidates

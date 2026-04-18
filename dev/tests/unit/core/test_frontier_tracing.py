@@ -329,3 +329,117 @@ class TestPathBacktracking:
 
         assert payload["connections"] == [[0, 1]]
         assert payload["diagnostics"]["stop_reason_counts"]["terminal_frontier_hit"] == 1
+
+    def test_frontier_tracer_records_child_better_than_parent_rejection_before_valid_connection(
+        self, monkeypatch
+    ):
+        """A rejected child-better-than-parent hit should still allow the next valid hit.
+
+        This mirrors the active neighborhood diagnosis: the frontier hits two
+        terminals, but only one survives into the candidate manifest because the
+        first is rejected during local parent/child resolution.
+        """
+
+        energy = np.full((9, 9, 9), 1.0, dtype=np.float32)
+        energy[4, 4, 4] = -9.0
+        energy[4, 5, 4] = -8.0
+        energy[4, 6, 4] = -7.0
+        energy[5, 4, 4] = -6.0
+        energy[6, 4, 4] = -5.0
+        energy[4, 3, 4] = -4.0
+        energy[4, 2, 4] = -3.0
+
+        vertex_positions = np.array(
+            [
+                [4.0, 4.0, 4.0],
+                [4.0, 6.0, 4.0],
+                [6.0, 4.0, 4.0],
+                [4.0, 2.0, 4.0],
+            ],
+            dtype=np.float32,
+        )
+        vertex_scales = np.zeros(4, dtype=np.int16)
+        center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+        resolve_calls = {"count": 0}
+
+        def fake_resolve(*_args, **_kwargs):
+            resolve_calls["count"] += 1
+            if resolve_calls["count"] == 1:
+                return (
+                    None,
+                    None,
+                    "rejected_child_better_than_parent",
+                    {
+                        "parent_path_max_energy": -4.0,
+                        "child_path_max_energy": -6.0,
+                        "resolution_note": "child path stays local but is rejected before manifest emission",
+                    },
+                )
+            return (
+                0,
+                2,
+                "accepted_parent_origin_half",
+                {
+                    "bifurcation_choice": "parent_origin_half",
+                    "resolution_note": "second terminal survives into the candidate manifest",
+                },
+            )
+
+        monkeypatch.setattr(
+            "slavv.core.edge_candidates._resolve_frontier_edge_connection_details",
+            fake_resolve,
+        )
+
+        payload = _trace_origin_edges_matlab_frontier(
+            energy,
+            np.zeros_like(energy, dtype=np.int16),
+            vertex_positions,
+            vertex_scales,
+            np.array([1.0], dtype=np.float32),
+            np.ones(3, dtype=np.float32),
+            center_image,
+            0,
+            {
+                "number_of_edges_per_vertex": 2,
+                "space_strel_apothem": 1,
+                "max_edge_length_per_origin_radius": 8.0,
+            },
+        )
+
+        assert resolve_calls["count"] == 2
+        assert payload["connections"] == [[0, 2]]
+        assert payload["diagnostics"]["stop_reason_counts"]["terminal_frontier_hit"] == 2
+        assert payload["diagnostics"]["frontier_per_origin_terminal_rejections"] == {"0": 1}
+        assert payload["diagnostics"]["frontier_per_origin_terminal_accepts"] == {"0": 1}
+        assert (
+            payload["diagnostics"]["frontier_terminal_resolution_counts"][
+                "rejected_child_better_than_parent"
+            ]
+            == 1
+        )
+        assert (
+            payload["diagnostics"]["frontier_terminal_resolution_counts"][
+                "accepted_parent_origin_half"
+            ]
+            == 1
+        )
+
+        lifecycle_events = payload["frontier_lifecycle_events"]
+        assert len(lifecycle_events) == 2
+
+        rejected_event = lifecycle_events[0]
+        assert rejected_event["resolution_reason"] == "rejected_child_better_than_parent"
+        assert rejected_event["survived_candidate_manifest"] is False
+        assert rejected_event["rejection_reason"] == "rejected_child_better_than_parent"
+        assert rejected_event["parent_child_outcome"] == "child_better_than_parent"
+        assert rejected_event["final_survival_stage"] == "pre_manifest_rejection"
+        assert rejected_event["resolution_debug"]["parent_path_max_energy"] == -4.0
+        assert rejected_event["resolution_debug"]["child_path_max_energy"] == -6.0
+
+        accepted_event = lifecycle_events[1]
+        assert accepted_event["resolution_reason"] == "accepted_parent_origin_half"
+        assert accepted_event["survived_candidate_manifest"] is True
+        assert accepted_event["rejection_reason"] is None
+        assert accepted_event["bifurcation_choice"] == "parent_origin_half"
+        assert accepted_event["final_survival_stage"] == "candidate_manifest"

@@ -23,6 +23,12 @@ MATLAB script.
 | `vectorize_V200.m` | `source/slavv/core/pipeline.py` (`SLAVVProcessor`) | `Ported` | Main pipeline orchestration entry point |
 | `run_matlab_vectorization.m` | `source/slavv/apps/parity_cli.py` and `dev/scripts/cli/compare_matlab_python.py` | `Merged` | Batch-style orchestration now lives in packaged Python CLI code plus a compatibility wrapper |
 
+Implementation note: the maintained comparison entrypoint is still the
+`source/slavv/parity/comparison.py` facade. It keeps the public orchestration
+surface stable while delegating artifact/report assembly, Python-source
+loading, MATLAB execution, reuse, health-check, and standalone workflow logic
+into `source/slavv/parity/_comparison/`.
+
 ## Energy And Enhancement
 
 | MATLAB File | Python Location | Status | Notes |
@@ -62,6 +68,13 @@ MATLAB script.
 | `clean_edge_pairs.m` | `source/slavv/core/edge_selection.py` | `Merged` | |
 | `edge_info_extractor.m` | `source/slavv/io/matlab_parser.py` | `Ported` | |
 | `edge_curator.m` | `source/slavv/visualization/interactive_curator.py` | `Ported` | Interactive curation UI |
+
+Implementation note: `source/slavv/core/edge_candidates.py` is currently the
+compatibility facade for the maintained frontier/candidate surface. The public
+module stays import- and monkeypatch-compatible while `frontier_trace.py`,
+`frontier_resolution.py`, `audit.py`, `lifecycle.py`, and supplementation
+helpers live under
+`source/slavv/core/_edge_candidates/`.
 
 ## Network And Graph Construction
 

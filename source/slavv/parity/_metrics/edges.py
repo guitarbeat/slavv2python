@@ -7,92 +7,16 @@ import numpy as np
 
 from .counts import _count_items, _infer_edges_count
 from .signatures import (
+    _candidate_endpoint_pair_details,
+    _candidate_endpoint_pairs_by_source,
     _edge_endpoint_pair_set,
     _edge_endpoint_signatures,
     _edge_signatures,
+    _incident_endpoint_pairs_by_vertex,
+    _normalize_candidate_connection_sources,
     _sample_counter_diff,
     _sample_set_diff,
 )
-
-
-def _normalize_candidate_connection_sources(
-    raw_sources: Any,
-    candidate_connection_count: int,
-) -> list[str]:
-    """Return normalized connection-source labels when candidate provenance is available."""
-    if candidate_connection_count <= 0:
-        return []
-    if isinstance(raw_sources, np.ndarray):
-        source_values = np.asarray(raw_sources).reshape(-1).tolist()
-    elif isinstance(raw_sources, (list, tuple)):
-        source_values = list(raw_sources)
-    else:
-        return []
-    if len(source_values) != candidate_connection_count:
-        return []
-    allowed_sources = {"frontier", "watershed", "geodesic", "fallback"}
-    normalized: list[str] = []
-    for value in source_values:
-        source_label = str(value).strip().lower()
-        normalized.append(source_label if source_label in allowed_sources else "fallback")
-    return normalized
-
-
-def _candidate_endpoint_pair_details(
-    payload: dict[str, Any],
-) -> tuple[
-    dict[int, set[tuple[int, int]]],
-    dict[int, dict[str, set[tuple[int, int]]]],
-    dict[str, set[tuple[int, int]]],
-    dict[tuple[int, int], set[str]],
-]:
-    """Group candidate endpoint pairs by seed origin and provenance source."""
-    connections = np.asarray(payload.get("connections", np.array([])))
-    if connections.size == 0:
-        return (
-            {},
-            {},
-            {"frontier": set(), "watershed": set(), "geodesic": set(), "fallback": set()},
-            {},
-        )
-    if connections.ndim == 1:
-        connections = connections.reshape(1, -1)
-
-    origins = np.asarray(payload.get("origin_indices", np.array([])), dtype=np.int32).reshape(-1)
-    if origins.size != len(connections):
-        origins = connections[:, 0].astype(np.int32, copy=False)
-    connection_sources = _normalize_candidate_connection_sources(
-        payload.get("connection_sources"),
-        len(connections),
-    )
-
-    pairs_by_seed_origin: dict[int, set[tuple[int, int]]] = {}
-    source_pairs_by_seed_origin: dict[int, dict[str, set[tuple[int, int]]]] = {}
-    pairs_by_source: dict[str, set[tuple[int, int]]] = {
-        "frontier": set(),
-        "watershed": set(),
-        "geodesic": set(),
-        "fallback": set(),
-    }
-    pair_sources: dict[tuple[int, int], set[str]] = {}
-
-    for index, connection in enumerate(connections):
-        pair = [int(value) for value in np.asarray(connection).tolist()[:2]]
-        if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
-            continue
-        endpoint_pair = tuple(sorted(pair))
-        origin = int(origins[index]) if index < len(origins) else int(endpoint_pair[0])
-        pairs_by_seed_origin.setdefault(origin, set()).add(endpoint_pair)
-        if index >= len(connection_sources):
-            continue
-        source_label = connection_sources[index]
-        pairs_by_source[source_label].add(endpoint_pair)
-        pair_sources.setdefault(endpoint_pair, set()).add(source_label)
-        source_pairs_by_seed_origin.setdefault(origin, {}).setdefault(source_label, set()).add(
-            endpoint_pair
-        )
-
-    return pairs_by_seed_origin, source_pairs_by_seed_origin, pairs_by_source, pair_sources
 
 
 def _coerce_str_int_map(raw: Any) -> dict[int, int]:
@@ -147,26 +71,6 @@ def _candidate_audit_summary(candidate_audit: dict[str, Any] | None) -> dict[str
         "top_origin_summaries": top_per_origin,
         "diagnostic_counters": candidate_audit.get("diagnostic_counters", {}),
     }
-
-
-def _candidate_endpoint_pairs_by_source(
-    payload: dict[str, Any],
-) -> dict[str, set[tuple[int, int]]]:
-    """Group unique candidate endpoint pairs by their recorded source label."""
-    _, _, grouped, _ = _candidate_endpoint_pair_details(payload)
-    return {label: pairs for label, pairs in grouped.items() if pairs}
-
-
-def _incident_endpoint_pairs_by_vertex(
-    endpoint_pairs: set[tuple[int, int]],
-) -> dict[int, set[tuple[int, int]]]:
-    """Group endpoint pairs by each incident vertex."""
-    grouped: dict[int, set[tuple[int, int]]] = {}
-    for pair in endpoint_pairs:
-        start_vertex, end_vertex = (int(value) for value in pair)
-        grouped.setdefault(start_vertex, set()).add(pair)
-        grouped.setdefault(end_vertex, set()).add(pair)
-    return grouped
 
 
 def _chosen_candidate_source_summary(

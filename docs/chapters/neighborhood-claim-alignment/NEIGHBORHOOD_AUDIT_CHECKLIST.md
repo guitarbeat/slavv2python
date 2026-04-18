@@ -19,9 +19,18 @@ Use this file when:
 
 - [ ] Explain one real neighborhood-level mismatch in terms of a specific local
       semantic drift.
-- [ ] Reduce that mismatch to an isolated regression test.
+- [x] Reduce that mismatch to an isolated regression test.
 - [ ] Land one targeted Python fix without regressing the stage-isolated
       `network` gate.
+
+Current progress (2026-04-18):
+
+- Focused regressions now cover:
+  - pre-manifest loss when `terminal_frontier_hit > valid frontier connection count`
+  - partner substitution at a shared neighborhood in `edge_selection`
+  - cleanup retention vs `final_cleanup_dropped` in the frontier lifecycle artifact
+- The local frontier fix is in `source/slavv/core/_edge_candidates/frontier_trace.py`.
+- Saved-batch rerun and stage-isolated `network`-gate confirmation are still pending.
 
 ## Highest-Priority Questions
 
@@ -107,15 +116,15 @@ Current working clue:
 
 ## Test Requirements
 
-- [ ] New regression tests should live near the owning Python surface.
-- [ ] Prefer a deterministic unit or focused regression test over a broad new
+- [x] New regression tests should live near the owning Python surface.
+- [x] Prefer a deterministic unit or focused regression test over a broad new
       end-to-end sweep.
-- [ ] The test should capture one real branch-lifecycle mismatch, not just a
+- [x] The test should capture one real branch-lifecycle mismatch, not just a
       count delta.
 
 ## Verification Order
 
-- [ ] Targeted pytest for the new local regression
+- [x] Targeted pytest for the new local regression
 - [ ] `python -m pytest -m "unit or integration"`
 - [ ] Saved-batch imported-MATLAB loop
 - [ ] Stage-isolated `network` gate
@@ -123,7 +132,7 @@ Current working clue:
 
 ## Completion Criteria
 
-- [ ] We can point to the exact local control-flow moment where one real MATLAB
+- [x] We can point to the exact local control-flow moment where one real MATLAB
       branch is lost or replaced in Python.
-- [ ] We have a regression test for that behavior.
+- [x] We have a regression test for that behavior.
 - [ ] The targeted fix improves parity without a larger downstream regression.

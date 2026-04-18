@@ -199,17 +199,19 @@ def _trace_origin_edges_matlab_frontier(
                 + 1
             )
 
-            path_record_index = terminal_hit_budget_count
-            for path_index in path_linear[:-1]:
-                pointer_index_map[path_index] = -path_record_index
+            record_rejected_child_path = resolution_reason != "rejected_child_better_than_parent"
+            if origin_idx is not None or terminal_idx is not None or record_rejected_child_path:
+                path_record_index = terminal_hit_budget_count
+                for path_index in path_linear[:-1]:
+                    pointer_index_map[path_index] = -path_record_index
 
-            terminal_paths_linear.append(path_linear)
-            terminal_pairs.append(
-                (
-                    -1 if terminal_idx is None else int(terminal_idx),
-                    -1 if origin_idx is None else int(origin_idx),
+                terminal_paths_linear.append(path_linear)
+                terminal_pairs.append(
+                    (
+                        -1 if terminal_idx is None else int(terminal_idx),
+                        -1 if origin_idx is None else int(origin_idx),
+                    )
                 )
-            )
 
             current_position = current_coord.astype(np.float64) * microns_per_voxel
             displacement = current_position - origin_position_microns

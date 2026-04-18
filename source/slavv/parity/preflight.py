@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+
+from ._persistence import load_json_dict_or_empty, write_json_file
 
 DEFAULT_REQUIRED_FREE_SPACE_GB = 5.0
 PREFLIGHT_STATUS_PASSED = "passed"
@@ -121,9 +122,7 @@ def persist_output_preflight(report: OutputRootPreflightReport, metadata_dir: Pa
     """Persist the normalized output-root preflight report."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
     report_path = metadata_dir / "output_preflight.json"
-    with open(report_path, "w", encoding="utf-8") as handle:
-        json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
-    return report_path
+    return write_json_file(report_path, report.to_dict())
 
 
 def load_output_preflight(path_or_dir: Path) -> dict[str, object] | None:
@@ -131,8 +130,7 @@ def load_output_preflight(path_or_dir: Path) -> dict[str, object] | None:
     candidate = path_or_dir / "output_preflight.json" if path_or_dir.is_dir() else path_or_dir
     if not candidate.exists():
         return None
-    with open(candidate, encoding="utf-8") as handle:
-        return json.load(handle)
+    return load_json_dict_or_empty(candidate)
 
 
 def summarize_output_preflight(report: OutputRootPreflightReport) -> str:

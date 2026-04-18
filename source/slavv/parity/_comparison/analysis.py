@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -10,6 +9,7 @@ if TYPE_CHECKING:
 
     from slavv.runtime import RunContext
 
+from .._persistence import load_json_dict_or_empty, write_json_file
 from ..diagnostics import (
     format_shared_neighborhood_summary,
     generate_shared_neighborhood_diagnostics,
@@ -24,13 +24,8 @@ _COMPARISON_DEPTH_CHOICES = {"shallow", "deep"}
 def _load_network_gate_parity_status(metadata_dir: Path) -> bool | None:
     """Return the latest persisted network-gate parity status when available."""
     execution_path = metadata_dir / "network_gate_execution.json"
-    if not execution_path.exists():
-        return None
-
-    try:
-        with open(execution_path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, json.JSONDecodeError):
+    payload = load_json_dict_or_empty(execution_path)
+    if not payload:
         return None
     return bool(payload.get("parity_achieved"))
 
@@ -134,10 +129,7 @@ def _run_comparison_analysis(
         comparison.setdefault("edges", {}).setdefault("diagnostics", {})[
             "shared_neighborhood_audit"
         ] = shared_neighborhood_audit
-        (analysis_dir / "shared_neighborhood_audit.json").write_text(
-            json.dumps(shared_neighborhood_audit, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        write_json_file(analysis_dir / "shared_neighborhood_audit.json", shared_neighborhood_audit)
     report_file = _write_comparison_report(comparison, analysis_dir / "comparison_report.json")
     quick_json, quick_tsv = _write_comparison_quick_view(comparison, analysis_dir)
     print(f"Quick compare artifacts: {quick_json} and {quick_tsv}")

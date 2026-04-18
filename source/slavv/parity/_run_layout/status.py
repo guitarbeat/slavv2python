@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 from slavv.runtime import load_run_snapshot
-from slavv.runtime.run_state import atomic_write_json
+from slavv.runtime.run_state import atomic_write_json, load_json_dict
 
 from .paths import (
     is_aggregate_run_container,
@@ -21,12 +20,7 @@ _STATUS_QUALITY = {"pass", "fail", "partial", "unknown"}
 
 
 def _read_json_file(path: Path) -> dict[str, Any] | None:
-    try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, json.JSONDecodeError):
-        return None
-    return payload if isinstance(payload, dict) else None
+    return load_json_dict(path)
 
 
 def _normalize_status_payload(status: dict[str, Any]) -> dict[str, Any]:

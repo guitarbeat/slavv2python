@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from ._edge_primitives import directions as _directions
 from ._edge_primitives import lookup as _lookup

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from slavv.utils import format_size
 
+from .._persistence import load_json_dict_or_empty, write_text_file
 from .inventory import RunMetadata, collect_directory_inventory, load_run_metadata
 from .paths import resolve_run_layout
 
@@ -248,11 +248,7 @@ def generate_manifest(
     matlab_status = run_metadata.matlab_status
     matlab_health_check = run_metadata.matlab_health_check
     if report_file.exists():
-        try:
-            with open(report_file, encoding="utf-8") as handle:
-                report = json.load(handle)
-        except Exception:
-            pass
+        report = load_json_dict_or_empty(report_file)
 
     directory_inventory = collect_directory_inventory(run_root)
     inventory = directory_inventory["inventory"]
@@ -370,8 +366,7 @@ def generate_manifest(
         lines.append("")
 
     manifest_content = "\n".join(lines)
-    with open(output_file, "w", encoding="utf-8") as handle:
-        handle.write(manifest_content)
+    write_text_file(output_file, manifest_content)
     return manifest_content
 
 

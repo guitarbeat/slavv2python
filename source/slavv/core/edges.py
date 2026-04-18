@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from ._edge_payloads import _empty_edge_diagnostics, _empty_edges_result
 from ._edges import resumable as _resumable

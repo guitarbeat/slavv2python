@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from ._persistence import (
+    load_json_dict_or_empty,
+    write_json_file,
+    write_text_file,
+)
 from .run_layout import resolve_run_layout
 
 if TYPE_CHECKING:
@@ -76,12 +80,6 @@ class SharedNeighborhoodDiagnosticReport:
         ]
         return payload
 
-
-def _read_json(path: Path) -> dict[str, Any]:
-    with open(path, encoding="utf-8") as handle:
-        return json.load(handle)
-
-
 def _load_comparison_payload(run_root: Path) -> dict[str, Any]:
     layout = resolve_run_layout(run_root)
     report_path = layout["analysis_dir"] / "comparison_report.json"
@@ -89,7 +87,12 @@ def _load_comparison_payload(run_root: Path) -> dict[str, Any]:
         raise FileNotFoundError(
             f"Comparison report not found at {report_path}. Run comparison analysis first."
         )
-    return _read_json(report_path)
+    report = load_json_dict_or_empty(report_path)
+    if not report:
+        raise FileNotFoundError(
+            f"Comparison report at {report_path} could not be loaded as a JSON object."
+        )
+    return report
 
 
 def _load_shared_audit(analysis_dir: Path, comparison_report: dict[str, Any]) -> dict[str, Any]:
@@ -102,7 +105,9 @@ def _load_shared_audit(analysis_dir: Path, comparison_report: dict[str, Any]) ->
 
     audit_path = analysis_dir / "shared_neighborhood_audit.json"
     if audit_path.exists():
-        return _read_json(audit_path)
+        audit = load_json_dict_or_empty(audit_path)
+        if audit:
+            return audit
 
     raise FileNotFoundError(
         f"Shared-neighborhood audit is not available in the comparison report or at {audit_path}."
@@ -364,10 +369,8 @@ def persist_shared_neighborhood_diagnostics(
     json_path = analysis_dir / _DIAGNOSTIC_JSON_NAME
     markdown_path = analysis_dir / _DIAGNOSTIC_MARKDOWN_NAME
 
-    with open(json_path, "w", encoding="utf-8") as handle:
-        json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
-
-    markdown_path.write_text(render_shared_neighborhood_markdown(report), encoding="utf-8")
+    write_json_file(json_path, report.to_dict())
+    write_text_file(markdown_path, render_shared_neighborhood_markdown(report))
     return json_path, markdown_path
 
 
@@ -379,7 +382,9 @@ def load_shared_neighborhood_diagnostics(
     if not json_path.exists():
         return None
 
-    payload = _read_json(json_path)
+    payload = load_json_dict_or_empty(json_path)
+    if not payload:
+        return None
     divergences = [
         NeighborhoodDivergence(**divergence)
         for divergence in payload.get("divergent_neighborhoods", [])

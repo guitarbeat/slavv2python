@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
+from slavv.runtime.run_state import atomic_write_json, atomic_write_text
+
 from .paths import comparisons_root_from_path, relative_run_path, resolve_run_layout
 from .status import _read_json_file, infer_run_status
 
@@ -51,7 +53,7 @@ def read_pointer_file(pointer_file: Path) -> str | None:
 def write_pointer_file(pointer_file: Path, relative_path: str) -> Path:
     """Persist a pointer file containing exactly one relative path."""
     pointer_file.parent.mkdir(parents=True, exist_ok=True)
-    pointer_file.write_text(relative_path.strip() + "\n", encoding="utf-8")
+    atomic_write_text(pointer_file, relative_path.strip() + "\n")
     return pointer_file
 
 
@@ -63,7 +65,7 @@ def create_pointer_files(comparisons_root: Path) -> dict[str, Path]:
     for file_name in _POINTER_FILES:
         path = pointers_dir / file_name
         if not path.exists():
-            path.write_text("", encoding="utf-8")
+            atomic_write_text(path, "")
         created[file_name] = path
     return created
 
@@ -93,8 +95,6 @@ def build_experiment_index_entry(
 
 def write_experiment_index(experiment_dir: Path, entries: list[dict[str, Any]]) -> Path:
     """Persist an experiment index.json payload."""
-    from slavv.runtime.run_state import atomic_write_json
-
     index_path = experiment_dir / "index.json"
     atomic_write_json(index_path, {"runs": entries})
     return index_path

@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from ._persistence import write_json_file, write_text_file
 from .run_layout import resolve_run_layout
 
 logger = logging.getLogger(__name__)
@@ -253,9 +254,8 @@ def generate_proof_artifact(
     proof.artifact_json_path = str(json_path)
     proof.artifact_markdown_path = str(markdown_path)
 
-    with open(json_path, "w", encoding="utf-8") as handle:
-        json.dump(proof.to_dict(), handle, indent=2, sort_keys=True)
-    markdown_path.write_text(_build_proof_markdown(proof), encoding="utf-8")
+    write_json_file(json_path, proof.to_dict())
+    write_text_file(markdown_path, _build_proof_markdown(proof))
     return proof
 
 
@@ -292,8 +292,7 @@ def maintain_proof_artifact_index(
     )
 
     index_path = analysis_dir / _PROOF_INDEX_NAME
-    with open(index_path, "w", encoding="utf-8") as handle:
-        json.dump(index.to_dict(), handle, indent=2, sort_keys=True)
+    write_json_file(index_path, index.to_dict())
     return index
 
 

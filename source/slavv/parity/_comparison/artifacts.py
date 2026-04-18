@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import copy
-import json
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
+if TYPE_CHECKING:
+    from pathlib import Path
 
+from .._persistence import (
+    _json_default,
+    _json_default_with_string_fallback,
+    write_json_file,
+    write_kv_tsv,
+)
 from ..preflight import OutputRootPreflightReport, persist_output_preflight
 from ..workflow_assessment import (
     LoopAssessmentReport,
@@ -17,24 +22,7 @@ from ..workflow_assessment import (
     persist_matlab_health_check,
 )
 
-
-def _json_default(value: Any) -> Any:
-    """Serialize numpy-heavy comparison parameters to JSON."""
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, Path):
-        return str(value)
-    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
-
-
-def _comparison_report_default(value: Any) -> Any:
-    """Serialize comparison-report payloads with a string fallback."""
-    try:
-        return _json_default(value)
-    except TypeError:
-        return str(value)
+_comparison_report_default = _json_default_with_string_fallback
 
 
 def _build_serializable_comparison_report(comparison: dict[str, Any]) -> dict[str, Any]:
@@ -117,27 +105,19 @@ def _write_comparison_quick_view(
     quick_view = _build_comparison_quick_view(comparison)
     quick_json = analysis_dir / "comparison_quick_view.json"
     quick_tsv = analysis_dir / "comparison_quick_view.tsv"
-
-    with open(quick_json, "w", encoding="utf-8") as handle:
-        json.dump(quick_view, handle, indent=2, sort_keys=True)
-
-    tsv_lines = ["metric\tvalue"]
-    tsv_lines.extend(f"{key}\t{value}" for key, value in sorted(quick_view.items()))
-    quick_tsv.write_text("\n".join(tsv_lines) + "\n", encoding="utf-8")
+    write_json_file(quick_json, quick_view)
+    write_kv_tsv(quick_tsv, quick_view)
 
     return quick_json, quick_tsv
 
 
 def _write_comparison_report(comparison: dict[str, Any], report_file: Path) -> Path:
     """Persist the normalized comparison report JSON."""
-    with open(report_file, "w", encoding="utf-8") as handle:
-        json.dump(
-            _build_serializable_comparison_report(comparison),
-            handle,
-            indent=2,
-            sort_keys=True,
-            default=_comparison_report_default,
-        )
+    write_json_file(
+        report_file,
+        _build_serializable_comparison_report(comparison),
+        default=_json_default_with_string_fallback,
+    )
     print(f"\nComparison report saved to: {report_file}")
     return report_file
 
@@ -146,8 +126,7 @@ def _write_normalized_params_file(metadata_dir: Path, params: dict[str, Any]) ->
     """Persist the normalized comparison parameters for both MATLAB and Python runs."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
     params_path = metadata_dir / "comparison_params.normalized.json"
-    with open(params_path, "w", encoding="utf-8") as handle:
-        json.dump(params, handle, indent=2, default=_json_default)
+    write_json_file(params_path, params, default=_json_default)
     return params_path
 
 

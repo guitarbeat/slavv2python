@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import time
@@ -11,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from slavv.io.matlab_parser import load_mat_file_safe
+
+from ._persistence import load_json_dict_or_empty, write_json_file
 
 WORKFLOW_STAGES = ("energy", "vertices", "edges", "network")
 DEFAULT_LOG_TAIL_LINES = 20
@@ -134,9 +135,7 @@ def persist_matlab_status(report: MatlabStatusReport, metadata_dir: Path) -> Pat
     """Persist normalized MATLAB status metadata."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
     report_path = metadata_dir / "matlab_status.json"
-    with open(report_path, "w", encoding="utf-8") as handle:
-        json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
-    return report_path
+    return write_json_file(report_path, report.to_dict())
 
 
 def load_matlab_status(path_or_dir: Path) -> dict[str, Any] | None:
@@ -144,8 +143,7 @@ def load_matlab_status(path_or_dir: Path) -> dict[str, Any] | None:
     candidate = path_or_dir / "matlab_status.json" if path_or_dir.is_dir() else path_or_dir
     if not candidate.exists():
         return None
-    with open(candidate, encoding="utf-8") as handle:
-        return json.load(handle)
+    return load_json_dict_or_empty(candidate)
 
 
 def persist_matlab_failure_summary(report: MatlabStatusReport, metadata_dir: Path) -> Path | None:
@@ -168,9 +166,7 @@ def persist_matlab_failure_summary(report: MatlabStatusReport, metadata_dir: Pat
         "matlab_log_file": report.matlab_log_file,
         "matlab_log_tail": report.matlab_log_tail,
     }
-    with open(failure_path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2, sort_keys=True)
-    return failure_path
+    return write_json_file(failure_path, payload)
 
 
 def summarize_matlab_status(report: MatlabStatusReport) -> str:
@@ -183,14 +179,7 @@ def summarize_matlab_status(report: MatlabStatusReport) -> str:
 
 
 def _load_json_file(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, ValueError):
-        return {}
-    return payload if isinstance(payload, dict) else {}
+    return load_json_dict_or_empty(path)
 
 
 def _tail_log_file(path: Path, *, line_count: int) -> list[str]:

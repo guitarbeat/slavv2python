@@ -7,9 +7,13 @@ from typing import Any
 
 import numpy as np
 
-from .._edge_payloads import _merge_edge_diagnostics
-from .candidate_manifest import _append_candidate_unit
 from .common import _candidate_endpoint_pair_set
+from .supplement_workflow import (
+    _append_supplement_row,
+    _increment_origin_count,
+    _merge_or_append_supplement,
+    _new_supplement_payload,
+)
 from .watershed_candidates import _build_watershed_candidate_rows
 
 logger = logging.getLogger(__name__)
@@ -58,21 +62,14 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         energy_sign,
         parity_watershed_metric_threshold=parity_watershed_metric_threshold,
     )
-    supplement_payload: dict[str, Any] = {
-        "candidate_source": "watershed",
-        "traces": [],
-        "connections": [],
-        "metrics": [],
-        "energy_traces": [],
-        "scale_traces": [],
-        "origin_indices": [],
-        "connection_sources": [],
-        "diagnostics": {
+    supplement_payload = _new_supplement_payload(
+        "watershed",
+        diagnostics={
             "watershed_join_supplement_count": 0,
             "watershed_per_origin_candidate_counts": {},
             **shared_diagnostics,
         },
-    }
+    )
 
     n_reachability_rejected = 0
     n_mutual_frontier_rejected = 0
@@ -111,22 +108,27 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             n_cap_rejected += 1
             continue
 
-        supplement_payload["traces"].append(trace)
-        supplement_payload["connections"].append([pair[0], pair[1]])
-        supplement_payload["metrics"].append(metric)
-        supplement_payload["energy_traces"].append(energy_trace)
-        supplement_payload["scale_traces"].append(scale_trace)
-        supplement_payload["origin_indices"].append(pair[0])
-        supplement_payload["connection_sources"].append("watershed")
+        _append_supplement_row(
+            supplement_payload,
+            pair=pair,
+            trace=trace,
+            energy_trace=energy_trace,
+            scale_trace=scale_trace,
+            metric=metric,
+            origin_index=pair[0],
+            connection_source="watershed",
+        )
         supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
         n_accepted += 1
-        origin_supplement_counts[seed_origin] = current_origin_count + 1
+        _increment_origin_count(
+            supplement_payload["diagnostics"],
+            origin_supplement_counts,
+            seed_origin,
+            key="watershed_per_origin_candidate_counts",
+        )
         existing_pairs.add(pair)
         endpoint_pair_degree_counts[pair[0]] = endpoint_pair_degree_counts.get(pair[0], 0) + 1
         endpoint_pair_degree_counts[pair[1]] = endpoint_pair_degree_counts.get(pair[1], 0) + 1
-        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][
-            str(seed_origin)
-        ] = int(origin_supplement_counts.get(seed_origin, 0))
 
     supplement_payload["diagnostics"]["watershed_reachability_rejected"] = n_reachability_rejected
     supplement_payload["diagnostics"]["watershed_mutual_frontier_rejected"] = (
@@ -155,10 +157,5 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         n_accepted,
     )
 
-    if supplement_payload["connections"]:
-        _append_candidate_unit(candidates, supplement_payload)
-    else:
-        _merge_edge_diagnostics(
-            candidates.get("diagnostics", {}), supplement_payload["diagnostics"]
-        )
+    _merge_or_append_supplement(candidates, supplement_payload)
     return candidates

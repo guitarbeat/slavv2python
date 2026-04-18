@@ -237,7 +237,7 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 ### Neighborhood Claim Alignment (Active)
 
 - [ ] Explain one real neighborhood-level mismatch in terms of a specific local semantic drift.
-- [ ] Reduce that mismatch to an isolated regression test.
+- [x] Reduce that mismatch to an isolated regression test. (Focused regressions now cover frontier pre-manifest rejection, shared-neighborhood partner substitution, and cleanup-retention loss.)
 - [ ] Land one targeted Python fix without regressing the stage-isolated `network` gate.
 - [ ] Record which branches are admitted into the temporary candidate state.
 - [ ] Record which branches are later invalidated or reassigned.
@@ -272,13 +272,13 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] New regression tests should live near the owning Python surface.
 - [ ] Prefer a deterministic unit or focused regression test over a broad new end-to-end sweep.
 - [ ] The test should capture one real branch-lifecycle mismatch, not just a count delta.
-- [ ] Targeted pytest for the new local regression.
+- [x] Targeted pytest for the new local regression.
 - [ ] `python -m pytest -m "unit or integration"`.
 - [ ] Saved-batch imported-MATLAB loop.
 - [ ] Stage-isolated `network` gate.
 - [ ] Fresh live MATLAB confirmation only after the cheaper gates improve.
 - [x] We can point to the exact local control-flow moment where one real MATLAB branch is lost or replaced in Python. (Confirmed `_resolve_frontier_edge_connection_details` rejections).
-- [ ] We have a regression test for that behavior.
+- [x] We have a regression test for that behavior.
 - [ ] The targeted fix improves parity without a larger downstream regression.
 
 ### Candidate Generation Handoff (Historical)

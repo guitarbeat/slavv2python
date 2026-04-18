@@ -38,6 +38,21 @@ Facade/package refactors landed and validated so far:
 - `source/slavv/analysis/ml_curator.py` has been reduced by moving heuristic
   curators and support helpers into sibling modules
 
+Current facade boundaries that still matter for follow-up work:
+
+- `source/slavv/core/edge_candidates.py` remains the compatibility surface for
+  monkeypatch-sensitive imports while `frontier_trace.py`,
+  `frontier_resolution.py`, diagnostics, lifecycle, and supplementation
+  helpers live under
+  `source/slavv/core/_edge_candidates/`
+- `source/slavv/parity/comparison.py` remains the orchestration facade while
+  artifact/report assembly, Python-source loading, MATLAB execution, reuse,
+  health checks, and standalone workflow helpers stay in
+  `source/slavv/parity/_comparison/`
+- the open follow-up tasks are still the `16.x`, `17.x`, `18.x`, and
+  `20.x` items below, so the remaining cleanup should stay narrow and
+  compatibility-preserving until those slices close
+
 Current `source/` files still above 500 lines:
 
 - `source/slavv/parity/comparison.py` — `1120`
@@ -366,6 +381,11 @@ Additional focused validation slices now exercised during the facade conversions
   - [ ] 20.1 List temporary compatibility imports introduced by the refactor
   - [ ] 20.2 Remove only the shims proven to be unused
   - [ ] 20.3 Keep any remaining shims documented if callers still depend on them
+
+  - Current note: `edge_candidates.py` and `comparison.py` are intentionally
+    still acting as facade layers, so the compatibility inventory should stay
+    aligned with those public import surfaces rather than with the private
+    helper modules they delegate into.
 
 - [ ] 21. Align tests and docs with final ownership boundaries
   - [ ] 21.1 Move or add tests only where ownership boundaries changed materially

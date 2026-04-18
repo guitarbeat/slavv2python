@@ -102,6 +102,33 @@ def atomic_write_json(path: str | Path, data: Any) -> None:
             os.unlink(tmp_name)
 
 
+def atomic_write_text(path: str | Path, text: str) -> None:
+    """Atomically write UTF-8 text content."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix=target.name, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        _replace_with_retry(tmp_name, target)
+    finally:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+
+
+def load_json_dict(path: str | Path) -> dict[str, Any] | None:
+    """Load a JSON file when it exists and contains an object payload."""
+    target = Path(path)
+    if not target.exists():
+        return None
+    try:
+        with open(target, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def atomic_joblib_dump(value: Any, path: str | Path) -> None:
     """Atomically write a joblib artifact."""
     target = Path(path)

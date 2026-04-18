@@ -6,9 +6,13 @@ from typing import Any
 
 import numpy as np
 
-from .._edge_payloads import _merge_edge_diagnostics
 from .audit import _normalize_candidate_connection_sources
-from .candidate_manifest import _append_candidate_unit
+from .supplement_workflow import (
+    _append_supplement_row,
+    _increment_origin_count,
+    _merge_or_append_supplement,
+    _new_supplement_payload,
+)
 from .watershed_candidates import _build_watershed_candidate_rows
 
 
@@ -57,23 +61,16 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
     )
     candidate_rows.sort(key=lambda row: (row[4], row[5]))
 
-    supplement_payload: dict[str, Any] = {
-        "candidate_source": "watershed",
-        "traces": [],
-        "connections": [],
-        "metrics": [],
-        "energy_traces": [],
-        "scale_traces": [],
-        "origin_indices": [],
-        "connection_sources": [],
-        "diagnostics": {
+    supplement_payload = _new_supplement_payload(
+        "watershed",
+        diagnostics={
             "watershed_join_supplement_count": 0,
             "watershed_per_origin_candidate_counts": {},
             **shared_diagnostics,
             "watershed_origin_budget_rejected": 0,
             "watershed_accepted": 0,
         },
-    }
+    )
     origin_added_counts: dict[int, int] = {}
     for pair, trace, energy_trace, scale_trace, metric, _distance in candidate_rows:
         if candidate_mode == "remaining_origin_contacts":
@@ -82,24 +79,24 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
                 supplement_payload["diagnostics"]["watershed_origin_budget_rejected"] += 1
                 continue
 
-        supplement_payload["traces"].append(trace)
-        supplement_payload["connections"].append([pair[0], pair[1]])
-        supplement_payload["metrics"].append(metric)
-        supplement_payload["energy_traces"].append(energy_trace)
-        supplement_payload["scale_traces"].append(scale_trace)
-        supplement_payload["origin_indices"].append(pair[0])
-        supplement_payload["connection_sources"].append("watershed")
+        _append_supplement_row(
+            supplement_payload,
+            pair=pair,
+            trace=trace,
+            energy_trace=energy_trace,
+            scale_trace=scale_trace,
+            metric=metric,
+            origin_index=pair[0],
+            connection_source="watershed",
+        )
         supplement_payload["diagnostics"]["watershed_join_supplement_count"] += 1
         supplement_payload["diagnostics"]["watershed_accepted"] += 1
-        origin_added_counts[pair[0]] = origin_added_counts.get(pair[0], 0) + 1
-        supplement_payload["diagnostics"]["watershed_per_origin_candidate_counts"][str(pair[0])] = (
-            origin_added_counts[pair[0]]
+        _increment_origin_count(
+            supplement_payload["diagnostics"],
+            origin_added_counts,
+            pair[0],
+            key="watershed_per_origin_candidate_counts",
         )
 
-    if supplement_payload["connections"]:
-        _append_candidate_unit(candidates, supplement_payload)
-    else:
-        _merge_edge_diagnostics(
-            candidates.get("diagnostics", {}), supplement_payload["diagnostics"]
-        )
+    _merge_or_append_supplement(candidates, supplement_payload)
     return candidates

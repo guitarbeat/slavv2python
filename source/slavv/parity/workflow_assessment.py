@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import time
@@ -13,6 +12,7 @@ from typing import Any
 
 from slavv.runtime import load_run_snapshot
 
+from ._persistence import load_json_dict_or_empty, write_json_file
 from .matlab_status import MatlabStatusReport, inspect_matlab_status, load_matlab_status
 from .preflight import (
     DEFAULT_REQUIRED_FREE_SPACE_GB,
@@ -105,9 +105,7 @@ def persist_loop_assessment(report: LoopAssessmentReport, metadata_dir: Path) ->
     """Persist the normalized loop assessment report."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
     report_path = metadata_dir / "loop_assessment.json"
-    with open(report_path, "w", encoding="utf-8") as handle:
-        json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
-    return report_path
+    return write_json_file(report_path, report.to_dict())
 
 
 def load_loop_assessment(path_or_dir: Path) -> dict[str, Any] | None:
@@ -115,8 +113,7 @@ def load_loop_assessment(path_or_dir: Path) -> dict[str, Any] | None:
     candidate = path_or_dir / "loop_assessment.json" if path_or_dir.is_dir() else path_or_dir
     if not candidate.exists():
         return None
-    with open(candidate, encoding="utf-8") as handle:
-        return json.load(handle)
+    return load_json_dict_or_empty(candidate)
 
 
 def summarize_loop_assessment(report: LoopAssessmentReport) -> str:
@@ -438,9 +435,7 @@ def persist_matlab_health_check(report: MatlabHealthCheckReport, metadata_dir: P
     """Persist a MATLAB health-check report."""
     metadata_dir.mkdir(parents=True, exist_ok=True)
     report_path = metadata_dir / "matlab_health_check.json"
-    with open(report_path, "w", encoding="utf-8") as handle:
-        json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
-    return report_path
+    return write_json_file(report_path, report.to_dict())
 
 
 def load_matlab_health_check(path_or_dir: Path) -> dict[str, Any] | None:
@@ -448,8 +443,7 @@ def load_matlab_health_check(path_or_dir: Path) -> dict[str, Any] | None:
     candidate = path_or_dir / "matlab_health_check.json" if path_or_dir.is_dir() else path_or_dir
     if not candidate.exists():
         return None
-    with open(candidate, encoding="utf-8") as handle:
-        return json.load(handle)
+    return load_json_dict_or_empty(candidate)
 
 
 def summarize_matlab_health_check(report: MatlabHealthCheckReport) -> str:
@@ -560,8 +554,9 @@ def _load_recorded_comparison_params(run_root: Path) -> dict[str, Any] | None:
     params_path = run_root / "99_Metadata" / "comparison_params.normalized.json"
     if not params_path.exists():
         return None
-    with open(params_path, encoding="utf-8") as handle:
-        params = json.load(handle)
+    params = load_json_dict_or_empty(params_path)
+    if not params:
+        return None
     params["comparison_exact_network"] = True
     params.setdefault("python_parity_rerun_from", "edges")
     return params

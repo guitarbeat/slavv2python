@@ -2,39 +2,31 @@
 
 from __future__ import annotations
 
-import json
-from datetime import datetime
 from typing import Any
+
+from .._persistence import (
+    infer_date_str as _infer_date_str,
+)
+from .._persistence import (
+    load_json_dict_or_empty,
+    write_lines_file,
+)
 
 
 def load_report(report_path, logger: Any) -> dict[str, Any]:
     """Load the comparison report if present."""
-    report: dict[str, Any] = {}
-    if report_path.exists():
-        try:
-            with open(report_path, encoding="utf-8") as f:
-                report = json.load(f)
-        except Exception as exc:
-            logger.error("Failed to load comparison report %s: %s", report_path, exc)
+    report = load_json_dict_or_empty(report_path)
+    if report_path.exists() and not report:
+        logger.error("Failed to load comparison report %s", report_path)
     return report
 
 
 def infer_date_str(run_name: str) -> str:
     """Infer a display date from the run name."""
-    date_str = "Unknown"
-    date_part = run_name.split("_")[0]
-    if len(date_part) == 8 and date_part.isdigit():
-        try:
-            date_obj = datetime.strptime(date_part, "%Y%m%d")
-            date_str = date_obj.strftime("%Y-%m-%d")
-        except Exception:
-            pass
-    return date_str
+    return _infer_date_str(run_name)
 
 
 def write_summary(output_file, lines: list[str]) -> None:
     """Write the summary file to disk."""
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
-
+    write_lines_file(output_file, lines)
     print(f"Generated summary: {output_file}")
