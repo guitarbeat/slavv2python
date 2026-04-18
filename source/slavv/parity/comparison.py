@@ -8,12 +8,9 @@ for comparison purposes.
 from __future__ import annotations
 
 import copy
-import json
 import os
 from pathlib import Path
 from typing import Any
-
-import numpy as np
 
 from slavv.core import SLAVVProcessor
 from slavv.io import export_pipeline_results, load_tiff_volume
@@ -42,6 +39,10 @@ from ._comparison.artifacts import (
     _write_comparison_report,
     _write_normalized_params_file,
 )
+from ._comparison.config import (
+    discover_matlab_artifacts as _discover_matlab_artifacts_impl,
+)
+from ._comparison.config import load_parameters as _load_parameters_impl
 from ._comparison.health_check import (
     run_matlab_health_check_workflow as _run_matlab_health_check_workflow_impl,
 )
@@ -304,54 +305,12 @@ def _bootstrap_existing_matlab_batch_for_python_parity(
 
 def load_parameters(params_file: str | None = None) -> dict[str, Any]:
     """Load parameters from JSON file or use defaults."""
-    if params_file and os.path.exists(params_file):
-        with open(params_file) as f:
-            params = json.load(f)
-    else:
-        # Use Python defaults
-        params = {
-            "microns_per_voxel": [1.0, 1.0, 1.0],
-            "radius_of_smallest_vessel_in_microns": 1.5,
-            "radius_of_largest_vessel_in_microns": 50.0,
-            "approximating_PSF": True,
-            "excitation_wavelength_in_microns": 1.3,
-            "numerical_aperture": 0.95,
-            "sample_index_of_refraction": 1.33,
-            "scales_per_octave": 1.5,
-            "gaussian_to_ideal_ratio": 1.0,
-            "spherical_to_annular_ratio": 1.0,
-            "max_voxels_per_node_energy": 1e5,
-        }
-
-    # Convert lists to numpy arrays where needed
-    if "microns_per_voxel" in params:
-        params["microns_per_voxel"] = np.array(params["microns_per_voxel"])
-
-    return params
+    return _load_parameters_impl(params_file)
 
 
 def discover_matlab_artifacts(output_dir: str | Path) -> dict[str, Any]:
     """Discover the newest MATLAB batch folder and key output artifacts."""
-    output_path = Path(output_dir)
-    if not output_path.exists():
-        return {}
-
-    batch_folders = sorted(
-        path for path in output_path.iterdir() if path.is_dir() and path.name.startswith("batch_")
-    )
-    if not batch_folders:
-        return {}
-
-    batch_folder = batch_folders[-1]
-    artifacts: dict[str, Any] = {"batch_folder": str(batch_folder)}
-
-    vectors_dir = batch_folder / "vectors"
-    if vectors_dir.exists():
-        artifacts["vectors_dir"] = str(vectors_dir)
-        if network_files := sorted(vectors_dir.glob("network_*.mat")):
-            artifacts["network_mat"] = str(network_files[-1])
-
-    return artifacts
+    return _discover_matlab_artifacts_impl(output_dir)
 
 
 def run_matlab_vectorization(
