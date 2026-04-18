@@ -11,6 +11,8 @@ from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
 from ..utils.safe_unpickle import safe_load
+from ._edge_payloads import _empty_edge_diagnostics, _empty_edges_result
+from ._radius_utils import _scalar_radius
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -25,18 +27,13 @@ from .edge_candidates import (
 from .edge_primitives import (
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,
-    _scalar_radius,
     _trace_energy_series,
     _trace_scale_series,
     estimate_vessel_directions,
     generate_edge_directions,
     trace_edge,
 )
-from .edge_selection import (
-    _empty_edge_diagnostics,
-    _empty_edges_result,
-    choose_edges_for_workflow,
-)
+from .edge_selection import choose_edges_for_workflow
 from .vertices import paint_vertex_center_image
 
 if TYPE_CHECKING:
@@ -68,7 +65,7 @@ def extract_edges(
 
     if len(vertex_positions) == 0:
         logger.info("Extracted 0 edges")
-        return _empty_edges_result(vertex_positions)
+        return cast("dict[str, Any]", _empty_edges_result(vertex_positions))
 
     lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
     logger.info("Creating vertex center lookup image...")
@@ -251,7 +248,7 @@ def extract_edges_resumable(
     direction_method = params.get("direction_method", "hessian")
 
     if len(vertex_positions) == 0:
-        return _empty_edges_result(vertex_positions)
+        return cast("dict[str, Any]", _empty_edges_result(vertex_positions))
 
     units_dir = stage_controller.artifact_path("units")
     units_dir.mkdir(parents=True, exist_ok=True)

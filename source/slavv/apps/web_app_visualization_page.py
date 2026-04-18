@@ -46,19 +46,25 @@ def _render_export_download(
     network,
     parameters,
     export_spec: dict[str, str],
+    generate_export_data_fn=None,
+    update_run_task_fn=None,
 ) -> None:
     """Render one export button using a shared table-driven config."""
-    from slavv.apps import web_app as web_app_facade
+    if generate_export_data_fn is None or update_run_task_fn is None:
+        from slavv.apps import web_app as web_app_facade
+
+        generate_export_data_fn = web_app_facade.generate_export_data
+        update_run_task_fn = web_app_facade._update_run_task
 
     with column:
-        if export_data := web_app_facade.generate_export_data(
+        if export_data := generate_export_data_fn(
             vertices,
             edges,
             network,
             parameters,
             export_spec["format_type"],
         ):
-            web_app_facade._update_run_task(
+            update_run_task_fn(
                 run_dir,
                 "exports",
                 status="completed",

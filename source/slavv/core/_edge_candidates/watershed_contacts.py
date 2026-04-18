@@ -6,12 +6,12 @@ from typing import Any
 
 import numpy as np
 
+from .._edge_payloads import _merge_edge_diagnostics
 from ..edge_primitives import (
     _edge_metric_from_energy_trace,
     _trace_energy_series,
     _trace_scale_series,
 )
-from ..edge_selection import _merge_edge_diagnostics
 from .audit import _normalize_candidate_connection_sources
 from .candidate_manifest import _append_candidate_unit
 from .common import _candidate_endpoint_pair_set

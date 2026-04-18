@@ -7,6 +7,7 @@ in the candidate payload and comparison report.
 import numpy as np
 import pytest
 
+from slavv.core._edge_payloads import _empty_edge_diagnostics
 from slavv.core.edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -15,7 +16,6 @@ from slavv.core.edge_candidates import (
     _supplement_matlab_frontier_candidates_with_watershed_joins,
     _trace_local_geodesic_between_vertices,
 )
-from slavv.core.edge_selection import _empty_edge_diagnostics
 from slavv.core.vertices import (
     paint_vertex_center_image,
 )

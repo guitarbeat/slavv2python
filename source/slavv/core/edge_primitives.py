@@ -11,6 +11,7 @@ import scipy.ndimage as ndi
 from skimage import feature
 from typing_extensions import TypeAlias
 
+from ._edge_payloads import _empty_stop_reason_counts
 from .energy import compute_gradient_impl
 
 if TYPE_CHECKING:
@@ -26,31 +27,6 @@ Float64Array: TypeAlias = "np.ndarray"
 BoolArray: TypeAlias = "np.ndarray"
 TraceMetadata: TypeAlias = "dict[str, Any]"
 TraceEdgeResult: TypeAlias = "list[np.ndarray] | tuple[list[np.ndarray], TraceMetadata]"
-
-
-def _empty_stop_reason_counts() -> dict[str, int]:
-    """Return the canonical edge-trace stop-reason counter payload."""
-    return {
-        "bounds": 0,
-        "nan": 0,
-        "energy_threshold": 0,
-        "energy_rise_step_halving": 0,
-        "max_steps": 0,
-        "direct_terminal_hit": 0,
-        "frontier_exhausted_nonnegative": 0,
-        "length_limit": 0,
-        "terminal_frontier_hit": 0,
-    }
-
-
-def _scalar_radius(radius_value: np.ndarray | float | int) -> float:
-    """Convert isotropic or axis-aware radii into a single tracing radius."""
-    radius_array = np.asarray(radius_value, dtype=np.float32).reshape(-1)
-    if radius_array.size == 0:
-        return 0.0
-    if radius_array.size == 1:
-        return float(radius_array[0])
-    return float(np.cbrt(np.prod(radius_array)))
 
 
 def in_bounds(pos: np.ndarray, shape: tuple[int, ...]) -> bool:

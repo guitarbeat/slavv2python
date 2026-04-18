@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import numpy as np
 
-from ..edge_selection import _merge_edge_diagnostics
+from .._edge_payloads import _merge_edge_diagnostics
 from .audit import _normalize_candidate_connection_sources
 
 

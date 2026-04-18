@@ -46,8 +46,10 @@ from .web_app_shell import main
 from .web_app_static_pages import show_about_page, show_home_page
 from .web_app_visualization_page import (
     EXPORT_BUTTON_SPECS,
-    _render_export_download,
     show_visualization_page,
+)
+from .web_app_visualization_page import (
+    _render_export_download as _render_export_download_impl,
 )
 
 warnings.filterwarnings("ignore")
@@ -126,6 +128,30 @@ st.html(
 def cached_load_tiff_volume(file):
     """Cached wrapper for load_tiff_volume."""
     return load_tiff_volume(file)
+
+
+def _render_export_download(
+    column,
+    *,
+    run_dir: str | None,
+    vertices,
+    edges,
+    network,
+    parameters,
+    export_spec: dict[str, str],
+):
+    """Facade wrapper that preserves monkeypatch-friendly app helpers."""
+    return _render_export_download_impl(
+        column,
+        run_dir=run_dir,
+        vertices=vertices,
+        edges=edges,
+        network=network,
+        parameters=parameters,
+        export_spec=export_spec,
+        generate_export_data_fn=generate_export_data,
+        update_run_task_fn=_update_run_task,
+    )
 
 
 __all__ = [

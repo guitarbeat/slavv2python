@@ -7,15 +7,15 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from .._edge_payloads import _empty_edge_diagnostics
+from .._radius_utils import _scalar_radius
 from ..edge_primitives import (
     TraceMetadata,
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,
-    _scalar_radius,
     _trace_energy_series,
     _trace_scale_series,
 )
-from ..edge_selection import _empty_edge_diagnostics
 from .candidate_manifest import _append_candidate_unit
 from .common import (
     _parity_candidate_salvage_mode,

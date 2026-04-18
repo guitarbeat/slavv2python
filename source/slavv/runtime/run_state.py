@@ -4,322 +4,54 @@ from __future__ import annotations
 
 import calendar
 import copy
-import hashlib
 import json
 import logging
-import os
-import tempfile
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, cast
 
-import joblib
-import numpy as np
-
 from slavv.utils.safe_unpickle import safe_load
+
+from ._run_state.constants import (
+    PIPELINE_STAGES,
+    PREPROCESS_STAGE,
+    STAGE_WEIGHTS,
+    STATUS_BLOCKED,
+    STATUS_COMPLETED,
+    STATUS_COMPLETED_TARGET,
+    STATUS_FAILED,
+    STATUS_PENDING,
+    STATUS_RUNNING,
+)
+from ._run_state.io import (
+    _ensure_stage_map,
+    _normalize_for_json,
+    atomic_joblib_dump,
+    atomic_write_json,
+    load_legacy_run_snapshot,
+    load_run_snapshot,
+)
+from ._run_state.io import (
+    fingerprint_array as _fingerprint_array,
+)
+from ._run_state.io import (
+    fingerprint_file as _fingerprint_file,
+)
+from ._run_state.io import (
+    fingerprint_jsonable as _fingerprint_jsonable,
+)
+from ._run_state.io import (
+    stable_json_dumps as _stable_json_dumps,
+)
+from ._run_state.models import ProgressEvent, RunSnapshot, StageSnapshot, TaskSnapshot, _now_iso
 
 logger = logging.getLogger(__name__)
 
-PREPROCESS_STAGE = "preprocess"
-PIPELINE_STAGES = ["energy", "vertices", "edges", "network"]
-TRACKED_RUN_STAGES = [PREPROCESS_STAGE, *PIPELINE_STAGES]
-STAGE_WEIGHTS = {
-    PREPROCESS_STAGE: 0.05,
-    "energy": 0.35,
-    "vertices": 0.15,
-    "edges": 0.30,
-    "network": 0.15,
-}
-STATUS_PENDING = "pending"
-STATUS_RUNNING = "running"
-STATUS_COMPLETED = "completed"
-STATUS_COMPLETED_TARGET = "completed_target"
-STATUS_FAILED = "failed"
-STATUS_BLOCKED = "resume_blocked"
-
-
-def _now_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-
-def _normalize_for_json(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {str(k): _normalize_for_json(v) for k, v in sorted(value.items())}
-    if isinstance(value, (list, tuple)):
-        return [_normalize_for_json(v) for v in value]
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, set):
-        return [_normalize_for_json(v) for v in sorted(value)]
-    return value
-
-
-def stable_json_dumps(value: Any) -> str:
-    """Serialize a value with deterministic ordering."""
-    return json.dumps(_normalize_for_json(value), sort_keys=True, separators=(",", ":"))
-
-
-def fingerprint_jsonable(value: Any) -> str:
-    """Create a content hash for JSON-like data."""
-    payload = stable_json_dumps(value).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
-
-
-def fingerprint_array(array: np.ndarray) -> str:
-    """Create a content hash for a numpy array."""
-    hasher = hashlib.sha256()
-    hasher.update(str(array.shape).encode("utf-8"))
-    hasher.update(str(array.dtype).encode("utf-8"))
-    hasher.update(np.ascontiguousarray(array).tobytes())
-    return hasher.hexdigest()
-
-
-def fingerprint_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
-    """Create a content hash for a file."""
-    hasher = hashlib.sha256()
-    with open(path, "rb") as handle:
-        while True:
-            if chunk := handle.read(chunk_size):
-                hasher.update(chunk)
-            else:
-                break
-    return hasher.hexdigest()
-
-
-def atomic_write_json(path: str | Path, data: Any) -> None:
-    """Atomically write JSON content."""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix=target.name, suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(_normalize_for_json(data), handle, indent=2, sort_keys=True)
-        _replace_with_retry(tmp_name, target)
-    finally:
-        if os.path.exists(tmp_name):
-            os.unlink(tmp_name)
-
-
-def atomic_joblib_dump(value: Any, path: str | Path) -> None:
-    """Atomically write a joblib artifact."""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix=target.name, suffix=".tmp")
-    os.close(fd)
-    try:
-        joblib.dump(value, tmp_name)
-        _replace_with_retry(tmp_name, target)
-    finally:
-        if os.path.exists(tmp_name):
-            os.unlink(tmp_name)
-
-
-def _replace_with_retry(
-    tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25
-) -> None:
-    """Retry atomic replacement to tolerate transient Windows file locks."""
-    last_error = None
-    for attempt in range(attempts):
-        try:
-            os.replace(tmp_name, target)
-            return
-        except PermissionError as exc:
-            last_error = exc
-            if attempt == attempts - 1:
-                raise
-            time.sleep(delay)
-    if last_error is not None:
-        raise last_error
-
-
-@dataclass
-class StageSnapshot:
-    """Serializable state for a pipeline stage."""
-
-    name: str
-    status: str = STATUS_PENDING
-    progress: float = 0.0
-    resumed: bool = False
-    detail: str = ""
-    substage: str = ""
-    units_total: int = 0
-    units_completed: int = 0
-    artifacts: dict[str, str] = field(default_factory=dict)
-    started_at: str | None = None
-    updated_at: str | None = None
-    completed_at: str | None = None
-    elapsed_seconds: float = 0.0
-    eta_seconds: float | None = None
-
-
-@dataclass
-class TaskSnapshot:
-    """Serializable state for optional work attached to a run."""
-
-    name: str
-    status: str = STATUS_PENDING
-    progress: float = 0.0
-    detail: str = ""
-    artifacts: dict[str, str] = field(default_factory=dict)
-    started_at: str | None = None
-    updated_at: str | None = None
-    completed_at: str | None = None
-    elapsed_seconds: float = 0.0
-
-
-@dataclass
-class RunSnapshot:
-    """Serializable snapshot for a resumable run."""
-
-    run_id: str
-    input_fingerprint: str = ""
-    params_fingerprint: str = ""
-    status: str = STATUS_PENDING
-    target_stage: str = "network"
-    current_stage: str = ""
-    overall_progress: float = 0.0
-    elapsed_seconds: float = 0.0
-    eta_seconds: float | None = None
-    stages: dict[str, StageSnapshot] = field(default_factory=dict)
-    optional_tasks: dict[str, TaskSnapshot] = field(default_factory=dict)
-    artifacts: dict[str, str] = field(default_factory=dict)
-    errors: list[dict[str, Any]] = field(default_factory=list)
-    provenance: dict[str, Any] = field(default_factory=dict)
-    created_at: str = field(default_factory=_now_iso)
-    updated_at: str = field(default_factory=_now_iso)
-    last_event: str = ""
-
-    def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> RunSnapshot:
-        stage_data = data.get("stages", {})
-        task_data = data.get("optional_tasks", {})
-        stages = {
-            name: StageSnapshot(
-                **dict({"name": name}, **{k: v for k, v in values.items() if k != "name"})
-            )
-            for name, values in stage_data.items()
-        }
-        tasks = {
-            name: TaskSnapshot(
-                **dict({"name": name}, **{k: v for k, v in values.items() if k != "name"})
-            )
-            for name, values in task_data.items()
-        }
-        return cls(
-            run_id=data.get("run_id", uuid.uuid4().hex[:12]),
-            input_fingerprint=data.get("input_fingerprint", ""),
-            params_fingerprint=data.get("params_fingerprint", ""),
-            status=data.get("status", STATUS_PENDING),
-            target_stage=data.get("target_stage", "network"),
-            current_stage=data.get("current_stage", ""),
-            overall_progress=float(data.get("overall_progress", 0.0)),
-            elapsed_seconds=float(data.get("elapsed_seconds", 0.0)),
-            eta_seconds=data.get("eta_seconds"),
-            stages=stages,
-            optional_tasks=tasks,
-            artifacts=data.get("artifacts", {}),
-            errors=data.get("errors", []),
-            provenance=data.get("provenance", {}),
-            created_at=data.get("created_at", _now_iso()),
-            updated_at=data.get("updated_at", _now_iso()),
-            last_event=data.get("last_event", ""),
-        )
-
-
-@dataclass
-class ProgressEvent:
-    """Progress payload emitted by the pipeline."""
-
-    stage: str
-    status: str
-    overall_progress: float
-    stage_progress: float
-    detail: str
-    resumed: bool
-    snapshot: RunSnapshot
-
-
-def load_run_snapshot(path_or_dir: str | Path) -> RunSnapshot | None:
-    """Load a run snapshot from a file or directory if present."""
-    path = Path(path_or_dir)
-    candidates = []
-    if path.is_dir():
-        candidates.extend(
-            [
-                path / "run_snapshot.json",
-                path / "99_Metadata" / "run_snapshot.json",
-                path / "metadata" / "run_snapshot.json",
-            ]
-        )
-    else:
-        candidates.append(path)
-
-    for candidate in candidates:
-        if candidate.exists():
-            with open(candidate, encoding="utf-8") as handle:
-                return RunSnapshot.from_dict(json.load(handle))
-    return None
-
-
-def load_legacy_run_snapshot(
-    checkpoint_dir: str | Path, *, target_stage: str = "network"
-) -> RunSnapshot | None:
-    """Inspect legacy checkpoint directories without mutating them."""
-    checkpoints_dir = Path(checkpoint_dir)
-    checkpoint_paths = {
-        stage: checkpoints_dir / f"checkpoint_{stage}.pkl" for stage in PIPELINE_STAGES
-    }
-    if not any(path.exists() for path in checkpoint_paths.values()):
-        return None
-
-    snapshot = RunSnapshot(
-        run_id=hashlib.sha1(str(checkpoints_dir.resolve()).encode("utf-8")).hexdigest()[:12],
-        target_stage=target_stage,
-        status=STATUS_PENDING,
-        stages=_ensure_stage_map(),
-        provenance={"layout": "legacy"},
-    )
-    preprocess_stage = snapshot.stages[PREPROCESS_STAGE]
-    preprocess_stage.status = STATUS_COMPLETED
-    preprocess_stage.progress = 1.0
-    preprocess_stage.units_total = 1
-    preprocess_stage.units_completed = 1
-    preprocess_stage.resumed = True
-    for stage, path in checkpoint_paths.items():
-        if not path.exists():
-            continue
-        stage_snapshot = snapshot.stages[stage]
-        stage_snapshot.status = STATUS_COMPLETED
-        stage_snapshot.progress = 1.0
-        stage_snapshot.units_total = 1
-        stage_snapshot.units_completed = 1
-        stage_snapshot.resumed = True
-        stage_snapshot.artifacts["checkpoint"] = str(path)
-        stage_snapshot.completed_at = _now_iso()
-    total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
-    snapshot.overall_progress = (
-        sum(STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in TRACKED_RUN_STAGES)
-        / total
-    )
-    return snapshot
-
-
-def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[str, StageSnapshot]:
-    stages = {name: StageSnapshot(name=name) for name in TRACKED_RUN_STAGES}
-    if existing:
-        stages |= existing
-        for name in TRACKED_RUN_STAGES:
-            stages.setdefault(name, StageSnapshot(name=name))
-    return stages
+fingerprint_array = _fingerprint_array
+fingerprint_file = _fingerprint_file
+fingerprint_jsonable = _fingerprint_jsonable
+stable_json_dumps = _stable_json_dumps
 
 
 class StageController:
@@ -853,7 +585,7 @@ class RunContext:
         elapsed = max(0.0, time.time() - started)
         remaining = elapsed * (1.0 - stage_snapshot.progress) / stage_snapshot.progress
         stage_snapshot.elapsed_seconds = elapsed
-        return remaining
+        return float(remaining)
 
     def _estimate_run_eta(self, snapshot: RunSnapshot) -> float | None:
         if snapshot.overall_progress <= 0.0:
@@ -863,7 +595,7 @@ class RunContext:
             return None
         elapsed = max(0.0, time.time() - created)
         snapshot.elapsed_seconds = elapsed
-        return elapsed * (1.0 - snapshot.overall_progress) / snapshot.overall_progress
+        return float(elapsed * (1.0 - snapshot.overall_progress) / snapshot.overall_progress)
 
     def _calculate_overall_progress(
         self,
@@ -890,7 +622,7 @@ class RunContext:
                     StageSnapshot(stage_name),
                 ).progress
             )
-        return max(0.0, min(1.0, progress / total))
+        return float(max(0.0, min(1.0, progress / total)))
 
     @staticmethod
     def _parse_time(timestamp: str | None) -> float | None:
@@ -905,7 +637,7 @@ class RunContext:
 def target_stage_progress(snapshot: RunSnapshot) -> float:
     """Return progress toward the user-selected pipeline target."""
     if snapshot.target_stage not in PIPELINE_STAGES:
-        return snapshot.overall_progress
+        return float(snapshot.overall_progress)
     index = PIPELINE_STAGES.index(snapshot.target_stage)
     selected = PIPELINE_STAGES[: index + 1]
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in selected)
@@ -922,7 +654,7 @@ def target_stage_progress(snapshot: RunSnapshot) -> float:
                 StageSnapshot(stage),
             ).progress
         )
-    return max(0.0, min(1.0, progress / total))
+    return float(max(0.0, min(1.0, progress / total)))
 
 
 def _stage_status_line(stage_name: str, stage: StageSnapshot) -> str:

@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 from scipy.spatial import cKDTree
 
+from .._edge_payloads import _merge_edge_diagnostics
 from ..edge_primitives import (
     TraceMetadata,
     _clip_trace_indices,
@@ -14,7 +15,6 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
-from ..edge_selection import _merge_edge_diagnostics
 from ..vertices import _matlab_linear_indices
 from .candidate_manifest import _append_candidate_unit
 from .common import (

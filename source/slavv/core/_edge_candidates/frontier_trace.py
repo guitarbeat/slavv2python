@@ -7,12 +7,12 @@ from typing import Any
 
 import numpy as np
 
+from .._edge_payloads import _empty_edge_diagnostics
 from ..edge_primitives import (
     _edge_metric_from_energy_trace,
     _trace_energy_series,
     _trace_scale_series,
 )
-from ..edge_selection import _empty_edge_diagnostics
 from .common import (
     BoolArray,
     Int32Array,

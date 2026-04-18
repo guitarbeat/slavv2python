@@ -7,6 +7,7 @@ from typing import Any, cast
 import numpy as np
 from typing_extensions import TypeAlias
 
+from ._edge_payloads import _empty_edges_result, build_edge_diagnostics
 from .edge_primitives import _clip_trace_indices
 
 Int16Array: TypeAlias = "np.ndarray"
@@ -46,94 +47,18 @@ def _normalize_candidate_connection_sources(
     return normalized
 
 
-def _empty_stop_reason_counts() -> dict[str, int]:
-    """Return the canonical edge-trace stop-reason counter payload."""
-    return {
-        "bounds": 0,
-        "nan": 0,
-        "energy_threshold": 0,
-        "energy_rise_step_halving": 0,
-        "max_steps": 0,
-        "direct_terminal_hit": 0,
-        "frontier_exhausted_nonnegative": 0,
-        "length_limit": 0,
-        "terminal_frontier_hit": 0,
-    }
-
-
 def _empty_edge_diagnostics() -> dict[str, Any]:
     """Return the canonical edge-diagnostics payload."""
-    return {
-        "candidate_traced_edge_count": 0,
-        "terminal_edge_count": 0,
-        "self_edge_count": 0,
-        "duplicate_directed_pair_count": 0,
-        "antiparallel_pair_count": 0,
-        "chosen_edge_count": 0,
-        "dangling_edge_count": 0,
-        "negative_energy_rejected_count": 0,
-        "conflict_rejected_count": 0,
-        "conflict_rejected_by_source": {},
-        "conflict_blocking_source_counts": {},
-        "conflict_source_pairs": {},
-        "degree_pruned_count": 0,
-        "orphan_pruned_count": 0,
-        "cycle_pruned_count": 0,
-        "watershed_join_supplement_count": 0,
-        "watershed_endpoint_degree_rejected": 0,
-        "geodesic_join_supplement_count": 0,
-        "geodesic_shared_neighborhood_endpoint_relaxed": 0,
-        "terminal_direct_hit_count": 0,
-        "terminal_reverse_center_hit_count": 0,
-        "terminal_reverse_near_hit_count": 0,
-        "frontier_terminal_resolution_counts": {},
-        "frontier_per_origin_terminal_hits": {},
-        "frontier_per_origin_terminal_accepts": {},
-        "frontier_per_origin_terminal_rejections": {},
-        "stop_reason_counts": _empty_stop_reason_counts(),
-    }
-
-
-def _merge_edge_diagnostics(target: dict[str, Any], source: dict[str, Any]) -> None:
-    """Merge additive edge diagnostics from one payload into another."""
-    for key, value in source.items():
-        if key == "stop_reason_counts":
-            target_counts = target.setdefault("stop_reason_counts", _empty_stop_reason_counts())
-            for stop_reason, count in value.items():
-                target_counts[stop_reason] = int(target_counts.get(stop_reason, 0)) + int(count)
-            continue
-
-        if isinstance(value, dict):
-            target_map = target.setdefault(key, {})
-            if not isinstance(target_map, dict):
-                target_map = {}
-            for item_key, item_value in value.items():
-                target_map[str(item_key)] = int(target_map.get(str(item_key), 0)) + int(item_value)
-            target[key] = target_map
-            continue
-
-        if isinstance(value, (int, np.integer)):
-            target[key] = int(target.get(key, 0)) + int(value)
-
-
-def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str, Any]:
-    """Return the canonical empty edge payload."""
-    positions = (
-        np.asarray(vertex_positions, dtype=np.float32)
-        if vertex_positions is not None
-        else np.empty((0, 3), dtype=np.float32)
+    diagnostics = build_edge_diagnostics(
+        extra_fields={
+            "geodesic_shared_neighborhood_endpoint_relaxed": 0,
+            "frontier_terminal_resolution_counts": {},
+            "frontier_per_origin_terminal_hits": {},
+            "frontier_per_origin_terminal_accepts": {},
+            "frontier_per_origin_terminal_rejections": {},
+        }
     )
-    return {
-        "traces": [],
-        "connections": np.zeros((0, 2), dtype=np.int32),
-        "energies": np.zeros((0,), dtype=np.float32),
-        "energy_traces": [],
-        "scale_traces": [],
-        "connection_sources": [],
-        "vertex_positions": positions,
-        "diagnostics": _empty_edge_diagnostics(),
-        "chosen_candidate_indices": np.zeros((0,), dtype=np.int32),
-    }
+    return cast("dict[str, Any]", diagnostics)
 
 
 def _initialize_edge_selection_diagnostics(
@@ -230,7 +155,7 @@ def _build_selected_edges_result(
     diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the canonical chosen-edge payload from candidate indices."""
-    result: dict[str, Any] = _empty_edges_result(vertex_positions)
+    result = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
     result["traces"] = [np.asarray(traces[index], dtype=np.float32) for index in final_indices]
     result["connections"] = np.asarray(connections[final_indices], dtype=np.int32).reshape(-1, 2)
     result["energies"] = np.asarray(metrics[final_indices], dtype=np.float32)
@@ -451,7 +376,7 @@ def _choose_edges_matlab_style(
     diagnostics = _initialize_edge_selection_diagnostics(candidates, connections, traces)
 
     if len(traces) == 0:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -462,7 +387,7 @@ def _choose_edges_matlab_style(
         diagnostics,
     )
     if not filtered_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -567,7 +492,7 @@ def _choose_edges_matlab_style(
                 painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = source_snapshot
 
     if not chosen_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -584,7 +509,7 @@ def _choose_edges_matlab_style(
         index for keep, index in zip(keep_degree.tolist(), chosen_indices) if keep
     ]
     if not after_degree_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -598,7 +523,7 @@ def _choose_edges_matlab_style(
         index for keep, index in zip(keep_orphans.tolist(), after_degree_indices) if keep
     ]
     if not after_orphan_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -636,7 +561,7 @@ def _choose_edges_matlab_v200_cleanup(
     diagnostics = _initialize_edge_selection_diagnostics(candidates, connections, traces)
 
     if len(traces) == 0:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -647,7 +572,7 @@ def _choose_edges_matlab_v200_cleanup(
         diagnostics,
     )
     if not filtered_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -668,7 +593,7 @@ def _choose_edges_matlab_v200_cleanup(
         index for keep, index in zip(keep_degree.tolist(), filtered_indices) if keep
     ]
     if not after_degree_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
@@ -682,7 +607,7 @@ def _choose_edges_matlab_v200_cleanup(
         index for keep, index in zip(keep_orphans.tolist(), after_degree_indices) if keep
     ]
     if not after_orphan_indices:
-        empty = _empty_edges_result(vertex_positions)
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics
         return empty
 
