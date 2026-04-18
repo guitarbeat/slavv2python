@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import logging
 from datetime import datetime
 from typing import Any
 
 
-def load_report(report_path, logger: logging.Logger) -> dict[str, Any]:
+def load_report(report_path, logger: Any) -> dict[str, Any]:
     """Load the comparison report if present."""
     report: dict[str, Any] = {}
     if report_path.exists():

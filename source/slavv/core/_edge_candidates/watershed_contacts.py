@@ -7,19 +7,9 @@ from typing import Any
 import numpy as np
 
 from .._edge_payloads import _merge_edge_diagnostics
-from ..edge_primitives import (
-    _edge_metric_from_energy_trace,
-    _trace_energy_series,
-    _trace_scale_series,
-)
 from .audit import _normalize_candidate_connection_sources
 from .candidate_manifest import _append_candidate_unit
-from .common import _candidate_endpoint_pair_set
-from .watershed_support import (
-    _best_watershed_contact_coords,
-    _build_watershed_join_trace,
-    _build_watershed_labels,
-)
+from .watershed_candidates import _build_watershed_candidate_rows
 
 
 def _augment_matlab_frontier_candidates_with_watershed_contacts(
@@ -36,10 +26,6 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
     """Merge watershed-contact candidates into the MATLAB parity frontier payload."""
     if len(vertex_positions) < 2:
         return candidates
-
-    labels, image_shape = _build_watershed_labels(energy, vertex_positions, energy_sign)
-    existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
-    contact_coords_by_pair = _best_watershed_contact_coords(labels, energy)
 
     existing_connections = np.asarray(
         candidates.get("connections", np.zeros((0, 2), dtype=np.int32)),
@@ -61,60 +47,15 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
             frontier_origin_counts.get(int(origin_index), 0) + 1
         )
 
-    candidate_rows: list[
-        tuple[float, float, tuple[int, int], np.ndarray, np.ndarray, np.ndarray]
-    ] = []
-    n_already_existing = 0
-    n_short_trace = 0
-    n_energy_rejected = 0
-    n_metric_threshold_rejected = 0
-    n_total_watershed_pairs = len(contact_coords_by_pair)
-
-    for pair, contact_coord in sorted(contact_coords_by_pair.items()):
-        if pair in existing_pairs:
-            n_already_existing += 1
-            continue
-
-        trace = _build_watershed_join_trace(
-            vertex_positions[pair[0]],
-            contact_coord,
-            vertex_positions[pair[1]],
-            image_shape,
-        )
-        if len(trace) <= 1:
-            n_short_trace += 1
-            continue
-
-        energy_trace = _trace_energy_series(trace, energy)
-        energy_trace_array = np.asarray(energy_trace, dtype=np.float32)
-        max_energy = float(np.nanmax(energy_trace_array))
-        if energy_sign < 0:
-            is_invalid = max_energy >= 0
-        else:
-            min_energy = float(np.nanmin(energy_trace_array))
-            is_invalid = min_energy <= 0
-        if is_invalid:
-            n_energy_rejected += 1
-            continue
-
-        if parity_watershed_metric_threshold is not None:
-            if energy_sign < 0:
-                fails_metric_threshold = max_energy > parity_watershed_metric_threshold
-            else:
-                min_energy = float(np.nanmin(energy_trace_array))
-                fails_metric_threshold = min_energy < parity_watershed_metric_threshold
-            if fails_metric_threshold:
-                n_metric_threshold_rejected += 1
-                continue
-
-        scale_trace = _trace_scale_series(trace, scale_indices)
-        metric = _edge_metric_from_energy_trace(energy_trace)
-        endpoint_distance = float(
-            np.linalg.norm(vertex_positions[pair[0]] - vertex_positions[pair[1]])
-        )
-        candidate_rows.append((metric, endpoint_distance, pair, trace, energy_trace, scale_trace))
-
-    candidate_rows.sort(key=lambda row: (row[0], row[1]))
+    candidate_rows, shared_diagnostics = _build_watershed_candidate_rows(
+        candidates,
+        energy,
+        scale_indices,
+        vertex_positions,
+        energy_sign,
+        parity_watershed_metric_threshold=parity_watershed_metric_threshold,
+    )
+    candidate_rows.sort(key=lambda row: (row[4], row[5]))
 
     supplement_payload: dict[str, Any] = {
         "candidate_source": "watershed",
@@ -128,17 +69,13 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
         "diagnostics": {
             "watershed_join_supplement_count": 0,
             "watershed_per_origin_candidate_counts": {},
-            "watershed_total_pairs": n_total_watershed_pairs,
-            "watershed_already_existing": n_already_existing,
-            "watershed_short_trace_rejected": n_short_trace,
-            "watershed_energy_rejected": n_energy_rejected,
-            "watershed_metric_threshold_rejected": n_metric_threshold_rejected,
+            **shared_diagnostics,
             "watershed_origin_budget_rejected": 0,
             "watershed_accepted": 0,
         },
     }
     origin_added_counts: dict[int, int] = {}
-    for metric, _distance, pair, trace, energy_trace, scale_trace in candidate_rows:
+    for pair, trace, energy_trace, scale_trace, metric, _distance in candidate_rows:
         if candidate_mode == "remaining_origin_contacts":
             remaining_budget = max_edges_per_vertex - frontier_origin_counts.get(pair[0], 0)
             if remaining_budget <= 0 or origin_added_counts.get(pair[0], 0) >= remaining_budget:

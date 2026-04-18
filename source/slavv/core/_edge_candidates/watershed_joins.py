@@ -8,18 +8,9 @@ from typing import Any
 import numpy as np
 
 from .._edge_payloads import _merge_edge_diagnostics
-from ..edge_primitives import (
-    _edge_metric_from_energy_trace,
-    _trace_energy_series,
-    _trace_scale_series,
-)
 from .candidate_manifest import _append_candidate_unit
 from .common import _candidate_endpoint_pair_set
-from .watershed_support import (
-    _best_watershed_contact_coords,
-    _build_watershed_join_trace,
-    _build_watershed_labels,
-)
+from .watershed_candidates import _build_watershed_candidate_rows
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +30,7 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     if len(vertex_positions) < 2:
         return candidates
 
-    labels, image_shape = _build_watershed_labels(energy, vertex_positions, energy_sign)
     existing_pairs = _candidate_endpoint_pair_set(candidates.get("connections", np.zeros((0, 2))))
-    contact_coords_by_pair = _best_watershed_contact_coords(labels, energy)
     endpoint_pair_degree_counts: dict[int, int] = {}
     for start_vertex, end_vertex in existing_pairs:
         endpoint_pair_degree_counts[int(start_vertex)] = (
@@ -61,6 +50,14 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         if int(end_vertex) >= 0:
             frontier_vertices.add(int(end_vertex))
 
+    candidate_rows, shared_diagnostics = _build_watershed_candidate_rows(
+        candidates,
+        energy,
+        scale_indices,
+        vertex_positions,
+        energy_sign,
+        parity_watershed_metric_threshold=parity_watershed_metric_threshold,
+    )
     supplement_payload: dict[str, Any] = {
         "candidate_source": "watershed",
         "traces": [],
@@ -73,26 +70,18 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         "diagnostics": {
             "watershed_join_supplement_count": 0,
             "watershed_per_origin_candidate_counts": {},
+            **shared_diagnostics,
         },
     }
 
-    n_already_existing = 0
-    n_short_trace = 0
-    n_energy_rejected = 0
     n_reachability_rejected = 0
     n_mutual_frontier_rejected = 0
     n_cap_rejected = 0
     n_endpoint_degree_rejected = 0
-    n_metric_threshold_rejected = 0
     n_accepted = 0
-    n_total_watershed_pairs = len(contact_coords_by_pair)
     origin_supplement_counts: dict[int, int] = {}
 
-    for pair, contact_coord in sorted(contact_coords_by_pair.items()):
-        if pair in existing_pairs:
-            n_already_existing += 1
-            continue
-
+    for pair, trace, energy_trace, scale_trace, metric, _endpoint_distance in candidate_rows:
         if (
             enforce_frontier_reachability
             and pair[0] not in frontier_vertices
@@ -122,42 +111,9 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             n_cap_rejected += 1
             continue
 
-        trace = _build_watershed_join_trace(
-            vertex_positions[pair[0]],
-            contact_coord,
-            vertex_positions[pair[1]],
-            image_shape,
-        )
-        if len(trace) <= 1:
-            n_short_trace += 1
-            continue
-
-        energy_trace = _trace_energy_series(trace, energy)
-        energy_trace_array = np.asarray(energy_trace, dtype=np.float32)
-        max_energy = float(np.nanmax(energy_trace_array))
-        if energy_sign < 0:
-            is_invalid = max_energy >= 0
-        else:
-            min_energy = float(np.nanmin(energy_trace_array))
-            is_invalid = min_energy <= 0
-
-        if is_invalid:
-            n_energy_rejected += 1
-            continue
-
-        if parity_watershed_metric_threshold is not None:
-            if energy_sign < 0:
-                fails_metric_threshold = max_energy > parity_watershed_metric_threshold
-            else:
-                fails_metric_threshold = min_energy < parity_watershed_metric_threshold
-            if fails_metric_threshold:
-                n_metric_threshold_rejected += 1
-                continue
-
-        scale_trace = _trace_scale_series(trace, scale_indices)
         supplement_payload["traces"].append(trace)
         supplement_payload["connections"].append([pair[0], pair[1]])
-        supplement_payload["metrics"].append(_edge_metric_from_energy_trace(energy_trace))
+        supplement_payload["metrics"].append(metric)
         supplement_payload["energy_traces"].append(energy_trace)
         supplement_payload["scale_traces"].append(scale_trace)
         supplement_payload["origin_indices"].append(pair[0])
@@ -172,10 +128,6 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
             str(seed_origin)
         ] = int(origin_supplement_counts.get(seed_origin, 0))
 
-    supplement_payload["diagnostics"]["watershed_total_pairs"] = n_total_watershed_pairs
-    supplement_payload["diagnostics"]["watershed_already_existing"] = n_already_existing
-    supplement_payload["diagnostics"]["watershed_short_trace_rejected"] = n_short_trace
-    supplement_payload["diagnostics"]["watershed_energy_rejected"] = n_energy_rejected
     supplement_payload["diagnostics"]["watershed_reachability_rejected"] = n_reachability_rejected
     supplement_payload["diagnostics"]["watershed_mutual_frontier_rejected"] = (
         n_mutual_frontier_rejected
@@ -184,9 +136,6 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
     supplement_payload["diagnostics"]["watershed_endpoint_degree_rejected"] = (
         n_endpoint_degree_rejected
     )
-    supplement_payload["diagnostics"]["watershed_metric_threshold_rejected"] = (
-        n_metric_threshold_rejected
-    )
     supplement_payload["diagnostics"]["watershed_accepted"] = n_accepted
 
     logger.info(
@@ -194,15 +143,15 @@ def _supplement_matlab_frontier_candidates_with_watershed_joins(
         "%d reachability rejected, %d mutual-frontier rejected, "
         "%d endpoint-degree rejected, %d metric-threshold rejected, %d cap rejected, "
         "%d short-trace rejected, %d energy rejected, %d accepted",
-        n_total_watershed_pairs,
-        n_already_existing,
+        supplement_payload["diagnostics"]["watershed_total_pairs"],
+        supplement_payload["diagnostics"]["watershed_already_existing"],
         n_reachability_rejected,
         n_mutual_frontier_rejected,
         n_endpoint_degree_rejected,
-        n_metric_threshold_rejected,
+        supplement_payload["diagnostics"]["watershed_metric_threshold_rejected"],
         n_cap_rejected,
-        n_short_trace,
-        n_energy_rejected,
+        supplement_payload["diagnostics"]["watershed_short_trace_rejected"],
+        supplement_payload["diagnostics"]["watershed_energy_rejected"],
         n_accepted,
     )
 
