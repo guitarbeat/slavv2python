@@ -81,9 +81,20 @@ Managed archive note:
   `python_comparison_parameters.json`, `stages/*/stage_manifest.json`,
   `stages/edges/candidate_audit.json`, and
   `stages/edges/candidate_lifecycle.json`.
-- Heavy resumable payloads such as checkpoint `*.pkl`, `candidates.pkl`,
-  VMV/CASX/CSV exports, and raw MATLAB batch bulk are pruned from the managed
-  archive copy after the final comparison artifacts are written.
+- Heavy resumable Python payloads such as checkpoint `*.pkl`, `candidates.pkl`,
+  and VMV/CASX/CSV exports are pruned from the managed archive copy after the
+  final comparison artifacts are written.
+- Managed archives now preserve a minimal rerunnable MATLAB batch surface under
+  `01_Input/matlab_results/batch_*/` instead of pruning the batch tree
+  completely. The retained MATLAB subset is:
+  - `data/energy_*` sidecar files needed for imported-MATLAB bootstrap
+  - `vectors/vertices_*.mat`, `curated_vertices_*.mat`, `edges_*.mat`,
+    `curated_edges_*.mat`, and `network_*.mat`
+  - `settings/batch.mat` plus stage settings `energy_*.mat`,
+    `vertices_*.mat`, `edges_*.mat`, and `network_*.mat`
+  - `timings.json`
+- Nonessential MATLAB bulk such as logs and preview/export images may still be
+  pruned from the managed archive copy.
 
 ### `03_Analysis/`
 
@@ -211,7 +222,8 @@ kept with `retention=keep`.
 - Managed archive runs under `slavv_comparisons/` are preserved for
   analysis/reference by default, not as resumable scratch runs. Once a managed
   run has a completed comparison report, archive maintenance compacts the run to
-  the retained analysis surface and records the result in
+  the retained analysis surface plus the minimal rerunnable MATLAB batch subset,
+  and records the result in
   `99_Metadata/artifact_cleanup.json`.
 
 ## Chapter-Specific Workflow Notes
