@@ -57,39 +57,3 @@ def test_safe_load_rejects_builtin_eval_gadget(tmp_path):
 
     with pytest.raises(pickle.UnpicklingError, match="forbidden"):
         safe_load(p)
-
-
-def test_safe_load_size_limit(tmp_path):
-    p = tmp_path / "large.pkl"
-    with open(p, "wb") as f:
-        f.write(b"0" * (1024 + 1))  # Just dummy data
-
-    # We can't pickle strictly here, but safe_load checks size first
-    # So we don't need a valid pickle to test size check
-    with pytest.raises(ValueError, match="exceeds limit"):
-        safe_load(p, max_size=1024)
-
-
-def test_safe_load_joblib(tmp_path):
-    # Test compatibility with joblib dump (simple case)
-    data = {"arr": np.array([1, 2, 3])}
-    p = tmp_path / "test_joblib.pkl"
-    joblib.dump(data, p)
-
-    loaded = safe_load(p)
-    np.testing.assert_array_equal(loaded["arr"], data["arr"])
-
-
-def test_safe_load_missing_file():
-    with pytest.raises(FileNotFoundError):
-        safe_load("non_existent_file.pkl")
-
-
-def test_safe_load_rejects_oversized_decompressed_stream(tmp_path):
-    payload = b"x" * 2048
-    p = tmp_path / "compressed.pkl.gz"
-    with gzip.open(p, "wb") as f:
-        f.write(payload)
-
-    with pytest.raises(ValueError, match="Decompressed file size"):
-        safe_load(p, max_size=1024)

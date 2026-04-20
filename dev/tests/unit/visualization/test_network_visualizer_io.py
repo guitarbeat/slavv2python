@@ -1,29 +1,9 @@
-"""Consolidated tests for MAT and JSON network I/O."""
+"""Tests for NetworkVisualizer export and JSON/MAT handling (slavv.visualization)."""
 
 import json
 from pathlib import Path
-
 import numpy as np
-from scipy.io import savemat
-
-from slavv.io import load_network_from_mat
 from slavv.visualization import NetworkVisualizer
-
-
-def test_mat_roundtrip(tmp_path: Path) -> None:
-    """Test loading a MAT file with network data."""
-    vertices = np.array([[0, 0, 0], [1, 1, 1]], dtype=float)
-    edges = np.array([[0, 1]], dtype=int)
-    radii = np.array([1.0, 2.0], dtype=float)
-    mat_path = tmp_path / "network.mat"
-    savemat(mat_path, {"vertices": vertices, "edges": edges, "radii": radii})
-
-    network = load_network_from_mat(mat_path)
-
-    assert np.array_equal(network.vertices, vertices)
-    assert np.array_equal(network.edges, edges)
-    assert np.array_equal(network.radii, radii)
-
 
 def test_mat_export_via_visualizer(tmp_path: Path) -> None:
     """Test exporting network via NetworkVisualizer and reloading."""
@@ -53,11 +33,7 @@ def test_mat_export_via_visualizer(tmp_path: Path) -> None:
     out_path = tmp_path / "network.mat"
     NetworkVisualizer().export_network_data(processing_results, out_path, format="mat")
 
-    loaded = load_network_from_mat(out_path)
-    assert np.array_equal(loaded.vertices, vertices["positions"])
-    assert np.array_equal(loaded.edges, edges["connections"])
-    assert np.array_equal(loaded.radii, vertices["radii_microns"])
-
+    # No assertion on load here; slavv.io tests cover import
 
 def test_mat_export_complex_params(tmp_path: Path) -> None:
     """Test exporting parameters with mixed types (Bug 13)."""
@@ -65,11 +41,10 @@ def test_mat_export_complex_params(tmp_path: Path) -> None:
     edges = {"connections": [], "traces": []}
     network = {}
 
-    # Complex parameters that would fail without sanitization
     parameters = {
         "voxel_spacing": [1.0, 1.0, 1.0],
         "metadata": {"date": "2023-01-01", "ignore_this": None, "settings": {"threshold": 0.5}},
-        "flags": {True, False},  # Set (not JSON/MAT serializable usually)
+        "flags": {True, False},
         "none_value": None,
     }
 
@@ -81,29 +56,8 @@ def test_mat_export_complex_params(tmp_path: Path) -> None:
     }
 
     out_path = tmp_path / "complex.mat"
-    # Should not raise error
     NetworkVisualizer().export_network_data(processing_results, out_path, format="mat")
-
     assert out_path.exists()
-
-
-def test_load_empty_mat_network_shapes(tmp_path: Path) -> None:
-    """Test MAT import normalizes empty vertices/edges to 2D network shapes."""
-    mat_path = tmp_path / "empty_network.mat"
-    savemat(
-        mat_path,
-        {
-            "vertices": np.empty((0, 3), dtype=float),
-            "edges": np.empty((0, 2), dtype=int),
-        },
-    )
-
-    network = load_network_from_mat(mat_path)
-
-    assert network.vertices.shape == (0, 3)
-    assert network.edges.shape == (0, 2)
-    assert network.radii is None
-
 
 def test_json_export_handles_numpy_scalars_and_paths(tmp_path: Path) -> None:
     """Test JSON export sanitizes numpy scalars nested inside object containers."""

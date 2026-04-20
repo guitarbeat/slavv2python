@@ -6,9 +6,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 from defusedxml.common import EntitiesForbidden
+from dev.tests.support.network_builders import (
+    build_minimal_network_json_payload,
+    build_network_object,
+    write_network_json_fixture,
+)
 
 from slavv.io import (
-    Network,
     load_network_from_casx,
     load_network_from_csv,
     load_network_from_json,
@@ -23,11 +27,7 @@ class TestNetworkRoundtrip:
 
     def test_csv_roundtrip(self, tmp_path: Path) -> None:
         """Test CSV save and load preserves data."""
-        network = Network(
-            vertices=np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float),
-            edges=np.array([[0, 1]], dtype=int),
-            radii=np.array([4.0, 7.0], dtype=float),
-        )
+        network = build_network_object()
 
         v_path, e_path = save_network_to_csv(network, tmp_path / "net")
         assert v_path.exists()
@@ -40,11 +40,7 @@ class TestNetworkRoundtrip:
 
     def test_json_roundtrip(self, tmp_path: Path) -> None:
         """Test JSON save and load preserves data."""
-        network = Network(
-            vertices=np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float),
-            edges=np.array([[0, 1]], dtype=int),
-            radii=np.array([4.0, 7.0], dtype=float),
-        )
+        network = build_network_object()
 
         path = save_network_to_json(network, tmp_path / "net.json")
         assert Path(path).exists()
@@ -56,7 +52,7 @@ class TestNetworkRoundtrip:
 
     def test_csv_roundtrip_empty_network(self, tmp_path: Path) -> None:
         """Test CSV save/load handles empty networks without malformed shapes."""
-        network = Network(vertices=[], edges=[])
+        network = build_network_object(vertices=[], edges=[], radii=[])
 
         v_path, e_path = save_network_to_csv(network, tmp_path / "empty")
         assert v_path.exists()
@@ -68,7 +64,7 @@ class TestNetworkRoundtrip:
 
     def test_json_roundtrip_empty_network(self, tmp_path: Path) -> None:
         """Test JSON save/load keeps empty connections as an empty list."""
-        network = Network(vertices=[], edges=[])
+        network = build_network_object(vertices=[], edges=[], radii=[])
 
         path = save_network_to_json(network, tmp_path / "empty.json")
         payload = json.loads(Path(path).read_text())
@@ -157,15 +153,11 @@ class TestNetworkImport:
 
     def test_load_from_json_file(self, tmp_path: Path) -> None:
         """Test loading network from JSON format."""
-        data = {
-            "vertices": {
-                "positions": [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]],
-                "radii_microns": [4.0, 7.0],
-            },
-            "edges": {"connections": [[0, 1]]},
-        }
         json_path = tmp_path / "net.json"
-        json_path.write_text(json.dumps(data))
+        write_network_json_fixture(
+            json_path,
+            payload=build_minimal_network_json_payload(),
+        )
 
         network = load_network_from_json(json_path)
 

@@ -1,4 +1,10 @@
 import numpy as np
+from dev.tests.support.payload_builders import (
+    build_edges_payload,
+    build_network_payload,
+    build_processing_results,
+    build_vertices_payload,
+)
 
 from slavv.apps.curation_state import (
     build_curation_stats_rows,
@@ -8,44 +14,38 @@ from slavv.apps.curation_state import (
 
 
 def _sample_processing_results():
-    return {
-        "vertices": {
-            "positions": np.array(
-                [[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]],
-                dtype=float,
-            ),
-            "radii_microns": np.array([2.0, 2.5, 3.0], dtype=float),
-        },
-        "edges": {
-            "traces": [
-                np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
-                np.array([[0.0, 4.0, 0.0], [3.0, 4.0, 0.0]], dtype=float),
-            ],
-            "connections": np.array([[0, 1], [1, 2]], dtype=int),
-            "energies": np.array([-1.0, -0.8], dtype=float),
-        },
-        "network": {
-            "strands": [[0, 1, 2]],
-            "bifurcations": np.array([], dtype=int),
-        },
-        "parameters": {
-            "microns_per_voxel": [1.0, 1.0, 1.0],
-            "remove_cycles": True,
-        },
-    }
+    vertices = build_vertices_payload(
+        positions=[[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]],
+        radii_microns=[2.0, 2.5, 3.0],
+    )
+    edges = build_edges_payload(
+        traces=[
+            np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
+            np.array([[0.0, 4.0, 0.0], [3.0, 4.0, 0.0]], dtype=float),
+        ],
+        connections=np.array([[0, 1], [1, 2]], dtype=int),
+        energies=np.array([-1.0, -0.8], dtype=float),
+    )
+    network = build_network_payload(strands=[[0, 1, 2]], bifurcations=np.array([], dtype=int))
+    return build_processing_results(
+        vertices=vertices,
+        edges=edges,
+        network=network,
+        parameters={"microns_per_voxel": [1.0, 1.0, 1.0], "remove_cycles": True},
+    )
 
 
 def test_sync_curated_processing_results_rebuilds_network_and_preserves_baseline():
     processing_results = _sample_processing_results()
-    curated_vertices = {
-        "positions": np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
-        "radii_microns": np.array([2.0, 2.5], dtype=float),
-    }
-    curated_edges = {
-        "traces": [np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float)],
-        "connections": np.array([[0, 1]], dtype=int),
-        "energies": np.array([-1.0], dtype=float),
-    }
+    curated_vertices = build_vertices_payload(
+        positions=np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
+        radii_microns=np.array([2.0, 2.5], dtype=float),
+    )
+    curated_edges = build_edges_payload(
+        traces=[np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float)],
+        connections=np.array([[0, 1]], dtype=int),
+        energies=np.array([-1.0], dtype=float),
+    )
 
     updated_results, baseline_counts, current_counts = sync_curated_processing_results(
         processing_results,
