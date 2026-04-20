@@ -34,13 +34,13 @@ maintenance bucket instead of the thing the tools actually do.
 | [docs/chapters/neighborhood-claim-alignment/README.md](chapters/neighborhood-claim-alignment/README.md) | keep | P0 | Active chapter entry point with live loop, scope, and working questions. |
 | [docs/chapters/candidate-generation-handoff/README.md](chapters/candidate-generation-handoff/README.md) | keep | P1 | Historical handoff context still matters when reading the chapter lineage. |
 | [docs/chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | keep | P1 | Completed spec archive with requirements, design, tasks, and outcome notes. |
-| [docs/chapters/neighborhood-claim-alignment/working/README.md](chapters/neighborhood-claim-alignment/working/README.md) | remove | P2 | Folder is already self-describing and only contains the README itself. |
-| [docs/chapters/neighborhood-claim-alignment/archive/README.md](chapters/neighborhood-claim-alignment/archive/README.md) | remove | P2 | Same pattern as `working/`; the folder name already signals archival status. |
+| `docs/chapters/neighborhood-claim-alignment/working/README.md` | remove | P2 | Folder is already self-describing and only contains the README itself. |
+| `docs/chapters/neighborhood-claim-alignment/archive/README.md` | remove | P2 | Same pattern as `working/`; the folder name already signals archival status. |
 | [docs/reference/core/README.md](reference/core/README.md) | collapse | P1 | Useful, but mostly duplicates the parent reference index and can be absorbed into it. |
-| [docs/reference/backends/README.md](reference/backends/README.md) | collapse | P2 | Helpful grouping, but the backend filenames are already highly descriptive. |
-| [docs/reference/workflow/README.md](reference/workflow/README.md) | collapse | P2 | Small enough to move into the parent reference index. |
-| [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md) | collapse | P1 | Helper bucket index with low unique value; could become a better-named folder or a single `dev/scripts/README.md`. |
-| [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md) | remove | P2 | Lowest-value helper index; the script name already explains the folder purpose. |
+| `docs/reference/backends/README.md` | collapse | P2 | Helpful grouping, but the backend filenames are already highly descriptive. |
+| `docs/reference/workflow/README.md` | collapse | P2 | Small enough to move into the parent reference index. |
+| `dev/scripts/maintenance/README.md` | collapse | P1 | Helper bucket index with low unique value; could become a better-named folder or a single `dev/scripts/README.md`. |
+| `dev/scripts/benchmarks/README.md` | remove | P2 | Lowest-value helper index; the script name already explains the folder purpose. |
 
 ## Keep List
 
@@ -62,9 +62,9 @@ These files still have value, but they are the easiest to absorb into a parent
 index if the goal is to reduce README count without losing much information.
 
 1. [docs/reference/core/README.md](reference/core/README.md)
-2. [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md)
-3. [docs/reference/backends/README.md](reference/backends/README.md)
-4. [docs/reference/workflow/README.md](reference/workflow/README.md)
+2. `dev/scripts/maintenance/README.md`
+3. `docs/reference/backends/README.md`
+4. `docs/reference/workflow/README.md`
 
 Recommended collapse path:
 
@@ -78,10 +78,10 @@ Recommended collapse path:
 These are the easiest files to remove first because the parent folder names and
 neighboring files already explain them well enough.
 
-1. [docs/chapters/neighborhood-claim-alignment/working/README.md](chapters/neighborhood-claim-alignment/working/README.md)
-2. [docs/chapters/neighborhood-claim-alignment/archive/README.md](chapters/neighborhood-claim-alignment/archive/README.md)
-3. [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md)
-4. [docs/reference/backends/README.md](reference/backends/README.md) if the parent index is expanded first
+1. `docs/chapters/neighborhood-claim-alignment/working/README.md`
+2. `docs/chapters/neighborhood-claim-alignment/archive/README.md`
+3. `dev/scripts/benchmarks/README.md`
+4. `docs/reference/backends/README.md` if the parent index is expanded first
 
 The most important sequencing rule is: do not delete a sub-index README until the
 parent index is already capable of carrying its navigation load.

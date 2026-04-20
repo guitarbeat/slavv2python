@@ -46,8 +46,6 @@ Each chapter should expose:
 | Role | Chapter | Status | Entry | Best use |
 | --- | --- | --- | --- | --- |
 | Active chapter | `Neighborhood Claim Alignment` | Active | [README.md](neighborhood-claim-alignment/README.md) | Current parity investigation, live blockers, and next loop |
-| Active working docs | `working/` | Active support docs | [README.md](neighborhood-claim-alignment/working/README.md) | Live loop, checklist, and chapter entry shortcuts |
-| Archived notes | `archive/` | Historical support docs | [README.md](neighborhood-claim-alignment/archive/README.md) | Completed specs and retrospective notes |
 | Historical handoff | `Candidate Generation Handoff` | Historical handoff | [README.md](candidate-generation-handoff/README.md) | Why the problem stopped being a generic candidate-generation chase |
 | Closed chapter | `Imported-MATLAB Parity Closeout` | Closed / historical hub | [parity_closeout.md](imported-matlab-parity-closeout/parity_closeout.md) | What Chapter 1 established and what it handed off |
 
@@ -77,8 +75,6 @@ Use this table for the most common jump targets without scanning each chapter.
 | Chapter entry | [neighborhood-claim-alignment/README.md](neighborhood-claim-alignment/README.md) | Current parity investigation status and next loop |
 | Active chapter plan | [neighborhood-claim-alignment/INVESTIGATION_PLAN.md](neighborhood-claim-alignment/INVESTIGATION_PLAN.md) | Working hypotheses and active loop |
 | Active chapter checklist | [neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md](neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md) | Checkoff surface for the neighborhood audit |
-| Working docs index | [neighborhood-claim-alignment/working/README.md](neighborhood-claim-alignment/working/README.md) | Entry point for the live chapter loop |
-| Archive index | [neighborhood-claim-alignment/archive/README.md](neighborhood-claim-alignment/archive/README.md) | Entry point for completed chapter notes |
 | Comparison layout smoothing spec archive | [neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
 | Release verification note | [neighborhood-claim-alignment/release_verification_2026-04-14.md](neighborhood-claim-alignment/release_verification_2026-04-14.md) | Historical release-audit conclusions and evidence summary |
 | Lock-contention incident note | [neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |

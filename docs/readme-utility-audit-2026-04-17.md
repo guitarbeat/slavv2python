@@ -37,16 +37,16 @@ most relevant first-party clusters:
 | [docs/chapters/](chapters/README.md) | multi-chapter investigation system | The folder name alone does not tell you which chapter is active, historical, or archived. |
 | [docs/reference/](reference/README.md) | stable cross-cutting reference shelf | The folder name says “reference,” but not how the topics are grouped. |
 | [docs/reference/core/](reference/core/README.md) | 5 maintained topic docs | The filenames are descriptive; the README mostly acts as a local table of contents. |
-| [docs/reference/backends/](reference/backends/README.md) | 4 backend notes | The filenames already carry most of the semantic load. |
-| [docs/reference/workflow/](reference/workflow/README.md) | 2 workflow notes | The folder is small enough that the parent index already does much of the work. |
+| `docs/reference/backends/` | 4 backend notes | The filenames already carry most of the semantic load. |
+| `docs/reference/workflow/` | 2 workflow notes | The folder is small enough that the parent index already does much of the work. |
 | [docs/chapters/neighborhood-claim-alignment/](chapters/neighborhood-claim-alignment/README.md) | active chapter with sibling specs, archives, and working docs | The folder name is meaningful, but not enough to orient a reader to the live loop and current blockers. |
-| [docs/chapters/neighborhood-claim-alignment/working/](chapters/neighborhood-claim-alignment/working/README.md) | single-file helper folder | The folder name already says this is working material. |
-| [docs/chapters/neighborhood-claim-alignment/archive/](chapters/neighborhood-claim-alignment/archive/README.md) | single-file helper folder | The folder name already says this is archival material. |
+| `docs/chapters/neighborhood-claim-alignment/working/` | single-file helper folder | The folder name already says this is working material. |
+| `docs/chapters/neighborhood-claim-alignment/archive/` | single-file helper folder | The folder name already says this is archival material. |
 | [docs/chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/](chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | spec archive with 3 companion docs | The README helps distinguish a completed spec package from ordinary notes. |
 | [dev/](../dev/README.md) | developer workspace | The directory name is generic; the README gives it structure. |
 | [dev/tests/](../dev/tests/README.md) | test suite organization hub | The directory name tells you where tests live, not how to place them. |
-| [dev/scripts/maintenance/](../dev/scripts/maintenance/README.md) | 3 scripts plus cache noise | The directory already reads like an implementation bucket for maintenance helpers. |
-| [dev/scripts/benchmarks/](../dev/scripts/benchmarks/README.md) | 1 benchmark helper | The filename of the script already explains most of the folder. |
+| `dev/scripts/maintenance/` | 3 scripts plus cache noise | The directory already reads like an implementation bucket for maintenance helpers. |
+| `dev/scripts/benchmarks/` | 1 benchmark helper | The filename of the script already explains most of the folder. |
 
 ## Keep
 
@@ -81,12 +81,12 @@ These files are useful, but their value is mostly structural. If reducing README
 | File | Why it is a collapse candidate |
 | --- | --- |
 | [docs/reference/core/README.md](reference/core/README.md) | Good topic index, but it overlaps heavily with [docs/reference/README.md](reference/README.md). |
-| [docs/reference/backends/README.md](reference/backends/README.md) | Helpful grouping, but the backend filenames already communicate most of the topic boundaries. |
-| [docs/reference/workflow/README.md](reference/workflow/README.md) | Same pattern as the other reference sub-indexes; useful, but not essential if the parent index becomes richer. |
-| [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md) | The directory only contains three scripts plus cache noise; a shorter `dev/scripts/README.md` or better script names could cover the same ground. |
-| [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md) | This folder has one benchmark helper; the directory and script name already explain most of the purpose. |
-| [docs/chapters/neighborhood-claim-alignment/working/README.md](chapters/neighborhood-claim-alignment/working/README.md) | The directory currently contains only this README, so it behaves like a thin index rather than a distinct layer. |
-| [docs/chapters/neighborhood-claim-alignment/archive/README.md](chapters/neighborhood-claim-alignment/archive/README.md) | Same as `working/`; the folder name already signals archival status. |
+| `docs/reference/backends/README.md` | Helpful grouping, but the backend filenames already communicate most of the topic boundaries. |
+| `docs/reference/workflow/README.md` | Same pattern as the other reference sub-indexes; useful, but not essential if the parent index becomes richer. |
+| `dev/scripts/maintenance/README.md` | The directory only contains three scripts plus cache noise; a shorter `dev/scripts/README.md` or better script names could cover the same ground. |
+| `dev/scripts/benchmarks/README.md` | This folder has one benchmark helper; the directory and script name already explain most of the purpose. |
+| `docs/chapters/neighborhood-claim-alignment/working/README.md` | The directory currently contains only this README, so it behaves like a thin index rather than a distinct layer. |
+| `docs/chapters/neighborhood-claim-alignment/archive/README.md` | Same as `working/`; the folder name already signals archival status. |
 
 The strongest collapse argument is not that these READMEs are wrong. It is that
 their parent folders already provide enough semantic context for the remaining
@@ -95,27 +95,27 @@ contents.
 In particular:
 
 - [docs/reference/core/README.md](reference/core/README.md) overlaps with the parent reference index and could become a parent-only topic list.
-- [docs/reference/backends/README.md](reference/backends/README.md) and [docs/reference/workflow/README.md](reference/workflow/README.md) are small enough that their topic grouping could move into [docs/reference/README.md](reference/README.md).
-- [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md) could be replaced by a better-named parent folder such as `repo-maintenance/` or a single `dev/scripts/README.md`.
-- [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md) is the clearest case where the script name and folder name already carry nearly all the explanation.
+- `docs/reference/backends/README.md` and `docs/reference/workflow/README.md` are small enough that their topic grouping could move into [docs/reference/README.md](reference/README.md).
+- `dev/scripts/maintenance/README.md` could be replaced by a better-named parent folder such as `repo-maintenance/` or a single `dev/scripts/README.md`.
+- `dev/scripts/benchmarks/README.md` is the clearest case where the script name and folder name already carry nearly all the explanation.
 
 ## Easiest Removal Candidates
 
 If the goal is to remove README files with the least loss of information, these look like the lowest-risk first cuts.
 
-1. [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md)
-2. [docs/chapters/neighborhood-claim-alignment/working/README.md](chapters/neighborhood-claim-alignment/working/README.md)
-3. [docs/chapters/neighborhood-claim-alignment/archive/README.md](chapters/neighborhood-claim-alignment/archive/README.md)
-4. [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md)
+1. `dev/scripts/benchmarks/README.md`
+2. `docs/chapters/neighborhood-claim-alignment/working/README.md`
+3. `docs/chapters/neighborhood-claim-alignment/archive/README.md`
+4. `dev/scripts/maintenance/README.md`
 
 These are the easiest because they either describe a tiny directory, duplicate a folder name, or act as a local index with very little unique content.
 
 The order here matters:
 
-1. [docs/chapters/neighborhood-claim-alignment/working/README.md](chapters/neighborhood-claim-alignment/working/README.md) is the most removable because the folder itself is a single-purpose stub.
-2. [docs/chapters/neighborhood-claim-alignment/archive/README.md](chapters/neighborhood-claim-alignment/archive/README.md) is equally thin and similarly recoverable from context.
-3. [dev/scripts/benchmarks/README.md](../dev/scripts/benchmarks/README.md) is low-risk because it indexes one script whose name already advertises its purpose.
-4. [dev/scripts/maintenance/README.md](../dev/scripts/maintenance/README.md) is still small, but slightly more defensible because it spans several helper scripts.
+1. `docs/chapters/neighborhood-claim-alignment/working/README.md` is the most removable because the folder itself is a single-purpose stub.
+2. `docs/chapters/neighborhood-claim-alignment/archive/README.md` is equally thin and similarly recoverable from context.
+3. `dev/scripts/benchmarks/README.md` is low-risk because it indexes one script whose name already advertises its purpose.
+4. `dev/scripts/maintenance/README.md` is still small, but slightly more defensible because it spans several helper scripts.
 
 The chapter spec folders under [docs/chapters/neighborhood-claim-alignment/](chapters/neighborhood-claim-alignment/) also show that not every doc cluster needs a README. The adjacent folders [large-module-refactor-spec/](chapters/neighborhood-claim-alignment/large-module-refactor-spec/) and [parity-workflow-completion-spec/](chapters/neighborhood-claim-alignment/parity-workflow-completion-spec/) work without one because the directory names already announce a single well-defined artifact bundle.
 

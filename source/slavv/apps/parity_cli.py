@@ -18,7 +18,12 @@ from slavv.parity.comparison import (
 )
 from slavv.parity.proof_artifacts import display_latest_proof_summary
 from slavv.parity.run_layout import list_runs
-from slavv.parity.workflow_assessment import assess_loop_request, determine_loop_kind
+from slavv.parity.workflow_assessment import (
+    assess_loop_request,
+    determine_loop_kind,
+    has_python_checkpoint_surface,
+    has_reusable_matlab_batch_surface,
+)
 from slavv.runtime import load_run_snapshot
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -258,16 +263,12 @@ def _load_recorded_comparison_params(run_root: Path):
 
 def _has_reusable_matlab_artifacts(run_root: Path) -> bool:
     matlab_dir = run_root / "01_Input" / "matlab_results"
-    if not matlab_dir.exists():
-        return False
-    return any(child.name.startswith("batch_") for child in matlab_dir.iterdir())
+    return has_reusable_matlab_batch_surface(matlab_dir)
 
 
 def _has_reusable_python_checkpoints(run_root: Path) -> bool:
     checkpoint_dir = run_root / "02_Output" / "python_results" / "checkpoints"
-    if not checkpoint_dir.exists():
-        return False
-    return any(checkpoint_dir.glob("checkpoint_*.pkl"))
+    return has_python_checkpoint_surface(checkpoint_dir.parent)
 
 
 def _has_required_resume_artifacts(
@@ -367,7 +368,7 @@ def _resolve_output_dir(
         elif loop_kind in {"standalone_analysis", "validate_only"}:
             reusable_verdicts = {"analysis_ready"}
         else:
-            reusable_verdicts = {"analysis_ready", "reuse_ready", "fresh_matlab_required"}
+            reusable_verdicts = {"reuse_ready", "fresh_matlab_required"}
         for index, entry in enumerate(list_runs(base_dir)):
             candidate = entry.get("path")
             if not isinstance(candidate, Path):
@@ -378,7 +379,9 @@ def _resolve_output_dir(
                 input_path=input_path,
                 params=params,
             )
-            if assessment.verdict in reusable_verdicts:
+            if assessment.verdict in reusable_verdicts or (
+                assessment.verdict == "analysis_ready" and assessment.safe_to_reuse
+            ):
                 print(f"Reusing latest compatible run root: {candidate}")
 
                 # Display reuse eligibility summary after resume-latest compatibility check

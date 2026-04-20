@@ -13,6 +13,7 @@ from slavv.parity.run_layout import (
     list_runs,
     load_run_info,
     load_run_metadata,
+    refresh_managed_archive_metadata,
     resolve_run_layout,
     write_pointer_file,
     write_run_status,
@@ -291,11 +292,15 @@ def test_generate_summary_includes_extended_edge_diagnostics(tmp_path: Path):
     matlab_dir = run_dir / "01_Input" / "matlab_results"
     python_dir = run_dir / "02_Output" / "python_results"
     analysis_dir = run_dir / "03_Analysis"
+    edge_stage_dir = python_dir / "stages" / "edges"
     matlab_dir.mkdir(parents=True)
-    python_dir.mkdir(parents=True)
+    edge_stage_dir.mkdir(parents=True)
     analysis_dir.mkdir(parents=True)
     (matlab_dir / "batch_260210-100526").mkdir(parents=True)
     (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    (edge_stage_dir / "candidate_audit.json").write_text("{}", encoding="utf-8")
+    (edge_stage_dir / "candidates.pkl").write_bytes(b"candidates")
+    (analysis_dir / "shared_neighborhood_audit.json").write_text("{}", encoding="utf-8")
     report = {
         "python": {"comparison_mode": {"energy_source": "matlab_batch_hdf5"}},
         "edges": {
@@ -741,7 +746,7 @@ def test_generate_manifest_includes_matlab_resume_semantics(
     assert "- **MATLAB resume mode:** restart-current-stage" in content
     assert "- **MATLAB batch folder:** `01_Input/matlab_results/batch_260401-140000`" in normalized
     assert "## Authoritative Files" in content
-    assert "`99_Metadata/matlab_status.json`" in content
+    assert "`99_Metadata/matlab_status.json`" in normalized
     assert "## Failure Summary" in content
     assert "ERROR: MATLAB error Exit Status: 0x00000001" in content
 
@@ -831,6 +836,50 @@ def test_build_experiment_index_entry_tolerates_missing_optional_artifacts(tmp_p
     assert "parity" not in entry
 
 
+def test_refresh_managed_archive_metadata_writes_status_index_and_pointers(tmp_path: Path):
+    comparisons_root = tmp_path / "slavv_comparisons"
+    run_dir = (
+        comparisons_root / "experiments" / "release-verify" / "runs" / "20260413_release_verify"
+    )
+    analysis_dir = run_dir / "03_Analysis"
+    analysis_dir.mkdir(parents=True)
+    (run_dir / "99_Metadata").mkdir(parents=True)
+    (analysis_dir / "comparison_report.json").write_text(
+        json.dumps(
+            {
+                "vertices": {"matches_exactly": True},
+                "edges": {"matches_exactly": True},
+                "network": {"matches_exactly": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    refreshed = refresh_managed_archive_metadata(run_dir)
+
+    status_path = run_dir / "99_Metadata" / "status.json"
+    index_path = comparisons_root / "experiments" / "release-verify" / "index.json"
+    latest_pointer = comparisons_root / "pointers" / "latest_completed.txt"
+    canonical_pointer = comparisons_root / "pointers" / "canonical_acceptance.txt"
+    saved_batch_pointer = comparisons_root / "pointers" / "best_saved_batch.txt"
+
+    assert refreshed["managed_archive"] is True
+    assert json.loads(status_path.read_text(encoding="utf-8"))["state"] == "completed"
+    assert json.loads(status_path.read_text(encoding="utf-8"))["retention"] == "keep"
+    assert json.loads(index_path.read_text(encoding="utf-8"))["runs"][0]["run_path"] == (
+        "experiments/release-verify/runs/20260413_release_verify"
+    )
+    assert latest_pointer.read_text(encoding="utf-8").strip() == (
+        "experiments/release-verify/runs/20260413_release_verify"
+    )
+    assert canonical_pointer.read_text(encoding="utf-8").strip() == (
+        "experiments/release-verify/runs/20260413_release_verify"
+    )
+    assert saved_batch_pointer.read_text(encoding="utf-8").strip() == (
+        "experiments/release-verify/runs/20260413_release_verify"
+    )
+
+
 def test_generate_manifest_includes_status_json_summary(tmp_path: Path):
     run_dir = tmp_path / "20260413_release_verify"
     analysis_dir = run_dir / "03_Analysis"
@@ -854,6 +903,98 @@ def test_generate_manifest_includes_status_json_summary(tmp_path: Path):
     assert "- **Retention:** keep" in content
 
 
+def test_summary_and_manifest_skip_pruned_artifact_references_after_cleanup(tmp_path: Path):
+    run_dir = (
+        tmp_path / "slavv_comparisons" / "experiments" / "live-parity" / "runs" / "20260418_live"
+    )
+    analysis_dir = run_dir / "03_Analysis"
+    metadata_dir = run_dir / "99_Metadata"
+    python_dir = run_dir / "02_Output" / "python_results"
+    edge_stage_dir = python_dir / "stages" / "edges"
+    analysis_dir.mkdir(parents=True)
+    metadata_dir.mkdir(parents=True)
+    edge_stage_dir.mkdir(parents=True)
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    (python_dir / "python_comparison_parameters.json").write_text("{}", encoding="utf-8")
+    (python_dir / "stages" / "vertices").mkdir(parents=True, exist_ok=True)
+    (python_dir / "stages" / "vertices" / "stage_manifest.json").write_text("{}", encoding="utf-8")
+    (edge_stage_dir / "stage_manifest.json").write_text("{}", encoding="utf-8")
+    (edge_stage_dir / "candidate_audit.json").write_text("{}", encoding="utf-8")
+    (edge_stage_dir / "candidate_lifecycle.json").write_text("{}", encoding="utf-8")
+    (analysis_dir / "comparison_report.json").write_text(
+        json.dumps(
+            {
+                "edges": {
+                    "exact_match": False,
+                    "diagnostics": {
+                        "candidate_audit": {
+                            "schema_version": 1,
+                            "source_breakdown": {
+                                "frontier": {"candidate_connection_count": 1},
+                                "watershed": {"candidate_connection_count": 0},
+                                "fallback": {"candidate_connection_count": 0},
+                            },
+                        },
+                        "shared_neighborhood_audit": {
+                            "top_neighborhood": {
+                                "origin_index": 1,
+                                "missing_matlab_incident_endpoint_pair_count": 1,
+                                "candidate_endpoint_pair_count": 1,
+                                "final_chosen_endpoint_pair_count": 1,
+                                "first_divergence_stage": "pre_manifest_rejection",
+                                "first_divergence_reason": "none",
+                            }
+                        },
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (metadata_dir / "artifact_cleanup.json").write_text(
+        json.dumps(
+            {
+                "profile": "managed-analysis-retention-v1",
+                "applied": True,
+                "files_removed": 4,
+                "bytes_removed": 2048,
+                "bytes_removed_human": "2.0 KiB",
+                "empty_directories_removed": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_folder": str(
+                    run_dir / "01_Input" / "matlab_results" / "batch_260418-120000"
+                ),
+                "matlab_last_completed_stage": "network",
+                "matlab_next_stage": "",
+                "matlab_rerun_prediction": "Archive is analysis-only.",
+                "matlab_log_file": str(run_dir / "01_Input" / "matlab_results" / "matlab_run.log"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    summary_file = analysis_dir / "summary.txt"
+    generate_summary(run_dir, summary_file)
+    manifest = generate_manifest(run_dir, metadata_dir / "run_manifest.md")
+    summary = summary_file.read_text(encoding="utf-8")
+
+    assert "Candidate audit artifact:" in summary
+    assert "Candidate manifest path:" not in summary
+    assert "Shared neighborhood audit artifact:" not in summary
+    assert "## Artifact Cleanup" in manifest
+    assert "managed-analysis-retention-v1" in manifest
+    assert "`02_Output/python_results/stages/edges/candidates.pkl`" not in manifest
+    assert "matlab_run.log" not in manifest
+    assert "batch_260418-120000" not in manifest
+
+
 def test_generate_manifest_accepts_preloaded_metadata(tmp_path: Path):
     run_dir = tmp_path / "20260413_release_verify"
     metadata_dir = run_dir / "99_Metadata"
@@ -868,6 +1009,7 @@ def test_generate_manifest_accepts_preloaded_metadata(tmp_path: Path):
         preflight_report={"preflight_status": "passed", "allows_launch": True},
         matlab_status=None,
         matlab_health_check=None,
+        artifact_cleanup=None,
     )
 
     content = generate_manifest(

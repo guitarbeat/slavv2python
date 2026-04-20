@@ -165,6 +165,42 @@ def _generate_post_comparison_artifacts(
     generate_manifest_fn=None,
 ) -> None:
     """Best-effort generation of summary and manifest sidecar files."""
+    from ..run_layout import (
+        apply_managed_archive_cleanup,
+        managed_comparisons_root_from_path,
+        refresh_managed_archive_metadata,
+    )
+
+    managed_root = managed_comparisons_root_from_path(run_dir)
+    if managed_root is not None:
+        try:
+            cleanup_payload = apply_managed_archive_cleanup(run_dir)
+            if comparison_context is not None:
+                cleanup_applied = bool(cleanup_payload.get("applied", False))
+                detail = (
+                    "Managed archive cleanup applied"
+                    if cleanup_applied
+                    else "Managed archive cleanup skipped"
+                )
+                if skip_reason := str(cleanup_payload.get("skip_reason", "") or "").strip():
+                    detail = f"{detail}: {skip_reason}"
+                comparison_context.update_optional_task(
+                    "artifact_cleanup",
+                    status="completed" if cleanup_applied else "skipped",
+                    detail=detail,
+                    artifacts={
+                        "artifact_cleanup": str(metadata_dir / "artifact_cleanup.json"),
+                        "profile": str(cleanup_payload.get("profile", "")),
+                    },
+                )
+        except Exception as exc:
+            print(f"Note: Could not compact managed archive artifacts: {exc}")
+
+        try:
+            refresh_managed_archive_metadata(managed_root)
+        except Exception as exc:
+            print(f"Note: Could not refresh managed archive metadata: {exc}")
+
     if include_summary:
         try:
             summary_file = analysis_dir / "summary.txt"

@@ -179,6 +179,71 @@ def _inspect_matlab_status_for_workflow(
     return inspect_matlab_status_cached(output_directory, metadata_dir, input_file=input_file)
 
 
+def _finalize_run_status_before_post_artifacts(
+    comparison_context: RunContext,
+    *,
+    matlab_results: dict[str, Any] | None,
+    python_results: dict[str, Any] | None,
+) -> None:
+    """Persist a terminal snapshot state before archive maintenance inspects the run."""
+    terminal_statuses = {"completed", "completed_target", "failed", "resume_blocked"}
+    if str(comparison_context.snapshot.status or "").strip().lower() in terminal_statuses:
+        return
+
+    if matlab_results is not None and python_results is not None:
+        matlab_success = bool(matlab_results.get("success"))
+        python_success = bool(python_results.get("success"))
+        if matlab_success and python_success:
+            comparison_context.mark_run_status(
+                "completed",
+                current_stage="comparison_analysis",
+                detail="Comparison workflow completed successfully.",
+            )
+            return
+
+        if not matlab_success:
+            matlab_status = matlab_results.get("matlab_status") or {}
+            detail = str(
+                matlab_status.get("failure_summary")
+                or matlab_results.get("error")
+                or "MATLAB workflow failed."
+            )
+            comparison_context.mark_run_status("failed", current_stage="matlab", detail=detail)
+            return
+
+        detail = str(python_results.get("error") or "Python workflow failed.")
+        comparison_context.mark_run_status("failed", current_stage="python", detail=detail)
+        return
+
+    if matlab_results is not None:
+        if bool(matlab_results.get("success")):
+            comparison_context.mark_run_status(
+                "completed",
+                current_stage="matlab",
+                detail="MATLAB workflow completed successfully.",
+            )
+            return
+        matlab_status = matlab_results.get("matlab_status") or {}
+        detail = str(
+            matlab_status.get("failure_summary")
+            or matlab_results.get("error")
+            or "MATLAB workflow failed."
+        )
+        comparison_context.mark_run_status("failed", current_stage="matlab", detail=detail)
+        return
+
+    if python_results is not None:
+        if bool(python_results.get("success")):
+            comparison_context.mark_run_status(
+                "completed",
+                current_stage="python",
+                detail="Python workflow completed successfully.",
+            )
+            return
+        detail = str(python_results.get("error") or "Python workflow failed.")
+        comparison_context.mark_run_status("failed", current_stage="python", detail=detail)
+
+
 def _bootstrap_existing_matlab_batch_for_python_parity(
     *,
     matlab_output: Path,
@@ -968,6 +1033,12 @@ def orchestrate_comparison(
             compare_results_fn=compare_results,
             build_shared_neighborhood_audit_fn=build_shared_neighborhood_audit,
         )
+
+    _finalize_run_status_before_post_artifacts(
+        comparison_context,
+        matlab_results=matlab_results,
+        python_results=python_results,
+    )
 
     _generate_post_comparison_artifacts(
         run_dir=run_root,

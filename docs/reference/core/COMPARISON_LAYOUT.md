@@ -74,6 +74,17 @@ explicit local output root outside the repository.
 - `python_results/stages/edges/candidate_audit.json` (candidate source breakdown and origin-level counters)
 - resumable pipeline state and stage snapshots
 
+Managed archive note:
+
+- Runs under `slavv_comparisons/` are compacted after successful analysis.
+- The retained Python surface is analysis-first: `network.json` when available,
+  `python_comparison_parameters.json`, `stages/*/stage_manifest.json`,
+  `stages/edges/candidate_audit.json`, and
+  `stages/edges/candidate_lifecycle.json`.
+- Heavy resumable payloads such as checkpoint `*.pkl`, `candidates.pkl`,
+  VMV/CASX/CSV exports, and raw MATLAB batch bulk are pruned from the managed
+  archive copy after the final comparison artifacts are written.
+
 ### `03_Analysis/`
 
 - `summary.txt`
@@ -91,10 +102,11 @@ explicit local output root outside the repository.
 
 - `comparison_params.normalized.json`
 - `run_snapshot.json`
-- `status.json` - optional lifecycle metadata for managed runs grouped by comparison-layout smoothing
+- `status.json` - explicit lifecycle metadata for managed archive runs
 - `output_preflight.json`
 - `matlab_status.json`
 - `matlab_failure_summary.json` when MATLAB fails
+- `artifact_cleanup.json` - managed archive cleanup profile, skip/apply status, and reclaimed size
 - `run_manifest.md`
 - `loop_assessment.json` - workflow assessment report with reuse eligibility
 - `network_gate_validation.json` - pre-execution validation for stage-isolated network gate
@@ -109,10 +121,11 @@ human-facing ledger for orchestration decisions:
 | --- | --- |
 | `comparison_params.normalized.json` | Normalized parameter payload passed to both MATLAB and Python so reruns can inspect the exact effective settings |
 | `run_snapshot.json` | Shared run-state ledger with overall status, current stage, and optional-task artifacts such as `output_preflight`, `matlab_status`, and `matlab_pipeline` launch/reuse decisions |
-| `status.json` | Optional lifecycle metadata for managed runs, including `state`, `retention`, `quality_gate`, and optional supersession links used by comparison-layout smoothing |
+| `status.json` | Explicit lifecycle metadata for managed archive runs, including `state`, `retention`, `quality_gate`, and optional supersession links |
 | `output_preflight.json` | Authoritative preflight decision for the selected output root, including warnings, fatal errors, free-space estimates, and recommended action |
 | `matlab_status.json` | Normalized MATLAB rerun semantics such as selected `batch_*` folder, resume mode, next stage, partial-artifact detection, and predicted rerun behavior |
 | `matlab_failure_summary.json` | Concise failure summary and log-tail evidence persisted when MATLAB exits unsuccessfully |
+| `artifact_cleanup.json` | Managed archive cleanup record describing whether compaction ran, the applied retention profile, and how many files/bytes were removed |
 | `run_manifest.md` | Human-readable run summary that links the preflight decision, resume semantics, authoritative files, and comparison outputs |
 | `loop_assessment.json` | Workflow assessment report containing reuse eligibility, safe workflow loops, missing artifacts, and recommended next actions |
 | `network_gate_validation.json` | Pre-execution validation results for stage-isolated network gate, including artifact fingerprints and validation status |
@@ -141,14 +154,17 @@ Notes:
   `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`.
 - Pointer files store exactly one path relative to the comparison root, not an
   absolute filesystem path.
+- When a run is written under a managed archive root, the workflow now
+  automatically refreshes `99_Metadata/status.json`, the containing
+  `experiments/<slug>/index.json`, and the pointer files under `pointers/`.
 - Aggregate roots that contain `run_*` children are treated as containers only.
   Each `run_*` child is the authoritative managed run; the container itself is
   used only for reporting and migration rollups.
 
 ## Lifecycle Status Metadata
 
-When comparison-layout smoothing manages a run, it persists
-`99_Metadata/status.json` with this contract:
+When a managed archive workflow or comparison-layout maintenance pass touches a
+run, it persists `99_Metadata/status.json` with this contract:
 
 ```json
 {
@@ -192,6 +208,11 @@ kept with `retention=keep`.
 - Low-level standalone comparison helpers may still emit analysis artifacts at
   the caller-selected root when invoked directly. Prefer the staged layout when
   building durable comparison outputs for inspection.
+- Managed archive runs under `slavv_comparisons/` are preserved for
+  analysis/reference by default, not as resumable scratch runs. Once a managed
+  run has a completed comparison report, archive maintenance compacts the run to
+  the retained analysis surface and records the result in
+  `99_Metadata/artifact_cleanup.json`.
 
 ## Chapter-Specific Workflow Notes
 
@@ -224,6 +245,10 @@ lower noise:
   `03_Analysis/summary.txt`.
 - Keep roots that are canonical acceptance surfaces, release-audit references,
   or active chapter evidence.
+- Prefer compaction over deletion for completed managed archive runs: keep
+  `03_Analysis/**`, `99_Metadata/**`, `02_Output/python_results/network.json`
+  when present, `python_comparison_parameters.json`, stage manifests, and the
+  edge candidate audit/lifecycle artifacts.
 - Remove roots explicitly marked failed in `99_Metadata/run_snapshot.json` when
   a completed replacement run exists.
 - Remove empty folders after artifact moves.

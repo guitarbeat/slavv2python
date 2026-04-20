@@ -79,9 +79,7 @@ def test_evaluate_output_root_preflight_cached_reuses_recent_report(tmp_path: Pa
     persist_output_preflight(report, metadata_dir)
     monkeypatch.setattr(
         "slavv.parity.workflow_assessment.evaluate_output_root_preflight",
-        lambda *_args, **_kwargs: iter(()).throw(
-            AssertionError("cache should be reused")
-        ),
+        lambda *_args, **_kwargs: iter(()).throw(AssertionError("cache should be reused")),
     )
 
     cached = evaluate_output_root_preflight_cached(output_root, metadata_dir)
@@ -117,9 +115,7 @@ def test_inspect_matlab_status_cached_reuses_when_mtimes_match(tmp_path: Path, m
     persist_matlab_status(report, metadata_dir)
     monkeypatch.setattr(
         "slavv.parity.workflow_assessment.inspect_matlab_status",
-        lambda *_args, **_kwargs: iter(()).throw(
-            AssertionError("cache should be reused")
-        ),
+        lambda *_args, **_kwargs: iter(()).throw(AssertionError("cache should be reused")),
     )
 
     cached = inspect_matlab_status_cached(
@@ -134,6 +130,7 @@ def test_inspect_matlab_status_cached_reuses_when_mtimes_match(tmp_path: Path, m
 
 def test_assess_full_comparison_analysis_ready_with_completed_matlab_and_python_results(
     tmp_path: Path,
+    matlab_artifact_builder,
 ):
     run_root = tmp_path / "20260413_120000_comparison"
     metadata_dir = run_root / "99_Metadata"
@@ -152,8 +149,13 @@ def test_assess_full_comparison_analysis_ready_with_completed_matlab_and_python_
         ),
         encoding="utf-8",
     )
-    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260413-120000"
-    batch_dir.mkdir(parents=True)
+    matlab_fixture = matlab_artifact_builder(
+        run_root / "01_Input" / "matlab_results",
+        input_file=tmp_path / "input.tif",
+        batch_timestamp="260413-120000",
+        completed_stages=("energy", "vertices", "edges", "network"),
+    )
+    batch_dir = matlab_fixture["batch_folder"]
     (metadata_dir / "matlab_status.json").write_text(
         json.dumps(
             {
@@ -185,7 +187,10 @@ def test_assess_full_comparison_analysis_ready_with_completed_matlab_and_python_
     assert report.requires_fresh_matlab is False
 
 
-def test_assess_full_comparison_reuse_ready_with_completed_matlab_only(tmp_path: Path):
+def test_assess_full_comparison_reuse_ready_with_completed_matlab_only(
+    tmp_path: Path,
+    matlab_artifact_builder,
+):
     run_root = tmp_path / "20260413_121500_comparison"
     metadata_dir = run_root / "99_Metadata"
     metadata_dir.mkdir(parents=True)
@@ -203,8 +208,13 @@ def test_assess_full_comparison_reuse_ready_with_completed_matlab_only(tmp_path:
         ),
         encoding="utf-8",
     )
-    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260413-121500"
-    batch_dir.mkdir(parents=True)
+    matlab_fixture = matlab_artifact_builder(
+        run_root / "01_Input" / "matlab_results",
+        input_file=tmp_path / "input.tif",
+        batch_timestamp="260413-121500",
+        completed_stages=("energy", "vertices", "edges", "network"),
+    )
+    batch_dir = matlab_fixture["batch_folder"]
     (metadata_dir / "matlab_status.json").write_text(
         json.dumps(
             {
@@ -264,3 +274,63 @@ def test_assess_full_comparison_requires_fresh_matlab_without_completed_status(t
 
     assert report.verdict == "fresh_matlab_required"
     assert report.requires_fresh_matlab is True
+
+
+def test_assess_full_comparison_marks_compacted_archive_analysis_ready(tmp_path: Path):
+    run_root = (
+        tmp_path / "slavv_comparisons" / "experiments" / "live-parity" / "runs" / "20260418_live"
+    )
+    metadata_dir = run_root / "99_Metadata"
+    analysis_dir = run_root / "03_Analysis"
+    python_dir = run_root / "02_Output" / "python_results"
+    metadata_dir.mkdir(parents=True)
+    analysis_dir.mkdir(parents=True)
+    python_dir.mkdir(parents=True)
+    (metadata_dir / "run_snapshot.json").write_text(
+        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "comparison_params.normalized.json").write_text(
+        json.dumps(
+            {
+                "edge_method": "tracing",
+                "comparison_exact_network": True,
+                "python_parity_rerun_from": "edges",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (analysis_dir / "comparison_report.json").write_text("{}", encoding="utf-8")
+    (python_dir / "network.json").write_text("{}", encoding="utf-8")
+    (metadata_dir / "artifact_cleanup.json").write_text(
+        json.dumps({"profile": "managed-analysis-retention-v1", "applied": True}),
+        encoding="utf-8",
+    )
+    (metadata_dir / "matlab_status.json").write_text(
+        json.dumps(
+            {
+                "matlab_resume_mode": "complete-noop",
+                "matlab_batch_complete": True,
+                "matlab_batch_folder": str(
+                    run_root / "01_Input" / "matlab_results" / "batch_260418-120000"
+                ),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = assess_loop_request(
+        run_root,
+        loop_kind="full_comparison",
+        input_path=tmp_path / "input.tif",
+        params={
+            "edge_method": "tracing",
+            "comparison_exact_network": True,
+            "python_parity_rerun_from": "edges",
+        },
+    )
+
+    assert report.verdict == "analysis_ready"
+    assert report.safe_to_reuse is False
+    assert report.safe_to_analyze_only is True
+    assert report.requires_fresh_matlab is False

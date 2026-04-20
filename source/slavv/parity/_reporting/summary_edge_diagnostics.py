@@ -320,8 +320,10 @@ def _add_candidate_audit(
     )
     candidate_audit_path = layout["python_dir"] / "stages" / "edges" / "candidate_audit.json"
     candidate_manifest_path = layout["python_dir"] / "stages" / "edges" / "candidates.pkl"
-    lines.append(f"Candidate audit artifact: {candidate_audit_path}")
-    lines.append(f"Candidate manifest path: {candidate_manifest_path}")
+    if candidate_audit_path.exists():
+        lines.append(f"Candidate audit artifact: {candidate_audit_path}")
+    if candidate_manifest_path.exists():
+        lines.append(f"Candidate manifest path: {candidate_manifest_path}")
     if audit_top := candidate_audit.get("top_origin_summaries", []):
         lines.append("Top audit origin summaries (watershed/frontier/fallback total):")
         for entry in audit_top[:3]:
@@ -364,7 +366,8 @@ def _add_shared_neighborhood_audit(
     lines: list[str], shared_neighborhood_audit: dict[str, Any], layout: dict[str, Any]
 ) -> None:
     shared_neighborhood_audit_path = layout["analysis_dir"] / "shared_neighborhood_audit.json"
-    lines.append(f"Shared neighborhood audit artifact: {shared_neighborhood_audit_path}")
+    if shared_neighborhood_audit_path.exists():
+        lines.append(f"Shared neighborhood audit artifact: {shared_neighborhood_audit_path}")
     top_neighborhood = shared_neighborhood_audit.get("top_neighborhood", {})
     if isinstance(top_neighborhood, dict) and top_neighborhood:
         lines.append(

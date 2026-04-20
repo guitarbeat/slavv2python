@@ -181,8 +181,8 @@ Stage-isolated `network` confirmation:
 
 ## Subdirectories
 
-- [Working docs index](working/README.md)
-- [Archived notes index](archive/README.md)
+- The former `working/` and `archive/` README stubs were removed; use the
+  direct links in this chapter README instead of folder-level index pages.
 
 ## Core References
 

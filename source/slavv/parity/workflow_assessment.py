@@ -13,7 +13,14 @@ from typing import Any
 from slavv.runtime import load_run_snapshot
 
 from ._persistence import load_json_dict_or_empty, write_json_file
-from .matlab_status import MatlabStatusReport, inspect_matlab_status, load_matlab_status
+from ._run_layout.managed_archive import load_artifact_cleanup
+from .matlab_status import (
+    MatlabStatusReport,
+    _load_batch_settings,
+    _stage_complete,
+    inspect_matlab_status,
+    load_matlab_status,
+)
 from .preflight import (
     DEFAULT_REQUIRED_FREE_SPACE_GB,
     OutputRootPreflightReport,
@@ -142,9 +149,10 @@ def _build_loop_assessment_report(
 
 
 def _artifact_check_map(layout: dict[str, Path], metadata_dir: Path) -> dict[str, bool]:
-    has_matlab_batch = _has_reusable_matlab_batch(layout["matlab_dir"])
+    artifact_cleanup = load_artifact_cleanup(metadata_dir)
+    has_matlab_batch = has_reusable_matlab_batch_surface(layout["matlab_dir"])
     has_completed_matlab_batch = _has_completed_matlab_batch(metadata_dir, layout["matlab_dir"])
-    has_python_checkpoints = _has_python_checkpoint_surface(layout["python_dir"])
+    has_python_checkpoints = has_python_checkpoint_surface(layout["python_dir"])
     has_python_results = _has_python_results_surface(layout["python_dir"])
     has_analysis_artifacts = _has_analysis_surface(layout["analysis_dir"])
     has_matlab_results = _has_matlab_results_surface(layout["matlab_dir"])
@@ -155,6 +163,7 @@ def _artifact_check_map(layout: dict[str, Path], metadata_dir: Path) -> dict[str
         "python_results_present": has_python_results,
         "analysis_artifacts_present": has_analysis_artifacts,
         "matlab_results_present": has_matlab_results,
+        "artifact_cleanup_applied": bool(artifact_cleanup and artifact_cleanup.get("applied")),
     }
 
 
@@ -263,6 +272,8 @@ def _assess_full_comparison(
     *,
     has_completed_matlab_batch: bool,
     has_python_results: bool,
+    has_analysis_artifacts: bool,
+    artifact_cleanup_applied: bool,
 ) -> LoopAssessmentReport:
     report.has_required_artifacts = True
     if has_completed_matlab_batch:
@@ -283,6 +294,14 @@ def _assess_full_comparison(
         report.recommended_action = (
             "Skip MATLAB launch and reuse the completed batch for the imported-MATLAB Python rerun."
         )
+        return report
+    if artifact_cleanup_applied and has_analysis_artifacts:
+        report.artifact_reason = "managed archive has been compacted to analysis-only artifacts"
+        report.verdict = LOOP_ANALYSIS_READY
+        report.safe_to_reuse = False
+        report.safe_to_analyze_only = True
+        report.requires_fresh_matlab = False
+        report.recommended_action = "Use the existing analysis artifacts, or create a fresh run root for new MATLAB execution."
         return report
     report.artifact_reason = "no reusable completed MATLAB batch is available"
     report.verdict = LOOP_FRESH_MATLAB_REQUIRED
@@ -313,6 +332,7 @@ def assess_loop_request(
     has_python_results = report.artifact_checks["python_results_present"]
     has_analysis_artifacts = report.artifact_checks["analysis_artifacts_present"]
     has_matlab_results = report.artifact_checks["matlab_results_present"]
+    artifact_cleanup_applied = report.artifact_checks["artifact_cleanup_applied"]
     report.safe_to_analyze_only = has_analysis_artifacts or (
         has_matlab_results and has_python_results
     )
@@ -351,6 +371,8 @@ def assess_loop_request(
             report,
             has_completed_matlab_batch=has_completed_matlab_batch,
             has_python_results=has_python_results,
+            has_analysis_artifacts=has_analysis_artifacts,
+            artifact_cleanup_applied=artifact_cleanup_applied,
         )
 
     report.verdict = LOOP_BLOCKED
@@ -593,10 +615,15 @@ def _normalize_compare_path(path_value: str | Path | None) -> str:
     return normalized.lower() if os.name == "nt" else normalized
 
 
-def _has_reusable_matlab_batch(matlab_dir: Path) -> bool:
+def has_reusable_matlab_batch_surface(matlab_dir: Path) -> bool:
     if not matlab_dir.exists():
         return False
-    return any(child.is_dir() and child.name.startswith("batch_") for child in matlab_dir.iterdir())
+    for child in matlab_dir.iterdir():
+        if not child.is_dir() or not child.name.startswith("batch_"):
+            continue
+        if _batch_has_reusable_surface(child):
+            return True
+    return False
 
 
 def _has_completed_matlab_batch(metadata_dir: Path, matlab_dir: Path) -> bool:
@@ -611,14 +638,24 @@ def _has_completed_matlab_batch(metadata_dir: Path, matlab_dir: Path) -> bool:
 
     if batch_folder_text := str(payload.get("matlab_batch_folder", "") or "").strip():
         try:
-            return Path(batch_folder_text).exists()
+            batch_folder = Path(batch_folder_text)
         except OSError:
             return False
+        return batch_folder.exists() and _batch_has_completed_surface(batch_folder)
 
-    return _has_reusable_matlab_batch(matlab_dir)
+    if not matlab_dir.exists():
+        return False
+    for child in matlab_dir.iterdir():
+        if (
+            child.is_dir()
+            and child.name.startswith("batch_")
+            and _batch_has_completed_surface(child)
+        ):
+            return True
+    return False
 
 
-def _has_python_checkpoint_surface(python_dir: Path) -> bool:
+def has_python_checkpoint_surface(python_dir: Path) -> bool:
     checkpoint_dir = python_dir / "checkpoints"
     if not checkpoint_dir.exists():
         return False
@@ -630,7 +667,7 @@ def _has_python_results_surface(python_dir: Path) -> bool:
         return False
     if (python_dir / "network.json").exists():
         return True
-    return _has_python_checkpoint_surface(python_dir)
+    return has_python_checkpoint_surface(python_dir)
 
 
 def _has_analysis_surface(analysis_dir: Path) -> bool:
@@ -640,7 +677,23 @@ def _has_analysis_surface(analysis_dir: Path) -> bool:
 
 
 def _has_matlab_results_surface(matlab_dir: Path) -> bool:
-    return _has_reusable_matlab_batch(matlab_dir)
+    return has_reusable_matlab_batch_surface(matlab_dir)
+
+
+def _batch_has_reusable_surface(batch_folder: Path) -> bool:
+    _optional_inputs, roi_names = _load_batch_settings(batch_folder)
+    if not roi_names:
+        return False
+    return _stage_complete(batch_folder, roi_names, "edges") or _stage_complete(
+        batch_folder, roi_names, "network"
+    )
+
+
+def _batch_has_completed_surface(batch_folder: Path) -> bool:
+    _optional_inputs, roi_names = _load_batch_settings(batch_folder)
+    if not roi_names:
+        return False
+    return _stage_complete(batch_folder, roi_names, "network")
 
 
 def _hydrate_dataclass(cls: type[Any], payload: dict[str, Any] | None) -> Any | None:

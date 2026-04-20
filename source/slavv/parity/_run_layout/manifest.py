@@ -150,7 +150,6 @@ def _append_matlab_status_section(
     lines: list[str],
     run_root: Path,
     matlab_status: dict[str, Any] | None,
-    lifecycle_status: dict[str, Any] | None,
 ) -> None:
     if not matlab_status:
         return
@@ -161,11 +160,9 @@ def _append_matlab_status_section(
             f"- **MATLAB resume mode:** {matlab_status.get('matlab_resume_mode', 'unknown')}",
         ]
     )
-    batch_folder = matlab_status.get("matlab_batch_folder", "")
-    if batch_folder:
-        lines.append(
-            f"- **MATLAB batch folder:** `{_display_path(run_root, Path(str(batch_folder)))}`"
-        )
+    batch_folder = _coerce_existing_path(matlab_status.get("matlab_batch_folder"))
+    if batch_folder is not None:
+        lines.append(f"- **MATLAB batch folder:** `{_display_path(run_root, batch_folder)}`")
     lines.append(
         "- **Last completed MATLAB stage:** "
         f"{matlab_status.get('matlab_last_completed_stage') or '(none)'}"
@@ -181,17 +178,6 @@ def _append_matlab_status_section(
         )
     if matlab_status.get("stale_running_snapshot_suspected"):
         lines.append("- **Stale running snapshot suspected:** True")
-    lines.extend(["", "## Authoritative Files", "", "- `99_Metadata/matlab_status.json`"])
-    if lifecycle_status is not None:
-        lines.append("- `99_Metadata/status.json`")
-    if matlab_status.get("matlab_resume_state_file"):
-        lines.append(
-            f"- `{_display_path(run_root, Path(str(matlab_status['matlab_resume_state_file'])))}`"
-        )
-    if matlab_status.get("matlab_log_file"):
-        lines.append(f"- `{_display_path(run_root, Path(str(matlab_status['matlab_log_file'])))}`")
-    if batch_folder:
-        lines.append(f"- `{_display_path(run_root, Path(str(batch_folder)))}`")
     lines.append("")
     if matlab_status.get("failure_summary"):
         lines.extend(
@@ -222,6 +208,88 @@ def _append_matlab_health_check_section(
     lines.extend(["- **Artifact:** `99_Metadata/matlab_health_check.json`", ""])
 
 
+def _append_artifact_cleanup_section(
+    lines: list[str], artifact_cleanup: dict[str, Any] | None
+) -> None:
+    if not artifact_cleanup:
+        return
+    lines.extend(
+        [
+            "## Artifact Cleanup",
+            "",
+            f"- **Profile:** {artifact_cleanup.get('profile', 'unknown')}",
+            f"- **Applied:** {bool(artifact_cleanup.get('applied', False))}",
+        ]
+    )
+    if artifact_cleanup.get("applied"):
+        lines.append(f"- **Files removed:** {int(artifact_cleanup.get('files_removed', 0)):,}")
+        lines.append(
+            "- **Bytes removed:** "
+            f"{artifact_cleanup.get('bytes_removed_human', format_size(int(artifact_cleanup.get('bytes_removed', 0))))}"
+        )
+        lines.append(
+            "- **Empty directories removed:** "
+            f"{int(artifact_cleanup.get('empty_directories_removed', 0)):,}"
+        )
+    elif skip_reason := str(artifact_cleanup.get("skip_reason", "") or "").strip():
+        lines.append(f"- **Skip reason:** {skip_reason}")
+    lines.extend(["- **Artifact:** `99_Metadata/artifact_cleanup.json`", ""])
+
+
+def _append_authoritative_files_section(
+    lines: list[str],
+    run_root: Path,
+    layout: dict[str, Path],
+    metadata: RunMetadata,
+) -> None:
+    authoritative_files: list[Path] = []
+    for candidate in (
+        layout["metadata_dir"] / "matlab_status.json",
+        layout["metadata_dir"] / "status.json",
+        layout["metadata_dir"] / "artifact_cleanup.json",
+        layout["analysis_dir"] / "comparison_report.json",
+        layout["analysis_dir"] / "summary.txt",
+        layout["analysis_dir"] / "shared_neighborhood_audit.json",
+        layout["analysis_dir"] / "shared_neighborhood_diagnostics.json",
+        layout["analysis_dir"] / "shared_neighborhood_diagnostics.md",
+        layout["python_dir"] / "network.json",
+        layout["python_dir"] / "python_comparison_parameters.json",
+    ):
+        if candidate.exists():
+            authoritative_files.append(candidate)
+
+    authoritative_files.extend(sorted(layout["python_dir"].glob("stages/*/stage_manifest.json")))
+    for candidate in (
+        layout["python_dir"] / "stages" / "edges" / "candidate_audit.json",
+        layout["python_dir"] / "stages" / "edges" / "candidate_lifecycle.json",
+    ):
+        if candidate.exists():
+            authoritative_files.append(candidate)
+
+    if not authoritative_files:
+        return
+
+    lines.extend(["## Authoritative Files", ""])
+    if metadata.artifact_cleanup:
+        if metadata.artifact_cleanup.get("applied"):
+            lines.append(
+                "- Cleanup profile "
+                f"`{metadata.artifact_cleanup.get('profile', 'unknown')}` applied; "
+                f"removed {int(metadata.artifact_cleanup.get('files_removed', 0)):,} files "
+                f"({metadata.artifact_cleanup.get('bytes_removed_human', format_size(int(metadata.artifact_cleanup.get('bytes_removed', 0))))})."
+            )
+        elif skip_reason := str(metadata.artifact_cleanup.get("skip_reason", "") or "").strip():
+            lines.append(
+                "- Cleanup profile "
+                f"`{metadata.artifact_cleanup.get('profile', 'unknown')}` skipped ({skip_reason})."
+            )
+    lines.extend(
+        f"- `{_display_path(run_root, file_path)}`"
+        for file_path in dict.fromkeys(authoritative_files)
+    )
+    lines.append("")
+
+
 def generate_manifest(
     comparison_dir: Path,
     output_file: Path | None = None,
@@ -247,6 +315,7 @@ def generate_manifest(
     preflight_report = run_metadata.preflight_report
     matlab_status = run_metadata.matlab_status
     matlab_health_check = run_metadata.matlab_health_check
+    artifact_cleanup = run_metadata.artifact_cleanup
     if report_file.exists():
         report = load_json_dict_or_empty(report_file)
 
@@ -266,8 +335,10 @@ def generate_manifest(
     _append_run_status_section(lines, run_snapshot)
     _append_workflow_decision_section(lines, loop_assessment)
     _append_preflight_section(lines, preflight_report)
-    _append_matlab_status_section(lines, run_root, matlab_status, lifecycle_status)
+    _append_matlab_status_section(lines, run_root, matlab_status)
     _append_matlab_health_check_section(lines, matlab_health_check)
+    _append_artifact_cleanup_section(lines, artifact_cleanup)
+    _append_authoritative_files_section(lines, run_root, layout, run_metadata)
 
     if report:
         lines.extend(["## Comparison Summary", ""])
@@ -376,3 +447,10 @@ def _display_path(run_root: Path, path: Path) -> str:
         return str(path.relative_to(run_root))
     except ValueError:
         return str(path)
+
+
+def _coerce_existing_path(path_value: Any) -> Path | None:
+    if path_value in (None, ""):
+        return None
+    candidate = Path(str(path_value))
+    return candidate if candidate.exists() else None

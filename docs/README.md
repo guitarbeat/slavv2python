@@ -88,8 +88,9 @@ Core references for the active chapter:
 - [Parity Workflow Completion Spec Archive](chapters/neighborhood-claim-alignment/parity-workflow-completion-spec/tasks.md)
 - [Comparison Layout Smoothing Spec Archive](chapters/neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md)
 - [Release Verification 2026-04-14](chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
-- [Working docs index](chapters/neighborhood-claim-alignment/working/README.md)
-- [Archived notes index](chapters/neighborhood-claim-alignment/archive/README.md)
+- [Investigation Plan](chapters/neighborhood-claim-alignment/INVESTIGATION_PLAN.md)
+- [Neighborhood Audit Checklist](chapters/neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md)
+- [File Lock Contention Analysis 2026-04-13](chapters/neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md)
 
 Current live-run lessons:
 

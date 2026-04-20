@@ -10,81 +10,33 @@ from typing import Any
 
 from slavv.parity.run_layout import (
     aggregate_container_rollup,
-    build_experiment_index_entry,
-    create_pointer_files,
     discover_run_roots,
+    infer_experiment_slug,
     infer_run_status,
+    infer_target_run_name,
     is_aggregate_run_container,
     list_aggregate_child_runs,
-    normalize_run_root_name,
+    refresh_managed_archive_metadata,
     relative_run_path,
-    slugify_experiment_name,
-    write_experiment_index,
-    write_pointer_file,
+    select_pointer_targets,
     write_run_status,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_COMPARISONS_ROOT = REPO_ROOT / "slavv_comparisons"
 DEFAULT_REPORT_NAME = "comparison_layout_migration_report.json"
-POINTER_ORDER = ("latest_completed.txt", "canonical_acceptance.txt", "best_saved_batch.txt")
-
-_KNOWN_ROOT_SLUGS = {
-    "20260327_150656_clean_parity": "saved-batch",
-    "20260327_161610_clean_python_full": "python-full",
-    "20260330_parity_full_postfix": "postfix-parity",
-    "20260330_cross_compare_postfix": "postfix-cross-compare",
-    "20260328_023500_matlab_consistency": "matlab-consistency",
-    "20260328_142659_python_consistency": "python-consistency",
-    "20260330_python_consistency_postfix": "python-consistency",
-    "20260401_live_parity_retry": "live-parity",
-    "20260413_release_verify": "release-verify",
-    "20260413_live": "20260413",
-    "live_20260413b": "20260413b",
-    "20260413_live_canonical": "canonical-20260413",
-}
-
-
-def infer_experiment_slug(run_root: Path) -> str:
-    """Infer a stable experiment slug from a run-root name."""
-    if run_root.name in _KNOWN_ROOT_SLUGS:
-        return _KNOWN_ROOT_SLUGS[run_root.name]
-
-    if run_root.name.startswith("run_"):
-        parent = run_root.parent
-        if parent.name in _KNOWN_ROOT_SLUGS:
-            return _KNOWN_ROOT_SLUGS[parent.name]
-
-    tokens = run_root.name.split("_")
-    label_tokens = tokens[2:] if len(tokens) >= 3 and tokens[0].isdigit() and tokens[1].isdigit() else tokens[1:]
-    label = "-".join(label_tokens) if label_tokens else run_root.name
-    lowered = label.lower()
-    if "saved" in lowered and "batch" in lowered:
-        return "saved-batch"
-    if "release" in lowered and "verify" in lowered:
-        return "release-verify"
-    if "consistency" in lowered and "python" in lowered:
-        return "python-consistency"
-    if "consistency" in lowered and "matlab" in lowered:
-        return "matlab-consistency"
-    if "parity" in lowered and "live" in lowered:
-        return "live-parity"
-    return slugify_experiment_name(label)
-
-
-def infer_target_run_name(run_root: Path) -> str:
-    """Infer a normalized target run-root name while avoiding aggregate child collisions."""
-    if run_root.name.startswith("run_") and run_root.parent.name in _KNOWN_ROOT_SLUGS:
-        # Aggregate child names are often reused across containers (run_01, run_02).
-        # Prefix with the date-first parent to keep each run path unique and traceable.
-        return normalize_run_root_name(f"{run_root.parent.name}_{run_root.name}")
-    return normalize_run_root_name(run_root.name)
 
 
 def build_target_run_path(comparisons_root: Path, run_root: Path, slug: str | None = None) -> Path:
     """Return the grouped target path for a run root."""
     experiment_slug = slug or infer_experiment_slug(run_root)
-    return comparisons_root / "experiments" / experiment_slug / "runs" / infer_target_run_name(run_root)
+    return (
+        comparisons_root
+        / "experiments"
+        / experiment_slug
+        / "runs"
+        / infer_target_run_name(run_root)
+    )
 
 
 def find_doc_references_to_paths(repo_root: Path, paths: list[str]) -> list[dict[str, Any]]:
@@ -127,37 +79,6 @@ def discover_comparison_layout(comparisons_root: Path) -> dict[str, Any]:
     }
 
 
-def _pointer_candidates(run_entries: list[dict[str, Any]]) -> dict[str, str]:
-    completed = [entry for entry in run_entries if entry["status"]["state"] == "completed"]
-    completed.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
-    pointers: dict[str, str] = {}
-    if completed:
-        pointers["latest_completed.txt"] = completed[0]["target_relative_path"]
-
-    if canonical := [
-        entry
-        for entry in completed
-        if entry["status"]["quality_gate"] in {"pass", "partial"}
-        and entry["status"]["retention"] == "keep"
-    ]:
-        canonical.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
-        pointers["canonical_acceptance.txt"] = canonical[0]["target_relative_path"]
-    elif completed:
-        pointers["canonical_acceptance.txt"] = completed[0]["target_relative_path"]
-
-    if saved_batch := [
-        entry
-        for entry in completed
-        if "saved-batch" in entry["target_relative_path"]
-        or "saved" in entry["slug"]
-    ]:
-        saved_batch.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
-        pointers["best_saved_batch.txt"] = saved_batch[0]["target_relative_path"]
-    elif completed:
-        pointers["best_saved_batch.txt"] = completed[0]["target_relative_path"]
-    return pointers
-
-
 def build_migration_report(comparisons_root: Path, repo_root: Path | None = None) -> dict[str, Any]:
     """Build a machine-readable dry-run report for layout smoothing."""
     repo_root = repo_root or REPO_ROOT
@@ -179,15 +100,11 @@ def build_migration_report(comparisons_root: Path, repo_root: Path | None = None
                 "normalized_name": infer_target_run_name(run_root),
                 "status": status,
                 "conflict": target_path.exists() and target_path.resolve() != run_root.resolve(),
-                "action": (
-                    "noop"
-                    if target_path.resolve() == run_root.resolve()
-                    else "move"
-                ),
+                "action": ("noop" if target_path.resolve() == run_root.resolve() else "move"),
             }
         )
 
-    pointer_targets = _pointer_candidates(run_entries)
+    pointer_targets = select_pointer_targets(run_entries)
     for entry in run_entries:
         if entry["target_relative_path"] in pointer_targets.values():
             entry["status"]["retention"] = "keep"
@@ -282,32 +199,13 @@ def apply_migration_report(
             removed_empty_dirs.extend(_remove_empty_parents(source_path.parent, comparisons_root))
         else:
             target_path = source_path
-        pointer_targeted = run["target_relative_path"] in report.get("pointer_proposals", {}).values()
+        pointer_targeted = (
+            run["target_relative_path"] in report.get("pointer_proposals", {}).values()
+        )
         status = infer_run_status(target_path, pointer_targeted=pointer_targeted)
         write_run_status(target_path, status)
 
-    create_pointer_files(comparisons_root)
-    for name, relative_path in report.get("pointer_proposals", {}).items():
-        write_pointer_file(comparisons_root / "pointers" / name, relative_path)
-
-    experiment_entries: dict[str, list[dict[str, Any]]] = {}
-    for run in discover_run_roots(comparisons_root):
-        try:
-            relative_path = relative_run_path(run, comparisons_root)
-        except ValueError:
-            continue
-        pointer_targeted = relative_path in report.get("pointer_proposals", {}).values()
-        slug = infer_experiment_slug(run)
-        experiment_entries.setdefault(slug, []).append(
-            build_experiment_index_entry(
-                run,
-                comparisons_root=comparisons_root,
-                pointer_targeted=pointer_targeted,
-            )
-        )
-    for slug, entries in experiment_entries.items():
-        entries.sort(key=lambda entry: str(entry.get("run_path", "")), reverse=True)
-        write_experiment_index(comparisons_root / "experiments" / slug, entries)
+    refresh_managed_archive_metadata(comparisons_root)
 
     for candidate in report.get("cleanup_candidates", []):
         relative_path = candidate["path"]
@@ -374,7 +272,9 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=repo_root,
             allow_delete=list(args.allow_delete),
         )
-    report_path = Path(args.report_path) if args.report_path else comparisons_root / DEFAULT_REPORT_NAME
+    report_path = (
+        Path(args.report_path) if args.report_path else comparisons_root / DEFAULT_REPORT_NAME
+    )
     write_report(report, report_path)
     print(report_path)
     return 0

@@ -13,6 +13,7 @@ from ..matlab_status import load_matlab_status
 from ..preflight import load_output_preflight
 from ..workflow_assessment import load_loop_assessment, load_matlab_health_check
 from .indexing import _load_pointer_targets
+from .managed_archive import load_artifact_cleanup
 from .paths import (
     classify_run_path,
     comparisons_root_from_path,
@@ -40,6 +41,7 @@ class RunMetadata:
     preflight_report: dict[str, Any] | None
     matlab_status: dict[str, Any] | None
     matlab_health_check: dict[str, Any] | None
+    artifact_cleanup: dict[str, Any] | None = None
 
 
 def load_run_metadata(run_dir: Path) -> RunMetadata:
@@ -63,6 +65,7 @@ def load_run_metadata(run_dir: Path) -> RunMetadata:
         preflight_report=load_output_preflight(metadata_dir),
         matlab_status=load_matlab_status(metadata_dir),
         matlab_health_check=load_matlab_health_check(metadata_dir),
+        artifact_cleanup=load_artifact_cleanup(metadata_dir),
     )
 
 

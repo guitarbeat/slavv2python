@@ -477,7 +477,7 @@ def test_orchestrate_comparison_persists_shared_neighborhood_diagnostics(
 
 
 def test_orchestrate_comparison_full_reuse_analysis_only_skips_matlab_launch(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, matlab_artifact_builder
 ):
     import slavv.parity.comparison as comparison_module
 
@@ -486,8 +486,13 @@ def test_orchestrate_comparison_full_reuse_analysis_only_skips_matlab_launch(
     output_dir = tmp_path / "comparison_run"
     project_root = tmp_path / "project_root"
     project_root.mkdir()
-    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
-    batch_folder.mkdir(parents=True)
+    matlab_fixture = matlab_artifact_builder(
+        output_dir / "01_Input" / "matlab_results",
+        input_file=input_file,
+        batch_timestamp="260323-190000",
+        completed_stages=("energy", "vertices", "edges", "network"),
+    )
+    batch_folder = matlab_fixture["batch_folder"]
     metadata_dir = output_dir / "99_Metadata"
     metadata_dir.mkdir(parents=True)
     (metadata_dir / "matlab_status.json").write_text(
@@ -597,7 +602,9 @@ def test_orchestrate_comparison_full_reuse_analysis_only_skips_matlab_launch(
 
 
 def test_orchestrate_comparison_full_reuse_python_rerun_skips_matlab_launch(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path,
+    monkeypatch,
+    matlab_artifact_builder,
 ):
     import slavv.parity.comparison as comparison_module
 
@@ -606,8 +613,13 @@ def test_orchestrate_comparison_full_reuse_python_rerun_skips_matlab_launch(
     output_dir = tmp_path / "comparison_run"
     project_root = tmp_path / "project_root"
     project_root.mkdir()
-    batch_folder = output_dir / "01_Input" / "matlab_results" / "batch_260323-190000"
-    batch_folder.mkdir(parents=True)
+    matlab_fixture = matlab_artifact_builder(
+        output_dir / "01_Input" / "matlab_results",
+        input_file=input_file,
+        batch_timestamp="260323-190000",
+        completed_stages=("energy", "vertices", "edges", "network"),
+    )
+    batch_folder = matlab_fixture["batch_folder"]
     metadata_dir = output_dir / "99_Metadata"
     metadata_dir.mkdir(parents=True)
     (metadata_dir / "matlab_status.json").write_text(
