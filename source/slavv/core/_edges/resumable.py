@@ -10,6 +10,10 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
+from ..edge_candidates import (
+    _params_with_matlab_parity_edge_budget,
+    _params_with_matlab_parity_watershed_candidate_mode,
+)
 from .units import _load_edge_units
 
 if TYPE_CHECKING:
@@ -54,7 +58,6 @@ def extract_edges_resumable(
     lumen_radius_microns = energy_data["lumen_radius_microns"]
     scale_indices = energy_data.get("scale_indices")
     energy_sign = energy_data.get("energy_sign", -1.0)
-    max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
     step_size_ratio = params.get("step_size_per_origin_radius", 1.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
     max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
@@ -86,6 +89,16 @@ def extract_edges_resumable(
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
     use_frontier = use_matlab_frontier_tracer(energy_data, params)
+    params_for_workflow = params
+    if use_frontier:
+        params_for_workflow = _params_with_matlab_parity_edge_budget(
+            params_for_workflow, edge_budget=2
+        )
+        params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
+            params_for_workflow,
+            candidate_mode="remaining_origin_contacts",
+        )
+    max_edges_per_vertex = params_for_workflow.get("number_of_edges_per_vertex", 4)
 
     stage_controller.begin(
         detail="Tracing edges with resumable origin units",
@@ -122,7 +135,7 @@ def extract_edges_resumable(
                 microns_per_voxel,
                 vertex_center_image,
                 vertex_idx,
-                params,
+                params_for_workflow,
             )
             unit_traces = cast("list[np.ndarray]", frontier_payload["traces"])
             unit_connections = cast("list[list[int]]", frontier_payload["connections"])
@@ -251,7 +264,7 @@ def extract_edges_resumable(
             scale_indices,
             vertex_positions,
             energy_sign,
-            params,
+            params_for_workflow,
             microns_per_voxel,
         )
         supplement_origin_counts = normalize_candidate_origin_counts(
@@ -286,7 +299,7 @@ def extract_edges_resumable(
         vertex_scales,
         lumen_radius_pixels_axes,
         energy.shape,
-        params,
+        params_for_workflow,
     )
     if use_frontier:
         candidate_lifecycle = build_frontier_candidate_lifecycle(

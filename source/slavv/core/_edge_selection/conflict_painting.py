@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import numpy as np
 
+from .._edge_candidates.common import _matlab_frontier_edge_budget
 from .._edge_payloads import _empty_edges_result
 from .cleanup import (
     clean_edges_cycles_python,
@@ -207,7 +208,7 @@ def _choose_edges_matlab_style(
     keep_degree = clean_edges_vertex_degree_excess_python(
         chosen_connections,
         chosen_metrics,
-        int(params.get("number_of_edges_per_vertex", 4)),
+        _matlab_frontier_edge_budget(params),
     )
     diagnostics["degree_pruned_count"] = int(np.sum(~keep_degree))
 

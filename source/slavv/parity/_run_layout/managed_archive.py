@@ -294,6 +294,8 @@ def _cleanup_candidates(layout: dict[str, Path]) -> list[tuple[Path, str]]:
         candidates[path] = "matlab_logs"
     for pattern in ("*.mat", "*.tif", "*.tiff"):
         for path in matlab_dir.rglob(pattern):
+            if _is_required_reusable_matlab_artifact(path):
+                continue
             candidates[path] = "matlab_batch_bulk"
     for path in matlab_dir.rglob("*"):
         if not path.is_file() or path.suffix:
@@ -301,6 +303,8 @@ def _cleanup_candidates(layout: dict[str, Path]) -> list[tuple[Path, str]]:
         if path.stat().st_size < _NO_EXTENSION_BLOB_THRESHOLD_BYTES:
             continue
         if not _has_ancestor_named(path, "data"):
+            continue
+        if _is_required_reusable_matlab_artifact(path):
             continue
         candidates[path] = "matlab_batch_bulk"
 
@@ -326,6 +330,53 @@ def _discover_run_roots(search_root: Path) -> list[Path]:
 
 def _has_ancestor_named(path: Path, name: str) -> bool:
     return any(parent.name == name for parent in path.parents)
+
+
+def _is_required_reusable_matlab_artifact(path: Path) -> bool:
+    """Return whether a MATLAB artifact belongs to the minimal rerunnable surface."""
+    if not path.is_file():
+        return False
+
+    batch_root = next(
+        (
+            parent
+            for parent in (path.parent, *path.parents)
+            if parent.name.startswith("batch_")
+        ),
+        None,
+    )
+    if batch_root is None:
+        return False
+
+    relative_parts = path.relative_to(batch_root).parts
+    if not relative_parts:
+        return False
+
+    if len(relative_parts) == 1 and relative_parts[0] == "timings.json":
+        return True
+
+    if relative_parts[0] == "settings":
+        if path.name == "batch.mat":
+            return True
+        return (
+            path.suffix.lower() == ".mat"
+            and path.stem.split("_", 1)[0] in {"energy", "vertices", "edges", "network"}
+        )
+
+    if relative_parts[0] == "vectors" and path.suffix.lower() == ".mat":
+        prefixes = (
+            "vertices_",
+            "curated_vertices_",
+            "edges_",
+            "curated_edges_",
+            "network_",
+        )
+        return path.name.startswith(prefixes)
+
+    if relative_parts[0] == "data":
+        return path.is_file() and path.name.startswith("energy_") and path.suffix.lower() != ".mat"
+
+    return False
 
 
 def _remove_file(

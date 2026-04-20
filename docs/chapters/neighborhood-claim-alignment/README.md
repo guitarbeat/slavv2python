@@ -171,6 +171,7 @@ Stage-isolated `network` confirmation:
 
 ## Working Docs
 
+- [Direct Code Comparison 2026-04-20](direct_code_comparison_2026-04-20.md)
 - [Shared Neighborhood Claim Investigation Plan](INVESTIGATION_PLAN.md)
 - [Shared Neighborhood Audit Checklist](NEIGHBORHOOD_AUDIT_CHECKLIST.md)
 - [Large Module Refactor Spec Archive](large-module-refactor-spec/tasks.md)

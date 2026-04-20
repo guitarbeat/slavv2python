@@ -8,6 +8,11 @@ from typing import Any, Callable, cast
 import numpy as np
 from scipy.spatial import cKDTree
 
+from ..edge_candidates import (
+    _params_with_matlab_parity_edge_budget,
+    _params_with_matlab_parity_watershed_candidate_mode,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +55,17 @@ def extract_edges(
     tree = cKDTree(vertex_positions_microns)
     max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
     max_search_radius = max_vertex_radius * 5.0
-    if use_matlab_frontier_tracer(energy_data, params):
+    use_frontier = use_matlab_frontier_tracer(energy_data, params)
+    params_for_workflow = params
+    if use_frontier:
+        params_for_workflow = _params_with_matlab_parity_edge_budget(
+            params_for_workflow, edge_budget=2
+        )
+        params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
+            params_for_workflow,
+            candidate_mode="remaining_origin_contacts",
+        )
+    if use_frontier:
         candidates = generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -59,7 +74,7 @@ def extract_edges(
             lumen_radius_microns,
             microns_per_voxel,
             vertex_center_image,
-            params,
+            params_for_workflow,
         )
         candidates = finalize_matlab_parity_candidates(
             candidates,
@@ -67,7 +82,7 @@ def extract_edges(
             scale_indices,
             vertex_positions,
             energy_sign,
-            params,
+            params_for_workflow,
             microns_per_voxel,
         )
     else:
@@ -82,7 +97,7 @@ def extract_edges(
             vertex_center_image,
             tree,
             max_search_radius,
-            params,
+            params_for_workflow,
             energy_sign,
         )
     chosen = choose_edges_for_workflow(
@@ -91,7 +106,7 @@ def extract_edges(
         vertex_scales,
         lumen_radius_pixels_axes,
         energy.shape,
-        params,
+        params_for_workflow,
     )
     logger.info(
         "Extracted %d chosen edges from %d traced candidates",

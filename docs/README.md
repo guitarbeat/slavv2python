@@ -90,6 +90,7 @@ Core references for the active chapter:
 - [Release Verification 2026-04-14](chapters/neighborhood-claim-alignment/release_verification_2026-04-14.md)
 - [Investigation Plan](chapters/neighborhood-claim-alignment/INVESTIGATION_PLAN.md)
 - [Neighborhood Audit Checklist](chapters/neighborhood-claim-alignment/NEIGHBORHOOD_AUDIT_CHECKLIST.md)
+- [Direct Code Comparison 2026-04-20](chapters/neighborhood-claim-alignment/direct_code_comparison_2026-04-20.md)
 - [File Lock Contention Analysis 2026-04-13](chapters/neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md)
 
 Current live-run lessons:

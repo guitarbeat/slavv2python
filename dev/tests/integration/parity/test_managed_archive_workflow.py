@@ -71,7 +71,9 @@ def _write_matlab_archive_surface(matlab_dir: Path) -> Path:
     (vectors_dir / "edges_testROI.mat").write_bytes(b"edges")
     (vectors_dir / "curated_edges_testROI.mat").write_bytes(b"curated_edges")
     (vectors_dir / "network_testROI.mat").write_bytes(b"network")
+    (vectors_dir / "preview_projection.tif").write_bytes(b"preview")
     (settings_dir / "batch.mat").write_bytes(b"settings")
+    (settings_dir / "energy_testROI.mat").write_bytes(b"energy_settings")
     return batch_dir
 
 
@@ -236,7 +238,14 @@ def test_full_comparison_managed_archive_compacts_and_refreshes_metadata(tmp_pat
         run_root / "02_Output" / "python_results" / "stages" / "edges" / "candidates.pkl"
     ).exists()
     assert not (run_root / "01_Input" / "matlab_results" / "matlab_run.log").exists()
-    assert not batch_dir.exists()
+    assert batch_dir.exists()
+    assert (batch_dir / "data" / "energy_testROI").exists()
+    assert (batch_dir / "vectors" / "curated_vertices_testROI.mat").exists()
+    assert (batch_dir / "vectors" / "curated_edges_testROI.mat").exists()
+    assert (batch_dir / "vectors" / "network_testROI.mat").exists()
+    assert (batch_dir / "settings" / "batch.mat").exists()
+    assert (batch_dir / "settings" / "energy_testROI.mat").exists()
+    assert not (batch_dir / "vectors" / "preview_projection.tif").exists()
     assert (run_root.parent.parent / "index.json").exists()
     assert (run_root.parents[3] / "pointers" / "latest_completed.txt").read_text(
         encoding="utf-8"
@@ -309,3 +318,9 @@ def test_standalone_comparison_managed_archive_keeps_analysis_surface(tmp_path, 
     assert (python_dir / "stages" / "edges" / "candidate_lifecycle.json").exists()
     assert not (python_dir / "checkpoints" / "checkpoint_edges.pkl").exists()
     assert not (python_dir / "stages" / "edges" / "candidates.pkl").exists()
+    batch_dir = matlab_dir / "batch_260418-120000"
+    assert batch_dir.exists()
+    assert (batch_dir / "data" / "energy_testROI").exists()
+    assert (batch_dir / "vectors" / "network_testROI.mat").exists()
+    assert (batch_dir / "settings" / "batch.mat").exists()
+    assert not (batch_dir / "vectors" / "preview_projection.tif").exists()

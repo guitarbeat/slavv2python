@@ -19,6 +19,7 @@ from .common import (
     Float32Array,
     _candidate_endpoint_pair_set,
     _candidate_incident_pair_counts,
+    _matlab_frontier_edge_budget,
     _vertex_center_linear_lookup,
 )
 from .supplement_workflow import (
@@ -45,7 +46,7 @@ def _salvage_matlab_parity_candidates_with_local_geodesics(
     if len(vertex_positions) < 2 or salvage_mode == "none":
         return candidates
 
-    max_edges_per_vertex = int(params.get("number_of_edges_per_vertex", 4))
+    max_edges_per_vertex = _matlab_frontier_edge_budget(params)
     k_nearest = max(1, int(params.get("parity_geodesic_salvage_k_nearest", 10)))
     box_margin_voxels = max(0, int(params.get("parity_geodesic_salvage_box_margin_voxels", 4)))
     max_path_ratio = float(params.get("parity_geodesic_salvage_max_path_ratio", 2.5))

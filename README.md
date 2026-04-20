@@ -1,8 +1,93 @@
-﻿# SLAVV Python Port
+﻿
+# SLAVV Python Port
+
+## Getting Started (Quickstart)
+
+
+1. **Clone the repository and set up your environment:**
+
+  ```powershell
+  git clone https://github.com/guitarbeat/slavv2python.git
+  cd slavv2python
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  ```
+
+2. **Install dependencies:**
+
+  ```powershell
+  pip install -e .
+  # Or for app and dev tools:
+  pip install -e ".[app,dev]"
+  ```
+
+3. **Verify installation:**
+
+  ```powershell
+  slavv info
+  ```
+
+4. **Run a test pipeline:**
+
+  ```powershell
+  slavv run -i data/slavv_test_volume.tif -o slavv_output --export csv json
+  ```
+
+5. **Run tests:**
+
+  ```powershell
+  python -m pytest -m "unit or integration"
+  ```
+
+---
+
+
+## Common Workflows
+
+- **Run the CLI pipeline:**
+
+  ```powershell
+  slavv run -i volume.tif -o slavv_output --export csv json
+  ```
+
+- **Analyze results:**
+
+  ```powershell
+  slavv analyze -i slavv_output/network.json
+  slavv plot -i slavv_output/network.json -o plots.html
+  ```
+
+- **MATLAB parity comparison:**
+
+  ```powershell
+  python dev/scripts/cli/compare_matlab_python.py --input data/slavv_test_volume.tif --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" --output-dir comparison_output
+  ```
+
+- **Run the Streamlit app:**
+
+  ```powershell
+  slavv-app
+  # Or
+  python -m streamlit run source/slavv/apps/web_app.py
+  ```
+
+---
 
 Python reimplementation of **SLAVV** (Segmentation-Less, Automated, Vascular Vectorization) for 3D vascular network extraction from microscopy volumes. This repository contains the core package code, a Streamlit web application, a Command-Line Interface (CLI), MATLAB import helpers, and parity/comparison tooling used to validate the port against the original MATLAB implementation.
 
-## Overview
+
+## Documentation Map
+
+- [Project Overview & Setup](README.md)
+- [Developer & Workflow Guide](AGENTS.md)
+- [Reference Docs](docs/README.md)
+- [MATLAB Mapping & Parity](docs/reference/core/MATLAB_MAPPING.md)
+- [Glossary](docs/reference/core/GLOSSARY.md)
+- [Active Chapter](docs/chapters/neighborhood-claim-alignment/README.md)
+- [Test Placement Guide](dev/tests/README.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing Guide](CONTRIBUTING.md)
+
 
 SLAVV provides an automated pipeline to extract vascular graphs (vertices and edges) directly from 3D image data without an intermediate segmentation step. This Python port aims for high parity with the original MATLAB implementation while providing a modern, scalable, and easy-to-use Python interface.
 
@@ -150,9 +235,21 @@ python -m pytest
 | `docs/` | Reference docs: translation guide, MATLAB mapping, and comparison layout. |
 | `external/` | Optional local checkouts (e.g., `Vectorization-Public` for MATLAB SLAVV). |
 | `data/` | Sample data and test volumes. |
-| `slavv_comparisons/`| Default root for structured comparison outputs. |
+| `slavv_comparisons/` | Default root for structured comparison outputs. |
 
-## License
+
+## Troubleshooting
+
+- If you encounter issues with installation or running commands, ensure your Python version is supported and your virtual environment is activated.
+- For Windows, always activate your venv with `.venv\Scripts\Activate.ps1` before running commands.
+- For MATLAB parity, verify your MATLAB path and version.
+- Check the [Issues](https://github.com/guitarbeat/slavv2python/issues) page for known problems and solutions.
+- For more help, see [docs/README.md](docs/README.md) or open a new issue.
+
+## Feedback
+
+We welcome usability suggestions and bug reports! Please open an issue or PR, or leave feedback in the [Discussions](https://github.com/guitarbeat/slavv2python/discussions) tab.
+
 
 This project is licensed under the **GNU GPL-3.0**. See the `LICENSE` file for details.
 

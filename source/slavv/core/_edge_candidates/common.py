@@ -11,6 +11,9 @@ from typing_extensions import TypeAlias
 
 from .._vertices.payloads import matlab_linear_indices as _matlab_linear_indices
 
+_MATLAB_PARITY_EDGE_BUDGET_PARAM = "_matlab_parity_edge_number_tolerance"
+_MATLAB_PARITY_WATERSHED_MODE_PARAM = "_matlab_parity_watershed_candidate_mode"
+
 Int16Array: TypeAlias = "np.ndarray"
 Int32Array: TypeAlias = "np.ndarray"
 Int64Array: TypeAlias = "np.ndarray"
@@ -28,7 +31,12 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
 
 def _parity_watershed_candidate_mode(params: dict[str, Any]) -> str:
     """Return the MATLAB-parity watershed candidate strategy."""
-    requested_mode = str(params.get("parity_watershed_candidate_mode", "all_contacts")).strip()
+    requested_mode = str(
+        params.get(
+            _MATLAB_PARITY_WATERSHED_MODE_PARAM,
+            params.get("parity_watershed_candidate_mode", "all_contacts"),
+        )
+    ).strip()
     normalized_mode = requested_mode.lower()
     allowed_modes = {"all_contacts", "remaining_origin_contacts"}
     return normalized_mode if normalized_mode in allowed_modes else "all_contacts"
@@ -62,9 +70,33 @@ def _parity_candidate_salvage_mode(
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
-    """Return MATLAB's per-origin frontier edge budget from get_edges_for_vertex.m."""
-    requested_edges = int(params.get("number_of_edges_per_vertex", 4))
+    """Return the active MATLAB-parity edge budget for imported-MATLAB reruns."""
+    requested_edges = int(
+        params.get(_MATLAB_PARITY_EDGE_BUDGET_PARAM, params.get("number_of_edges_per_vertex", 4))
+    )
     return max(1, requested_edges)
+
+
+def _params_with_matlab_parity_edge_budget(
+    params: dict[str, Any],
+    *,
+    edge_budget: int = 2,
+) -> dict[str, Any]:
+    """Return a copy of ``params`` with the active MATLAB V300 edge budget forced."""
+    normalized = dict(params)
+    normalized[_MATLAB_PARITY_EDGE_BUDGET_PARAM] = max(1, int(edge_budget))
+    return normalized
+
+
+def _params_with_matlab_parity_watershed_candidate_mode(
+    params: dict[str, Any],
+    *,
+    candidate_mode: str = "remaining_origin_contacts",
+) -> dict[str, Any]:
+    """Return a copy of ``params`` with the imported-MATLAB watershed mode forced."""
+    normalized = dict(params)
+    normalized[_MATLAB_PARITY_WATERSHED_MODE_PARAM] = str(candidate_mode)
+    return normalized
 
 
 def _matlab_frontier_offsets(

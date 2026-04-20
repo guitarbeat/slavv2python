@@ -18,6 +18,7 @@ from ..edge_primitives import (
 )
 from .candidate_manifest import _append_candidate_unit
 from .common import (
+    _matlab_frontier_edge_budget,
     _parity_candidate_salvage_mode,
     _parity_watershed_candidate_mode,
     _parity_watershed_metric_threshold_from_params,
@@ -209,7 +210,7 @@ def _finalize_matlab_parity_candidates(
         scale_indices,
         vertex_positions,
         energy_sign,
-        max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+        max_edges_per_vertex=_matlab_frontier_edge_budget(params),
         candidate_mode=candidate_mode,
         parity_watershed_metric_threshold=watershed_metric_threshold,
     )

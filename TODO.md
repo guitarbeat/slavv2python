@@ -110,6 +110,26 @@ Repeated first-divergence terminals, especially terminal `1009`, suggest that
 multiple missing neighborhoods may share the same parent/child ownership or
 branch invalidation rule.
 
+### Direct code comparison on April 20, 2026
+
+- The active MATLAB `edges` path is still one global shared-state watershed
+  claim process, not a per-origin tracing loop.
+- The imported-MATLAB Python path still traces one origin at a time and then
+  appends watershed-contact candidates later, so upstream discovery semantics
+  still differ before chooser cleanup.
+- MATLAB `get_edges_V300` uses `edge_number_tolerance = 2`, while the live
+  imported-MATLAB Python rerun had still been operating with
+  `number_of_edges_per_vertex = 4`.
+- An immediate parity fix landed on April 20, 2026: imported-MATLAB frontier
+  workflows now force MATLAB's effective `2`-edge budget through candidate
+  generation, watershed supplementation, geodesic salvage, and degree cleanup.
+- The imported-MATLAB workflow now also forces the stricter
+  `remaining_origin_contacts` watershed mode so late watershed contacts do not
+  keep overfilling origins that already met the MATLAB budget.
+- That fix removes one confirmed mismatch, but the larger shared-map discovery
+  gap remains open and is still the strongest explanation for unresolved
+  branch invalidation and partner-substitution drift.
+
 ## What Is Left
 
 ### 1. Fix frontier parent/child invalidation semantics
