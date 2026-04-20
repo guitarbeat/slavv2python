@@ -82,4 +82,3 @@ def paint_vertex_center_image(
         dtype=np.uint16,
     )
     return center_image
-

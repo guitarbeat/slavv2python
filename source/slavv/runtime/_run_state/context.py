@@ -245,7 +245,9 @@ class RunContext:
             status=STATUS_PENDING,
             target_stage=target_stage or "network",
             stages=_ensure_stage_map(),
-            provenance=_normalize_for_json({"layout": "legacy" if self.legacy else "structured", **provenance}),
+            provenance=_normalize_for_json(
+                {"layout": "legacy" if self.legacy else "structured", **provenance}
+            ),
         )
 
     def _bootstrap_legacy_snapshot(self, *, target_stage: str) -> RunSnapshot | None:
@@ -268,7 +270,9 @@ class RunContext:
         return StageController(self, name)
 
     def persist(self) -> None:
-        self.snapshot.elapsed_seconds = max(self.snapshot.elapsed_seconds, time.time() - self.start_time)
+        self.snapshot.elapsed_seconds = max(
+            self.snapshot.elapsed_seconds, time.time() - self.start_time
+        )
         self.snapshot.updated_at = _now_iso()
         atomic_write_json(self.snapshot_path, self.snapshot.to_dict())
 
@@ -282,7 +286,10 @@ class RunContext:
         mismatch = []
         if self.snapshot.input_fingerprint and self.snapshot.input_fingerprint != input_fingerprint:
             mismatch.append("input")
-        if self.snapshot.params_fingerprint and self.snapshot.params_fingerprint != params_fingerprint:
+        if (
+            self.snapshot.params_fingerprint
+            and self.snapshot.params_fingerprint != params_fingerprint
+        ):
             mismatch.append("parameters")
 
         if not mismatch:
@@ -346,7 +353,9 @@ class RunContext:
         self.persist()
 
     def mark_preprocess_complete(self) -> None:
-        stage_snapshot = self.snapshot.stages.setdefault(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
+        stage_snapshot = self.snapshot.stages.setdefault(
+            PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE)
+        )
         if stage_snapshot.started_at is None:
             stage_snapshot.started_at = _now_iso()
         stage_snapshot.status = STATUS_COMPLETED
@@ -392,7 +401,9 @@ class RunContext:
         stage_snapshot.units_completed = units_completed
         stage_snapshot.resumed = resumed or stage_snapshot.resumed
         if stage_snapshot.units_total > 0:
-            stage_snapshot.progress = min(1.0, stage_snapshot.units_completed / stage_snapshot.units_total)
+            stage_snapshot.progress = min(
+                1.0, stage_snapshot.units_completed / stage_snapshot.units_total
+            )
         self.snapshot.current_stage = stage
         self.snapshot.status = STATUS_RUNNING
         self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
@@ -427,7 +438,9 @@ class RunContext:
         if progress is not None:
             stage_snapshot.progress = max(0.0, min(1.0, progress))
         elif stage_snapshot.units_total > 0:
-            stage_snapshot.progress = min(1.0, stage_snapshot.units_completed / stage_snapshot.units_total)
+            stage_snapshot.progress = min(
+                1.0, stage_snapshot.units_completed / stage_snapshot.units_total
+            )
         stage_snapshot.eta_seconds = self._estimate_eta(stage_snapshot)
         self.snapshot.current_stage = stage
         self.snapshot.status = STATUS_RUNNING
@@ -450,7 +463,9 @@ class RunContext:
         stage_snapshot.progress = 1.0
         stage_snapshot.updated_at = _now_iso()
         stage_snapshot.completed_at = _now_iso()
-        stage_snapshot.units_total = max(stage_snapshot.units_total, stage_snapshot.units_completed, 1)
+        stage_snapshot.units_total = max(
+            stage_snapshot.units_total, stage_snapshot.units_completed, 1
+        )
         stage_snapshot.units_completed = stage_snapshot.units_total
         if detail:
             stage_snapshot.detail = detail
@@ -556,7 +571,9 @@ class RunContext:
         stages: dict[str, StageSnapshot],
         preprocess_done: bool | None = None,
     ) -> float:
-        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
+        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(
+            STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES
+        )
         progress = 0.0
         if preprocess_done is None:
             snapshot = getattr(self, "snapshot", None)
@@ -567,7 +584,10 @@ class RunContext:
         if preprocess_done:
             progress += STAGE_WEIGHTS[PREPROCESS_STAGE]
         for stage_name in PIPELINE_STAGES:
-            progress += STAGE_WEIGHTS[stage_name] * stages.get(stage_name, StageSnapshot(stage_name)).progress
+            progress += (
+                STAGE_WEIGHTS[stage_name]
+                * stages.get(stage_name, StageSnapshot(stage_name)).progress
+            )
         return float(max(0.0, min(1.0, progress / total)))
 
     @staticmethod

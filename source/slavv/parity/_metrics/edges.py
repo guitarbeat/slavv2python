@@ -126,7 +126,9 @@ def _chosen_candidate_source_summary(
         if source_label not in source_counts:
             continue
         source_counts[source_label] += 1
-        pair = [int(value) for value in np.asarray(candidate_connections[candidate_index]).tolist()[:2]]
+        pair = [
+            int(value) for value in np.asarray(candidate_connections[candidate_index]).tolist()[:2]
+        ]
         if len(pair) < 2 or pair[0] < 0 or pair[1] < 0:
             continue
         endpoint_pair = tuple(sorted(pair))
@@ -211,7 +213,9 @@ def _chosen_candidate_source_summary(
         "watershed_extra_python_endpoint_pair_count": len(chosen_watershed_pairs)
         - chosen_watershed_matched,
         "geodesic_endpoint_pair_count": len(chosen_geodesic_pairs),
-        "geodesic_matched_matlab_endpoint_pair_count": len(chosen_geodesic_pairs & matlab_endpoint_pairs),
+        "geodesic_matched_matlab_endpoint_pair_count": len(
+            chosen_geodesic_pairs & matlab_endpoint_pairs
+        ),
         "geodesic_extra_python_endpoint_pair_count": len(chosen_geodesic_pairs)
         - len(chosen_geodesic_pairs & matlab_endpoint_pairs),
     }
@@ -294,9 +298,15 @@ def _frontier_missing_vertex_overlap_summary(
         if source_label in chosen_pair_sets:
             chosen_pair_sets[source_label].add(pair)
     chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(python_endpoint_pair_set)
-    frontier_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(chosen_pair_sets["frontier"])
-    watershed_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(chosen_pair_sets["watershed"])
-    geodesic_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(chosen_pair_sets["geodesic"])
+    frontier_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
+        chosen_pair_sets["frontier"]
+    )
+    watershed_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
+        chosen_pair_sets["watershed"]
+    )
+    geodesic_chosen_incident_by_vertex = _incident_endpoint_pairs_by_vertex(
+        chosen_pair_sets["geodesic"]
+    )
 
     extra_frontier_entries.sort(key=lambda item: item.get("energy", np.inf))
     top_overlap_counts: dict[str, Any] = {}
@@ -327,12 +337,15 @@ def _frontier_missing_vertex_overlap_summary(
                 missing_by_vertex[vertex] & frontier_candidate_incident_by_vertex.get(vertex, set())
             ),
             "missing_matlab_pairs_present_in_watershed_candidates": len(
-                missing_by_vertex[vertex] & watershed_candidate_incident_by_vertex.get(vertex, set())
+                missing_by_vertex[vertex]
+                & watershed_candidate_incident_by_vertex.get(vertex, set())
             ),
             "missing_matlab_pairs_present_in_geodesic_candidates": len(
                 missing_by_vertex[vertex] & geodesic_candidate_incident_by_vertex.get(vertex, set())
             ),
-            "candidate_incident_endpoint_pair_count": len(candidate_incident_by_vertex.get(vertex, set())),
+            "candidate_incident_endpoint_pair_count": len(
+                candidate_incident_by_vertex.get(vertex, set())
+            ),
             "frontier_candidate_incident_endpoint_pair_count": len(
                 frontier_candidate_incident_by_vertex.get(vertex, set())
             ),
@@ -342,7 +355,9 @@ def _frontier_missing_vertex_overlap_summary(
             "geodesic_candidate_incident_endpoint_pair_count": len(
                 geodesic_candidate_incident_by_vertex.get(vertex, set())
             ),
-            "chosen_incident_endpoint_pair_count": len(chosen_incident_by_vertex.get(vertex, set())),
+            "chosen_incident_endpoint_pair_count": len(
+                chosen_incident_by_vertex.get(vertex, set())
+            ),
             "chosen_frontier_incident_endpoint_pair_count": len(
                 frontier_chosen_incident_by_vertex.get(vertex, set())
             ),
@@ -389,8 +404,8 @@ def _missing_matlab_seed_origin_samples(
         return []
 
     matlab_pairs_by_vertex = _incident_endpoint_pairs_by_vertex(matlab_endpoint_pairs)
-    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = _candidate_endpoint_pair_details(
-        candidate_edges
+    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = (
+        _candidate_endpoint_pair_details(candidate_edges)
     )
 
     samples = []
@@ -410,7 +425,9 @@ def _missing_matlab_seed_origin_samples(
                 "candidate_endpoint_pair_count": len(candidate_pairs),
                 "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
                 "frontier_candidate_endpoint_pair_count": len(source_pairs.get("frontier", set())),
-                "watershed_candidate_endpoint_pair_count": len(source_pairs.get("watershed", set())),
+                "watershed_candidate_endpoint_pair_count": len(
+                    source_pairs.get("watershed", set())
+                ),
                 "fallback_candidate_endpoint_pair_count": len(source_pairs.get("fallback", set())),
                 "missing_matlab_incident_endpoint_pair_samples": sorted(missing_pairs)[:3],
                 "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
@@ -434,8 +451,8 @@ def _extra_candidate_seed_origin_samples(
     limit: int = 10,
 ) -> list[dict[str, Any]]:
     """Summarize extra candidate endpoint pairs by the recorded seed origin."""
-    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = _candidate_endpoint_pair_details(
-        candidate_edges
+    candidate_pairs_by_seed_origin, source_pairs_by_seed_origin, _, _ = (
+        _candidate_endpoint_pair_details(candidate_edges)
     )
     if not candidate_pairs_by_seed_origin:
         return []
@@ -452,7 +469,9 @@ def _extra_candidate_seed_origin_samples(
                 "candidate_endpoint_pair_count": len(candidate_pairs),
                 "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
                 "frontier_candidate_endpoint_pair_count": len(source_pairs.get("frontier", set())),
-                "watershed_candidate_endpoint_pair_count": len(source_pairs.get("watershed", set())),
+                "watershed_candidate_endpoint_pair_count": len(
+                    source_pairs.get("watershed", set())
+                ),
                 "fallback_candidate_endpoint_pair_count": len(source_pairs.get("fallback", set())),
                 "candidate_endpoint_pair_samples": sorted(candidate_pairs)[:3],
                 "extra_candidate_endpoint_pair_samples": sorted(extra_candidate_pairs)[:3],
@@ -502,7 +521,9 @@ def compare_edges(
         comparison["count_difference"] = abs(matlab_count - python_count)
         avg_count = (matlab_count + python_count) / 2.0
         if avg_count > 0:
-            comparison["count_percent_difference"] = (comparison["count_difference"] / avg_count) * 100.0
+            comparison["count_percent_difference"] = (
+                comparison["count_difference"] / avg_count
+            ) * 100.0
 
     matlab_total_length = matlab_edges.get("total_length", 0.0)
     if matlab_total_length > 0:
@@ -520,18 +541,25 @@ def compare_edges(
 
         comparison["total_length"]["python"] = float(python_total_length)
         if matlab_total_length > 0 and python_total_length > 0:
-            comparison["total_length"]["difference"] = float(abs(matlab_total_length - python_total_length))
+            comparison["total_length"]["difference"] = float(
+                abs(matlab_total_length - python_total_length)
+            )
             comparison["total_length"]["percent_difference"] = float(
-                (comparison["total_length"]["difference"] / ((matlab_total_length + python_total_length) / 2.0))
+                (
+                    comparison["total_length"]["difference"]
+                    / ((matlab_total_length + python_total_length) / 2.0)
+                )
                 * 100.0
             )
 
-    include_trace = _count_items(matlab_edges.get("traces")) > 0 and _count_items(
-        python_edges.get("traces")
-    ) > 0
-    include_energy = _count_items(matlab_edges.get("energies")) > 0 and _count_items(
-        python_edges.get("energies")
-    ) > 0
+    include_trace = (
+        _count_items(matlab_edges.get("traces")) > 0
+        and _count_items(python_edges.get("traces")) > 0
+    )
+    include_energy = (
+        _count_items(matlab_edges.get("energies")) > 0
+        and _count_items(python_edges.get("energies")) > 0
+    )
     matlab_counter = Counter(_edge_signatures(matlab_edges, include_trace, include_energy))
     python_counter = Counter(_edge_signatures(python_edges, include_trace, include_energy))
     comparison["exact_match"] = matlab_counter == python_counter
@@ -570,9 +598,15 @@ def compare_edges(
             fallback_pair_samples = sorted(source_pairs.get("fallback", set()))[:3]
         elif candidate_audit is not None:
             source_breakdown = candidate_audit.get("source_breakdown", {})
-            frontier_count = int(source_breakdown.get("frontier", {}).get("candidate_endpoint_pair_count", 0))
-            supplement_count = int(source_breakdown.get("watershed", {}).get("candidate_endpoint_pair_count", 0))
-            fallback_count = int(source_breakdown.get("fallback", {}).get("candidate_endpoint_pair_count", 0))
+            frontier_count = int(
+                source_breakdown.get("frontier", {}).get("candidate_endpoint_pair_count", 0)
+            )
+            supplement_count = int(
+                source_breakdown.get("watershed", {}).get("candidate_endpoint_pair_count", 0)
+            )
+            fallback_count = int(
+                source_breakdown.get("fallback", {}).get("candidate_endpoint_pair_count", 0)
+            )
             frontier_pair_samples = list(
                 source_breakdown.get("frontier", {}).get("candidate_endpoint_pair_samples", [])
             )[:3]
@@ -598,7 +632,9 @@ def compare_edges(
         fallback_only_pairs = sorted(
             pair for pair, sources in pair_sources.items() if sources == {"fallback"}
         )
-        multi_source_pairs = sorted(pair for pair, sources in pair_sources.items() if len(sources) > 1)
+        multi_source_pairs = sorted(
+            pair for pair, sources in pair_sources.items() if len(sources) > 1
+        )
 
         coverage: dict[str, Any] = {
             "candidate_endpoint_pair_count": len(candidate_endpoint_pairs),
@@ -607,7 +643,9 @@ def compare_edges(
             "fallback_candidate_endpoint_pair_count": fallback_count,
             "matlab_endpoint_pair_count": len(matlab_endpoint_pairs),
             "python_endpoint_pair_count": len(python_endpoint_pairs),
-            "matched_matlab_endpoint_pair_count": len(matlab_endpoint_pairs & candidate_endpoint_pairs),
+            "matched_matlab_endpoint_pair_count": len(
+                matlab_endpoint_pairs & candidate_endpoint_pairs
+            ),
             "missing_matlab_endpoint_pair_count": len(missing_matlab_pairs),
             "extra_candidate_endpoint_pair_count": len(extra_candidate_pairs),
             "matlab_pairs_fully_covered": not missing_matlab_pairs,
@@ -661,7 +699,9 @@ def compare_edges(
             python_edges, candidate_edges, matlab_endpoint_pairs
         )
         if frontier_overlap_summary is not None:
-            comparison["diagnostics"]["extra_frontier_missing_vertex_overlap"] = frontier_overlap_summary
+            comparison["diagnostics"]["extra_frontier_missing_vertex_overlap"] = (
+                frontier_overlap_summary
+            )
     if candidate_audit is not None:
         comparison["diagnostics"]["candidate_audit"] = _candidate_audit_summary(candidate_audit)
 

@@ -80,7 +80,9 @@ def compare_results(
 
     if matlab_parsed and python_data:
         if "vertices" in matlab_parsed and "vertices" in python_data:
-            comparison["vertices"] = compare_vertices(matlab_parsed["vertices"], python_data["vertices"])
+            comparison["vertices"] = compare_vertices(
+                matlab_parsed["vertices"], python_data["vertices"]
+            )
 
         if "edges" in matlab_parsed and "edges" in python_data:
             comparison["edges"] = compare_edges(

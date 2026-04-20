@@ -150,7 +150,11 @@ def calculate_energy_field_resumable(
             energy_scale = compute_energy_scale(chunk_img, config, scale_idx)
             chunk_inner = energy_scale[inner_slice]
             target_view = best_energy[out_slice]
-            mask = chunk_inner < target_view if config["energy_sign"] < 0 else chunk_inner > target_view
+            mask = (
+                chunk_inner < target_view
+                if config["energy_sign"] < 0
+                else chunk_inner > target_view
+            )
             target_view[mask] = chunk_inner[mask]
             best_energy[out_slice] = target_view
 

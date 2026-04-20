@@ -147,31 +147,76 @@ def _matlab_hessian_energy(
 ) -> np.ndarray:
     """Approximate MATLAB's curvature-weighted Hessian energy response."""
     grad_y = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 0, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 0),
+        microns_per_voxel,
     )
     grad_x = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 1, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 0),
+        microns_per_voxel,
     )
     grad_z = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 0, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 1),
+        microns_per_voxel,
     )
     h_yy = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (2, 0, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (2, 0, 0),
+        microns_per_voxel,
     )
     h_xx = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 2, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 2, 0),
+        microns_per_voxel,
     )
     h_zz = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 0, 2), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 2),
+        microns_per_voxel,
     )
     h_yx = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 1, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 1, 0),
+        microns_per_voxel,
     )
     h_xz = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 1, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 1),
+        microns_per_voxel,
     )
     h_yz = _matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 0, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 1),
+        microns_per_voxel,
     )
 
     laplacian: np.ndarray = h_yy + h_xx + h_zz
@@ -252,31 +297,76 @@ def _cupy_matlab_hessian_energy(
 ) -> np.ndarray:
     """Approximate MATLAB Hessian energy using CuPy for derivative kernels."""
     grad_y = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 0, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 0),
+        microns_per_voxel,
     )
     grad_x = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 1, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 0),
+        microns_per_voxel,
     )
     grad_z = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 0, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 1),
+        microns_per_voxel,
     )
     h_yy = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (2, 0, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (2, 0, 0),
+        microns_per_voxel,
     )
     h_xx = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 2, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 2, 0),
+        microns_per_voxel,
     )
     h_zz = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 0, 2), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 0, 2),
+        microns_per_voxel,
     )
     h_yx = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 1, 0), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 1, 0),
+        microns_per_voxel,
     )
     h_xz = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (0, 1, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (0, 1, 1),
+        microns_per_voxel,
     )
     h_yz = _cupy_matched_filter_derivative(
-        image, sigma_object, sigma_background, spherical_to_annular_ratio, (1, 0, 1), microns_per_voxel
+        image,
+        sigma_object,
+        sigma_background,
+        spherical_to_annular_ratio,
+        (1, 0, 1),
+        microns_per_voxel,
     )
 
     laplacian: np.ndarray = h_yy + h_xx + h_zz

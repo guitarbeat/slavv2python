@@ -164,4 +164,3 @@ def build_selected_edges_result(
     diagnostics["chosen_edge_count"] = len(final_indices)
     result["diagnostics"] = diagnostics
     return result
-

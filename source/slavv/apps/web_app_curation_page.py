@@ -55,9 +55,7 @@ def show_ml_curation_page():
     """Display the ML curation page."""
     from slavv.apps import web_app as web_app_facade
 
-    st.markdown(
-        '<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True
-    )
+    st.markdown('<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True)
 
     if "processing_results" not in st.session_state:
         st.warning("⚠️ No processing results found. Please process an image first.")

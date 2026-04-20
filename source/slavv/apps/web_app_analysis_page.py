@@ -47,7 +47,9 @@ def show_analysis_page() -> None:
     st.markdown("### 📊 Key Metrics")
     col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
     with col1:
-        st.metric("Total Length", f"{stats.get('total_length', 0):.1f} μm", help="Sum of all edge lengths")
+        st.metric(
+            "Total Length", f"{stats.get('total_length', 0):.1f} μm", help="Sum of all edge lengths"
+        )
     with col2:
         st.metric(
             "Volume Fraction",
@@ -61,9 +63,13 @@ def show_analysis_page() -> None:
             help="Bifurcations per cubic millimeter",
         )
     with col4:
-        st.metric("Mean Radius", f"{stats.get('mean_radius', 0):.2f} μm", help="Average vessel radius")
+        st.metric(
+            "Mean Radius", f"{stats.get('mean_radius', 0):.2f} μm", help="Average vessel radius"
+        )
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"])
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"]
+    )
     visualizer = NetworkVisualizer()
 
     with tab1:
@@ -71,11 +77,15 @@ def show_analysis_page() -> None:
         col1, col2 = st.columns(2, gap="large")
         with col1:
             st.plotly_chart(
-                visualizer.plot_strand_analysis(results["network"], results["vertices"], parameters),
+                visualizer.plot_strand_analysis(
+                    results["network"], results["vertices"], parameters
+                ),
                 use_container_width=True,
             )
         with col2:
-            st.plotly_chart(visualizer.plot_radius_distribution(results["vertices"]), use_container_width=True)
+            st.plotly_chart(
+                visualizer.plot_radius_distribution(results["vertices"]), use_container_width=True
+            )
         st.markdown("#### Length-Weighted Histograms")
         st.caption(
             "Depth, radius, and inclination distributions weighted by segment length. Ported from `area_histogram_plotter.m`."
@@ -97,7 +107,9 @@ def show_analysis_page() -> None:
         st.markdown("#### Network Topology")
         col1, col2 = st.columns(2, gap="large")
         with col1:
-            st.plotly_chart(visualizer.plot_degree_distribution(results["network"]), use_container_width=True)
+            st.plotly_chart(
+                visualizer.plot_degree_distribution(results["network"]), use_container_width=True
+            )
         with col2:
             connectivity_stats = pd.DataFrame(
                 {
@@ -125,11 +137,27 @@ def show_analysis_page() -> None:
         )
         col1, col2 = st.columns(2, gap="small")
         with col1:
-            st.metric("Mean Tortuosity", f"{stats.get('mean_tortuosity', 0):.2f}", help="Average path tortuosity")
-            st.metric("Tortuosity Std", f"{stats.get('tortuosity_std', 0):.2f}", help="Standard deviation of tortuosity")
+            st.metric(
+                "Mean Tortuosity",
+                f"{stats.get('mean_tortuosity', 0):.2f}",
+                help="Average path tortuosity",
+            )
+            st.metric(
+                "Tortuosity Std",
+                f"{stats.get('tortuosity_std', 0):.2f}",
+                help="Standard deviation of tortuosity",
+            )
         with col2:
-            st.metric("Fractal Dimension", f"{stats.get('fractal_dimension', 0):.2f}", help="Complexity of network structure")
-            st.metric("Lacunarity", f"{stats.get('lacunarity', 0):.2f}", help="Spatial heterogeneity of the network")
+            st.metric(
+                "Fractal Dimension",
+                f"{stats.get('fractal_dimension', 0):.2f}",
+                help="Complexity of network structure",
+            )
+            st.metric(
+                "Lacunarity",
+                f"{stats.get('lacunarity', 0):.2f}",
+                help="Spatial heterogeneity of the network",
+            )
 
     with tab4:
         st.markdown("#### Complete Statistics Table")

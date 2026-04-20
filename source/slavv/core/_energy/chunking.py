@@ -225,7 +225,9 @@ def _calculate_energy_field_chunked(
             sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
             sub_params["return_all_scales"] = True
             chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
-            energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][(*inner_slice, slice(None))]
+            energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
+                (*inner_slice, slice(None))
+            ]
         if config["energy_sign"] < 0:
             energy_3d = np.min(energy_4d, axis=3)
             scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)

@@ -80,6 +80,7 @@ class SharedNeighborhoodDiagnosticReport:
         ]
         return payload
 
+
 def _load_comparison_payload(run_root: Path) -> dict[str, Any]:
     layout = resolve_run_layout(run_root)
     report_path = layout["analysis_dir"] / "comparison_report.json"

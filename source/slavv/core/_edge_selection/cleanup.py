@@ -120,4 +120,3 @@ def clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
             continue
         parent[root_end] = root_start
     return keep
-

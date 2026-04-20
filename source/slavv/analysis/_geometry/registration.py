@@ -121,8 +121,8 @@ def icp_register_rigid(
             denom = float(np.sum(source_centered**2))
             if denom > 0:
                 scale_kabsch = float(np.sum(singular_vals) / denom)
-        translate_kabsch = (
-            target_matched.mean(axis=0) - scale_kabsch * (rotation_kabsch @ source_arr.mean(axis=0))
+        translate_kabsch = target_matched.mean(axis=0) - scale_kabsch * (
+            rotation_kabsch @ source_arr.mean(axis=0)
         )
 
         rotation = rotation_kabsch @ rotation
@@ -130,9 +130,7 @@ def icp_register_rigid(
         translate = rotation_kabsch @ translate + translate_kabsch
 
         source_projected = (source_arr @ rotation.T) * scale + translate
-        err = float(
-            np.sqrt(np.mean(np.sum((source_projected - target_matched) ** 2, axis=1)))
-        )
+        err = float(np.sqrt(np.mean(np.sum((source_projected - target_matched) ** 2, axis=1))))
         if abs(prev_err - err) < tol:
             prev_err = err
             break
@@ -217,16 +215,30 @@ def register_strands(
     edges_b_arr = np.atleast_2d(np.asarray(edges_b, dtype=int))
 
     if vertices_a_arr.size == 0:
-        return {"vertices": vertices_b_arr.copy(), "edges": edges_b_arr.copy(), "transform": np.eye(4), "rms": 0.0}
+        return {
+            "vertices": vertices_b_arr.copy(),
+            "edges": edges_b_arr.copy(),
+            "transform": np.eye(4),
+            "rms": 0.0,
+        }
     if vertices_b_arr.size == 0:
-        return {"vertices": vertices_a_arr.copy(), "edges": edges_a_arr.copy(), "transform": np.eye(4), "rms": 0.0}
+        return {
+            "vertices": vertices_a_arr.copy(),
+            "edges": edges_a_arr.copy(),
+            "transform": np.eye(4),
+            "rms": 0.0,
+        }
 
     if method == "rigid":
-        transform, rms = icp_register_rigid(vertices_a_arr, vertices_b_arr, with_scale=with_scale, max_iters=max_iters)
+        transform, rms = icp_register_rigid(
+            vertices_a_arr, vertices_b_arr, with_scale=with_scale, max_iters=max_iters
+        )
     elif method == "affine":
         tree = cKDTree(vertices_b_arr)
         _, idx = tree.query(vertices_a_arr, k=1)
-        transform, rms = register_vector_sets(vertices_a_arr, vertices_b_arr[idx], method="affine", return_error=True)
+        transform, rms = register_vector_sets(
+            vertices_a_arr, vertices_b_arr[idx], method="affine", return_error=True
+        )
     else:
         raise ValueError("method must be 'rigid' or 'affine'")
 
@@ -245,19 +257,25 @@ def register_strands(
             merged_vertices.append(vertices_a_transformed[row_idx].tolist())
 
     merged_vertices_arr = np.asarray(merged_vertices, dtype=float)
-    edges_a_mapped = np.vstack([
-        np.minimum(a_to_merged[edges_a_arr[:, 0]], a_to_merged[edges_a_arr[:, 1]]),
-        np.maximum(a_to_merged[edges_a_arr[:, 0]], a_to_merged[edges_a_arr[:, 1]]),
-    ]).T
-    edges_b_norm = np.vstack([
-        np.minimum(edges_b_arr[:, 0], edges_b_arr[:, 1]),
-        np.maximum(edges_b_arr[:, 0], edges_b_arr[:, 1]),
-    ]).T
+    edges_a_mapped = np.vstack(
+        [
+            np.minimum(a_to_merged[edges_a_arr[:, 0]], a_to_merged[edges_a_arr[:, 1]]),
+            np.maximum(a_to_merged[edges_a_arr[:, 0]], a_to_merged[edges_a_arr[:, 1]]),
+        ]
+    ).T
+    edges_b_norm = np.vstack(
+        [
+            np.minimum(edges_b_arr[:, 0], edges_b_arr[:, 1]),
+            np.maximum(edges_b_arr[:, 0], edges_b_arr[:, 1]),
+        ]
+    ).T
 
     all_edges = np.vstack([edges_b_norm, edges_a_mapped])
     all_edges = all_edges[all_edges[:, 0] != all_edges[:, 1]]
     if all_edges.size:
-        view = np.ascontiguousarray(all_edges).view([("a", all_edges.dtype), ("b", all_edges.dtype)])
+        view = np.ascontiguousarray(all_edges).view(
+            [("a", all_edges.dtype), ("b", all_edges.dtype)]
+        )
         _, idx_unique = np.unique(view, return_index=True)
         merged_edges = all_edges[np.sort(idx_unique)]
     else:

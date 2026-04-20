@@ -68,8 +68,12 @@ def add_edge_diagnostics(lines: list[str], report: dict[str, Any], layout: dict[
                 f"{int(conflict_source_pairs.get('watershed->watershed', 0)):,}"
             )
 
-    final_matched_endpoint_pairs = int(report.get("edges", {}).get("matched_endpoint_pair_count", 0))
-    final_missing_endpoint_pairs = int(report.get("edges", {}).get("missing_endpoint_pair_count", 0))
+    final_matched_endpoint_pairs = int(
+        report.get("edges", {}).get("matched_endpoint_pair_count", 0)
+    )
+    final_missing_endpoint_pairs = int(
+        report.get("edges", {}).get("missing_endpoint_pair_count", 0)
+    )
     final_extra_endpoint_pairs = int(report.get("edges", {}).get("extra_endpoint_pair_count", 0))
     if final_matched_endpoint_pairs or final_missing_endpoint_pairs or final_extra_endpoint_pairs:
         lines.append(
@@ -155,7 +159,9 @@ def _add_candidate_coverage(lines: list[str], candidate_coverage: dict[str, Any]
             f"{int(candidate_coverage.get('watershed_only_candidate_endpoint_pair_count', 0)):,}/"
             f"{int(candidate_coverage.get('fallback_only_candidate_endpoint_pair_count', 0)):,}"
         )
-    if missing_candidate_pairs := candidate_coverage.get("missing_matlab_endpoint_pair_samples", []):
+    if missing_candidate_pairs := candidate_coverage.get(
+        "missing_matlab_endpoint_pair_samples", []
+    ):
         lines.append(f"First missing candidate endpoint pair: {missing_candidate_pairs[0]}")
     if missing_seed_origins := candidate_coverage.get("missing_matlab_seed_origin_samples", []):
         top_seed_origin = missing_seed_origins[0]
@@ -167,9 +173,13 @@ def _add_candidate_coverage(lines: list[str], candidate_coverage: dict[str, Any]
             f"  seed candidate pairs "
             f"{int(top_seed_origin.get('candidate_endpoint_pair_count', 0)):,}"
         )
-        if missing_seed_pairs := top_seed_origin.get("missing_matlab_incident_endpoint_pair_samples", []):
+        if missing_seed_pairs := top_seed_origin.get(
+            "missing_matlab_incident_endpoint_pair_samples", []
+        ):
             lines.append(f"First missing pair at top seed origin: {missing_seed_pairs[0]}")
-    if supplement_candidate_pairs := candidate_coverage.get("supplement_candidate_endpoint_pair_samples", []):
+    if supplement_candidate_pairs := candidate_coverage.get(
+        "supplement_candidate_endpoint_pair_samples", []
+    ):
         lines.append(f"First watershed supplement candidate pair: {supplement_candidate_pairs[0]}")
     if extra_seed_origins := candidate_coverage.get("extra_candidate_seed_origin_samples", []):
         top_extra_origin = extra_seed_origins[0]
@@ -185,7 +195,9 @@ def _add_candidate_coverage(lines: list[str], candidate_coverage: dict[str, Any]
             lines.append(f"First extra pair at top seed origin: {extra_seed_pairs[0]}")
 
 
-def _add_chosen_candidate_sources(lines: list[str], chosen_candidate_sources: dict[str, Any]) -> None:
+def _add_chosen_candidate_sources(
+    lines: list[str], chosen_candidate_sources: dict[str, Any]
+) -> None:
     chosen_counts = chosen_candidate_sources.get("counts", {})
     lines.append(
         "Chosen candidate sources frontier/watershed/geodesic/fallback: "
@@ -229,13 +241,25 @@ def _add_chosen_candidate_sources(lines: list[str], chosen_candidate_sources: di
             extra_length = extra_stats.get("median_length")
             fragments = []
             if matched_energy is not None or extra_energy is not None:
-                matched_energy_text = f"{float(matched_energy):.1f}" if matched_energy is not None else "n/a"
-                extra_energy_text = f"{float(extra_energy):.1f}" if extra_energy is not None else "n/a"
-                fragments.append(f"median energy matched/extra {matched_energy_text}/{extra_energy_text}")
+                matched_energy_text = (
+                    f"{float(matched_energy):.1f}" if matched_energy is not None else "n/a"
+                )
+                extra_energy_text = (
+                    f"{float(extra_energy):.1f}" if extra_energy is not None else "n/a"
+                )
+                fragments.append(
+                    f"median energy matched/extra {matched_energy_text}/{extra_energy_text}"
+                )
             if matched_length is not None or extra_length is not None:
-                matched_length_text = f"{round(float(matched_length))}" if matched_length is not None else "n/a"
-                extra_length_text = f"{round(float(extra_length))}" if extra_length is not None else "n/a"
-                fragments.append(f"median length matched/extra {matched_length_text}/{extra_length_text}")
+                matched_length_text = (
+                    f"{round(float(matched_length))}" if matched_length is not None else "n/a"
+                )
+                extra_length_text = (
+                    f"{round(float(extra_length))}" if extra_length is not None else "n/a"
+                )
+                fragments.append(
+                    f"median length matched/extra {matched_length_text}/{extra_length_text}"
+                )
             if fragments:
                 lines.append(f"Chosen {source_label} profile: " + "  ".join(fragments))
 
@@ -259,8 +283,7 @@ def _add_extra_frontier_overlap(lines: list[str], extra_frontier_overlap: dict[s
             )
         if segments:
             lines.append(
-                "Strongest extra frontier sharing missing-matlab vertex: "
-                + "  ".join(segments)
+                "Strongest extra frontier sharing missing-matlab vertex: " + "  ".join(segments)
             )
     if top_shared_vertices := extra_frontier_overlap.get("top_shared_vertices", []):
         formatted_vertices = []
@@ -280,10 +303,14 @@ def _add_extra_frontier_overlap(lines: list[str], extra_frontier_overlap: dict[s
                 f"{int(entry.get('missing_matlab_endpoint_pair_count', 0))})"
             )
         if candidate_hits:
-            lines.append("Top shared vertex missing-pair candidate hits: " + " ".join(candidate_hits))
+            lines.append(
+                "Top shared vertex missing-pair candidate hits: " + " ".join(candidate_hits)
+            )
 
 
-def _add_candidate_audit(lines: list[str], candidate_audit: dict[str, Any], layout: dict[str, Any]) -> None:
+def _add_candidate_audit(
+    lines: list[str], candidate_audit: dict[str, Any], layout: dict[str, Any]
+) -> None:
     lines.append(
         "Candidate audit: "
         f"schema=v{int(candidate_audit.get('schema_version', 1))} "
@@ -315,7 +342,9 @@ def _add_candidate_audit(lines: list[str], candidate_audit: dict[str, Any], layo
             f"{int(pair_source_breakdown.get('fallback_only_pair_count', 0)):,}/"
             f"{int(pair_source_breakdown.get('multi_source_pair_count', 0)):,}"
         )
-        if watershed_only_pairs := pair_source_breakdown.get("watershed_only_endpoint_pair_samples", []):
+        if watershed_only_pairs := pair_source_breakdown.get(
+            "watershed_only_endpoint_pair_samples", []
+        ):
             lines.append(f"First watershed-only candidate pair: {watershed_only_pairs[0]}")
     if audit_diag := candidate_audit.get("diagnostic_counters", {}):
         lines.append(

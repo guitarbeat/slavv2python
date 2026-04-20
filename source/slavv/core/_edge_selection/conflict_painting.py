@@ -250,4 +250,3 @@ def _choose_edges_matlab_style(
         vertex_positions,
         diagnostics,
     )
-

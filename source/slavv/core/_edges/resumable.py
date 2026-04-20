@@ -71,7 +71,9 @@ def extract_edges_resumable(
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-    candidates, completed = _load_edge_units(units_dir, append_candidate_unit, empty_edge_diagnostics)
+    candidates, completed = _load_edge_units(
+        units_dir, append_candidate_unit, empty_edge_diagnostics
+    )
 
     lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
     logger.info("Creating vertex center lookup image...")
@@ -329,7 +331,9 @@ def extract_edges_watershed_resumable(
 
     units_dir = stage_controller.artifact_path("units")
     units_dir.mkdir(parents=True, exist_ok=True)
-    existing_payload, completed = _load_edge_units(units_dir, append_candidate_unit, empty_edge_diagnostics)
+    existing_payload, completed = _load_edge_units(
+        units_dir, append_candidate_unit, empty_edge_diagnostics
+    )
     edges = existing_payload["traces"]
     connections = (
         existing_payload["connections"].tolist() if existing_payload["connections"].size else []
@@ -384,7 +388,9 @@ def extract_edges_watershed_resumable(
             "traces": unit_traces,
             "connections": unit_connections,
             "metrics": unit_energies,
-            "energy_traces": [np.asarray([energy_value], dtype=np.float32) for energy_value in unit_energies],
+            "energy_traces": [
+                np.asarray([energy_value], dtype=np.float32) for energy_value in unit_energies
+            ],
             "scale_traces": [np.zeros((len(trace),), dtype=np.int16) for trace in unit_traces],
             "origin_indices": [origin_index] * len(unit_traces),
             "connection_sources": ["fallback"] * len(unit_traces),

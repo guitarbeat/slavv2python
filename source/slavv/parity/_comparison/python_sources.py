@@ -181,7 +181,9 @@ def _load_python_results_from_source(
                         loaded_data["vertices"]["positions"]
                     )
                     if "radii" in loaded_data["vertices"]:
-                        loaded_data["vertices"]["radii"] = np.array(loaded_data["vertices"]["radii"])
+                        loaded_data["vertices"]["radii"] = np.array(
+                            loaded_data["vertices"]["radii"]
+                        )
 
                 if "edges" in loaded_data and "traces" in loaded_data["edges"]:
                     loaded_data["edges"]["traces"] = [

@@ -80,7 +80,9 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
         comparison["count_difference"] = abs(matlab_count - python_count)
         avg_count = (matlab_count + python_count) / 2.0
         if avg_count > 0:
-            comparison["count_percent_difference"] = (comparison["count_difference"] / avg_count) * 100.0
+            comparison["count_percent_difference"] = (
+                comparison["count_difference"] / avg_count
+            ) * 100.0
 
     matlab_positions = _as_position_array(matlab_verts.get("positions", np.array([])))
     python_positions = _as_position_array(python_verts.get("positions", np.array([])))
@@ -137,7 +139,9 @@ def compare_vertices(matlab_verts: dict[str, Any], python_verts: dict[str, Any])
     coords_scales_energy_counter_matlab = Counter(coords_scales_energy_matlab)
     coords_scales_energy_counter_python = Counter(coords_scales_energy_python)
 
-    comparison["exact_positions_scales_match"] = coords_scales_counter_matlab == coords_scales_counter_python
+    comparison["exact_positions_scales_match"] = (
+        coords_scales_counter_matlab == coords_scales_counter_python
+    )
     comparison["exact_positions_scales_energies_match"] = (
         coords_scales_energy_counter_matlab == coords_scales_energy_counter_python
     )

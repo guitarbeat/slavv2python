@@ -128,4 +128,3 @@ def choose_edges_for_workflow(
         image_shape,
         params,
     )
-

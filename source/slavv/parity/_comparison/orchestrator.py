@@ -379,14 +379,16 @@ def orchestrate_comparison(
             print("\nSkipping MATLAB execution (completed reusable batch detected)")
         else:
             print("\nSkipping MATLAB execution (--skip-matlab)")
-        matlab_results, python_force_rerun_from = bootstrap_existing_matlab_batch_for_python_parity_fn(
-            matlab_output=matlab_output,
-            python_output=python_output,
-            input_file=input_file,
-            params_for_python=params_for_python,
-            comparison_context=comparison_context,
-            metadata_dir=metadata_dir,
-            python_parity_rerun_from=requested_python_rerun_from,
+        matlab_results, python_force_rerun_from = (
+            bootstrap_existing_matlab_batch_for_python_parity_fn(
+                matlab_output=matlab_output,
+                python_output=python_output,
+                input_file=input_file,
+                params_for_python=params_for_python,
+                comparison_context=comparison_context,
+                metadata_dir=metadata_dir,
+                python_parity_rerun_from=requested_python_rerun_from,
+            )
         )
 
     python_results = None

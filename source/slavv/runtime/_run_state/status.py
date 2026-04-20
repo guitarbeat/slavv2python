@@ -14,7 +14,9 @@ def target_stage_progress(snapshot: RunSnapshot) -> float:
     selected = PIPELINE_STAGES[: index + 1]
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in selected)
     preprocess_stage = snapshot.stages.get(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
-    preprocess_done = bool(snapshot.artifacts.get("preprocess_done")) or (preprocess_stage.status == STATUS_COMPLETED)
+    preprocess_done = bool(snapshot.artifacts.get("preprocess_done")) or (
+        preprocess_stage.status == STATUS_COMPLETED
+    )
     progress = STAGE_WEIGHTS[PREPROCESS_STAGE] if preprocess_done else 0.0
     for stage in selected:
         progress += STAGE_WEIGHTS[stage] * snapshot.stages.get(stage, StageSnapshot(stage)).progress

@@ -13,9 +13,7 @@ def show_processing_page() -> None:
     """Display the image processing page."""
     from slavv.apps import web_app as web_app_facade
 
-    st.markdown(
-        '<h2 class="section-header">Image Processing Pipeline</h2>', unsafe_allow_html=True
-    )
+    st.markdown('<h2 class="section-header">Image Processing Pipeline</h2>', unsafe_allow_html=True)
 
     st.markdown("### 📁 Upload Image")
     uploaded_file = st.file_uploader(
@@ -256,9 +254,8 @@ def show_processing_page() -> None:
             help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
         )
 
-    current_snapshot = (
+    current_snapshot = st.session_state.get("current_run_dir") and web_app_facade.load_run_snapshot(
         st.session_state.get("current_run_dir")
-        and web_app_facade.load_run_snapshot(st.session_state.get("current_run_dir"))
     )
     if current_snapshot is not None:
         web_app_facade._render_run_dashboard(current_snapshot)
@@ -328,9 +325,7 @@ def show_processing_page() -> None:
                         stop_after=stop_after_val,
                         force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
                     )
-                    final_snapshot = (
-                        web_app_facade.load_run_snapshot(run_dir) if run_dir else None
-                    )
+                    final_snapshot = web_app_facade.load_run_snapshot(run_dir) if run_dir else None
                     with dashboard_placeholder.container():
                         web_app_facade._render_run_dashboard(final_snapshot)
                     status.update(
