@@ -9,9 +9,3 @@ parity_cli
 web_app
     Streamlit web application.
 """
-
-from __future__ import annotations
-
-from .cli import main  # legacy package-level re-export; console scripts target slavv.apps.cli:main
-
-__all__ = ["main"]

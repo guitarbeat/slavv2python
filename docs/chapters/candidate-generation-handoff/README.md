@@ -108,9 +108,11 @@ Out of scope:
 
 Historical note:
 
-This loop is preserved for context, but the active workspace now keeps
+This loop is preserved for context only. The active workspace now keeps
 comparison runs under
-`C:\Users\alw4834\Documents\slavv2python\slavv_comparisons`.
+`C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\...`,
+and the active parity chapter uses fresh imported-MATLAB trial roots rather
+than the old local `saved_batch_run` example below.
 
 ```powershell
 python dev/scripts/cli/compare_matlab_python.py `
@@ -119,6 +121,11 @@ python dev/scripts/cli/compare_matlab_python.py `
   --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\next_chapter_run `
   --params C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
 ```
+
+Current active evidence roots:
+
+- `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
 
 ## Core References
 

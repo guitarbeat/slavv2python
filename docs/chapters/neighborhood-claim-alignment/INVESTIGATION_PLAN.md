@@ -1,7 +1,7 @@
 ﻿# Shared Neighborhood Claim Investigation Plan
 
 Status: Active Chapter 3 plan
-Updated: 2026-04-10
+Updated: 2026-04-20
 
 Use [README.md](README.md) for chapter framing and
 [NEIGHBORHOOD_AUDIT_CHECKLIST.md](NEIGHBORHOOD_AUDIT_CHECKLIST.md) for the
@@ -19,13 +19,21 @@ Use this file when you want to know:
   - exact vertex parity on the imported-MATLAB surface
   - exact stage-isolated `network` parity when exact MATLAB `edges` are
     imported
-- Current best saved-batch result:
-  - `vertices 110/110`
-  - `edges 94/93`
-  - `strands 49/54`
+- Current live evidence roots:
+  - `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  - `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+- Current live imported-MATLAB `edges` trial:
+  - `vertices 1682/1682`
+  - `edges 1555/1379`
+  - `strands 774/682`
+- Current stage-isolated `network` gate:
+  - `vertices 1682/1682`
+  - `edges 1379/1379`
+  - `strands 682/682`
 - Strongest current clue:
-  - the first concrete divergence looks like wrong local partner choice and
-    claim ordering around shared active neighborhoods
+  - the live divergence mix now points first at partner choice, branch
+    invalidation, and a smaller claim-ordering remainder around shared active
+    neighborhoods
 - Standing warning:
   - better candidate counts alone do not guarantee better final edge or strand
     parity
@@ -156,7 +164,7 @@ around the same active area.
 ### Phase 5: Revalidate in the right order
 
 1. neighborhood-scoped regression test
-2. saved-batch imported-MATLAB rerun
+2. imported-MATLAB `edges` rerun on the current live trial surface
 3. stage-isolated `network` gate
 4. fresh live MATLAB confirmation
 
@@ -176,7 +184,7 @@ This chapter succeeds when:
 - we can explain at least one worst-case neighborhood in terms of a specific
   local semantic mismatch
 - we have an isolated regression test for that mismatch
-- a targeted Python change improves the saved-batch imported-MATLAB loop
+- a targeted Python change improves the imported-MATLAB `edges` rerun
   without causing a worse regression elsewhere
 - the stage-isolated `network` gate remains exact
 

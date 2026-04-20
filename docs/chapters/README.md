@@ -58,6 +58,16 @@ Each chapter should expose:
 3. [Candidate Generation Handoff](candidate-generation-handoff/README.md)
 4. [Imported-MATLAB Parity Closeout](imported-matlab-parity-closeout/parity_closeout.md)
 
+## Current Evidence Roots
+
+Use these paths when you want the freshest imported-MATLAB evidence surfaces
+without hunting through older release-audit notes:
+
+- live `edges` rerun:
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- stage-isolated `network` gate:
+  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+
 ## Common Jump Targets
 
 Use this table for the most common jump targets without scanning each chapter.
@@ -70,7 +80,7 @@ Use this table for the most common jump targets without scanning each chapter.
 | Working docs index | [neighborhood-claim-alignment/working/README.md](neighborhood-claim-alignment/working/README.md) | Entry point for the live chapter loop |
 | Archive index | [neighborhood-claim-alignment/archive/README.md](neighborhood-claim-alignment/archive/README.md) | Entry point for completed chapter notes |
 | Comparison layout smoothing spec archive | [neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md](neighborhood-claim-alignment/comparison-layout-smoothing-spec/README.md) | Consolidated spec, design, and completed execution log for comparison layout migration |
-| Release verification note | [neighborhood-claim-alignment/release_verification_2026-04-14.md](neighborhood-claim-alignment/release_verification_2026-04-14.md) | Release-audit conclusions and evidence summary |
+| Release verification note | [neighborhood-claim-alignment/release_verification_2026-04-14.md](neighborhood-claim-alignment/release_verification_2026-04-14.md) | Historical release-audit conclusions and evidence summary |
 | Lock-contention incident note | [neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md](neighborhood-claim-alignment/file_lock_contention_analysis_2026-04-13.md) | Windows rerun incident handling and safe recovery |
 | Canonical acceptance pointer | [../../slavv_comparisons/pointers/canonical_acceptance.txt](../../slavv_comparisons/pointers/canonical_acceptance.txt) | Authoritative pointer to the current acceptance run root |
 | Latest completed pointer | [../../slavv_comparisons/pointers/latest_completed.txt](../../slavv_comparisons/pointers/latest_completed.txt) | Authoritative pointer to the latest completed managed run |

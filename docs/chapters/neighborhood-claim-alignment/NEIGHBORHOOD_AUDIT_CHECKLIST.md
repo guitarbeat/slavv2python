@@ -30,7 +30,13 @@ Current progress (2026-04-18):
   - partner substitution at a shared neighborhood in `edge_selection`
   - cleanup retention vs `final_cleanup_dropped` in the frontier lifecycle artifact
 - The local frontier fix is in `source/slavv/core/_edge_candidates/frontier_trace.py`.
-- Saved-batch rerun and stage-isolated `network`-gate confirmation are still pending.
+- A fresh live imported-MATLAB parity trial now exists at
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`.
+- That live trial moved the repo out of the broken fallback-only under-emission state and into an over-emission regime (`1379/1555` edges), with divergence now led by partner choice and branch invalidation.
+- A fresh stage-isolated network trial now exists at
+  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`,
+  and it reproduced exact MATLAB counts at the `network` stage.
+- Saved-batch rerun is still pending.
 
 ## Highest-Priority Questions
 
@@ -91,8 +97,10 @@ Current working clue:
 
 ### Vertex `1283`
 
-- [ ] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]`
+- [~] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]`
       survive while the missing MATLAB pairs do not.
+      Fresh live trial still shows `1283` as the top shared neighborhood with
+      `missing/candidate/final = 4/3/2`.
 - [ ] Check whether `1319` is lost because of partner substitution rather than
       geometric impossibility.
 - [ ] Compare the local branch lifecycle against the MATLAB artifact.
@@ -125,9 +133,9 @@ Current working clue:
 ## Verification Order
 
 - [x] Targeted pytest for the new local regression
-- [ ] `python -m pytest -m "unit or integration"`
+- [x] `python -m pytest -m "unit or integration"`
 - [ ] Saved-batch imported-MATLAB loop
-- [ ] Stage-isolated `network` gate
+- [x] Stage-isolated `network` gate
 - [ ] Fresh live MATLAB confirmation only after the cheaper gates improve
 
 ## Completion Criteria
@@ -136,3 +144,31 @@ Current working clue:
       branch is lost or replaced in Python.
 - [x] We have a regression test for that behavior.
 - [ ] The targeted fix improves parity without a larger downstream regression.
+
+## Fresh Live Trial Snapshot
+
+- Run root: `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- Counts:
+  - vertices `1682/1682`
+  - edges `1379/1555`
+  - strands `682/774`
+- Top divergence mix:
+  - partner choice `14`
+  - branch invalidation `5`
+  - claim ordering `4`
+- Highest-severity examples:
+  - `1283` remains the top branch-invalidation neighborhood
+  - `8`, `17`, `20`, `35`, and `40` are now strong partner-choice probes
+
+## Fresh Network-Gate Snapshot
+
+- Run root: `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+- Counts:
+  - vertices `1682/1682`
+  - edges `1379/1379`
+  - strands `682/682`
+- Interpretation:
+  - downstream `network` assembly still matches exactly when exact MATLAB
+    edges are supplied
+  - the active regression surface remains upstream in `edge_candidates.py` and
+    `edge_selection.py`

@@ -6,10 +6,18 @@ tracked in the temporary repo-root `todo.md`.
 ## Scope
 
 - Canonical comparison input: `data/slavv_test_volume.tif`
-- Canonical live run root:
+- Historical canonical live run root for this audit:
   `C:\slavv_comparisons\20260413_release_verify\live_canonical_20260413`
 - MATLAB batch:
   `01_Input\matlab_results\batch_260413-144432`
+
+Current note:
+
+- This report is a closed April 14 release audit. The active imported-MATLAB
+  evidence roots now live under
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  and
+  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`.
 
 ## Release Checklist Outcome
 

@@ -5,6 +5,13 @@
 This plan implements the new comparison layout organization model with minimal
 risk and full backward compatibility for existing staged runs.
 
+Historical note:
+
+- The repository scan examples in this archived plan reflect the migration
+  moment when the layout work was completed. Names such as
+  `20260413_release_verify` are historical inventory examples, not the current
+  active evidence roots for parity work.
+
 Repository scan grounding for this plan:
 
 - direct staged roots: `20260327_150656_clean_parity`,

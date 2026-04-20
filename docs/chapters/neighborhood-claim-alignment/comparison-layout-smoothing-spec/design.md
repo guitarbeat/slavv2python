@@ -5,6 +5,13 @@
 This design introduces a lightweight organization layer above existing run roots
 while preserving the established staged layout used by parity workflows.
 
+Historical note:
+
+- This archived design captures the migration plan and the repository scan at
+  the time it was completed. Example run roots such as
+  `20260413_release_verify` are historical migration examples, not the current
+  active parity evidence roots.
+
 Current staged layout remains unchanged inside each run root:
 
 - `01_Input/`
@@ -64,7 +71,7 @@ slavv_comparisons/
 - Keep run roots immutable once created (except status metadata updates).
 - Generate `index.json` per experiment as a compact summary table.
 
-Initial slug mapping based on current repository scan:
+Initial slug mapping based on the historical repository scan:
 
 - `20260327_150656_clean_parity` -> `saved-batch`
 - `20260327_161610_clean_python_full` -> `python-full`
@@ -98,7 +105,7 @@ Suggested `index.json` entry schema:
 - Keep pointers human-editable and script-friendly.
 - Use pointers in docs to reduce stale hardcoded paths.
 
-Example pointer file content:
+Historical example pointer file content:
 
 ```text
 experiments/release-verify/runs/20260413_144432_live_canonical

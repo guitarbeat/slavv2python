@@ -32,14 +32,21 @@ ordering, and branch invalidation around shared active neighborhoods.
 
 ## Starting Facts
 
-- Current best retained saved-batch result is `vertices 110/110`,
-  `edges 94/93`, `strands 49/54`.
-- The canonical live imported-MATLAB rerun at
-  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\20260413_release_verify\live_canonical_20260413`
-  is still farther off: `2577/2577` vertices, `2533/2463` edges, and
-  `1120/1006` strands.
 - The imported-MATLAB workflow is the active finish line for exact parity in
   this phase; native Python-from-energy parity is still out of scope.
+- The current live imported-MATLAB evidence surface is the fresh `edges`
+  rerun at
+  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`.
+- That live trial now matches vertices exactly but over-emits later in the
+  `edges` stage: `1682/1682` vertices, `1555/1379` edges, and `774/682`
+  strands.
+- The fresh stage-isolated `network` gate at
+  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
+  remains exact: `1682/1682` vertices, `1379/1379` edges, and `682/682`
+  strands.
+- The older saved-batch lab references in this chapter are still useful as
+  historical context, but this checkout does not currently treat a local
+  `saved_batch_run` root as the canonical working surface.
 - Origin `64` remains useful, but it is now a neighborhood probe rather than
   the whole story.
 - Shared neighborhoods around `359`, `866`, and `1283` show stronger evidence
@@ -111,10 +118,13 @@ Out of scope:
 
 ## First Loop
 
-Use the saved-batch surface as the lab, but inspect neighborhoods instead of
-only aggregate counts.
+Use the imported-MATLAB trial roots as the lab, but inspect neighborhoods
+instead of only aggregate counts.
 
-1. Reuse a staged saved-batch run root.
+1. Reuse the fresh `edges` rerun under
+   `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+   when you need current parity-mode artifacts, and keep any new focused
+   experiments under the same `experiments/live-parity/runs/` organization.
 2. Record per-neighborhood candidate lifecycle artifacts for `1482`, `1666`,
    `1654`, and `866` first, then use `1283` and `64` as cleanup-loss checks.
 3. Compare those artifacts against MATLAB's shared-map semantics, not just
@@ -123,28 +133,29 @@ only aggregate counts.
    - partner substitution
    - final cleanup loss
    - true candidate-admission gaps
-4. Promote a change only if the saved-batch surface improves without regressing
-   the stage-isolated `network` gate.
+4. Promote a change only if the `edges` rerun improves without regressing the
+   stage-isolated `network` gate.
 5. Treat the live MATLAB-backed rerun as the release-grade acceptance surface
    before claiming imported-MATLAB parity is complete.
 
 ```powershell
-python dev/scripts/cli/compare_matlab_python.py `
-  --input C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
-  --skip-matlab `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\shared_neighborhood_claim_trial `
-  --params C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
+.\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
+  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --comparison-depth deep `
+  --python-result-source checkpoints-only
 ```
 
-Canonical live acceptance rerun:
+Stage-isolated `network` confirmation:
 
 ```powershell
-python dev/scripts/cli/compare_matlab_python.py `
-  --input data/slavv_test_volume.tif `
-  --skip-matlab `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\20260413_release_verify\live_canonical_20260413 `
-  --python-parity-rerun-from edges `
-  --comparison-depth deep
+.\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
+  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
+  --comparison-depth deep `
+  --python-result-source checkpoints-only
 ```
 
 ## Deliverables For This Chapter
@@ -152,10 +163,10 @@ python dev/scripts/cli/compare_matlab_python.py `
 - A diagnostic artifact that shows admission, invalidation, reassignment, and
   final survival per shared neighborhood.
 - At least one isolated regression test for a real neighborhood-level mismatch.
-- One targeted Python change that improves the imported-MATLAB saved-batch loop
+- One targeted Python change that improves the imported-MATLAB `edges` rerun
   without causing a larger regression on the live confirmation surface.
-- Updated run docs that cite the canonical saved-batch lab, the canonical live
-  acceptance root, and the exact commands for rerun, diagnostics, and proof
+- Updated run docs that cite the current `experiments/live-parity/runs/`
+  evidence roots and the exact commands for rerun, diagnostics, and proof
   inspection.
 
 ## Working Docs
@@ -181,4 +192,3 @@ python dev/scripts/cli/compare_matlab_python.py `
 - [Imported-MATLAB Parity Closeout](../imported-matlab-parity-closeout/parity_closeout.md)
 - [Parity Findings](../imported-matlab-parity-closeout/parity_findings.md)
 - [MATLAB Parity Audit Checklist](../imported-matlab-parity-closeout/MATLAB_PARITY_AUDIT_CHECKLIST.md)
-

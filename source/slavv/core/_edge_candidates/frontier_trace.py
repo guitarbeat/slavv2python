@@ -201,7 +201,7 @@ def _trace_origin_edges_matlab_frontier(
 
             record_rejected_child_path = resolution_reason != "rejected_child_better_than_parent"
             if origin_idx is not None or terminal_idx is not None or record_rejected_child_path:
-                path_record_index = terminal_hit_budget_count
+                path_record_index = len(terminal_paths_linear) + 1
                 for path_index in path_linear[:-1]:
                     pointer_index_map[path_index] = -path_record_index
 

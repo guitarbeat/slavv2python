@@ -93,10 +93,15 @@ Core references for the active chapter:
 
 Current live-run lessons:
 
-- the broad over-emission regime from March 30, 2026 is no longer the active
-  blocker
-- the repo moved into an under-emission regime by April 1, 2026, and the
-  remaining gap is now narrower and more local
+- the broad over-emission regime from March 30, 2026 is no longer the same
+  failure shape, but live imported-MATLAB `edges` work has now returned to an
+  over-emission regime after the April 18 frontier fix
+- the fresh live `edges` evidence root is
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  with exact vertices and over-emitted edges/strands
+- the fresh stage-isolated `network` evidence root is
+  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+  and it remains exact when MATLAB `edges` are supplied
 - several older hotspots such as `64`, `359`, and `1283` now have much better
   candidate coverage than they did earlier in the investigation
 - the worst live blockers now split into distinct classes rather than one
@@ -105,6 +110,8 @@ Current live-run lessons:
   - manifest partner substitution around origins such as `1654` and `866`
   - smaller true candidate-admission gaps such as `2305` and `2492`
   - final cleanup loss at origins such as `1283`
+- the current live divergence mix is led by partner choice, branch
+  invalidation, and a smaller claim-ordering remainder
 - repeated failures with the same terminal ids, including terminal `1009`,
   suggest that some missing neighborhoods share one branch-ownership or
   parent/child invalidation rule instead of being unrelated local accidents

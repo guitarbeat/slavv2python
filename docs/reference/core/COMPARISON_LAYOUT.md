@@ -35,9 +35,9 @@ Use date-first names so roots sort naturally and are easy to scan.
 - Preferred full timestamp form: `YYYYMMDD_HHMMSS_<label>`
   - example: `20260327_150656_clean_parity`
 - Preferred date-only form: `YYYYMMDD_<label>`
-  - example: `20260413_release_verify`
+  - example: `20260418_claim_ordering_trial`
 - Avoid suffix-date form for new roots.
-  - use `20260413_release_verify`, not `release_verify_20260413`
+  - use `20260418_claim_ordering_trial`, not `claim_ordering_trial_20260418`
 
 For one-off historical cleanup, rename only when it improves discoverability and
 does not break active external references.
@@ -48,7 +48,8 @@ For live MATLAB-enabled comparisons, prefer a local non-synced drive with
 comfortable free space. Good examples are:
 
 - Windows: `D:\slavv_comparisons\20260413_release_verify`
-- POSIX: `/tmp/slavv_comparisons/20260413_release_verify`
+- Windows (repo-local experiment archive): `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
+- POSIX: `/tmp/slavv_comparisons/20260418_claim_ordering_trial`
 
 Avoid placing fresh MATLAB outputs under OneDrive-synced folders, network
 mounts, or repo-local scratch paths unless you are intentionally debugging a
@@ -136,6 +137,8 @@ Notes:
 
 - This grouping layer is optional and backward compatible. Legacy top-level run
   roots remain valid, and the staged layout above remains authoritative.
+- A current repo-local example is
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`.
 - Pointer files store exactly one path relative to the comparison root, not an
   absolute filesystem path.
 - Aggregate roots that contain `run_*` children are treated as containers only.

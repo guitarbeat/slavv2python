@@ -29,23 +29,36 @@ Every parity claim should cite staged artifacts under:
 
 Use these as the primary evidence surfaces.
 
-Saved-batch lab:
+Current live `edges` evidence root:
 
-- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run`
+- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
 
-Canonical live acceptance root:
+Current stage-isolated `network` evidence root:
 
-- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413`
+- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
+
+Historical note:
+
+- Older `saved_batch_run` and `20260413_release_verify` roots remain useful as
+  archived evidence, but they are no longer the primary acceptance surfaces in
+  this checkout.
 
 ## Current Baseline
 
-As of the latest canonical live rerun:
+As of the latest fresh imported-MATLAB `edges` rerun:
 
-- vertices: `2577 / 2577`
-- edges: `2533 / 2463`
-- strands: `1120 / 1006`
+- vertices: `1682 / 1682`
+- edges: `1555 / 1379`
+- strands: `774 / 682`
 
-This means vertex parity is stable, but edge and strand parity are still open.
+As of the latest fresh stage-isolated `network` rerun:
+
+- vertices: `1682 / 1682`
+- edges: `1379 / 1379`
+- strands: `682 / 682`
+
+This means vertex parity and downstream `network` assembly are still stable
+when exact MATLAB edges are supplied, but edge-stage parity remains open.
 
 ## Lessons Learned
 
@@ -55,8 +68,9 @@ This means vertex parity is stable, but edge and strand parity are still open.
   Python produced more edges than MATLAB.
 - By April 1, 2026 the repo had already flipped into an under-emission regime.
   Python was now missing edges instead of inventing too many of them.
-- April 13, 2026 is still under-emitting, but candidate coverage is much
-  stronger than it was earlier in the investigation.
+- April 18, 2026 confirmed that the recent frontier fix changed the live
+  regime again. The repo is now over-emitting on the imported-MATLAB `edges`
+  rerun while the stage-isolated `network` gate stays exact.
 
 ### What improved
 
@@ -184,44 +198,46 @@ Why:
 
 ## Recommended Next Loop
 
-1. Use the saved-batch run root for the cheapest targeted rerun.
+1. Use the fresh imported-MATLAB `edges` trial root for the cheapest targeted
+   rerun with current parity-mode artifacts.
 2. Compare lifecycle artifacts for `1482` and `1666` first.
 3. Patch `edge_candidates.py` only if the evidence still points to
    pre-manifest rejection.
 4. Run the stage-isolated `network` gate to protect downstream exactness.
-5. Promote the change only if the saved-batch surface improves.
-6. Rerun the canonical live imported-MATLAB root and record counts, top
+5. Promote the change only if the current imported-MATLAB `edges` surface improves.
+6. Rerun the current live imported-MATLAB `edges` root and record counts, top
    divergence neighborhoods, and proof artifacts.
 7. Move to `1654` and `866` only after the repeated frontier rejection pattern
    has been addressed.
 
 ## Useful Commands
 
-Saved-batch rerun:
+Current live `edges` comparison refresh:
 
 ```powershell
-python dev/scripts/cli/compare_matlab_python.py `
-  --input C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\01_Input\synthetic_branch_volume.tif `
-  --skip-matlab `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\shared_neighborhood_claim_trial `
-  --params C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\saved_batch_run\99_Metadata\comparison_params.normalized.json
+.\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
+  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --comparison-depth deep `
+  --python-result-source checkpoints-only
 ```
 
-Canonical live rerun from edges:
+Current stage-isolated `network` comparison refresh:
 
 ```powershell
-python dev/scripts/cli/compare_matlab_python.py `
-  --input data/slavv_test_volume.tif `
-  --skip-matlab `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413 `
-  --python-parity-rerun-from edges `
-  --comparison-depth deep
+.\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
+  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
+  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
+  --comparison-depth deep `
+  --python-result-source checkpoints-only
 ```
 
 Proof artifact summary:
 
 ```powershell
-slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\release_verify_20260413\live_canonical_20260413
+slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial
 ```
 
 ## Chapter Task Backlog
@@ -236,6 +252,9 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 
 ### Neighborhood Claim Alignment (Active)
 
+- [x] Run one fresh live imported-MATLAB parity trial after the frontier parent/child fix. (Trial run `20260418_claim_ordering_trial` reran Python from `edges` against imported MATLAB checkpoints.)
+- [x] Record whether the frontier fix improves the old under-emission regime or flips the repo into a different failure mode. (The fresh live trial flipped to over-emission: `1379/1555` edges and `682/774` strands.)
+- [x] Re-run a fresh stage-isolated network probe after the frontier fix. (Trial run `20260418_network_gate_trial` reran Python from `network` on imported MATLAB checkpoints and reproduced exact counts: `1682/1682` vertices, `1379/1379` edges, `682/682` strands.)
 - [ ] Explain one real neighborhood-level mismatch in terms of a specific local semantic drift.
 - [x] Reduce that mismatch to an isolated regression test. (Focused regressions now cover frontier pre-manifest rejection, shared-neighborhood partner substitution, and cleanup-retention loss.)
 - [ ] Land one targeted Python fix without regressing the stage-isolated `network` gate.
@@ -258,6 +277,8 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] Compare its missing MATLAB pairs with neighboring-origin survivors.
 - [x] Decide whether the first mismatch is admission, ownership, or partner substitution. (It's admission/rejection during discovery).
 - [x] Explain why `terminal_frontier_hit = 3` yields only one valid frontier connection. (For origin `866`; others are likely `rejected_child_better_than_parent`).
+- [x] Re-check the live divergence mix after the frontier invalidation fix. (Fresh live trial now reports `partner_choice=14`, `branch_invalidation=5`, `claim_ordering=4`; top high-severity origins include `1283` for branch invalidation and `8/17/20/35/40` for partner choice.)
+- [x] Re-check origin `1283` after the fresh live trial. (Top shared neighborhood is still `1283`, with `missing/candidate/final = 4/3/2` and first divergence `pre_manifest_rejection - rejected_child_better_than_parent`.)
 - [ ] Compare missing partners `[1023]`, `[1203]`, and `[1348]` against the chosen alternatives.
 - [ ] Decide whether this is early invalidation, local competition, or bifurcation-half drift.
 - [ ] Explain why `[1283, 1134]`, `[1283, 768]`, and watershed `[1283, 1659]` survive while the missing MATLAB pairs do not.
@@ -273,13 +294,43 @@ slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_compa
 - [ ] Prefer a deterministic unit or focused regression test over a broad new end-to-end sweep.
 - [ ] The test should capture one real branch-lifecycle mismatch, not just a count delta.
 - [x] Targeted pytest for the new local regression.
-- [ ] `python -m pytest -m "unit or integration"`.
+- [x] `python -m pytest -m "unit or integration"`. (`460 passed, 1 skipped, 17 deselected` on 2026-04-18.)
 - [ ] Saved-batch imported-MATLAB loop.
 - [ ] Stage-isolated `network` gate.
 - [ ] Fresh live MATLAB confirmation only after the cheaper gates improve.
 - [x] We can point to the exact local control-flow moment where one real MATLAB branch is lost or replaced in Python. (Confirmed `_resolve_frontier_edge_connection_details` rejections).
 - [x] We have a regression test for that behavior.
 - [ ] The targeted fix improves parity without a larger downstream regression.
+
+### Fresh Live Trial Notes (2026-04-18)
+
+- A fresh live imported-MATLAB parity rerun was executed under:
+  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- The trial imported MATLAB `energy`, `vertices`, and `edges` checkpoints, then reran Python from `edges` with the preserved parity-mode parameters from the earlier live comparison.
+- Outcome:
+  - vertices: `1682 / 1682`
+  - edges: `1379 / 1555`
+  - strands: `682 / 774`
+- This is no longer the catastrophic under-emission fallback-only failure seen in an invalid plain-CLI rerun; it is a parity-mode over-emission regime.
+- The highest-signal remaining blockers on this live trial are:
+  - partner choice around shared neighborhoods
+  - branch invalidation / pre-manifest rejection
+  - a smaller claim-ordering remainder
+- Fresh diagnostics now recommend:
+  - start with branch invalidation in `edge_candidates.py`
+  - then inspect partner-choice and conflict resolution in `edge_selection.py`
+
+### Fresh Network-Gate Trial Notes (2026-04-18)
+
+- A fresh stage-isolated network trial was executed under:
+  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+- The trial imported MATLAB `energy`, `vertices`, and `edges` checkpoints, then reran Python from `network`.
+- Outcome:
+  - vertices: `1682 / 1682`
+  - edges: `1379 / 1379`
+  - strands: `682 / 682`
+- This preserves the earlier conclusion that downstream network assembly can still match exactly when exact MATLAB edges are provided.
+- The current frontier work therefore still looks upstream: the remaining problem is the `edges` stage, not downstream `network` assembly.
 
 ### Candidate Generation Handoff (Historical)
 
