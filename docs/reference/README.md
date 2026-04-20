@@ -20,7 +20,8 @@ If you are new to the reference shelf, start here:
 
 ### Core Parity And Translation
 
-- [Core topic index](core/README.md)
+This topic group defines the stable translation and parity contract for the Python port.
+
 - [Glossary](core/GLOSSARY.md) - project terms and workflow vocabulary
 - [MATLAB Translation Guide](core/MATLAB_TRANSLATION_GUIDE.md) - semantics that matter when editing parity-sensitive code
 - [MATLAB Mapping](core/MATLAB_MAPPING.md) - maintained MATLAB-to-Python correspondence
