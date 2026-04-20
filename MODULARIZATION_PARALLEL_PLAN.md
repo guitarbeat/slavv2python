@@ -105,32 +105,29 @@ Primary write scope:
 - `dev/tests/integration/`
 - `dev/tests/README.md`
 
-Key files likely to move or change:
+Completed work:
 
-- `dev/tests/unit/io/test_safe_unpickle.py`
-- `dev/tests/unit/io/test_casx_export.py`
-- `dev/tests/unit/io/test_vmv_export.py`
-- `dev/tests/unit/io/test_mat_io.py`
-- `dev/tests/unit/apps/test_web_app_dashboard_refactor.py`
-- `dev/tests/unit/apps/test_web_app_artifacts_refactor.py`
-- `dev/tests/unit/runtime/test_run_state.py`
+- added `dev/tests/support/payload_builders.py`
+- added `dev/tests/support/network_builders.py`
+- added `dev/tests/support/run_state_builders.py`
+- moved obvious ownership leaks such as `test_safe_unpickle.py`
+- renamed task-history app tests to behavior names
+- consolidated MAT/JSON visualizer export coverage under the visualization test surface
+- split the large runtime file into focused runtime unit tests plus
+  `dev/tests/integration/test_pipeline_run_state_integration.py`
+- adopted shared builders in several app, io, runtime, visualization, and parity tests
 
-Deliverables:
+Reference:
 
-- `dev/tests/support/payload_builders.py`
-- `dev/tests/support/network_builders.py`
-- `dev/tests/support/run_state_builders.py`
-- renamed tests that reflect behavior rather than task history
-- moved tests that reflect ownership rather than convenience
-- detailed execution checklist in `WS0_SAFETY_NET_CHECKLIST.md`
+- `WS0_SAFETY_NET_CHECKLIST.md` records the completed safety-net reshaping work
 
 Can run in parallel with:
 
-- none at the start; this is the main safety-net unlock
+- follow-on workstreams only; treat WS0 as the completed safety-net baseline
 
 Must land before:
 
-- WS1, WS2, WS3, WS4, WS5, WS6, WS7, WS8
+- already satisfied for active work
 
 ### WS1 - Typed Result Models
 
@@ -159,6 +156,37 @@ Deliverables:
 - typed models such as `EnergyResult`, `VertexSet`, `EdgeSet`, `NetworkResult`
 - temporary `from_dict()` and `to_dict()` compatibility helpers
 - tests for payload invariants and adapter behavior
+
+Completed so far:
+
+- added `source/slavv/models/`
+- added dict compatibility adapters for the initial result models
+- added a shared `normalize_pipeline_result()` helper so adapter logic has a
+  single repair point
+- added focused adapter tests
+- routed `SLAVVProcessor.process_image()` final and early-stop returns through
+  the typed compatibility seam while preserving dict-shaped public results
+- adopted typed result normalization in app/report helpers such as
+  `share_report.py`, `curation_state.py`, and `web_app_artifacts.py`
+- added `apps/dashboard_state.py` so dashboard context loading and stat
+  resolution are normalized and directly unit-tested outside the Streamlit
+  page module
+- added `apps/analysis_state.py` so analysis-page payload handling and fallback
+  stats resolution are normalized and directly unit-tested outside the
+  Streamlit page module
+- added `apps/visualization_state.py` so visualization-page payload handling is
+  normalized and directly unit-tested outside the Streamlit page module
+- adopted typed result normalization in visualization statistics/export helpers
+  under `network_plot_statistics.py`
+- adopted typed result normalization in `analysis/ml_curator.py` training-data
+  preparation
+
+Still to do:
+
+- continue shrinking direct dict access in additional app, visualization, and
+  analysis entrypoints
+- decide whether the next WS1 step should cover more consumers or introduce
+  additional typed component models for deeper internal stages
 
 Can run in parallel with:
 
@@ -189,6 +217,32 @@ Deliverables:
 - `source/slavv/workflows/pipeline_stages.py`
 - a thinner `SLAVVProcessor` facade
 - focused tests for the runner and stage sequencing
+
+Completed so far:
+
+- added `source/slavv/workflows/`
+- moved pipeline result finalization and stop-after handling into
+  `workflows/pipeline_results.py`
+- moved pipeline setup helpers such as stage validation, run-context creation,
+  rerun-flag calculation, progress emission, and preprocessing into
+  `workflows/pipeline_setup.py`
+- moved shared result-bundle/progress/stop-after advancement into
+  `workflows/pipeline_runner.py`
+- moved the sequential stage loop itself into
+  `workflows/pipeline_runner.py`
+- moved shared stage-resolution control flow into
+  `workflows/pipeline_stages.py`
+  including controller lookup and failure tracking
+- moved repeated stage checkpoint load/save/complete logic into
+  `workflows/stage_checkpoints.py`
+- added focused workflow helper tests while preserving `SLAVVProcessor`
+  behavior
+
+Still to do:
+
+- extract stage sequencing and stage-resolution orchestration into dedicated
+  workflow modules
+- keep thinning `core/pipeline.py` until it mainly delegates orchestration
 
 Can run in parallel with:
 

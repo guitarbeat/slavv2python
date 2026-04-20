@@ -45,17 +45,28 @@ does not break active external references.
 ## Recommended Output Root
 
 For live MATLAB-enabled comparisons, prefer a local non-synced drive with
-comfortable free space. Good examples are:
+comfortable free space. In this checkout, the canonical managed archive root is
+`D:\slavv_comparisons`. Good examples are:
 
-- Windows: `D:\slavv_comparisons\20260413_release_verify`
-- Windows (repo-local experiment archive): `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
+- Windows: `D:\slavv_comparisons\experiments\live-parity\runs\20260420_live_parity_scratch`
+- Windows (explicit experiment root): `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
 - POSIX: `/tmp/slavv_comparisons/20260418_claim_ordering_trial`
 
 Avoid placing fresh MATLAB outputs under OneDrive-synced folders, network
 mounts, or repo-local scratch paths unless you are intentionally debugging a
 failure mode. The comparison preflight now records that decision in
 `99_Metadata/output_preflight.json`, but the safest default is still an
-explicit local output root outside the repository.
+explicit local output root outside the repository. The packaged parity CLI now
+prefers `SLAVV_COMPARISONS_ROOT` when it is set, otherwise
+`D:\slavv_comparisons` on Windows when `D:` is available, and only then falls
+back to a local `comparisons/` folder.
+
+Current parity-workflow note:
+
+- The maintained comparison params at
+  `dev/scripts/cli/comparison_params.json` currently pin
+  `energy_storage_format="npy"` so live Windows parity runs do not depend on
+  Zarr's directory-backed chunk writes during long energy-stage reruns.
 
 ## Typical Contents
 

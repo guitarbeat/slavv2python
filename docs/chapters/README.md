@@ -61,10 +61,11 @@ Each chapter should expose:
 Use these paths when you want the freshest imported-MATLAB evidence surfaces
 without hunting through older release-audit notes:
 
+- canonical archive root: `D:\slavv_comparisons`
 - live `edges` rerun:
-  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
 - stage-isolated `network` gate:
-  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
 
 ## Common Jump Targets
 

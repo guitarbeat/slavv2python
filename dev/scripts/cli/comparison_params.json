@@ -14,6 +14,7 @@
 	"max_voxels_per_node": 6000,
 	"energy_sign": -1.0,
 	"energy_method": "hessian",
+	"energy_storage_format": "npy",
 	"edge_method": "tracing",
 	"direction_method": "hessian",
 	"number_of_edges_per_vertex": 4,

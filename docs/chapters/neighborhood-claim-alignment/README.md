@@ -34,14 +34,16 @@ ordering, and branch invalidation around shared active neighborhoods.
 
 - The imported-MATLAB workflow is the active finish line for exact parity in
   this phase; native Python-from-energy parity is still out of scope.
+- The canonical managed archive root for live parity work in this checkout is
+  `D:\slavv_comparisons`, not the near-full workspace drive on `C:`.
 - The current live imported-MATLAB evidence surface is the fresh `edges`
   rerun at
-  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`.
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`.
 - That live trial now matches vertices exactly but over-emits later in the
   `edges` stage: `1682/1682` vertices, `1555/1379` edges, and `774/682`
   strands.
 - The fresh stage-isolated `network` gate at
-  `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
   remains exact: `1682/1682` vertices, `1379/1379` edges, and `682/682`
   strands.
 - The older saved-batch lab references in this chapter are still useful as
@@ -140,9 +142,9 @@ instead of only aggregate counts.
 
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
-  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```
@@ -151,9 +153,9 @@ Stage-isolated `network` confirmation:
 
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
-  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
+  --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```

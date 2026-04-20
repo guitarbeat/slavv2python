@@ -1,6 +1,12 @@
 from pathlib import Path
 
 import pytest
+from dev.tests.support.payload_builders import (
+    build_edges_payload,
+    build_network_payload,
+    build_processing_results,
+    build_vertices_payload,
+)
 
 from slavv.apps.share_report import (
     build_share_report_html,
@@ -13,28 +19,30 @@ np = pytest.importorskip("numpy")
 
 @pytest.fixture
 def sample_processing_results():
-    return {
-        "vertices": {
-            "positions": np.array(
-                [[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]],
-                dtype=float,
-            ),
-            "energies": np.array([-1.2, -1.0, -0.9], dtype=float),
-            "radii_microns": np.array([2.0, 2.5, 3.0], dtype=float),
-        },
-        "edges": {
-            "traces": [
-                np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
-                np.array([[0.0, 4.0, 0.0], [3.0, 4.0, 0.0]], dtype=float),
-            ],
-            "connections": np.array([[0, 1], [1, 2]], dtype=int),
-            "energies": np.array([-1.0, -0.8], dtype=float),
-        },
-        "network": {
-            "strands": [[0, 1, 2]],
-            "bifurcations": np.array([], dtype=int),
-        },
-        "parameters": {
+    vertices = build_vertices_payload(
+        positions=[[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]],
+        energies=np.array([-1.2, -1.0, -0.9], dtype=float),
+        radii_microns=np.array([2.0, 2.5, 3.0], dtype=float),
+    )
+    edges = build_edges_payload(
+        traces=[
+            np.array([[0.0, 0.0, 0.0], [0.0, 4.0, 0.0]], dtype=float),
+            np.array([[0.0, 4.0, 0.0], [3.0, 4.0, 0.0]], dtype=float),
+        ],
+        connections=np.array([[0, 1], [1, 2]], dtype=int),
+        energies=np.array([-1.0, -0.8], dtype=float),
+    )
+    network = build_network_payload(
+        strands=[[0, 1, 2]],
+        bifurcations=np.array([], dtype=int),
+        edges=edges,
+    )
+
+    return build_processing_results(
+        vertices=vertices,
+        edges=edges,
+        network=network,
+        parameters={
             "microns_per_voxel": [1.0, 1.0, 1.0],
             "radius_of_smallest_vessel_in_microns": 1.0,
             "radius_of_largest_vessel_in_microns": 3.0,
@@ -42,7 +50,7 @@ def sample_processing_results():
             "approximating_PSF": False,
             "number_of_edges_per_vertex": 2,
         },
-    }
+    )
 
 
 def test_build_share_report_html_contains_core_sections(sample_processing_results):

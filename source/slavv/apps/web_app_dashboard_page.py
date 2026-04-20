@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from slavv.apps.share_report import compute_shareable_stats
-from slavv.runtime import RunSnapshot, load_run_snapshot
 from slavv.runtime.run_state import target_stage_progress
 from slavv.visualization import NetworkVisualizer
 
-from .web_app_artifacts import _has_full_network_results
+from .dashboard_state import DashboardContext, load_dashboard_context
 from .web_app_dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
@@ -24,23 +22,15 @@ from .web_app_dashboard import (
     filter_dashboard_breakdown,
 )
 
+if TYPE_CHECKING:
+    from slavv.runtime import RunSnapshot
+
 DASHBOARD_ASSUMPTION = (
     "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
     "current network outputs, and share-report activity for the current session."
 )
 DASHBOARD_RELEASE_URL = "https://docs.streamlit.io/develop/quick-reference/release-notes"
 DASHBOARD_REPO_URL = "https://github.com/UTFOIL/slavv2python"
-
-
-class DashboardContext(TypedDict):
-    """Typed session-backed inputs for the dashboard surface."""
-
-    run_dir: str | None
-    snapshot: RunSnapshot | None
-    results: dict[str, Any] | None
-    share_metrics: dict[str, Any]
-    dataset_name: str
-    stats: dict[str, Any] | None
 
 
 def _render_run_dashboard(snapshot) -> None:
@@ -112,27 +102,7 @@ def _init_dashboard_state() -> None:
 
 def _dashboard_context() -> DashboardContext:
     """Load dashboard context from session state and run metadata."""
-    run_dir = cast("str | None", st.session_state.get("current_run_dir"))
-    snapshot = load_run_snapshot(run_dir) if run_dir else None
-    results = cast("dict[str, Any] | None", st.session_state.get("processing_results"))
-    share_metrics = cast("dict[str, Any]", st.session_state.get("share_report_metrics", {}))
-    dataset_name = str(st.session_state.get("dataset_name", "No dataset loaded"))
-
-    stats = None
-    if results and _has_full_network_results(results):
-        stats = compute_shareable_stats(
-            results,
-            image_shape=st.session_state.get("image_shape", (100, 100, 50)),
-        )
-
-    return {
-        "run_dir": run_dir,
-        "snapshot": snapshot,
-        "results": results,
-        "share_metrics": share_metrics,
-        "dataset_name": dataset_name,
-        "stats": stats,
-    }
+    return load_dashboard_context(st.session_state)
 
 
 def _toast_dashboard_feedback() -> None:

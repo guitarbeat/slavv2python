@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import streamlit as st
 
+from slavv.apps.visualization_state import (
+    list_available_visualizations,
+    normalize_visualization_results,
+)
 from slavv.visualization import NetworkVisualizer
 
 EXPORT_BUTTON_SPECS = (
@@ -93,7 +97,7 @@ def show_visualization_page() -> None:
     st.markdown('<h2 class="section-header">Network Visualization</h2>', unsafe_allow_html=True)
 
     if "processing_results" not in st.session_state:
-        st.warning("⚠️ No processing results found. Please process an image first.")
+        st.warning("No processing results found. Please process an image first.")
         return
 
     st.markdown(
@@ -103,15 +107,11 @@ def show_visualization_page() -> None:
     """
     )
 
-    results = st.session_state["processing_results"]
-    available_viz = []
-    if "energy_data" in results:
-        available_viz.append("Energy Field")
-    if "vertices" in results and "edges" in results and "network" in results:
-        available_viz.extend(["2D Network", "3D Network", "Depth Projection", "Strand Analysis"])
+    results = normalize_visualization_results(st.session_state["processing_results"])
+    available_viz = list_available_visualizations(results)
 
     if not available_viz:
-        st.warning("⚠️ No visualizable results found in the current run.")
+        st.warning("No visualizable results found in the current run.")
         return
 
     viz_type = st.selectbox(
@@ -122,7 +122,7 @@ def show_visualization_page() -> None:
     col1, col2 = st.columns([3, 1], gap="large")
 
     with col2:
-        st.markdown("### 🎨 Display Options")
+        st.markdown("### Display Options")
         show_vertices = st.checkbox(
             "Show vertices", value=True, help="Display detected vertex markers"
         )
@@ -143,13 +143,13 @@ def show_visualization_page() -> None:
 
     visualizer = NetworkVisualizer()
     with col1:
-        st.markdown(f"### 📊 {viz_type}")
+        st.markdown(f"### {viz_type}")
         if viz_type == "2D Network":
             fig = visualizer.plot_2d_network(
-                st.session_state["processing_results"]["vertices"],
-                st.session_state["processing_results"]["edges"],
-                st.session_state["processing_results"]["network"],
-                st.session_state["parameters"],
+                results["vertices"],
+                results["edges"],
+                results["network"],
+                results["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
                 show_vertices=show_vertices,
                 show_edges=show_edges,
@@ -158,10 +158,10 @@ def show_visualization_page() -> None:
             st.plotly_chart(fig, use_container_width=True)
         elif viz_type == "3D Network":
             fig = visualizer.plot_3d_network(
-                st.session_state["processing_results"]["vertices"],
-                st.session_state["processing_results"]["edges"],
-                st.session_state["processing_results"]["network"],
-                st.session_state["parameters"],
+                results["vertices"],
+                results["edges"],
+                results["network"],
+                results["parameters"],
                 color_by=color_scheme.lower().replace(" ", "_"),
                 show_vertices=show_vertices,
                 show_edges=show_edges,
@@ -170,16 +170,16 @@ def show_visualization_page() -> None:
             st.plotly_chart(fig, use_container_width=True)
         elif viz_type == "Depth Projection":
             fig = visualizer.plot_depth_statistics(
-                st.session_state["processing_results"]["vertices"],
-                st.session_state["processing_results"]["edges"],
-                st.session_state["parameters"],
+                results["vertices"],
+                results["edges"],
+                results["parameters"],
             )
             st.plotly_chart(fig, use_container_width=True)
         elif viz_type == "Strand Analysis":
             fig = visualizer.plot_strand_analysis(
-                st.session_state["processing_results"]["network"],
-                st.session_state["processing_results"]["vertices"],
-                st.session_state["parameters"],
+                results["network"],
+                results["vertices"],
+                results["parameters"],
             )
             st.plotly_chart(fig, use_container_width=True)
         elif viz_type == "Energy Field":
@@ -189,12 +189,12 @@ def show_visualization_page() -> None:
             slice_axis = st.sidebar.selectbox(
                 "Slice Axis", [0, 1, 2], format_func=lambda x: ["Y", "X", "Z"][x]
             )
-            energy = st.session_state["processing_results"]["energy_data"]["energy"]
+            energy = results["energy_data"]["energy"]
             slice_index = st.sidebar.number_input(
                 "Slice Index", value=int(energy.shape[slice_axis] // 2)
             )
             fig = visualizer.plot_energy_field(
-                st.session_state["processing_results"]["energy_data"],
+                results["energy_data"],
                 slice_axis=slice_axis,
                 slice_index=slice_index,
             )
@@ -204,12 +204,12 @@ def show_visualization_page() -> None:
         st.info("Complete the full network stage to unlock exports and the share report.")
         return
 
-    st.markdown("### 💾 Export Options")
+    st.markdown("### Export Options")
     col1, col2, col3, col4 = st.columns(4, gap="medium")
-    vertices = st.session_state["processing_results"]["vertices"]
-    edges = st.session_state["processing_results"]["edges"]
-    network = st.session_state["processing_results"]["network"]
-    parameters = st.session_state["processing_results"]["parameters"]
+    vertices = results["vertices"]
+    edges = results["edges"]
+    network = results["network"]
+    parameters = results["parameters"]
     current_run_dir = st.session_state.get("current_run_dir")
     for column, export_spec in zip((col1, col2, col3), EXPORT_BUTTON_SPECS):
         _render_export_download(
@@ -222,14 +222,14 @@ def show_visualization_page() -> None:
             export_spec=export_spec,
         )
     share_report_data = web_app_facade.generate_share_report_data(
-        st.session_state["processing_results"],
+        results,
         st.session_state.get("dataset_name", "SLAVV dataset"),
         st.session_state.get("image_shape", (100, 100, 50)),
     )
     web_app_facade._log_share_report_prepared_once(
         st.session_state.get("dataset_name", "SLAVV dataset"),
         share_report_data,
-        st.session_state["processing_results"],
+        results,
     )
     web_app_facade._update_run_task(
         st.session_state.get("current_run_dir"),

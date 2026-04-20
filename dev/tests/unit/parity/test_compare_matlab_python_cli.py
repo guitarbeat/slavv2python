@@ -260,6 +260,46 @@ def test_cli_uses_canonical_default_params_file(cli_module, tmp_path, monkeypatc
     )
 
 
+def test_canonical_default_parity_params_pin_npy_energy_storage(cli_module):
+    params = cli_module.load_parameters(str(cli_module.DEFAULT_COMPARISON_PARAMS))
+
+    assert params["energy_storage_format"] == "npy"
+
+
+def test_default_comparisons_root_honors_env_var(cli_module, tmp_path, monkeypatch):
+    custom_root = tmp_path / "archive_root"
+    monkeypatch.setenv(cli_module.COMPARISONS_ROOT_ENV_VAR, str(custom_root))
+
+    assert cli_module._default_comparisons_root() == custom_root
+
+
+def test_cli_uses_default_archive_root_for_fresh_runs(cli_module, tmp_path, monkeypatch):
+    input_file = _write_input_file(tmp_path)
+    archive_root = tmp_path / "archive_root"
+    observed = {}
+
+    monkeypatch.setattr(cli_module, "load_parameters", lambda _path: {"edge_method": "tracing"})
+    monkeypatch.setattr(cli_module, "_default_comparisons_root", lambda: archive_root)
+
+    def fake_orchestrate(*, output_dir, **_kwargs):
+        observed["output_dir"] = output_dir
+        return 0
+
+    monkeypatch.setattr(cli_module, "orchestrate_comparison", fake_orchestrate)
+    _run_cli(
+        monkeypatch,
+        [
+            "--input",
+            str(input_file),
+            "--skip-matlab",
+        ],
+    )
+
+    assert cli_module.main() == 0
+    assert observed["output_dir"].parent == archive_root
+    assert observed["output_dir"].name.endswith("_comparison")
+
+
 def test_cli_rejects_directory_as_input(cli_module, tmp_path, monkeypatch, capsys):
     input_dir = tmp_path / "input_dir"
     input_dir.mkdir()

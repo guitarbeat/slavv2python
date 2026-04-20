@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+from dev.tests.support.payload_builders import build_processing_results
 
 from slavv.analysis.ml_curator import DrewsCurator, MLCurator
 
@@ -54,3 +55,59 @@ def test_drews_curator_filters_short_and_tortuous_edges():
     assert len(curated["connections"]) == 1
     assert curated["original_indices"].tolist() == [0]
     assert curated["energies"].tolist() == [0.9]
+
+
+def test_generate_training_data_normalizes_results_and_uses_energy_image_shape(monkeypatch):
+    curator = MLCurator()
+    processing_results = [
+        build_processing_results(
+            overrides={"metadata": {"source": "typed-adapter"}},
+            energy_data={
+                "energy": np.zeros((6, 5, 4), dtype=np.float32),
+                "scale_indices": np.zeros((6, 5, 4), dtype=np.int16),
+                "image_shape": (6, 5, 4),
+                "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
+                "lumen_radius_microns": np.array([2.0], dtype=np.float32),
+            },
+        )
+    ]
+    manual_annotations = [
+        {
+            "vertex_labels": np.array([1, 0, 1], dtype=int),
+            "edge_labels": np.array([1, 0], dtype=int),
+        }
+    ]
+
+    seen_image_shapes: list[tuple[int, ...]] = []
+    seen_vertex_payloads: list[dict[str, object]] = []
+    seen_edge_payloads: list[dict[str, object]] = []
+
+    def fake_extract_vertex_features(vertices, energy_data, image_shape):
+        seen_vertex_payloads.append(vertices)
+        seen_image_shapes.append(tuple(image_shape))
+        assert "radii_microns" in vertices
+        assert energy_data["image_shape"] == (6, 5, 4)
+        return np.array([[1.0], [2.0], [3.0]], dtype=float)
+
+    def fake_extract_edge_features(edges, vertices, energy_data):
+        seen_edge_payloads.append(edges)
+        assert "connections" in edges
+        assert "positions" in vertices
+        assert energy_data["image_shape"] == (6, 5, 4)
+        return np.array([[4.0], [5.0]], dtype=float)
+
+    monkeypatch.setattr(curator, "extract_vertex_features", fake_extract_vertex_features)
+    monkeypatch.setattr(curator, "extract_edge_features", fake_extract_edge_features)
+
+    vertex_features, vertex_labels, edge_features, edge_labels = curator.generate_training_data(
+        processing_results,
+        manual_annotations,
+    )
+
+    assert seen_image_shapes == [(6, 5, 4)]
+    assert len(seen_vertex_payloads) == 1
+    assert len(seen_edge_payloads) == 1
+    assert vertex_features.shape == (3, 1)
+    assert edge_features.shape == (2, 1)
+    assert vertex_labels.tolist() == [1, 0, 1]
+    assert edge_labels.tolist() == [1, 0]

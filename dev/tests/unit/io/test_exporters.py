@@ -1,14 +1,11 @@
-import numpy as np
 import pytest
+from dev.tests.support.network_builders import build_network_object
 
-from slavv.io import Network, partition_network
+from slavv.io import partition_network
 
 
 def test_partition_network_rejects_nonpositive_chunks():
-    network = Network(
-        vertices=np.array([[0.0, 0.0, 0.0]], dtype=float),
-        edges=np.empty((0, 2), dtype=int),
-    )
+    network = build_network_object(vertices=[[0.0, 0.0, 0.0]], edges=[], radii=[])
 
     with pytest.raises(ValueError, match="chunks must contain positive"):
         partition_network(network, (0, 1))

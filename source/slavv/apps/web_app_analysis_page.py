@@ -5,7 +5,11 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from slavv.apps.curation_state import summarize_processing_counts
+from slavv.apps.analysis_state import (
+    has_analysis_network,
+    normalize_analysis_results,
+    resolve_analysis_stats,
+)
 from slavv.apps.web_app_artifacts import _update_run_task
 from slavv.visualization import NetworkVisualizer
 
@@ -14,13 +18,13 @@ def show_analysis_page() -> None:
     """Display the analysis page."""
     st.markdown('<h2 class="section-header">Network Analysis</h2>', unsafe_allow_html=True)
     if "processing_results" not in st.session_state:
-        st.warning("⚠️ No processing results found. Please process an image first.")
+        st.warning("No processing results found. Please process an image first.")
         return
 
-    results = st.session_state["processing_results"]
-    if "network" not in results:
+    results = normalize_analysis_results(st.session_state["processing_results"])
+    if not has_analysis_network(results):
         st.warning(
-            "⚠️ Analysis requires complete network extraction. Please run the pipeline up to the 'network' target."
+            "Analysis requires complete network extraction. Please run the pipeline up to the 'network' target."
         )
         return
 
@@ -31,8 +35,7 @@ def show_analysis_page() -> None:
     """
     )
 
-    results = st.session_state["processing_results"]
-    parameters = st.session_state["parameters"]
+    parameters = results["parameters"]
     _update_run_task(
         st.session_state.get("current_run_dir"),
         "analysis",
@@ -40,15 +43,13 @@ def show_analysis_page() -> None:
         detail="Analysis dashboard viewed",
     )
 
-    stats = st.session_state.get("analysis_stats")
-    if stats is None:
-        stats = summarize_processing_counts(results)
+    stats = resolve_analysis_stats(results, st.session_state.get("analysis_stats"))
 
-    st.markdown("### 📊 Key Metrics")
+    st.markdown("### Key Metrics")
     col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
     with col1:
         st.metric(
-            "Total Length", f"{stats.get('total_length', 0):.1f} μm", help="Sum of all edge lengths"
+            "Total Length", f"{stats.get('total_length', 0):.1f} um", help="Sum of all edge lengths"
         )
     with col2:
         st.metric(
@@ -59,16 +60,16 @@ def show_analysis_page() -> None:
     with col3:
         st.metric(
             "Bifurcation Density",
-            f"{stats.get('bifurcation_density', 0):.2f} /mm³",
+            f"{stats.get('bifurcation_density', 0):.2f} /mm^3",
             help="Bifurcations per cubic millimeter",
         )
     with col4:
         st.metric(
-            "Mean Radius", f"{stats.get('mean_radius', 0):.2f} μm", help="Average vessel radius"
+            "Mean Radius", f"{stats.get('mean_radius', 0):.2f} um", help="Average vessel radius"
         )
 
     tab1, tab2, tab3, tab4 = st.tabs(
-        ["📈 Distributions", "🌳 Topology", "📏 Morphometry", "📊 Statistics"]
+        ["Distributions", "Topology", "Morphometry", "Statistics"]
     )
     visualizer = NetworkVisualizer()
 
@@ -167,14 +168,14 @@ def show_analysis_page() -> None:
                     "Number of Strands",
                     "Number of Bifurcations",
                     "Number of Endpoints",
-                    "Total Length (μm)",
-                    "Mean Strand Length (μm)",
-                    "Length Density (μm/μm³)",
+                    "Total Length (um)",
+                    "Mean Strand Length (um)",
+                    "Length Density (um/um^3)",
                     "Volume Fraction",
-                    "Mean Radius (μm)",
-                    "Radius Std (μm)",
-                    "Bifurcation Density (/mm³)",
-                    "Surface Area (μm²)",
+                    "Mean Radius (um)",
+                    "Radius Std (um)",
+                    "Bifurcation Density (/mm^3)",
+                    "Surface Area (um^2)",
                     "Mean Tortuosity",
                     "Number of Connected Components",
                     "Average Path Length",
@@ -216,7 +217,7 @@ def show_analysis_page() -> None:
             },
         )
         st.download_button(
-            label="📥 Download Statistics CSV",
+            label="Download Statistics CSV",
             data=full_stats.to_csv(index=False),
             file_name="network_statistics.csv",
             mime="text/csv",

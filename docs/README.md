@@ -95,14 +95,16 @@ Core references for the active chapter:
 
 Current live-run lessons:
 
+- the canonical managed archive root for fresh parity work in this checkout is
+  `D:\slavv_comparisons`
 - the broad over-emission regime from March 30, 2026 is no longer the same
   failure shape, but live imported-MATLAB `edges` work has now returned to an
   over-emission regime after the April 18 frontier fix
 - the fresh live `edges` evidence root is
-  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
   with exact vertices and over-emitted edges/strands
 - the fresh stage-isolated `network` evidence root is
-  `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
   and it remains exact when MATLAB `edges` are supplied
 - several older hotspots such as `64`, `359`, and `1283` now have much better
   candidate coverage than they did earlier in the investigation

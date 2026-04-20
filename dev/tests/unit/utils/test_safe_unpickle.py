@@ -1,7 +1,5 @@
-import gzip
 import pickle
 
-import joblib
 import numpy as np
 import pytest
 

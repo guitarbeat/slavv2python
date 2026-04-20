@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 import streamlit as st
 
 from slavv.apps.share_report import build_share_report_html, record_share_event
+from slavv.models import normalize_pipeline_result
 from slavv.runtime import RunContext
 from slavv.runtime.run_state import fingerprint_jsonable
 from slavv.visualization import NetworkVisualizer
@@ -22,7 +23,14 @@ if TYPE_CHECKING:
 @st.cache_data(show_spinner=False)
 def generate_export_data(vertices, edges, network, parameters, format_type):
     """Generate export data and return as bytes."""
-    results = {"vertices": vertices, "edges": edges, "network": network, "parameters": parameters}
+    results = normalize_pipeline_result(
+        {
+            "vertices": vertices,
+            "edges": edges,
+            "network": network,
+            "parameters": parameters,
+        }
+    ).to_dict()
     visualizer = NetworkVisualizer()
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -56,8 +64,12 @@ def generate_export_data(vertices, edges, network, parameters, format_type):
 
 def _has_full_network_results(results: Mapping[str, Any]) -> bool:
     """Return True when a full network exists and exports can be offered."""
-    required_keys = {"vertices", "edges", "network"}
-    return required_keys.issubset(results)
+    typed_result = normalize_pipeline_result(results)
+    return (
+        typed_result.vertices is not None
+        and typed_result.edges is not None
+        and typed_result.network is not None
+    )
 
 
 @st.cache_data(show_spinner=False)
@@ -67,10 +79,11 @@ def generate_share_report_data(
     image_shape: tuple[int, int, int],
 ) -> str:
     """Generate a self-contained HTML share report."""
+    typed_result = normalize_pipeline_result(processing_results)
     return cast(
         "str",
         build_share_report_html(
-            processing_results,
+            typed_result.to_dict(),
             dataset_name=dataset_name,
             image_shape=image_shape,
         ),
@@ -84,15 +97,17 @@ def _log_share_report_prepared_once(dataset_name, report_data, results):
         return
 
     st.session_state["share_report_prepared_signature"] = signature
+    typed_result = normalize_pipeline_result(results)
+    normalized_results = typed_result.to_dict()
     record_share_event(
         st.session_state,
         "share_report_requested",
         dataset_name,
         signature,
         extra={
-            "vertices_count": len(results["vertices"].get("positions", [])),
-            "edges_count": len(results["edges"].get("traces", [])),
-            "strands_count": len(results["network"].get("strands", [])),
+            "vertices_count": len(normalized_results["vertices"].get("positions", [])),
+            "edges_count": len(normalized_results["edges"].get("traces", [])),
+            "strands_count": len(normalized_results["network"].get("strands", [])),
         },
     )
 

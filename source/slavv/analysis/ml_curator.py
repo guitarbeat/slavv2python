@@ -26,6 +26,7 @@ from sklearn.svm import SVC
 
 warnings.filterwarnings("ignore")
 try:
+    from ..models import normalize_pipeline_result
     from ..utils import calculate_path_length
     from ..utils.safe_unpickle import safe_load
     from .automatic_curator import AutomaticCurator
@@ -49,6 +50,7 @@ except ImportError:  # pragma: no cover - fallback for direct execution
     )
     from slavv.analysis.ml_curator_io import materialize_model_source
     from slavv.analysis.ml_curator_training import load_aggregated_training_data
+    from slavv.models import normalize_pipeline_result
     from slavv.utils import calculate_path_length
     from slavv.utils.safe_unpickle import safe_load
 
@@ -645,11 +647,19 @@ class MLCurator:
         edge_labels_list = []
 
         for results, annot in zip(processing_results, manual_annotations):
+            typed_result = normalize_pipeline_result(results)
+            normalized_results = typed_result.to_dict()
+            image_shape = (
+                typed_result.energy_data.image_shape
+                if typed_result.energy_data is not None
+                else tuple(int(value) for value in results.get("image_shape", (100, 100, 50)))
+            )
+
             # Extract vertex features and labels
             v_features = self.extract_vertex_features(
-                results["vertices"],
-                results["energy_data"],
-                results.get("image_shape", (100, 100, 50)),
+                normalized_results["vertices"],
+                normalized_results["energy_data"],
+                image_shape,
             )
             v_labels = annot.get("vertex_labels", np.ones(len(v_features)))
 
@@ -658,7 +668,9 @@ class MLCurator:
 
             # Extract edge features and labels
             e_features = self.extract_edge_features(
-                results["edges"], results["vertices"], results["energy_data"]
+                normalized_results["edges"],
+                normalized_results["vertices"],
+                normalized_results["energy_data"],
             )
             e_labels = annot.get("edge_labels", np.ones(len(e_features)))
 

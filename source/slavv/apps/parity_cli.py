@@ -5,6 +5,7 @@ from __future__ import annotations
 # ruff: noqa: UP045
 import argparse
 import json
+import os
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -29,6 +30,8 @@ from slavv.runtime import load_run_snapshot
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 project_root = Path(__file__).resolve().parents[3]
 DEFAULT_COMPARISON_PARAMS = project_root / "dev" / "scripts" / "cli" / "comparison_params.json"
+COMPARISONS_ROOT_ENV_VAR = "SLAVV_COMPARISONS_ROOT"
+WINDOWS_COMPARISONS_ROOT = Path("D:/slavv_comparisons")
 
 
 def print_latest_proof_summary(run_dir: Path) -> int:
@@ -48,7 +51,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         default=None,
-        help="Output directory for results (default: comparisons/YYYYMMDD_HHMMSS)",
+        help=(
+            "Output directory for results (default: SLAVV_COMPARISONS_ROOT, or "
+            "D:\\slavv_comparisons on Windows when D: is available, otherwise "
+            "comparisons/YYYYMMDD_HHMMSS)"
+        ),
     )
     parser.add_argument(
         "--params",
@@ -320,8 +327,20 @@ def _is_resume_candidate_compatible(
 
 def _build_fresh_output_dir(base_dir: Optional[Path] = None) -> Path:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    parent = base_dir or Path("comparisons")
+    parent = base_dir or _default_comparisons_root()
     return parent / f"{timestamp}_comparison"
+
+
+def _default_comparisons_root() -> Path:
+    """Return the preferred archive root for fresh parity runs."""
+    configured_root = os.environ.get(COMPARISONS_ROOT_ENV_VAR, "").strip()
+    if configured_root:
+        return Path(configured_root).expanduser()
+
+    if os.name == "nt" and Path("D:/").exists():
+        return WINDOWS_COMPARISONS_ROOT
+
+    return Path("comparisons")
 
 
 def _loop_kind_for_resolution(
@@ -428,7 +447,7 @@ def _resolve_output_dir(
         latest = select_compatible_run(requested)
         return latest if latest is not None else _build_fresh_output_dir(requested)
     if resume_latest:
-        latest = select_compatible_run(Path("comparisons"))
+        latest = select_compatible_run(_default_comparisons_root())
         if latest is not None:
             return latest
     return _build_fresh_output_dir(Path(user_output_dir) if user_output_dir else None)

@@ -9,13 +9,13 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from ..models import normalize_pipeline_result
 from ..utils import calculate_path_length
 from .network_plot_dashboard import add_summary_dashboard_traces
 from .network_plot_exports import export_casx, export_csv, export_json, export_mat, export_vmv
 from .network_plot_layout import distribution_layout, empty_figure, summary_dashboard_layout
 
 logger = logging.getLogger(__name__)
-
 
 def plot_energy_field(
     self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
@@ -300,10 +300,10 @@ def create_summary_dashboard(self, processing_results: dict[str, Any]) -> go.Fig
     """
     logger.info("Creating summary dashboard")
 
-    vertices = processing_results["vertices"]
-    processing_results["edges"]
-    network = processing_results["network"]
-    parameters = processing_results["parameters"]
+    typed_result = normalize_pipeline_result(processing_results)
+    vertices = typed_result.vertices.to_dict() if typed_result.vertices else {}
+    network = typed_result.network.to_dict() if typed_result.network else {}
+    parameters = typed_result.parameters
 
     # Create subplots
     fig = make_subplots(
@@ -343,15 +343,17 @@ def export_network_data(
     """
     logger.info(f"Exporting network data in {format} format")
 
-    vertices = processing_results["vertices"]
-    edges = processing_results["edges"]
-    network = processing_results["network"]
-    parameters = processing_results["parameters"]
+    typed_result = normalize_pipeline_result(processing_results)
+    normalized_results = typed_result.to_dict()
+    vertices = normalized_results["vertices"]
+    edges = normalized_results["edges"]
+    network = normalized_results["network"]
+    parameters = typed_result.parameters
 
     if format == "csv":
         return export_csv(vertices, edges, network, parameters, output_path)
     if format == "json":
-        return export_json(processing_results, output_path)
+        return export_json(normalized_results, output_path)
     if format == "vmv":
         return export_vmv(vertices, edges, network, parameters, output_path)
     if format == "casx":

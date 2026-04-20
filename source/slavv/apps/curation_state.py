@@ -5,14 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 from slavv.core import SLAVVProcessor
+from slavv.models import normalize_pipeline_result
 
 
 def summarize_processing_counts(processing_results: dict[str, Any]) -> dict[str, int]:
     """Return the key count metrics used for curation comparisons."""
-    network = processing_results.get("network", {})
+    typed_result = normalize_pipeline_result(processing_results)
+    results = typed_result.to_dict()
+    network = results.get("network", {})
     return {
-        "Vertices": len(processing_results.get("vertices", {}).get("positions", [])),
-        "Edges": len(processing_results.get("edges", {}).get("traces", [])),
+        "Vertices": len(results.get("vertices", {}).get("positions", [])),
+        "Edges": len(results.get("edges", {}).get("traces", [])),
         "Strands": len(network.get("strands", [])),
         "Bifurcations": len(network.get("bifurcations", [])),
     }
@@ -26,20 +29,22 @@ def sync_curated_processing_results(
     baseline_counts: dict[str, int] | None = None,
 ) -> tuple[dict[str, Any], dict[str, int], dict[str, int]]:
     """Return updated processing results with a rebuilt network and stable baseline counts."""
+    typed_result = normalize_pipeline_result(processing_results)
     preserved_baseline = (
         dict(baseline_counts)
         if baseline_counts is not None
         else summarize_processing_counts(processing_results)
     )
 
-    updated_results = dict(processing_results)
-    updated_results["vertices"] = curated_vertices
-    updated_results["edges"] = curated_edges
-    updated_results["network"] = SLAVVProcessor().construct_network(
+    rebuilt_network = SLAVVProcessor().construct_network(
         curated_edges,
         curated_vertices,
-        updated_results.get("parameters", {}),
+        typed_result.parameters,
     )
+    updated_results = typed_result.to_dict()
+    updated_results["vertices"] = curated_vertices
+    updated_results["edges"] = curated_edges
+    updated_results["network"] = rebuilt_network
 
     return updated_results, preserved_baseline, summarize_processing_counts(updated_results)
 

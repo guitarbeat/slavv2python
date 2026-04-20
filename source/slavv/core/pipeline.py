@@ -6,18 +6,20 @@ Coordinates the energy, tracing, and graph construction steps.
 from __future__ import annotations
 
 import logging
-import tempfile
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from .. import utils
 from ..runtime import ProgressEvent, RunContext
-from ..runtime.run_state import (
-    PIPELINE_STAGES,
-    PREPROCESS_STAGE,
-    STATUS_RUNNING,
-    atomic_write_json,
-    fingerprint_array,
-    fingerprint_jsonable,
+from ..runtime.run_state import PREPROCESS_STAGE
+from ..workflows import (
+    PipelineStageStep,
+    emit_progress,
+    finalize_pipeline_results,
+    prepare_pipeline_run,
+    preprocess_image,
+    resolve_stage_with_checkpoint,
+    run_pipeline_stage_sequence,
+    validate_stage_control,
 )
 from . import edges as edge_ops
 from . import energy, graph
@@ -29,21 +31,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _validate_stage_control(stage_name: str | None, option_name: str) -> None:
-    if stage_name is not None and stage_name not in PIPELINE_STAGES:
-        valid = ", ".join(PIPELINE_STAGES)
-        raise ValueError(f"{option_name} must be one of: {valid}")
-
-
-def _emit_progress(
-    progress_callback: Callable[[float, str], None] | None,
-    fraction: float,
-    stage: str,
-) -> None:
-    if progress_callback:
-        progress_callback(fraction, stage)
-
-
 class SLAVVProcessor:
     """Main class for SLAVV vectorization processing"""
 
@@ -52,113 +39,6 @@ class SLAVVProcessor:
         self.vertices = None
         self.edges = None
         self.network = None
-
-    @staticmethod
-    def _effective_run_dir(
-        run_dir: str | None,
-        checkpoint_dir: str | None,
-        event_callback: Callable[[ProgressEvent], None] | None,
-    ) -> str | None:
-        if run_dir is not None or checkpoint_dir is not None or event_callback is None:
-            return run_dir
-        return tempfile.mkdtemp(prefix="slavv_run_")
-
-    @staticmethod
-    def _create_run_context(
-        effective_run_dir: str | None,
-        checkpoint_dir: str | None,
-        input_fingerprint: str,
-        params_fingerprint: str,
-        image: np.ndarray,
-        stop_after: str | None,
-        event_callback: Callable[[ProgressEvent], None] | None,
-    ) -> RunContext | None:
-        if effective_run_dir is None and checkpoint_dir is None:
-            return None
-        return RunContext(
-            run_dir=effective_run_dir,
-            checkpoint_dir=checkpoint_dir,
-            input_fingerprint=input_fingerprint,
-            params_fingerprint=params_fingerprint,
-            target_stage=stop_after or "network",
-            provenance={
-                "source": "pipeline",
-                "image_shape": list(image.shape),
-                "stop_after": stop_after or "network",
-            },
-            event_callback=event_callback,
-            legacy=checkpoint_dir is not None and effective_run_dir is None,
-        )
-
-    @staticmethod
-    def _initialize_run_context(
-        run_context: RunContext | None,
-        *,
-        input_fingerprint: str,
-        params_fingerprint: str,
-        force_rerun_from: str | None,
-        parameters: dict[str, Any],
-    ) -> None:
-        if run_context is None:
-            return
-        run_context.ensure_resume_allowed(
-            input_fingerprint=input_fingerprint,
-            params_fingerprint=params_fingerprint,
-            force_rerun_from=force_rerun_from,
-        )
-        if force_rerun_from in PIPELINE_STAGES:
-            run_context.reset_pipeline_state_from(force_rerun_from)
-        params_path = (
-            run_context.run_root / "checkpoint_params.json"
-            if run_context.legacy
-            else run_context.metadata_dir / "validated_params.json"
-        )
-        atomic_write_json(params_path, parameters)
-        run_context.mark_run_status(
-            STATUS_RUNNING,
-            current_stage=PREPROCESS_STAGE,
-            detail="Starting SLAVV processing pipeline",
-        )
-
-    @staticmethod
-    def _force_rerun_flags(force_rerun_from: str | None) -> dict[str, bool]:
-        force_rerun = dict.fromkeys(PIPELINE_STAGES, False)
-        if force_rerun_from not in PIPELINE_STAGES:
-            return force_rerun
-        start_idx = PIPELINE_STAGES.index(force_rerun_from)
-        for stage_name in PIPELINE_STAGES[start_idx:]:
-            force_rerun[stage_name] = True
-        return force_rerun
-
-    @staticmethod
-    def _preprocess_image(
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-    ) -> np.ndarray:
-        try:
-            preprocessed = cast("np.ndarray", utils.preprocess_image(image, parameters))
-        except Exception as exc:
-            if run_context is not None:
-                run_context.fail_stage(PREPROCESS_STAGE, exc)
-            raise
-        if run_context is not None:
-            run_context.mark_preprocess_complete()
-        return preprocessed
-
-    @staticmethod
-    def _stop_after_stage(
-        stop_after: str | None,
-        stage_name: str,
-        results: dict[str, Any],
-        run_context: RunContext | None,
-    ) -> dict[str, Any] | None:
-        if stop_after != stage_name:
-            return None
-        logger.info("Pipeline stopped after '%s' stage as requested.", stage_name)
-        if run_context is not None:
-            run_context.finalize_run(stop_after=stop_after)
-        return results
 
     def process_image(
         self,
@@ -197,95 +77,90 @@ class SLAVVProcessor:
         """
         if image.ndim != 3 or 0 in image.shape:
             raise ValueError("Input image must be a non-empty 3D array")
-        _validate_stage_control(stop_after, "stop_after")
-        _validate_stage_control(force_rerun_from, "force_rerun_from")
+        validate_stage_control(stop_after, "stop_after")
+        validate_stage_control(force_rerun_from, "force_rerun_from")
 
         logger.info("Starting SLAVV processing pipeline")
 
-        _emit_progress(progress_callback, 0.0, "start")
+        emit_progress(progress_callback, 0.0, "start")
 
-        parameters = utils.validate_parameters(parameters)
-        input_fingerprint = fingerprint_array(image)
-        params_fingerprint = fingerprint_jsonable(parameters)
-        effective_run_dir = self._effective_run_dir(run_dir, checkpoint_dir, event_callback)
-        run_context = self._create_run_context(
-            effective_run_dir,
-            checkpoint_dir,
-            input_fingerprint,
-            params_fingerprint,
+        prepared_run = prepare_pipeline_run(
             image,
-            stop_after,
-            event_callback,
-        )
-        self._initialize_run_context(
-            run_context,
-            input_fingerprint=input_fingerprint,
-            params_fingerprint=params_fingerprint,
+            parameters,
+            run_dir=run_dir,
+            checkpoint_dir=checkpoint_dir,
+            stop_after=stop_after,
             force_rerun_from=force_rerun_from,
-            parameters=parameters,
+            event_callback=event_callback,
+            run_context_factory=RunContext,
         )
-        force_rerun = self._force_rerun_flags(force_rerun_from)
+        parameters = prepared_run.parameters
+        run_context = prepared_run.run_context
+        force_rerun = prepared_run.force_rerun
 
         results = {"parameters": parameters}
-        image = self._preprocess_image(image, parameters, run_context)
-        _emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
-
-        energy_data = self._resolve_energy_stage(
-            image, parameters, run_context, force_rerun["energy"]
-        )
-        results["energy_data"] = energy_data
-        _emit_progress(progress_callback, 0.4, "energy")
-        if early_result := self._stop_after_stage(stop_after, "energy", results, run_context):
+        image = preprocess_image(image, parameters, run_context)
+        emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
+        if early_result := run_pipeline_stage_sequence(
+            results,
+            steps=[
+                PipelineStageStep(
+                    result_key="energy_data",
+                    stage_name="energy",
+                    progress_fraction=0.4,
+                    resolve_fn=lambda: self._resolve_energy_stage(
+                        image,
+                        parameters,
+                        run_context,
+                        force_rerun["energy"],
+                    ),
+                ),
+                PipelineStageStep(
+                    result_key="vertices",
+                    stage_name="vertices",
+                    progress_fraction=0.6,
+                    resolve_fn=lambda: self._resolve_vertices_stage(
+                        cast("dict[str, Any]", results["energy_data"]),
+                        parameters,
+                        run_context,
+                        force_rerun["vertices"],
+                    ),
+                ),
+                PipelineStageStep(
+                    result_key="edges",
+                    stage_name="edges",
+                    progress_fraction=0.8,
+                    resolve_fn=lambda: self._resolve_edges_stage(
+                        cast("dict[str, Any]", results["energy_data"]),
+                        cast("dict[str, Any]", results["vertices"]),
+                        parameters,
+                        run_context,
+                        force_rerun["edges"],
+                    ),
+                ),
+                PipelineStageStep(
+                    result_key="network",
+                    stage_name="network",
+                    progress_fraction=1.0,
+                    resolve_fn=lambda: self._resolve_network_stage(
+                        cast("dict[str, Any]", results["edges"]),
+                        cast("dict[str, Any]", results["vertices"]),
+                        parameters,
+                        run_context,
+                        force_rerun["network"],
+                    ),
+                ),
+            ],
+            progress_callback=progress_callback,
+            stop_after=stop_after,
+            run_context=run_context,
+        ):
             return early_result
-
-        vertices = self._resolve_vertices_stage(
-            energy_data,
-            parameters,
-            run_context,
-            force_rerun["vertices"],
-        )
-        results["vertices"] = vertices
-        _emit_progress(progress_callback, 0.6, "vertices")
-        if early_result := self._stop_after_stage(stop_after, "vertices", results, run_context):
-            return early_result
-
-        edges = self._resolve_edges_stage(
-            energy_data,
-            vertices,
-            parameters,
-            run_context,
-            force_rerun["edges"],
-        )
-        results["edges"] = edges
-        _emit_progress(progress_callback, 0.8, "edges")
-        if early_result := self._stop_after_stage(stop_after, "edges", results, run_context):
-            return early_result
-
-        network = self._resolve_network_stage(
-            edges,
-            vertices,
-            parameters,
-            run_context,
-            force_rerun["network"],
-        )
-        results["network"] = network
-        _emit_progress(progress_callback, 1.0, "network")
 
         logger.info("SLAVV processing pipeline completed")
         if run_context is not None:
             run_context.finalize_run(stop_after=stop_after)
-        return results
-
-    @staticmethod
-    def _stage_artifacts(stage_controller) -> dict[str, str]:
-        artifacts = {}
-        if stage_controller.stage_dir.exists():
-            for artifact in stage_controller.stage_dir.iterdir():
-                if artifact.name == "resume_state.json":
-                    continue
-                if artifact.is_file() or artifact.is_dir():
-                    artifacts[artifact.name] = str(artifact)
-        return artifacts
+        return finalize_pipeline_results(results)
 
     def _resolve_energy_stage(
         self,
@@ -294,37 +169,22 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        if run_context is None:
-            return self.calculate_energy_field(image, parameters)
-        controller = run_context.stage("energy")
-        if controller.checkpoint_path.exists() and not force_rerun:
-            logger.info("Loading cached Energy Field from %s", controller.checkpoint_path)
-            energy_data = cast("dict[str, Any]", controller.load_checkpoint())
-            controller.complete(
-                detail="Loaded energy checkpoint",
-                artifacts=self._stage_artifacts(controller),
-                resumed=True,
-            )
-            return energy_data
-        try:
-            energy_data = cast(
-                "dict[str, Any]",
-                energy.calculate_energy_field_resumable(
-                    image,
-                    parameters,
-                    controller,
-                    utils.get_chunking_lattice,
-                ),
-            )
-            controller.save_checkpoint(energy_data)
-            controller.complete(
-                detail="Energy field ready",
-                artifacts=self._stage_artifacts(controller),
-            )
-            return energy_data
-        except Exception as exc:
-            run_context.fail_stage("energy", exc)
-            raise
+        return resolve_stage_with_checkpoint(
+            run_context=run_context,
+            force_rerun=force_rerun,
+            stage_name="energy",
+            cached_log_label="Energy Field",
+            cached_detail="Loaded energy checkpoint",
+            success_detail="Energy field ready",
+            fallback_fn=lambda: self.calculate_energy_field(image, parameters),
+            compute_fn=lambda controller: energy.calculate_energy_field_resumable(
+                image,
+                parameters,
+                controller,
+                utils.get_chunking_lattice,
+            ),
+            logger=logger,
+        )
 
     def _resolve_vertices_stage(
         self,
@@ -333,32 +193,21 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        if run_context is None:
-            return self.extract_vertices(energy_data, parameters)
-        controller = run_context.stage("vertices")
-        if controller.checkpoint_path.exists() and not force_rerun:
-            logger.info("Loading cached Vertices from %s", controller.checkpoint_path)
-            vertices = cast("dict[str, Any]", controller.load_checkpoint())
-            controller.complete(
-                detail="Loaded vertex checkpoint",
-                artifacts=self._stage_artifacts(controller),
-                resumed=True,
-            )
-            return vertices
-        try:
-            vertices = cast(
-                "dict[str, Any]",
-                vertex_ops.extract_vertices_resumable(energy_data, parameters, controller),
-            )
-            controller.save_checkpoint(vertices)
-            controller.complete(
-                detail="Vertices extracted",
-                artifacts=self._stage_artifacts(controller),
-            )
-            return vertices
-        except Exception as exc:
-            run_context.fail_stage("vertices", exc)
-            raise
+        return resolve_stage_with_checkpoint(
+            run_context=run_context,
+            force_rerun=force_rerun,
+            stage_name="vertices",
+            cached_log_label="Vertices",
+            cached_detail="Loaded vertex checkpoint",
+            success_detail="Vertices extracted",
+            fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
+            compute_fn=lambda controller: vertex_ops.extract_vertices_resumable(
+                energy_data,
+                parameters,
+                controller,
+            ),
+            logger=logger,
+        )
 
     def _resolve_edges_stage(
         self,
@@ -368,52 +217,36 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        if run_context is None:
-            edge_method = parameters.get("edge_method", "tracing")
-            if edge_method == "watershed":
-                return self.extract_edges_watershed(energy_data, vertices, parameters)
-            return self.extract_edges(energy_data, vertices, parameters)
-        controller = run_context.stage("edges")
-        if controller.checkpoint_path.exists() and not force_rerun:
-            logger.info("Loading cached Edges from %s", controller.checkpoint_path)
-            edges = cast("dict[str, Any]", controller.load_checkpoint())
-            controller.complete(
-                detail="Loaded edge checkpoint",
-                artifacts=self._stage_artifacts(controller),
-                resumed=True,
-            )
-            return edges
-        try:
-            edge_method = parameters.get("edge_method", "tracing")
-            if edge_method == "watershed":
-                edges = cast(
-                    "dict[str, Any]",
-                    edge_ops.extract_edges_watershed_resumable(
-                        energy_data,
-                        vertices,
-                        parameters,
-                        controller,
-                    ),
+        edge_method = parameters.get("edge_method", "tracing")
+        return resolve_stage_with_checkpoint(
+            run_context=run_context,
+            force_rerun=force_rerun,
+            stage_name="edges",
+            cached_log_label="Edges",
+            cached_detail="Loaded edge checkpoint",
+            success_detail="Edges extracted",
+            fallback_fn=lambda: (
+                self.extract_edges_watershed(energy_data, vertices, parameters)
+                if edge_method == "watershed"
+                else self.extract_edges(energy_data, vertices, parameters)
+            ),
+            compute_fn=lambda controller: (
+                edge_ops.extract_edges_watershed_resumable(
+                    energy_data,
+                    vertices,
+                    parameters,
+                    controller,
                 )
-            else:
-                edges = cast(
-                    "dict[str, Any]",
-                    edge_ops.extract_edges_resumable(
-                        energy_data,
-                        vertices,
-                        parameters,
-                        controller,
-                    ),
+                if edge_method == "watershed"
+                else edge_ops.extract_edges_resumable(
+                    energy_data,
+                    vertices,
+                    parameters,
+                    controller,
                 )
-            controller.save_checkpoint(edges)
-            controller.complete(
-                detail="Edges extracted",
-                artifacts=self._stage_artifacts(controller),
-            )
-            return edges
-        except Exception as exc:
-            run_context.fail_stage("edges", exc)
-            raise
+            ),
+            logger=logger,
+        )
 
     def _resolve_network_stage(
         self,
@@ -423,32 +256,22 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        if run_context is None:
-            return self.construct_network(edges, vertices, parameters)
-        controller = run_context.stage("network")
-        if controller.checkpoint_path.exists() and not force_rerun:
-            logger.info("Loading cached Network from %s", controller.checkpoint_path)
-            network = cast("dict[str, Any]", controller.load_checkpoint())
-            controller.complete(
-                detail="Loaded network checkpoint",
-                artifacts=self._stage_artifacts(controller),
-                resumed=True,
-            )
-            return network
-        try:
-            network = cast(
-                "dict[str, Any]",
-                graph.construct_network_resumable(edges, vertices, parameters, controller),
-            )
-            controller.save_checkpoint(network)
-            controller.complete(
-                detail="Network constructed",
-                artifacts=self._stage_artifacts(controller),
-            )
-            return network
-        except Exception as exc:
-            run_context.fail_stage("network", exc)
-            raise
+        return resolve_stage_with_checkpoint(
+            run_context=run_context,
+            force_rerun=force_rerun,
+            stage_name="network",
+            cached_log_label="Network",
+            cached_detail="Loaded network checkpoint",
+            success_detail="Network constructed",
+            fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
+            compute_fn=lambda controller: graph.construct_network_resumable(
+                edges,
+                vertices,
+                parameters,
+                controller,
+            ),
+            logger=logger,
+        )
 
     def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""

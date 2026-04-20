@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 from plotly.io import to_html
 
 from slavv.analysis import calculate_network_statistics
+from slavv.models import normalize_pipeline_result
 from slavv.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:
@@ -59,10 +60,11 @@ def compute_shareable_stats(
     processing_results: Mapping[str, Any], image_shape: tuple[int, int, int] | None = None
 ) -> dict[str, Any]:
     """Compute headline network statistics for the share report."""
-    parameters = processing_results.get("parameters", {})
-    vertices = processing_results["vertices"]
-    edges = processing_results["edges"]
-    network = processing_results["network"]
+    result = normalize_pipeline_result(processing_results)
+    parameters = result.parameters
+    vertices = cast("dict[str, Any]", result.vertices.to_dict() if result.vertices else {})
+    edges = cast("dict[str, Any]", result.edges.to_dict() if result.edges else {})
+    network = cast("dict[str, Any]", result.network.to_dict() if result.network else {})
 
     return cast(
         "dict[str, Any]",
@@ -82,12 +84,16 @@ def build_share_report_signature(
     dataset_name: str, processing_results: Mapping[str, Any], stats: Mapping[str, Any]
 ) -> str:
     """Build a stable signature used to dedupe report-ready tracking in a session."""
+    result = normalize_pipeline_result(processing_results)
+    vertices = cast("dict[str, Any]", result.vertices.to_dict() if result.vertices else {})
+    edges = cast("dict[str, Any]", result.edges.to_dict() if result.edges else {})
+    network = cast("dict[str, Any]", result.network.to_dict() if result.network else {})
     payload = {
         "dataset_name": dataset_name,
-        "vertices": len(processing_results["vertices"].get("positions", [])),
-        "edges": len(processing_results["edges"].get("traces", [])),
-        "strands": len(processing_results["network"].get("strands", [])),
-        "bifurcations": len(processing_results["network"].get("bifurcations", [])),
+        "vertices": len(vertices.get("positions", [])),
+        "edges": len(edges.get("traces", [])),
+        "strands": len(network.get("strands", [])),
+        "bifurcations": len(network.get("bifurcations", [])),
         "total_length": round(float(stats.get("total_length", 0.0)), 3),
         "volume_fraction": round(float(stats.get("volume_fraction", 0.0)), 6),
     }
@@ -123,8 +129,9 @@ def build_share_report_html(
     image_shape: tuple[int, int, int] | None = None,
 ) -> dict[str, Any]:
     """Build a self-contained HTML share report and related metadata."""
-    results = dict(processing_results)
-    parameters = results.get("parameters", {})
+    typed_result = normalize_pipeline_result(processing_results)
+    results = typed_result.to_dict()
+    parameters = typed_result.parameters
     stats = compute_shareable_stats(results, image_shape=image_shape)
     visualizer = NetworkVisualizer()
 

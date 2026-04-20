@@ -4,6 +4,12 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from dev.tests.support.run_state_builders import (
+    build_snapshot_dict,
+    materialize_checkpoint_surface,
+    materialize_run_snapshot,
+)
+
 from slavv.parity.matlab_status import MatlabStatusReport, persist_matlab_status
 from slavv.parity.preflight import OutputRootPreflightReport, persist_output_preflight
 from slavv.parity.workflow_assessment import (
@@ -24,9 +30,11 @@ def test_assess_loop_request_marks_skip_matlab_root_reusable_with_checkpoints(tm
     run_root = tmp_path / "20260410_120000_comparison"
     metadata_dir = run_root / "99_Metadata"
     metadata_dir.mkdir(parents=True)
-    (metadata_dir / "run_snapshot.json").write_text(
-        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
-        encoding="utf-8",
+    materialize_run_snapshot(
+        run_root,
+        build_snapshot_dict(
+            provenance={"input_file": str(tmp_path / "input.tif")},
+        ),
     )
     (metadata_dir / "comparison_params.normalized.json").write_text(
         json.dumps(
@@ -38,9 +46,7 @@ def test_assess_loop_request_marks_skip_matlab_root_reusable_with_checkpoints(tm
         ),
         encoding="utf-8",
     )
-    checkpoints_dir = run_root / "02_Output" / "python_results" / "checkpoints"
-    checkpoints_dir.mkdir(parents=True)
-    (checkpoints_dir / "checkpoint_edges.pkl").write_bytes(b"checkpoint")
+    materialize_checkpoint_surface(run_root, stages=("edges",))
 
     report = assess_loop_request(
         run_root,
@@ -135,9 +141,11 @@ def test_assess_full_comparison_analysis_ready_with_completed_matlab_and_python_
     run_root = tmp_path / "20260413_120000_comparison"
     metadata_dir = run_root / "99_Metadata"
     metadata_dir.mkdir(parents=True)
-    (metadata_dir / "run_snapshot.json").write_text(
-        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
-        encoding="utf-8",
+    materialize_run_snapshot(
+        run_root,
+        build_snapshot_dict(
+            provenance={"input_file": str(tmp_path / "input.tif")},
+        ),
     )
     (metadata_dir / "comparison_params.normalized.json").write_text(
         json.dumps(
@@ -194,9 +202,11 @@ def test_assess_full_comparison_reuse_ready_with_completed_matlab_only(
     run_root = tmp_path / "20260413_121500_comparison"
     metadata_dir = run_root / "99_Metadata"
     metadata_dir.mkdir(parents=True)
-    (metadata_dir / "run_snapshot.json").write_text(
-        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
-        encoding="utf-8",
+    materialize_run_snapshot(
+        run_root,
+        build_snapshot_dict(
+            provenance={"input_file": str(tmp_path / "input.tif")},
+        ),
     )
     (metadata_dir / "comparison_params.normalized.json").write_text(
         json.dumps(
@@ -246,9 +256,11 @@ def test_assess_full_comparison_requires_fresh_matlab_without_completed_status(t
     run_root = tmp_path / "20260413_123000_comparison"
     metadata_dir = run_root / "99_Metadata"
     metadata_dir.mkdir(parents=True)
-    (metadata_dir / "run_snapshot.json").write_text(
-        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
-        encoding="utf-8",
+    materialize_run_snapshot(
+        run_root,
+        build_snapshot_dict(
+            provenance={"input_file": str(tmp_path / "input.tif")},
+        ),
     )
     (metadata_dir / "comparison_params.normalized.json").write_text(
         json.dumps(
@@ -286,9 +298,11 @@ def test_assess_full_comparison_marks_compacted_archive_analysis_ready(tmp_path:
     metadata_dir.mkdir(parents=True)
     analysis_dir.mkdir(parents=True)
     python_dir.mkdir(parents=True)
-    (metadata_dir / "run_snapshot.json").write_text(
-        json.dumps({"run_id": "run-1", "provenance": {"input_file": str(tmp_path / "input.tif")}}),
-        encoding="utf-8",
+    materialize_run_snapshot(
+        run_root,
+        build_snapshot_dict(
+            provenance={"input_file": str(tmp_path / "input.tif")},
+        ),
     )
     (metadata_dir / "comparison_params.normalized.json").write_text(
         json.dumps(

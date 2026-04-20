@@ -29,13 +29,18 @@ Every parity claim should cite staged artifacts under:
 
 Use these as the primary evidence surfaces.
 
+Archive-root note:
+
+- Keep managed parity runs under `D:\slavv_comparisons` in this checkout so
+  fresh MATLAB-enabled trials do not compete with workspace disk space on `C:`.
+
 Current live `edges` evidence root:
 
-- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
+- `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
 
 Current stage-isolated `network` evidence root:
 
-- `C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
+- `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
 
 Historical note:
 
@@ -236,9 +241,9 @@ Current live `edges` comparison refresh:
 
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
-  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```
@@ -247,9 +252,9 @@ Current stage-isolated `network` comparison refresh:
 
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
-  --standalone-matlab-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
-  --output-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
+  --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```
@@ -257,7 +262,7 @@ Current stage-isolated `network` comparison refresh:
 Proof artifact summary:
 
 ```powershell
-slavv parity-proof --run-dir C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial
+slavv parity-proof --run-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial
 ```
 
 ## Chapter Task Backlog

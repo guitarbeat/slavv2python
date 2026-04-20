@@ -35,6 +35,18 @@ def test_process_image_output_types():
     assert network["vertex_degrees"].dtype == np.int32
 
 
+def test_process_image_stop_after_energy_returns_plain_dict_payload():
+    processor = SLAVVProcessor()
+    image = np.zeros((5, 5, 5), dtype=np.float32)
+
+    result = processor.process_image(image, {}, stop_after="energy")
+
+    assert isinstance(result, dict)
+    assert isinstance(result["parameters"], dict)
+    assert isinstance(result["energy_data"], dict)
+    assert "vertices" not in result
+
+
 def test_validate_parameters_invalid_scales():
     with pytest.raises(ValueError, match="scales_per_octave must be positive"):
         validate_parameters({"scales_per_octave": 0})
