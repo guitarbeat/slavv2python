@@ -156,24 +156,17 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("bandpass_window must be non-negative; set 0 to disable")
     validated["discrete_tracing"] = params.get("discrete_tracing", False)
     validated["comparison_exact_network"] = bool(params.get("comparison_exact_network", False))
-    validated["parity_frontier_reachability_gate"] = bool(
-        params.get("parity_frontier_reachability_gate", False)
-    )
-    validated["parity_require_mutual_frontier_participation"] = bool(
-        params.get("parity_require_mutual_frontier_participation", True)
-    )
     parity_watershed_candidate_mode = str(
         params.get("parity_watershed_candidate_mode", "all_contacts")
     ).strip()
     allowed_parity_watershed_candidate_modes = {
         "all_contacts",
         "remaining_origin_contacts",
-        "legacy_supplement",
     }
     if parity_watershed_candidate_mode not in allowed_parity_watershed_candidate_modes:
         raise ValueError(
             "parity_watershed_candidate_mode must be one of "
-            "'all_contacts', 'remaining_origin_contacts', or 'legacy_supplement'"
+            "'all_contacts' or 'remaining_origin_contacts'"
         )
     validated["parity_watershed_candidate_mode"] = parity_watershed_candidate_mode
     parity_watershed_metric_threshold = params.get("parity_watershed_metric_threshold")

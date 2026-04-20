@@ -47,9 +47,7 @@ def test_validate_parameters_accepts_zarr_energy_storage_format():
 def test_validate_parameters_preserves_parity_specific_overrides():
     validated = validate_parameters(
         {
-            "parity_frontier_reachability_gate": False,
-            "parity_require_mutual_frontier_participation": False,
-            "parity_watershed_candidate_mode": "legacy_supplement",
+            "parity_watershed_candidate_mode": "remaining_origin_contacts",
             "parity_watershed_metric_threshold": -90.0,
             "parity_candidate_salvage_mode": "none",
             "parity_geodesic_salvage_k_nearest": 8,
@@ -58,9 +56,7 @@ def test_validate_parameters_preserves_parity_specific_overrides():
         }
     )
 
-    assert validated["parity_frontier_reachability_gate"] is False
-    assert validated["parity_require_mutual_frontier_participation"] is False
-    assert validated["parity_watershed_candidate_mode"] == "legacy_supplement"
+    assert validated["parity_watershed_candidate_mode"] == "remaining_origin_contacts"
     assert validated["parity_watershed_metric_threshold"] == -90.0
     assert validated["parity_candidate_salvage_mode"] == "none"
     assert validated["parity_geodesic_salvage_k_nearest"] == 8

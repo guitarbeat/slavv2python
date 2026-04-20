@@ -30,7 +30,7 @@ def _parity_watershed_candidate_mode(params: dict[str, Any]) -> str:
     """Return the MATLAB-parity watershed candidate strategy."""
     requested_mode = str(params.get("parity_watershed_candidate_mode", "all_contacts")).strip()
     normalized_mode = requested_mode.lower()
-    allowed_modes = {"all_contacts", "remaining_origin_contacts", "legacy_supplement"}
+    allowed_modes = {"all_contacts", "remaining_origin_contacts"}
     return normalized_mode if normalized_mode in allowed_modes else "all_contacts"
 
 
@@ -57,7 +57,7 @@ def _parity_candidate_salvage_mode(
     }
     normalized_mode = requested_mode if requested_mode in allowed_modes else "auto"
     if normalized_mode == "auto":
-        return "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
+        return "frontier_deficit_geodesic"
     return normalized_mode
 
 

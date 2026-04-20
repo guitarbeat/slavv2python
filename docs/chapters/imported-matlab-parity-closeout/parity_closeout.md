@@ -131,7 +131,7 @@ Idea:
 
 Comparison:
 
-- `legacy_supplement`: `110 / 85 / 53`
+- `legacy_supplement`: `110 / 85 / 53` (historical mode, now retired)
 - `all_contacts`: `110 / 84 / 48`
 
 Interpretation:
@@ -414,4 +414,3 @@ This round did not achieve full MATLAB network parity, but it did produce a clea
 - the remaining gap is still candidate-generation driven
 - the modern upstream MATLAB target is more watershed/shared-state oriented than the older frontier-only mapping implied
 - origin `64` remains the most actionable next debugging surface
-

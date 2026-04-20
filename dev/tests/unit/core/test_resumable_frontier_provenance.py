@@ -25,7 +25,6 @@ def test_extract_edges_resumable_preserves_frontier_candidate_provenance(monkeyp
     params = {
         "comparison_exact_network": True,
         "number_of_edges_per_vertex": 1,
-        "parity_frontier_reachability_gate": False,
     }
 
     def fake_frontier(*args, **kwargs):

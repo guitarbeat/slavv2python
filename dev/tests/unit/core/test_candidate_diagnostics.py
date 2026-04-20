@@ -87,6 +87,7 @@ class TestWatershedSupplementDiagnostics:
             "diagnostics": {
                 **_empty_edge_diagnostics(),
                 "frontier_per_origin_candidate_counts": {0: 1},
+                "frontier_per_origin_terminal_rejections": {0: 1},
             },
         }
         vertex_positions = np.array(
@@ -120,9 +121,8 @@ class TestWatershedSupplementDiagnostics:
             vertex_positions,
             -1.0,
             {
-                "number_of_edges_per_vertex": 4,
-                "parity_watershed_candidate_mode": "legacy_supplement",
-                "parity_frontier_reachability_gate": True,
+                "number_of_edges_per_vertex": 1,
+                "parity_watershed_candidate_mode": "remaining_origin_contacts",
                 "parity_candidate_salvage_mode": "frontier_deficit_geodesic",
                 "parity_geodesic_salvage_k_nearest": 2,
             },
