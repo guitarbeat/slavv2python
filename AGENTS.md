@@ -13,21 +13,16 @@ Repository guidance for coding agents working in `slavv2python`.
 
 - `source/slavv/`: core package code, including processing, I/O, analysis, visualization, and app entry points
 - `dev/tests/`: unit, integration, UI, and diagnostic coverage
-- `dev/scripts/cli/`: MATLAB comparison helpers and wrapper scripts
-- `dev/scripts/maintenance/`: repo maintenance helpers for mapping and MATLAB script audits
-- `docs/`: maintained reference docs for MATLAB mapping, parity notes, report catalogs, and comparison run layout
-- `external/Vectorization-Public/`: optional local checkout of the upstream MATLAB implementation
+- `dev/scripts/`: maintained helper scripts and benchmarks
+- `docs/`: maintained reference docs for the current Python codebase
 
 ## Read First When Relevant
 
-- `docs/README.md`: index for maintained reference docs and active chapter status.
-- `TODO.md`: active imported-MATLAB parity backlog and current canonical run roots.
+- `docs/README.md`: index for maintained reference docs.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
-- `docs/reference/COMPARISON_LAYOUT.md`: canonical staged comparison layout details and naming conventions.
-- `docs/reference/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
-- `source/slavv/parity/run_layout.py`: canonical staged comparison layout and legacy-path compatibility rules.
-- `source/slavv/runtime/run_state.py`: structured run metadata, staged artifact locations, and legacy checkpoint compatibility.
+- `docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
+- `source/slavv/runtime/run_state.py`: structured run metadata and staged artifact locations.
 
 ## Setup
 
@@ -84,7 +79,6 @@ Tests:
 ```powershell
 python -m pytest dev/tests/
 python -m pytest -m "unit or integration"
-python -m pytest dev/tests/diagnostic/test_comparison_setup.py
 ```
 
 Other useful checks:
@@ -103,22 +97,19 @@ slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
 slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
-slavv import-matlab -b path\to\batch_260210-101213 -c my_checkpoints
 ```
 
 Useful `slavv run` options:
 
 ```powershell
 slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a
-slavv run -i volume.tif -o slavv_output --checkpoint-dir checkpoints
 slavv run -i volume.tif -o slavv_output --stop-after edges
 slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 ```
 
 Notes:
 
-- `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` and `--checkpoint-dir` are both omitted.
-- Prefer `--run-dir` for new resumable runs; `--checkpoint-dir` remains the legacy flat-checkpoint surface.
+- `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted.
 - `slavv analyze` can operate directly on the standard exported `network.json`.
 
 Streamlit app:
@@ -153,35 +144,7 @@ python -m mypy
 python -m pytest -m "unit or integration"
 ```
 
-If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage. If the change touches diagnostics, comparison helpers, or environment setup, include the diagnostic tests as well.
-
-### MATLAB Parity Workflow
-
-Run this when touching MATLAB import, comparison, or parity-sensitive logic. Check `TODO.md` for current canonical run roots and recommended rerun commands.
-
-```powershell
-python -m pytest dev/tests/diagnostic/test_comparison_setup.py
-python dev/scripts/cli/compare_matlab_python.py `
-    --input data/slavv_test_volume.tif `
-    --matlab-path "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" `
-    --output-dir comparison_output
-```
-
-Useful comparison flags:
-
-```powershell
-python dev/scripts/cli/compare_matlab_python.py --skip-matlab ...
-python dev/scripts/cli/compare_matlab_python.py --skip-python ...
-```
-
-Parity layout conventions to preserve:
-
-- Structured comparison runs use `01_Input/`, `02_Output/`, `03_Analysis/`, and `99_Metadata/` under the run root.
-- Python comparison artifacts belong under `02_Output/python_results/`; run snapshots and normalized comparison params belong under `99_Metadata/`.
-- Parity utilities should continue to accept both the staged layout and legacy flat layouts when existing code supports both.
-- See `docs/reference/COMPARISON_LAYOUT.md` for the full layout reference and examples.
-
-Expect the MATLAB workflow to require a populated `external/Vectorization-Public/` checkout and a valid local MATLAB installation.
+If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage.
 
 ## Repo-Specific Guardrails
 
@@ -194,8 +157,7 @@ Expect the MATLAB workflow to require a populated `external/Vectorization-Public
 - Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
 - Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/slavv/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
 - Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
-- Preserve MATLAB parity where practical, and add deterministic regression tests for behavior changes.
-- When touching parity or comparison code, preserve the staged run-root semantics implemented in `source/slavv/parity/run_layout.py` and `source/slavv/runtime/run_state.py`, including compatibility with legacy checkpoint directories where present.
+- Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility has been removed.
 - Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
 - Do not treat generated outputs under `comparisons/`, `comparison_output*/`, or cache directories as source inputs for code changes.
 
