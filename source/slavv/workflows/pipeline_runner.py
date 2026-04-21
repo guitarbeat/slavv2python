@@ -24,6 +24,42 @@ class PipelineStageStep:
     resolve_fn: Callable[[], dict[str, Any]]
 
 
+def build_standard_pipeline_steps(
+    *,
+    resolve_energy: Callable[[], dict[str, Any]],
+    resolve_vertices: Callable[[], dict[str, Any]],
+    resolve_edges: Callable[[], dict[str, Any]],
+    resolve_network: Callable[[], dict[str, Any]],
+) -> list[PipelineStageStep]:
+    """Return the canonical SLAVV stage sequence with shared metadata."""
+    return [
+        PipelineStageStep(
+            result_key="energy_data",
+            stage_name="energy",
+            progress_fraction=0.4,
+            resolve_fn=resolve_energy,
+        ),
+        PipelineStageStep(
+            result_key="vertices",
+            stage_name="vertices",
+            progress_fraction=0.6,
+            resolve_fn=resolve_vertices,
+        ),
+        PipelineStageStep(
+            result_key="edges",
+            stage_name="edges",
+            progress_fraction=0.8,
+            resolve_fn=resolve_edges,
+        ),
+        PipelineStageStep(
+            result_key="network",
+            stage_name="network",
+            progress_fraction=1.0,
+            resolve_fn=resolve_network,
+        ),
+    ]
+
+
 def advance_pipeline_stage(
     results: dict[str, Any],
     *,
@@ -65,5 +101,9 @@ def run_pipeline_stage_sequence(
             return early_result
     return None
 
-
-__all__ = ["PipelineStageStep", "advance_pipeline_stage", "run_pipeline_stage_sequence"]
+__all__ = [
+    "PipelineStageStep",
+    "advance_pipeline_stage",
+    "build_standard_pipeline_steps",
+    "run_pipeline_stage_sequence",
+]

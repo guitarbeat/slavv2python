@@ -176,6 +176,9 @@ Completed so far:
   Streamlit page module
 - added `apps/visualization_state.py` so visualization-page payload handling is
   normalized and directly unit-tested outside the Streamlit page module
+- added `apps/processing_state.py` so processing-page run-dir derivation,
+  run-snapshot loading, post-run metrics, and session-state hydration are
+  normalized and directly unit-tested outside the Streamlit page module
 - adopted typed result normalization in visualization statistics/export helpers
   under `network_plot_statistics.py`
 - adopted typed result normalization in `analysis/ml_curator.py` training-data
@@ -230,9 +233,12 @@ Completed so far:
   `workflows/pipeline_runner.py`
 - moved the sequential stage loop itself into
   `workflows/pipeline_runner.py`
+- moved the canonical pipeline stage order and shared stage metadata into
+  `workflows/pipeline_runner.py`
 - moved shared stage-resolution control flow into
   `workflows/pipeline_stages.py`
-  including controller lookup and failure tracking
+  including controller lookup, failure tracking, and the standard
+  stage-specific checkpoint metadata for energy, vertices, edges, and network
 - moved repeated stage checkpoint load/save/complete logic into
   `workflows/stage_checkpoints.py`
 - added focused workflow helper tests while preserving `SLAVVProcessor`
@@ -240,8 +246,6 @@ Completed so far:
 
 Still to do:
 
-- extract stage sequencing and stage-resolution orchestration into dedicated
-  workflow modules
 - keep thinning `core/pipeline.py` until it mainly delegates orchestration
 
 Can run in parallel with:

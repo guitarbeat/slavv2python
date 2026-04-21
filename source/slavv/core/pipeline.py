@@ -12,12 +12,15 @@ from .. import utils
 from ..runtime import ProgressEvent, RunContext
 from ..runtime.run_state import PREPROCESS_STAGE
 from ..workflows import (
-    PipelineStageStep,
+    build_standard_pipeline_steps,
     emit_progress,
     finalize_pipeline_results,
     prepare_pipeline_run,
     preprocess_image,
-    resolve_stage_with_checkpoint,
+    resolve_edges_stage,
+    resolve_energy_stage,
+    resolve_network_stage,
+    resolve_vertices_stage,
     run_pipeline_stage_sequence,
     validate_stage_control,
 )
@@ -103,54 +106,34 @@ class SLAVVProcessor:
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
         if early_result := run_pipeline_stage_sequence(
             results,
-            steps=[
-                PipelineStageStep(
-                    result_key="energy_data",
-                    stage_name="energy",
-                    progress_fraction=0.4,
-                    resolve_fn=lambda: self._resolve_energy_stage(
-                        image,
-                        parameters,
-                        run_context,
-                        force_rerun["energy"],
-                    ),
+            steps=build_standard_pipeline_steps(
+                resolve_energy=lambda: self._resolve_energy_stage(
+                    image,
+                    parameters,
+                    run_context,
+                    force_rerun["energy"],
                 ),
-                PipelineStageStep(
-                    result_key="vertices",
-                    stage_name="vertices",
-                    progress_fraction=0.6,
-                    resolve_fn=lambda: self._resolve_vertices_stage(
-                        cast("dict[str, Any]", results["energy_data"]),
-                        parameters,
-                        run_context,
-                        force_rerun["vertices"],
-                    ),
+                resolve_vertices=lambda: self._resolve_vertices_stage(
+                    cast("dict[str, Any]", results["energy_data"]),
+                    parameters,
+                    run_context,
+                    force_rerun["vertices"],
                 ),
-                PipelineStageStep(
-                    result_key="edges",
-                    stage_name="edges",
-                    progress_fraction=0.8,
-                    resolve_fn=lambda: self._resolve_edges_stage(
-                        cast("dict[str, Any]", results["energy_data"]),
-                        cast("dict[str, Any]", results["vertices"]),
-                        parameters,
-                        run_context,
-                        force_rerun["edges"],
-                    ),
+                resolve_edges=lambda: self._resolve_edges_stage(
+                    cast("dict[str, Any]", results["energy_data"]),
+                    cast("dict[str, Any]", results["vertices"]),
+                    parameters,
+                    run_context,
+                    force_rerun["edges"],
                 ),
-                PipelineStageStep(
-                    result_key="network",
-                    stage_name="network",
-                    progress_fraction=1.0,
-                    resolve_fn=lambda: self._resolve_network_stage(
-                        cast("dict[str, Any]", results["edges"]),
-                        cast("dict[str, Any]", results["vertices"]),
-                        parameters,
-                        run_context,
-                        force_rerun["network"],
-                    ),
+                resolve_network=lambda: self._resolve_network_stage(
+                    cast("dict[str, Any]", results["edges"]),
+                    cast("dict[str, Any]", results["vertices"]),
+                    parameters,
+                    run_context,
+                    force_rerun["network"],
                 ),
-            ],
+            ),
             progress_callback=progress_callback,
             stop_after=stop_after,
             run_context=run_context,
@@ -169,15 +152,11 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_stage_with_checkpoint(
+        return resolve_energy_stage(
             run_context=run_context,
             force_rerun=force_rerun,
-            stage_name="energy",
-            cached_log_label="Energy Field",
-            cached_detail="Loaded energy checkpoint",
-            success_detail="Energy field ready",
             fallback_fn=lambda: self.calculate_energy_field(image, parameters),
-            compute_fn=lambda controller: energy.calculate_energy_field_resumable(
+            resumable_fn=lambda controller: energy.calculate_energy_field_resumable(
                 image,
                 parameters,
                 controller,
@@ -193,15 +172,11 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_stage_with_checkpoint(
+        return resolve_vertices_stage(
             run_context=run_context,
             force_rerun=force_rerun,
-            stage_name="vertices",
-            cached_log_label="Vertices",
-            cached_detail="Loaded vertex checkpoint",
-            success_detail="Vertices extracted",
             fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
-            compute_fn=lambda controller: vertex_ops.extract_vertices_resumable(
+            resumable_fn=lambda controller: vertex_ops.extract_vertices_resumable(
                 energy_data,
                 parameters,
                 controller,
@@ -218,32 +193,27 @@ class SLAVVProcessor:
         force_rerun: bool,
     ) -> dict[str, Any]:
         edge_method = parameters.get("edge_method", "tracing")
-        return resolve_stage_with_checkpoint(
+        return resolve_edges_stage(
             run_context=run_context,
             force_rerun=force_rerun,
-            stage_name="edges",
-            cached_log_label="Edges",
-            cached_detail="Loaded edge checkpoint",
-            success_detail="Edges extracted",
-            fallback_fn=lambda: (
-                self.extract_edges_watershed(energy_data, vertices, parameters)
-                if edge_method == "watershed"
-                else self.extract_edges(energy_data, vertices, parameters)
+            edge_method=edge_method,
+            tracing_fallback_fn=lambda: self.extract_edges(energy_data, vertices, parameters),
+            watershed_fallback_fn=lambda: self.extract_edges_watershed(
+                energy_data,
+                vertices,
+                parameters,
             ),
-            compute_fn=lambda controller: (
-                edge_ops.extract_edges_watershed_resumable(
-                    energy_data,
-                    vertices,
-                    parameters,
-                    controller,
-                )
-                if edge_method == "watershed"
-                else edge_ops.extract_edges_resumable(
-                    energy_data,
-                    vertices,
-                    parameters,
-                    controller,
-                )
+            tracing_resumable_fn=lambda controller: edge_ops.extract_edges_resumable(
+                energy_data,
+                vertices,
+                parameters,
+                controller,
+            ),
+            watershed_resumable_fn=lambda controller: edge_ops.extract_edges_watershed_resumable(
+                energy_data,
+                vertices,
+                parameters,
+                controller,
             ),
             logger=logger,
         )
@@ -256,15 +226,11 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_stage_with_checkpoint(
+        return resolve_network_stage(
             run_context=run_context,
             force_rerun=force_rerun,
-            stage_name="network",
-            cached_log_label="Network",
-            cached_detail="Loaded network checkpoint",
-            success_detail="Network constructed",
             fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
-            compute_fn=lambda controller: graph.construct_network_resumable(
+            resumable_fn=lambda controller: graph.construct_network_resumable(
                 edges,
                 vertices,
                 parameters,

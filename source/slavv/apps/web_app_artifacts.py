@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 import tempfile
 import zipfile
@@ -10,10 +9,10 @@ from typing import TYPE_CHECKING, Any, cast
 
 import streamlit as st
 
+from slavv.apps.processing_state import build_processing_run_dir
 from slavv.apps.share_report import build_share_report_html, record_share_event
 from slavv.models import normalize_pipeline_result
 from slavv.runtime import RunContext
-from slavv.runtime.run_state import fingerprint_jsonable
 from slavv.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:
@@ -113,10 +112,8 @@ def _log_share_report_prepared_once(dataset_name, report_data, results):
 
 
 def _build_processing_run_dir(upload_bytes: bytes, validated_params: dict[str, object]) -> str:
-    """Return a stable run directory per input file and validated parameter set."""
-    file_hash = hashlib.md5(upload_bytes).hexdigest()[:12]
-    params_hash = fingerprint_jsonable(validated_params)[:12]
-    return os.path.join(tempfile.gettempdir(), "slavv_runs", f"{file_hash}_{params_hash}")
+    """Compatibility wrapper for the processing-page run-dir helper."""
+    return build_processing_run_dir(upload_bytes, validated_params)
 
 
 def _update_run_task(

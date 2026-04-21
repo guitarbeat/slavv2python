@@ -5,6 +5,11 @@ from __future__ import annotations
 import numpy as np
 import streamlit as st
 
+from slavv.apps.processing_state import (
+    load_processing_snapshot,
+    store_processing_session_state,
+    summarize_processing_metrics,
+)
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 
@@ -254,8 +259,9 @@ def show_processing_page() -> None:
             help="Ignore cached results and recalculate from this stage onwards. Leave as 'None' to use cached files if available.",
         )
 
-    current_snapshot = st.session_state.get("current_run_dir") and web_app_facade.load_run_snapshot(
-        st.session_state.get("current_run_dir")
+    current_snapshot = load_processing_snapshot(
+        st.session_state,
+        snapshot_loader=web_app_facade.load_run_snapshot,
     )
     if current_snapshot is not None:
         web_app_facade._render_run_dashboard(current_snapshot)
@@ -333,17 +339,15 @@ def show_processing_page() -> None:
                         state="complete",
                     )
 
-                st.session_state["processing_results"] = results
-                st.session_state["parameters"] = validated_params
-                st.session_state["image_shape"] = image.shape
-                st.session_state["dataset_name"] = uploaded_file.name
-                st.session_state["current_run_dir"] = run_dir
-                st.session_state["run_snapshot"] = (
-                    final_snapshot.to_dict() if final_snapshot is not None else None
+                store_processing_session_state(
+                    st.session_state,
+                    results=results,
+                    validated_params=validated_params,
+                    image_shape=image.shape,
+                    dataset_name=uploaded_file.name,
+                    run_dir=run_dir,
+                    final_snapshot=final_snapshot,
                 )
-                st.session_state.pop("curation_baseline_counts", None)
-                st.session_state.pop("last_curation_mode", None)
-                st.session_state.pop("share_report_prepared_signature", None)
                 web_app_facade._render_run_dashboard(final_snapshot)
                 if stop_after_val != "network":
                     st.warning(
@@ -352,33 +356,30 @@ def show_processing_page() -> None:
                 st.markdown('<div class="success-box">', unsafe_allow_html=True)
                 st.success("🎉 Processing stage completed successfully!")
                 st.markdown("</div>", unsafe_allow_html=True)
+                processing_metrics = summarize_processing_metrics(results)
                 col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
                 with col1:
-                    vertices_count = len(results.get("vertices", {}).get("positions", []))
                     st.metric(
                         "Vertices Found",
-                        vertices_count if "vertices" in results else "N/A",
+                        processing_metrics["vertices"] if "vertices" in results else "N/A",
                         help="Total vertices detected in the volume",
                     )
                 with col2:
-                    edges_count = len(results.get("edges", {}).get("traces", []))
                     st.metric(
                         "Edges Extracted",
-                        edges_count if "edges" in results else "N/A",
+                        processing_metrics["edges"] if "edges" in results else "N/A",
                         help="Number of vessel segments traced",
                     )
                 with col3:
-                    strands_count = len(results.get("network", {}).get("strands", []))
                     st.metric(
                         "Network Strands",
-                        strands_count if "network" in results else "N/A",
+                        processing_metrics["strands"] if "network" in results else "N/A",
                         help="Connected components in the network",
                     )
                 with col4:
-                    bif_count = len(results.get("network", {}).get("bifurcations", []))
                     st.metric(
                         "Bifurcations",
-                        bif_count if "network" in results else "N/A",
+                        processing_metrics["bifurcations"] if "network" in results else "N/A",
                         help="Detected branching points",
                     )
             except Exception as exc:

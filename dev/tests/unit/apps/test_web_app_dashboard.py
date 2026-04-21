@@ -6,6 +6,7 @@ import pytest
 pytest.importorskip("streamlit")
 
 from slavv.apps import web_app
+from slavv.apps.processing_state import build_processing_run_dir
 from slavv.runtime.run_state import RunSnapshot, StageSnapshot, TaskSnapshot
 
 
@@ -220,15 +221,15 @@ def test_render_export_download_uses_shared_failure_path(monkeypatch):
 def test_build_processing_run_dir_varies_with_validated_parameters():
     upload_bytes = b"same-uploaded-file"
 
-    first = web_app._build_processing_run_dir(
+    first = build_processing_run_dir(
         upload_bytes,
         {"radius_of_smallest_vessel_in_microns": 1.5},
     )
-    second = web_app._build_processing_run_dir(
+    second = build_processing_run_dir(
         upload_bytes,
         {"radius_of_smallest_vessel_in_microns": 2.0},
     )
-    repeated = web_app._build_processing_run_dir(
+    repeated = build_processing_run_dir(
         upload_bytes,
         {"radius_of_smallest_vessel_in_microns": 1.5},
     )

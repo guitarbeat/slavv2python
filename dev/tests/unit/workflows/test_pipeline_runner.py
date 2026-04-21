@@ -3,6 +3,7 @@ from __future__ import annotations
 from slavv.workflows.pipeline_runner import (
     PipelineStageStep,
     advance_pipeline_stage,
+    build_standard_pipeline_steps,
     run_pipeline_stage_sequence,
 )
 
@@ -85,6 +86,24 @@ def test_run_pipeline_stage_sequence_executes_steps_in_order():
     assert calls == ["energy", "vertices"]
     assert results["energy_data"] == {"energy": []}
     assert results["vertices"] == {"positions": []}
+
+
+def test_build_standard_pipeline_steps_uses_canonical_stage_order():
+    calls: list[str] = []
+
+    steps = build_standard_pipeline_steps(
+        resolve_energy=lambda: calls.append("energy") or {"energy": []},
+        resolve_vertices=lambda: calls.append("vertices") or {"positions": []},
+        resolve_edges=lambda: calls.append("edges") or {"traces": []},
+        resolve_network=lambda: calls.append("network") or {"strands": []},
+    )
+
+    assert [step.result_key for step in steps] == ["energy_data", "vertices", "edges", "network"]
+    assert [step.stage_name for step in steps] == ["energy", "vertices", "edges", "network"]
+    assert [step.progress_fraction for step in steps] == [0.4, 0.6, 0.8, 1.0]
+    assert steps[0].resolve_fn() == {"energy": []}
+    assert steps[3].resolve_fn() == {"strands": []}
+    assert calls == ["energy", "network"]
 
 
 def test_run_pipeline_stage_sequence_stops_after_matching_stage():
