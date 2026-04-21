@@ -43,38 +43,6 @@ def _optional_task_status_line(name: str, task: Any) -> str:
     return " | ".join(parts)
 
 
-def _python_rerun_line(snapshot: RunSnapshot, artifacts: dict[str, Any]) -> str | None:
-    if artifacts.get("python_force_rerun_from"):
-        return f"  Python rerun from: {artifacts.get('python_force_rerun_from')}"
-    python_pipeline = snapshot.optional_tasks.get("python_pipeline")
-    if python_pipeline is None:
-        return None
-    python_force_rerun_from = python_pipeline.artifacts.get("force_rerun_from", "")
-    return f"  Python rerun from: {python_force_rerun_from}" if python_force_rerun_from else None
-
-
-def _extend_matlab_resume_lines(lines: list[str], snapshot: RunSnapshot) -> None:
-    matlab_status_task = snapshot.optional_tasks.get("matlab_status")
-    if matlab_status_task is None:
-        return
-    artifacts = matlab_status_task.artifacts
-    lines.extend(("", "MATLAB resume:"))
-    lines.append(f"  Batch folder: {artifacts.get('batch_folder') or '(none)'}")
-    lines.append(
-        "  Resume mode: "
-        f"{artifacts.get('resume_mode', 'unknown')}"
-        f" | last completed={artifacts.get('last_completed_stage', '(none)')}"
-        f" | next={artifacts.get('next_stage', '(none)')}"
-    )
-    python_rerun_line = _python_rerun_line(snapshot, artifacts)
-    if python_rerun_line is not None:
-        lines.append(python_rerun_line)
-    if artifacts.get("rerun_prediction"):
-        lines.append(f"  Prediction: {artifacts.get('rerun_prediction')}")
-    if artifacts.get("failure_summary_file"):
-        lines.append(f"  Failure summary file: {artifacts.get('failure_summary_file')}")
-
-
 def build_status_lines(snapshot: RunSnapshot) -> list[str]:
     """Create a human-readable status summary for CLI output."""
     lines = [
@@ -98,7 +66,6 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
             _optional_task_status_line(name, task)
             for name, task in sorted(snapshot.optional_tasks.items())
         )
-    _extend_matlab_resume_lines(lines, snapshot)
     if snapshot.errors:
         lines.extend(("", "Errors:"))
         lines.extend(

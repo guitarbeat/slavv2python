@@ -19,8 +19,7 @@ from slavv.workflows.pipeline_setup import (
 
 
 class _DummyRunContext:
-    def __init__(self, *, legacy: bool = False) -> None:
-        self.legacy = legacy
+    def __init__(self) -> None:
         self.run_root = Path("run-root")
         self.metadata_dir = Path("run-root") / "99_Metadata"
         self.resume_calls: list[dict[str, object]] = []
@@ -59,7 +58,7 @@ def test_emit_progress_invokes_callback():
 
 
 def test_effective_run_dir_creates_temp_dir_when_event_callback_is_present():
-    run_dir = effective_run_dir(None, None, lambda _event: None)
+    run_dir = effective_run_dir(None, lambda _event: None)
 
     assert run_dir is not None
     assert Path(run_dir).name.startswith("slavv_run_")
@@ -74,7 +73,6 @@ def test_create_run_context_uses_factory_and_pipeline_provenance():
 
     context = create_run_context(
         None,
-        "checkpoints",
         "input-fingerprint",
         "params-fingerprint",
         np.zeros((2, 3, 4), dtype=np.float32),
@@ -85,7 +83,6 @@ def test_create_run_context_uses_factory_and_pipeline_provenance():
 
     assert context == "context"
     assert calls[0]["target_stage"] == "edges"
-    assert calls[0]["legacy"] is True
     assert calls[0]["provenance"] == {
         "source": "pipeline",
         "image_shape": [2, 3, 4],
@@ -180,14 +177,13 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
     )
     monkeypatch.setattr(
         "slavv.workflows.pipeline_setup.effective_run_dir",
-        lambda run_dir, checkpoint_dir, event_callback: "resolved-run-dir",
+        lambda run_dir, event_callback: "resolved-run-dir",
     )
 
     create_calls: list[dict[str, object]] = []
 
     def fake_create_run_context(
         effective_run_dir_value,
-        checkpoint_dir,
         input_fingerprint,
         params_fingerprint,
         image,
@@ -199,7 +195,6 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
         create_calls.append(
             {
                 "effective_run_dir_value": effective_run_dir_value,
-                "checkpoint_dir": checkpoint_dir,
                 "input_fingerprint": input_fingerprint,
                 "params_fingerprint": params_fingerprint,
                 "shape": tuple(image.shape),
@@ -215,7 +210,6 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
         np.ones((2, 3, 4), dtype=np.float32),
         {"alpha": 1},
         run_dir=None,
-        checkpoint_dir="checkpoints",
         stop_after="edges",
         force_rerun_from="vertices",
         event_callback=None,
@@ -234,7 +228,6 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
     assert create_calls == [
         {
             "effective_run_dir_value": "resolved-run-dir",
-            "checkpoint_dir": "checkpoints",
             "input_fingerprint": "image-fingerprint",
             "params_fingerprint": "params-fingerprint",
             "shape": (2, 3, 4),

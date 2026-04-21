@@ -99,18 +99,14 @@ def build_run_context(
     params_fingerprint: str = "params-a",
     target_stage: str = "network",
     provenance: dict[str, Any] | None = None,
-    legacy: bool = False,
-    checkpoint_dir: Path | None = None,
 ) -> RunContext:
     """Build a ``RunContext`` with standard test defaults."""
     return RunContext(
-        run_dir=None if legacy else run_dir,
-        checkpoint_dir=(checkpoint_dir or run_dir) if legacy else checkpoint_dir,
+        run_dir=run_dir,
         input_fingerprint=input_fingerprint,
         params_fingerprint=params_fingerprint,
         target_stage=target_stage,
         provenance=provenance or {"source": "test-builder"},
-        legacy=legacy,
     )
 
 
@@ -131,9 +127,7 @@ def materialize_checkpoint_surface(
     structured: bool = True,
 ) -> Path:
     """Write checkpoint files for the requested stages."""
-    checkpoint_dir = (
-        root / "02_Output" / "python_results" / "checkpoints" if structured else root
-    )
+    checkpoint_dir = root / "02_Output" / "python_results" / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     for stage in stages:
         joblib.dump(

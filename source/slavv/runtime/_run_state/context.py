@@ -166,20 +166,15 @@ class RunContext:
     def __init__(
         self,
         *,
-        run_dir: str | Path | None = None,
-        checkpoint_dir: str | Path | None = None,
+        run_dir: str | Path,
         input_fingerprint: str = "",
         params_fingerprint: str = "",
         target_stage: str | None = "network",
         provenance: dict[str, Any] | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
-        legacy: bool = False,
     ):
-        self.legacy = legacy or (checkpoint_dir is not None and run_dir is None)
         self.layout = resolve_run_layout(
             run_dir=run_dir,
-            checkpoint_dir=checkpoint_dir,
-            legacy=self.legacy,
         )
         self.run_root = self.layout.run_root
         self.metadata_dir = self.layout.metadata_dir
@@ -203,17 +198,13 @@ class RunContext:
         cls,
         run_dir: str | Path,
         *,
-        legacy: bool = False,
-        checkpoint_dir: str | Path | None = None,
         target_stage: str | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
     ) -> RunContext:
         return cls(
-            run_dir=None if legacy else run_dir,
-            checkpoint_dir=(checkpoint_dir or run_dir) if legacy else None,
+            run_dir=run_dir,
             target_stage=target_stage,
             event_callback=event_callback,
-            legacy=legacy,
         )
 
     def checkpoint_path(self, stage: str) -> Path:

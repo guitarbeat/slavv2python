@@ -11,15 +11,8 @@ from typing import Any
 import joblib
 import numpy as np
 
-from .constants import (
-    PIPELINE_STAGES,
-    PREPROCESS_STAGE,
-    STAGE_WEIGHTS,
-    STATUS_COMPLETED,
-    STATUS_PENDING,
-    TRACKED_RUN_STAGES,
-)
-from .models import RunSnapshot, StageSnapshot, _now_iso
+from .constants import TRACKED_RUN_STAGES
+from .models import RunSnapshot, StageSnapshot
 
 
 def _normalize_for_json(value: Any) -> Any:
@@ -148,13 +141,7 @@ def load_run_snapshot(path_or_dir: str | Path) -> RunSnapshot | None:
     path = Path(path_or_dir)
     candidates = []
     if path.is_dir():
-        candidates.extend(
-            [
-                path / "run_snapshot.json",
-                path / "99_Metadata" / "run_snapshot.json",
-                path / "metadata" / "run_snapshot.json",
-            ]
-        )
+        candidates.append(path / "99_Metadata" / "run_snapshot.json")
     else:
         candidates.append(path)
 
@@ -172,46 +159,3 @@ def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[
         for name in TRACKED_RUN_STAGES:
             stages.setdefault(name, StageSnapshot(name=name))
     return stages
-
-
-def load_legacy_run_snapshot(
-    checkpoint_dir: str | Path, *, target_stage: str = "network"
-) -> RunSnapshot | None:
-    """Inspect legacy checkpoint directories without mutating them."""
-    checkpoints_dir = Path(checkpoint_dir)
-    checkpoint_paths = {
-        stage: checkpoints_dir / f"checkpoint_{stage}.pkl" for stage in PIPELINE_STAGES
-    }
-    if not any(path.exists() for path in checkpoint_paths.values()):
-        return None
-
-    snapshot = RunSnapshot(
-        run_id=hashlib.sha1(str(checkpoints_dir.resolve()).encode("utf-8")).hexdigest()[:12],
-        target_stage=target_stage,
-        status=STATUS_PENDING,
-        stages=_ensure_stage_map(),
-        provenance={"layout": "legacy"},
-    )
-    preprocess_stage = snapshot.stages[PREPROCESS_STAGE]
-    preprocess_stage.status = STATUS_COMPLETED
-    preprocess_stage.progress = 1.0
-    preprocess_stage.units_total = 1
-    preprocess_stage.units_completed = 1
-    preprocess_stage.resumed = True
-    for stage, path in checkpoint_paths.items():
-        if not path.exists():
-            continue
-        stage_snapshot = snapshot.stages[stage]
-        stage_snapshot.status = STATUS_COMPLETED
-        stage_snapshot.progress = 1.0
-        stage_snapshot.units_total = 1
-        stage_snapshot.units_completed = 1
-        stage_snapshot.resumed = True
-        stage_snapshot.artifacts["checkpoint"] = str(path)
-        stage_snapshot.completed_at = _now_iso()
-    total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
-    snapshot.overall_progress = (
-        sum(STAGE_WEIGHTS[stage] * snapshot.stages[stage].progress for stage in TRACKED_RUN_STAGES)
-        / total
-    )
-    return snapshot

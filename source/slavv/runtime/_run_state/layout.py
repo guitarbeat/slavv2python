@@ -8,9 +8,8 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class RunLayout:
-    """Resolved filesystem layout for a structured or legacy run."""
+    """Resolved filesystem layout for a structured run."""
 
-    legacy: bool
     run_root: Path
     artifacts_dir: Path
     metadata_dir: Path
@@ -40,29 +39,13 @@ class RunLayout:
 def resolve_run_layout(
     *,
     run_dir: str | Path | None,
-    checkpoint_dir: str | Path | None,
-    legacy: bool,
 ) -> RunLayout:
-    """Resolve a structured or legacy filesystem layout for run-state bookkeeping."""
-    if legacy:
-        if checkpoint_dir is None:
-            raise ValueError("checkpoint_dir is required for legacy run state")
-        run_root = Path(checkpoint_dir)
-        return RunLayout(
-            legacy=True,
-            run_root=run_root,
-            artifacts_dir=run_root,
-            metadata_dir=run_root,
-            stages_dir=run_root / "stage_state",
-            checkpoints_dir=run_root,
-        )
-
+    """Resolve a structured filesystem layout for run-state bookkeeping."""
     if run_dir is None:
-        raise ValueError("run_dir is required for structured run state")
+        raise ValueError("run_dir is required for run state")
     run_root = Path(run_dir)
     artifacts_dir = run_root / "02_Output" / "python_results"
     return RunLayout(
-        legacy=False,
         run_root=run_root,
         artifacts_dir=artifacts_dir,
         metadata_dir=run_root / "99_Metadata",

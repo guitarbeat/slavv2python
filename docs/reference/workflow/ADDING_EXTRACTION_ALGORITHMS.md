@@ -75,7 +75,7 @@ For example, the experimental `simpleitk_objectness` mode is integrated by:
 - keeping the default `hessian` path unchanged unless the new backend is
   explicitly selected
 - documenting any parameter differences when the backend cannot or should not
-  emulate all MATLAB-style controls
+  emulate all controls used by the default production backend
 
 Treat new energy backends the same way: opt-in, deterministic where practical,
 and covered in both direct and resumable tests.
@@ -85,15 +85,14 @@ experimental `cupy_hessian` mode: keep the existing parameter and resumable
 surfaces, document hardware/runtime requirements clearly, and avoid changing
 the default CPU behavior unless the new backend is explicitly selected.
 
-## Parity And Layout Guardrails
+## Layout Guardrails
 
-When a change touches MATLAB parity or comparison-facing behavior, preserve the
-staged run-root semantics (`01_Input/`, `02_Output/`, `03_Analysis/`,
-`99_Metadata/`) and keep compatibility with legacy flat checkpoint/run layouts
-where supported today.
+When a change touches resumable workflow behavior, preserve the structured
+run-root semantics (`01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`)
+used by the current Python implementation.
 
-Do not silently rename or relocate staged artifacts without adding matching
-compatibility handling.
+Do not silently rename or relocate staged artifacts without updating the
+runtime helpers, tests, and documentation together.
 
 ## Minimum Test Coverage
 
@@ -119,20 +118,11 @@ python -m mypy
 python -m pytest -m "unit or integration"
 ```
 
-If you changed parity/comparison behavior, also run:
-
-```powershell
-python -m pytest dev/tests/diagnostic/test_comparison_setup.py
-```
-
 ## Documentation Checklist
 
 Before considering the algorithm integrated, make sure all of these are true:
 
 - the CLI help mentions the new mode
 - the relevant reference doc explains when to use it
-- any new staged artifacts are described in
-  `docs/reference/core/COMPARISON_LAYOUT.md` if they become durable workflow
-  outputs
-- parity-sensitive changes cite the right chapter or report if they alter the
-  MATLAB investigation surface
+- any new durable staged artifacts are described in the relevant runtime or
+  workflow reference docs

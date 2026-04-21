@@ -19,7 +19,7 @@ def test_load_or_create_snapshot_reuses_existing_snapshot(tmp_path):
             provenance={"source": "existing"},
         ),
     )
-    layout = resolve_run_layout(run_dir=run_dir, checkpoint_dir=None, legacy=False)
+    layout = resolve_run_layout(run_dir=run_dir)
 
     snapshot = load_or_create_snapshot(
         layout,

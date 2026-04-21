@@ -50,13 +50,10 @@ class SLAVVProcessor:
         progress_callback: Callable[[float, str], None] | None = None,
         event_callback: Callable[[ProgressEvent], None] | None = None,
         run_dir: str | None = None,
-        checkpoint_dir: str | None = None,
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
     ) -> dict[str, Any]:
         """Complete SLAVV processing pipeline.
-
-        MATLAB Equivalent: `vectorize_V200.m` (with resume capability)
 
         Args:
             image: 3D input image array (y, x, z)
@@ -67,9 +64,6 @@ class SLAVVProcessor:
                 snapshots whenever run state changes.
             run_dir: Optional structured run directory. When provided, staged
                 metadata and artifacts are persisted under this root.
-            checkpoint_dir: Optional directory path. If provided, intermediate steps
-                (Energy, Vertices, Edges, Network) will be saved/loaded from this directory.
-                Enables resuming crashed runs or inspecting intermediate results.
             stop_after: Optional string ('energy', 'vertices', 'edges', 'network').
                 The pipeline will return early after completing the specified stage.
             force_rerun_from: Optional string ('energy', 'vertices', 'edges', 'network').
@@ -91,7 +85,6 @@ class SLAVVProcessor:
             image,
             parameters,
             run_dir=run_dir,
-            checkpoint_dir=checkpoint_dir,
             stop_after=stop_after,
             force_rerun_from=force_rerun_from,
             event_callback=event_callback,

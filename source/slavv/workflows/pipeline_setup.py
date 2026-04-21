@@ -52,18 +52,16 @@ def emit_progress(
 
 def effective_run_dir(
     run_dir: str | None,
-    checkpoint_dir: str | None,
     event_callback: Callable[[ProgressEvent], None] | None,
 ) -> str | None:
     """Return the effective run directory for this pipeline execution."""
-    if run_dir is not None or checkpoint_dir is not None or event_callback is None:
+    if run_dir is not None or event_callback is None:
         return run_dir
     return tempfile.mkdtemp(prefix="slavv_run_")
 
 
 def create_run_context(
     effective_run_dir_value: str | None,
-    checkpoint_dir: str | None,
     input_fingerprint: str,
     params_fingerprint: str,
     image: np.ndarray,
@@ -73,11 +71,10 @@ def create_run_context(
     run_context_factory: type[RunContext] | Callable[..., RunContext],
 ) -> RunContext | None:
     """Create a run context when structured run tracking is enabled."""
-    if effective_run_dir_value is None and checkpoint_dir is None:
+    if effective_run_dir_value is None:
         return None
     return run_context_factory(
         run_dir=effective_run_dir_value,
-        checkpoint_dir=checkpoint_dir,
         input_fingerprint=input_fingerprint,
         params_fingerprint=params_fingerprint,
         target_stage=stop_after or "network",
@@ -87,7 +84,6 @@ def create_run_context(
             "stop_after": stop_after or "network",
         },
         event_callback=event_callback,
-        legacy=checkpoint_dir is not None and effective_run_dir_value is None,
     )
 
 
@@ -110,9 +106,7 @@ def initialize_run_context(
     if force_rerun_from in PIPELINE_STAGES:
         run_context.reset_pipeline_state_from(force_rerun_from)
     params_path = (
-        run_context.run_root / "checkpoint_params.json"
-        if run_context.legacy
-        else run_context.metadata_dir / "validated_params.json"
+        run_context.metadata_dir / "validated_params.json"
     )
     atomic_write_json(params_path, parameters)
     run_context.mark_run_status(
@@ -155,7 +149,6 @@ def prepare_pipeline_run(
     parameters: dict[str, Any],
     *,
     run_dir: str | None,
-    checkpoint_dir: str | None,
     stop_after: str | None,
     force_rerun_from: str | None,
     event_callback: Callable[[ProgressEvent], None] | None,
@@ -165,10 +158,9 @@ def prepare_pipeline_run(
     validated_parameters = utils.validate_parameters(parameters)
     input_fingerprint = fingerprint_array(image)
     params_fingerprint = fingerprint_jsonable(validated_parameters)
-    resolved_run_dir = effective_run_dir(run_dir, checkpoint_dir, event_callback)
+    resolved_run_dir = effective_run_dir(run_dir, event_callback)
     run_context = create_run_context(
         resolved_run_dir,
-        checkpoint_dir,
         input_fingerprint,
         params_fingerprint,
         image,

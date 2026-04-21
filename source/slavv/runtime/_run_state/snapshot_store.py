@@ -12,30 +12,12 @@ from .io import (
     _ensure_stage_map,
     _normalize_for_json,
     atomic_write_json,
-    load_legacy_run_snapshot,
     load_run_snapshot,
 )
 from .models import ProgressEvent, RunSnapshot, StageSnapshot, _now_iso
-from .progress import calculate_overall_progress
 
 if TYPE_CHECKING:
     from .layout import RunLayout
-
-
-def bootstrap_legacy_snapshot(
-    checkpoints_dir,
-    *,
-    target_stage: str,
-) -> RunSnapshot | None:
-    """Inspect legacy checkpoint directories without mutating them."""
-    snapshot = load_legacy_run_snapshot(checkpoints_dir, target_stage=target_stage)
-    if snapshot is None:
-        return None
-    snapshot.overall_progress = calculate_overall_progress(
-        snapshot.stages,
-        preprocess_done=bool(snapshot.artifacts.get("preprocess_done")),
-    )
-    return snapshot
 
 
 def load_or_create_snapshot(
@@ -50,8 +32,6 @@ def load_or_create_snapshot(
     layout.ensure_directories()
 
     existing = load_run_snapshot(layout.snapshot_path)
-    if existing is None and layout.legacy:
-        existing = bootstrap_legacy_snapshot(layout.checkpoints_dir, target_stage=target_stage or "network")
 
     if existing is not None:
         existing.stages = _ensure_stage_map(existing.stages)
@@ -73,7 +53,7 @@ def load_or_create_snapshot(
         status=STATUS_PENDING,
         target_stage=target_stage or "network",
         stages=_ensure_stage_map(),
-        provenance=_normalize_for_json({"layout": "legacy" if layout.legacy else "structured", **provenance}),
+        provenance=_normalize_for_json({"layout": "structured", **provenance}),
     )
 
 
@@ -106,8 +86,9 @@ def emit_progress_event(
         snapshot=copy.deepcopy(snapshot),
     )
     event_callback(payload)
+
+
 __all__ = [
-    "bootstrap_legacy_snapshot",
     "emit_progress_event",
     "load_or_create_snapshot",
     "persist_snapshot",

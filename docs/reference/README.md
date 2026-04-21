@@ -1,48 +1,12 @@
 # Reference Docs
 
-[Up: Documentation Index](../README.md)
+Use this folder for current, cross-cutting technical references.
 
-This folder collects the maintained cross-cutting reference material for the
-SLAVV Python port. Use this index when you want the stable docs organized by
-topic instead of reading the files one by one.
-
-## Reading Order
-
-If you are new to the reference shelf, start here:
+Recommended reading order:
 
 1. [Glossary](core/GLOSSARY.md)
-2. [MATLAB Translation Guide](core/MATLAB_TRANSLATION_GUIDE.md)
-3. [MATLAB Mapping](core/MATLAB_MAPPING.md)
-4. [Energy Computation Methods](core/ENERGY_METHODS.md)
-5. [Comparison Run Layout](core/COMPARISON_LAYOUT.md)
+2. [Energy Computation Methods](core/ENERGY_METHODS.md)
+3. [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
+4. Optional backend docs under `backends/`
 
-## Topic Groups
-
-### Core Parity And Translation
-
-This topic group defines the stable translation and parity contract for the Python port.
-
-- [Glossary](core/GLOSSARY.md) - project terms and workflow vocabulary
-- [MATLAB Translation Guide](core/MATLAB_TRANSLATION_GUIDE.md) - semantics that matter when editing parity-sensitive code
-- [MATLAB Mapping](core/MATLAB_MAPPING.md) - maintained MATLAB-to-Python correspondence
-- [Energy Computation Methods](core/ENERGY_METHODS.md) - supported `energy_method` options and extension points
-- [Comparison Run Layout](core/COMPARISON_LAYOUT.md) - canonical staged comparison-run contract
-
-### Optional Backends And Runtime Surfaces
-
-- [SimpleITK Energy Backend](backends/SIMPLEITK_ENERGY_BACKEND.md) - spacing-aware vesselness backend
-- [CuPy Energy Backend](backends/CUPY_ENERGY_BACKEND.md) - GPU-accelerated energy backend
-- [Zarr Energy Storage](backends/ZARR_ENERGY_STORAGE.md) - resumable chunked storage for large energy artifacts
-- [napari Curator Prototype](backends/NAPARI_CURATOR.md) - experimental napari-based curation surface
-
-### Contributing And Context
-
-- [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md) - checklist for wiring in new extraction modes
-- [External Library Survey](workflow/EXTERNAL_LIBRARY_SURVEY_2026-04-06.md) - short status note on external packages already adopted or still open
-
-## Notes
-
-- These documents are intentionally maintained and should stay small, durable,
-  and cross-cutting.
-- Chapter-specific investigation notes live under `docs/chapters/` instead of
-  here.
+This shelf now documents the maintained Python implementation only. Retired MATLAB/parity references were removed with the legacy code paths.
