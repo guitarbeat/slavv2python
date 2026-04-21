@@ -112,12 +112,6 @@ class TestBuildParser:
         assert args.command == "status"
         assert args.run_dir == "run_dir"
 
-    def test_parity_proof_subcommand(self):
-        parser = _build_cli_parser()
-        args = parser.parse_args(["parity-proof", "--run-dir", "run_dir"])
-        assert args.command == "parity-proof"
-        assert args.run_dir == "run_dir"
-
 
 class TestArgsToParameters:
     """Verify CLI args convert correctly to SLAVV parameter dicts."""
@@ -201,60 +195,14 @@ class TestMainEntryPoint:
         assert "Target progress:" in captured.out
         assert "energy" in captured.out
 
-    def test_status_prints_matlab_resume_section(self, capsys, tmp_path):
-        run_dir = tmp_path / "run"
-        context = RunContext(
-            run_dir=run_dir,
-            input_fingerprint="input-a",
-            params_fingerprint="params-a",
-            target_stage="network",
-        )
-        context.update_optional_task(
-            "matlab_status",
-            status="failed",
-            detail="Rerun will reuse batch_260401-140000 but restart energy from the stage boundary. Last failure: ERROR: MATLAB error Exit Status: 0x00000001",
-            artifacts={
-                "batch_folder": "C:\\temp\\batch_260401-140000",
-                "resume_mode": "restart-current-stage",
-                "last_completed_stage": "(none)",
-                "next_stage": "energy",
-                "rerun_prediction": "Rerun will reuse batch_260401-140000 but restart energy from the stage boundary.",
-                "failure_summary_file": "C:\\temp\\matlab_failure_summary.json",
-            },
-        )
-        context.update_optional_task(
-            "python_pipeline",
-            status="pending",
-            detail="Waiting for MATLAB import",
-            artifacts={"force_rerun_from": "edges"},
-        )
-
-        main(["status", "--run-dir", str(run_dir)])
-
-        captured = capsys.readouterr()
-        assert "MATLAB resume:" in captured.out
-        assert "restart-current-stage" in captured.out
-        assert "Python rerun from: edges" in captured.out
-
     def test_status_missing_snapshot_is_read_only(self, capsys, tmp_path):
         with pytest.raises(SystemExit) as exc:
             main(["status", "--run-dir", str(tmp_path)])
 
         captured = capsys.readouterr()
         assert exc.value.code == 1
-        assert "no run snapshot or legacy checkpoints found" in captured.err
+        assert "no run snapshot found" in captured.err
         assert not list(tmp_path.iterdir())
-
-    def test_parity_proof_prints_latest_summary(self, capsys, monkeypatch, tmp_path):
-        monkeypatch.setattr(
-            "slavv.apps.parity_cli.print_latest_proof_summary",
-            lambda run_dir: print(f"proof-summary:{run_dir.name}") or 0,
-        )
-
-        main(["parity-proof", "--run-dir", str(tmp_path)])
-
-        captured = capsys.readouterr()
-        assert "proof-summary" in captured.out
 
 
 def test_load_exported_network_json_preserves_parameters(tmp_path):

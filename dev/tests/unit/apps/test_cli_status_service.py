@@ -11,22 +11,18 @@ def test_load_status_snapshot_prefers_primary_snapshot():
     loaded = load_status_snapshot(
         "run-dir",
         snapshot_loader=lambda run_dir: snapshot if run_dir == "run-dir" else None,
-        legacy_snapshot_loader=lambda run_dir: object(),
     )
 
     assert loaded is snapshot
 
 
-def test_load_status_snapshot_falls_back_to_legacy_loader():
-    legacy_snapshot = object()
-
+def test_load_status_snapshot_returns_none_when_missing():
     loaded = load_status_snapshot(
         "run-dir",
         snapshot_loader=lambda run_dir: None,
-        legacy_snapshot_loader=lambda run_dir: legacy_snapshot if run_dir == "run-dir" else None,
     )
 
-    assert loaded is legacy_snapshot
+    assert loaded is None
 
 
 def test_build_status_output_lines_uses_status_line_builder():

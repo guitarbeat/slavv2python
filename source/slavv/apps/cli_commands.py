@@ -5,15 +5,20 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from pathlib import Path
-
-import numpy as np
 
 from .cli_analysis_service import calculate_exported_network_stats
 from .cli_export_service import save_network_export
 from .cli_exported_network import _load_exported_results
 from .cli_info_service import load_info_lines
 from .cli_reporting import build_analysis_output_lines
+from .cli_run_service import (
+    build_exportable_network,
+    build_run_completion_lines,
+    filter_export_formats,
+    format_run_event_line,
+    resolve_effective_run_dir,
+    update_run_export_task,
+)
 from .cli_shared import (
     _DETAILED_LOG_FORMAT,
     _SIMPLE_LOG_FORMAT,
@@ -50,19 +55,15 @@ def _handle_run_command(args) -> None:
     image = load_tiff_volume(args.input)
 
     parameters = _build_pipeline_parameters(args)
-    effective_run_dir = args.run_dir or (
-        None if args.checkpoint_dir else os.path.join(args.output, "_slavv_run")
+    effective_run_dir = resolve_effective_run_dir(
+        run_dir=args.run_dir,
+        output_dir=args.output,
     )
 
     last_event_line = {"value": ""}
 
     def event_callback(event) -> None:
-        line = (
-            f"[{event.stage}] stage={event.stage_progress * 100:.1f}% "
-            f"overall={event.overall_progress * 100:.1f}%"
-        )
-        if event.detail:
-            line = f"{line} - {event.detail}"
+        line = format_run_event_line(event)
         if line != last_event_line["value"]:
             print(line)
             last_event_line["value"] = line
@@ -73,35 +74,19 @@ def _handle_run_command(args) -> None:
         parameters,
         event_callback=event_callback,
         run_dir=effective_run_dir,
-        checkpoint_dir=args.checkpoint_dir,
         stop_after=args.stop_after,
         force_rerun_from=args.force_rerun_from,
     )
 
     os.makedirs(args.output, exist_ok=True)
-    vertices = results.get("vertices", {})
-    edges = results.get("edges", {})
-    pos = np.asarray(vertices.get("positions", []))
-    rad = np.asarray(vertices.get("radii_microns", []))
-    conn = np.atleast_2d(np.asarray(edges.get("connections", [])))
+    network_obj = build_exportable_network(results, network_factory=Network)
 
-    network_obj = Network(
-        vertices=pos if pos.size > 0 else np.empty((0, 3)),
-        edges=conn if conn.size > 0 else np.empty((0, 2)),
-        radii=rad if rad.size > 0 else None,
+    export_formats, export_warnings = filter_export_formats(
+        _expand_export_formats(args.export),
+        results,
     )
-
-    export_formats = _expand_export_formats(args.export)
-
-    if export_formats and "vertices" not in results:
-        logger.warning(
-            "Export requested but pipeline stopped before extracting vertices. Skipping export."
-        )
-        export_formats = []
-    elif export_formats and "network" not in results and "edges" not in results:
-        logger.warning(
-            "Export requested but pipeline stopped early. Formatting output with available data only."
-        )
+    for warning_line in export_warnings:
+        logger.warning(warning_line)
 
     for fmt in export_formats:
         save_network_export(
@@ -111,99 +96,40 @@ def _handle_run_command(args) -> None:
             results=results,
         )
 
-    snapshot = None
-    if effective_run_dir:
-        snapshot = load_run_snapshot(effective_run_dir)
-        if snapshot is not None:
-            context = RunContext.from_existing(effective_run_dir)
-            context.update_optional_task(
-                "exports",
-                status="completed" if export_formats else "pending",
-                detail="Exported requested output formats"
-                if export_formats
-                else "No exports requested",
-                artifacts=_build_export_artifacts(args.output, export_formats),
-            )
-            snapshot = context.snapshot
-    elif args.checkpoint_dir:
-        snapshot = load_run_snapshot(args.checkpoint_dir)
+    snapshot = update_run_export_task(
+        effective_run_dir=effective_run_dir,
+        export_formats=export_formats,
+        output_dir=args.output,
+        snapshot_loader=load_run_snapshot,
+        context_factory=RunContext.from_existing,
+        artifact_builder=_build_export_artifacts,
+    )
 
-    if effective_run_dir:
-        print(f"Run directory: {effective_run_dir}")
-    elif args.checkpoint_dir:
-        print(f"Checkpoint directory: {args.checkpoint_dir}")
-    if snapshot is not None:
-        print()
-        for line in build_status_lines(snapshot):
-            print(line)
-
-    print(f"Done. Results in {args.output}")
-
-
-def _handle_import_matlab_command(args) -> None:
-    """Import MATLAB batch output as Python checkpoints."""
-    from slavv.io.matlab_bridge import import_matlab_batch
-    from slavv.runtime import RunContext
-
-    _configure_logging(args.verbose, format_string=_DETAILED_LOG_FORMAT)
-
-    if written := import_matlab_batch(
-        args.batch_folder,
-        args.checkpoint_dir,
-        stages=args.stages,
+    for line in build_run_completion_lines(
+        effective_run_dir=effective_run_dir,
+        output_dir=args.output,
+        snapshot=snapshot,
+        status_line_builder=build_status_lines,
     ):
-        print(f"Imported {len(written)} stage(s) into {args.checkpoint_dir}:")
-        for stage, path in written.items():
-            print(f"  {stage}: {path}")
-        context = RunContext(
-            checkpoint_dir=args.checkpoint_dir,
-            target_stage="network",
-            provenance={"source": "matlab_import"},
-            legacy=True,
-        )
-        for stage, path in written.items():
-            context.complete_stage(
-                stage,
-                detail="Imported from MATLAB batch output",
-                artifacts={"checkpoint": path},
-                resumed=True,
-            )
-        print()
-        print("You can now run the Python pipeline with:")
-        print(f"  slavv run -i <image.tif> --checkpoint-dir {args.checkpoint_dir}")
-    else:
-        print("No MATLAB data files found. Check that the batch folder path is correct.")
+        print(line)
 
 
 def _handle_status_command(args) -> None:
-    """Render run status from a run directory or legacy checkpoint directory."""
-    from slavv.runtime import build_status_lines, load_legacy_run_snapshot, load_run_snapshot
+    """Render run status from a run directory."""
+    from slavv.runtime import build_status_lines, load_run_snapshot
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
 
     snapshot = load_status_snapshot(
         args.run_dir,
         snapshot_loader=load_run_snapshot,
-        legacy_snapshot_loader=load_legacy_run_snapshot,
     )
     if snapshot is None:
-        print(
-            f"Error: no run snapshot or legacy checkpoints found in {args.run_dir}", file=sys.stderr
-        )
+        print(f"Error: no run snapshot found in {args.run_dir}", file=sys.stderr)
         sys.exit(1)
 
     for line in build_status_output_lines(snapshot, status_line_builder=build_status_lines):
         print(line)
-
-
-def _handle_parity_proof_command(args) -> None:
-    """Render the latest maintained network-gate proof artifact summary."""
-    from slavv.apps.parity_cli import print_latest_proof_summary
-
-    _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
-    print_latest_proof_summary(Path(args.run_dir))
-
-
 def _handle_analyze_command(args) -> None:
     """Analyze an exported network JSON file and print statistics."""
     from slavv.analysis import calculate_network_statistics

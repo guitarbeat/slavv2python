@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from .cli_commands import (
     _handle_analyze_command,
-    _handle_import_matlab_command,
     _handle_info_command,
-    _handle_parity_proof_command,
     _handle_plot_command,
     _handle_run_command,
     _handle_status_command,
@@ -43,9 +41,7 @@ __all__ = [
     "_configure_logging",
     "_expand_export_formats",
     "_handle_analyze_command",
-    "_handle_import_matlab_command",
     "_handle_info_command",
-    "_handle_parity_proof_command",
     "_handle_plot_command",
     "_handle_run_command",
     "_handle_status_command",

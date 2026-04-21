@@ -7,13 +7,9 @@ def load_status_snapshot(
     run_dir: str,
     *,
     snapshot_loader,
-    legacy_snapshot_loader,
 ):
-    """Load a run snapshot, falling back to legacy checkpoint metadata."""
-    snapshot = snapshot_loader(run_dir)
-    if snapshot is None:
-        snapshot = legacy_snapshot_loader(run_dir)
-    return snapshot
+    """Load a run snapshot from the structured run directory."""
+    return snapshot_loader(run_dir)
 
 
 def build_status_output_lines(snapshot, *, status_line_builder) -> list[str]:

@@ -98,7 +98,6 @@ all = [
 [project.urls]
 Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
-"Original MATLAB" = "https://github.com/UTFOIL/Vectorization-Public"
 
 [project.scripts]
 slavv-app = "slavv.apps.streamlit_launcher:main"

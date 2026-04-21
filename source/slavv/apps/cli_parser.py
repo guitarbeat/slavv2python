@@ -36,9 +36,6 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Structured run directory for resumable status tracking",
     )
     run_parser.add_argument(
-        "--checkpoint-dir", default=None, help="Checkpoint directory for resume support"
-    )
-    run_parser.add_argument(
         "--energy-storage-format",
         choices=["auto", "npy", "zarr"],
         default="auto",
@@ -116,48 +113,11 @@ def _build_cli_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("info", help="Print version and system information")
 
-    imp_parser = subparsers.add_parser(
-        "import-matlab", help="Import a MATLAB batch_* folder as Python checkpoints"
-    )
-    imp_parser.add_argument(
-        "-b",
-        "--batch-folder",
-        required=True,
-        help="Path to the MATLAB batch_* folder (or parent directory)",
-    )
-    imp_parser.add_argument(
-        "-c",
-        "--checkpoint-dir",
-        required=True,
-        help="Output directory for Python checkpoint pickles",
-    )
-    imp_parser.add_argument(
-        "--stages",
-        nargs="+",
-        choices=["energy", "vertices", "edges", "network"],
-        default=None,
-        help="Which stages to import (default: all available)",
-    )
-    imp_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
-
     status_parser = subparsers.add_parser("status", help="Inspect the status of a resumable run")
     status_parser.add_argument(
         "--run-dir",
         required=True,
-        help="Run directory or legacy checkpoint directory containing run metadata",
+        help="Run directory containing run metadata",
     )
     status_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
-
-    parity_proof_parser = subparsers.add_parser(
-        "parity-proof",
-        help="Display the latest stage-isolated network proof artifact for a comparison run",
-    )
-    parity_proof_parser.add_argument(
-        "--run-dir",
-        required=True,
-        help="Run directory containing staged comparison artifacts",
-    )
-    parity_proof_parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable debug logging"
-    )
     return parser

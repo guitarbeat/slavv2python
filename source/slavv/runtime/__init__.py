@@ -10,7 +10,6 @@ from .run_state import (
     StageSnapshot,
     TaskSnapshot,
     build_status_lines,
-    load_legacy_run_snapshot,
     load_run_snapshot,
 )
 
@@ -22,6 +21,5 @@ __all__ = [
     "StageSnapshot",
     "TaskSnapshot",
     "build_status_lines",
-    "load_legacy_run_snapshot",
     "load_run_snapshot",
 ]

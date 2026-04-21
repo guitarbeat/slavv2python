@@ -22,7 +22,6 @@ from ._run_state.io import (
     fingerprint_file,
     fingerprint_jsonable,
     load_json_dict,
-    load_legacy_run_snapshot,
     load_run_snapshot,
     stable_json_dumps,
 )
@@ -53,7 +52,6 @@ __all__ = [
     "fingerprint_file",
     "fingerprint_jsonable",
     "load_json_dict",
-    "load_legacy_run_snapshot",
     "load_run_snapshot",
     "stable_json_dumps",
     "target_stage_progress",

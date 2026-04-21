@@ -10,9 +10,7 @@ if TYPE_CHECKING:
 
 from .cli_commands import (
     _handle_analyze_command,
-    _handle_import_matlab_command,
     _handle_info_command,
-    _handle_parity_proof_command,
     _handle_plot_command,
     _handle_run_command,
     _handle_status_command,
@@ -20,9 +18,7 @@ from .cli_commands import (
 
 CLI_COMMAND_HANDLERS: dict[str, Callable[[object], None]] = {
     "analyze": _handle_analyze_command,
-    "import-matlab": _handle_import_matlab_command,
     "info": lambda _args: _handle_info_command(),
-    "parity-proof": _handle_parity_proof_command,
     "plot": _handle_plot_command,
     "run": _handle_run_command,
     "status": _handle_status_command,

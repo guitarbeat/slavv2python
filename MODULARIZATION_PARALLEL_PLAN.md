@@ -422,13 +422,21 @@ Completed so far:
   service/state modules instead of importing the `web_app` facade internally
 - rewired the remaining app consumers away from `web_app_artifacts.py`, which
   is now only a compatibility wrapper over the export service layer
+- removed the last function-local `from slavv.apps import app_services` imports
+  so page modules now use direct module imports instead of package-level
+  indirection
 
-Still to do:
+Complete enough:
 
-- continue moving page-owned helper logic into focused app service/state
-  modules until `web_app.py` is mostly a compatibility surface
-- decide whether dashboard/export helpers should stay grouped under
-  `app_services.py` or be split further into narrower service modules
+- yes for the current modularization tranche; `web_app.py` and
+  `web_app_artifacts.py` now act as compatibility surfaces while the app logic
+  lives in focused service/state modules
+
+Deferred cleanup:
+
+- optional final shrinkage of `web_app.py` barrel re-exports
+- optional further splitting of `app_services.py` if the compatibility surface
+  needs to be narrowed later
 
 Can run in parallel with:
 
@@ -477,13 +485,27 @@ Completed so far:
   assembly is now handled in the service layer too
 - added `cli_export_service.py` so network export persistence no longer lives
   directly in `_handle_run_command()`
+- added `cli_run_service.py` so run-directory resolution, progress-event
+  formatting, export filtering, exportable-network construction, snapshot
+  update wiring, and completion-line rendering no longer live directly in
+  `_handle_run_command()`
+- added `cli_import_service.py` so MATLAB import success/missing output
+  rendering no longer lives directly in `_handle_import_matlab_command()`
 - added focused tests for the extracted CLI report-formatting helpers
 
-Still to do:
+Complete enough:
 
-- extract more command execution logic from `cli_commands.py` into focused
-  service modules
-- thin `cli.py` so it does less direct command branching and re-exporting
+- yes for the current modularization tranche; the main CLI branching,
+  reporting, export persistence, run helper flow, import messaging, status
+  lookup, and analyze helper flow now live outside the old monolithic command
+  module and entrypoint
+
+Deferred cleanup:
+
+- optional future reduction of `cli.py` re-exports once downstream imports are
+  narrowed
+- optional extraction of plot/parity-proof command helpers if those handlers
+  need deeper modularity later
 
 Can run in parallel with:
 
