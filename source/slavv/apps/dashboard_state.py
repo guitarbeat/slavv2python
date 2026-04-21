@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
+from slavv.apps.export_services import has_full_network_results
 from slavv.apps.share_report import compute_shareable_stats
-from slavv.apps.web_app_artifacts import _has_full_network_results
 from slavv.models import normalize_pipeline_result
 from slavv.runtime import RunSnapshot, load_run_snapshot
 
@@ -36,7 +36,7 @@ def resolve_dashboard_stats(
     stats_builder: Callable[..., dict[str, Any]] = compute_shareable_stats,
 ) -> dict[str, Any] | None:
     """Compute dashboard statistics when a full network result is available."""
-    if not results or not _has_full_network_results(results):
+    if not results or not has_full_network_results(results):
         return None
     return stats_builder(results, image_shape=image_shape)
 

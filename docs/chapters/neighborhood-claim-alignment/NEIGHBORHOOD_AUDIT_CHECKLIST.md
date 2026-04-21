@@ -23,16 +23,21 @@ Use this file when:
 - [ ] Land one targeted Python fix without regressing the stage-isolated
       `network` gate.
 
-Current progress (2026-04-18):
+Current progress (2026-04-21):
 
 - Focused regressions now cover:
   - pre-manifest loss when `terminal_frontier_hit > valid frontier connection count`
   - partner substitution at a shared neighborhood in `edge_selection`
   - cleanup retention vs `final_cleanup_dropped` in the frontier lifecycle artifact
 - The local frontier fix is in `source/slavv/core/_edge_candidates/frontier_trace.py`.
-- A fresh live imported-MATLAB parity trial now exists at
-  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`.
-- That live trial moved the repo out of the broken fallback-only under-emission state and into an over-emission regime (`1379/1555` edges), with divergence now led by partner choice and branch invalidation.
+- A fresh managed live imported-MATLAB parity trial now exists at
+  `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`.
+- That clean managed run preserved a reusable MATLAB batch surface and now
+  points first at candidate-endpoint coverage on the full test volume
+  (`1976/2533` edges, `386/1120` strands).
+- Shared-neighborhood diagnostics remain active on that surface, with
+  divergence still split across partner choice, branch invalidation, and
+  claim ordering.
 - A fresh stage-isolated network trial now exists at
   `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`,
   and it reproduced exact MATLAB counts at the `network` stage.
@@ -147,18 +152,20 @@ Current working clue:
 
 ## Fresh Live Trial Snapshot
 
-- Run root: `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- Run root: `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`
 - Counts:
-  - vertices `1682/1682`
-  - edges `1379/1555`
-  - strands `682/774`
+  - vertices `2577/2577`
+  - edges `1976/2533`
+  - strands `386/1120`
 - Top divergence mix:
-  - partner choice `14`
+  - partner choice `15`
   - branch invalidation `5`
   - claim ordering `4`
 - Highest-severity examples:
-  - `1283` remains the top branch-invalidation neighborhood
-  - `8`, `17`, `20`, `35`, and `40` are now strong partner-choice probes
+  - `1679` is the top missing seed origin and first divergence
+    `pre_manifest_rejection - rejected_child_better_than_parent`
+  - `276` and `283` are strong candidate-endpoint coverage probes on the
+    current full-volume surface
 
 ## Fresh Network-Gate Snapshot
 

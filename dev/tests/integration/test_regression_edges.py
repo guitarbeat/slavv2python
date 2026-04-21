@@ -6,6 +6,7 @@ import slavv.core.edges as edges_module
 from slavv.core import SLAVVProcessor
 from slavv.core.edge_candidates import (
     _matlab_frontier_edge_budget,
+    _matlab_parity_frontier_budget_mode,
     _parity_watershed_candidate_mode,
 )
 
@@ -278,4 +279,9 @@ def test_extract_edges_forces_matlab_v300_budget_through_imported_matlab_workflo
         assert workflow_params is not params
         assert workflow_params["number_of_edges_per_vertex"] == 4
         assert _matlab_frontier_edge_budget(workflow_params) == 2
-        assert _parity_watershed_candidate_mode(workflow_params) == "remaining_origin_contacts"
+        assert _matlab_parity_frontier_budget_mode(workflow_params) == (
+            "accepted_candidates"
+        )
+        assert _parity_watershed_candidate_mode(workflow_params) == (
+            "remaining_origin_contacts"
+        )

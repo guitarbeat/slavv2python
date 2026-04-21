@@ -131,7 +131,7 @@ def infer_target_run_name(run_root: Path) -> str:
 def select_pointer_targets(run_entries: list[dict[str, Any]]) -> dict[str, str]:
     """Choose pointer targets from normalized run entries."""
     completed = [entry for entry in run_entries if entry["status"]["state"] == "completed"]
-    completed.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
+    completed.sort(key=_pointer_entry_sort_key, reverse=True)
     pointers: dict[str, str] = {}
     if completed:
         pointers["latest_completed.txt"] = completed[0]["target_relative_path"]
@@ -146,7 +146,7 @@ def select_pointer_targets(run_entries: list[dict[str, Any]]) -> dict[str, str]:
         canonical = [
             entry for entry in completed if entry["status"]["quality_gate"] in {"pass", "partial"}
         ]
-    canonical.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
+    canonical.sort(key=_pointer_entry_sort_key, reverse=True)
     if canonical:
         pointers["canonical_acceptance.txt"] = canonical[0]["target_relative_path"]
     elif completed:
@@ -157,7 +157,7 @@ def select_pointer_targets(run_entries: list[dict[str, Any]]) -> dict[str, str]:
         for entry in completed
         if "saved-batch" in entry["target_relative_path"] or "saved" in entry["slug"]
     ]
-    saved_batch.sort(key=lambda entry: entry["target_relative_path"], reverse=True)
+    saved_batch.sort(key=_pointer_entry_sort_key, reverse=True)
     if saved_batch:
         pointers["best_saved_batch.txt"] = saved_batch[0]["target_relative_path"]
     elif completed:
@@ -316,8 +316,14 @@ def _discover_run_roots(search_root: Path) -> list[Path]:
         return []
 
     discovered: set[Path] = set()
-    for path in [search_root, *search_root.rglob("*")]:
+    candidate_paths = sorted(
+        [search_root, *search_root.rglob("*")],
+        key=lambda path: (len(path.parts), str(path)),
+    )
+    for path in candidate_paths:
         if not path.is_dir():
+            continue
+        if any(root in path.parents for root in discovered):
             continue
         if is_aggregate_run_container(path):
             for child in list_aggregate_child_runs(path):
@@ -326,6 +332,25 @@ def _discover_run_roots(search_root: Path) -> list[Path]:
         if is_staged_run_root(path) or is_legacy_flat_run_root(path):
             discovered.add(resolve_run_root(path))
     return sorted(discovered)
+
+
+def _pointer_entry_sort_key(entry: dict[str, Any]) -> tuple[datetime, str]:
+    timestamp = _extract_entry_timestamp(entry)
+    return (timestamp, entry["target_relative_path"])
+
+
+def _extract_entry_timestamp(entry: dict[str, Any]) -> datetime:
+    run_root = entry.get("run_root")
+    run_name = getattr(run_root, "name", "") if run_root is not None else ""
+    for fmt, prefix in (("%Y%m%d_%H%M%S", 15), ("%Y%m%d", 8)):
+        if len(run_name) < prefix:
+            continue
+        candidate = run_name[:prefix]
+        try:
+            return datetime.strptime(candidate, fmt)
+        except ValueError:
+            continue
+    return datetime.min
 
 
 def _has_ancestor_named(path: Path, name: str) -> bool:

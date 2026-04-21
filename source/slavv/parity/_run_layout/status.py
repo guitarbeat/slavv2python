@@ -73,18 +73,37 @@ def infer_quality_gate(run_dir: Path) -> str:
     if report is None:
         return "unknown"
 
-    comparisons = []
+    parity_gate = report.get("parity_gate")
+    if isinstance(parity_gate, dict) and "passed" in parity_gate:
+        if bool(parity_gate.get("passed")):
+            return "pass"
+        component_flags = [
+            parity_gate.get("vertices_exact"),
+            parity_gate.get("edges_exact"),
+            parity_gate.get("strands_exact"),
+        ]
+        if any(flag is True for flag in component_flags):
+            return "partial"
+        if any(flag is False for flag in component_flags):
+            return "fail"
+
+    comparison_flags: list[bool] = []
     for section in ("vertices", "edges", "strands", "network"):
         payload = report.get(section)
-        if isinstance(payload, dict):
-            comparisons.append(payload)
+        if not isinstance(payload, dict):
+            continue
+        if "matches_exactly" in payload:
+            comparison_flags.append(bool(payload["matches_exactly"]))
+            continue
+        if "exact_match" in payload:
+            comparison_flags.append(bool(payload["exact_match"]))
 
-    if any("matches_exactly" in item for item in comparisons):
-        if all(
-            bool(item.get("matches_exactly")) for item in comparisons if "matches_exactly" in item
-        ):
+    if comparison_flags:
+        if all(comparison_flags):
             return "pass"
-        return "partial"
+        if any(comparison_flags):
+            return "partial"
+        return "fail"
     return "unknown"
 
 

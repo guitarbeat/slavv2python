@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slavv.core import SLAVVProcessor
 from slavv.models import normalize_pipeline_result
+
+if TYPE_CHECKING:
+    from collections.abc import MutableMapping
 
 
 def summarize_processing_counts(processing_results: dict[str, Any]) -> dict[str, int]:
@@ -49,6 +52,27 @@ def sync_curated_processing_results(
     return updated_results, preserved_baseline, summarize_processing_counts(updated_results)
 
 
+def apply_curated_session_results(
+    session_state: MutableMapping[str, Any],
+    curated_vertices: dict[str, Any],
+    curated_edges: dict[str, Any],
+    *,
+    curation_mode: str,
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Apply curated vertices and edges to session state and clear stale derived data."""
+    updated_results, baseline_counts, current_counts = sync_curated_processing_results(
+        session_state["processing_results"],
+        curated_vertices,
+        curated_edges,
+        baseline_counts=session_state.get("curation_baseline_counts"),
+    )
+    session_state["processing_results"] = updated_results
+    session_state["curation_baseline_counts"] = baseline_counts
+    session_state["last_curation_mode"] = curation_mode
+    session_state.pop("share_report_prepared_signature", None)
+    return baseline_counts, current_counts
+
+
 def build_curation_stats_rows(
     baseline_counts: dict[str, int],
     current_counts: dict[str, int],
@@ -77,6 +101,7 @@ def build_curation_stats_rows(
 
 
 __all__ = [
+    "apply_curated_session_results",
     "build_curation_stats_rows",
     "summarize_processing_counts",
     "sync_curated_processing_results",

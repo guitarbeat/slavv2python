@@ -36,7 +36,7 @@ Archive-root note:
 
 Current live `edges` evidence root:
 
-- `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
+- `D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`
 
 Current stage-isolated `network` evidence root:
 
@@ -52,9 +52,9 @@ Historical note:
 
 As of the latest fresh imported-MATLAB `edges` rerun:
 
-- vertices: `1682 / 1682`
-- edges: `1555 / 1379`
-- strands: `774 / 682`
+- vertices: `2577 / 2577`
+- edges: `1976 / 2533`
+- strands: `386 / 1120`
 
 As of the latest fresh stage-isolated `network` rerun:
 
@@ -62,8 +62,11 @@ As of the latest fresh stage-isolated `network` rerun:
 - edges: `1379 / 1379`
 - strands: `682 / 682`
 
-This means vertex parity and downstream `network` assembly are still stable
-when exact MATLAB edges are supplied, but edge-stage parity remains open.
+This means the managed `D:` workflow is healthy again, vertex parity still
+holds on the live imported-MATLAB surface, and edge-stage parity remains
+open. The fresh clean run now under-emits badly enough that the summary's
+first triage recommendation is candidate-endpoint coverage before edge or
+strand diffs.
 
 ## Lessons Learned
 
@@ -73,9 +76,12 @@ when exact MATLAB edges are supplied, but edge-stage parity remains open.
   Python produced more edges than MATLAB.
 - By April 1, 2026 the repo had already flipped into an under-emission regime.
   Python was now missing edges instead of inventing too many of them.
-- April 18, 2026 confirmed that the recent frontier fix changed the live
-  regime again. The repo is now over-emitting on the imported-MATLAB `edges`
-  rerun while the stage-isolated `network` gate stays exact.
+- April 18, 2026 confirmed that one imported-MATLAB trial had flipped into an
+  over-emission regime while the stage-isolated `network` gate stayed exact.
+- April 21, 2026 produced the first clean end-to-end managed `D:` rerun with
+  a reusable MATLAB batch surface. That fresh run is now under-emitting on the
+  broader test volume and explicitly points back to candidate-endpoint
+  coverage as the first triage surface.
 
 ### What improved
 
@@ -134,6 +140,21 @@ branch invalidation rule.
 - That fix removes one confirmed mismatch, but the larger shared-map discovery
   gap remains open and is still the strongest explanation for unresolved
   branch invalidation and partner-substitution drift.
+
+### Clean workflow confirmation on April 21, 2026
+
+- The managed parity workflow now completes cleanly under
+  `D:\slavv_comparisons` with a reusable MATLAB batch surface and imported
+  MATLAB checkpoints.
+- The current live clean run is
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`.
+- Its summary reports `24` divergent shared neighborhoods with
+  `claim-ordering=4`, `branch-invalidation=5`, and `partner-choice=15`, so
+  the neighborhood-level claim analysis remains useful after the workflow
+  repairs.
+- The same summary also says "Start with candidate-endpoint coverage before
+  edge or strand diffs," which means upstream admission coverage is still a
+  first-order blocker on the current full-volume surface.
 
 ## What Is Left
 
@@ -242,8 +263,8 @@ Current live `edges` comparison refresh:
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
   --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
-  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```
@@ -344,6 +365,28 @@ slavv parity-proof --run-dir D:\slavv_comparisons\experiments\live-parity\runs\2
 - Fresh diagnostics now recommend:
   - start with branch invalidation in `edge_candidates.py`
   - then inspect partner-choice and conflict resolution in `edge_selection.py`
+
+### Clean Managed Live Trial Notes (2026-04-21)
+
+- A fresh managed imported-MATLAB parity rerun was executed under:
+  `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`
+- The run completed end to end on `D:` with a reusable MATLAB batch under:
+  `01_Input/matlab_results/batch_260421-151654`
+- The trial imported MATLAB `energy` and `vertices` checkpoints, then reran
+  Python from `edges` and `network`.
+- Outcome:
+  - vertices: `2577 / 2577`
+  - edges: `1976 / 2533`
+  - strands: `386 / 1120`
+- The summary's first recommendation is now:
+  - start with candidate-endpoint coverage before edge or strand diffs
+- Shared-neighborhood diagnostics remain active on this surface:
+  - divergent neighborhoods `24`
+  - claim ordering `4`
+  - branch invalidation `5`
+  - partner choice `15`
+- This run is now the primary live `edges` evidence root because it proves the
+  full managed `D:` workflow and preserves a reusable MATLAB batch surface.
 
 ### Fresh Network-Gate Trial Notes (2026-04-18)
 

@@ -25,12 +25,15 @@ def _install_fake_streamlit(monkeypatch):
 
 def test_web_app_artifact_helpers_are_imported_from_sibling_module(monkeypatch):
     _install_fake_streamlit(monkeypatch)
+    sys.modules.pop("slavv.apps.app_services", None)
     sys.modules.pop("slavv.apps.web_app", None)
     sys.modules.pop("slavv.apps.web_app_artifacts", None)
 
     web_app = importlib.import_module("slavv.apps.web_app")
+    app_services = importlib.import_module("slavv.apps.app_services")
     artifacts = importlib.import_module("slavv.apps.web_app_artifacts")
 
+    assert web_app.cached_load_tiff_volume is app_services.cached_load_tiff_volume
     assert web_app.generate_export_data is artifacts.generate_export_data
     assert web_app.generate_share_report_data is artifacts.generate_share_report_data
     assert web_app._has_full_network_results is artifacts._has_full_network_results

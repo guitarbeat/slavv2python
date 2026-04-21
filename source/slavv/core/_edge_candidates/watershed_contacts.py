@@ -78,6 +78,10 @@ def _augment_matlab_frontier_candidates_with_watershed_contacts(
             if remaining_budget <= 0 or origin_added_counts.get(pair[0], 0) >= remaining_budget:
                 supplement_payload["diagnostics"]["watershed_origin_budget_rejected"] += 1
                 continue
+        elif candidate_mode == "origin_cap":
+            if origin_added_counts.get(pair[0], 0) >= max_edges_per_vertex:
+                supplement_payload["diagnostics"]["watershed_origin_budget_rejected"] += 1
+                continue
 
         _append_supplement_row(
             supplement_payload,

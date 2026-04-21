@@ -138,12 +138,12 @@ class SLAVVProcessor:
             stop_after=stop_after,
             run_context=run_context,
         ):
-            return early_result
+            return cast("dict[str, Any]", early_result)
 
         logger.info("SLAVV processing pipeline completed")
         if run_context is not None:
             run_context.finalize_run(stop_after=stop_after)
-        return finalize_pipeline_results(results)
+        return cast("dict[str, Any]", finalize_pipeline_results(results))
 
     def _resolve_energy_stage(
         self,
@@ -152,7 +152,9 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_energy_stage(
+        return cast(
+            "dict[str, Any]",
+            resolve_energy_stage(
             run_context=run_context,
             force_rerun=force_rerun,
             fallback_fn=lambda: self.calculate_energy_field(image, parameters),
@@ -163,6 +165,7 @@ class SLAVVProcessor:
                 utils.get_chunking_lattice,
             ),
             logger=logger,
+            ),
         )
 
     def _resolve_vertices_stage(
@@ -172,7 +175,9 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_vertices_stage(
+        return cast(
+            "dict[str, Any]",
+            resolve_vertices_stage(
             run_context=run_context,
             force_rerun=force_rerun,
             fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
@@ -182,6 +187,7 @@ class SLAVVProcessor:
                 controller,
             ),
             logger=logger,
+            ),
         )
 
     def _resolve_edges_stage(
@@ -193,7 +199,9 @@ class SLAVVProcessor:
         force_rerun: bool,
     ) -> dict[str, Any]:
         edge_method = parameters.get("edge_method", "tracing")
-        return resolve_edges_stage(
+        return cast(
+            "dict[str, Any]",
+            resolve_edges_stage(
             run_context=run_context,
             force_rerun=force_rerun,
             edge_method=edge_method,
@@ -216,6 +224,7 @@ class SLAVVProcessor:
                 controller,
             ),
             logger=logger,
+            ),
         )
 
     def _resolve_network_stage(
@@ -226,7 +235,9 @@ class SLAVVProcessor:
         run_context: RunContext | None,
         force_rerun: bool,
     ) -> dict[str, Any]:
-        return resolve_network_stage(
+        return cast(
+            "dict[str, Any]",
+            resolve_network_stage(
             run_context=run_context,
             force_rerun=force_rerun,
             fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
@@ -237,6 +248,7 @@ class SLAVVProcessor:
                 controller,
             ),
             logger=logger,
+            ),
         )
 
     def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:

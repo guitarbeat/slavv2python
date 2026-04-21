@@ -12,6 +12,7 @@ from skimage.segmentation import watershed
 
 from ..edge_candidates import (
     _params_with_matlab_parity_edge_budget,
+    _params_with_matlab_parity_frontier_budget_mode,
     _params_with_matlab_parity_watershed_candidate_mode,
 )
 from .units import _load_edge_units
@@ -93,6 +94,10 @@ def extract_edges_resumable(
     if use_frontier:
         params_for_workflow = _params_with_matlab_parity_edge_budget(
             params_for_workflow, edge_budget=2
+        )
+        params_for_workflow = _params_with_matlab_parity_frontier_budget_mode(
+            params_for_workflow,
+            mode="accepted_candidates",
         )
         params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
             params_for_workflow,

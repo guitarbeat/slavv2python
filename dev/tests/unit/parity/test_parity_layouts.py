@@ -9,12 +9,14 @@ from slavv.parity.run_layout import (
     build_experiment_index_entry,
     collect_directory_inventory,
     generate_manifest,
+    infer_quality_gate,
     infer_run_status,
     list_runs,
     load_run_info,
     load_run_metadata,
     refresh_managed_archive_metadata,
     resolve_run_layout,
+    select_pointer_targets,
     write_pointer_file,
     write_run_status,
 )
@@ -878,6 +880,91 @@ def test_refresh_managed_archive_metadata_writes_status_index_and_pointers(tmp_p
     assert saved_batch_pointer.read_text(encoding="utf-8").strip() == (
         "experiments/release-verify/runs/20260413_release_verify"
     )
+
+
+def test_select_pointer_targets_prefers_newest_timestamp_over_experiment_slug():
+    release_run = Path(
+        "D:/slavv_comparisons/experiments/release-verify/runs/20260413_release_verify"
+    )
+    live_run = Path(
+        "D:/slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean"
+    )
+
+    pointers = select_pointer_targets(
+        [
+            {
+                "run_root": release_run,
+                "slug": "release-verify",
+                "target_relative_path": "experiments/release-verify/runs/20260413_release_verify",
+                "status": {
+                    "state": "completed",
+                    "retention": "keep",
+                    "quality_gate": "unknown",
+                },
+            },
+            {
+                "run_root": live_run,
+                "slug": "live-parity",
+                "target_relative_path": "experiments/live-parity/runs/20260421_live_parity_clean",
+                "status": {
+                    "state": "completed",
+                    "retention": "eligible_for_cleanup",
+                    "quality_gate": "partial",
+                },
+            },
+        ]
+    )
+
+    assert pointers["latest_completed.txt"] == (
+        "experiments/live-parity/runs/20260421_live_parity_clean"
+    )
+    assert pointers["canonical_acceptance.txt"] == (
+        "experiments/live-parity/runs/20260421_live_parity_clean"
+    )
+
+
+def test_refresh_managed_archive_metadata_ignores_nested_checkpoint_run_snapshots(tmp_path: Path):
+    comparisons_root = tmp_path / "slavv_comparisons"
+    run_dir = (
+        comparisons_root / "experiments" / "live-parity" / "runs" / "20260421_live_parity_clean"
+    )
+    analysis_dir = run_dir / "03_Analysis"
+    analysis_dir.mkdir(parents=True)
+    (run_dir / "99_Metadata").mkdir(parents=True)
+    (run_dir / "02_Output" / "python_results" / "checkpoints").mkdir(parents=True)
+    (analysis_dir / "comparison_report.json").write_text(
+        json.dumps({"parity_gate": {"passed": False, "vertices_exact": True, "edges_exact": False}}),
+        encoding="utf-8",
+    )
+    (
+        run_dir / "02_Output" / "python_results" / "checkpoints" / "run_snapshot.json"
+    ).write_text("{}", encoding="utf-8")
+
+    refreshed = refresh_managed_archive_metadata(run_dir)
+
+    assert "checkpoints" not in refreshed["experiments"]
+    assert not (comparisons_root / "experiments" / "checkpoints" / "index.json").exists()
+
+
+def test_infer_quality_gate_uses_parity_gate_schema(tmp_path: Path):
+    run_dir = tmp_path / "20260421_live_parity_clean"
+    analysis_dir = run_dir / "03_Analysis"
+    analysis_dir.mkdir(parents=True)
+    (analysis_dir / "comparison_report.json").write_text(
+        json.dumps(
+            {
+                "parity_gate": {
+                    "passed": False,
+                    "vertices_exact": True,
+                    "edges_exact": False,
+                    "strands_exact": False,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert infer_quality_gate(run_dir) == "partial"
 
 
 def test_generate_manifest_includes_status_json_summary(tmp_path: Path):

@@ -176,9 +176,17 @@ Completed so far:
   Streamlit page module
 - added `apps/visualization_state.py` so visualization-page payload handling is
   normalized and directly unit-tested outside the Streamlit page module
+- extended `apps/visualization_state.py` with export-readiness checks, export
+  payload extraction, and share-report session context so more of the
+  visualization page support logic is no longer page-owned
 - added `apps/processing_state.py` so processing-page run-dir derivation,
   run-snapshot loading, post-run metrics, and session-state hydration are
   normalized and directly unit-tested outside the Streamlit page module
+- added `apps/app_services.py` so Streamlit page modules can share app-facing
+  service helpers without routing through `web_app.py` as a catch-all facade
+- extended `apps/curation_state.py` with session-level curated-result
+  application so curation baseline bookkeeping and share-report invalidation no
+  longer live directly inside the Streamlit page module
 - adopted typed result normalization in visualization statistics/export helpers
   under `network_plot_statistics.py`
 - adopted typed result normalization in `analysis/ml_curator.py` training-data
@@ -188,6 +196,8 @@ Still to do:
 
 - continue shrinking direct dict access in additional app, visualization, and
   analysis entrypoints
+- keep moving page-level helper imports from `web_app.py` toward focused
+  service/state modules so the remaining facade becomes thinner
 - decide whether the next WS1 step should cover more consumers or introduce
   additional typed component models for deeper internal stages
 
@@ -286,6 +296,35 @@ Deliverables:
 - `progress.py`
 - a compatibility `RunContext` facade
 
+Completed work:
+
+- added `runtime/_run_state/progress.py` as the first extracted runtime helper
+  module for timestamp parsing, stage ETA, run ETA, preprocess completion, and
+  weighted overall-progress calculation
+- added `runtime/_run_state/resume_guard.py` for fingerprint mismatch
+  detection, mismatch messaging, and blocked-vs-reset resume policy helpers
+- added `runtime/_run_state/reset.py` for stage reset cleanup, persisted
+  artifact removal, and stage-snapshot reinitialization helpers
+- added `runtime/_run_state/lifecycle.py` for preprocess/stage/task/finalize
+  snapshot mutation helpers
+- rewired `RunContext` in `runtime/_run_state/context.py` to delegate those
+  pure progress calculations instead of owning them inline
+- rewired `RunContext.ensure_resume_allowed()` to delegate resume mismatch
+  policy helpers instead of owning that logic inline
+- rewired `RunContext.reset_pipeline_state_from()` to delegate reset cleanup
+  helpers instead of owning file-removal logic inline
+- rewired `RunContext` stage/task/finalize mutation methods to delegate
+  lifecycle helpers instead of owning those state transitions inline
+- added focused tests for the extracted progress, resume-guard, reset, and
+  lifecycle helper surfaces
+
+Status:
+
+- `WS3` is now complete enough to act as the runtime baseline for later
+  workstreams. `RunContext` remains the compatibility facade, while layout,
+  snapshot-store, progress, resume-guard, reset, and lifecycle concerns now
+  have dedicated helper modules.
+
 Can run in parallel with:
 
 - WS2 after WS1
@@ -363,6 +402,34 @@ Deliverables:
 - `export_service.py`
 - page modules that mostly render UI
 
+Completed so far:
+
+- added focused state helpers such as `dashboard_state.py`,
+  `analysis_state.py`, `visualization_state.py`, `processing_state.py`, and
+  the expanded `curation_state.py` so page-owned payload/session logic is more
+  directly unit-tested outside the Streamlit modules
+- added `app_services.py` so page modules can share app-facing helpers without
+  reaching back through `web_app.py`
+- added `curation_services.py` so interactive curator dispatch and curated
+  session application no longer need to live inside
+  `web_app_curation_page.py`
+- added `export_services.py` so export generation, share-report preparation,
+  and optional run-task updates no longer need to live in
+  `web_app_artifacts.py`
+- added `dashboard_services.py` so run-status dashboard rendering no longer
+  needs to live in `web_app_dashboard_page.py`
+- rewired processing, curation, and visualization pages to consume explicit
+  service/state modules instead of importing the `web_app` facade internally
+- rewired the remaining app consumers away from `web_app_artifacts.py`, which
+  is now only a compatibility wrapper over the export service layer
+
+Still to do:
+
+- continue moving page-owned helper logic into focused app service/state
+  modules until `web_app.py` is mostly a compatibility surface
+- decide whether dashboard/export helpers should stay grouped under
+  `app_services.py` or be split further into narrower service modules
+
 Can run in parallel with:
 
 - WS4
@@ -394,6 +461,29 @@ Deliverables:
 - command service modules returning structured results
 - a thinner `cli.py` entrypoint
 - less reliance on barrel re-exports of underscore helpers
+
+Completed so far:
+
+- added `cli_reporting.py` so CLI info/analyze output formatting no longer
+  lives inline in `cli_commands.py`
+- added `cli_dispatch.py` so command branching no longer lives directly in
+  `cli.py`
+- added `cli_analysis_service.py` so exported-network statistics calculation
+  no longer lives directly in `_handle_analyze_command()`
+- added `cli_info_service.py` so info-line assembly no longer lives directly in
+  `_handle_info_command()`
+- added `cli_status_service.py` so status snapshot lookup and legacy fallback
+  no longer live directly in `_handle_status_command()`, and status-line
+  assembly is now handled in the service layer too
+- added `cli_export_service.py` so network export persistence no longer lives
+  directly in `_handle_run_command()`
+- added focused tests for the extracted CLI report-formatting helpers
+
+Still to do:
+
+- extract more command execution logic from `cli_commands.py` into focused
+  service modules
+- thin `cli.py` so it does less direct command branching and re-exporting
 
 Can run in parallel with:
 

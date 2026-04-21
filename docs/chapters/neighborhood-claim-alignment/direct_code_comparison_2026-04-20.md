@@ -157,6 +157,26 @@ Still open:
 - duplicate suppression and some claim-order consequences still happen later in
   Python than in MATLAB
 
+## April 21 Follow-Up
+
+The next clean managed live rerun on April 21, 2026 did complete successfully
+under
+`D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`,
+so this note's workflow assumptions are now verified on the new `D:` archive
+root as well.
+
+That run still failed parity badly on the larger test volume:
+
+- vertices `2577/2577`
+- edges `1976/2533`
+- strands `386/1120`
+
+The budget fix therefore removed one confirmed mismatch without closing the
+larger discovery gap. The clean run summary now points first at
+candidate-endpoint coverage before edge or strand diffs, which is consistent
+with the architectural explanation in this note rather than a missing-workflow
+or stale-artifact explanation.
+
 ## Best Current Explanation For The Remaining Gap
 
 The repo is not blocked because MATLAB code was never copied.

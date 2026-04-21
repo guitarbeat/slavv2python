@@ -51,6 +51,8 @@ def _run_setup_checks() -> tuple[list[str], list[str]]:
         script_path = scripts_dir / script
         if script_path.exists():
             print(f"  [OK] {script}")
+            if script_path.read_bytes().startswith(b"\xef\xbb\xbf"):
+                errors.append(f"  [ERROR] {script} starts with a UTF-8 BOM; MATLAB R2019a rejects it")
         else:
             errors.append(f"  [ERROR] {script} not found")
 

@@ -6,11 +6,13 @@ import pandas as pd
 import streamlit as st
 
 from slavv.apps.analysis_state import (
+    build_analysis_connectivity_rows,
+    build_analysis_full_stats_rows,
     has_analysis_network,
     normalize_analysis_results,
     resolve_analysis_stats,
 )
-from slavv.apps.web_app_artifacts import _update_run_task
+from slavv.apps.export_services import update_run_task
 from slavv.visualization import NetworkVisualizer
 
 
@@ -36,7 +38,7 @@ def show_analysis_page() -> None:
     )
 
     parameters = results["parameters"]
-    _update_run_task(
+    update_run_task(
         st.session_state.get("current_run_dir"),
         "analysis",
         status="completed",
@@ -112,22 +114,7 @@ def show_analysis_page() -> None:
                 visualizer.plot_degree_distribution(results["network"]), use_container_width=True
             )
         with col2:
-            connectivity_stats = pd.DataFrame(
-                {
-                    "Metric": [
-                        "Connected Components",
-                        "Average Path Length",
-                        "Clustering Coefficient",
-                        "Network Diameter",
-                    ],
-                    "Value": [
-                        stats.get("num_connected_components", 0),
-                        stats.get("avg_path_length", 0.0),
-                        stats.get("clustering_coefficient", 0.0),
-                        stats.get("network_diameter", 0.0),
-                    ],
-                }
-            )
+            connectivity_stats = pd.DataFrame(build_analysis_connectivity_rows(stats))
             st.dataframe(connectivity_stats, use_container_width=True)
 
     with tab3:
@@ -162,52 +149,7 @@ def show_analysis_page() -> None:
 
     with tab4:
         st.markdown("#### Complete Statistics Table")
-        full_stats = pd.DataFrame(
-            {
-                "Metric": [
-                    "Number of Strands",
-                    "Number of Bifurcations",
-                    "Number of Endpoints",
-                    "Total Length (um)",
-                    "Mean Strand Length (um)",
-                    "Length Density (um/um^3)",
-                    "Volume Fraction",
-                    "Mean Radius (um)",
-                    "Radius Std (um)",
-                    "Bifurcation Density (/mm^3)",
-                    "Surface Area (um^2)",
-                    "Mean Tortuosity",
-                    "Number of Connected Components",
-                    "Average Path Length",
-                    "Clustering Coefficient",
-                    "Network Diameter",
-                    "Fractal Dimension",
-                    "Lacunarity",
-                    "Tortuosity Std",
-                ],
-                "Value": [
-                    stats.get("num_strands", 0),
-                    stats.get("num_bifurcations", 0),
-                    stats.get("num_endpoints", 0),
-                    f"{stats.get('total_length', 0):.1f}",
-                    f"{stats.get('mean_strand_length', 0):.1f}",
-                    f"{stats.get('length_density', 0):.3f}",
-                    f"{stats.get('volume_fraction', 0):.4f}",
-                    f"{stats.get('mean_radius', 0):.2f}",
-                    f"{stats.get('radius_std', 0):.2f}",
-                    f"{stats.get('bifurcation_density', 0):.2f}",
-                    f"{stats.get('surface_area', 0):.1f}",
-                    f"{stats.get('mean_tortuosity', 0):.3f}",
-                    stats.get("num_connected_components", 0),
-                    f"{stats.get('avg_path_length', 0):.2f}",
-                    f"{stats.get('clustering_coefficient', 0):.2f}",
-                    f"{stats.get('network_diameter', 0):.2f}",
-                    f"{stats.get('fractal_dimension', 0):.2f}",
-                    f"{stats.get('lacunarity', 0):.2f}",
-                    f"{stats.get('tortuosity_std', 0):.2f}",
-                ],
-            }
-        )
+        full_stats = pd.DataFrame(build_analysis_full_stats_rows(stats))
         st.dataframe(
             full_stats,
             use_container_width=True,

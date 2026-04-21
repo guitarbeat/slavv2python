@@ -20,6 +20,7 @@ from .common import (
     _matlab_frontier_edge_budget,
     _matlab_frontier_offsets,
     _matlab_linear_index_to_coord,
+    _matlab_parity_frontier_budget_mode,
     _path_coords_from_linear_indices,
 )
 from .frontier_resolution import _build_frontier_lifecycle_event
@@ -99,9 +100,15 @@ def _trace_origin_edges_matlab_frontier(
         }
 
     current_linear = origin_linear
+    budget_mode = _matlab_parity_frontier_budget_mode(params)
 
     while (
-        terminal_hit_budget_count < max_edges_per_vertex
+        (
+            valid_terminal_count
+            if budget_mode == "accepted_candidates"
+            else terminal_hit_budget_count
+        )
+        < max_edges_per_vertex
         and len(previous_indices_visited) < max_number_of_indices
     ):
         from .. import edge_candidates as edge_candidates_facade

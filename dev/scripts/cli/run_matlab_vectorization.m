@@ -1,4 +1,4 @@
-﻿%% run_matlab_vectorization.m
+%% run_matlab_vectorization.m
 % Non-interactive, restartable wrapper script for vectorize_V200.
 %
 % Re-running the same command in the same output directory resumes the most

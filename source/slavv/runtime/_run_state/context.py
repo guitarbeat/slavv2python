@@ -1,36 +1,52 @@
 from __future__ import annotations
 
-import calendar
-import copy
 import json
 import logging
 import time
-import uuid
-from pathlib import Path
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from slavv.utils.safe_unpickle import safe_load
 
 from .constants import (
     PIPELINE_STAGES,
     PREPROCESS_STAGE,
-    STAGE_WEIGHTS,
-    STATUS_BLOCKED,
     STATUS_COMPLETED,
-    STATUS_COMPLETED_TARGET,
     STATUS_FAILED,
-    STATUS_PENDING,
     STATUS_RUNNING,
 )
 from .io import (
-    _ensure_stage_map,
-    _normalize_for_json,
     atomic_joblib_dump,
     atomic_write_json,
-    load_legacy_run_snapshot,
-    load_run_snapshot,
 )
-from .models import ProgressEvent, RunSnapshot, StageSnapshot, TaskSnapshot, _now_iso
+from .layout import resolve_run_layout
+from .lifecycle import (
+    begin_stage_snapshot,
+    complete_stage_snapshot,
+    fail_stage_snapshot,
+    finalize_run_snapshot,
+    mark_preprocess_complete_snapshot,
+    update_optional_task_snapshot,
+    update_stage_snapshot,
+)
+from .models import ProgressEvent, RunSnapshot, StageSnapshot, _now_iso
+from .progress import (
+    calculate_overall_progress,
+    estimate_run_eta,
+    estimate_stage_eta,
+    parse_run_time,
+    preprocess_complete,
+)
+from .reset import clear_stage_runtime_artifacts, reset_stage_snapshots
+from .resume_guard import (
+    apply_resume_block,
+    apply_resume_reset,
+    fingerprint_mismatches,
+    update_snapshot_fingerprints,
+)
+from .snapshot_store import emit_progress_event, load_or_create_snapshot, persist_snapshot
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +60,11 @@ class StageController:
 
     @property
     def stage_dir(self) -> Path:
-        path = self.run_context.stages_dir / self.name
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+        return self.run_context.layout.stage_dir(self.name)
 
     @property
     def checkpoint_path(self) -> Path:
-        return self.run_context.checkpoint_path(self.name)
+        return self.run_context.layout.checkpoint_path(self.name)
 
     @property
     def manifest_path(self) -> Path:
@@ -162,27 +176,21 @@ class RunContext:
         legacy: bool = False,
     ):
         self.legacy = legacy or (checkpoint_dir is not None and run_dir is None)
-        if self.legacy:
-            if checkpoint_dir is None:
-                raise ValueError("checkpoint_dir is required for legacy run state")
-            self.run_root = Path(checkpoint_dir)
-            self.artifacts_dir = self.run_root
-            self.metadata_dir = self.run_root
-            self.stages_dir = self.run_root / "stage_state"
-            self.checkpoints_dir = self.run_root
-        else:
-            if run_dir is None:
-                raise ValueError("run_dir is required for structured run state")
-            self.run_root = Path(run_dir)
-            self.metadata_dir = self.run_root / "99_Metadata"
-            self.artifacts_dir = self.run_root / "02_Output" / "python_results"
-            self.stages_dir = self.artifacts_dir / "stages"
-            self.checkpoints_dir = self.artifacts_dir / "checkpoints"
-
-        self.snapshot_path = self.metadata_dir / "run_snapshot.json"
+        self.layout = resolve_run_layout(
+            run_dir=run_dir,
+            checkpoint_dir=checkpoint_dir,
+            legacy=self.legacy,
+        )
+        self.run_root = self.layout.run_root
+        self.metadata_dir = self.layout.metadata_dir
+        self.artifacts_dir = self.layout.artifacts_dir
+        self.stages_dir = self.layout.stages_dir
+        self.checkpoints_dir = self.layout.checkpoints_dir
+        self.snapshot_path = self.layout.snapshot_path
         self.event_callback = event_callback
         self.start_time = time.time()
-        self.snapshot = self._load_or_create_snapshot(
+        self.snapshot = load_or_create_snapshot(
+            self.layout,
             input_fingerprint=input_fingerprint,
             params_fingerprint=params_fingerprint,
             target_stage=target_stage,
@@ -208,60 +216,8 @@ class RunContext:
             legacy=legacy,
         )
 
-    def _load_or_create_snapshot(
-        self,
-        *,
-        input_fingerprint: str,
-        params_fingerprint: str,
-        target_stage: str | None,
-        provenance: dict[str, Any],
-    ) -> RunSnapshot:
-        self.metadata_dir.mkdir(parents=True, exist_ok=True)
-        self.artifacts_dir.mkdir(parents=True, exist_ok=True)
-        self.stages_dir.mkdir(parents=True, exist_ok=True)
-        self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
-
-        existing = load_run_snapshot(self.snapshot_path)
-        if existing is None and self.legacy:
-            existing = self._bootstrap_legacy_snapshot(target_stage=target_stage or "network")
-
-        if existing is not None:
-            existing.stages = _ensure_stage_map(existing.stages)
-            if input_fingerprint and not existing.input_fingerprint:
-                existing.input_fingerprint = input_fingerprint
-            if params_fingerprint and not existing.params_fingerprint:
-                existing.params_fingerprint = params_fingerprint
-            if target_stage is not None:
-                existing.target_stage = target_stage
-            if provenance:
-                existing.provenance.update(_normalize_for_json(provenance))
-            existing.updated_at = _now_iso()
-            return existing
-
-        return RunSnapshot(
-            run_id=uuid.uuid4().hex[:12],
-            input_fingerprint=input_fingerprint,
-            params_fingerprint=params_fingerprint,
-            status=STATUS_PENDING,
-            target_stage=target_stage or "network",
-            stages=_ensure_stage_map(),
-            provenance=_normalize_for_json(
-                {"layout": "legacy" if self.legacy else "structured", **provenance}
-            ),
-        )
-
-    def _bootstrap_legacy_snapshot(self, *, target_stage: str) -> RunSnapshot | None:
-        snapshot = load_legacy_run_snapshot(self.checkpoints_dir, target_stage=target_stage)
-        if snapshot is None:
-            return None
-        snapshot.overall_progress = self._calculate_overall_progress(
-            snapshot.stages,
-            preprocess_done=bool(snapshot.artifacts.get("preprocess_done")),
-        )
-        return snapshot
-
     def checkpoint_path(self, stage: str) -> Path:
-        return self.checkpoints_dir / f"checkpoint_{stage}.pkl"
+        return self.layout.checkpoint_path(stage)
 
     def stage(self, name: str) -> StageController:
         if name not in PIPELINE_STAGES:
@@ -270,11 +226,7 @@ class RunContext:
         return StageController(self, name)
 
     def persist(self) -> None:
-        self.snapshot.elapsed_seconds = max(
-            self.snapshot.elapsed_seconds, time.time() - self.start_time
-        )
-        self.snapshot.updated_at = _now_iso()
-        atomic_write_json(self.snapshot_path, self.snapshot.to_dict())
+        persist_snapshot(self.snapshot, self.snapshot_path, start_time=self.start_time)
 
     def ensure_resume_allowed(
         self,
@@ -283,42 +235,34 @@ class RunContext:
         params_fingerprint: str,
         force_rerun_from: str | None = None,
     ) -> None:
-        mismatch = []
-        if self.snapshot.input_fingerprint and self.snapshot.input_fingerprint != input_fingerprint:
-            mismatch.append("input")
-        if (
-            self.snapshot.params_fingerprint
-            and self.snapshot.params_fingerprint != params_fingerprint
-        ):
-            mismatch.append("parameters")
+        mismatch = fingerprint_mismatches(
+            self.snapshot,
+            input_fingerprint=input_fingerprint,
+            params_fingerprint=params_fingerprint,
+        )
 
         if not mismatch:
-            self.snapshot.input_fingerprint = input_fingerprint
-            self.snapshot.params_fingerprint = params_fingerprint
+            update_snapshot_fingerprints(
+                self.snapshot,
+                input_fingerprint=input_fingerprint,
+                params_fingerprint=params_fingerprint,
+            )
             self.persist()
             return
 
         if force_rerun_from == "energy":
-            logger.info(
-                "Resuming with explicit rerun from energy after %s change",
-                ", ".join(mismatch),
+            apply_resume_reset(
+                self.snapshot,
+                input_fingerprint=input_fingerprint,
+                params_fingerprint=params_fingerprint,
+                mismatch=mismatch,
+                logger=logger,
             )
             self.reset_pipeline_state()
-            self.snapshot.input_fingerprint = input_fingerprint
-            self.snapshot.params_fingerprint = params_fingerprint
-            self.snapshot.status = STATUS_PENDING
-            self.snapshot.last_event = "Pipeline reset after resume guard mismatch"
             self.persist()
             return
 
-        message = (
-            "Resume blocked because the "
-            + " and ".join(mismatch)
-            + " fingerprint changed. Re-run with force_rerun_from='energy' to start a fresh pipeline."
-        )
-        self.snapshot.status = STATUS_BLOCKED
-        self.snapshot.last_event = message
-        self.snapshot.errors.append({"message": message, "at": _now_iso()})
+        message = apply_resume_block(self.snapshot, mismatch)
         self.persist()
         raise RuntimeError(message)
 
@@ -326,48 +270,19 @@ class RunContext:
         self.reset_pipeline_state_from("energy")
 
     def reset_pipeline_state_from(self, start_stage: str) -> None:
-        if start_stage not in PIPELINE_STAGES:
+        affected_stages = reset_stage_snapshots(self.snapshot.stages, start_stage=start_stage)
+        if not affected_stages:
             return
-        start_index = PIPELINE_STAGES.index(start_stage)
-        for stage in PIPELINE_STAGES[start_index:]:
+        for stage in affected_stages:
             controller = self.stage(stage)
-            if controller.checkpoint_path.exists():
-                controller.checkpoint_path.unlink()
-            if controller.manifest_path.exists():
-                controller.manifest_path.unlink()
-            if controller.state_path.exists():
-                controller.state_path.unlink()
-            if controller.stage_dir.exists():
-                for child in controller.stage_dir.iterdir():
-                    if child.is_file():
-                        child.unlink()
-                    elif child.is_dir():
-                        for nested in child.rglob("*"):
-                            if nested.is_file():
-                                nested.unlink()
-                        for nested in sorted(child.rglob("*"), reverse=True):
-                            if nested.is_dir():
-                                nested.rmdir()
-                        child.rmdir()
-            self.snapshot.stages[stage] = StageSnapshot(name=stage)
+            clear_stage_runtime_artifacts(controller)
         self.persist()
 
     def mark_preprocess_complete(self) -> None:
-        stage_snapshot = self.snapshot.stages.setdefault(
-            PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE)
+        mark_preprocess_complete_snapshot(
+            self.snapshot,
+            overall_progress=self._calculate_overall_progress(self.snapshot.stages, preprocess_done=True),
         )
-        if stage_snapshot.started_at is None:
-            stage_snapshot.started_at = _now_iso()
-        stage_snapshot.status = STATUS_COMPLETED
-        stage_snapshot.progress = 1.0
-        stage_snapshot.units_total = max(stage_snapshot.units_total, 1)
-        stage_snapshot.units_completed = stage_snapshot.units_total
-        stage_snapshot.detail = "Preprocessing complete"
-        stage_snapshot.updated_at = _now_iso()
-        stage_snapshot.completed_at = _now_iso()
-        self.snapshot.artifacts["preprocess_done"] = "true"
-        self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
-        self.snapshot.last_event = "Preprocessing complete"
         self.persist()
         self.emit_event(PREPROCESS_STAGE, STATUS_COMPLETED, detail="Preprocessing complete")
 
@@ -390,24 +305,16 @@ class RunContext:
         substage: str = "",
         resumed: bool = False,
     ) -> None:
-        stage_snapshot = self.snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
-        if stage_snapshot.started_at is None:
-            stage_snapshot.started_at = _now_iso()
-        stage_snapshot.status = STATUS_RUNNING
-        stage_snapshot.updated_at = _now_iso()
-        stage_snapshot.detail = detail
-        stage_snapshot.substage = substage
-        stage_snapshot.units_total = units_total or stage_snapshot.units_total
-        stage_snapshot.units_completed = units_completed
-        stage_snapshot.resumed = resumed or stage_snapshot.resumed
-        if stage_snapshot.units_total > 0:
-            stage_snapshot.progress = min(
-                1.0, stage_snapshot.units_completed / stage_snapshot.units_total
-            )
-        self.snapshot.current_stage = stage
-        self.snapshot.status = STATUS_RUNNING
+        begin_stage_snapshot(
+            self.snapshot,
+            stage=stage,
+            detail=detail,
+            units_total=units_total,
+            units_completed=units_completed,
+            substage=substage,
+            resumed=resumed,
+        )
         self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
-        self.snapshot.last_event = detail or f"Running {stage}"
         self.persist()
         self.emit_event(stage, STATUS_RUNNING, detail=detail)
 
@@ -422,31 +329,19 @@ class RunContext:
         substage: str | None = None,
         resumed: bool | None = None,
     ) -> None:
-        stage_snapshot = self.snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
-        stage_snapshot.status = STATUS_RUNNING
-        stage_snapshot.updated_at = _now_iso()
-        if detail is not None:
-            stage_snapshot.detail = detail
-        if substage is not None:
-            stage_snapshot.substage = substage
-        if units_total is not None:
-            stage_snapshot.units_total = units_total
-        if units_completed is not None:
-            stage_snapshot.units_completed = units_completed
-        if resumed is not None:
-            stage_snapshot.resumed = resumed
-        if progress is not None:
-            stage_snapshot.progress = max(0.0, min(1.0, progress))
-        elif stage_snapshot.units_total > 0:
-            stage_snapshot.progress = min(
-                1.0, stage_snapshot.units_completed / stage_snapshot.units_total
-            )
+        stage_snapshot = update_stage_snapshot(
+            self.snapshot,
+            stage=stage,
+            detail=detail,
+            units_total=units_total,
+            units_completed=units_completed,
+            progress=progress,
+            substage=substage,
+            resumed=resumed,
+        )
         stage_snapshot.eta_seconds = self._estimate_eta(stage_snapshot)
-        self.snapshot.current_stage = stage
-        self.snapshot.status = STATUS_RUNNING
         self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
         self.snapshot.eta_seconds = self._estimate_run_eta(self.snapshot)
-        self.snapshot.last_event = stage_snapshot.detail or f"Running {stage}"
         self.persist()
         self.emit_event(stage, STATUS_RUNNING, detail=stage_snapshot.detail)
 
@@ -458,38 +353,21 @@ class RunContext:
         artifacts: dict[str, str] | None = None,
         resumed: bool | None = None,
     ) -> None:
-        stage_snapshot = self.snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
-        stage_snapshot.status = STATUS_COMPLETED
-        stage_snapshot.progress = 1.0
-        stage_snapshot.updated_at = _now_iso()
-        stage_snapshot.completed_at = _now_iso()
-        stage_snapshot.units_total = max(
-            stage_snapshot.units_total, stage_snapshot.units_completed, 1
+        stage_snapshot = complete_stage_snapshot(
+            self.snapshot,
+            stage=stage,
+            detail=detail,
+            artifacts=artifacts,
+            resumed=resumed,
         )
-        stage_snapshot.units_completed = stage_snapshot.units_total
-        if detail:
-            stage_snapshot.detail = detail
-        if artifacts:
-            stage_snapshot.artifacts.update(artifacts)
-            self.snapshot.artifacts.update({f"{stage}.{k}": v for k, v in artifacts.items()})
-        if resumed is not None:
-            stage_snapshot.resumed = resumed
         self.snapshot.overall_progress = self._calculate_overall_progress(self.snapshot.stages)
         self.snapshot.eta_seconds = self._estimate_run_eta(self.snapshot)
-        self.snapshot.last_event = detail or f"Completed {stage}"
         self.persist()
         self.emit_event(stage, STATUS_COMPLETED, detail=stage_snapshot.detail)
 
     def fail_stage(self, stage: str, error: BaseException | str) -> None:
         message = str(error)
-        stage_snapshot = self.snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
-        stage_snapshot.status = STATUS_FAILED
-        stage_snapshot.updated_at = _now_iso()
-        stage_snapshot.detail = message
-        self.snapshot.status = STATUS_FAILED
-        self.snapshot.current_stage = stage
-        self.snapshot.last_event = message
-        self.snapshot.errors.append({"stage": stage, "message": message, "at": _now_iso()})
+        fail_stage_snapshot(self.snapshot, stage=stage, message=message)
         self.persist()
         self.emit_event(stage, STATUS_FAILED, detail=message)
 
@@ -502,99 +380,45 @@ class RunContext:
         progress: float | None = None,
         artifacts: dict[str, str] | None = None,
     ) -> None:
-        task = self.snapshot.optional_tasks.setdefault(name, TaskSnapshot(name=name))
-        if task.started_at is None and status == STATUS_RUNNING:
-            task.started_at = _now_iso()
-        task.status = status
-        task.updated_at = _now_iso()
-        task.detail = detail
-        if progress is not None:
-            task.progress = progress
-        if status == STATUS_COMPLETED:
-            task.progress = 1.0
-            task.completed_at = _now_iso()
-        if artifacts:
-            task.artifacts.update(artifacts)
-        self.snapshot.last_event = detail or f"Task {name}: {status}"
+        update_optional_task_snapshot(
+            self.snapshot,
+            name=name,
+            status=status,
+            detail=detail,
+            progress=progress,
+            artifacts=artifacts,
+        )
         self.persist()
 
     def finalize_run(self, *, stop_after: str | None = None) -> None:
-        if stop_after and stop_after != "network":
-            self.snapshot.status = STATUS_COMPLETED_TARGET
-        else:
-            self.snapshot.status = STATUS_COMPLETED
-            self.snapshot.overall_progress = 1.0
-        self.snapshot.current_stage = stop_after or "network"
-        self.snapshot.eta_seconds = 0.0
-        self.snapshot.last_event = "Run completed"
+        finalize_run_snapshot(self.snapshot, stop_after=stop_after)
         self.persist()
         self.emit_event(self.snapshot.current_stage, self.snapshot.status, detail="Run completed")
 
     def emit_event(self, stage: str, status: str, *, detail: str = "") -> None:
-        if self.event_callback is None:
-            return
-        stage_snapshot = self.snapshot.stages.get(stage, StageSnapshot(name=stage))
-        payload = ProgressEvent(
+        emit_progress_event(
+            self.snapshot,
+            self.event_callback,
             stage=stage,
             status=status,
-            overall_progress=self.snapshot.overall_progress,
-            stage_progress=stage_snapshot.progress,
             detail=detail,
-            resumed=stage_snapshot.resumed,
-            snapshot=copy.deepcopy(self.snapshot),
         )
-        self.event_callback(payload)
 
     def _estimate_eta(self, stage_snapshot: StageSnapshot) -> float | None:
-        if stage_snapshot.progress <= 0.0 or stage_snapshot.started_at is None:
-            return None
-        started = self._parse_time(stage_snapshot.started_at)
-        if started is None:
-            return None
-        elapsed = max(0.0, time.time() - started)
-        remaining = elapsed * (1.0 - stage_snapshot.progress) / stage_snapshot.progress
-        stage_snapshot.elapsed_seconds = elapsed
-        return float(remaining)
+        return estimate_stage_eta(stage_snapshot)
 
     def _estimate_run_eta(self, snapshot: RunSnapshot) -> float | None:
-        if snapshot.overall_progress <= 0.0:
-            return None
-        created = self._parse_time(snapshot.created_at)
-        if created is None:
-            return None
-        elapsed = max(0.0, time.time() - created)
-        snapshot.elapsed_seconds = elapsed
-        return float(elapsed * (1.0 - snapshot.overall_progress) / snapshot.overall_progress)
+        return estimate_run_eta(snapshot)
 
     def _calculate_overall_progress(
         self,
         stages: dict[str, StageSnapshot],
         preprocess_done: bool | None = None,
     ) -> float:
-        total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(
-            STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES
-        )
-        progress = 0.0
         if preprocess_done is None:
-            snapshot = getattr(self, "snapshot", None)
-            preprocess_stage = stages.get(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
-            preprocess_done = bool(snapshot and snapshot.artifacts.get("preprocess_done")) or (
-                preprocess_stage.status == STATUS_COMPLETED
-            )
-        if preprocess_done:
-            progress += STAGE_WEIGHTS[PREPROCESS_STAGE]
-        for stage_name in PIPELINE_STAGES:
-            progress += (
-                STAGE_WEIGHTS[stage_name]
-                * stages.get(stage_name, StageSnapshot(stage_name)).progress
-            )
-        return float(max(0.0, min(1.0, progress / total)))
+            preprocess_done = preprocess_complete(stages, snapshot=getattr(self, "snapshot", None))
+        return calculate_overall_progress(stages, preprocess_done=preprocess_done)
 
     @staticmethod
     def _parse_time(timestamp: str | None) -> float | None:
-        if not timestamp:
-            return None
-        try:
-            return calendar.timegm(time.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ"))
-        except ValueError:
-            return None
+        return parse_run_time(timestamp)

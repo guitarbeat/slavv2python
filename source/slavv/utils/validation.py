@@ -162,11 +162,12 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     allowed_parity_watershed_candidate_modes = {
         "all_contacts",
         "remaining_origin_contacts",
+        "origin_cap",
     }
     if parity_watershed_candidate_mode not in allowed_parity_watershed_candidate_modes:
         raise ValueError(
             "parity_watershed_candidate_mode must be one of "
-            "'all_contacts' or 'remaining_origin_contacts'"
+            "'all_contacts', 'remaining_origin_contacts', or 'origin_cap'"
         )
     validated["parity_watershed_candidate_mode"] = parity_watershed_candidate_mode
     parity_watershed_metric_threshold = params.get("parity_watershed_metric_threshold")

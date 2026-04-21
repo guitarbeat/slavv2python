@@ -4,23 +4,25 @@ import warnings
 
 import streamlit as st
 
-from slavv.io import load_tiff_volume
-from slavv.runtime import load_run_snapshot
-
-from .web_app_analysis_page import show_analysis_page
-from .web_app_artifacts import (
+from .app_services import (
     _build_processing_run_dir,
     _has_full_network_results,
     _log_share_report_prepared_once,
+    _render_run_dashboard,
     _update_run_task,
+    cached_load_tiff_volume,
     generate_export_data,
     generate_share_report_data,
+    load_run_snapshot,
 )
-from .web_app_curation_page import (
-    _apply_curated_results,
-    _run_interactive_curator,
-    show_ml_curation_page,
+from .app_services import (
+    apply_curated_results as _apply_curated_results,
 )
+from .app_services import (
+    run_interactive_curator as _run_interactive_curator,
+)
+from .web_app_analysis_page import show_analysis_page
+from .web_app_curation_page import show_ml_curation_page
 from .web_app_dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
@@ -37,7 +39,6 @@ from .web_app_dashboard_page import (
     _open_dashboard_metric_dialog,
     _render_dashboard_surface,
     _render_dashboard_surface_fragment,
-    _render_run_dashboard,
     _toast_dashboard_feedback,
     show_dashboard_page,
 )
@@ -122,14 +123,6 @@ st.html(
 </style>
 """
 )
-
-
-@st.cache_data(show_spinner=False)
-def cached_load_tiff_volume(file):
-    """Cached wrapper for load_tiff_volume."""
-    return load_tiff_volume(file)
-
-
 def _render_export_download(
     column,
     *,

@@ -15,7 +15,7 @@ Current note:
 
 - This report is a closed April 14 release audit. The active imported-MATLAB
   evidence roots now live under
-  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+  `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`
   and
   `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`.
 

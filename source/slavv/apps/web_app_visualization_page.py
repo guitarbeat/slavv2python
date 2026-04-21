@@ -5,10 +5,15 @@ from __future__ import annotations
 import streamlit as st
 
 from slavv.apps.visualization_state import (
+    extract_visualization_export_payload,
+    has_visualization_network,
     list_available_visualizations,
     normalize_visualization_results,
+    resolve_visualization_session_context,
 )
 from slavv.visualization import NetworkVisualizer
+
+from . import app_services
 
 EXPORT_BUTTON_SPECS = (
     {
@@ -55,10 +60,8 @@ def _render_export_download(
 ) -> None:
     """Render one export button using a shared table-driven config."""
     if generate_export_data_fn is None or update_run_task_fn is None:
-        from slavv.apps import web_app as web_app_facade
-
-        generate_export_data_fn = web_app_facade.generate_export_data
-        update_run_task_fn = web_app_facade._update_run_task
+        generate_export_data_fn = app_services.generate_export_data
+        update_run_task_fn = app_services._update_run_task
 
     with column:
         if export_data := generate_export_data_fn(
@@ -92,8 +95,6 @@ def _render_export_download(
 
 def show_visualization_page() -> None:
     """Display the visualization page."""
-    from slavv.apps import web_app as web_app_facade
-
     st.markdown('<h2 class="section-header">Network Visualization</h2>', unsafe_allow_html=True)
 
     if "processing_results" not in st.session_state:
@@ -200,17 +201,15 @@ def show_visualization_page() -> None:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-    if not web_app_facade._has_full_network_results(results):
+    if not has_visualization_network(results):
         st.info("Complete the full network stage to unlock exports and the share report.")
         return
 
     st.markdown("### Export Options")
     col1, col2, col3, col4 = st.columns(4, gap="medium")
-    vertices = results["vertices"]
-    edges = results["edges"]
-    network = results["network"]
-    parameters = results["parameters"]
-    current_run_dir = st.session_state.get("current_run_dir")
+    vertices, edges, network, parameters = extract_visualization_export_payload(results)
+    viz_context = resolve_visualization_session_context(st.session_state)
+    current_run_dir = viz_context["run_dir"]
     for column, export_spec in zip((col1, col2, col3), EXPORT_BUTTON_SPECS):
         _render_export_download(
             column,
@@ -221,17 +220,17 @@ def show_visualization_page() -> None:
             parameters=parameters,
             export_spec=export_spec,
         )
-    share_report_data = web_app_facade.generate_share_report_data(
+    share_report_data = app_services.generate_share_report_data(
         results,
-        st.session_state.get("dataset_name", "SLAVV dataset"),
-        st.session_state.get("image_shape", (100, 100, 50)),
+        viz_context["dataset_name"],
+        viz_context["image_shape"],
     )
-    web_app_facade._log_share_report_prepared_once(
-        st.session_state.get("dataset_name", "SLAVV dataset"),
+    app_services._log_share_report_prepared_once(
+        viz_context["dataset_name"],
         share_report_data,
         results,
     )
-    web_app_facade._update_run_task(
+    app_services._update_run_task(
         st.session_state.get("current_run_dir"),
         "share_report",
         status="completed",
@@ -255,11 +254,11 @@ def show_visualization_page() -> None:
             record_share_event(
                 st.session_state,
                 "share_report_downloaded",
-                st.session_state.get("dataset_name", "SLAVV dataset"),
+                viz_context["dataset_name"],
                 share_report_data["signature"],
                 extra={"report_file_name": share_report_data["file_name"]},
             )
-            web_app_facade._update_run_task(
+            app_services._update_run_task(
                 st.session_state.get("current_run_dir"),
                 "share_report",
                 status="completed",
@@ -270,7 +269,7 @@ def show_visualization_page() -> None:
         st.success(
             "Share report downloaded. Forward the HTML file to collaborators for offline review."
         )
-    share_metrics = st.session_state.get("share_report_metrics", {})
+    share_metrics = viz_context["share_metrics"]
     st.caption(
         "Tracked share events this session: "
         f"requested={share_metrics.get('share_report_requested', 0)}, "

@@ -38,10 +38,15 @@ ordering, and branch invalidation around shared active neighborhoods.
   `D:\slavv_comparisons`, not the near-full workspace drive on `C:`.
 - The current live imported-MATLAB evidence surface is the fresh `edges`
   rerun at
-  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`.
-- That live trial now matches vertices exactly but over-emits later in the
-  `edges` stage: `1682/1682` vertices, `1555/1379` edges, and `774/682`
-  strands.
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`.
+- That clean managed rerun matches vertices exactly but still misses many
+  MATLAB edges later in the `edges` stage:
+  `2577/2577` vertices, `1976/2533` edges, and `386/1120` strands.
+- The live summary for that run explicitly says to start with
+  candidate-endpoint coverage before edge or strand diffs.
+- The same run still produced `24` divergent shared neighborhoods split across
+  claim-ordering, branch invalidation, and partner-choice categories, so the
+  neighborhood-claim framing remains active rather than obsolete.
 - The fresh stage-isolated `network` gate at
   `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
   remains exact: `1682/1682` vertices, `1379/1379` edges, and `682/682`
@@ -65,13 +70,10 @@ ordering, and branch invalidation around shared active neighborhoods.
 - Several older hotspots improved materially as candidate coverage matured.
   Origins `64`, `359`, and `1283` now have much broader local candidate
   coverage than they did earlier in the investigation.
-- The current live blockers now split into failure classes instead of one
-  generic candidate-generation problem:
-  - frontier pre-manifest rejection: `1482`, `1666`, `2129`, `2216`, `2424`,
-    `2459`, `2486`
-  - manifest partner substitution: `1654`, `866`, `322`, `35`, `4`, `3`, `57`
-  - candidate-admission gaps: `2305`, `2492`
-  - final cleanup loss: `1283`, `64`, `20`
+- The clean April 21 rerun moved the main triage recommendation back toward
+  candidate-endpoint coverage, but the shared-neighborhood diagnostics still
+  split the live blockers into local failure classes instead of one generic
+  global threshold problem.
 - Several frontier failures now show the same local shape:
   one seed-origin frontier edge is accepted, one or more sibling branches are
   rejected as `rejected_child_better_than_parent`, and the accepted parent edge
@@ -124,7 +126,7 @@ Use the imported-MATLAB trial roots as the lab, but inspect neighborhoods
 instead of only aggregate counts.
 
 1. Reuse the fresh `edges` rerun under
-   `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+   `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`
    when you need current parity-mode artifacts, and keep any new focused
    experiments under the same `experiments/live-parity/runs/` organization.
 2. Record per-neighborhood candidate lifecycle artifacts for `1482`, `1666`,
@@ -143,8 +145,8 @@ instead of only aggregate counts.
 ```powershell
 .\.venv\Scripts\python.exe dev\scripts\cli\compare_matlab_python.py `
   --standalone-matlab-dir D:\slavv_comparisons\experiments\live-parity\runs\20260401_live_parity_retry\01_Input\matlab_results `
-  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial\02_Output\python_results `
-  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial `
+  --standalone-python-dir D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean\02_Output\python_results `
+  --output-dir D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean `
   --comparison-depth deep `
   --python-result-source checkpoints-only
 ```

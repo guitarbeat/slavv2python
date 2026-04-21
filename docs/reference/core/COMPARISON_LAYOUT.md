@@ -35,9 +35,9 @@ Use date-first names so roots sort naturally and are easy to scan.
 - Preferred full timestamp form: `YYYYMMDD_HHMMSS_<label>`
   - example: `20260327_150656_clean_parity`
 - Preferred date-only form: `YYYYMMDD_<label>`
-  - example: `20260418_claim_ordering_trial`
+  - example: `20260421_live_parity_clean`
 - Avoid suffix-date form for new roots.
-  - use `20260418_claim_ordering_trial`, not `claim_ordering_trial_20260418`
+  - use `20260421_live_parity_clean`, not `live_parity_clean_20260421`
 
 For one-off historical cleanup, rename only when it improves discoverability and
 does not break active external references.
@@ -49,8 +49,8 @@ comfortable free space. In this checkout, the canonical managed archive root is
 `D:\slavv_comparisons`. Good examples are:
 
 - Windows: `D:\slavv_comparisons\experiments\live-parity\runs\20260420_live_parity_scratch`
-- Windows (explicit experiment root): `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
-- POSIX: `/tmp/slavv_comparisons/20260418_claim_ordering_trial`
+- Windows (explicit experiment root): `D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`
+- POSIX: `/tmp/slavv_comparisons/20260421_live_parity_clean`
 
 Avoid placing fresh MATLAB outputs under OneDrive-synced folders, network
 mounts, or repo-local scratch paths unless you are intentionally debugging a
@@ -173,7 +173,7 @@ Notes:
 - This grouping layer is optional and backward compatible. Legacy top-level run
   roots remain valid, and the staged layout above remains authoritative.
 - A current repo-local example is
-  `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`.
+  `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`.
 - Pointer files store exactly one path relative to the comparison root, not an
   absolute filesystem path.
 - When a run is written under a managed archive root, the workflow now

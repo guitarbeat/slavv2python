@@ -110,7 +110,7 @@ Historical note:
 
 This loop is preserved for context only. The active workspace now keeps
 comparison runs under
-`C:\Users\alw4834\Documents\slavv2python\slavv_comparisons\experiments\...`,
+`D:\slavv_comparisons\experiments\...`,
 and the active parity chapter uses fresh imported-MATLAB trial roots rather
 than the old local `saved_batch_run` example below.
 
@@ -124,7 +124,7 @@ python dev/scripts/cli/compare_matlab_python.py `
 
 Current active evidence roots:
 
-- `slavv_comparisons/experiments/live-parity/runs/20260418_claim_ordering_trial`
+- `slavv_comparisons/experiments/live-parity/runs/20260421_live_parity_clean`
 - `slavv_comparisons/experiments/live-parity/runs/20260418_network_gate_trial`
 
 ## Core References

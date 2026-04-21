@@ -13,6 +13,7 @@ from .._vertices.payloads import matlab_linear_indices as _matlab_linear_indices
 
 _MATLAB_PARITY_EDGE_BUDGET_PARAM = "_matlab_parity_edge_number_tolerance"
 _MATLAB_PARITY_WATERSHED_MODE_PARAM = "_matlab_parity_watershed_candidate_mode"
+_MATLAB_PARITY_FRONTIER_BUDGET_MODE_PARAM = "_matlab_parity_frontier_budget_mode"
 
 Int16Array: TypeAlias = "np.ndarray"
 Int32Array: TypeAlias = "np.ndarray"
@@ -38,8 +39,21 @@ def _parity_watershed_candidate_mode(params: dict[str, Any]) -> str:
         )
     ).strip()
     normalized_mode = requested_mode.lower()
-    allowed_modes = {"all_contacts", "remaining_origin_contacts"}
+    allowed_modes = {"all_contacts", "remaining_origin_contacts", "origin_cap"}
     return normalized_mode if normalized_mode in allowed_modes else "all_contacts"
+
+
+def _matlab_parity_frontier_budget_mode(params: dict[str, Any]) -> str:
+    """Return the imported-MATLAB frontier budget strategy."""
+    requested_mode = str(
+        params.get(
+            _MATLAB_PARITY_FRONTIER_BUDGET_MODE_PARAM,
+            params.get("parity_frontier_budget_mode", "terminal_hits"),
+        )
+    ).strip()
+    normalized_mode = requested_mode.lower()
+    allowed_modes = {"terminal_hits", "accepted_candidates"}
+    return normalized_mode if normalized_mode in allowed_modes else "terminal_hits"
 
 
 def _parity_watershed_metric_threshold_from_params(params: dict[str, Any]) -> float | None:
@@ -96,6 +110,17 @@ def _params_with_matlab_parity_watershed_candidate_mode(
     """Return a copy of ``params`` with the imported-MATLAB watershed mode forced."""
     normalized = dict(params)
     normalized[_MATLAB_PARITY_WATERSHED_MODE_PARAM] = str(candidate_mode)
+    return normalized
+
+
+def _params_with_matlab_parity_frontier_budget_mode(
+    params: dict[str, Any],
+    *,
+    mode: str = "accepted_candidates",
+) -> dict[str, Any]:
+    """Return a copy of ``params`` with the imported-MATLAB frontier budget mode forced."""
+    normalized = dict(params)
+    normalized[_MATLAB_PARITY_FRONTIER_BUDGET_MODE_PARAM] = str(mode)
     return normalized
 
 

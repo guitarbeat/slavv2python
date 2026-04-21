@@ -63,7 +63,7 @@ without hunting through older release-audit notes:
 
 - canonical archive root: `D:\slavv_comparisons`
 - live `edges` rerun:
-  `D:\slavv_comparisons\experiments\live-parity\runs\20260418_claim_ordering_trial`
+  `D:\slavv_comparisons\experiments\live-parity\runs\20260421_live_parity_clean`
 - stage-isolated `network` gate:
   `D:\slavv_comparisons\experiments\live-parity\runs\20260418_network_gate_trial`
 

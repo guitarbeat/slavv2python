@@ -9,12 +9,14 @@ import plotly.express as px
 import streamlit as st
 
 from slavv.analysis import AutomaticCurator, MLCurator
+from slavv.apps import curation_services
 from slavv.apps.curation_state import (
     build_curation_stats_rows,
     summarize_processing_counts,
-    sync_curated_processing_results,
 )
-from slavv.apps.web_app_artifacts import _update_run_task
+from slavv.apps.export_services import update_run_task
+
+from . import app_services
 
 
 def _apply_curated_results(
@@ -24,37 +26,26 @@ def _apply_curated_results(
     curation_mode: str,
 ) -> tuple[dict[str, int], dict[str, int]]:
     """Sync curated vertices and edges into session state with a rebuilt network."""
-    updated_results, baseline_counts, current_counts = sync_curated_processing_results(
-        st.session_state["processing_results"],
+    return curation_services.apply_curated_results(
+        st.session_state,
         curated_vertices,
         curated_edges,
-        baseline_counts=st.session_state.get("curation_baseline_counts"),
+        curation_mode=curation_mode,
     )
-    st.session_state["processing_results"] = updated_results
-    st.session_state["curation_baseline_counts"] = baseline_counts
-    st.session_state["last_curation_mode"] = curation_mode
-    st.session_state.pop("share_report_prepared_signature", None)
-    return baseline_counts, current_counts
 
 
 def _run_interactive_curator(energy_data, vertices_data, edges_data, backend="qt"):
     """Import desktop curator backends lazily so the web app can load without GUI deps."""
-    backend_name = str(backend).strip().lower()
-    if backend_name in {"qt", "qt_pyvista", "pyvista"}:
-        from slavv.visualization.interactive_curator import run_curator
-
-        return run_curator(energy_data, vertices_data, edges_data)
-    if backend_name == "napari":
-        from slavv.visualization.napari_curator import run_curator_napari
-
-        return run_curator_napari(energy_data, vertices_data, edges_data)
-    raise ValueError("curator backend must be 'qt' or 'napari'")
+    return curation_services.run_interactive_curator(
+        energy_data,
+        vertices_data,
+        edges_data,
+        backend=backend,
+    )
 
 
 def show_ml_curation_page():
     """Display the ML curation page."""
-    from slavv.apps import web_app as web_app_facade
-
     st.markdown('<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True)
 
     if "processing_results" not in st.session_state:
@@ -103,7 +94,7 @@ def show_ml_curation_page():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🚀 Launch Interactive Curator", type="primary", width=250):
-                _update_run_task(
+                update_run_task(
                     st.session_state.get("current_run_dir"),
                     "manual_curation",
                     status="running",
@@ -115,7 +106,7 @@ def show_ml_curation_page():
                     st.warning(
                         "⚠️ Please check your taskbar for the new 3D window. Closing the window will save and continue."
                     )
-                    curated_vertices, curated_edges = web_app_facade._run_interactive_curator(
+                    curated_vertices, curated_edges = app_services._run_interactive_curator(
                         results["energy_data"],
                         results["vertices"],
                         results["edges"],
@@ -123,13 +114,13 @@ def show_ml_curation_page():
                     )
                     status.update(label="Rebuilding network after curation...", state="running")
                     try:
-                        baseline_counts, current_counts = web_app_facade._apply_curated_results(
+                        baseline_counts, current_counts = app_services._apply_curated_results(
                             curated_vertices,
                             curated_edges,
                             curation_mode="Interactive (Manual GUI)",
                         )
                     except Exception as exc:
-                        _update_run_task(
+                        update_run_task(
                             st.session_state.get("current_run_dir"),
                             "manual_curation",
                             status="failed",
@@ -140,7 +131,7 @@ def show_ml_curation_page():
                             f"{exc!s}"
                         )
                         st.stop()
-                    _update_run_task(
+                    update_run_task(
                         st.session_state.get("current_run_dir"),
                         "manual_curation",
                         status="completed",
@@ -239,7 +230,7 @@ def show_ml_curation_page():
         }
 
         if st.button("🚀 Start Automatic Curation", type="primary", width=250):
-            _update_run_task(
+            update_run_task(
                 st.session_state.get("current_run_dir"),
                 "automatic_curation",
                 status="running",
@@ -255,13 +246,13 @@ def show_ml_curation_page():
                 )
                 status.update(label="Rebuilding network after curation...", state="running")
                 try:
-                    baseline_counts, current_counts = web_app_facade._apply_curated_results(
+                    baseline_counts, current_counts = app_services._apply_curated_results(
                         curated_vertices,
                         curated_edges,
                         curation_mode="Automatic (Rule-based)",
                     )
                 except Exception as exc:
-                    _update_run_task(
+                    update_run_task(
                         st.session_state.get("current_run_dir"),
                         "automatic_curation",
                         status="failed",
@@ -272,7 +263,7 @@ def show_ml_curation_page():
                         f"{exc!s}"
                     )
                     st.stop()
-                _update_run_task(
+                update_run_task(
                     st.session_state.get("current_run_dir"),
                     "automatic_curation",
                     status="completed",
@@ -356,7 +347,7 @@ def show_ml_curation_page():
             if vertex_training_data is None and edge_training_data is None:
                 st.error("Please upload training data for vertices, edges, or both.")
             else:
-                _update_run_task(
+                update_run_task(
                     st.session_state.get("current_run_dir"),
                     "ml_training",
                     status="running",
@@ -377,7 +368,7 @@ def show_ml_curation_page():
                         res_e = ml_curator.train_edge_classifier(X_e, y_e)
                         st.write(f"Edge test accuracy: {res_e['test_accuracy']:.3f}")
                     st.session_state["ml_curator"] = ml_curator
-                    _update_run_task(
+                    update_run_task(
                         st.session_state.get("current_run_dir"),
                         "ml_training",
                         status="completed",
@@ -387,7 +378,7 @@ def show_ml_curation_page():
                     st.success("✅ Models trained!")
 
         if st.button("🤖 Start ML Curation", type="primary", width=250):
-            _update_run_task(
+            update_run_task(
                 st.session_state.get("current_run_dir"),
                 "ml_curation",
                 status="running",
@@ -400,7 +391,7 @@ def show_ml_curation_page():
                     ml_curator.load_models(vertex_model_file, edge_model_file)
                 if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:
                     st.error("❌ ML models not loaded or trained. Cannot perform ML curation.")
-                    _update_run_task(
+                    update_run_task(
                         st.session_state.get("current_run_dir"),
                         "ml_curation",
                         status="failed",
@@ -422,13 +413,13 @@ def show_ml_curation_page():
                 )
                 status.update(label="Rebuilding network after curation...", state="running")
                 try:
-                    baseline_counts, current_counts = web_app_facade._apply_curated_results(
+                    baseline_counts, current_counts = app_services._apply_curated_results(
                         curated_vertices,
                         curated_edges,
                         curation_mode="Machine Learning (Model-based)",
                     )
                 except Exception as exc:
-                    _update_run_task(
+                    update_run_task(
                         st.session_state.get("current_run_dir"),
                         "ml_curation",
                         status="failed",
@@ -441,7 +432,7 @@ def show_ml_curation_page():
                     st.stop()
                 st.success("✅ ML curation complete!")
                 status.update(label="ML curation complete!", state="complete")
-                _update_run_task(
+                update_run_task(
                     st.session_state.get("current_run_dir"),
                     "ml_curation",
                     status="completed",

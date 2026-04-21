@@ -13,11 +13,11 @@ from slavv.apps.processing_state import (
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters
 
+from . import app_services
+
 
 def show_processing_page() -> None:
     """Display the image processing page."""
-    from slavv.apps import web_app as web_app_facade
-
     st.markdown('<h2 class="section-header">Image Processing Pipeline</h2>', unsafe_allow_html=True)
 
     st.markdown("### 📁 Upload Image")
@@ -261,10 +261,10 @@ def show_processing_page() -> None:
 
     current_snapshot = load_processing_snapshot(
         st.session_state,
-        snapshot_loader=web_app_facade.load_run_snapshot,
+        snapshot_loader=app_services.load_run_snapshot,
     )
     if current_snapshot is not None:
-        web_app_facade._render_run_dashboard(current_snapshot)
+        app_services._render_run_dashboard(current_snapshot)
 
     if uploaded_file is not None:
         if st.button("🚀 Start Processing", type="primary", width=250):
@@ -303,7 +303,7 @@ def show_processing_page() -> None:
                 with st.status("Processing image...", expanded=True) as status:
                     status.update(label="Loading image...", state="running")
                     try:
-                        image = web_app_facade.cached_load_tiff_volume(uploaded_file)
+                        image = app_services.cached_load_tiff_volume(uploaded_file)
                         st.success(f"✅ Image loaded successfully with shape: {image.shape}")
                     except ValueError as exc:
                         st.error(f"❌ Error loading TIFF file: {exc}")
@@ -311,7 +311,7 @@ def show_processing_page() -> None:
 
                     processor = SLAVVProcessor()
                     dashboard_placeholder = st.empty()
-                    run_dir = web_app_facade._build_processing_run_dir(
+                    run_dir = app_services._build_processing_run_dir(
                         uploaded_file.getvalue(),
                         validated_params,
                     )
@@ -321,7 +321,7 @@ def show_processing_page() -> None:
                         label = event.detail or f"{event.stage} {int(event.stage_progress * 100)}%"
                         status.update(label=label, state=state)
                         with dashboard_placeholder.container():
-                            web_app_facade._render_run_dashboard(event.snapshot)
+                            app_services._render_run_dashboard(event.snapshot)
 
                     results = processor.process_image(
                         image,
@@ -331,9 +331,9 @@ def show_processing_page() -> None:
                         stop_after=stop_after_val,
                         force_rerun_from=force_rerun_stage if force_rerun_stage != "None" else None,
                     )
-                    final_snapshot = web_app_facade.load_run_snapshot(run_dir) if run_dir else None
+                    final_snapshot = app_services.load_run_snapshot(run_dir) if run_dir else None
                     with dashboard_placeholder.container():
-                        web_app_facade._render_run_dashboard(final_snapshot)
+                        app_services._render_run_dashboard(final_snapshot)
                     status.update(
                         label=f"Processing finished at target: {stop_after_val}",
                         state="complete",
@@ -348,7 +348,7 @@ def show_processing_page() -> None:
                     run_dir=run_dir,
                     final_snapshot=final_snapshot,
                 )
-                web_app_facade._render_run_dashboard(final_snapshot)
+                app_services._render_run_dashboard(final_snapshot)
                 if stop_after_val != "network":
                     st.warning(
                         f"⚠️ Pipeline halted early at '{stop_after_val}'. Downstream results (if any) are not available."

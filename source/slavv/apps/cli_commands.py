@@ -6,12 +6,14 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
+from .cli_analysis_service import calculate_exported_network_stats
+from .cli_export_service import save_network_export
 from .cli_exported_network import _load_exported_results
-from .cli_parser import _EXPORT_FILE_NAMES
+from .cli_info_service import load_info_lines
+from .cli_reporting import build_analysis_output_lines
 from .cli_shared import (
     _DETAILED_LOG_FORMAT,
     _SIMPLE_LOG_FORMAT,
@@ -21,57 +23,9 @@ from .cli_shared import (
     _expand_export_formats,
     _require_existing_file,
 )
+from .cli_status_service import build_status_output_lines, load_status_snapshot
 
 logger = logging.getLogger(__name__)
-
-
-def _save_network_export(
-    format_type: str,
-    *,
-    output_dir: str,
-    network_obj: Any,
-    results: dict,
-) -> str | None:
-    """Persist one export format and return the written path when successful."""
-    export_path = os.path.join(output_dir, _EXPORT_FILE_NAMES[format_type])
-
-    if format_type == "mat":
-        try:
-            from slavv.visualization import NetworkVisualizer
-
-            vis = NetworkVisualizer()
-            vis.export_network_data(
-                {
-                    "vertices": results.get("vertices", {}),
-                    "edges": results.get("edges", {}),
-                    "network": results.get("network", {}),
-                    "parameters": results.get("parameters", {}),
-                },
-                export_path,
-                format="mat",
-            )
-            logger.info("Saved MAT to %s", export_path)
-            return export_path
-        except ImportError as exc:
-            logger.warning("Error saving MAT file: %s", exc)
-            return None
-
-    from slavv.io import (
-        save_network_to_casx,
-        save_network_to_csv,
-        save_network_to_json,
-        save_network_to_vmv,
-    )
-
-    exporters = {
-        "csv": save_network_to_csv,
-        "json": save_network_to_json,
-        "casx": save_network_to_casx,
-        "vmv": save_network_to_vmv,
-    }
-    exporters[format_type](network_obj, export_path)
-    logger.info("Saved %s to %s", format_type.upper(), export_path)
-    return export_path
 
 
 def _handle_info_command() -> None:
@@ -79,12 +33,8 @@ def _handle_info_command() -> None:
     from slavv import __version__
     from slavv.utils import get_system_info
 
-    print(f"slavv {__version__}")
-    print()
-
-    info = get_system_info()
-    for key, value in info.items():
-        print(f"  {key}: {value}")
+    for line in load_info_lines(version=__version__, system_info=get_system_info()):
+        print(line)
 
 
 def _handle_run_command(args) -> None:
@@ -154,7 +104,7 @@ def _handle_run_command(args) -> None:
         )
 
     for fmt in export_formats:
-        _save_network_export(
+        save_network_export(
             fmt,
             output_dir=args.output,
             network_obj=network_obj,
@@ -231,16 +181,18 @@ def _handle_status_command(args) -> None:
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
 
-    snapshot = load_run_snapshot(args.run_dir)
-    if snapshot is None:
-        snapshot = load_legacy_run_snapshot(args.run_dir)
+    snapshot = load_status_snapshot(
+        args.run_dir,
+        snapshot_loader=load_run_snapshot,
+        legacy_snapshot_loader=load_legacy_run_snapshot,
+    )
     if snapshot is None:
         print(
             f"Error: no run snapshot or legacy checkpoints found in {args.run_dir}", file=sys.stderr
         )
         sys.exit(1)
 
-    for line in build_status_lines(snapshot):
+    for line in build_status_output_lines(snapshot, status_line_builder=build_status_lines):
         print(line)
 
 
@@ -260,46 +212,13 @@ def _handle_analyze_command(args) -> None:
     results = _load_exported_results(args.input)
 
     logger.info("Calculating statistics...")
-    stats = calculate_network_statistics(
-        results["network"]["strands"],
-        results["network"]["bifurcations"],
-        results["vertices"]["positions"],
-        results["vertices"]["radii_microns"],
-        results["parameters"].get("microns_per_voxel", [1.0, 1.0, 1.0]),
-        results["image_shape"],
+    stats = calculate_exported_network_stats(
+        results,
+        statistics_fn=calculate_network_statistics,
     )
 
-    topological_metrics = (
-        ("Vertices", stats.get("num_vertices", 0)),
-        ("Edges", stats.get("num_edges", 0)),
-        ("Strands", stats.get("num_strands", 0)),
-        ("Bifurcations", stats.get("num_bifurcations", 0)),
-        ("Connected Components", stats.get("num_connected_components", 0)),
-        ("Endpoints", stats.get("num_endpoints", 0)),
-        ("Mean Degree", stats.get("mean_degree", 0.0)),
-        ("Clustering Coefficient", stats.get("clustering_coefficient", 0.0)),
-    )
-    geometric_metrics = (
-        ("Total Edge Length", f"{float(stats.get('total_length', 0.0)):.2f} um"),
-        ("Mean Strand Length", f"{float(stats.get('mean_strand_length', 0.0)):.2f} um"),
-        ("Mean Edge Length", f"{float(stats.get('mean_edge_length', 0.0)):.2f} um"),
-        ("Mean Edge Radius", f"{float(stats.get('mean_edge_radius', 0.0)):.2f} um"),
-        ("Mean Radius", f"{float(stats.get('mean_radius', 0.0)):.2f} um"),
-        ("Volume Fraction", f"{float(stats.get('volume_fraction', 0.0)):.4f}"),
-        ("Bifurcation Density", f"{float(stats.get('bifurcation_density', 0.0)):.2f} /mm^3"),
-    )
-
-    print("\n--- Network Statistics ---\n")
-    print("Topological Features:")
-    for label, value in topological_metrics:
-        if isinstance(value, float):
-            print(f"  {label}: {value:.4f}")
-        else:
-            print(f"  {label}: {value}")
-
-    print("\nGeometric Features (Aggregates):")
-    for label, value in geometric_metrics:
-        print(f"  {label}: {value}")
+    for line in build_analysis_output_lines(stats):
+        print(line)
 
 
 def _handle_plot_command(args) -> None:

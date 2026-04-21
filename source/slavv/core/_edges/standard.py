@@ -10,6 +10,7 @@ from scipy.spatial import cKDTree
 
 from ..edge_candidates import (
     _params_with_matlab_parity_edge_budget,
+    _params_with_matlab_parity_frontier_budget_mode,
     _params_with_matlab_parity_watershed_candidate_mode,
 )
 
@@ -61,9 +62,12 @@ def extract_edges(
         params_for_workflow = _params_with_matlab_parity_edge_budget(
             params_for_workflow, edge_budget=2
         )
-        params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
+        params_for_workflow = _params_with_matlab_parity_frontier_budget_mode(
             params_for_workflow,
-            candidate_mode="remaining_origin_contacts",
+            mode="accepted_candidates",
+        )
+        params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
+            params_for_workflow, candidate_mode="remaining_origin_contacts"
         )
     if use_frontier:
         candidates = generate_edge_candidates_matlab_frontier(
