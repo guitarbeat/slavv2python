@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from slavv.core import SLAVVProcessor
+from slavv.core._edge_selection.cleanup import clean_edges_cycles_python
 from slavv.core.edge_primitives import _finalize_traced_edge
 from slavv.core.edge_selection import (
     _choose_edges_matlab_style,
@@ -176,6 +177,55 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
     assert chosen["diagnostics"]["conflict_rejected_by_source"] == {"watershed": 1}
     assert chosen["diagnostics"]["conflict_blocking_source_counts"] == {"frontier": 1}
     assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
+
+
+def test_choose_edges_preserves_input_order_for_duplicate_pairs_with_equal_metrics():
+    vertex_positions = np.array([[1, 1, 1], [1, 6, 1]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    first_trace = np.array([[1, 1, 1], [1, 2, 1], [1, 4, 1], [1, 6, 1]], dtype=np.float32)
+    shorter_duplicate = np.array([[1, 1, 1], [1, 4, 1], [1, 6, 1]], dtype=np.float32)
+    candidates = {
+        "traces": [first_trace, shorter_duplicate],
+        "connections": np.array([[0, 1], [0, 1]], dtype=np.int32),
+        "metrics": np.array([-5.0, -5.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+        ],
+        "scale_traces": [np.zeros(4, dtype=np.int16), np.zeros(3, dtype=np.int16)],
+        "origin_indices": np.array([0, 0], dtype=np.int32),
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4},
+    )
+
+    assert chosen["chosen_candidate_indices"].tolist() == [0]
+    assert np.array_equal(chosen["traces"][0], first_trace)
+    assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
+
+
+def test_cycle_cleanup_removes_worst_edge_per_cycle_component():
+    connections = np.array(
+        [
+            [0, 1],
+            [1, 2],
+            [2, 0],
+            [3, 4],
+            [4, 5],
+            [5, 3],
+        ],
+        dtype=np.int32,
+    )
+
+    keep = clean_edges_cycles_python(connections)
+
+    assert keep.tolist() == [True, True, False, True, True, False]
 
 
 def test_remove_short_hairs_repeats_until_graph_is_stable():

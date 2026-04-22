@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import numpy as np
+from scipy import sparse
+from scipy.sparse.csgraph import connected_components
 
 from ..edge_primitives import _clip_trace_indices
 
@@ -16,7 +18,7 @@ def clean_edges_vertex_degree_excess_python(
     if connections.size == 0 or max_edges_per_vertex <= 0:
         return np.ones((len(connections),), dtype=bool)
 
-    keep = np.ones((len(connections),), dtype=bool)
+    keep: np.ndarray = np.ones((len(connections),), dtype=bool)
     n_vertices = int(np.max(connections)) + 1 if connections.size else 0
     if n_vertices <= 0:
         return keep
@@ -67,7 +69,7 @@ def clean_edges_orphans_python(
             )
         )
 
-    keep = np.ones((len(locations),), dtype=bool)
+    keep: np.ndarray = np.ones((len(locations),), dtype=bool)
     changed = True
     while changed:
         changed = False
@@ -98,25 +100,92 @@ def clean_edges_orphans_python(
 
 
 def clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
-    """Remove cycle-closing edges while preserving the best-to-worst order."""
+    """Mirror MATLAB's cycle cleanup by removing the worst edge per cycle component."""
     if connections.size == 0:
         return np.zeros((0,), dtype=bool)
 
-    keep = np.ones((len(connections),), dtype=bool)
-    n_vertices = int(np.max(connections)) + 1
-    parent = np.arange(n_vertices, dtype=np.int32)
+    normalized = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    keep: np.ndarray = np.ones((len(normalized),), dtype=bool)
+    n_vertices = int(np.max(normalized)) + 1
+    if n_vertices <= 0:
+        return keep
 
-    def find(vertex: int) -> int:
-        while parent[vertex] != vertex:
-            parent[vertex] = parent[parent[vertex]]
-            vertex = parent[vertex]
-        return int(vertex)
+    rows = normalized[:, 0].astype(np.int32, copy=False)
+    cols = normalized[:, 1].astype(np.int32, copy=False)
+    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
 
-    for edge_index, (start_vertex, end_vertex) in enumerate(connections):
-        root_start = find(int(start_vertex))
-        root_end = find(int(end_vertex))
-        if root_start == root_end:
-            keep[edge_index] = False
-            continue
-        parent[root_end] = root_start
+    edge_lookup = sparse.csr_matrix(
+        (edge_ids, (rows, cols)),
+        shape=(n_vertices, n_vertices),
+        dtype=np.int32,
+    )
+    adjacency = sparse.csr_matrix(
+        (np.ones((len(normalized),), dtype=bool), (rows, cols)),
+        shape=(n_vertices, n_vertices),
+        dtype=bool,
+    )
+    adjacency = adjacency.maximum(adjacency.transpose()).astype(bool)
+
+    active_vertices = np.flatnonzero(np.asarray(adjacency.sum(axis=0)).ravel() > 1)
+    if active_vertices.size == 0:
+        return keep
+
+    adjacency = adjacency[active_vertices][:, active_vertices].tocsr()
+    edge_lookup = edge_lookup[active_vertices][:, active_vertices].tocsr()
+
+    removed_edge_ids: list[int] = []
+    while adjacency.shape[0] > 0:
+        two_step = (adjacency @ adjacency).astype(bool)
+        cycle_adjacency = two_step.multiply(adjacency).astype(bool)
+        if cycle_adjacency.nnz == 0:
+            break
+
+        n_components, labels = connected_components(
+            cycle_adjacency,
+            directed=False,
+            connection="weak",
+            return_labels=True,
+        )
+        components = [
+            np.flatnonzero(labels == component_index)
+            for component_index in range(n_components)
+            if np.count_nonzero(labels == component_index) > 1
+        ]
+        if not components:
+            break
+
+        pair_rows: list[int] = []
+        pair_cols: list[int] = []
+        cycle_vertex_mask = np.zeros((adjacency.shape[0],), dtype=bool)
+
+        for component_vertices in components:
+            cycle_vertex_mask[component_vertices] = True
+            component_lookup = edge_lookup[component_vertices][:, component_vertices].tocoo()
+            if component_lookup.nnz == 0:
+                continue
+
+            worst_edge_id = int(np.max(component_lookup.data))
+            removed_edge_ids.append(worst_edge_id)
+            first_match = int(np.flatnonzero(component_lookup.data == worst_edge_id)[0])
+            pair_rows.append(int(component_vertices[component_lookup.row[first_match]]))
+            pair_cols.append(int(component_vertices[component_lookup.col[first_match]]))
+
+        if not pair_rows:
+            break
+
+        adjacency = adjacency.tolil(copy=True)
+        edge_lookup = edge_lookup.tolil(copy=True)
+        for row, col in zip(pair_rows, pair_cols):
+            adjacency[row, col] = False
+            adjacency[col, row] = False
+            edge_lookup[row, col] = 0
+            edge_lookup[col, row] = 0
+        adjacency = adjacency.tocsr()
+        edge_lookup = edge_lookup.tocsr()
+
+        adjacency = adjacency[cycle_vertex_mask][:, cycle_vertex_mask].tocsr()
+        edge_lookup = edge_lookup[cycle_vertex_mask][:, cycle_vertex_mask].tocsr()
+
+    if removed_edge_ids:
+        keep[np.asarray(sorted(set(removed_edge_ids)), dtype=np.int32) - 1] = False
     return keep

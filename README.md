@@ -36,6 +36,7 @@ python -m mypy
 
 - [AGENTS.md](AGENTS.md)
 - [docs/README.md](docs/README.md)
+- [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [dev/tests/README.md](dev/tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 

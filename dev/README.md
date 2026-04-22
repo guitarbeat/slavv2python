@@ -16,6 +16,7 @@ package source under `source/slavv/`.
 
 - Use [tests/README.md](tests/README.md) for canonical test placement and scope.
 - Use `scripts/cli/parity_experiment.py` for counts-only Python reruns against reusable staged comparison roots.
+- Use `../docs/reference/core/MATLAB_PARITY_MAPPING.md` when the task requires exact imported-MATLAB parity mapping or a Python-vs-MATLAB audit.
 
 ## Key Scripts
 

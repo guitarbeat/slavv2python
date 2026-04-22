@@ -1,0 +1,126 @@
+from __future__ import annotations
+
+import numpy as np
+
+from slavv.core._edge_candidates.global_watershed import (
+    _initialize_matlab_global_watershed_state,
+    _matlab_global_watershed_border_locations,
+    _matlab_global_watershed_current_strel,
+    _matlab_global_watershed_insert_available_location,
+    _matlab_global_watershed_reveal_unclaimed_strel,
+)
+
+
+def test_matlab_global_watershed_border_locations_cover_all_boundary_voxels():
+    border_locations = _matlab_global_watershed_border_locations((3, 3, 3))
+
+    assert len(border_locations) == 26
+    assert 13 not in border_locations
+
+
+def test_initialize_matlab_global_watershed_state_matches_shared_map_layout():
+    energy = np.arange(27, dtype=np.float32).reshape((3, 3, 3), order="F")
+    vertex_positions = np.array([[1.0, 1.0, 1.0], [0.0, 1.0, 1.0]], dtype=np.float32)
+
+    state = _initialize_matlab_global_watershed_state(energy, vertex_positions)
+    vertex_index_map = state["vertex_index_map"]
+    energy_map_temp = state["energy_map_temp"]
+    adjacency = state["vertex_adjacency_matrix"].toarray()
+
+    center_linear = 13
+    border_vertex_linear = 12
+
+    assert state["vertex_locations"].tolist() == [center_linear, border_vertex_linear]
+    assert state["available_locations"].tolist() == [border_vertex_linear, center_linear]
+    assert state["vertex_energies"].tolist() == [13.0, 12.0]
+    assert np.isneginf(energy_map_temp.ravel(order="F")[center_linear])
+    assert np.isneginf(energy_map_temp.ravel(order="F")[border_vertex_linear])
+    assert vertex_index_map.ravel(order="F")[center_linear] == 1
+    assert vertex_index_map.ravel(order="F")[border_vertex_linear] == 3
+    assert vertex_index_map.ravel(order="F")[0] == 3
+    assert adjacency.shape == (3, 3)
+    assert np.array_equal(adjacency, np.eye(3, dtype=bool))
+
+
+def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
+    strel = _matlab_global_watershed_current_strel(
+        0,
+        current_scale_index=0,
+        shape=(3, 3, 3),
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+        step_size_per_origin_radius=1.0,
+    )
+
+    assert np.all(strel["coords"] >= 0)
+    assert np.all(strel["coords"] < np.array([3, 3, 3], dtype=np.int32))
+    assert len(strel["coords"]) < 27
+    assert strel["pointer_indices"].tolist() == list(range(1, len(strel["coords"]) + 1))
+
+
+def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_voxels():
+    vertex_index_map = np.zeros((3, 3, 3), dtype=np.uint32)
+    energy_map = np.full((3, 3, 3), 99.0, dtype=np.float32)
+    pointer_map = np.zeros((3, 3, 3), dtype=np.uint64)
+    d_over_r_map = np.zeros((3, 3, 3), dtype=np.float32)
+    size_map = np.full((3, 3, 3), -1, dtype=np.int16)
+
+    vertex_index_map[1, 1, 1] = 7
+    energy_map[1, 1, 1] = -9.0
+    pointer_map[1, 1, 1] = 55
+    d_over_r_map[1, 1, 1] = 2.5
+    size_map[1, 1, 1] = 4
+
+    result = _matlab_global_watershed_reveal_unclaimed_strel(
+        current_vertex_index=2,
+        current_scale_index=3,
+        current_d_over_r=1.25,
+        strel_coords=np.array([[1, 1, 1], [1, 1, 2]], dtype=np.int32),
+        strel_pointer_indices=np.array([9, 10], dtype=np.uint64),
+        strel_r_over_R=np.array([0.0, 0.5], dtype=np.float32),
+        strel_adjusted_energies=np.array([-5.0, -6.0], dtype=np.float32),
+        vertex_index_map=vertex_index_map,
+        energy_map=energy_map,
+        pointer_map=pointer_map,
+        d_over_r_map=d_over_r_map,
+        size_map=size_map,
+    )
+
+    assert result["vertices_of_current_strel"].tolist() == [7, 0]
+    assert result["is_without_vertex_in_strel"].tolist() == [False, True]
+    assert vertex_index_map[1, 1, 1] == 7
+    assert energy_map[1, 1, 1] == -9.0
+    assert pointer_map[1, 1, 1] == 55
+    assert d_over_r_map[1, 1, 1] == 2.5
+    assert size_map[1, 1, 1] == 4
+    assert vertex_index_map[1, 1, 2] == 2
+    assert energy_map[1, 1, 2] == -6.0
+    assert pointer_map[1, 1, 2] == 10
+    assert d_over_r_map[1, 1, 2] == np.float32(1.75)
+    assert size_map[1, 1, 2] == 3
+
+
+def test_matlab_global_watershed_insert_available_location_primary_seed_keeps_sorted_order():
+    updated = _matlab_global_watershed_insert_available_location(
+        [11, 22, 33],
+        next_location=44,
+        next_energy=-5.0,
+        energy_lookup={11: -1.0, 22: -3.0, 33: -6.0},
+        seed_idx=1,
+        is_current_location_clear=True,
+    )
+
+    assert updated == [11, 22, 44, 33]
+
+
+def test_matlab_global_watershed_insert_available_location_secondary_seed_replaces_uncleared_tail():
+    updated = _matlab_global_watershed_insert_available_location(
+        [11, 22, 33],
+        next_location=44,
+        next_energy=-5.0,
+        energy_lookup={11: -1.0, 22: -3.0, 33: -6.0},
+        seed_idx=2,
+        is_current_location_clear=False,
+    )
+
+    assert updated == [11, 22, 44]

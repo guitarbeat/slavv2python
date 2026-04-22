@@ -48,6 +48,192 @@ def _matlab_frontier_offsets(
     return offsets, distances.astype(np.float32, copy=False)
 
 
+def _matlab_frontier_scale_offsets(
+    scale_index: int,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    *,
+    step_size_per_origin_radius: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Construct MATLAB's scale-dependent spherical strel plus 27-neighborhood box."""
+    radii_microns = (
+        float(np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)])
+        * float(step_size_per_origin_radius)
+    )
+    radii_pixels = np.maximum(radii_microns / np.asarray(microns_per_voxel, dtype=np.float64), 1.0)
+    rounded_radii = np.rint(radii_pixels).astype(np.int32, copy=False)
+    offsets: list[list[int]] = []
+    for z in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):
+        for x in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):
+            for y in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):
+                linf_distance = max(abs(y), abs(x), abs(z))
+                radial_l2_distance_squared = (
+                    (float(y) / float(radii_pixels[0])) ** 2
+                    + (float(x) / float(radii_pixels[1])) ** 2
+                    + (float(z) / float(radii_pixels[2])) ** 2
+                )
+                if radial_l2_distance_squared <= 1.0 or linf_distance <= 1:
+                    offsets.append([y, x, z])
+    offsets_array: Int32Array = np.asarray(offsets, dtype=np.int32)
+    distances = np.sqrt(
+        np.sum((offsets_array.astype(np.float64) * microns_per_voxel) ** 2, axis=1)
+    )
+    return offsets_array, distances.astype(np.float32, copy=False)
+
+
+def _matlab_frontier_size_tolerance(lumen_radius_microns: np.ndarray) -> float:
+    """Return MATLAB's scale-index tolerance derived from ``radius_tolerance = 0.5``."""
+    radii = np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)
+    if radii.size < 2:
+        return float("inf")
+    positive_radii = radii[radii > 0]
+    if positive_radii.size < 2:
+        return float("inf")
+    log_steps = np.diff(np.log(positive_radii))
+    valid_steps = log_steps[np.isfinite(log_steps) & (log_steps > 1e-12)]
+    if valid_steps.size == 0:
+        return float("inf")
+    size_ratio_per_index = float(math.exp(float(np.median(valid_steps))))
+    if size_ratio_per_index <= 1.0:
+        return float("inf")
+    return float(math.log(1.5) / math.log(size_ratio_per_index))
+
+
+def _matlab_frontier_adjusted_neighbor_energies(
+    raw_energies: np.ndarray,
+    *,
+    neighbor_offsets: np.ndarray,
+    neighbor_distances_microns: np.ndarray,
+    neighbor_scale_indices: np.ndarray | None,
+    propagated_scale_index: int,
+    current_distance_microns: float,
+    origin_radius_microns: float,
+    current_forward_unit: np.ndarray | None,
+    microns_per_voxel: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+) -> np.ndarray:
+    """Apply MATLAB-style size, distance, and direction penalties to neighborhood energies."""
+    adjusted = np.asarray(raw_energies, dtype=np.float64).copy()
+
+    size_tolerance = _matlab_frontier_size_tolerance(lumen_radius_microns)
+    if neighbor_scale_indices is not None and math.isfinite(size_tolerance) and size_tolerance > 0:
+        size_index_differences = np.asarray(
+            neighbor_scale_indices,
+            dtype=np.float64,
+        ) - float(propagated_scale_index)
+        adjusted *= np.exp(-0.5 * np.square(size_index_differences / size_tolerance))
+
+    safe_origin_radius = max(float(origin_radius_microns), 1e-6)
+    local_r_over_R = np.asarray(neighbor_distances_microns, dtype=np.float64) / safe_origin_radius
+    local_distance_adjustment = (
+        1.0 - np.cos(np.pi * np.minimum(1.0, (4.0 / 3.0) * local_r_over_R))
+    ) / 2.0
+    adjusted *= local_distance_adjustment
+
+    current_d_over_r = float(current_distance_microns) / safe_origin_radius
+    total_distance_adjustment = math.exp(-0.5 * ((3.0 * current_d_over_r / 3.0) ** 2))
+    adjusted *= total_distance_adjustment
+
+    if current_forward_unit is not None:
+        forward = np.asarray(current_forward_unit, dtype=np.float64).reshape(3)
+        forward_norm = float(np.linalg.norm(forward))
+        if forward_norm > 1e-12:
+            forward = forward / forward_norm
+            neighbor_vectors = np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+            neighbor_norms = np.linalg.norm(neighbor_vectors, axis=1)
+            directional_alignment: np.ndarray = np.zeros(
+                (len(neighbor_vectors),),
+                dtype=np.float64,
+            )
+            valid = neighbor_norms > 1e-12
+            directional_alignment[valid] = (
+                np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
+            )
+            directional_alignment[directional_alignment < 0.0] = 0.0
+            adjusted *= directional_alignment
+
+    adjusted[~np.isfinite(adjusted)] = np.inf
+    result: Float32Array = adjusted.astype(np.float32, copy=False)
+    return cast("np.ndarray", result)
+
+
+def _matlab_frontier_directional_suppression_factors(
+    neighbor_offsets: np.ndarray,
+    *,
+    selected_index: int,
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Return MATLAB's continuous same-direction suppression factors for a chosen seed."""
+    neighbor_vectors = np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+    norms = np.linalg.norm(neighbor_vectors, axis=1)
+    unit_vectors = np.zeros_like(neighbor_vectors, dtype=np.float64)
+    valid = norms > 1e-12
+    unit_vectors[valid] = neighbor_vectors[valid] / norms[valid, None]
+    cosine_to_selected = np.sum(unit_vectors * unit_vectors[int(selected_index)], axis=1)
+    suppression = (1.0 - cosine_to_selected) / 2.0
+    result: Float32Array = suppression.astype(np.float32, copy=False)
+    return cast("np.ndarray", result)
+
+
+def _matlab_frontier_select_seed_moves(
+    adjusted_neighbor_energies: np.ndarray,
+    *,
+    neighbor_offsets: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    current_is_source: bool,
+    edge_budget: int,
+    current_branch_order: int,
+) -> list[tuple[int, int]]:
+    """Choose MATLAB-style seed moves from one strel using directional suppression."""
+    if len(adjusted_neighbor_energies) == 0:
+        return []
+
+    working_energies = np.asarray(adjusted_neighbor_energies, dtype=np.float64).copy()
+    seed_count = int(edge_budget) if current_is_source else 1
+    selected_moves: list[tuple[int, int]] = []
+
+    for seed_idx in range(1, max(1, seed_count) + 1):
+        selected_index = int(np.argmin(working_energies))
+        selected_energy = float(working_energies[selected_index])
+        if not math.isfinite(selected_energy) or selected_energy >= 0.0:
+            break
+        selected_moves.append((selected_index, int(current_branch_order + seed_idx - 1)))
+        working_energies *= _matlab_frontier_directional_suppression_factors(
+            neighbor_offsets,
+            selected_index=selected_index,
+            microns_per_voxel=microns_per_voxel,
+        )
+
+    return selected_moves
+
+
+def _matlab_frontier_insert_available_location(
+    available_entries: list[tuple[float, int]],
+    *,
+    linear_index: int,
+    energy: float,
+) -> None:
+    """Insert one MATLAB frontier location into worst-to-best energy order."""
+    insert_at = len(available_entries)
+    for idx, (existing_energy, _existing_linear_index) in enumerate(available_entries):
+        if existing_energy < energy:
+            insert_at = idx
+            break
+    available_entries.insert(insert_at, (float(energy), int(linear_index)))
+
+
+def _matlab_frontier_pop_best_available_location(
+    available_entries: list[tuple[float, int]],
+    available_map: dict[int, float],
+) -> tuple[float, int] | None:
+    """Pop the MATLAB frontier's best currently valid available location."""
+    while available_entries:
+        candidate_energy, candidate_linear = available_entries.pop()
+        if available_map.get(candidate_linear) == candidate_energy:
+            return float(candidate_energy), int(candidate_linear)
+    return None
+
+
 def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]) -> int:
     """Convert a 0-based ``(y, x, z)`` coordinate into MATLAB linear order."""
     y, x, z = (int(value) for value in coord[:3])

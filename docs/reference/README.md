@@ -4,9 +4,13 @@ Use this folder for current, cross-cutting technical references.
 
 Recommended reading order:
 
-1. [Glossary](core/GLOSSARY.md)
-2. [Energy Computation Methods](core/ENERGY_METHODS.md)
-3. [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
-4. Optional backend docs under `backends/`
+1. [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
+2. [Glossary](core/GLOSSARY.md)
+3. [Energy Computation Methods](core/ENERGY_METHODS.md)
+4. [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
+5. Optional backend docs under `backends/`
 
-This shelf now documents the maintained Python implementation only. Retired MATLAB/parity references were removed with the legacy code paths.
+This shelf documents the maintained Python implementation and the current
+source-of-truth mapping for exact imported-MATLAB parity work. The retired rich
+parity harness is still gone; the maintained parity runner remains
+`dev/scripts/cli/parity_experiment.py`.

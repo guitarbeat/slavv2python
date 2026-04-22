@@ -19,6 +19,7 @@ Repository guidance for coding agents working in `slavv2python`.
 ## Read First When Relevant
 
 - `docs/README.md`: index for maintained reference docs.
+- `docs/reference/core/MATLAB_PARITY_MAPPING.md`: canonical MATLAB-to-Python map for exact imported-MATLAB parity work.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
 - `docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
@@ -166,6 +167,23 @@ Notes:
 - It uses the source run's preserved `03_Analysis/comparison_report.json` as MATLAB count truth.
 - It does not recreate the removed rich parity diagnostics or old public parity CLI.
 
+## Exact MATLAB Parity Rule
+
+For any MATLAB-parity-sensitive surface, especially the imported-MATLAB `edges` and `network`
+stages, the required goal is exact method parity, not approximate behavioral similarity.
+
+- Treat the MATLAB source under `external/Vectorization-Public/source/` as the canonical
+  implementation.
+- Python parity work must reproduce the same mathematical method and algorithm structure 1:1 unless a
+  deviation is explicitly documented and approved as non-parity work.
+- Do not accept "close enough" replacements such as heuristic supplements, salvage passes, reordered
+  ownership logic, or simplified local tracing when the MATLAB source uses a different global/shared
+  method.
+- Any undocumented deviation between Python and MATLAB on a parity surface should be treated as a bug,
+  not as an implementation choice.
+- When working on parity, audit the current Python path against the MATLAB source and the maintained
+  mapping before making fixes.
+
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/slavv/`.
@@ -177,6 +195,8 @@ Notes:
 - Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
 - Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/slavv/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
 - Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
+- For MATLAB-parity work, preserve method parity with the upstream MATLAB source before optimizing,
+  simplifying, or generalizing the Python implementation.
 - Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility has been removed.
 - Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
 - Do not treat generated outputs under `comparisons/`, `comparison_output*/`, or cache directories as source inputs for code changes.

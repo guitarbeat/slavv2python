@@ -93,12 +93,7 @@ def prepare_candidate_indices_for_cleanup(
     if filtered_indices.size == 0:
         return []
 
-    edge_lengths = np.asarray(
-        [len(np.asarray(energy_traces[index])) for index in filtered_indices],
-        dtype=np.int32,
-    )
-    length_sorted = filtered_indices[np.argsort(edge_lengths, kind="stable")]
-    ordered = length_sorted[np.argsort(metrics[length_sorted], kind="stable")]
+    ordered = filtered_indices[np.argsort(metrics[filtered_indices], kind="stable")]
 
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []

@@ -14,3 +14,5 @@ Start here:
 
 The old rich MATLAB/parity investigation harness has been retired.
 The maintained developer replacement is `dev/scripts/cli/parity_experiment.py`, which is intentionally counts-only and meant for rerunning the live Python pipeline against reusable staged comparison roots.
+The maintained source map for exact imported-MATLAB parity work now lives at
+`docs/reference/core/MATLAB_PARITY_MAPPING.md`.

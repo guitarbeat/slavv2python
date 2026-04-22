@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from heapq import heappop, heappush
 from typing import Any
 
 import numpy as np
@@ -17,8 +16,12 @@ from .common import (
     BoolArray,
     Int32Array,
     _coord_to_matlab_linear_index,
+    _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_edge_budget,
-    _matlab_frontier_offsets,
+    _matlab_frontier_insert_available_location,
+    _matlab_frontier_pop_best_available_location,
+    _matlab_frontier_scale_offsets,
+    _matlab_frontier_select_seed_moves,
     _matlab_linear_index_to_coord,
     _path_coords_from_linear_indices,
 )
@@ -40,16 +43,7 @@ def _trace_origin_edges_matlab_frontier(
     shape = energy.shape
     max_edges_per_vertex = _matlab_frontier_edge_budget(params)
     max_length_ratio = float(params.get("max_edge_length_per_origin_radius", 60.0))
-    strel_apothem = int(
-        params.get(
-            "space_strel_apothem_edges",
-            params.get(
-                "space_strel_apothem",
-                max(1, round(params.get("step_size_per_origin_radius", 1.0))),
-            ),
-        )
-    )
-    offsets, offset_distances = _matlab_frontier_offsets(strel_apothem, microns_per_voxel)
+    step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))
     origin_coord = np.rint(vertex_positions[origin_vertex_idx]).astype(np.int32)
     origin_coord[0] = np.clip(origin_coord[0], 0, shape[0] - 1)
     origin_coord[1] = np.clip(origin_coord[1], 0, shape[1] - 1)
@@ -78,26 +72,12 @@ def _trace_origin_edges_matlab_frontier(
     previous_indices_visited: list[int] = []
     pointer_index_map: dict[int, int] = {origin_linear: 0}
     pointer_energy_map: dict[int, float] = {}
-    distance_map: dict[int, float] = {origin_linear: 1.0}
+    distance_map: dict[int, float] = {origin_linear: 0.0}
+    branch_order_map: dict[int, int] = {origin_linear: 0}
+    predecessor_linear_map: dict[int, int] = {}
+    propagated_scale_map: dict[int, int] = {origin_linear: origin_scale}
     available_map: dict[int, float] = {}
-    available_heap: list[tuple[float, int]] = []
-
-    if np.any(origin_coord < strel_apothem) or np.any(
-        origin_coord >= (np.asarray(shape, dtype=np.int32) - strel_apothem)
-    ):
-        diagnostics["stop_reason_counts"]["bounds"] += 1
-        return {
-            "origin_index": origin_vertex_idx,
-            "candidate_source": "frontier",
-            "traces": traces,
-            "connections": connections,
-            "metrics": metrics,
-            "energy_traces": energy_traces,
-            "scale_traces": scale_traces,
-            "origin_indices": [origin_vertex_idx] * len(traces),
-            "connection_sources": ["frontier"] * len(traces),
-            "diagnostics": diagnostics,
-        }
+    available_entries: list[tuple[float, int]] = []
 
     current_linear = origin_linear
 
@@ -108,7 +88,14 @@ def _trace_origin_edges_matlab_frontier(
         from .. import edge_candidates as edge_candidates_facade
 
         current_coord = _matlab_linear_index_to_coord(current_linear, shape)
-        current_energy = float(energy[current_coord[0], current_coord[1], current_coord[2]])
+        current_distance_microns = float(distance_map.get(current_linear, 0.0))
+        current_propagated_scale = int(propagated_scale_map.get(current_linear, origin_scale))
+        offsets, offset_distances = _matlab_frontier_scale_offsets(
+            current_propagated_scale,
+            lumen_radius_microns,
+            microns_per_voxel,
+            step_size_per_origin_radius=step_size_per_origin_radius,
+        )
         terminal_vertex_idx = (
             int(vertex_center_image[current_coord[0], current_coord[1], current_coord[2]]) - 1
         )
@@ -130,29 +117,78 @@ def _trace_origin_edges_matlab_frontier(
         )
         neighbor_coords = np.asarray(neighbor_coords[valid_mask], dtype=np.int32)
         neighbor_distances = offset_distances[valid_mask]
+        neighbor_offsets = offsets[valid_mask]
+        current_forward_unit = None
+        predecessor_linear = predecessor_linear_map.get(current_linear)
+        if predecessor_linear is not None:
+            predecessor_coord = _matlab_linear_index_to_coord(predecessor_linear, shape)
+            forward_vector = (
+                current_coord.astype(np.float64) - predecessor_coord.astype(np.float64)
+            ) * microns_per_voxel
+            forward_norm = float(np.linalg.norm(forward_vector))
+            if forward_norm > 1e-12:
+                current_forward_unit = forward_vector / forward_norm
+
+        neighbor_scale_values = None
+        if scale_indices is not None and len(neighbor_coords):
+            neighbor_scale_values = scale_indices[
+                neighbor_coords[:, 0],
+                neighbor_coords[:, 1],
+                neighbor_coords[:, 2],
+            ].astype(np.int16, copy=False)
+
+        raw_neighbor_energies = energy[
+            neighbor_coords[:, 0],
+            neighbor_coords[:, 1],
+            neighbor_coords[:, 2],
+        ].astype(np.float32, copy=False)
+        adjusted_neighbor_energies = _matlab_frontier_adjusted_neighbor_energies(
+            raw_neighbor_energies,
+            neighbor_offsets=neighbor_offsets,
+            neighbor_distances_microns=neighbor_distances,
+            neighbor_scale_indices=neighbor_scale_values,
+            propagated_scale_index=current_propagated_scale,
+            current_distance_microns=current_distance_microns,
+            origin_radius_microns=origin_radius_microns,
+            current_forward_unit=current_forward_unit,
+            microns_per_voxel=microns_per_voxel,
+            lumen_radius_microns=lumen_radius_microns,
+        )
         new_coords: list[np.ndarray] = []
         new_distances: list[float] = []
-        for coord_row, distance in zip(neighbor_coords, neighbor_distances):
+        new_adjusted_energies: list[float] = []
+        current_branch_order = int(branch_order_map.get(current_linear, 0))
+        for coord_row, distance, adjusted_energy in zip(
+            neighbor_coords,
+            neighbor_distances,
+            adjusted_neighbor_energies,
+        ):
             coord: Int32Array = np.asarray(coord_row, dtype=np.int32)
             linear_index = _coord_to_matlab_linear_index(coord, shape)
-            if pointer_energy_map.get(linear_index, 0.0) > current_energy:
-                pointer_index_map[linear_index] = current_visit_order
-                pointer_energy_map[linear_index] = current_energy
-                distance_map[linear_index] = distance_map[current_linear] + float(distance)
-                new_coords.append(coord.astype(np.int32, copy=False))
-                new_distances.append(float(distance_map[linear_index]))
+            if linear_index in pointer_index_map:
+                continue
+            pointer_index_map[linear_index] = current_visit_order
+            pointer_energy_map[linear_index] = float(adjusted_energy)
+            predecessor_linear_map[linear_index] = current_linear
+            propagated_scale_map[linear_index] = current_propagated_scale
+            distance_map[linear_index] = current_distance_microns + float(distance)
+            new_coords.append(coord.astype(np.int32, copy=False))
+            new_distances.append(float(distance_map[linear_index]))
+            new_adjusted_energies.append(float(adjusted_energy))
 
         new_coords_array: Int32Array = np.zeros((0, 3), dtype=np.int32)
         if new_coords:
             new_coords_array = np.asarray(new_coords, dtype=np.int32)
             new_distances_array = np.asarray(new_distances, dtype=np.float32)
+            new_adjusted_energies_array = np.asarray(new_adjusted_energies, dtype=np.float32)
             diagnostics["stop_reason_counts"]["length_limit"] += int(
                 np.sum(new_distances_array >= max_edge_length_microns)
             )
             within_length: BoolArray = new_distances_array < max_edge_length_microns
             new_coords_array = new_coords_array[within_length]
+            new_adjusted_energies_array = new_adjusted_energies_array[within_length]
             if len(new_coords_array) and valid_terminal_count > 0:
-                new_coords_array = (
+                kept_after_prune = (
                     edge_candidates_facade._prune_frontier_indices_beyond_found_vertices(
                         new_coords_array,
                         origin_position_microns,
@@ -160,6 +196,19 @@ def _trace_origin_edges_matlab_frontier(
                         microns_per_voxel,
                     )
                 )
+                if len(kept_after_prune) != len(new_coords_array):
+                    kept_linear = {
+                        _coord_to_matlab_linear_index(coord, shape) for coord in kept_after_prune
+                    }
+                    keep_mask = np.array(
+                        [
+                            _coord_to_matlab_linear_index(coord, shape) in kept_linear
+                            for coord in new_coords_array
+                        ],
+                        dtype=bool,
+                    )
+                    new_adjusted_energies_array = new_adjusted_energies_array[keep_mask]
+                new_coords_array = kept_after_prune
 
         if terminal_vertex_idx >= 0:
             terminal_hit_budget_count += 1
@@ -281,23 +330,44 @@ def _trace_origin_edges_matlab_frontier(
                     linear_index = _coord_to_matlab_linear_index(coord, shape)
                     available_map.pop(linear_index, None)
         else:
-            for coord in new_coords_array:
-                linear_index = _coord_to_matlab_linear_index(coord, shape)
-                available_energy = float(energy[coord[0], coord[1], coord[2]])
-                available_map[linear_index] = available_energy
-                heappush(available_heap, (available_energy, linear_index))
+            if len(new_coords_array):
+                selected_seed_moves = _matlab_frontier_select_seed_moves(
+                    new_adjusted_energies_array,
+                    neighbor_offsets=new_coords_array - current_coord,
+                    microns_per_voxel=microns_per_voxel,
+                    current_is_source=predecessor_linear is None,
+                    edge_budget=max_edges_per_vertex,
+                    current_branch_order=current_branch_order,
+                )
+                for selected_index, selected_branch_order in selected_seed_moves:
+                    if selected_branch_order >= max_edges_per_vertex:
+                        continue
+                    coord = new_coords_array[int(selected_index)]
+                    linear_index = _coord_to_matlab_linear_index(coord, shape)
+                    branch_order_map[linear_index] = int(selected_branch_order)
+                    available_energy = float(new_adjusted_energies_array[int(selected_index)])
+                    available_map[linear_index] = available_energy
+                    _matlab_frontier_insert_available_location(
+                        available_entries,
+                        linear_index=linear_index,
+                        energy=available_energy,
+                    )
 
         available_map.pop(current_linear, None)
         next_current = None
         stopped_on_nonnegative = False
-        while available_heap:
-            candidate_energy, candidate_linear = heappop(available_heap)
-            if available_map.get(candidate_linear) != candidate_energy:
-                continue
+        while True:
+            next_available = _matlab_frontier_pop_best_available_location(
+                available_entries,
+                available_map,
+            )
+            if next_available is None:
+                break
+            candidate_energy, candidate_linear = next_available
             if candidate_energy >= 0:
                 available_map.pop(candidate_linear, None)
                 diagnostics["stop_reason_counts"]["frontier_exhausted_nonnegative"] += 1
-                available_heap.clear()
+                available_entries.clear()
                 stopped_on_nonnegative = True
                 next_current = None
                 break
