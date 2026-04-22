@@ -10,6 +10,11 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
+from .._edge_candidates.watershed_candidates import (
+    _augment_candidates_with_watershed_contacts,
+    _parity_watershed_candidate_mode,
+    _parity_watershed_metric_threshold_from_params,
+)
 from .units import _load_edge_units
 
 if TYPE_CHECKING:
@@ -184,6 +189,19 @@ def extract_edges_resumable(
             substage="trace_origins",
             detail=f"Tracing origin {vertex_idx + 1}/{len(vertex_positions)}",
             resumed=bool(completed - {vertex_idx}),
+        )
+
+    candidate_mode = _parity_watershed_candidate_mode(params)
+    if candidate_mode is not None:
+        candidates = _augment_candidates_with_watershed_contacts(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=max_edges_per_vertex,
+            candidate_mode=candidate_mode,
+            metric_threshold=_parity_watershed_metric_threshold_from_params(params),
         )
 
     supplement_origin_counts = normalize_candidate_origin_counts(

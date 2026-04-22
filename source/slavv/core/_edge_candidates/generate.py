@@ -16,6 +16,11 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
+from .watershed_candidates import (
+    _augment_candidates_with_watershed_contacts,
+    _parity_watershed_candidate_mode,
+    _parity_watershed_metric_threshold_from_params,
+)
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
@@ -43,16 +48,32 @@ def _generate_fallback_directions(
     """Generate the direction set for one fallback tracing origin."""
     edge_candidates_facade = _edge_candidates_facade()
     if direction_method == "hessian":
-        directions = edge_candidates_facade.estimate_vessel_directions(
-            energy, start_pos, start_radius, microns_per_voxel
+        directions = cast(
+            "np.ndarray",
+            edge_candidates_facade.estimate_vessel_directions(
+                energy,
+                start_pos,
+                start_radius,
+                microns_per_voxel,
+            ),
         )
         if directions.shape[0] < max_edges_per_vertex:
-            extra = edge_candidates_facade.generate_edge_directions(
-                max_edges_per_vertex - directions.shape[0], seed=vertex_idx
+            extra = cast(
+                "np.ndarray",
+                edge_candidates_facade.generate_edge_directions(
+                    max_edges_per_vertex - directions.shape[0],
+                    seed=vertex_idx,
+                ),
             )
-            return np.vstack([directions, extra])
+            return cast("np.ndarray", np.vstack([directions, extra]))
         return directions[:max_edges_per_vertex]
-    return edge_candidates_facade.generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
+    return cast(
+        "np.ndarray",
+        edge_candidates_facade.generate_edge_directions(
+            max_edges_per_vertex,
+            seed=vertex_idx,
+        ),
+    )
 
 
 def _trace_fallback_origin_candidates(
@@ -242,7 +263,7 @@ def _generate_edge_candidates(
         origin_indices.extend(unit_origin_indices)
         connection_sources.extend(unit_connection_sources)
 
-    return {
+    candidates = {
         "traces": traces,
         "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
         "metrics": np.asarray(metrics, dtype=np.float32),
@@ -253,3 +274,17 @@ def _generate_edge_candidates(
         "connection_sources": connection_sources,
         "diagnostics": diagnostics,
     }
+    candidate_mode = _parity_watershed_candidate_mode(params)
+    if candidate_mode is None:
+        return candidates
+
+    return _augment_candidates_with_watershed_contacts(
+        candidates,
+        energy,
+        scale_indices,
+        vertex_positions,
+        energy_sign,
+        max_edges_per_vertex=max_edges_per_vertex,
+        candidate_mode=candidate_mode,
+        metric_threshold=_parity_watershed_metric_threshold_from_params(params),
+    )
