@@ -45,6 +45,6 @@ def test_build_watershed_candidate_rows_tracks_common_rejections_and_preserves_p
         None,
         vertex_positions,
         -1.0,
-        parity_watershed_metric_threshold=-0.75,
+        metric_threshold=-0.75,
     )
     assert threshold_diagnostics["watershed_metric_threshold_rejected"] >= 1

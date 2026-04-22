@@ -60,9 +60,9 @@ The first implementation explicitly honors:
 
 ## Parameters Not Emulated In V1
 
-The backend does not emulate the MATLAB-style PSF and annular controls used by
-the default Hessian path. If you choose `simpleitk_objectness`, these controls
-are not applied:
+The backend does not emulate the PSF and annular controls used by the default
+Hessian path. If you choose `simpleitk_objectness`, these controls are not
+applied:
 
 - `approximating_PSF`
 - `gaussian_to_ideal_ratio`
@@ -74,7 +74,7 @@ for those controls.
 ## How It Differs From Other Energy Methods
 
 - `hessian`
-  This is the default backend and remains the parity-oriented baseline.
+  This is the default backend and remains the production baseline.
 - `frangi`
   Uses scikit-image vesselness filtering with the current pipeline's scale
   selection logic.
@@ -84,5 +84,5 @@ for those controls.
   Uses SimpleITK Hessian/objectness filtering with explicit physical spacing and
   optional installation.
 
-For now, `simpleitk_objectness` should be treated as an experimental comparison
-backend rather than a new default.
+For now, `simpleitk_objectness` should be treated as an experimental backend
+rather than a new default.

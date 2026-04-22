@@ -40,15 +40,7 @@ def normalize_candidate_connection_sources(
 
 def empty_edge_diagnostics() -> dict[str, Any]:
     """Return the canonical edge-diagnostics payload."""
-    diagnostics = build_edge_diagnostics(
-        extra_fields={
-            "geodesic_shared_neighborhood_endpoint_relaxed": 0,
-            "frontier_terminal_resolution_counts": {},
-            "frontier_per_origin_terminal_hits": {},
-            "frontier_per_origin_terminal_accepts": {},
-            "frontier_per_origin_terminal_rejections": {},
-        }
-    )
+    diagnostics = build_edge_diagnostics(extra_fields={})
     return cast("dict[str, Any]", diagnostics)
 
 

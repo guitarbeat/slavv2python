@@ -52,15 +52,15 @@ pre-commit install
 Format:
 
 ```powershell
-python -m ruff format source tests
-python -m ruff format --check source tests
+python -m ruff format source dev/tests
+python -m ruff format --check source dev/tests
 ```
 
 Lint:
 
 ```powershell
-python -m ruff check source tests
-python -m ruff check source tests --fix
+python -m ruff check source dev/tests
+python -m ruff check source dev/tests --fix
 ```
 
 Type-check:
@@ -129,7 +129,7 @@ The ML curation flow accepts uploaded `.joblib` and `.pkl` model files directly.
 1. Read the impacted module and its nearest tests first.
 2. If you are adding or moving tests, verify placement against `dev/tests/README.md` and the marker behavior in `dev/tests/conftest.py`.
 3. Run the smallest targeted pytest command that covers the change.
-4. Run `python -m ruff check source tests --fix` and `python -m ruff format source tests` if you touched Python files.
+4. Run `python -m ruff check source dev/tests --fix` and `python -m ruff format source dev/tests` if you touched Python files.
 5. Finish with `python -m pytest -m "unit or integration"` when the change crosses module boundaries.
 
 ### Regression Check
@@ -138,8 +138,8 @@ Use this before pushing substantial package changes:
 
 ```powershell
 python -m compileall source dev/scripts
-python -m ruff format --check source tests
-python -m ruff check source tests
+python -m ruff format --check source dev/tests
+python -m ruff check source dev/tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```

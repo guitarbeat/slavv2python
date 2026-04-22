@@ -13,13 +13,8 @@ from ._radius_utils import _scalar_radius
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
-    _build_frontier_candidate_lifecycle,
-    _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
-    _generate_edge_candidates_matlab_frontier,
     _normalize_candidate_origin_counts,
-    _trace_origin_edges_matlab_frontier,
-    _use_matlab_frontier_tracer,
 )
 from .edge_primitives import (
     _edge_metric_from_energy_trace,
@@ -72,9 +67,6 @@ def extract_edges(
             params,
             empty_edges_result=_empty_edges_result,
             paint_vertex_center_image=paint_vertex_center_image,
-            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
-            generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
-            finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
         ),
@@ -88,7 +80,7 @@ def extract_edges_resumable(
     stage_controller: StageController,
 ) -> dict[str, object]:
     """Trace edges with per-origin persisted units."""
-    from slavv.runtime.run_state import atomic_joblib_dump, atomic_write_json
+    from slavv.runtime.run_state import atomic_joblib_dump
 
     return cast(
         "dict[str, object]",
@@ -98,17 +90,12 @@ def extract_edges_resumable(
             params,
             stage_controller,
             atomic_joblib_dump=atomic_joblib_dump,
-            atomic_write_json=atomic_write_json,
             empty_edges_result=_empty_edges_result,
             empty_edge_diagnostics=_empty_edge_diagnostics,
             scalar_radius=_scalar_radius,
             append_candidate_unit=_append_candidate_unit,
             build_edge_candidate_audit=_build_edge_candidate_audit,
-            build_frontier_candidate_lifecycle=_build_frontier_candidate_lifecycle,
-            finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             normalize_candidate_origin_counts=_normalize_candidate_origin_counts,
-            trace_origin_edges_matlab_frontier=_trace_origin_edges_matlab_frontier,
-            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
             edge_metric_from_energy_trace=_edge_metric_from_energy_trace,
             record_trace_diagnostics=_record_trace_diagnostics,
             trace_energy_series=_trace_energy_series,

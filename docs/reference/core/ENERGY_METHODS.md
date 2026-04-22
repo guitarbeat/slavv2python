@@ -6,16 +6,14 @@ This note explains the supported `energy_method` options in the Python SLAVV
 pipeline, how they interact with the existing parameter surface, and where to
 extend the implementation when a new method is needed.
 
-The active validation surface lives in `source/slavv/utils/validation.py`, and
-the canonical comparison-layout guidance for parity-sensitive runs lives in
-`docs/reference/core/COMPARISON_LAYOUT.md`.
+The active validation surface lives in `source/slavv/utils/validation.py`.
 
 ## Supported Methods
 
 | Method | Where it lives | Best use | Notes |
 | --- | --- | --- | --- |
-| `hessian` | `source/slavv/core/energy.py` | Default production and parity work | Uses the MATLAB-aligned Hessian response path and remains the safest choice for reproducible comparisons. |
-| `frangi` | `skimage.filters.frangi` via `source/slavv/core/energy.py` | Quick vesselness experiments | Good for exploratory runs, but not the preferred parity target. |
+| `hessian` | `source/slavv/core/energy.py` | Default production work | Uses the full Hessian response path and remains the safest choice for reproducible runs. |
+| `frangi` | `skimage.filters.frangi` via `source/slavv/core/energy.py` | Quick vesselness experiments | Good for exploratory native-Python runs. |
 | `sato` | `skimage.filters.sato` via `source/slavv/core/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed `scikit-image` surface does not provide `sato`. |
 
 The CLI exposes the same options through:
@@ -50,7 +48,7 @@ All three methods still respect the shared energy configuration surface in
 - `spherical_to_annular_ratio`
 - `energy_sign`
 
-`hessian` uses the full MATLAB-style matched-filter path. `frangi` and `sato`
+`hessian` uses the full matched-filter path. `frangi` and `sato`
 reuse the scale schedule and energy-sign conventions, but they defer the
 per-scale vesselness computation to scikit-image. If `sato` is unavailable in
 the installed `scikit-image`, the code falls back to `hessian` instead of
@@ -58,13 +56,12 @@ failing the run.
 
 ## Choosing A Method
 
-- Use `hessian` when the run needs to stay close to MATLAB semantics, when
-  parity diagnostics matter, or when you want the same direct/resumable energy
-  behavior.
+- Use `hessian` when you want the default production behavior and the most
+  stable direct/resumable energy path.
 - Use `frangi` or `sato` when you are benchmarking alternate vesselness
   backends or doing exploratory native-Python runs.
 - Treat `frangi` and `sato` outputs as alternative analysis surfaces, not as
-  replacements for the maintained MATLAB-parity target.
+  replacements for the default `hessian` path.
 
 ## Extending With A New Method
 
@@ -92,7 +89,5 @@ When adding a new energy backend, update these surfaces together:
   `source/slavv/core/energy.py`.
 - Preserve `float32` outputs for persisted energy volumes unless there is a
   deliberate format change.
-- For parity-sensitive runs, prefer `hessian` and keep staged outputs aligned
-  with `docs/reference/core/COMPARISON_LAYOUT.md`.
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.

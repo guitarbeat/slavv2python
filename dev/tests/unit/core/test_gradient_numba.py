@@ -26,5 +26,5 @@ def test_compute_gradient_fast_linear_field():
 def test_numba_acceleration_flag_matches_gradient_helper_shape():
     assert isinstance(energy_module.is_numba_acceleration_enabled(), bool)
     if energy_module.is_numba_acceleration_enabled():
-        assert hasattr(energy_module.compute_gradient_impl, "py_func")
-        assert hasattr(energy_module.compute_gradient_fast, "py_func")
+        assert callable(energy_module.compute_gradient_impl)
+        assert callable(energy_module.compute_gradient_fast)

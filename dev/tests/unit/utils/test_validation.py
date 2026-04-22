@@ -8,7 +8,6 @@ def test_validate_parameters_defaults():
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
     assert validated["energy_sign"] == -1.0
-    assert validated["comparison_exact_network"] is False
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
     assert validated["sigma_per_influence_vertices"] == 1.0
     assert validated["sigma_per_influence_edges"] == 0.5
@@ -42,26 +41,6 @@ def test_validate_parameters_accepts_zarr_energy_storage_format():
     validated = validate_parameters({"energy_storage_format": "zarr"})
 
     assert validated["energy_storage_format"] == "zarr"
-
-
-def test_validate_parameters_preserves_parity_specific_overrides():
-    validated = validate_parameters(
-        {
-            "parity_watershed_candidate_mode": "origin_cap",
-            "parity_watershed_metric_threshold": -90.0,
-            "parity_candidate_salvage_mode": "none",
-            "parity_geodesic_salvage_k_nearest": 8,
-            "parity_geodesic_salvage_box_margin_voxels": 5,
-            "parity_geodesic_salvage_max_path_ratio": 3.0,
-        }
-    )
-
-    assert validated["parity_watershed_candidate_mode"] == "origin_cap"
-    assert validated["parity_watershed_metric_threshold"] == -90.0
-    assert validated["parity_candidate_salvage_mode"] == "none"
-    assert validated["parity_geodesic_salvage_k_nearest"] == 8
-    assert validated["parity_geodesic_salvage_box_margin_voxels"] == 5
-    assert validated["parity_geodesic_salvage_max_path_ratio"] == 3.0
 
 
 def test_validate_parameters_coerces_integer_like_matlab_settings():
@@ -115,14 +94,6 @@ def test_validate_parameters_warns_for_unusual_excitation_wavelength():
         (
             {"number_of_edges_per_vertex": 4.5},
             "number_of_edges_per_vertex must be an integer value",
-        ),
-        (
-            {"parity_watershed_candidate_mode": "unknown_mode"},
-            "parity_watershed_candidate_mode must be one of",
-        ),
-        (
-            {"parity_candidate_salvage_mode": "unknown_mode"},
-            "parity_candidate_salvage_mode must be one of",
         ),
     ],
 )

@@ -25,7 +25,6 @@ def _load_edge_units(
         "scale_traces": [],
         "origin_indices": np.zeros((0,), dtype=np.int32),
         "connection_sources": [],
-        "frontier_lifecycle_events": [],
         "diagnostics": empty_edge_diagnostics(),
     }
     completed: set[int] = set()

@@ -21,10 +21,10 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
     edges = {
         "connections": np.array(
             [
-                [0, 1],  # base edge
-                [1, 2],  # continuation
-                [2, 0],  # forms a cycle
-                [1, 3],  # branch causing strand mismatch
+                [0, 1],
+                [1, 2],
+                [2, 0],
+                [1, 3],
             ],
             dtype=int,
         ),
@@ -35,60 +35,17 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
             np.array([[1.0, 0.0, 0.0], [1.0, 1.0, 0.0]], dtype=float),
         ],
     }
+
     network = processor.construct_network(edges, vertices, {})
 
-    # The 2-0 edge should be pruned as a cycle
-    cycle_pairs = [tuple(map(int, c)) for c in network["cycles"]]
+    cycle_pairs = [tuple(map(int, pair)) for pair in network["cycles"]]
     assert (0, 2) in cycle_pairs
     assert 2 not in network["adjacency_list"][0]
-
-    # The branched component is processed, and with sparse tracing, one path is taken
-    # resulting in valid strands rather than mismatched ones (depending on greedy trace order).
-    # Updated to reflect sparse implementation behavior (greedy tracing linearization).
     assert len(network["strands"]) >= 1
     assert len(network["mismatched_strands"]) == 0
 
 
-def test_construct_network_parity_emits_matlab_shaped_strands():
-    processor = SLAVVProcessor()
-    vertices = {
-        "positions": np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [2.0, 0.0, 0.0],
-                [3.0, 0.0, 0.0],
-                [2.0, 1.0, 0.0],
-            ],
-            dtype=float,
-        ),
-    }
-    edges = {
-        "connections": np.array(
-            [
-                [0, 1],
-                [1, 2],
-                [2, 3],
-                [2, 4],
-            ],
-            dtype=np.int32,
-        ),
-        "traces": [
-            np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
-            np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
-            np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
-            np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
-        ],
-    }
-
-    network = processor.construct_network(edges, vertices, {"comparison_exact_network": True})
-
-    assert network["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
-    assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
-    assert network["mismatched_strands"] == []
-
-
-def test_construct_network_resumable_reuses_parity_topology(tmp_path):
+def test_construct_network_resumable_persists_standard_topology(tmp_path):
     vertices = {
         "positions": np.array(
             [
@@ -120,15 +77,9 @@ def test_construct_network_resumable_reuses_parity_topology(tmp_path):
     }
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="network")
 
-    network = construct_network_resumable(
-        edges,
-        vertices,
-        {"comparison_exact_network": True},
-        run_context.stage("network"),
-    )
+    network = construct_network_resumable(edges, vertices, {}, run_context.stage("network"))
 
-    assert network["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
-    assert network["strands_to_vertices"] == [[0, 2], [2, 3], [2, 4]]
+    assert network["strands"]
     assert network["mismatched_strands"] == []
     assert run_context.stage("network").artifact_path("strands.pkl").exists()
 

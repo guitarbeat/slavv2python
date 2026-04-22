@@ -11,7 +11,6 @@ from ._edge_selection.conflict_painting import (
     _construct_structuring_element_offsets_matlab,
     _offset_coords_matlab,
 )
-from ._edge_selection.workflow import _choose_edges_matlab_v200_cleanup
 
 
 def choose_edges_for_workflow(
@@ -23,14 +22,6 @@ def choose_edges_for_workflow(
     params: dict[str, Any],
 ) -> dict[str, Any]:
     """Route edge cleanup through the maintained workflow-specific chooser."""
-    if bool(params.get("comparison_exact_network", False)):
-        result = _choose_edges_matlab_v200_cleanup(
-            candidates,
-            vertex_positions.astype(np.float32, copy=False),
-            image_shape,
-            params,
-        )
-        return cast("dict[str, Any]", result)
     result = _choose_edges_matlab_style(
         candidates,
         vertex_positions.astype(np.float32, copy=False),
@@ -44,7 +35,6 @@ def choose_edges_for_workflow(
 
 __all__ = [
     "_choose_edges_matlab_style",
-    "_choose_edges_matlab_v200_cleanup",
     "_construct_structuring_element_offsets_matlab",
     "_offset_coords_matlab",
     "choose_edges_for_workflow",

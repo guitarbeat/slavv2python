@@ -187,182 +187,15 @@ def _default_network_topology(
     }
 
 
-def _interior_components(
-    interior_vertices: set[int],
-    adjacency_list: dict[int, set[int]],
-) -> list[list[int]]:
-    """Return connected components of the degree-2 interior-vertex subgraph."""
-    components: list[list[int]] = []
-    visited: set[int] = set()
-
-    for start in sorted(interior_vertices):
-        if start in visited:
-            continue
-        stack = [start]
-        component: list[int] = []
-        while stack:
-            vertex = stack.pop()
-            if vertex in visited:
-                continue
-            visited.add(vertex)
-            component.append(vertex)
-            for neighbor in sorted(adjacency_list[vertex], reverse=True):
-                if neighbor in interior_vertices and neighbor not in visited:
-                    stack.append(neighbor)
-        components.append(sorted(component))
-
-    return components
-
-
-def _component_edge_indices(
-    connections: np.ndarray,
-    component_set: set[int],
-    end_vertices: set[int],
-) -> list[int]:
-    """Return edge indices that belong to a MATLAB-style strand component."""
-    indices: list[int] = []
-    for index, (start_vertex, end_vertex) in enumerate(connections):
-        start = int(start_vertex)
-        end = int(end_vertex)
-        if (
-            (start in component_set and end in component_set)
-            or (start in component_set and end in end_vertices)
-            or (end in component_set and start in end_vertices)
-        ):
-            indices.append(index)
-    return indices
-
-
-def _order_strand_vertices(
-    edge_pairs: list[tuple[int, int]],
-    preferred_start: int | None,
-) -> list[int]:
-    """Order strand vertices end-to-end from an undirected edge set."""
-    if not edge_pairs:
-        return []
-
-    local_adjacency: dict[int, set[int]] = {}
-    for start_vertex, end_vertex in edge_pairs:
-        local_adjacency.setdefault(int(start_vertex), set()).add(int(end_vertex))
-        local_adjacency.setdefault(int(end_vertex), set()).add(int(start_vertex))
-
-    start_vertex = preferred_start if preferred_start in local_adjacency else min(local_adjacency)
-    path = [int(start_vertex)]
-    current = int(start_vertex)
-    used_edges: set[tuple[int, int]] = set()
-
-    while len(used_edges) < len(edge_pairs):
-        next_vertex = None
-        for neighbor in sorted(local_adjacency[current]):
-            v0, v1 = current, int(neighbor)
-            edge_key = (v0, v1) if v0 < v1 else (v1, v0)
-            if edge_key not in used_edges:
-                next_vertex = int(neighbor)
-                used_edges.add(edge_key)
-                break
-        if next_vertex is None:
-            break
-        path.append(next_vertex)
-        current = next_vertex
-
-    return path
-
-
-def _matlab_parity_network_topology(
-    edge_connections: np.ndarray,
-    adjacency_list: dict[int, set[int]],
-    n_vertices: int,
-) -> dict[str, Any]:
-    """Construct strand topology following MATLAB's degree-2-interior model."""
-    if edge_connections.size == 0:
-        return {
-            "strands": [],
-            "strands_to_vertices": [],
-            "mismatched_strands": [],
-        }
-
-    vertex_degrees = _vertex_degrees(adjacency_list, n_vertices)
-    interior_vertices = {
-        int(vertex_index)
-        for vertex_index, degree in enumerate(vertex_degrees.tolist())
-        if degree == 2
-    }
-
-    strands: list[list[int]] = []
-    strands_to_vertices: list[list[int]] = []
-
-    for component in _interior_components(interior_vertices, adjacency_list):
-        active_component = component
-        edge_indices: list[int] = []
-        end_vertices: list[int] = []
-
-        while active_component:
-            component_set = set(active_component)
-            end_vertices = sorted(
-                {
-                    int(neighbor)
-                    for vertex in active_component
-                    for neighbor in adjacency_list[vertex]
-                    if neighbor not in component_set
-                }
-            )
-            edge_indices = _component_edge_indices(
-                edge_connections, component_set, set(end_vertices)
-            )
-            if end_vertices or not edge_indices:
-                break
-
-            worst_edge_index = max(edge_indices)
-            worst_start, worst_end = (int(value) for value in edge_connections[worst_edge_index])
-            active_component = [
-                vertex for vertex in active_component if vertex not in {worst_start, worst_end}
-            ]
-
-        if not active_component or not edge_indices:
-            continue
-
-        ordered_vertices = _order_strand_vertices(
-            [
-                (int(edge_connections[index, 0]), int(edge_connections[index, 1]))
-                for index in edge_indices
-            ],
-            end_vertices[0] if end_vertices else None,
-        )
-        if len(ordered_vertices) > 1:
-            strands.append(ordered_vertices)
-            strands_to_vertices.append([ordered_vertices[0], ordered_vertices[-1]])
-
-    for start_vertex, end_vertex in edge_connections.tolist():
-        if int(start_vertex) not in interior_vertices and int(end_vertex) not in interior_vertices:
-            strand = [int(start_vertex), int(end_vertex)]
-            strands.append(strand)
-            strands_to_vertices.append(strand.copy())
-
-    return {
-        "strands": strands,
-        "strands_to_vertices": strands_to_vertices,
-        "mismatched_strands": [],
-    }
-
-
 def _network_payload(
     adjacency_list: dict[int, set[int]],
     graph_edges: dict[tuple[int, int], np.ndarray],
     dangling_edges: list[dict[str, Any]],
     cycles: list[tuple[int, int]],
-    edge_connections: np.ndarray,
     n_vertices: int,
-    comparison_exact_network: bool,
 ) -> dict[str, Any]:
     """Build the final network payload from shared graph state."""
-    if comparison_exact_network:
-        topology = _matlab_parity_network_topology(
-            edge_connections[(edge_connections[:, 0] >= 0) & (edge_connections[:, 1] >= 0)],
-            adjacency_list,
-            n_vertices,
-        )
-    else:
-        topology = _default_network_topology(adjacency_list, n_vertices)
+    topology = _default_network_topology(adjacency_list, n_vertices)
 
     vertex_degrees = _vertex_degrees(adjacency_list, n_vertices)
     bifurcations = np.where(vertex_degrees > 2)[0].astype(np.int32)
@@ -379,8 +212,6 @@ def _network_payload(
         "graph_edges": graph_edges,
         "dangling_edges": dangling_edges,
     }
-    if "strands_to_vertices" in topology:
-        payload["strands_to_vertices"] = topology["strands_to_vertices"]
     return payload
 
 
@@ -396,11 +227,8 @@ def construct_network(
     n_vertices = len(vertex_positions)
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    comparison_exact_network = bool(params.get("comparison_exact_network", False))
-    min_hair_length = (
-        0.0 if comparison_exact_network else params.get("min_hair_length_in_microns", 0.0)
-    )
-    remove_cycles = False if comparison_exact_network else params.get("remove_cycles", True)
+    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
+    remove_cycles = params.get("remove_cycles", True)
 
     adjacency_list, graph_edges, dangling_edges = _build_graph_state(
         edge_traces,
@@ -416,9 +244,7 @@ def construct_network(
         graph_edges,
         dangling_edges,
         cycles,
-        edge_connections,
         n_vertices,
-        comparison_exact_network,
     )
 
     logger.info(
@@ -447,11 +273,8 @@ def construct_network_resumable(
     n_vertices = len(vertex_positions)
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    comparison_exact_network = bool(params.get("comparison_exact_network", False))
-    min_hair_length = (
-        0.0 if comparison_exact_network else params.get("min_hair_length_in_microns", 0.0)
-    )
-    remove_cycles = False if comparison_exact_network else params.get("remove_cycles", True)
+    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
+    remove_cycles = params.get("remove_cycles", True)
 
     stage_controller.begin(detail="Building network graph", units_total=5, substage="adjacency")
     adjacency_path = stage_controller.artifact_path("adjacency.pkl")
@@ -507,15 +330,7 @@ def construct_network_resumable(
     stage_controller.update(units_total=5, units_completed=3, substage="cycle_prune")
 
     if not strands_path.exists():
-        topology = (
-            _matlab_parity_network_topology(
-                edge_connections[(edge_connections[:, 0] >= 0) & (edge_connections[:, 1] >= 0)],
-                adjacency_list,
-                n_vertices,
-            )
-            if comparison_exact_network
-            else _default_network_topology(adjacency_list, n_vertices)
-        )
+        topology = _default_network_topology(adjacency_list, n_vertices)
         atomic_joblib_dump(topology, strands_path)
     topology = safe_load(strands_path)
     stage_controller.update(units_total=5, units_completed=4, substage="strand_trace")
@@ -525,14 +340,10 @@ def construct_network_resumable(
         graph_edges,
         dangling_edges,
         cycles,
-        edge_connections,
         n_vertices,
-        comparison_exact_network,
     )
     network["strands"] = topology["strands"]
     network["mismatched_strands"] = topology["mismatched_strands"]
-    if "strands_to_vertices" in topology:
-        network["strands_to_vertices"] = topology["strands_to_vertices"]
     stage_controller.update(units_total=5, units_completed=5, substage="finalize")
     return network
 

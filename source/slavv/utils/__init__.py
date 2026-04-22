@@ -16,7 +16,7 @@ from .math import calculate_path_length, fourier_transform_even, weighted_ks_tes
 from .preprocessing import preprocess_image
 from .profiling import profile_process_image
 from .synthetic import generate_synthetic_vessel_volume
-from .system_info import get_matlab_info, get_system_info
+from .system_info import get_system_info
 from .validation import validate_parameters
 
 __all__ = [
@@ -26,7 +26,6 @@ __all__ = [
     "fourier_transform_even",
     "generate_synthetic_vessel_volume",
     "get_chunking_lattice",
-    "get_matlab_info",
     "get_system_info",
     "preprocess_image",
     "profile_process_image",

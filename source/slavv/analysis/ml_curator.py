@@ -318,7 +318,7 @@ class MLCurator:
         return np.array(features)
 
     def train_vertex_classifier(
-        self, features: np.ndarray, labels: np.ndarray, method: str = "matlab_nn"
+        self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
     ) -> dict[str, Any]:
         """Train vertex classifier using provided features and labels.
 
@@ -326,7 +326,7 @@ class MLCurator:
             features: Feature matrix (``n_samples``, ``n_features``)
             labels: Binary labels (1 for true vertex, 0 for false positive)
             method: Classification method ('random_forest', 'svm', 'neural_network',
-                'gradient_boosting', 'matlab_nn')
+                'gradient_boosting', 'single_hidden_layer_mlp')
 
         Returns:
             Training results and performance metrics
@@ -352,8 +352,8 @@ class MLCurator:
             self.vertex_classifier = MLPClassifier(
                 hidden_layer_sizes=(100, 50), random_state=42, max_iter=1000
             )
-        elif method == "matlab_nn":
-            # Mimic MATLAB vertexCuratorNetwork architecture: single hidden layer
+        elif method == "single_hidden_layer_mlp":
+            # Compact single-hidden-layer MLP for lightweight curation training.
             self.vertex_classifier = MLPClassifier(
                 hidden_layer_sizes=(16,),
                 activation="logistic",
@@ -398,7 +398,7 @@ class MLCurator:
         return results
 
     def train_edge_classifier(
-        self, features: np.ndarray, labels: np.ndarray, method: str = "matlab_nn"
+        self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
     ) -> dict[str, Any]:
         """Train edge classifier using provided features and labels.
 
@@ -406,7 +406,7 @@ class MLCurator:
             features: Feature matrix (``n_samples``, ``n_features``)
             labels: Binary labels (1 for true edge, 0 for false positive)
             method: Classification method ('random_forest', 'svm', 'neural_network',
-                'gradient_boosting', 'matlab_nn')
+                'gradient_boosting', 'single_hidden_layer_mlp')
 
         Returns:
             Training results and performance metrics
@@ -432,8 +432,8 @@ class MLCurator:
             self.edge_classifier = MLPClassifier(
                 hidden_layer_sizes=(100, 50), random_state=42, max_iter=1000
             )
-        elif method == "matlab_nn":
-            # Approximate MATLAB edgeCuratorNetwork: logistic single hidden layer
+        elif method == "single_hidden_layer_mlp":
+            # Compact single-hidden-layer MLP for lightweight curation training.
             self.edge_classifier = MLPClassifier(
                 hidden_layer_sizes=(32,),
                 activation="logistic",

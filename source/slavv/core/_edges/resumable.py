@@ -10,11 +10,6 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
-from ..edge_candidates import (
-    _params_with_matlab_parity_edge_budget,
-    _params_with_matlab_parity_frontier_budget_mode,
-    _params_with_matlab_parity_watershed_candidate_mode,
-)
 from .units import _load_edge_units
 
 if TYPE_CHECKING:
@@ -30,17 +25,12 @@ def extract_edges_resumable(
     stage_controller: StageController,
     *,
     atomic_joblib_dump: Callable[..., None],
-    atomic_write_json: Callable[..., None],
     empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
     empty_edge_diagnostics: Callable[[], dict[str, Any]],
     scalar_radius: Callable[[np.ndarray | float], float],
     append_candidate_unit: Callable[..., None],
     build_edge_candidate_audit: Callable[..., dict[str, Any]],
-    build_frontier_candidate_lifecycle: Callable[..., dict[str, Any]],
-    finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
     normalize_candidate_origin_counts: Callable[..., dict[int, int]],
-    trace_origin_edges_matlab_frontier: Callable[..., dict[str, Any]],
-    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
     edge_metric_from_energy_trace: Callable[[np.ndarray], float],
     record_trace_diagnostics: Callable[[dict[str, Any], dict[str, Any]], None],
     trace_energy_series: Callable[[np.ndarray, np.ndarray], np.ndarray],
@@ -52,6 +42,8 @@ def extract_edges_resumable(
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
 ) -> dict[str, Any]:
     """Trace edges with per-origin persisted units."""
+    from slavv.runtime.run_state import atomic_write_json
+
     energy = energy_data["energy"]
     vertex_positions = vertices["positions"]
     vertex_scales = vertices["scales"]
@@ -73,7 +65,6 @@ def extract_edges_resumable(
     units_dir.mkdir(parents=True, exist_ok=True)
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
-    candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
     candidates, completed = _load_edge_units(
         units_dir, append_candidate_unit, empty_edge_diagnostics
@@ -89,21 +80,7 @@ def extract_edges_resumable(
     max_search_radius = max_vertex_radius * 5.0
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
-    use_frontier = use_matlab_frontier_tracer(energy_data, params)
-    params_for_workflow = params
-    if use_frontier:
-        params_for_workflow = _params_with_matlab_parity_edge_budget(
-            params_for_workflow, edge_budget=2
-        )
-        params_for_workflow = _params_with_matlab_parity_frontier_budget_mode(
-            params_for_workflow,
-            mode="accepted_candidates",
-        )
-        params_for_workflow = _params_with_matlab_parity_watershed_candidate_mode(
-            params_for_workflow,
-            candidate_mode="remaining_origin_contacts",
-        )
-    max_edges_per_vertex = params_for_workflow.get("number_of_edges_per_vertex", 4)
+    max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
 
     stage_controller.begin(
         detail="Tracing edges with resumable origin units",
@@ -113,143 +90,90 @@ def extract_edges_resumable(
         resumed=bool(completed),
     )
 
-    frontier_origin_counts: dict[int, int] = {}
-    if use_frontier:
-        for origin_index, count in (
-            candidates.get("diagnostics", {})
-            .get("frontier_per_origin_candidate_counts", {})
-            .items()
-        ):
-            try:
-                frontier_origin_counts[int(origin_index)] = int(count)
-            except (TypeError, ValueError):
-                continue
-
     for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if vertex_idx in completed:
             continue
 
         unit_trace_metadata_v: list[dict[str, Any]] = []
-        if use_frontier:
-            frontier_payload = trace_origin_edges_matlab_frontier(
+        unit_traces = []
+        unit_connections = []
+        unit_metrics = []
+        unit_energy_traces = []
+        unit_scale_traces = []
+        start_radius = scalar_radius(lumen_radius_pixels[start_scale])
+        step_size = start_radius * step_size_ratio
+        max_length = start_radius * max_length_ratio
+        max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
+        if direction_method == "hessian":
+            directions = estimate_vessel_directions(
                 energy,
-                scale_indices,
+                start_pos,
+                start_radius,
+                microns_per_voxel,
+            )
+            if directions.shape[0] < max_edges_per_vertex:
+                extra = generate_edge_directions(max_edges_per_vertex - directions.shape[0], seed=vertex_idx)
+                directions = np.vstack([directions, extra])
+            else:
+                directions = directions[:max_edges_per_vertex]
+        else:
+            directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
+
+        for direction in directions:
+            res_te = trace_edge(
+                energy_prepared,
+                start_pos,
+                direction,
+                step_size,
+                max_edge_energy,
                 vertex_positions,
                 vertex_scales,
+                lumen_radius_pixels,
                 lumen_radius_microns,
-                microns_per_voxel,
-                vertex_center_image,
-                vertex_idx,
-                params_for_workflow,
+                max_steps,
+                mpv_prepared,
+                energy_sign,
+                discrete_steps=discrete_tracing,
+                vertex_center_image=vertex_center_image,
+                tree=tree,
+                max_search_radius=max_search_radius,
+                origin_vertex_idx=vertex_idx,
+                return_metadata=True,
             )
-            unit_traces = cast("list[np.ndarray]", frontier_payload["traces"])
-            unit_connections = cast("list[list[int]]", frontier_payload["connections"])
-            unit_metrics = cast("list[float]", frontier_payload["metrics"])
-            unit_energy_traces = cast("list[np.ndarray]", frontier_payload["energy_traces"])
-            unit_scale_traces = cast("list[np.ndarray]", frontier_payload["scale_traces"])
-            unit_diagnostics = cast("dict[str, Any]", frontier_payload["diagnostics"])
-            frontier_count = len(unit_connections)
-            if frontier_count > 0:
-                frontier_origin_counts[vertex_idx] = frontier_count
-        else:
-            unit_traces = []
-            unit_connections = []
-            unit_metrics = []
-            unit_energy_traces = []
-            unit_scale_traces = []
-            start_radius = scalar_radius(lumen_radius_pixels[start_scale])
-            step_size = start_radius * step_size_ratio
-            max_length = start_radius * max_length_ratio
-            max_steps = max(1, int(np.ceil(max_length / max(step_size, 1e-12))))
-            if direction_method == "hessian":
-                directions = estimate_vessel_directions(
-                    energy,
-                    start_pos,
-                    start_radius,
-                    microns_per_voxel,
-                )
-                if directions.shape[0] < max_edges_per_vertex:
-                    extra = generate_edge_directions(
-                        max_edges_per_vertex - directions.shape[0], seed=vertex_idx
-                    )
-                    directions = np.vstack([directions, extra])
-                else:
-                    directions = directions[:max_edges_per_vertex]
-            else:
-                directions = generate_edge_directions(max_edges_per_vertex, seed=vertex_idx)
+            edge_trace, trace_metadata = cast("tuple[list[np.ndarray], dict[str, Any]]", res_te)
+            if len(edge_trace) <= 1:
+                continue
+            edge_arr = np.asarray(edge_trace, dtype=np.float32)
+            term_v = (
+                int(trace_metadata["terminal_vertex"])
+                if trace_metadata["terminal_vertex"] is not None
+                else -1
+            )
+            energy_trace = trace_energy_series(edge_arr, energy)
+            scale_trace = trace_scale_series(edge_arr, scale_indices)
+            unit_traces.append(edge_arr)
+            unit_connections.append([vertex_idx, term_v])
+            unit_metrics.append(edge_metric_from_energy_trace(energy_trace))
+            unit_energy_traces.append(energy_trace)
+            unit_scale_traces.append(scale_trace)
+            unit_trace_metadata_v.append(trace_metadata)
 
-            for direction in directions:
-                res_te = trace_edge(
-                    energy_prepared,
-                    start_pos,
-                    direction,
-                    step_size,
-                    max_edge_energy,
-                    vertex_positions,
-                    vertex_scales,
-                    lumen_radius_pixels,
-                    lumen_radius_microns,
-                    max_steps,
-                    mpv_prepared,
-                    energy_sign,
-                    discrete_steps=discrete_tracing,
-                    vertex_center_image=vertex_center_image,
-                    tree=tree,
-                    max_search_radius=max_search_radius,
-                    origin_vertex_idx=vertex_idx,
-                    return_metadata=True,
-                )
-                edge_trace, trace_metadata = cast("tuple[list[np.ndarray], dict[str, Any]]", res_te)
-                if len(edge_trace) <= 1:
-                    continue
-                edge_arr = np.asarray(edge_trace, dtype=np.float32)
-                term_v = (
-                    int(trace_metadata["terminal_vertex"])
-                    if trace_metadata["terminal_vertex"] is not None
-                    else -1
-                )
-                energy_trace = trace_energy_series(edge_arr, energy)
-                scale_trace = trace_scale_series(edge_arr, scale_indices)
-                unit_traces.append(edge_arr)
-                unit_connections.append([vertex_idx, term_v])
-                unit_metrics.append(edge_metric_from_energy_trace(energy_trace))
-                unit_energy_traces.append(energy_trace)
-                unit_scale_traces.append(scale_trace)
-                unit_trace_metadata_v.append(trace_metadata)
+        unit_diagnostics = empty_edge_diagnostics()
+        for item in unit_trace_metadata_v:
+            record_trace_diagnostics(unit_diagnostics, cast("dict[str, Any]", item))
 
-            unit_diagnostics = empty_edge_diagnostics()
-            for item in unit_trace_metadata_v:
-                record_trace_diagnostics(unit_diagnostics, cast("dict[str, Any]", item))
-
-        if use_frontier:
-            payload = {
-                "origin_index": vertex_idx,
-                "candidate_source": str(frontier_payload.get("candidate_source", "frontier")),
-                "traces": unit_traces,
-                "connections": unit_connections,
-                "metrics": unit_metrics,
-                "energy_traces": unit_energy_traces,
-                "scale_traces": unit_scale_traces,
-                "origin_indices": list(frontier_payload.get("origin_indices", [])),
-                "connection_sources": list(frontier_payload.get("connection_sources", [])),
-                "frontier_lifecycle_events": list(
-                    frontier_payload.get("frontier_lifecycle_events", [])
-                ),
-                "diagnostics": unit_diagnostics,
-            }
-        else:
-            payload = {
-                "origin_index": vertex_idx,
-                "candidate_source": "fallback",
-                "traces": unit_traces,
-                "connections": unit_connections,
-                "metrics": unit_metrics,
-                "energy_traces": unit_energy_traces,
-                "scale_traces": unit_scale_traces,
-                "origin_indices": [vertex_idx] * len(unit_traces),
-                "connection_sources": ["fallback"] * len(unit_traces),
-                "diagnostics": unit_diagnostics,
-            }
+        payload = {
+            "origin_index": vertex_idx,
+            "candidate_source": "fallback",
+            "traces": unit_traces,
+            "connections": unit_connections,
+            "metrics": unit_metrics,
+            "energy_traces": unit_energy_traces,
+            "scale_traces": unit_scale_traces,
+            "origin_indices": [vertex_idx] * len(unit_traces),
+            "connection_sources": ["fallback"] * len(unit_traces),
+            "diagnostics": unit_diagnostics,
+        }
         atomic_joblib_dump(payload, units_dir / f"vertex_{vertex_idx:06d}.pkl")
         append_candidate_unit(candidates, payload)
         completed.add(vertex_idx)
@@ -262,27 +186,15 @@ def extract_edges_resumable(
             resumed=bool(completed - {vertex_idx}),
         )
 
-    if use_frontier:
-        candidates = finalize_matlab_parity_candidates(
-            candidates,
-            energy,
-            scale_indices,
-            vertex_positions,
-            energy_sign,
-            params_for_workflow,
-            microns_per_voxel,
-        )
-        supplement_origin_counts = normalize_candidate_origin_counts(
-            candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")
-        )
-    else:
-        supplement_origin_counts = {}
+    supplement_origin_counts = normalize_candidate_origin_counts(
+        candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")
+    )
 
     candidate_audit = build_edge_candidate_audit(
         candidates,
         len(vertex_positions),
-        use_frontier_tracer=use_frontier,
-        frontier_origin_counts=frontier_origin_counts,
+        use_frontier_tracer=False,
+        frontier_origin_counts={},
         supplement_origin_counts={
             int(origin_index): int(count)
             for origin_index, count in (supplement_origin_counts or {}).items()
@@ -304,20 +216,14 @@ def extract_edges_resumable(
         vertex_scales,
         lumen_radius_pixels_axes,
         energy.shape,
-        params_for_workflow,
+        params,
     )
-    if use_frontier:
-        candidate_lifecycle = build_frontier_candidate_lifecycle(
-            candidates,
-            chosen.get("chosen_candidate_indices"),
-        )
-        atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
     atomic_joblib_dump(chosen, chosen_manifest_path)
     stage_controller.update(
         units_total=len(vertex_positions) + 2,
         units_completed=len(vertex_positions) + 2,
         substage="choose_edges",
-        detail="Selected MATLAB-style terminal edges",
+        detail="Selected final edges",
         resumed=bool(completed),
     )
     return chosen

@@ -126,29 +126,3 @@ def _get_python_info() -> dict[str, Any]:
         "implementation": platform.python_implementation(),
         "compiler": platform.python_compiler(),
     }
-
-
-def get_matlab_info(matlab_path: str | None = None) -> dict[str, Any]:
-    """
-    Get MATLAB version information.
-
-    Parameters
-    ----------
-    matlab_path : str, optional
-        Path to MATLAB executable. If provided, attempts to extract version.
-
-    Returns
-    -------
-    dict
-        MATLAB version information if available.
-    """
-    matlab_info = {"version": None, "path": matlab_path}
-
-    if matlab_path:
-        # Try to extract version from path (e.g., "R2019a" from path)
-        import re
-
-        if match := re.search(r"R\d{4}[ab]", matlab_path):
-            matlab_info["version"] = match.group(0)
-
-    return matlab_info

@@ -72,7 +72,7 @@ def test_create_run_context_uses_factory_and_pipeline_provenance():
         return "context"
 
     context = create_run_context(
-        None,
+        "resolved-run-dir",
         "input-fingerprint",
         "params-fingerprint",
         np.zeros((2, 3, 4), dtype=np.float32),

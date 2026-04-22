@@ -1,4 +1,4 @@
-"""Shared watershed candidate row construction for parity supplementation."""
+"""Shared watershed candidate row construction for candidate augmentation."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def _build_watershed_candidate_rows(
     scale_indices: np.ndarray | None,
     vertex_positions: np.ndarray,
     energy_sign: float,
-    parity_watershed_metric_threshold: float | None = None,
+    metric_threshold: float | None = None,
 ) -> tuple[list[WatershedCandidateRow], dict[str, int]]:
     """Build shared watershed candidate rows before policy-specific filtering."""
     if len(vertex_positions) < 2:
@@ -75,11 +75,11 @@ def _build_watershed_candidate_rows(
             diagnostics["watershed_energy_rejected"] += 1
             continue
 
-        if parity_watershed_metric_threshold is not None:
+        if metric_threshold is not None:
             if energy_sign < 0:
-                fails_metric_threshold = max_energy > parity_watershed_metric_threshold
+                fails_metric_threshold = max_energy > metric_threshold
             else:
-                fails_metric_threshold = min_energy < parity_watershed_metric_threshold
+                fails_metric_threshold = min_energy < metric_threshold
             if fails_metric_threshold:
                 diagnostics["watershed_metric_threshold_rejected"] += 1
                 continue
