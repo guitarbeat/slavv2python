@@ -146,6 +146,26 @@ python -m pytest -m "unit or integration"
 
 If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage.
 
+### Developer Parity Experiment
+
+Use this when you need a current-code rerun against a reusable staged comparison root:
+
+```powershell
+python dev/scripts/cli/parity_experiment.py rerun-python `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial `
+    --rerun-from edges
+
+python dev/scripts/cli/parity_experiment.py summarize `
+    --run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+```
+
+Notes:
+
+- This runner is developer-only and counts-only.
+- It uses the source run's preserved `03_Analysis/comparison_report.json` as MATLAB count truth.
+- It does not recreate the removed rich parity diagnostics or old public parity CLI.
+
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/slavv/`.

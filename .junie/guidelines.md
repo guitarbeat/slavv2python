@@ -38,9 +38,9 @@ Always prefer `python -m` for tool execution:
 
 When working on parity-sensitive logic:
 - **Staged Layout**: Respect the `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` structure.
-- **Comparison Tool**: Use `dev/scripts/cli/compare_matlab_python.py`.
+- **Developer Runner**: Use `dev/scripts/cli/parity_experiment.py` for counts-only Python reruns against reusable staged comparison roots.
 - **Evidence**: Cite artifacts from canonical run roots defined in `TODO.md`.
-- **Validation**: Use the `slavv parity-proof` command to verify exact parity.
+- **Scope**: Rich legacy parity diagnostics are retired from the live source tree; the maintained runner only compares preserved MATLAB count truth against a fresh Python rerun.
 
 ## Testing Strategy
 

@@ -12,4 +12,5 @@ Start here:
 3. [Reference index](reference/README.md)
 4. [Test placement guide](../dev/tests/README.md)
 
-The old MATLAB/parity investigation material has been retired along with the code paths it described.
+The old rich MATLAB/parity investigation harness has been retired.
+The maintained developer replacement is `dev/scripts/cli/parity_experiment.py`, which is intentionally counts-only and meant for rerunning the live Python pipeline against reusable staged comparison roots.

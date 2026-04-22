@@ -6,7 +6,7 @@ import warnings
 from typing import Any
 
 
-def _coerce_integral_parameter(name: str, value: Any) -> int:
+def _coerce_integral_parameter(name: str, value: Any) -> Any:
     """Accept MATLAB-style numeric scalars for integer pipeline settings."""
     if isinstance(value, bool):
         return int(value)
@@ -21,7 +21,7 @@ def _coerce_integral_parameter(name: str, value: Any) -> int:
 
 def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     """Validate parameters and populate defaults for the maintained pipeline."""
-    validated = {}
+    validated: dict[str, Any] = {}
 
     # Voxel size parameters
     try:
@@ -160,5 +160,9 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         "number_of_edges_per_vertex",
     ):
         validated[key] = _coerce_integral_parameter(key, validated[key])
+
+    # Preserve workflow-specific extension keys such as parity controls.
+    for key, value in params.items():
+        validated.setdefault(key, value)
 
     return validated

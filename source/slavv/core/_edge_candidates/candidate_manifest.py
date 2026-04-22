@@ -23,6 +23,20 @@ def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any])
         len(unit_connections),
         default_source=str(unit_payload.get("candidate_source", "unknown")),
     )
+    target.setdefault("frontier_lifecycle_events", [])
+    base_candidate_index = len(target["traces"])
+    emitted_frontier_count = 0
+    for raw_event in unit_payload.get("frontier_lifecycle_events", []):
+        if not isinstance(raw_event, dict):
+            continue
+        event = dict(raw_event)
+        if event.get("survived_candidate_manifest"):
+            event["manifest_candidate_index"] = base_candidate_index + emitted_frontier_count
+            emitted_frontier_count += 1
+        else:
+            event["manifest_candidate_index"] = None
+        target["frontier_lifecycle_events"].append(event)
+
     target["traces"].extend(unit_traces)
     target["energy_traces"].extend(
         np.asarray(trace, dtype=np.float32) for trace in unit_payload["energy_traces"]

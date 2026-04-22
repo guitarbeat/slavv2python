@@ -42,4 +42,5 @@ python -m mypy
 ## Notes
 
 - Structured `run_dir` metadata is the supported resumable workflow.
-- Legacy parity, MATLAB import, and comparison tooling have been removed.
+- The legacy rich parity and MATLAB comparison harness has been removed from the public CLI surface.
+- A developer-only counts runner is available at `dev/scripts/cli/parity_experiment.py` for rerunning Python `edges` or `network` against reusable staged comparison roots.

@@ -9,21 +9,11 @@ from ._edges import resumable as _resumable
 from ._edges import standard as _standard
 from ._edges import units as _units
 from ._edges import watershed as _watershed
-from ._radius_utils import _scalar_radius
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
     _generate_edge_candidates,
     _normalize_candidate_origin_counts,
-)
-from .edge_primitives import (
-    _edge_metric_from_energy_trace,
-    _record_trace_diagnostics,
-    _trace_energy_series,
-    _trace_scale_series,
-    estimate_vessel_directions,
-    generate_edge_directions,
-    trace_edge,
 )
 from .edge_selection import choose_edges_for_workflow
 from .vertices import paint_vertex_center_image
@@ -91,18 +81,9 @@ def extract_edges_resumable(
             stage_controller,
             atomic_joblib_dump=atomic_joblib_dump,
             empty_edges_result=_empty_edges_result,
-            empty_edge_diagnostics=_empty_edge_diagnostics,
-            scalar_radius=_scalar_radius,
-            append_candidate_unit=_append_candidate_unit,
             build_edge_candidate_audit=_build_edge_candidate_audit,
             normalize_candidate_origin_counts=_normalize_candidate_origin_counts,
-            edge_metric_from_energy_trace=_edge_metric_from_energy_trace,
-            record_trace_diagnostics=_record_trace_diagnostics,
-            trace_energy_series=_trace_energy_series,
-            trace_scale_series=_trace_scale_series,
-            estimate_vessel_directions=estimate_vessel_directions,
-            generate_edge_directions=generate_edge_directions,
-            trace_edge=trace_edge,
+            generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
             paint_vertex_center_image=paint_vertex_center_image,
         ),
