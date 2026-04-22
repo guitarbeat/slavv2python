@@ -32,6 +32,7 @@ WatershedCandidateRow: TypeAlias = tuple[
 _ALLOWED_WATERSHED_CANDIDATE_MODES = {
     "all_contacts",
     "remaining_origin_contacts",
+    "legacy_supplement",
     "origin_cap",
 }
 

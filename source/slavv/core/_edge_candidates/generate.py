@@ -16,6 +16,13 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
+from .candidate_manifest import _append_candidate_unit
+from .frontier_trace import _trace_origin_edges_matlab_frontier
+from .geodesic import _salvage_matlab_parity_candidates_with_local_geodesics
+from .watershed import (
+    _augment_matlab_frontier_candidates_with_watershed_contacts,
+    _supplement_matlab_frontier_candidates_with_watershed_joins,
+)
 from .watershed_candidates import (
     _augment_candidates_with_watershed_contacts,
     _parity_watershed_candidate_mode,
@@ -33,6 +40,20 @@ def _edge_candidates_facade() -> Any:
     from .. import edge_candidates as edge_candidates_facade
 
     return edge_candidates_facade
+
+
+def _empty_candidate_manifest() -> dict[str, Any]:
+    """Return an empty candidate manifest with the standard payload shape."""
+    return {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+        "connection_sources": [],
+        "diagnostics": _empty_edge_diagnostics(),
+    }
 
 
 def _generate_fallback_directions(
@@ -66,7 +87,7 @@ def _generate_fallback_directions(
                 ),
             )
             return cast("np.ndarray", np.vstack([directions, extra]))
-        return directions[:max_edges_per_vertex]
+        return cast("np.ndarray", directions[:max_edges_per_vertex])
     return cast(
         "np.ndarray",
         edge_candidates_facade.generate_edge_directions(
@@ -74,6 +95,119 @@ def _generate_fallback_directions(
             seed=vertex_idx,
         ),
     )
+
+
+def _finalize_matlab_parity_candidates(
+    candidates: dict[str, Any],
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    energy_sign: float,
+    params: dict[str, Any],
+    microns_per_voxel: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Finalize MATLAB-parity candidates with the configured watershed strategy."""
+    candidate_mode = _parity_watershed_candidate_mode(params)
+    watershed_metric_threshold = _parity_watershed_metric_threshold_from_params(params)
+
+    if candidate_mode == "legacy_supplement":
+        enforce_frontier_reachability_gate = bool(
+            params.get("parity_frontier_reachability_gate", False)
+        )
+        require_mutual_frontier_participation = bool(
+            params.get("parity_require_mutual_frontier_participation", True)
+        )
+        finalized = _supplement_matlab_frontier_candidates_with_watershed_joins(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            enforce_frontier_reachability=enforce_frontier_reachability_gate,
+            require_mutual_frontier_participation=require_mutual_frontier_participation,
+            parity_watershed_metric_threshold=watershed_metric_threshold,
+        )
+    else:
+        finalized = _augment_matlab_frontier_candidates_with_watershed_contacts(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+            candidate_mode=candidate_mode or "all_contacts",
+            parity_watershed_metric_threshold=watershed_metric_threshold,
+        )
+
+    salvage_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip().lower()
+    if salvage_mode == "auto":
+        salvage_mode = "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
+    if salvage_mode == "none":
+        return finalized
+
+    microns_per_voxel_value = (
+        np.asarray(microns_per_voxel, dtype=np.float32)
+        if microns_per_voxel is not None
+        else np.ones((3,), dtype=np.float32)
+    )
+    return cast(
+        "dict[str, Any]",
+        _salvage_matlab_parity_candidates_with_local_geodesics(
+            finalized,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            microns_per_voxel_value,
+            params,
+            salvage_mode=salvage_mode,
+            parity_metric_threshold=watershed_metric_threshold,
+        ),
+    )
+
+
+def _generate_edge_candidates_matlab_frontier(
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    vertex_center_image: np.ndarray,
+    params: dict[str, Any],
+) -> dict[str, Any]:
+    """Generate edge candidates using the MATLAB-style best-first frontier search."""
+    candidates = _empty_candidate_manifest()
+    per_origin_candidate_counts: dict[int, int] = {}
+    for origin_vertex_idx in range(len(vertex_positions)):
+        unit_payload = _trace_origin_edges_matlab_frontier(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            origin_vertex_idx,
+            params,
+        )
+        n_unit_traces = len(unit_payload.get("traces", []))
+        if n_unit_traces > 0:
+            per_origin_candidate_counts[origin_vertex_idx] = n_unit_traces
+        _append_candidate_unit(candidates, unit_payload)
+
+    candidates["diagnostics"]["frontier_origins_with_candidates"] = len(per_origin_candidate_counts)
+    candidates["diagnostics"]["frontier_origins_without_candidates"] = len(vertex_positions) - len(
+        per_origin_candidate_counts
+    )
+    candidates["diagnostics"]["frontier_per_origin_candidate_counts"] = per_origin_candidate_counts
+    logger.info(
+        "Frontier candidates: %d origins produced candidates, %d did not",
+        len(per_origin_candidate_counts),
+        len(vertex_positions) - len(per_origin_candidate_counts),
+    )
+    return candidates
 
 
 def _trace_fallback_origin_candidates(
@@ -278,13 +412,16 @@ def _generate_edge_candidates(
     if candidate_mode is None:
         return candidates
 
-    return _augment_candidates_with_watershed_contacts(
-        candidates,
-        energy,
-        scale_indices,
-        vertex_positions,
-        energy_sign,
-        max_edges_per_vertex=max_edges_per_vertex,
-        candidate_mode=candidate_mode,
-        metric_threshold=_parity_watershed_metric_threshold_from_params(params),
+    return cast(
+        "dict[str, Any]",
+        _augment_candidates_with_watershed_contacts(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            max_edges_per_vertex=max_edges_per_vertex,
+            candidate_mode=candidate_mode,
+            metric_threshold=_parity_watershed_metric_threshold_from_params(params),
+        ),
     )

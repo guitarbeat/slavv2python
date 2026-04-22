@@ -12,8 +12,12 @@ from ._edges import watershed as _watershed
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
+    _build_frontier_candidate_lifecycle,
+    _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
+    _generate_edge_candidates_matlab_frontier,
     _normalize_candidate_origin_counts,
+    _use_matlab_frontier_tracer,
 )
 from .edge_selection import choose_edges_for_workflow
 from .vertices import paint_vertex_center_image
@@ -57,6 +61,9 @@ def extract_edges(
             params,
             empty_edges_result=_empty_edges_result,
             paint_vertex_center_image=paint_vertex_center_image,
+            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
+            generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
+            finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
         ),
@@ -82,10 +89,14 @@ def extract_edges_resumable(
             atomic_joblib_dump=atomic_joblib_dump,
             empty_edges_result=_empty_edges_result,
             build_edge_candidate_audit=_build_edge_candidate_audit,
+            build_frontier_candidate_lifecycle=_build_frontier_candidate_lifecycle,
+            finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             normalize_candidate_origin_counts=_normalize_candidate_origin_counts,
+            generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
             paint_vertex_center_image=paint_vertex_center_image,
+            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
         ),
     )
 

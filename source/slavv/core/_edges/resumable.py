@@ -27,12 +27,16 @@ def extract_edges_resumable(
     atomic_joblib_dump: Callable[..., None],
     empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
     build_edge_candidate_audit: Callable[..., dict[str, Any]],
+    build_frontier_candidate_lifecycle: Callable[..., dict[str, Any]],
+    finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
     normalize_candidate_origin_counts: Callable[..., dict[int, int]],
+    generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
     generate_edge_candidates: Callable[..., dict[str, Any]],
     choose_edges_for_workflow: Callable[..., dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
+    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
-    """Generate edge candidates through the maintained frontier workflow."""
+    """Generate edge candidates through the maintained or MATLAB-parity workflow."""
     from slavv.runtime.run_state import atomic_write_json
 
     energy = energy_data["energy"]
@@ -53,44 +57,77 @@ def extract_edges_resumable(
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")
-    vertex_positions_microns = vertex_positions * microns_per_voxel
-    tree = cKDTree(vertex_positions_microns)
-    max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
-    max_search_radius = max_vertex_radius * 5.0
+    use_frontier = use_matlab_frontier_tracer(energy_data, params)
 
     stage_controller.begin(
-        detail="Generating edge candidates through maintained frontier workflow",
+        detail=(
+            "Generating edge candidates through MATLAB-style frontier workflow"
+            if use_frontier
+            else "Generating edge candidates through maintained frontier workflow"
+        ),
         units_total=3,
         units_completed=0,
         substage="generate_candidates",
         resumed=False,
     )
-    candidates = generate_edge_candidates(
-        energy,
-        scale_indices,
-        vertex_positions,
-        vertex_scales,
-        energy_data["lumen_radius_pixels"],
-        lumen_radius_microns,
-        microns_per_voxel,
-        vertex_center_image,
-        tree,
-        max_search_radius,
-        params,
-        energy_sign,
-    )
+    if use_frontier:
+        candidates = generate_edge_candidates_matlab_frontier(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            params,
+        )
+        candidates = finalize_matlab_parity_candidates(
+            candidates,
+            energy,
+            scale_indices,
+            vertex_positions,
+            energy_sign,
+            params,
+            microns_per_voxel,
+        )
+        frontier_origin_counts_raw = normalize_candidate_origin_counts(
+            candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts")
+        )
+        frontier_origin_counts = {
+            int(origin_index): int(count)
+            for origin_index, count in frontier_origin_counts_raw.items()
+        }
+    else:
+        vertex_positions_microns = vertex_positions * microns_per_voxel
+        tree = cKDTree(vertex_positions_microns)
+        max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
+        max_search_radius = max_vertex_radius * 5.0
+        candidates = generate_edge_candidates(
+            energy,
+            scale_indices,
+            vertex_positions,
+            vertex_scales,
+            energy_data["lumen_radius_pixels"],
+            lumen_radius_microns,
+            microns_per_voxel,
+            vertex_center_image,
+            tree,
+            max_search_radius,
+            params,
+            energy_sign,
+        )
 
-    connection_sources = [str(value) for value in candidates.get("connection_sources", [])]
-    origin_indices = np.asarray(
-        candidates.get("origin_indices", np.zeros((0,), dtype=np.int32)),
-        dtype=np.int32,
-    ).reshape(-1)
-    frontier_origin_counts_raw: dict[int, int] = {}
-    for index, origin_index in enumerate(origin_indices):
-        if index >= len(connection_sources) or connection_sources[index] != "frontier":
-            continue
-        origin_key = int(origin_index)
-        frontier_origin_counts_raw[origin_key] = frontier_origin_counts_raw.get(origin_key, 0) + 1
+        connection_sources = [str(value) for value in candidates.get("connection_sources", [])]
+        origin_indices = np.asarray(
+            candidates.get("origin_indices", np.zeros((0,), dtype=np.int32)),
+            dtype=np.int32,
+        ).reshape(-1)
+        frontier_origin_counts = {}
+        for index, origin_index in enumerate(origin_indices):
+            if index >= len(connection_sources) or connection_sources[index] != "frontier":
+                continue
+            origin_key = int(origin_index)
+            frontier_origin_counts[origin_key] = frontier_origin_counts.get(origin_key, 0) + 1
 
     supplement_origin_counts = normalize_candidate_origin_counts(
         candidates.get("diagnostics", {}).get("watershed_per_origin_candidate_counts")
@@ -99,11 +136,8 @@ def extract_edges_resumable(
     candidate_audit = build_edge_candidate_audit(
         candidates,
         len(vertex_positions),
-        use_frontier_tracer=True,
-        frontier_origin_counts={
-            int(origin_index): int(count)
-            for origin_index, count in frontier_origin_counts_raw.items()
-        },
+        use_frontier_tracer=use_frontier,
+        frontier_origin_counts=frontier_origin_counts,
         supplement_origin_counts={
             int(origin_index): int(count)
             for origin_index, count in (supplement_origin_counts or {}).items()
@@ -127,12 +161,23 @@ def extract_edges_resumable(
         energy.shape,
         params,
     )
+    if use_frontier and candidates.get("frontier_lifecycle_events"):
+        candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
+        candidate_lifecycle = build_frontier_candidate_lifecycle(
+            candidates,
+            chosen.get("chosen_candidate_indices"),
+        )
+        atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
     atomic_joblib_dump(chosen, chosen_manifest_path)
     stage_controller.update(
         units_total=3,
         units_completed=3,
         substage="choose_edges",
-        detail="Selected final edges",
+        detail=(
+            "Selected MATLAB-style terminal edges"
+            if use_frontier
+            else "Selected final edges"
+        ),
         resumed=False,
     )
     return chosen
