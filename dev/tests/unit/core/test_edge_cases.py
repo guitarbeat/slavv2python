@@ -7,7 +7,9 @@ from slavv.core.edge_primitives import _finalize_traced_edge
 from slavv.core.edge_selection import (
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
+    _matlab_edge_endpoint_positions_and_scales,
     _offset_coords_matlab,
+    _snapshot_endpoint_influences_matlab,
 )
 from slavv.core.graph import _remove_short_hairs
 from slavv.core.vertices import extract_vertices, paint_vertex_center_image
@@ -258,3 +260,105 @@ def test_offset_coords_matlab_snaps_out_of_bounds_axes_back_to_center():
     assert np.all(coords >= 0)
     assert np.all(coords < 3)
     assert np.any(np.all(coords == np.array([0, 0, 0]), axis=1))
+
+
+def test_matlab_edge_endpoint_positions_and_scales_use_trace_endpoints():
+    trace = np.array(
+        [[5.2, 5.1, 4.9], [5.0, 6.0, 5.0], [4.8, 7.2, 5.1]],
+        dtype=np.float32,
+    )
+    scale_trace = np.array([1, 2, 3], dtype=np.int16)
+
+    start, end = _matlab_edge_endpoint_positions_and_scales(trace, scale_trace)
+
+    assert np.allclose(start[0], trace[0])
+    assert np.allclose(end[0], trace[-1])
+    assert start[1] == 1
+    assert end[1] == 3
+
+
+def test_snapshot_endpoint_influences_matlab_restores_overlap_from_combined_snapshot():
+    painted_image = np.zeros((5, 5, 5), dtype=np.int32)
+    painted_source_image = np.zeros((5, 5, 5), dtype=np.uint8)
+    painted_image[1, 1, 1] = 5
+    painted_image[1, 2, 1] = 7
+    painted_image[1, 3, 1] = 9
+    painted_source_image[1, 1, 1] = 1
+    painted_source_image[1, 2, 1] = 2
+    painted_source_image[1, 3, 1] = 3
+
+    combined_coords, snapshot, source_snapshot = _snapshot_endpoint_influences_matlab(
+        [
+            np.array([[1, 1, 1], [1, 2, 1]], dtype=np.int32),
+            np.array([[1, 2, 1], [1, 3, 1]], dtype=np.int32),
+        ],
+        painted_image,
+        painted_source_image,
+    )
+
+    assert np.all(
+        painted_image[combined_coords[:, 0], combined_coords[:, 1], combined_coords[:, 2]] == 0
+    )
+    assert np.all(
+        painted_source_image[
+            combined_coords[:, 0],
+            combined_coords[:, 1],
+            combined_coords[:, 2],
+        ]
+        == 0
+    )
+
+    painted_image[combined_coords[:, 0], combined_coords[:, 1], combined_coords[:, 2]] = snapshot
+    painted_source_image[
+        combined_coords[:, 0],
+        combined_coords[:, 1],
+        combined_coords[:, 2],
+    ] = source_snapshot
+
+    assert painted_image[1, 2, 1] == 7
+    assert painted_source_image[1, 2, 1] == 2
+
+
+def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
+    vertex_positions = np.array(
+        [[5, 5, 5], [5, 7, 5], [5, 9, 5], [5, 11, 5]],
+        dtype=np.float32,
+    )
+    vertex_scales = np.array([3, 3, 3, 3], dtype=np.int16)
+    candidates = {
+        "traces": [
+            np.array([[5, 5, 5], [5, 6, 5], [5, 7, 5]], dtype=np.float32),
+            np.array([[5, 9, 5], [5, 10, 5], [5, 11, 5]], dtype=np.float32),
+        ],
+        "connections": np.array([[0, 1], [2, 3]], dtype=np.int32),
+        "metrics": np.array([-5.0, -4.0], dtype=np.float32),
+        "energy_traces": [
+            np.array([-5.0, -5.0, -5.0], dtype=np.float32),
+            np.array([-4.0, -4.0, -4.0], dtype=np.float32),
+        ],
+        "scale_traces": [np.zeros(3, dtype=np.int16), np.zeros(3, dtype=np.int16)],
+        "origin_indices": np.array([0, 2], dtype=np.int32),
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array(
+            [
+                [0.49, 0.49, 0.49],
+                [1.0, 1.0, 1.0],
+                [1.5, 1.5, 1.5],
+                [2.5, 2.5, 2.5],
+            ],
+            dtype=np.float32,
+        ),
+        (20, 20, 20),
+        {
+            "number_of_edges_per_vertex": 4,
+            "sigma_per_influence_vertices": 1.0,
+            "sigma_per_influence_edges": 0.5,
+        },
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1], [2, 3]]

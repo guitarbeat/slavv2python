@@ -9,7 +9,9 @@ import numpy as np
 from ._edge_selection.conflict_painting import (
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
+    _matlab_edge_endpoint_positions_and_scales,
     _offset_coords_matlab,
+    _snapshot_endpoint_influences_matlab,
 )
 
 
@@ -36,6 +38,8 @@ def choose_edges_for_workflow(
 __all__ = [
     "_choose_edges_matlab_style",
     "_construct_structuring_element_offsets_matlab",
+    "_matlab_edge_endpoint_positions_and_scales",
     "_offset_coords_matlab",
+    "_snapshot_endpoint_influences_matlab",
     "choose_edges_for_workflow",
 ]

@@ -43,7 +43,7 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
     kept = offsets[distances <= 1.0]
     if kept.size == 0:
         return np.zeros((1, 3), dtype=np.int32)
-    return kept.astype(np.int32, copy=False)
+    return cast("np.ndarray", kept.astype(np.int32, copy=False))
 
 
 def _offset_coords_matlab(
@@ -57,7 +57,63 @@ def _offset_coords_matlab(
     for axis, size in enumerate(image_shape):
         invalid = (coords[:, axis] < 0) | (coords[:, axis] >= size)
         coords[invalid, axis] = base[axis]
-    return coords
+    return cast("np.ndarray", coords)
+
+
+def _matlab_edge_endpoint_positions_and_scales(
+    trace: np.ndarray,
+    scale_trace: np.ndarray,
+) -> tuple[tuple[np.ndarray, int], tuple[np.ndarray, int]]:
+    """Return MATLAB-style endpoint positions and endpoint scales from one edge trace."""
+    trace_array = np.asarray(trace, dtype=np.float32).reshape(-1, 3)
+    scale_array = np.asarray(scale_trace, dtype=np.int16).reshape(-1)
+    if trace_array.shape[0] == 0:
+        empty_position = np.zeros((3,), dtype=np.float32)
+        return (empty_position, 0), (empty_position, 0)
+
+    start_scale = int(scale_array[0]) if scale_array.size else 0
+    end_scale = int(scale_array[-1]) if scale_array.size else start_scale
+    return (
+        (trace_array[0], max(0, start_scale)),
+        (trace_array[-1], max(0, end_scale)),
+    )
+
+
+def _snapshot_endpoint_influences_matlab(
+    endpoint_coord_groups: list[np.ndarray],
+    painted_image: np.ndarray,
+    painted_source_image: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Snapshot and clear MATLAB endpoint influences as one concatenated coordinate list."""
+    if not endpoint_coord_groups:
+        empty: np.ndarray = np.zeros((0, 3), dtype=np.int32)
+        return empty, np.zeros((0,), dtype=painted_image.dtype), np.zeros(
+            (0,),
+            dtype=painted_source_image.dtype,
+        )
+
+    combined_coords = np.concatenate(endpoint_coord_groups, axis=0).astype(np.int32, copy=False)
+    snapshot = painted_image[
+        combined_coords[:, 0],
+        combined_coords[:, 1],
+        combined_coords[:, 2],
+    ].copy()
+    source_snapshot = painted_source_image[
+        combined_coords[:, 0],
+        combined_coords[:, 1],
+        combined_coords[:, 2],
+    ].copy()
+    painted_image[
+        combined_coords[:, 0],
+        combined_coords[:, 1],
+        combined_coords[:, 2],
+    ] = 0
+    painted_source_image[
+        combined_coords[:, 0],
+        combined_coords[:, 1],
+        combined_coords[:, 2],
+    ] = 0
+    return combined_coords, snapshot, source_snapshot
 
 
 def _choose_edges_matlab_style(
@@ -101,8 +157,8 @@ def _choose_edges_matlab_style(
     sigma_per_influence_edges = float(params.get("sigma_per_influence_edges", 0.5))
     vertex_offset_cache: dict[int, np.ndarray] = {}
     edge_offset_cache: dict[int, np.ndarray] = {}
-    painted_image = np.zeros(image_shape, dtype=np.int32)
-    painted_source_image = np.zeros(image_shape, dtype=np.uint8)
+    painted_image: np.ndarray = np.zeros(image_shape, dtype=np.int32)
+    painted_source_image: np.ndarray = np.zeros(image_shape, dtype=np.uint8)
     source_code_by_label = {"unknown": 0, "frontier": 1, "watershed": 2, "fallback": 3}
     source_label_by_code = {code: label for label, code in source_code_by_label.items()}
 
@@ -123,23 +179,30 @@ def _choose_edges_matlab_style(
         start_vertex, end_vertex = (int(value) for value in connections[index])
         current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
         current_source_code = source_code_by_label.get(current_source, 0)
-        endpoint_snapshots: list[tuple[np.ndarray, np.ndarray, np.ndarray]] = []
-
-        for vertex_index in (start_vertex, end_vertex):
-            coords = _offset_coords_matlab(
-                vertex_positions[vertex_index],
-                vertex_offsets(int(vertex_scales[vertex_index])),
-                image_shape,
-            )
-            snapshot = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
-            source_snapshot = painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]].copy()
-            painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
-            painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = 0
-            endpoint_snapshots.append((coords, snapshot, source_snapshot))
-
-        chosen = True
         trace = np.asarray(traces[index], dtype=np.float32)
         scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
+        endpoint_coord_groups: list[np.ndarray] = []
+
+        for endpoint_position, endpoint_scale in _matlab_edge_endpoint_positions_and_scales(
+            trace,
+            scale_trace,
+        ):
+            scale_index = int(np.clip(endpoint_scale, 0, len(lumen_radius_pixels_axes) - 1))
+            coords = _offset_coords_matlab(
+                endpoint_position,
+                vertex_offsets(scale_index),
+                image_shape,
+            )
+            endpoint_coord_groups.append(coords)
+        endpoint_coords, endpoint_snapshot, endpoint_source_snapshot = (
+            _snapshot_endpoint_influences_matlab(
+                endpoint_coord_groups,
+                painted_image,
+                painted_source_image,
+            )
+        )
+
+        chosen = True
         for point_index, point in enumerate(trace):
             scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
             coords = _offset_coords_matlab(point, edge_offsets(scale_value), image_shape)
@@ -185,17 +248,24 @@ def _choose_edges_matlab_style(
                 break
 
         if chosen:
-            for vertex_index, (coords, _snapshot, _source_snapshot) in zip(
+            for vertex_index, coords in zip(
                 (start_vertex, end_vertex),
-                endpoint_snapshots,
+                endpoint_coord_groups,
             ):
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
                 painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = current_source_code
             chosen_indices.append(index)
-        else:
-            for coords, snapshot, source_snapshot in endpoint_snapshots:
-                painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = snapshot
-                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = source_snapshot
+        elif endpoint_coords.size:
+            painted_image[
+                endpoint_coords[:, 0],
+                endpoint_coords[:, 1],
+                endpoint_coords[:, 2],
+            ] = endpoint_snapshot
+            painted_source_image[
+                endpoint_coords[:, 0],
+                endpoint_coords[:, 1],
+                endpoint_coords[:, 2],
+            ] = endpoint_source_snapshot
 
     if not chosen_indices:
         empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
@@ -239,14 +309,17 @@ def _choose_edges_matlab_style(
         index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep
     ]
 
-    return build_selected_edges_result(
-        final_indices,
-        traces,
-        connections,
-        metrics,
-        energy_traces,
-        scale_traces,
-        connection_sources,
-        vertex_positions,
-        diagnostics,
+    return cast(
+        "dict[str, Any]",
+        build_selected_edges_result(
+            final_indices,
+            traces,
+            connections,
+            metrics,
+            energy_traces,
+            scale_traces,
+            connection_sources,
+            vertex_positions,
+            diagnostics,
+        ),
     )

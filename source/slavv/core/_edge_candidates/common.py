@@ -111,6 +111,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
     current_forward_unit: np.ndarray | None,
     microns_per_voxel: np.ndarray,
     lumen_radius_microns: np.ndarray,
+    distance_tolerance: float = 3.0,
 ) -> np.ndarray:
     """Apply MATLAB-style size, distance, and direction penalties to neighborhood energies."""
     adjusted = np.asarray(raw_energies, dtype=np.float64).copy()
@@ -128,11 +129,16 @@ def _matlab_frontier_adjusted_neighbor_energies(
     local_distance_adjustment = (
         1.0 - np.cos(np.pi * np.minimum(1.0, (4.0 / 3.0) * local_r_over_R))
     ) / 2.0
-    adjusted *= local_distance_adjustment
+    with np.errstate(invalid="ignore"):
+        adjusted *= local_distance_adjustment
 
     current_d_over_r = float(current_distance_microns) / safe_origin_radius
-    total_distance_adjustment = math.exp(-0.5 * ((3.0 * current_d_over_r / 3.0) ** 2))
-    adjusted *= total_distance_adjustment
+    safe_distance_tolerance = max(float(distance_tolerance), 1e-6)
+    total_distance_adjustment = math.exp(
+        -0.5 * ((3.0 * current_d_over_r / safe_distance_tolerance) ** 2)
+    )
+    with np.errstate(invalid="ignore"):
+        adjusted *= total_distance_adjustment
 
     if current_forward_unit is not None:
         forward = np.asarray(current_forward_unit, dtype=np.float64).reshape(3)
@@ -150,7 +156,8 @@ def _matlab_frontier_adjusted_neighbor_energies(
                 np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
             )
             directional_alignment[directional_alignment < 0.0] = 0.0
-            adjusted *= directional_alignment
+            with np.errstate(invalid="ignore"):
+                adjusted *= directional_alignment
 
     adjusted[~np.isfinite(adjusted)] = np.inf
     result: Float32Array = adjusted.astype(np.float32, copy=False)

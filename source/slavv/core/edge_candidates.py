@@ -45,6 +45,7 @@ from ._edge_candidates.generate import (
     _generate_edge_candidates_matlab_frontier,
 )
 from ._edge_candidates.geodesic import _salvage_matlab_parity_candidates_with_local_geodesics
+from ._edge_candidates.global_watershed import _generate_edge_candidates_matlab_global_watershed
 from ._edge_candidates.lifecycle import _build_frontier_candidate_lifecycle
 from ._edge_candidates.watershed import (
     _augment_matlab_frontier_candidates_with_watershed_contacts,
@@ -80,6 +81,7 @@ __all__ = [
     "_frontier_parent_child_outcome_from_reason",
     "_generate_edge_candidates",
     "_generate_edge_candidates_matlab_frontier",
+    "_generate_edge_candidates_matlab_global_watershed",
     "_matlab_frontier_edge_budget",
     "_matlab_frontier_offsets",
     "_matlab_linear_index_to_coord",

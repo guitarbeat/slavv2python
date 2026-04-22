@@ -153,6 +153,7 @@ def _trace_origin_edges_matlab_frontier(
             current_forward_unit=current_forward_unit,
             microns_per_voxel=microns_per_voxel,
             lumen_radius_microns=lumen_radius_microns,
+            distance_tolerance=3.0,
         )
         new_coords: list[np.ndarray] = []
         new_distances: list[float] = []

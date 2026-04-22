@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import numpy as np
 
+from slavv.core._edge_candidates.generate import _finalize_matlab_parity_candidates
 from slavv.core._edge_candidates.global_watershed import (
+    _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
     _matlab_global_watershed_border_locations,
     _matlab_global_watershed_current_strel,
     _matlab_global_watershed_insert_available_location,
     _matlab_global_watershed_reveal_unclaimed_strel,
+    _matlab_global_watershed_scale_pointer_map,
 )
 
 
@@ -45,7 +48,7 @@ def test_initialize_matlab_global_watershed_state_matches_shared_map_layout():
 def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
     strel = _matlab_global_watershed_current_strel(
         0,
-        current_scale_index=0,
+        current_scale_label=1,
         shape=(3, 3, 3),
         lumen_radius_microns=np.array([1.0], dtype=np.float32),
         microns_per_voxel=np.ones((3,), dtype=np.float32),
@@ -55,7 +58,7 @@ def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
     assert np.all(strel["coords"] >= 0)
     assert np.all(strel["coords"] < np.array([3, 3, 3], dtype=np.int32))
     assert len(strel["coords"]) < 27
-    assert strel["pointer_indices"].tolist() == list(range(1, len(strel["coords"]) + 1))
+    assert strel["pointer_indices"].tolist() == [14, 15, 17, 18, 23, 24, 26, 27]
 
 
 def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_voxels():
@@ -73,7 +76,7 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_
 
     result = _matlab_global_watershed_reveal_unclaimed_strel(
         current_vertex_index=2,
-        current_scale_index=3,
+        current_scale_label=3,
         current_d_over_r=1.25,
         strel_coords=np.array([[1, 1, 1], [1, 1, 2]], dtype=np.int32),
         strel_pointer_indices=np.array([9, 10], dtype=np.uint64),
@@ -124,3 +127,87 @@ def test_matlab_global_watershed_insert_available_location_secondary_seed_replac
     )
 
     assert updated == [11, 22, 44]
+
+
+def test_generate_edge_candidates_matlab_global_watershed_recovers_simple_bridge():
+    energy = np.ones((5, 5, 5), dtype=np.float32)
+    energy[1, 2, 2] = -1.0
+    energy[2, 2, 2] = -2.0
+    energy[3, 2, 2] = -1.0
+    scale_indices = np.zeros((5, 5, 5), dtype=np.int16)
+    vertex_positions = np.array([[1.0, 2.0, 2.0], [3.0, 2.0, 2.0]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+
+    candidates = _generate_edge_candidates_matlab_global_watershed(
+        energy,
+        scale_indices,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+        _vertex_center_image=np.zeros((5, 5, 5), dtype=np.int32),
+        params={"comparison_exact_network": True},
+    )
+
+    assert candidates["matlab_global_watershed_exact"] is True
+    assert candidates["candidate_source"] == "global_watershed"
+    assert len(candidates["connections"]) == 1
+    assert sorted(candidates["connections"].tolist()[0]) == [0, 1]
+    assert candidates["connection_sources"] == ["global_watershed"]
+    assert len(candidates["traces"]) == 1
+    endpoints = {
+        tuple(candidates["traces"][0][0].tolist()),
+        tuple(candidates["traces"][0][-1].tolist()),
+    }
+    assert endpoints == {
+        (1.0, 2.0, 2.0),
+        (3.0, 2.0, 2.0),
+    }
+    assert candidates["diagnostics"]["candidate_traced_edge_count"] == 1
+    assert candidates["pointer_map"].shape == energy.shape
+    assert candidates["raw_pointer_map"].shape == energy.shape
+    assert candidates["vertex_index_map"].shape == energy.shape
+
+
+def test_matlab_global_watershed_scale_pointer_map_matches_final_matlab_formula():
+    pointer_map = np.zeros((3, 3, 3), dtype=np.uint64)
+    size_map = np.ones((3, 3, 3), dtype=np.int16)
+    pointer_map[1, 1, 1] = 14
+    pointer_map[1, 1, 2] = 27
+
+    scaled = _matlab_global_watershed_scale_pointer_map(
+        pointer_map,
+        size_map,
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+        step_size_per_origin_radius=1.0,
+    )
+
+    assert scaled[1, 1, 1] == np.float32(1000.0 / 27.0 * 14.0)
+    assert scaled[1, 1, 2] == np.float32(1000.0 / 27.0 * 27.0)
+
+
+def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_payload():
+    candidates = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+        "connection_sources": [],
+        "diagnostics": {},
+        "matlab_global_watershed_exact": True,
+    }
+
+    finalized = _finalize_matlab_parity_candidates(
+        candidates,
+        energy=np.zeros((3, 3, 3), dtype=np.float32),
+        scale_indices=np.zeros((3, 3, 3), dtype=np.int16),
+        vertex_positions=np.zeros((0, 3), dtype=np.float32),
+        energy_sign=-1.0,
+        params={"comparison_exact_network": True},
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+    )
+
+    assert finalized is candidates

@@ -36,7 +36,7 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
         ],
     }
 
-    network = processor.construct_network(edges, vertices, {})
+    network = processor.construct_network(edges, vertices, {"remove_cycles": True})
 
     cycle_pairs = [tuple(map(int, pair)) for pair in network["cycles"]]
     assert (0, 2) in cycle_pairs
@@ -77,7 +77,12 @@ def test_construct_network_resumable_persists_standard_topology(tmp_path):
     }
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="network")
 
-    network = construct_network_resumable(edges, vertices, {}, run_context.stage("network"))
+    network = construct_network_resumable(
+        edges,
+        vertices,
+        {"remove_cycles": True},
+        run_context.stage("network"),
+    )
 
     assert network["strands"]
     assert network["mismatched_strands"] == []

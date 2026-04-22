@@ -16,9 +16,8 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
-from .candidate_manifest import _append_candidate_unit
-from .frontier_trace import _trace_origin_edges_matlab_frontier
 from .geodesic import _salvage_matlab_parity_candidates_with_local_geodesics
+from .global_watershed import _generate_edge_candidates_matlab_global_watershed
 from .watershed import (
     _augment_matlab_frontier_candidates_with_watershed_contacts,
     _supplement_matlab_frontier_candidates_with_watershed_joins,
@@ -40,20 +39,6 @@ def _edge_candidates_facade() -> Any:
     from .. import edge_candidates as edge_candidates_facade
 
     return edge_candidates_facade
-
-
-def _empty_candidate_manifest() -> dict[str, Any]:
-    """Return an empty candidate manifest with the standard payload shape."""
-    return {
-        "traces": [],
-        "connections": np.zeros((0, 2), dtype=np.int32),
-        "metrics": np.zeros((0,), dtype=np.float32),
-        "energy_traces": [],
-        "scale_traces": [],
-        "origin_indices": np.zeros((0,), dtype=np.int32),
-        "connection_sources": [],
-        "diagnostics": _empty_edge_diagnostics(),
-    }
 
 
 def _generate_fallback_directions(
@@ -107,6 +92,9 @@ def _finalize_matlab_parity_candidates(
     microns_per_voxel: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Finalize MATLAB-parity candidates with the configured watershed strategy."""
+    if bool(candidates.get("matlab_global_watershed_exact", False)):
+        return candidates
+
     candidate_mode = _parity_watershed_candidate_mode(params)
     watershed_metric_threshold = _parity_watershed_metric_threshold_from_params(params)
 
@@ -144,7 +132,7 @@ def _finalize_matlab_parity_candidates(
     if salvage_mode == "auto":
         salvage_mode = "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
     if salvage_mode == "none":
-        return finalized
+        return cast("dict[str, Any]", finalized)
 
     microns_per_voxel_value = (
         np.asarray(microns_per_voxel, dtype=np.float32)
@@ -177,37 +165,27 @@ def _generate_edge_candidates_matlab_frontier(
     vertex_center_image: np.ndarray,
     params: dict[str, Any],
 ) -> dict[str, Any]:
-    """Generate edge candidates using the MATLAB-style best-first frontier search."""
-    candidates = _empty_candidate_manifest()
-    per_origin_candidate_counts: dict[int, int] = {}
-    for origin_vertex_idx in range(len(vertex_positions)):
-        unit_payload = _trace_origin_edges_matlab_frontier(
-            energy,
-            scale_indices,
-            vertex_positions,
-            vertex_scales,
-            lumen_radius_microns,
-            microns_per_voxel,
-            vertex_center_image,
-            origin_vertex_idx,
-            params,
-        )
-        n_unit_traces = len(unit_payload.get("traces", []))
-        if n_unit_traces > 0:
-            per_origin_candidate_counts[origin_vertex_idx] = n_unit_traces
-        _append_candidate_unit(candidates, unit_payload)
-
-    candidates["diagnostics"]["frontier_origins_with_candidates"] = len(per_origin_candidate_counts)
-    candidates["diagnostics"]["frontier_origins_without_candidates"] = len(vertex_positions) - len(
-        per_origin_candidate_counts
+    """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
+    candidates = _generate_edge_candidates_matlab_global_watershed(
+        energy,
+        scale_indices,
+        vertex_positions,
+        vertex_scales,
+        lumen_radius_microns,
+        microns_per_voxel,
+        vertex_center_image,
+        params,
     )
-    candidates["diagnostics"]["frontier_per_origin_candidate_counts"] = per_origin_candidate_counts
+    per_origin_candidate_counts = candidates["diagnostics"].get(
+        "frontier_per_origin_candidate_counts",
+        {},
+    )
     logger.info(
-        "Frontier candidates: %d origins produced candidates, %d did not",
+        "Global watershed candidates: %d origins produced candidates, %d did not",
         len(per_origin_candidate_counts),
         len(vertex_positions) - len(per_origin_candidate_counts),
     )
-    return candidates
+    return cast("dict[str, Any]", candidates)
 
 
 def _trace_fallback_origin_candidates(
