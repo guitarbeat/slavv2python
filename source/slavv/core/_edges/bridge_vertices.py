@@ -223,7 +223,7 @@ def _matlab_bridge_search_target(
 
     number_of_indices = 0
     safe_lower = np.asarray([int(strel_apothem)] * 3, dtype=np.int32)
-    safe_upper = np.asarray(shape, dtype=np.int32) - int(strel_apothem)
+    safe_upper: np.ndarray = np.asarray(shape, dtype=np.int32) - int(strel_apothem)
     there_exists_possible_move = bool(
         np.all(current_coord >= safe_lower) and np.all(current_coord < safe_upper)
     )
@@ -682,6 +682,7 @@ def add_vertices_to_edges_matlab_style(
         metrics,
         energy_traces,
         diagnostics,
+        reject_nonnegative_energy_edges=False,
     )
     rebuilt = build_selected_edges_result(
         keep_indices,

@@ -7,8 +7,9 @@ This document provides project-specific guidelines for Junie (AI Agent) working 
 Before starting any task, review these sources in order:
 1.  **[README.md](README.md)**: Project overview and quick start.
 2.  **[AGENTS.md](AGENTS.md)**: **Canonical workflow commands** and repository-wide guardrails.
-3.  **[docs/README.md](docs/README.md)**: Index for reference docs and **Active Chapter** status.
-4.  **[docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)**: Canonical MATLAB-to-Python mapping for exact imported-MATLAB parity work.
+3.  **[docs/README.md](docs/README.md)**: Index for maintained reference docs.
+4.  **[docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)**: Canonical source-of-truth hierarchy, claim boundaries, and remaining work for fully implementing the released SLAVV method in Python.
+5.  **[docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)**: Stage-by-stage MATLAB-to-Python map for the imported-MATLAB exact route.
 
 ## Build & Configuration
 
@@ -38,15 +39,17 @@ Always prefer `python -m` for tool execution:
 
 When working on parity-sensitive logic:
 - **Canonical Source Rule**: Treat `external/Vectorization-Public/source/` as the source of truth.
+- **Hierarchy Rule**: Use the released MATLAB source first, preserved MATLAB artifacts plus `prove-exact` second, and paper prose as explanatory context.
 - **Exact Method Rule**: The goal is exact mathematical and algorithmic parity with MATLAB, not
   approximate output similarity.
 - **Deviation Policy**: Heuristic replacements, post-hoc supplements, salvage passes, reordered
   claim resolution, or simplified local workflows are bugs on parity surfaces unless they are
   explicitly documented as non-parity behavior.
 - **Staged Layout**: Respect the `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` structure.
-- **Developer Runner**: Use `dev/scripts/cli/parity_experiment.py` for counts-only Python reruns against reusable staged comparison roots.
+- **Developer Runner**: Use `dev/scripts/cli/parity_experiment.py` for Python reruns and exact artifact proof against reusable staged comparison roots.
 - **Evidence**: Cite artifacts from the staged comparison root you are using and from `docs/reference/core/MATLAB_PARITY_MAPPING.md` when describing source mappings.
-- **Scope**: Rich legacy parity diagnostics are retired from the live source tree; the maintained runner only compares preserved MATLAB count truth against a fresh Python rerun.
+- **Claim Boundary**: Do not call a stage `Exact` or `100%` until it is artifact-proven under the current maintained proof workflow.
+- **Scope**: Rich legacy parity diagnostics are retired from the live source tree; the maintained runner supports rerun summaries plus exact artifact proof, but not the removed legacy diagnostics.
 
 ## Testing Strategy
 

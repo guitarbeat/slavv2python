@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from scipy.io import loadmat
 
+from ..runtime.run_state import atomic_joblib_dump
 from ..utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
@@ -71,13 +72,23 @@ def find_matlab_vector_paths(batch_dir: Path) -> dict[str, Path]:
     if not vectors_dir.is_dir():
         raise ValueError(f"missing MATLAB vectors directory: {vectors_dir}")
 
+    stage_patterns: dict[str, tuple[str, ...]] = {
+        "vertices": ("curated_vertices*.mat", "vertices*.mat"),
+        "edges": ("edges*.mat", "curated_edges*.mat"),
+        "network": ("network*.mat",),
+    }
     stage_paths: dict[str, Path] = {}
     for stage in EXACT_STAGE_ORDER:
-        candidates = sorted(
-            path
-            for path in vectors_dir.glob(f"{stage}*.mat")
-            if path.is_file() and not path.name.startswith("curated_")
-        )
+        candidates: list[Path] = []
+        seen: set[Path] = set()
+        for pattern in stage_patterns[stage]:
+            for path in sorted(vectors_dir.glob(pattern)):
+                if not path.is_file() or path in seen:
+                    continue
+                candidates.append(path)
+                seen.add(path)
+            if candidates:
+                break
         if not candidates:
             raise ValueError(f"missing raw MATLAB {stage} vector file under {vectors_dir}")
         if len(candidates) > 1:
@@ -129,6 +140,26 @@ def load_normalized_python_checkpoints(
             raise ValueError(f"expected mapping payload in {checkpoint_path}")
         normalized[stage] = normalize_python_stage_payload(stage, cast("dict[str, Any]", payload))
     return normalized
+
+
+def sync_exact_vertex_checkpoint_from_matlab(
+    checkpoint_path: Path,
+    batch_dir: Path,
+) -> dict[str, Any]:
+    """Overwrite vertex checkpoint parity fields from the canonical MATLAB vector surface."""
+    payload = safe_load(checkpoint_path)
+    if not isinstance(payload, dict):
+        raise ValueError(f"expected mapping payload in {checkpoint_path}")
+
+    normalized_vertices = load_normalized_matlab_vectors(batch_dir, ("vertices",))["vertices"]
+    updated = dict(cast("dict[str, Any]", payload))
+
+    updated["positions"] = np.asarray(normalized_vertices["positions"], dtype=np.float64)
+    updated["scales"] = np.asarray(normalized_vertices["scales"], dtype=np.int64)
+    updated["energies"] = np.asarray(normalized_vertices["energies"], dtype=np.float64)
+    updated["count"] = len(updated["positions"])
+    atomic_joblib_dump(updated, checkpoint_path)
+    return updated
 
 
 def normalize_python_stage_payload(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -244,9 +275,8 @@ def render_exact_proof_report(report: dict[str, Any]) -> str:
 
 def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "positions": _normalize_matlab_float_matrix(
+        "positions": _normalize_matlab_spatial_matrix(
             _require_key(payload, "vertex_space_subscripts"),
-            columns=3,
         ),
         "scales": _normalize_matlab_int_vector(_require_key(payload, "vertex_scale_subscripts")),
         "energies": _normalize_float_vector(_require_key(payload, "vertex_energies")),
@@ -256,9 +286,8 @@ def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any
 def _normalize_matlab_edges_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "connections": _normalize_matlab_connections(_require_key(payload, "edges2vertices")),
-        "traces": _normalize_matlab_float_matrix_list(
+        "traces": _normalize_matlab_spatial_matrix_list(
             _require_key(payload, "edge_space_subscripts"),
-            columns=3,
         ),
         "scale_traces": _normalize_matlab_float_vector_list(
             _require_key(payload, "edge_scale_subscripts"),
@@ -267,10 +296,9 @@ def _normalize_matlab_edges_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "energies": _normalize_float_vector(
             payload.get("mean_edge_energies", payload.get("energies")),
         ),
-        "bridge_vertex_positions": _normalize_optional_matlab_float_matrix(
+        "bridge_vertex_positions": _normalize_optional_matlab_spatial_matrix(
             payload,
             ("bridge_vertex_space_subscripts", "bridge_vertex_positions"),
-            columns=3,
         ),
         "bridge_vertex_scales": _normalize_optional_matlab_int_vector(
             payload,
@@ -289,9 +317,8 @@ def _normalize_matlab_network_payload(payload: dict[str, Any]) -> dict[str, Any]
         "bifurcations": _normalize_matlab_int_vector(
             _require_key(payload, "bifurcation_vertices"),
         ),
-        "strand_subscripts": _normalize_matlab_float_matrix_list(
+        "strand_subscripts": _normalize_matlab_spatial_scale_matrix_list(
             _require_key(payload, "strand_subscripts"),
-            columns=4,
         ),
         "strand_energy_traces": _normalize_float_vector_list(
             _require_key(payload, "strand_energies"),
@@ -299,9 +326,8 @@ def _normalize_matlab_network_payload(payload: dict[str, Any]) -> dict[str, Any]
         "mean_strand_energies": _normalize_float_vector(
             _require_key(payload, "mean_strand_energies"),
         ),
-        "vessel_directions": _normalize_float_matrix_list(
+        "vessel_directions": _normalize_spatial_vector_list(
             _require_key(payload, "vessel_directions"),
-            columns=3,
         ),
     }
 
@@ -325,10 +351,9 @@ def _normalize_matlab_bridge_payload(payload: dict[str, Any]) -> dict[str, Any]:
             source_payload,
             ("bridge_edges2vertices", "bridge_connections", "edges2vertices", "connections"),
         ),
-        "traces": _normalize_optional_matlab_float_matrix_list(
+        "traces": _normalize_optional_matlab_spatial_matrix_list(
             source_payload,
             ("bridge_edge_space_subscripts", "traces", "edge_space_subscripts"),
-            columns=3,
         ),
         "scale_traces": _normalize_optional_matlab_float_vector_list(
             source_payload,
@@ -412,6 +437,10 @@ def _normalize_matlab_float_matrix(value: Any, *, columns: int) -> np.ndarray:
     return _normalize_float_matrix(value, columns=columns, one_based=True)
 
 
+def _normalize_matlab_spatial_matrix(value: Any) -> np.ndarray:
+    return _normalize_spatial_matrix(value, one_based=True)
+
+
 def _normalize_optional_matlab_float_matrix(
     payload: dict[str, Any],
     field_names: tuple[str, ...],
@@ -421,8 +450,19 @@ def _normalize_optional_matlab_float_matrix(
     return _normalize_float_matrix(_optional_field(payload, *field_names), columns=columns, one_based=True)
 
 
+def _normalize_optional_matlab_spatial_matrix(
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
+) -> np.ndarray:
+    return _normalize_spatial_matrix(_optional_field(payload, *field_names), one_based=True)
+
+
 def _normalize_matlab_float_matrix_list(value: Any, *, columns: int) -> list[np.ndarray]:
     return _normalize_float_matrix_list(value, columns=columns, one_based=True)
+
+
+def _normalize_matlab_spatial_matrix_list(value: Any) -> list[np.ndarray]:
+    return _normalize_spatial_matrix_list(value, one_based=True)
 
 
 def _normalize_optional_matlab_float_matrix_list(
@@ -434,8 +474,19 @@ def _normalize_optional_matlab_float_matrix_list(
     return _normalize_float_matrix_list(_optional_field(payload, *field_names), columns=columns, one_based=True)
 
 
+def _normalize_optional_matlab_spatial_matrix_list(
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
+) -> list[np.ndarray]:
+    return _normalize_spatial_matrix_list(_optional_field(payload, *field_names), one_based=True)
+
+
 def _normalize_matlab_float_vector_list(value: Any) -> list[np.ndarray]:
     return _normalize_float_vector_list(value, one_based=True)
+
+
+def _normalize_matlab_spatial_scale_matrix_list(value: Any) -> list[np.ndarray]:
+    return _normalize_spatial_scale_matrix_list(value, one_based=True)
 
 
 def _normalize_optional_matlab_float_vector_list(
@@ -483,10 +534,28 @@ def _normalize_float_matrix(value: Any, *, columns: int, one_based: bool = False
     return cast("np.ndarray", normalized.astype(np.float64, copy=False))
 
 
+def _normalize_spatial_matrix(value: Any, *, one_based: bool = False) -> np.ndarray:
+    normalized = _normalize_float_matrix(value, columns=3, one_based=False)
+    if normalized.size == 0:
+        return normalized
+    normalized = normalized[:, ::-1]
+    if one_based:
+        normalized = normalized - 1.0
+    return cast("np.ndarray", normalized.astype(np.float64, copy=False))
+
+
 def _normalize_float_vector_list(value: Any, *, one_based: bool = False) -> list[np.ndarray]:
     vectors: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
         vectors.append(_normalize_float_vector(item, one_based=one_based))
+    return vectors
+
+
+def _normalize_spatial_vector_list(value: Any) -> list[np.ndarray]:
+    vectors: list[np.ndarray] = []
+    for item in _coerce_sequence_items(value):
+        normalized = _normalize_float_matrix(item, columns=3, one_based=False)
+        vectors.append(normalized[:, ::-1].astype(np.float64, copy=False))
     return vectors
 
 
@@ -499,6 +568,27 @@ def _normalize_float_matrix_list(
     matrices: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
         matrices.append(_normalize_float_matrix(item, columns=columns, one_based=one_based))
+    return matrices
+
+
+def _normalize_spatial_matrix_list(value: Any, *, one_based: bool = False) -> list[np.ndarray]:
+    matrices: list[np.ndarray] = []
+    for item in _coerce_sequence_items(value):
+        matrices.append(_normalize_spatial_matrix(item, one_based=one_based))
+    return matrices
+
+
+def _normalize_spatial_scale_matrix_list(value: Any, *, one_based: bool = False) -> list[np.ndarray]:
+    matrices: list[np.ndarray] = []
+    for item in _coerce_sequence_items(value):
+        normalized = _normalize_float_matrix(item, columns=4, one_based=False)
+        if normalized.size == 0:
+            matrices.append(np.empty((0, 4), dtype=np.float64))
+            continue
+        reordered = np.column_stack((normalized[:, 2], normalized[:, 1], normalized[:, 0], normalized[:, 3]))
+        if one_based:
+            reordered = reordered - 1.0
+        matrices.append(reordered.astype(np.float64, copy=False))
     return matrices
 
 
@@ -710,4 +800,5 @@ __all__ = [
     "load_normalized_python_checkpoints",
     "normalize_python_stage_payload",
     "render_exact_proof_report",
+    "sync_exact_vertex_checkpoint_from_matlab",
 ]

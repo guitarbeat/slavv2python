@@ -36,6 +36,7 @@ python -m mypy
 
 - [AGENTS.md](AGENTS.md)
 - [docs/README.md](docs/README.md)
+- [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [dev/tests/README.md](dev/tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
@@ -44,4 +45,4 @@ python -m mypy
 
 - Structured `run_dir` metadata is the supported resumable workflow.
 - The legacy rich parity and MATLAB comparison harness has been removed from the public CLI surface.
-- A developer-only counts runner is available at `dev/scripts/cli/parity_experiment.py` for rerunning Python `edges` or `network` against reusable staged comparison roots.
+- A developer-only parity runner is available at `dev/scripts/cli/parity_experiment.py` for rerunning Python `edges` or `network` against reusable staged comparison roots and for exact artifact proof against preserved MATLAB vectors.

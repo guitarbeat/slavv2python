@@ -94,6 +94,55 @@ def _materialize_exact_matlab_batch(run_root: Path) -> Path:
     return batch_dir
 
 
+def _exact_vertex_payload() -> dict[str, object]:
+    return {
+        "positions": np.array([[2.0, 1.0, 0.0], [5.0, 4.0, 3.0]], dtype=np.float32),
+        "scales": np.array([1, 2], dtype=np.int16),
+        "energies": np.array([-2.0, -1.0], dtype=np.float32),
+    }
+
+
+def _exact_edge_payload(*, energies: np.ndarray | None = None) -> dict[str, object]:
+    return {
+        "connections": np.array([[0, 1]], dtype=np.int32),
+        "traces": [np.array([[2.0, 1.0, 0.0], [5.0, 4.0, 3.0]], dtype=np.float32)],
+        "scale_traces": [np.array([1.0, 1.5], dtype=np.float32)],
+        "energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
+        "energies": np.array([-3.5], dtype=np.float32) if energies is None else energies,
+        "bridge_vertex_positions": np.empty((0, 3), dtype=np.float32),
+        "bridge_vertex_scales": np.empty((0,), dtype=np.int16),
+        "bridge_vertex_energies": np.empty((0,), dtype=np.float32),
+        "bridge_edges": {
+            "connections": np.empty((0, 2), dtype=np.int32),
+            "traces": [],
+            "scale_traces": [],
+            "energy_traces": [],
+            "energies": np.empty((0,), dtype=np.float32),
+        },
+    }
+
+
+def _exact_network_payload() -> dict[str, object]:
+    return {
+        "strands": [[0, 1]],
+        "bifurcations": np.empty((0,), dtype=np.int32),
+        "strand_subscripts": [
+            np.array(
+                [
+                    [2.0, 1.0, 0.0, 1.0],
+                    [5.0, 4.0, 3.0, 1.5],
+                ],
+                dtype=np.float32,
+            )
+        ],
+        "strand_energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
+        "mean_strand_energies": np.array([-3.5], dtype=np.float32),
+        "vessel_directions": [
+            np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 1.0]], dtype=np.float32)
+        ],
+    }
+
+
 @pytest.mark.integration
 def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monkeypatch):
     source_run_root = tmp_path / "source-run"
@@ -252,51 +301,107 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
 
 
 @pytest.mark.integration
+def test_rerun_python_syncs_exact_vertex_checkpoint_from_matlab(tmp_path, monkeypatch):
+    source_run_root = tmp_path / "source-run"
+    dest_run_root = tmp_path / "dest-run"
+    input_file = tmp_path / "input.tif"
+    input_file.write_bytes(b"placeholder-tiff")
+    _materialize_exact_matlab_batch(source_run_root)
+
+    materialize_checkpoint_surface(
+        source_run_root,
+        stages=("energy", "vertices", "edges", "network"),
+        payloads={
+            "energy": {"energy_origin": "matlab_batch_hdf5"},
+            "vertices": {
+                "positions": np.zeros((2, 3), dtype=np.float32),
+                "scales": np.zeros((2,), dtype=np.int16),
+                "energies": np.zeros((2,), dtype=np.float32),
+                "radii_microns": np.array([1.0, 1.0], dtype=np.float32),
+                "count": 2,
+            },
+            "edges": build_edges_payload(
+                traces=[[[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]],
+                connections=[[0, 1]],
+            ),
+            "network": build_network_payload(strands=[[0, 1]]),
+        },
+    )
+    _write_json(
+        source_run_root / "03_Analysis" / "comparison_report.json",
+        {
+            "matlab": {"vertices_count": 2, "edges_count": 1, "strand_count": 1},
+            "python": {"vertices_count": 2, "edges_count": 1, "network_strands_count": 1},
+            "vertices": {"matlab_count": 2, "python_count": 2},
+            "edges": {"matlab_count": 1, "python_count": 1},
+            "network": {"matlab_strand_count": 1, "python_strand_count": 1},
+        },
+    )
+    _write_json(
+        source_run_root / "99_Metadata" / "validated_params.json",
+        {"comparison_exact_network": True},
+    )
+    materialize_run_snapshot(
+        source_run_root,
+        {"run_id": "run-1", "provenance": {"input_file": str(input_file)}},
+    )
+
+    class FakeProcessor:
+        def process_image(self, image, parameters, *, run_dir=None, force_rerun_from=None, **_kwargs):
+            from joblib import load
+
+            checkpoint_vertices = load(
+                Path(run_dir) / parity_experiment.CHECKPOINTS_DIR / "checkpoint_vertices.pkl"
+            )
+            np.testing.assert_array_equal(
+                checkpoint_vertices["positions"],
+                np.array([[2.0, 1.0, 0.0], [5.0, 4.0, 3.0]], dtype=np.float32),
+            )
+            np.testing.assert_array_equal(
+                checkpoint_vertices["scales"],
+                np.array([1, 2], dtype=np.int16),
+            )
+            np.testing.assert_array_equal(
+                checkpoint_vertices["energies"],
+                np.array([-2.0, -1.0], dtype=np.float32),
+            )
+            from joblib import dump
+
+            checkpoint_dir = Path(run_dir) / parity_experiment.CHECKPOINTS_DIR
+            dump(build_edges_payload(traces=[[[2.0, 1.0, 0.0], [5.0, 4.0, 3.0]]], connections=[[0, 1]]), checkpoint_dir / "checkpoint_edges.pkl")
+            dump(build_network_payload(strands=[[0, 1]]), checkpoint_dir / "checkpoint_network.pkl")
+            return {}
+
+    monkeypatch.setattr(parity_experiment, "load_tiff_volume", lambda _path: np.ones((2, 2, 2)))
+    monkeypatch.setattr(parity_experiment, "SLAVVProcessor", FakeProcessor)
+
+    parity_experiment.main(
+        [
+            "rerun-python",
+            "--source-run-root",
+            str(source_run_root),
+            "--dest-run-root",
+            str(dest_run_root),
+            "--rerun-from",
+            "edges",
+        ]
+    )
+
+    provenance = json.loads(
+        (dest_run_root / "99_Metadata" / "experiment_provenance.json").read_text(encoding="utf-8")
+    )
+    assert provenance["exact_vertex_checkpoint_sync"] is True
+
+
+@pytest.mark.integration
 def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
     source_run_root = tmp_path / "source-run"
     dest_run_root = tmp_path / "dest-run"
     _materialize_exact_matlab_batch(source_run_root)
 
-    vertex_payload = {
-        "positions": np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32),
-        "scales": np.array([1, 2], dtype=np.int16),
-        "energies": np.array([-2.0, -1.0], dtype=np.float32),
-    }
-    edge_payload = {
-        "connections": np.array([[0, 1]], dtype=np.int32),
-        "traces": [np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32)],
-        "scale_traces": [np.array([1.0, 1.5], dtype=np.float32)],
-        "energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
-        "energies": np.array([-3.5], dtype=np.float32),
-        "bridge_vertex_positions": np.empty((0, 3), dtype=np.float32),
-        "bridge_vertex_scales": np.empty((0,), dtype=np.int16),
-        "bridge_vertex_energies": np.empty((0,), dtype=np.float32),
-        "bridge_edges": {
-            "connections": np.empty((0, 2), dtype=np.int32),
-            "traces": [],
-            "scale_traces": [],
-            "energy_traces": [],
-            "energies": np.empty((0,), dtype=np.float32),
-        },
-    }
-    network_payload = {
-        "strands": [[0, 1]],
-        "bifurcations": np.empty((0,), dtype=np.int32),
-        "strand_subscripts": [
-            np.array(
-                [
-                    [0.0, 1.0, 2.0, 1.0],
-                    [3.0, 4.0, 5.0, 1.5],
-                ],
-                dtype=np.float32,
-            )
-        ],
-        "strand_energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
-        "mean_strand_energies": np.array([-3.5], dtype=np.float32),
-        "vessel_directions": [
-            np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float32)
-        ],
-    }
+    vertex_payload = _exact_vertex_payload()
+    edge_payload = _exact_edge_payload()
+    network_payload = _exact_network_payload()
 
     materialize_checkpoint_surface(
         source_run_root,
@@ -356,46 +461,9 @@ def test_prove_exact_reports_first_edge_mismatch(tmp_path):
         dest_run_root,
         stages=("vertices", "edges", "network"),
         payloads={
-            "vertices": {
-                "positions": np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32),
-                "scales": np.array([1, 2], dtype=np.int16),
-                "energies": np.array([-2.0, -1.0], dtype=np.float32),
-            },
-            "edges": {
-                "connections": np.array([[0, 1]], dtype=np.int32),
-                "traces": [np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32)],
-                "scale_traces": [np.array([1.0, 1.5], dtype=np.float32)],
-                "energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
-                "energies": np.array([-9.0], dtype=np.float32),
-                "bridge_vertex_positions": np.empty((0, 3), dtype=np.float32),
-                "bridge_vertex_scales": np.empty((0,), dtype=np.int16),
-                "bridge_vertex_energies": np.empty((0,), dtype=np.float32),
-                "bridge_edges": {
-                    "connections": np.empty((0, 2), dtype=np.int32),
-                    "traces": [],
-                    "scale_traces": [],
-                    "energy_traces": [],
-                    "energies": np.empty((0,), dtype=np.float32),
-                },
-            },
-            "network": {
-                "strands": [[0, 1]],
-                "bifurcations": np.empty((0,), dtype=np.int32),
-                "strand_subscripts": [
-                    np.array(
-                        [
-                            [0.0, 1.0, 2.0, 1.0],
-                            [3.0, 4.0, 5.0, 1.5],
-                        ],
-                        dtype=np.float32,
-                    )
-                ],
-                "strand_energy_traces": [np.array([-4.0, -3.0], dtype=np.float32)],
-                "mean_strand_energies": np.array([-3.5], dtype=np.float32),
-                "vessel_directions": [
-                    np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float32)
-                ],
-            },
+            "vertices": _exact_vertex_payload(),
+            "edges": _exact_edge_payload(energies=np.array([-9.0], dtype=np.float32)),
+            "network": _exact_network_payload(),
         },
     )
     _write_json(

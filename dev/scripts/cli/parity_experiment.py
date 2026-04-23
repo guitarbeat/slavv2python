@@ -26,6 +26,7 @@ from slavv.io.matlab_exact_proof import (
     load_normalized_matlab_vectors,
     load_normalized_python_checkpoints,
     render_exact_proof_report,
+    sync_exact_vertex_checkpoint_from_matlab,
 )
 from slavv.runtime.run_state import atomic_write_json, atomic_write_text, load_json_dict
 from slavv.utils.safe_unpickle import safe_load
@@ -431,6 +432,23 @@ def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -
         copy2(source_surface.run_snapshot_path, metadata_dir / "source_run_snapshot.json")
 
 
+def maybe_sync_exact_vertex_checkpoint(
+    source_run_root: Path,
+    dest_run_root: Path,
+) -> bool:
+    """Refresh the destination vertex checkpoint from canonical MATLAB vectors on the exact route."""
+    try:
+        exact_surface = validate_exact_proof_source_surface(source_run_root)
+    except ValueError:
+        return False
+
+    checkpoint_path = dest_run_root / CHECKPOINTS_DIR / "checkpoint_vertices.pkl"
+    if not checkpoint_path.is_file():
+        raise ValueError(f"destination run root is missing vertex checkpoint: {checkpoint_path}")
+    sync_exact_vertex_checkpoint_from_matlab(checkpoint_path, exact_surface.matlab_batch_dir)
+    return True
+
+
 def persist_experiment_summary(dest_run_root: Path, summary_payload: dict[str, Any]) -> None:
     """Persist the JSON and text summaries under 03_Analysis."""
     summary_text = render_experiment_summary(summary_payload)
@@ -454,6 +472,7 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
     input_file = resolve_input_file(source_surface, args.input)
     params = load_params_file(source_surface, args.params_file)
     copy_source_surface(source_surface, dest_run_root)
+    exact_vertex_sync = maybe_sync_exact_vertex_checkpoint(source_surface.run_root, dest_run_root)
 
     atomic_write_json(
         dest_run_root / "99_Metadata" / "experiment_provenance.json",
@@ -468,6 +487,7 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
             ),
             "input_file": str(input_file),
             "rerun_from": args.rerun_from,
+            "exact_vertex_checkpoint_sync": exact_vertex_sync,
         },
     )
 

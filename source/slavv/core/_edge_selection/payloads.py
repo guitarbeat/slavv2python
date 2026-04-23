@@ -72,12 +72,14 @@ def prepare_candidate_indices_for_cleanup(
     metrics: np.ndarray,
     energy_traces: list[np.ndarray],
     diagnostics: dict[str, Any],
+    *,
+    reject_nonnegative_energy_edges: bool = True,
 ) -> list[int]:
     """Apply MATLAB ``clean_edge_pairs`` ordering before downstream cleanup."""
     valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
     filtered_indices = np.flatnonzero(valid)
 
-    if filtered_indices.size:
+    if filtered_indices.size and reject_nonnegative_energy_edges:
         nonnegative_max = np.array(
             [
                 np.nanmax(np.asarray(energy_traces[index], dtype=np.float32)) >= 0

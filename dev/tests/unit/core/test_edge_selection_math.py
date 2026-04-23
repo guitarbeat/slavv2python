@@ -40,6 +40,59 @@ def test_prepare_candidate_indices_for_cleanup_prefers_shorter_mutual_edge_on_ti
     assert diagnostics["antiparallel_pair_count"] == 1
 
 
+def test_prepare_candidate_indices_for_cleanup_exact_route_keeps_nonnegative_candidates():
+    connections = np.array(
+        [
+            [0, 1],
+            [1, 2],
+        ],
+        dtype=np.int32,
+    )
+    metrics = np.array([-5.0, -4.0], dtype=np.float32)
+    energy_traces = [
+        np.array([-5.0, -5.0], dtype=np.float32),
+        np.array([-4.0, 0.25], dtype=np.float32),
+    ]
+    diagnostics = empty_edge_diagnostics()
+
+    indices = prepare_candidate_indices_for_cleanup(
+        connections,
+        metrics,
+        energy_traces,
+        diagnostics,
+        reject_nonnegative_energy_edges=False,
+    )
+
+    assert indices == [0, 1]
+    assert diagnostics["negative_energy_rejected_count"] == 0
+
+
+def test_prepare_candidate_indices_for_cleanup_legacy_route_rejects_nonnegative_candidates():
+    connections = np.array(
+        [
+            [0, 1],
+            [1, 2],
+        ],
+        dtype=np.int32,
+    )
+    metrics = np.array([-5.0, -4.0], dtype=np.float32)
+    energy_traces = [
+        np.array([-5.0, -5.0], dtype=np.float32),
+        np.array([-4.0, 0.25], dtype=np.float32),
+    ]
+    diagnostics = empty_edge_diagnostics()
+
+    indices = prepare_candidate_indices_for_cleanup(
+        connections,
+        metrics,
+        energy_traces,
+        diagnostics,
+    )
+
+    assert indices == [0]
+    assert diagnostics["negative_energy_rejected_count"] == 1
+
+
 def test_clean_edges_vertex_degree_excess_matches_overlapping_vertex_excess_removals():
     connections = np.array(
         [

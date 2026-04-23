@@ -43,7 +43,7 @@ def _initialize_matlab_global_watershed_state(
         int(energy.shape[2]),
     )
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
-    max_coord = np.asarray(shape, dtype=np.int32) - 1
+    max_coord: np.ndarray = np.asarray(shape, dtype=np.int32) - 1
     vertex_coords = np.clip(vertex_coords, 0, max_coord)
     vertex_locations = np.asarray(
         [_coord_to_matlab_linear_index(coord, shape) for coord in vertex_coords],
@@ -250,12 +250,12 @@ def _matlab_global_watershed_unit_vectors(
     microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Return MATLAB-style unit vectors for one local strel."""
-    vectors = np.asarray(offsets, dtype=np.float64) * np.asarray(
+    vectors: np.ndarray = np.asarray(offsets, dtype=np.float64) * np.asarray(
         microns_per_voxel,
         dtype=np.float64,
     )
     norms = np.linalg.norm(vectors, axis=1)
-    unit_vectors = np.zeros_like(vectors, dtype=np.float64)
+    unit_vectors: np.ndarray = np.zeros_like(vectors, dtype=np.float64)
     valid_mask = norms > 1e-12
     unit_vectors[valid_mask] = vectors[valid_mask] / norms[valid_mask, None]
     return cast("np.ndarray", unit_vectors.astype(np.float32, copy=False))
@@ -311,7 +311,7 @@ def _matlab_global_watershed_scale_pointer_map(
 ) -> np.ndarray:
     """Apply MATLAB's final pointer-map scaling by scale-specific strel length."""
     scaled_pointer_map = np.zeros(pointer_map.shape, dtype=np.float32)
-    pointer_mask = pointer_map > 0
+    pointer_mask: np.ndarray = pointer_map > 0
     if not np.any(pointer_mask):
         return cast("np.ndarray", scaled_pointer_map)
 
@@ -381,12 +381,17 @@ def _generate_edge_candidates_matlab_global_watershed(
     number_of_vertices = len(vertex_locations)
 
     energy_map = np.asarray(energy_map_temp, dtype=np.float32).copy()
+    original_scale_image: np.ndarray
     if scale_indices is None:
         size_map: np.ndarray = np.ones(shape, dtype=np.int16)
-        original_scale_image: np.ndarray = np.zeros(shape, dtype=np.int16)
+        original_scale_image = np.zeros(shape, dtype=np.int16)
     else:
-        original_scale_image = np.asarray(scale_indices, dtype=np.int16).copy()
-        size_map = (original_scale_image + np.int16(1)).astype(np.int16, copy=False)
+        original_scale_image = np.asarray(
+            cast("np.ndarray", scale_indices),
+            dtype=np.int16,
+        ).copy()
+        size_map = np.asarray(original_scale_image, dtype=np.int16).copy()
+        size_map += np.int16(1)
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
     vertex_coords[:, 0] = np.clip(vertex_coords[:, 0], 0, shape[0] - 1)
     vertex_coords[:, 1] = np.clip(vertex_coords[:, 1], 0, shape[1] - 1)

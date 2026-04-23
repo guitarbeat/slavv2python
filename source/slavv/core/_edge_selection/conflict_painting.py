@@ -144,6 +144,9 @@ def _choose_edges_matlab_style(
         metrics,
         energy_traces,
         diagnostics,
+        reject_nonnegative_energy_edges=not bool(
+            candidates.get("matlab_global_watershed_exact", False)
+        ),
     )
     if not filtered_indices:
         empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))

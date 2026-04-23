@@ -5,6 +5,13 @@
 This document is the maintained source map for exact imported-MATLAB parity
 work in the live Python tree.
 
+For canonical claim boundaries and the remaining work required to fully
+implement the released SLAVV method in Python, see
+`MATLAB_METHOD_IMPLEMENTATION_PLAN.md`.
+
+Status labels in this document are source-audit labels, not artifact-proof
+claims. Use `docs/reference/core/EXACT_PROOF_FINDINGS.md` for proof status.
+
 ## Scope
 
 - Canonical MATLAB source lives under `external/Vectorization-Public/source/`.
@@ -45,14 +52,14 @@ The active MATLAB sources for the imported-MATLAB parity target are:
 
 | MATLAB surface | Live Python surface | Status | Notes |
 | --- | --- | --- | --- |
-| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/slavv/core/edges.py`, `source/slavv/core/_edges/standard.py`, `source/slavv/core/_edges/resumable.py`, `source/slavv/core/_edge_candidates/generate.py`, `source/slavv/core/_edge_candidates/global_watershed.py`, `source/slavv/core/_edge_candidates/common.py` | Exact on imported-MATLAB exact route | The exact route now uses one global shared-state watershed-style search with shared `available_locations`, `pointer_map`, `d_over_r_map`, `branch_order_map`, and `vertex_adjacency_matrix`, plus MATLAB-shaped join tracing and exact V300 tolerances. Legacy non-parity tracing helpers still exist outside the exact route. |
-| `get_edge_metric.m` | `source/slavv/core/_edge_primitives/metrics.py` | Exact | Both use the current MATLAB `max`-energy edge metric, with `NaN` coerced to `-1000`. |
-| `choose_edges_V200.m` | `source/slavv/core/_edge_selection/payloads.py`, `source/slavv/core/_edge_selection/conflict_painting.py`, `source/slavv/core/_edges/postprocess.py` | Exact on imported-MATLAB exact route | The exact route now mirrors MATLAB pair cleanup ordering, conflict painting, pre-clean `smooth_edges_V2 -> crop_edges_V200`, degree/orphan/cycle cleanup, final `smooth_edges_V2`, and endpoint-energy normalization. Python still records extra diagnostics, but those side-channel fields do not affect the math. |
-| `clean_edges_vertex_degree_excess.m` | `source/slavv/core/_edge_selection/cleanup.py` | Exact | The exact route now removes worst incident edges using MATLAB-shaped sparse edge-id lookup and descending removal order. |
-| `clean_edges_orphans.m` | `source/slavv/core/_edge_selection/cleanup.py` | Exact | The exact route now mirrors MATLAB's iterative terminal-contact test against vertex terminals plus painted edge interiors, with renumbering between orphan-removal passes. |
-| `clean_edges_cycles.m` | `source/slavv/core/_edge_selection/cleanup.py` | Exact | The exact route now iteratively finds cyclical connected components and removes the worst edge from each one, matching MATLAB's component-wise cleanup rather than a spanning-forest shortcut. |
-| `add_vertices_to_edges.m` | `source/slavv/core/_edges/bridge_vertices.py`, `source/slavv/core/_edges/standard.py`, `source/slavv/core/_edges/resumable.py`, `source/slavv/core/graph.py` | Exact on imported-MATLAB exact route | The exact route now detects endpoint/interior overlaps, temporarily removes unrelated edges from the bridge-reconfiguration working set, inserts bridge vertices, relabels child edges, splits parent edges, emits separate `bridge_edges`, augments network vertex counts with the inserted bridge vertices, resolves bridge targets only through a MATLAB-shaped local best-first search over edge voxels modeled on `get_edges_for_vertex(..., 'add_vertex_to_edge')`, and mirrors MATLAB `get_edge_vectors.m` for the auxiliary bridge-edge payload by exporting MATLAB-shaped `edges2vertices` plus mean bridge-edge energies. |
-| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `source/slavv/core/graph.py` | Exact on imported-MATLAB exact route | The exact route now isolates the degree-2 interior subgraph, forms MATLAB strand components, sorts edge order and direction, assembles ordered strand objects from edge traces, preserves full `[y, x, z, scale]` strand subscripts, then computes smoothed strands, vessel directions, and strand metrics with MATLAB-shaped helpers. |
+| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/slavv/core/edges.py`, `source/slavv/core/_edges/standard.py`, `source/slavv/core/_edges/resumable.py`, `source/slavv/core/_edge_candidates/generate.py`, `source/slavv/core/_edge_candidates/global_watershed.py`, `source/slavv/core/_edge_candidates/common.py` | Ported on imported-MATLAB exact route; proof pending | The exact route now uses one global shared-state watershed-style search with shared `available_locations`, `pointer_map`, `d_over_r_map`, `branch_order_map`, and `vertex_adjacency_matrix`, plus MATLAB-shaped join tracing and exact V300 tolerances. Legacy non-parity tracing helpers still exist outside the exact route. |
+| `get_edge_metric.m` | `source/slavv/core/_edge_primitives/metrics.py` | Source-aligned | Both use the current MATLAB `max`-energy edge metric, with `NaN` coerced to `-1000`. |
+| `choose_edges_V200.m` | `source/slavv/core/_edge_selection/payloads.py`, `source/slavv/core/_edge_selection/conflict_painting.py`, `source/slavv/core/_edges/postprocess.py` | Ported on imported-MATLAB exact route; proof pending | The exact route now mirrors MATLAB pair cleanup ordering, conflict painting, pre-clean `smooth_edges_V2 -> crop_edges_V200`, degree/orphan/cycle cleanup, final `smooth_edges_V2`, and endpoint-energy normalization. Python still records extra diagnostics, but those side-channel fields do not affect the math. |
+| `clean_edges_vertex_degree_excess.m` | `source/slavv/core/_edge_selection/cleanup.py` | Source-aligned; proof pending | The exact route now removes worst incident edges using MATLAB-shaped sparse edge-id lookup and descending removal order. |
+| `clean_edges_orphans.m` | `source/slavv/core/_edge_selection/cleanup.py` | Source-aligned; proof pending | The exact route now mirrors MATLAB's iterative terminal-contact test against vertex terminals plus painted edge interiors, with renumbering between orphan-removal passes. |
+| `clean_edges_cycles.m` | `source/slavv/core/_edge_selection/cleanup.py` | Source-aligned; proof pending | The exact route now iteratively finds cyclical connected components and removes the worst edge from each one, matching MATLAB's component-wise cleanup rather than a spanning-forest shortcut. |
+| `add_vertices_to_edges.m` | `source/slavv/core/_edges/bridge_vertices.py`, `source/slavv/core/_edges/standard.py`, `source/slavv/core/_edges/resumable.py`, `source/slavv/core/graph.py` | Ported on imported-MATLAB exact route; proof pending | The exact route now detects endpoint/interior overlaps, temporarily removes unrelated edges from the bridge-reconfiguration working set, inserts bridge vertices, relabels child edges, splits parent edges, emits separate `bridge_edges`, augments network vertex counts with the inserted bridge vertices, resolves bridge targets only through a MATLAB-shaped local best-first search over edge voxels modeled on `get_edges_for_vertex(..., 'add_vertex_to_edge')`, and mirrors MATLAB `get_edge_vectors.m` for the auxiliary bridge-edge payload by exporting MATLAB-shaped `edges2vertices` plus mean bridge-edge energies. |
+| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `source/slavv/core/graph.py` | Ported on imported-MATLAB exact route; proof pending | The exact route now isolates the degree-2 interior subgraph, forms MATLAB strand components, sorts edge order and direction, assembles ordered strand objects from edge traces, preserves full `[y, x, z, scale]` strand subscripts, then computes smoothed strands, vessel directions, and strand metrics with MATLAB-shaped helpers. |
 
 ## Current Confirmed Remaining Deviations
 
@@ -100,7 +107,8 @@ The exact-parity port is now best tracked as three deliberate passes:
 
 ### Pass 1: Edge Discovery
 
-- Status: Complete on the imported-MATLAB exact route.
+- Status: Source port complete on the imported-MATLAB exact route; artifact
+  proof still pending.
 - The exact route now ports MATLAB `get_edges_V300.m` and
   `get_edges_by_watershed.m` into a shared-state Python workflow.
 - The exact route no longer depends on the old per-origin frontier/supplement
@@ -108,7 +116,8 @@ The exact-parity port is now best tracked as three deliberate passes:
 
 ### Pass 2: Edge Cleanup And Bridge Vertices
 
-- Status: Complete on the imported-MATLAB exact route.
+- Status: Source port complete on the imported-MATLAB exact route; artifact
+  proof still pending.
 - `get_edge_metric.m`, `choose_edges_V200.m`,
   `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, and
   `clean_edges_cycles.m` are now ported on the exact route.
@@ -122,7 +131,8 @@ The exact-parity port is now best tracked as three deliberate passes:
 
 ### Pass 3: Network And Strand Assembly
 
-- Status: Complete on the imported-MATLAB exact route.
+- Status: Source port complete on the imported-MATLAB exact route; downstream
+  artifact proof still pending.
 - `source/slavv/core/graph.py` now carries direct ports of
   `get_network_V190.m`, `sort_network_V180.m`, and `get_strand_objects.m`
   for the exact route.

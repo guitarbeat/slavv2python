@@ -1,0 +1,1040 @@
+PLOS COMPUTATIONAL BIOLOGY
+
+
+                                                     RESEARCH ARTICLE
+
+                                                     Segmentation-Less, Automated, Vascular
+                                                     Vectorization
+                                                     Samuel A. Mihelic1, William A. Sikora ID1, Ahmed M. Hassan ID1, Michael R. Williamson ID2,
+                                                     Theresa A. Jones ID2, Andrew K. Dunn1*
+                                                     1 Department of Biomedical Engineering, The University of Texas, Austin, Texas, United States of America,
+                                                     2 Institute for Neuroscience, The University of Texas, Austin, Texas, United States of America
+
+                                                     * adunn@utexas.edu
+
+
+a1111111111
+a1111111111                                          Abstract
+a1111111111
+a1111111111                                          Recent advances in two-photon fluorescence microscopy (2PM) have allowed large scale
+a1111111111                                          imaging and analysis of blood vessel networks in living mice. However, extracting network
+                                                     graphs and vector representations for the dense capillary bed remains a bottleneck in many
+                                                     applications. Vascular vectorization is algorithmically difficult because blood vessels have
+                                                     many shapes and sizes, the samples are often unevenly illuminated, and large image vol-
+   OPEN ACCESS                                       umes are required to achieve good statistical power. State-of-the-art, three-dimensional,
+Citation: Mihelic SA, Sikora WA, Hassan AM,
+                                                     vascular vectorization approaches often require a segmented (binary) image, relying on
+Williamson MR, Jones TA, Dunn AK (2021)              manual or supervised-machine annotation. Therefore, voxel-by-voxel image segmentation
+Segmentation-Less, Automated, Vascular               is biased by the human annotator or trainer. Furthermore, segmented images oftentimes
+Vectorization. PLoS Comput Biol 17(10):
+                                                     require remedial morphological filtering before skeletonization or vectorization. To address
+e1009451. https://doi.org/10.1371/journal.
+pcbi.1009451                                         these limitations, we present a vectorization method to extract vascular objects directly from
+                                                     unsegmented images without the need for machine learning or training. The Segmentation-
+Editor: Alison L. Marsden, Stanford University,
+UNITED STATES                                        Less, Automated, Vascular Vectorization (SLAVV) source code in MATLAB is openly avail-
+                                                     able on GitHub. This novel method uses simple models of vascular anatomy, efficient linear
+Received: March 23, 2021
+                                                     filtering, and vector extraction algorithms to remove the image segmentation requirement,
+Accepted: September 14, 2021
+                                                     replacing it with manual or automated vector classification. Semi-automated SLAVV is dem-
+Published: October 8, 2021                           onstrated on three in vivo 2PM image volumes of microvascular networks (capillaries, arteri-
+Copyright: © 2021 Mihelic et al. This is an open     oles and venules) in the mouse cortex. Vectorization performance is proven robust to the
+access article distributed under the terms of the    choice of plasma- or endothelial-labeled contrast, and processing costs are shown to scale
+Creative Commons Attribution License, which
+                                                     with input image volume. Fully-automated SLAVV performance is evaluated on simulated
+permits unrestricted use, distribution, and
+reproduction in any medium, provided the original    2PM images of varying quality all based on the large (1.4×0.9×0.6 mm3 and 1.6×108 voxel)
+author and source are credited.                      input image. Vascular statistics of interest (e.g. volume fraction, surface area density) calcu-
+Data Availability Statement: The input datasets,     lated from automatically vectorized images show greater robustness to image quality than
+intermediates, and outputs are available through     those calculated from intensity-thresholded images.
+the Dataverse Project at https://doi.org/10.18738/
+T8/NA08NU. The code is available through GitHub
+at https://github.com/UTFOIL/Vectorization-Public.
+
+Funding: This research was supported by the
+National Institutes of Health (EB011556 and
+                                                       Author summary
+NS108484 and NS082518 to A.K.D., and                   Remarkably little is known about the plasticity (i.e. adaptability) of microvasculature (i.e.
+T32EB007507 to S.A.M.). The funders had no role
+                                                       capillary networks) in the adult brain because of the barriers to acquisition and processing
+in study design, data collection and analysis,
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                 1 / 20
+PLOS COMPUTATIONAL BIOLOGY                                              Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+decision to publish, or preparation of the
+manuscript.                                        of in vivo images. However, this basic concept is central to the field of neuroscience, and
+Competing interests: The authors have declared     its investigation would provide insights to neurovascular conditions such as Alzheimer’s,
+that no competing interests exist.                 diabetes, and stroke. Our team of (biomedical, optical, and software) engineers is develop-
+                                                   ing the pipeline to image, map out, and monitor the capillary blood vessels over several
+                                                   weeks to months in a healthy mouse brain. One of the major challenges in this workflow
+                                                   is the process of extracting the capillary network roadmap from the raw volumetric micro-
+                                                   scope image. This challenge is exacerbated by in vivo imaging constraints (e.g. low/aniso-
+                                                   tropic resolution, low image quality (noise/artifacts), non-standard (tube-shaped)
+                                                   contrast agent). To confront these issues, we developed a general-purpose software
+                                                   method to extract vascular network maps from low quality images of all sorts, enabling
+                                                   researchers to better quantify the vascular anatomy portrayed in their images. The benefit
+                                                   will be a better understanding of the neurovasculature on the spatial and temporal scales
+                                                   relevant to fundamental cellular processes of the brain.
+
+
+
+
+                                                    This is a PLOS Computational Biology Software paper.
+
+
+
+
+                                                 Introduction
+                                                 The neurovascular system provides oxygen and nutrients in response to local metabolic
+                                                 demands through the process of neurovascular coupling [1]. This process is dysregulated in
+                                                 pathological conditions such as hypertension and Alzheimer’s disease [2, 3]. Individual capil-
+                                                 lary tracking over multiple imaging sessions would provide a useful experimental tool for mea-
+                                                 suring neurovascular plasticity in preclinical disease models. Such experiments could screen
+                                                 new stroke therapeutics and provide much needed relief to clinical studies [4–7]. However
+                                                 these measurements remain intractable for large image volumes, due to difficulties in vectori-
+                                                 zation. Researchers demonstrated individual capillary tracking in living mouse cortex over sev-
+                                                 eral weeks [8], but the statistical significance of vascular plasticity estimates could have been
+                                                 improved with larger images and more automated processing.
+                                                     A vectorized network consists of a graph that summarizes the connectivity and a collection
+                                                 of simple objects that represent individual vessel segments. High-fidelity vectorization is diffi-
+                                                 cult to attain in general, but greatly facilitates and simplifies the vascular network for statistical
+                                                 analysis, for example for finding patterns between species [9]. State-of-the art approaches to
+                                                 vascular vectorization [10–12] require image segmentation of the vascular network. From a
+                                                 computer vision perspective, the segmentation of blood vessels from in vivo optical micros-
+                                                 copy images presents major challenges:
+                                                 • Blood vessels have many sizes and bifurcations causing a variety of shapes.
+                                                 • Objects are unevenly illuminated (especially larger vessels), and image quality decreases with
+                                                   depth.
+                                                 • Large, information-rich images are required to achieve both statistical power and spatial
+                                                   resolution
+                                                    Although ex vivo imaging techniques have yielded whole mouse brain vascular vectoriza-
+                                                 tion at one-micron voxel resolution [12], in vivo imaging suffers from much lower signal
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                           2 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             quality due to deeper tissue penetration. It is this image segmentation requirement, which is
+                                             difficult to meet in vivo, that motivates us to revisit the vascular vectorization workflow.
+                                                 For the purposes of quantifying vascular anatomy, skeletonization techniques are used to
+                                             vectorize and extract the centerlines of blood vessels [10, 11, 13–15]. Skeletonization tech-
+                                             niques perform iterative morphological filtering on binarized images, and therefore require
+                                             segmented images generated from vessel enhancement filtering, thresholding, or manual or
+                                             machine-learned annotation. Manual, voxel-by-voxel, image segmentation ensures a high-
+                                             quality binary input image to skeletonize, but is a tedious and often heuristic task. Alterna-
+                                             tively, convolutional neural networks allow computers to learn this manual task from example
+                                             [11, 16]. However, deep learners that are trained by humans in voxel-by-voxel classification
+                                             have human biases and are not intrinsically robust to input image properties such as resolution
+                                             and noise level.
+                                                 Many filters using local curvature information show improved robustness to image quality
+                                             [17–19]. These filters require eigenvalue decomposition of the Hessian at many voxels, and are
+                                             thus computationally expensive. They rely on local shape information, are difficult to extend
+                                             to multiscale, and show attenuated response at vessel bifurcations. These deficiencies were
+                                             addressed by Jerman et al. [20] using a unitless ratio of eigenvalues. Lee and coworkers [21]
+                                             used a Hessian-based filter to segment images using an exploratory vectorization algorithm
+                                             that automatically traces vessels and terminates each trace when the filtered image drops
+                                             below a predefined threshold. However, the termination criteria was arbitrary and did not pro-
+                                             duce a connected network.
+                                                 Manual or machine-learning approaches to voxel-by-voxel, image segmentation [22] do
+                                             not guarantee any topological structure without remedial morphological filtering. Further-
+                                             more, traditional performance metrics of image segmentation (e.g. Dice coefficient) do not
+                                             measure topological or connectivity accuracy. As an alternative, we propose extracting vascu-
+                                             lar vectors directly from 2PM images, thereby enforcing fundamental shape and connectivity
+                                             constraints. To demonstrate this workflow, we present the Segmentation-Less, Automated,
+                                             Vascular Vectorization (SLAVV) method outlined in Fig 1.
+                                                 The advantage of the direct vectorization approach is that there is no requirement to seg-
+                                             ment, interpolate, or otherwise preprocess the input image. The image processing required to
+                                             vectorize is simplified: Vessel segments and bifurcations are both enhanced by a single blob
+                                             detector. The extracted vectors have realistic shape and connectivity constraints, so there is no
+                                             need for nonlinear morphological filtering. Additionally, there is no need to create training
+                                             sets or train the software, because the method does not rely on machine learning. However,
+                                             the extracted vectors are probabilistic and need to be classified in some way. A graphical user
+                                             interface is used to curate the extracted vectors from in vivo, plasma- and endothelial-labeled
+                                             2PM images to create ground-truth vectorizations. Fully-automated vectorization perfor-
+                                             mance is then evaluated on realistic, simulated 2PM images of varying quality. Performance is
+                                             evaluated as the percent error in several vascular statistics of interest: volume fraction, surface
+                                             area density, length density, and bifurcation density.
+
+
+                                             Results
+                                             Demonstration of SLAVV
+                                             To demonstrate the SLAVV approach, a diverse set of images (see 2PM imaging) were vector-
+                                             ized (see Automated vessel vectorization), manually curated (see Interactive curation soft-
+                                             ware), and visualized (see Visualizations). Images 1 and 2 are of the same field of view using
+                                             two different sources of contrast (plasma- vs. endothelial-label), while Image 3 is from a differ-
+                                             ent mouse and has a much larger field of view, consisting of 6 tiled images. The intermediates
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                       3 / 20
+PLOS COMPUTATIONAL BIOLOGY                                               Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+
+                                             Fig 1. Overview of the SLAVV approach. The purpose of SLAVV is to vectorize vascular objects from raw three
+                                             dimensional images. The first step of the method is to linearly filter the input image to form “energy” and “size”
+                                             images, which enhance vessel centerlines and estimate vessel sizes, respectively. Next, vertices along the blood vessels
+                                             are extracted as local minima of the three-dimensional energy image. Vertices are then connected by edges, which
+                                             follow minimal energy trajectories. Finally, a graph theoretic representation of the vascular network is generated from
+                                             the vertices and edges.
+                                             https://doi.org/10.1371/journal.pcbi.1009451.g001
+
+
+                                             and outputs of SLAVV applied to these example images are also provided for interoperability.
+                                             Three more images the size of Image 3 are further demonstrated in a tutorial of the manual
+                                             processing steps on the GitHub repository. The runtimes of the automated steps (Design con-
+                                             siderations for scalability) are shown in Table 1, and bulk statistics (see Statistical analysis of
+                                             vectors) are shown in Table 2. Example inputs (plasma- or endothelial-labeled fluorescent
+                                             images) and intermediates (energy, size, vertex, and edge images) are shown for a small vol-
+                                             ume of vasculature in Fig 2A. Input images were linearly filtered at many scales (see Energy:
+                                             Multi-scale linear filtering) to produce the energy and size images which estimate the center-
+                                             line positions and radius of vessels, respectively. Vertices were extracted (see Energy: Multi-
+                                             scale linear filtering) as the minima of the energy image, with associated radii looked up from
+                                             the size image. Edges were traced (see Edge extraction) from one vertex to another along the
+                                             path of minimum energy, and the size of the vessel at each location was again read from the
+                                             size image. The connectivity information was then summarized (see Network and strand iden-
+                                             tification) as a network connecting bifurcations or endpoints with strands. The strand objects
+                                             (collections of non-bifurcating edges) were each labeled with a unique color in the perspective
+                                             rendering in Fig 2B. The axial projections in Fig 2C show vector vessel depth or direction
+                                             information as a volume filling (at one quarter of the estimated vessel radius) overlaying the
+                                             input image. The runtimes of the automated vectorization steps are shown in Table 1 for each
+                                             of the three input images. Table 2 shows total network statistics of interest.
+
+
+                                             Interactive curation software
+                                             For the vectorization of raw input images, an interactive vector curation interface (see Interac-
+                                             tive curation software) was used to segment the automatically-generated vertex and edge
+
+                                             Table 1. Runtimes of automated processing steps in seconds. Processing computer specifications: Intel Xeon CPU
+                                             E5–2687 v3 @3.10 GHz, 32 GB RAM, 64-bit operating system, and 10 independent cores for parallel processing.
+                                                                                            Image 1                 Image 2                  Image 3
+                                                                Energy filter runtime [s] 986                       1,037                     7,853
+                                                           Vertex extraction runtime [s] 22                         35                        96
+                                                             Edge extraction runtime [s] 73                         204                       141
+                                                           Network analysis runtime [s] 19                          0.5                       34
+                                                                      Number of Voxels 1.67×107                     1.67×107                  1.64×108
+                                             https://doi.org/10.1371/journal.pcbi.1009451.t001
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                       4 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                    Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+Table 2. Bulk network statistics of interest.
+                                                        Image 1                          Image 2                            Image 3
+                                Num. bifurcations 130                                    194                                 3,383
+                                      Length [mm] 16.2                                   17.0                                443
+                                       Area [mm2] 0.495                                  0.534                               13.0
+                                                               −3                                −3
+                                                    3
+                                    Volume [mm ] 2.17×10                                 2.46×10                             4.40×10−2
+                                                    3          −2                                −2
+                            Image Volume [mm ] 2.75×10                                   2.75×10                             0.761
+https://doi.org/10.1371/journal.pcbi.1009451.t002
+
+
+                                                        objects into true and false categories and to patch false negatives. Vertex and edge curation
+                                                        costs for the three curated image volumes are shown in Table 3. Image 3 required the most
+                                                        time because it was the largest volume. Image 1 required more time than Image 2 although it
+                                                        was the same field of view, because the endothelial label was not as strong as the plasma label.
+                                                        The large number of vertex selections for Image 3 were due to the imperfect tiling process (see
+                                                        Image tiling) causing image discontinuities away from the image boundaries. Many of these
+                                                        selections were done simultaneously using a click-and-drag box selection. Local thresholds
+                                                        were placed on the energy feature of the vertices of the max energy feature of the edges in
+                                                        order to coarsely classify vectors over large regions of the image at once. The Final Total rows
+                                                        refer to the number of vector objects (vertices or edges) remaining in the final curated
+                                                        datasets.
+
+
+                                                        Example anatomical statistics
+                                                        To demonstrate its statistical power, the SLAVV software was used to automatically vectorize
+                                                        and manually classify a large volume of capillaries, venules, and arterioles. Fig 3A shows a
+                                                        three-dimensional rendering of the vectorized vessels (color-coded by strand) beneath a maxi-
+                                                        mum intensity projection of the superficial layers of the tiled (see Image tiling) Image 3. The
+                                                        vectorized vessels were idealized as collections of cylinders attached at the centers of their
+                                                        faces, and connected face to face (Fig 3B). Fig 3C shows lateral-area weighted histograms of
+                                                        vessel statistics (see Statistical analysis of vectors): depth, radius, and inclination (i.e. angle
+                                                        from xy plane). Fig 3D shows bulk statistics (length, area, volume, radius, and inclination)
+                                                        binned by depth (z coordinate). The total summary statistics (see Statistical analysis of vectors)
+                                                        and a binary mask (see Visualizations: Three-dimensional scalar fields) derived from this vec-
+                                                        tor set serve as ground truth statistics and image segmentation for the automated SLAVV per-
+                                                        formance evaluation.
+
+
+                                                        Objective performance evaluation of fully-automated SLAVV
+                                                        To remove the dependence on (subjective) manual annotation in determining ground truth
+                                                        images, two-photon images were simulated (see Simulating 2PM images) from an assumed
+                                                        ground truth anatomy with various levels of contrast and noise. To enable the tracking of bulk
+                                                        network statistic accuracy in addition to image segmentation accuracy, a ground truth vector
+                                                        set (with known network statistics) was used to generate the ground truth segmented image.
+                                                        Image segmentation performance was evaluated using ROC curves to show the voxel-by-voxel
+                                                        segmentation strength of the energy feature of vectors. Errors in bulk statistics were used as
+                                                        performance metrics because they additionally capture topographical and connectivity accu-
+                                                        racy. Seven simulated images of varying quality were generated from the vector set from
+                                                        Image 3 (Table 4). The noise and contrast settings for the simulated images are shown in Fig
+                                                        4A, and maximum intensity projections are shown in the top row of Fig 4B.
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                 5 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                    Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+
+         Fig 2. Example projections of original two-photon images, intermediate outputs, and vector renderings of manually assisted SLAVV applied to Image 2.
+         The green chevron is directly underneath a medium sized vessel which bleeds into the original projection volume for the plasma-labeled Image 2 but not the
+         endothelial-labeled Image 1. A. Either Image 1 or 2 could be the input (Image 2 outputs shown here, Image 1 outputs are similar (S1 Fig). The original image is
+         subject to multiscale, LoG, matched filtering to obtain three-dimensional energy and size images. The energy image is used to estimate vertex centers and the
+         size image to estimate their radii. Vertices are used as genesis and terminus points for energy image exploration in the centerline extraction algorithm. Finally,
+         estimated vessel radii are recalled from the size image to form the volume-filled vector rendering. Gray-scale coloring in the vector renderings corresponds to
+         the energy values and thus vector probabilities. B. Three-dimensional visual output of SLAVV. Colors represent strands, which are defined as non-bifurcating
+         vessel segments. Each strand is assigned a random color. The image is 125 μm in z and 460 in x and y. The projection volume used in the other panels is shown
+         as a gray box in the center of the larger volume. The blue chevron marks the vessel that bleeds into Image 2 at the green chevron. C. Depth and direction
+         outputs from SLAVV. Vector volumes are rendered over the original projection at a quarter of their original radius to facilitate the visualization of the
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                            6 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                       Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+           underlying vessels. Direction is calculated by spatial difference quotient with respect to edge trajectory. The centerline for the vessel above the green chevron
+           lies above the projection volume.
+           https://doi.org/10.1371/journal.pcbi.1009451.g002
+
+
+                                                       The simulated images were vectorized to characterize the performance of the fully-auto-
+                                                    mated (see Automated energy thresholding) SLAVV software. Three values (60, 80, and 100%)
+                                                    were used for the fG processing parameter in the energy calculation step. Vertices were
+                                                    extracted for each energy image and classified using global thresholding with a dense sweep of
+                                                    thresholds. The curated vertex sets were rendered at the resolution of the input image and
+                                                    compared to the ground truth image voxel-by-voxel to calculate the confusion table enumerat-
+                                                    ing the false positives FP, true positives TP, false negatives FN, and true negatives TN. To
+                                                    approximate an expert user selecting the most accurate image segmentation using a single
+                                                    global threshold selection, the vertex set yielding the highest classification accuracy (TP + TN)/
+                                                    (TP + TN + FP + FN) was passed to the edge extraction step.
+                                                       Edges were extracted for each vertex set and similarly classified using many global thresh-
+                                                    olds. Edge sets were rendered and voxel-by-voxel compared to the ground truth to find the
+                                                    sensitivity and specificity for each threshold. An ROC curve was made to observe the voxel-by-
+                                                    voxel classification strength of global thresholding on the edge objects (bottom row of Fig 4B).
+                                                    The edge set from each threshold sweep with maximal voxel-by-voxel classification accuracy
+                                                    was passed on to the network calculation step to compute statistics and compare to those of
+                                                    the ground truth.
+                                                       The simulated image quality was benchmarked using a commonly-used, voxel-by-voxel,
+                                                    intensity thresholding classifier (Fig 4, black series) that has perfect accuracy in the limit of
+                                                    perfect image quality (CNR ! 1). To demonstrate the sensitivity of the intensity thresholding
+                                                    classifier to image quality, the volume was computed from the intensity thresholded image
+                                                    with the best voxel-by-voxel classification accuracy. For the higher quality images, the volume
+                                                    accuracy was comparable to that of the vectorized approaches, however, the topology was
+                                                    unconstrained, leading to salt and pepper segmentation errors. These topological errors made
+                                                    surface area calculation highly sensitive to noise for the intensity classifier approach (result not
+                                                    shown). For the lowest quality image, the intensity classifier yielded a maximal segmentation
+                                                    accuracy of around 95%, corresponding to the operating point that assigns all voxels to back-
+                                                    ground (0% volume accuracy).
+                                                       As a vessel segmentation tool on input images of poor quality (1 � CNR � 4), three fully-
+                                                    automated implementations of SLAVV outperformed the intensity classifier (Fig 4C and 4D.
+
+Table 3. Summary of human effort toward manual vector classification on the graphical curator interface in the demonstration of SLAVV. Selections were point-
+and-click classifications of objects either individually or over a rectangular volume.
+                                                                           Image 1                           Image 2                          Image 3
+           Vertices                                      Duration [min] 101                                  24                                206
+                                                       Local Thresholds 2                                    5                                 110
+                                                               Selections 4724                               230                               19,845
+                                                               Additions 62                                  18                                28
+                                                               Final Total 1,380                             1,397                             30,586
+            Edges                                        Duration [min] 207                                  140                               410
+                                                       Local Thresholds 9                                    0                                 1
+                                                               Selections 145                                66                                96
+                                                               Additions 152                                 63                                557
+                                                               Final Total 1,193                             1,323                             31,523
+https://doi.org/10.1371/journal.pcbi.1009451.t003
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                                7 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                   Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+
+         Fig 3. Example statistics of the microvasculature calculated from manually assisted SLAVV applied to Image 3. A. Three-dimensional rendering of strand
+         objects similar to Fig 2B. Size of the image is 600 μm in z, 1350 in x, and 940 y. Projection of the first 70 μm of the original image is shown with the same
+         perspective. B. Cartoon depiction of consecutive cylinder representation of a vessel segment used in calculations. C. Histograms of depth, radius, and
+         inclination (angle from the xy plane). The large peak in the inclination histogram at horizontal alignment is due to low axial resolution (5 μm). Contributions
+         of cylinders to the bins are weighted by their lateral areas. D. Depth-resolved anatomical statistics output from SLAVV. Cylinders are binned by depth. Their
+         heights, lateral areas, and volumes are summed and divided by the image volume apportioned to each bin to yield length, area, and volume densities of
+         vasculature. Average radius and inclination in each depth bin are lateral area-weighted averages.
+         https://doi.org/10.1371/journal.pcbi.1009451.g003
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                          8 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                      Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+Table 4. Descriptions of 2PM input images used in SLAVV demonstration. Note that the endothelium (vessel wall) was labeled in Image 1.
+                                                Image                    1                                    2                                       3
+                                                Mouse                    1                                    1                                       2
+                                 Contrast localization             Endothelium                             Plasma                                  Plasma
+                         Transverse dimensions [μm]                   469×469                             469×469                                 1350×940
+                       Axial (depth) dimension [μm]                     125                                  125                                     600
+                        Transverse voxel length [μm]                    0.92                                 0.92                                    1.07
+                              Axial voxel length [μm]                    2                                    2                                       5
+                                             Bit depth                   16                                   16                                      8
+                                  Numerical aperture                     1.0                                 1.0                                     0.95
+                                        Preprocessing                  None                                 None                             Tiling, median filter
+https://doi.org/10.1371/journal.pcbi.1009451.t004
+
+
+
+
+           Fig 4. Objective performance of fully-automated SLAVV software. A. Simulated images of varying quality are generated from the vector set from Image 3
+           shown in Fig 3. Image quality is swept along contrast and noise axes, independently. Example maximum intensity projections are shown for three extremes of
+           image quality (triangle: best quality, 4-point star: high noise, 5-point star: lowest contrast). The legend shows the labels for the four segmentation methods used
+           in B-D. Images are vectorized using SLAVV with different amounts of Gaussian filter, fG (60, 80, or 100% of matched filter length). B. Vasculature is segmented
+           from three simulated images using four automated approaches: thresholding either voxel intensity or maximum energy feature on edge objects produced by
+           three automated vectorizations. Voxel-by-voxel classification strengths of thresholded vectorized objects or voxel intensities are shown as ROC curves for three
+           of the seven input images. Note that the ROC curves for the energy feature of vectors do not have support for every voxel, because not every voxel is contained
+           in an extracted vector volume. Operating points with maximal classification accuracy are indicated by circles in the bottom row of B and plotted in the top row
+           of C&D across all input images. C&D. Bulk network statistics (length, area, volume, and number of bifurcations) were extracted from vectors or binary images
+           resulting from maximal accuracy operating points. Performance metrics were plotted against CNR (image quality) for a (C) contrast or (D) noise sweep.
+           Thresholding vectorized objects to segment vasculature demonstrated a greater robustness to image quality than thresholding voxel intensities. Surface area,
+           length, and number of bifurcations were not extracted from binary images, because these images were topologically very inaccurate.
+           https://doi.org/10.1371/journal.pcbi.1009451.g004
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                               9 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             The peak, voxel-by-voxel classification accuracy of fully-automated SLAVV was above 97% for
+                                             all image qualities tested. However, the number of bifurcations detected was very sensitive to
+                                             noise. A larger fraction of Gaussian in the filtering kernel (fG ! 100%) provided greater
+                                             robustness to noise for bifurcation detection, but resulted in an underestimate of volume even
+                                             for the higher quality input images.
+
+
+                                             Materials and methods
+                                             2PM imaging
+                                             Two-photon fluorescence microscopy (2PM), in vivo, three-dimensional images of murine
+                                             microvasculature were acquired from two mice at two resolutions with two different sources
+                                             of contrast. Animal use was in accordance with IACUC guidelines and approved by the Ani-
+                                             mal Care and Use Committee of the University of Texas at Austin. Table 4 summarizes the
+                                             images input to the SLAVV software for demonstration.
+                                                Dual channel plasma- and endothelial-labeled. Mouse 1 (Young adult Tie2-GFP, FVB
+                                             background, JAX stock no. 003658) was implanted with a 4mm cranial window over sensori-
+                                             motor cortex [23]. For imaging, the mouse was anesthetized with 1–2% isoflurane in oxygen
+                                             and head fixed. A retro-orbital injection of 0.05mL of 1% (w/v) 70 kDa Texas Red-conjugated
+                                             dextran was given to label the plasma. GFP fluorescence was localized to the endothelium.
+                                             Images 1 and 2 were acquired with a Prairie Ultima two-photon microscope with a Ti:Sapphire
+                                             laser (Mai Tai, Spectra-Physics) tuned to 870 nm and a 20× 1.0 NA water immersion objective
+                                             (Olympus) using Prairie View software.
+                                                Image tiling. Mouse 2 was injected intravenously with Texas Red and imaged through a
+                                             cranial window using a two-photon microscope [24]. The laser (1050 nm, 80 MHz repetition
+                                             rate, 100 fs pulse duration [25]) was scanned using galvo-galvo mirrors over 550 μm × 550 μm
+                                             (512 × 512 pixels) and axially using a motorized stage over 600 μm depth (120 slices). The
+                                             images were output as 16 bit signed integers (3×107 voxels). To achieve the tiling in Image 3, a
+                                             2×3 grid of plasma-labeled images with 100 μm overlaps were median-filtered (3×3×3 voxel
+                                             kernel) and then tiled with translational registration via cross-correlation [26] in Fiji [27].
+
+
+                                             Automated vessel vectorization
+                                             Novel Segmentation-Less Automated Vascular Vectorization (SLAVV) software extracts vec-
+                                             tor sets representing vascular networks from raw gray-scale images without the need for pre-
+                                             processing or specialized hardware. As described in the documentation on the GitHub reposi-
+                                             tory, the SLAVV method has four major steps:
+                                             1. Energy: Multi-scale linear filtering
+                                             2. Vertex extraction
+                                             3. Edge extraction
+                                             4. Network and strand identification
+                                                 Vertices and edges resulting from Steps 2 and 3 are probabilistic vectors that require classi-
+                                             fication (see Vector classification).
+                                                 Energy: Multi-scale linear filtering. The raw (unprocessed/uninterpolated), three-
+                                             dimensional input image is matched-filtered for vessels (idealized as spherical objects) within
+                                             a user-specified size range to yield a multi-scale, four-dimensional image (Fig 5, conceptual).
+                                             The matched filter is the convolution of a Laplacian of Gaussian (LoG) with standard
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      10 / 20
+PLOS COMPUTATIONAL BIOLOGY                                                     Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+
+         Fig 5. One-dimensional simplification of linear filtering step. To form the energy image E at scales 1. . .n. . .N, the original image I(x) is convolved with a
+         LoG filter and an Ideal kernel. The Ideal kernel is a linear combination of spherical and annular pulses to match the fluorescent signal shape of vessels. σ2 is the
+         variance of the Gaussian, r is the radius of the Ideal kernel, so R2 = σ2 + r2 is the square “radius” of the LoG, matched filter. The resulting multiscale energy
+         image is projected along the scale coordinate to form two three-dimensional images that depict energy and size (not shown here, example in Fig 2. In this
+         example, the kernel weighting factor was chosen so that the sums of all the spherical and annular kernels were all equal, the ratio r/σ was chosen to be 1, and a
+         vertex was found at location v with radius Rn and energy En(v).
+         https://doi.org/10.1371/journal.pcbi.1009451.g005
+
+
+                                                  deviation, σ, and an Ideal (spherical and/or annular) kernel of radius r. Therefore, the radius,
+                                                  R, of the matched vessel is given by R2 = σ2 + r2.
+                                                     To detect a variety of fluorescent signal shapes, the Ideal kernel is a combination of spheri-
+                                                  cal and annular pulses. The spherical kernel, KS(ρ) = 1ρ<r, and annular kernel, KS(ρ) = δ(ρ − r),
+                                                  are defined analytically in spherical coordinates with respect to the radial coordinate, ρ, and
+                                                  the ideal kernel radius, r, using the Dirac delta function, δ, and the indicator function, 1. These
+                                                  kernels are Fourier transformed analytically before discrete sampling in the three-dimensional
+                                                  spatial-frequency domain. The weighting parameter fS controls the fraction of spherical versus
+
+
+                                                  Table 5. Processing parameters used to vectorize the three experimental images and the set of synthetic images
+                                                  derived from Image 3. The smallest and largest radii delimit the range of the characteristic radii of the convolutional
+                                                  matching kernels used, and the “scales per octave” parameter determined the sampling density in the scale coordinate.
+                                                                                Image           1                   2                  3                  3-synthetic
+                                                                                fG [%]          50                 75                  50                 60, 80, 100
+                                                                                fS [%]          50                 50                  85                     100
+                                                                 Smallest radius [μm]           1.5                1.5                1.5                      1
+                                                                  Largest radius [μm]           60                 60                  60                     45
+                                                                     Scales per octave          6                   6                  3                       3
+                                                  https://doi.org/10.1371/journal.pcbi.1009451.t005
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                                               11 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             annular pulse in the matching kernel, thus weighting the responses from signals in the shape
+                                             of the vessel wall vs lumen. Therefore, fS = |KS|/(|KS| + |KA|), where |KS| and |KA| are the total
+                                             weights (L1 norms) of the spherical and annular matching kernels.
+                                                 The Ideal kernel is convolved with a Gaussian to achieve robustness to noise and slight mis-
+                                             matches in size and shape. The processing parameter fG controls the relative sizes of the Gauss-
+                                             ian and Ideal kernels, thereby trading noise robustness for accuracy of size and position.
+                                             Therefore, fG = σ/(σ + r), where σ is the standard deviation of the Gaussian kernel and r is the
+                                             radius of the Ideal kernel.
+                                                 The scale space sampling is exponentially distributed with tunable density. The octave is
+                                             defined as doubling of the vessel volume. For example, Image 1 is sampled across 16 doublings
+                                             of the matched filter volume at a rate of 6 scales per octave, producing 96 discrete scale sam-
+                                             ples. To enforce a minimal amount of blurring and ensure good shape agreement between
+                                             objects in the image and matched filters, a three-dimensional (anisotropic) Gaussian model of
+                                             the microscope point spread function [28] is also convolved with each matched filter. Table 5
+                                             shows the processing parameters used to process the featured images.
+                                                 The four-dimensional (multi-scale) energy image is projected across the scale coordinate to
+                                             yield two three-dimensional images (both the same size as the input) called the energy and size
+                                             images. The energy image encodes “energy” which is used to estimate the likelihood of that
+                                             voxel containing a vessel centerline. The size image encodes the expected radius of a vessel cen-
+                                             tered at each voxel. Because energy is the Laplacian of a real-valued image, negative values cor-
+                                             respond to locally bright regions of the original image. Image voxels with positive energies are
+                                             therefore ignored based on the assumption that the fluorescent signal is brighter than the back-
+                                             ground. To compare Laplacian values across different scales and amounts of blurring, each
+                                             second derivative is weighted by the variance of the Gaussian filter at that scale in that dimen-
+                                             sion [29] to compensate for decreased derivative values due to blurring.
+                                                 The projection method across scale-space depends on the signal type, because the annular
+                                             signal is more sensitive to size mismatches and cannot be averaged across many sizes reliably.
+                                             Thus, for the annular input signal (endothelial label), the estimated scale is simply the scale
+                                             that yielded the least energy. For the spherical input signal (plasma label), the estimated scale is
+                                             a weighted average across all scales that yielded a negative energy using energy magnitude as
+                                             weights. For linear combinations of annular and spherical signals, the weighted average of the
+                                             two estimates is taken. The three-dimensional, scale-projected energy image is then defined by
+                                             sampling the four-dimensional energy image at the scale nearest the estimated scale at each
+                                             voxel.
+                                                 Vertex extraction. The purpose of the vertex extraction step is to identify centerline
+                                             points along the vascular network to serve as seed points for the edge extraction step. The
+                                             inputs are the energy and size images, and the output is a set of vertices: non-overlapping
+                                             spheres that should be concentric with vessel centerlines, share the same radius as the vessel at
+                                             that central location, and densely mark the vasculature with at least one vertex for each strand
+                                             in the final output network.
+                                                 This algorithm is based on the keypoint extraction outlined by Lowe [29]: Vertex center
+                                             points are located by searching the energy image for local minima in all three dimensions.
+                                             Additionally, the sizes of the vertices are assigned by referencing the size image at their center
+                                             points. Vertex volumes are then painted onto a blank canvas from lowest to highest energy to
+                                             obtain the most probable non-overlapping subset (Algorithm 1, one-dimensional example).
+                                                 Edge extraction. The purpose of the edge extraction step is to trace the vessel segments
+                                             between pairs of vertices with a simple automated algorithm. The inputs are the set of vertices
+                                             and the energy and size images. The output is a set of edges: vessel traces connecting vertex
+                                             pairs, summarized by ordered lists of centerpoint three-space coordinates and associated radii.
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      12 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             Algorithm 2 loops through the list of vertices in parallel, exploring the energy image around
+                                             each origin vertex. The neighboring energy values and the pointers leading back to the origin
+                                             vertex are stored in sparse maps defined at the explored locations. The exploration follows the
+                                             lowest energy neighbor, in a watershed manner, from the origin vertex (A) seed point, until
+                                             finding a terminal vertex (B). When found, the connecting edge is traced from the terminal to
+                                             the origin vertex following the shortest path with lowest maximum energy using the pointer
+                                             map (the numel function returns the number of elements in the list). To guarantee that this
+                                             algorithm uses finite time and memory, maxima were placed on the number of edges that each
+                                             seed vertex could find (4 edges per vertex) and on the length of trace (20–100 times seed vertex
+                                             radius).
+                                                 Algorithm 1 Extracting vertices from the energy and radius images.
+                                                 1: Function vertices = find_vertices(energy, radius)
+                                                 2: Initialize vertices as an empty list
+                                                 3: Let mask be the vector of ones with length of energy
+                                                 4: While there is a negative entry in mask�energy
+                                                 5:      Let location = argmin(mask�energy)
+                                                 6:      Let mask(location) = 0
+                                                 7:      If location is a local minimum of energy
+                                                 8:          Initialize vertex with fields:
+                                                 9:             vertex.location = location
+                                                 10:             vertex.radius = radius(location)
+                                                 11:             vertex.energy = energy(location)
+                                                 12:          Append vertex to vertices:
+                                                 13:          Let interval = [-vertex.radius,vertex.radius]
+                                                 14:          Let mask(location+interval) = 0
+                                                 This algorithm guarantees certain output properties: (1) For each vertex, the edges are
+                                             extracted in order of increasing maximum energy. (2) Vertices are not allowed to make multi-
+                                             ple edge connections in the same direction, to avoid retracing stretches of vessel segments.
+                                             Once a vertex discovers a neighbor vertex by means of an edge, it is not allowed to search far-
+                                             ther in the direction of that neighbor. (3) Algorithm 2 extracts non-overlapping centerline
+                                             traces forthe edges from each origin vertex. When two edge traces with the same origin vertex
+                                             would share a common segment of centerline voxels, the SLAVV software only counts the
+                                             redundant trace in the first-extracted, lower-energy (more-probable) edge.
+                                                 Additional constraints are placed on this algorithm to guarantee other output properties:
+                                             (4) In cases where two vertices discover each other, only one of the traces is kept. (5) Small
+                                             cycles of three fully-connected vertices are eliminated using graph theoretic methods. Two ver-
+                                             tices are adjacent by a small cycle if they can be mutually reached using one and two edges.
+                                             The connected components of the adjacency matrix by these small cycles is calculated, and the
+                                             least probable edge is removed from each component. The adjacency matrix is then recalcu-
+                                             lated and the removal repeated until there are no adjacencies by small cycles.
+                                                 Network and strand identification. The purpose of the network and strand identification
+                                             step is to organize the vectors to facilitate statistical calculations and visualization. The inputs
+                                             are the sets of vertex and edge objects, and the outputs are sets of strands, bifurcations and
+                                             endpoints. Bifurcations and endpoints are special vertices: bifurcations connect three or more
+                                             edges, endpoints connect one. A strand is a set of one or more consecutive edges that connects
+                                             exactly two special vertices.
+                                                 Algorithm 2 Extracting edges associated to a vertex set from an energy image.
+                                                 1: Function edges = find_edges(vertices, energy, max_number_edges)
+                                                 2: Initialize edges as an empty list
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      13 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                                 3: (Parallel) For each vertex_A in vertices
+                                                 4:      Initialize explored_locations and vertices_B as an empty list
+                                                 5:      Initialize number_of_edges_found to 0
+                                                 6:      Initialize energy_map and pointer_map as empty sparse arrays
+                                                 7:      Initialize location as vertex_A.location
+                                                 8:      Let pointer_map(location) = −1
+                                                 9:      While true
+                                                 10:         If some vertex_B in vertices distinct from vertex_A is at location
+                                                 11:             Initialize traced_locations as a list with first entry location
+                                                 12:             While pointer_map(location) � 0
+                                                 13:                Let location = explored_locations(pointer_map(location))
+                                                 14:                Append location to traced_locations
+                                                 15:             Initialize edge with fields:
+                                                 16:                edge.locations = traced_locations
+                                                 17:                edge.vertex_A = vertex_A
+                                                 18:                edge.vertex_B = vertex_B
+                                                 19:             Append edge to edges and vertex_B to vertices_B
+                                                 20:             Increment number_of_edges_found
+                                                 21:             pointer_map(traced_locations) = − number_of_edges_found
+                                                 22:             If number_of_edges_found = max_number_edges, break
+                                                 23:         Append location to explored_locations
+                                                 24:         Let neighbors list the locations in the 3×3×3 cube around location
+                                                 25:         Delete any neighbor in neighbors where pointer_map(neighbor) = 0
+                                                 26:         For vertex_B in vertices_B
+                                                 27:             Let plane be the plane that faces vertex_A at vertex_B
+                                                 28:             Delete any neighbor in neighbors beyond plane from vertex_A
+                                                 29:         Let pointer_map(neighbors) = numel(explored_locations)
+                                                 30:         Let energy_map(neighbors) = energy(neighbors)
+                                                 31:         Let energy_map(location) = 0
+                                                 32:         If min(energy_map) � 0, break
+                                                 33:         Let location = argmin(energy_map)
+                                                 Bifurcations are found by calculating the adjacency matrix for the graph of the vertices and
+                                             edges. Bifurcations are vertices associated with 3 or more edges. These vertices and their asso-
+                                             ciated edges are then removed from the graph, leaving only vertices with 1 or 2 edges. The con-
+                                             nected components of this graph identify the majority of the strand objects. The remaining
+                                             strands and strand fragments are the single edges that connect to bifurcation vertices.
+                                                 Once all the edges are assigned to strands and a subset of the vertices to bifurcations, a
+                                             smoothing operation is applied that keeps the special vertices fixed and smooths the positions
+                                             and sizes along the one-dimensional strands. Gaussian smoothing kernels are applied at dis-
+                                             crete locations along each strand with standard deviations equal to their radii. Smoothing ker-
+                                             nels are further weighted by the energy value at each strand location. Algorithm 2 guarantees
+                                             negative energy at every location along an edge, so the weighting is well defined and will favor
+                                             the more likely, lower-energy locations. The variable smoothing kernel is then applied to each
+                                             strand location to spatially average along the strand trace to increase the statistical significance
+                                             of the five local quantities: three-space position, size, and energy.
+                                                 Design considerations for scalability. To improve computational efficiency, several
+                                             design features are built into the energy filtering step. For larger scale objects, the image is
+                                             downsampled in each dimension before filtering to have a resolution no greater than 10 voxels
+                                             per object radius, and then upsampled afterwards with linear interpolation. The image volume
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      14 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             is processed in overlapping chunks to respect memory constraints and allow for paralleliza-
+                                             tion. The overlapping length is expanded for larger scales to eliminate edge effects within the
+                                             image volume. To reduce computational complexity, all blurring, matched filtering, and deriv-
+                                             ative approximations are calculated in the Fourier domain with a single, combined filter for
+                                             each scale sampled from analytical Fourier representations. The vertex extraction step is simi-
+                                             larly parallelized with respect to the input image as is the energy step. Local minima are found
+                                             and recorded within small chunks of the image in parallel. The edge extraction step is paralle-
+                                             lized with respect to the input vertex list, and the input image is loaded in small chunks around
+                                             each vertex. The network identification step has only vector inputs, so its complexity is less of
+                                             a concern.
+
+
+                                             Vector classification
+                                             Due to the property of the SLAVV method extracting probabilistic vectors directly from gray-
+                                             scale images (without the need for image segmentation), a vector classification step after the
+                                             edge extraction step is used to provide a deterministic input to the network statistic calcula-
+                                             tions. Vector classification is performed manually (Interactive curation software) or automati-
+                                             cally (Automated energy thresholding). For the case of the simulated images with known
+                                             ground truth, the vector objects are automatically thresholded by sweeping a probability
+                                             threshold and choosing the operating point with the best voxel-voxel image segmentation
+                                             accuracy. For the authentic images demonstrated in this manuscript, this threshold selection is
+                                             made repeatedly, locally, and with live visual feedback and image volume navigation by an
+                                             expert using the graphical curator interface.
+                                                 Interactive curation software. A built-in, graphical curator interface allows the user to
+                                             manually classify probabilistic vertices and edges into true and false categories. The human
+                                             effort spent on each manual curation is described here, automatically recorded by the curation
+                                             software, and further demonstrated in a tutorial on the GitHub repository.
+                                                 The automatically generated vectors are rendered transparently over the raw image. The
+                                             user sets the intensity limits of the underlying raw image to accommodate variable brightness
+                                             and contrast. The user may also view the probabilistic vectors with their brightness dependent
+                                             on their energies to assess the accuracy of the automated filtering and vector extraction steps.
+                                             The interface enables navigation within the input image volume to view any rectangular sub-
+                                             volume as a maximum intensity projection in z. Manual edits to vectors can then be made
+                                             within the sub-volume.
+                                                 Manual edits are either classifications or additions. Two vector classification tools are used:
+                                             point-and-click true/false toggling and local energy thresholding (within the navigation vol-
+                                             ume). Some vertices are added to a volume in a manual way that is assisted by the energy and
+                                             size images. The user specifies the x and y location with a point-and-click and the software
+                                             automatically selects the z position that minimizes the energy and the size from the corre-
+                                             sponding location in the size image. Additionally, some edges are added by selecting two verti-
+                                             ces to connect. The location and size along the added edge are simply linearly interpolated
+                                             from the two vertices.
+                                                 Automated energy thresholding. The vertex and edge objects are both segmented using
+                                             global thresholds on the energy feature. Receiver operating characteristic (ROC) curves are
+                                             created by sweeping this energy threshold. The most accurate operating points are chosen with
+                                             the knowledge of the ground truth image to maximize voxel-by-voxel classification accuracy.
+                                             For the vertex objects, global thresholding applies a user-defined upper limit on the acceptable
+                                             energy associated with any vertex. Vertices with energies above the threshold are classified as
+                                             false and eliminated. Since each vertex serves as a seed point (and possible termination point)
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      15 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             in the edge extraction algorithm, vertices are segmented prior to edge extraction to improve
+                                             performance. For the edge objects, global thresholding applies a user-defined upper limit on
+                                             the acceptable maximum energy associated with any edge. Edges with maximum energy above
+                                             the threshold are eliminated.
+
+                                             Visualizations
+                                                 Three-dimensional scalar fields. Outputs of the energy, vertex, edge, and network steps
+                                             of the SLAVV software (see Automated vessel vectorization) are automatically output as TIFF
+                                             files of three-dimensional scalar fields at the resolution of the input image. These files are
+                                             opened in ImageJ [27] for viewing and projection. Vertices and edges are rendered as energy-
+                                             weighted, centerline- or volume-filled objects. Centerline filling creates single voxel wide, con-
+                                             tinuous traces. Volume filling places spherical structuring elements of estimated radius, con-
+                                             centric with the centerline traces.
+                                                 Projections and perspectives. The strand-resolved and depth-resolved z-projections are
+                                             created inside the SLAVV software in MATLAB by rendering strand centerline voxels with
+                                             colors based on the unique strand identity or the z-component of each centerline location,
+                                             respectively. Three-dimensional visualization is also done inside the SLAVV software with the
+                                             isosurface and isonormals MATLAB functions by upsampling the strand sample
+                                             points, and rendering each as a volume-filled object. The colors are again mapped from the
+                                             strand unique identifiers.
+
+                                             Statistical analysis of vectors
+                                             Statistical calculations are performed within the SLAVV software to extract features of the net-
+                                             work output such as volume, surface area, length, and number of bifurcations. These calcula-
+                                             tions operate on the network output strands idealized as consecutive circular, right cylinders
+                                             (Fig 3B). For analyzing distributions (histograms) of vessel quantities, the lateral surface area is
+                                             used as the weighting quantity, because the lateral surface area is directly proportional to the
+                                             chemical flux across the vessel wall.
+
+                                             Simulating 2PM images
+                                             Realistic 2PM images of varying contrast and noise are simulated from a ground truth vectori-
+                                             zation for the purposes of measuring automated vectorization performance. First the ground
+                                             truth vectorization is rendered in a binary volume-fill at high resolution, blurred with an over-
+                                             estimated Gaussian model for the microscope point spread function [28], and downsampled
+                                             to the resolution of the original raw image. The intensities are then linearly transformed to
+                                             have a positive background value IB and a larger foreground value IF.
+                                                 To simulate Poisson distributed noise, a normally distributed random variable is added to
+                                             each voxel with variance equal to the voxel intensity. The foreground and background values
+                                             are varied to achieve different contrast and noise levels. Contrast is defined as the difference
+                                             between the foreground and background intensities, IF − IB, and noise as the standard devia-
+                                                                     pffiffiffiffiffiffiffiffiffiffiffiffiffi
+                                             tion of that difference, IF þ IB . For comparison purposes, simulated image quality is summa-
+                                             rized by the contrast to noise ratio.
+
+                                             Evaluating vectorization performance
+                                             The SLAVV method is designed to extract bulk statistics of interest from large volumes of vas-
+                                             culature. Therefore, vectorization performance is evaluated by its accuracy in computing such
+                                             statistics. The surface area density is a fundamental vascular statistic because it is roughly
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      16 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             proportional to the chemical transport per volume of tissue. Other oftentimes reported statis-
+                                             tics of interest are the volume fraction, length density, and bifurcation density.
+
+                                             Discussion
+                                             Advantages of the direct vectorization approach
+                                             The SLAVV method is advantageous because it is robust to input signal shape, quality, and res-
+                                             olution. Through efficient linear filtering, vessel centerlines and sizes are estimated along with
+                                             an “energy” or goodness of fit metric. Vessel objects are extracted using simple algorithms to
+                                             utilize the energy information along with size and topological (connectivity) constraints.
+                                             Unlike image segmentation approaches, which classify voxels as true or false from grayscale
+                                             images, the SLAVV approach directly extracts elementary vectors from the grayscale image. In
+                                             doing so, it removes the needs for pre- or post-image processing (interpolation, morphological
+                                             filtering, skeletonization), which improves computational efficiency and reduces sensitivities
+                                             to image quality, resolution, and signal shape (spherical vs annular). Although machine learn-
+                                             ing methods may perform quickly and efficiently once trained on a particular dataset, such
+                                             image segmentation methods do not directly produce vectorizations and require computation-
+                                             ally-expensive (non-linear) morphological filtering during skeletonization. In contrast,
+                                             SLAVV is developed from first principles in signal processing, so there is no need to train a
+                                             model or maintain separate training and testing datasets. Furthermore, image segmentation
+                                             methods produce binary images without any guaranteed topology, oftentimes requiring reme-
+                                             dial morphological filtering. In contrast, the SLAVV method is guaranteed to produce a con-
+                                             nected network with certain topological constraints (Automated vessel vectorization): 1. edges
+                                             connect two vertices, 2. vertex volumes do not overlap. Although the SLAVV method does not
+                                             segment the image before extracting vectors, it can nonetheless be used as a segmentation tool
+                                             (by rendering the extracted vectors at the resolution of the original). Unlike voxel-by-voxel
+                                             image segmentation methods, the output of SLAVV has guaranteed shape and connectivity
+                                             constraints that are realistic for vascular networks.
+
+                                             Performance of SLAVV on endothelial-labeled inputs
+                                             An endothelial labeled image, such as Image 1 is very difficult to segment using voxel-by-voxel
+                                             classification, because the signal only outlines the object instead of filling its volume. The
+                                             SLAVV approach is robust to this input signal shape, because it can be tuned to detect a com-
+                                             bination of spherical and annular shapes. However, manual vector classification is less efficient
+                                             on the endothelial-labeled Image 1 than the plasma-labeled Image 2 (Table 3), because the
+                                             automated vector extraction is less robust to noise for the endothelial signal which is weaker
+                                             and spans fewer voxels. Despite these obstacles, the SLAVV method enables the calculation of
+                                             morphological statistics from endothelial contrast (Table 2) that would otherwise be very diffi-
+                                             cult. Additionally, because the initial filtering is linear, the superposition principle guarantees
+                                             good performance on any combination of plasma- and endothelial- labeled inputs (result not
+                                             shown).
+
+                                             Anatomical statistic accuracy
+                                             The surface area density was observed to be uniform in depth (Fig 3C or 3D), consistent with
+                                             an assumption of homogeneous chemical transport demand. Previous anatomical statistics
+                                             describing cerebral microvasculature in mice have largely come from two-photon images of
+                                             post-mortem brain tissue. In a comprehensive review by [10], the vascular volume density was
+                                             reported to be between 0.5 and 1% and the length density between 0.7 and 1.1 m/mm3. These
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      17 / 20
+PLOS COMPUTATIONAL BIOLOGY                                          Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             results are comparable to the bulk statistics obtained in the cursory anatomical study shown in
+                                             Fig 3 and Table 2. For example, the vectors extracted from Image 3 had a length density of 0.6
+                                             m/mm3. Interestingly, the corresponding volume density was 6%. This larger volume estimate
+                                             could be attributed to a higher vascular perfusion under anesthesia and in vivo compared to
+                                             post-mortem imaging.
+
+                                             Fully-automated SLAVV performance
+                                             The objective performance evaluation demonstrates a rigorous framework for testing the accu-
+                                             racy of vectorization techniques on a simulated image with known quality and ground truth.
+                                             The ability of SLAVV to extract bulk network statistics such as surface area, length, and num-
+                                             ber of bifurcations is shown to be more robust to image quality than the voxel intensity classi-
+                                             fier benchmark. The vectorizations utilized size, shape, and topographical information to
+                                             achieve a greater robustness to image quality. Therefore, it is unsurprising that there was an
+                                             image quality threshold below which the vector energy classifier outperformed the voxel inten-
+                                             sity classifier.
+
+                                             Future work: Neurovascular plasticity
+                                             The vectorization software will be expanded to accept time-lapse images, automatically register
+                                             vascular objects between imaging sessions, and manually curate any changes. Time-lapse
+                                             images will be analyzed to estimate vascular plasticity statistics such as angiogenesis or angio-
+                                             necrosis. Time-resolved neurovascular statistics in murine cortex will be estimated with high
+                                             accuracy and precision and in large volume. Good estimates of these statistics will inform fun-
+                                             damental neurovascular research. Measured statistics will be compared between treatment
+                                             groups in a relevant medical experiment, for example to study the effect of a drug on capillary
+                                             plasticity in adult murine cortex.
+
+                                             Conclusion
+                                             We present the SLAVV method to vectorize microvascular networks directly from unpro-
+                                             cessed, in vivo 2PM images of the mouse cortex. This vectorization method removes any pre-
+                                             processing requirements (image segmentation, interpolation, denoising) by utilizing linear
+                                             filtering and vector extraction algorithms. Furthermore, there is no machine learning required,
+                                             so the user does not need to generate separate training and testing datasets. The SLAVV
+                                             method is shown to perform similarly on plasma- and endothelial-labeled images, enabling
+                                             statistical calculations for the bulk network (length, area, volume, bifurcation frequency) and
+                                             for individual capillaries, arterioles, or venules. Automated and manual processing costs
+                                             remain manageable even for large volume inputs. Fully-automated SLAVV performance is
+                                             proven robust to image quality compared to a common intensity-based thresholding
+                                             approach. The SLAVV method is expected to enable longitudinal capillary tracking through
+                                             accurate and efficient vectorization of time-lapse, in vivo images of mouse cerebral
+                                             microvasculature.
+
+                                             Supporting information
+                                             S1 Fig. Endothelial-labeled input image vectorization.
+                                             (PDF)
+
+
+                                             Author Contributions
+                                             Conceptualization: Samuel A. Mihelic, Theresa A. Jones, Andrew K. Dunn.
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                      18 / 20
+PLOS COMPUTATIONAL BIOLOGY                                            Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+
+                                             Data curation: Samuel A. Mihelic, William A. Sikora, Ahmed M. Hassan, Michael R.
+                                               Williamson.
+                                             Formal analysis: Samuel A. Mihelic.
+                                             Funding acquisition: Theresa A. Jones, Andrew K. Dunn.
+                                             Investigation: Samuel A. Mihelic, Ahmed M. Hassan, Michael R. Williamson, Andrew K.
+                                                Dunn.
+                                             Methodology: Samuel A. Mihelic, William A. Sikora.
+                                             Project administration: Samuel A. Mihelic.
+                                             Resources: Theresa A. Jones, Andrew K. Dunn.
+                                             Software: Samuel A. Mihelic, William A. Sikora.
+                                             Supervision: Samuel A. Mihelic, Theresa A. Jones, Andrew K. Dunn.
+                                             Validation: Samuel A. Mihelic, William A. Sikora.
+                                             Visualization: Samuel A. Mihelic.
+                                             Writing – original draft: Samuel A. Mihelic.
+                                             Writing – review & editing: William A. Sikora, Ahmed M. Hassan, Michael R. Williamson,
+                                               Theresa A. Jones, Andrew K. Dunn.
+
+
+
+                                             References
+                                              1.   Kozberg M, Hillman E. Neurovascular coupling and energy metabolism in the developing brain. In:
+                                                   Progress in brain research. vol. 225. Elsevier; 2016. p. 213–242.
+                                              2.   Girouard H, Iadecola C. Neurovascular coupling in the normal brain and in hypertension, stroke, and
+                                                   Alzheimer disease. Journal of applied physiology. 2006; 100(1):328–335. https://doi.org/10.1152/
+                                                   japplphysiol.00966.2005 PMID: 16357086
+                                              3.   Lecrux C, Hamel E. The neurovascular unit in brain function and disease. Acta physiologica. 2011; 203
+                                                   (1):47–59. https://doi.org/10.1111/j.1748-1716.2011.02256.x PMID: 21272266
+                                              4.   STAIR STAIR. Recommendations for standards regarding preclinical neuroprotective and restorative
+                                                   drug development. Stroke. 1999; 30(12):2752. https://doi.org/10.1161/01.STR.30.12.2752
+                                              5.   Dirnagl U. Bench to bedside: the quest for quality in experimental stroke research. Journal of Cerebral
+                                                   Blood Flow & Metabolism. 2006; 26(12):1465–1478. https://doi.org/10.1038/sj.jcbfm.9600298 PMID:
+                                                   16525413
+                                              6.   Savitz SI. A critical appraisal of the NXY-059 neuroprotection studies for acute stroke: a need for more
+                                                   rigorous testing of neuroprotective agents in animal models of stroke. Experimental neurology. 2007;
+                                                   205(1):20–25. https://doi.org/10.1016/j.expneurol.2007.03.003 PMID: 17408618
+                                              7.   Fisher M, Feuerstein G, Howells DW, Hurn PD, Kent TA, Savitz SI, et al. Update of the stroke therapy
+                                                   academic industry roundtable preclinical recommendations. Stroke. 2009; 40(6):2244–2250. https://
+                                                   doi.org/10.1161/STROKEAHA.108.541128 PMID: 19246690
+                                              8.   Cudmore RH, Dougherty SE, Linden DJ. Cerebral vascular structure in the motor cortex of adult mice is
+                                                   stable and is not altered by voluntary exercise. Journal of Cerebral Blood Flow & Metabolism. 2017; 37
+                                                   (12):3725–3743. https://doi.org/10.1177/0271678X16682508
+                                              9.   Smith AF, Doyeux V, Berg M, Peyrounette M, Haft-Javaherian M, Larue AE, et al. Brain capillary net-
+                                                   works across species: a few simple organizational requirements are sufficient to reproduce both struc-
+                                                   ture and function. Frontiers in physiology. 2019; 10:233. https://doi.org/10.3389/fphys.2019.00233
+                                                   PMID: 30971935
+                                             10.   Tsai PS, Kaufhold JP, Blinder P, Friedman B, Drew PJ, Karten HJ, et al. Correlations of neuronal and
+                                                   microvascular densities in murine cortex revealed by direct counting and colocalization of nuclei and
+                                                   vessels. Journal of Neuroscience. 2009; 29(46):14553–14570. https://doi.org/10.1523/JNEUROSCI.
+                                                   3287-09.2009 PMID: 19923289
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                            19 / 20
+PLOS COMPUTATIONAL BIOLOGY                                            Segmentation-less vectorization of microvasculature from in vivo two-photon images
+
+
+
+                                             11.   Haft-Javaherian M, Fang L, Muse V, Schaffer CB, Nishimura N, Sabuncu MR. Deep convolutional neural
+                                                   networks for segmenting 3D in vivo multiphoton images of vasculature in Alzheimer disease mouse mod-
+                                                   els. PloS one. 2019; 14(3):e0213539. https://doi.org/10.1371/journal.pone.0213539 PMID: 30865678
+                                             12.   Wu J, He Y, Yang Z, Guo C, Luo Q, Zhou W, et al. 3D BrainCV: simultaneous visualization and analysis
+                                                   of cells and capillaries in a whole mouse brain with one-micron voxel resolution. Neuroimage. 2014;
+                                                   87:199–208. https://doi.org/10.1016/j.neuroimage.2013.10.036 PMID: 24185025
+                                             13.   Lang S, Müller B, Dominietto MD, Cattin PC, Zanette I, Weitkamp T, et al. Three-dimensional quantifica-
+                                                   tion of capillary networks in healthy and cancerous tissues of two mice. Microvascular research. 2012;
+                                                   84(3):314–322. https://doi.org/10.1016/j.mvr.2012.07.002 PMID: 22796313
+                                             14.   Cao Y, Wu T, Li D, Ni S, Hu J, Lu H, et al. Three-dimensional imaging of microvasculature in the rat spinal
+                                                   cord following injury. Scientific reports. 2015; 5:12643. https://doi.org/10.1038/srep12643 PMID: 26220842
+                                             15.   Teikari P, Santos M, Poon C, Hynynen K. Deep learning convolutional networks for multiphoton micros-
+                                                   copy vasculature segmentation. arXiv preprint arXiv:160602382. 2016;.
+                                             16.   Damseh R, Pouliot P, Gagnon L, Sakadzic S, Boas D, Cheriet F, et al. Automatic Graph-based Model-
+                                                   ing of Brain Microvessels Captured with Two-Photon Microscopy. IEEE journal of biomedical and health
+                                                   informatics. 2018;. https://doi.org/10.1109/JBHI.2018.2884678 PMID: 30507542
+                                             17.   Sato Y, Nakajima S, Atsumi H, Koller T, Gerig G, Yoshida S, et al. 3D multi-scale line filter for segmenta-
+                                                   tion and visualization of curvilinear structures in medical images. In: CVRMed-MRCAS’97. Springer;
+                                                   1997. p. 213–222.
+                                             18.   Yousefi S, Qin J, Zhi Z, Wang RK. Label-free optical lymphangiography: development of an automatic
+                                                   segmentation method applied to optical coherence tomography to visualize lymphatic vessels using
+                                                   Hessian filters. Journal of biomedical optics. 2013; 18(8):086004. https://doi.org/10.1117/1.JBO.18.8.
+                                                   086004 PMID: 23922124
+                                             19.   Yousefi S, Liu T, Wang RK. Segmentation and quantification of blood vessels for OCT-based micro-
+                                                   angiograms using hybrid shape/intensity compounding. Microvascular research. 2015; 97:37–46.
+                                                   https://doi.org/10.1016/j.mvr.2014.09.007 PMID: 25283347
+                                             20.   Jerman T, Pernuš F, Likar B, Špiclin Ž. Enhancement of vascular structures in 3D and 2D angiographic
+                                                   images. IEEE transactions on medical imaging. 2016; 35(9):2107–2118. https://doi.org/10.1109/TMI.
+                                                   2016.2550102 PMID: 27076353
+                                             21.   Lee J, Jiang JY, Wu W, Lesage F, Boas DA. Statistical intensity variation analysis for rapid volumetric
+                                                   imaging of capillary network flux. Biomedical optics express. 2014; 5(4):1160–1172. https://doi.org/10.
+                                                   1364/BOE.5.001160 PMID: 24761298
+                                             22.   Araújo RJ, Cardoso JS, Oliveira HP. A Deep Learning Design for Improving Topology Coherence in
+                                                   Blood Vessel Segmentation. In: International Conference on Medical Image Computing and Computer-
+                                                   Assisted Intervention. Springer; 2019. p. 93–101.
+                                             23.   Clark TA, Sullender C, Kazmi SM, Speetles BL, Williamson MR, Palmberg DM, et al. Artery targeted
+                                                   photothrombosis widens the vascular penumbra, instigates peri-infarct neovascularization and models
+                                                   forelimb impairments. Scientific reports. 2019; 9(1):2323. https://doi.org/10.1038/s41598-019-39092-7
+                                                   PMID: 30787398
+                                             24.   Hassan AM, Wu X, Jarrett JW, Xu S, Yu J, Miller DR, et al. Polymer dots enable deep in vivo multipho-
+                                                   ton fluorescence imaging of microvasculature. Biomedical optics express. 2019; 10(2):584–599. https://
+                                                   doi.org/10.1364/BOE.10.000584 PMID: 30800501
+                                             25.   Perillo EP, Jarrett JW, Liu YL, Hassan A, Fernée DC, Goldak JR, et al. Two-color multiphoton in vivo
+                                                   imaging with a femtosecond diamond Raman laser. Light: Science & Applications. 2017; 6(11):e17095–
+                                                   e17095. https://doi.org/10.1038/lsa.2017.95 PMID: 29576887
+                                             26.   Preibisch S, Saalfeld S, Tomancak P. Globally optimal stitching of tiled 3D microscopic image acquisi-
+                                                   tions. Bioinformatics. 2009; 25(11):1463–1465. https://doi.org/10.1093/bioinformatics/btp184 PMID:
+                                                   19346324
+                                             27.   Schindelin J, Arganda-Carreras I, Frise E, Kaynig V, Longair M, Pietzsch T, et al. Fiji: an open-source
+                                                   platform for biological-image analysis. Nature methods. 2012; 9(7):676–682. https://doi.org/10.1038/
+                                                   nmeth.2019 PMID: 22743772
+                                             28.   Zipfel WR, Williams RM, Webb WW. Nonlinear magic: multiphoton microscopy in the biosciences.
+                                                   Nature biotechnology. 2003; 21(11):1369. https://doi.org/10.1038/nbt899 PMID: 14595365
+                                             29.   Lowe DG. Distinctive image features from scale-invariant keypoints. International journal of computer
+                                                   vision. 2004; 60(2):91–110. https://doi.org/10.1023/B:VISI.0000029664.99615.94
+
+
+
+
+PLOS Computational Biology | https://doi.org/10.1371/journal.pcbi.1009451 October 8, 2021                                                              20 / 20
+

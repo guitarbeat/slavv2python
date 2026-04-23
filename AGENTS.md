@@ -19,6 +19,7 @@ Repository guidance for coding agents working in `slavv2python`.
 ## Read First When Relevant
 
 - `docs/README.md`: index for maintained reference docs.
+- `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md`: canonical claim boundaries, source-of-truth hierarchy, and remaining work for fully implementing the released SLAVV method in Python.
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md`: canonical MATLAB-to-Python map for exact imported-MATLAB parity work.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
@@ -159,12 +160,18 @@ python dev/scripts/cli/parity_experiment.py rerun-python `
 
 python dev/scripts/cli/parity_experiment.py summarize `
     --run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+
+python dev/scripts/cli/parity_experiment.py prove-exact `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial `
+    --stage all
 ```
 
 Notes:
 
-- This runner is developer-only and counts-only.
-- It uses the source run's preserved `03_Analysis/comparison_report.json` as MATLAB count truth.
+- This runner is developer-only.
+- `rerun-python` and `summarize` provide count-level rerun summaries.
+- `prove-exact` compares normalized Python checkpoints against preserved raw MATLAB vectors.
 - It does not recreate the removed rich parity diagnostics or old public parity CLI.
 
 ## Exact MATLAB Parity Rule
@@ -172,8 +179,14 @@ Notes:
 For any MATLAB-parity-sensitive surface, especially the imported-MATLAB `edges` and `network`
 stages, the required goal is exact method parity, not approximate behavioral similarity.
 
+- Treat `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md` as the canonical
+  claim-boundary document for what counts as source-aligned, artifact-proven, or fully
+  implemented in Python.
 - Treat the MATLAB source under `external/Vectorization-Public/source/` as the canonical
   implementation.
+- Treat `prove-exact` results and preserved MATLAB vectors as the proof gate.
+- Treat the paper prose as explanatory context, not as a higher-priority spec than the released
+  MATLAB code.
 - Python parity work must reproduce the same mathematical method and algorithm structure 1:1 unless a
   deviation is explicitly documented and approved as non-parity work.
 - Do not accept "close enough" replacements such as heuristic supplements, salvage passes, reordered
