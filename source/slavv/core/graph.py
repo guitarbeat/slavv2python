@@ -72,6 +72,7 @@ def _normalize_connections(edge_connections: Any) -> np.ndarray:
 
 def _build_graph_state(
     edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
     edge_energy_traces: list[np.ndarray],
     edge_connections: np.ndarray,
     n_vertices: int,
@@ -79,16 +80,19 @@ def _build_graph_state(
     dict[int, set[int]],
     dict[tuple[int, int], np.ndarray],
     dict[tuple[int, int], np.ndarray],
+    dict[tuple[int, int], np.ndarray],
     list[dict[str, Any]],
 ]:
     """Build sparse adjacency, undirected graph-edge storage, and dangling edge records."""
     adjacency_list: dict[int, set[int]] = {i: set() for i in range(n_vertices)}
     graph_edges: dict[tuple[int, int], np.ndarray] = {}
+    graph_edge_scales: dict[tuple[int, int], np.ndarray] = {}
     graph_edge_energies: dict[tuple[int, int], np.ndarray] = {}
     dangling_edges: list[dict[str, Any]] = []
 
-    for trace, energy_trace, (start_vertex, end_vertex) in zip(
+    for trace, scale_trace, energy_trace, (start_vertex, end_vertex) in zip(
         edge_traces,
+        edge_scale_traces,
         edge_energy_traces,
         edge_connections,
     ):
@@ -98,6 +102,7 @@ def _build_graph_state(
                     "start": int(start_vertex) if start_vertex >= 0 else None,
                     "end": int(end_vertex) if end_vertex >= 0 else None,
                     "trace": trace,
+                    "scale_trace": scale_trace,
                     "energy_trace": energy_trace,
                 }
             )
@@ -108,9 +113,10 @@ def _build_graph_state(
         adjacency_list[v1].add(v0)
         key = (v0, v1) if v0 < v1 else (v1, v0)
         graph_edges.setdefault(key, trace)
+        graph_edge_scales.setdefault(key, scale_trace)
         graph_edge_energies.setdefault(key, energy_trace)
 
-    return adjacency_list, graph_edges, graph_edge_energies, dangling_edges
+    return adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges
 
 
 def _remove_short_hairs(
@@ -118,6 +124,7 @@ def _remove_short_hairs(
     adjacency_list: dict[int, set[int]],
     microns_per_voxel: np.ndarray,
     min_hair_length: float,
+    graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
     graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
 ) -> None:
     """Remove short terminal hairs in-place."""
@@ -142,6 +149,8 @@ def _remove_short_hairs(
             adjacency_list[v0].discard(v1)
             adjacency_list[v1].discard(v0)
             del graph_edges[(v0, v1)]
+            if graph_edge_scales is not None:
+                del graph_edge_scales[(v0, v1)]
             if graph_edge_energies is not None:
                 del graph_edge_energies[(v0, v1)]
 
@@ -150,6 +159,7 @@ def _remove_cycles(
     graph_edges: dict[tuple[int, int], np.ndarray],
     adjacency_list: dict[int, set[int]],
     n_vertices: int,
+    graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
     graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
 ) -> list[tuple[int, int]]:
     """Remove cycle-closing edges by building a spanning forest in best-to-worst order."""
@@ -173,6 +183,8 @@ def _remove_cycles(
             adjacency_list[v0].discard(v1)
             adjacency_list[v1].discard(v0)
             del graph_edges[(v0, v1)]
+            if graph_edge_scales is not None:
+                del graph_edge_scales[(v0, v1)]
             if graph_edge_energies is not None:
                 del graph_edge_energies[(v0, v1)]
         else:
@@ -454,12 +466,14 @@ def _matlab_sort_network_v180(
 
 def _matlab_get_strand_objects(
     edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
     edge_energy_traces: list[np.ndarray],
     edge_indices_in_strands: list[np.ndarray],
     edge_backwards_in_strands: list[np.ndarray],
-) -> tuple[list[np.ndarray], list[np.ndarray]]:
+) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Mirror MATLAB's ``get_strand_objects`` strand assembly from ordered edges."""
-    strand_traces: list[np.ndarray] = []
+    strand_space_traces: list[np.ndarray] = []
+    strand_scale_traces: list[np.ndarray] = []
     strand_energy_traces: list[np.ndarray] = []
 
     for strand_edge_indices, strand_edge_backwards in zip(
@@ -472,6 +486,10 @@ def _matlab_get_strand_objects(
             np.asarray(edge_traces[int(edge_index)], dtype=np.float32).copy()
             for edge_index in ordered_edge_indices.tolist()
         ]
+        edge_scales_at_strand = [
+            np.asarray(edge_scale_traces[int(edge_index)], dtype=np.float32).reshape(-1).copy()
+            for edge_index in ordered_edge_indices.tolist()
+        ]
         edge_energies_at_strand = [
             np.asarray(edge_energy_traces[int(edge_index)], dtype=np.float32).copy()
             for edge_index in ordered_edge_indices.tolist()
@@ -480,14 +498,17 @@ def _matlab_get_strand_objects(
         for edge_ordinal in range(len(ordered_edge_indices)):
             if backwards_flags[edge_ordinal]:
                 edge_traces_at_strand[edge_ordinal] = np.flipud(edge_traces_at_strand[edge_ordinal])
+                edge_scales_at_strand[edge_ordinal] = np.flipud(edge_scales_at_strand[edge_ordinal])
                 edge_energies_at_strand[edge_ordinal] = np.flipud(
                     edge_energies_at_strand[edge_ordinal],
                 )
             if edge_ordinal < len(ordered_edge_indices) - 1:
                 edge_traces_at_strand[edge_ordinal] = edge_traces_at_strand[edge_ordinal][:-1]
+                edge_scales_at_strand[edge_ordinal] = edge_scales_at_strand[edge_ordinal][:-1]
                 edge_energies_at_strand[edge_ordinal] = edge_energies_at_strand[edge_ordinal][:-1]
 
         strand_trace = np.concatenate(edge_traces_at_strand, axis=0)
+        strand_scale = np.concatenate(edge_scales_at_strand, axis=0)
         strand_energy = np.concatenate(edge_energies_at_strand, axis=0)
         rounded_positions = np.rint(10.0 * strand_trace[:, :3]).astype(np.int32, copy=False)
         _unique_rows, unique_indices = np.unique(
@@ -496,15 +517,249 @@ def _matlab_get_strand_objects(
             return_index=True,
         )
         stable_unique_indices = np.asarray(sorted(unique_indices.tolist()), dtype=np.int32)
-        strand_traces.append(strand_trace[stable_unique_indices])
+        strand_space_traces.append(strand_trace[stable_unique_indices])
+        strand_scale_traces.append(strand_scale[stable_unique_indices])
         strand_energy_traces.append(strand_energy[stable_unique_indices])
 
-    return strand_traces, strand_energy_traces
+    return strand_space_traces, strand_scale_traces, strand_energy_traces
+
+
+def _matlab_edge_metrics(energy_traces: list[np.ndarray]) -> np.ndarray:
+    """Mirror MATLAB ``get_edge_metric(..., 'max')`` over a list of traces."""
+    if not energy_traces:
+        return cast("np.ndarray", np.zeros((0,), dtype=np.float32))
+    metrics = np.asarray(
+        [
+            float(np.max(np.asarray(trace, dtype=np.float32)))
+            if np.asarray(trace).size
+            else float("nan")
+            for trace in energy_traces
+        ],
+        dtype=np.float32,
+    )
+    metrics[np.isnan(metrics)] = np.float32(-1000.0)
+    return cast("np.ndarray", metrics)
+
+
+def _matlab_interp1_implicit_axis(values: np.ndarray, query_points: np.ndarray) -> np.ndarray:
+    """Mirror MATLAB ``interp1(values, xq)`` where the x-axis is ``1:numel(values)``."""
+    ordinate_axis = np.arange(1, len(values) + 1, dtype=np.float64)
+    queries = np.asarray(query_points, dtype=np.float64)
+    result = np.interp(
+        queries,
+        ordinate_axis,
+        np.asarray(values, dtype=np.float64),
+        left=np.nan,
+        right=np.nan,
+    )
+    return cast("np.ndarray", np.asarray(result, dtype=np.float64))
+
+
+def _matlab_smooth_edges_v2(
+    edge_space_subscripts: list[np.ndarray],
+    edge_scale_subscripts: list[np.ndarray],
+    edge_energies: list[np.ndarray],
+    smoothing_kernel_sigma_to_lumen_radius_ratio: float,
+    lumen_radius_in_microns_range: np.ndarray,
+    microns_per_voxel: np.ndarray,
+) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
+    """Mirror the active local-neighbor branch of MATLAB ``smooth_edges_V2``."""
+    if not edge_space_subscripts:
+        return [], [], []
+    if np.asarray(lumen_radius_in_microns_range).size == 0:
+        return (
+            [np.asarray(space_trace, dtype=np.float32).copy() for space_trace in edge_space_subscripts],
+            [
+                np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
+                for scale_trace in edge_scale_subscripts
+            ],
+            [np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy() for energy_trace in edge_energies],
+        )
+
+    smoothed_space_subscripts = [
+        np.asarray(space_trace, dtype=np.float32).copy() for space_trace in edge_space_subscripts
+    ]
+    smoothed_scale_subscripts = [
+        np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
+        for scale_trace in edge_scale_subscripts
+    ]
+    smoothed_energies = [
+        np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy()
+        for energy_trace in edge_energies
+    ]
+
+    for edge_index in range(len(smoothed_space_subscripts)):
+        is_inf_position = np.isneginf(smoothed_energies[edge_index])
+        if np.any(~is_inf_position):
+            smoothed_energies[edge_index][is_inf_position] = np.min(
+                smoothed_energies[edge_index][~is_inf_position]
+            )
+
+    scale_subscript_averages = np.asarray(
+        [
+            float(
+                np.sum(scale_trace.astype(np.float64) * energy_trace.astype(np.float64))
+                / np.sum(energy_trace.astype(np.float64))
+            )
+            for scale_trace, energy_trace in zip(
+                smoothed_scale_subscripts,
+                smoothed_energies,
+            )
+        ],
+        dtype=np.float64,
+    )
+    average_lumen_radii = np.exp(
+        _matlab_interp1_implicit_axis(
+            np.log(np.asarray(lumen_radius_in_microns_range, dtype=np.float64)),
+            scale_subscript_averages,
+        )
+    )
+    microns_per_sigma = (
+        np.asarray(smoothing_kernel_sigma_to_lumen_radius_ratio, dtype=np.float64)
+        * average_lumen_radii
+    )
+
+    for edge_index in range(len(smoothed_space_subscripts)):
+        if not np.any(smoothed_energies[edge_index] > -np.inf):
+            continue
+
+        edge_subscripts_at_edge = np.column_stack(
+            (
+                np.asarray(smoothed_space_subscripts[edge_index], dtype=np.float64),
+                np.asarray(smoothed_scale_subscripts[edge_index], dtype=np.float64),
+            )
+        )
+        edge_energies_at_edge = np.asarray(smoothed_energies[edge_index], dtype=np.float64)
+        edge_microns_at_edge = edge_subscripts_at_edge[:, :3] * np.asarray(
+            microns_per_voxel,
+            dtype=np.float64,
+        )
+        edge_cumulative_length = np.concatenate(
+            (
+                np.zeros((1,), dtype=np.float64),
+                np.cumsum(
+                    np.sqrt(
+                        np.sum(
+                            np.diff(edge_microns_at_edge[:, :3], axis=0) ** 2,
+                            axis=1,
+                        )
+                    )
+                ),
+            )
+        )
+        kernel_micron_domains = edge_cumulative_length[:, None] - edge_cumulative_length[None, :]
+        sigma = float(microns_per_sigma[edge_index])
+        kernel_sigma_domains = kernel_micron_domains / sigma
+        gaussian_kernels = np.exp(-(kernel_sigma_domains**2) / 2.0)
+        energy_conv_kernel = np.sum(edge_energies_at_edge[:, None] * gaussian_kernels, axis=0)
+        energy_conv_energy_conv_kernel = np.sum(
+            (edge_energies_at_edge[:, None] ** 2) * gaussian_kernels,
+            axis=0,
+        )
+        subscript_conv_energy_conv_kernel = np.sum(
+            edge_subscripts_at_edge[:, None, :]
+            * edge_energies_at_edge[:, None, None]
+            * gaussian_kernels[:, :, None],
+            axis=0,
+        )
+        with np.errstate(divide="ignore", invalid="ignore"):
+            edge_subscripts_smoothed = (
+                subscript_conv_energy_conv_kernel / energy_conv_kernel[:, None]
+            )
+            edge_energies_smoothed = energy_conv_energy_conv_kernel / energy_conv_kernel
+
+        edge_subscripts_smoothed[0, :] = edge_subscripts_at_edge[0, :]
+        edge_subscripts_smoothed[-1, :] = edge_subscripts_at_edge[-1, :]
+        edge_energies_smoothed[0] = edge_energies_at_edge[0]
+        edge_energies_smoothed[-1] = edge_energies_at_edge[-1]
+
+        edge_cumulative_lengths = np.concatenate(
+            (
+                np.zeros((1,), dtype=np.float64),
+                np.cumsum(
+                    np.max(
+                        np.abs(np.diff(edge_subscripts_smoothed[:, :3], axis=0)),
+                        axis=1,
+                    )
+                ),
+            )
+        )
+        edge_sample_lengths = np.linspace(
+            0.0,
+            float(edge_cumulative_lengths[-1]),
+            num=len(edge_cumulative_lengths),
+            dtype=np.float64,
+        )
+
+        sampled_subscripts = np.column_stack(
+            [
+                np.interp(
+                    edge_sample_lengths,
+                    edge_cumulative_lengths,
+                    edge_subscripts_smoothed[:, dimension],
+                )
+                for dimension in range(edge_subscripts_smoothed.shape[1])
+            ]
+        )
+        sampled_energies = np.interp(
+            edge_sample_lengths,
+            edge_cumulative_lengths,
+            edge_energies_smoothed,
+        )
+
+        smoothed_space_subscripts[edge_index] = sampled_subscripts[:, :3].astype(
+            np.float32,
+            copy=False,
+        )
+        smoothed_scale_subscripts[edge_index] = sampled_subscripts[:, 3].astype(
+            np.float32,
+            copy=False,
+        )
+        smoothed_energies[edge_index] = sampled_energies.astype(np.float32, copy=False)
+
+    return (
+        smoothed_space_subscripts,
+        smoothed_scale_subscripts,
+        smoothed_energies,
+    )
+
+
+def _matlab_get_vessel_directions_v3(
+    strand_space_subscripts: list[np.ndarray],
+    microns_per_voxel: np.ndarray,
+) -> list[np.ndarray]:
+    """Mirror MATLAB ``get_vessel_directions_V3`` over strand objects."""
+    vessel_directions: list[np.ndarray] = []
+    microns_per_voxel_arr = np.asarray(microns_per_voxel, dtype=np.float32)
+
+    for strand in strand_space_subscripts:
+        strand_coords = np.asarray(strand, dtype=np.float32)
+        if len(strand_coords) == 0:
+            vessel_directions.append(np.zeros((0, 3), dtype=np.float32))
+            continue
+
+        strand_coords = strand_coords * microns_per_voxel_arr
+        if len(strand_coords) > 2:
+            cropped = strand_coords[2:, :] - strand_coords[:-2, :]
+            directions = np.vstack((cropped[0:1, :], cropped, cropped[-1:, :]))
+        elif len(strand_coords) == 2:
+            cropped = strand_coords[1:2, :] - strand_coords[0:1, :]
+            directions = np.vstack((cropped, cropped))
+        else:
+            directions = np.zeros((1, 3), dtype=np.float32)
+
+        norms = np.sqrt(np.sum(directions**2, axis=1, keepdims=True))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            unit_directions = directions / norms
+        vessel_directions.append(np.asarray(unit_directions, dtype=np.float32))
+
+    return vessel_directions
 
 
 def _matlab_network_topology(
     edge_connections: np.ndarray,
     edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
     edge_energy_traces: list[np.ndarray],
     n_vertices: int,
 ) -> dict[str, Any]:
@@ -524,8 +779,9 @@ def _matlab_network_topology(
         end_vertices_in_strands,
         edge_indices_in_strands_unsorted,
     )
-    strand_traces, strand_energy_traces = _matlab_get_strand_objects(
+    strand_space_traces, strand_scale_traces, strand_energy_traces = _matlab_get_strand_objects(
         edge_traces,
+        edge_scale_traces,
         edge_energy_traces,
         edge_indices_in_strands,
         edge_backwards_in_strands,
@@ -537,47 +793,94 @@ def _matlab_network_topology(
         "edge_indices_in_strands": edge_indices_in_strands,
         "edge_backwards_in_strands": edge_backwards_in_strands,
         "end_vertices_in_strands": end_vertices_in_strands,
-        "strand_traces": strand_traces,
+        "strand_traces": strand_space_traces,
+        "strand_space_traces": strand_space_traces,
+        "strand_scale_traces": strand_scale_traces,
         "strand_energy_traces": strand_energy_traces,
     }
 
 
 def _graph_state_ordered_edges(
     graph_edges: dict[tuple[int, int], np.ndarray],
+    graph_edge_scales: dict[tuple[int, int], np.ndarray],
     graph_edge_energies: dict[tuple[int, int], np.ndarray],
-) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray]]:
+) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Recover surviving edge connections, traces, and energy traces in insertion order."""
     ordered_pairs = list(graph_edges.keys())
     if not ordered_pairs:
-        return np.empty((0, 2), dtype=np.int32), [], []
+        return np.empty((0, 2), dtype=np.int32), [], [], []
     connections = np.asarray(ordered_pairs, dtype=np.int32).reshape(-1, 2)
     traces = [np.asarray(graph_edges[pair], dtype=np.float32) for pair in ordered_pairs]
+    scale_traces = [
+        np.asarray(graph_edge_scales[pair], dtype=np.float32).reshape(-1)
+        for pair in ordered_pairs
+    ]
     energy_traces = [
         np.asarray(graph_edge_energies[pair], dtype=np.float32)
         for pair in ordered_pairs
     ]
-    return cast("np.ndarray", connections), traces, energy_traces
+    return cast("np.ndarray", connections), traces, scale_traces, energy_traces
 
 
 def _network_payload(
     adjacency_list: dict[int, set[int]],
     graph_edges: dict[tuple[int, int], np.ndarray],
+    graph_edge_scales: dict[tuple[int, int], np.ndarray],
     graph_edge_energies: dict[tuple[int, int], np.ndarray],
     dangling_edges: list[dict[str, Any]],
     cycles: list[tuple[int, int]],
     n_vertices: int,
+    *,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
 ) -> dict[str, Any]:
     """Build the final network payload from shared graph state."""
-    pruned_connections, pruned_traces, pruned_energy_traces = _graph_state_ordered_edges(
+    (
+        pruned_connections,
+        pruned_traces,
+        pruned_scale_traces,
+        pruned_energy_traces,
+    ) = _graph_state_ordered_edges(
         graph_edges,
+        graph_edge_scales,
         graph_edge_energies,
     )
     topology = _matlab_network_topology(
         pruned_connections,
         pruned_traces,
+        pruned_scale_traces,
         pruned_energy_traces,
         n_vertices,
     )
+    sigma_strand_smoothing = float(np.sqrt(2.0) / 2.0)
+    strand_space_traces = cast("list[np.ndarray]", topology["strand_space_traces"])
+    strand_scale_traces = cast("list[np.ndarray]", topology["strand_scale_traces"])
+    strand_energy_traces = cast("list[np.ndarray]", topology["strand_energy_traces"])
+    if sigma_strand_smoothing and np.asarray(lumen_radius_microns).size > 0:
+        (
+            strand_space_traces,
+            strand_scale_traces,
+            strand_energy_traces,
+        ) = _matlab_smooth_edges_v2(
+            strand_space_traces,
+            strand_scale_traces,
+            strand_energy_traces,
+            sigma_strand_smoothing,
+            lumen_radius_microns,
+            microns_per_voxel,
+        )
+    vessel_directions = _matlab_get_vessel_directions_v3(
+        strand_space_traces,
+        microns_per_voxel,
+    )
+    mean_strand_energies = _matlab_edge_metrics(strand_energy_traces)
+    strand_subscripts = [
+        np.column_stack((space_trace, scale_trace))
+        for space_trace, scale_trace in zip(
+            strand_space_traces,
+            strand_scale_traces,
+        )
+    ]
     vertex_degrees = _vertex_degrees(adjacency_list, n_vertices)
     orphans = np.where(vertex_degrees == 0)[0].astype(np.int32)
 
@@ -590,13 +893,19 @@ def _network_payload(
         "adjacency_list": adjacency_list,
         "vertex_degrees": vertex_degrees,
         "graph_edges": graph_edges,
+        "graph_edge_scales": graph_edge_scales,
         "graph_edge_energies": graph_edge_energies,
         "dangling_edges": dangling_edges,
         "edge_indices_in_strands": topology["edge_indices_in_strands"],
         "edge_backwards_in_strands": topology["edge_backwards_in_strands"],
         "end_vertices_in_strands": topology["end_vertices_in_strands"],
-        "strand_traces": topology["strand_traces"],
-        "strand_energy_traces": topology["strand_energy_traces"],
+        "strand_subscripts": strand_subscripts,
+        "strand_traces": strand_space_traces,
+        "strand_space_traces": strand_space_traces,
+        "strand_scale_traces": strand_scale_traces,
+        "strand_energy_traces": strand_energy_traces,
+        "mean_strand_energies": mean_strand_energies,
+        "vessel_directions": vessel_directions,
     }
     return payload
 
@@ -608,20 +917,38 @@ def construct_network(
     logger.info("Constructing network")
 
     edge_traces = edges["traces"]
+    edge_scale_traces = edges.get(
+        "scale_traces",
+        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
+    )
     edge_energy_traces = edges.get(
         "energy_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
     edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = vertices["positions"]
+    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
+    bridge_vertex_positions = np.asarray(
+        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
+        dtype=np.float32,
+    ).reshape(-1, 3)
+    if bridge_vertex_positions.size:
+        vertex_positions = np.vstack([vertex_positions, bridge_vertex_positions]).astype(
+            np.float32,
+            copy=False,
+        )
     n_vertices = len(vertex_positions)
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+    lumen_radius_microns = np.asarray(
+        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
+        dtype=np.float32,
+    ).reshape(-1)
     min_hair_length = params.get("min_hair_length_in_microns", 0.0)
     remove_cycles = bool(params.get("remove_cycles", False))
 
-    adjacency_list, graph_edges, graph_edge_energies, dangling_edges = _build_graph_state(
+    adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = _build_graph_state(
         edge_traces,
+        edge_scale_traces,
         edge_energy_traces,
         edge_connections,
         n_vertices,
@@ -632,10 +959,17 @@ def construct_network(
         adjacency_list,
         microns_per_voxel,
         float(min_hair_length),
+        graph_edge_scales,
         graph_edge_energies,
     )
     cycles = (
-        _remove_cycles(graph_edges, adjacency_list, n_vertices, graph_edge_energies)
+        _remove_cycles(
+            graph_edges,
+            adjacency_list,
+            n_vertices,
+            graph_edge_scales,
+            graph_edge_energies,
+        )
         if remove_cycles
         else []
     )
@@ -643,10 +977,13 @@ def construct_network(
     network = _network_payload(
         adjacency_list,
         graph_edges,
+        graph_edge_scales,
         graph_edge_energies,
         dangling_edges,
         cycles,
         n_vertices,
+        lumen_radius_microns=lumen_radius_microns,
+        microns_per_voxel=microns_per_voxel,
     )
 
     logger.info(
@@ -670,15 +1007,32 @@ def construct_network_resumable(
     from slavv.runtime.run_state import atomic_joblib_dump
 
     edge_traces = edges["traces"]
+    edge_scale_traces = edges.get(
+        "scale_traces",
+        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
+    )
     edge_energy_traces = edges.get(
         "energy_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
     edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = vertices["positions"]
+    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
+    bridge_vertex_positions = np.asarray(
+        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
+        dtype=np.float32,
+    ).reshape(-1, 3)
+    if bridge_vertex_positions.size:
+        vertex_positions = np.vstack([vertex_positions, bridge_vertex_positions]).astype(
+            np.float32,
+            copy=False,
+        )
     n_vertices = len(vertex_positions)
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+    lumen_radius_microns = np.asarray(
+        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
+        dtype=np.float32,
+    ).reshape(-1)
     min_hair_length = params.get("min_hair_length_in_microns", 0.0)
     remove_cycles = bool(params.get("remove_cycles", False))
 
@@ -689,8 +1043,9 @@ def construct_network_resumable(
     strands_path = stage_controller.artifact_path("strands.pkl")
 
     if not adjacency_path.exists():
-        adjacency_list, graph_edges, graph_edge_energies, dangling_edges = _build_graph_state(
+        adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = _build_graph_state(
             edge_traces,
+            edge_scale_traces,
             edge_energy_traces,
             edge_connections,
             n_vertices,
@@ -699,6 +1054,7 @@ def construct_network_resumable(
             {
                 "adjacency_list": adjacency_list,
                 "graph_edges": graph_edges,
+                "graph_edge_scales": graph_edge_scales,
                 "graph_edge_energies": graph_edge_energies,
                 "dangling_edges": dangling_edges,
             },
@@ -708,6 +1064,7 @@ def construct_network_resumable(
     adjacency_payload = safe_load(adjacency_path)
     adjacency_list = adjacency_payload["adjacency_list"]
     graph_edges = adjacency_payload["graph_edges"]
+    graph_edge_scales = adjacency_payload["graph_edge_scales"]
     graph_edge_energies = adjacency_payload["graph_edge_energies"]
     dangling_edges = adjacency_payload["dangling_edges"]
     stage_controller.update(units_total=5, units_completed=1, substage="adjacency")
@@ -718,12 +1075,14 @@ def construct_network_resumable(
             adjacency_list,
             microns_per_voxel,
             float(min_hair_length),
+            graph_edge_scales,
             graph_edge_energies,
         )
         atomic_joblib_dump(
             {
                 "adjacency_list": adjacency_list,
                 "graph_edges": graph_edges,
+                "graph_edge_scales": graph_edge_scales,
                 "graph_edge_energies": graph_edge_energies,
             },
             pruned_path,
@@ -732,16 +1091,24 @@ def construct_network_resumable(
         pruned_payload = safe_load(pruned_path)
         adjacency_list = pruned_payload["adjacency_list"]
         graph_edges = pruned_payload["graph_edges"]
+        graph_edge_scales = pruned_payload["graph_edge_scales"]
         graph_edge_energies = pruned_payload["graph_edge_energies"]
     stage_controller.update(units_total=5, units_completed=2, substage="hair_prune")
 
     cycles: list[tuple[int, int]] = []
     if remove_cycles and graph_edges and not cycle_path.exists():
-        cycles = _remove_cycles(graph_edges, adjacency_list, n_vertices, graph_edge_energies)
+        cycles = _remove_cycles(
+            graph_edges,
+            adjacency_list,
+            n_vertices,
+            graph_edge_scales,
+            graph_edge_energies,
+        )
         atomic_joblib_dump(
             {
                 "adjacency_list": adjacency_list,
                 "graph_edges": graph_edges,
+                "graph_edge_scales": graph_edge_scales,
                 "graph_edge_energies": graph_edge_energies,
                 "cycles": cycles,
             },
@@ -751,18 +1118,26 @@ def construct_network_resumable(
         cycle_payload = safe_load(cycle_path)
         adjacency_list = cycle_payload["adjacency_list"]
         graph_edges = cycle_payload["graph_edges"]
+        graph_edge_scales = cycle_payload["graph_edge_scales"]
         graph_edge_energies = cycle_payload["graph_edge_energies"]
         cycles = cycle_payload["cycles"]
     stage_controller.update(units_total=5, units_completed=3, substage="cycle_prune")
 
     if not strands_path.exists():
-        pruned_connections, pruned_traces, pruned_energy_traces = _graph_state_ordered_edges(
+        (
+            pruned_connections,
+            pruned_traces,
+            pruned_scale_traces,
+            pruned_energy_traces,
+        ) = _graph_state_ordered_edges(
             graph_edges,
+            graph_edge_scales,
             graph_edge_energies,
         )
         topology = _matlab_network_topology(
             pruned_connections,
             pruned_traces,
+            pruned_scale_traces,
             pruned_energy_traces,
             n_vertices,
         )
@@ -773,10 +1148,13 @@ def construct_network_resumable(
     network = _network_payload(
         adjacency_list,
         graph_edges,
+        graph_edge_scales,
         graph_edge_energies,
         dangling_edges,
         cycles,
         n_vertices,
+        lumen_radius_microns=lumen_radius_microns,
+        microns_per_voxel=microns_per_voxel,
     )
     network["strands"] = topology["strands"]
     network["mismatched_strands"] = topology["mismatched_strands"]
@@ -785,9 +1163,12 @@ def construct_network_resumable(
 
 
 __all__ = [
+    "_matlab_edge_metrics",
     "_matlab_get_network_v190",
     "_matlab_get_strand_objects",
+    "_matlab_get_vessel_directions_v3",
     "_matlab_network_topology",
+    "_matlab_smooth_edges_v2",
     "_matlab_sort_network_v180",
     "construct_network",
     "construct_network_resumable",

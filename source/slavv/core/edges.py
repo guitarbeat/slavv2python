@@ -9,6 +9,8 @@ from ._edges import resumable as _resumable
 from ._edges import standard as _standard
 from ._edges import units as _units
 from ._edges import watershed as _watershed
+from ._edges.bridge_vertices import add_vertices_to_edges_matlab_style
+from ._edges.postprocess import finalize_edges_matlab_style
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -66,6 +68,8 @@ def extract_edges(
             finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
+            add_vertices_to_edges_matlab_style=add_vertices_to_edges_matlab_style,
+            finalize_edges_matlab_style=finalize_edges_matlab_style,
         ),
     )
 
@@ -95,6 +99,8 @@ def extract_edges_resumable(
             generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
+            add_vertices_to_edges_matlab_style=add_vertices_to_edges_matlab_style,
+            finalize_edges_matlab_style=finalize_edges_matlab_style,
             paint_vertex_center_image=paint_vertex_center_image,
             use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
         ),

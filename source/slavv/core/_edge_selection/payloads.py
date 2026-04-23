@@ -73,7 +73,7 @@ def prepare_candidate_indices_for_cleanup(
     energy_traces: list[np.ndarray],
     diagnostics: dict[str, Any],
 ) -> list[int]:
-    """Apply MATLAB-shaped pair filtering before downstream cleanup."""
+    """Apply MATLAB ``clean_edge_pairs`` ordering before downstream cleanup."""
     valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
     filtered_indices = np.flatnonzero(valid)
 
@@ -93,7 +93,12 @@ def prepare_candidate_indices_for_cleanup(
     if filtered_indices.size == 0:
         return []
 
-    ordered = filtered_indices[np.argsort(metrics[filtered_indices], kind="stable")]
+    edge_lengths = np.asarray(
+        [len(np.asarray(energy_traces[index], dtype=np.float32)) for index in filtered_indices],
+        dtype=np.int32,
+    )
+    ordered = filtered_indices[np.argsort(edge_lengths, kind="stable")]
+    ordered = ordered[np.argsort(metrics[ordered], kind="stable")]
 
     directed_seen: set[tuple[int, int]] = set()
     directed_indices: list[int] = []

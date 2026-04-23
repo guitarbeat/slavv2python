@@ -7,6 +7,7 @@ from typing import Any, cast
 import numpy as np
 
 from .._edge_payloads import _empty_edges_result
+from .._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
 from .cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
@@ -120,6 +121,7 @@ def _choose_edges_matlab_style(
     candidates: dict[str, Any],
     vertex_positions: np.ndarray,
     vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
     lumen_radius_pixels_axes: np.ndarray,
     image_shape: tuple[int, int, int],
     params: dict[str, Any],
@@ -267,6 +269,24 @@ def _choose_edges_matlab_style(
                 endpoint_coords[:, 2],
             ] = endpoint_source_snapshot
 
+    if not chosen_indices:
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    chosen_indices, cropped_edge_count = prefilter_edge_indices_for_cleanup_matlab_style(
+        chosen_indices,
+        traces,
+        scale_traces,
+        energy_traces,
+        lumen_radius_microns=np.asarray(lumen_radius_microns, dtype=np.float32),
+        microns_per_voxel=np.asarray(
+            params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+            dtype=np.float32,
+        ),
+        size_of_image=image_shape,
+    )
+    diagnostics["cropped_edge_count"] = cropped_edge_count
     if not chosen_indices:
         empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics

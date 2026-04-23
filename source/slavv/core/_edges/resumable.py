@@ -33,6 +33,8 @@ def extract_edges_resumable(
     generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
     generate_edge_candidates: Callable[..., dict[str, Any]],
     choose_edges_for_workflow: Callable[..., dict[str, Any]],
+    add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
+    finalize_edges_matlab_style: Callable[..., dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
     use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
@@ -157,10 +159,30 @@ def extract_edges_resumable(
         candidates,
         vertex_positions,
         vertex_scales,
+        lumen_radius_microns,
         lumen_radius_pixels_axes,
         energy.shape,
         params,
     )
+    if use_frontier:
+        chosen = add_vertices_to_edges_matlab_style(
+            chosen,
+            vertices,
+            energy=energy,
+            scale_indices=scale_indices,
+            microns_per_voxel=microns_per_voxel,
+            lumen_radius_microns=lumen_radius_microns,
+            lumen_radius_pixels_axes=lumen_radius_pixels_axes,
+            size_of_image=energy.shape,
+            params=params,
+        )
+    chosen = finalize_edges_matlab_style(
+        chosen,
+        lumen_radius_microns=lumen_radius_microns,
+        microns_per_voxel=microns_per_voxel,
+        size_of_image=energy.shape,
+    )
+    chosen["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
     if use_frontier and candidates.get("frontier_lifecycle_events"):
         candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
         candidate_lifecycle = build_frontier_candidate_lifecycle(

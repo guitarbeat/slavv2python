@@ -1,0 +1,248 @@
+"""Unit tests for exact imported-MATLAB artifact proof helpers."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import numpy as np
+from scipy.io import savemat
+
+from slavv.io.matlab_exact_proof import compare_exact_artifacts, load_normalized_matlab_stage
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def _cell(items: list[np.ndarray]) -> np.ndarray:
+    cell = np.empty((len(items),), dtype=object)
+    for index, item in enumerate(items):
+        cell[index] = item
+    return cell
+
+
+def _write_mat(path: Path, payload: dict[str, object]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    savemat(path, payload)
+    return path
+
+
+def test_load_normalized_matlab_vertices_converts_one_based_indices(tmp_path):
+    mat_path = _write_mat(
+        tmp_path / "vertices.mat",
+        {
+            "vertex_space_subscripts": np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            "vertex_scale_subscripts": np.array([2, 4], dtype=np.int16),
+            "vertex_energies": np.array([-3.5, -1.25], dtype=np.float64),
+        },
+    )
+
+    payload = load_normalized_matlab_stage(mat_path, "vertices")
+
+    np.testing.assert_array_equal(
+        payload["positions"],
+        np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(payload["scales"], np.array([1, 3], dtype=np.int64))
+    np.testing.assert_array_equal(payload["energies"], np.array([-3.5, -1.25], dtype=np.float64))
+
+
+def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
+    mat_path = _write_mat(
+        tmp_path / "edges.mat",
+        {
+            "edges2vertices": np.array([[1, 2]], dtype=np.int16),
+            "edge_space_subscripts": _cell(
+                [
+                    np.array(
+                        [
+                            [2.0, 3.0, 4.0],
+                            [3.0, 4.0, 5.0],
+                        ],
+                        dtype=np.float64,
+                    )
+                ]
+            ),
+            "edge_scale_subscripts": _cell([np.array([3.0, 2.5], dtype=np.float64)]),
+            "edge_energies": _cell([np.array([-4.0, -3.0], dtype=np.float64)]),
+            "mean_edge_energies": np.array([-3.5], dtype=np.float64),
+            "bridge_vertex_space_subscripts": np.array([[4.0, 5.0, 6.0]], dtype=np.float64),
+            "bridge_vertex_scale_subscripts": np.array([3], dtype=np.int16),
+            "bridge_vertex_energies": np.array([-5.0], dtype=np.float64),
+            "bridge_edges2vertices": np.array([[4, 0]], dtype=np.int16),
+            "bridge_edge_space_subscripts": _cell(
+                [
+                    np.array(
+                        [
+                            [4.0, 5.0, 6.0],
+                            [5.0, 6.0, 7.0],
+                        ],
+                        dtype=np.float64,
+                    )
+                ]
+            ),
+            "bridge_edge_scale_subscripts": _cell([np.array([3.0, 2.0], dtype=np.float64)]),
+            "bridge_edge_energies": _cell([np.array([-6.0, -5.0], dtype=np.float64)]),
+            "bridge_mean_edge_energies": np.array([-5.5], dtype=np.float64),
+        },
+    )
+
+    payload = load_normalized_matlab_stage(mat_path, "edges")
+
+    np.testing.assert_array_equal(payload["connections"], np.array([[0, 1]], dtype=np.int64))
+    np.testing.assert_array_equal(
+        payload["traces"][0],
+        np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(
+        payload["scale_traces"][0],
+        np.array([2.0, 1.5], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(
+        payload["bridge_vertex_positions"],
+        np.array([[3.0, 4.0, 5.0]], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(payload["bridge_vertex_scales"], np.array([2], dtype=np.int64))
+    np.testing.assert_array_equal(
+        payload["bridge_edges"]["connections"],
+        np.array([[3, -1]], dtype=np.int64),
+    )
+    np.testing.assert_array_equal(
+        payload["bridge_edges"]["traces"][0],
+        np.array([[3.0, 4.0, 5.0], [4.0, 5.0, 6.0]], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(
+        payload["bridge_edges"]["energies"],
+        np.array([-5.5], dtype=np.float64),
+    )
+
+
+def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
+    mat_path = _write_mat(
+        tmp_path / "network.mat",
+        {
+            "strands2vertices": np.empty((0, 2), dtype=np.int16),
+            "bifurcation_vertices": np.empty((0,), dtype=np.int16),
+            "strand_subscripts": np.empty((0,), dtype=object),
+            "strand_energies": np.empty((0,), dtype=object),
+            "mean_strand_energies": np.empty((0,), dtype=np.float64),
+            "vessel_directions": np.empty((0,), dtype=object),
+        },
+    )
+
+    payload = load_normalized_matlab_stage(mat_path, "network")
+
+    assert payload["strands"] == []
+    np.testing.assert_array_equal(payload["bifurcations"], np.empty((0,), dtype=np.int64))
+    assert payload["strand_subscripts"] == []
+    assert payload["strand_energy_traces"] == []
+    np.testing.assert_array_equal(payload["mean_strand_energies"], np.empty((0,), dtype=np.float64))
+    assert payload["vessel_directions"] == []
+
+
+def test_compare_exact_artifacts_passes_on_exact_match():
+    report = compare_exact_artifacts(
+        {
+            "vertices": {
+                "positions": np.array([[0.0, 1.0, 2.0]], dtype=np.float64),
+                "scales": np.array([1], dtype=np.int64),
+                "energies": np.array([-2.0], dtype=np.float64),
+            }
+        },
+        {
+            "vertices": {
+                "positions": np.array([[0.0, 1.0, 2.0]], dtype=np.float64),
+                "scales": np.array([1], dtype=np.int64),
+                "energies": np.array([-2.0], dtype=np.float64),
+            }
+        },
+        ("vertices",),
+    )
+
+    assert report["passed"] is True
+    assert report["first_failure"] is None
+
+
+def test_compare_exact_artifacts_reports_ordering_mismatch():
+    matlab_edges = {
+        "connections": np.array([[0, 1], [1, 2]], dtype=np.int64),
+        "traces": [],
+        "scale_traces": [],
+        "energy_traces": [],
+        "energies": np.array([], dtype=np.float64),
+        "bridge_vertex_positions": np.empty((0, 3), dtype=np.float64),
+        "bridge_vertex_scales": np.empty((0,), dtype=np.int64),
+        "bridge_vertex_energies": np.empty((0,), dtype=np.float64),
+        "bridge_edges": {
+            "connections": np.empty((0, 2), dtype=np.int64),
+            "traces": [],
+            "scale_traces": [],
+            "energy_traces": [],
+            "energies": np.empty((0,), dtype=np.float64),
+        },
+    }
+    python_edges = dict(matlab_edges)
+    python_edges["connections"] = np.array([[1, 2], [0, 1]], dtype=np.int64)
+
+    report = compare_exact_artifacts(
+        {"edges": matlab_edges},
+        {"edges": python_edges},
+        ("edges",),
+    )
+
+    assert report["passed"] is False
+    assert report["first_failing_stage"] == "edges"
+    assert report["first_failure"]["mismatch_type"] == "ordering mismatch"
+    assert report["first_failure"]["field_path"] == "edges.connections"
+
+
+def test_compare_exact_artifacts_reports_shape_mismatch():
+    report = compare_exact_artifacts(
+        {
+            "network": {
+                "strands": [np.array([0, 1], dtype=np.int64)],
+                "bifurcations": np.array([], dtype=np.int64),
+                "strand_subscripts": [np.array([[0.0, 0.0, 0.0, 0.0]], dtype=np.float64)],
+                "strand_energy_traces": [np.array([-1.0], dtype=np.float64)],
+                "mean_strand_energies": np.array([-1.0], dtype=np.float64),
+                "vessel_directions": [np.array([[1.0, 0.0, 0.0]], dtype=np.float64)],
+            }
+        },
+        {
+            "network": {
+                "strands": [np.array([0, 1], dtype=np.int64)],
+                "bifurcations": np.array([], dtype=np.int64),
+                "strand_subscripts": [np.array([[0.0, 0.0, 0.0]], dtype=np.float64)],
+                "strand_energy_traces": [np.array([-1.0], dtype=np.float64)],
+                "mean_strand_energies": np.array([-1.0], dtype=np.float64),
+                "vessel_directions": [np.array([[1.0, 0.0, 0.0]], dtype=np.float64)],
+            }
+        },
+        ("network",),
+    )
+
+    assert report["passed"] is False
+    assert report["first_failure"]["mismatch_type"] == "shape mismatch"
+    assert report["first_failure"]["field_path"] == "network.strand_subscripts[0]"
+
+
+def test_compare_exact_artifacts_reports_missing_field():
+    report = compare_exact_artifacts(
+        {
+            "vertices": {
+                "positions": np.array([[0.0, 1.0, 2.0]], dtype=np.float64),
+                "scales": np.array([1], dtype=np.int64),
+                "energies": np.array([-2.0], dtype=np.float64),
+            }
+        },
+        {
+            "vertices": {
+                "positions": np.array([[0.0, 1.0, 2.0]], dtype=np.float64),
+                "scales": np.array([1], dtype=np.int64),
+            }
+        },
+        ("vertices",),
+    )
+
+    assert report["passed"] is False
+    assert report["first_failure"]["mismatch_type"] == "missing field"
+    assert report["first_failure"]["field_path"] == "vertices.energies"

@@ -129,6 +129,7 @@ def test_choose_edges_filters_nonterminal_duplicates_and_antiparallel():
         candidates,
         vertex_positions,
         vertex_scales,
+        np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
@@ -168,6 +169,7 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
         candidates,
         vertex_positions,
         vertex_scales,
+        np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
@@ -181,7 +183,7 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
     assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
 
 
-def test_choose_edges_preserves_input_order_for_duplicate_pairs_with_equal_metrics():
+def test_choose_edges_prefers_shorter_duplicate_pair_when_metrics_are_equal():
     vertex_positions = np.array([[1, 1, 1], [1, 6, 1]], dtype=np.float32)
     vertex_scales = np.array([0, 0], dtype=np.int16)
     first_trace = np.array([[1, 1, 1], [1, 2, 1], [1, 4, 1], [1, 6, 1]], dtype=np.float32)
@@ -202,13 +204,14 @@ def test_choose_edges_preserves_input_order_for_duplicate_pairs_with_equal_metri
         candidates,
         vertex_positions,
         vertex_scales,
+        np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
     )
 
-    assert chosen["chosen_candidate_indices"].tolist() == [0]
-    assert np.array_equal(chosen["traces"][0], first_trace)
+    assert chosen["chosen_candidate_indices"].tolist() == [1]
+    assert np.array_equal(chosen["traces"][0], shorter_duplicate)
     assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
 
 
@@ -344,6 +347,7 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
         candidates,
         vertex_positions,
         vertex_scales,
+        np.array([0.49, 1.0, 1.5, 2.5], dtype=np.float32),
         np.array(
             [
                 [0.49, 0.49, 0.49],

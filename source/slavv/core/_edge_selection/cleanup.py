@@ -15,24 +15,55 @@ def clean_edges_vertex_degree_excess_python(
     max_edges_per_vertex: int,
 ) -> np.ndarray:
     """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
+    del metrics
     if connections.size == 0 or max_edges_per_vertex <= 0:
         return np.ones((len(connections),), dtype=bool)
 
-    keep: np.ndarray = np.ones((len(connections),), dtype=bool)
-    n_vertices = int(np.max(connections)) + 1 if connections.size else 0
-    if n_vertices <= 0:
+    normalized = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    keep: np.ndarray = np.ones((len(normalized),), dtype=bool)
+    n_vertices = int(np.max(normalized)) + 1 if normalized.size else 0
+    if n_vertices <= 0 or len(normalized) == 0:
         return keep
 
-    adjacency: list[list[int]] = [[] for _ in range(n_vertices)]
-    for edge_index, (start_vertex, end_vertex) in enumerate(connections):
-        adjacency[int(start_vertex)].append(edge_index)
-        adjacency[int(end_vertex)].append(edge_index)
+    rows = normalized[:, 0].astype(np.int32, copy=False)
+    cols = normalized[:, 1].astype(np.int32, copy=False)
+    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
+    edge_lookup_table = sparse.csr_matrix(
+        (edge_ids, (rows, cols)),
+        shape=(n_vertices, n_vertices),
+        dtype=np.int32,
+    )
+    adjacency_matrix = sparse.csr_matrix(
+        (np.ones((len(normalized),), dtype=bool), (rows, cols)),
+        shape=(n_vertices, n_vertices),
+        dtype=bool,
+    )
+    vertex_degrees = np.asarray(adjacency_matrix.sum(axis=0)).ravel() + np.asarray(
+        adjacency_matrix.sum(axis=1)
+    ).ravel()
+    vertex_excess_degrees = vertex_degrees - int(max_edges_per_vertex)
+    vertices_of_excess_degree = np.flatnonzero(vertex_excess_degrees > 0)
+    if vertices_of_excess_degree.size == 0:
+        return keep
 
-    for edge_indices in adjacency:
-        excess = len(edge_indices) - max_edges_per_vertex
-        if excess > 0:
-            for edge_index in sorted(edge_indices, reverse=True)[:excess]:
-                keep[edge_index] = False
+    edges_to_remove: list[int] = []
+    for vertex_index in vertices_of_excess_degree.tolist():
+        incoming_vertices = edge_lookup_table[:, vertex_index].nonzero()[0].astype(np.int32)
+        outgoing_vertices = edge_lookup_table[vertex_index, :].nonzero()[1].astype(np.int32)
+        edges_at_vertex = np.concatenate(
+            (
+                edge_lookup_table[incoming_vertices, vertex_index].toarray().ravel(),
+                edge_lookup_table[vertex_index, outgoing_vertices].toarray().ravel(),
+            )
+        )
+        if edges_at_vertex.size == 0:
+            continue
+        edges_at_vertex_descending = np.sort(edges_at_vertex)[::-1]
+        excess_degree = int(vertex_excess_degrees[vertex_index])
+        edges_to_remove.extend(edges_at_vertex_descending[:excess_degree].astype(int).tolist())
+
+    if edges_to_remove:
+        keep[np.asarray(edges_to_remove, dtype=np.int32) - 1] = False
     return keep
 
 
@@ -57,10 +88,10 @@ def clean_edges_orphans_python(
         for y, x, z in vertex_coords.tolist()
     }
 
-    locations = []
+    edge_locations_by_original_index: list[np.ndarray] = []
     for trace in traces:
         coords = _clip_trace_indices(np.asarray(trace, dtype=np.float32), image_shape)
-        locations.append(
+        edge_locations_by_original_index.append(
             np.asarray(
                 coords[:, 0]
                 + coords[:, 1] * image_shape[0]
@@ -69,33 +100,54 @@ def clean_edges_orphans_python(
             )
         )
 
-    keep: np.ndarray = np.ones((len(locations),), dtype=bool)
-    changed = True
-    while changed:
-        changed = False
-        interior: set[int] = set()
-        exterior_locations: list[tuple[int, int]] = []
-        for edge_index, edge_locations in enumerate(locations):
-            if not keep[edge_index] or edge_locations.size == 0:
-                continue
-            if edge_locations.size > 2:
-                interior.update(int(value) for value in edge_locations[1:-1].tolist())
-            exterior_locations.extend(
-                (
-                    (edge_index, int(edge_locations[0])),
-                    (edge_index, int(edge_locations[-1])),
-                )
-            )
-        removable: set[int] = set()
-        allowed = interior | vertex_locations
-        for edge_index, location in exterior_locations:
-            if location not in allowed:
-                removable.add(edge_index)
+    keep: np.ndarray = np.ones((len(edge_locations_by_original_index),), dtype=bool)
+    original_edge_indices = list(range(len(edge_locations_by_original_index)))
+    active_edge_locations = list(edge_locations_by_original_index)
+    searching_for_orphans = True
+    while searching_for_orphans:
+        number_of_edges = len(active_edge_locations)
+        if number_of_edges == 0:
+            break
 
-        if removable:
-            changed = True
-            for edge_index in removable:
-                keep[edge_index] = False
+        edge_index_lut = [
+            np.full(edge_locations.shape, edge_index + 1, dtype=np.int32)
+            for edge_index, edge_locations in enumerate(active_edge_locations)
+        ]
+        interior_edge_locations = np.concatenate(
+            [
+                edge_locations[1:-1]
+                for edge_locations in active_edge_locations
+                if edge_locations.size > 2
+            ],
+            axis=0,
+        ) if any(edge_locations.size > 2 for edge_locations in active_edge_locations) else np.zeros((0,), dtype=np.int64)
+        exterior_edge_locations = np.concatenate(
+            [edge_locations[[0, -1]] for edge_locations in active_edge_locations],
+            axis=0,
+        )
+        exterior_edge_location_index2edge_index = np.concatenate(
+            [edge_indices[[0, -1]] for edge_indices in edge_index_lut],
+            axis=0,
+        )
+        union_locations = np.union1d(interior_edge_locations, np.fromiter(vertex_locations, dtype=np.int64))
+        unique_exterior_locations, unique_exterior_indices = np.unique(
+            exterior_edge_locations,
+            return_index=True,
+        )
+        orphan_value_mask = ~np.isin(unique_exterior_locations, union_locations)
+        orphan_terminal_indices = unique_exterior_indices[orphan_value_mask]
+        edge_indices_to_remove = np.unique(
+            exterior_edge_location_index2edge_index[orphan_terminal_indices]
+        ).astype(np.int32, copy=False)
+
+        if edge_indices_to_remove.size == 0:
+            searching_for_orphans = False
+            continue
+
+        for current_edge_index in sorted(edge_indices_to_remove.tolist(), reverse=True):
+            keep[original_edge_indices[current_edge_index - 1]] = False
+            del original_edge_indices[current_edge_index - 1]
+            del active_edge_locations[current_edge_index - 1]
     return keep
 
 
@@ -154,12 +206,10 @@ def clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
         if not components:
             break
 
-        pair_rows: list[int] = []
-        pair_cols: list[int] = []
+        vertex_pairs_to_remove: list[tuple[int, int]] = []
         cycle_vertex_mask = np.zeros((adjacency.shape[0],), dtype=bool)
 
         for component_vertices in components:
-            cycle_vertex_mask[component_vertices] = True
             component_lookup = edge_lookup[component_vertices][:, component_vertices].tocoo()
             if component_lookup.nnz == 0:
                 continue
@@ -167,15 +217,17 @@ def clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
             worst_edge_id = int(np.max(component_lookup.data))
             removed_edge_ids.append(worst_edge_id)
             first_match = int(np.flatnonzero(component_lookup.data == worst_edge_id)[0])
-            pair_rows.append(int(component_vertices[component_lookup.row[first_match]]))
-            pair_cols.append(int(component_vertices[component_lookup.col[first_match]]))
+            row = int(component_vertices[component_lookup.row[first_match]])
+            col = int(component_vertices[component_lookup.col[first_match]])
+            vertex_pairs_to_remove.append((row, col))
+            cycle_vertex_mask[component_vertices] = True
 
-        if not pair_rows:
+        if not vertex_pairs_to_remove:
             break
 
         adjacency = adjacency.tolil(copy=True)
         edge_lookup = edge_lookup.tolil(copy=True)
-        for row, col in zip(pair_rows, pair_cols):
+        for row, col in vertex_pairs_to_remove:
             adjacency[row, col] = False
             adjacency[col, row] = False
             edge_lookup[row, col] = 0

@@ -23,6 +23,8 @@ def extract_edges(
     finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
     generate_edge_candidates: Callable[..., dict[str, Any]],
     choose_edges_for_workflow: Callable[..., dict[str, Any]],
+    add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
+    finalize_edges_matlab_style: Callable[..., dict[str, Any]],
 ) -> dict[str, Any]:
     """Extract edges by tracing from vertices through energy field."""
     logger.info("Extracting edges")
@@ -89,10 +91,30 @@ def extract_edges(
         candidates,
         vertex_positions,
         vertex_scales,
+        lumen_radius_microns,
         lumen_radius_pixels_axes,
         energy.shape,
         params,
     )
+    if use_matlab_frontier_tracer(energy_data, params):
+        chosen = add_vertices_to_edges_matlab_style(
+            chosen,
+            vertices,
+            energy=energy,
+            scale_indices=scale_indices,
+            microns_per_voxel=microns_per_voxel,
+            lumen_radius_microns=lumen_radius_microns,
+            lumen_radius_pixels_axes=lumen_radius_pixels_axes,
+            size_of_image=energy.shape,
+            params=params,
+        )
+    chosen = finalize_edges_matlab_style(
+        chosen,
+        lumen_radius_microns=lumen_radius_microns,
+        microns_per_voxel=microns_per_voxel,
+        size_of_image=energy.shape,
+    )
+    chosen["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
     logger.info(
         "Extracted %d chosen edges from %d traced candidates",
         len(chosen["traces"]),

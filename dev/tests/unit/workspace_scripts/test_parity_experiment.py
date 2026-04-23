@@ -11,6 +11,7 @@ from dev.tests.support.run_state_builders import (
     materialize_checkpoint_surface,
     materialize_run_snapshot,
 )
+from scipy.io import savemat
 
 parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
 
@@ -64,6 +65,42 @@ def _build_source_run_root(tmp_path: Path) -> Path:
     return run_root
 
 
+def _materialize_exact_matlab_batch(run_root: Path) -> Path:
+    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260421-151654"
+    vectors_dir = batch_dir / "vectors"
+    vectors_dir.mkdir(parents=True, exist_ok=True)
+    savemat(
+        vectors_dir / "vertices_260421.mat",
+        {
+            "vertex_space_subscripts": [[1.0, 2.0, 3.0]],
+            "vertex_scale_subscripts": [2],
+            "vertex_energies": [-1.0],
+        },
+    )
+    savemat(
+        vectors_dir / "edges_260421.mat",
+        {
+            "edges2vertices": [[1, 1]],
+            "edge_space_subscripts": [],
+            "edge_scale_subscripts": [],
+            "edge_energies": [],
+            "mean_edge_energies": [],
+        },
+    )
+    savemat(
+        vectors_dir / "network_260421.mat",
+        {
+            "strands2vertices": [],
+            "bifurcation_vertices": [],
+            "strand_subscripts": [],
+            "strand_energies": [],
+            "mean_strand_energies": [],
+            "vessel_directions": [],
+        },
+    )
+    return batch_dir
+
+
 def test_build_parser_rerun_python_defaults():
     parser = parity_experiment.build_parser()
 
@@ -81,6 +118,24 @@ def test_build_parser_rerun_python_defaults():
     assert args.rerun_from == "edges"
     assert args.params_file is None
     assert args.input is None
+
+
+def test_build_parser_prove_exact_defaults():
+    parser = parity_experiment.build_parser()
+
+    args = parser.parse_args(
+        [
+            "prove-exact",
+            "--source-run-root",
+            "source-run",
+            "--dest-run-root",
+            "dest-run",
+        ]
+    )
+
+    assert args.command == "prove-exact"
+    assert args.stage == "all"
+    assert args.report_path is None
 
 
 def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):
@@ -148,6 +203,56 @@ def test_load_params_file_uses_source_default_and_override(tmp_path):
 
     assert default_params == {"number_of_edges_per_vertex": 4}
     assert override_params == {"edge_method": "tracing"}
+
+
+def test_validate_exact_proof_source_surface_accepts_required_artifacts(tmp_path):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {"comparison_exact_network": True},
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
+    )
+
+    surface = parity_experiment.validate_exact_proof_source_surface(run_root)
+
+    assert surface.run_root == run_root.resolve()
+    assert surface.matlab_batch_dir.name == "batch_260421-151654"
+    assert set(surface.matlab_vector_paths) == {"vertices", "edges", "network"}
+
+
+def test_validate_exact_proof_source_surface_requires_exact_route_gate(tmp_path):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
+    )
+
+    with pytest.raises(ValueError, match="comparison_exact_network"):
+        parity_experiment.validate_exact_proof_source_surface(run_root)
+
+
+def test_validate_exact_proof_source_surface_requires_matlab_batch_hdf5(tmp_path):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {"comparison_exact_network": True},
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={"energy": {"energy_origin": "python_native"}},
+    )
+
+    with pytest.raises(ValueError, match="matlab_batch_hdf5"):
+        parity_experiment.validate_exact_proof_source_surface(run_root)
 
 
 def test_build_experiment_summary_computes_deltas(tmp_path):
