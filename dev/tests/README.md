@@ -14,4 +14,6 @@ Keep tests under `dev/tests/` organized by the owning package surface.
 
 - Prefer moving a misfiled test into the matching owner directory instead of reshaping production code around the old location.
 - Keep regression intent in test names, markers, and assertions.
-- Do not create new parity- or MATLAB-specific test areas; those legacy surfaces have been removed.
+- Reuse the shared builders under `dev/tests/support/` when a test needs synthetic payloads, run snapshots, checkpoints, or reusable network fixtures.
+- Keep exact-route parity tests under the owning package surface, or under `dev/tests/unit/workspace_scripts/` for maintained developer runners such as `dev/scripts/cli/parity_experiment.py`.
+- Do not create new task-history or workstream-specific test directories; place tests by owner surface, not by the temporary project that introduced them.

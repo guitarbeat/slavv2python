@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, cast
 
 import numpy as np
@@ -14,22 +15,23 @@ from ..edge_primitives import (
     _trace_scale_series,
 )
 from .common import (
+    _build_matlab_global_watershed_lut,
     _coord_to_matlab_linear_index,
     _matlab_frontier_adjusted_neighbor_energies,
-    _matlab_frontier_scale_offsets,
     _matlab_linear_index_to_coord,
 )
 
 
 def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-order linear indices for the image border at ``strel_apothem = 1``."""
-    border_locations: list[int] = []
-    for z in range(shape[2]):
-        for x in range(shape[1]):
-            for y in range(shape[0]):
-                if y in (0, shape[0] - 1) or x in (0, shape[1] - 1) or z in (0, shape[2] - 1):
-                    border_locations.append(_coord_to_matlab_linear_index(np.array([y, x, z]), shape))
-    return cast("np.ndarray", np.asarray(sorted(set(border_locations)), dtype=np.int64))
+    border_mask: np.ndarray = np.zeros(shape, dtype=bool)
+    border_mask[0, :, :] = True
+    border_mask[shape[0] - 1, :, :] = True
+    border_mask[:, 0, :] = True
+    border_mask[:, shape[1] - 1, :] = True
+    border_mask[:, :, 0] = True
+    border_mask[:, :, shape[2] - 1] = True
+    return cast("np.ndarray", np.flatnonzero(border_mask.ravel(order="F")).astype(np.int64))
 
 
 def _initialize_matlab_global_watershed_state(
@@ -42,7 +44,9 @@ def _initialize_matlab_global_watershed_state(
         int(energy.shape[1]),
         int(energy.shape[2]),
     )
-    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
+    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
+        np.int32, copy=False
+    )
     max_coord: np.ndarray = np.asarray(shape, dtype=np.int32) - 1
     vertex_coords = np.clip(vertex_coords, 0, max_coord)
     vertex_locations = np.asarray(
@@ -54,7 +58,7 @@ def _initialize_matlab_global_watershed_state(
 
     branch_order_map = np.zeros(shape, dtype=np.uint8)
     d_over_r_map = np.zeros(shape, dtype=np.float32)
-    pointer_map = np.zeros(shape, dtype=np.uint64)
+    pointer_map = np.zeros(shape, dtype=np.uint32)
     vertex_index_map = np.zeros(shape, dtype=np.uint32)
 
     vertex_energies = np.empty((number_of_vertices,), dtype=np.float32)
@@ -102,12 +106,14 @@ def _matlab_global_watershed_current_strel(
     current_scale_index = int(
         np.clip(int(current_scale_label) - 1, 0, len(lumen_radius_microns) - 1)
     )
-    offsets, offset_distances = _matlab_frontier_scale_offsets(
+    lut = _build_matlab_global_watershed_lut(
         current_scale_index,
-        lumen_radius_microns,
-        microns_per_voxel,
+        size_of_image=shape,
+        lumen_radius_microns=lumen_radius_microns,
+        microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
+    offsets = np.asarray(lut["local_subscripts"], dtype=np.int32)
     strel_coords = current_coord[None, :] + offsets
     valid_mask = (
         (strel_coords[:, 0] >= 0)
@@ -119,21 +125,18 @@ def _matlab_global_watershed_current_strel(
     )
     valid_coords = np.asarray(strel_coords[valid_mask], dtype=np.int32)
     valid_offsets = np.asarray(offsets[valid_mask], dtype=np.int32)
-    valid_distances = np.asarray(offset_distances[valid_mask], dtype=np.float32)
-    valid_linear = np.asarray(
-        [_coord_to_matlab_linear_index(coord, shape) for coord in valid_coords],
-        dtype=np.int64,
+    valid_linear = np.asarray(lut["linear_offsets"], dtype=np.int64)[valid_mask] + np.int64(
+        current_linear
     )
-    pointer_indices = np.flatnonzero(valid_mask).astype(np.uint64) + np.uint64(1)
-    origin_radius = max(float(lumen_radius_microns[current_scale_index]), 1e-6)
-    strel_r_over_R = valid_distances.astype(np.float64) / origin_radius
+    pointer_indices = np.arange(1, len(offsets) + 1, dtype=np.uint32)[valid_mask]
     return {
         "current_coord": current_coord.astype(np.int32, copy=False),
         "coords": valid_coords,
         "offsets": valid_offsets,
         "linear_indices": valid_linear,
         "pointer_indices": pointer_indices,
-        "r_over_R": strel_r_over_R.astype(np.float32, copy=False),
+        "r_over_R": np.asarray(lut["r_over_R"], dtype=np.float32)[valid_mask],
+        "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float32)[valid_mask],
     }
 
 
@@ -175,7 +178,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
             claim_coords[:, 0],
             claim_coords[:, 1],
             claim_coords[:, 2],
-        ] = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
+        ] = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint32)
         d_over_r_map[
             claim_coords[:, 0],
             claim_coords[:, 1],
@@ -281,13 +284,16 @@ def _matlab_global_watershed_trace_half(
         if pointer_value == 0:
             break
         tracing_scale_label = int(size_map[tracing_coord[0], tracing_coord[1], tracing_coord[2]])
-        full_offsets, _full_distances = _matlab_frontier_scale_offsets(
+        lut = _build_matlab_global_watershed_lut(
             int(np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1)),
-            lumen_radius_microns,
-            microns_per_voxel,
+            size_of_image=shape,
+            lumen_radius_microns=lumen_radius_microns,
+            microns_per_voxel=microns_per_voxel,
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
-        predecessor_coord = tracing_coord - full_offsets[pointer_value - 1]
+        predecessor_coord = (
+            tracing_coord - np.asarray(lut["local_subscripts"], dtype=np.int32)[pointer_value - 1]
+        )
         tracing_linear = _coord_to_matlab_linear_index(predecessor_coord, shape)
     return traced
 
@@ -320,12 +326,13 @@ def _matlab_global_watershed_scale_pointer_map(
     strel_lengths = np.asarray(
         [
             len(
-                _matlab_frontier_scale_offsets(
+                _build_matlab_global_watershed_lut(
                     int(scale_index),
-                    lumen_radius_microns,
-                    microns_per_voxel,
+                    size_of_image=pointer_map.shape,
+                    lumen_radius_microns=lumen_radius_microns,
+                    microns_per_voxel=microns_per_voxel,
                     step_size_per_origin_radius=step_size_per_origin_radius,
-                )[0]
+                )["linear_offsets"]
             )
             for scale_index in scale_indices
         ],
@@ -346,6 +353,8 @@ def _generate_edge_candidates_matlab_global_watershed(
     microns_per_voxel: np.ndarray,
     _vertex_center_image: np.ndarray,
     params: dict[str, Any],
+    *,
+    heartbeat: Any | None = None,
 ) -> dict[str, Any]:
     """Generate candidates with MATLAB's one-pass global shared-state watershed search."""
     del _vertex_center_image
@@ -389,10 +398,12 @@ def _generate_edge_candidates_matlab_global_watershed(
         original_scale_image = np.asarray(
             cast("np.ndarray", scale_indices),
             dtype=np.int16,
-        ).copy()
+        )
         size_map = np.asarray(original_scale_image, dtype=np.int16).copy()
         size_map += np.int16(1)
-    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
+    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
+        np.int32, copy=False
+    )
     vertex_coords[:, 0] = np.clip(vertex_coords[:, 0], 0, shape[0] - 1)
     vertex_coords[:, 1] = np.clip(vertex_coords[:, 1], 0, shape[1] - 1)
     vertex_coords[:, 2] = np.clip(vertex_coords[:, 2], 0, shape[2] - 1)
@@ -409,10 +420,13 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []
+    iteration_count = 0
+    last_heartbeat_at = time.monotonic()
 
     while True:
         if not available_locations:
             break
+        iteration_count += 1
 
         current_location = int(available_locations[-1])
         current_coord = _matlab_linear_index_to_coord(current_location, shape)
@@ -421,9 +435,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         )
         if min_available_energy == float("-inf"):
             energy_map_temp[current_coord[0], current_coord[1], current_coord[2]] = energy_map[
-                current_coord[0],
-                current_coord[1],
-                current_coord[2]
+                current_coord[0], current_coord[1], current_coord[2]
             ]
             min_available_energy = float(
                 energy_map_temp[current_coord[0], current_coord[1], current_coord[2]]
@@ -431,7 +443,9 @@ def _generate_edge_candidates_matlab_global_watershed(
         if min_available_energy >= 0.0:
             break
 
-        current_vertex_index = int(vertex_index_map[current_coord[0], current_coord[1], current_coord[2]])
+        current_vertex_index = int(
+            vertex_index_map[current_coord[0], current_coord[1], current_coord[2]]
+        )
         if current_vertex_index <= 0:
             available_locations.pop()
             continue
@@ -452,10 +466,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
         current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
         current_strel_r_over_r = cast("np.ndarray", current_strel["r_over_R"])
-        current_strel_unit_vectors = _matlab_global_watershed_unit_vectors(
-            current_strel_offsets,
-            microns_per_voxel,
-        )
+        current_strel_unit_vectors = cast("np.ndarray", current_strel["unit_vectors"])
 
         current_strel_energies = energy_map_temp[
             current_strel_coords[:, 0],
@@ -464,15 +475,18 @@ def _generate_edge_candidates_matlab_global_watershed(
         ].astype(np.float32, copy=False)
         current_d_over_r = float(d_over_r_map[current_coord[0], current_coord[1], current_coord[2]])
         current_forward_unit: np.ndarray | None = None
-        current_pointer_value = int(pointer_map[current_coord[0], current_coord[1], current_coord[2]])
+        current_pointer_value = int(
+            pointer_map[current_coord[0], current_coord[1], current_coord[2]]
+        )
         if current_pointer_value > 0:
-            full_offsets, _full_distances = _matlab_frontier_scale_offsets(
+            lut = _build_matlab_global_watershed_lut(
                 current_scale_index,
-                lumen_radius_microns,
-                microns_per_voxel,
+                size_of_image=shape,
+                lumen_radius_microns=lumen_radius_microns,
+                microns_per_voxel=microns_per_voxel,
                 step_size_per_origin_radius=step_size_per_origin_radius,
             )
-            full_unit_vectors = _matlab_global_watershed_unit_vectors(full_offsets, microns_per_voxel)
+            full_unit_vectors = np.asarray(lut["unit_vectors"], dtype=np.float32)
             current_forward_unit = full_unit_vectors[current_pointer_value - 1]
 
         current_strel_energies = _matlab_frontier_adjusted_neighbor_energies(
@@ -534,9 +548,11 @@ def _generate_edge_candidates_matlab_global_watershed(
                     available_locations.pop()
             else:
                 if next_vertex_index == 0:
-                    branch_order = int(
-                        branch_order_map[current_coord[0], current_coord[1], current_coord[2]]
-                    ) + seed_idx - 1
+                    branch_order = (
+                        int(branch_order_map[current_coord[0], current_coord[1], current_coord[2]])
+                        + seed_idx
+                        - 1
+                    )
                     branch_order_map[next_coord[0], next_coord[1], next_coord[2]] = np.uint8(
                         branch_order
                     )
@@ -575,12 +591,16 @@ def _generate_edge_candidates_matlab_global_watershed(
                         is_current_location_clear = True
                         current_available = available_locations.pop()
                         reset_locations = [
-                            location for location in reset_locations if location != current_available
+                            location
+                            for location in reset_locations
+                            if location != current_available
                         ]
                     if reset_locations:
                         reset_set = set(reset_locations)
                         available_locations = [
-                            location for location in available_locations if location not in reset_set
+                            location
+                            for location in available_locations
+                            if location not in reset_set
                         ]
 
                     if not bool(
@@ -638,6 +658,16 @@ def _generate_edge_candidates_matlab_global_watershed(
                 (1.0 - cosine_to_selected.astype(np.float32, copy=False)) / 2.0
             )
 
+        if heartbeat is not None:
+            now = time.monotonic()
+            if (
+                iteration_count == 1
+                or iteration_count % 512 == 0
+                or (now - last_heartbeat_at) >= 5.0
+            ):
+                heartbeat(iteration_count, len(edge_pairs))
+                last_heartbeat_at = now
+
     traces: list[np.ndarray] = []
     connections: list[list[int]] = []
     metrics: list[float] = []
@@ -673,7 +703,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         str(origin_index): origin_indices.count(origin_index)
         for origin_index in sorted(set(origin_indices))
     }
-    raw_pointer_map = np.asarray(pointer_map, dtype=np.uint64).copy()
+    raw_pointer_map = np.asarray(pointer_map)
     scaled_pointer_map = _matlab_global_watershed_scale_pointer_map(
         raw_pointer_map,
         size_map,
@@ -692,10 +722,10 @@ def _generate_edge_candidates_matlab_global_watershed(
         "diagnostics": diagnostics,
         "matlab_global_watershed_exact": True,
         "candidate_source": "global_watershed",
-        "energy_map": np.asarray(energy_map, dtype=np.float32).copy(),
-        "vertex_index_map": np.asarray(vertex_index_map, dtype=np.uint32).copy(),
+        "energy_map": np.asarray(energy_map, dtype=np.float32),
+        "vertex_index_map": np.asarray(vertex_index_map, dtype=np.uint32),
         "pointer_map": scaled_pointer_map,
         "raw_pointer_map": raw_pointer_map,
-        "d_over_r_map": np.asarray(d_over_r_map, dtype=np.float32).copy(),
-        "branch_order_map": np.asarray(branch_order_map, dtype=np.uint8).copy(),
+        "d_over_r_map": np.asarray(d_over_r_map, dtype=np.float32),
+        "branch_order_map": np.asarray(branch_order_map, dtype=np.uint8),
     }

@@ -251,10 +251,34 @@ def render_exact_proof_report(report: dict[str, Any]) -> str:
         "Exact proof report",
         f"Status: {'PASS' if report.get('passed') else 'FAIL'}",
         f"Stages: {', '.join(report.get('stages', []))}",
-        "",
-        "Stage summary",
-        *stage_lines,
     ]
+    report_scope = report.get("report_scope")
+    if isinstance(report_scope, str) and report_scope:
+        lines.append(f"Scope: {report_scope}")
+    lines.extend(
+        [
+            "",
+            "Stage summary",
+            *stage_lines,
+        ]
+    )
+
+    candidate_surface = report.get("candidate_surface")
+    if isinstance(candidate_surface, dict):
+        lines.extend(
+            [
+                "",
+                "Candidate surface",
+                (
+                    "Counts: "
+                    f"MATLAB={candidate_surface.get('matlab_pair_count', 0)} "
+                    f"Python={candidate_surface.get('python_pair_count', 0)} "
+                    f"matched={candidate_surface.get('matched_pair_count', 0)} "
+                    f"missing={candidate_surface.get('missing_pair_count', 0)} "
+                    f"extra={candidate_surface.get('extra_pair_count', 0)}"
+                ),
+            ]
+        )
 
     first_failure = report.get("first_failure")
     if isinstance(first_failure, dict):

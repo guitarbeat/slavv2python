@@ -132,6 +132,42 @@ done.
    change. Do not regress the staged artifact comparison contract while fixing
    edge math.
 
+### Exact-Route Patch Order
+
+When Phase 1 work is active, patch in this order unless the latest proof run
+shows an earlier surface is already green:
+
+1. `source/slavv/core/_edge_candidates/global_watershed.py`
+   Treat upstream candidate emission as the first target whenever candidate
+   coverage is still missing MATLAB-valid pairs.
+2. `source/slavv/core/_edge_selection/conflict_painting.py`
+   Move here once candidate coverage is materially closer and the remaining
+   loss appears during chosen-edge acceptance.
+3. `source/slavv/core/_edge_selection/cleanup.py`
+   Audit crop timing and cleanup order only after the upstream candidate
+   surface and conflict acceptance order have been measured.
+4. `source/slavv/core/_edges/bridge_vertices.py` and
+   `source/slavv/core/graph.py`
+   Only patch these if the first failing proof field or replay evidence points
+   to a bridge-specific or network-specific mismatch after edge parity improves.
+
+### Exact-Route Iteration Loop
+
+For every math-bearing Phase 1 patch, use this exact sequence:
+
+1. Run targeted unit tests for the touched subsystem.
+2. Run `python -m ruff check` on the touched files.
+3. Run `python -m mypy` on the touched source modules.
+4. Run the developer parity helper on a reusable staged run root:
+   - `capture-candidates` if the upstream candidate surface is still in doubt
+   - `replay-edges` if you are isolating chooser or cleanup behavior
+   - `prove-exact --stage all` only after the earlier gates are informative
+5. Record the first failing field and the measured delta in
+   `EXACT_PROOF_FINDINGS.md`.
+
+Do not weaken proof normalization or comparison semantics to make a run pass.
+`prove-exact` is the acceptance gate, not a negotiable summary surface.
+
 ### Phase 2: Remove The Remaining "Imported MATLAB Only" Boundary
 
 This phase is about implementing the paper's full method in Python rather than

@@ -161,3 +161,73 @@ The honest status is:
 - at least one major Python-only deviation has been removed
 - full artifact proof is still red until `vertices`, `edges`, and `network`
   all pass `prove-exact`
+
+## April 24, 2026 Informative Exact-Route Iteration
+
+### 8. The exact route now runs past the old immediate memory failure
+
+The fresh exact-route rerun at
+`D:\slavv_comparisons\experiments\live-parity\runs\20260424_exact_boundary_trial`
+did not crash immediately in `global_watershed.py` the way earlier exact runs
+had.
+
+During the one allowed live iteration:
+
+- the exact child worker stayed alive and active
+- worker CPU climbed past `1000` CPU seconds
+- worker memory stabilized around `1.3 GB`
+- the staged run root kept updating under `99_Metadata/run_snapshot.json`
+
+So the current blocker is no longer the old instant RAM failure at exact-route
+startup.
+
+### 9. The runtime heartbeat is now visible, but only inside the stage snapshot
+
+The new heartbeat wiring is working, but it currently lands in the nested stage
+surface rather than the top-level `current_detail` field.
+
+Observed live snapshot state during the iteration:
+
+- top-level `current_stage`: `edges`
+- top-level `current_detail`: `null`
+- nested `stages.edges.detail`:
+  `Generating edge candidates through MATLAB-style frontier workflow (iterations=54784, candidates=2524)`
+
+This means the run is no longer opaque, but callers that only read the
+top-level `current_detail` field will still incorrectly think the stage is
+silent.
+
+### 10. The candidate boundary is still not reached quickly enough for same-night proof
+
+The exact-route candidate checkpoint added for this pass is:
+
+- `02_Output/python_results/checkpoints/checkpoint_edge_candidates.pkl`
+
+On the April 24, 2026 live iteration, neither of these existed by the end of
+the monitoring window:
+
+- `checkpoint_edge_candidates.pkl`
+- `checkpoint_edges.pkl`
+
+That means the single informative iteration still could not reach the first
+proofable boundary needed to decide whether the next blocker is:
+
+- upstream candidate emission, or
+- downstream chooser / cleanup
+
+### 11. Tonight's decisive result is therefore still runtime-boundary failure
+
+For the April 24, 2026 one-iteration test, the honest outcome is:
+
+- the exact route is genuinely running now
+- the new candidate-boundary proof surface is in place
+- but the rerun still did not reach the candidate checkpoint within the single
+  allowed iteration window
+
+So tonight's blocker remains:
+
+`runtime cost before the first proofable candidate boundary`
+
+This is not evidence that the exact edge math is correct or incorrect. It is
+evidence that the exact route is still too expensive to produce the next
+decision-making artifact quickly enough under the current live rerun path.

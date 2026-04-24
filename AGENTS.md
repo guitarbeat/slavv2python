@@ -153,6 +153,22 @@ If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage.
 Use this when you need a current-code rerun against a reusable staged comparison root:
 
 ```powershell
+python dev/scripts/cli/parity_experiment.py preflight-exact `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+
+python dev/scripts/cli/parity_experiment.py prove-luts `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+
+python dev/scripts/cli/parity_experiment.py capture-candidates `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+
+python dev/scripts/cli/parity_experiment.py replay-edges `
+    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+
 python dev/scripts/cli/parity_experiment.py rerun-python `
     --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
     --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial `
@@ -170,8 +186,10 @@ python dev/scripts/cli/parity_experiment.py prove-exact `
 Notes:
 
 - This runner is developer-only.
+- `preflight-exact`, `prove-luts`, `capture-candidates`, and `replay-edges` are the fail-fast debugging funnel for the imported-MATLAB exact route.
 - `rerun-python` and `summarize` provide count-level rerun summaries.
 - `prove-exact` compares normalized Python checkpoints against preserved raw MATLAB vectors.
+- `fail-fast` runs the cheap gates first and stops at the first failing gate before the full exact proof.
 - It does not recreate the removed rich parity diagnostics or old public parity CLI.
 
 ## Exact MATLAB Parity Rule

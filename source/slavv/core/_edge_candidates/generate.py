@@ -130,7 +130,9 @@ def _finalize_matlab_parity_candidates(
 
     salvage_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip().lower()
     if salvage_mode == "auto":
-        salvage_mode = "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
+        salvage_mode = (
+            "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
+        )
     if salvage_mode == "none":
         return cast("dict[str, Any]", finalized)
 
@@ -164,6 +166,8 @@ def _generate_edge_candidates_matlab_frontier(
     microns_per_voxel: np.ndarray,
     vertex_center_image: np.ndarray,
     params: dict[str, Any],
+    *,
+    heartbeat: Any | None = None,
 ) -> dict[str, Any]:
     """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
     candidates = _generate_edge_candidates_matlab_global_watershed(
@@ -175,6 +179,7 @@ def _generate_edge_candidates_matlab_frontier(
         microns_per_voxel,
         vertex_center_image,
         params,
+        heartbeat=heartbeat,
     )
     per_origin_candidate_counts = candidates["diagnostics"].get(
         "frontier_per_origin_candidate_counts",

@@ -26,8 +26,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 - Use:
   
    ```powershell
-    python -m ruff check source tests --fix
-    python -m ruff format source tests
+    python -m ruff check source dev/tests --fix
+    python -m ruff format source dev/tests
    ```
 
    for linting/formatting.

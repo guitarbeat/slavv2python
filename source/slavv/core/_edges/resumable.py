@@ -39,6 +39,7 @@ def extract_edges_resumable(
     use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
+    from slavv.io.matlab_fail_fast import build_candidate_snapshot_payload
     from slavv.runtime.run_state import atomic_write_json
 
     energy = energy_data["energy"]
@@ -73,6 +74,19 @@ def extract_edges_resumable(
         resumed=False,
     )
     if use_frontier:
+
+        def _heartbeat(iteration_count: int, candidate_count: int) -> None:
+            stage_controller.update(
+                units_total=3,
+                units_completed=0,
+                substage="generate_candidates",
+                detail=(
+                    "Generating edge candidates through MATLAB-style frontier workflow "
+                    f"(iterations={iteration_count}, candidates={candidate_count})"
+                ),
+                resumed=False,
+            )
+
         candidates = generate_edge_candidates_matlab_frontier(
             energy,
             scale_indices,
@@ -82,6 +96,7 @@ def extract_edges_resumable(
             microns_per_voxel,
             vertex_center_image,
             params,
+            heartbeat=_heartbeat,
         )
         candidates = finalize_matlab_parity_candidates(
             candidates,
@@ -148,6 +163,12 @@ def extract_edges_resumable(
     atomic_write_json(candidate_audit_path, candidate_audit)
 
     atomic_joblib_dump(candidates, candidate_manifest_path)
+    if use_frontier:
+        candidate_checkpoint_path = (
+            stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
+        )
+        candidate_checkpoint_payload = build_candidate_snapshot_payload(candidates)
+        atomic_joblib_dump(candidate_checkpoint_payload, candidate_checkpoint_path)
     stage_controller.update(
         units_total=3,
         units_completed=1,
@@ -195,11 +216,7 @@ def extract_edges_resumable(
         units_total=3,
         units_completed=3,
         substage="choose_edges",
-        detail=(
-            "Selected MATLAB-style terminal edges"
-            if use_frontier
-            else "Selected final edges"
-        ),
+        detail=("Selected MATLAB-style terminal edges" if use_frontier else "Selected final edges"),
         resumed=False,
     )
     return chosen

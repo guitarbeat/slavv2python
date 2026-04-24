@@ -6,6 +6,7 @@ import importlib
 import json
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pytest
 from dev.tests.support.run_state_builders import (
     materialize_checkpoint_surface,
@@ -138,6 +139,24 @@ def test_build_parser_prove_exact_defaults():
     assert args.report_path is None
 
 
+def test_build_parser_fail_fast_defaults():
+    parser = parity_experiment.build_parser()
+
+    args = parser.parse_args(
+        [
+            "fail-fast",
+            "--source-run-root",
+            "source-run",
+            "--dest-run-root",
+            "dest-run",
+        ]
+    )
+
+    assert args.command == "fail-fast"
+    assert args.force is False
+    assert args.debug_maps is False
+
+
 def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):
     run_root = _build_source_run_root(tmp_path)
 
@@ -253,6 +272,97 @@ def test_validate_exact_proof_source_surface_requires_matlab_batch_hdf5(tmp_path
 
     with pytest.raises(ValueError, match="matlab_batch_hdf5"):
         parity_experiment.validate_exact_proof_source_surface(run_root)
+
+
+def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
+    tmp_path,
+    monkeypatch,
+):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {
+            "comparison_exact_network": True,
+            "microns_per_voxel": [1.0, 1.0, 1.0],
+        },
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={
+            "energy": {
+                "energy_origin": "matlab_batch_hdf5",
+                "energy": np.zeros((10, 10, 10), dtype=np.float32),
+                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+            }
+        },
+    )
+    monkeypatch.setattr(parity_experiment, "find_parity_process_collisions", lambda _path: [])
+
+    class _FakeMemory:
+        available = 64
+
+    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
+
+    report = parity_experiment.build_exact_preflight_report(
+        run_root,
+        tmp_path / "dest-run",
+        memory_safety_fraction=0.8,
+        force=False,
+    )
+
+    assert report["passed"] is False
+    assert report["collision_count"] == 0
+
+
+def test_build_exact_preflight_report_refuses_on_destination_collision(
+    tmp_path,
+    monkeypatch,
+):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {
+            "comparison_exact_network": True,
+            "microns_per_voxel": [1.0, 1.0, 1.0],
+        },
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={
+            "energy": {
+                "energy_origin": "matlab_batch_hdf5",
+                "energy": np.zeros((2, 2, 2), dtype=np.float32),
+                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+            }
+        },
+    )
+
+    monkeypatch.setattr(
+        parity_experiment,
+        "find_parity_process_collisions",
+        lambda _path: [
+            {"pid": 1234, "name": "python", "cmdline": ["python", "parity_experiment.py"]}
+        ],
+    )
+
+    class _FakeMemory:
+        available = 2_000_000_000
+
+    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
+
+    report = parity_experiment.build_exact_preflight_report(
+        run_root,
+        tmp_path / "dest-run",
+        memory_safety_fraction=0.8,
+        force=False,
+    )
+
+    assert report["passed"] is False
+    assert report["collision_count"] == 1
 
 
 def test_build_experiment_summary_computes_deltas(tmp_path):

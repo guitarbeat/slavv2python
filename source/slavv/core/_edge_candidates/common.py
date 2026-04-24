@@ -56,10 +56,29 @@ def _matlab_frontier_scale_offsets(
     step_size_per_origin_radius: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Construct MATLAB's scale-dependent spherical strel plus 27-neighborhood box."""
-    radii_microns = (
-        float(np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)])
-        * float(step_size_per_origin_radius)
+    local_geometry = _build_matlab_local_strel_geometry(
+        scale_index,
+        lumen_radius_microns,
+        microns_per_voxel,
+        step_size_per_origin_radius=step_size_per_origin_radius,
     )
+    return (
+        np.asarray(local_geometry["local_subscripts"], dtype=np.int32),
+        np.asarray(local_geometry["distance_lut"], dtype=np.float32),
+    )
+
+
+def _build_matlab_local_strel_geometry(
+    scale_index: int,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    *,
+    step_size_per_origin_radius: float,
+) -> dict[str, np.ndarray]:
+    """Port MATLAB ``calculate_linear_strel_range`` local geometry for one scale."""
+    radii_microns = float(
+        np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)]
+    ) * float(step_size_per_origin_radius)
     radii_pixels = np.maximum(radii_microns / np.asarray(microns_per_voxel, dtype=np.float64), 1.0)
     rounded_radii = np.rint(radii_pixels).astype(np.int32, copy=False)
     offsets: list[list[int]] = []
@@ -75,10 +94,56 @@ def _matlab_frontier_scale_offsets(
                 if radial_l2_distance_squared <= 1.0 or linf_distance <= 1:
                     offsets.append([y, x, z])
     offsets_array: Int32Array = np.asarray(offsets, dtype=np.int32)
-    distances = np.sqrt(
-        np.sum((offsets_array.astype(np.float64) * microns_per_voxel) ** 2, axis=1)
+    relative_distances = offsets_array.astype(np.float64, copy=False) * np.asarray(
+        microns_per_voxel,
+        dtype=np.float64,
     )
-    return offsets_array, distances.astype(np.float32, copy=False)
+    distance_lut = np.sqrt(np.sum(relative_distances**2, axis=1))
+    unit_vectors = np.zeros_like(relative_distances, dtype=np.float64)
+    valid = distance_lut > 1e-12
+    unit_vectors[valid] = relative_distances[valid] / distance_lut[valid, None]
+    safe_radius = max(
+        float(np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)]),
+        1e-6,
+    )
+    r_over_r_lut = distance_lut / safe_radius
+    return {
+        "local_subscripts": offsets_array,
+        "distance_lut": distance_lut.astype(np.float32, copy=False),
+        "unit_vectors": unit_vectors.astype(np.float32, copy=False),
+        "r_over_R": r_over_r_lut.astype(np.float32, copy=False),
+    }
+
+
+def _build_matlab_global_watershed_lut(
+    scale_index: int,
+    *,
+    size_of_image: tuple[int, int, int],
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    step_size_per_origin_radius: float,
+) -> dict[str, np.ndarray]:
+    """Build MATLAB watershed LUT fields for one scale exactly enough for parity checks."""
+    local_geometry = _build_matlab_local_strel_geometry(
+        scale_index,
+        lumen_radius_microns,
+        microns_per_voxel,
+        step_size_per_origin_radius=step_size_per_origin_radius,
+    )
+    local_subscripts = np.asarray(local_geometry["local_subscripts"], dtype=np.int32)
+    cum_prod_image_dims = np.cumprod(np.asarray(size_of_image, dtype=np.int64))
+    linear_offsets = (
+        local_subscripts[:, 0].astype(np.int64, copy=False)
+        + local_subscripts[:, 1].astype(np.int64, copy=False) * int(cum_prod_image_dims[0])
+        + local_subscripts[:, 2].astype(np.int64, copy=False) * int(cum_prod_image_dims[1])
+    )
+    return {
+        "linear_offsets": linear_offsets.astype(np.int64, copy=False),
+        "local_subscripts": local_subscripts,
+        "distance_lut": np.asarray(local_geometry["distance_lut"], dtype=np.float32),
+        "r_over_R": np.asarray(local_geometry["r_over_R"], dtype=np.float32),
+        "unit_vectors": np.asarray(local_geometry["unit_vectors"], dtype=np.float32),
+    }
 
 
 def _matlab_frontier_size_tolerance(lumen_radius_microns: np.ndarray) -> float:

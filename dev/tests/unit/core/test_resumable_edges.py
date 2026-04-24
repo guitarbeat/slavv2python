@@ -90,6 +90,8 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         generate_edge_candidates_matlab_frontier=lambda *_args: candidates,
         generate_edge_candidates=fake_generate_edge_candidates,
         choose_edges_for_workflow=fake_choose_edges_for_workflow,
+        add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
+        finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
         use_matlab_frontier_tracer=lambda *_args: False,
     )
@@ -163,8 +165,11 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         calls.append("finalize")
         return frontier_candidates
 
-    def fake_generate_frontier(*_args):
+    def fake_generate_frontier(*_args, **kwargs):
         calls.append("generate_frontier")
+        heartbeat = kwargs.get("heartbeat")
+        if callable(heartbeat):
+            heartbeat(7, len(frontier_candidates["connections"]))
         return frontier_candidates
 
     def fake_generate_fallback(*_args):
@@ -185,6 +190,8 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         generate_edge_candidates_matlab_frontier=fake_generate_frontier,
         generate_edge_candidates=fake_generate_fallback,
         choose_edges_for_workflow=lambda *_args: chosen,
+        add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
+        finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
         use_matlab_frontier_tracer=lambda *_args: True,
     )
@@ -192,3 +199,8 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     assert result is chosen
     assert calls == ["generate_frontier", "finalize"]
     assert stage_controller.artifact_path("candidate_lifecycle.json").is_file()
+    candidate_checkpoint_path = run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
+    assert candidate_checkpoint_path.is_file()
+    candidate_checkpoint = joblib.load(candidate_checkpoint_path)
+    assert candidate_checkpoint["connections"].tolist() == [[0, 1]]
+    assert candidate_checkpoint["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
