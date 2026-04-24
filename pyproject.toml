@@ -100,15 +100,15 @@ Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
-slavv-app = "slavv.apps.streamlit_launcher:main"
-slavv = "slavv.apps.cli:main"
+slavv-app = "apps.streamlit_launcher:main"
+slavv = "apps.cli:main"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["source"]
-include = ["slavv*"]
+include = ["analysis*", "apps*", "core*", "io*", "models*", "runtime*", "utils*", "visualization*", "workflows*"]
 
 # ── Ruff (linter + formatter) ───────────────────────────────────────────────
 [tool.ruff]
@@ -146,7 +146,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["slavv"]
+known-first-party = ["analysis", "apps", "core", "io", "models", "runtime", "utils", "visualization", "workflows"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -158,20 +158,20 @@ docstring-code-format = true
 python_version = "3.9"
 mypy_path = "source"
 files = [
-    "source/slavv/apps/cli.py",
-    "source/slavv/apps/share_report.py",
-    "source/slavv/apps/streamlit_launcher.py",
-    "source/slavv/apps/web_app.py",
-    "source/slavv/analysis/geometry.py",
-    "source/slavv/core/energy.py",
-    "source/slavv/core/graph.py",
-    "source/slavv/core/vertices.py",
-    "source/slavv/core/edge_primitives.py",
-    "source/slavv/core/edge_candidates.py",
-    "source/slavv/core/edge_selection.py",
-    "source/slavv/core/edges.py",
-    "source/slavv/core/pipeline.py",
-    "source/slavv/runtime/run_state.py",
+    "source/apps/cli.py",
+    "source/apps/share_report.py",
+    "source/apps/streamlit_launcher.py",
+    "source/apps/web_app.py",
+    "source/analysis/geometry.py",
+    "source/core/energy.py",
+    "source/core/graph.py",
+    "source/core/vertices.py",
+    "source/core/edge_primitives.py",
+    "source/core/edge_candidates.py",
+    "source/core/edge_selection.py",
+    "source/core/edges.py",
+    "source/core/pipeline.py",
+    "source/runtime/run_state.py",
 ]
 warn_return_any = true
 warn_unused_configs = true
