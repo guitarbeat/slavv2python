@@ -116,6 +116,8 @@ target-version = "py39"
 line-length = 100
 src = ["source", "dev/tests"]
 
+exclude = ["external/*"]
+
 [tool.ruff.lint]
 select = [
     "E",      # pycodestyle errors

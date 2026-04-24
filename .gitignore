@@ -161,31 +161,5 @@ comparison_results_test_run/
 workspace/tmp_parity_current_venv/
 workspace/tmp_comparison_params_*.json
 
-
-
-
-# Generated assets
-assets/
-
-# Pip metadata
-pip-wheel-metadata/
-.jupyter/
-
-# Linting and testing reports
-*_report*.txt
-*_errors.json
-pytest_collect*.txt
-# Temporary directories
-.piptmp/
-.smoketmp/
-.tmp/
-.pytest_tmp/
-tests/.pytest_tmp/
-workspace/tmp_*/
-workspace/tmp_tests/
-workspace/tmp_fixture/
-workspace/tmp_network_stage_probe/
-.ruff_cache/
-.agent/
-.jules/
-slavv_comparisons/
+# Exclude external directory from all scans
+external/
