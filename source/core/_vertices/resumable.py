@@ -1,4 +1,4 @@
-"""Resumable vertex extraction workflow."""
+﻿"""Resumable vertex extraction workflow."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from .payloads import (
 )
 
 if TYPE_CHECKING:
-    from slavv.runtime import StageController
+    from source.runtime import StageController
 
 
 def extract_vertices_resumable(
@@ -156,3 +156,5 @@ def extract_vertices_resumable(
         lumen_radius_pixels,
         lumen_radius_microns,
     )
+
+

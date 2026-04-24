@@ -1,8 +1,8 @@
-import numpy as np
+﻿import numpy as np
 import pytest
-import slavv.core as core
-from slavv.core import SLAVVProcessor
-from slavv.utils import validate_parameters
+import source.core as core
+from source.core import SLAVVProcessor
+from source.utils import validate_parameters
 
 
 def test_process_image_structure():
@@ -72,3 +72,5 @@ def test_core_module_exports_minimal_public_api():
         "trace_edge",
     ):
         assert not hasattr(core, removed_name)
+
+

@@ -1,13 +1,13 @@
-"""Helpers for loading dashboard context from session-backed state."""
+﻿"""Helpers for loading dashboard context from session-backed state."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
-from slavv.apps.export_services import has_full_network_results
-from slavv.apps.share_report import compute_shareable_stats
-from slavv.models import normalize_pipeline_result
-from slavv.runtime import RunSnapshot, load_run_snapshot
+from source.apps._state_utils import normalize_state_results
+from source.apps.export_services import has_full_network_results
+from source.apps.share_report import compute_shareable_stats
+from source.runtime import RunSnapshot, load_run_snapshot
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -26,7 +26,7 @@ class DashboardContext(TypedDict):
 
 def normalize_dashboard_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
     """Return a normalized dict payload for dashboard consumers."""
-    return normalize_pipeline_result(processing_results).to_dict()
+    return normalize_state_results(processing_results)
 
 
 def resolve_dashboard_stats(
@@ -73,3 +73,5 @@ __all__ = [
     "normalize_dashboard_results",
     "resolve_dashboard_stats",
 ]
+
+

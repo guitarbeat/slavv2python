@@ -1,4 +1,4 @@
-import importlib
+﻿import importlib
 
 import pytest
 
@@ -12,7 +12,9 @@ def test_app_sets_wide_layout(monkeypatch):
         called.update(kwargs)
 
     monkeypatch.setattr(st, "set_page_config", fake_config)
-    from slavv.apps import web_app as app
+    from source.apps import web_app as app
 
     importlib.reload(app)
     assert called.get("layout") == "wide"
+
+

@@ -1,4 +1,4 @@
-from slavv.visualization.network_plot_layout import (
+﻿from source.visualization.network_plot_layout import (
     AXIS_NAMES,
     axis_labels,
     distribution_layout,
@@ -82,3 +82,5 @@ def test_empty_figure_returns_centered_annotation():
     assert fig.layout.annotations[0].text == "No strands found"
     assert fig.layout.annotations[0].x == 0.5
     assert fig.layout.annotations[0].y == 0.5
+
+

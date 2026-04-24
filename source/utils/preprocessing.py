@@ -1,5 +1,5 @@
-"""
-Image preprocessing functions for SLAVV.
+﻿"""
+Image preprocessing functions for source.
 """
 
 from __future__ import annotations
@@ -41,3 +41,4 @@ def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
         img = np.clip(img - background, 0, 1)
 
     return img
+

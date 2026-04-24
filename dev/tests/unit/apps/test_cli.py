@@ -1,10 +1,10 @@
-"""Tests for the SLAVV CLI entry point (slavv.apps.cli)."""
+﻿"""Tests for the SLAVV CLI entry point (source.apps.cli)."""
 
 import json
 
 import numpy as np
 import pytest
-from slavv.apps.cli import (
+from source.apps.cli import (
     _build_cli_parser,
     _build_export_artifacts,
     _build_pipeline_parameters,
@@ -13,7 +13,7 @@ from slavv.apps.cli import (
     _require_existing_file,
     main,
 )
-from slavv.runtime import RunContext
+from source.runtime import RunContext
 
 
 class TestBuildParser:
@@ -250,3 +250,6 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     assert "Topological Features:" in captured.out
     assert "Vertices: 3" in captured.out
     assert "Total Edge Length: 2.00 um" in captured.out
+
+
+

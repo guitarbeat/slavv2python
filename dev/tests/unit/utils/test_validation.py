@@ -1,5 +1,5 @@
-import pytest
-from slavv.utils import validate_parameters
+﻿import pytest
+from source.utils import validate_parameters
 
 
 def test_validate_parameters_defaults():
@@ -113,3 +113,5 @@ def test_validate_parameters_warns_for_unusual_excitation_wavelength():
 def test_validate_parameters_rejects_invalid_values(params, message):
     with pytest.raises(ValueError, match=message):
         validate_parameters(params)
+
+

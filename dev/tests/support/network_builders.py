@@ -1,4 +1,4 @@
-"""Reusable network-object and export payload builders for tests."""
+﻿"""Reusable network-object and export payload builders for tests."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from slavv.io import Network
+from source.io import Network
 
 from .payload_builders import build_processing_results
 
@@ -69,3 +69,5 @@ __all__ = [
     "build_network_object",
     "write_network_json_fixture",
 ]
+
+

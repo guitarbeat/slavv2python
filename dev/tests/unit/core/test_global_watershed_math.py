@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core._edge_candidates.generate import _finalize_matlab_parity_candidates
-from slavv.core._edge_candidates.global_watershed import (
+from source.core._edge_candidates.generate import _finalize_matlab_parity_candidates
+from source.core._edge_candidates.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
     _matlab_global_watershed_border_locations,
@@ -210,3 +210,5 @@ def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_pa
     )
 
     assert finalized is candidates
+
+

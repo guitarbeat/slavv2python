@@ -1,4 +1,4 @@
-"""Launch the Streamlit UI through Streamlit's real CLI entrypoint."""
+﻿"""Launch the Streamlit UI through Streamlit's real CLI entrypoint."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
-_APP_PACKAGE = "slavv.apps"
+_APP_PACKAGE = "source.apps"
 _WEB_APP_SCRIPT = "web_app.py"
 
 
@@ -62,3 +62,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

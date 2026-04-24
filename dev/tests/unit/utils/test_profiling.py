@@ -1,7 +1,7 @@
-from pstats import Stats
+﻿from pstats import Stats
 
 import numpy as np
-from slavv.utils.profiling import profile_process_image
+from source.utils.profiling import profile_process_image
 
 
 def test_profile_process_image_returns_stats():
@@ -9,3 +9,5 @@ def test_profile_process_image_returns_stats():
     stats = profile_process_image(volume, {})
     assert isinstance(stats, Stats)
     assert any("process_image" in func[2] for func in stats.stats)
+
+

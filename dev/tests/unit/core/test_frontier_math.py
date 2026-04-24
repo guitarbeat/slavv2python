@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import math
 
 import numpy as np
-from slavv.core._edge_candidates.common import (
+from source.core._edge_candidates.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
     _matlab_frontier_insert_available_location,
@@ -177,3 +177,5 @@ def test_matlab_frontier_available_locations_skip_stale_entries():
         -2.0,
         33,
     )
+
+

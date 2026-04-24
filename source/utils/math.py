@@ -1,5 +1,5 @@
-"""
-Mathematical helper functions for SLAVV.
+﻿"""
+Mathematical helper functions for source.
 """
 
 from __future__ import annotations
@@ -74,3 +74,4 @@ def fourier_transform_even(image: np.ndarray) -> np.ndarray:
     padded_image = np.pad(arr, pad_width, mode="symmetric")
 
     return scipy.fft.fftn(padded_image)
+

@@ -1,7 +1,7 @@
-import xml.etree.ElementTree as ET
+﻿import xml.etree.ElementTree as ET
 
 import numpy as np
-from slavv.visualization import NetworkVisualizer
+from source.visualization import NetworkVisualizer
 
 
 def test_casx_export_full(tmp_path):
@@ -77,3 +77,5 @@ def test_casx_export_full(tmp_path):
     s0 = strand_list[0]
     assert s0.attrib["id"] == "0"
     assert s0.text.strip() == "0 1 2"
+
+

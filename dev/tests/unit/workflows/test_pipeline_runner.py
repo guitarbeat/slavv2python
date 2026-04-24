@@ -1,6 +1,6 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from slavv.workflows.pipeline_runner import (
+from source.workflows.pipeline_runner import (
     PipelineStageStep,
     advance_pipeline_stage,
     build_standard_pipeline_steps,
@@ -136,3 +136,5 @@ def test_run_pipeline_stage_sequence_stops_after_matching_stage():
     assert early is not None
     assert "vertices" not in early
     assert run_context.stop_after_calls == ["energy"]
+
+

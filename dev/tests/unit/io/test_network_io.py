@@ -1,4 +1,4 @@
-"""Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
+﻿"""Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
 
 import json
 from pathlib import Path
@@ -11,7 +11,7 @@ from dev.tests.support.network_builders import (
     build_network_object,
     write_network_json_fixture,
 )
-from slavv.io import (
+from source.io import (
     load_network_from_casx,
     load_network_from_csv,
     load_network_from_json,
@@ -200,3 +200,5 @@ class TestNetworkImport:
         network = load_network_from_csv(prefix)
 
         assert np.array_equal(network.edges, np.array([[1, 0]], dtype=int))
+
+

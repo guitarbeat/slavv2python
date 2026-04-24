@@ -1,12 +1,12 @@
-"""Tests for visualizer-driven MAT and JSON export behavior."""
+﻿"""Tests for visualizer-driven MAT and JSON export behavior."""
 
 import json
 from pathlib import Path
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
-from slavv.io import load_network_from_mat
-from slavv.visualization import NetworkVisualizer
+from source.io import load_network_from_mat
+from source.visualization import NetworkVisualizer
 
 
 def test_mat_export_via_visualizer(tmp_path: Path) -> None:
@@ -91,3 +91,5 @@ def test_json_export_handles_numpy_scalars_and_paths(tmp_path: Path) -> None:
     assert sorted(exported["network"]["adjacency"]["0"]) == [1, 2]
     assert exported["network"]["graph_edges"]["0"] == [3, 4]
     assert exported["parameters"]["path"] == str(Path("nested") / "output")
+
+

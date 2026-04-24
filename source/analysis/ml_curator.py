@@ -1,4 +1,4 @@
-"""
+﻿"""
 Machine Learning Curator for SLAVV
 
 This module provides ML-based curation of vertices and edges detected by the SLAVV algorithm.
@@ -36,23 +36,23 @@ try:
     from .ml_curator_io import materialize_model_source
     from .ml_curator_training import load_aggregated_training_data
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from slavv.analysis.automatic_curator import AutomaticCurator
-    from slavv.analysis.curation_heuristics import (
+    from source.analysis.automatic_curator import AutomaticCurator
+    from source.analysis.curation_heuristics import (
         choose_edges,
         choose_vertices,
         extract_uncurated_info,
     )
-    from slavv.analysis.drews_curator import DrewsCurator
-    from slavv.analysis.ml_curator_features import (
+    from source.analysis.drews_curator import DrewsCurator
+    from source.analysis.ml_curator_features import (
         compute_local_gradient,
         feature_importance,
         in_bounds,
     )
-    from slavv.analysis.ml_curator_io import materialize_model_source
-    from slavv.analysis.ml_curator_training import load_aggregated_training_data
-    from slavv.models import normalize_pipeline_result
-    from slavv.utils import calculate_path_length
-    from slavv.utils.safe_unpickle import safe_load
+    from source.analysis.ml_curator_io import materialize_model_source
+    from source.analysis.ml_curator_training import load_aggregated_training_data
+    from source.models import normalize_pipeline_result
+    from source.utils import calculate_path_length
+    from source.utils.safe_unpickle import safe_load
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -523,7 +523,7 @@ class MLCurator:
         }
 
         logger.info(
-            f"Vertex curation complete: {len(vertices['positions'])} → {len(kept_indices)} vertices"
+            f"Vertex curation complete: {len(vertices['positions'])} â†’ {len(kept_indices)} vertices"
         )
 
         return curated_vertices
@@ -562,7 +562,7 @@ class MLCurator:
             "vertex_positions": edges["vertex_positions"],
         }
 
-        logger.info(f"Edge curation complete: {len(edges['traces'])} → {len(kept_indices)} edges")
+        logger.info(f"Edge curation complete: {len(edges['traces'])} â†’ {len(kept_indices)} edges")
 
         return curated_edges
 
@@ -690,3 +690,5 @@ class MLCurator:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Aggregate features from multiple result snippets for training."""
         return load_aggregated_training_data(data_dir, file_pattern=file_pattern)
+
+

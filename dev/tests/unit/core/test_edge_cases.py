@@ -1,17 +1,17 @@
-import numpy as np
+﻿import numpy as np
 import pytest
-from slavv.core import SLAVVProcessor
-from slavv.core._edge_selection.cleanup import clean_edges_cycles_python
-from slavv.core.edge_primitives import _finalize_traced_edge
-from slavv.core.edge_selection import (
+from source.core import SLAVVProcessor
+from source.core._edge_selection.cleanup import clean_edges_cycles_python
+from source.core.edge_primitives import _finalize_traced_edge
+from source.core.edge_selection import (
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
     _matlab_edge_endpoint_positions_and_scales,
     _offset_coords_matlab,
     _snapshot_endpoint_influences_matlab,
 )
-from slavv.core.graph import _remove_short_hairs
-from slavv.core.vertices import extract_vertices, paint_vertex_center_image
+from source.core.graph import _remove_short_hairs
+from source.core.vertices import extract_vertices, paint_vertex_center_image
 
 
 def test_extract_handles_no_vertices():
@@ -365,3 +365,5 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
     )
 
     assert chosen["connections"].tolist() == [[0, 1], [2, 3]]
+
+

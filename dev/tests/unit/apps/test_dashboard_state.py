@@ -1,12 +1,12 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
-from slavv.apps.dashboard_state import (
+from source.apps.dashboard_state import (
     load_dashboard_context,
     normalize_dashboard_results,
     resolve_dashboard_stats,
 )
-from slavv.runtime.run_state import RunSnapshot
+from source.runtime.run_state import RunSnapshot
 
 
 def test_normalize_dashboard_results_returns_plain_dict_payload():
@@ -66,3 +66,5 @@ def test_load_dashboard_context_normalizes_results_and_stats():
     assert context["share_metrics"] == {"share_report_requested": 2}
     assert context["results"]["vertices"]["positions"].shape == (3, 3)
     assert context["stats"] == {"num_strands": 1, "shape": (6, 5, 4)}
+
+

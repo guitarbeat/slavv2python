@@ -1,4 +1,4 @@
-"""Helpers for SLAVV share-report generation and local event logging."""
+﻿"""Helpers for SLAVV share-report generation and local event logging."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from plotly.io import to_html
-from slavv.analysis import calculate_network_statistics
-from slavv.models import normalize_pipeline_result
-from slavv.visualization import NetworkVisualizer
+from source.analysis import calculate_network_statistics
+from source.models import normalize_pipeline_result
+from source.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
@@ -391,3 +391,5 @@ def record_share_event(
         handle.write(json.dumps(event, sort_keys=True) + "\n")
 
     return log_path
+
+

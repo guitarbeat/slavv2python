@@ -1,4 +1,4 @@
-"""Command-line interface for SLAVV."""
+﻿"""Command-line interface for source."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.version:
-        from slavv import __version__
+        from source import __version__
 
         print(f"slavv {__version__}")
         return
@@ -72,3 +72,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+

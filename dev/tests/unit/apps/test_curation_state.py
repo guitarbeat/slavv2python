@@ -1,11 +1,11 @@
-import numpy as np
+﻿import numpy as np
 from dev.tests.support.payload_builders import (
     build_edges_payload,
     build_network_payload,
     build_processing_results,
     build_vertices_payload,
 )
-from slavv.apps.curation_state import (
+from source.apps.curation_state import (
     apply_curated_session_results,
     build_curation_stats_rows,
     summarize_processing_counts,
@@ -157,3 +157,5 @@ def test_build_curation_stats_rows_reports_signed_change_percentages():
             "Change (%)": "n/a",
         },
     ]
+
+

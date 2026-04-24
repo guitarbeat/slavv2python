@@ -1,11 +1,11 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import cast
 
 import numpy as np
-from slavv.core._edge_candidates.candidate_manifest import _append_candidate_unit
-from slavv.core._edge_candidates.common import _use_matlab_frontier_tracer
-from slavv.core._edges import standard as standard_edges
+from source.core._edge_candidates.candidate_manifest import _append_candidate_unit
+from source.core._edge_candidates.common import _use_matlab_frontier_tracer
+from source.core._edges import standard as standard_edges
 
 
 def test_use_matlab_frontier_tracer_requires_exact_network_and_matlab_energy_origin():
@@ -115,7 +115,11 @@ def test_standard_extract_edges_uses_matlab_frontier_branch_when_enabled():
         finalize_matlab_parity_candidates=fake_finalize,
         generate_edge_candidates=fake_generate_fallback,
         choose_edges_for_workflow=lambda *_args: chosen,
+        add_vertices_to_edges_matlab_style=lambda chosen_edges, *_args, **_kwargs: chosen_edges,
+        finalize_edges_matlab_style=lambda chosen_edges, **_kwargs: chosen_edges,
     )
 
     assert result is chosen
     assert calls == ["generate_frontier", "finalize"]
+
+

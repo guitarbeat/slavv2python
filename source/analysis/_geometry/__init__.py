@@ -22,8 +22,10 @@ from .trace_ops import (
     smooth_edge_traces,
     subsample_vectors,
 )
+from .vector_math import angle_degrees, safe_normalize_rows, scaled_positions
 
 __all__ = [
+    "angle_degrees",
     "calculate_branching_angles",
     "calculate_image_stats",
     "calculate_network_statistics",
@@ -39,6 +41,8 @@ __all__ = [
     "register_strands",
     "register_vector_sets",
     "resample_vectors",
+    "safe_normalize_rows",
+    "scaled_positions",
     "smooth_edge_traces",
     "subsample_vectors",
     "transform_vector_set",

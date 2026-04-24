@@ -1,13 +1,13 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
-from slavv.apps.processing_state import (
+from source.apps.processing_state import (
     build_processing_run_dir,
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
 )
-from slavv.runtime.run_state import RunSnapshot
+from source.runtime.run_state import RunSnapshot
 
 
 def test_build_processing_run_dir_varies_with_validated_parameters():
@@ -88,3 +88,5 @@ def test_store_processing_session_state_persists_processing_outputs():
     assert "curation_baseline_counts" not in session_state
     assert "last_curation_mode" not in session_state
     assert "share_report_prepared_signature" not in session_state
+
+

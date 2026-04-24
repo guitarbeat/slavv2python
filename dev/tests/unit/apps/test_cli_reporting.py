@@ -1,8 +1,8 @@
-"""Tests for CLI report formatting helpers."""
+﻿"""Tests for CLI report formatting helpers."""
 
 from __future__ import annotations
 
-from slavv.apps.cli_reporting import build_analysis_output_lines, build_info_lines
+from source.apps.cli_reporting import build_analysis_output_lines, build_info_lines
 
 
 def test_build_info_lines_includes_version_and_system_info():
@@ -51,3 +51,5 @@ def test_build_analysis_output_lines_formats_topological_and_geometric_metrics()
     assert "  Total Edge Length: 10.50 um" in lines
     assert "  Volume Fraction: 0.1235" in lines
     assert "  Bifurcation Density: 8.20 /mm^3" in lines
+
+

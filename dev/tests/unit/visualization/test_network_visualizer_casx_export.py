@@ -1,8 +1,8 @@
-import xml.etree.ElementTree as ET
+﻿import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
-from slavv.visualization.network_plots import NetworkVisualizer
+from source.visualization.network_plots import NetworkVisualizer
 
 
 def test_casx_export(tmp_path):
@@ -111,3 +111,5 @@ def test_casx_export_defaults_missing_radii_to_zero(tmp_path):
     assert len(verts) == 2
     assert float(verts[0].attrib["radius"]) == pytest.approx(0.0, 0.001)
     assert float(verts[1].attrib["radius"]) == pytest.approx(0.0, 0.001)
+
+

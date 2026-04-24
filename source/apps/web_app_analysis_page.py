@@ -1,18 +1,18 @@
-"""Analysis page for the SLAVV Streamlit app."""
+﻿"""Analysis page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-from slavv.apps.analysis_state import (
+from source.apps.analysis_state import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
     has_analysis_network,
     normalize_analysis_results,
     resolve_analysis_stats,
 )
-from slavv.apps.export_services import update_run_task
-from slavv.visualization import NetworkVisualizer
+from source.apps.export_services import update_run_task
+from source.visualization import NetworkVisualizer
 
 
 def show_analysis_page() -> None:
@@ -161,3 +161,5 @@ def show_analysis_page() -> None:
             file_name="network_statistics.csv",
             mime="text/csv",
         )
+
+

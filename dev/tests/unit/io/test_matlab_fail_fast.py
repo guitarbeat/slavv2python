@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core._edge_candidates.common import _build_matlab_global_watershed_lut
-from slavv.io.matlab_fail_fast import (
+from source.core._edge_candidates.common import _build_matlab_global_watershed_lut
+from source.io.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,
@@ -108,3 +108,5 @@ def test_build_candidate_coverage_report_counts_matched_missing_and_extra_pairs(
     assert report["extra_pair_count"] == 1
     assert report["missing_pair_samples"] == [[1, 2]]
     assert report["extra_pair_samples"] == [[2, 3]]
+
+

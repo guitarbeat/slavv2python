@@ -1,12 +1,12 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 import plotly.express as px
 import streamlit as st
-from slavv.runtime.run_state import target_stage_progress
-from slavv.visualization import NetworkVisualizer
+from source.runtime.run_state import target_stage_progress
+from source.visualization import NetworkVisualizer
 
 from .dashboard_services import render_run_dashboard
 from .dashboard_state import DashboardContext, load_dashboard_context
@@ -21,7 +21,7 @@ from .web_app_dashboard import (
 )
 
 if TYPE_CHECKING:
-    from slavv.runtime import RunSnapshot
+    from source.runtime import RunSnapshot
 
 DASHBOARD_ASSUMPTION = (
     "Assumption: until dashboard metrics are specified, this view summarizes the active run, "
@@ -334,3 +334,5 @@ def show_dashboard_page():
         _render_dashboard_surface_fragment()
     else:
         _render_dashboard_surface()
+
+

@@ -1,11 +1,11 @@
-"""Helpers for keeping curated app results internally consistent."""
+﻿"""Helpers for keeping curated app results internally consistent."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from slavv.core import SLAVVProcessor
-from slavv.models import normalize_pipeline_result
+from source.core import SLAVVProcessor
+from source.models import normalize_pipeline_result
 
 if TYPE_CHECKING:
     from collections.abc import MutableMapping
@@ -106,3 +106,5 @@ __all__ = [
     "summarize_processing_counts",
     "sync_curated_processing_results",
 ]
+
+

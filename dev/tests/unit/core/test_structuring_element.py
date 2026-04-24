@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.core.energy import spherical_structuring_element
+﻿import numpy as np
+from source.core.energy import spherical_structuring_element
 
 
 def test_anisotropic_structuring_element():
@@ -8,3 +8,5 @@ def test_anisotropic_structuring_element():
     assert strel_iso.shape == (3, 3, 3)
     assert strel_iso[1, 1, 2]
     assert not strel_aniso[1, 1, 2]
+
+

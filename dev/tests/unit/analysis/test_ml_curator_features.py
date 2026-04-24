@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.analysis.ml_curator_features import compute_local_gradient, feature_importance, in_bounds
+from source.analysis.ml_curator_features import compute_local_gradient, feature_importance, in_bounds
 
 
 def test_compute_local_gradient_uses_central_difference():
@@ -32,3 +32,5 @@ def test_feature_importance_returns_none_when_missing():
 
     assert feature_importance(_NoImportance()) is None
     assert feature_importance(_WithImportance()).tolist() == [0.1, 0.9]
+
+

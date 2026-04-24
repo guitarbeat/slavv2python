@@ -1,12 +1,12 @@
-"""Tests for run-status parsing and rendering helpers."""
+﻿"""Tests for run-status parsing and rendering helpers."""
 
 from __future__ import annotations
 
 import calendar
 
 from dev.tests.support.run_state_builders import build_run_context
-from slavv.runtime import RunContext
-from slavv.runtime.run_state import build_status_lines
+from source.runtime import RunContext
+from source.runtime.run_state import build_status_lines
 
 
 def test_parse_time_uses_utc_epoch():
@@ -41,3 +41,5 @@ def test_build_status_lines_include_optional_tasks(tmp_path):
     assert "Optional tasks:" in rendered
     assert "export_network: running" in rendered
     assert "Writing JSON and CSV exports." in rendered
+
+

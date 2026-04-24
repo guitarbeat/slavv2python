@@ -20,7 +20,6 @@ from .geodesic import _salvage_matlab_parity_candidates_with_local_geodesics
 from .global_watershed import _generate_edge_candidates_matlab_global_watershed
 from .watershed import (
     _augment_matlab_frontier_candidates_with_watershed_contacts,
-    _supplement_matlab_frontier_candidates_with_watershed_joins,
 )
 from .watershed_candidates import (
     _augment_candidates_with_watershed_contacts,
@@ -98,41 +97,20 @@ def _finalize_matlab_parity_candidates(
     candidate_mode = _parity_watershed_candidate_mode(params)
     watershed_metric_threshold = _parity_watershed_metric_threshold_from_params(params)
 
-    if candidate_mode == "legacy_supplement":
-        enforce_frontier_reachability_gate = bool(
-            params.get("parity_frontier_reachability_gate", False)
-        )
-        require_mutual_frontier_participation = bool(
-            params.get("parity_require_mutual_frontier_participation", True)
-        )
-        finalized = _supplement_matlab_frontier_candidates_with_watershed_joins(
-            candidates,
-            energy,
-            scale_indices,
-            vertex_positions,
-            energy_sign,
-            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
-            enforce_frontier_reachability=enforce_frontier_reachability_gate,
-            require_mutual_frontier_participation=require_mutual_frontier_participation,
-            parity_watershed_metric_threshold=watershed_metric_threshold,
-        )
-    else:
-        finalized = _augment_matlab_frontier_candidates_with_watershed_contacts(
-            candidates,
-            energy,
-            scale_indices,
-            vertex_positions,
-            energy_sign,
-            max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
-            candidate_mode=candidate_mode or "all_contacts",
-            parity_watershed_metric_threshold=watershed_metric_threshold,
-        )
+    finalized = _augment_matlab_frontier_candidates_with_watershed_contacts(
+        candidates,
+        energy,
+        scale_indices,
+        vertex_positions,
+        energy_sign,
+        max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
+        candidate_mode=candidate_mode or "all_contacts",
+        parity_watershed_metric_threshold=watershed_metric_threshold,
+    )
 
     salvage_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip().lower()
     if salvage_mode == "auto":
-        salvage_mode = (
-            "none" if candidate_mode == "legacy_supplement" else "frontier_deficit_geodesic"
-        )
+        salvage_mode = "frontier_deficit_geodesic"
     if salvage_mode == "none":
         return cast("dict[str, Any]", finalized)
 

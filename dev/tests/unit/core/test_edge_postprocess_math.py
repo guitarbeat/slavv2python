@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core._edges.postprocess import (
+from source.core._edges.postprocess import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
     finalize_edges_matlab_style,
@@ -154,3 +154,5 @@ def test_finalize_edges_matlab_style_only_smooths_and_normalizes_post_cleanup():
     assert np.allclose(finalized["scale_traces"][0], np.array([0.0, 0.0], dtype=np.float32))
     assert np.allclose(finalized["raw_energies"], np.array([-4.0], dtype=np.float32))
     assert np.allclose(finalized["energies"], np.array([-1.0], dtype=np.float32))
+
+

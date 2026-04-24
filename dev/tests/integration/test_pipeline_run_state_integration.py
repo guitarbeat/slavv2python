@@ -1,12 +1,12 @@
-"""Integration tests for pipeline interactions with run-state persistence."""
+﻿"""Integration tests for pipeline interactions with run-state persistence."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
-from slavv.core import SLAVVProcessor
-from slavv.runtime import load_run_snapshot
-from slavv.runtime.run_state import STATUS_BLOCKED, STATUS_FAILED
+from source.core import SLAVVProcessor
+from source.runtime import load_run_snapshot
+from source.runtime.run_state import STATUS_BLOCKED, STATUS_FAILED
 
 
 def test_process_image_blocks_reuse_when_parameters_change(tmp_path):
@@ -54,7 +54,7 @@ def test_preprocess_failure_marks_run_failed(tmp_path, monkeypatch):
     def _boom(_image, _parameters):
         raise RuntimeError("preprocess exploded")
 
-    monkeypatch.setattr("slavv.core.pipeline.utils.preprocess_image", _boom)
+    monkeypatch.setattr("source.core.pipeline.utils.preprocess_image", _boom)
 
     with pytest.raises(RuntimeError, match="preprocess exploded"):
         processor.process_image(image, {}, run_dir=str(run_dir))
@@ -64,3 +64,6 @@ def test_preprocess_failure_marks_run_failed(tmp_path, monkeypatch):
     assert snapshot.status == STATUS_FAILED
     assert snapshot.current_stage == "preprocess"
     assert snapshot.stages["preprocess"].status == STATUS_FAILED
+
+
+

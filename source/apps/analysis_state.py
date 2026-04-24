@@ -1,11 +1,12 @@
-"""Helpers for normalized analysis-page state."""
+﻿"""Helpers for normalized analysis-page state."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from slavv.apps.curation_state import summarize_processing_counts
-from slavv.models import normalize_pipeline_result
+from source.apps._state_utils import normalize_state_results
+from source.apps.curation_state import summarize_processing_counts
+from source.models import normalize_pipeline_result
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 def normalize_analysis_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
     """Return a normalized dict payload for analysis consumers."""
-    return normalize_pipeline_result(processing_results).to_dict()
+    return normalize_state_results(processing_results)
 
 
 def has_analysis_network(processing_results: Mapping[str, Any]) -> bool:
@@ -97,3 +98,5 @@ __all__ = [
     "normalize_analysis_results",
     "resolve_analysis_stats",
 ]
+
+

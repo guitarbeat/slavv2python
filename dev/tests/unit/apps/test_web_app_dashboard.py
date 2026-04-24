@@ -1,20 +1,20 @@
-import sys
+﻿import sys
 import types
 
 import pytest
 
 pytest.importorskip("streamlit")
 
-from slavv.apps import web_app
-from slavv.apps.processing_state import build_processing_run_dir
-from slavv.runtime.run_state import RunSnapshot, StageSnapshot, TaskSnapshot
+from source.apps import web_app
+from source.apps.processing_state import build_processing_run_dir
+from source.runtime.run_state import RunSnapshot, StageSnapshot, TaskSnapshot
 
 
 def test_run_interactive_curator_dispatches_qt_backend(monkeypatch):
     fake_module = types.SimpleNamespace(
         run_curator=lambda energy, vertices, edges: ("qt-vertices", "qt-edges")
     )
-    monkeypatch.setitem(sys.modules, "slavv.visualization.interactive_curator", fake_module)
+    monkeypatch.setitem(sys.modules, "source.visualization.interactive_curator", fake_module)
 
     result = web_app._run_interactive_curator("energy", "vertices", "edges")
 
@@ -25,7 +25,7 @@ def test_run_interactive_curator_dispatches_napari_backend(monkeypatch):
     fake_module = types.SimpleNamespace(
         run_curator_napari=lambda energy, vertices, edges: ("napari-vertices", "napari-edges")
     )
-    monkeypatch.setitem(sys.modules, "slavv.visualization.napari_curator", fake_module)
+    monkeypatch.setitem(sys.modules, "source.visualization.napari_curator", fake_module)
 
     result = web_app._run_interactive_curator("energy", "vertices", "edges", backend="napari")
 
@@ -212,7 +212,7 @@ def test_render_export_download_uses_shared_failure_path(monkeypatch):
         export_spec=web_app.EXPORT_BUTTON_SPECS[2],
     )
 
-    assert calls["button"][0][0] == "📊 Export CSV"
+    assert calls["button"][0][0] == "ðŸ“Š Export CSV"
     assert calls["button"][1]["disabled"] is True
     assert "update" not in calls
     assert "download" not in calls
@@ -236,3 +236,6 @@ def test_build_processing_run_dir_varies_with_validated_parameters():
 
     assert first != second
     assert first == repeated
+
+
+

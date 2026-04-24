@@ -1,5 +1,5 @@
-"""
-Network construction and graph theory operations for SLAVV.
+﻿"""
+Network construction and graph theory operations for source.
 Handles the conversion of traced edges into a connected graph (strands, bifurcations).
 """
 
@@ -17,7 +17,7 @@ from ..utils.safe_unpickle import safe_load
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from slavv.runtime import StageController
+    from source.runtime import StageController
 
 
 def trace_strand_sparse(
@@ -1016,7 +1016,7 @@ def construct_network_resumable(
     stage_controller: StageController,
 ) -> dict[str, Any]:
     """Construct a network while persisting stage-level substeps."""
-    from slavv.runtime.run_state import atomic_joblib_dump
+    from source.runtime.run_state import atomic_joblib_dump
 
     edge_traces = edges["traces"]
     edge_scale_traces = edges.get(
@@ -1189,3 +1189,6 @@ __all__ = [
     "sort_and_validate_strands_sparse",
     "trace_strand_sparse",
 ]
+
+
+

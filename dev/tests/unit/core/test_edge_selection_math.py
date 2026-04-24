@@ -1,16 +1,16 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core._edge_selection.cleanup import (
+from source.core._edge_selection.cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv.core._edge_selection.payloads import (
+from source.core._edge_selection.payloads import (
     empty_edge_diagnostics,
     prepare_candidate_indices_for_cleanup,
 )
-from slavv.core._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
+from source.core._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
 
 
 def test_prepare_candidate_indices_for_cleanup_prefers_shorter_mutual_edge_on_tied_metric():
@@ -194,3 +194,5 @@ def test_clean_edges_cycles_removes_worst_edge_from_cycle_component_not_first_cl
     keep = clean_edges_cycles_python(connections)
 
     assert keep.tolist() == [True, True, True, True, False]
+
+

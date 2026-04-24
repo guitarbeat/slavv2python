@@ -1,4 +1,4 @@
-"""Developer helpers for imported-MATLAB parity experiments."""
+﻿"""Developer helpers for imported-MATLAB parity experiments."""
 
 # ruff: noqa: E402
 
@@ -19,17 +19,17 @@ SOURCE_DIR = REPO_ROOT / "source"
 if str(SOURCE_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCE_DIR))
 
-from slavv import SLAVVProcessor
-from slavv.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
-from slavv.core._edges.postprocess import finalize_edges_matlab_style
-from slavv.core.edge_candidates import (
+from source import SLAVVProcessor
+from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
+from source.core._edges.postprocess import finalize_edges_matlab_style
+from source.core.edge_candidates import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates_matlab_frontier,
 )
-from slavv.core.edge_selection import choose_edges_for_workflow
-from slavv.core.vertices import paint_vertex_center_image
-from slavv.io import load_tiff_volume
-from slavv.io.matlab_exact_proof import (
+from source.core.edge_selection import choose_edges_for_workflow
+from source.core.vertices import paint_vertex_center_image
+from source.io import load_tiff_volume
+from source.io.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     compare_exact_artifacts,
     find_matlab_vector_paths,
@@ -40,7 +40,7 @@ from slavv.io.matlab_exact_proof import (
     render_exact_proof_report,
     sync_exact_vertex_checkpoint_from_matlab,
 )
-from slavv.io.matlab_fail_fast import (
+from source.io.matlab_fail_fast import (
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,
     compare_lut_fixture_payload,
@@ -48,13 +48,13 @@ from slavv.io.matlab_fail_fast import (
     render_candidate_coverage_report,
     render_lut_proof_report,
 )
-from slavv.runtime.run_state import (
+from source.runtime.run_state import (
     atomic_joblib_dump,
     atomic_write_json,
     atomic_write_text,
     load_json_dict,
 )
-from slavv.utils.safe_unpickle import safe_load
+from source.utils.safe_unpickle import safe_load
 
 CHECKPOINTS_DIR = Path("02_Output") / "python_results" / "checkpoints"
 COMPARISON_REPORT_PATH = Path("03_Analysis") / "comparison_report.json"
@@ -1361,3 +1361,5 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
+
+

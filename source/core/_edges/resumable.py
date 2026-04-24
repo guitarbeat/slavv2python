@@ -1,4 +1,4 @@
-"""Resumable edge extraction paths."""
+﻿"""Resumable edge extraction paths."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from skimage.segmentation import watershed
 from .units import _load_edge_units
 
 if TYPE_CHECKING:
-    from slavv.runtime import StageController
+    from source.runtime import StageController
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ def extract_edges_resumable(
     use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
-    from slavv.io.matlab_fail_fast import build_candidate_snapshot_payload
-    from slavv.runtime.run_state import atomic_write_json
+    from source.io.matlab_fail_fast import build_candidate_snapshot_payload
+    from source.runtime.run_state import atomic_write_json
 
     energy = energy_data["energy"]
     vertex_positions = vertices["positions"]
@@ -332,3 +332,5 @@ def extract_edges_watershed_resumable(
         "energies": np.asarray(edge_energies, dtype=np.float32),
         "vertex_positions": vertex_positions.astype(np.float32),
     }
+
+

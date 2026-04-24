@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.core import SLAVVProcessor
+﻿import numpy as np
+from source.core import SLAVVProcessor
 
 
 def test_extract_edges_watershed_two_vertices():
@@ -40,3 +40,5 @@ def test_extract_edges_watershed_empty_connections_keep_two_columns():
     edges = processor.extract_edges_watershed(energy_data, vertices, {})
 
     assert edges["connections"].shape == (0, 2)
+
+

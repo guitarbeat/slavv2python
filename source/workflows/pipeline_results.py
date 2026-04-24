@@ -1,14 +1,14 @@
-"""Result normalization helpers for pipeline orchestration."""
+﻿"""Result normalization helpers for pipeline orchestration."""
 
 from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any
 
-from slavv.models import normalize_pipeline_result
+from source.models import normalize_pipeline_result
 
 if TYPE_CHECKING:
-    from slavv.runtime import RunContext
+    from source.runtime import RunContext
 
 logger = logging.getLogger(__name__)
 
@@ -32,3 +32,5 @@ def stop_after_stage_if_requested(
     if run_context is not None:
         run_context.finalize_run(stop_after=stop_after)
     return finalize_pipeline_results(results)
+
+

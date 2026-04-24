@@ -1,24 +1,24 @@
-"""Visualization page for the SLAVV Streamlit app."""
+﻿"""Visualization page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import streamlit as st
-from slavv.apps.visualization_state import (
+from source.apps.visualization_state import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,
     normalize_visualization_results,
     resolve_visualization_session_context,
 )
-from slavv.visualization import NetworkVisualizer
+from source.visualization import NetworkVisualizer
 
 from . import app_services
 
 EXPORT_BUTTON_SPECS = (
     {
         "format_type": "vmv",
-        "label": "📄 Download VMV",
-        "empty_label": "📄 Export VMV",
+        "label": "ðŸ“„ Download VMV",
+        "empty_label": "ðŸ“„ Export VMV",
         "file_name": "network.vmv",
         "mime": "text/plain",
         "help": "Export network in VessMorphoVis (VMV) format",
@@ -26,8 +26,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "casx",
-        "label": "📄 Download CASX",
-        "empty_label": "📄 Export CASX",
+        "label": "ðŸ“„ Download CASX",
+        "empty_label": "ðŸ“„ Export CASX",
         "file_name": "network.casx",
         "mime": "application/xml",
         "help": "Export network in CASX XML format",
@@ -35,8 +35,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "csv",
-        "label": "📊 Download CSV (Zip)",
-        "empty_label": "📊 Export CSV",
+        "label": "ðŸ“Š Download CSV (Zip)",
+        "empty_label": "ðŸ“Š Export CSV",
         "file_name": "network_csv.zip",
         "mime": "application/zip",
         "help": "Export network data as Zipped CSVs (vertices & edges)",
@@ -248,7 +248,7 @@ def show_visualization_page() -> None:
             help="Download a self-contained HTML report to share with collaborators.",
         )
         if downloaded:
-            from slavv.apps.share_report import record_share_event
+            from source.apps.share_report import record_share_event
 
             record_share_event(
                 st.session_state,
@@ -274,3 +274,5 @@ def show_visualization_page() -> None:
         f"requested={share_metrics.get('share_report_requested', 0)}, "
         f"downloaded={share_metrics.get('share_report_downloaded', 0)}"
     )
+
+

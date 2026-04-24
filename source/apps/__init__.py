@@ -1,4 +1,4 @@
-"""User-facing applications for SLAVV.
+﻿"""User-facing applications for source.
 
 Submodules
 ----------
@@ -7,3 +7,4 @@ cli
 web_app
     Streamlit web application.
 """
+

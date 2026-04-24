@@ -1,10 +1,9 @@
-"""File I/O operations for SLAVV."""
+﻿"""File I/O operations for source."""
 
 from __future__ import annotations
 
 from .exporters import export_pipeline_results, parse_registration_file, partition_network
 from .network_io import (
-    MatNetwork,
     Network,
     convert_casx_to_vmv,
     load_network_from_casx,
@@ -20,7 +19,6 @@ from .network_io import (
 from .tiff import dicom_to_tiff, load_tiff_volume
 
 __all__ = [
-    "MatNetwork",
     "Network",
     "convert_casx_to_vmv",
     "dicom_to_tiff",
@@ -38,3 +36,4 @@ __all__ = [
     "save_network_to_json",
     "save_network_to_vmv",
 ]
+

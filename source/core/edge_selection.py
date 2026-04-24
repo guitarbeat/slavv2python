@@ -1,4 +1,4 @@
-"""Public edge-selection facade for SLAVV."""
+﻿"""Public edge-selection facade for source."""
 
 from __future__ import annotations
 
@@ -45,3 +45,4 @@ __all__ = [
     "_snapshot_endpoint_influences_matlab",
     "choose_edges_for_workflow",
 ]
+

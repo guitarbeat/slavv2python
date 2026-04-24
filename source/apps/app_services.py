@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import streamlit as st
-from slavv.io import load_tiff_volume
-from slavv.runtime import load_run_snapshot
+from source.io import load_tiff_volume
+from source.runtime import load_run_snapshot
 
 from .curation_services import apply_curated_results, run_interactive_curator
 from .dashboard_services import render_run_dashboard
@@ -47,3 +47,5 @@ __all__ = [
     "run_interactive_curator",
     "update_run_task",
 ]
+
+

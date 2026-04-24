@@ -1,10 +1,10 @@
-"""Focused app-facing helpers for curation workflows."""
+﻿"""Focused app-facing helpers for curation workflows."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from slavv.apps.curation_state import apply_curated_session_results
+from source.apps.curation_state import apply_curated_session_results
 
 
 def apply_curated_results(
@@ -32,14 +32,16 @@ def run_interactive_curator(
     """Import desktop curator backends lazily so the web app can load without GUI deps."""
     backend_name = str(backend).strip().lower()
     if backend_name in {"qt", "qt_pyvista", "pyvista"}:
-        from slavv.visualization.interactive_curator import run_curator
+        from source.visualization.interactive_curator import run_curator
 
         return run_curator(energy_data, vertices_data, edges_data)
     if backend_name == "napari":
-        from slavv.visualization.napari_curator import run_curator_napari
+        from source.visualization.napari_curator import run_curator_napari
 
         return run_curator_napari(energy_data, vertices_data, edges_data)
     raise ValueError("curator backend must be 'qt' or 'napari'")
 
 
 __all__ = ["apply_curated_results", "run_interactive_curator"]
+
+

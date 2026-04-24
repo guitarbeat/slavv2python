@@ -1,7 +1,7 @@
-import numpy as np
+﻿import numpy as np
 import pytest
 import tifffile
-from slavv.io import load_tiff_volume
+from source.io import load_tiff_volume
 
 import io
 
@@ -37,3 +37,5 @@ def test_load_tiff_volume_memmap(tmp_path):
     vol = load_tiff_volume(path, memory_map=True)
     assert vol.shape == (2, 2, 2)
     assert isinstance(vol, np.memmap)
+
+

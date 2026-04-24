@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any, cast
 
 import numpy as np
-from slavv.core import energy_storage as _energy_storage
+from source.core import energy_storage as _energy_storage
 
 from . import backends
 
@@ -246,3 +246,5 @@ def _calculate_energy_field_chunked(
         energy_3d[out_slice] = chunk_data["energy"][inner_slice]
         scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
     return _energy_result_payload(config, image.shape, energy_3d, scale_indices)
+
+

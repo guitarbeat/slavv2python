@@ -26,11 +26,10 @@ np.int = int
 np.float = float
 np.bool = np.bool_
 
-# Add source/ to path so slavv is importable
+# Add repo root to path so `source` package imports are resolvable.
 repo_root = Path(__file__).resolve().parents[2]
-source_dir = repo_root / "source"
-if source_dir.exists() and str(source_dir) not in sys.path:
-    sys.path.insert(0, str(source_dir))
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
 
 
 def pytest_collection_modifyitems(items):

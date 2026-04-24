@@ -1,10 +1,11 @@
-"""Helpers for normalized visualization-page state."""
+﻿"""Helpers for normalized visualization-page state."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv.models import normalize_pipeline_result
+from source.apps._state_utils import normalize_state_results
+from source.models import normalize_pipeline_result
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
 def normalize_visualization_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
     """Return a normalized dict payload for visualization consumers."""
-    return normalize_pipeline_result(processing_results).to_dict()
+    return normalize_state_results(processing_results)
 
 
 def list_available_visualizations(processing_results: Mapping[str, Any]) -> list[str]:
@@ -76,3 +77,5 @@ __all__ = [
     "normalize_visualization_results",
     "resolve_visualization_session_context",
 ]
+
+

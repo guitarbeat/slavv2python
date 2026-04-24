@@ -5,6 +5,8 @@ from typing import Any, cast
 import numpy as np
 from scipy.spatial import cKDTree
 
+from .vector_math import safe_normalize_rows
+
 
 def evaluate_registration(
     vectors_after: np.ndarray,
@@ -20,13 +22,8 @@ def evaluate_registration(
     if vectors_after_arr.size == 0 or vectors_before_arr.size == 0:
         return 0.0, np.array([]), np.array([])
 
-    norms_after = np.linalg.norm(vectors_after_arr, axis=1, keepdims=True)
-    norms_before = np.linalg.norm(vectors_before_arr, axis=1, keepdims=True)
-    norms_after[norms_after == 0] = 1.0
-    norms_before[norms_before == 0] = 1.0
-
-    normalized_after = vectors_after_arr / norms_after
-    normalized_before = vectors_before_arr / norms_before
+    normalized_after = safe_normalize_rows(vectors_after_arr)
+    normalized_before = safe_normalize_rows(vectors_before_arr)
     sim_matrix = np.clip(normalized_before @ normalized_after.T, -1.0, 1.0)
 
     best_before_to_after = np.max(sim_matrix, axis=1)

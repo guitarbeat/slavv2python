@@ -1,9 +1,9 @@
-"""Tests for run-state layout helpers."""
+﻿"""Tests for run-state layout helpers."""
 
 from __future__ import annotations
 
 import pytest
-from slavv.runtime._run_state.layout import resolve_run_layout
+from source.runtime._run_state.layout import resolve_run_layout
 
 
 def test_resolve_run_layout_structured_uses_staged_directories(tmp_path):
@@ -21,3 +21,5 @@ def test_resolve_run_layout_structured_uses_staged_directories(tmp_path):
 def test_resolve_run_layout_requires_run_dir():
     with pytest.raises(ValueError, match="run_dir is required for run state"):
         resolve_run_layout(run_dir=None)
+
+

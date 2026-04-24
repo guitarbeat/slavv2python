@@ -1,8 +1,8 @@
-"""Tests for run-state snapshot lifecycle helpers."""
+﻿"""Tests for run-state snapshot lifecycle helpers."""
 
 from __future__ import annotations
 
-from slavv.runtime._run_state.lifecycle import (
+from source.runtime._run_state.lifecycle import (
     begin_stage_snapshot,
     complete_stage_snapshot,
     fail_stage_snapshot,
@@ -11,7 +11,7 @@ from slavv.runtime._run_state.lifecycle import (
     update_optional_task_snapshot,
     update_stage_snapshot,
 )
-from slavv.runtime._run_state.models import RunSnapshot, StageSnapshot
+from source.runtime._run_state.models import RunSnapshot, StageSnapshot
 
 
 def test_mark_preprocess_complete_snapshot_marks_artifacts_and_progress():
@@ -117,3 +117,5 @@ def test_finalize_run_snapshot_marks_target_completion():
     assert snapshot.status == "completed_target"
     assert snapshot.current_stage == "edges"
     assert snapshot.eta_seconds == 0.0
+
+

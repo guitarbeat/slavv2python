@@ -1,5 +1,5 @@
-"""
-Utility modules for SLAVV.
+﻿"""
+Utility modules for source.
 
 This subpackage contains shared utilities:
 - preprocessing: Image preprocessing functions
@@ -32,3 +32,4 @@ __all__ = [
     "validate_parameters",
     "weighted_ks_test",
 ]
+

@@ -1,11 +1,11 @@
-"""Tests for stage-reset runtime helpers."""
+﻿"""Tests for stage-reset runtime helpers."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from slavv.runtime._run_state.models import StageSnapshot
-from slavv.runtime._run_state.reset import (
+from source.runtime._run_state.models import StageSnapshot
+from source.runtime._run_state.reset import (
     clear_stage_runtime_artifacts,
     remove_stage_dir_contents,
     reset_stage_snapshots,
@@ -68,3 +68,5 @@ def test_reset_stage_snapshots_reinitializes_requested_and_later_stages():
     assert stages["vertices"].status == "pending"
     assert stages["edges"].progress == 0.0
     assert stages["network"].detail == ""
+
+

@@ -1,4 +1,4 @@
-"""Low-level edge tracing primitives for SLAVV."""
+﻿"""Low-level edge tracing primitives for source."""
 
 from __future__ import annotations
 
@@ -44,3 +44,4 @@ def estimate_vessel_directions(
             fallback_direction_generator=generate_edge_directions,
         ),
     )
+

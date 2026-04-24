@@ -1,11 +1,11 @@
-"""Tests for MAT network I/O."""
+﻿"""Tests for MAT network I/O."""
 
 from pathlib import Path
 
 import numpy as np
 from dev.tests.support.network_builders import build_network_object
 from scipy.io import savemat
-from slavv.io import load_network_from_mat
+from source.io import load_network_from_mat
 
 
 def test_mat_roundtrip(tmp_path: Path) -> None:
@@ -48,3 +48,5 @@ def test_load_empty_mat_network_shapes(tmp_path: Path) -> None:
     assert network.vertices.shape == (0, 3)
     assert network.edges.shape == (0, 2)
     assert network.radii is None
+
+

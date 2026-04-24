@@ -1,4 +1,4 @@
-"""Small orchestration helpers for sequential pipeline execution."""
+﻿"""Small orchestration helpers for sequential pipeline execution."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from .pipeline_setup import emit_progress
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from slavv.runtime import RunContext
+    from source.runtime import RunContext
 
 
 @dataclass(frozen=True)
@@ -108,3 +108,5 @@ __all__ = [
     "build_standard_pipeline_steps",
     "run_pipeline_stage_sequence",
 ]
+
+

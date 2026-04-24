@@ -1,5 +1,5 @@
-"""
-Main pipeline orchestration for SLAVV.
+﻿"""
+Main pipeline orchestration for source.
 Coordinates the energy, tracing, and graph construction steps.
 """
 
@@ -248,7 +248,7 @@ class SLAVVProcessor:
 
     def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
-        from .. import utils as utils_module
+        from source import utils as utils_module
 
         return energy.calculate_energy_field(image, params, utils_module.get_chunking_lattice)
 
@@ -276,3 +276,5 @@ class SLAVVProcessor:
     ) -> dict[str, Any]:
         """Construct network from traces. Delegates to ``graph`` module."""
         return graph.construct_network(edges, vertices, params)
+
+

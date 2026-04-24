@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.analysis import extract_uncurated_info
+﻿import numpy as np
+from source.analysis import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:
@@ -21,3 +21,5 @@ def test_extract_uncurated_info_shapes() -> None:
     assert "edge_features" in info
     assert info["vertex_features"].shape[0] == 2
     assert info["edge_features"].shape[0] == 1
+
+

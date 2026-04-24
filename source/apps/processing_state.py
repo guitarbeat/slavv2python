@@ -1,4 +1,4 @@
-"""Helpers for processing-page state and result bookkeeping."""
+﻿"""Helpers for processing-page state and result bookkeeping."""
 
 from __future__ import annotations
 
@@ -7,13 +7,13 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv.models import normalize_pipeline_result
-from slavv.runtime.run_state import fingerprint_jsonable
+from source.models import normalize_pipeline_result
+from source.runtime.run_state import fingerprint_jsonable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
 
-    from slavv.runtime import RunSnapshot
+    from source.runtime import RunSnapshot
 
 
 def build_processing_run_dir(upload_bytes: bytes, validated_params: dict[str, object]) -> str:
@@ -78,3 +78,5 @@ __all__ = [
     "store_processing_session_state",
     "summarize_processing_metrics",
 ]
+
+

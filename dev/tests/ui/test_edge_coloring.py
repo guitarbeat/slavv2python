@@ -1,7 +1,7 @@
-import numpy as np
+﻿import numpy as np
 import plotly.express as px
 import pytest
-from slavv.visualization import NetworkVisualizer
+from source.visualization import NetworkVisualizer
 
 
 @pytest.fixture
@@ -208,3 +208,5 @@ def test_3d_length_coloring_adds_colorbar(base_inputs):
     ]
     assert colorbar_traces
     assert colorbar_traces[0].marker.colorbar.title.text.lower() == "length"
+
+

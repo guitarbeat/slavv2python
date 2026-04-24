@@ -1,8 +1,8 @@
-"""Tests for CLI status-loading helpers."""
+﻿"""Tests for CLI status-loading helpers."""
 
 from __future__ import annotations
 
-from slavv.apps.cli_status_service import build_status_output_lines, load_status_snapshot
+from source.apps.cli_status_service import build_status_output_lines, load_status_snapshot
 
 
 def test_load_status_snapshot_prefers_primary_snapshot():
@@ -37,3 +37,5 @@ def test_build_status_output_lines_uses_status_line_builder():
     )
 
     assert lines == ["line-a", "same:True"]
+
+

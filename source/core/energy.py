@@ -1,5 +1,5 @@
-"""
-Energy field calculations for SLAVV.
+﻿"""
+Energy field calculations for source.
 Includes Hessian-based vessel enhancement (Frangi/Sato) and Numba-accelerated gradient computation.
 """
 
@@ -29,7 +29,7 @@ from ._energy.gradients import (
 from ._energy.resumable import calculate_energy_field_resumable as _calculate_energy_field_resumable
 
 if TYPE_CHECKING:
-    from slavv.runtime import StageController
+    from source.runtime import StageController
 
 
 def calculate_energy_field(
@@ -103,3 +103,6 @@ __all__ = [
     "is_numba_acceleration_enabled",
     "spherical_structuring_element",
 ]
+
+
+

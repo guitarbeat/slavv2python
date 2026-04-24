@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.utils import get_chunking_lattice
+﻿import numpy as np
+from source.utils import get_chunking_lattice
 
 
 def test_chunking_lattice_returns_single_chunk_when_volume_fits():
@@ -36,3 +36,5 @@ def test_chunking_lattice_keeps_output_slices_contiguous_when_margin_is_clamped(
         processed_z = output_slice[2].stop
 
     assert processed_z == shape[2]
+
+

@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.utils import calculate_path_length
+﻿import numpy as np
+from source.utils import calculate_path_length
 
 
 def test_calculate_path_length_handles_empty_singleton_and_repeated_points():
@@ -30,3 +30,5 @@ def test_calculate_path_length_accumulates_multisegment_3d_distance():
     )
 
     assert np.isclose(calculate_path_length(path), 22.0)
+
+

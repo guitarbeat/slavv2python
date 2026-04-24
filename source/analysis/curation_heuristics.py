@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -7,7 +7,7 @@ import numpy as np
 try:
     from ..utils import calculate_path_length
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from slavv.utils import calculate_path_length
+    from source.utils import calculate_path_length
 
 
 def choose_vertices(
@@ -44,9 +44,11 @@ def extract_uncurated_info(
     try:
         from .ml_curator import MLCurator
     except ImportError:  # pragma: no cover - fallback for direct execution
-        from slavv.analysis.ml_curator import MLCurator
+        from source.analysis.ml_curator import MLCurator
 
     curator = MLCurator()
     vertex_features = curator.extract_vertex_features(vertices, energy_data, image_shape)
     edge_features = curator.extract_edge_features(edges, vertices, energy_data)
     return {"vertex_features": vertex_features, "edge_features": edge_features}
+
+

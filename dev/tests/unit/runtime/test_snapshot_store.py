@@ -1,11 +1,11 @@
-"""Tests for snapshot store and event emission helpers."""
+﻿"""Tests for snapshot store and event emission helpers."""
 
 from __future__ import annotations
 
 from dev.tests.support.run_state_builders import build_snapshot_dict, materialize_run_snapshot
-from slavv.runtime._run_state.layout import resolve_run_layout
-from slavv.runtime._run_state.models import RunSnapshot, StageSnapshot
-from slavv.runtime._run_state.snapshot_store import emit_progress_event, load_or_create_snapshot
+from source.runtime._run_state.layout import resolve_run_layout
+from source.runtime._run_state.models import RunSnapshot, StageSnapshot
+from source.runtime._run_state.snapshot_store import emit_progress_event, load_or_create_snapshot
 
 
 def test_load_or_create_snapshot_reuses_existing_snapshot(tmp_path):
@@ -55,3 +55,5 @@ def test_emit_progress_event_uses_stage_progress_and_deep_copies_snapshot():
     assert event.stage_progress == 0.25
     assert event.resumed is True
     assert event.snapshot is not snapshot
+
+

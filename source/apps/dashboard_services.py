@@ -1,10 +1,10 @@
-"""Focused app-facing helpers for dashboard rendering."""
+﻿"""Focused app-facing helpers for dashboard rendering."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-from slavv.runtime.run_state import target_stage_progress
+from source.runtime.run_state import target_stage_progress
 
 from .web_app_dashboard import DASHBOARD_STAGE_ORDER
 
@@ -67,3 +67,5 @@ def render_run_dashboard(snapshot) -> None:
 
 
 __all__ = ["render_run_dashboard"]
+
+

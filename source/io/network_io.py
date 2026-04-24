@@ -34,10 +34,6 @@ class Network:
     radii: np.ndarray | None = None
 
 
-# Backwards-compatible alias
-MatNetwork = Network
-
-
 def _normalize_vertices_array(vertices: Any) -> np.ndarray:
     """Return vertex data in stable ``(N, 3)`` form."""
     array = np.asarray(vertices, dtype=float)

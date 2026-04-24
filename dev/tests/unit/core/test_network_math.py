@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.core.graph import (
+﻿import numpy as np
+from source.core.graph import (
     _matlab_edge_metrics,
     _matlab_get_strand_objects,
     _matlab_get_vessel_directions_v3,
@@ -166,3 +166,5 @@ def test_matlab_smooth_edges_v2_and_vessel_directions_match_straight_strand_math
         np.array([[1.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float32),
     )
     assert np.allclose(_matlab_edge_metrics(smoothed_energy), np.array([-2.0], dtype=np.float32))
+
+

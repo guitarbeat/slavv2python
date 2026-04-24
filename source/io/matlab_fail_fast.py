@@ -1,4 +1,4 @@
-"""Fail-fast parity helpers for the imported-MATLAB exact route."""
+﻿"""Fail-fast parity helpers for the imported-MATLAB exact route."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ DEBUG_MAP_FIELDS: tuple[str, ...] = (
 def load_builtin_lut_fixture() -> dict[str, Any]:
     """Load the checked-in exact-LUT fixture payload."""
     fixture_text = (
-        resources.files("slavv.io.fixtures")
+        resources.files("source.io.fixtures")
         .joinpath(LUT_FIXTURE_RESOURCE)
         .read_text(encoding="utf-8")
     )
@@ -340,3 +340,4 @@ __all__ = [
     "render_candidate_coverage_report",
     "render_lut_proof_report",
 ]
+

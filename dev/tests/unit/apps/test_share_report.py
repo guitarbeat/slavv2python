@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pytest
 from dev.tests.support.payload_builders import (
@@ -7,7 +7,7 @@ from dev.tests.support.payload_builders import (
     build_processing_results,
     build_vertices_payload,
 )
-from slavv.apps.share_report import (
+from source.apps.share_report import (
     build_share_report_html,
     make_share_report_filename,
     record_share_event,
@@ -87,3 +87,5 @@ def test_record_share_event_updates_state_and_appends_jsonl(tmp_path: Path):
     assert len(lines) == 1
     assert '"event": "share_report_downloaded"' in lines[0]
     assert '"report_signature": "abc123"' in lines[0]
+
+

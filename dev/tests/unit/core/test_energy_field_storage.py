@@ -1,11 +1,11 @@
-import numpy as np
+﻿import numpy as np
 import numpy.testing as npt
 import pytest
-from slavv.core import SLAVVProcessor
-from slavv.core import energy as energy_module
-from slavv.core._energy import backends as energy_backends
-from slavv.runtime import RunContext
-from slavv.utils import get_chunking_lattice, validate_parameters
+from source.core import SLAVVProcessor
+from source.core import energy as energy_module
+from source.core._energy import backends as energy_backends
+from source.runtime import RunContext
+from source.utils import get_chunking_lattice, validate_parameters
 
 
 def test_energy_field_no_full_storage():
@@ -131,3 +131,5 @@ def test_resumable_energy_zarr_storage_requires_optional_dependency(monkeypatch,
             run_context.stage("energy"),
             get_chunking_lattice,
         )
+
+

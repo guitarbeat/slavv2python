@@ -1,7 +1,7 @@
-import numpy as np
+﻿import numpy as np
 import pytest
-from slavv.core import SLAVVProcessor
-from slavv.utils import validate_parameters
+from source.core import SLAVVProcessor
+from source.utils import validate_parameters
 
 
 def test_validate_parameters_direction_method():
@@ -39,7 +39,7 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
     }
 
     monkeypatch.setattr(
-        "slavv.core.edge_candidates.estimate_vessel_directions",
+        "source.core.edge_candidates.estimate_vessel_directions",
         lambda *args, **kwargs: iter(()).throw(
             AssertionError("Hessian estimator should not be called")
         ),
@@ -48,3 +48,6 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
     edges = processor.extract_edges(energy_data, vertices, params)
     assert len(edges["traces"]) == 0
     assert edges["diagnostics"]["candidate_traced_edge_count"] == 2
+
+
+

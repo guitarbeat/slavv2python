@@ -1,12 +1,12 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core._edges.bridge_vertices import (
+from source.core._edges.bridge_vertices import (
     _matlab_bridge_search_target,
     add_vertices_to_edges_matlab_style,
 )
-from slavv.core._vertices.painting import paint_vertex_center_image, paint_vertex_image
-from slavv.core.graph import construct_network
+from source.core._vertices.painting import paint_vertex_center_image, paint_vertex_image
+from source.core.graph import construct_network
 
 
 def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_parent():
@@ -229,7 +229,7 @@ def test_add_vertices_to_edges_matlab_style_has_no_parent_half_fallback(monkeypa
     }
 
     monkeypatch.setattr(
-        "slavv.core._edges.bridge_vertices._matlab_bridge_search_target",
+        "source.core._edges.bridge_vertices._matlab_bridge_search_target",
         lambda *args, **kwargs: None,
     )
 
@@ -321,3 +321,6 @@ def test_add_vertices_to_edges_matlab_style_ignores_unrelated_edges_during_bridg
         not np.any(np.all(np.isclose(trace, np.array([3.0, 4.0, 1.0], dtype=np.float32)), axis=1))
         for trace in bridged["bridge_edges"]["traces"]
     )
+
+
+

@@ -19,6 +19,35 @@ Float64Array: TypeAlias = "np.ndarray"
 BoolArray: TypeAlias = "np.ndarray"
 
 
+def normalize_candidate_connection_sources(
+    raw_sources: Any,
+    candidate_connection_count: int,
+    *,
+    default_source: str = "unknown",
+) -> list[str]:
+    """Return a normalized per-connection source label list."""
+    if candidate_connection_count <= 0:
+        return []
+
+    if isinstance(raw_sources, np.ndarray):
+        source_values = np.asarray(raw_sources).reshape(-1).tolist()
+    elif isinstance(raw_sources, (list, tuple)):
+        source_values = list(raw_sources)
+    else:
+        source_values = []
+
+    allowed_sources = {"frontier", "watershed", "geodesic", "fallback", "unknown"}
+    default_label = default_source if default_source in allowed_sources else "unknown"
+    normalized: list[str] = []
+    for index in range(candidate_connection_count):
+        if index < len(source_values):
+            source_label = str(source_values[index]).strip().lower()
+            normalized.append(source_label if source_label in allowed_sources else default_label)
+            continue
+        normalized.append(default_label)
+    return normalized
+
+
 def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, Any]) -> bool:
     """Enable the parity-only frontier tracer for imported MATLAB energy reruns."""
     if not bool(params.get("comparison_exact_network", False)):

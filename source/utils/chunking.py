@@ -1,5 +1,5 @@
-"""
-Chunking utilities for memory-efficient processing in SLAVV.
+﻿"""
+Chunking utilities for memory-efficient processing in source.
 """
 
 from __future__ import annotations
@@ -68,3 +68,4 @@ def get_chunking_lattice(
         start = end
 
     return slices
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 from typing import Any
@@ -8,7 +8,7 @@ import numpy as np
 try:
     from ..utils import calculate_path_length
 except ImportError:  # pragma: no cover - fallback for direct execution
-    from slavv.utils import calculate_path_length
+    from source.utils import calculate_path_length
 
 logger = logging.getLogger(__name__)
 
@@ -199,3 +199,5 @@ class AutomaticCurator:
         }
         logger.info(f"Automatic edge curation: {len(edge_traces)} -> {len(kept_indices)} edges")
         return curated_edges
+
+

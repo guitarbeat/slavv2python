@@ -1,11 +1,11 @@
-from unittest.mock import patch
+﻿from unittest.mock import patch
 
 import numpy as np
-from slavv.core import SLAVVProcessor
+from source.core import SLAVVProcessor
 
 
 @patch(
-    "slavv.core.edge_candidates.estimate_vessel_directions",
+    "source.core.edge_candidates.estimate_vessel_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
@@ -101,9 +101,9 @@ def test_extract_edges_direction_padding_is_repeatable(monkeypatch):
         }
         return trace, metadata
 
-    monkeypatch.setattr("slavv.core.edge_candidates.estimate_vessel_directions", fake_estimate)
-    monkeypatch.setattr("slavv.core.edge_candidates.generate_edge_directions", fake_generate)
-    monkeypatch.setattr("slavv.core.edge_candidates.trace_edge", fake_trace_edge)
+    monkeypatch.setattr("source.core.edge_candidates.estimate_vessel_directions", fake_estimate)
+    monkeypatch.setattr("source.core.edge_candidates.generate_edge_directions", fake_generate)
+    monkeypatch.setattr("source.core.edge_candidates.trace_edge", fake_trace_edge)
 
     first = processor.extract_edges(energy_data, vertices, params)
     second = processor.extract_edges(energy_data, vertices, params)
@@ -117,3 +117,6 @@ def test_extract_edges_direction_padding_is_repeatable(monkeypatch):
         first["diagnostics"]["candidate_traced_edge_count"]
         == second["diagnostics"]["candidate_traced_edge_count"]
     )
+
+
+

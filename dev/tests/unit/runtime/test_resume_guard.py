@@ -1,18 +1,18 @@
-"""Tests for resume-guard behavior in structured runs."""
+﻿"""Tests for resume-guard behavior in structured runs."""
 
 from __future__ import annotations
 
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
-from slavv.runtime import load_run_snapshot
-from slavv.runtime._run_state.models import RunSnapshot
-from slavv.runtime._run_state.resume_guard import (
+from source.runtime import load_run_snapshot
+from source.runtime._run_state.models import RunSnapshot
+from source.runtime._run_state.resume_guard import (
     apply_resume_block,
     build_resume_block_message,
     fingerprint_mismatches,
     update_snapshot_fingerprints,
 )
-from slavv.runtime.run_state import STATUS_BLOCKED, STATUS_PENDING
+from source.runtime.run_state import STATUS_BLOCKED, STATUS_PENDING
 
 
 def test_resume_guard_blocks_mismatched_input(tmp_path):
@@ -107,3 +107,5 @@ def test_apply_resume_block_sets_blocked_status_and_error_message():
     assert snapshot.status == STATUS_BLOCKED
     assert "fingerprint changed" in snapshot.last_event
     assert snapshot.errors
+
+

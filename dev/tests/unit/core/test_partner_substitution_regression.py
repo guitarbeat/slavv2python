@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
-from slavv.core.edge_selection import _choose_edges_matlab_style
+from source.core.edge_selection import _choose_edges_matlab_style
 
 
 def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():
@@ -42,6 +42,7 @@ def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():
         candidates,
         vertex_positions,
         vertex_scales,
+        np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
@@ -55,3 +56,5 @@ def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():
     assert chosen["diagnostics"]["conflict_rejected_by_source"] == {"watershed": 1}
     assert chosen["diagnostics"]["conflict_blocking_source_counts"] == {"frontier": 1}
     assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
+
+

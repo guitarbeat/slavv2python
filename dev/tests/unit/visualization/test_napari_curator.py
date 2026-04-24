@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import importlib
 
 import numpy as np
 import pytest
-from slavv.visualization import napari_curator
+from source.visualization import napari_curator
 
 
 def test_prepare_curator_payload_adds_default_status_lists():
@@ -56,3 +56,5 @@ def test_load_napari_modules_requires_optional_dependency(monkeypatch):
 
     with pytest.raises(RuntimeError, match="slavv\\[napari\\]"):
         napari_curator._load_napari_modules()
+
+

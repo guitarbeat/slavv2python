@@ -1,7 +1,7 @@
-import numpy as np
+﻿import numpy as np
 
 # Ensure module path
-from slavv.utils import preprocess_image
+from source.utils import preprocess_image
 
 
 def test_preprocess_normalizes_to_unit_range():
@@ -33,3 +33,5 @@ def test_preprocess_bandpass_removes_axial_gradient():
     assert var_with < var_without * 0.1
     assert np.isclose(out.min(), 0.0)
     assert out.max() <= 1.0
+
+

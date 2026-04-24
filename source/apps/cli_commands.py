@@ -1,4 +1,4 @@
-"""Command handlers for the SLAVV CLI."""
+﻿"""Command handlers for the SLAVV CLI."""
 
 from __future__ import annotations
 
@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 
 def _handle_info_command() -> None:
     """Print version and system information."""
-    from slavv import __version__
-    from slavv.utils import get_system_info
+    from source import __version__
+    from source.utils import get_system_info
 
     for line in load_info_lines(version=__version__, system_info=get_system_info()):
         print(line)
@@ -44,9 +44,9 @@ def _handle_info_command() -> None:
 
 def _handle_run_command(args) -> None:
     """Execute the SLAVV processing pipeline."""
-    from slavv import SLAVVProcessor
-    from slavv.io import Network, load_tiff_volume
-    from slavv.runtime import RunContext, build_status_lines, load_run_snapshot
+    from source import SLAVVProcessor
+    from source.io import Network, load_tiff_volume
+    from source.runtime import RunContext, build_status_lines, load_run_snapshot
 
     _require_existing_file(args.input, label="input file")
     _configure_logging(args.verbose, format_string=_DETAILED_LOG_FORMAT)
@@ -116,7 +116,7 @@ def _handle_run_command(args) -> None:
 
 def _handle_status_command(args) -> None:
     """Render run status from a run directory."""
-    from slavv.runtime import build_status_lines, load_run_snapshot
+    from source.runtime import build_status_lines, load_run_snapshot
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
 
@@ -134,7 +134,7 @@ def _handle_status_command(args) -> None:
 
 def _handle_analyze_command(args) -> None:
     """Analyze an exported network JSON file and print statistics."""
-    from slavv.analysis import calculate_network_statistics
+    from source.analysis import calculate_network_statistics
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
     results = _load_exported_results(args.input)
@@ -151,7 +151,7 @@ def _handle_analyze_command(args) -> None:
 
 def _handle_plot_command(args) -> None:
     """Generate interactive plots from exported network JSON."""
-    from slavv.visualization.network_plots import NetworkVisualizer
+    from source.visualization.network_plots import NetworkVisualizer
 
     _configure_logging(args.verbose, format_string=_SIMPLE_LOG_FORMAT)
     results = _load_exported_results(args.input)
@@ -167,3 +167,6 @@ def _handle_plot_command(args) -> None:
 
     fig.write_html(args.output)
     print(f"Saved interactive plots to {args.output}")
+
+
+

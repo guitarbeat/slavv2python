@@ -1,7 +1,7 @@
-import numpy as np
-from slavv.core import SLAVVProcessor
-from slavv.core.graph import construct_network_resumable, trace_strand_sparse
-from slavv.runtime import RunContext
+﻿import numpy as np
+from source.core import SLAVVProcessor
+from source.core.graph import construct_network_resumable, trace_strand_sparse
+from source.runtime import RunContext
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():
@@ -100,3 +100,5 @@ def test_trace_strand_sparse_uses_sorted_neighbor_order():
     strand = trace_strand_sparse(0, adjacency_list, visited)
 
     assert strand == [0, 1, 2]
+
+

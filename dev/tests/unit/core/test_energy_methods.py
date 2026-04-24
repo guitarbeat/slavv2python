@@ -1,15 +1,15 @@
-"""Consolidated tests for alternative energy methods."""
+﻿"""Consolidated tests for alternative energy methods."""
 
 from __future__ import annotations
 
 import numpy as np
 import numpy.testing as npt
 import pytest
-from slavv.core import SLAVVProcessor
-from slavv.core import energy as energy_module
-from slavv.core._energy import backends as energy_backends
-from slavv.runtime import RunContext
-from slavv.utils import get_chunking_lattice
+from source.core import SLAVVProcessor
+from source.core import energy as energy_module
+from source.core._energy import backends as energy_backends
+from source.runtime import RunContext
+from source.utils import get_chunking_lattice
 
 
 class _FakeSitkImage:
@@ -298,3 +298,5 @@ def test_cupy_direct_and_resumable_paths_match(monkeypatch, tmp_path):
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
     npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])
+
+

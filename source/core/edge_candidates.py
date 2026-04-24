@@ -1,4 +1,4 @@
-"""Edge candidate generation helpers for SLAVV."""
+﻿"""Edge candidate generation helpers for source."""
 
 from __future__ import annotations
 
@@ -105,3 +105,4 @@ __all__ = [
     "generate_edge_directions",
     "trace_edge",
 ]
+

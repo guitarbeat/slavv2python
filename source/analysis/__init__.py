@@ -1,5 +1,5 @@
-"""
-Analysis modules for SLAVV.
+﻿"""
+Analysis modules for source.
 
 This subpackage contains:
 - geometry: Geometric operations and network statistics
@@ -34,9 +34,9 @@ from .ml_curator import (
     MLCurator,
 )
 
-# Interactive curation is optional GUI code — import directly when needed:
-#   from slavv.visualization.interactive_curator import InteractiveCurator, run_curator
-#   from slavv.visualization.napari_curator import run_curator_napari
+# Interactive curation is optional GUI code â€” import directly when needed:
+#   from source.visualization.interactive_curator import InteractiveCurator, run_curator
+#   from source.visualization.napari_curator import run_curator_napari
 
 __all__ = [
     "AutomaticCurator",
@@ -63,3 +63,6 @@ __all__ = [
     "subsample_vectors",
     "transform_vector_set",
 ]
+
+
+

@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any
 import networkx as nx
 import numpy as np
 
+from .vector_math import angle_degrees, scaled_positions
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -27,8 +29,12 @@ def calculate_branching_angles(
         start, next_idx = strand[0], strand[1]
         end, prev_idx = strand[-1], strand[-2]
 
-        vec_start = (vertex_positions_arr[next_idx] - vertex_positions_arr[start]) * scale
-        vec_end = (vertex_positions_arr[prev_idx] - vertex_positions_arr[end]) * scale
+        vec_start = scaled_positions(
+            vertex_positions_arr[next_idx] - vertex_positions_arr[start], scale
+        )
+        vec_end = scaled_positions(
+            vertex_positions_arr[prev_idx] - vertex_positions_arr[end], scale
+        )
 
         if start in bifurcation_ids:
             directions.setdefault(start, []).append(vec_start)
@@ -44,16 +50,7 @@ def calculate_branching_angles(
             for j in range(i + 1, len(valid_vectors)):
                 direction_vec_a = valid_vectors[i]
                 direction_vec_b = valid_vectors[j]
-                norm_a = np.linalg.norm(direction_vec_a)
-                norm_b = np.linalg.norm(direction_vec_b)
-                if norm_a == 0 or norm_b == 0:
-                    continue
-                cosang = np.clip(
-                    np.dot(direction_vec_a, direction_vec_b) / (norm_a * norm_b),
-                    -1.0,
-                    1.0,
-                )
-                angles.append(float(np.degrees(np.arccos(cosang))))
+                angles.append(angle_degrees(direction_vec_a, direction_vec_b))
 
     return angles
 
@@ -115,8 +112,8 @@ def _iter_segment_lengths_and_radii(
         if len(strand) < 2:
             continue
         for start_vertex, end_vertex in zip(strand, strand[1:]):
-            pos1 = vertex_positions[start_vertex] * scale
-            pos2 = vertex_positions[end_vertex] * scale
+            pos1 = scaled_positions(vertex_positions[start_vertex], scale)
+            pos2 = scaled_positions(vertex_positions[end_vertex], scale)
             length = float(np.linalg.norm(pos2 - pos1))
             radius = float(0.5 * (radii[start_vertex] + radii[end_vertex]))
             yield length, radius
@@ -202,8 +199,8 @@ def _network_graph_components(
         for idx in range(len(strand) - 1):
             start_idx = strand[idx]
             end_idx = strand[idx + 1]
-            pos1 = vertex_positions_arr[start_idx] * scale
-            pos2 = vertex_positions_arr[end_idx] * scale
+            pos1 = scaled_positions(vertex_positions_arr[start_idx], scale)
+            pos2 = scaled_positions(vertex_positions_arr[end_idx], scale)
             seg_length = np.linalg.norm(pos2 - pos1)
             strand_length += seg_length
             edge_lengths.append(float(seg_length))
@@ -211,7 +208,9 @@ def _network_graph_components(
             graph_obj.add_edge(start_idx, end_idx, weight=seg_length)
         strand_lengths.append(float(strand_length))
         euclidean = np.linalg.norm(
-            (vertex_positions_arr[strand[-1]] - vertex_positions_arr[strand[0]]) * scale
+            scaled_positions(
+                vertex_positions_arr[strand[-1]] - vertex_positions_arr[strand[0]], scale
+            )
         )
         if euclidean > 0:
             tortuosities.append(float(strand_length / euclidean))

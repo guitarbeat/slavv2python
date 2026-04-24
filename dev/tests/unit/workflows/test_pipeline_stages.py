@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 
 import pytest
-from slavv.workflows.pipeline_stages import (
+from source.workflows.pipeline_stages import (
     resolve_edges_stage,
     resolve_energy_stage,
     resolve_network_stage,
@@ -54,7 +54,7 @@ def test_resolve_stage_with_checkpoint_uses_resumable_helper(monkeypatch):
     compute_calls: list[object] = []
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_stages.resolve_resumable_stage",
+        "source.workflows.pipeline_stages.resolve_resumable_stage",
         lambda stage_controller, *, force_rerun, cached_log_label, compute_fn, **kwargs: (
             seen.append((stage_controller, force_rerun, cached_log_label)) or compute_fn()
         ),
@@ -87,7 +87,7 @@ def test_resolve_stage_with_checkpoint_marks_stage_failed_before_reraising(monke
     def boom(*args, **kwargs):
         raise RuntimeError("stage blew up")
 
-    monkeypatch.setattr("slavv.workflows.pipeline_stages.resolve_resumable_stage", boom)
+    monkeypatch.setattr("source.workflows.pipeline_stages.resolve_resumable_stage", boom)
 
     with pytest.raises(RuntimeError, match="stage blew up"):
         resolve_stage_with_checkpoint(
@@ -109,7 +109,7 @@ def test_resolve_energy_stage_uses_standard_stage_metadata(monkeypatch):
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_stages.resolve_stage_with_checkpoint",
+        "source.workflows.pipeline_stages.resolve_stage_with_checkpoint",
         lambda **kwargs: captured.update(kwargs) or {"stage": "energy"},
     )
 
@@ -132,7 +132,7 @@ def test_resolve_vertices_stage_uses_standard_stage_metadata(monkeypatch):
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_stages.resolve_stage_with_checkpoint",
+        "source.workflows.pipeline_stages.resolve_stage_with_checkpoint",
         lambda **kwargs: captured.update(kwargs) or {"stage": "vertices"},
     )
 
@@ -154,7 +154,7 @@ def test_resolve_edges_stage_selects_watershed_callbacks(monkeypatch):
     calls: list[str] = []
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_stages.resolve_stage_with_checkpoint",
+        "source.workflows.pipeline_stages.resolve_stage_with_checkpoint",
         lambda **kwargs: (
             captured.update(kwargs) or kwargs["fallback_fn"]() or kwargs["compute_fn"]("controller")
         ),
@@ -184,7 +184,7 @@ def test_resolve_network_stage_uses_standard_stage_metadata(monkeypatch):
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_stages.resolve_stage_with_checkpoint",
+        "source.workflows.pipeline_stages.resolve_stage_with_checkpoint",
         lambda **kwargs: captured.update(kwargs) or {"stage": "network"},
     )
 
@@ -199,3 +199,6 @@ def test_resolve_network_stage_uses_standard_stage_metadata(monkeypatch):
     assert result == {"stage": "network"}
     assert captured["stage_name"] == "network"
     assert captured["cached_log_label"] == "Network"
+
+
+

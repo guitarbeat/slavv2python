@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import streamlit as st
 
@@ -79,7 +79,7 @@ def show_home_page():
 
 
 def show_about_page():
-    """Display the about page with detailed information about SLAVV."""
+    """Display the about page with detailed information about source."""
     st.markdown('<h2 class="section-header">About SLAVV</h2>', unsafe_allow_html=True)
 
     st.markdown("""
@@ -109,3 +109,4 @@ def show_about_page():
 
     For more information or to cite this work, please refer to the project documentation.
     """)
+

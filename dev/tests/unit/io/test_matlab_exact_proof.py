@@ -1,4 +1,4 @@
-"""Unit tests for exact imported-MATLAB artifact proof helpers."""
+﻿"""Unit tests for exact imported-MATLAB artifact proof helpers."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.io import savemat
-from slavv.io.matlab_exact_proof import (
+from source.io.matlab_exact_proof import (
     compare_exact_artifacts,
     load_normalized_matlab_stage,
     sync_exact_vertex_checkpoint_from_matlab,
@@ -143,7 +143,7 @@ def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
 
 
 def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
-    from slavv.io.matlab_exact_proof import find_matlab_vector_paths
+    from source.io.matlab_exact_proof import find_matlab_vector_paths
 
     vectors_dir = tmp_path / "batch" / "vectors"
     vectors_dir.mkdir(parents=True, exist_ok=True)
@@ -361,3 +361,5 @@ def test_compare_exact_artifacts_reports_missing_field():
     assert report["passed"] is False
     assert report["first_failure"]["mismatch_type"] == "missing field"
     assert report["first_failure"]["field_path"] == "vertices.energies"
+
+

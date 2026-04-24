@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
-from slavv.models import (
+from source.models import (
     EdgeSet,
     EnergyResult,
     NetworkResult,
@@ -78,3 +78,5 @@ def test_normalize_pipeline_result_accepts_mapping_like_payloads():
     assert isinstance(result, PipelineResult)
     assert np.array_equal(result.vertices.to_dict()["positions"], payload["vertices"]["positions"])
     assert result.extra["metadata"] == {"source": "mapping"}
+
+

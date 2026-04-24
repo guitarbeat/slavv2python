@@ -32,7 +32,6 @@ WatershedCandidateRow: TypeAlias = tuple[
 _ALLOWED_WATERSHED_CANDIDATE_MODES = {
     "all_contacts",
     "remaining_origin_contacts",
-    "legacy_supplement",
     "origin_cap",
 }
 
@@ -49,6 +48,10 @@ def _parity_watershed_candidate_mode(params: dict[str, Any]) -> str | None:
         requested_mode = "all_contacts"
 
     normalized_mode = str(requested_mode).strip().lower()
+    # Keep backwards-compatible acceptance for the removed legacy mode while
+    # routing all behavior through the maintained contact-based path.
+    if normalized_mode == "legacy_supplement":
+        return "all_contacts"
     if normalized_mode not in _ALLOWED_WATERSHED_CANDIDATE_MODES:
         return "all_contacts"
     return normalized_mode

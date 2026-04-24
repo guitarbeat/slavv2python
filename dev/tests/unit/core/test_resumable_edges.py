@@ -1,9 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import joblib
 import numpy as np
-from slavv.core._edges import resumable as resumable_edges
-from slavv.runtime import RunContext
+from source.core._edges import resumable as resumable_edges
+from source.runtime import RunContext
 
 
 def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
@@ -215,3 +215,5 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     candidate_checkpoint = joblib.load(candidate_checkpoint_path)
     assert candidate_checkpoint["connections"].tolist() == [[0, 1]]
     assert candidate_checkpoint["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
+
+

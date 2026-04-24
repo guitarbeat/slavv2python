@@ -1,6 +1,6 @@
-import numpy as np
-from slavv.analysis import MLCurator
-from slavv.utils import calculate_path_length
+﻿import numpy as np
+from source.analysis import MLCurator
+from source.utils import calculate_path_length
 
 
 def test_vertex_edge_feature_enrichment():
@@ -29,3 +29,5 @@ def test_vertex_edge_feature_enrichment():
     assert np.isclose(e_feats[0][12], 2.0)  # end radius
     assert np.isclose(e_feats[0][14], calculate_path_length(edges["traces"][0]) / 1.5)
     assert np.isclose(e_feats[0][15], -1.0)
+
+

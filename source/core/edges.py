@@ -1,4 +1,4 @@
-"""Edge extraction orchestration for SLAVV."""
+﻿"""Edge extraction orchestration for source."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .vertices import paint_vertex_center_image
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from slavv.runtime import StageController
+    from source.runtime import StageController
 
 
 def _load_edge_units(
@@ -81,7 +81,7 @@ def extract_edges_resumable(
     stage_controller: StageController,
 ) -> dict[str, object]:
     """Trace edges with per-origin persisted units."""
-    from slavv.runtime.run_state import atomic_joblib_dump
+    from source.runtime.run_state import atomic_joblib_dump
 
     return cast(
         "dict[str, object]",
@@ -114,7 +114,7 @@ def extract_edges_watershed_resumable(
     stage_controller: StageController,
 ) -> dict[str, object]:
     """Extract watershed edges with per-label persisted units."""
-    from slavv.runtime.run_state import atomic_joblib_dump
+    from source.runtime.run_state import atomic_joblib_dump
 
     return cast(
         "dict[str, object]",
@@ -128,3 +128,6 @@ def extract_edges_watershed_resumable(
             empty_edge_diagnostics=_empty_edge_diagnostics,
         ),
     )
+
+
+

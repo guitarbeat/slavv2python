@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
 import numpy as np
 import pytest
-from slavv.workflows.pipeline_setup import (
+from source.workflows.pipeline_setup import (
     PreparedPipelineRun,
     create_run_context,
     effective_run_dir,
@@ -94,7 +94,7 @@ def test_initialize_run_context_writes_params_and_marks_running(monkeypatch):
     run_context = _DummyRunContext()
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.atomic_write_json",
+        "source.workflows.pipeline_setup.atomic_write_json",
         lambda path, payload: writes.append((path, payload)),
     )
 
@@ -135,7 +135,7 @@ def test_preprocess_image_marks_completion(monkeypatch):
     image = np.ones((2, 2, 2), dtype=np.float32)
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.utils.preprocess_image",
+        "source.workflows.pipeline_setup.utils.preprocess_image",
         lambda image_arg, parameters_arg: image_arg * 2,
     )
 
@@ -151,7 +151,7 @@ def test_preprocess_image_marks_failure_before_reraising(monkeypatch):
     def boom(_image, _parameters):
         raise RuntimeError("preprocess broke")
 
-    monkeypatch.setattr("slavv.workflows.pipeline_setup.utils.preprocess_image", boom)
+    monkeypatch.setattr("source.workflows.pipeline_setup.utils.preprocess_image", boom)
 
     with pytest.raises(RuntimeError, match="preprocess broke"):
         preprocess_image(np.ones((2, 2, 2), dtype=np.float32), {}, run_context)
@@ -163,19 +163,19 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
     run_context = _DummyRunContext()
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.utils.validate_parameters",
+        "source.workflows.pipeline_setup.utils.validate_parameters",
         lambda params: {"validated": True, **params},
     )
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.fingerprint_array",
+        "source.workflows.pipeline_setup.fingerprint_array",
         lambda image: "image-fingerprint",
     )
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.fingerprint_jsonable",
+        "source.workflows.pipeline_setup.fingerprint_jsonable",
         lambda params: "params-fingerprint",
     )
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.effective_run_dir",
+        "source.workflows.pipeline_setup.effective_run_dir",
         lambda run_dir, event_callback: "resolved-run-dir",
     )
 
@@ -204,7 +204,7 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
         return run_context
 
     monkeypatch.setattr(
-        "slavv.workflows.pipeline_setup.create_run_context", fake_create_run_context
+        "source.workflows.pipeline_setup.create_run_context", fake_create_run_context
     )
 
     prepared = prepare_pipeline_run(
@@ -243,3 +243,6 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
             "force_rerun_from": "vertices",
         }
     ]
+
+
+

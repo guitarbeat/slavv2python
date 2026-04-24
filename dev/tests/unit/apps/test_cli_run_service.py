@@ -1,10 +1,10 @@
-"""Tests for CLI run-command helpers."""
+﻿"""Tests for CLI run-command helpers."""
 
 from __future__ import annotations
 
 from types import SimpleNamespace
 
-from slavv.apps.cli_run_service import (
+from source.apps.cli_run_service import (
     build_exportable_network,
     build_run_completion_lines,
     filter_export_formats,
@@ -90,3 +90,5 @@ def test_build_run_completion_lines_includes_snapshot_lines():
         "status-b",
         "Done. Results in out",
     ]
+
+

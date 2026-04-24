@@ -1,5 +1,5 @@
-import numpy as np
-from slavv.analysis import (
+﻿import numpy as np
+from source.analysis import (
     evaluate_registration,
     get_edge_metric,
     get_edges_for_vertex,
@@ -113,3 +113,5 @@ def test_get_edges_for_vertex():
     assert sorted(get_edges_for_vertex(connections, 0)) == [0, 2]
     assert sorted(get_edges_for_vertex(connections, 1)) == [0, 1]
     assert len(get_edges_for_vertex(connections, 3)) == 0
+
+

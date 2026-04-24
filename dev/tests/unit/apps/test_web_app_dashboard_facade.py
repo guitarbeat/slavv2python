@@ -1,4 +1,4 @@
-import importlib
+﻿import importlib
 import sys
 import types
 import typing
@@ -26,11 +26,11 @@ def _install_fake_streamlit(monkeypatch):
 
 def test_web_app_dashboard_helpers_are_imported_from_sibling_module(monkeypatch):
     _install_fake_streamlit(monkeypatch)
-    sys.modules.pop("slavv.apps.web_app", None)
-    sys.modules.pop("slavv.apps.web_app_dashboard", None)
+    sys.modules.pop("source.apps.web_app", None)
+    sys.modules.pop("source.apps.web_app_dashboard", None)
 
-    web_app = importlib.import_module("slavv.apps.web_app")
-    dashboard = importlib.import_module("slavv.apps.web_app_dashboard")
+    web_app = importlib.import_module("source.apps.web_app")
+    dashboard = importlib.import_module("source.apps.web_app_dashboard")
 
     assert web_app.DASHBOARD_PLACEHOLDER == dashboard.DASHBOARD_PLACEHOLDER
     assert web_app.DASHBOARD_BREAKDOWN_SECTIONS == dashboard.DASHBOARD_BREAKDOWN_SECTIONS
@@ -41,7 +41,7 @@ def test_web_app_dashboard_helpers_are_imported_from_sibling_module(monkeypatch)
 
 
 def test_dashboard_pure_helpers_cover_filtering_and_backlog_cases():
-    dashboard = importlib.import_module("slavv.apps.web_app_dashboard")
+    dashboard = importlib.import_module("source.apps.web_app_dashboard")
 
     frame = pd.DataFrame(
         [
@@ -71,3 +71,4 @@ def test_dashboard_pure_helpers_cover_filtering_and_backlog_cases():
         release_url="https://release.example",
     )
     assert "Export success rate" in backlog["Metric"].tolist()
+

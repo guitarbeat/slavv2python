@@ -1,10 +1,11 @@
-import numpy as np
-from slavv.core._edge_candidates.generate import _generate_edge_candidates
-from slavv.core._edge_candidates.watershed_candidates import (
+﻿import numpy as np
+from source.core._edge_candidates.generate import _generate_edge_candidates
+from source.core._edge_candidates.watershed_candidates import (
     _augment_candidates_with_watershed_contacts,
     _build_watershed_candidate_rows,
+    _parity_watershed_candidate_mode,
 )
-from slavv.core._edge_payloads import _empty_edge_diagnostics
+from source.core._edge_payloads import _empty_edge_diagnostics
 
 
 def test_build_watershed_candidate_rows_tracks_common_rejections_and_preserves_pair_order():
@@ -83,7 +84,7 @@ def test_augment_candidates_with_watershed_contacts_appends_missing_pairs_and_tr
         }
 
     monkeypatch.setattr(
-        "slavv.core._edge_candidates.watershed_candidates._build_watershed_candidate_rows",
+        "source.core._edge_candidates.watershed_candidates._build_watershed_candidate_rows",
         fake_build_rows,
     )
 
@@ -145,7 +146,7 @@ def test_augment_candidates_with_watershed_contacts_respects_remaining_origin_bu
         }
 
     monkeypatch.setattr(
-        "slavv.core._edge_candidates.watershed_candidates._build_watershed_candidate_rows",
+        "source.core._edge_candidates.watershed_candidates._build_watershed_candidate_rows",
         fake_build_rows,
     )
 
@@ -214,11 +215,11 @@ def test_generate_edge_candidates_applies_watershed_supplement_for_exact_network
         return {"connections": np.array([[0, 1], [0, 2]], dtype=np.int32)}
 
     monkeypatch.setattr(
-        "slavv.core._edge_candidates.generate._trace_fallback_origin_candidates",
+        "source.core._edge_candidates.generate._trace_fallback_origin_candidates",
         fake_trace_origin,
     )
     monkeypatch.setattr(
-        "slavv.core._edge_candidates.generate._augment_candidates_with_watershed_contacts",
+        "source.core._edge_candidates.generate._augment_candidates_with_watershed_contacts",
         fake_augment,
     )
 
@@ -248,3 +249,18 @@ def test_generate_edge_candidates_applies_watershed_supplement_for_exact_network
         "candidate_mode": "all_contacts",
         "metric_threshold": -3.5,
     }
+
+
+def test_parity_watershed_candidate_mode_maps_legacy_mode_to_all_contacts():
+    assert (
+        _parity_watershed_candidate_mode(
+            {
+                "comparison_exact_network": True,
+                "parity_watershed_candidate_mode": "legacy_supplement",
+            }
+        )
+        == "all_contacts"
+    )
+
+
+

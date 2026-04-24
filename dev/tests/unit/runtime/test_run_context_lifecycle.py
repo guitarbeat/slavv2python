@@ -1,11 +1,11 @@
-"""Tests for structured run-context lifecycle behavior."""
+﻿"""Tests for structured run-context lifecycle behavior."""
 
 from __future__ import annotations
 
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
-from slavv.runtime import RunContext, load_run_snapshot
-from slavv.runtime.run_state import (
+from source.runtime import RunContext, load_run_snapshot
+from source.runtime.run_state import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
     target_stage_progress,
@@ -76,3 +76,5 @@ def test_stage_controller_rejects_unknown_stage(tmp_path):
 
     with pytest.raises(ValueError, match="stage must be one of"):
         context.stage("preprocess")
+
+

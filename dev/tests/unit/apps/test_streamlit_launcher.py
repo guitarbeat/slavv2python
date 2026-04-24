@@ -1,11 +1,11 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import subprocess
 import sys
 from contextlib import contextmanager
 from pathlib import Path
 
-from slavv.apps import streamlit_launcher
+from source.apps import streamlit_launcher
 
 
 def test_main_reports_missing_streamlit(monkeypatch, capsys):
@@ -67,3 +67,5 @@ def test_build_env_overrides_incompatible_console_encoding(monkeypatch):
 
     assert env["PYTHONIOENCODING"] == "utf-8"
     assert env["PYTHONUTF8"] == "1"
+
+

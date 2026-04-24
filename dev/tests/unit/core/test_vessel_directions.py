@@ -1,7 +1,7 @@
-from unittest.mock import patch
+﻿from unittest.mock import patch
 
 import numpy as np
-from slavv.core.edge_primitives import estimate_vessel_directions
+from source.core.edge_primitives import estimate_vessel_directions
 
 
 def test_estimate_vessel_directions_axis_aligned():
@@ -18,7 +18,7 @@ def test_estimate_vessel_directions_axis_aligned():
 
 
 @patch(
-    "slavv.core.edge_primitives.generate_edge_directions",
+    "source.core.edge_primitives.generate_edge_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_fallback(mock_generate_directions):
@@ -46,7 +46,7 @@ def test_estimate_vessel_directions_anisotropic_spacing():
 
 
 @patch(
-    "slavv.core.edge_primitives.generate_edge_directions",
+    "source.core.edge_primitives.generate_edge_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):
@@ -57,3 +57,6 @@ def test_estimate_vessel_directions_isotropic_hessian(mock_generate_directions):
     )
     expected = mock_generate_directions.return_value
     assert np.allclose(dirs, expected)
+
+
+

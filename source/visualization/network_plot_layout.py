@@ -84,26 +84,6 @@ def plot_3d_layout(
     return layout
 
 
-def plot_3d_scene_layout(
-    title: str,
-    *,
-    showlegend: bool,
-    width: int = 800,
-    height: int = 600,
-    updatemenus: list[dict[str, Any]] | None = None,
-    sliders: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
-    """Backward-compatible shared layout helper for 3D scene figures."""
-    return plot_3d_layout(
-        title,
-        showlegend=showlegend,
-        width=width,
-        height=height,
-        updatemenus=updatemenus,
-        sliders=sliders,
-    )
-
-
 def distribution_layout(
     title: str,
     xaxis_title: str,
@@ -122,31 +102,6 @@ def distribution_layout(
         "width": width,
         "height": height,
     }
-
-
-def figure_layout(
-    title: str,
-    *,
-    xaxis_title: str | None = None,
-    yaxis_title: str | None = None,
-    showlegend: bool = False,
-    width: int,
-    height: int,
-) -> dict[str, Any]:
-    """Backward-compatible shared helper for simple figure layouts."""
-    layout = distribution_layout(
-        title,
-        xaxis_title or "",
-        yaxis_title or "",
-        showlegend=showlegend,
-        width=width,
-        height=height,
-    )
-    if xaxis_title is None:
-        layout.pop("xaxis_title")
-    if yaxis_title is None:
-        layout.pop("yaxis_title")
-    return layout
 
 
 def summary_dashboard_layout() -> dict[str, Any]:
