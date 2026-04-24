@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.analysis import AutomaticCurator
 
 

@@ -7,7 +7,6 @@ from typing import cast
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-
 from slavv.analysis import AutomaticCurator, MLCurator
 from slavv.apps import curation_services
 from slavv.apps.curation_state import (

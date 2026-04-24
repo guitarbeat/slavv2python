@@ -171,7 +171,9 @@ def _augment_candidates_with_watershed_contacts(
         origin_index_int = int(origin_index)
         if origin_index_int < 0:
             continue
-        existing_origin_counts[origin_index_int] = existing_origin_counts.get(origin_index_int, 0) + 1
+        existing_origin_counts[origin_index_int] = (
+            existing_origin_counts.get(origin_index_int, 0) + 1
+        )
 
     candidate_rows.sort(key=lambda row: (row[4], row[5]))
     supplement_traces: list[np.ndarray] = []
@@ -187,7 +189,10 @@ def _augment_candidates_with_watershed_contacts(
         origin_index = int(pair[0])
         if candidate_mode == "remaining_origin_contacts":
             remaining_budget = max_edges_per_vertex - existing_origin_counts.get(origin_index, 0)
-            if remaining_budget <= 0 or origin_added_counts.get(origin_index, 0) >= remaining_budget:
+            if (
+                remaining_budget <= 0
+                or origin_added_counts.get(origin_index, 0) >= remaining_budget
+            ):
                 origin_budget_rejected += 1
                 continue
         elif candidate_mode == "origin_cap":
@@ -206,8 +211,7 @@ def _augment_candidates_with_watershed_contacts(
     supplement_diagnostics: dict[str, Any] = {
         "watershed_join_supplement_count": len(supplement_connections),
         "watershed_per_origin_candidate_counts": {
-            int(origin_index): int(count)
-            for origin_index, count in origin_added_counts.items()
+            int(origin_index): int(count) for origin_index, count in origin_added_counts.items()
         },
         "watershed_origin_budget_rejected": origin_budget_rejected,
         "watershed_accepted": len(supplement_connections),

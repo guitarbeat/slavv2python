@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.core._edges.bridge_vertices import (
     _matlab_bridge_search_target,
     add_vertices_to_edges_matlab_style,
@@ -27,7 +26,13 @@ def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_par
     chosen_edges = {
         "traces": [
             np.array(
-                [[1.0, 3.0, 1.0], [2.0, 3.0, 1.0], [3.0, 3.0, 1.0], [4.0, 3.0, 1.0], [5.0, 3.0, 1.0]],
+                [
+                    [1.0, 3.0, 1.0],
+                    [2.0, 3.0, 1.0],
+                    [3.0, 3.0, 1.0],
+                    [4.0, 3.0, 1.0],
+                    [5.0, 3.0, 1.0],
+                ],
                 dtype=np.float32,
             ),
             np.array([[3.0, 5.0, 1.0], [3.0, 4.0, 1.0], [3.0, 3.0, 1.0]], dtype=np.float32),
@@ -57,7 +62,9 @@ def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_par
         size_of_image=energy.shape,
     )
 
-    assert np.allclose(bridged["bridge_vertex_positions"], np.array([[2.0, 3.0, 1.0]], dtype=np.float32))
+    assert np.allclose(
+        bridged["bridge_vertex_positions"], np.array([[2.0, 3.0, 1.0]], dtype=np.float32)
+    )
     assert bridged["bridge_vertex_scales"].tolist() == [0]
     assert np.allclose(bridged["bridge_vertex_energies"], np.array([-9.0], dtype=np.float32))
     assert sorted(bridged["connections"].tolist()) == [[0, 3], [2, 3], [3, 1]]
@@ -68,7 +75,9 @@ def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_par
         bridged["bridge_edges"]["traces"][0],
         np.array([[3.0, 3.0, 1.0], [2.0, 3.0, 1.0]], dtype=np.float32),
     )
-    assert np.allclose(bridged["bridge_edges"]["mean_edge_energies"], np.array([-9.5], dtype=np.float32))
+    assert np.allclose(
+        bridged["bridge_edges"]["mean_edge_energies"], np.array([-9.5], dtype=np.float32)
+    )
     assert np.allclose(bridged["bridge_edges"]["energies"], np.array([-9.5], dtype=np.float32))
     assert bridged["diagnostics"]["bridge_vertex_count"] == 1
     assert bridged["diagnostics"]["bridge_edge_count"] == 1
@@ -152,7 +161,11 @@ def test_matlab_bridge_search_target_can_turn_through_branch_to_existing_vertex(
     target = _matlab_bridge_search_target(
         overlap_linear_index=int(4 + 4 * energy.shape[0] + 1 * energy.shape[0] * energy.shape[1]),
         traces=[parent_trace, branch_trace, child_trace],
-        scale_traces=[np.zeros((5,), dtype=np.float32), np.zeros((3,), dtype=np.float32), np.zeros((3,), dtype=np.float32)],
+        scale_traces=[
+            np.zeros((5,), dtype=np.float32),
+            np.zeros((3,), dtype=np.float32),
+            np.zeros((3,), dtype=np.float32),
+        ],
         child_edges=[(2, 2)],
         scale_indices=scale_indices,
         energy=energy,
@@ -190,7 +203,13 @@ def test_add_vertices_to_edges_matlab_style_has_no_parent_half_fallback(monkeypa
     chosen_edges = {
         "traces": [
             np.array(
-                [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [2.0, 0.0, 0.0], [3.0, 0.0, 0.0], [4.0, 0.0, 0.0]],
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [2.0, 0.0, 0.0],
+                    [3.0, 0.0, 0.0],
+                    [4.0, 0.0, 0.0],
+                ],
                 dtype=np.float32,
             ),
             np.array([[2.0, 2.0, 0.0], [2.0, 1.0, 0.0], [2.0, 0.0, 0.0]], dtype=np.float32),
@@ -252,11 +271,20 @@ def test_add_vertices_to_edges_matlab_style_ignores_unrelated_edges_during_bridg
     chosen_edges = {
         "traces": [
             np.array(
-                [[1.0, 3.0, 1.0], [2.0, 3.0, 1.0], [3.0, 3.0, 1.0], [4.0, 3.0, 1.0], [5.0, 3.0, 1.0]],
+                [
+                    [1.0, 3.0, 1.0],
+                    [2.0, 3.0, 1.0],
+                    [3.0, 3.0, 1.0],
+                    [4.0, 3.0, 1.0],
+                    [5.0, 3.0, 1.0],
+                ],
                 dtype=np.float32,
             ),
             np.array([[3.0, 5.0, 1.0], [3.0, 4.0, 1.0], [3.0, 3.0, 1.0]], dtype=np.float32),
-            np.array([[1.0, 6.0, 1.0], [2.0, 5.0, 1.0], [3.0, 4.0, 1.0], [4.0, 6.0, 1.0]], dtype=np.float32),
+            np.array(
+                [[1.0, 6.0, 1.0], [2.0, 5.0, 1.0], [3.0, 4.0, 1.0], [4.0, 6.0, 1.0]],
+                dtype=np.float32,
+            ),
         ],
         "scale_traces": [
             np.zeros((5,), dtype=np.float32),
@@ -285,7 +313,9 @@ def test_add_vertices_to_edges_matlab_style_ignores_unrelated_edges_during_bridg
         size_of_image=energy.shape,
     )
 
-    assert np.allclose(bridged["bridge_vertex_positions"], np.array([[2.0, 3.0, 1.0]], dtype=np.float32))
+    assert np.allclose(
+        bridged["bridge_vertex_positions"], np.array([[2.0, 3.0, 1.0]], dtype=np.float32)
+    )
     assert [3, 4] in bridged["connections"].tolist()
     assert all(
         not np.any(np.all(np.isclose(trace, np.array([3.0, 4.0, 1.0], dtype=np.float32)), axis=1))

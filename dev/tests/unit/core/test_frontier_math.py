@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 
 import numpy as np
-
 from slavv.core._edge_candidates.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,

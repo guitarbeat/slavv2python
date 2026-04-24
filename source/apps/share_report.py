@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from plotly.io import to_html
-
 from slavv.analysis import calculate_network_statistics
 from slavv.models import normalize_pipeline_result
 from slavv.visualization import NetworkVisualizer

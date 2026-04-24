@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
-
 from slavv.apps.processing_state import (
     build_processing_run_dir,
     load_processing_snapshot,
@@ -40,8 +39,9 @@ def test_load_processing_snapshot_uses_snapshot_loader():
 
     snapshot = load_processing_snapshot(
         {"current_run_dir": "run-dir"},
-        snapshot_loader=lambda run_dir: seen_run_dirs.append(run_dir)
-        or RunSnapshot(run_id="run-123", stages={}),
+        snapshot_loader=lambda run_dir: (
+            seen_run_dirs.append(run_dir) or RunSnapshot(run_id="run-123", stages={})
+        ),
     )
 
     assert seen_run_dirs == ["run-dir"]

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
-
 from slavv.workflows.pipeline_results import (
     finalize_pipeline_results,
     stop_after_stage_if_requested,

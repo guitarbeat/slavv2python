@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-
 from slavv.apps.analysis_state import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
@@ -70,9 +69,7 @@ def show_analysis_page() -> None:
             "Mean Radius", f"{stats.get('mean_radius', 0):.2f} um", help="Average vessel radius"
         )
 
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["Distributions", "Topology", "Morphometry", "Statistics"]
-    )
+    tab1, tab2, tab3, tab4 = st.tabs(["Distributions", "Topology", "Morphometry", "Statistics"])
     visualizer = NetworkVisualizer()
 
     with tab1:

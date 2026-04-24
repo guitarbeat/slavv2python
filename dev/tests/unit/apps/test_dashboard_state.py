@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
-
 from slavv.apps.dashboard_state import (
     load_dashboard_context,
     normalize_dashboard_results,

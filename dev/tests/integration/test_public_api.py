@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 import slavv.core as core
 from slavv.core import SLAVVProcessor
 from slavv.utils import validate_parameters

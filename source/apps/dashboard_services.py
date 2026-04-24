@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
-
 from slavv.runtime.run_state import target_stage_progress
 
 from .web_app_dashboard import DASHBOARD_STAGE_ORDER

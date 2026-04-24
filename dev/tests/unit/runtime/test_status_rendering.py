@@ -5,7 +5,6 @@ from __future__ import annotations
 import calendar
 
 from dev.tests.support.run_state_builders import build_run_context
-
 from slavv.runtime import RunContext
 from slavv.runtime.run_state import build_status_lines
 

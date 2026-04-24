@@ -4,7 +4,6 @@ import importlib
 
 import numpy as np
 import pytest
-
 from slavv.visualization import napari_curator
 
 

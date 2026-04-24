@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.core._edge_selection.cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,

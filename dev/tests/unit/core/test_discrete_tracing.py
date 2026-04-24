@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.core.edge_primitives import trace_edge
 
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.analysis.ml_curator_features import compute_local_gradient, feature_importance, in_bounds
 
 

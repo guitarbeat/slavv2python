@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.neural_network import MLPClassifier
-
 from slavv.analysis import MLCurator
 
 

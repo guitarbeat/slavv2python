@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
-
 from slavv.apps.analysis_state import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,

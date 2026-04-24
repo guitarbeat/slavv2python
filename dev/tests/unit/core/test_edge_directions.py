@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from slavv.core.edge_primitives import generate_edge_directions
 
 

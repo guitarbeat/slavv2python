@@ -1,7 +1,6 @@
 from pstats import Stats
 
 import numpy as np
-
 from slavv.utils.profiling import profile_process_image
 
 

@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from slavv.core import SLAVVProcessor
 from slavv.core._edge_selection.cleanup import clean_edges_cycles_python
 from slavv.core.edge_primitives import _finalize_traced_edge

@@ -8,15 +8,16 @@ import pandas as pd
 
 def _install_fake_streamlit(monkeypatch):
     fake_streamlit = types.SimpleNamespace(
-        cache_data=lambda *args, **kwargs: (lambda func: func),
-        dialog=lambda *args, **kwargs: (lambda func: func),
-        fragment=lambda *args, **kwargs: (lambda func: func),
+        cache_data=lambda *args, **kwargs: lambda func: func,
+        dialog=lambda *args, **kwargs: lambda func: func,
+        fragment=lambda *args, **kwargs: lambda func: func,
         set_page_config=lambda *args, **kwargs: None,
         html=lambda *args, **kwargs: None,
         session_state={},
     )
     monkeypatch.setitem(sys.modules, "streamlit", fake_streamlit)
     if not hasattr(typing, "TypedDict"):
+
         class TypedDict(dict):
             pass
 

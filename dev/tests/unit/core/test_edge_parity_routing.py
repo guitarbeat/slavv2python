@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import cast
 
 import numpy as np
-
 from slavv.core._edge_candidates.candidate_manifest import _append_candidate_unit
 from slavv.core._edge_candidates.common import _use_matlab_frontier_tracer
 from slavv.core._edges import standard as standard_edges

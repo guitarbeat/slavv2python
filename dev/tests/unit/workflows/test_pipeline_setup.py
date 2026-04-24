@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 from slavv.workflows.pipeline_setup import (
     PreparedPipelineRun,
     create_run_context,
@@ -204,7 +203,9 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
         )
         return run_context
 
-    monkeypatch.setattr("slavv.workflows.pipeline_setup.create_run_context", fake_create_run_context)
+    monkeypatch.setattr(
+        "slavv.workflows.pipeline_setup.create_run_context", fake_create_run_context
+    )
 
     prepared = prepare_pipeline_run(
         np.ones((2, 3, 4), dtype=np.float32),

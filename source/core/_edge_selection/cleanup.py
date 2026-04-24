@@ -38,9 +38,10 @@ def clean_edges_vertex_degree_excess_python(
         shape=(n_vertices, n_vertices),
         dtype=bool,
     )
-    vertex_degrees = np.asarray(adjacency_matrix.sum(axis=0)).ravel() + np.asarray(
-        adjacency_matrix.sum(axis=1)
-    ).ravel()
+    vertex_degrees = (
+        np.asarray(adjacency_matrix.sum(axis=0)).ravel()
+        + np.asarray(adjacency_matrix.sum(axis=1)).ravel()
+    )
     vertex_excess_degrees = vertex_degrees - int(max_edges_per_vertex)
     vertices_of_excess_degree = np.flatnonzero(vertex_excess_degrees > 0)
     if vertices_of_excess_degree.size == 0:
@@ -113,14 +114,18 @@ def clean_edges_orphans_python(
             np.full(edge_locations.shape, edge_index + 1, dtype=np.int32)
             for edge_index, edge_locations in enumerate(active_edge_locations)
         ]
-        interior_edge_locations = np.concatenate(
-            [
-                edge_locations[1:-1]
-                for edge_locations in active_edge_locations
-                if edge_locations.size > 2
-            ],
-            axis=0,
-        ) if any(edge_locations.size > 2 for edge_locations in active_edge_locations) else np.zeros((0,), dtype=np.int64)
+        interior_edge_locations = (
+            np.concatenate(
+                [
+                    edge_locations[1:-1]
+                    for edge_locations in active_edge_locations
+                    if edge_locations.size > 2
+                ],
+                axis=0,
+            )
+            if any(edge_locations.size > 2 for edge_locations in active_edge_locations)
+            else np.zeros((0,), dtype=np.int64)
+        )
         exterior_edge_locations = np.concatenate(
             [edge_locations[[0, -1]] for edge_locations in active_edge_locations],
             axis=0,
@@ -129,7 +134,9 @@ def clean_edges_orphans_python(
             [edge_indices[[0, -1]] for edge_indices in edge_index_lut],
             axis=0,
         )
-        union_locations = np.union1d(interior_edge_locations, np.fromiter(vertex_locations, dtype=np.int64))
+        union_locations = np.union1d(
+            interior_edge_locations, np.fromiter(vertex_locations, dtype=np.int64)
+        )
         unique_exterior_locations, unique_exterior_indices = np.unique(
             exterior_edge_locations,
             return_index=True,

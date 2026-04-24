@@ -4,7 +4,6 @@ import json
 
 import numpy as np
 import pytest
-
 from slavv.apps.cli import (
     _build_cli_parser,
     _build_export_artifacts,

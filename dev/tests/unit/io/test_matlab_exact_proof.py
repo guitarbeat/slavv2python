@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.io import savemat
-
 from slavv.io.matlab_exact_proof import (
     compare_exact_artifacts,
     load_normalized_matlab_stage,
@@ -198,7 +197,9 @@ def test_sync_exact_vertex_checkpoint_from_matlab_overwrites_parity_fields(tmp_p
     _write_mat(
         vectors_dir / "curated_vertices_1.mat",
         {
-            "vertex_space_subscripts": np.array([[4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], dtype=np.float64),
+            "vertex_space_subscripts": np.array(
+                [[4.0, 5.0, 6.0], [7.0, 8.0, 9.0]], dtype=np.float64
+            ),
             "vertex_scale_subscripts": np.array([3, 5], dtype=np.int16),
             "vertex_energies": np.array([-9.0, -7.0], dtype=np.float64),
         },

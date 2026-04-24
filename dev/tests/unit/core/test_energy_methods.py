@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import numpy.testing as npt
 import pytest
-
 from slavv.core import SLAVVProcessor
 from slavv.core import energy as energy_module
 from slavv.core._energy import backends as energy_backends

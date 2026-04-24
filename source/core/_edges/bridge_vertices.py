@@ -174,7 +174,9 @@ def _matlab_bridge_search_target(
             edge_size_map[coords[:, 0], coords[:, 1], coords[:, 2]] = rounded_scales
 
     for child_edge_index, _overlap_position in child_edges:
-        child_coords = np.rint(np.asarray(traces[child_edge_index], dtype=np.float32)[:, :3]).astype(
+        child_coords = np.rint(
+            np.asarray(traces[child_edge_index], dtype=np.float32)[:, :3]
+        ).astype(
             np.int32,
             copy=False,
         )
@@ -199,8 +201,8 @@ def _matlab_bridge_search_target(
     )
     if len(lumen_radius_microns) == 0:
         return None
-    max_edge_length_in_microns = (
-        float(max_edge_length_per_origin_radius) * float(lumen_radius_microns[current_scale_index])
+    max_edge_length_in_microns = float(max_edge_length_per_origin_radius) * float(
+        lumen_radius_microns[current_scale_index]
     )
     max_edge_length_in_voxels = int(
         round(float(np.max(max_edge_length_in_microns / microns_per_voxel))) + 1
@@ -353,7 +355,9 @@ def _matlab_bridge_search_target(
         else:
             current_scale = int(
                 np.clip(
-                    edge_size_map[int(current_coord[0]), int(current_coord[1]), int(current_coord[2])],
+                    edge_size_map[
+                        int(current_coord[0]), int(current_coord[1]), int(current_coord[2])
+                    ],
                     0,
                     max(len(lumen_radius_microns) - 1, 0),
                 )
@@ -455,15 +459,24 @@ def add_vertices_to_edges_matlab_style(
         active_edge_indices = [
             edge_index
             for edge_index, edge_indices_at_edge in enumerate(edge_index_cells)
-            if any(int(linear_index) in overlap_index_set for linear_index in edge_indices_at_edge.tolist())
+            if any(
+                int(linear_index) in overlap_index_set
+                for linear_index in edge_indices_at_edge.tolist()
+            )
         ]
         inactive_edge_indices = [
-            edge_index for edge_index in range(len(traces)) if edge_index not in set(active_edge_indices)
+            edge_index
+            for edge_index in range(len(traces))
+            if edge_index not in set(active_edge_indices)
         ]
         if inactive_edge_indices:
             inactive_traces = [traces[edge_index] for edge_index in inactive_edge_indices]
-            inactive_scale_traces = [scale_traces[edge_index] for edge_index in inactive_edge_indices]
-            inactive_energy_traces = [energy_traces[edge_index] for edge_index in inactive_edge_indices]
+            inactive_scale_traces = [
+                scale_traces[edge_index] for edge_index in inactive_edge_indices
+            ]
+            inactive_energy_traces = [
+                energy_traces[edge_index] for edge_index in inactive_edge_indices
+            ]
             inactive_connection_sources = [
                 connection_sources[edge_index] for edge_index in inactive_edge_indices
             ]
@@ -573,7 +586,9 @@ def add_vertices_to_edges_matlab_style(
             for child_edge_index, _overlap_position in child_edges:
                 connections[child_edge_index, 1] = target_vertex_index
 
-            parent_indices_desc = sorted({edge_index for edge_index, _ in parent_edges}, reverse=True)
+            parent_indices_desc = sorted(
+                {edge_index for edge_index, _ in parent_edges}, reverse=True
+            )
             replacement_traces: list[np.ndarray] = []
             replacement_scale_traces: list[np.ndarray] = []
             replacement_energy_traces: list[np.ndarray] = []
@@ -625,14 +640,18 @@ def add_vertices_to_edges_matlab_style(
                     if parent_edge_index < len(chosen_candidate_indices)
                     else -1
                 )
-                replacement_candidate_indices.extend([parent_candidate_index, parent_candidate_index])
+                replacement_candidate_indices.extend(
+                    [parent_candidate_index, parent_candidate_index]
+                )
 
                 del traces[parent_edge_index]
                 del scale_traces[parent_edge_index]
                 del energy_traces[parent_edge_index]
                 connections = np.delete(connections, parent_edge_index, axis=0)
                 del connection_sources[parent_edge_index]
-                chosen_candidate_indices = np.delete(chosen_candidate_indices, parent_edge_index, axis=0)
+                chosen_candidate_indices = np.delete(
+                    chosen_candidate_indices, parent_edge_index, axis=0
+                )
 
             traces.extend(replacement_traces)
             scale_traces.extend(replacement_scale_traces)
@@ -661,7 +680,9 @@ def add_vertices_to_edges_matlab_style(
         energy_traces = inactive_energy_traces + energy_traces
         connection_sources = inactive_connection_sources + connection_sources
         connections = np.vstack([inactive_connections, connections]).astype(np.int32, copy=False)
-        chosen_candidate_indices = np.concatenate([inactive_candidate_indices, chosen_candidate_indices])
+        chosen_candidate_indices = np.concatenate(
+            [inactive_candidate_indices, chosen_candidate_indices]
+        )
 
     bridge_mean_energies = np.asarray(
         [
@@ -696,7 +717,9 @@ def add_vertices_to_edges_matlab_style(
         diagnostics,
     )
     if chosen_candidate_indices.size:
-        rebuilt["chosen_candidate_indices"] = chosen_candidate_indices[np.asarray(keep_indices, dtype=np.int32)]
+        rebuilt["chosen_candidate_indices"] = chosen_candidate_indices[
+            np.asarray(keep_indices, dtype=np.int32)
+        ]
     else:
         rebuilt["chosen_candidate_indices"] = np.asarray(keep_indices, dtype=np.int32)
     rebuilt["bridge_vertex_positions"] = (

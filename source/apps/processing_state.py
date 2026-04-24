@@ -39,7 +39,9 @@ def summarize_processing_metrics(processing_results: Mapping[str, Any]) -> dict[
     """Return lightweight post-run counts for processing-page metrics."""
     typed_result = normalize_pipeline_result(processing_results)
     return {
-        "vertices": len(typed_result.vertices.positions) if typed_result.vertices is not None else 0,
+        "vertices": len(typed_result.vertices.positions)
+        if typed_result.vertices is not None
+        else 0,
         "edges": len(typed_result.edges.traces) if typed_result.edges is not None else 0,
         "strands": len(typed_result.network.strands) if typed_result.network is not None else 0,
         "bifurcations": len(typed_result.network.bifurcations)

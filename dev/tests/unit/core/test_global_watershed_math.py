@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.core._edge_candidates.generate import _finalize_matlab_parity_candidates
 from slavv.core._edge_candidates.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.core.edge_selection import _choose_edges_matlab_style
 
 

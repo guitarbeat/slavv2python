@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.utils import get_chunking_lattice
 
 

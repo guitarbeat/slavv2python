@@ -88,9 +88,13 @@ def _snapshot_endpoint_influences_matlab(
     """Snapshot and clear MATLAB endpoint influences as one concatenated coordinate list."""
     if not endpoint_coord_groups:
         empty: np.ndarray = np.zeros((0, 3), dtype=np.int32)
-        return empty, np.zeros((0,), dtype=painted_image.dtype), np.zeros(
-            (0,),
-            dtype=painted_source_image.dtype,
+        return (
+            empty,
+            np.zeros((0,), dtype=painted_image.dtype),
+            np.zeros(
+                (0,),
+                dtype=painted_source_image.dtype,
+            ),
         )
 
     combined_coords = np.concatenate(endpoint_coord_groups, axis=0).astype(np.int32, copy=False)

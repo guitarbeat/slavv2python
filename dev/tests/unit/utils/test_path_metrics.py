@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.utils import calculate_path_length
 
 

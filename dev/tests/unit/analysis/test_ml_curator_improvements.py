@@ -2,7 +2,6 @@ import json
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
-
 from slavv.analysis.ml_curator import DrewsCurator, MLCurator
 
 

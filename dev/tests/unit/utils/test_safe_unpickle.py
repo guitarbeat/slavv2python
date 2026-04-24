@@ -2,7 +2,6 @@ import pickle
 
 import numpy as np
 import pytest
-
 from slavv.utils.safe_unpickle import safe_load
 
 

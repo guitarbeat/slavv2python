@@ -30,7 +30,10 @@ def test_build_status_output_lines_uses_status_line_builder():
 
     lines = build_status_output_lines(
         snapshot,
-        status_line_builder=lambda current_snapshot: ["line-a", f"same:{current_snapshot is snapshot}"],
+        status_line_builder=lambda current_snapshot: [
+            "line-a",
+            f"same:{current_snapshot is snapshot}",
+        ],
     )
 
     assert lines == ["line-a", "same:True"]

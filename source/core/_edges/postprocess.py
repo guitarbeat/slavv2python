@@ -14,7 +14,7 @@ def _matlab_edge_endpoint_energy(edge_energy_trace: np.ndarray) -> float:
         return float("nan")
     endpoint_product = np.float32(trace[-1] * trace[0])
     with np.errstate(invalid="ignore"):
-        endpoint_magnitude = np.float32(endpoint_product**np.float32(0.5))
+        endpoint_magnitude = np.float32(endpoint_product ** np.float32(0.5))
     return float(-endpoint_magnitude)
 
 
@@ -41,9 +41,9 @@ def normalize_edges_matlab_style(chosen_edges: dict[str, Any]) -> dict[str, Any]
             (-trace / endpoint_energies[index]).astype(np.float32, copy=False)
             for index, trace in enumerate(energy_traces)
         ]
-        normalized_energies = (
-            -raw_energies / endpoint_energies[: len(raw_energies)]
-        ).astype(np.float32, copy=False)
+        normalized_energies = (-raw_energies / endpoint_energies[: len(raw_energies)]).astype(
+            np.float32, copy=False
+        )
     normalized_energies[np.isnan(normalized_energies)] = -np.inf
 
     chosen_edges["raw_energies"] = raw_energies
@@ -118,8 +118,7 @@ def prefilter_edge_indices_for_cleanup_matlab_style(
         return [], 0
 
     edge_space_traces = [
-        np.asarray(traces[index], dtype=np.float32).copy()
-        for index in candidate_indices
+        np.asarray(traces[index], dtype=np.float32).copy() for index in candidate_indices
     ]
     edge_scale_traces = [
         np.asarray(scale_traces[index], dtype=np.float32).reshape(-1).copy()

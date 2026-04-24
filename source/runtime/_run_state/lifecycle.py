@@ -53,7 +53,9 @@ def begin_stage_snapshot(
     stage_snapshot.units_completed = units_completed
     stage_snapshot.resumed = resumed or stage_snapshot.resumed
     if stage_snapshot.units_total > 0:
-        stage_snapshot.progress = min(1.0, stage_snapshot.units_completed / stage_snapshot.units_total)
+        stage_snapshot.progress = min(
+            1.0, stage_snapshot.units_completed / stage_snapshot.units_total
+        )
     snapshot.current_stage = stage
     snapshot.status = STATUS_RUNNING
     snapshot.last_event = detail or f"Running {stage}"
@@ -88,7 +90,9 @@ def update_stage_snapshot(
     if progress is not None:
         stage_snapshot.progress = max(0.0, min(1.0, progress))
     elif stage_snapshot.units_total > 0:
-        stage_snapshot.progress = min(1.0, stage_snapshot.units_completed / stage_snapshot.units_total)
+        stage_snapshot.progress = min(
+            1.0, stage_snapshot.units_completed / stage_snapshot.units_total
+        )
     snapshot.current_stage = stage
     snapshot.status = STATUS_RUNNING
     snapshot.last_event = stage_snapshot.detail or f"Running {stage}"

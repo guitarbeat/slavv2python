@@ -1,7 +1,6 @@
 import json
 
 import numpy as np
-
 from slavv.analysis.ml_curator_training import load_aggregated_training_data
 
 

@@ -1,10 +1,9 @@
-import io
-
 import numpy as np
 import pytest
 import tifffile
-
 from slavv.io import load_tiff_volume
+
+import io
 
 
 def test_load_tiff_volume_valid():

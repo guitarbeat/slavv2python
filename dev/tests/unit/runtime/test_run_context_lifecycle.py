@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
-
 from slavv.runtime import RunContext, load_run_snapshot
 from slavv.runtime.run_state import (
     STATUS_COMPLETED,

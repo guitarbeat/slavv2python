@@ -11,7 +11,6 @@ from dev.tests.support.network_builders import (
     build_network_object,
     write_network_json_fixture,
 )
-
 from slavv.io import (
     load_network_from_casx,
     load_network_from_csv,

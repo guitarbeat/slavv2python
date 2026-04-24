@@ -5,7 +5,6 @@ from typing import Any
 
 import pandas as pd
 import plotly.express as px
-
 from slavv.utils.formatting import format_time
 
 DASHBOARD_STAGE_ORDER = ("energy", "vertices", "edges", "network")

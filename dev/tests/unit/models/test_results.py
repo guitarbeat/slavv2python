@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
-
 from slavv.models import (
     EdgeSet,
     EnergyResult,

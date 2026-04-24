@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.core.graph import (
     _matlab_edge_metrics,
     _matlab_get_strand_objects,
@@ -39,7 +38,11 @@ def test_matlab_network_topology_matches_branching_strand_decomposition():
 
     assert topology["bifurcations"].tolist() == [2]
     assert topology["strands"] == [[0, 1, 2], [2, 3], [2, 4]]
-    assert [indices.tolist() for indices in topology["edge_indices_in_strands"]] == [[0, 1], [2], [3]]
+    assert [indices.tolist() for indices in topology["edge_indices_in_strands"]] == [
+        [0, 1],
+        [2],
+        [3],
+    ]
     assert [flags.tolist() for flags in topology["edge_backwards_in_strands"]] == [
         [False, False],
         [False],

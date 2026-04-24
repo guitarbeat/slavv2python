@@ -101,6 +101,7 @@ def run_pipeline_stage_sequence(
             return early_result
     return None
 
+
 __all__ = [
     "PipelineStageStep",
     "advance_pipeline_stage",

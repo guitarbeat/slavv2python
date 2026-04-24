@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, cast
 
 import numpy as np
-
 from slavv.core import energy_storage as _energy_storage
 
 from . import backends

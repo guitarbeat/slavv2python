@@ -1,7 +1,6 @@
 import xml.etree.ElementTree as ET
 
 import numpy as np
-
 from slavv.visualization import NetworkVisualizer
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.analysis import choose_edges, choose_vertices
 
 

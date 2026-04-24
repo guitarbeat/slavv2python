@@ -17,6 +17,7 @@ from .network_plot_layout import distribution_layout, empty_figure, summary_dash
 
 logger = logging.getLogger(__name__)
 
+
 def plot_energy_field(
     self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
 ) -> go.Figure:

@@ -62,7 +62,9 @@ def resolve_visualization_session_context(
     return {
         "run_dir": cast("str | None", session_state.get("current_run_dir")),
         "dataset_name": cast("str", session_state.get("dataset_name", "SLAVV dataset")),
-        "image_shape": cast("tuple[int, int, int]", session_state.get("image_shape", (100, 100, 50))),
+        "image_shape": cast(
+            "tuple[int, int, int]", session_state.get("image_shape", (100, 100, 50))
+        ),
         "share_metrics": cast("dict[str, int]", session_state.get("share_report_metrics", {})),
     }
 

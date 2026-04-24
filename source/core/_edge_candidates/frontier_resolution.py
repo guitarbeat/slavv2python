@@ -137,9 +137,7 @@ def _resolve_frontier_edge_connection_details(
     parent_1 = parent_path[:bifurcation_index]
     parent_2 = parent_path[bifurcation_index + 1 :]
     parent_1_energy = (
-        _path_max_energy_from_linear_indices(parent_1, energy, shape)
-        if parent_1
-        else float("-inf")
+        _path_max_energy_from_linear_indices(parent_1, energy, shape) if parent_1 else float("-inf")
     )
     resolution_debug["parent_terminal_half_length"] = len(parent_1)
     resolution_debug["parent_terminal_half_max_energy"] = float(parent_1_energy)

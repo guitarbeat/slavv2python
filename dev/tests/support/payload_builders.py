@@ -100,9 +100,7 @@ def build_vertices_payload(
 ) -> dict[str, Any]:
     """Build a minimal vertices payload for tests."""
     pos = _coerce_positions(
-        positions
-        if positions is not None
-        else [[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]]
+        positions if positions is not None else [[0.0, 0.0, 0.0], [0.0, 4.0, 0.0], [3.0, 4.0, 0.0]]
     )
     count = int(pos.shape[0])
     radii_microns_array = _coerce_vector(

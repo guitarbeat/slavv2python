@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import streamlit as st
-
 from slavv.apps.processing_state import (
     load_processing_snapshot,
     store_processing_session_state,

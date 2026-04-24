@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 
 import pytest
-
 from slavv.workflows.pipeline_stages import (
     resolve_edges_stage,
     resolve_energy_stage,
@@ -57,8 +56,7 @@ def test_resolve_stage_with_checkpoint_uses_resumable_helper(monkeypatch):
     monkeypatch.setattr(
         "slavv.workflows.pipeline_stages.resolve_resumable_stage",
         lambda stage_controller, *, force_rerun, cached_log_label, compute_fn, **kwargs: (
-            seen.append((stage_controller, force_rerun, cached_log_label))
-            or compute_fn()
+            seen.append((stage_controller, force_rerun, cached_log_label)) or compute_fn()
         ),
     )
 
@@ -157,9 +155,9 @@ def test_resolve_edges_stage_selects_watershed_callbacks(monkeypatch):
 
     monkeypatch.setattr(
         "slavv.workflows.pipeline_stages.resolve_stage_with_checkpoint",
-        lambda **kwargs: captured.update(kwargs)
-        or kwargs["fallback_fn"]()
-        or kwargs["compute_fn"]("controller"),
+        lambda **kwargs: (
+            captured.update(kwargs) or kwargs["fallback_fn"]() or kwargs["compute_fn"]("controller")
+        ),
     )
 
     resolve_edges_stage(
@@ -168,10 +166,12 @@ def test_resolve_edges_stage_selects_watershed_callbacks(monkeypatch):
         edge_method="watershed",
         tracing_fallback_fn=lambda: calls.append("tracing-fallback") or {"mode": "tracing"},
         watershed_fallback_fn=lambda: calls.append("watershed-fallback") or {"mode": "watershed"},
-        tracing_resumable_fn=lambda controller: calls.append("tracing-resumable")
-        or {"mode": "tracing"},
-        watershed_resumable_fn=lambda controller: calls.append("watershed-resumable")
-        or {"mode": "watershed"},
+        tracing_resumable_fn=lambda controller: (
+            calls.append("tracing-resumable") or {"mode": "tracing"}
+        ),
+        watershed_resumable_fn=lambda controller: (
+            calls.append("watershed-resumable") or {"mode": "watershed"}
+        ),
         logger=logging.getLogger("test-pipeline-stages"),
     )
 

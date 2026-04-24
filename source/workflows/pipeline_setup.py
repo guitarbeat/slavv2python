@@ -20,7 +20,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     import numpy as np
-
     from slavv.runtime import ProgressEvent, RunContext
 
 
@@ -105,9 +104,7 @@ def initialize_run_context(
     )
     if force_rerun_from in PIPELINE_STAGES:
         run_context.reset_pipeline_state_from(force_rerun_from)
-    params_path = (
-        run_context.metadata_dir / "validated_params.json"
-    )
+    params_path = run_context.metadata_dir / "validated_params.json"
     atomic_write_json(params_path, parameters)
     run_context.mark_run_status(
         STATUS_RUNNING,

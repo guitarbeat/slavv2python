@@ -130,6 +130,8 @@ def _handle_status_command(args) -> None:
 
     for line in build_status_output_lines(snapshot, status_line_builder=build_status_lines):
         print(line)
+
+
 def _handle_analyze_command(args) -> None:
     """Analyze an exported network JSON file and print statistics."""
     from slavv.analysis import calculate_network_statistics

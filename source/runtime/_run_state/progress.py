@@ -58,7 +58,9 @@ def calculate_overall_progress(
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
     progress = STAGE_WEIGHTS[PREPROCESS_STAGE] if preprocess_done else 0.0
     for stage_name in PIPELINE_STAGES:
-        progress += STAGE_WEIGHTS[stage_name] * stages.get(stage_name, StageSnapshot(stage_name)).progress
+        progress += (
+            STAGE_WEIGHTS[stage_name] * stages.get(stage_name, StageSnapshot(stage_name)).progress
+        )
     return float(max(0.0, min(1.0, progress / total)))
 
 

@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import numpy as np
-
 from slavv.core.edge_primitives import estimate_vessel_directions
 
 

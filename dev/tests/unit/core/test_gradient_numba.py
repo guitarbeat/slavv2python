@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.core import energy as energy_module
 from slavv.core.edge_primitives import compute_gradient
 

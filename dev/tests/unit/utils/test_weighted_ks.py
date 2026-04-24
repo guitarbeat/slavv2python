@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.utils import weighted_ks_test
 
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from slavv.core._edges.postprocess import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import joblib
 import numpy as np
-
 from slavv.core._edges import resumable as resumable_edges
 from slavv.runtime import RunContext
 
@@ -82,11 +81,16 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         params,
         stage_controller,
         atomic_joblib_dump=lambda value, path: joblib.dump(value, path),
-        empty_edges_result=lambda _vertex_positions: {"traces": [], "connections": np.zeros((0, 2))},
+        empty_edges_result=lambda _vertex_positions: {
+            "traces": [],
+            "connections": np.zeros((0, 2)),
+        },
         build_edge_candidate_audit=fake_build_edge_candidate_audit,
         build_frontier_candidate_lifecycle=lambda *_args: {"events": []},
         finalize_matlab_parity_candidates=lambda *_args: candidates,
-        normalize_candidate_origin_counts=lambda raw: {int(key): int(value) for key, value in raw.items()},
+        normalize_candidate_origin_counts=lambda raw: {
+            int(key): int(value) for key, value in raw.items()
+        },
         generate_edge_candidates_matlab_frontier=lambda *_args: candidates,
         generate_edge_candidates=fake_generate_edge_candidates,
         choose_edges_for_workflow=fake_choose_edges_for_workflow,
@@ -142,7 +146,9 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         "scale_traces": [np.array([0], dtype=np.int16)],
         "origin_indices": np.array([0], dtype=np.int32),
         "connection_sources": ["frontier"],
-        "frontier_lifecycle_events": [{"seed_origin_index": 0, "survived_candidate_manifest": True}],
+        "frontier_lifecycle_events": [
+            {"seed_origin_index": 0, "survived_candidate_manifest": True}
+        ],
         "diagnostics": {
             "frontier_per_origin_candidate_counts": {"0": 1},
             "watershed_per_origin_candidate_counts": {"0": 1},
@@ -182,11 +188,16 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         params,
         stage_controller,
         atomic_joblib_dump=lambda value, path: joblib.dump(value, path),
-        empty_edges_result=lambda _vertex_positions: {"traces": [], "connections": np.zeros((0, 2))},
+        empty_edges_result=lambda _vertex_positions: {
+            "traces": [],
+            "connections": np.zeros((0, 2)),
+        },
         build_edge_candidate_audit=lambda *_args, **_kwargs: {"audit": True},
         build_frontier_candidate_lifecycle=lambda *_args: {"events": [1]},
         finalize_matlab_parity_candidates=fake_finalize,
-        normalize_candidate_origin_counts=lambda raw: {int(key): int(value) for key, value in raw.items()},
+        normalize_candidate_origin_counts=lambda raw: {
+            int(key): int(value) for key, value in raw.items()
+        },
         generate_edge_candidates_matlab_frontier=fake_generate_frontier,
         generate_edge_candidates=fake_generate_fallback,
         choose_edges_for_workflow=lambda *_args: chosen,

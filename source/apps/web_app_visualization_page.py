@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import streamlit as st
-
 from slavv.apps.visualization_state import (
     extract_visualization_export_payload,
     has_visualization_network,

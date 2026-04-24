@@ -6,7 +6,6 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
 from slavv.io import Network
 
 from .payload_builders import build_processing_results

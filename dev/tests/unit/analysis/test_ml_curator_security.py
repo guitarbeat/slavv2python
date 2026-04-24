@@ -2,7 +2,6 @@ import os
 import pickle
 
 import pytest
-
 from slavv.analysis.ml_curator import MLCurator
 
 # We expect pickle.UnpicklingError to be raised

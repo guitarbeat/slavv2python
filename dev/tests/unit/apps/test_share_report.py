@@ -7,7 +7,6 @@ from dev.tests.support.payload_builders import (
     build_processing_results,
     build_vertices_payload,
 )
-
 from slavv.apps.share_report import (
     build_share_report_html,
     make_share_report_filename,

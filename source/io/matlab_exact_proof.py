@@ -62,7 +62,9 @@ def find_single_matlab_batch_dir(run_root: Path) -> Path:
         raise ValueError(f"no MATLAB batch directory found under {matlab_results_dir}")
     if len(batch_dirs) > 1:
         joined = ", ".join(str(path) for path in batch_dirs)
-        raise ValueError(f"expected one MATLAB batch directory under {matlab_results_dir}, found: {joined}")
+        raise ValueError(
+            f"expected one MATLAB batch directory under {matlab_results_dir}, found: {joined}"
+        )
     return batch_dirs[0]
 
 
@@ -93,7 +95,9 @@ def find_matlab_vector_paths(batch_dir: Path) -> dict[str, Path]:
             raise ValueError(f"missing raw MATLAB {stage} vector file under {vectors_dir}")
         if len(candidates) > 1:
             joined = ", ".join(str(path) for path in candidates)
-            raise ValueError(f"expected one raw MATLAB {stage} vector file under {vectors_dir}, found: {joined}")
+            raise ValueError(
+                f"expected one raw MATLAB {stage} vector file under {vectors_dir}, found: {joined}"
+            )
         stage_paths[stage] = candidates[0]
     return stage_paths
 
@@ -182,7 +186,9 @@ def normalize_python_stage_payload(stage: str, payload: dict[str, Any]) -> dict[
                 columns=3,
             ),
             "bridge_vertex_scales": _normalize_int_vector(payload.get("bridge_vertex_scales")),
-            "bridge_vertex_energies": _normalize_float_vector(payload.get("bridge_vertex_energies")),
+            "bridge_vertex_energies": _normalize_float_vector(
+                payload.get("bridge_vertex_energies")
+            ),
             "bridge_edges": _normalize_python_bridge_payload(payload.get("bridge_edges")),
         }
     if stage == "network":
@@ -236,7 +242,9 @@ def compare_exact_artifacts(
         "stages": list(stages),
         "stage_summaries": stage_summaries,
         "first_failing_stage": first_failure["stage"] if first_failure is not None else None,
-        "first_failing_field_path": first_failure["field_path"] if first_failure is not None else None,
+        "first_failing_field_path": first_failure["field_path"]
+        if first_failure is not None
+        else None,
         "first_failure": first_failure,
     }
 
@@ -471,7 +479,9 @@ def _normalize_optional_matlab_float_matrix(
     *,
     columns: int,
 ) -> np.ndarray:
-    return _normalize_float_matrix(_optional_field(payload, *field_names), columns=columns, one_based=True)
+    return _normalize_float_matrix(
+        _optional_field(payload, *field_names), columns=columns, one_based=True
+    )
 
 
 def _normalize_optional_matlab_spatial_matrix(
@@ -495,7 +505,9 @@ def _normalize_optional_matlab_float_matrix_list(
     *,
     columns: int,
 ) -> list[np.ndarray]:
-    return _normalize_float_matrix_list(_optional_field(payload, *field_names), columns=columns, one_based=True)
+    return _normalize_float_matrix_list(
+        _optional_field(payload, *field_names), columns=columns, one_based=True
+    )
 
 
 def _normalize_optional_matlab_spatial_matrix_list(
@@ -602,14 +614,18 @@ def _normalize_spatial_matrix_list(value: Any, *, one_based: bool = False) -> li
     return matrices
 
 
-def _normalize_spatial_scale_matrix_list(value: Any, *, one_based: bool = False) -> list[np.ndarray]:
+def _normalize_spatial_scale_matrix_list(
+    value: Any, *, one_based: bool = False
+) -> list[np.ndarray]:
     matrices: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
         normalized = _normalize_float_matrix(item, columns=4, one_based=False)
         if normalized.size == 0:
             matrices.append(np.empty((0, 4), dtype=np.float64))
             continue
-        reordered = np.column_stack((normalized[:, 2], normalized[:, 1], normalized[:, 0], normalized[:, 3]))
+        reordered = np.column_stack(
+            (normalized[:, 2], normalized[:, 1], normalized[:, 0], normalized[:, 3])
+        )
         if one_based:
             reordered = reordered - 1.0
         matrices.append(reordered.astype(np.float64, copy=False))

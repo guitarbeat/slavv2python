@@ -299,8 +299,12 @@ def _matlab_get_network_v190(
             exterior_neighbor_counts = adjacency_for_strand_exterior.sum(axis=0).astype(np.int32)
 
             if np.all(exterior_neighbor_counts == 0):
-                adjacency_interior = adjacency_matrix[current_interior][:, current_interior].toarray()
-                interior_rows, interior_cols = _matlab_find_nonzero_matrix_entries(adjacency_interior)
+                adjacency_interior = adjacency_matrix[current_interior][
+                    :, current_interior
+                ].toarray()
+                interior_rows, interior_cols = _matlab_find_nonzero_matrix_entries(
+                    adjacency_interior
+                )
                 cyclical_edge_ids = _matlab_lookup_edge_ids(
                     edge_lookup_table,
                     current_interior[interior_rows],
@@ -311,7 +315,9 @@ def _matlab_get_network_v190(
                     current_interior = current_interior[
                         ~np.isin(current_interior, worst_edge_vertices.astype(np.int32))
                     ]
-                    adjacency_for_strand = adjacency_matrix[current_interior, :].toarray().astype(bool)
+                    adjacency_for_strand = (
+                        adjacency_matrix[current_interior, :].toarray().astype(bool)
+                    )
                     adjacency_for_strand_exterior = adjacency_for_strand.copy()
                     adjacency_for_strand_exterior[:, current_interior] = False
                     exterior_neighbor_counts = adjacency_for_strand_exterior.sum(axis=0).astype(
@@ -568,12 +574,18 @@ def _matlab_smooth_edges_v2(
         return [], [], []
     if np.asarray(lumen_radius_in_microns_range).size == 0:
         return (
-            [np.asarray(space_trace, dtype=np.float32).copy() for space_trace in edge_space_subscripts],
+            [
+                np.asarray(space_trace, dtype=np.float32).copy()
+                for space_trace in edge_space_subscripts
+            ],
             [
                 np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
                 for scale_trace in edge_scale_subscripts
             ],
-            [np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy() for energy_trace in edge_energies],
+            [
+                np.asarray(energy_trace, dtype=np.float32).reshape(-1).copy()
+                for energy_trace in edge_energies
+            ],
         )
 
     smoothed_space_subscripts = [
@@ -812,12 +824,10 @@ def _graph_state_ordered_edges(
     connections = np.asarray(ordered_pairs, dtype=np.int32).reshape(-1, 2)
     traces = [np.asarray(graph_edges[pair], dtype=np.float32) for pair in ordered_pairs]
     scale_traces = [
-        np.asarray(graph_edge_scales[pair], dtype=np.float32).reshape(-1)
-        for pair in ordered_pairs
+        np.asarray(graph_edge_scales[pair], dtype=np.float32).reshape(-1) for pair in ordered_pairs
     ]
     energy_traces = [
-        np.asarray(graph_edge_energies[pair], dtype=np.float32)
-        for pair in ordered_pairs
+        np.asarray(graph_edge_energies[pair], dtype=np.float32) for pair in ordered_pairs
     ]
     return cast("np.ndarray", connections), traces, scale_traces, energy_traces
 
@@ -946,12 +956,14 @@ def construct_network(
     min_hair_length = params.get("min_hair_length_in_microns", 0.0)
     remove_cycles = bool(params.get("remove_cycles", False))
 
-    adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = _build_graph_state(
-        edge_traces,
-        edge_scale_traces,
-        edge_energy_traces,
-        edge_connections,
-        n_vertices,
+    adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
+        _build_graph_state(
+            edge_traces,
+            edge_scale_traces,
+            edge_energy_traces,
+            edge_connections,
+            n_vertices,
+        )
     )
 
     _remove_short_hairs(
@@ -1043,12 +1055,14 @@ def construct_network_resumable(
     strands_path = stage_controller.artifact_path("strands.pkl")
 
     if not adjacency_path.exists():
-        adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = _build_graph_state(
-            edge_traces,
-            edge_scale_traces,
-            edge_energy_traces,
-            edge_connections,
-            n_vertices,
+        adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
+            _build_graph_state(
+                edge_traces,
+                edge_scale_traces,
+                edge_energy_traces,
+                edge_connections,
+                n_vertices,
+            )
         )
         atomic_joblib_dump(
             {

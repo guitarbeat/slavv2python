@@ -148,16 +148,16 @@ class SLAVVProcessor:
         return cast(
             "dict[str, Any]",
             resolve_energy_stage(
-            run_context=run_context,
-            force_rerun=force_rerun,
-            fallback_fn=lambda: self.calculate_energy_field(image, parameters),
-            resumable_fn=lambda controller: energy.calculate_energy_field_resumable(
-                image,
-                parameters,
-                controller,
-                utils.get_chunking_lattice,
-            ),
-            logger=logger,
+                run_context=run_context,
+                force_rerun=force_rerun,
+                fallback_fn=lambda: self.calculate_energy_field(image, parameters),
+                resumable_fn=lambda controller: energy.calculate_energy_field_resumable(
+                    image,
+                    parameters,
+                    controller,
+                    utils.get_chunking_lattice,
+                ),
+                logger=logger,
             ),
         )
 
@@ -171,15 +171,15 @@ class SLAVVProcessor:
         return cast(
             "dict[str, Any]",
             resolve_vertices_stage(
-            run_context=run_context,
-            force_rerun=force_rerun,
-            fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
-            resumable_fn=lambda controller: vertex_ops.extract_vertices_resumable(
-                energy_data,
-                parameters,
-                controller,
-            ),
-            logger=logger,
+                run_context=run_context,
+                force_rerun=force_rerun,
+                fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
+                resumable_fn=lambda controller: vertex_ops.extract_vertices_resumable(
+                    energy_data,
+                    parameters,
+                    controller,
+                ),
+                logger=logger,
             ),
         )
 
@@ -195,28 +195,30 @@ class SLAVVProcessor:
         return cast(
             "dict[str, Any]",
             resolve_edges_stage(
-            run_context=run_context,
-            force_rerun=force_rerun,
-            edge_method=edge_method,
-            tracing_fallback_fn=lambda: self.extract_edges(energy_data, vertices, parameters),
-            watershed_fallback_fn=lambda: self.extract_edges_watershed(
-                energy_data,
-                vertices,
-                parameters,
-            ),
-            tracing_resumable_fn=lambda controller: edge_ops.extract_edges_resumable(
-                energy_data,
-                vertices,
-                parameters,
-                controller,
-            ),
-            watershed_resumable_fn=lambda controller: edge_ops.extract_edges_watershed_resumable(
-                energy_data,
-                vertices,
-                parameters,
-                controller,
-            ),
-            logger=logger,
+                run_context=run_context,
+                force_rerun=force_rerun,
+                edge_method=edge_method,
+                tracing_fallback_fn=lambda: self.extract_edges(energy_data, vertices, parameters),
+                watershed_fallback_fn=lambda: self.extract_edges_watershed(
+                    energy_data,
+                    vertices,
+                    parameters,
+                ),
+                tracing_resumable_fn=lambda controller: edge_ops.extract_edges_resumable(
+                    energy_data,
+                    vertices,
+                    parameters,
+                    controller,
+                ),
+                watershed_resumable_fn=lambda controller: (
+                    edge_ops.extract_edges_watershed_resumable(
+                        energy_data,
+                        vertices,
+                        parameters,
+                        controller,
+                    )
+                ),
+                logger=logger,
             ),
         )
 
@@ -231,16 +233,16 @@ class SLAVVProcessor:
         return cast(
             "dict[str, Any]",
             resolve_network_stage(
-            run_context=run_context,
-            force_rerun=force_rerun,
-            fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
-            resumable_fn=lambda controller: graph.construct_network_resumable(
-                edges,
-                vertices,
-                parameters,
-                controller,
-            ),
-            logger=logger,
+                run_context=run_context,
+                force_rerun=force_rerun,
+                fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
+                resumable_fn=lambda controller: graph.construct_network_resumable(
+                    edges,
+                    vertices,
+                    parameters,
+                    controller,
+                ),
+                logger=logger,
             ),
         )
 

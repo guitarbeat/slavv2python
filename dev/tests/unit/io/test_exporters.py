@@ -1,6 +1,5 @@
 import pytest
 from dev.tests.support.network_builders import build_network_object
-
 from slavv.io import partition_network
 
 

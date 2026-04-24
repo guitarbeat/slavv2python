@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 import plotly.express as px
 import streamlit as st
-
 from slavv.runtime.run_state import target_stage_progress
 from slavv.visualization import NetworkVisualizer
 

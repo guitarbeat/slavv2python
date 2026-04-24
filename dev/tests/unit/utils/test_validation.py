@@ -1,5 +1,4 @@
 import pytest
-
 from slavv.utils import validate_parameters
 
 

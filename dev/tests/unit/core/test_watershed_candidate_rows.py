@@ -1,5 +1,4 @@
 import numpy as np
-
 from slavv.core._edge_candidates.generate import _generate_edge_candidates
 from slavv.core._edge_candidates.watershed_candidates import (
     _augment_candidates_with_watershed_contacts,

@@ -272,7 +272,9 @@ class RunContext:
     def mark_preprocess_complete(self) -> None:
         mark_preprocess_complete_snapshot(
             self.snapshot,
-            overall_progress=self._calculate_overall_progress(self.snapshot.stages, preprocess_done=True),
+            overall_progress=self._calculate_overall_progress(
+                self.snapshot.stages, preprocess_done=True
+            ),
         )
         self.persist()
         self.emit_event(PREPROCESS_STAGE, STATUS_COMPLETED, detail="Preprocessing complete")
