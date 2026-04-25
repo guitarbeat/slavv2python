@@ -365,6 +365,105 @@ def test_build_exact_preflight_report_refuses_on_destination_collision(
     assert report["collision_count"] == 1
 
 
+def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
+    source_run_root = tmp_path / "source-run"
+    dest_run_root = tmp_path / "dest-run"
+    matlab_batch_dir = tmp_path / "matlab-batch"
+    matlab_batch_dir.mkdir()
+    source_surface = parity_experiment.ExactProofSourceSurface(
+        run_root=source_run_root,
+        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
+        matlab_batch_dir=matlab_batch_dir,
+        matlab_vector_paths={},
+    )
+    candidates = {
+        "traces": [np.array([[0.0, 0.0, 0.0]], dtype=np.float32)],
+        "connections": np.array([[0, 0]], dtype=np.int32),
+        "metrics": np.array([-1.0], dtype=np.float32),
+        "energy_traces": [np.array([-1.0], dtype=np.float32)],
+        "scale_traces": [np.array([0], dtype=np.int16)],
+        "origin_indices": np.array([0], dtype=np.int32),
+        "connection_sources": ["global_watershed"],
+        "diagnostics": {},
+    }
+
+    def fake_generate(*_args, **kwargs):
+        heartbeat = kwargs.get("heartbeat")
+        if callable(heartbeat):
+            heartbeat(512, 1)
+        return candidates
+
+    monkeypatch.setattr(
+        parity_experiment,
+        "validate_exact_proof_source_surface",
+        lambda _run_root: source_surface,
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "load_exact_params_file",
+        lambda _surface: {"comparison_exact_network": True},
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "_load_exact_energy_payload",
+        lambda _surface: {
+            "energy": np.zeros((2, 2, 2), dtype=np.float32),
+            "scale_indices": np.zeros((2, 2, 2), dtype=np.int16),
+            "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+            "energy_sign": -1.0,
+        },
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "_load_exact_vertices_payload",
+        lambda _surface: {
+            "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+            "scales": np.array([0], dtype=np.int16),
+        },
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "_generate_edge_candidates_matlab_frontier",
+        fake_generate,
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "_finalize_matlab_parity_candidates",
+        lambda candidate_payload, *_args: candidate_payload,
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "load_normalized_matlab_vectors",
+        lambda *_args, **_kwargs: {
+            "edges": {
+                "connections": np.array([[0, 0]], dtype=np.int32),
+            }
+        },
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "build_candidate_coverage_report",
+        lambda *_args, **_kwargs: {"candidate_surface": {}},
+    )
+
+    parity_experiment._run_capture_candidates(
+        source_run_root=source_run_root,
+        dest_run_root=dest_run_root,
+        include_debug_maps=False,
+    )
+
+    snapshot = json.loads(
+        (dest_run_root / parity_experiment.RUN_SNAPSHOT_PATH).read_text(encoding="utf-8")
+    )
+    assert snapshot["current_stage"] == "edges"
+    assert snapshot["current_detail"] == (
+        "Generating edge candidates through MATLAB-style frontier workflow "
+        "(iterations=512, candidates=1)"
+    )
+    assert snapshot["stages"]["edges"]["detail"] == snapshot["current_detail"]
+
+
 def test_build_experiment_summary_computes_deltas(tmp_path):
     source_run_root = tmp_path / "source-run"
     dest_run_root = tmp_path / "dest-run"

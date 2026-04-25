@@ -549,6 +549,47 @@ def ensure_dest_run_layout(dest_run_root: Path) -> None:
     (dest_run_root / "99_Metadata").mkdir(parents=True, exist_ok=True)
 
 
+def write_capture_candidates_snapshot(
+    dest_run_root: Path,
+    *,
+    detail: str,
+    iteration_count: int = 0,
+    candidate_count: int = 0,
+) -> None:
+    """Persist lightweight run progress for long candidate-capture runs."""
+    atomic_write_json(
+        dest_run_root / RUN_SNAPSHOT_PATH,
+        {
+            "run_id": "capture-candidates",
+            "status": "running",
+            "target_stage": "edges",
+            "current_stage": "edges",
+            "current_detail": detail,
+            "overall_progress": 0.0,
+            "last_event": detail,
+            "stages": {
+                "edges": {
+                    "name": "edges",
+                    "status": "running",
+                    "progress": 0.0,
+                    "detail": detail,
+                    "substage": "generate_candidates",
+                    "units_total": 1,
+                    "units_completed": 0,
+                    "artifacts": {},
+                }
+            },
+            "optional_tasks": {},
+            "artifacts": {
+                "edge_candidate_iterations": str(int(iteration_count)),
+                "edge_candidate_count": str(int(candidate_count)),
+            },
+            "errors": [],
+            "provenance": {},
+        },
+    )
+
+
 def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
     checkpoint_path = source_surface.checkpoints_dir / "checkpoint_energy.pkl"
     return _expect_mapping(safe_load(checkpoint_path), str(checkpoint_path))
@@ -926,6 +967,22 @@ def _run_capture_candidates(
         params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
     )
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+
+    def _heartbeat(iteration_count: int, candidate_count: int) -> None:
+        write_capture_candidates_snapshot(
+            dest_root,
+            detail=(
+                "Generating edge candidates through MATLAB-style frontier workflow "
+                f"(iterations={iteration_count}, candidates={candidate_count})"
+            ),
+            iteration_count=iteration_count,
+            candidate_count=candidate_count,
+        )
+
+    write_capture_candidates_snapshot(
+        dest_root,
+        detail="Generating edge candidates through MATLAB-style frontier workflow",
+    )
     candidates = _generate_edge_candidates_matlab_frontier(
         energy,
         None if scale_indices is None else np.asarray(scale_indices, dtype=np.int16),
@@ -935,6 +992,7 @@ def _run_capture_candidates(
         microns_per_voxel,
         vertex_center_image,
         params,
+        heartbeat=_heartbeat,
     )
     candidates = _finalize_matlab_parity_candidates(
         candidates,

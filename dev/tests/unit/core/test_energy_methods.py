@@ -1,4 +1,4 @@
-﻿"""Consolidated tests for alternative energy methods."""
+"""Consolidated tests for alternative energy methods."""
 
 from __future__ import annotations
 
@@ -155,6 +155,7 @@ def test_default_hessian_energy_produces_negative_tubular_response():
 
     assert result["energy"][4, 4, 4] < 0
     assert result["energy"][4, 4, 4] == result["energy"].min()
+    assert result["energy_origin"] == "python_native_hessian"
 
 
 def test_simpleitk_energy_method_requires_optional_dependency(monkeypatch):
@@ -298,5 +299,3 @@ def test_cupy_direct_and_resumable_paths_match(monkeypatch, tmp_path):
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
     npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])
-
-

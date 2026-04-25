@@ -1,4 +1,4 @@
-﻿"""Tests for run-state snapshot lifecycle helpers."""
+"""Tests for run-state snapshot lifecycle helpers."""
 
 from __future__ import annotations
 
@@ -43,6 +43,7 @@ def test_begin_stage_snapshot_sets_running_state():
     assert stage.progress == 0.25
     assert stage.resumed is True
     assert snapshot.current_stage == "energy"
+    assert snapshot.current_detail == "Starting energy"
     assert snapshot.status == "running"
 
 
@@ -61,6 +62,7 @@ def test_update_stage_snapshot_updates_eta_and_last_event():
 
     assert stage.progress == 0.75
     assert snapshot.last_event == "Almost done"
+    assert snapshot.current_detail == "Almost done"
 
 
 def test_complete_stage_snapshot_promotes_artifacts_and_completion():
@@ -117,5 +119,3 @@ def test_finalize_run_snapshot_marks_target_completion():
     assert snapshot.status == "completed_target"
     assert snapshot.current_stage == "edges"
     assert snapshot.eta_seconds == 0.0
-
-

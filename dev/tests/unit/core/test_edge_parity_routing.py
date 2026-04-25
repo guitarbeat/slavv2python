@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import cast
 
@@ -16,6 +16,14 @@ def test_use_matlab_frontier_tracer_requires_exact_network_and_matlab_energy_ori
     assert not _use_matlab_frontier_tracer(
         {"energy_origin": "python_pipeline"},
         {"comparison_exact_network": True},
+    )
+    assert not _use_matlab_frontier_tracer(
+        {"energy_origin": "python_native_hessian"},
+        {"comparison_exact_network": True},
+    )
+    assert _use_matlab_frontier_tracer(
+        {"energy_origin": "python_native_hessian"},
+        {"comparison_exact_network": True, "native_energy_exact_proof": True},
     )
     assert _use_matlab_frontier_tracer(
         {"energy_origin": "matlab_batch_hdf5"},
@@ -121,5 +129,3 @@ def test_standard_extract_edges_uses_matlab_frontier_branch_when_enabled():
 
     assert result is chosen
     assert calls == ["generate_frontier", "finalize"]
-
-

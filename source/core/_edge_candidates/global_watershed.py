@@ -413,10 +413,9 @@ def _generate_edge_candidates_matlab_global_watershed(
         vertex_coords[:, 2],
     ] = np.asarray(vertex_scales, dtype=size_map.dtype) + np.int16(1)
 
-    del params
     edge_number_tolerance = 2
     energy_tolerance = 1.0
-    step_size_per_origin_radius = 1.0
+    step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))
 
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []

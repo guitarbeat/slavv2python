@@ -28,6 +28,7 @@ def mark_preprocess_complete_snapshot(snapshot: RunSnapshot, *, overall_progress
     stage_snapshot.completed_at = _now_iso()
     snapshot.artifacts["preprocess_done"] = "true"
     snapshot.overall_progress = overall_progress
+    snapshot.current_detail = "Preprocessing complete"
     snapshot.last_event = "Preprocessing complete"
 
 
@@ -58,6 +59,7 @@ def begin_stage_snapshot(
         )
     snapshot.current_stage = stage
     snapshot.status = STATUS_RUNNING
+    snapshot.current_detail = detail
     snapshot.last_event = detail or f"Running {stage}"
     return stage_snapshot
 
@@ -95,6 +97,7 @@ def update_stage_snapshot(
         )
     snapshot.current_stage = stage
     snapshot.status = STATUS_RUNNING
+    snapshot.current_detail = stage_snapshot.detail
     snapshot.last_event = stage_snapshot.detail or f"Running {stage}"
     return stage_snapshot
 
@@ -122,6 +125,7 @@ def complete_stage_snapshot(
         snapshot.artifacts.update({f"{stage}.{k}": v for k, v in artifacts.items()})
     if resumed is not None:
         stage_snapshot.resumed = resumed
+    snapshot.current_detail = stage_snapshot.detail
     snapshot.last_event = detail or f"Completed {stage}"
     return stage_snapshot
 
@@ -134,6 +138,7 @@ def fail_stage_snapshot(snapshot: RunSnapshot, *, stage: str, message: str) -> S
     stage_snapshot.detail = message
     snapshot.status = STATUS_FAILED
     snapshot.current_stage = stage
+    snapshot.current_detail = message
     snapshot.last_event = message
     snapshot.errors.append({"stage": stage, "message": message, "at": _now_iso()})
     return stage_snapshot
@@ -174,6 +179,7 @@ def finalize_run_snapshot(snapshot: RunSnapshot, *, stop_after: str | None = Non
         snapshot.status = STATUS_COMPLETED
         snapshot.overall_progress = 1.0
     snapshot.current_stage = stop_after or "network"
+    snapshot.current_detail = "Run completed"
     snapshot.eta_seconds = 0.0
     snapshot.last_event = "Run completed"
 

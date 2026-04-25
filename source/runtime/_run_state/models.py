@@ -57,6 +57,7 @@ class RunSnapshot:
     status: str = STATUS_PENDING
     target_stage: str = "network"
     current_stage: str = ""
+    current_detail: str = ""
     overall_progress: float = 0.0
     elapsed_seconds: float = 0.0
     eta_seconds: float | None = None
@@ -95,6 +96,7 @@ class RunSnapshot:
             status=data.get("status", STATUS_PENDING),
             target_stage=data.get("target_stage", "network"),
             current_stage=data.get("current_stage", ""),
+            current_detail=data.get("current_detail", data.get("last_event", "")),
             overall_progress=float(data.get("overall_progress", 0.0)),
             elapsed_seconds=float(data.get("elapsed_seconds", 0.0)),
             eta_seconds=data.get("eta_seconds"),

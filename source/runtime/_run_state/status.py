@@ -50,6 +50,7 @@ def build_status_lines(snapshot: RunSnapshot) -> list[str]:
         f"Status: {snapshot.status}",
         f"Target stage: {snapshot.target_stage}",
         f"Current stage: {snapshot.current_stage or '(idle)'}",
+        f"Current detail: {snapshot.current_detail or '(none)'}",
         f"Overall progress: {snapshot.overall_progress * 100:.1f}%",
         f"Target progress: {target_stage_progress(snapshot) * 100:.1f}%",
         f"Elapsed: {snapshot.elapsed_seconds:.1f}s",

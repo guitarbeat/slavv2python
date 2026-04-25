@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 EXACT_STAGE_ORDER: tuple[str, ...] = ("vertices", "edges", "network")
 EXACT_STAGE_FIELDS: dict[str, tuple[str, ...]] = {
+    "energy": ("energy", "scale_indices", "energy_4d", "lumen_radius_microns"),
     "vertices": ("positions", "scales", "energies"),
     "edges": (
         "connections",
@@ -118,10 +119,12 @@ def load_normalized_matlab_stage(path: Path, stage: str) -> dict[str, Any]:
     """Load and normalize a single raw MATLAB vector file."""
     matlab_payload = cast(
         "dict[str, Any]",
-        loadmat(path, squeeze_me=True, struct_as_record=False),
+        loadmat(path, squeeze_me=stage != "energy", struct_as_record=False),
     )
     if stage == "vertices":
         return _normalize_matlab_vertices_payload(matlab_payload)
+    if stage == "energy":
+        return _normalize_matlab_energy_payload(matlab_payload)
     if stage == "edges":
         return _normalize_matlab_edges_payload(matlab_payload)
     if stage == "network":
@@ -168,6 +171,13 @@ def sync_exact_vertex_checkpoint_from_matlab(
 
 def normalize_python_stage_payload(stage: str, payload: dict[str, Any]) -> dict[str, Any]:
     """Normalize a Python checkpoint payload into the exact-proof contract."""
+    if stage == "energy":
+        return {
+            "energy": _normalize_float_array(payload.get("energy")),
+            "scale_indices": _normalize_int_array(payload.get("scale_indices")),
+            "energy_4d": _normalize_float_array(payload.get("energy_4d")),
+            "lumen_radius_microns": _normalize_float_vector(payload.get("lumen_radius_microns")),
+        }
     if stage == "vertices":
         return {
             "positions": _normalize_float_matrix(payload.get("positions"), columns=3),
@@ -312,6 +322,20 @@ def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any
         ),
         "scales": _normalize_matlab_int_vector(_require_key(payload, "vertex_scale_subscripts")),
         "energies": _normalize_float_vector(_require_key(payload, "vertex_energies")),
+    }
+
+
+def _normalize_matlab_energy_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "energy": _normalize_float_array(_require_key(payload, "energy")),
+        "scale_indices": _normalize_int_array(
+            _require_key(payload, "scale_indices"),
+            one_based=True,
+        ),
+        "energy_4d": _normalize_float_array(_require_key(payload, "energy_4d")),
+        "lumen_radius_microns": _normalize_float_vector(
+            _require_key(payload, "lumen_radius_microns"),
+        ),
     }
 
 
@@ -553,10 +577,22 @@ def _normalize_int_vector(value: Any, *, one_based: bool = False) -> np.ndarray:
     return cast("np.ndarray", array.astype(np.int64, copy=False))
 
 
+def _normalize_int_array(value: Any, *, one_based: bool = False) -> np.ndarray:
+    array = np.asarray([] if value is None else value, dtype=np.int64)
+    if one_based and array.size:
+        array = array - 1
+    return cast("np.ndarray", array.astype(np.int64, copy=False))
+
+
 def _normalize_float_vector(value: Any, *, one_based: bool = False) -> np.ndarray:
     array = np.asarray([] if value is None else value, dtype=np.float64).reshape(-1)
     if one_based and array.size:
         array = array - 1.0
+    return cast("np.ndarray", array.astype(np.float64, copy=False))
+
+
+def _normalize_float_array(value: Any) -> np.ndarray:
+    array = np.asarray([] if value is None else value, dtype=np.float64)
     return cast("np.ndarray", array.astype(np.float64, copy=False))
 
 

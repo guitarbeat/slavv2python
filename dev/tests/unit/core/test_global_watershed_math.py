@@ -1,6 +1,8 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
+import pytest
+from source.core._edge_candidates import global_watershed as global_watershed_module
 from source.core._edge_candidates.generate import _finalize_matlab_parity_candidates
 from source.core._edge_candidates.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
@@ -168,6 +170,36 @@ def test_generate_edge_candidates_matlab_global_watershed_recovers_simple_bridge
     assert candidates["vertex_index_map"].shape == energy.shape
 
 
+def test_generate_edge_candidates_matlab_global_watershed_uses_configured_step_size(
+    monkeypatch,
+):
+    observed_step_sizes: list[float] = []
+
+    def fake_current_strel(*_args, **kwargs):
+        observed_step_sizes.append(float(kwargs["step_size_per_origin_radius"]))
+        raise RuntimeError("captured step size")
+
+    monkeypatch.setattr(
+        global_watershed_module,
+        "_matlab_global_watershed_current_strel",
+        fake_current_strel,
+    )
+
+    with pytest.raises(RuntimeError, match="captured step size"):
+        _generate_edge_candidates_matlab_global_watershed(
+            np.full((3, 3, 3), -1.0, dtype=np.float32),
+            np.zeros((3, 3, 3), dtype=np.int16),
+            np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+            np.array([0], dtype=np.int16),
+            lumen_radius_microns=np.array([1.0], dtype=np.float32),
+            microns_per_voxel=np.ones((3,), dtype=np.float32),
+            _vertex_center_image=np.zeros((3, 3, 3), dtype=np.int32),
+            params={"step_size_per_origin_radius": 2.5},
+        )
+
+    assert observed_step_sizes == [2.5]
+
+
 def test_matlab_global_watershed_scale_pointer_map_matches_final_matlab_formula():
     pointer_map = np.zeros((3, 3, 3), dtype=np.uint64)
     size_map = np.ones((3, 3, 3), dtype=np.int16)
@@ -210,5 +242,3 @@ def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_pa
     )
 
     assert finalized is candidates
-
-

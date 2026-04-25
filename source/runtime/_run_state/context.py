@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import logging
@@ -284,6 +284,7 @@ class RunContext:
         if current_stage:
             self.snapshot.current_stage = current_stage
         if detail:
+            self.snapshot.current_detail = detail
             self.snapshot.last_event = detail
         self.persist()
         self.emit_event(current_stage or self.snapshot.current_stage, status, detail=detail)
@@ -415,5 +416,3 @@ class RunContext:
     @staticmethod
     def _parse_time(timestamp: str | None) -> float | None:
         return parse_run_time(timestamp)
-
-

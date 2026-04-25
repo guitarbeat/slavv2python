@@ -52,7 +52,12 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
     """Enable the parity-only frontier tracer for imported MATLAB energy reruns."""
     if not bool(params.get("comparison_exact_network", False)):
         return False
-    return energy_data.get("energy_origin") == "matlab_batch_hdf5"
+    energy_origin = energy_data.get("energy_origin")
+    if energy_origin == "matlab_batch_hdf5":
+        return True
+    return bool(params.get("native_energy_exact_proof", False)) and (
+        energy_origin == "python_native_hessian"
+    )
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:

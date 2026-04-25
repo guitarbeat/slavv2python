@@ -1,4 +1,4 @@
-﻿"""Unit tests for exact imported-MATLAB artifact proof helpers."""
+"""Unit tests for exact imported-MATLAB artifact proof helpers."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from scipy.io import savemat
 from source.io.matlab_exact_proof import (
     compare_exact_artifacts,
     load_normalized_matlab_stage,
+    normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
 )
 
@@ -47,6 +48,35 @@ def test_load_normalized_matlab_vertices_converts_one_based_indices(tmp_path):
     )
     np.testing.assert_array_equal(payload["scales"], np.array([1, 3], dtype=np.int64))
     np.testing.assert_array_equal(payload["energies"], np.array([-3.5, -1.25], dtype=np.float64))
+
+
+def test_energy_stage_normalization_supports_dense_native_proof_surface(tmp_path):
+    mat_path = _write_mat(
+        tmp_path / "energy.mat",
+        {
+            "energy": np.array([[[[-1.0]], [[-2.0]]]], dtype=np.float64).reshape(1, 2, 1),
+            "scale_indices": np.array([[[1], [2]]], dtype=np.int16),
+            "energy_4d": np.array([[[[-1.0, -2.0]]]], dtype=np.float64),
+            "lumen_radius_microns": np.array([1.0, 2.0], dtype=np.float64),
+        },
+    )
+    python_payload = {
+        "energy": np.array([[[-1.0], [-2.0]]], dtype=np.float32),
+        "scale_indices": np.array([[[0], [1]]], dtype=np.int16),
+        "energy_4d": np.array([[[[-1.0, -2.0]]]], dtype=np.float32),
+        "lumen_radius_microns": np.array([1.0, 2.0], dtype=np.float32),
+    }
+
+    matlab_energy = load_normalized_matlab_stage(mat_path, "energy")
+    python_energy = normalize_python_stage_payload("energy", python_payload)
+    report = compare_exact_artifacts(
+        {"energy": matlab_energy},
+        {"energy": python_energy},
+        ("energy",),
+    )
+
+    np.testing.assert_array_equal(matlab_energy["scale_indices"], python_energy["scale_indices"])
+    assert report["passed"] is True
 
 
 def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
@@ -361,5 +391,3 @@ def test_compare_exact_artifacts_reports_missing_field():
     assert report["passed"] is False
     assert report["first_failure"]["mismatch_type"] == "missing field"
     assert report["first_failure"]["field_path"] == "vertices.energies"
-
-

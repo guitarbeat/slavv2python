@@ -85,6 +85,11 @@ def _energy_result_payload(
         "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
         "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
         "energy_sign": config["energy_sign"],
+        "energy_origin": (
+            "python_native_hessian"
+            if config["energy_method"] == "hessian"
+            else f"python_{config['energy_method']}"
+        ),
         "image_shape": image_shape,
     }
     if energy_4d is not None:
