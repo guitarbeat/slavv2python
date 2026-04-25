@@ -154,7 +154,7 @@ def test_default_hessian_energy_produces_negative_tubular_response():
     result = proc.calculate_energy_field(image, params)
 
     assert result["energy"][4, 4, 4] < 0
-    assert np.isinf(result["energy"][0, 0, 0])
+    assert result["energy"][4, 4, 4] == result["energy"].min()
 
 
 def test_simpleitk_energy_method_requires_optional_dependency(monkeypatch):

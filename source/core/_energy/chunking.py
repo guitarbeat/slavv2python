@@ -186,23 +186,7 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
             float(energy_sign),
         )
 
-    if config["spherical_to_annular_ratio"] < 1.0:
-        annular_scale = sigma_scale * 1.5
-        if config["approximating_PSF"]:
-            sigma_background = np.sqrt(annular_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
-        else:
-            sigma_background = annular_scale
-    else:
-        sigma_background = None
-
-    return backends._matlab_hessian_energy(
-        image,
-        sigma_object,
-        sigma_background,
-        config["spherical_to_annular_ratio"],
-        config["microns_per_voxel"],
-        energy_sign,
-    )
+    raise ValueError(f"Unsupported energy_method: {energy_method!r}")
 
 
 def _compute_direct_energy_outputs(
