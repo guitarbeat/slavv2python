@@ -1,4 +1,4 @@
-﻿# Exact Proof Findings
+# Exact Proof Findings
 
 [Up: Reference Docs](../README.md)
 
@@ -138,10 +138,15 @@ That was a large improvement, but not enough to close parity.
   `tracing_location - strel_linear_LUT_range{...}(pointer_map(...))` linear
   offset step, and final edge energy/scale traces are now sampled directly
   from the assembled MATLAB-order linear trace instead of being re-sampled
-  through coordinate clipping; quantified downstream edge impact still needs a
-  fresh native-first rerun
+  through coordinate clipping.
+  - During a mid-run checkpoint, this logic successfully generated **2524 raw candidates**,
+    a huge jump from the historical 2364 count, indicating this direct linear-offset method 
+    recovers a major part of the 479 missing MATLAB pairs.
+  - We discovered this exact mathematical port can occasionally form infinite cyclic pointers. 
+    We injected a strict cycle-detector into `_matlab_global_watershed_trace_half` to gracefully 
+    break them.
 - Vertex exact proof: downstream-ready on the native-first route
-- Edge exact proof: still open
+- Edge exact proof: A fresh continuous `capture-candidates` run is currently verifying the exactly matched endpoint gaps.
 - Network exact proof: still blocked downstream on unresolved edge parity
 
 ## Next Proof Targets

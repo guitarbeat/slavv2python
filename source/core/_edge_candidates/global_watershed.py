@@ -318,8 +318,14 @@ def _matlab_global_watershed_trace_half(
 ) -> list[int]:
     """Trace one MATLAB watershed half-edge back to its zero-pointer origin."""
     traced: list[int] = []
+    visited: set[int] = set()
     tracing_linear = int(start_linear)
     while True:
+        if tracing_linear in visited:
+            import logging
+            logging.error(f"Cycle detected in global watershed backtrack at linear index {tracing_linear}. Breaking to prevent infinite loop.")
+            break
+        visited.add(tracing_linear)
         traced.append(int(tracing_linear))
         tracing_coord = _matlab_linear_index_to_coord(tracing_linear, shape)
         pointer_value = int(pointer_map[tracing_coord[0], tracing_coord[1], tracing_coord[2]])
@@ -354,7 +360,10 @@ def _sample_volume_from_matlab_linear_trace(
     """Sample one volume exactly at normalized MATLAB-order linear indices."""
     if not linear_trace:
         return np.zeros((0,), dtype=np.asarray(volume).dtype)
-    flat_volume = np.asarray(volume).ravel(order="F")
+    if np.asarray(volume).ndim == 1:
+        flat_volume = np.asarray(volume)
+    else:
+        flat_volume = np.asarray(volume).ravel(order="F")
     linear_indices = np.asarray(linear_trace, dtype=np.int64)
     return cast("np.ndarray", flat_volume[linear_indices])
 
@@ -737,6 +746,12 @@ def _generate_edge_candidates_matlab_global_watershed(
     connection_sources: list[str] = []
     diagnostics = _empty_edge_diagnostics()
 
+    flat_energy_map = np.asarray(energy_map, dtype=np.float32).ravel(order="F")
+    if original_scale_image is not None:
+        flat_scale_image = np.asarray(original_scale_image, dtype=np.int16).ravel(order="F")
+    else:
+        flat_scale_image = None
+
     for (start_vertex_index, end_vertex_index), (half_1, half_2) in zip(edge_pairs, edge_halves):
         if end_vertex_index == number_of_vertices + 1:
             continue
@@ -744,8 +759,8 @@ def _generate_edge_candidates_matlab_global_watershed(
             half_1,
             half_2,
             shape=shape,
-            energy_map=energy_map,
-            scale_image=original_scale_image,
+            energy_map=flat_energy_map,
+            scale_image=flat_scale_image,
         )
         traces.append(trace)
         connections.append([start_vertex_index - 1, end_vertex_index - 1])
