@@ -1,4 +1,4 @@
-# Reference Docs
+﻿# Reference Docs
 
 Use this folder for current, cross-cutting technical references.
 
@@ -14,8 +14,11 @@ Recommended reading order:
 8. Optional backend docs under `backends/`
 
 This shelf documents the maintained Python implementation and the current
-parity rules for exact imported-MATLAB work. Treat the released MATLAB source as
-the executable specification, `prove-exact` as the proof gate, and the paper as
-explanatory context. The maintained parity runner remains
-`dev/scripts/cli/parity_experiment.py`, which supports both rerun summaries and
-exact artifact proof on reusable staged runs.
+native-first exact-route rules. Treat the released MATLAB source as the
+executable specification, preserved MATLAB vectors as the oracle artifacts,
+`prove-exact` as the proof gate, and the paper as explanatory context.
+
+The maintained parity runner remains `dev/scripts/cli/parity_experiment.py`.
+Its canonical exact route now accepts native Hessian energy provenance
+(`python_native_hessian`) while still allowing preserved MATLAB energy
+provenance (`matlab_batch_hdf5`) for historical replay and regression checks.

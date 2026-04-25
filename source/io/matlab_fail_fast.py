@@ -1,4 +1,4 @@
-﻿"""Fail-fast parity helpers for the imported-MATLAB exact route."""
+"""Fail-fast parity helpers for the native-first exact route."""
 
 from __future__ import annotations
 
@@ -340,4 +340,3 @@ __all__ = [
     "render_candidate_coverage_report",
     "render_lut_proof_report",
 ]
-

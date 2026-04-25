@@ -9,6 +9,7 @@ import numpy as np
 from skimage.graph import route_through_array
 from typing_extensions import TypeAlias
 
+from .._energy.provenance import is_exact_compatible_energy_origin
 from .._vertices.payloads import matlab_linear_indices as _matlab_linear_indices
 
 Int16Array: TypeAlias = "np.ndarray"
@@ -49,15 +50,10 @@ def normalize_candidate_connection_sources(
 
 
 def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, Any]) -> bool:
-    """Enable the parity-only frontier tracer for imported MATLAB energy reruns."""
+    """Enable the MATLAB-style frontier tracer for exact-compatible energy reruns."""
     if not bool(params.get("comparison_exact_network", False)):
         return False
-    energy_origin = energy_data.get("energy_origin")
-    if energy_origin == "matlab_batch_hdf5":
-        return True
-    return bool(params.get("native_energy_exact_proof", False)) and (
-        energy_origin == "python_native_hessian"
-    )
+    return is_exact_compatible_energy_origin(energy_data.get("energy_origin"))
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
@@ -185,15 +181,11 @@ def _matlab_frontier_size_tolerance(lumen_radius_microns: np.ndarray) -> float:
     radii = np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)
     if radii.size < 2:
         return float("inf")
-    positive_radii = radii[radii > 0]
+    positive_radii = radii[np.isfinite(radii) & (radii > 0)]
     if positive_radii.size < 2:
         return float("inf")
-    log_steps = np.diff(np.log(positive_radii))
-    valid_steps = log_steps[np.isfinite(log_steps) & (log_steps > 1e-12)]
-    if valid_steps.size == 0:
-        return float("inf")
-    size_ratio_per_index = float(math.exp(float(np.median(valid_steps))))
-    if size_ratio_per_index <= 1.0:
+    size_ratio_per_index = float(positive_radii[1] / positive_radii[0])
+    if not math.isfinite(size_ratio_per_index) or size_ratio_per_index <= 1.0:
         return float("inf")
     return float(math.log(1.5) / math.log(size_ratio_per_index))
 

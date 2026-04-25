@@ -9,9 +9,12 @@ from source.core._edge_candidates.global_watershed import (
     _initialize_matlab_global_watershed_state,
     _matlab_global_watershed_border_locations,
     _matlab_global_watershed_current_strel,
+    _matlab_global_watershed_finalize_edge_trace,
     _matlab_global_watershed_insert_available_location,
+    _matlab_global_watershed_reset_join_locations,
     _matlab_global_watershed_reveal_unclaimed_strel,
     _matlab_global_watershed_scale_pointer_map,
+    _matlab_global_watershed_trace_half,
 )
 
 
@@ -37,6 +40,8 @@ def test_initialize_matlab_global_watershed_state_matches_shared_map_layout():
     assert state["vertex_locations"].tolist() == [center_linear, border_vertex_linear]
     assert state["available_locations"].tolist() == [border_vertex_linear, center_linear]
     assert state["vertex_energies"].tolist() == [13.0, 12.0]
+    assert state["pointer_map"].dtype == np.uint64
+    assert state["d_over_r_map"].dtype == np.float64
     assert np.isneginf(energy_map_temp.ravel(order="F")[center_linear])
     assert np.isneginf(energy_map_temp.ravel(order="F")[border_vertex_linear])
     assert vertex_index_map.ravel(order="F")[center_linear] == 1
@@ -59,6 +64,7 @@ def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
     assert np.all(strel["coords"] >= 0)
     assert np.all(strel["coords"] < np.array([3, 3, 3], dtype=np.int32))
     assert len(strel["coords"]) < 27
+    assert strel["pointer_indices"].dtype == np.uint64
     assert strel["pointer_indices"].tolist() == [14, 15, 17, 18, 23, 24, 26, 27]
 
 
@@ -130,6 +136,28 @@ def test_matlab_global_watershed_insert_available_location_secondary_seed_replac
     assert updated == [11, 22, 44]
 
 
+def test_matlab_global_watershed_reset_join_locations_matches_indexed_matlab_removal():
+    updated, is_clear = _matlab_global_watershed_reset_join_locations(
+        [11, 22, 22, 33, 44],
+        next_vertex_locations=np.array([22, 44, 44], dtype=np.int64),
+        is_current_location_clear=False,
+    )
+
+    assert is_clear is True
+    assert updated == [11, 22, 33]
+
+
+def test_matlab_global_watershed_reset_join_locations_keeps_cleared_tail_behavior():
+    updated, is_clear = _matlab_global_watershed_reset_join_locations(
+        [11, 22, 33, 44],
+        next_vertex_locations=np.array([22, 44], dtype=np.int64),
+        is_current_location_clear=True,
+    )
+
+    assert is_clear is True
+    assert updated == [11, 33]
+
+
 def test_generate_edge_candidates_matlab_global_watershed_recovers_simple_bridge():
     energy = np.ones((5, 5, 5), dtype=np.float32)
     energy[1, 2, 2] = -1.0
@@ -167,6 +195,8 @@ def test_generate_edge_candidates_matlab_global_watershed_recovers_simple_bridge
     assert candidates["diagnostics"]["candidate_traced_edge_count"] == 1
     assert candidates["pointer_map"].shape == energy.shape
     assert candidates["raw_pointer_map"].shape == energy.shape
+    assert candidates["raw_pointer_map"].dtype == np.uint64
+    assert candidates["d_over_r_map"].dtype == np.float64
     assert candidates["vertex_index_map"].shape == energy.shape
 
 
@@ -216,6 +246,61 @@ def test_matlab_global_watershed_scale_pointer_map_matches_final_matlab_formula(
 
     assert scaled[1, 1, 1] == np.float32(1000.0 / 27.0 * 14.0)
     assert scaled[1, 1, 2] == np.float32(1000.0 / 27.0 * 27.0)
+
+
+def test_matlab_global_watershed_trace_half_follows_linear_lut_offsets():
+    shape = (5, 5, 5)
+    pointer_map = np.zeros(shape, dtype=np.uint64)
+    size_map = np.ones(shape, dtype=np.int16)
+    strel = _matlab_global_watershed_current_strel(
+        63,
+        current_scale_label=1,
+        shape=shape,
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+        step_size_per_origin_radius=1.0,
+    )
+    offsets = strel["offsets"]
+    pointer_indices = strel["pointer_indices"]
+    forward_x_idx = int(pointer_indices[np.all(offsets == np.array([1, 0, 0]), axis=1)][0])
+
+    pointer_map[2, 2, 2] = np.uint64(forward_x_idx)
+    pointer_map[3, 2, 2] = np.uint64(forward_x_idx)
+
+    traced = _matlab_global_watershed_trace_half(
+        63,
+        pointer_map=pointer_map,
+        size_map=size_map,
+        shape=shape,
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+        step_size_per_origin_radius=1.0,
+    )
+
+    assert traced == [63, 62, 61]
+
+
+def test_matlab_global_watershed_finalize_edge_trace_samples_linear_trace_directly():
+    shape = (3, 3, 3)
+    energy_map = np.arange(27, dtype=np.float32).reshape(shape, order="F")
+    scale_image = (100 + np.arange(27, dtype=np.int16)).reshape(shape, order="F")
+
+    trace, energy_trace, scale_trace = _matlab_global_watershed_finalize_edge_trace(
+        [13, 12],
+        [14, 17],
+        shape=shape,
+        energy_map=energy_map,
+        scale_image=scale_image,
+    )
+
+    assert trace.tolist() == [
+        [0.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [2.0, 1.0, 1.0],
+        [2.0, 2.0, 1.0],
+    ]
+    assert energy_trace.tolist() == [12.0, 13.0, 14.0, 17.0]
+    assert scale_trace.tolist() == [112, 113, 114, 117]
 
 
 def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_payload():

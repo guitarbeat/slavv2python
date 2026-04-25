@@ -7,6 +7,7 @@ import numpy as np
 from source.core import energy_storage as _energy_storage
 
 from . import backends, native_hessian
+from .provenance import energy_origin_for_method
 
 
 def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
@@ -85,11 +86,7 @@ def _energy_result_payload(
         "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
         "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
         "energy_sign": config["energy_sign"],
-        "energy_origin": (
-            "python_native_hessian"
-            if config["energy_method"] == "hessian"
-            else f"python_{config['energy_method']}"
-        ),
+        "energy_origin": energy_origin_for_method(str(config["energy_method"])),
         "image_shape": image_shape,
     }
     if energy_4d is not None:

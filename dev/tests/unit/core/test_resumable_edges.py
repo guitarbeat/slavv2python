@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import joblib
 import numpy as np
@@ -126,7 +126,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         "lumen_radius_microns": np.array([1.0], dtype=np.float32),
         "lumen_radius_pixels_axes": np.ones((1, 3), dtype=np.float32),
         "energy_sign": -1.0,
-        "energy_origin": "matlab_batch_hdf5",
+        "energy_origin": "python_native_hessian",
     }
     vertices = {
         "positions": np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float32),
@@ -215,5 +215,3 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     candidate_checkpoint = joblib.load(candidate_checkpoint_path)
     assert candidate_checkpoint["connections"].tolist() == [[0, 1]]
     assert candidate_checkpoint["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
-
-

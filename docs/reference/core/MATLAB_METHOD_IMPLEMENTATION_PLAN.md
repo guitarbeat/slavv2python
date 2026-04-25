@@ -1,19 +1,18 @@
-# MATLAB Method Implementation Plan
+﻿# MATLAB Method Implementation Plan
 
 [Up: Reference Docs](../README.md)
 
-This document defines what it means to say that Python "implements the paper's
-method" for SLAVV and records the remaining work to make that statement
-truthful.
+This document defines what it means to say that Python implements the released
+SLAVV method and records the remaining work to make that statement truthful.
 
 ## Purpose
 
 - Resolve ambiguity between paper prose, released MATLAB source, and current
   Python status.
 - Define the canonical source-of-truth hierarchy for parity work.
-- Separate "source-level porting" from "artifact-proven implementation".
-- Provide the concrete sequence required to fully implement the released SLAVV
-  method in Python.
+- Separate source-level porting from artifact-proven implementation.
+- Track the native-first transition from historical MATLAB-imported exact reruns
+  to a canonical Python exact route.
 
 ## Canonical Hierarchy
 
@@ -27,6 +26,7 @@ When these sources differ, use this order:
 Implications:
 
 - The released MATLAB code is the executable specification for parity work.
+- Preserved MATLAB vectors are the oracle proof artifacts.
 - The paper prose is explanatory context, not a higher-priority spec than the
   released MATLAB code.
 - Current Python docs must never overrule either the MATLAB source or proof
@@ -41,166 +41,128 @@ Use the following labels precisely:
   equal to the MATLAB implementation.
 - `Source-aligned`:
   the Python stage appears line-by-line aligned with the released MATLAB source,
-  but `prove-exact` is not yet green for that stage or route.
+  but the maintained proof gate is not yet green for that stage.
 - `Artifact-proven exact`:
-  the Python stage matches preserved MATLAB vectors exactly under
-  `prove-exact`.
+  the Python stage matches preserved MATLAB vectors exactly under the maintained
+  proof surface.
 - `Full paper method implemented in Python`:
-  Python reproduces the method end to end from raw image inputs, not only on the
-  imported-MATLAB exact route.
+  Python reproduces the method end to end from raw image inputs without runtime
+  dependence on imported MATLAB energy artifacts.
 
 Do not use `Exact` or `100%` for a stage unless the stage is artifact-proven.
 
-## Current Scope Boundary
+## Current Exact-Route Boundary
 
-The current exact imported-MATLAB route is narrower than the full paper method.
+The maintained exact route is now native-first.
 
-- It only activates when `comparison_exact_network` is enabled.
-- It only activates when `energy_origin == matlab_batch_hdf5`.
-- It therefore reuses MATLAB-produced energy artifacts rather than proving that
-  Python independently reproduces the paper's linear filtering step from raw
-  input images.
+- It activates when `comparison_exact_network` is enabled.
+- It accepts any exact-compatible energy provenance.
+- The canonical provenance is `python_native_hessian`.
+- `matlab_batch_hdf5` remains accepted only for historical replay,
+  regression comparison, and oracle-backed diagnostics.
+- Preserved MATLAB vectors remain the proof oracle for `prove-exact`.
 
-See:
-
-- `source/slavv/core/_edge_candidates/common.py`
-- `source/slavv/core/_edges/standard.py`
-- `docs/reference/core/EXACT_PROOF_FINDINGS.md`
+The parity-facing orchestration surface for this work now lives under
+`source/core/matlab_compat/`, which mirrors the released MATLAB stage and
+function boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
 
 | Stage | Current status | Truthful claim today | Main blocker |
 | --- | --- | --- | --- |
-| Energy / size image generation | Not part of the current exact imported-MATLAB proof target | Not yet a full Python implementation of the paper's end-to-end method | The exact route currently reuses MATLAB energy artifacts |
-| Vertex extraction | Source-aligned and artifact-proven on the imported-MATLAB exact route | Exact only on the imported-MATLAB exact route, not yet full-method Python from raw input | Depends on imported MATLAB energy inputs |
-| Edge extraction | Source-aligned in many places, but not artifact-proven | Not yet exact | `prove-exact` still fails at `edges.connections` |
+| Energy / size image generation | Native matched-filter implementation is the canonical exact-compatible source | Python now has a native exact-route energy implementation and no longer depends on imported MATLAB energy at runtime | Keep broadening MATLAB-oracle fixture coverage and preserve direct/resumable parity |
+| Vertex extraction | Runnable on the native-first exact route | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges/network |
+| Edge extraction | Source-aligned in many places, but not artifact-proven | Not yet exact | `prove-exact` still fails downstream at `edges.connections` until the edge route is fully closed |
 | Edge cleanup / bridge insertion | Source-aligned in many places, but not artifact-proven | Not yet exact | Downstream of unresolved edge mismatch |
 | Network / strand assembly | Source-aligned in many places, but not artifact-proven | Not yet exact | Downstream of unresolved edge mismatch |
 
 ## What Must Be True Before We Claim Full Python Implementation
 
-1. The imported-MATLAB exact route must pass `prove-exact --stage all`.
-2. The parity docs must stop using `Exact` for stages that are only source-level
-   ports.
-3. Python must independently reproduce the paper's energy / size image generation
-   from raw inputs, not only consume imported MATLAB energy artifacts.
-4. That Python-native path must then be validated against the released MATLAB
-   implementation and artifacts.
+1. The native-first exact route must pass `prove-exact --stage all`.
+2. Maintained docs must describe `python_native_hessian` as the canonical
+   exact-compatible source surface and must not describe imported MATLAB energy
+   as the active runtime dependency.
+3. Native energy fixture coverage must remain green for projected energy,
+   `scale_indices`, `energy_4d`, and key intermediates such as Laplacian and
+   valid-mask surfaces.
+4. Vertices, edges, and network must be artifact-proven on the native-first
+   exact route, with preserved MATLAB vectors still serving as the oracle.
 
-## Immediate Implementation Order
+## Implementation Phases
 
-### Phase 1: Close The Imported-MATLAB Exact Route
+### Phase 1: Native Energy Cutover
 
-This phase is about getting the current exact-route artifact proof green.
+Status: complete enough to change the canonical route.
+
+Completed work:
+
+1. Native Hessian matched filtering now implements the maintained raw-image
+   energy stage.
+2. `python_native_hessian` is the canonical exact-compatible provenance.
+3. The exact-route gate and proof tooling no longer require
+   `matlab_batch_hdf5`.
+4. `source/core/matlab_compat/` now provides MATLAB-shaped orchestration and
+   function wrappers for audits and proof routing.
+
+### Phase 2: Close Downstream Native Exact Parity
+
+Status: active.
 
 Primary work items:
 
-1. Close the remaining `edges.connections` mismatch on the exact route.
-2. Re-run `prove-exact` after every math-bearing edge change.
+1. Close the remaining `edges.connections` mismatch on the native-first exact
+   route.
+2. Re-run `prove-exact` after every math-bearing edge or network change.
 3. Keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
    measured effect of each fix.
+4. Continue using `source/core/matlab_compat/` as the parity-facing audit
+   surface instead of ad hoc route descriptions.
 
 Acceptance gate:
 
-- `vertices`, `edges`, and `network` all pass `prove-exact` on the imported-
-  MATLAB exact route.
+- `vertices`, `edges`, and `network` all pass `prove-exact` on the native-first
+  exact route.
 
-### Current File-Level Gap Checklist
+## Current File-Level Gap Checklist
 
-These are the concrete code surfaces that still need work before Phase 1 is
-done.
+These are the concrete code surfaces that still need work before downstream
+native exact parity is done.
 
-1. `source/slavv/core/_edge_candidates/global_watershed.py`
+1. `source/core/_edge_candidates/global_watershed.py`
    Close the remaining candidate-generation gap against preserved MATLAB edge
-   pairs. The current exact route still misses MATLAB-valid connections before
-   chooser cleanup.
-2. `source/slavv/core/_edge_selection/conflict_painting.py`
+   pairs. Candidate emission still appears to be the first major downstream
+   mismatch surface.
+2. `source/core/_edge_selection/conflict_painting.py`
    Continue auditing conflict-painting acceptance order against released MATLAB
-   `choose_edges_V200.m`. This is still one of the main places where MATLAB-
-   valid pairs are lost after candidate generation.
-3. `source/slavv/core/_edge_selection/cleanup.py`
-   Re-check crop, degree, orphan, and cycle cleanup against the exact-route
-   proof artifacts whenever `edges.connections` improves but is still not
-   green.
-4. `source/slavv/core/_edges/bridge_vertices.py`
-   Keep the bridge path in sync with the exact-route proof surface. This stage
-   is downstream of the unresolved edge mismatch and should not be called exact
-   until the full edge artifact proof is green.
-5. `source/slavv/io/matlab_exact_proof.py` and
-   `dev/scripts/cli/parity_experiment.py`
-   Preserve the proof harness as the acceptance gate for every exact-route
-   change. Do not regress the staged artifact comparison contract while fixing
-   edge math.
-
-### Exact-Route Patch Order
-
-When Phase 1 work is active, patch in this order unless the latest proof run
-shows an earlier surface is already green:
-
-1. `source/slavv/core/_edge_candidates/global_watershed.py`
-   Treat upstream candidate emission as the first target whenever candidate
-   coverage is still missing MATLAB-valid pairs.
-2. `source/slavv/core/_edge_selection/conflict_painting.py`
-   Move here once candidate coverage is materially closer and the remaining
-   loss appears during chosen-edge acceptance.
-3. `source/slavv/core/_edge_selection/cleanup.py`
-   Audit crop timing and cleanup order only after the upstream candidate
-   surface and conflict acceptance order have been measured.
-4. `source/slavv/core/_edges/bridge_vertices.py` and
-   `source/slavv/core/graph.py`
-   Only patch these if the first failing proof field or replay evidence points
-   to a bridge-specific or network-specific mismatch after edge parity improves.
-
-### Exact-Route Iteration Loop
-
-For every math-bearing Phase 1 patch, use this exact sequence:
-
-1. Run targeted unit tests for the touched subsystem.
-2. Run `python -m ruff check` on the touched files.
-3. Run `python -m mypy` on the touched source modules.
-4. Run the developer parity helper on a reusable staged run root:
-   - `capture-candidates` if the upstream candidate surface is still in doubt
-   - `replay-edges` if you are isolating chooser or cleanup behavior
-   - `prove-exact --stage all` only after the earlier gates are informative
-5. Record the first failing field and the measured delta in
-   `EXACT_PROOF_FINDINGS.md`.
-
-Do not weaken proof normalization or comparison semantics to make a run pass.
-`prove-exact` is the acceptance gate, not a negotiable summary surface.
-
-### Phase 2: Remove The Remaining "Imported MATLAB Only" Boundary
-
-This phase is about implementing the paper's full method in Python rather than
-only the imported-MATLAB parity route.
-
-Primary work items:
-
-1. Audit Python's native energy / size generation against the released MATLAB
-   energy-filtering implementation and the paper's "Energy: Multi-scale linear
-   filtering" section.
-2. Define a proof surface for Python-native energy outputs.
-3. Validate the native Python path from raw image to vectors against the released
-   MATLAB implementation.
-
-Acceptance gate:
-
-- Python can produce energy, vertices, edges, and network outputs from raw image
-  inputs without relying on imported MATLAB energy artifacts, and those outputs
-  are artifact-proven against MATLAB.
+   `choose_edges_V200.m`.
+3. `source/core/_edge_selection/cleanup.py`
+   Re-check crop, degree, orphan, and cycle cleanup whenever
+   `edges.connections` improves but remains red.
+4. `source/core/_edges/bridge_vertices.py`
+   Keep the bridge path in sync with the exact-route proof surface.
+5. `source/core/graph.py`
+   Audit strand ordering and network assembly only after the upstream edge proof
+   surfaces are materially closer.
+6. `dev/scripts/cli/parity_experiment.py` and `source/io/matlab_exact_proof.py`
+   Preserve the proof harness as the acceptance gate for native-first exact
+   reruns.
 
 ## Documentation Rules
 
 Apply these rules across parity docs:
 
+- Use `native-first exact route` for the current maintained route.
+- Use `historical imported-MATLAB replay` only for the preserved-energy
+  compatibility surface.
 - Use `source-aligned` when code appears ported but proof is still pending.
-- Use `artifact-proven exact` only when `prove-exact` is green for that stage.
-- Say `imported-MATLAB exact route` when the route still depends on preserved
-  MATLAB energy.
-- Do not describe the current route as the full paper method in Python while the
-  energy stage is still outsourced to MATLAB artifacts.
+- Use `artifact-proven exact` only when the maintained proof gate is green for
+  that stage.
+- Do not describe the current route as imported-MATLAB-only unless you are
+  explicitly talking about the historical replay surface.
 
 ## Related Docs
 
-- `MATLAB_PARITY_MAPPING.md`: source-level stage map
+- `MATLAB_PARITY_MAPPING.md`: source-level stage map and compat-layer routing
 - `EXACT_PROOF_FINDINGS.md`: current proof failures and measured fixes
+- `ENERGY_METHODS.md`: maintained native energy backend surface
 - `../papers/journal.pcbi.1009451.pdf`: paper narrative and published methods

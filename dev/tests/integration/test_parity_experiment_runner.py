@@ -319,7 +319,7 @@ def test_rerun_python_syncs_exact_vertex_checkpoint_from_matlab(tmp_path, monkey
         source_run_root,
         stages=("energy", "vertices", "edges", "network"),
         payloads={
-            "energy": {"energy_origin": "matlab_batch_hdf5"},
+            "energy": {"energy_origin": "python_native_hessian"},
             "vertices": {
                 "positions": np.zeros((2, 3), dtype=np.float32),
                 "scales": np.zeros((2,), dtype=np.int16),
@@ -421,7 +421,7 @@ def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
         source_run_root,
         stages=("energy", "vertices", "edges", "network"),
         payloads={
-            "energy": {"energy_origin": "matlab_batch_hdf5"},
+            "energy": {"energy_origin": "python_native_hessian"},
             "vertices": vertex_payload,
             "edges": edge_payload,
             "network": network_payload,
@@ -456,6 +456,7 @@ def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
     )
     assert report_payload["passed"] is True
     assert report_payload["first_failure"] is None
+    assert report_payload["exact_route_gate"].endswith("(canonical: python_native_hessian)")
 
 
 @pytest.mark.integration
@@ -468,7 +469,7 @@ def test_prove_exact_reports_first_edge_mismatch(tmp_path):
         source_run_root,
         stages=("energy", "vertices", "edges", "network"),
         payloads={
-            "energy": {"energy_origin": "matlab_batch_hdf5"},
+            "energy": {"energy_origin": "python_native_hessian"},
         },
     )
     materialize_checkpoint_surface(
@@ -514,7 +515,7 @@ def test_prove_exact_falls_back_to_candidate_checkpoint_when_edges_checkpoint_mi
         source_run_root,
         stages=("energy", "vertices", "edges", "network"),
         payloads={
-            "energy": {"energy_origin": "matlab_batch_hdf5"},
+            "energy": {"energy_origin": "python_native_hessian"},
         },
     )
     materialize_checkpoint_surface(
@@ -574,7 +575,7 @@ def test_replay_edges_consumes_candidate_checkpoint_and_writes_proof(tmp_path, m
         stages=("energy", "vertices"),
         payloads={
             "energy": {
-                "energy_origin": "matlab_batch_hdf5",
+                "energy_origin": "python_native_hessian",
                 "energy": np.zeros((4, 4, 4), dtype=np.float32),
                 "scale_indices": np.zeros((4, 4, 4), dtype=np.int16),
                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),

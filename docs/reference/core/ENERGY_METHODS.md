@@ -1,4 +1,4 @@
-# Energy Computation Methods
+﻿# Energy Computation Methods
 
 [Up: Documentation Index](../../README.md)
 
@@ -7,6 +7,11 @@ Python SLAVV pipeline, how they interact with the energy parameter surface, and
 where to extend the implementation when a new method is needed.
 
 The active validation surface lives in `source/utils/validation.py`.
+
+When `comparison_exact_network` is enabled, the maintained exact route now
+recognizes `python_native_hessian` as the canonical exact-compatible energy
+provenance. Preserved `matlab_batch_hdf5` energy remains accepted only for
+historical replay and oracle-backed regression comparisons.
 
 ## Supported Methods
 
@@ -117,3 +122,7 @@ When adding a new energy backend, update these surfaces together:
   deliberate format change.
 - If a new backend cannot support the resumable path cleanly, stop and document
   the limitation before exposing it through the CLI.
+
+
+
+

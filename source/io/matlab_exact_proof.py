@@ -1,4 +1,4 @@
-"""Exact imported-MATLAB artifact normalization and proof helpers."""
+"""MATLAB-oracle artifact normalization and proof helpers for the exact route."""
 
 from __future__ import annotations
 

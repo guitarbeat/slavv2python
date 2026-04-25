@@ -22,6 +22,14 @@ def test_matlab_frontier_size_tolerance_matches_radius_tolerance_formula():
     assert math.isclose(tolerance, math.log(1.5) / math.log(2.0))
 
 
+def test_matlab_frontier_size_tolerance_uses_first_two_radii_like_matlab():
+    lumen_radius_microns = np.array([1.0, 2.0, 5.0], dtype=np.float32)
+
+    tolerance = _matlab_frontier_size_tolerance(lumen_radius_microns)
+
+    assert math.isclose(tolerance, math.log(1.5) / math.log(2.0))
+
+
 def test_matlab_frontier_scale_offsets_include_full_27_neighborhood_at_small_scale():
     offsets, distances = _matlab_frontier_scale_offsets(
         0,

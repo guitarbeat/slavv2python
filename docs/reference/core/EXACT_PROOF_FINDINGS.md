@@ -1,9 +1,8 @@
-# Exact Proof Findings
+﻿# Exact Proof Findings
 
 [Up: Reference Docs](../README.md)
 
-This note tracks the current imported-MATLAB exact-route proof findings while
-artifact parity is still open.
+This note tracks the maintained proof state for the native-first exact route.
 
 For canonical claim boundaries and the distinction between source-level porting
 and full Python implementation of the released SLAVV method, see
@@ -11,50 +10,80 @@ and full Python implementation of the released SLAVV method, see
 
 ## Scope
 
-- This document is only about the imported-MATLAB exact route.
+- The canonical exact route is `comparison_exact_network=True` with
+  `python_native_hessian` as the canonical exact-compatible energy provenance.
+- Preserved MATLAB vectors remain the oracle artifacts for proof.
+- `matlab_batch_hdf5` remains accepted only as a historical compatibility and
+  replay surface.
 - `100%` means artifact-level equality against preserved MATLAB vectors, not
   just matching counts.
-- The proof source is the preserved MATLAB batch under the staged comparison
-  run root, not `comparison_report.json`.
 
-## Canonical Runs
+## Native-First Track
 
-- Preserved MATLAB source run:
-  `D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial`
-- First exact-proof rerun:
-  `D:\slavv_comparisons\experiments\live-parity\runs\20260422_exact_proof_trial`
+### 1. The exact-route gate now accepts native Hessian as canonical
 
-## Findings Through April 23, 2026
+The maintained exact-route gate no longer depends on imported MATLAB energy.
+The current gate is:
 
-### 1. The proof contract needed correction before the math could be judged
+- `comparison_exact_network=True`
+- exact-compatible energy provenance
+- canonical provenance: `python_native_hessian`
 
-The first proof pass exposed representation mismatches that were not real math
-failures:
+This means the live Python exact route can now run from raw-image native energy
+while still comparing against preserved MATLAB vectors as the oracle.
 
-- exact proof must prefer `curated_vertices*.mat` over raw `vertices*.mat`
-- MATLAB spatial coordinates must be reversed into the Python checkpoint axis
-  order before comparison
-- the destination exact-route vertex checkpoint must be synced from the
-  canonical MATLAB vertex vectors before rerunning downstream stages
+### 2. Native matched-filter energy is now the canonical source surface
 
-After those fixes, the vertex stage passed exact proof.
+The maintained `hessian` path is now the canonical exact-compatible source for
+energy generation.
 
-### 2. The first real artifact failure is in `edges.connections`
+Maintained native-energy coverage now checks:
 
-After the proof-surface fixes, the first true mismatch in
-`20260422_exact_proof_trial` was:
+- projected `energy`
+- `scale_indices`
+- `energy_4d`
+- per-scale Laplacian
+- per-scale valid-mask behavior
+- direct versus resumable alignment
+
+That work moves the proof boundary downstream: the primary open parity work is
+no longer the runtime dependency on MATLAB-produced energy artifacts.
+
+### 3. The main remaining blocker is still downstream edge parity
+
+The best quantified mismatch evidence is still the historical edge-proof data
+captured before the native-first cutover. That historical evidence remains
+useful because the downstream exact edge path is substantially the same code
+surface now routed from native energy.
+
+Current practical interpretation:
+
+- energy provenance is no longer the main blocker
+- edge candidate emission and chooser cleanup remain the likely first failing
+  downstream surfaces
+- network proof remains blocked behind unresolved edge parity
+
+## Historical Quantified Findings
+
+These measurements came from the historical imported-MATLAB replay track and are
+retained here until a fresh native-first rerun replaces them with updated
+numbers.
+
+### 4. The first real artifact failure was `edges.connections`
+
+On the April 22, 2026 exact-proof rerun:
 
 - stage: `edges`
 - field: `connections`
 - MATLAB shape: `2533 x 2`
 - Python shape: `1654 x 2`
 
-That established that the remaining exact-parity gap was still a real edge-stage
-math problem, not a proof-harness formatting issue.
+That established that the remaining exact-parity gap was an edge-stage math
+problem, not merely a proof-harness formatting issue.
 
-### 3. The gap is split across both candidate generation and chosen-edge cleanup
+### 5. The gap was split across candidate generation and chosen-edge cleanup
 
-On the April 22, 2026 exact-proof rerun:
+On that same run:
 
 - raw Python edge candidates: `2364`
 - raw candidate intersection with MATLAB endpoint pairs: `2054`
@@ -68,51 +97,12 @@ After the full chosen-edge path:
 - final chosen-edge missing MATLAB pairs: `980`
 - final chosen-edge extra Python pairs: `101`
 
-So the remaining failure is not only in candidate generation. The exact route is
-also losing many MATLAB-valid pairs later in edge cleanup and selection.
+### 6. A stale Python-only cleanup gate was removed
 
-### 4. A stale Python-only energy gate was still active in `clean_edge_pairs`
+A legacy nonnegative-energy rejection in the chooser path was removed from the
+exact route because MATLAB's active deterministic path no longer uses it.
 
-The most important April 23, 2026 finding was that Python was still applying a
-legacy rejection that MATLAB's active deterministic path no longer uses.
-
-Before the fix, `prepare_candidate_indices_for_cleanup(...)` in
-`source/slavv/core/_edge_selection/payloads.py` removed any candidate whose
-energy trace ever reached `>= 0`.
-
-That rule is not part of active MATLAB `clean_edge_pairs.m` for the
-deterministic search path. In the MATLAB source, the old nonnegative-energy
-filter is commented out.
-
-Measured effect on the exact candidate surface from
-`20260422_exact_proof_trial`:
-
-- raw candidates entering cleanup: `2364`
-- candidates after the stale Python energy gate: `1861`
-- candidates removed only by that gate: `503`
-- MATLAB-valid pairs removed by that gate: `397`
-
-This was a real mathematical deviation, not just a bookkeeping difference.
-
-### 5. The exact route now bypasses that stale gate
-
-The imported-MATLAB exact route now disables the nonnegative-energy rejection,
-while legacy non-parity callers keep the old behavior.
-
-Changed surfaces:
-
-- `source/slavv/core/_edge_selection/payloads.py`
-- `source/slavv/core/_edge_selection/conflict_painting.py`
-- `source/slavv/core/_edges/bridge_vertices.py`
-
-This keeps the exact route aligned with MATLAB's active deterministic
-`clean_edge_pairs.m` semantics without widening that behavior across unrelated
-legacy paths.
-
-### 6. The replayed effect is large, but parity is still not closed
-
-Replaying the exact chooser locally on the same April 22, 2026 candidate surface
-showed a large improvement after removing the stale gate:
+Measured replay effect:
 
 Before the fix:
 
@@ -128,106 +118,37 @@ After the fix:
 - MATLAB pair intersection at final chosen edges: `1886`
 - missing MATLAB pairs at final chosen edges: `647`
 
-So this one fix closes a large part of the exact-route edge gap, but it does
-not yet achieve artifact equality with MATLAB.
-
-### 7. The remaining exact gap is now smaller and more focused
-
-After removing the stale energy gate, the remaining open issues are:
-
-- candidate generation still misses `479` MATLAB pairs before cleanup
-- later edge selection and cleanup still remove many MATLAB-valid pairs even
-  after the stale energy gate is gone
-
-The next audit targets are therefore:
-
-1. exact global watershed candidate emission
-2. conflict-painting acceptance order
-3. crop / degree / cycle cleanup behavior on the exact route
+That was a large improvement, but not enough to close parity.
 
 ## Current Status
 
-- Vertex exact proof: passing after proof-contract fixes
-- Edge exact proof: failing, but materially closer after the April 23, 2026
-  `clean_edge_pairs` fix
-- Network exact proof: still blocked downstream on the unresolved edge mismatch
+- Native energy cutover: complete enough to make native Hessian the canonical
+  exact-compatible source surface
+- Global watershed size-tolerance derivation now matches the released MATLAB
+  `get_edges_V300.m` first-two-radii formula; quantified downstream edge impact
+  still needs a fresh native-first rerun
+- Global watershed join-time `available_locations` removal now follows MATLAB's
+  indexed `intersect(...)` reset behavior instead of a looser value-based
+  filter; quantified downstream edge impact still needs a fresh native-first
+  rerun
+- Global watershed shared-state map dtypes now match MATLAB for `pointer_map`
+  (`uint64`) and `d_over_r_map` (`double`/`float64`); quantified downstream
+  edge impact still needs a fresh native-first rerun
+- Global watershed half-edge backtracking now follows MATLAB's direct
+  `tracing_location - strel_linear_LUT_range{...}(pointer_map(...))` linear
+  offset step, and final edge energy/scale traces are now sampled directly
+  from the assembled MATLAB-order linear trace instead of being re-sampled
+  through coordinate clipping; quantified downstream edge impact still needs a
+  fresh native-first rerun
+- Vertex exact proof: downstream-ready on the native-first route
+- Edge exact proof: still open
+- Network exact proof: still blocked downstream on unresolved edge parity
 
-## Claim Boundary
+## Next Proof Targets
 
-The exact imported-MATLAB route is not yet proven `100%` equal to MATLAB.
-The honest status is:
-
-- many core mathematical surfaces are now source-level aligned
-- at least one major Python-only deviation has been removed
-- full artifact proof is still red until `vertices`, `edges`, and `network`
-  all pass `prove-exact`
-
-## April 24, 2026 Informative Exact-Route Iteration
-
-### 8. The exact route now runs past the old immediate memory failure
-
-The fresh exact-route rerun at
-`D:\slavv_comparisons\experiments\live-parity\runs\20260424_exact_boundary_trial`
-did not crash immediately in `global_watershed.py` the way earlier exact runs
-had.
-
-During the one allowed live iteration:
-
-- the exact child worker stayed alive and active
-- worker CPU climbed past `1000` CPU seconds
-- worker memory stabilized around `1.3 GB`
-- the staged run root kept updating under `99_Metadata/run_snapshot.json`
-
-So the current blocker is no longer the old instant RAM failure at exact-route
-startup.
-
-### 9. The runtime heartbeat is now visible, but only inside the stage snapshot
-
-The new heartbeat wiring is working, but it currently lands in the nested stage
-surface rather than the top-level `current_detail` field.
-
-Observed live snapshot state during the iteration:
-
-- top-level `current_stage`: `edges`
-- top-level `current_detail`: `null`
-- nested `stages.edges.detail`:
-  `Generating edge candidates through MATLAB-style frontier workflow (iterations=54784, candidates=2524)`
-
-This means the run is no longer opaque, but callers that only read the
-top-level `current_detail` field will still incorrectly think the stage is
-silent.
-
-### 10. The candidate boundary is still not reached quickly enough for same-night proof
-
-The exact-route candidate checkpoint added for this pass is:
-
-- `02_Output/python_results/checkpoints/checkpoint_edge_candidates.pkl`
-
-On the April 24, 2026 live iteration, neither of these existed by the end of
-the monitoring window:
-
-- `checkpoint_edge_candidates.pkl`
-- `checkpoint_edges.pkl`
-
-That means the single informative iteration still could not reach the first
-proofable boundary needed to decide whether the next blocker is:
-
-- upstream candidate emission, or
-- downstream chooser / cleanup
-
-### 11. Tonight's decisive result is therefore still runtime-boundary failure
-
-For the April 24, 2026 one-iteration test, the honest outcome is:
-
-- the exact route is genuinely running now
-- the new candidate-boundary proof surface is in place
-- but the rerun still did not reach the candidate checkpoint within the single
-  allowed iteration window
-
-So tonight's blocker remains:
-
-`runtime cost before the first proofable candidate boundary`
-
-This is not evidence that the exact edge math is correct or incorrect. It is
-evidence that the exact route is still too expensive to produce the next
-decision-making artifact quickly enough under the current live rerun path.
+1. Re-run `prove-exact` on the native-first route and record the first failing
+   downstream field.
+2. Keep candidate-boundary and replay-edge measurements current whenever edge
+   math changes.
+3. Replace the historical imported-MATLAB counts above with native-first rerun
+   measurements once they are available.

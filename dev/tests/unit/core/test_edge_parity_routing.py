@@ -8,7 +8,7 @@ from source.core._edge_candidates.common import _use_matlab_frontier_tracer
 from source.core._edges import standard as standard_edges
 
 
-def test_use_matlab_frontier_tracer_requires_exact_network_and_matlab_energy_origin():
+def test_use_matlab_frontier_tracer_requires_exact_network_and_exact_compatible_energy_origin():
     assert not _use_matlab_frontier_tracer(
         {"energy_origin": "matlab_batch_hdf5"},
         {"comparison_exact_network": False},
@@ -17,13 +17,9 @@ def test_use_matlab_frontier_tracer_requires_exact_network_and_matlab_energy_ori
         {"energy_origin": "python_pipeline"},
         {"comparison_exact_network": True},
     )
-    assert not _use_matlab_frontier_tracer(
-        {"energy_origin": "python_native_hessian"},
-        {"comparison_exact_network": True},
-    )
     assert _use_matlab_frontier_tracer(
         {"energy_origin": "python_native_hessian"},
-        {"comparison_exact_network": True, "native_energy_exact_proof": True},
+        {"comparison_exact_network": True},
     )
     assert _use_matlab_frontier_tracer(
         {"energy_origin": "matlab_batch_hdf5"},
@@ -81,7 +77,7 @@ def test_standard_extract_edges_uses_matlab_frontier_branch_when_enabled():
         "lumen_radius_microns": np.array([1.0], dtype=np.float32),
         "lumen_radius_pixels_axes": np.ones((1, 3), dtype=np.float32),
         "energy_sign": -1.0,
-        "energy_origin": "matlab_batch_hdf5",
+        "energy_origin": "python_native_hessian",
     }
     vertices = {
         "positions": np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float32),

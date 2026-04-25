@@ -224,7 +224,11 @@ def test_load_params_file_uses_source_default_and_override(tmp_path):
     assert override_params == {"edge_method": "tracing"}
 
 
-def test_validate_exact_proof_source_surface_accepts_required_artifacts(tmp_path):
+@pytest.mark.parametrize("energy_origin", ["python_native_hessian", "matlab_batch_hdf5"])
+def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(
+    tmp_path,
+    energy_origin,
+):
     run_root = _build_source_run_root(tmp_path)
     _materialize_exact_matlab_batch(run_root)
     _write_json(
@@ -234,7 +238,7 @@ def test_validate_exact_proof_source_surface_accepts_required_artifacts(tmp_path
     materialize_checkpoint_surface(
         run_root,
         stages=("energy",),
-        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
+        payloads={"energy": {"energy_origin": energy_origin}},
     )
 
     surface = parity_experiment.validate_exact_proof_source_surface(run_root)
@@ -257,7 +261,7 @@ def test_validate_exact_proof_source_surface_requires_exact_route_gate(tmp_path)
         parity_experiment.validate_exact_proof_source_surface(run_root)
 
 
-def test_validate_exact_proof_source_surface_requires_matlab_batch_hdf5(tmp_path):
+def test_validate_exact_proof_source_surface_requires_exact_compatible_energy_origin(tmp_path):
     run_root = _build_source_run_root(tmp_path)
     _materialize_exact_matlab_batch(run_root)
     _write_json(
@@ -270,7 +274,7 @@ def test_validate_exact_proof_source_surface_requires_matlab_batch_hdf5(tmp_path
         payloads={"energy": {"energy_origin": "python_native"}},
     )
 
-    with pytest.raises(ValueError, match="matlab_batch_hdf5"):
+    with pytest.raises(ValueError, match="exact-compatible"):
         parity_experiment.validate_exact_proof_source_surface(run_root)
 
 
@@ -292,7 +296,7 @@ def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
         stages=("energy",),
         payloads={
             "energy": {
-                "energy_origin": "matlab_batch_hdf5",
+                "energy_origin": "python_native_hessian",
                 "energy": np.zeros((10, 10, 10), dtype=np.float32),
                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),
             }
@@ -334,7 +338,7 @@ def test_build_exact_preflight_report_refuses_on_destination_collision(
         stages=("energy",),
         payloads={
             "energy": {
-                "energy_origin": "matlab_batch_hdf5",
+                "energy_origin": "python_native_hessian",
                 "energy": np.zeros((2, 2, 2), dtype=np.float32),
                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),
             }

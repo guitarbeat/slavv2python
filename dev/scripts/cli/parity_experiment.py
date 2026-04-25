@@ -1,4 +1,4 @@
-﻿"""Developer helpers for imported-MATLAB parity experiments."""
+"""Developer helpers for native-first MATLAB-oracle parity experiments."""
 
 # ruff: noqa: E402
 
@@ -22,6 +22,11 @@ if str(SOURCE_DIR) not in sys.path:
 from source import SLAVVProcessor
 from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
 from source.core._edges.postprocess import finalize_edges_matlab_style
+from source.core._energy.provenance import (
+    exact_compatible_energy_origins_text,
+    exact_route_gate_description,
+    is_exact_compatible_energy_origin,
+)
 from source.core.edge_candidates import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates_matlab_frontier,
@@ -125,7 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the developer parity experiment parser."""
     parser = argparse.ArgumentParser(
         description=(
-            "Developer helpers for rerunning and proving imported-MATLAB exact-route parity "
+            "Developer helpers for rerunning and proving native-first exact-route parity "
             "against an existing staged comparison run."
         ),
     )
@@ -181,7 +186,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     prove = subparsers.add_parser(
         "prove-exact",
-        help="Compare rerun Python checkpoints against preserved raw MATLAB vectors on the exact imported-MATLAB route.",
+        help="Compare rerun Python checkpoints against preserved raw MATLAB vectors on the native-first exact route.",
     )
     prove.add_argument(
         "--source-run-root",
@@ -332,9 +337,11 @@ def validate_exact_proof_source_surface(source_run_root: Path) -> ExactProofSour
         str(energy_checkpoint_path),
     )
     energy_origin = energy_payload.get("energy_origin", energy_payload.get("energy_source"))
-    if energy_origin != "matlab_batch_hdf5":
+    if not is_exact_compatible_energy_origin(energy_origin):
+        accepted = exact_compatible_energy_origins_text()
         raise ValueError(
-            f"source energy provenance must be matlab_batch_hdf5, found: {energy_origin!r}"
+            "source energy provenance must be exact-compatible "
+            f"({accepted}), found: {energy_origin!r}"
         )
 
     matlab_batch_dir = find_single_matlab_batch_dir(run_root)
@@ -378,7 +385,7 @@ def build_exact_preflight_report(
     memory_safety_fraction: float,
     force: bool,
 ) -> dict[str, Any]:
-    """Build the fail-fast preflight report for an exact imported-MATLAB run."""
+    """Build the fail-fast preflight report for a native-first exact run."""
     surface = validate_exact_preflight_surface(source_run_root, dest_run_root)
     memory_estimate = estimate_exact_route_memory(surface.image_shape)
     available_memory_bytes = int(psutil.virtual_memory().available)
@@ -392,7 +399,7 @@ def build_exact_preflight_report(
         "passed": passed,
         "source_run_root": str(surface.source_surface.run_root),
         "dest_run_root": str(surface.dest_run_root),
-        "report_scope": "exact imported-MATLAB preflight only",
+        "report_scope": "native-first exact preflight only",
         "image_shape": list(surface.image_shape),
         "memory_estimate": memory_estimate,
         "available_memory_bytes": available_memory_bytes,
@@ -872,7 +879,9 @@ def _build_candidate_exact_proof_report(
         "stages": ["edges"],
         "stage_summaries": {"edges": stage_summary},
         "first_failing_stage": first_failure["stage"] if first_failure is not None else None,
-        "first_failing_field_path": first_failure["field_path"] if first_failure is not None else None,
+        "first_failing_field_path": first_failure["field_path"]
+        if first_failure is not None
+        else None,
         "first_failure": first_failure,
         "candidate_surface": coverage_report,
         "report_scope": "candidate boundary fallback (edges.connections only)",
@@ -1210,16 +1219,18 @@ def _handle_prove_exact(args: argparse.Namespace) -> None:
         )
     else:
         python_artifacts = load_normalized_python_checkpoints(checkpoints_dir, selected_stages)
-        report_payload = compare_exact_artifacts(matlab_artifacts, python_artifacts, selected_stages)
+        report_payload = compare_exact_artifacts(
+            matlab_artifacts, python_artifacts, selected_stages
+        )
     report_payload.update(
         {
             "source_run_root": str(source_surface.run_root),
             "dest_run_root": str(dest_run_root),
             "matlab_batch_dir": str(source_surface.matlab_batch_dir),
             "report_scope": str(
-                report_payload.get("report_scope", "imported-matlab exact route only")
+                report_payload.get("report_scope", "native-first exact route only")
             ),
-            "exact_route_gate": "comparison_exact_network + matlab_batch_hdf5",
+            "exact_route_gate": exact_route_gate_description(),
         }
     )
 
@@ -1419,5 +1430,3 @@ def main(argv: list[str] | None = None) -> None:
 
 if __name__ == "__main__":
     main()
-
-
