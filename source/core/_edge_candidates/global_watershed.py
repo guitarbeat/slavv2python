@@ -409,21 +409,18 @@ def _matlab_global_watershed_scale_pointer_map(
 
     scale_labels = size_map[pointer_mask].astype(np.int64, copy=False)
     scale_indices = np.clip(scale_labels - 1, 0, len(lumen_radius_microns) - 1)
-    strel_lengths = np.asarray(
-        [
-            len(
-                _build_matlab_global_watershed_lut(
-                    int(scale_index),
-                    size_of_image=pointer_map.shape,
-                    lumen_radius_microns=lumen_radius_microns,
-                    microns_per_voxel=microns_per_voxel,
-                    step_size_per_origin_radius=step_size_per_origin_radius,
-                )["linear_offsets"]
-            )
-            for scale_index in scale_indices
-        ],
-        dtype=np.float32,
-    )
+    unique_lengths = np.zeros(len(lumen_radius_microns), dtype=np.float32)
+    for i in range(len(lumen_radius_microns)):
+        unique_lengths[i] = len(
+            _build_matlab_global_watershed_lut(
+                i,
+                size_of_image=pointer_map.shape,
+                lumen_radius_microns=lumen_radius_microns,
+                microns_per_voxel=microns_per_voxel,
+                step_size_per_origin_radius=step_size_per_origin_radius,
+            )["linear_offsets"]
+        )
+    strel_lengths = unique_lengths[scale_indices]
     scaled_pointer_map[pointer_mask] = (
         1000.0 / np.maximum(strel_lengths, 1.0) * pointer_map[pointer_mask].astype(np.float32)
     )
