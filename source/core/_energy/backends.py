@@ -145,7 +145,7 @@ def _matlab_hessian_energy(
     microns_per_voxel: np.ndarray,
     energy_sign: float,
 ) -> np.ndarray:
-    """Approximate MATLAB's curvature-weighted Hessian energy response."""
+    """Legacy Gaussian/Hessian approximation retained for non-parity experiments."""
     grad_y = _matched_filter_derivative(
         image,
         sigma_object,
@@ -295,7 +295,7 @@ def _cupy_matlab_hessian_energy(
     microns_per_voxel: np.ndarray,
     energy_sign: float,
 ) -> np.ndarray:
-    """Approximate MATLAB Hessian energy using CuPy for derivative kernels."""
+    """GPU variant of the legacy Gaussian/Hessian approximation path."""
     grad_y = _cupy_matched_filter_derivative(
         image,
         sigma_object,

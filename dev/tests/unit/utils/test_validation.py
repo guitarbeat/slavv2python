@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from source.utils import validate_parameters
 
 
@@ -6,6 +6,7 @@ def test_validate_parameters_defaults():
     validated = validate_parameters({})
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
+    assert validated["energy_projection_mode"] == "matlab"
     assert validated["energy_sign"] == -1.0
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
     assert validated["sigma_per_influence_vertices"] == 1.0
@@ -40,6 +41,12 @@ def test_validate_parameters_accepts_zarr_energy_storage_format():
     validated = validate_parameters({"energy_storage_format": "zarr"})
 
     assert validated["energy_storage_format"] == "zarr"
+
+
+def test_validate_parameters_accepts_paper_energy_projection_mode():
+    validated = validate_parameters({"energy_projection_mode": "paper"})
+
+    assert validated["energy_projection_mode"] == "paper"
 
 
 def test_validate_parameters_coerces_integer_like_matlab_settings():
@@ -113,5 +120,3 @@ def test_validate_parameters_warns_for_unusual_excitation_wavelength():
 def test_validate_parameters_rejects_invalid_values(params, message):
     with pytest.raises(ValueError, match=message):
         validate_parameters(params)
-
-

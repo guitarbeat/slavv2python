@@ -1,4 +1,4 @@
-﻿"""
+"""
 Energy field calculations for source.
 Includes Hessian-based vessel enhancement (Frangi/Sato) and Numba-accelerated gradient computation.
 """
@@ -16,6 +16,7 @@ from ._energy.chunking import (
     _energy_lattice,
     _energy_result_payload,
     _open_energy_storage_array,
+    _project_scale_stack,
     _remove_storage_path,
     _select_energy_storage_format,
 )
@@ -36,13 +37,14 @@ def calculate_energy_field(
     image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
 ) -> dict[str, Any]:
     """
-    Calculate multi-scale energy field using Hessian-based filtering.
+    Calculate multi-scale energy field using MATLAB-faithful matched filtering.
 
-    This implements the energy calculation from ``get_energy_V202`` in
-    MATLAB, including PSF prefiltering and configurable Gaussian/annular
-    ratios. Set ``energy_method='frangi'`` or ``'sato'`` in ``params`` to use
-    scikit-image's :func:`~skimage.filters.frangi` or
-    :func:`~skimage.filters.sato` vesselness filters as alternative backends.
+    The default ``energy_method='hessian'`` path implements the released
+    ``get_energy_V202`` / ``energy_filter_V200`` style matched-filter energy
+    stage, including MATLAB-style octave downsampling and a configurable
+    projection mode over the scale dimension. Set ``energy_method='frangi'``,
+    ``'sato'``, ``'simpleitk_objectness'``, or ``'cupy_hessian'`` in
+    ``params`` to use explicit non-parity backends.
     """
     image = image.astype(np.float32, copy=False)
     config = _prepare_energy_config(image, params)
@@ -91,6 +93,7 @@ def calculate_energy_field_resumable(
             remove_storage_path=_remove_storage_path,
             open_energy_storage_array=_open_energy_storage_array,
             compute_energy_scale=_compute_energy_scale,
+            project_scale_stack=_project_scale_stack,
         ),
     )
 
@@ -103,6 +106,3 @@ __all__ = [
     "is_numba_acceleration_enabled",
     "spherical_structuring_element",
 ]
-
-
-

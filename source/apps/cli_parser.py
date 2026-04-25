@@ -55,6 +55,15 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         ),
     )
     run_parser.add_argument(
+        "--energy-projection-mode",
+        choices=["matlab", "paper"],
+        default="matlab",
+        help=(
+            "Projection mode for the default Hessian energy stack (default: matlab). "
+            "'paper' uses the published blended scale-estimate projection."
+        ),
+    )
+    run_parser.add_argument(
         "--edge-method",
         choices=["tracing", "watershed"],
         default="tracing",

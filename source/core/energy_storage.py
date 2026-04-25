@@ -43,7 +43,7 @@ def zarr_chunks_for_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
             min(int(shape[0]), 64),
             min(int(shape[1]), 64),
             min(int(shape[2]), 64),
-            min(int(shape[3]), 4),
+            1,
         )
     return tuple(min(int(axis), 64) for axis in shape)
 

@@ -8,7 +8,8 @@ the Python SLAVV port.
 ## When To Use It
 
 Use `simpleitk_objectness` when you want a spacing-aware 3D vesselness backend
-without changing the default Hessian implementation for existing runs.
+without changing the default MATLAB-faithful Hessian implementation for
+existing runs.
 
 This backend is a good fit for:
 
@@ -74,7 +75,8 @@ for those controls.
 ## How It Differs From Other Energy Methods
 
 - `hessian`
-  This is the default backend and remains the production baseline.
+  This is the default backend and remains the production baseline, using the
+  native matched-filter MATLAB-style energy path.
 - `frangi`
   Uses scikit-image vesselness filtering with the current pipeline's scale
   selection logic.

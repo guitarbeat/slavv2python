@@ -1,9 +1,10 @@
-﻿"""Image processing page for the SLAVV Streamlit app."""
+"""Image processing page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import numpy as np
 import streamlit as st
+
 from source.apps.processing_state import (
     load_processing_snapshot,
     store_processing_session_state,
@@ -19,7 +20,7 @@ def show_processing_page() -> None:
     """Display the image processing page."""
     st.markdown('<h2 class="section-header">Image Processing Pipeline</h2>', unsafe_allow_html=True)
 
-    st.markdown("### ðŸ“ Upload Image")
+    st.markdown("### Upload Image")
     uploaded_file = st.file_uploader(
         "Choose a TIFF file",
         type=["tif", "tiff"],
@@ -27,7 +28,7 @@ def show_processing_page() -> None:
     )
 
     if uploaded_file is not None:
-        st.success(f"âœ… Uploaded: {uploaded_file.name}")
+        st.success(f"Ã¢Å“â€¦ Uploaded: {uploaded_file.name}")
         st.json(
             {
                 "Filename": uploaded_file.name,
@@ -43,16 +44,14 @@ def show_processing_page() -> None:
             "and advanced options. Defaults are provided for typical datasets."
         )
 
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["ðŸ”¬ Microscopy", "ðŸ“ Vessel Sizes", "âš™ï¸ Processing", "ðŸ”¬ Advanced"]
-    )
+    tab1, tab2, tab3, tab4 = st.tabs(["Microscopy", "Vessel Sizes", "Processing", "Advanced"])
 
     with tab1:
         st.markdown("#### Microscopy Parameters")
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             microns_per_voxel_y = st.number_input(
-                "Y voxel size (Î¼m)",
+                "Y voxel size (ÃŽÂ¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=1.0,
@@ -60,7 +59,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in Y dimension. (MATLAB: microns_per_voxel(1))",
             )
             microns_per_voxel_x = st.number_input(
-                "X voxel size (Î¼m)",
+                "X voxel size (ÃŽÂ¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=1.0,
@@ -68,7 +67,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in X dimension. (MATLAB: microns_per_voxel(2))",
             )
             microns_per_voxel_z = st.number_input(
-                "Z voxel size (Î¼m)",
+                "Z voxel size (ÃŽÂ¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=1.0,
@@ -91,17 +90,17 @@ def show_processing_page() -> None:
                     help="Numerical aperture of the microscope objective. (MATLAB: numerical_aperture)",
                 )
                 excitation_wavelength = st.number_input(
-                    "Excitation wavelength (Î¼m)",
+                    "Excitation wavelength (ÃŽÂ¼m)",
                     min_value=0.4,
                     max_value=3.0,
                     value=1.3,
                     step=0.1,
-                    help="Laser excitation wavelength. Typical range: 0.7-3.0 Î¼m for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
+                    help="Laser excitation wavelength. Typical range: 0.7-3.0 ÃŽÂ¼m for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
                 )
                 if not (0.7 <= excitation_wavelength <= 3.0):
                     st.markdown('<div class="warning-box">', unsafe_allow_html=True)
                     st.warning(
-                        "âš ï¸ Excitation wavelength outside typical range (0.7-3.0 Î¼m). This range is typical for two-photon microscopy. Please verify this value."
+                        "Excitation wavelength outside typical range (0.7-3.0 um). This range is typical for two-photon microscopy. Please verify this value."
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
                 sample_index_of_refraction = st.number_input(
@@ -118,7 +117,7 @@ def show_processing_page() -> None:
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             radius_smallest = st.number_input(
-                "Smallest vessel radius (Î¼m)",
+                "Smallest vessel radius (ÃŽÂ¼m)",
                 min_value=0.1,
                 max_value=100.0,
                 value=1.5,
@@ -126,7 +125,7 @@ def show_processing_page() -> None:
                 help="Radius of the smallest vessel to be detected in microns. (MATLAB: radius_of_smallest_vessel_in_microns)",
             )
             radius_largest = st.number_input(
-                "Largest vessel radius (Î¼m)",
+                "Largest vessel radius (ÃŽÂ¼m)",
                 min_value=1.0,
                 max_value=500.0,
                 value=50.0,
@@ -134,7 +133,7 @@ def show_processing_page() -> None:
                 help="Radius of the largest vessel to be detected in microns. (MATLAB: radius_of_largest_vessel_in_microns)",
             )
             if radius_largest <= radius_smallest:
-                st.error("âŒ Largest radius must be greater than smallest radius")
+                st.error("Largest radius must be greater than smallest radius")
         with col2:
             scales_per_octave = st.number_input(
                 "Scales per octave",
@@ -147,7 +146,7 @@ def show_processing_page() -> None:
             if radius_largest > radius_smallest:
                 volume_ratio = (radius_largest / radius_smallest) ** 3
                 n_scales = int(np.log(volume_ratio) / np.log(2) * scales_per_octave) + 3
-                st.info(f"ðŸ“Š This will generate approximately {n_scales} scales")
+                st.info(f"This will generate approximately {n_scales} scales")
 
     with tab3:
         st.markdown("#### Processing Parameters")
@@ -216,6 +215,16 @@ def show_processing_page() -> None:
                 help="Weighting factor of the spherical pulse over the combined weights of spherical and annular pulses. (MATLAB: spherical_to_annular_ratio)",
             )
         with col2:
+            energy_projection_mode = st.selectbox(
+                "Energy projection mode",
+                options=["matlab", "paper"],
+                index=0,
+                help=(
+                    "Projection rule for the default Hessian energy stack. "
+                    "'matlab' follows the released MATLAB minimum projection, "
+                    "while 'paper' uses the published blended scale estimate."
+                ),
+            )
             step_size_per_origin_radius = st.number_input(
                 "Step size ratio",
                 min_value=0.1,
@@ -266,7 +275,7 @@ def show_processing_page() -> None:
         app_services._render_run_dashboard(current_snapshot)
 
     if uploaded_file is not None:
-        if st.button("ðŸš€ Start Processing", type="primary", width=250):
+        if st.button("Start Processing", type="primary", width=250):
             parameters = {
                 "microns_per_voxel": [
                     microns_per_voxel_y,
@@ -284,6 +293,7 @@ def show_processing_page() -> None:
                 "max_voxels_per_node_energy": max_voxels_per_node,
                 "gaussian_to_ideal_ratio": gaussian_to_ideal_ratio,
                 "spherical_to_annular_ratio": spherical_to_annular_ratio,
+                "energy_projection_mode": energy_projection_mode,
                 "step_size_per_origin_radius": step_size_per_origin_radius,
                 "max_edge_energy": max_edge_energy,
             }
@@ -297,15 +307,15 @@ def show_processing_page() -> None:
                 )
             try:
                 validated_params = validate_parameters(parameters)
-                st.success("âœ… Parameters validated successfully")
+                st.success("Parameters validated successfully")
 
                 with st.status("Processing image...", expanded=True) as status:
                     status.update(label="Loading image...", state="running")
                     try:
                         image = app_services.cached_load_tiff_volume(uploaded_file)
-                        st.success(f"âœ… Image loaded successfully with shape: {image.shape}")
+                        st.success(f"Image loaded successfully with shape: {image.shape}")
                     except ValueError as exc:
-                        st.error(f"âŒ Error loading TIFF file: {exc}")
+                        st.error(f"Error loading TIFF file: {exc}")
                         st.stop()
 
                     processor = SLAVVProcessor()
@@ -350,10 +360,10 @@ def show_processing_page() -> None:
                 app_services._render_run_dashboard(final_snapshot)
                 if stop_after_val != "network":
                     st.warning(
-                        f"âš ï¸ Pipeline halted early at '{stop_after_val}'. Downstream results (if any) are not available."
+                        f"Pipeline halted early at '{stop_after_val}'. Downstream results (if any) are not available."
                     )
                 st.markdown('<div class="success-box">', unsafe_allow_html=True)
-                st.success("ðŸŽ‰ Processing stage completed successfully!")
+                st.success("Processing stage completed successfully!")
                 st.markdown("</div>", unsafe_allow_html=True)
                 processing_metrics = summarize_processing_metrics(results)
                 col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
@@ -382,8 +392,6 @@ def show_processing_page() -> None:
                         help="Detected branching points",
                     )
             except Exception as exc:
-                st.error(f"âŒ Processing failed: {exc!s}")
+                st.error(f"Processing failed: {exc!s}")
     else:
-        st.info("ðŸ‘† Please upload a TIFF file to begin processing")
-
-
+        st.info("Please upload a TIFF file to begin processing")

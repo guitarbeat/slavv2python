@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import numpy.testing as npt
 import pytest
 from source.core import SLAVVProcessor
@@ -75,6 +75,35 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
 
 
+def test_direct_and_resumable_hessian_paper_projection_match(tmp_path):
+    image = np.zeros((7, 7, 7), dtype=np.float32)
+    image[3, :, 3] = 1.0
+    params = validate_parameters(
+        {
+            "energy_method": "hessian",
+            "energy_projection_mode": "paper",
+            "radius_of_smallest_vessel_in_microns": 1.0,
+            "radius_of_largest_vessel_in_microns": 2.0,
+            "scales_per_octave": 1.0,
+            "approximating_PSF": False,
+        }
+    )
+
+    direct = SLAVVProcessor().calculate_energy_field(image, params)
+    run_context = RunContext(run_dir=tmp_path / "run-paper", target_stage="energy")
+    resumable = energy_module.calculate_energy_field_resumable(
+        image,
+        params,
+        run_context.stage("energy"),
+        get_chunking_lattice,
+    )
+
+    assert "energy_4d" not in direct
+    assert "energy_4d" not in resumable
+    npt.assert_allclose(direct["energy"], resumable["energy"])
+    npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+
+
 def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
     image = np.zeros((7, 7, 7), dtype=np.float32)
     image[3, :, 3] = 1.0
@@ -131,5 +160,3 @@ def test_resumable_energy_zarr_storage_requires_optional_dependency(monkeypatch,
             run_context.stage("energy"),
             get_chunking_lattice,
         )
-
-

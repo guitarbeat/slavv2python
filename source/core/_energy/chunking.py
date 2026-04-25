@@ -1,11 +1,12 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, cast
 
 import numpy as np
+
 from source.core import energy_storage as _energy_storage
 
-from . import backends
+from . import backends, native_hessian
 
 
 def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
@@ -104,6 +105,25 @@ def _best_energy_outputs(
     return energy_3d, scale_indices, energy_4d
 
 
+def _returned_energy_4d(config: dict[str, Any], energy_4d: np.ndarray | None) -> np.ndarray | None:
+    if bool(config["return_all_scales"]):
+        return energy_4d
+    return None
+
+
+def _project_scale_stack(
+    config: dict[str, Any],
+    energy_4d: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+    energy_3d, scale_indices = native_hessian.project_energy_stack(
+        energy_4d,
+        energy_sign=float(config["energy_sign"]),
+        projection_mode=str(config["energy_projection_mode"]),
+        spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+    )
+    return energy_3d, scale_indices, _returned_energy_4d(config, energy_4d)
+
+
 def _update_best_energy(
     energy_3d: np.ndarray,
     scale_indices: np.ndarray,
@@ -121,6 +141,9 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
     image = image.astype(np.float32, copy=False)
     energy_method = config["energy_method"]
     energy_sign = config["energy_sign"]
+    if energy_method == "hessian":
+        return native_hessian.compute_native_hessian_energy(image, config, scale_idx)
+
     sigma_scale = config["lumen_radius_microns"][scale_idx] / config["microns_per_voxel"]
     sigma_scale = sigma_scale / max(config["gaussian_to_ideal_ratio"], 1e-12)
     sigma_scale = np.asarray(sigma_scale, dtype=float)
@@ -187,6 +210,12 @@ def _compute_direct_energy_outputs(
     config: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     n_scales = len(config["lumen_radius_microns"])
+    if native_hessian.required_scale_stack(config):
+        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
+        for scale_idx in range(n_scales):
+            energy_4d[..., scale_idx] = _compute_energy_scale(image, config, scale_idx)
+        return _project_scale_stack(config, energy_4d)
+
     energy_3d, scale_indices, energy_4d = _best_energy_outputs(
         image.shape,
         float(config["energy_sign"]),
@@ -215,7 +244,7 @@ def _calculate_energy_field_chunked(
     get_chunking_lattice_func,
     calculate_energy_field,
 ) -> dict[str, Any]:
-    if config["return_all_scales"]:
+    if native_hessian.required_scale_stack(config):
         n_scales = len(config["lumen_radius_microns"])
         energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
         for chunk_slice, out_slice, inner_slice in lattice:
@@ -227,13 +256,14 @@ def _calculate_energy_field_chunked(
             energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
                 (*inner_slice, slice(None))
             ]
-        if config["energy_sign"] < 0:
-            energy_3d = np.min(energy_4d, axis=3)
-            scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
-        else:
-            energy_3d = np.max(energy_4d, axis=3)
-            scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
-        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+        energy_3d, scale_indices, returned_energy_4d = _project_scale_stack(config, energy_4d)
+        return _energy_result_payload(
+            config,
+            image.shape,
+            energy_3d,
+            scale_indices,
+            returned_energy_4d,
+        )
 
     energy_3d = np.empty(image.shape, dtype=np.float32)
     scale_indices = np.empty(image.shape, dtype=np.int16)
@@ -246,5 +276,3 @@ def _calculate_energy_field_chunked(
         energy_3d[out_slice] = chunk_data["energy"][inner_slice]
         scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
     return _energy_result_payload(config, image.shape, energy_3d, scale_indices)
-
-

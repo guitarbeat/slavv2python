@@ -68,7 +68,8 @@ CPU Hessian path, including:
 ## How It Differs From Other Energy Methods
 
 - `hessian`
-  Default CPU baseline.
+  Default CPU baseline, using the native MATLAB-style matched-filter energy
+  engine.
 - `frangi`
   Scikit-image vesselness filtering.
 - `sato`
@@ -79,4 +80,5 @@ CPU Hessian path, including:
   GPU-accelerated derivative backend for NVIDIA/CUDA environments.
 
 For now, `cupy_hessian` should be treated as an experimental performance path
-rather than a new default.
+rather than a new default. It does not replace the default parity-oriented
+`hessian` implementation.

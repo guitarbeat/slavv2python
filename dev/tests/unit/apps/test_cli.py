@@ -1,4 +1,4 @@
-﻿"""Tests for the SLAVV CLI entry point (source.apps.cli)."""
+"""Tests for the SLAVV CLI entry point (source.apps.cli)."""
 
 import json
 
@@ -45,6 +45,7 @@ class TestBuildParser:
         assert args.output == "./slavv_output"
         assert args.energy_storage_format == "auto"
         assert args.energy_method == "hessian"
+        assert args.energy_projection_mode == "matlab"
         assert args.edge_method == "tracing"
         assert args.vessel_radius == 1.5
         assert args.microns_per_voxel == [1.0, 1.0, 1.0]
@@ -64,6 +65,8 @@ class TestBuildParser:
                 "zarr",
                 "--energy-method",
                 "frangi",
+                "--energy-projection-mode",
+                "paper",
                 "--edge-method",
                 "watershed",
                 "--vessel-radius",
@@ -80,6 +83,7 @@ class TestBuildParser:
         )
         assert args.energy_storage_format == "zarr"
         assert args.energy_method == "frangi"
+        assert args.energy_projection_mode == "paper"
         assert args.edge_method == "watershed"
         assert args.vessel_radius == 2.0
         assert args.microns_per_voxel == [0.5, 0.5, 1.0]
@@ -99,6 +103,12 @@ class TestBuildParser:
         args = parser.parse_args(["run", "-i", "vol.tif", "--energy-method", "cupy_hessian"])
 
         assert args.energy_method == "cupy_hessian"
+
+    def test_run_subcommand_accepts_paper_energy_projection_mode(self):
+        parser = _build_cli_parser()
+        args = parser.parse_args(["run", "-i", "vol.tif", "--energy-projection-mode", "paper"])
+
+        assert args.energy_projection_mode == "paper"
 
     def test_info_subcommand(self):
         parser = _build_cli_parser()
@@ -120,6 +130,7 @@ class TestArgsToParameters:
         args = parser.parse_args(["run", "-i", "test.tif"])
         params = _build_pipeline_parameters(args)
         assert params["energy_method"] == "hessian"
+        assert params["energy_projection_mode"] == "matlab"
         assert params["energy_storage_format"] == "auto"
         assert params["edge_method"] == "tracing"
         assert params["radius_of_smallest_vessel_in_microns"] == 1.5
@@ -250,6 +261,3 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     assert "Topological Features:" in captured.out
     assert "Vertices: 3" in captured.out
     assert "Total Edge Length: 2.00 um" in captured.out
-
-
-

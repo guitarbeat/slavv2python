@@ -5,7 +5,7 @@ from typing import Any
 
 import numpy as np
 
-from . import backends
+from . import backends, native_hessian
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
     approximating_psf = bool(params.get("approximating_PSF", True))
     energy_sign = float(params.get("energy_sign", -1.0))
     energy_method = params.get("energy_method", "hessian")
+    energy_projection_mode = str(params.get("energy_projection_mode", "matlab")).strip().lower()
     return_all_scales = bool(params.get("return_all_scales", False))
     max_voxels = int(params.get("max_voxels_per_node_energy", 1e5))
     if energy_method == "simpleitk_objectness":
@@ -72,13 +73,20 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         radius_largest,
         scales_per_octave,
     )
+    octave_at_scales, scale_resolution_factors = native_hessian.matlab_octave_resolution_factors(
+        lumen_radius_microns,
+        microns_per_voxel,
+        scales_per_octave,
+    )
     lumen_radius_pixels_axes = lumen_radius_microns[:, None] / microns_per_voxel[None, :]
     lumen_radius_pixels = lumen_radius_pixels_axes.mean(axis=1)
 
-    max_sigma = (lumen_radius_microns[-1] / microns_per_voxel) / max(gaussian_to_ideal_ratio, 1e-12)
+    largest_pixels_per_radius = lumen_radius_microns[-1] / microns_per_voxel
     if approximating_psf:
-        max_sigma = np.sqrt(max_sigma**2 + pixels_per_sigma_psf**2)
-    margin = int(np.ceil(np.max(max_sigma)))
+        chunk_support = np.sqrt(pixels_per_sigma_psf**2 + largest_pixels_per_radius**2)
+    else:
+        chunk_support = largest_pixels_per_radius
+    margin = int(np.ceil(np.max(6.0 * chunk_support)))
 
     if energy_method == "sato" and backends.sato is None:
         logger.warning(
@@ -99,10 +107,13 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "approximating_PSF": approximating_psf,
         "energy_sign": energy_sign,
         "energy_method": energy_method,
+        "energy_projection_mode": energy_projection_mode,
         "return_all_scales": return_all_scales,
         "max_voxels": max_voxels,
         "margin": margin,
         "scale_ordinates": scale_ordinates,
+        "octave_at_scales": octave_at_scales,
+        "scale_resolution_factors": scale_resolution_factors,
         "lumen_radius_microns": lumen_radius_microns,
         "lumen_radius_pixels": lumen_radius_pixels,
         "lumen_radius_pixels_axes": lumen_radius_pixels_axes,

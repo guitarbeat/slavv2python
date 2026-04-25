@@ -1,4 +1,4 @@
-﻿"""Parameter validation functions for source."""
+"""Parameter validation functions for source."""
 
 from __future__ import annotations
 
@@ -72,19 +72,28 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["scales_per_octave"] = params.get("scales_per_octave", 1.5)
     validated["gaussian_to_ideal_ratio"] = params.get("gaussian_to_ideal_ratio", 1.0)
     validated["spherical_to_annular_ratio"] = params.get("spherical_to_annular_ratio", 1.0)
+    validated["energy_projection_mode"] = (
+        str(params.get("energy_projection_mode", "matlab")).strip().lower()
+    )
     validated["energy_sign"] = params.get("energy_sign", -1.0)
     if validated["energy_sign"] not in (-1, 1):
         raise ValueError("energy_sign must be -1 or 1")
     if validated["scales_per_octave"] <= 0:
         raise ValueError("scales_per_octave must be positive (e.g., 1.5)")
-    if validated["gaussian_to_ideal_ratio"] <= 0:
+    if validated["gaussian_to_ideal_ratio"] < 0:
         raise ValueError(
-            "gaussian_to_ideal_ratio must be positive; try 1.0 to disable prefiltering"
+            "gaussian_to_ideal_ratio must be non-negative; use 0.0 for an ideal-only kernel"
         )
-    if validated["spherical_to_annular_ratio"] <= 0:
+    if validated["gaussian_to_ideal_ratio"] > 1:
+        raise ValueError("gaussian_to_ideal_ratio must be between 0 and 1 inclusive")
+    if validated["spherical_to_annular_ratio"] < 0:
         raise ValueError(
-            "spherical_to_annular_ratio must be positive; use 1.0 to skip annular subtraction"
+            "spherical_to_annular_ratio must be non-negative; use 0.0 for annular-only weighting"
         )
+    if validated["spherical_to_annular_ratio"] > 1:
+        raise ValueError("spherical_to_annular_ratio must be between 0 and 1 inclusive")
+    if validated["energy_projection_mode"] not in ("matlab", "paper"):
+        raise ValueError("energy_projection_mode must be 'matlab' or 'paper'")
 
     # Processing parameters
     validated["max_voxels_per_node_energy"] = params.get("max_voxels_per_node_energy", 1e5)
@@ -166,4 +175,3 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         validated.setdefault(key, value)
 
     return validated
-

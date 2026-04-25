@@ -1,10 +1,12 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import json
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+from . import native_hessian
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -71,6 +73,7 @@ def calculate_energy_field_resumable(
     remove_storage_path,
     open_energy_storage_array,
     compute_energy_scale,
+    project_scale_stack,
 ) -> dict[str, Any]:
     """Compute energy with resumable chunk/scale units backed by persistent arrays."""
     config = prepare_energy_config(image, params)
@@ -129,8 +132,9 @@ def calculate_energy_field_resumable(
         storage_format=storage_format,
     )
 
+    store_scale_stack = native_hessian.required_scale_stack(config)
     energy_4d = None
-    if config["return_all_scales"]:
+    if store_scale_stack:
         energy_4d = open_energy_storage_array(
             energy4d_path,
             mode="r+" if energy4d_path.exists() else "w",
@@ -185,9 +189,23 @@ def calculate_energy_field_resumable(
                 resumed=resumed,
             )
 
+    result_energy = np.asarray(best_energy)
+    result_scale = np.asarray(best_scale)
+    returned_energy_4d = None
+    if energy_4d is not None:
+        if str(config["energy_projection_mode"]) == "paper":
+            result_energy, result_scale, returned_energy_4d = project_scale_stack(
+                config,
+                np.asarray(energy_4d),
+            )
+            best_energy[...] = result_energy
+            best_scale[...] = result_scale
+        elif bool(config["return_all_scales"]):
+            returned_energy_4d = np.asarray(energy_4d)
+
     result = {
-        "energy": np.asarray(best_energy),
-        "scale_indices": np.asarray(best_scale),
+        "energy": result_energy,
+        "scale_indices": result_scale,
         "lumen_radius_microns": config["lumen_radius_microns"],
         "lumen_radius_pixels": config["lumen_radius_pixels"],
         "lumen_radius_pixels_axes": config["lumen_radius_pixels_axes"],
@@ -196,8 +214,6 @@ def calculate_energy_field_resumable(
         "energy_sign": config["energy_sign"],
         "image_shape": image.shape,
     }
-    if energy_4d is not None:
-        result["energy_4d"] = np.asarray(energy_4d)
+    if returned_energy_4d is not None:
+        result["energy_4d"] = returned_energy_4d
     return result
-
-

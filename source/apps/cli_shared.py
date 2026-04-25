@@ -20,6 +20,7 @@ def _build_pipeline_parameters(args: argparse.Namespace) -> dict:
     """Convert parsed CLI arguments to a SLAVV parameters dict."""
     return {
         "energy_method": args.energy_method,
+        "energy_projection_mode": args.energy_projection_mode,
         "energy_storage_format": args.energy_storage_format,
         "edge_method": args.edge_method,
         "radius_of_smallest_vessel_in_microns": args.vessel_radius,
