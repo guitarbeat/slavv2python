@@ -145,6 +145,9 @@ That was a large improvement, but not enough to close parity.
   - We discovered this exact mathematical port can occasionally form infinite cyclic pointers. 
     We injected a strict cycle-detector into `_matlab_global_watershed_trace_half` to gracefully 
     break them.
+  - We identified two severe Python scaling bottlenecks during trace finalization:
+    - O(N) repetitive array flattenings during volume sampling caused memory/bandwidth thrashing. We addressed this by pre-flattening edge energy/scale maps prior to the candidate loop.
+    - An O(N) list-comprehension instantiation of `_build_matlab_global_watershed_lut` generated 25M+ redundant local arrays when calculating pointer map stretches. We resolved this with an O(K) vectorized unique-length indexing strategy, vastly reducing execution time.
 - Vertex exact proof: downstream-ready on the native-first route
 - Edge exact proof: A fresh continuous `capture-candidates` run is currently verifying the exactly matched endpoint gaps.
 - Network exact proof: still blocked downstream on unresolved edge parity
