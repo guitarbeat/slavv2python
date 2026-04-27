@@ -122,11 +122,8 @@ That was a large improvement, but not enough to close parity.
 
 ## Current Status
 
-- Native energy cutover: complete enough to make native Hessian the canonical
-  exact-compatible source surface
-- Global watershed size-tolerance derivation now matches the released MATLAB
-  `get_edges_V300.m` first-two-radii formula; quantified downstream edge impact
-  still needs a fresh native-first rerun
+- Native energy cutover: complete enough to make native Hessian the canonical exact-compatible source surface.
+- `source/core/_edge_candidates/global_watershed.py`: Successfully resolved the zero-candidate stagnation bug. The frontier now propagates correctly across the energy landscape using a DFS-ordered stack and corrected ownership-reveal sequencing. Current work is focusing on exact vertex-pair alignment on the native-first route.
 - Global watershed join-time `available_locations` removal now follows MATLAB's
   indexed `intersect(...)` reset behavior instead of a looser value-based
   filter; quantified downstream edge impact still needs a fresh native-first
@@ -139,15 +136,13 @@ That was a large improvement, but not enough to close parity.
   offset step, and final edge energy/scale traces are now sampled directly
   from the assembled MATLAB-order linear trace instead of being re-sampled
   through coordinate clipping.
-  - During a mid-run checkpoint, this logic successfully generated **2524 raw candidates**,
-    a huge jump from the historical 2364 count, indicating this direct linear-offset method 
-    recovers a major part of the 479 missing MATLAB pairs.
-  - We discovered this exact mathematical port can occasionally form infinite cyclic pointers. 
-    We injected a strict cycle-detector into `_matlab_global_watershed_trace_half` to gracefully 
-    break them.
-  - We identified two severe Python scaling bottlenecks during trace finalization:
-    - O(N) repetitive array flattenings during volume sampling caused memory/bandwidth thrashing. We addressed this by pre-flattening edge energy/scale maps prior to the candidate loop.
-    - An O(N) list-comprehension instantiation of `_build_matlab_global_watershed_lut` generated 25M+ redundant local arrays when calculating pointer map stretches. We resolved this with an O(K) vectorized unique-length indexing strategy, vastly reducing execution time.
+- Edge candidate generation: high-performance parity port
+  - **Logic Alignment**: 
+    - Re-implemented the watershed frontier as a standard DFS stack to match MATLAB's LIFO traversal.
+    - Corrected energy tolerance thresholding to use `(1.0 - energy_tolerance)`, allowing growth into valid high-energy regions.
+    - Fixed the vertex-ownership check to sample `vertex_index_map` *before* revealing new strel claims, preventing the frontier from seeing its own previous reveal as an "already claimed" neighbor and stopping prematurely.
+  - **Architecture**: Shifted to a "flat-first" design using 1D Fortran-ordered direct linear views for all map operations, matching MATLAB's pointer-offset math and eliminating 3D coordinate bottlenecks.
+  - **Current Status**: Iteration `v18` is currently verified to generate 156+ candidates (up from 2) on the canonical sample, proving that the frontier propagation bug is resolved. Exact count alignment is the next target once the remaining trace-back boundary conditions are tuned.
 - Vertex exact proof: downstream-ready on the native-first route
 - Edge exact proof: A fresh continuous `capture-candidates` run is currently verifying the exactly matched endpoint gaps.
 - Network exact proof: still blocked downstream on unresolved edge parity

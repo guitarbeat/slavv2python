@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import heapq
 import time
 from typing import Any, cast
 
@@ -54,10 +55,10 @@ def _initialize_matlab_global_watershed_state(
     number_of_vertices = len(vertex_locations)
     border_locations = _matlab_global_watershed_border_locations(shape)
 
-    branch_order_map = np.zeros(shape, dtype=np.uint8)
-    d_over_r_map = np.zeros(shape, dtype=np.float64)
-    pointer_map = np.zeros(shape, dtype=np.uint64)
-    vertex_index_map = np.zeros(shape, dtype=np.uint32)
+    branch_order_map = np.zeros(shape, dtype=np.uint8, order="F")
+    d_over_r_map = np.zeros(shape, dtype=np.float64, order="F")
+    pointer_map = np.zeros(shape, dtype=np.uint64, order="F")
+    vertex_index_map = np.zeros(shape, dtype=np.uint32, order="F")
 
     vertex_energies = np.empty((number_of_vertices,), dtype=np.float32)
     for vertex_offset, linear_index in enumerate(vertex_locations):
@@ -69,9 +70,10 @@ def _initialize_matlab_global_watershed_state(
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
         vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(number_of_vertices + 1)
 
-    energy_map_temp = np.asarray(energy, dtype=np.float32).copy()
-    for coord in vertex_coords:
-        energy_map_temp[int(coord[0]), int(coord[1]), int(coord[2])] = float("-inf")
+    energy_map_temp = np.asarray(energy, dtype=np.float32, order="F").copy()
+    for vertex_offset, linear_index in enumerate(vertex_locations):
+        coord = _matlab_linear_index_to_coord(int(linear_index), shape)
+        energy_map_temp[coord[0], coord[1], coord[2]] = float(vertex_energies[vertex_offset])
 
     available_locations = vertex_locations[::-1].astype(np.int64, copy=False)
     vertex_adjacency_matrix = sparse.identity(number_of_vertices + 1, format="lil", dtype=bool)
@@ -134,6 +136,7 @@ def _matlab_global_watershed_current_strel(
         "linear_indices": valid_linear,
         "pointer_indices": pointer_indices,
         "r_over_R": np.asarray(lut["r_over_R"], dtype=np.float32)[valid_mask],
+        "distance_microns": np.asarray(lut["distance_lut"], dtype=np.float32)[valid_mask],
         "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float32)[valid_mask],
     }
 
@@ -143,151 +146,85 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     current_vertex_index: int,
     current_scale_label: int,
     current_d_over_r: float,
-    strel_coords: np.ndarray,
+    valid_linear: np.ndarray,
     strel_pointer_indices: np.ndarray,
-    strel_r_over_R: np.ndarray,
+    strel_distance_microns: np.ndarray,
     strel_adjusted_energies: np.ndarray,
-    vertex_index_map: np.ndarray,
-    energy_map: np.ndarray,
-    pointer_map: np.ndarray,
-    d_over_r_map: np.ndarray,
-    size_map: np.ndarray,
+    vertex_index_map_flat: np.ndarray,
+    energy_map_flat: np.ndarray,
+    pointer_map_flat: np.ndarray,
+    d_over_r_map_flat: np.ndarray,
+    size_map_flat: np.ndarray,
 ) -> dict[str, np.ndarray]:
     """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels."""
-    vertices_of_current_strel = vertex_index_map[
-        strel_coords[:, 0],
-        strel_coords[:, 1],
-        strel_coords[:, 2],
-    ]
-    is_without_vertex = vertices_of_current_strel == 0
+    is_without_vertex = vertex_index_map_flat[valid_linear] == 0
     if np.any(is_without_vertex):
-        claim_coords = strel_coords[is_without_vertex]
-        vertex_index_map[
-            claim_coords[:, 0],
-            claim_coords[:, 1],
-            claim_coords[:, 2],
-        ] = np.uint32(current_vertex_index)
-        energy_map[
-            claim_coords[:, 0],
-            claim_coords[:, 1],
-            claim_coords[:, 2],
-        ] = np.asarray(strel_adjusted_energies[is_without_vertex], dtype=np.float32)
-        pointer_map[
-            claim_coords[:, 0],
-            claim_coords[:, 1],
-            claim_coords[:, 2],
-        ] = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-        d_over_r_map[
-            claim_coords[:, 0],
-            claim_coords[:, 1],
-            claim_coords[:, 2],
-        ] = np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float64) + np.float64(
-            current_d_over_r
+        claim_linear = valid_linear[is_without_vertex]
+        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
+        energy_map_flat[claim_linear] = np.asarray(
+            strel_adjusted_energies[is_without_vertex], dtype=np.float32
         )
-        size_map[
-            claim_coords[:, 0],
-            claim_coords[:, 1],
-            claim_coords[:, 2],
-        ] = np.asarray(current_scale_label, dtype=size_map.dtype)
+        pointer_map_flat[claim_linear] = np.asarray(
+            strel_pointer_indices[is_without_vertex], dtype=np.uint64
+        )
+        d_over_r_map_flat[claim_linear] = (
+            strel_distance_microns[is_without_vertex] + current_d_over_r
+        )
+        size_map_flat[claim_linear] = np.int16(current_scale_label)
 
     return {
-        "vertices_of_current_strel": np.asarray(vertices_of_current_strel, dtype=np.uint32),
-        "is_without_vertex_in_strel": np.asarray(is_without_vertex, dtype=bool),
+        "vertices_of_current_strel": vertex_index_map_flat[valid_linear],
+        "is_without_vertex_in_strel": is_without_vertex,
     }
 
 
 def _matlab_global_watershed_insert_available_location(
-    available_locations: list[int],
     *,
     next_location: int,
     next_energy: float,
-    energy_lookup: dict[int, float],
-    seed_idx: int,
-    is_current_location_clear: bool,
-) -> list[int]:
-    """Insert one next location using MATLAB's seed-order-dependent list logic."""
-    if not available_locations:
-        return [int(next_location)]
-
-    if seed_idx == 1:
-        if energy_lookup[int(available_locations[0])] <= float(next_energy):
-            location_idx = 1
-        else:
-            location_idx = 1 + max(
-                idx
-                for idx, linear_index in enumerate(available_locations, start=1)
-                if energy_lookup[int(linear_index)] > float(next_energy)
-            )
-    else:
-        if energy_lookup[int(available_locations[-1])] >= float(next_energy):
-            location_idx = (
-                len(available_locations) + 1
-                if is_current_location_clear
-                else len(available_locations)
-            )
-        else:
-            location_idx = next(
-                idx
-                for idx, linear_index in enumerate(available_locations, start=1)
-                if energy_lookup[int(linear_index)] < float(next_energy)
-            )
-
-    insert_at = location_idx - 1
-    if is_current_location_clear:
-        return [
-            *available_locations[:insert_at],
-            int(next_location),
-            *available_locations[insert_at:],
-        ]
-    return [
-        *available_locations[:insert_at],
-        int(next_location),
-        *available_locations[insert_at:-1],
-    ]
+    available_locations: list[tuple[float, int, int]],
+    energy_map_flat: np.ndarray,
+    insertion_counter: list[int],
+) -> None:
+    """Insert into heap with energy priority (most negative first) and LIFO tie-breaking."""
+    insertion_counter[0] += 1
+    heapq.heappush(available_locations, (float(next_energy), -insertion_counter[0], int(next_location)))
 
 
 def _matlab_global_watershed_reset_join_locations(
-    available_locations: list[int],
+    available_locations: list[tuple[float, int, int]],
     *,
     next_vertex_locations: np.ndarray,
     is_current_location_clear: bool,
-) -> tuple[list[int], bool]:
-    """Mirror MATLAB's indexed available-location removal during watershed joins."""
-    updated_available = [int(location) for location in available_locations]
-    if not updated_available:
-        return updated_available, is_current_location_clear
+    current_location: int,
+) -> bool:
+    """Mirror MATLAB's indexed available-location removal during watershed joins.
+    
+    Mutates available_locations in-place for efficiency.
+    """
+    if not available_locations and is_current_location_clear:
+        return is_current_location_clear
 
-    locations_to_reset = np.intersect1d(
-        np.asarray(updated_available, dtype=np.int64),
-        np.asarray(next_vertex_locations, dtype=np.int64),
-        assume_unique=False,
-    ).astype(np.int64, copy=False)
-
+    locations_to_reset = set(next_vertex_locations.tolist())
+    
     if not is_current_location_clear:
+        # If not clear, the 'current_location' we popped at the start of the loop
+        # is conceptually still in the list and might be one of the reset targets.
+        if current_location in locations_to_reset:
+            locations_to_reset.remove(current_location)
         is_current_location_clear = True
-        current_available = int(updated_available.pop())
-        if len(locations_to_reset):
-            locations_to_reset = locations_to_reset[locations_to_reset != current_available]
 
-    if not len(locations_to_reset):
-        return updated_available, is_current_location_clear
+    if not locations_to_reset:
+        return is_current_location_clear
 
-    reset_indices: list[int] = []
-    for location in locations_to_reset.tolist():
-        try:
-            reset_indices.append(updated_available.index(int(location)))
-        except ValueError:
-            continue
-    if not reset_indices:
-        return updated_available, is_current_location_clear
-
-    reset_index_set = set(reset_indices)
-    updated_available = [
-        location
-        for idx, location in enumerate(updated_available)
-        if idx not in reset_index_set
-    ]
-    return updated_available, is_current_location_clear
+    # Filter the list. O(N) but better than multiple .remove() calls.
+    # We filter in reverse if it helps, but simple comprehension is usually fast.
+    new_list = [loc for loc in available_locations if loc[2] not in locations_to_reset]
+    available_locations.clear()
+    available_locations.extend(new_list)
+    heapq.heapify(available_locations)
+    
+    return is_current_location_clear
 
 
 def _matlab_global_watershed_unit_vectors(
@@ -316,22 +253,28 @@ def _matlab_global_watershed_trace_half(
     microns_per_voxel: np.ndarray,
     step_size_per_origin_radius: float,
 ) -> list[int]:
-    """Trace one MATLAB watershed half-edge back to its zero-pointer origin."""
+    """Trace one MATLAB watershed half-edge back to its zero-pointer origin using flat views."""
+    pointer_map_flat = pointer_map.ravel(order="F")
+    size_map_flat = size_map.ravel(order="F")
+    
     traced: list[int] = []
     visited: set[int] = set()
     tracing_linear = int(start_linear)
-    while True:
+    img_size = pointer_map_flat.size
+
+    while 0 <= tracing_linear < img_size:
         if tracing_linear in visited:
             import logging
-            logging.error(f"Cycle detected in global watershed backtrack at linear index {tracing_linear}. Breaking to prevent infinite loop.")
+            logging.error(f"Cycle detected in global watershed backtrack at {tracing_linear}. Breaking.")
             break
         visited.add(tracing_linear)
         traced.append(int(tracing_linear))
-        tracing_coord = _matlab_linear_index_to_coord(tracing_linear, shape)
-        pointer_value = int(pointer_map[tracing_coord[0], tracing_coord[1], tracing_coord[2]])
+        
+        pointer_value = int(pointer_map_flat[tracing_linear])
         if pointer_value == 0:
             break
-        tracing_scale_label = int(size_map[tracing_coord[0], tracing_coord[1], tracing_coord[2]])
+            
+        tracing_scale_label = int(size_map_flat[tracing_linear])
         lut = _build_matlab_global_watershed_lut(
             int(np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1)),
             size_of_image=shape,
@@ -340,6 +283,12 @@ def _matlab_global_watershed_trace_half(
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
         linear_offsets = np.asarray(lut["linear_offsets"], dtype=np.int64)
+        
+        if pointer_value < 1 or pointer_value > len(linear_offsets):
+            import logging
+            logging.error(f"Pointer index {pointer_value} out of range for scale {tracing_scale_label} (size {len(linear_offsets)}) at {tracing_linear}.")
+            break
+            
         tracing_linear = int(tracing_linear - int(linear_offsets[pointer_value - 1]))
     return traced
 
@@ -475,14 +424,15 @@ def _generate_edge_candidates_matlab_global_watershed(
     energy_map = np.asarray(energy_map_temp, dtype=np.float32).copy()
     original_scale_image: np.ndarray
     if scale_indices is None:
-        size_map: np.ndarray = np.ones(shape, dtype=np.int16)
-        original_scale_image = np.zeros(shape, dtype=np.int16)
+        size_map: np.ndarray = np.ones(shape, dtype=np.int16, order="F")
+        original_scale_image = np.zeros(shape, dtype=np.int16, order="F")
     else:
         original_scale_image = np.asarray(
             cast("np.ndarray", scale_indices),
             dtype=np.int16,
+            order="F",
         )
-        size_map = np.asarray(original_scale_image, dtype=np.int16).copy()
+        size_map = np.asarray(original_scale_image, dtype=np.int16, order="F").copy()
         size_map += np.int16(1)
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
         np.int32, copy=False
@@ -496,70 +446,80 @@ def _generate_edge_candidates_matlab_global_watershed(
         vertex_coords[:, 2],
     ] = np.asarray(vertex_scales, dtype=size_map.dtype) + np.int16(1)
 
-    edge_number_tolerance = 2
-    energy_tolerance = 1.0
+    edge_number_tolerance = int(params.get("edge_number_tolerance", 2))
+    energy_tolerance = float(params.get("energy_tolerance", 1.0))
     step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))
+    distance_tolerance = float(params.get("distance_tolerance", 3.0))
+
+    # Pre-flatten maps for performance
+    energy_map_temp_flat = energy_map_temp.ravel(order="F")
+    d_over_r_map_flat = d_over_r_map.ravel(order="F")
+    pointer_map_flat = pointer_map.ravel(order="F")
+    vertex_index_map_flat = vertex_index_map.ravel(order="F")
+    size_map_flat = size_map.ravel(order="F")
+    branch_order_map_flat = branch_order_map.ravel(order="F")
 
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []
-    iteration_count = 0
+
     last_heartbeat_at = time.monotonic()
+    
+    # Track the raw vertex energies for resetting -inf values
+    vertex_energies_raw_flat = energy_map_raw.ravel(order="F")
 
-    while True:
-        if not available_locations:
-            break
-        iteration_count += 1
-
-        current_location = int(available_locations[-1])
-        current_coord = _matlab_linear_index_to_coord(current_location, shape)
-        min_available_energy = float(
-            energy_map_temp[current_coord[0], current_coord[1], current_coord[2]]
+    available_locations_heap: list[tuple[float, int, int]] = []
+    insertion_counter = [0]
+    for loc in available_locations:
+        _matlab_global_watershed_insert_available_location(
+            next_location=loc,
+            next_energy=energy_map_temp_flat[loc],
+            available_locations=available_locations_heap,
+            energy_map_flat=energy_map_temp_flat,
+            insertion_counter=insertion_counter,
         )
-        if min_available_energy == float("-inf"):
-            energy_map_temp[current_coord[0], current_coord[1], current_coord[2]] = energy_map[
-                current_coord[0], current_coord[1], current_coord[2]
-            ]
-            min_available_energy = float(
-                energy_map_temp[current_coord[0], current_coord[1], current_coord[2]]
-            )
-        if min_available_energy >= 0.0:
-            break
 
-        current_vertex_index = int(
-            vertex_index_map[current_coord[0], current_coord[1], current_coord[2]]
-        )
-        if current_vertex_index <= 0:
-            available_locations.pop()
-            continue
-        current_scale_label = int(size_map[current_coord[0], current_coord[1], current_coord[2]])
+    iteration = 0
+    while available_locations_heap:
+        iteration += 1
+        current_energy, _, current_linear = heapq.heappop(available_locations_heap)
+        is_current_location_clear = False
+        current_coord = _matlab_linear_index_to_coord(current_linear, shape)
+
+        current_energy = energy_map_temp_flat[current_linear]
+
+        # Reset vertex energy to original value if first time popping it
+        if float(current_energy) == float("-inf"):
+            current_energy = vertex_energies_raw_flat[current_linear]
+            energy_map_temp_flat[current_linear] = current_energy
+
+        current_vertex_index = int(vertex_index_map_flat[current_linear])
+        current_scale_label = int(size_map_flat[current_linear])
         current_scale_index = int(
             np.clip(current_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
+
         current_strel = _matlab_global_watershed_current_strel(
-            current_location,
+            current_linear,
             current_scale_label=current_scale_label,
             shape=shape,
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
+        current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
+        current_strel_distance_microns = cast("np.ndarray", current_strel["distance_microns"])
         current_strel_coords = cast("np.ndarray", current_strel["coords"])
         current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
         current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
         current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
-        current_strel_r_over_r = cast("np.ndarray", current_strel["r_over_R"])
         current_strel_unit_vectors = cast("np.ndarray", current_strel["unit_vectors"])
 
-        current_strel_energies = energy_map_temp[
-            current_strel_coords[:, 0],
-            current_strel_coords[:, 1],
-            current_strel_coords[:, 2],
-        ].astype(np.float32, copy=False)
-        current_d_over_r = float(d_over_r_map[current_coord[0], current_coord[1], current_coord[2]])
-        current_forward_unit: np.ndarray | None = None
-        current_pointer_value = int(
-            pointer_map[current_coord[0], current_coord[1], current_coord[2]]
+        current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
+            np.float32, copy=False
         )
+        current_d_over_r = float(d_over_r_map_flat[current_linear])
+        current_forward_unit: np.ndarray | None = None
+        current_pointer_value = int(pointer_map_flat[current_linear])
         if current_pointer_value > 0:
             lut = _build_matlab_global_watershed_lut(
                 current_scale_index,
@@ -571,16 +531,12 @@ def _generate_edge_candidates_matlab_global_watershed(
             full_unit_vectors = np.asarray(lut["unit_vectors"], dtype=np.float32)
             current_forward_unit = full_unit_vectors[current_pointer_value - 1]
 
-        current_strel_energies = _matlab_frontier_adjusted_neighbor_energies(
+        adjusted = _matlab_frontier_adjusted_neighbor_energies(
             current_strel_energies,
             neighbor_offsets=current_strel_offsets,
-            neighbor_distances_microns=current_strel_r_over_r
+            neighbor_distances_microns=current_strel_r_over_R
             * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
-            neighbor_scale_indices=size_map[
-                current_strel_coords[:, 0],
-                current_strel_coords[:, 1],
-                current_strel_coords[:, 2],
-            ],
+            neighbor_scale_indices=size_map_flat[current_strel_linear],
             propagated_scale_index=current_scale_label,
             current_distance_microns=current_d_over_r
             * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
@@ -588,85 +544,78 @@ def _generate_edge_candidates_matlab_global_watershed(
             current_forward_unit=current_forward_unit,
             microns_per_voxel=microns_per_voxel,
             lumen_radius_microns=lumen_radius_microns,
-            distance_tolerance=3.0,
+            distance_tolerance=distance_tolerance,
         )
 
-        revealed = _matlab_global_watershed_reveal_unclaimed_strel(
+        # Sample ownership BEFORE claiming to determine growability/connectivity
+        vertices_of_current_strel = vertex_index_map_flat[current_strel_linear]
+        is_without_vertex_in_strel = vertices_of_current_strel == 0
+
+        # Identify tolerated candidates from PENALIZED energies
+        # MATLAB: is_energy_tolerated_in_strel = current_strel_energies < vertex_energies( current_vertex_index ) * energy_tolerance_coeff ;
+        is_energy_tolerated_in_strel = adjusted < (
+            float(vertex_energies[current_vertex_index - 1]) * (1.0 - energy_tolerance)
+        )
+
+        _matlab_global_watershed_reveal_unclaimed_strel(
             current_vertex_index=current_vertex_index,
             current_scale_label=current_scale_label,
             current_d_over_r=current_d_over_r,
-            strel_coords=current_strel_coords,
+            valid_linear=current_strel_linear,
             strel_pointer_indices=current_strel_pointer_indices,
-            strel_r_over_R=current_strel_r_over_r,
-            strel_adjusted_energies=current_strel_energies,
-            vertex_index_map=vertex_index_map,
-            energy_map=energy_map,
-            pointer_map=pointer_map,
-            d_over_r_map=d_over_r_map,
-            size_map=size_map,
+            strel_distance_microns=current_strel["distance_microns"],
+            strel_adjusted_energies=adjusted,
+            vertex_index_map_flat=vertex_index_map_flat,
+            energy_map_flat=energy_map_temp_flat,
+            pointer_map_flat=pointer_map_flat,
+            d_over_r_map_flat=d_over_r_map_flat,
+            size_map_flat=size_map_flat,
         )
-        vertices_of_current_strel = cast("np.ndarray", revealed["vertices_of_current_strel"])
-        is_new_trace_from_current_location = (
-            int(pointer_map[current_coord[0], current_coord[1], current_coord[2]]) == 0
-        )
-        if is_new_trace_from_current_location:
-            seed_index_range = range(1, edge_number_tolerance + 1)
-        else:
-            seed_index_range = range(1, 2)
 
-        is_current_location_clear = False
-        for seed_idx in seed_index_range:
-            is_energy_tolerated_in_strel = current_strel_energies < (
-                float(vertex_energies[current_vertex_index - 1]) * (1.0 - energy_tolerance)
-            )
-            strel_idx = int(np.argmin(current_strel_energies))
+        for seed_idx in range(1, edge_number_tolerance + 1):
+            strel_idx = int(np.argmin(adjusted))
             next_location = int(current_strel_linear[strel_idx])
-            next_coord = current_strel_coords[strel_idx]
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
 
             if not bool(is_energy_tolerated_in_strel[strel_idx]):
-                if not is_current_location_clear and available_locations:
+                if not is_current_location_clear:
                     is_current_location_clear = True
-                    available_locations.pop()
             else:
+                # Apply directional suppression for next seed
+                from .common import _matlab_frontier_directional_suppression_factors
+
+                adjusted *= _matlab_frontier_directional_suppression_factors(
+                    current_strel_offsets,
+                    selected_index=strel_idx,
+                    microns_per_voxel=microns_per_voxel,
+                )
+
                 if next_vertex_index == 0:
                     branch_order = (
-                        int(branch_order_map[current_coord[0], current_coord[1], current_coord[2]])
+                        int(branch_order_map_flat[current_linear])
                         + seed_idx
                         - 1
                     )
-                    branch_order_map[next_coord[0], next_coord[1], next_coord[2]] = np.uint8(
+                    branch_order_map_flat[next_location] = np.uint8(
                         branch_order
                     )
                     if branch_order < edge_number_tolerance:
-                        energy_lookup = {
-                            location: float(
-                                energy_map_temp[
-                                    _matlab_linear_index_to_coord(location, shape)[0],
-                                    _matlab_linear_index_to_coord(location, shape)[1],
-                                    _matlab_linear_index_to_coord(location, shape)[2],
-                                ]
-                            )
-                            for location in [*available_locations, next_location]
-                        }
-                        available_locations = _matlab_global_watershed_insert_available_location(
-                            available_locations,
+                        _matlab_global_watershed_insert_available_location(
                             next_location=next_location,
-                            next_energy=energy_lookup[next_location],
-                            energy_lookup=energy_lookup,
-                            seed_idx=seed_idx,
-                            is_current_location_clear=is_current_location_clear,
+                            next_energy=float(energy_map_temp_flat[next_location]),
+                            available_locations=available_locations_heap,
+                            energy_map_flat=energy_map_temp_flat,
+                            insertion_counter=insertion_counter,
                         )
                         if not is_current_location_clear:
                             is_current_location_clear = True
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
-                    available_locations, is_current_location_clear = (
-                        _matlab_global_watershed_reset_join_locations(
-                            available_locations,
-                            next_vertex_locations=current_strel_linear[is_next_vertex_in_strel],
-                            is_current_location_clear=is_current_location_clear,
-                        )
+                    is_current_location_clear = _matlab_global_watershed_reset_join_locations(
+                        available_locations=available_locations_heap,
+                        next_vertex_locations=current_strel_linear[is_next_vertex_in_strel],
+                        is_current_location_clear=is_current_location_clear,
+                        current_location=current_linear,
                     )
 
                     if not bool(
@@ -682,7 +631,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                         ] = True
 
                         half_1 = _matlab_global_watershed_trace_half(
-                            current_location,
+                            current_linear,
                             pointer_map=pointer_map,
                             size_map=size_map,
                             shape=shape,
@@ -716,22 +665,15 @@ def _generate_edge_candidates_matlab_global_watershed(
                         edge_halves.append((half_1, half_2))
                         edge_pairs.append((current_vertex_index, next_vertex_index))
 
-            cosine_to_selected = np.sum(
-                current_strel_unit_vectors * current_strel_unit_vectors[strel_idx],
-                axis=1,
-            )
-            current_strel_energies = current_strel_energies * (
-                (1.0 - cosine_to_selected.astype(np.float32, copy=False)) / 2.0
-            )
 
         if heartbeat is not None:
             now = time.monotonic()
             if (
-                iteration_count == 1
-                or iteration_count % 512 == 0
+                iteration == 1
+                or iteration % 512 == 0
                 or (now - last_heartbeat_at) >= 5.0
             ):
-                heartbeat(iteration_count, len(edge_pairs))
+                heartbeat(iteration, len(edge_pairs))
                 last_heartbeat_at = now
 
     traces: list[np.ndarray] = []
