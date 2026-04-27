@@ -26,54 +26,40 @@ and full Python implementation of the released SLAVV method, see
 |-----------|--------|-------------|---------|
 | **Native Energy** | ✅ Complete | Canonical source | N/A |
 | **Vertices** | ✅ Ready | Downstream-ready on native route | Awaiting edge proof |
-| **Edges** | ❌ Blocked | v22 has critical bugs | Cycle detection + pointer out-of-range errors |
+| **Edges** | 🔧 Fixing | v22 bugs being addressed | Fixes applied, testing in progress |
 | **Network** | ⏸️ Blocked | Source-aligned, proof pending | Upstream edge parity |
 
 ## Current Status (April 2026)
 
-### Critical Finding (April 27, 2026): v22 Candidate Generation Has Blocking Bugs
+### Critical Finding (April 27, 2026): v22 Candidate Generation Bugs — Fixes In Progress
 
-**Attempted Run**: `capture-candidates` on the native-first exact route with v22 code
+**Initial Run** (April 27, 2026 morning): `capture-candidates` FAILED with critical errors:
+- 40+ cycle detection errors in backtracking
+- 15+ pointer index out-of-range errors
 
-**Result**: FAILED with multiple critical errors:
+**Fixes Applied** (April 27, 2026 afternoon):
+1. Added bounds checking after computing next backtrack location
+2. Added pointer validation in reveal function to filter invalid pointers
+3. Added LUT consistency checks and assertions
 
-1. **Cycle detection errors** (40+ instances):
-   ```
-   ERROR:root:Cycle detected in global watershed backtrack at <location>. Breaking.
-   ```
-   The backtracking logic is encountering cycles in the pointer map, causing
-   premature termination of candidate traces.
+**Current Status** (April 27, 2026 1:30 PM): Testing in progress
+- `capture-candidates` is running with fixes applied
+- No immediate crashes observed
+- Algorithm is taking longer than expected (5+ minutes, still running)
+- Awaiting completion to assess if valid candidates are generated
 
-2. **Pointer index out-of-range errors** (15+ instances):
-   ```
-   ERROR:root:Pointer index <N> out of range for scale <S> (size <M>) at <location>.
-   ```
-   The pointer map contains invalid indices that exceed the LUT size for the
-   given scale, indicating a bug in how pointers are written during frontier
-   propagation.
+See `V22_BUG_FIXES.md` for detailed fix descriptions.
 
-**Impact**: The v22 watershed implementation cannot generate valid candidates.
-The "proof of concept" claim in the previous status was premature — candidates
-are being generated, but they contain fundamental errors that prevent valid
-trace-back.
-
-**Root Cause Hypothesis**: The flat-first 1D Fortran architecture and/or the
-heapq frontier traversal is writing invalid pointer values or creating cycles
-in the pointer map. The LUT proof passed (all scales PASS), so the issue is in
-the runtime frontier propagation, not the LUT construction.
+**Impact**: The immediate crashes are prevented by defensive checks, but the
+algorithm performance and correctness still need verification. The long runtime
+suggests either the defensive filtering is catching many invalid pointers, or
+there are additional performance/logic issues.
 
 **Immediate Next Steps**:
-1. Add defensive checks in the backtracking code to log the pointer map state
-   when cycles or out-of-range indices are detected.
-2. Verify that pointer writes during frontier propagation respect the LUT size
-   bounds for each scale.
-3. Check if the LIFO tie-breaking or energy-tolerance logic is causing the
-   frontier to write pointers in an order that creates cycles.
-4. Re-run a small-scale debug trace to isolate the first failing candidate.
-
-**Status Downgrade**: Edges moved from "Active Work (v22)" to "Blocked on v22
-bugs". Candidate generation must be fixed before any downstream proof work can
-proceed.
+1. Wait for current test run to complete
+2. Examine output for valid candidate generation
+3. Check logs for how many invalid pointers were filtered
+4. Add iteration limits if needed to prevent infinite loops
 
 ### Energy: Native Implementation Complete ✅
 

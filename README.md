@@ -40,6 +40,7 @@ python -m mypy
 - [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 - [docs/reference/core/V22_BLOCKING_BUGS.md](docs/reference/core/V22_BLOCKING_BUGS.md) ⚠️ **Critical**
+- [docs/reference/core/V22_BUG_FIXES.md](docs/reference/core/V22_BUG_FIXES.md) 🔧 **In Progress**
 - [dev/tests/README.md](dev/tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
