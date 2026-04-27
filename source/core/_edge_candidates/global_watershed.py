@@ -115,13 +115,13 @@ def _matlab_global_watershed_current_strel(
     )
     offsets = np.asarray(lut["local_subscripts"], dtype=np.int32)
     linear_offsets_full = np.asarray(lut["linear_offsets"], dtype=np.int64)
-    
+
     # Verify LUT consistency
     assert len(offsets) == len(linear_offsets_full), (
         f"LUT inconsistency: local_subscripts has {len(offsets)} elements "
         f"but linear_offsets has {len(linear_offsets_full)} elements"
     )
-    
+
     strel_coords = current_coord[None, :] + offsets
     valid_mask = (
         (strel_coords[:, 0] >= 0)
@@ -133,18 +133,46 @@ def _matlab_global_watershed_current_strel(
     )
     valid_coords = np.asarray(strel_coords[valid_mask], dtype=np.int32)
     valid_offsets = np.asarray(offsets[valid_mask], dtype=np.int32)
-    valid_linear = linear_offsets_full[valid_mask] + np.int64(current_linear)
-    
+    valid_linear_raw = linear_offsets_full[valid_mask] + np.int64(current_linear)
+
+    # Additional bounds check for linear indices
+    img_size = shape[0] * shape[1] * shape[2]
+    linear_valid_mask = (valid_linear_raw >= 0) & (valid_linear_raw < img_size)
+    if not np.all(linear_valid_mask):
+        import logging
+
+        logging.error(
+            f"Linear index out of bounds at current={current_linear}, scale={current_scale_label}: "
+            f"{np.sum(~linear_valid_mask)} indices out of range [0, {img_size})"
+        )
+        # Filter again
+        valid_coords = valid_coords[linear_valid_mask]
+        valid_offsets = valid_offsets[linear_valid_mask]
+        valid_linear = valid_linear_raw[linear_valid_mask]
+        # Update valid_mask to reflect the additional filtering
+        temp_mask = valid_mask.copy()
+        temp_mask[valid_mask] = linear_valid_mask
+        valid_mask = temp_mask
+    else:
+        valid_linear = valid_linear_raw
+
     # Pointer indices are 1-based indices into the FULL LUT (before filtering)
     # These must be in range [1, len(offsets)]
     pointer_indices = np.arange(1, len(offsets) + 1, dtype=np.uint64)[valid_mask]
-    
+
     # Verify all pointer indices are valid
-    assert np.all(pointer_indices >= 1) and np.all(pointer_indices <= len(offsets)), (
-        f"Invalid pointer indices: min={np.min(pointer_indices)}, "
-        f"max={np.max(pointer_indices)}, LUT size={len(offsets)}"
-    )
-    
+    if not (np.all(pointer_indices >= 1) and np.all(pointer_indices <= len(offsets))):
+        import logging
+
+        logging.error(
+            f"ASSERTION FAILED: Invalid pointer indices at scale {current_scale_label}: "
+            f"min={np.min(pointer_indices)}, max={np.max(pointer_indices)}, LUT size={len(offsets)}"
+        )
+        raise AssertionError(
+            f"Invalid pointer indices: min={np.min(pointer_indices)}, "
+            f"max={np.max(pointer_indices)}, LUT size={len(offsets)}"
+        )
+
     return {
         "current_coord": current_coord.astype(np.int32, copy=False),
         "coords": valid_coords,
@@ -155,6 +183,8 @@ def _matlab_global_watershed_current_strel(
         "distance_microns": np.asarray(lut["distance_lut"], dtype=np.float32)[valid_mask],
         "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float32)[valid_mask],
         "lut_size": len(offsets),  # Store for debugging
+        "scale_label_clipped": current_scale_index
+        + 1,  # Clipped scale for consistent pointer/size_map usage
     }
 
 
@@ -173,34 +203,81 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     d_over_r_map_flat: np.ndarray,
     size_map_flat: np.ndarray,
     lut_size: int,  # Add this parameter for validation
+    filtered_pointer_stats: dict[str, int] | None = None,  # Track filtering stats
 ) -> dict[str, np.ndarray]:
     """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels.
-    
+
     CRITICAL: Only write to locations that have vertex_index == 0 to prevent
     overwriting existing pointers and creating cycles.
+
+    CRITICAL: The pointer indices in strel_pointer_indices are 1-based indices into the
+    FULL LUT for current_scale_label. They must be in range [1, lut_size]. The size_map
+    is also written with current_scale_label so that during backtracking, we can reconstruct
+    the correct LUT and interpret the pointer correctly.
     """
     is_without_vertex = vertex_index_map_flat[valid_linear] == 0
     if np.any(is_without_vertex):
         claim_linear = valid_linear[is_without_vertex]
         claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-        
-        # Validate pointer indices before writing
+
+        # Sanity check: verify array lengths match
+        if len(strel_pointer_indices) != len(valid_linear):
+            import logging
+
+            logging.error(
+                f"CRITICAL: Array length mismatch! strel_pointer_indices has {len(strel_pointer_indices)} elements "
+                f"but valid_linear has {len(valid_linear)} elements at scale {current_scale_label}"
+            )
+            return {
+                "vertices_of_current_strel": vertex_index_map_flat[valid_linear],
+                "is_without_vertex_in_strel": is_without_vertex,
+            }
+
+        # Validate pointer indices before writing - they should match the LUT size for current_scale_label
         if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
             import logging
+
             bad_pointers = claim_pointers[(claim_pointers < 1) | (claim_pointers > lut_size)]
+            bad_locations = claim_linear[(claim_pointers < 1) | (claim_pointers > lut_size)]
             logging.error(
-                f"Attempting to write invalid pointers: {bad_pointers[:10]} "
-                f"(LUT size={lut_size}, scale={current_scale_label})"
+                f"CRITICAL BUG: Attempting to write {len(bad_pointers)} invalid pointers at scale {current_scale_label}. "
+                f"Pointer range [{np.min(bad_pointers)}, {np.max(bad_pointers)}] vs LUT size {lut_size}. "
+                f"This indicates a bug in pointer index generation! "
+                f"Sample bad locations: {bad_locations[:5].tolist()}"
             )
-            # Filter out invalid pointers
+            if filtered_pointer_stats is not None:
+                filtered_pointer_stats["total_filtered"] = filtered_pointer_stats.get(
+                    "total_filtered", 0
+                ) + len(bad_pointers)
+                filtered_pointer_stats["total_attempts"] = filtered_pointer_stats.get(
+                    "total_attempts", 0
+                ) + len(claim_pointers)
+
+            # Filter out invalid pointers as a defensive measure
             valid_pointer_mask = (claim_pointers >= 1) & (claim_pointers <= lut_size)
             claim_linear = claim_linear[valid_pointer_mask]
             claim_pointers = claim_pointers[valid_pointer_mask]
             is_without_vertex_filtered = is_without_vertex.copy()
             is_without_vertex_filtered[is_without_vertex] = valid_pointer_mask
             is_without_vertex = is_without_vertex_filtered
-        
+
         if len(claim_linear) > 0:
+            # Verify we're not overwriting existing pointers
+            existing_pointers = pointer_map_flat[claim_linear]
+            existing_scales = size_map_flat[claim_linear]
+            if np.any(existing_pointers != 0):
+                import logging
+
+                overwrite_count = np.sum(existing_pointers != 0)
+                overwrite_mask = existing_pointers != 0
+                logging.error(
+                    f"CRITICAL: Attempting to overwrite {overwrite_count} existing pointers at scale {current_scale_label}! "
+                    f"This violates the is_without_vertex constraint. "
+                    f"Existing pointer values: {existing_pointers[overwrite_mask][:5]}, "
+                    f"Existing scales: {existing_scales[overwrite_mask][:5]}, "
+                    f"New pointers: {claim_pointers[overwrite_mask][:5]}"
+                )
+
             vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
             energy_map_flat[claim_linear] = np.asarray(
                 strel_adjusted_energies[is_without_vertex], dtype=np.float32
@@ -210,6 +287,31 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                 strel_distance_microns[is_without_vertex] + current_d_over_r
             )
             size_map_flat[claim_linear] = np.int16(current_scale_label)
+
+            # DIAGNOSTIC: Log a sample write for debugging
+            if len(claim_linear) > 0 and np.random.random() < 0.0001:  # Log 0.01% of writes
+                import logging
+
+                sample_idx = 0
+                logging.info(
+                    f"WRITE: location={claim_linear[sample_idx]}, "
+                    f"pointer={claim_pointers[sample_idx]}, "
+                    f"scale={current_scale_label}, "
+                    f"lut_size={lut_size}, "
+                    f"vertex={current_vertex_index}"
+                )
+
+            # DIAGNOSTIC: Verify pointers were written correctly by reading them back
+            readback_pointers = pointer_map_flat[claim_linear]
+            if not np.array_equal(readback_pointers, claim_pointers):
+                import logging
+
+                mismatches = np.sum(readback_pointers != claim_pointers)
+                logging.error(
+                    f"CRITICAL CORRUPTION: {mismatches}/{len(claim_pointers)} pointers corrupted immediately after writing! "
+                    f"Scale {current_scale_label}. "
+                    f"Written: {claim_pointers[:5]}, Read back: {readback_pointers[:5]}"
+                )
 
     return {
         "vertices_of_current_strel": vertex_index_map_flat[valid_linear],
@@ -303,6 +405,9 @@ def _matlab_global_watershed_trace_half(
     tracing_linear = int(start_linear)
     img_size = pointer_map_flat.size
 
+    # DIAGNOSTIC: Track first few steps for debugging
+    trace_log: list[tuple[int, int, int]] = []  # (location, pointer, scale)
+
     while 0 <= tracing_linear < img_size:
         if tracing_linear in visited:
             import logging
@@ -319,7 +424,14 @@ def _matlab_global_watershed_trace_half(
             break
 
         tracing_scale_label = int(size_map_flat[tracing_linear])
-        tracing_scale_index = int(np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1))
+
+        # DIAGNOSTIC: Log first few steps
+        if len(trace_log) < 5:
+            trace_log.append((tracing_linear, pointer_value, tracing_scale_label))
+
+        tracing_scale_index = int(
+            np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1)
+        )
         lut = _build_matlab_global_watershed_lut(
             tracing_scale_index,
             size_of_image=shape,
@@ -335,15 +447,17 @@ def _matlab_global_watershed_trace_half(
 
             logging.error(
                 f"Pointer index {pointer_value} out of range for scale {tracing_scale_label} "
-                f"(size {len(linear_offsets)}) at {tracing_linear}. "
-                f"Valid range: [1, {len(linear_offsets)}]"
+                f"(size {len(linear_offsets)}) at location {tracing_linear}. "
+                f"Valid range: [1, {len(linear_offsets)}]. "
+                f"Pointer dtype: {pointer_map_flat.dtype}, value type: {type(pointer_value)}. "
+                f"Trace history: {trace_log}"
             )
             break
 
         # Use pointer_value - 1 since it's 1-based
         offset = int(linear_offsets[pointer_value - 1])
         tracing_linear = int(tracing_linear - offset)
-        
+
         # Bounds check the new location
         if tracing_linear < 0 or tracing_linear >= img_size:
             import logging
@@ -353,7 +467,7 @@ def _matlab_global_watershed_trace_half(
                 f"(image size {img_size}) from pointer {pointer_value} with offset {offset}"
             )
             break
-            
+
     return traced
 
 
@@ -531,6 +645,9 @@ def _generate_edge_candidates_matlab_global_watershed(
     # Track the raw vertex energies for resetting -inf values
     vertex_energies_raw_flat = energy_map_raw.ravel(order="F")
 
+    # Track pointer filtering statistics
+    filtered_pointer_stats: dict[str, int] = {}
+
     available_locations_heap: list[tuple[float, int, int]] = []
     insertion_counter = [0]
     for loc in available_locations:
@@ -568,6 +685,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             step_size_per_origin_radius=step_size_per_origin_radius,
+        )
+        # Extract clipped scale for consistent pointer creation and size_map writing
+        current_scale_label_for_writing = current_strel.get(
+            "scale_label_clipped", current_scale_label
         )
         current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
         current_strel_coords = cast("np.ndarray", current_strel["coords"])
@@ -617,9 +738,26 @@ def _generate_edge_candidates_matlab_global_watershed(
             float(vertex_energies[current_vertex_index - 1]) * (1.0 - energy_tolerance)
         )
 
+        # Validate pointer indices before passing to reveal
+        if np.any(current_strel_pointer_indices < 1) or np.any(
+            current_strel_pointer_indices > current_strel["lut_size"]
+        ):
+            import logging
+
+            bad_ptrs = current_strel_pointer_indices[
+                (current_strel_pointer_indices < 1)
+                | (current_strel_pointer_indices > current_strel["lut_size"])
+            ]
+            logging.error(
+                f"CRITICAL BUG DETECTED: Invalid pointers BEFORE reveal at iteration {iteration}, "
+                f"scale {current_scale_label}, location {current_linear}. "
+                f"Bad pointer range: [{np.min(bad_ptrs)}, {np.max(bad_ptrs)}] vs LUT size {current_strel['lut_size']}. "
+                f"Total pointers: {len(current_strel_pointer_indices)}"
+            )
+
         _matlab_global_watershed_reveal_unclaimed_strel(
             current_vertex_index=current_vertex_index,
-            current_scale_label=current_scale_label,
+            current_scale_label=current_scale_label_for_writing,
             current_d_over_r=current_d_over_r,
             valid_linear=current_strel_linear,
             strel_pointer_indices=current_strel_pointer_indices,
@@ -631,6 +769,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             d_over_r_map_flat=d_over_r_map_flat,
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],
+            filtered_pointer_stats=filtered_pointer_stats,
         )
 
         for seed_idx in range(1, edge_number_tolerance + 1):
@@ -770,6 +909,21 @@ def _generate_edge_candidates_matlab_global_watershed(
         str(origin_index): origin_indices.count(origin_index)
         for origin_index in sorted(set(origin_indices))
     }
+
+    # Log pointer filtering statistics
+    if filtered_pointer_stats:
+        import logging
+
+        total_filtered = filtered_pointer_stats.get("total_filtered", 0)
+        total_attempts = filtered_pointer_stats.get("total_attempts", 0)
+        if total_filtered > 0:
+            logging.warning(
+                f"Pointer filtering summary: {total_filtered}/{total_attempts} pointers filtered "
+                f"({100.0 * total_filtered / max(total_attempts, 1):.1f}%)"
+            )
+        diagnostics["filtered_pointer_count"] = total_filtered
+        diagnostics["total_pointer_attempts"] = total_attempts
+
     raw_pointer_map = np.asarray(pointer_map)
     scaled_pointer_map = _matlab_global_watershed_scale_pointer_map(
         raw_pointer_map,

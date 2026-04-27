@@ -13,6 +13,19 @@ Recommended reading order:
 7. [Papers](papers/README.md)
 8. Optional backend docs under `backends/`
 
+## Active Bug Investigations
+
+**v22 Global Watershed Pointer Corruption** (April 27, 2026):
+- [V22 Summary](core/V22_SUMMARY.md) - Quick overview and fix instructions
+- [V22 Investigation Handover](core/V22_INVESTIGATION_HANDOVER.md) - Complete investigation details
+- [V22 Bug Fixes](core/V22_BUG_FIXES.md) - Detailed bug tracking and test results
+- [V22 Blocking Bugs](core/V22_BLOCKING_BUGS.md) - Original bug report
+- [V22 Pointer Corruption Investigation](core/V22_POINTER_CORRUPTION_INVESTIGATION.md) - Phase-by-phase log
+
+**Status**: Root cause identified (scale clipping mismatch), ready for fix implementation.
+
+---
+
 This shelf documents the maintained Python implementation and the current
 native-first exact-route rules. Treat the released MATLAB source as the
 executable specification, preserved MATLAB vectors as the oracle artifacts,

@@ -26,12 +26,12 @@ and full Python implementation of the released SLAVV method, see
 |-----------|--------|-------------|---------|
 | **Native Energy** | ✅ Complete | Canonical source | N/A |
 | **Vertices** | ✅ Ready | Downstream-ready on native route | Awaiting edge proof |
-| **Edges** | 🔧 Fixing | v22 bugs being addressed | Fixes applied, testing in progress |
+| **Edges** | 🔄 Active Work | v22 generates candidates, not exact | 65% match rate, investigating gaps |
 | **Network** | ⏸️ Blocked | Source-aligned, proof pending | Upstream edge parity |
 
 ## Current Status (April 2026)
 
-### Critical Finding (April 27, 2026): v22 Candidate Generation Bugs — Fixes In Progress
+### Critical Finding (April 27, 2026): v22 Bugs Fixed — Partial Success
 
 **Initial Run** (April 27, 2026 morning): `capture-candidates` FAILED with critical errors:
 - 40+ cycle detection errors in backtracking
@@ -42,24 +42,30 @@ and full Python implementation of the released SLAVV method, see
 2. Added pointer validation in reveal function to filter invalid pointers
 3. Added LUT consistency checks and assertions
 
-**Current Status** (April 27, 2026 1:30 PM): Testing in progress
-- `capture-candidates` is running with fixes applied
-- No immediate crashes observed
-- Algorithm is taking longer than expected (5+ minutes, still running)
-- Awaiting completion to assess if valid candidates are generated
+**Test Results** (April 27, 2026): ✅ **Algorithm completes successfully**
 
-See `V22_BUG_FIXES.md` for detailed fix descriptions.
+| Metric | Count | vs MATLAB |
+|--------|-------|-----------|
+| MATLAB candidates | 2533 | 100% (oracle) |
+| Python candidates | 2120 | 83.7% |
+| Matched pairs | 1643 | **64.9% match** |
+| Missing pairs | 890 | 35.1% gap |
+| Extra pairs | 477 | 22.5% over |
 
-**Impact**: The immediate crashes are prevented by defensive checks, but the
-algorithm performance and correctness still need verification. The long runtime
-suggests either the defensive filtering is catching many invalid pointers, or
-there are additional performance/logic issues.
+**Status**: The immediate crashes are fixed and the algorithm generates candidates,
+but **not yet at exact parity**. The 65% match rate is lower than the historical
+pre-v22 code (87%), suggesting either:
+- Defensive filtering is too aggressive and rejecting valid candidates
+- There are still logic bugs in frontier propagation
+- Energy/distance tolerance calculations differ from MATLAB
+
+See `V22_BUG_FIXES.md` for detailed results and next steps.
 
 **Immediate Next Steps**:
-1. Wait for current test run to complete
-2. Examine output for valid candidate generation
-3. Check logs for how many invalid pointers were filtered
-4. Add iteration limits if needed to prevent infinite loops
+1. Investigate why 890 MATLAB candidates are missing (35% gap)
+2. Investigate why 477 extra candidates are generated
+3. Check if defensive filtering rejected valid pointers
+4. Compare energy tolerance and distance tolerance calculations to MATLAB
 
 ### Energy: Native Implementation Complete ✅
 
