@@ -289,7 +289,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
             size_map_flat[claim_linear] = np.int16(current_scale_label)
 
             # DIAGNOSTIC: Log a sample write for debugging
-            if len(claim_linear) > 0 and np.random.random() < 0.0001:  # Log 0.01% of writes
+            if len(claim_linear) > 0 and np.random.random() < 0.001:  # Log 0.1% of writes
                 import logging
 
                 sample_idx = 0
@@ -299,6 +299,16 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                     f"scale={current_scale_label}, "
                     f"lut_size={lut_size}, "
                     f"vertex={current_vertex_index}"
+                )
+            
+            # DIAGNOSTIC: Log writes to specific problematic locations
+            if 12532290 in claim_linear:
+                import logging
+                idx = np.where(claim_linear == 12532290)[0][0]
+                logging.error(
+                    f"WRITING TO PROBLEM LOCATION 12532290: "
+                    f"pointer={claim_pointers[idx]}, scale={current_scale_label}, "
+                    f"lut_size={lut_size}, vertex={current_vertex_index}"
                 )
 
             # DIAGNOSTIC: Verify pointers were written correctly by reading them back
@@ -612,6 +622,10 @@ def _generate_edge_candidates_matlab_global_watershed(
         )
         size_map = np.asarray(original_scale_image, dtype=np.int16, order="F").copy()
         size_map += np.int16(1)
+        # CRITICAL FIX: Clip size_map to valid range to prevent out-of-range scale labels
+        # The input scale_indices might have values outside [0, len(lumen_radius_microns)-1]
+        # After adding 1, size_map should be in range [1, len(lumen_radius_microns)]
+        size_map = np.clip(size_map, 1, len(lumen_radius_microns))
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
         np.int32, copy=False
     )
@@ -690,6 +704,25 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_scale_label_for_writing = current_strel.get(
             "scale_label_clipped", current_scale_label
         )
+        
+        # DIAGNOSTIC: Log when scale clipping occurs
+        if current_scale_label_for_writing != current_scale_label:
+            import logging
+            logging.warning(
+                f"SCALE CLIPPING: original={current_scale_label}, clipped={current_scale_label_for_writing}, "
+                f"location={current_linear}, lut_size={current_strel['lut_size']}"
+            )
+        
+        # DIAGNOSTIC: Log for specific problematic iteration
+        if current_linear == 12532290 or (current_linear in [12470094, 12532290]):
+            import logging
+            logging.error(
+                f"PROCESSING PROBLEM LOCATION {current_linear}: "
+                f"original_scale={current_scale_label}, clipped_scale={current_scale_label_for_writing}, "
+                f"lut_size={current_strel['lut_size']}, "
+                f"scale_label_clipped_in_strel={current_strel.get('scale_label_clipped', 'NOT FOUND')}"
+            )
+        
         current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
         current_strel_coords = cast("np.ndarray", current_strel["coords"])
         current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
@@ -771,6 +804,21 @@ def _generate_edge_candidates_matlab_global_watershed(
             lut_size=current_strel["lut_size"],
             filtered_pointer_stats=filtered_pointer_stats,
         )
+        
+        # DIAGNOSTIC: Verify what was actually written
+        if np.random.random() < 0.001:  # Log 0.1% of iterations
+            import logging
+            is_without_vertex = vertex_index_map_flat[current_strel_linear] == current_vertex_index
+            if np.any(is_without_vertex):
+                sample_idx = np.where(is_without_vertex)[0][0]
+                sample_location = current_strel_linear[sample_idx]
+                written_scale = int(size_map_flat[sample_location])
+                written_pointer = int(pointer_map_flat[sample_location])
+                logging.info(
+                    f"VERIFY: location={sample_location}, written_pointer={written_pointer}, "
+                    f"written_scale={written_scale}, expected_scale={current_scale_label_for_writing}, "
+                    f"original_scale={current_scale_label}, lut_size={current_strel['lut_size']}"
+                )
 
         for seed_idx in range(1, edge_number_tolerance + 1):
             strel_idx = int(np.argmin(adjusted))
