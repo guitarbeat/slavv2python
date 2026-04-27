@@ -188,7 +188,9 @@ def _matlab_global_watershed_insert_available_location(
 ) -> None:
     """Insert into heap with energy priority (most negative first) and LIFO tie-breaking."""
     insertion_counter[0] += 1
-    heapq.heappush(available_locations, (float(next_energy), -insertion_counter[0], int(next_location)))
+    heapq.heappush(
+        available_locations, (float(next_energy), -insertion_counter[0], int(next_location))
+    )
 
 
 def _matlab_global_watershed_reset_join_locations(
@@ -199,14 +201,14 @@ def _matlab_global_watershed_reset_join_locations(
     current_location: int,
 ) -> bool:
     """Mirror MATLAB's indexed available-location removal during watershed joins.
-    
+
     Mutates available_locations in-place for efficiency.
     """
     if not available_locations and is_current_location_clear:
         return is_current_location_clear
 
     locations_to_reset = set(next_vertex_locations.tolist())
-    
+
     if not is_current_location_clear:
         # If not clear, the 'current_location' we popped at the start of the loop
         # is conceptually still in the list and might be one of the reset targets.
@@ -223,7 +225,7 @@ def _matlab_global_watershed_reset_join_locations(
     available_locations.clear()
     available_locations.extend(new_list)
     heapq.heapify(available_locations)
-    
+
     return is_current_location_clear
 
 
@@ -256,7 +258,7 @@ def _matlab_global_watershed_trace_half(
     """Trace one MATLAB watershed half-edge back to its zero-pointer origin using flat views."""
     pointer_map_flat = pointer_map.ravel(order="F")
     size_map_flat = size_map.ravel(order="F")
-    
+
     traced: list[int] = []
     visited: set[int] = set()
     tracing_linear = int(start_linear)
@@ -265,15 +267,18 @@ def _matlab_global_watershed_trace_half(
     while 0 <= tracing_linear < img_size:
         if tracing_linear in visited:
             import logging
-            logging.error(f"Cycle detected in global watershed backtrack at {tracing_linear}. Breaking.")
+
+            logging.error(
+                f"Cycle detected in global watershed backtrack at {tracing_linear}. Breaking."
+            )
             break
         visited.add(tracing_linear)
         traced.append(int(tracing_linear))
-        
+
         pointer_value = int(pointer_map_flat[tracing_linear])
         if pointer_value == 0:
             break
-            
+
         tracing_scale_label = int(size_map_flat[tracing_linear])
         lut = _build_matlab_global_watershed_lut(
             int(np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1)),
@@ -283,12 +288,15 @@ def _matlab_global_watershed_trace_half(
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
         linear_offsets = np.asarray(lut["linear_offsets"], dtype=np.int64)
-        
+
         if pointer_value < 1 or pointer_value > len(linear_offsets):
             import logging
-            logging.error(f"Pointer index {pointer_value} out of range for scale {tracing_scale_label} (size {len(linear_offsets)}) at {tracing_linear}.")
+
+            logging.error(
+                f"Pointer index {pointer_value} out of range for scale {tracing_scale_label} (size {len(linear_offsets)}) at {tracing_linear}."
+            )
             break
-            
+
         tracing_linear = int(tracing_linear - int(linear_offsets[pointer_value - 1]))
     return traced
 
@@ -463,7 +471,7 @@ def _generate_edge_candidates_matlab_global_watershed(
     edge_pairs: list[tuple[int, int]] = []
 
     last_heartbeat_at = time.monotonic()
-    
+
     # Track the raw vertex energies for resetting -inf values
     vertex_energies_raw_flat = energy_map_raw.ravel(order="F")
 
@@ -483,7 +491,6 @@ def _generate_edge_candidates_matlab_global_watershed(
         iteration += 1
         current_energy, _, current_linear = heapq.heappop(available_locations_heap)
         is_current_location_clear = False
-        current_coord = _matlab_linear_index_to_coord(current_linear, shape)
 
         current_energy = energy_map_temp_flat[current_linear]
 
@@ -507,12 +514,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
         current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
-        current_strel_distance_microns = cast("np.ndarray", current_strel["distance_microns"])
         current_strel_coords = cast("np.ndarray", current_strel["coords"])
         current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
         current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
         current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
-        current_strel_unit_vectors = cast("np.ndarray", current_strel["unit_vectors"])
 
         current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
             np.float32, copy=False
@@ -549,7 +554,6 @@ def _generate_edge_candidates_matlab_global_watershed(
 
         # Sample ownership BEFORE claiming to determine growability/connectivity
         vertices_of_current_strel = vertex_index_map_flat[current_strel_linear]
-        is_without_vertex_in_strel = vertices_of_current_strel == 0
 
         # Identify tolerated candidates from PENALIZED energies
         # MATLAB: is_energy_tolerated_in_strel = current_strel_energies < vertex_energies( current_vertex_index ) * energy_tolerance_coeff ;
@@ -591,14 +595,8 @@ def _generate_edge_candidates_matlab_global_watershed(
                 )
 
                 if next_vertex_index == 0:
-                    branch_order = (
-                        int(branch_order_map_flat[current_linear])
-                        + seed_idx
-                        - 1
-                    )
-                    branch_order_map_flat[next_location] = np.uint8(
-                        branch_order
-                    )
+                    branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
+                    branch_order_map_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
                         _matlab_global_watershed_insert_available_location(
                             next_location=next_location,
@@ -665,14 +663,9 @@ def _generate_edge_candidates_matlab_global_watershed(
                         edge_halves.append((half_1, half_2))
                         edge_pairs.append((current_vertex_index, next_vertex_index))
 
-
         if heartbeat is not None:
             now = time.monotonic()
-            if (
-                iteration == 1
-                or iteration % 512 == 0
-                or (now - last_heartbeat_at) >= 5.0
-            ):
+            if iteration == 1 or iteration % 512 == 0 or (now - last_heartbeat_at) >= 5.0:
                 heartbeat(iteration, len(edge_pairs))
                 last_heartbeat_at = now
 
