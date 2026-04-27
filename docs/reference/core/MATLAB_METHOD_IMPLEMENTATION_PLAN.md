@@ -134,8 +134,11 @@ native exact parity is done.
    pairs. Candidate emission still appears to be the first major downstream
    mismatch surface.
 2. `source/core/_edge_selection/conflict_painting.py`
-   Continue auditing conflict-painting acceptance order against released MATLAB
-   `choose_edges_V200.m`.
+   One structural deviation is now documented: the sequential trace iteration
+   (`enumerate(trace)`) must be replaced with a per-edge randomly permuted
+   index range to match MATLAB's `randperm` call (see Deviation #3 in
+   `MATLAB_PARITY_MAPPING.md`). Decide whether to use a fixed seed for the
+   exact route or accept this as a documented non-deterministic deviation.
 3. `source/core/_edge_selection/cleanup.py`
    Re-check crop, degree, orphan, and cycle cleanup whenever
    `edges.connections` improves but remains red.

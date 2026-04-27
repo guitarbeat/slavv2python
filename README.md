@@ -38,6 +38,8 @@ python -m mypy
 - [docs/README.md](docs/README.md)
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md)
+- [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
+- [docs/reference/core/V22_BLOCKING_BUGS.md](docs/reference/core/V22_BLOCKING_BUGS.md) ⚠️ **Critical**
 - [dev/tests/README.md](dev/tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 

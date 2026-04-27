@@ -26,10 +26,54 @@ and full Python implementation of the released SLAVV method, see
 |-----------|--------|-------------|---------|
 | **Native Energy** | ✅ Complete | Canonical source | N/A |
 | **Vertices** | ✅ Ready | Downstream-ready on native route | Awaiting edge proof |
-| **Edges** | 🔄 Active Work | Source-aligned, proof pending | Candidate alignment (v22) |
+| **Edges** | ❌ Blocked | v22 has critical bugs | Cycle detection + pointer out-of-range errors |
 | **Network** | ⏸️ Blocked | Source-aligned, proof pending | Upstream edge parity |
 
 ## Current Status (April 2026)
+
+### Critical Finding (April 27, 2026): v22 Candidate Generation Has Blocking Bugs
+
+**Attempted Run**: `capture-candidates` on the native-first exact route with v22 code
+
+**Result**: FAILED with multiple critical errors:
+
+1. **Cycle detection errors** (40+ instances):
+   ```
+   ERROR:root:Cycle detected in global watershed backtrack at <location>. Breaking.
+   ```
+   The backtracking logic is encountering cycles in the pointer map, causing
+   premature termination of candidate traces.
+
+2. **Pointer index out-of-range errors** (15+ instances):
+   ```
+   ERROR:root:Pointer index <N> out of range for scale <S> (size <M>) at <location>.
+   ```
+   The pointer map contains invalid indices that exceed the LUT size for the
+   given scale, indicating a bug in how pointers are written during frontier
+   propagation.
+
+**Impact**: The v22 watershed implementation cannot generate valid candidates.
+The "proof of concept" claim in the previous status was premature — candidates
+are being generated, but they contain fundamental errors that prevent valid
+trace-back.
+
+**Root Cause Hypothesis**: The flat-first 1D Fortran architecture and/or the
+heapq frontier traversal is writing invalid pointer values or creating cycles
+in the pointer map. The LUT proof passed (all scales PASS), so the issue is in
+the runtime frontier propagation, not the LUT construction.
+
+**Immediate Next Steps**:
+1. Add defensive checks in the backtracking code to log the pointer map state
+   when cycles or out-of-range indices are detected.
+2. Verify that pointer writes during frontier propagation respect the LUT size
+   bounds for each scale.
+3. Check if the LIFO tie-breaking or energy-tolerance logic is causing the
+   frontier to write pointers in an order that creates cycles.
+4. Re-run a small-scale debug trace to isolate the first failing candidate.
+
+**Status Downgrade**: Edges moved from "Active Work (v22)" to "Blocked on v22
+bugs". Candidate generation must be fixed before any downstream proof work can
+proceed.
 
 ### Energy: Native Implementation Complete ✅
 
@@ -57,11 +101,15 @@ without requiring imported MATLAB artifacts.
 **Status**: Proof pending, but not blocked by vertex-stage issues. Waiting for
 downstream edge proof to complete before formal vertex proof run.
 
-### Edges: High-Performance Parity Port (Active Work) 🔄
+### Edges: v22 Blocked on Critical Bugs ❌
 
-**Current Iteration**: v22 (as of April 2026)
+**Current Iteration**: v22 (April 2026)
 
-**Major Accomplishments**:
+**Status as of April 27, 2026**: **BLOCKED** — `capture-candidates` run revealed
+critical bugs in the v22 global watershed implementation that prevent valid
+candidate generation.
+
+**Previous Accomplishments** (now invalidated):
 1. ✅ **Resolved frontier propagation stagnation bug**
    - Implemented heapq-based O(log N) min-priority traversal
    - Added LIFO tie-breaking via insertion counter (matches MATLAB's `find(..., 'last')`)
@@ -73,19 +121,43 @@ downstream edge proof to complete before formal vertex proof run.
    - Direct linear views for all map operations
    - Matches MATLAB's pointer-offset math exactly
 
-3. ✅ **Verified candidate generation on canonical sample**
-   - Frontier now propagates correctly across energy landscape
-   - Zero-candidate stagnation bug is resolved
-   - Candidates are being generated (proof of concept established)
+3. ❌ **"Verified candidate generation on canonical sample"** — INVALIDATED
+   - Candidates are generated, but contain fundamental errors
+   - Cycle detection errors during backtracking (40+ instances)
+   - Pointer index out-of-range errors (15+ instances)
+   - The "proof of concept" claim was premature
 
-**Current Focus**: Exact vertex-pair alignment
-- Fine-tuning trace-back boundary conditions
-- Closing the gap between Python candidate counts and MATLAB oracle pairs
-- Running continuous `capture-candidates` verification
+**Critical Bugs Found (April 27, 2026)**:
 
-**Known Remaining Work**:
+1. **Cycle Detection in Backtracking**:
+   - 40+ instances of `Cycle detected in global watershed backtrack at <location>`
+   - The pointer map contains cycles that prevent valid trace reconstruction
+   - Likely caused by incorrect pointer writes during frontier propagation
+
+2. **Pointer Index Out-of-Range**:
+   - 15+ instances of `Pointer index <N> out of range for scale <S> (size <M>)`
+   - Pointers exceed the LUT size for the given scale
+   - Indicates the frontier is writing invalid pointer values
+
+**Root Cause Hypothesis**:
+- The flat-first 1D architecture or heapq traversal is writing pointers that
+  don't respect LUT bounds or create circular references
+- The LIFO tie-breaking or energy-tolerance logic may be causing the frontier
+  to revisit locations in a way that creates invalid pointer chains
+
+**Immediate Fix Requirements**:
+1. Add defensive logging to capture pointer map state when errors occur
+2. Verify pointer writes respect LUT size bounds for each scale
+3. Check if tie-breaking or energy-tolerance logic creates cycles
+4. Run small-scale debug trace to isolate the first failing candidate
+
+**Known Remaining Work** (blocked until bugs are fixed):
+- Fix cycle detection and pointer out-of-range bugs
 - Complete exact count alignment with MATLAB oracle
-- Verify conflict-painting acceptance order in `conflict_painting.py`
+- **Fix randomised trace-order in conflict-painting loop** — MATLAB uses `randperm`
+  per edge; Python iterates sequentially. This is the only structural deviation
+  found in the chooser after the April 2026 audit. See `MATLAB_PARITY_MAPPING.md`
+  Deviation #3 for the full analysis and recommended fix.
 - Re-check cleanup chain (crop, degree, orphan, cycle) after candidate alignment
 
 ### Network: Source-Aligned, Awaiting Upstream ⏸️
@@ -95,6 +167,21 @@ remain blocked on unresolved edge parity. No network-specific issues are known;
 the blocker is purely upstream.
 
 **Status**: Ready for proof once edge parity is established.
+
+### Cleanup Chain: Structurally Aligned ✅
+
+An April 2026 audit of `cleanup.py` against the three MATLAB cleanup functions
+found all three structurally aligned:
+
+- `clean_edges_vertex_degree_excess`: removal order (highest-index / worst-energy
+  first) matches MATLAB exactly.
+- `clean_edges_orphans`: terminal-location union (interior edge locations ∪ vertex
+  locations) matches the active MATLAB path.
+- `clean_edges_cycles`: worst-edge-per-component removal and between-iteration
+  vertex pruning both match MATLAB.
+
+No cleanup-specific fixes are needed. The cleanup chain will be re-verified once
+upstream candidate alignment improves.
 
 ## Historical Quantified Findings (Pre-v22)
 
