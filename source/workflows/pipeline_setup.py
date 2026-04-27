@@ -1,4 +1,4 @@
-﻿"""Setup helpers for pipeline orchestration."""
+"""Setup helpers for pipeline orchestration."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     import numpy as np
+
     from source.runtime import ProgressEvent, RunContext
 
 
@@ -177,6 +178,3 @@ def prepare_pipeline_run(
         run_context=run_context,
         force_rerun=force_rerun_flags(force_rerun_from),
     )
-
-
-

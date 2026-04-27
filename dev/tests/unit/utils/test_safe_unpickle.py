@@ -1,4 +1,4 @@
-﻿import pickle
+import pickle
 
 import numpy as np
 import pytest
@@ -54,5 +54,3 @@ def test_safe_load_rejects_builtin_eval_gadget(tmp_path):
 
     with pytest.raises(pickle.UnpicklingError, match="forbidden"):
         safe_load(p)
-
-

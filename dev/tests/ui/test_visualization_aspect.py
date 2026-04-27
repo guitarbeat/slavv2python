@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.visualization import NetworkVisualizer
 
 
@@ -21,5 +21,3 @@ def test_plot_2d_network_has_equal_aspect():
 
     assert fig.layout.yaxis.scaleanchor == "x"
     assert fig.layout.yaxis.scaleratio == 1
-
-

@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pytest
 from source.core import SLAVVProcessor
 from source.core._edge_selection.cleanup import clean_edges_cycles_python
@@ -365,5 +365,3 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
     )
 
     assert chosen["connections"].tolist() == [[0, 1], [2, 3]]
-
-

@@ -1,4 +1,4 @@
-﻿# MATLAB Parity Mapping
+# MATLAB Parity Mapping
 
 [Up: Reference Docs](../README.md)
 
@@ -59,7 +59,7 @@ The active MATLAB sources for the native-first exact target are:
 | `vectorize_V200.m` | `source/core/matlab_compat/vectorize_v200.py`, `source/core/pipeline.py` | Source-aligned orchestration surface | The compat layer mirrors MATLAB stage order while delegating into the maintained modular Python pipeline. |
 | `get_energy_V202.m` and `energy_filter_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/energy.py`, `source/core/_energy/native_hessian.py`, `source/core/_energy/provenance.py` | Native exact-compatible source surface | Native matched filtering is now the canonical exact-route energy implementation. |
 | `get_vertices_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/vertices.py`, `source/core/_vertices/extraction.py` | Source-aligned; proof pending on native exact route | The maintained exact route now starts from native energy rather than imported MATLAB energy. |
-| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/core/matlab_compat/stages.py`, `source/core/edges.py`, `source/core/_edges/standard.py`, `source/core/_edges/resumable.py`, `source/core/_edge_candidates/generate.py`, `source/core/_edge_candidates/global_watershed.py`, `source/core/_edge_candidates/common.py` | Ported on native-first exact route; proof pending | The exact route uses the MATLAB-style frontier / shared-state watershed path whenever the energy provenance is exact-compatible. Scale-tolerance derivation now follows MATLAB's first-two-radii formula from `get_edges_V300.m`, join-time `available_locations` resets now follow MATLAB's indexed `intersect(...)` removal behavior, shared-state `pointer_map` / `d_over_r_map` dtypes now match MATLAB, and half-edge backtracking plus final edge energy/scale sampling now stay on MATLAB-order linear indices through the trace assembly path. |
+| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/core/matlab_compat/stages.py`, `source/core/edges.py`, `source/core/_edges/standard.py`, `source/core/_edges/resumable.py`, `source/core/_edge_candidates/generate.py`, `source/core/_edge_candidates/global_watershed.py`, `source/core/_edge_candidates/common.py` | **High-Performance Port (Source-Aligned)** | The exact route uses the MATLAB-style **heapq-accelerated O(log N) frontier** and **flat-first 1D Fortran architecture**. Scale-tolerance derivation now follows MATLAB's first-two-radii formula, and trace-back sampling uses direct linear offsets. |
 | `get_edge_metric.m` | `source/core/matlab_compat/stages.py`, `source/analysis/_geometry/trace_ops.py`, `source/core/graph.py` | Source-aligned | The compat layer exposes a MATLAB-named wrapper while the maintained trace metric helpers stay modular. |
 | `choose_edges_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/edge_selection.py`, `source/core/_edge_selection/payloads.py`, `source/core/_edge_selection/conflict_painting.py`, `source/core/_edges/postprocess.py` | Ported on native-first exact route; proof pending | The chooser now sits on the canonical native exact route rather than behind a hidden native-energy override. |
 | `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, `clean_edges_cycles.m` | `source/core/_edge_selection/cleanup.py` | Source-aligned; proof pending | Cleanup math is ported but still downstream of unresolved edge parity. |
@@ -76,20 +76,7 @@ compatible. The canonical provenance is `python_native_hessian`; preserved
 `matlab_batch_hdf5` surfaces remain supported for historical replay and oracle
 comparison.
 
-### 2. Legacy non-parity helpers still exist outside the exact route
-
-Legacy local tracing and supplement helpers still exist under:
-
-- `source/core/_edge_candidates/frontier_trace.py`
-- `source/core/_edge_candidates/frontier_resolution.py`
-- `source/core/_edge_candidates/watershed_contacts.py`
-- `source/core/_edge_candidates/watershed_joins.py`
-- `source/core/_edge_candidates/geodesic_salvage.py`
-
-They are acceptable as non-parity support surfaces, but they should not be
-presented as the canonical MATLAB-equivalent method.
-
-### 3. Downstream proof is still open after the energy cutover
+### 2. Downstream proof is still open after the energy cutover
 
 The major remaining gap is no longer native energy provenance. The current open
 work is downstream exact proof for:

@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from sklearn.neural_network import MLPClassifier
 from source.analysis import MLCurator
 
@@ -54,5 +54,3 @@ def test_generate_training_data_uses_annotation_edge_labels():
 
     np.testing.assert_array_equal(vertex_labels, np.array([1]))
     np.testing.assert_array_equal(edge_labels, np.array([0]))
-
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -243,6 +243,3 @@ def test_prepare_pipeline_run_validates_inputs_and_initializes_context(monkeypat
             "force_rerun_from": "vertices",
         }
     ]
-
-
-

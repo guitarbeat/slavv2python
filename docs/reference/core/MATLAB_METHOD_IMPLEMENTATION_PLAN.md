@@ -1,4 +1,4 @@
-﻿# MATLAB Method Implementation Plan
+# MATLAB Method Implementation Plan
 
 [Up: Reference Docs](../README.md)
 
@@ -72,9 +72,9 @@ function boundaries while delegating into the maintained modular Python code.
 | --- | --- | --- | --- |
 | Energy / size image generation | Native matched-filter implementation is the canonical exact-compatible source | Python now has a native exact-route energy implementation and no longer depends on imported MATLAB energy at runtime | Keep broadening MATLAB-oracle fixture coverage and preserve direct/resumable parity |
 | Vertex extraction | Runnable on the native-first exact route | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges/network |
-| Edge extraction | Source-aligned in many places, but not artifact-proven | Not yet exact | `prove-exact` still fails downstream at `edges.connections` until the edge route is fully closed |
-| Edge cleanup / bridge insertion | Source-aligned in many places, but not artifact-proven | Not yet exact | Downstream of unresolved edge mismatch |
-| Network / strand assembly | Source-aligned in many places, but not artifact-proven | Not yet exact | Downstream of unresolved edge mismatch |
+| Edge extraction | **Source-aligned (High Performance)** | Not yet exact | We have resolved the frontier propagation bug with a new **heapq-based O(log N) traversal** and 1D Fortran-ordered architecture. Closing the final vertex-pair alignment gap. |
+| Edge cleanup / bridge insertion | Source-aligned | Not yet exact | Downstream of unresolved edge mismatch |
+| Network / strand assembly | Source-aligned | Not yet exact | Downstream of unresolved edge mismatch |
 
 ## What Must Be True Before We Claim Full Python Implementation
 
@@ -110,12 +110,13 @@ Status: active.
 
 Primary work items:
 
-1. Close the remaining `edges.connections` mismatch on the native-first exact
-   route.
-2. Re-run `prove-exact` after every math-bearing edge or network change.
-3. Keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
+1. **Resolved**: Watershed frontier propagation stagnation.
+2. **Resolved**: Memory-layout bottleneck via flat-first 1D Fortran architecture.
+3. **In-Progress**: Closing the remaining `edges.connections` mismatch on the native-first exact route (active baseline: `v22`).
+4. Re-run `prove-exact` after every math-bearing edge or network change.
+5. Keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
    measured effect of each fix.
-4. Continue using `source/core/matlab_compat/` as the parity-facing audit
+6. Continue using `source/core/matlab_compat/` as the parity-facing audit
    surface instead of ad hoc route descriptions.
 
 Acceptance gate:

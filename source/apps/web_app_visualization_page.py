@@ -1,8 +1,9 @@
-﻿"""Visualization page for the SLAVV Streamlit app."""
+"""Visualization page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import streamlit as st
+
 from source.apps.visualization_state import (
     extract_visualization_export_payload,
     has_visualization_network,
@@ -274,5 +275,3 @@ def show_visualization_page() -> None:
         f"requested={share_metrics.get('share_report_requested', 0)}, "
         f"downloaded={share_metrics.get('share_report_downloaded', 0)}"
     )
-
-

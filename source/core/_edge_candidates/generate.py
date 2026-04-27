@@ -16,16 +16,7 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
-from .geodesic import _salvage_matlab_parity_candidates_with_local_geodesics
 from .global_watershed import _generate_edge_candidates_matlab_global_watershed
-from .watershed import (
-    _augment_matlab_frontier_candidates_with_watershed_contacts,
-)
-from .watershed_candidates import (
-    _augment_candidates_with_watershed_contacts,
-    _parity_watershed_candidate_mode,
-    _parity_watershed_metric_threshold_from_params,
-)
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
@@ -90,49 +81,9 @@ def _finalize_matlab_parity_candidates(
     params: dict[str, Any],
     microns_per_voxel: np.ndarray | None = None,
 ) -> dict[str, Any]:
-    """Finalize MATLAB-parity candidates with the configured watershed strategy."""
-    if bool(candidates.get("matlab_global_watershed_exact", False)):
-        return candidates
-
-    candidate_mode = _parity_watershed_candidate_mode(params)
-    watershed_metric_threshold = _parity_watershed_metric_threshold_from_params(params)
-
-    finalized = _augment_matlab_frontier_candidates_with_watershed_contacts(
-        candidates,
-        energy,
-        scale_indices,
-        vertex_positions,
-        energy_sign,
-        max_edges_per_vertex=int(params.get("number_of_edges_per_vertex", 4)),
-        candidate_mode=candidate_mode or "all_contacts",
-        parity_watershed_metric_threshold=watershed_metric_threshold,
-    )
-
-    salvage_mode = str(params.get("parity_candidate_salvage_mode", "auto")).strip().lower()
-    if salvage_mode == "auto":
-        salvage_mode = "frontier_deficit_geodesic"
-    if salvage_mode == "none":
-        return cast("dict[str, Any]", finalized)
-
-    microns_per_voxel_value = (
-        np.asarray(microns_per_voxel, dtype=np.float32)
-        if microns_per_voxel is not None
-        else np.ones((3,), dtype=np.float32)
-    )
-    return cast(
-        "dict[str, Any]",
-        _salvage_matlab_parity_candidates_with_local_geodesics(
-            finalized,
-            energy,
-            scale_indices,
-            vertex_positions,
-            energy_sign,
-            microns_per_voxel_value,
-            params,
-            salvage_mode=salvage_mode,
-            parity_metric_threshold=watershed_metric_threshold,
-        ),
-    )
+    """Finalize MATLAB-parity candidates. Currently a pass-through as non-parity supplements are removed."""
+    del energy, scale_indices, vertex_positions, energy_sign, params, microns_per_voxel
+    return candidates
 
 
 def _generate_edge_candidates_matlab_frontier(
@@ -369,20 +320,4 @@ def _generate_edge_candidates(
         "connection_sources": connection_sources,
         "diagnostics": diagnostics,
     }
-    candidate_mode = _parity_watershed_candidate_mode(params)
-    if candidate_mode is None:
-        return candidates
-
-    return cast(
-        "dict[str, Any]",
-        _augment_candidates_with_watershed_contacts(
-            candidates,
-            energy,
-            scale_indices,
-            vertex_positions,
-            energy_sign,
-            max_edges_per_vertex=max_edges_per_vertex,
-            candidate_mode=candidate_mode,
-            metric_threshold=_parity_watershed_metric_threshold_from_params(params),
-        ),
-    )
+    return candidates

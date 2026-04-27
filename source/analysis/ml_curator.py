@@ -1,4 +1,4 @@
-﻿"""
+"""
 Machine Learning Curator for SLAVV
 
 This module provides ML-based curation of vertices and edges detected by the SLAVV algorithm.
@@ -523,7 +523,7 @@ class MLCurator:
         }
 
         logger.info(
-            f"Vertex curation complete: {len(vertices['positions'])} â†’ {len(kept_indices)} vertices"
+            f"Vertex curation complete: {len(vertices['positions'])} -> {len(kept_indices)} vertices"
         )
 
         return curated_vertices
@@ -562,7 +562,7 @@ class MLCurator:
             "vertex_positions": edges["vertex_positions"],
         }
 
-        logger.info(f"Edge curation complete: {len(edges['traces'])} â†’ {len(kept_indices)} edges")
+        logger.info(f"Edge curation complete: {len(edges['traces'])} -> {len(kept_indices)} edges")
 
         return curated_edges
 
@@ -690,5 +690,3 @@ class MLCurator:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Aggregate features from multiple result snippets for training."""
         return load_aggregated_training_data(data_dir, file_pattern=file_pattern)
-
-

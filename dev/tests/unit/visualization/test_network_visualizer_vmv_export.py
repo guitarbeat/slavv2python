@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 import numpy as np
 from source.visualization import NetworkVisualizer
@@ -139,5 +139,3 @@ def test_vmv_export():
     # Clean up
     if os.path.exists(output_path):
         os.remove(output_path)
-
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
 from source.apps.visualization_state import (
@@ -72,5 +72,3 @@ def test_resolve_visualization_session_context_returns_share_defaults():
         "image_shape": (6, 5, 4),
         "share_metrics": {"share_report_requested": 2},
     }
-
-

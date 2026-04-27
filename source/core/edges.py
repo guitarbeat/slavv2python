@@ -1,4 +1,4 @@
-﻿"""Edge extraction orchestration for source."""
+"""Edge extraction orchestration for source."""
 
 from __future__ import annotations
 
@@ -128,6 +128,3 @@ def extract_edges_watershed_resumable(
             empty_edge_diagnostics=_empty_edge_diagnostics,
         ),
     )
-
-
-

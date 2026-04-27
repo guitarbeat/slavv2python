@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -118,5 +118,3 @@ def test_resolve_resumable_stage_computes_and_persists_when_forced(tmp_path):
 
     assert payload == {"payload": "fresh-result"}
     assert controller.saved_payloads == [{"payload": "fresh-result"}]
-
-

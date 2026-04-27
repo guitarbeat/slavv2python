@@ -1,4 +1,4 @@
-﻿"""Helpers for normalized analysis-page state."""
+"""Helpers for normalized analysis-page state."""
 
 from __future__ import annotations
 
@@ -98,5 +98,3 @@ __all__ = [
     "normalize_analysis_results",
     "resolve_analysis_stats",
 ]
-
-

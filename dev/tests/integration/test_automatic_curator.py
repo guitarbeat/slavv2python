@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.analysis import AutomaticCurator
 
 
@@ -93,5 +93,3 @@ def test_automatic_edge_curation_handles_curated_vertices():
     # After the fix, it should correctly identify and keep the valid edge (1->2)
     assert len(curated_edges["traces"]) == 1
     np.testing.assert_array_equal(curated_edges["original_indices"], [1])
-
-

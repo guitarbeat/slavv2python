@@ -1,4 +1,4 @@
-﻿"""Command-line interface for source."""
+"""Command-line interface for source."""
 
 from __future__ import annotations
 
@@ -72,4 +72,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
-

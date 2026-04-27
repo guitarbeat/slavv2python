@@ -1,4 +1,4 @@
-﻿"""Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
+"""Consolidated tests for network I/O (CSV, JSON, CASX, VMV)."""
 
 import json
 from pathlib import Path
@@ -200,5 +200,3 @@ class TestNetworkImport:
         network = load_network_from_csv(prefix)
 
         assert np.array_equal(network.edges, np.array([[1, 0]], dtype=int))
-
-

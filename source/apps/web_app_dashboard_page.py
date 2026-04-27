@@ -1,10 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 import plotly.express as px
 import streamlit as st
+
 from source.runtime.run_state import target_stage_progress
 from source.visualization import NetworkVisualizer
 
@@ -334,5 +335,3 @@ def show_dashboard_page():
         _render_dashboard_surface_fragment()
     else:
         _render_dashboard_surface()
-
-

@@ -1,4 +1,4 @@
-﻿"""Reusable network-object and export payload builders for tests."""
+"""Reusable network-object and export payload builders for tests."""
 
 from __future__ import annotations
 
@@ -69,5 +69,3 @@ __all__ = [
     "build_network_object",
     "write_network_json_fixture",
 ]
-
-

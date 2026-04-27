@@ -1,6 +1,6 @@
-﻿"""End-to-end integration test for the full SLAVV pipeline.
+"""End-to-end integration test for the full SLAVV pipeline.
 
-Loads the real test volume, runs every stage (energy â†’ vertices â†’ edges â†’ network),
+Loads the real test volume, runs every stage (energy -> vertices -> edges -> network),
 and verifies that all export formats produce valid output files.
 """
 
@@ -72,7 +72,7 @@ def test_end_to_end_pipeline(tmp_path):
     params = {
         "microns_per_voxel": [1.0, 1.0, 1.0],
         "radius_of_smallest_vessel_in_microns": 1.5,
-        "radius_of_largest_vessel_in_microns": 5.0,  # small range â†’ fewer scales
+        "radius_of_largest_vessel_in_microns": 5.0,  # small range -> fewer scales
         "scales_per_octave": 1.0,
         "energy_upper_bound": 0.0,
         "space_strel_apothem": 1,
@@ -101,7 +101,7 @@ def test_end_to_end_pipeline(tmp_path):
     assert "vertex_degrees" in network
     assert network["vertex_degrees"].shape[0] == len(vertices["positions"])
 
-    # 5. Test exporters â€” convert dict â†’ Network dataclass first
+    # 5. Test exporters - convert dict -> Network dataclass first
     net_obj = _results_to_network(results)
     out_dir = tmp_path / "exports"
     out_dir.mkdir()
@@ -129,6 +129,3 @@ def test_end_to_end_pipeline(tmp_path):
     save_network_to_vmv(net_obj, str(vmv_path))
     assert vmv_path.exists()
     assert vmv_path.stat().st_size > 0
-
-
-

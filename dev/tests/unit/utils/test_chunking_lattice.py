@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.utils import get_chunking_lattice
 
 
@@ -36,5 +36,3 @@ def test_chunking_lattice_keeps_output_slices_contiguous_when_margin_is_clamped(
         processed_z = output_slice[2].stop
 
     assert processed_z == shape[2]
-
-

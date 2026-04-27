@@ -1,4 +1,4 @@
-﻿"""
+"""
 Analysis modules for source.
 
 This subpackage contains:
@@ -63,6 +63,3 @@ __all__ = [
     "subsample_vectors",
     "transform_vector_set",
 ]
-
-
-

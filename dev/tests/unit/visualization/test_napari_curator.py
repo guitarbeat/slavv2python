@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import importlib
 
@@ -56,5 +56,3 @@ def test_load_napari_modules_requires_optional_dependency(monkeypatch):
 
     with pytest.raises(RuntimeError, match="slavv\\[napari\\]"):
         napari_curator._load_napari_modules()
-
-

@@ -1,4 +1,4 @@
-﻿import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
@@ -111,5 +111,3 @@ def test_casx_export_defaults_missing_radii_to_zero(tmp_path):
     assert len(verts) == 2
     assert float(verts[0].attrib["radius"]) == pytest.approx(0.0, 0.001)
     assert float(verts[1].attrib["radius"]) == pytest.approx(0.0, 0.001)
-
-

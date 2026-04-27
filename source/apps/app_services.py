@@ -1,6 +1,7 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import streamlit as st
+
 from source.io import load_tiff_volume
 from source.runtime import load_run_snapshot
 
@@ -47,5 +48,3 @@ __all__ = [
     "run_interactive_curator",
     "update_run_task",
 ]
-
-

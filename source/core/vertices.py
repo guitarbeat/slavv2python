@@ -1,4 +1,4 @@
-﻿"""Public vertex extraction facade for source."""
+"""Public vertex extraction facade for source."""
 
 from __future__ import annotations
 
@@ -12,4 +12,3 @@ __all__ = [
     "paint_vertex_center_image",
     "paint_vertex_image",
 ]
-

@@ -1,4 +1,4 @@
-﻿from unittest.mock import patch
+from unittest.mock import patch
 
 import numpy as np
 from source.core import SLAVVProcessor
@@ -117,6 +117,3 @@ def test_extract_edges_direction_padding_is_repeatable(monkeypatch):
         first["diagnostics"]["candidate_traced_edge_count"]
         == second["diagnostics"]["candidate_traced_edge_count"]
     )
-
-
-

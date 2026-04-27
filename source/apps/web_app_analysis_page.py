@@ -1,9 +1,10 @@
-﻿"""Analysis page for the SLAVV Streamlit app."""
+"""Analysis page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
+
 from source.apps.analysis_state import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
@@ -161,5 +162,3 @@ def show_analysis_page() -> None:
             file_name="network_statistics.csv",
             mime="text/csv",
         )
-
-

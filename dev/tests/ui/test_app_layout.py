@@ -1,4 +1,4 @@
-﻿import importlib
+import importlib
 
 import pytest
 
@@ -16,5 +16,3 @@ def test_app_sets_wide_layout(monkeypatch):
 
     importlib.reload(app)
     assert called.get("layout") == "wide"
-
-

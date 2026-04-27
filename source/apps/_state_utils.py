@@ -13,4 +13,3 @@ if TYPE_CHECKING:
 def normalize_state_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
     """Return a normalized dict payload for app state consumers."""
     return normalize_pipeline_result(processing_results).to_dict()
-

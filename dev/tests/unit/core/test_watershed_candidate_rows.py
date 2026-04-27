@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.core._edge_candidates.generate import _generate_edge_candidates
 from source.core._edge_candidates.watershed_candidates import (
     _augment_candidates_with_watershed_contacts,
@@ -261,6 +261,3 @@ def test_parity_watershed_candidate_mode_maps_legacy_mode_to_all_contacts():
         )
         == "all_contacts"
     )
-
-
-

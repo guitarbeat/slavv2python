@@ -1,4 +1,4 @@
-﻿"""Tests for stage-reset runtime helpers."""
+"""Tests for stage-reset runtime helpers."""
 
 from __future__ import annotations
 
@@ -68,5 +68,3 @@ def test_reset_stage_snapshots_reinitializes_requested_and_later_stages():
     assert stages["vertices"].status == "pending"
     assert stages["edges"].progress == 0.0
     assert stages["network"].detail == ""
-
-

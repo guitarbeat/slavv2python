@@ -1,4 +1,4 @@
-﻿"""Small orchestration helpers for sequential pipeline execution."""
+"""Small orchestration helpers for sequential pipeline execution."""
 
 from __future__ import annotations
 
@@ -108,5 +108,3 @@ __all__ = [
     "build_standard_pipeline_steps",
     "run_pipeline_stage_sequence",
 ]
-
-

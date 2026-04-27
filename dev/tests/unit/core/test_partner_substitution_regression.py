@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 from source.core.edge_selection import _choose_edges_matlab_style
@@ -56,5 +56,3 @@ def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():
     assert chosen["diagnostics"]["conflict_rejected_by_source"] == {"watershed": 1}
     assert chosen["diagnostics"]["conflict_blocking_source_counts"] == {"frontier": 1}
     assert chosen["diagnostics"]["conflict_source_pairs"] == {"watershed->frontier": 1}
-
-

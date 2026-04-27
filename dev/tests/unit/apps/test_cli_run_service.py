@@ -1,4 +1,4 @@
-﻿"""Tests for CLI run-command helpers."""
+"""Tests for CLI run-command helpers."""
 
 from __future__ import annotations
 
@@ -90,5 +90,3 @@ def test_build_run_completion_lines_includes_snapshot_lines():
         "status-b",
         "Done. Results in out",
     ]
-
-

@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import types
 
 import pytest
@@ -236,6 +236,3 @@ def test_build_processing_run_dir_varies_with_validated_parameters():
 
     assert first != second
     assert first == repeated
-
-
-

@@ -1,4 +1,4 @@
-﻿"""Tests for CLI status-loading helpers."""
+"""Tests for CLI status-loading helpers."""
 
 from __future__ import annotations
 
@@ -37,5 +37,3 @@ def test_build_status_output_lines_uses_status_line_builder():
     )
 
     assert lines == ["line-a", "same:True"]
-
-

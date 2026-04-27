@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from source.workflows.pipeline_runner import (
     PipelineStageStep,
@@ -136,5 +136,3 @@ def test_run_pipeline_stage_sequence_stops_after_matching_stage():
     assert early is not None
     assert "vertices" not in early
     assert run_context.stop_after_calls == ["energy"]
-
-

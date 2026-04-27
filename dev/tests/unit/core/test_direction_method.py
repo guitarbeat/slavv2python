@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import pytest
 from source.core import SLAVVProcessor
 from source.utils import validate_parameters
@@ -48,6 +48,3 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
     edges = processor.extract_edges(energy_data, vertices, params)
     assert len(edges["traces"]) == 0
     assert edges["diagnostics"]["candidate_traced_edge_count"] == 2
-
-
-

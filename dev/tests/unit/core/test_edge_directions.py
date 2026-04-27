@@ -1,4 +1,4 @@
-﻿"""Consolidated tests for generate_edge_directions function."""
+"""Consolidated tests for generate_edge_directions function."""
 
 import numpy as np
 import pytest
@@ -33,5 +33,3 @@ def test_generate_edge_directions_properties():
 
     # Directions should be unique
     assert len(np.unique(np.round(dirs5, 6), axis=0)) == 5
-
-

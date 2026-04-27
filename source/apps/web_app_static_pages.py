@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import streamlit as st
 
@@ -109,4 +109,3 @@ def show_about_page():
 
     For more information or to cite this work, please refer to the project documentation.
     """)
-

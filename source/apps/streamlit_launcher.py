@@ -1,4 +1,4 @@
-﻿"""Launch the Streamlit UI through Streamlit's real CLI entrypoint."""
+"""Launch the Streamlit UI through Streamlit's real CLI entrypoint."""
 
 from __future__ import annotations
 
@@ -62,4 +62,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

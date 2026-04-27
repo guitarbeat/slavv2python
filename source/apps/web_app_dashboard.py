@@ -1,10 +1,11 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 from typing import Any
 
 import pandas as pd
 import plotly.express as px
+
 from source.utils.formatting import format_time
 
 DASHBOARD_STAGE_ORDER = ("energy", "vertices", "edges", "network")
@@ -396,5 +397,3 @@ def build_dashboard_backlog_frame(
         for request in metric_requests or []
     )
     return pd.DataFrame(rows)
-
-

@@ -1,4 +1,4 @@
-﻿import importlib
+import importlib
 import sys
 import types
 import typing
@@ -71,4 +71,3 @@ def test_dashboard_pure_helpers_cover_filtering_and_backlog_cases():
         release_url="https://release.example",
     )
     assert "Export success rate" in backlog["Metric"].tolist()
-

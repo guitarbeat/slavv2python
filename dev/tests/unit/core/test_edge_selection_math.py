@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 from source.core._edge_selection.cleanup import (
@@ -194,5 +194,3 @@ def test_clean_edges_cycles_removes_worst_edge_from_cycle_component_not_first_cl
     keep = clean_edges_cycles_python(connections)
 
     assert keep.tolist() == [True, True, True, True, False]
-
-

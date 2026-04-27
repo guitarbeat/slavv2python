@@ -1,4 +1,4 @@
-﻿"""
+"""
 Geometric operations and network statistics for source.
 Handles registration, spatial metrics, and statistical analysis of the vascular network.
 """
@@ -46,4 +46,3 @@ __all__ = [
     "subsample_vectors",
     "transform_vector_set",
 ]
-

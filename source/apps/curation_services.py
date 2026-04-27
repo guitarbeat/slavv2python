@@ -1,4 +1,4 @@
-﻿"""Focused app-facing helpers for curation workflows."""
+"""Focused app-facing helpers for curation workflows."""
 
 from __future__ import annotations
 
@@ -43,5 +43,3 @@ def run_interactive_curator(
 
 
 __all__ = ["apply_curated_results", "run_interactive_curator"]
-
-

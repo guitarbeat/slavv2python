@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.utils import weighted_ks_test
 
 
@@ -15,5 +15,3 @@ def test_weighted_ks_with_weights():
     w2 = np.array([0.1, 0.9])
     stat = weighted_ks_test(x, y, weights2=w2)
     assert np.isclose(stat, 0.9)
-
-

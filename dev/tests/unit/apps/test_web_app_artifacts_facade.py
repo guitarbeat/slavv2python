@@ -1,4 +1,4 @@
-﻿import importlib
+import importlib
 import sys
 import types
 import typing
@@ -40,4 +40,3 @@ def test_web_app_artifact_helpers_are_imported_from_sibling_module(monkeypatch):
     assert web_app._has_full_network_results is artifacts._has_full_network_results
     assert web_app._log_share_report_prepared_once is artifacts._log_share_report_prepared_once
     assert web_app._build_processing_run_dir is artifacts._build_processing_run_dir
-

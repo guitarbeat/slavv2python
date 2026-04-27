@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.analysis import crop_edges, crop_vertices, crop_vertices_by_mask
 
 
@@ -22,5 +22,3 @@ def test_crop_vertices_by_mask():
     cropped_vertices, mask = crop_vertices_by_mask(vertices, mask_volume)
     assert cropped_vertices.shape[0] == 2
     assert mask.tolist() == [True, True, False]
-
-

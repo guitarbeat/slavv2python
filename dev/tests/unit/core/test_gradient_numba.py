@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.core import energy as energy_module
 from source.core.edge_primitives import compute_gradient
 
@@ -27,5 +27,3 @@ def test_numba_acceleration_flag_matches_gradient_helper_shape():
     if energy_module.is_numba_acceleration_enabled():
         assert callable(energy_module.compute_gradient_impl)
         assert callable(energy_module.compute_gradient_fast)
-
-

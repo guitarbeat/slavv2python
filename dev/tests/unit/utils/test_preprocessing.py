@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 # Ensure module path
 from source.utils import preprocess_image
@@ -33,5 +33,3 @@ def test_preprocess_bandpass_removes_axial_gradient():
     assert var_with < var_without * 0.1
     assert np.isclose(out.min(), 0.0)
     assert out.max() <= 1.0
-
-

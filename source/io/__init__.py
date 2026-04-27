@@ -1,4 +1,4 @@
-﻿"""File I/O operations for source."""
+"""File I/O operations for source."""
 
 from __future__ import annotations
 
@@ -36,4 +36,3 @@ __all__ = [
     "save_network_to_json",
     "save_network_to_vmv",
 ]
-

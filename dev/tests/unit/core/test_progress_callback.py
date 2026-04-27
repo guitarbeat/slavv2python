@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.core import SLAVVProcessor
 
 
@@ -23,5 +23,3 @@ def test_process_image_reports_progress():
     assert stages == ["start", "preprocess", "energy", "vertices", "edges", "network"]
     assert calls[0][0] == 0.0
     assert calls[-1][0] == 1.0
-
-

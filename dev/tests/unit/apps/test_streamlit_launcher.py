@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import subprocess
 import sys
@@ -67,5 +67,3 @@ def test_build_env_overrides_incompatible_console_encoding(monkeypatch):
 
     assert env["PYTHONIOENCODING"] == "utf-8"
     assert env["PYTHONUTF8"] == "1"
-
-

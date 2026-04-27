@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.analysis import (
     calculate_network_statistics,
     calculate_surface_area,
@@ -115,5 +115,3 @@ def test_calculate_branching_angles():
     )
     assert np.isclose(stats["mean_branch_angle"], 120.0)
     assert np.isclose(stats["branch_angle_std"], 0.0, atol=1e-6)
-
-

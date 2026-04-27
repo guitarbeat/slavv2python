@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from source.analysis import MLCurator
 
@@ -73,5 +73,3 @@ def test_load_models_accepts_uploaded_file_objects(tmp_path):
 
     assert loaded.vertex_classifier is not None
     assert loaded.edge_classifier is not None
-
-

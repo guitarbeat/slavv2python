@@ -1,4 +1,4 @@
-﻿"""Export helpers for CLI command handlers."""
+"""Export helpers for CLI command handlers."""
 
 from __future__ import annotations
 
@@ -64,6 +64,3 @@ def save_network_export(
 
 
 __all__ = ["save_network_export"]
-
-
-

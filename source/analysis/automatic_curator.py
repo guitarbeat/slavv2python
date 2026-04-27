@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 from typing import Any
@@ -199,5 +199,3 @@ class AutomaticCurator:
         }
         logger.info(f"Automatic edge curation: {len(edge_traces)} -> {len(kept_indices)} edges")
         return curated_edges
-
-

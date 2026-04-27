@@ -1,4 +1,4 @@
-﻿import os
+import os
 import pickle
 
 import pytest
@@ -29,5 +29,3 @@ def test_ml_curator_load_malicious_model(tmp_path):
     # Attempt to load as edge model
     with pytest.raises(pickle.UnpicklingError, match=r"forbidden|Failed to safely unpickle"):
         curator.load_models(edge_path=filepath)
-
-

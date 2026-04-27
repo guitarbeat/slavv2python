@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
 from source.apps.dashboard_state import (
@@ -66,5 +66,3 @@ def test_load_dashboard_context_normalizes_results_and_stats():
     assert context["share_metrics"] == {"share_report_requested": 2}
     assert context["results"]["vertices"]["positions"].shape == (3, 3)
     assert context["stats"] == {"num_strands": 1, "shape": (6, 5, 4)}
-
-

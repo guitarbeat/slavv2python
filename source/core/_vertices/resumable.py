@@ -1,4 +1,4 @@
-﻿"""Resumable vertex extraction workflow."""
+"""Resumable vertex extraction workflow."""
 
 from __future__ import annotations
 
@@ -156,5 +156,3 @@ def extract_vertices_resumable(
         lumen_radius_pixels,
         lumen_radius_microns,
     )
-
-

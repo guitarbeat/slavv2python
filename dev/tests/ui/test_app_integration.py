@@ -1,4 +1,4 @@
-﻿import warnings
+import warnings
 
 import pytest
 
@@ -11,5 +11,3 @@ def test_app_main_runs():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         app.main()
-
-

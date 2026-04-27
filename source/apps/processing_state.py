@@ -1,4 +1,4 @@
-﻿"""Helpers for processing-page state and result bookkeeping."""
+"""Helpers for processing-page state and result bookkeeping."""
 
 from __future__ import annotations
 
@@ -78,5 +78,3 @@ __all__ = [
     "store_processing_session_state",
     "summarize_processing_metrics",
 ]
-
-

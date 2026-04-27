@@ -1,4 +1,4 @@
-﻿"""
+"""
 Formatting utilities for source.
 """
 
@@ -25,4 +25,3 @@ def format_time(seconds: float) -> str:
     hours = int(seconds // 3600)
     mins = int((seconds % 3600) // 60)
     return f"{hours}h {mins}m"
-

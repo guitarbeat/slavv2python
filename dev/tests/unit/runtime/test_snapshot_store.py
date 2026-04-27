@@ -1,4 +1,4 @@
-﻿"""Tests for snapshot store and event emission helpers."""
+"""Tests for snapshot store and event emission helpers."""
 
 from __future__ import annotations
 
@@ -55,5 +55,3 @@ def test_emit_progress_event_uses_stage_progress_and_deep_copies_snapshot():
     assert event.stage_progress == 0.25
     assert event.resumed is True
     assert event.snapshot is not snapshot
-
-

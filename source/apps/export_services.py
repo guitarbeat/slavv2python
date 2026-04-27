@@ -1,4 +1,4 @@
-﻿"""Focused app-facing helpers for exports and share reports."""
+"""Focused app-facing helpers for exports and share reports."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import zipfile
 from typing import TYPE_CHECKING, Any, cast
 
 import streamlit as st
+
 from source.apps.processing_state import build_processing_run_dir
 from source.apps.share_report import build_share_report_html, record_share_event
 from source.models import normalize_pipeline_result
@@ -143,5 +144,3 @@ __all__ = [
     "log_share_report_prepared_once",
     "update_run_task",
 ]
-
-

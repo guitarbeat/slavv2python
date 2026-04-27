@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 from typing import Any
@@ -175,5 +175,3 @@ class DrewsCurator:
         curated = _slice_edge_payload(edges, traces, connections, keep_indices, n_edges)
         logger.info(f"Drews curation: {n_edges} -> {len(keep_indices)} edges")
         return curated
-
-

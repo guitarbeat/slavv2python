@@ -1,4 +1,4 @@
-﻿"""Helpers for loading dashboard context from session-backed state."""
+"""Helpers for loading dashboard context from session-backed state."""
 
 from __future__ import annotations
 
@@ -73,5 +73,3 @@ __all__ = [
     "normalize_dashboard_results",
     "resolve_dashboard_stats",
 ]
-
-

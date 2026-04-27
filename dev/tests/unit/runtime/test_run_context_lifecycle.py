@@ -1,4 +1,4 @@
-﻿"""Tests for structured run-context lifecycle behavior."""
+"""Tests for structured run-context lifecycle behavior."""
 
 from __future__ import annotations
 
@@ -76,5 +76,3 @@ def test_stage_controller_rejects_unknown_stage(tmp_path):
 
     with pytest.raises(ValueError, match="stage must be one of"):
         context.stage("preprocess")
-
-

@@ -1,4 +1,4 @@
-﻿"""Tests for run-status parsing and rendering helpers."""
+"""Tests for run-status parsing and rendering helpers."""
 
 from __future__ import annotations
 
@@ -41,5 +41,3 @@ def test_build_status_lines_include_optional_tasks(tmp_path):
     assert "Optional tasks:" in rendered
     assert "export_network: running" in rendered
     assert "Writing JSON and CSV exports." in rendered
-
-

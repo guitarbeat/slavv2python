@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import plotly.express as px
 import pytest
 from source.visualization import NetworkVisualizer
@@ -208,5 +208,3 @@ def test_3d_length_coloring_adds_colorbar(base_inputs):
     ]
     assert colorbar_traces
     assert colorbar_traces[0].marker.colorbar.title.text.lower() == "length"
-
-

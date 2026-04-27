@@ -1,4 +1,4 @@
-﻿"""Tests for MAT network I/O."""
+"""Tests for MAT network I/O."""
 
 from pathlib import Path
 
@@ -48,5 +48,3 @@ def test_load_empty_mat_network_shapes(tmp_path: Path) -> None:
     assert network.vertices.shape == (0, 3)
     assert network.edges.shape == (0, 2)
     assert network.radii is None
-
-

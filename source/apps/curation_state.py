@@ -1,4 +1,4 @@
-﻿"""Helpers for keeping curated app results internally consistent."""
+"""Helpers for keeping curated app results internally consistent."""
 
 from __future__ import annotations
 
@@ -106,5 +106,3 @@ __all__ = [
     "summarize_processing_counts",
     "sync_curated_processing_results",
 ]
-
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
 from source.apps.analysis_state import (
@@ -84,5 +84,3 @@ def test_build_analysis_full_stats_rows_formats_values_for_display():
     assert rows[3] == {"Metric": "Total Length (um)", "Value": "120.2"}
     assert rows[6] == {"Metric": "Volume Fraction", "Value": "0.0046"}
     assert rows[-1] == {"Metric": "Tortuosity Std", "Value": "0.22"}
-
-

@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.utils import calculate_path_length
 
 
@@ -30,5 +30,3 @@ def test_calculate_path_length_accumulates_multisegment_3d_distance():
     )
 
     assert np.isclose(calculate_path_length(path), 22.0)
-
-

@@ -1,4 +1,4 @@
-﻿"""Command handlers for the SLAVV CLI."""
+"""Command handlers for the SLAVV CLI."""
 
 from __future__ import annotations
 
@@ -167,6 +167,3 @@ def _handle_plot_command(args) -> None:
 
     fig.write_html(args.output)
     print(f"Saved interactive plots to {args.output}")
-
-
-

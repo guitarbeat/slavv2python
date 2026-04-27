@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.visualization import NetworkVisualizer
 
 
@@ -28,5 +28,3 @@ def test_animate_strands_3d_frames():
     # Each frame should contain vertex scatter plus at least one edge trace
     for frame in fig.frames:
         assert len(frame.data) >= 2
-
-

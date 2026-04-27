@@ -1,4 +1,4 @@
-﻿"""
+"""
 Chunking utilities for memory-efficient processing in source.
 """
 
@@ -68,4 +68,3 @@ def get_chunking_lattice(
         start = end
 
     return slices
-

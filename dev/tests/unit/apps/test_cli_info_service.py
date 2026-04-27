@@ -1,4 +1,4 @@
-﻿"""Tests for CLI info helpers."""
+"""Tests for CLI info helpers."""
 
 from __future__ import annotations
 
@@ -17,5 +17,3 @@ def test_load_info_lines_delegates_to_report_format():
         "  Python: 3.12.1",
         "  Platform: Windows",
     ]
-
-

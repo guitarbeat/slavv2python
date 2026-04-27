@@ -1,4 +1,4 @@
-﻿"""
+"""
 Utility modules for source.
 
 This subpackage contains shared utilities:
@@ -32,4 +32,3 @@ __all__ = [
     "validate_parameters",
     "weighted_ks_test",
 ]
-

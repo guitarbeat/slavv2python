@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 from source.core._edges.bridge_vertices import (
@@ -321,6 +321,3 @@ def test_add_vertices_to_edges_matlab_style_ignores_unrelated_edges_during_bridg
         not np.any(np.all(np.isclose(trace, np.array([3.0, 4.0, 1.0], dtype=np.float32)), axis=1))
         for trace in bridged["bridge_edges"]["traces"]
     )
-
-
-

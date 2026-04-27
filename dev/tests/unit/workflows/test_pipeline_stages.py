@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 
@@ -199,6 +199,3 @@ def test_resolve_network_stage_uses_standard_stage_metadata(monkeypatch):
     assert result == {"stage": "network"}
     assert captured["stage_name"] == "network"
     assert captured["cached_log_label"] == "Network"
-
-
-

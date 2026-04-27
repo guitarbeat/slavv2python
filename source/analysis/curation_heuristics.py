@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -50,5 +50,3 @@ def extract_uncurated_info(
     vertex_features = curator.extract_vertex_features(vertices, energy_data, image_shape)
     edge_features = curator.extract_edge_features(edges, vertices, energy_data)
     return {"vertex_features": vertex_features, "edge_features": edge_features}
-
-

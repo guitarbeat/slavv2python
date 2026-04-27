@@ -1,4 +1,4 @@
-﻿"""
+"""
 Visualization modules for source.
 
 This subpackage contains visualization tools for vascular networks:
@@ -21,4 +21,3 @@ except ImportError as e:
     logger.warning(f"Visualization module unavailable (missing dependencies): {e}")
     NetworkVisualizer = None
     __all__ = []
-

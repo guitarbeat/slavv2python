@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from dev.tests.support.payload_builders import (
     build_edges_payload,
     build_network_payload,
@@ -157,5 +157,3 @@ def test_build_curation_stats_rows_reports_signed_change_percentages():
             "Change (%)": "n/a",
         },
     ]
-
-

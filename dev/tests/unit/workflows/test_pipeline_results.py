@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
@@ -44,5 +44,3 @@ def test_stop_after_stage_if_requested_skips_other_stages():
 
     assert early is None
     assert run_context.stop_after_calls == []
-
-

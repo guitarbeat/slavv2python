@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
 from source.apps.processing_state import (
@@ -88,5 +88,3 @@ def test_store_processing_session_state_persists_processing_outputs():
     assert "curation_baseline_counts" not in session_state
     assert "last_curation_mode" not in session_state
     assert "share_report_prepared_signature" not in session_state
-
-

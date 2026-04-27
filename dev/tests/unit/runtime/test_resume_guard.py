@@ -1,4 +1,4 @@
-﻿"""Tests for resume-guard behavior in structured runs."""
+"""Tests for resume-guard behavior in structured runs."""
 
 from __future__ import annotations
 
@@ -107,5 +107,3 @@ def test_apply_resume_block_sets_blocked_status_and_error_message():
     assert snapshot.status == STATUS_BLOCKED
     assert "fingerprint changed" in snapshot.last_event
     assert snapshot.errors
-
-

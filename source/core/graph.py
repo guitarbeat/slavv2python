@@ -1,4 +1,4 @@
-﻿"""
+"""
 Network construction and graph theory operations for source.
 Handles the conversion of traced edges into a connected graph (strands, bifurcations).
 """
@@ -1189,6 +1189,3 @@ __all__ = [
     "sort_and_validate_strands_sparse",
     "trace_strand_sparse",
 ]
-
-
-

@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.analysis import choose_edges, choose_vertices
 
 
@@ -21,5 +21,3 @@ def test_choose_edges_thresholds():
     }
     idx = choose_edges(edges, min_energy=1.0, min_length=2.0, energy_sign=-1.0)
     assert idx.tolist() == [0]
-
-

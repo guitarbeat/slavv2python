@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 from source.core._edge_candidates.common import _build_matlab_global_watershed_lut
@@ -108,5 +108,3 @@ def test_build_candidate_coverage_report_counts_matched_missing_and_extra_pairs(
     assert report["extra_pair_count"] == 1
     assert report["missing_pair_samples"] == [[1, 2]]
     assert report["extra_pair_samples"] == [[2, 3]]
-
-

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import math
 
@@ -185,5 +185,3 @@ def test_matlab_frontier_available_locations_skip_stale_entries():
         -2.0,
         33,
     )
-
-

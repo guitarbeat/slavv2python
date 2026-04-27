@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 This file summarizes notable repository changes for the SLAVV Python port.
 
@@ -13,7 +13,8 @@ cuts.
 - **New Analysis Metrics**: Extended network graph computations to include volume, surface area, densities, and edge energy statistics.
 
 ### Changed
-
+- **High-Performance Watershed Parity**: Completed the transition to an exact MATLAB-style **heapq-accelerated O(log N) frontier** and **flat-first 1D Fortran architecture** for candidate generation. This shift resolves frontier stagnation bugs and aligns priority traversal 1:1 with the MATLAB oracle.
+- **Removed Deprecated Files**: Deleted 11 legacy non-parity helper modules (frontier_trace, frontier_resolution, watershed_contacts, etc.) to enforce the canonical native-first exact proof route and simplify the edge extraction package.
 - **Refactored Core Pipeline**: Major overhaul of `process_image` and `calculate_energy_field` into modular helpers to improve readability and chunked processing.
 - **Improved MATLAB Bridge**: Decomposed `import_matlab_batch` into focused helpers for better error handling and clearer stage resolution.
 - **Enhanced Curator Logic**: Refactored automatic, Drew's, and ML curators to use reusable helper functions for feature construction and boundary checks.

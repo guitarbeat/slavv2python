@@ -1,4 +1,4 @@
-﻿"""Helpers for normalized visualization-page state."""
+"""Helpers for normalized visualization-page state."""
 
 from __future__ import annotations
 
@@ -77,5 +77,3 @@ __all__ = [
     "normalize_visualization_results",
     "resolve_visualization_session_context",
 ]
-
-

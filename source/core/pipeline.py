@@ -1,4 +1,4 @@
-﻿"""
+"""
 Main pipeline orchestration for source.
 Coordinates the energy, tracing, and graph construction steps.
 """
@@ -97,7 +97,7 @@ class SLAVVProcessor:
         results = {"parameters": parameters}
         image = preprocess_image(image, parameters, run_context)
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
-        if early_result := run_pipeline_stage_sequence(
+        early_result = run_pipeline_stage_sequence(
             results,
             steps=build_standard_pipeline_steps(
                 resolve_energy=lambda: self._resolve_energy_stage(
@@ -130,7 +130,8 @@ class SLAVVProcessor:
             progress_callback=progress_callback,
             stop_after=stop_after,
             run_context=run_context,
-        ):
+        )
+        if early_result:
             return cast("dict[str, Any]", early_result)
 
         logger.info("SLAVV processing pipeline completed")
@@ -276,5 +277,3 @@ class SLAVVProcessor:
     ) -> dict[str, Any]:
         """Construct network from traces. Delegates to ``graph`` module."""
         return graph.construct_network(edges, vertices, params)
-
-

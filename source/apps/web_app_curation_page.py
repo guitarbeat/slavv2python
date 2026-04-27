@@ -1,4 +1,4 @@
-﻿"""Machine-learning curation page for the SLAVV Streamlit app."""
+"""Machine-learning curation page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import cast
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
 from source.analysis import AutomaticCurator, MLCurator
 from source.apps import curation_services
 from source.apps.curation_state import (
@@ -48,13 +49,13 @@ def show_ml_curation_page():
     st.markdown('<h2 class="section-header">Machine Learning Curation</h2>', unsafe_allow_html=True)
 
     if "processing_results" not in st.session_state:
-        st.warning("âš ï¸ No processing results found. Please process an image first.")
+        st.warning("[!] No processing results found. Please process an image first.")
         return
 
     results = st.session_state["processing_results"]
     if "vertices" not in results or "edges" not in results:
         st.warning(
-            "âš ï¸ Curation requires both vertices and edges to be extracted. Please run the pipeline at least up to the 'edges' stage."
+            "[!] Curation requires both vertices and edges to be extracted. Please run the pipeline at least up to the 'edges' stage."
         )
         return
 
@@ -69,7 +70,7 @@ def show_ml_curation_page():
     results = st.session_state["processing_results"]
     st.session_state["parameters"]
 
-    st.markdown("### ðŸŽ¯ Curation Options")
+    st.markdown("### [Curation] Curation Options")
     curation_type = st.radio(
         "Select Curation Type:",
         ("Interactive (Manual GUI)", "Automatic (Rule-based)", "Machine Learning (Model-based)"),
@@ -92,7 +93,7 @@ def show_ml_curation_page():
         curator_backend = "napari" if curator_backend_label.startswith("napari") else "qt"
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("ðŸš€ Launch Interactive Curator", type="primary", width=250):
+            if st.button("[Launch] Launch Interactive Curator", type="primary", width=250):
                 update_run_task(
                     st.session_state.get("current_run_dir"),
                     "manual_curation",
@@ -103,7 +104,7 @@ def show_ml_curation_page():
                     "Interactive Curator running in new window...", expanded=True
                 ) as status:
                     st.warning(
-                        "âš ï¸ Please check your taskbar for the new 3D window. Closing the window will save and continue."
+                        "[!] Please check your taskbar for the new 3D window. Closing the window will save and continue."
                     )
                     curated_vertices, curated_edges = app_services._run_interactive_curator(
                         results["energy_data"],
@@ -137,7 +138,7 @@ def show_ml_curation_page():
                         detail="Interactive curation saved and network rebuilt",
                     )
                     status.update(label="Interactive Curation complete!", state="complete")
-                    st.success("âœ… Interactive edits saved!")
+                    st.success("[OK] Interactive edits saved!")
                     st.caption(
                         "The downstream network, exports, and share report now use the curated vertices and edges."
                     )
@@ -228,7 +229,7 @@ def show_ml_curation_page():
             "image_shape": st.session_state["image_shape"],
         }
 
-        if st.button("ðŸš€ Start Automatic Curation", type="primary", width=250):
+        if st.button("[Run] Start Automatic Curation", type="primary", width=250):
             update_run_task(
                 st.session_state.get("current_run_dir"),
                 "automatic_curation",
@@ -268,7 +269,7 @@ def show_ml_curation_page():
                     status="completed",
                     detail="Automatic curation complete and network rebuilt",
                 )
-                st.success("âœ… Automatic curation complete!")
+                st.success("[OK] Automatic curation complete!")
                 status.update(label="Automatic curation complete!", state="complete")
                 st.caption(
                     "The downstream network, exports, and share report now use the curated vertices and edges."
@@ -342,7 +343,7 @@ def show_ml_curation_page():
                 help="Minimum confidence score for keeping edges",
             )
 
-        if st.button("ðŸ“š Train Models", type="secondary", width=250):
+        if st.button("[Train] Train Models", type="secondary", width=250):
             if vertex_training_data is None and edge_training_data is None:
                 st.error("Please upload training data for vertices, edges, or both.")
             else:
@@ -374,9 +375,9 @@ def show_ml_curation_page():
                         detail="ML models trained",
                     )
                     status.update(label="Training complete!", state="complete")
-                    st.success("âœ… Models trained!")
+                    st.success("[OK] Models trained!")
 
-        if st.button("ðŸ¤– Start ML Curation", type="primary", width=250):
+        if st.button("[ML] Start ML Curation", type="primary", width=250):
             update_run_task(
                 st.session_state.get("current_run_dir"),
                 "ml_curation",
@@ -389,7 +390,7 @@ def show_ml_curation_page():
                     ml_curator = MLCurator()
                     ml_curator.load_models(vertex_model_file, edge_model_file)
                 if ml_curator.vertex_classifier is None or ml_curator.edge_classifier is None:
-                    st.error("âŒ ML models not loaded or trained. Cannot perform ML curation.")
+                    st.error("[ERROR] ML models not loaded or trained. Cannot perform ML curation.")
                     update_run_task(
                         st.session_state.get("current_run_dir"),
                         "ml_curation",
@@ -429,7 +430,7 @@ def show_ml_curation_page():
                         f"{exc!s}"
                     )
                     st.stop()
-                st.success("âœ… ML curation complete!")
+                st.success("[OK] ML curation complete!")
                 status.update(label="ML curation complete!", state="complete")
                 update_run_task(
                     st.session_state.get("current_run_dir"),
@@ -456,8 +457,8 @@ def show_ml_curation_page():
                         help="Change relative to the pre-curation baseline",
                     )
 
-    if st.button("ðŸ“Š Show Curation Statistics", width=250):
-        st.markdown("### ðŸ“ˆ Curation Results")
+    if st.button("[Stats] Show Curation Statistics", width=250):
+        st.markdown("### [Graph] Curation Results")
         baseline_counts = st.session_state.get("curation_baseline_counts")
         if baseline_counts is None:
             st.info(
@@ -481,5 +482,3 @@ def show_ml_curation_page():
                 barmode="group",
             )
             st.plotly_chart(fig, use_container_width=True)
-
-

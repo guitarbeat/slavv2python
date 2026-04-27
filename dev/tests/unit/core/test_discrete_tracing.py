@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.core.edge_primitives import trace_edge
 
 
@@ -24,5 +24,3 @@ def test_discrete_tracing_steps_snap_to_voxels():
     )
     coords = np.asarray(trace)
     assert np.allclose(coords, np.round(coords))
-
-

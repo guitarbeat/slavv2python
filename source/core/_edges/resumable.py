@@ -1,4 +1,4 @@
-﻿"""Resumable edge extraction paths."""
+"""Resumable edge extraction paths."""
 
 from __future__ import annotations
 
@@ -332,5 +332,3 @@ def extract_edges_watershed_resumable(
         "energies": np.asarray(edge_energies, dtype=np.float32),
         "vertex_positions": vertex_positions.astype(np.float32),
     }
-
-

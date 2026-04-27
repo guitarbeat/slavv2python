@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import plotly.graph_objects as go
 from source.visualization import NetworkVisualizer
 
@@ -32,5 +32,3 @@ def test_create_summary_dashboard_builds_expected_panels():
         "Radii",
         "Vertex Count by Depth",
     ]
-
-

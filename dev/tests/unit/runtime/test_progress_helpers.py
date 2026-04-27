@@ -1,4 +1,4 @@
-﻿"""Tests for pure run-progress helper functions."""
+"""Tests for pure run-progress helper functions."""
 
 from __future__ import annotations
 
@@ -69,5 +69,3 @@ def test_calculate_overall_progress_uses_stage_weights_and_preprocess_flag():
     progress = calculate_overall_progress(stages, preprocess_done=True)
 
     assert 0.0 < progress < 1.0
-
-

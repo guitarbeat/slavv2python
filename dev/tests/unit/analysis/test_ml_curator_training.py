@@ -1,4 +1,4 @@
-﻿import json
+import json
 
 import numpy as np
 from source.analysis.ml_curator_training import load_aggregated_training_data
@@ -36,5 +36,3 @@ def test_load_aggregated_training_data_returns_four_empty_arrays_for_empty_dir(t
     assert v_lab.shape == (0,)
     assert e_feat.shape == (0,)
     assert e_lab.shape == (0,)
-
-

@@ -1,4 +1,4 @@
-﻿"""Reusable builders for run-state and checkpoint test fixtures."""
+"""Reusable builders for run-state and checkpoint test fixtures."""
 
 from __future__ import annotations
 
@@ -144,5 +144,3 @@ __all__ = [
     "materialize_checkpoint_surface",
     "materialize_run_snapshot",
 ]
-
-

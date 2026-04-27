@@ -1,4 +1,4 @@
-﻿import json
+import json
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
@@ -110,5 +110,3 @@ def test_generate_training_data_normalizes_results_and_uses_energy_image_shape(m
     assert edge_features.shape == (2, 1)
     assert vertex_labels.tolist() == [1, 0, 1]
     assert edge_labels.tolist() == [1, 0]
-
-

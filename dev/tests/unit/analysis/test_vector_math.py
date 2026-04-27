@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -43,5 +43,3 @@ def test_scaled_positions_applies_per_axis_scale() -> None:
 def test_scaled_positions_rejects_mismatched_scale_dimension() -> None:
     with pytest.raises(ValueError, match="scale length must match"):
         scaled_positions(np.array([[1.0, 2.0, 3.0]], dtype=float), [1.0, 2.0])
-
-

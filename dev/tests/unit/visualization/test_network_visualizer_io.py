@@ -1,4 +1,4 @@
-﻿"""Tests for visualizer-driven MAT and JSON export behavior."""
+"""Tests for visualizer-driven MAT and JSON export behavior."""
 
 import json
 from pathlib import Path
@@ -91,5 +91,3 @@ def test_json_export_handles_numpy_scalars_and_paths(tmp_path: Path) -> None:
     assert sorted(exported["network"]["adjacency"]["0"]) == [1, 2]
     assert exported["network"]["graph_edges"]["0"] == [3, 4]
     assert exported["parameters"]["path"] == str(Path("nested") / "output")
-
-

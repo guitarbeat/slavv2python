@@ -1,4 +1,4 @@
-﻿"""Integration tests for pipeline interactions with run-state persistence."""
+"""Integration tests for pipeline interactions with run-state persistence."""
 
 from __future__ import annotations
 
@@ -64,6 +64,3 @@ def test_preprocess_failure_marks_run_failed(tmp_path, monkeypatch):
     assert snapshot.status == STATUS_FAILED
     assert snapshot.current_stage == "preprocess"
     assert snapshot.stages["preprocess"].status == STATUS_FAILED
-
-
-

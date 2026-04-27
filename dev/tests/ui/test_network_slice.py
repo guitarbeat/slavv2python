@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from source.visualization import NetworkVisualizer
 
 
@@ -33,5 +33,3 @@ def test_plot_network_slice_filters_edges_and_vertices():
     # Axes should share scale to preserve physical aspect ratio
     assert fig.layout.yaxis.scaleanchor == "x"
     assert fig.layout.yaxis.scaleratio == 1
-
-
