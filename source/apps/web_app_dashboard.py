@@ -372,7 +372,11 @@ def build_dashboard_backlog_frame(
             "Tracked": False,
             "Status": "TODO",
             "Reference": repo_url,
-            "Notes": "Summarize queued, active, and completed volumes once entities are defined.",
+            "Notes": (
+                "Summarize queued, active, and completed volumes. "
+                "Requires a persistent run-registry or job-queue entity; "
+                "promote to Ready once that data source is defined."
+            ),
         },
         {
             "Metric": "Curation QA",
@@ -381,7 +385,11 @@ def build_dashboard_backlog_frame(
             "Tracked": False,
             "Status": "TODO",
             "Reference": release_url,
-            "Notes": "Add reviewer throughput and acceptance-rate metrics when QA sources exist.",
+            "Notes": (
+                "Reviewer throughput and edge-acceptance-rate metrics. "
+                "Requires a structured QA log or curator-session store; "
+                "promote to Ready once that data source exists."
+            ),
         },
     ]
     rows.extend(

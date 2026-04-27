@@ -153,39 +153,31 @@ Measured improvement:
 This was a significant improvement but insufficient to close parity. The v22
 frontier overhaul addresses the root cause of candidate generation gaps.
 
-## Current Status
+## Global Watershed Detail (v22)
 
-- Native energy cutover: complete enough to make native Hessian the canonical exact-compatible source surface.
-- `source/core/_edge_candidates/global_watershed.py`: Successfully resolved the zero-candidate stagnation bug. The frontier now propagates correctly across the energy landscape using a **heapq-based O(log N) min-priority traversal** and corrected ownership-reveal sequencing. Current work is focusing on exact vertex-pair alignment on the native-first route.
-- Global watershed join-time `available_locations` removal now follows MATLAB's
-  indexed `intersect(...)` reset behavior instead of a looser value-based
-  filter; quantified downstream edge impact still needs a fresh native-first
-  rerun
-- Global watershed shared-state map dtypes now match MATLAB for `pointer_map`
-  (`uint64`) and `d_over_r_map` (`double`/`float64`); quantified downstream
-  edge impact still needs a fresh native-first rerun
-- Global watershed half-edge backtracking now follows MATLAB's direct
+These are the specific alignment fixes landed in the v22 iteration, recorded
+here for audit traceability.
+
+- `available_locations` removal at join-time now follows MATLAB's indexed
+  `intersect(...)` reset behavior instead of a looser value-based filter.
+- Shared-state map dtypes now match MATLAB: `pointer_map` is `uint64`,
+  `d_over_r_map` is `float64`.
+- Half-edge backtracking now follows MATLAB's direct
   `tracing_location - strel_linear_LUT_range{...}(pointer_map(...))` linear
-  offset step, and final edge energy/scale traces are now sampled directly
-  from the assembled MATLAB-order linear trace instead of being re-sampled
-  through coordinate clipping.
-- Edge candidate generation: high-performance parity port
-  - **Logic Alignment**: 
-    - Re-implemented the watershed frontier as a **min-heap (`heapq`)** to ensure energy-priority traversal.
-    - Implemented **LIFO tie-breaking** via an insertion counter to match MATLAB's `find(..., 'last')` priority.
-    - Corrected energy tolerance thresholding to use `(1.0 - energy_tolerance)`, allowing growth into valid high-energy regions.
-    - Fixed the vertex-ownership check to sample `vertex_index_map` *before* revealing new strel claims, preventing the frontier from seeing its own previous reveal as an "already claimed" neighbor and stopping prematurely.
-  - **Architecture**: Shifted to a **"flat-first"** design using 1D Fortran-ordered direct linear views for all map operations, matching MATLAB's pointer-offset math and eliminating 3D coordinate bottlenecks.
-  - **Current Status**: Iteration **`v22`** is currently verified to generate candidates on the canonical sample, proving that the frontier propagation bug is resolved. Exact count alignment is the next target once the remaining trace-back boundary conditions are tuned.
-- Vertex exact proof: downstream-ready on the native-first route
-- Edge exact proof: A fresh continuous `capture-candidates` run is currently verifying the exactly matched endpoint gaps.
-- Network exact proof: still blocked downstream on unresolved edge parity
+  offset step.
+- Final edge energy and scale traces are sampled directly from the assembled
+  MATLAB-order linear trace instead of being re-sampled through coordinate
+  clipping.
+
+Quantified downstream impact of these fixes still needs a fresh native-first
+`capture-candidates` rerun to replace the pre-v22 historical numbers above.
 
 ## Next Proof Targets
 
-1. Re-run `prove-exact` on the native-first route and record the first failing
-   downstream field.
-2. Keep candidate-boundary and replay-edge measurements current whenever edge
-   math changes.
-3. Replace the historical imported-MATLAB counts above with native-first rerun
-   measurements once they are available.
+1. Run `capture-candidates` on the native-first route to get updated candidate
+   counts against the MATLAB oracle and replace the pre-v22 historical numbers.
+2. Run `prove-exact --stage edges` and record the first failing field and
+   measured counts.
+3. Keep candidate-boundary and `replay-edges` measurements current whenever
+   edge math changes.
+4. Once edges pass, run `prove-exact --stage all` to close vertices and network.
