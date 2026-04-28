@@ -85,7 +85,7 @@
     - Verify LUT building produces identical results for all scale indices
     - _Requirements: 3.5_
 
-  - [ ] 4.3 Verify candidate capture achieves 100% match rate
+  - [x] 4.3 Verify candidate capture achieves 100% match rate
     - Run: `python dev/scripts/cli/parity_experiment.py capture-candidates --source-run-root <source> --dest-run-root <dest>`
     - Verify 100% candidate match rate with MATLAB (2533 candidates)
     - Verify zero missing candidates (was 890 on unfixed code)
