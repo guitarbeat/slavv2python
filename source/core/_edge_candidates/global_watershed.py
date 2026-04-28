@@ -310,6 +310,12 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                     f"pointer={claim_pointers[idx]}, scale={current_scale_label}, "
                     f"lut_size={lut_size}, vertex={current_vertex_index}"
                 )
+                # Read back immediately to verify
+                logging.error(
+                    f"READBACK IMMEDIATE: "
+                    f"pointer_map[12532290]={pointer_map_flat[12532290]}, "
+                    f"size_map[12532290]={size_map_flat[12532290]} (before write)"
+                )
 
             # DIAGNOSTIC: Verify pointers were written correctly by reading them back
             readback_pointers = pointer_map_flat[claim_linear]
@@ -321,6 +327,15 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                     f"CRITICAL CORRUPTION: {mismatches}/{len(claim_pointers)} pointers corrupted immediately after writing! "
                     f"Scale {current_scale_label}. "
                     f"Written: {claim_pointers[:5]}, Read back: {readback_pointers[:5]}"
+                )
+            
+            # DIAGNOSTIC: Verify write to location 12532290
+            if 12532290 in claim_linear:
+                import logging
+                logging.error(
+                    f"READBACK AFTER WRITE: "
+                    f"pointer_map[12532290]={pointer_map_flat[12532290]}, "
+                    f"size_map[12532290]={size_map_flat[12532290]} (after write)"
                 )
 
     return {
@@ -720,7 +735,20 @@ def _generate_edge_candidates_matlab_global_watershed(
                 f"PROCESSING PROBLEM LOCATION {current_linear}: "
                 f"original_scale={current_scale_label}, clipped_scale={current_scale_label_for_writing}, "
                 f"lut_size={current_strel['lut_size']}, "
-                f"scale_label_clipped_in_strel={current_strel.get('scale_label_clipped', 'NOT FOUND')}"
+                f"scale_label_clipped_in_strel={current_strel.get('scale_label_clipped', 'NOT FOUND')}, "
+                f"pointer_indices_range=[{np.min(current_strel['pointer_indices'])}, {np.max(current_strel['pointer_indices'])}]"
+            )
+        
+        # DIAGNOSTIC: Check if any neighbor locations include 12532290
+        if 12532290 in current_strel_linear:
+            import logging
+            idx = np.where(current_strel_linear == 12532290)[0][0]
+            logging.error(
+                f"LOCATION 12532290 IS A NEIGHBOR of {current_linear}: "
+                f"will write pointer={current_strel_pointer_indices[idx]}, "
+                f"scale={current_scale_label_for_writing}, "
+                f"lut_size={current_strel['lut_size']}, "
+                f"vertex={current_vertex_index}"
             )
         
         current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])

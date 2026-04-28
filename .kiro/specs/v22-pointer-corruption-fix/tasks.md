@@ -33,12 +33,16 @@
   - Mark task complete when tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [ ] 3. Fix for scale clipping inconsistency causing pointer corruption
+- [-] 3. Fix for scale clipping inconsistency causing pointer corruption
+  - **STATUS**: Initial fix implemented but integration test shows no improvement (still 65% match rate, 890 missing, 477 extra)
+  - **ISSUE**: Despite correct implementation of scale_label_clipped return and usage, parity test results unchanged
+  - **INVESTIGATION NEEDED**: Added diagnostic logging to trace actual writes to size_map at problematic locations
 
   - [x] 3.1 Implement the fix in `_matlab_global_watershed_current_strel`
     - Modify `_matlab_global_watershed_current_strel` function (lines ~100-180 in `source/core/_edge_candidates/global_watershed.py`)
     - Add `"scale_label_clipped": current_scale_index + 1` to the return dictionary to provide the clipped scale (converting back to 1-based label)
     - This ensures the clipped scale is available for consistent use in pointer creation and size_map storage
+    - **COMPLETED**: Implementation verified at lines 186-188
     - _Bug_Condition: isBugCondition(input) where `(input.current_scale_label < 1 OR input.current_scale_label > len(input.lumen_radius_microns))`_
     - _Expected_Behavior: For out-of-range scales, return clipped scale and use it consistently for both LUT building and size_map writing_
     - _Preservation: In-range scales continue to work exactly as before (clipped == unclipped)_
@@ -49,6 +53,7 @@
     - Add: `current_scale_label_for_writing = current_strel.get("scale_label_clipped", current_scale_label)`
     - Update the call to `_matlab_global_watershed_reveal_unclaimed_strel` to use `current_scale_label_for_writing` instead of `current_scale_label`
     - This ensures the clipped scale is written to size_map, matching the scale used for pointer creation
+    - **COMPLETED**: Implementation verified at lines 705-706 and 793
     - _Bug_Condition: Prevents unclipped scale from being written to size_map when scale is out of range_
     - _Expected_Behavior: size_map stores the same scale value used for LUT building during pointer creation_
     - _Preservation: In-range scales pass through unchanged (clipped == unclipped)_
@@ -60,6 +65,7 @@
     - The test from task 1 encodes the expected behavior
     - When this test passes, it confirms the expected behavior is satisfied
     - Run bug condition exploration test from step 1
+    - **COMPLETED**: Unit tests pass
     - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
     - Verify that out-of-range scales now produce valid pointer indices
     - Verify that clipped scale is returned and used consistently
@@ -69,9 +75,24 @@
     - **Property 2: Preservation** - In-Range Scale Behavior Unchanged
     - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
     - Run preservation property tests from step 2
+    - **COMPLETED**: Unit tests pass
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
     - Confirm all tests still pass after fix (no regressions for in-range scales)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
+
+  - [ ] 3.5 Investigate why integration test shows no improvement
+    - **PROBLEM**: capture-candidates test shows same failure rate as before fix (65% match, 890 missing, 477 extra)
+    - **ANALYSIS COMPLETED**:
+      - Verified only ONE code path writes to size_map (line 289 in reveal function)
+      - Verified clipped scale is correctly passed to reveal function (line 793)
+      - Verified size_map initialization includes clipping (line 628)
+      - Added comprehensive diagnostic logging for location 12532290
+    - **NEXT STEPS**:
+      - Run capture-candidates with enhanced logging to trace actual writes
+      - Verify defensive filtering (lines 256-262) isn't removing valid writes
+      - Check if pointer indices are being created for wrong scale
+      - Investigate if there's a mismatch between pointer creation scale and lut_size parameter
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
 - [ ] 4. Run integration tests to verify 100% MATLAB parity
 
@@ -86,7 +107,12 @@
     - _Requirements: 3.5_
 
   - [x] 4.3 Verify candidate capture achieves 100% match rate
+    - **STATUS**: FAILED - Test completed but shows no improvement from fix
+    - **RESULTS**: Match rate 64.9% (1643/2533), Missing: 890, Extra: 477 - same as before fix
+    - **DIAGNOSTIC LOGS**: Show pointer out-of-range errors still occurring (e.g., pointer 1373 for scale 6 with LUT size 81)
+    - **INVESTIGATION**: Enhanced diagnostic logging added to trace writes to problematic location 12532290
     - Run: `python dev/scripts/cli/parity_experiment.py capture-candidates --source-run-root <source> --dest-run-root <dest>`
+    - **BLOCKED**: Need to run with enhanced logging to understand why fix isn't working
     - Verify 100% candidate match rate with MATLAB (2533 candidates)
     - Verify zero missing candidates (was 890 on unfixed code)
     - Verify zero extra candidates (was 477 on unfixed code)
@@ -103,7 +129,14 @@
     - Verify all normalized checkpoints match MATLAB vectors
     - _Requirements: 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [~] 5. Checkpoint - Ensure all tests pass
+- [ ] 5. Checkpoint - Ensure all tests pass
+  - **STATUS**: BLOCKED - Integration test 4.3 failed, investigation in progress
+  - **UNIT TESTS**: Pass (tasks 1, 2, 3.3, 3.4)
+  - **INTEGRATION TESTS**: Failed (task 4.3 shows no improvement)
+  - **NEXT STEPS**: 
+    - Complete task 3.5 investigation with enhanced diagnostic logging
+    - Identify root cause of why fix isn't working in integration test
+    - Revise fix implementation based on findings
   - Verify all property-based tests pass (bug condition and preservation)
   - Verify all integration tests pass (100% MATLAB parity achieved)
   - Verify zero pointer out-of-range errors in diagnostic logs
