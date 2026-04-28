@@ -80,18 +80,24 @@
     - Confirm all tests still pass after fix (no regressions for in-range scales)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-  - [ ] 3.5 Investigate why integration test shows no improvement
+  - [x] 3.5 Investigate why integration test shows no improvement
     - **PROBLEM**: capture-candidates test shows same failure rate as before fix (65% match, 890 missing, 477 extra)
     - **ANALYSIS COMPLETED**:
       - Verified only ONE code path writes to size_map (line 289 in reveal function)
       - Verified clipped scale is correctly passed to reveal function (line 793)
       - Verified size_map initialization includes clipping (line 628)
       - Added comprehensive diagnostic logging for location 12532290
-    - **NEXT STEPS**:
-      - Run capture-candidates with enhanced logging to trace actual writes
-      - Verify defensive filtering (lines 256-262) isn't removing valid writes
-      - Check if pointer indices are being created for wrong scale
-      - Investigate if there's a mismatch between pointer creation scale and lut_size parameter
+      - **ROOT CAUSE IDENTIFIED**: Overwrite bug - locations written with correct clipped scale are being overwritten later
+      - **EVIDENCE**: Location 12532290 written with scale=13, reads as scale=6 during backtracking
+    - **FINDING**: Fix IS working correctly, but overwrite prevention logic is broken
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+
+  - [ ] 3.6 Fix overwrite prevention bug
+    - **PROBLEM**: Locations are being overwritten despite `is_without_vertex` check
+    - **ROOT CAUSE**: `is_without_vertex` uses `vertex_index_map == 0` but doesn't check `pointer_map != 0`
+    - **EXPECTED**: Locations with existing pointers should never be overwritten
+    - **FIX**: Update `is_without_vertex` check to also verify `pointer_map == 0`
+    - **VERIFICATION**: Re-run capture-candidates and verify no overwrite errors in logs
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
 - [ ] 4. Run integration tests to verify 100% MATLAB parity

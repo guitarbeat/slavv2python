@@ -207,7 +207,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
 ) -> dict[str, np.ndarray]:
     """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels.
 
-    CRITICAL: Only write to locations that have vertex_index == 0 to prevent
+    CRITICAL: Only write to locations that have vertex_index == 0 AND pointer_map == 0 to prevent
     overwriting existing pointers and creating cycles.
 
     CRITICAL: The pointer indices in strel_pointer_indices are 1-based indices into the
@@ -215,7 +215,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     is also written with current_scale_label so that during backtracking, we can reconstruct
     the correct LUT and interpret the pointer correctly.
     """
-    is_without_vertex = vertex_index_map_flat[valid_linear] == 0
+    is_without_vertex = (vertex_index_map_flat[valid_linear] == 0) & (pointer_map_flat[valid_linear] == 0)
     if np.any(is_without_vertex):
         claim_linear = valid_linear[is_without_vertex]
         claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
@@ -277,16 +277,18 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                     f"Existing scales: {existing_scales[overwrite_mask][:5]}, "
                     f"New pointers: {claim_pointers[overwrite_mask][:5]}"
                 )
+                
+                # DIAGNOSTIC: Check if location 12532290 is being overwritten
+                if 12532290 in claim_linear[overwrite_mask]:
+                    idx_in_overwrite = np.where(claim_linear[overwrite_mask] == 12532290)[0][0]
+                    logging.error(
+                        f"OVERWRITE DETECTED FOR LOCATION 12532290: "
+                        f"existing_pointer={existing_pointers[overwrite_mask][idx_in_overwrite]}, "
+                        f"existing_scale={existing_scales[overwrite_mask][idx_in_overwrite]}, "
+                        f"new_pointer={claim_pointers[overwrite_mask][idx_in_overwrite]}, "
+                        f"new_scale={current_scale_label}"
+                    )
 
-            vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
-            energy_map_flat[claim_linear] = np.asarray(
-                strel_adjusted_energies[is_without_vertex], dtype=np.float32
-            )
-            pointer_map_flat[claim_linear] = claim_pointers
-            d_over_r_map_flat[claim_linear] = (
-                strel_distance_microns[is_without_vertex] + current_d_over_r
-            )
-            size_map_flat[claim_linear] = np.int16(current_scale_label)
 
             # DIAGNOSTIC: Log a sample write for debugging
             if len(claim_linear) > 0 and np.random.random() < 0.001:  # Log 0.1% of writes
@@ -301,23 +303,50 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                     f"vertex={current_vertex_index}"
                 )
             
-            # DIAGNOSTIC: Log writes to specific problematic locations
+            # DIAGNOSTIC: Log writes to specific problematic locations - BEFORE write
             if 12532290 in claim_linear:
                 import logging
                 idx = np.where(claim_linear == 12532290)[0][0]
+                # Read BEFORE write
+                before_pointer = int(pointer_map_flat[12532290])
+                before_scale = int(size_map_flat[12532290])
+                before_vertex = int(vertex_index_map_flat[12532290])
                 logging.error(
-                    f"WRITING TO PROBLEM LOCATION 12532290: "
-                    f"pointer={claim_pointers[idx]}, scale={current_scale_label}, "
-                    f"lut_size={lut_size}, vertex={current_vertex_index}"
+                    f"ABOUT TO WRITE TO LOCATION 12532290: "
+                    f"will_write_pointer={claim_pointers[idx]}, will_write_scale={current_scale_label}, "
+                    f"lut_size={lut_size}, will_write_vertex={current_vertex_index}"
                 )
-                # Read back immediately to verify
                 logging.error(
-                    f"READBACK IMMEDIATE: "
-                    f"pointer_map[12532290]={pointer_map_flat[12532290]}, "
-                    f"size_map[12532290]={size_map_flat[12532290]} (before write)"
+                    f"READBACK BEFORE WRITE: "
+                    f"current_pointer={before_pointer}, "
+                    f"current_scale={before_scale}, "
+                    f"current_vertex={before_vertex}"
+                )
+            
+            # Perform the writes
+            vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
+            energy_map_flat[claim_linear] = np.asarray(
+                strel_adjusted_energies[is_without_vertex], dtype=np.float32
+            )
+            pointer_map_flat[claim_linear] = claim_pointers
+            d_over_r_map_flat[claim_linear] = (
+                strel_distance_microns[is_without_vertex] + current_d_over_r
+            )
+            size_map_flat[claim_linear] = np.int16(current_scale_label)
+            
+            # DIAGNOSTIC: Read back AFTER write for location 12532290
+            if 12532290 in claim_linear:
+                import logging
+                after_pointer = int(pointer_map_flat[12532290])
+                after_scale = int(size_map_flat[12532290])
+                after_vertex = int(vertex_index_map_flat[12532290])
+                logging.error(
+                    f"READBACK AFTER WRITE: "
+                    f"pointer_map[12532290]={after_pointer}, "
+                    f"size_map[12532290]={after_scale}, "
+                    f"vertex_index_map[12532290]={after_vertex}"
                 )
 
-            # DIAGNOSTIC: Verify pointers were written correctly by reading them back
             readback_pointers = pointer_map_flat[claim_linear]
             if not np.array_equal(readback_pointers, claim_pointers):
                 import logging
@@ -728,6 +757,13 @@ def _generate_edge_candidates_matlab_global_watershed(
                 f"location={current_linear}, lut_size={current_strel['lut_size']}"
             )
         
+        # Extract strel arrays first
+        current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
+        current_strel_coords = cast("np.ndarray", current_strel["coords"])
+        current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
+        current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
+        current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
+        
         # DIAGNOSTIC: Log for specific problematic iteration
         if current_linear == 12532290 or (current_linear in [12470094, 12532290]):
             import logging
@@ -736,7 +772,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                 f"original_scale={current_scale_label}, clipped_scale={current_scale_label_for_writing}, "
                 f"lut_size={current_strel['lut_size']}, "
                 f"scale_label_clipped_in_strel={current_strel.get('scale_label_clipped', 'NOT FOUND')}, "
-                f"pointer_indices_range=[{np.min(current_strel['pointer_indices'])}, {np.max(current_strel['pointer_indices'])}]"
+                f"pointer_indices_range=[{np.min(current_strel_pointer_indices)}, {np.max(current_strel_pointer_indices)}]"
             )
         
         # DIAGNOSTIC: Check if any neighbor locations include 12532290
@@ -750,12 +786,6 @@ def _generate_edge_candidates_matlab_global_watershed(
                 f"lut_size={current_strel['lut_size']}, "
                 f"vertex={current_vertex_index}"
             )
-        
-        current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
-        current_strel_coords = cast("np.ndarray", current_strel["coords"])
-        current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
-        current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
-        current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
 
         current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
             np.float32, copy=False
