@@ -69,11 +69,11 @@ def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
 
 
 def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_voxels():
-    vertex_index_map = np.zeros((3, 3, 3), dtype=np.uint32)
-    energy_map = np.full((3, 3, 3), 99.0, dtype=np.float32)
-    pointer_map = np.zeros((3, 3, 3), dtype=np.uint64)
-    d_over_r_map = np.zeros((3, 3, 3), dtype=np.float32)
-    size_map = np.full((3, 3, 3), -1, dtype=np.int16)
+    vertex_index_map = np.zeros((3, 3, 3), dtype=np.uint32, order="F")
+    energy_map = np.full((3, 3, 3), 99.0, dtype=np.float32, order="F")
+    pointer_map = np.zeros((3, 3, 3), dtype=np.uint64, order="F")
+    d_over_r_map = np.zeros((3, 3, 3), dtype=np.float32, order="F")
+    size_map = np.full((3, 3, 3), -1, dtype=np.int16, order="F")
 
     vertex_index_map[1, 1, 1] = 7
     energy_map[1, 1, 1] = -9.0
@@ -85,15 +85,16 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_
         current_vertex_index=2,
         current_scale_label=3,
         current_d_over_r=1.25,
-        strel_coords=np.array([[1, 1, 1], [1, 1, 2]], dtype=np.int32),
+        valid_linear=np.array([13, 22], dtype=np.int64),
         strel_pointer_indices=np.array([9, 10], dtype=np.uint64),
-        strel_r_over_R=np.array([0.0, 0.5], dtype=np.float32),
+        strel_distance_microns=np.array([0.0, 0.5], dtype=np.float32),
         strel_adjusted_energies=np.array([-5.0, -6.0], dtype=np.float32),
-        vertex_index_map=vertex_index_map,
-        energy_map=energy_map,
-        pointer_map=pointer_map,
-        d_over_r_map=d_over_r_map,
-        size_map=size_map,
+        vertex_index_map_flat=vertex_index_map.ravel(order="F"),
+        energy_map_flat=energy_map.ravel(order="F"),
+        pointer_map_flat=pointer_map.ravel(order="F"),
+        d_over_r_map_flat=d_over_r_map.ravel(order="F"),
+        size_map_flat=size_map.ravel(order="F"),
+        lut_size=27,
     )
 
     assert result["vertices_of_current_strel"].tolist() == [7, 0]
@@ -108,6 +109,25 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_
     assert pointer_map[1, 1, 2] == 10
     assert d_over_r_map[1, 1, 2] == np.float32(1.75)
     assert size_map[1, 1, 2] == 3
+
+
+def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim_pointers():
+    with pytest.raises(AssertionError, match="invalid claim pointers"):
+        _matlab_global_watershed_reveal_unclaimed_strel(
+            current_vertex_index=1,
+            current_scale_label=2,
+            current_d_over_r=0.5,
+            valid_linear=np.array([1], dtype=np.int64),
+            strel_pointer_indices=np.array([99], dtype=np.uint64),
+            strel_distance_microns=np.array([0.25], dtype=np.float32),
+            strel_adjusted_energies=np.array([-1.0], dtype=np.float32),
+            vertex_index_map_flat=np.zeros((8,), dtype=np.uint32),
+            energy_map_flat=np.zeros((8,), dtype=np.float32),
+            pointer_map_flat=np.zeros((8,), dtype=np.uint64),
+            d_over_r_map_flat=np.zeros((8,), dtype=np.float64),
+            size_map_flat=np.zeros((8,), dtype=np.int16),
+            lut_size=4,
+        )
 
 
 def test_matlab_global_watershed_insert_available_location_primary_seed_keeps_sorted_order():

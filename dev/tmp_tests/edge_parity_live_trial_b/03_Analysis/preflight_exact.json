@@ -1,0 +1,75 @@
+{
+  "allowed_memory_bytes": 2873160499,
+  "available_memory_bytes": 3591450624,
+  "collision_count": 0,
+  "collisions": [],
+  "dest_run_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\tmp_tests\\edge_parity_live_trial_b",
+  "force": false,
+  "image_shape": [
+    121,
+    512,
+    512
+  ],
+  "memory_estimate": {
+    "estimated_required_bytes": 1308426240,
+    "overhead_bytes": 261685248,
+    "planned_arrays": [
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "energy"
+      },
+      {
+        "bytes_per_voxel": 2,
+        "estimated_bytes": 63438848,
+        "name": "scale_indices"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "vertex_center_image"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "energy_map_temp"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "energy_map"
+      },
+      {
+        "bytes_per_voxel": 1,
+        "estimated_bytes": 31719424,
+        "name": "branch_order_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "d_over_r_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "pointer_map"
+      },
+      {
+        "bytes_per_voxel": 4,
+        "estimated_bytes": 126877696,
+        "name": "vertex_index_map"
+      },
+      {
+        "bytes_per_voxel": 2,
+        "estimated_bytes": 63438848,
+        "name": "size_map"
+      }
+    ],
+    "subtotal_bytes": 1046740992,
+    "voxel_count": 31719424
+  },
+  "memory_safety_fraction": 0.8,
+  "passed": true,
+  "report_scope": "native-first exact preflight only",
+  "source_run_root": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\20260421_accepted_budget_trial"
+}

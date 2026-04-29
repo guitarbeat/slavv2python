@@ -9,9 +9,9 @@ where to extend the implementation when a new method is needed.
 The active validation surface lives in `source/utils/validation.py`.
 
 When `comparison_exact_network` is enabled, the maintained exact route
-recognizes `python_native_hessian` as the canonical exact-compatible energy
-provenance. Preserved `matlab_batch_hdf5` energy remains accepted only for
-historical replay and oracle-backed regression comparisons.
+recognizes `python_native_hessian` as the only exact-compatible energy
+provenance. Preserved MATLAB vectors remain proof artifacts, not accepted
+runtime energy provenance.
 
 ## Supported Methods
 

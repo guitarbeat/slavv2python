@@ -1,14 +1,7 @@
 from __future__ import annotations
 
 CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN = "python_native_hessian"
-HISTORICAL_IMPORTED_MATLAB_ENERGY_ORIGIN = "matlab_batch_hdf5"
-
-EXACT_COMPATIBLE_ENERGY_ORIGINS = frozenset(
-    {
-        CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN,
-        HISTORICAL_IMPORTED_MATLAB_ENERGY_ORIGIN,
-    }
-)
+EXACT_COMPATIBLE_ENERGY_ORIGINS = frozenset({CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN})
 
 
 def energy_origin_for_method(energy_method: str) -> str:
@@ -25,10 +18,7 @@ def is_exact_compatible_energy_origin(origin: object) -> bool:
 
 def exact_route_gate_description() -> str:
     """Return the maintained summary of the exact-route gate."""
-    return (
-        "comparison_exact_network + exact-compatible energy provenance "
-        "(canonical: python_native_hessian)"
-    )
+    return "comparison_exact_network + python_native_hessian energy provenance"
 
 
 def exact_compatible_energy_origins_text() -> str:
@@ -39,7 +29,6 @@ def exact_compatible_energy_origins_text() -> str:
 __all__ = [
     "CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN",
     "EXACT_COMPATIBLE_ENERGY_ORIGINS",
-    "HISTORICAL_IMPORTED_MATLAB_ENERGY_ORIGIN",
     "energy_origin_for_method",
     "exact_compatible_energy_origins_text",
     "exact_route_gate_description",

@@ -1,0 +1,14 @@
+Exact proof report
+Status: FAIL
+Stages: edges
+Scope: native-first exact route only
+
+Stage summary
+edges: FAIL
+
+First failure
+Stage: edges
+Field: edges.connections
+Mismatch: shape mismatch
+MATLAB: {'shape': [2533, 2], 'dtype': 'int64', 'values': [0, 23, 20, 71, 22, 15]}
+Python: {'shape': [1804, 2], 'dtype': 'int64', 'values': [23, 0, 20, 71, 105, 21]}

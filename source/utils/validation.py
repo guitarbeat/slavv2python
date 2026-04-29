@@ -21,6 +21,11 @@ def _coerce_integral_parameter(name: str, value: Any) -> Any:
 
 def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     """Validate parameters and populate defaults for the maintained pipeline."""
+    legacy_parity_keys = sorted(str(key) for key in params if str(key).startswith("parity_"))
+    if legacy_parity_keys:
+        joined = ", ".join(legacy_parity_keys)
+        raise ValueError(f"legacy parity parameters are no longer supported: {joined}")
+
     validated: dict[str, Any] = {}
 
     # Voxel size parameters
@@ -170,7 +175,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     ):
         validated[key] = _coerce_integral_parameter(key, validated[key])
 
-    # Preserve workflow-specific extension keys such as parity controls.
+    # Preserve workflow-specific extension keys outside the retired parity surface.
     for key, value in params.items():
         validated.setdefault(key, value)
 

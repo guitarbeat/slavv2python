@@ -68,18 +68,15 @@ def test_validate_parameters_coerces_integer_like_matlab_settings():
     assert isinstance(validated["number_of_edges_per_vertex"], int)
 
 
-def test_validate_parameters_preserves_unknown_extension_keys():
-    validated = validate_parameters(
-        {
-            "comparison_exact_network": True,
-            "parity_watershed_candidate_mode": "all_contacts",
-            "parity_geodesic_salvage_k_nearest": 10,
-        }
-    )
-
-    assert validated["comparison_exact_network"] is True
-    assert validated["parity_watershed_candidate_mode"] == "all_contacts"
-    assert validated["parity_geodesic_salvage_k_nearest"] == 10
+def test_validate_parameters_rejects_legacy_parity_controls():
+    with pytest.raises(ValueError, match="legacy parity parameters are no longer supported"):
+        validate_parameters(
+            {
+                "comparison_exact_network": True,
+                "parity_watershed_candidate_mode": "all_contacts",
+                "parity_geodesic_salvage_k_nearest": 10,
+            }
+        )
 
 
 def test_validate_parameters_warns_for_unusual_excitation_wavelength():

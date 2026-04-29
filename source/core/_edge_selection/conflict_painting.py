@@ -20,6 +20,8 @@ from .payloads import (
     prepare_candidate_indices_for_cleanup,
 )
 
+EXACT_ROUTE_CHOOSER_SEED = 0
+
 
 def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarray:
     """Construct MATLAB-shaped ellipsoid offsets using the original radius equation."""
@@ -161,6 +163,12 @@ def _choose_edges_matlab_style(
         candidates.get("connection_sources"),
         len(connections),
     )
+    use_exact_route_permutation = bool(params.get("comparison_exact_network", False))
+    chooser_rng = (
+        np.random.default_rng(EXACT_ROUTE_CHOOSER_SEED) if use_exact_route_permutation else None
+    )
+    if use_exact_route_permutation:
+        diagnostics["exact_route_chooser_seed"] = EXACT_ROUTE_CHOOSER_SEED
 
     sigma_per_influence_vertices = float(params.get("sigma_per_influence_vertices", 1.0))
     sigma_per_influence_edges = float(params.get("sigma_per_influence_edges", 0.5))
@@ -212,7 +220,13 @@ def _choose_edges_matlab_style(
         )
 
         chosen = True
-        for point_index, point in enumerate(trace):
+        if chooser_rng is not None:
+            point_index_range = chooser_rng.permutation(len(trace)).tolist()
+        else:
+            point_index_range = list(range(len(trace)))
+
+        for point_index in point_index_range:
+            point = trace[point_index]
             scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
             coords = _offset_coords_matlab(point, edge_offsets(scale_value), image_shape)
             if coords.size == 0:

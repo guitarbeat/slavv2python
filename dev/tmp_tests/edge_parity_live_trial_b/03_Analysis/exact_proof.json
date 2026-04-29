@@ -1,0 +1,89 @@
+{
+  "dest_run_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\tmp_tests\\edge_parity_live_trial_b",
+  "exact_route_gate": "comparison_exact_network + exact-compatible energy provenance (canonical: python_native_hessian)",
+  "first_failing_field_path": "edges.connections",
+  "first_failing_stage": "edges",
+  "first_failure": {
+    "field_path": "edges.connections",
+    "matlab_preview": {
+      "dtype": "int64",
+      "shape": [
+        2533,
+        2
+      ],
+      "values": [
+        0,
+        23,
+        20,
+        71,
+        22,
+        15
+      ]
+    },
+    "mismatch_type": "shape mismatch",
+    "python_preview": {
+      "dtype": "int64",
+      "shape": [
+        1804,
+        2
+      ],
+      "values": [
+        23,
+        0,
+        20,
+        71,
+        105,
+        21
+      ]
+    },
+    "stage": "edges"
+  },
+  "matlab_batch_dir": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\20260421_accepted_budget_trial\\01_Input\\matlab_results\\batch_260421-151654",
+  "passed": false,
+  "report_scope": "native-first exact route only",
+  "source_run_root": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\20260421_accepted_budget_trial",
+  "stage_summaries": {
+    "edges": {
+      "field_count": 9,
+      "first_failure": {
+        "field_path": "edges.connections",
+        "matlab_preview": {
+          "dtype": "int64",
+          "shape": [
+            2533,
+            2
+          ],
+          "values": [
+            0,
+            23,
+            20,
+            71,
+            22,
+            15
+          ]
+        },
+        "mismatch_type": "shape mismatch",
+        "python_preview": {
+          "dtype": "int64",
+          "shape": [
+            1804,
+            2
+          ],
+          "values": [
+            23,
+            0,
+            20,
+            71,
+            105,
+            21
+          ]
+        },
+        "stage": "edges"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "edges"
+  ]
+}

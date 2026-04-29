@@ -22,8 +22,6 @@ Use the other core docs for different jobs:
 - The canonical exact route is `comparison_exact_network=True` with
   `python_native_hessian` as the canonical exact-compatible energy provenance.
 - Preserved MATLAB vectors remain the oracle artifacts for `prove-exact`.
-- `matlab_batch_hdf5` remains accepted only for historical replay and oracle
-  comparison.
 - `100%` means artifact-level equality against preserved MATLAB vectors, not
   count-level similarity.
 
@@ -40,11 +38,29 @@ Use the other core docs for different jobs:
 
 The strongest current interpretation is:
 
+- exact-route proof runs must first pass a saved-params fairness audit before
+  candidate or chooser counts are treated as trustworthy parity evidence
 - the pointer-lifecycle fixes were real and should stay
 - the reviewed MATLAB and Python watershed constants are already aligned
 - the reviewed size, distance, and direction penalties are already aligned
 - the remaining candidate gap looks more like a frontier, join, or chooser
   control-flow problem than a scalar-parameter problem
+
+### Exact Params Fairness Gate
+
+The maintained exact route now rejects source runs whose saved
+`validated_params.json` still carries Python-only parity controls or omits the
+required MATLAB-shaped exact settings.
+
+Current live read on the preserved run root
+`20260421_accepted_budget_trial`:
+
+- saved params still include Python-only `parity_*` controls
+- `energy_projection_mode` is not explicitly recorded as `matlab`
+
+Until that params surface is cleaned up, the run is not a fully fair
+start-from-the-same-settings exact baseline even if later proof artifacts are
+available.
 
 ## Native Energy
 
@@ -166,8 +182,10 @@ not close parity.
 
 ## Next Proof Actions
 
-1. Re-run native-first `capture-candidates` and replace the older v22 counts.
-2. Re-run `prove-exact --stage edges` and record the first failing field.
-3. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
+1. Clean the exact source-run params surface so preflight passes the fairness
+   audit with no Python-only `parity_*` controls.
+2. Re-run native-first `capture-candidates` and replace the older v22 counts.
+3. Re-run `prove-exact --stage edges` and record the first failing field.
+4. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
    file focused on live proof status.
-4. Once edges pass, run `prove-exact --stage all` to close vertices and network.
+5. Once edges pass, run `prove-exact --stage all` to close vertices and network.

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import heapq
 import time
 from typing import Any, cast
 
@@ -70,10 +69,10 @@ def _initialize_matlab_global_watershed_state(
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
         vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(number_of_vertices + 1)
 
-    energy_map_temp = np.asarray(energy, dtype=np.float32, order="F").copy()
-    for vertex_offset, linear_index in enumerate(vertex_locations):
+    energy_map_temp = np.array(energy, dtype=np.float32, order="F", copy=True)
+    for linear_index in vertex_locations:
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
-        energy_map_temp[coord[0], coord[1], coord[2]] = float(vertex_energies[vertex_offset])
+        energy_map_temp[coord[0], coord[1], coord[2]] = np.float32(-np.inf)
 
     available_locations = vertex_locations[::-1].astype(np.int64, copy=False)
     vertex_adjacency_matrix = sparse.identity(number_of_vertices + 1, format="lil", dtype=bool)
@@ -135,39 +134,21 @@ def _matlab_global_watershed_current_strel(
     valid_offsets = np.asarray(offsets[valid_mask], dtype=np.int32)
     valid_linear_raw = linear_offsets_full[valid_mask] + np.int64(current_linear)
 
-    # Additional bounds check for linear indices
     img_size = shape[0] * shape[1] * shape[2]
     linear_valid_mask = (valid_linear_raw >= 0) & (valid_linear_raw < img_size)
     if not np.all(linear_valid_mask):
-        import logging
-
-        logging.error(
-            f"Linear index out of bounds at current={current_linear}, scale={current_scale_label}: "
-            f"{np.sum(~linear_valid_mask)} indices out of range [0, {img_size})"
+        bad_linear = valid_linear_raw[~linear_valid_mask][:5].tolist()
+        raise AssertionError(
+            "Global watershed produced out-of-bounds linear indices for one in-bounds strel: "
+            f"current={current_linear}, scale={current_scale_label}, sample={bad_linear}"
         )
-        # Filter again
-        valid_coords = valid_coords[linear_valid_mask]
-        valid_offsets = valid_offsets[linear_valid_mask]
-        valid_linear = valid_linear_raw[linear_valid_mask]
-        # Update valid_mask to reflect the additional filtering
-        temp_mask = valid_mask.copy()
-        temp_mask[valid_mask] = linear_valid_mask
-        valid_mask = temp_mask
-    else:
-        valid_linear = valid_linear_raw
+    valid_linear = valid_linear_raw
 
     # Pointer indices are 1-based indices into the FULL LUT (before filtering)
     # These must be in range [1, len(offsets)]
     pointer_indices = np.arange(1, len(offsets) + 1, dtype=np.uint64)[valid_mask]
 
-    # Verify all pointer indices are valid
     if not (np.all(pointer_indices >= 1) and np.all(pointer_indices <= len(offsets))):
-        import logging
-
-        logging.error(
-            f"ASSERTION FAILED: Invalid pointer indices at scale {current_scale_label}: "
-            f"min={np.min(pointer_indices)}, max={np.max(pointer_indices)}, LUT size={len(offsets)}"
-        )
         raise AssertionError(
             f"Invalid pointer indices: min={np.min(pointer_indices)}, "
             f"max={np.max(pointer_indices)}, LUT size={len(offsets)}"
@@ -202,8 +183,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     pointer_map_flat: np.ndarray,
     d_over_r_map_flat: np.ndarray,
     size_map_flat: np.ndarray,
-    lut_size: int,  # Add this parameter for validation
-    filtered_pointer_stats: dict[str, int] | None = None,  # Track filtering stats
+    lut_size: int,
 ) -> dict[str, np.ndarray]:
     """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels.
 
@@ -215,243 +195,134 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     is also written with current_scale_label so that during backtracking, we can reconstruct
     the correct LUT and interpret the pointer correctly.
     """
-    # DIAGNOSTIC: Log when processing location 12532290's neighbors
-    if 12532290 in valid_linear:
-        import logging
-        idx_12532290 = np.where(valid_linear == 12532290)[0][0]
-        current_vertex_at_12532290 = int(vertex_index_map_flat[12532290])
-        current_pointer_at_12532290 = int(pointer_map_flat[12532290])
-        current_scale_at_12532290 = int(size_map_flat[12532290])
-        logging.error(
-            f"REVEAL CALLED WITH 12532290 IN STREL: "
-            f"current_vertex_index={current_vertex_index}, "
-            f"current_scale_label={current_scale_label}, "
-            f"existing_vertex_at_12532290={current_vertex_at_12532290}, "
-            f"existing_pointer_at_12532290={current_pointer_at_12532290}, "
-            f"existing_scale_at_12532290={current_scale_at_12532290}, "
-            f"will_write_pointer={strel_pointer_indices[idx_12532290]}"
+    if len(strel_pointer_indices) != len(valid_linear):
+        raise AssertionError(
+            "Global watershed strel arrays must stay aligned: "
+            f"{len(strel_pointer_indices)} pointers for {len(valid_linear)} locations"
         )
-    
-    is_without_vertex = (vertex_index_map_flat[valid_linear] == 0) & (pointer_map_flat[valid_linear] == 0)
+
+    vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
+    is_without_vertex = (vertices_of_current_strel == 0) & (pointer_map_flat[valid_linear] == 0)
     if np.any(is_without_vertex):
         claim_linear = valid_linear[is_without_vertex]
         claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-
-        # Sanity check: verify array lengths match
-        if len(strel_pointer_indices) != len(valid_linear):
-            import logging
-
-            logging.error(
-                f"CRITICAL: Array length mismatch! strel_pointer_indices has {len(strel_pointer_indices)} elements "
-                f"but valid_linear has {len(valid_linear)} elements at scale {current_scale_label}"
-            )
-            return {
-                "vertices_of_current_strel": vertex_index_map_flat[valid_linear],
-                "is_without_vertex_in_strel": is_without_vertex,
-            }
-
-        # Validate pointer indices before writing - they should match the LUT size for current_scale_label
         if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
-            import logging
-
             bad_pointers = claim_pointers[(claim_pointers < 1) | (claim_pointers > lut_size)]
-            bad_locations = claim_linear[(claim_pointers < 1) | (claim_pointers > lut_size)]
-            logging.error(
-                f"CRITICAL BUG: Attempting to write {len(bad_pointers)} invalid pointers at scale {current_scale_label}. "
-                f"Pointer range [{np.min(bad_pointers)}, {np.max(bad_pointers)}] vs LUT size {lut_size}. "
-                f"This indicates a bug in pointer index generation! "
-                f"Sample bad locations: {bad_locations[:5].tolist()}"
+            raise AssertionError(
+                "Global watershed produced invalid claim pointers for one strel: "
+                f"scale={current_scale_label}, lut_size={lut_size}, "
+                f"sample={bad_pointers[:5].tolist()}"
             )
-            if filtered_pointer_stats is not None:
-                filtered_pointer_stats["total_filtered"] = filtered_pointer_stats.get(
-                    "total_filtered", 0
-                ) + len(bad_pointers)
-                filtered_pointer_stats["total_attempts"] = filtered_pointer_stats.get(
-                    "total_attempts", 0
-                ) + len(claim_pointers)
-
-            # Filter out invalid pointers as a defensive measure
-            valid_pointer_mask = (claim_pointers >= 1) & (claim_pointers <= lut_size)
-            claim_linear = claim_linear[valid_pointer_mask]
-            claim_pointers = claim_pointers[valid_pointer_mask]
-            is_without_vertex_filtered = is_without_vertex.copy()
-            is_without_vertex_filtered[is_without_vertex] = valid_pointer_mask
-            is_without_vertex = is_without_vertex_filtered
-
-        if len(claim_linear) > 0:
-            # CRITICAL FIX: Filter out locations with existing pointers to prevent overwrites
-            # The is_without_vertex check should have caught these, but defensive filtering
-            # or race conditions might have allowed them through
-            existing_pointers = pointer_map_flat[claim_linear]
-            existing_scales = size_map_flat[claim_linear]
-            no_existing_pointer_mask = existing_pointers == 0
-            
-            if not np.all(no_existing_pointer_mask):
-                import logging
-
-                overwrite_count = np.sum(~no_existing_pointer_mask)
-                overwrite_mask = ~no_existing_pointer_mask
-                logging.error(
-                    f"CRITICAL: Prevented overwrite of {overwrite_count} existing pointers at scale {current_scale_label}! "
-                    f"This indicates a bug in the is_without_vertex logic. "
-                    f"Existing pointer values: {existing_pointers[overwrite_mask][:5]}, "
-                    f"Existing scales: {existing_scales[overwrite_mask][:5]}, "
-                    f"Would-be new pointers: {claim_pointers[overwrite_mask][:5]}"
-                )
-                
-                # DIAGNOSTIC: Check if location 12532290 is being overwritten
-                if 12532290 in claim_linear[overwrite_mask]:
-                    idx_in_overwrite = np.where(claim_linear[overwrite_mask] == 12532290)[0][0]
-                    logging.error(
-                        f"OVERWRITE PREVENTED FOR LOCATION 12532290: "
-                        f"existing_pointer={existing_pointers[overwrite_mask][idx_in_overwrite]}, "
-                        f"existing_scale={existing_scales[overwrite_mask][idx_in_overwrite]}, "
-                        f"would-be new_pointer={claim_pointers[overwrite_mask][idx_in_overwrite]}, "
-                        f"would-be new_scale={current_scale_label}"
-                    )
-                
-                # Filter out locations with existing pointers
-                claim_linear = claim_linear[no_existing_pointer_mask]
-                claim_pointers = claim_pointers[no_existing_pointer_mask]
-                
-                # Update is_without_vertex to reflect the additional filtering
-                is_without_vertex_no_overwrite = is_without_vertex.copy()
-                is_without_vertex_no_overwrite[is_without_vertex] = no_existing_pointer_mask
-                is_without_vertex = is_without_vertex_no_overwrite
-
-
-            # DIAGNOSTIC: Log a sample write for debugging
-            if len(claim_linear) > 0 and np.random.random() < 0.001:  # Log 0.1% of writes
-                import logging
-
-                sample_idx = 0
-                logging.info(
-                    f"WRITE: location={claim_linear[sample_idx]}, "
-                    f"pointer={claim_pointers[sample_idx]}, "
-                    f"scale={current_scale_label}, "
-                    f"lut_size={lut_size}, "
-                    f"vertex={current_vertex_index}"
-                )
-            
-            # DIAGNOSTIC: Log writes to specific problematic locations - BEFORE write
-            if 12532290 in claim_linear:
-                import logging
-                idx = np.where(claim_linear == 12532290)[0][0]
-                # Read BEFORE write
-                before_pointer = int(pointer_map_flat[12532290])
-                before_scale = int(size_map_flat[12532290])
-                before_vertex = int(vertex_index_map_flat[12532290])
-                logging.error(
-                    f"ABOUT TO WRITE TO LOCATION 12532290: "
-                    f"will_write_pointer={claim_pointers[idx]}, will_write_scale={current_scale_label}, "
-                    f"lut_size={lut_size}, will_write_vertex={current_vertex_index}"
-                )
-                logging.error(
-                    f"READBACK BEFORE WRITE: "
-                    f"current_pointer={before_pointer}, "
-                    f"current_scale={before_scale}, "
-                    f"current_vertex={before_vertex}"
-                )
-            
-            # Perform the writes
-            vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
-            energy_map_flat[claim_linear] = np.asarray(
-                strel_adjusted_energies[is_without_vertex], dtype=np.float32
+        if np.any(pointer_map_flat[claim_linear] != 0):
+            raise AssertionError(
+                "Global watershed attempted to overwrite an existing pointer on the exact route."
             )
-            pointer_map_flat[claim_linear] = claim_pointers
-            d_over_r_map_flat[claim_linear] = (
-                strel_distance_microns[is_without_vertex] + current_d_over_r
-            )
-            size_map_flat[claim_linear] = np.int16(current_scale_label)
-            
-            # DIAGNOSTIC: Read back AFTER write for location 12532290
-            if 12532290 in claim_linear:
-                import logging
-                after_pointer = int(pointer_map_flat[12532290])
-                after_scale = int(size_map_flat[12532290])
-                after_vertex = int(vertex_index_map_flat[12532290])
-                logging.error(
-                    f"READBACK AFTER WRITE: "
-                    f"pointer_map[12532290]={after_pointer}, "
-                    f"size_map[12532290]={after_scale}, "
-                    f"vertex_index_map[12532290]={after_vertex}"
-                )
-
-            readback_pointers = pointer_map_flat[claim_linear]
-            if not np.array_equal(readback_pointers, claim_pointers):
-                import logging
-
-                mismatches = np.sum(readback_pointers != claim_pointers)
-                logging.error(
-                    f"CRITICAL CORRUPTION: {mismatches}/{len(claim_pointers)} pointers corrupted immediately after writing! "
-                    f"Scale {current_scale_label}. "
-                    f"Written: {claim_pointers[:5]}, Read back: {readback_pointers[:5]}"
-                )
-            
-            # DIAGNOSTIC: Verify write to location 12532290
-            if 12532290 in claim_linear:
-                import logging
-                logging.error(
-                    f"READBACK AFTER WRITE: "
-                    f"pointer_map[12532290]={pointer_map_flat[12532290]}, "
-                    f"size_map[12532290]={size_map_flat[12532290]} (after write)"
-                )
+        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
+        energy_map_flat[claim_linear] = np.asarray(
+            strel_adjusted_energies[is_without_vertex],
+            dtype=np.float32,
+        )
+        pointer_map_flat[claim_linear] = claim_pointers
+        d_over_r_map_flat[claim_linear] = (
+            np.asarray(strel_distance_microns[is_without_vertex], dtype=np.float32)
+            + current_d_over_r
+        )
+        size_map_flat[claim_linear] = np.int16(current_scale_label)
 
     return {
-        "vertices_of_current_strel": vertex_index_map_flat[valid_linear],
+        "vertices_of_current_strel": vertices_of_current_strel,
         "is_without_vertex_in_strel": is_without_vertex,
     }
 
 
 def _matlab_global_watershed_insert_available_location(
+    available_locations: list[int],
     *,
     next_location: int,
     next_energy: float,
-    available_locations: list[tuple[float, int, int]],
-    energy_map_flat: np.ndarray,
-    insertion_counter: list[int],
-) -> None:
-    """Insert into heap with energy priority (most negative first) and LIFO tie-breaking."""
-    insertion_counter[0] += 1
-    heapq.heappush(
-        available_locations, (float(next_energy), -insertion_counter[0], int(next_location))
+    energy_lookup: Any,
+    seed_idx: int,
+    is_current_location_clear: bool,
+) -> list[int]:
+    """Insert one location into MATLAB's worst-to-best available-location list."""
+
+    def _energy_for(linear_index: int) -> float:
+        return float(energy_lookup[int(linear_index)])
+
+    if not available_locations:
+        return [int(next_location)]
+
+    if seed_idx == 1:
+        if _energy_for(available_locations[0]) <= float(next_energy):
+            insert_at = 0
+        else:
+            insert_at = 0
+            for idx, linear_index in enumerate(available_locations):
+                if _energy_for(linear_index) > float(next_energy):
+                    insert_at = idx + 1
+    else:
+        if _energy_for(available_locations[-1]) >= float(next_energy):
+            insert_at = (
+                len(available_locations)
+                if is_current_location_clear
+                else len(available_locations) - 1
+            )
+        else:
+            insert_at = next(
+                idx
+                for idx, linear_index in enumerate(available_locations)
+                if _energy_for(linear_index) < float(next_energy)
+            )
+
+    prefix = available_locations[:insert_at]
+    suffix = (
+        available_locations[insert_at:]
+        if is_current_location_clear
+        else available_locations[insert_at:-1]
     )
+    return [*prefix, int(next_location), *suffix]
 
 
 def _matlab_global_watershed_reset_join_locations(
-    available_locations: list[tuple[float, int, int]],
+    available_locations: list[int],
     *,
     next_vertex_locations: np.ndarray,
     is_current_location_clear: bool,
-    current_location: int,
-) -> bool:
+) -> tuple[list[int], bool]:
     """Mirror MATLAB's indexed available-location removal during watershed joins.
 
-    Mutates available_locations in-place for efficiency.
+    Returns the updated list and the current-location cleared flag.
     """
-    if not available_locations and is_current_location_clear:
-        return is_current_location_clear
+    if not available_locations:
+        return [], is_current_location_clear
 
-    locations_to_reset = set(next_vertex_locations.tolist())
+    updated_locations = list(available_locations)
+    locations_to_reset = sorted(
+        {
+            int(value) for value in np.asarray(next_vertex_locations, dtype=np.int64).tolist()
+        }.intersection(updated_locations)
+    )
 
     if not is_current_location_clear:
-        # If not clear, the 'current_location' we popped at the start of the loop
-        # is conceptually still in the list and might be one of the reset targets.
-        if current_location in locations_to_reset:
-            locations_to_reset.remove(current_location)
+        current_location = updated_locations[-1]
         is_current_location_clear = True
+        updated_locations = updated_locations[:-1]
+        locations_to_reset = [value for value in locations_to_reset if value != current_location]
 
     if not locations_to_reset:
-        return is_current_location_clear
+        return updated_locations, is_current_location_clear
 
-    # Filter the list. O(N) but better than multiple .remove() calls.
-    # We filter in reverse if it helps, but simple comprehension is usually fast.
-    new_list = [loc for loc in available_locations if loc[2] not in locations_to_reset]
-    available_locations.clear()
-    available_locations.extend(new_list)
-    heapq.heapify(available_locations)
+    indices_to_remove: list[int] = []
+    for location in locations_to_reset:
+        try:
+            indices_to_remove.append(updated_locations.index(location))
+        except ValueError:
+            continue
 
-    return is_current_location_clear
+    for index in sorted(set(indices_to_remove), reverse=True):
+        del updated_locations[index]
+
+    return updated_locations, is_current_location_clear
 
 
 def _matlab_global_watershed_unit_vectors(
@@ -483,35 +354,14 @@ def _matlab_global_watershed_trace_half(
     """Trace one MATLAB watershed half-edge back to its zero-pointer origin using flat views."""
     pointer_map_flat = pointer_map.ravel(order="F")
     size_map_flat = size_map.ravel(order="F")
-    
-    # CRITICAL DIAGNOSTIC: Verify size_map_flat is a view
-    import logging
-    if not np.shares_memory(size_map, size_map_flat):
-        logging.error(f"TRACE BUG: size_map_flat is NOT a view of size_map in trace function!")
-    
-    # DIAGNOSTIC: Log if we're tracing from location 12532290
-    if start_linear == 12532290 or start_linear == 12470094:
-        logging.error(
-            f"TRACE STARTING FROM {start_linear}: "
-            f"pointer={int(pointer_map_flat[start_linear])}, "
-            f"scale={int(size_map_flat[start_linear])}"
-        )
 
     traced: list[int] = []
     visited: set[int] = set()
     tracing_linear = int(start_linear)
     img_size = pointer_map_flat.size
 
-    # DIAGNOSTIC: Track first few steps for debugging
-    trace_log: list[tuple[int, int, int]] = []  # (location, pointer, scale)
-
     while 0 <= tracing_linear < img_size:
         if tracing_linear in visited:
-            import logging
-
-            logging.error(
-                f"Cycle detected in global watershed backtrack at {tracing_linear}. Breaking."
-            )
             break
         visited.add(tracing_linear)
         traced.append(int(tracing_linear))
@@ -521,11 +371,6 @@ def _matlab_global_watershed_trace_half(
             break
 
         tracing_scale_label = int(size_map_flat[tracing_linear])
-
-        # DIAGNOSTIC: Log first few steps
-        if len(trace_log) < 5:
-            trace_log.append((tracing_linear, pointer_value, tracing_scale_label))
-
         tracing_scale_index = int(
             np.clip(tracing_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
@@ -538,31 +383,13 @@ def _matlab_global_watershed_trace_half(
         )
         linear_offsets = np.asarray(lut["linear_offsets"], dtype=np.int64)
 
-        # Pointer is 1-based, so valid range is [1, len(linear_offsets)]
         if pointer_value < 1 or pointer_value > len(linear_offsets):
-            import logging
-
-            logging.error(
-                f"Pointer index {pointer_value} out of range for scale {tracing_scale_label} "
-                f"(size {len(linear_offsets)}) at location {tracing_linear}. "
-                f"Valid range: [1, {len(linear_offsets)}]. "
-                f"Pointer dtype: {pointer_map_flat.dtype}, value type: {type(pointer_value)}. "
-                f"Trace history: {trace_log}"
-            )
             break
 
-        # Use pointer_value - 1 since it's 1-based
         offset = int(linear_offsets[pointer_value - 1])
         tracing_linear = int(tracing_linear - offset)
 
-        # Bounds check the new location
         if tracing_linear < 0 or tracing_linear >= img_size:
-            import logging
-
-            logging.error(
-                f"Backtrack resulted in out-of-bounds location {tracing_linear} "
-                f"(image size {img_size}) from pointer {pointer_value} with offset {offset}"
-            )
             break
 
     return traced
@@ -696,7 +523,7 @@ def _generate_edge_candidates_matlab_global_watershed(
     vertex_adjacency_matrix = cast("Any", state["vertex_adjacency_matrix"])
     number_of_vertices = len(vertex_locations)
 
-    energy_map = np.asarray(energy_map_temp, dtype=np.float32).copy()
+    energy_map = np.array(energy_map_raw, dtype=np.float32, order="F", copy=True)
     original_scale_image: np.ndarray
     if scale_indices is None:
         size_map: np.ndarray = np.ones(shape, dtype=np.int16, order="F")
@@ -733,22 +560,12 @@ def _generate_edge_candidates_matlab_global_watershed(
     step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))
     distance_tolerance = float(params.get("distance_tolerance", 3.0))
 
-    # Pre-flatten maps for performance
     energy_map_temp_flat = energy_map_temp.ravel(order="F")
     d_over_r_map_flat = d_over_r_map.ravel(order="F")
     pointer_map_flat = pointer_map.ravel(order="F")
     vertex_index_map_flat = vertex_index_map.ravel(order="F")
     size_map_flat = size_map.ravel(order="F")
     branch_order_map_flat = branch_order_map.ravel(order="F")
-    
-    # CRITICAL DIAGNOSTIC: Verify size_map_flat is a view of size_map
-    import logging
-    logging.error(f"size_map flags: C_CONTIGUOUS={size_map.flags['C_CONTIGUOUS']}, F_CONTIGUOUS={size_map.flags['F_CONTIGUOUS']}, OWNDATA={size_map.flags['OWNDATA']}")
-    if not np.shares_memory(size_map, size_map_flat):
-        logging.error("CRITICAL BUG: size_map_flat is NOT a view of size_map! Writes will not persist!")
-        logging.error(f"size_map_flat flags: C_CONTIGUOUS={size_map_flat.flags['C_CONTIGUOUS']}, F_CONTIGUOUS={size_map_flat.flags['F_CONTIGUOUS']}, OWNDATA={size_map_flat.flags['OWNDATA']}")
-    else:
-        logging.info(f"size_map_flat is a view of size_map: {size_map_flat.base is size_map}")
 
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []
@@ -758,38 +575,27 @@ def _generate_edge_candidates_matlab_global_watershed(
     # Track the raw vertex energies for resetting -inf values
     vertex_energies_raw_flat = energy_map_raw.ravel(order="F")
 
-    # Track pointer filtering statistics
-    filtered_pointer_stats: dict[str, int] = {}
-
-    available_locations_heap: list[tuple[float, int, int]] = []
-    insertion_counter = [0]
-    for loc in available_locations:
-        _matlab_global_watershed_insert_available_location(
-            next_location=loc,
-            next_energy=energy_map_temp_flat[loc],
-            available_locations=available_locations_heap,
-            energy_map_flat=energy_map_temp_flat,
-            insertion_counter=insertion_counter,
-        )
-
     iteration = 0
-    while available_locations_heap:
+    while available_locations:
         iteration += 1
-        current_energy, _, current_linear = heapq.heappop(available_locations_heap)
+        current_linear = int(available_locations[-1])
         is_current_location_clear = False
 
-        current_energy = energy_map_temp_flat[current_linear]
+        current_energy = float(energy_map_temp_flat[current_linear])
 
-        # Reset vertex energy to original value if first time popping it
         if float(current_energy) == float("-inf"):
-            current_energy = vertex_energies_raw_flat[current_linear]
+            current_energy = float(vertex_energies_raw_flat[current_linear])
             energy_map_temp_flat[current_linear] = current_energy
+
+        if current_energy >= 0.0:
+            break
 
         current_vertex_index = int(vertex_index_map_flat[current_linear])
         current_scale_label = int(size_map_flat[current_linear])
         current_scale_index = int(
             np.clip(current_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
+        current_pointer_value = int(pointer_map_flat[current_linear])
 
         current_strel = _matlab_global_watershed_current_strel(
             current_linear,
@@ -803,51 +609,18 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_scale_label_for_writing = current_strel.get(
             "scale_label_clipped", current_scale_label
         )
-        
-        # DIAGNOSTIC: Log when scale clipping occurs
-        if current_scale_label_for_writing != current_scale_label:
-            import logging
-            logging.warning(
-                f"SCALE CLIPPING: original={current_scale_label}, clipped={current_scale_label_for_writing}, "
-                f"location={current_linear}, lut_size={current_strel['lut_size']}"
-            )
-        
-        # Extract strel arrays first
+
         current_strel_r_over_R = cast("np.ndarray", current_strel["r_over_R"])
         current_strel_coords = cast("np.ndarray", current_strel["coords"])
         current_strel_linear = cast("np.ndarray", current_strel["linear_indices"])
         current_strel_offsets = cast("np.ndarray", current_strel["offsets"])
         current_strel_pointer_indices = cast("np.ndarray", current_strel["pointer_indices"])
-        
-        # DIAGNOSTIC: Log for specific problematic iteration
-        if current_linear == 12532290 or (current_linear in [12470094, 12532290]):
-            import logging
-            logging.error(
-                f"PROCESSING PROBLEM LOCATION {current_linear}: "
-                f"original_scale={current_scale_label}, clipped_scale={current_scale_label_for_writing}, "
-                f"lut_size={current_strel['lut_size']}, "
-                f"scale_label_clipped_in_strel={current_strel.get('scale_label_clipped', 'NOT FOUND')}, "
-                f"pointer_indices_range=[{np.min(current_strel_pointer_indices)}, {np.max(current_strel_pointer_indices)}]"
-            )
-        
-        # DIAGNOSTIC: Check if any neighbor locations include 12532290
-        if 12532290 in current_strel_linear:
-            import logging
-            idx = np.where(current_strel_linear == 12532290)[0][0]
-            logging.error(
-                f"LOCATION 12532290 IS A NEIGHBOR of {current_linear}: "
-                f"will write pointer={current_strel_pointer_indices[idx]}, "
-                f"scale={current_scale_label_for_writing}, "
-                f"lut_size={current_strel['lut_size']}, "
-                f"vertex={current_vertex_index}"
-            )
 
         current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
             np.float32, copy=False
         )
         current_d_over_r = float(d_over_r_map_flat[current_linear])
         current_forward_unit: np.ndarray | None = None
-        current_pointer_value = int(pointer_map_flat[current_linear])
         if current_pointer_value > 0:
             lut = _build_matlab_global_watershed_lut(
                 current_scale_index,
@@ -884,23 +657,6 @@ def _generate_edge_candidates_matlab_global_watershed(
             float(vertex_energies[current_vertex_index - 1]) * (1.0 - energy_tolerance)
         )
 
-        # Validate pointer indices before passing to reveal
-        if np.any(current_strel_pointer_indices < 1) or np.any(
-            current_strel_pointer_indices > current_strel["lut_size"]
-        ):
-            import logging
-
-            bad_ptrs = current_strel_pointer_indices[
-                (current_strel_pointer_indices < 1)
-                | (current_strel_pointer_indices > current_strel["lut_size"])
-            ]
-            logging.error(
-                f"CRITICAL BUG DETECTED: Invalid pointers BEFORE reveal at iteration {iteration}, "
-                f"scale {current_scale_label}, location {current_linear}. "
-                f"Bad pointer range: [{np.min(bad_ptrs)}, {np.max(bad_ptrs)}] vs LUT size {current_strel['lut_size']}. "
-                f"Total pointers: {len(current_strel_pointer_indices)}"
-            )
-
         _matlab_global_watershed_reveal_unclaimed_strel(
             current_vertex_index=current_vertex_index,
             current_scale_label=current_scale_label_for_writing,
@@ -915,23 +671,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             d_over_r_map_flat=d_over_r_map_flat,
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],
-            filtered_pointer_stats=filtered_pointer_stats,
         )
-        
-        # DIAGNOSTIC: Verify what was actually written
-        if np.random.random() < 0.001:  # Log 0.1% of iterations
-            import logging
-            is_without_vertex = vertex_index_map_flat[current_strel_linear] == current_vertex_index
-            if np.any(is_without_vertex):
-                sample_idx = np.where(is_without_vertex)[0][0]
-                sample_location = current_strel_linear[sample_idx]
-                written_scale = int(size_map_flat[sample_location])
-                written_pointer = int(pointer_map_flat[sample_location])
-                logging.info(
-                    f"VERIFY: location={sample_location}, written_pointer={written_pointer}, "
-                    f"written_scale={written_scale}, expected_scale={current_scale_label_for_writing}, "
-                    f"original_scale={current_scale_label}, lut_size={current_strel['lut_size']}"
-                )
 
         for seed_idx in range(1, edge_number_tolerance + 1):
             strel_idx = int(np.argmin(adjusted))
@@ -940,9 +680,9 @@ def _generate_edge_candidates_matlab_global_watershed(
 
             if not bool(is_energy_tolerated_in_strel[strel_idx]):
                 if not is_current_location_clear:
+                    available_locations = available_locations[:-1]
                     is_current_location_clear = True
             else:
-                # Apply directional suppression for next seed
                 from .common import _matlab_frontier_directional_suppression_factors
 
                 adjusted *= _matlab_frontier_directional_suppression_factors(
@@ -955,22 +695,24 @@ def _generate_edge_candidates_matlab_global_watershed(
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
                     branch_order_map_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
-                        _matlab_global_watershed_insert_available_location(
+                        available_locations = _matlab_global_watershed_insert_available_location(
+                            available_locations,
                             next_location=next_location,
                             next_energy=float(energy_map_temp_flat[next_location]),
-                            available_locations=available_locations_heap,
-                            energy_map_flat=energy_map_temp_flat,
-                            insertion_counter=insertion_counter,
+                            energy_lookup=energy_map_temp_flat,
+                            seed_idx=seed_idx,
+                            is_current_location_clear=is_current_location_clear,
                         )
-                        if not is_current_location_clear:
-                            is_current_location_clear = True
+                        is_current_location_clear = True
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
-                    is_current_location_clear = _matlab_global_watershed_reset_join_locations(
-                        available_locations=available_locations_heap,
+                    (
+                        available_locations,
+                        is_current_location_clear,
+                    ) = _matlab_global_watershed_reset_join_locations(
+                        available_locations,
                         next_vertex_locations=current_strel_linear[is_next_vertex_in_strel],
                         is_current_location_clear=is_current_location_clear,
-                        current_location=current_linear,
                     )
 
                     if not bool(
@@ -1070,20 +812,6 @@ def _generate_edge_candidates_matlab_global_watershed(
         str(origin_index): origin_indices.count(origin_index)
         for origin_index in sorted(set(origin_indices))
     }
-
-    # Log pointer filtering statistics
-    if filtered_pointer_stats:
-        import logging
-
-        total_filtered = filtered_pointer_stats.get("total_filtered", 0)
-        total_attempts = filtered_pointer_stats.get("total_attempts", 0)
-        if total_filtered > 0:
-            logging.warning(
-                f"Pointer filtering summary: {total_filtered}/{total_attempts} pointers filtered "
-                f"({100.0 * total_filtered / max(total_attempts, 1):.1f}%)"
-            )
-        diagnostics["filtered_pointer_count"] = total_filtered
-        diagnostics["total_pointer_attempts"] = total_attempts
 
     raw_pointer_map = np.asarray(pointer_map)
     scaled_pointer_map = _matlab_global_watershed_scale_pointer_map(

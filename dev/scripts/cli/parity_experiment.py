@@ -80,6 +80,55 @@ CANDIDATE_COVERAGE_JSON_PATH = Path("03_Analysis") / "candidate_coverage.json"
 CANDIDATE_COVERAGE_TEXT_PATH = Path("03_Analysis") / "candidate_coverage.txt"
 HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
+EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
+    {
+        "approximating_PSF",
+        "bandpass_window",
+        "direction_method",
+        "discrete_tracing",
+        "edge_method",
+        "energy_method",
+        "energy_projection_mode",
+        "energy_sign",
+        "energy_upper_bound",
+        "excitation_wavelength_in_microns",
+        "gaussian_to_ideal_ratio",
+        "length_dilation_ratio",
+        "max_edge_energy",
+        "max_edge_length_per_origin_radius",
+        "max_voxels_per_node",
+        "max_voxels_per_node_energy",
+        "microns_per_voxel",
+        "min_hair_length_in_microns",
+        "number_of_edges_per_vertex",
+        "numerical_aperture",
+        "radius_of_largest_vessel_in_microns",
+        "radius_of_smallest_vessel_in_microns",
+        "sample_index_of_refraction",
+        "scales_per_octave",
+        "sigma_per_influence_edges",
+        "sigma_per_influence_vertices",
+        "space_strel_apothem",
+        "space_strel_apothem_edges",
+        "spherical_to_annular_ratio",
+        "step_size_per_origin_radius",
+    }
+)
+EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS = frozenset(
+    {
+        "comparison_exact_network",
+        "energy_storage_format",
+        "return_all_scales",
+    }
+)
+EXACT_REQUIRED_PARAMETER_VALUES: dict[str, Any] = {
+    "comparison_exact_network": True,
+    "direction_method": "hessian",
+    "discrete_tracing": False,
+    "edge_method": "tracing",
+    "energy_method": "hessian",
+    "energy_projection_mode": "matlab",
+}
 EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL: tuple[tuple[str, int], ...] = (
     ("energy", 4),
     ("scale_indices", 2),
@@ -386,15 +435,27 @@ def build_exact_preflight_report(
     force: bool,
 ) -> dict[str, Any]:
     """Build the fail-fast preflight report for a native-first exact run."""
-    surface = validate_exact_preflight_surface(source_run_root, dest_run_root)
+    try:
+        surface = validate_exact_preflight_surface(source_run_root, dest_run_root)
+    except ValueError as exc:
+        return {
+            "passed": False,
+            "source_run_root": str(source_run_root.expanduser().resolve()),
+            "dest_run_root": str(dest_run_root.expanduser().resolve()),
+            "report_scope": "native-first exact preflight only",
+            "error": str(exc),
+        }
+
+    params_payload = _load_json_object(surface.source_surface.validated_params_path)
+    params_audit = build_exact_params_audit(params_payload)
     memory_estimate = estimate_exact_route_memory(surface.image_shape)
     available_memory_bytes = int(psutil.virtual_memory().available)
     safety_fraction = float(max(min(memory_safety_fraction, 1.0), 0.05))
     allowed_memory_bytes = int(available_memory_bytes * safety_fraction)
     collisions = find_parity_process_collisions(surface.dest_run_root)
-    passed = memory_estimate["estimated_required_bytes"] <= allowed_memory_bytes and (
-        force or not collisions
-    )
+    passed = bool(params_audit.get("passed")) and (
+        memory_estimate["estimated_required_bytes"] <= allowed_memory_bytes
+    ) and (force or not collisions)
     return {
         "passed": passed,
         "source_run_root": str(surface.source_surface.run_root),
@@ -408,26 +469,58 @@ def build_exact_preflight_report(
         "collision_count": len(collisions),
         "collisions": collisions,
         "force": bool(force),
+        "params_audit": params_audit,
     }
 
 
 def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
     """Render a compact exact-route preflight report."""
-    memory_estimate = _mapping_item(report_payload, "memory_estimate")
     lines = [
         "Exact preflight report",
         f"Status: {'PASS' if report_payload.get('passed') else 'FAIL'}",
         f"Source run root: {report_payload.get('source_run_root')}",
         f"Destination run root: {report_payload.get('dest_run_root')}",
-        f"Image shape: {report_payload.get('image_shape')}",
-        (
-            "Memory: "
-            f"estimated={memory_estimate.get('estimated_required_bytes')} "
-            f"allowed={report_payload.get('allowed_memory_bytes')} "
-            f"available={report_payload.get('available_memory_bytes')}"
-        ),
-        f"Collision count: {report_payload.get('collision_count', 0)}",
     ]
+    error_text = report_payload.get("error")
+    if isinstance(error_text, str) and error_text.strip():
+        lines.append(f"Error: {error_text}")
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            f"Image shape: {report_payload.get('image_shape')}",
+        ]
+    )
+    memory_estimate = _mapping_item(report_payload, "memory_estimate")
+    lines.append(
+        "Memory: "
+        f"estimated={memory_estimate.get('estimated_required_bytes')} "
+        f"allowed={report_payload.get('allowed_memory_bytes')} "
+        f"available={report_payload.get('available_memory_bytes')}"
+    )
+    params_audit = report_payload.get("params_audit")
+    if isinstance(params_audit, dict):
+        lines.append(
+            f"Params audit: {'PASS' if params_audit.get('passed') else 'FAIL'} "
+            f"(shared={params_audit.get('shared_method_param_count', 0)})"
+        )
+        disallowed_keys = params_audit.get("disallowed_python_only_keys", [])
+        if disallowed_keys:
+            joined = ", ".join(str(value) for value in disallowed_keys)
+            lines.append(f"Disallowed Python-only parity keys: {joined}")
+        required_mismatches = params_audit.get("required_exact_mismatches", [])
+        if required_mismatches:
+            mismatch_summaries = [
+                f"{item['key']} expected={item['expected']!r} found={item['found']!r}"
+                for item in required_mismatches
+                if isinstance(item, dict)
+            ]
+            lines.append("Required exact mismatches: " + "; ".join(mismatch_summaries))
+        unclassified_keys = params_audit.get("unclassified_keys", [])
+        if unclassified_keys:
+            joined = ", ".join(str(value) for value in unclassified_keys)
+            lines.append(f"Unclassified params: {joined}")
+    lines.append(f"Collision count: {report_payload.get('collision_count', 0)}")
     collisions = report_payload.get("collisions", [])
     if collisions:
         lines.append(f"Collisions: {collisions}")
@@ -523,6 +616,101 @@ def resolve_input_file(
     return resolved
 
 
+def _load_json_object(json_path: Path) -> dict[str, Any]:
+    payload = load_json_dict(json_path)
+    if payload is None:
+        raise ValueError(f"expected JSON object in params file: {json_path}")
+    return cast("dict[str, Any]", payload)
+
+
+def _normalize_param_value(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return _normalize_param_value(value.tolist())
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, tuple):
+        return [_normalize_param_value(item) for item in value]
+    if isinstance(value, list):
+        return [_normalize_param_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _normalize_param_value(item) for key, item in value.items()}
+    return value
+
+
+def build_exact_params_audit(params: dict[str, Any]) -> dict[str, Any]:
+    """Build a fairness audit for exact-route parameter payloads."""
+    param_keys = {str(key) for key in params}
+    shared_method_keys = sorted(param_keys & EXACT_SHARED_METHOD_PARAMETER_KEYS)
+    orchestration_keys = sorted(param_keys & EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS)
+    disallowed_python_only_keys = sorted(key for key in param_keys if key.startswith("parity_"))
+
+    required_exact_mismatches: list[dict[str, Any]] = []
+    for key, expected_value in EXACT_REQUIRED_PARAMETER_VALUES.items():
+        actual_value = _normalize_param_value(params.get(key))
+        normalized_expected = _normalize_param_value(expected_value)
+        if actual_value != normalized_expected:
+            required_exact_mismatches.append(
+                {
+                    "key": key,
+                    "expected": normalized_expected,
+                    "found": actual_value,
+                }
+            )
+
+    known_keys = (
+        EXACT_SHARED_METHOD_PARAMETER_KEYS
+        | EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
+        | set(EXACT_REQUIRED_PARAMETER_VALUES)
+    )
+    unclassified_keys = sorted(
+        key for key in param_keys if key not in known_keys and key not in disallowed_python_only_keys
+    )
+
+    return {
+        "passed": not disallowed_python_only_keys and not required_exact_mismatches,
+        "shared_method_param_count": len(shared_method_keys),
+        "shared_method_params": {
+            key: _normalize_param_value(params[key]) for key in shared_method_keys if key in params
+        },
+        "allowed_orchestration_params": {
+            key: _normalize_param_value(params[key]) for key in orchestration_keys if key in params
+        },
+        "required_exact_values": {
+            key: _normalize_param_value(value)
+            for key, value in EXACT_REQUIRED_PARAMETER_VALUES.items()
+        },
+        "required_exact_mismatches": required_exact_mismatches,
+        "disallowed_python_only_keys": disallowed_python_only_keys,
+        "unclassified_keys": unclassified_keys,
+    }
+
+
+def _raise_if_unfair_exact_params(params: dict[str, Any], *, params_path: Path) -> None:
+    audit = build_exact_params_audit(params)
+    if bool(audit.get("passed")):
+        return
+
+    disallowed_keys = ", ".join(
+        str(value) for value in audit.get("disallowed_python_only_keys", [])
+    )
+    mismatch_items = [
+        f"{item['key']} expected={item['expected']!r} found={item['found']!r}"
+        for item in audit.get("required_exact_mismatches", [])
+        if isinstance(item, dict)
+    ]
+    mismatch_text = "; ".join(mismatch_items)
+    problems: list[str] = []
+    if disallowed_keys:
+        problems.append(f"disallowed Python-only parity keys: {disallowed_keys}")
+    if mismatch_text:
+        problems.append(f"required exact setting mismatches: {mismatch_text}")
+    details = "; ".join(problems) if problems else "unknown fairness mismatch"
+    raise ValueError(
+        "exact-route params are not a fair MATLAB comparison in "
+        f"{params_path}: {details}"
+    )
+
+
 def load_params_file(
     source_surface: SourceRunSurface,
     params_file: str | None,
@@ -533,20 +721,17 @@ def load_params_file(
         if params_file is not None
         else source_surface.validated_params_path
     )
-    payload = load_json_dict(params_path)
-    if payload is None:
-        raise ValueError(f"expected JSON object in params file: {params_path}")
-    return cast("dict[str, Any]", payload)
+    payload = _load_json_object(params_path)
+    if bool(payload.get("comparison_exact_network")):
+        _raise_if_unfair_exact_params(payload, params_path=params_path)
+    return payload
 
 
 def load_exact_params_file(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
     """Load the exact-route validated params payload."""
-    payload = load_json_dict(source_surface.validated_params_path)
-    if payload is None:
-        raise ValueError(
-            f"expected JSON object in params file: {source_surface.validated_params_path}"
-        )
-    return cast("dict[str, Any]", payload)
+    payload = _load_json_object(source_surface.validated_params_path)
+    _raise_if_unfair_exact_params(payload, params_path=source_surface.validated_params_path)
+    return payload
 
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:
@@ -1185,6 +1370,7 @@ def _handle_summarize(args: argparse.Namespace) -> None:
 
 def _handle_prove_exact(args: argparse.Namespace) -> None:
     source_surface = validate_exact_proof_source_surface(Path(args.source_run_root))
+    load_exact_params_file(source_surface)
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
     checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
     if not checkpoints_dir.is_dir():

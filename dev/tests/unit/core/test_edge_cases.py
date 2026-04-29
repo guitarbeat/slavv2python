@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from source.core import SLAVVProcessor
+from source.core._edge_selection import conflict_painting as conflict_painting_module
 from source.core._edge_selection.cleanup import clean_edges_cycles_python
 from source.core.edge_primitives import _finalize_traced_edge
 from source.core.edge_selection import (
@@ -212,6 +213,51 @@ def test_choose_edges_prefers_shorter_duplicate_pair_when_metrics_are_equal():
     assert chosen["chosen_candidate_indices"].tolist() == [1]
     assert np.array_equal(chosen["traces"][0], shorter_duplicate)
     assert chosen["diagnostics"]["duplicate_directed_pair_count"] == 1
+
+
+def test_choose_edges_exact_route_uses_seeded_trace_permutation(monkeypatch):
+    seed_calls: list[int] = []
+    permutation_calls: list[int] = []
+
+    class FakeRng:
+        def permutation(self, length: int) -> np.ndarray:
+            permutation_calls.append(length)
+            return np.arange(length - 1, -1, -1, dtype=np.int64)
+
+    def fake_default_rng(seed: int) -> FakeRng:
+        seed_calls.append(seed)
+        return FakeRng()
+
+    monkeypatch.setattr(conflict_painting_module.np.random, "default_rng", fake_default_rng)
+
+    vertex_positions = np.array([[1, 1, 1], [1, 5, 1]], dtype=np.float32)
+    vertex_scales = np.array([0, 0], dtype=np.int16)
+    candidates = {
+        "traces": [np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)],
+        "connections": np.array([[0, 1]], dtype=np.int32),
+        "metrics": np.array([-5.0], dtype=np.float32),
+        "energy_traces": [np.array([-5.0, -5.0, -5.0], dtype=np.float32)],
+        "scale_traces": [np.zeros(3, dtype=np.int16)],
+        "origin_indices": np.array([0], dtype=np.int32),
+        "matlab_global_watershed_exact": True,
+    }
+
+    chosen = _choose_edges_matlab_style(
+        candidates,
+        vertex_positions,
+        vertex_scales,
+        np.array([0.5], dtype=np.float32),
+        np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
+        (8, 8, 8),
+        {"number_of_edges_per_vertex": 4, "comparison_exact_network": True},
+    )
+
+    assert chosen["connections"].tolist() == [[0, 1]]
+    assert seed_calls == [conflict_painting_module.EXACT_ROUTE_CHOOSER_SEED]
+    assert permutation_calls == [3]
+    assert chosen["diagnostics"]["exact_route_chooser_seed"] == (
+        conflict_painting_module.EXACT_ROUTE_CHOOSER_SEED
+    )
 
 
 def test_cycle_cleanup_removes_worst_edge_per_cycle_component():

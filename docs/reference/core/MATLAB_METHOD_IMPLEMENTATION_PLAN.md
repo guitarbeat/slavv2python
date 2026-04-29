@@ -62,8 +62,6 @@ The maintained exact route is native-first.
 - It activates when `comparison_exact_network` is enabled.
 - It accepts any exact-compatible energy provenance.
 - The canonical provenance is `python_native_hessian`.
-- `matlab_batch_hdf5` remains accepted only for historical replay,
-  regression comparison, and oracle-backed diagnostics.
 - Preserved MATLAB vectors remain the proof oracle for `prove-exact`.
 
 The parity-facing orchestration surface for this work now lives under
@@ -103,8 +101,8 @@ Completed work:
 1. Native Hessian matched filtering now implements the maintained raw-image
    energy stage.
 2. `python_native_hessian` is the canonical exact-compatible provenance.
-3. The exact-route gate and proof tooling no longer require
-   `matlab_batch_hdf5`.
+3. The exact-route gate and proof tooling no longer accept imported MATLAB
+   energy provenance.
 4. `source/core/matlab_compat/` now provides MATLAB-shaped orchestration and
    function wrappers for audits and proof routing.
 
@@ -156,13 +154,10 @@ native exact parity is done.
 Apply these rules across parity docs:
 
 - Use `native-first exact route` for the current maintained route.
-- Use `historical imported-MATLAB replay` only for the preserved-energy
-  compatibility surface.
 - Use `source-aligned` when code appears ported but proof is still pending.
 - Use `artifact-proven exact` only when the maintained proof gate is green for
   that stage.
-- Do not describe the current route as imported-MATLAB-only unless you are
-  explicitly talking about the historical replay surface.
+- Do not describe the current route as imported-MATLAB-compatible.
 
 ## Related Docs
 

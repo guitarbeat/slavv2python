@@ -224,11 +224,27 @@ def test_load_params_file_uses_source_default_and_override(tmp_path):
     assert override_params == {"edge_method": "tracing"}
 
 
-@pytest.mark.parametrize("energy_origin", ["python_native_hessian", "matlab_batch_hdf5"])
-def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(
-    tmp_path,
-    energy_origin,
-):
+def test_load_params_file_rejects_python_only_parity_controls_on_exact_route(tmp_path):
+    run_root = _build_source_run_root(tmp_path)
+    surface = parity_experiment.validate_source_run_surface(run_root)
+    override = _write_json(
+        tmp_path / "override_params.json",
+        {
+            "comparison_exact_network": True,
+            "edge_method": "tracing",
+            "energy_method": "hessian",
+            "direction_method": "hessian",
+            "energy_projection_mode": "matlab",
+            "discrete_tracing": False,
+            "parity_watershed_candidate_mode": "all_contacts",
+        },
+    )
+
+    with pytest.raises(ValueError, match="disallowed Python-only parity keys"):
+        parity_experiment.load_params_file(surface, str(override))
+
+
+def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(tmp_path):
     run_root = _build_source_run_root(tmp_path)
     _materialize_exact_matlab_batch(run_root)
     _write_json(
@@ -238,7 +254,7 @@ def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(
     materialize_checkpoint_surface(
         run_root,
         stages=("energy",),
-        payloads={"energy": {"energy_origin": energy_origin}},
+        payloads={"energy": {"energy_origin": "python_native_hessian"}},
     )
 
     surface = parity_experiment.validate_exact_proof_source_surface(run_root)
@@ -254,7 +270,7 @@ def test_validate_exact_proof_source_surface_requires_exact_route_gate(tmp_path)
     materialize_checkpoint_surface(
         run_root,
         stages=("energy",),
-        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
+        payloads={"energy": {"energy_origin": "python_native_hessian"}},
     )
 
     with pytest.raises(ValueError, match="comparison_exact_network"):
@@ -271,11 +287,38 @@ def test_validate_exact_proof_source_surface_requires_exact_compatible_energy_or
     materialize_checkpoint_surface(
         run_root,
         stages=("energy",),
-        payloads={"energy": {"energy_origin": "python_native"}},
+        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
     )
 
     with pytest.raises(ValueError, match="exact-compatible"):
         parity_experiment.validate_exact_proof_source_surface(run_root)
+
+
+def test_load_exact_params_file_rejects_python_only_parity_controls(tmp_path):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {
+            "comparison_exact_network": True,
+            "edge_method": "tracing",
+            "energy_method": "hessian",
+            "direction_method": "hessian",
+            "energy_projection_mode": "matlab",
+            "discrete_tracing": False,
+            "parity_candidate_salvage_mode": "auto",
+        },
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={"energy": {"energy_origin": "python_native_hessian"}},
+    )
+
+    surface = parity_experiment.validate_exact_proof_source_surface(run_root)
+
+    with pytest.raises(ValueError, match="disallowed Python-only parity keys"):
+        parity_experiment.load_exact_params_file(surface)
 
 
 def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
@@ -367,6 +410,53 @@ def test_build_exact_preflight_report_refuses_on_destination_collision(
 
     assert report["passed"] is False
     assert report["collision_count"] == 1
+
+
+def test_build_exact_preflight_report_flags_unfair_exact_params(tmp_path, monkeypatch):
+    run_root = _build_source_run_root(tmp_path)
+    _materialize_exact_matlab_batch(run_root)
+    _write_json(
+        run_root / "99_Metadata" / "validated_params.json",
+        {
+            "comparison_exact_network": True,
+            "direction_method": "hessian",
+            "discrete_tracing": False,
+            "edge_method": "tracing",
+            "energy_method": "hessian",
+            "energy_projection_mode": "matlab",
+            "parity_candidate_salvage_mode": "auto",
+        },
+    )
+    materialize_checkpoint_surface(
+        run_root,
+        stages=("energy",),
+        payloads={
+            "energy": {
+                "energy_origin": "python_native_hessian",
+                "energy": np.zeros((2, 2, 2), dtype=np.float32),
+                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+            }
+        },
+    )
+    monkeypatch.setattr(parity_experiment, "find_parity_process_collisions", lambda _path: [])
+
+    class _FakeMemory:
+        available = 2_000_000_000
+
+    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
+
+    report = parity_experiment.build_exact_preflight_report(
+        run_root,
+        tmp_path / "dest-run",
+        memory_safety_fraction=0.8,
+        force=False,
+    )
+
+    assert report["passed"] is False
+    assert report["params_audit"]["passed"] is False
+    assert report["params_audit"]["disallowed_python_only_keys"] == [
+        "parity_candidate_salvage_mode"
+    ]
 
 
 def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):

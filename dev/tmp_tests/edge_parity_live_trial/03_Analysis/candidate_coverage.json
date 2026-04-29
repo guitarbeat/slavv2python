@@ -1,0 +1,223 @@
+{
+  "candidate_checkpoint_path": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\tmp_tests\\edge_parity_live_trial\\02_Output\\python_results\\checkpoints\\checkpoint_edge_candidates.pkl",
+  "debug_maps_included": false,
+  "dest_run_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\tmp_tests\\edge_parity_live_trial",
+  "extra_pair_count": 167,
+  "extra_pair_samples": [
+    [
+      18,
+      143
+    ],
+    [
+      35,
+      561
+    ],
+    [
+      50,
+      206
+    ],
+    [
+      52,
+      412
+    ],
+    [
+      56,
+      158
+    ],
+    [
+      71,
+      210
+    ],
+    [
+      121,
+      226
+    ],
+    [
+      148,
+      297
+    ],
+    [
+      188,
+      229
+    ],
+    [
+      200,
+      267
+    ]
+  ],
+  "matched_pair_count": 1273,
+  "matched_pair_samples": [
+    [
+      0,
+      23
+    ],
+    [
+      1,
+      61
+    ],
+    [
+      1,
+      112
+    ],
+    [
+      2,
+      54
+    ],
+    [
+      2,
+      80
+    ],
+    [
+      3,
+      28
+    ],
+    [
+      3,
+      112
+    ],
+    [
+      4,
+      25
+    ],
+    [
+      5,
+      694
+    ],
+    [
+      7,
+      16
+    ]
+  ],
+  "matlab_pair_count": 2533,
+  "missing_pair_count": 1260,
+  "missing_pair_samples": [
+    [
+      0,
+      254
+    ],
+    [
+      1,
+      504
+    ],
+    [
+      3,
+      224
+    ],
+    [
+      4,
+      1893
+    ],
+    [
+      5,
+      2004
+    ],
+    [
+      6,
+      9
+    ],
+    [
+      6,
+      279
+    ],
+    [
+      8,
+      57
+    ],
+    [
+      9,
+      440
+    ],
+    [
+      10,
+      246
+    ]
+  ],
+  "passed": false,
+  "python_pair_count": 1440,
+  "report_scope": "candidate coverage only",
+  "source_run_root": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\20260421_accepted_budget_trial",
+  "top_extra_vertices": [
+    {
+      "count": 3,
+      "vertex_index": 2541
+    },
+    {
+      "count": 3,
+      "vertex_index": 2163
+    },
+    {
+      "count": 2,
+      "vertex_index": 398
+    },
+    {
+      "count": 2,
+      "vertex_index": 786
+    },
+    {
+      "count": 2,
+      "vertex_index": 677
+    },
+    {
+      "count": 2,
+      "vertex_index": 903
+    },
+    {
+      "count": 2,
+      "vertex_index": 716
+    },
+    {
+      "count": 2,
+      "vertex_index": 952
+    },
+    {
+      "count": 2,
+      "vertex_index": 1248
+    },
+    {
+      "count": 2,
+      "vertex_index": 865
+    }
+  ],
+  "top_missing_vertices": [
+    {
+      "count": 4,
+      "vertex_index": 207
+    },
+    {
+      "count": 4,
+      "vertex_index": 687
+    },
+    {
+      "count": 4,
+      "vertex_index": 1713
+    },
+    {
+      "count": 4,
+      "vertex_index": 696
+    },
+    {
+      "count": 4,
+      "vertex_index": 667
+    },
+    {
+      "count": 4,
+      "vertex_index": 996
+    },
+    {
+      "count": 4,
+      "vertex_index": 969
+    },
+    {
+      "count": 4,
+      "vertex_index": 1244
+    },
+    {
+      "count": 4,
+      "vertex_index": 1118
+    },
+    {
+      "count": 4,
+      "vertex_index": 2288
+    }
+  ]
+}

@@ -14,8 +14,8 @@ Use `MATLAB_METHOD_IMPLEMENTATION_PLAN.md` for claim boundaries and
 - Canonical MATLAB source lives under `external/Vectorization-Public/source/`.
 - The parity-facing Python shim now lives under `source/core/matlab_compat/`.
 - The canonical exact route is `comparison_exact_network=True` with
-  exact-compatible energy provenance; `python_native_hessian` is canonical and
-  `matlab_batch_hdf5` remains historical-compatible.
+  exact-compatible energy provenance; `python_native_hessian` is the only
+  accepted exact-route energy provenance.
 - Preserved MATLAB vectors are still the oracle artifacts for proof.
 - Treat any undocumented deviation on these parity surfaces as a bug.
 

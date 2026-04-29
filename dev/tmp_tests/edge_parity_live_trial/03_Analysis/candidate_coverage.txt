@@ -1,0 +1,7 @@
+Candidate coverage report
+Status: FAIL
+Counts: MATLAB=2533 Python=1440 matched=1273 missing=1260 extra=167
+Missing pair samples: [[0, 254], [1, 504], [3, 224], [4, 1893], [5, 2004], [6, 9], [6, 279], [8, 57], [9, 440], [10, 246]]
+Extra pair samples: [[18, 143], [35, 561], [50, 206], [52, 412], [56, 158], [71, 210], [121, 226], [148, 297], [188, 229], [200, 267]]
+Top missing vertices: [{'vertex_index': 207, 'count': 4}, {'vertex_index': 687, 'count': 4}, {'vertex_index': 1713, 'count': 4}, {'vertex_index': 696, 'count': 4}, {'vertex_index': 667, 'count': 4}, {'vertex_index': 996, 'count': 4}, {'vertex_index': 969, 'count': 4}, {'vertex_index': 1244, 'count': 4}, {'vertex_index': 1118, 'count': 4}, {'vertex_index': 2288, 'count': 4}]
+Top extra vertices: [{'vertex_index': 2541, 'count': 3}, {'vertex_index': 2163, 'count': 3}, {'vertex_index': 398, 'count': 2}, {'vertex_index': 786, 'count': 2}, {'vertex_index': 677, 'count': 2}, {'vertex_index': 903, 'count': 2}, {'vertex_index': 716, 'count': 2}, {'vertex_index': 952, 'count': 2}, {'vertex_index': 1248, 'count': 2}, {'vertex_index': 865, 'count': 2}]

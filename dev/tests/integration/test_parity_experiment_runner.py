@@ -154,6 +154,19 @@ def _fail_report(field_path: str) -> dict[str, object]:
     }
 
 
+def _exact_validated_params(**overrides: object) -> dict[str, object]:
+    params: dict[str, object] = {
+        "comparison_exact_network": True,
+        "direction_method": "hessian",
+        "discrete_tracing": False,
+        "edge_method": "tracing",
+        "energy_method": "hessian",
+        "energy_projection_mode": "matlab",
+    }
+    params.update(overrides)
+    return params
+
+
 @pytest.mark.integration
 def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monkeypatch):
     source_run_root = tmp_path / "source-run"
@@ -346,7 +359,7 @@ def test_rerun_python_syncs_exact_vertex_checkpoint_from_matlab(tmp_path, monkey
     )
     _write_json(
         source_run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
+        _exact_validated_params(),
     )
     materialize_run_snapshot(
         source_run_root,
@@ -438,7 +451,7 @@ def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
     )
     _write_json(
         source_run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
+        _exact_validated_params(),
     )
 
     parity_experiment.main(
@@ -483,7 +496,7 @@ def test_prove_exact_reports_first_edge_mismatch(tmp_path):
     )
     _write_json(
         source_run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
+        _exact_validated_params(),
     )
 
     with pytest.raises(SystemExit, match="1"):
@@ -539,7 +552,7 @@ def test_prove_exact_falls_back_to_candidate_checkpoint_when_edges_checkpoint_mi
     )
     _write_json(
         source_run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
+        _exact_validated_params(),
     )
 
     parity_experiment.main(
@@ -591,7 +604,7 @@ def test_replay_edges_consumes_candidate_checkpoint_and_writes_proof(tmp_path, m
     )
     _write_json(
         source_run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True, "microns_per_voxel": [1.0, 1.0, 1.0]},
+        _exact_validated_params(microns_per_voxel=[1.0, 1.0, 1.0]),
     )
     materialize_checkpoint_surface(
         dest_run_root,
