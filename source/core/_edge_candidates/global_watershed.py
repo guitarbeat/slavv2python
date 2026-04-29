@@ -215,6 +215,23 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     is also written with current_scale_label so that during backtracking, we can reconstruct
     the correct LUT and interpret the pointer correctly.
     """
+    # DIAGNOSTIC: Log when processing location 12532290's neighbors
+    if 12532290 in valid_linear:
+        import logging
+        idx_12532290 = np.where(valid_linear == 12532290)[0][0]
+        current_vertex_at_12532290 = int(vertex_index_map_flat[12532290])
+        current_pointer_at_12532290 = int(pointer_map_flat[12532290])
+        current_scale_at_12532290 = int(size_map_flat[12532290])
+        logging.error(
+            f"REVEAL CALLED WITH 12532290 IN STREL: "
+            f"current_vertex_index={current_vertex_index}, "
+            f"current_scale_label={current_scale_label}, "
+            f"existing_vertex_at_12532290={current_vertex_at_12532290}, "
+            f"existing_pointer_at_12532290={current_pointer_at_12532290}, "
+            f"existing_scale_at_12532290={current_scale_at_12532290}, "
+            f"will_write_pointer={strel_pointer_indices[idx_12532290]}"
+        )
+    
     is_without_vertex = (vertex_index_map_flat[valid_linear] == 0) & (pointer_map_flat[valid_linear] == 0)
     if np.any(is_without_vertex):
         claim_linear = valid_linear[is_without_vertex]
@@ -262,32 +279,45 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
             is_without_vertex = is_without_vertex_filtered
 
         if len(claim_linear) > 0:
-            # Verify we're not overwriting existing pointers
+            # CRITICAL FIX: Filter out locations with existing pointers to prevent overwrites
+            # The is_without_vertex check should have caught these, but defensive filtering
+            # or race conditions might have allowed them through
             existing_pointers = pointer_map_flat[claim_linear]
             existing_scales = size_map_flat[claim_linear]
-            if np.any(existing_pointers != 0):
+            no_existing_pointer_mask = existing_pointers == 0
+            
+            if not np.all(no_existing_pointer_mask):
                 import logging
 
-                overwrite_count = np.sum(existing_pointers != 0)
-                overwrite_mask = existing_pointers != 0
+                overwrite_count = np.sum(~no_existing_pointer_mask)
+                overwrite_mask = ~no_existing_pointer_mask
                 logging.error(
-                    f"CRITICAL: Attempting to overwrite {overwrite_count} existing pointers at scale {current_scale_label}! "
-                    f"This violates the is_without_vertex constraint. "
+                    f"CRITICAL: Prevented overwrite of {overwrite_count} existing pointers at scale {current_scale_label}! "
+                    f"This indicates a bug in the is_without_vertex logic. "
                     f"Existing pointer values: {existing_pointers[overwrite_mask][:5]}, "
                     f"Existing scales: {existing_scales[overwrite_mask][:5]}, "
-                    f"New pointers: {claim_pointers[overwrite_mask][:5]}"
+                    f"Would-be new pointers: {claim_pointers[overwrite_mask][:5]}"
                 )
                 
                 # DIAGNOSTIC: Check if location 12532290 is being overwritten
                 if 12532290 in claim_linear[overwrite_mask]:
                     idx_in_overwrite = np.where(claim_linear[overwrite_mask] == 12532290)[0][0]
                     logging.error(
-                        f"OVERWRITE DETECTED FOR LOCATION 12532290: "
+                        f"OVERWRITE PREVENTED FOR LOCATION 12532290: "
                         f"existing_pointer={existing_pointers[overwrite_mask][idx_in_overwrite]}, "
                         f"existing_scale={existing_scales[overwrite_mask][idx_in_overwrite]}, "
-                        f"new_pointer={claim_pointers[overwrite_mask][idx_in_overwrite]}, "
-                        f"new_scale={current_scale_label}"
+                        f"would-be new_pointer={claim_pointers[overwrite_mask][idx_in_overwrite]}, "
+                        f"would-be new_scale={current_scale_label}"
                     )
+                
+                # Filter out locations with existing pointers
+                claim_linear = claim_linear[no_existing_pointer_mask]
+                claim_pointers = claim_pointers[no_existing_pointer_mask]
+                
+                # Update is_without_vertex to reflect the additional filtering
+                is_without_vertex_no_overwrite = is_without_vertex.copy()
+                is_without_vertex_no_overwrite[is_without_vertex] = no_existing_pointer_mask
+                is_without_vertex = is_without_vertex_no_overwrite
 
 
             # DIAGNOSTIC: Log a sample write for debugging
