@@ -1,37 +1,38 @@
 ﻿# Reference Docs
 
-Use this folder for current, cross-cutting technical references.
+Use this folder for current, maintained technical references.
 
-Recommended reading order:
+## Core Docs
+
+Read these first when working on the live implementation:
 
 1. [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
+   Claim boundaries, source-of-truth hierarchy, and remaining roadmap.
 2. [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
+   MATLAB-to-Python surface map and confirmed structural deviations.
 3. [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
-4. [Glossary](core/GLOSSARY.md)
-5. [Energy Computation Methods](core/ENERGY_METHODS.md)
-6. [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
-7. [Papers](papers/README.md)
-8. Optional backend docs under `backends/`
+   Live proof status, current v22 watershed read, and the first failing field.
+4. [Energy Computation Methods](core/ENERGY_METHODS.md)
+   Supported energy backends, projection modes, and extension points.
+5. [Glossary](core/GLOSSARY.md)
+   Shared parity and pipeline terminology.
 
-## Active Bug Investigations
+## Workflow Guides
 
-**v22 Global Watershed Pointer Corruption** (April 27, 2026):
-- [V22 Summary](core/V22_SUMMARY.md) - Quick overview and fix instructions
-- [V22 Investigation Handover](core/V22_INVESTIGATION_HANDOVER.md) - Complete investigation details
-- [V22 Bug Fixes](core/V22_BUG_FIXES.md) - Detailed bug tracking and test results
-- [V22 Blocking Bugs](core/V22_BLOCKING_BUGS.md) - Original bug report
-- [V22 Pointer Corruption Investigation](core/V22_POINTER_CORRUPTION_INVESTIGATION.md) - Phase-by-phase log
+- [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 
-**Status**: Root cause identified (scale clipping mismatch), ready for fix implementation.
+## Adjacent Reference Docs
 
----
+These stay separate because they describe distinct maintained surfaces rather
+than alternate versions of the same content:
 
-This shelf documents the maintained Python implementation and the current
-native-first exact-route rules. Treat the released MATLAB source as the
-executable specification, preserved MATLAB vectors as the oracle artifacts,
-`prove-exact` as the proof gate, and the paper as explanatory context.
+- [Zarr Energy Storage](backends/ZARR_ENERGY_STORAGE.md)
+- [Napari Curator](backends/NAPARI_CURATOR.md)
+- [Papers](papers/README.md)
 
-The maintained parity runner remains `dev/scripts/cli/parity_experiment.py`.
-Its canonical exact route now accepts native Hessian energy provenance
-(`python_native_hessian`) while still allowing preserved MATLAB energy
-provenance (`matlab_batch_hdf5`) for historical replay and regression checks.
+## Live Status And Historical Context
+
+- [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) is the maintained owner
+  for live v22 and downstream proof status.
+- [v22 Pointer Corruption Archive](../chapters/v22-pointer-corruption/README.md)
+  preserves the April 2026 investigation trail and archived Kiro planning.

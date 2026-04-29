@@ -1,4 +1,4 @@
-# Adding Extraction Algorithms
+﻿# Adding Extraction Algorithms
 
 [Up: Documentation Index](../../README.md)
 
@@ -9,7 +9,7 @@ reachable from the current `argparse` CLI and resumable pipeline.
 
 ## Design Rules
 
-- Keep package code under `source/slavv/`.
+- Keep package code under `source/`.
 - Preserve the existing `slavv` and `slavv-app` entrypoints in
   `pyproject.toml`.
 - Extend the current parameter-validation and pipeline-dispatch surfaces rather
@@ -26,18 +26,17 @@ Most new extraction algorithms need coordinated changes in these files:
 
 | Surface | Why it matters |
 | --- | --- |
-| `source/slavv/utils/validation.py` | Validates new parameter values and sets defaults. |
-| `source/slavv/apps/cli.py` | Exposes the new option on `slavv run`. |
-| `source/slavv/core/pipeline.py` | Dispatches direct and resumable execution. |
-| `source/slavv/core/*.py` | Holds the implementation itself. |
-| `source/slavv/runtime/run_state.py` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
-| `dev/tests/unit/core/` and related owner-aligned tests | Locks behavior with deterministic coverage in direct and resumable modes. |
+| `source/utils/validation.py` | Validates new parameter values and sets defaults. |
+| `source/apps/cli_parser.py` and `source/apps/cli_shared.py` | Expose the new option on `slavv run`. |
+| `source/core/` and `source/workflows/` | Hold the implementation and the current pipeline orchestration. |
+| `source/runtime/run_state.py` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
+| `dev/tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
-- `source/slavv/core/edges.py` for stage orchestration and resumable helpers
-- `source/slavv/core/edge_candidates.py` for candidate generation
-- `source/slavv/core/edge_selection.py` for choice/cleanup logic
+- `source/core/edges.py` for stage orchestration and resumable helpers
+- `source/core/_edge_candidates/` for candidate generation
+- `source/core/_edge_selection/` for choice and cleanup logic
 
 ## Recommended Workflow
 
@@ -51,10 +50,10 @@ For edge extraction specifically, the maintained split today is:
    owning stage directory instead of ad-hoc scratch locations.
 4. Expose diagnostics.
    Favor JSON or pickle artifacts under the stage directory and route summary
-   messaging through the existing manifest/reporting surfaces.
+   messaging through the existing manifest and reporting surfaces.
 5. Wire run metadata.
    If the algorithm adds durable artifacts or optional sub-steps, make sure
-   run-state/stage-manifest surfaces can describe and rediscover them.
+   run-state and stage-manifest surfaces can describe and rediscover them.
 6. Add tests in the owner-aligned location.
    For core pipeline work, that usually means `dev/tests/unit/core/`.
 7. Update docs.
@@ -68,28 +67,49 @@ introducing a second registry.
 
 For example, the experimental `simpleitk_objectness` mode is integrated by:
 
-- extending validation in `source/slavv/utils/validation.py`
-- extending `slavv run --energy-method` choices in `source/slavv/apps/cli.py`
-- routing both direct and resumable execution through
-  `source/slavv/core/energy.py`
+- extending validation in `source/utils/validation.py`
+- extending `slavv run --energy-method` choices in the CLI parser surfaces
+- routing both direct and resumable execution through `source/core/energy.py`
 - keeping the default `hessian` path unchanged unless the new backend is
   explicitly selected
-- documenting any parameter differences when the backend cannot or should not
+- documenting parameter differences when the backend cannot or should not
   emulate all controls used by the default production backend
-
-Treat new energy backends the same way: opt-in, deterministic where practical,
-and covered in both direct and resumable tests.
 
 The same pattern also applies to performance-oriented backends such as the
 experimental `cupy_hessian` mode: keep the existing parameter and resumable
-surfaces, document hardware/runtime requirements clearly, and avoid changing
+surfaces, document hardware and runtime requirements clearly, and avoid changing
 the default CPU behavior unless the new backend is explicitly selected.
+
+## Library Adoption Snapshot
+
+The older external-library survey no longer needs to stand as a separate memo.
+Its durable outcomes are now:
+
+### Already adopted in the codebase
+
+- `SimpleITK` as an optional exploratory energy backend in `source/core/energy.py`
+- `CuPy` as an optional experimental GPU energy backend in `source/core/energy.py`
+- `Zarr` for resumable energy storage and staged persistence
+- `napari` as an optional curator surface in `source/visualization/napari_curator.py`
+- `numba` as an optional acceleration path where the maintained code uses it
+
+### Still-open future options
+
+These are the only remaining library ideas still worth tracking at this level:
+
+- `cuCIM` for GPU image operations with a scikit-image-like surface
+- `Dask` for lazy chunked computation when volume size becomes the bottleneck
+- `connected-components-3d` for faster 3D label cleanup helpers
+- `MONAI` for any future learned segmentation or denoising branch
+- `OpenCV` only if a targeted 2D preprocessing step becomes necessary
+
+If one of these becomes active work, fold the decision into the relevant
+maintained reference doc instead of creating a new broad survey note.
 
 ## Layout Guardrails
 
 When a change touches resumable workflow behavior, preserve the structured
-run-root semantics (`01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`)
-used by the current Python implementation.
+run-root semantics used by the current Python implementation.
 
 Do not silently rename or relocate staged artifacts without updating the
 runtime helpers, tests, and documentation together.

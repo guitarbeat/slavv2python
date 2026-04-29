@@ -1,18 +1,22 @@
-# MATLAB Method Implementation Plan
+﻿# MATLAB Method Implementation Plan
 
 [Up: Reference Docs](../README.md)
 
 This document defines what it means to say that Python implements the released
 SLAVV method and records the remaining work to make that statement truthful.
 
+Use this file for claim boundaries, source-of-truth rules, and roadmap phases.
+Use `EXACT_PROOF_FINDINGS.md` for live proof status and current v22 watershed
+readouts.
+
 ## Purpose
 
-- Resolve ambiguity between paper prose, released MATLAB source, and current
-  Python status.
-- Define the canonical source-of-truth hierarchy for parity work.
-- Separate source-level porting from artifact-proven implementation.
-- Track the native-first transition from historical MATLAB-imported exact reruns
-  to a canonical Python exact route.
+- resolve ambiguity between paper prose, released MATLAB source, and current
+  Python status
+- define the canonical source-of-truth hierarchy for parity work
+- separate source-level porting from artifact-proven implementation
+- track the native-first transition from historical MATLAB-imported exact reruns
+  to a canonical Python exact route
 
 ## Canonical Hierarchy
 
@@ -49,11 +53,11 @@ Use the following labels precisely:
   Python reproduces the method end to end from raw image inputs without runtime
   dependence on imported MATLAB energy artifacts.
 
-Do not use `Exact` or `100%` for a stage unless the stage is artifact-proven.
+Do not use `exact` or `100%` for a stage unless that stage is artifact-proven.
 
 ## Current Exact-Route Boundary
 
-The maintained exact route is now native-first.
+The maintained exact route is native-first.
 
 - It activates when `comparison_exact_network` is enabled.
 - It accepts any exact-compatible energy provenance.
@@ -68,13 +72,13 @@ function boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
 
-| Stage | Current status | Truthful claim today | Main blocker |
-| --- | --- | --- | --- |
-| Energy / size image generation | Native matched-filter implementation is the canonical exact-compatible source | Python now has a native exact-route energy implementation and no longer depends on imported MATLAB energy at runtime | Keep broadening MATLAB-oracle fixture coverage and preserve direct/resumable parity |
-| Vertex extraction | Runnable on the native-first exact route | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges/network |
-| Edge extraction | **Source-aligned (High Performance)** | Not yet exact | We have resolved the frontier propagation bug with a new **heapq-based O(log N) traversal** and 1D Fortran-ordered architecture. Closing the final vertex-pair alignment gap. |
-| Edge cleanup / bridge insertion | Source-aligned | Not yet exact | Downstream of unresolved edge mismatch |
-| Network / strand assembly | Source-aligned | Not yet exact | Downstream of unresolved edge mismatch |
+| Stage | Truthful claim today | Main blocker |
+| --- | --- | --- |
+| Energy / size image generation | Python has a native exact-route energy implementation and no longer depends on imported MATLAB energy at runtime | Keep MATLAB-oracle fixture coverage broad and direct/resumable parity green |
+| Vertex extraction | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges and network |
+| Edge extraction | Source-aligned on the native-first exact route | Candidate-generation and chooser proof are still red; see `EXACT_PROOF_FINDINGS.md` |
+| Edge cleanup / bridge insertion | Source-aligned | Downstream of unresolved edge mismatch |
+| Network / strand assembly | Source-aligned | Downstream of unresolved edge mismatch |
 
 ## What Must Be True Before We Claim Full Python Implementation
 
@@ -110,19 +114,18 @@ Status: active.
 
 Primary work items:
 
-1. **Resolved**: Watershed frontier propagation stagnation.
-2. **Resolved**: Memory-layout bottleneck via flat-first 1D Fortran architecture.
-3. **In-Progress**: Closing the remaining `edges.connections` mismatch on the native-first exact route (active baseline: `v22`).
-4. Re-run `prove-exact` after every math-bearing edge or network change.
-5. Keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
-   measured effect of each fix.
-6. Continue using `source/core/matlab_compat/` as the parity-facing audit
-   surface instead of ad hoc route descriptions.
+1. close the remaining `edges.connections` mismatch on the native-first exact
+   route
+2. re-run `prove-exact` after every math-bearing edge or network change
+3. keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
+   measured effect of each fix
+4. continue using `source/core/matlab_compat/` as the parity-facing audit
+   surface instead of ad hoc route descriptions
 
 Acceptance gate:
 
 - `vertices`, `edges`, and `network` all pass `prove-exact` on the native-first
-  exact route.
+  exact route
 
 ## Current File-Level Gap Checklist
 
@@ -134,11 +137,8 @@ native exact parity is done.
    pairs. Candidate emission still appears to be the first major downstream
    mismatch surface.
 2. `source/core/_edge_selection/conflict_painting.py`
-   One structural deviation is now documented: the sequential trace iteration
-   (`enumerate(trace)`) must be replaced with a per-edge randomly permuted
-   index range to match MATLAB's `randperm` call (see Deviation #3 in
-   `MATLAB_PARITY_MAPPING.md`). Decide whether to use a fixed seed for the
-   exact route or accept this as a documented non-deterministic deviation.
+   Replace sequential trace iteration with MATLAB-matching randomized trace
+   order if the exact route is going to claim literal chooser parity.
 3. `source/core/_edge_selection/cleanup.py`
    Re-check crop, degree, orphan, and cycle cleanup whenever
    `edges.connections` improves but remains red.
@@ -166,7 +166,8 @@ Apply these rules across parity docs:
 
 ## Related Docs
 
-- `MATLAB_PARITY_MAPPING.md`: source-level stage map and compat-layer routing
-- `EXACT_PROOF_FINDINGS.md`: current proof failures and measured fixes
+- `MATLAB_PARITY_MAPPING.md`: source-level stage map and confirmed structural
+  deviations
+- `EXACT_PROOF_FINDINGS.md`: live proof status and v22 watershed readouts
 - `ENERGY_METHODS.md`: maintained native energy backend surface
 - `../papers/journal.pcbi.1009451.pdf`: paper narrative and published methods

@@ -4,6 +4,11 @@ This folder is now archival-only.
 
 Keep chapter docs here only when they explain historical decisions that still help maintain the current Python codebase. The large parity and MATLAB investigation chapters were retired with the legacy tooling they supported.
 
+Current archival bundles:
+
+- [v22 Pointer Corruption](v22-pointer-corruption/README.md)
+- [Kiro Hooks](kiro/README.md)
+
 When adding a new chapter:
 
 - keep one stable entry document

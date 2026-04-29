@@ -1,24 +1,27 @@
 ﻿# Documentation
 
-The documentation tree is intentionally small:
+The documentation tree has two jobs:
 
-- `reference/` for maintained technical references
-- `chapters/` for lightweight historical notes when they are still useful
+- `reference/` for maintained technical guidance
+- `chapters/` for intentionally archival narratives that still help explain the
+  current Python codebase
 
-Start here:
+## Start Here
 
 1. [Repository README](../README.md)
 2. [Agent and workflow guide](../AGENTS.md)
 3. [Reference index](reference/README.md)
-4. [Test placement guide](../dev/tests/README.md)
+4. [Chapter index](chapters/README.md)
+5. [Test placement guide](../dev/tests/README.md)
 
-The maintained developer parity runner is `dev/scripts/cli/parity_experiment.py`.
-It now supports a native-first exact route, where native Python Hessian energy is
-canonical and preserved MATLAB vectors remain the oracle for proof.
+## Core Maintained References
 
-The canonical implementation-status and claim-boundary doc lives at
-`docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md`.
-The maintained source map for the native-first exact route lives at
-`docs/reference/core/MATLAB_PARITY_MAPPING.md`.
-Current proof findings live at
-`docs/reference/core/EXACT_PROOF_FINDINGS.md`.
+- [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
+- [MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)
+- [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
+- [Energy Computation Methods](reference/core/ENERGY_METHODS.md)
+
+## Archive Entry Points
+
+- [v22 Pointer Corruption Archive](chapters/v22-pointer-corruption/README.md)
+- [Kiro Hooks Archive](chapters/kiro/README.md)

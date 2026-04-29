@@ -8,9 +8,10 @@ package source under `source/slavv/`.
 | Path | Purpose |
 | --- | --- |
 | `scripts/cli/` | MATLAB comparison entrypoints, wrapper launchers, and canonical parity parameters |
-| `scripts/maintenance/` | Repository-maintenance helpers for MATLAB mapping and script audits |
-| `scripts/benchmarks/` | Benchmark helpers for profiling visualization-heavy workflows |
+| `scripts/` | Utility scripts for repository maintenance and cleanup |
+| `scratch/` | Temporary scratch files for quick experiments and checks (not maintained) |
 | `tests/` | Unit, integration, UI, and diagnostic coverage for maintained package and workspace helper behavior |
+| `tmp_tests/` | Temporary test artifacts (auto-managed by pytest, can be cleaned) |
 
 ## Start Here
 
@@ -24,18 +25,16 @@ package source under `source/slavv/`.
 | Path | Purpose |
 | --- | --- |
 | `scripts/cli/parity_experiment.py` | Developer runner for fail-fast exact-route gates (`preflight-exact`, `prove-luts`, `capture-candidates`, `replay-edges`, `fail-fast`), reusable reruns, and exact artifact proof against preserved MATLAB vectors |
-| `scripts/cli/run_matlab_vectorization.m` | MATLAB wrapper launched by the parity CLI |
-| `scripts/maintenance/comparison_layout_smoothing.py` | Inventory legacy and grouped comparison runs, and refresh grouped archive metadata |
-| `scripts/maintenance/refresh_matlab_mapping_appendix.py` | Refresh the generated MATLAB mapping appendix from upstream `.m` files |
-| `scripts/maintenance/find_matlab_script_files.py` | Find `.m` files that behave like scripts instead of functions |
-| `scripts/benchmarks/plot_2d_network_benchmark.py` | Manual timing probe for large 2D network plotting workloads |
+| `scripts/cleanup_deprecated_runs.ps1` | PowerShell utility to clean up deprecated run directories |
 
 ## Consolidation Notes
 
 - Generated caches such as `__pycache__/` do not belong in `dev/` and can be
   removed safely.
-- New developer utilities should live under the existing `scripts/` buckets
-  instead of creating one-off top-level folders.
+- New developer utilities should live under `scripts/` instead of creating
+  one-off top-level folders.
 - New tests should follow ownership-based placement under `tests/`, not the
   task name that introduced them.
+- The `scratch/` directory contains temporary experimental scripts that are not
+  maintained and can be cleaned up periodically.
 - Rich legacy parity diagnostics are not part of the live source tree. The maintained `parity_experiment.py` helper now covers fail-fast exact-route gates, rerun summaries, and exact artifact proof, but not the removed rich legacy diagnostics.

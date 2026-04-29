@@ -483,6 +483,19 @@ def _matlab_global_watershed_trace_half(
     """Trace one MATLAB watershed half-edge back to its zero-pointer origin using flat views."""
     pointer_map_flat = pointer_map.ravel(order="F")
     size_map_flat = size_map.ravel(order="F")
+    
+    # CRITICAL DIAGNOSTIC: Verify size_map_flat is a view
+    import logging
+    if not np.shares_memory(size_map, size_map_flat):
+        logging.error(f"TRACE BUG: size_map_flat is NOT a view of size_map in trace function!")
+    
+    # DIAGNOSTIC: Log if we're tracing from location 12532290
+    if start_linear == 12532290 or start_linear == 12470094:
+        logging.error(
+            f"TRACE STARTING FROM {start_linear}: "
+            f"pointer={int(pointer_map_flat[start_linear])}, "
+            f"scale={int(size_map_flat[start_linear])}"
+        )
 
     traced: list[int] = []
     visited: set[int] = set()
@@ -700,6 +713,9 @@ def _generate_edge_candidates_matlab_global_watershed(
         # The input scale_indices might have values outside [0, len(lumen_radius_microns)-1]
         # After adding 1, size_map should be in range [1, len(lumen_radius_microns)]
         size_map = np.clip(size_map, 1, len(lumen_radius_microns))
+        # CRITICAL FIX: np.clip() may return a non-F-contiguous array, causing ravel(order="F")
+        # to create a COPY instead of a view. Ensure F-contiguity so writes persist.
+        size_map = np.asfortranarray(size_map)
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
         np.int32, copy=False
     )
@@ -724,6 +740,15 @@ def _generate_edge_candidates_matlab_global_watershed(
     vertex_index_map_flat = vertex_index_map.ravel(order="F")
     size_map_flat = size_map.ravel(order="F")
     branch_order_map_flat = branch_order_map.ravel(order="F")
+    
+    # CRITICAL DIAGNOSTIC: Verify size_map_flat is a view of size_map
+    import logging
+    logging.error(f"size_map flags: C_CONTIGUOUS={size_map.flags['C_CONTIGUOUS']}, F_CONTIGUOUS={size_map.flags['F_CONTIGUOUS']}, OWNDATA={size_map.flags['OWNDATA']}")
+    if not np.shares_memory(size_map, size_map_flat):
+        logging.error("CRITICAL BUG: size_map_flat is NOT a view of size_map! Writes will not persist!")
+        logging.error(f"size_map_flat flags: C_CONTIGUOUS={size_map_flat.flags['C_CONTIGUOUS']}, F_CONTIGUOUS={size_map_flat.flags['F_CONTIGUOUS']}, OWNDATA={size_map_flat.flags['OWNDATA']}")
+    else:
+        logging.info(f"size_map_flat is a view of size_map: {size_map_flat.base is size_map}")
 
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []

@@ -1,262 +1,173 @@
-# Exact Proof Findings
+﻿# Exact Proof Findings
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-04-27
+**Last Updated**: 2026-04-29
 
-This note tracks the maintained proof state for the native-first exact route.
+This is the maintained current-status owner for the native-first exact route.
+Use it for live proof status, current v22 watershed readouts, the first failing
+field, and the measured effect of parity-bearing fixes.
 
-For canonical claim boundaries and the distinction between source-level porting
-and full Python implementation of the released SLAVV method, see
-`MATLAB_METHOD_IMPLEMENTATION_PLAN.md`.
+Use the other core docs for different jobs:
+
+- `MATLAB_METHOD_IMPLEMENTATION_PLAN.md` defines claim boundaries and the
+  remaining roadmap.
+- `MATLAB_PARITY_MAPPING.md` maps MATLAB functions to the live Python tree and
+  records confirmed structural deviations.
+- [v22 Pointer Corruption Archive](../../chapters/v22-pointer-corruption/README.md)
+  preserves the April 2026 investigation trail and archived Kiro planning.
 
 ## Scope
 
 - The canonical exact route is `comparison_exact_network=True` with
   `python_native_hessian` as the canonical exact-compatible energy provenance.
-- Preserved MATLAB vectors remain the oracle artifacts for proof.
-- `matlab_batch_hdf5` remains accepted only as a historical compatibility and
-  replay surface.
+- Preserved MATLAB vectors remain the oracle artifacts for `prove-exact`.
+- `matlab_batch_hdf5` remains accepted only for historical replay and oracle
+  comparison.
 - `100%` means artifact-level equality against preserved MATLAB vectors, not
-  just matching counts.
+  count-level similarity.
 
-## Quick Status Summary
+## Current Status
 
-| Component | Status | Proof State | Blocker |
-|-----------|--------|-------------|---------|
-| **Native Energy** | ✅ Complete | Canonical source | N/A |
-| **Vertices** | ✅ Ready | Downstream-ready on native route | Awaiting edge proof |
-| **Edges** | 🔄 Active Work | v22 generates candidates, not exact | 65% match rate, investigating gaps |
-| **Network** | ⏸️ Blocked | Source-aligned, proof pending | Upstream edge parity |
+| Component | Current state | Proof state | Main blocker |
+| --- | --- | --- | --- |
+| Native energy | Complete | Canonical exact-compatible source | Keep MATLAB-oracle fixture coverage green |
+| Vertices | Runnable on the native-first exact route | Proof pending downstream | Awaiting edge proof |
+| Edges | Active parity work | Not exact | Candidate-generation and chooser control flow |
+| Network | Source-aligned | Proof pending | Upstream edge parity |
 
-## Current Status (April 2026)
+## Current v22 Read
 
-### Critical Finding (April 27, 2026): v22 Bugs Fixed — Partial Success
+The strongest current interpretation is:
 
-**Initial Run** (April 27, 2026 morning): `capture-candidates` FAILED with critical errors:
-- 40+ cycle detection errors in backtracking
-- 15+ pointer index out-of-range errors
+- the pointer-lifecycle fixes were real and should stay
+- the reviewed MATLAB and Python watershed constants are already aligned
+- the reviewed size, distance, and direction penalties are already aligned
+- the remaining candidate gap looks more like a frontier, join, or chooser
+  control-flow problem than a scalar-parameter problem
 
-**Fixes Applied** (April 27, 2026 afternoon):
-1. Added bounds checking after computing next backtrack location
-2. Added pointer validation in reveal function to filter invalid pointers
-3. Added LUT consistency checks and assertions
+## Native Energy
 
-**Test Results** (April 27, 2026): ✅ **Algorithm completes successfully**
+The maintained `hessian` path is now the canonical exact-compatible source for
+energy generation.
+
+Maintained native-energy coverage includes:
+
+- projected `energy`
+- `scale_indices`
+- `energy_4d`
+- per-scale Laplacian intermediates
+- per-scale valid-mask behavior
+- direct versus resumable alignment
+
+This removes runtime dependence on imported MATLAB energy artifacts for the
+canonical exact route.
+
+## Vertices
+
+Vertex extraction is source-aligned and downstream-ready on the native-first
+exact route. No current evidence suggests that vertices are the first failing
+surface.
+
+## Edges: v22 Global Watershed
+
+### Latest Maintained Candidate Snapshot
+
+The last maintained v22 `capture-candidates` read remains:
 
 | Metric | Count | vs MATLAB |
-|--------|-------|-----------|
-| MATLAB candidates | 2533 | 100% (oracle) |
+| --- | --- | --- |
+| MATLAB candidates | 2533 | 100% oracle |
 | Python candidates | 2120 | 83.7% |
-| Matched pairs | 1643 | **64.9% match** |
+| Matched pairs | 1643 | 64.9% match |
 | Missing pairs | 890 | 35.1% gap |
 | Extra pairs | 477 | 22.5% over |
 
-**Status**: The immediate crashes are fixed and the algorithm generates candidates,
-but **not yet at exact parity**. The 65% match rate is lower than the historical
-pre-v22 code (87%), suggesting either:
-- Defensive filtering is too aggressive and rejecting valid candidates
-- There are still logic bugs in frontier propagation
-- Energy/distance tolerance calculations differ from MATLAB
+### Landed Fixes That Should Stay
 
-See `V22_BUG_FIXES.md` for detailed results and next steps.
+The current exact-route watershed path has already absorbed these meaningful
+fixes:
 
-**Immediate Next Steps**:
-1. Investigate why 890 MATLAB candidates are missing (35% gap)
-2. Investigate why 477 extra candidates are generated
-3. Check if defensive filtering rejected valid pointers
-4. Compare energy tolerance and distance tolerance calculations to MATLAB
+- clipped-scale consistency between LUT creation and `size_map` storage
+- MATLAB-style join-time reset behavior for `available_locations`
+- MATLAB-aligned shared-state dtypes for `pointer_map` and `d_over_r_map`
+- direct linear-offset backtracking for half-edge tracing
+- final energy and scale sampling directly from the assembled MATLAB-order
+  linear trace
+- MATLAB-derived scale-tolerance calculation from the first two vessel radii
 
-### Energy: Native Implementation Complete ✅
+### What The Latest Review No Longer Supports
 
-The maintained `hessian` path is now the canonical exact-compatible source for
-energy generation. **This milestone removes the runtime dependency on imported
-MATLAB energy artifacts.**
+The latest review does not support treating any of these as the primary current
+explanation:
 
-**Maintained native-energy coverage:**
-- ✅ Projected `energy` field
-- ✅ `scale_indices` field
-- ✅ `energy_4d` full 4D energy tensor
-- ✅ Per-scale Laplacian intermediates
-- ✅ Per-scale valid-mask behavior
-- ✅ Direct versus resumable alignment verified
+- a simple MATLAB-vs-Python scalar-parameter mismatch story
+- a size, distance, or direction penalty-formula mismatch story
+- pointer-generation corruption at creation time
+- immediate write/read corruption of `pointer_map_flat`
 
-**Impact**: The proof boundary has moved downstream. Native energy is no longer
-the blocker for full Python implementation claims.
+### Strongest Remaining Candidate Surfaces
 
-### Vertices: Downstream-Ready ✅
+1. frontier ordering and insertion semantics
+2. join cleanup semantics
+3. vertex `-Inf` sentinel lifecycle behavior
+4. chooser/control-flow deviations downstream of candidate emission
+5. diagnostic-era defensive logic still living in the production exact path
 
-Vertex extraction is source-aligned and ready for proof on the native-first
-exact route. The vertex stage now operates correctly from native Hessian energy
-without requiring imported MATLAB artifacts.
+## Cleanup And Network
 
-**Status**: Proof pending, but not blocked by vertex-stage issues. Waiting for
-downstream edge proof to complete before formal vertex proof run.
+The cleanup chain is structurally aligned after the April 2026 audit:
 
-### Edges: v22 Blocked on Critical Bugs ❌
+- degree cleanup removal order matches MATLAB
+- orphan cleanup terminal union matches MATLAB
+- cycle cleanup removes the worst edge per component and prunes vertices in the
+  same overall way
 
-**Current Iteration**: v22 (April 2026)
+That means downstream proof is still blocked primarily by unresolved upstream
+edge parity rather than known cleanup-specific bugs.
 
-**Status as of April 27, 2026**: **BLOCKED** — `capture-candidates` run revealed
-critical bugs in the v22 global watershed implementation that prevent valid
-candidate generation.
+Network and strand assembly remain source-aligned but proof-pending until edge
+parity closes.
 
-**Previous Accomplishments** (now invalidated):
-1. ✅ **Resolved frontier propagation stagnation bug**
-   - Implemented heapq-based O(log N) min-priority traversal
-   - Added LIFO tie-breaking via insertion counter (matches MATLAB's `find(..., 'last')`)
-   - Fixed energy tolerance thresholding: `(1.0 - energy_tolerance)`
-   - Corrected vertex-ownership check timing to prevent premature frontier termination
+## Historical Imported-MATLAB Replay Notes
 
-2. ✅ **Architecture overhaul: "Flat-first" 1D Fortran design**
-   - Eliminated 3D coordinate bottlenecks
-   - Direct linear views for all map operations
-   - Matches MATLAB's pointer-offset math exactly
+These measurements came from the older imported-MATLAB replay track before the
+native-first exact route became canonical. They are kept here only as historical
+context.
 
-3. ❌ **"Verified candidate generation on canonical sample"** — INVALIDATED
-   - Candidates are generated, but contain fundamental errors
-   - Cycle detection errors during backtracking (40+ instances)
-   - Pointer index out-of-range errors (15+ instances)
-   - The "proof of concept" claim was premature
-
-**Critical Bugs Found (April 27, 2026)**:
-
-1. **Cycle Detection in Backtracking**:
-   - 40+ instances of `Cycle detected in global watershed backtrack at <location>`
-   - The pointer map contains cycles that prevent valid trace reconstruction
-   - Likely caused by incorrect pointer writes during frontier propagation
-
-2. **Pointer Index Out-of-Range**:
-   - 15+ instances of `Pointer index <N> out of range for scale <S> (size <M>)`
-   - Pointers exceed the LUT size for the given scale
-   - Indicates the frontier is writing invalid pointer values
-
-**Root Cause Hypothesis**:
-- The flat-first 1D architecture or heapq traversal is writing pointers that
-  don't respect LUT bounds or create circular references
-- The LIFO tie-breaking or energy-tolerance logic may be causing the frontier
-  to revisit locations in a way that creates invalid pointer chains
-
-**Immediate Fix Requirements**:
-1. Add defensive logging to capture pointer map state when errors occur
-2. Verify pointer writes respect LUT size bounds for each scale
-3. Check if tie-breaking or energy-tolerance logic creates cycles
-4. Run small-scale debug trace to isolate the first failing candidate
-
-**Known Remaining Work** (blocked until bugs are fixed):
-- Fix cycle detection and pointer out-of-range bugs
-- Complete exact count alignment with MATLAB oracle
-- **Fix randomised trace-order in conflict-painting loop** — MATLAB uses `randperm`
-  per edge; Python iterates sequentially. This is the only structural deviation
-  found in the chooser after the April 2026 audit. See `MATLAB_PARITY_MAPPING.md`
-  Deviation #3 for the full analysis and recommended fix.
-- Re-check cleanup chain (crop, degree, orphan, cycle) after candidate alignment
-
-### Network: Source-Aligned, Awaiting Upstream ⏸️
-
-Network assembly and strand construction are source-aligned with MATLAB but
-remain blocked on unresolved edge parity. No network-specific issues are known;
-the blocker is purely upstream.
-
-**Status**: Ready for proof once edge parity is established.
-
-### Cleanup Chain: Structurally Aligned ✅
-
-An April 2026 audit of `cleanup.py` against the three MATLAB cleanup functions
-found all three structurally aligned:
-
-- `clean_edges_vertex_degree_excess`: removal order (highest-index / worst-energy
-  first) matches MATLAB exactly.
-- `clean_edges_orphans`: terminal-location union (interior edge locations ∪ vertex
-  locations) matches the active MATLAB path.
-- `clean_edges_cycles`: worst-edge-per-component removal and between-iteration
-  vertex pruning both match MATLAB.
-
-No cleanup-specific fixes are needed. The cleanup chain will be re-verified once
-upstream candidate alignment improves.
-
-## Historical Quantified Findings (Pre-v22)
-
-**Note**: These measurements came from the historical imported-MATLAB replay
-track before the v22 frontier overhaul. They are retained for historical context
-but should be replaced with fresh native-first measurements once v22 candidate
-alignment is complete.
-
-### Historical Edge Proof Failure (April 22, 2026)
-
-**First artifact failure**: `edges.connections`
+### Historical First Exact Failure
 
 - stage: `edges`
 - field: `connections`
 - MATLAB shape: `2533 x 2`
 - Python shape: `1654 x 2`
 
-This established that the exact-parity gap was an edge-stage math problem, not a
-proof-harness formatting issue.
+### Historical Candidate Gap
 
-### Historical Candidate Generation Gap
+Before the v22 route:
 
-Raw candidate generation (before v22 fixes):
+- raw Python candidates: `2364`
+- intersection with MATLAB endpoint pairs: `2054`
+- missing MATLAB pairs: `479`
+- extra Python pairs: `310`
 
-- raw Python edge candidates: `2364`
-- raw candidate intersection with MATLAB endpoint pairs: `2054`
-- raw candidate missing MATLAB pairs: `479`
-- raw candidate extra Python pairs: `310`
-
-After the full chosen-edge path:
+After the old chosen-edge path:
 
 - final Python chosen edges: `1654`
-- final chosen-edge intersection with MATLAB endpoint pairs: `1553`
-- final chosen-edge missing MATLAB pairs: `980`
-- final chosen-edge extra Python pairs: `101`
+- final chosen-edge intersection: `1553`
+- final missing MATLAB pairs: `980`
+- final extra Python pairs: `101`
 
-### Historical Fix: Removed Stale Cleanup Gate
+### Historical Cleanup-Gate Fix
 
-A legacy nonnegative-energy rejection in the chooser path was removed because
-MATLAB's active deterministic path no longer uses it.
+Removing the stale nonnegative-energy cleanup gate improved the historical
+chosen-edge path from `1553` matched MATLAB pairs to `1886`, but it still did
+not close parity.
 
-Measured improvement:
+## Next Proof Actions
 
-**Before the fix:**
-- after prepare: `1861`
-- after full cleanup: `1654`
-- MATLAB pair intersection at final chosen edges: `1553`
-- missing MATLAB pairs at final chosen edges: `980`
-
-**After the fix:**
-- after prepare: `2364`
-- after full cleanup: `2044`
-- MATLAB pair intersection at final chosen edges: `1886`
-- missing MATLAB pairs at final chosen edges: `647`
-
-This was a significant improvement but insufficient to close parity. The v22
-frontier overhaul addresses the root cause of candidate generation gaps.
-
-## Global Watershed Detail (v22)
-
-These are the specific alignment fixes landed in the v22 iteration, recorded
-here for audit traceability.
-
-- `available_locations` removal at join-time now follows MATLAB's indexed
-  `intersect(...)` reset behavior instead of a looser value-based filter.
-- Shared-state map dtypes now match MATLAB: `pointer_map` is `uint64`,
-  `d_over_r_map` is `float64`.
-- Half-edge backtracking now follows MATLAB's direct
-  `tracing_location - strel_linear_LUT_range{...}(pointer_map(...))` linear
-  offset step.
-- Final edge energy and scale traces are sampled directly from the assembled
-  MATLAB-order linear trace instead of being re-sampled through coordinate
-  clipping.
-
-Quantified downstream impact of these fixes still needs a fresh native-first
-`capture-candidates` rerun to replace the pre-v22 historical numbers above.
-
-## Next Proof Targets
-
-1. Run `capture-candidates` on the native-first route to get updated candidate
-   counts against the MATLAB oracle and replace the pre-v22 historical numbers.
-2. Run `prove-exact --stage edges` and record the first failing field and
-   measured counts.
-3. Keep candidate-boundary and `replay-edges` measurements current whenever
-   edge math changes.
+1. Re-run native-first `capture-candidates` and replace the older v22 counts.
+2. Re-run `prove-exact --stage edges` and record the first failing field.
+3. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
+   file focused on live proof status.
 4. Once edges pass, run `prove-exact --stage all` to close vertices and network.
