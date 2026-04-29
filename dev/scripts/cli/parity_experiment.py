@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 import argparse
+import json
+import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from shutil import copy2, copytree
@@ -16,6 +19,7 @@ import psutil
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SOURCE_DIR = REPO_ROOT / "source"
+DEV_RUNS_ROOT = REPO_ROOT / "dev" / "runs"
 if str(SOURCE_DIR) not in sys.path:
     sys.path.insert(0, str(SOURCE_DIR))
 
@@ -57,27 +61,47 @@ from source.runtime.run_state import (
     atomic_joblib_dump,
     atomic_write_json,
     atomic_write_text,
+    fingerprint_array,
+    fingerprint_file,
+    fingerprint_jsonable,
     load_json_dict,
+    stable_json_dumps,
 )
 from source.utils.safe_unpickle import safe_load
 
+ANALYSIS_DIR = Path("03_Analysis")
 CHECKPOINTS_DIR = Path("02_Output") / "python_results" / "checkpoints"
-COMPARISON_REPORT_PATH = Path("03_Analysis") / "comparison_report.json"
+EXPERIMENT_REFS_DIR = Path("00_Refs")
+EXPERIMENT_PARAMS_DIR = Path("01_Params")
+HASHES_DIR = ANALYSIS_DIR / "hashes"
+NORMALIZED_DIR = ANALYSIS_DIR / "normalized"
+METADATA_DIR = Path("99_Metadata")
+RUN_MANIFEST_PATH = METADATA_DIR / "run_manifest.json"
+ORACLE_MANIFEST_PATH = METADATA_DIR / "oracle_manifest.json"
+REPORT_MANIFEST_PATH = METADATA_DIR / "report_manifest.json"
+DATASET_MANIFEST_PATH = METADATA_DIR / "dataset_manifest.json"
+EXPERIMENT_INDEX_PATH = Path("index.jsonl")
+EXPERIMENT_ROOT_SUBDIRS = ("datasets", "oracles", "reports", "runs")
+DATASET_INPUT_DIR = Path("01_Input")
+COMPARISON_REPORT_PATH = ANALYSIS_DIR / "comparison_report.json"
 EDGE_CANDIDATE_CHECKPOINT_PATH = CHECKPOINTS_DIR / "checkpoint_edge_candidates.pkl"
-EDGE_REPLAY_PROOF_JSON_PATH = Path("03_Analysis") / "edge_replay_proof.json"
-EDGE_REPLAY_PROOF_TEXT_PATH = Path("03_Analysis") / "edge_replay_proof.txt"
-EXACT_PROOF_JSON_PATH = Path("03_Analysis") / "exact_proof.json"
-EXACT_PROOF_TEXT_PATH = Path("03_Analysis") / "exact_proof.txt"
-LUT_PROOF_JSON_PATH = Path("03_Analysis") / "lut_proof.json"
-LUT_PROOF_TEXT_PATH = Path("03_Analysis") / "lut_proof.txt"
-PREFLIGHT_EXACT_JSON_PATH = Path("03_Analysis") / "preflight_exact.json"
-PREFLIGHT_EXACT_TEXT_PATH = Path("03_Analysis") / "preflight_exact.txt"
-RUN_SNAPSHOT_PATH = Path("99_Metadata") / "run_snapshot.json"
-SUMMARY_JSON_PATH = Path("03_Analysis") / "experiment_summary.json"
-SUMMARY_TEXT_PATH = Path("03_Analysis") / "experiment_summary.txt"
-VALIDATED_PARAMS_PATH = Path("99_Metadata") / "validated_params.json"
-CANDIDATE_COVERAGE_JSON_PATH = Path("03_Analysis") / "candidate_coverage.json"
-CANDIDATE_COVERAGE_TEXT_PATH = Path("03_Analysis") / "candidate_coverage.txt"
+EDGE_REPLAY_PROOF_JSON_PATH = ANALYSIS_DIR / "edge_replay_proof.json"
+EDGE_REPLAY_PROOF_TEXT_PATH = ANALYSIS_DIR / "edge_replay_proof.txt"
+EXACT_PROOF_JSON_PATH = ANALYSIS_DIR / "exact_proof.json"
+EXACT_PROOF_TEXT_PATH = ANALYSIS_DIR / "exact_proof.txt"
+LUT_PROOF_JSON_PATH = ANALYSIS_DIR / "lut_proof.json"
+LUT_PROOF_TEXT_PATH = ANALYSIS_DIR / "lut_proof.txt"
+PREFLIGHT_EXACT_JSON_PATH = ANALYSIS_DIR / "preflight_exact.json"
+PREFLIGHT_EXACT_TEXT_PATH = ANALYSIS_DIR / "preflight_exact.txt"
+RUN_SNAPSHOT_PATH = METADATA_DIR / "run_snapshot.json"
+SUMMARY_JSON_PATH = ANALYSIS_DIR / "experiment_summary.json"
+SUMMARY_TEXT_PATH = ANALYSIS_DIR / "experiment_summary.txt"
+VALIDATED_PARAMS_PATH = METADATA_DIR / "validated_params.json"
+CANDIDATE_COVERAGE_JSON_PATH = ANALYSIS_DIR / "candidate_coverage.json"
+CANDIDATE_COVERAGE_TEXT_PATH = ANALYSIS_DIR / "candidate_coverage.txt"
+SHARED_PARAMS_PATH = EXPERIMENT_PARAMS_DIR / "shared_params.json"
+PYTHON_DERIVED_PARAMS_PATH = EXPERIMENT_PARAMS_DIR / "python_derived_params.json"
+PARAM_DIFF_PATH = EXPERIMENT_PARAMS_DIR / "param_diff.json"
 HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
 EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
@@ -164,6 +188,7 @@ class ExactProofSourceSurface:
     run_root: Path
     checkpoints_dir: Path
     validated_params_path: Path
+    oracle_surface: OracleSurface
     matlab_batch_dir: Path
     matlab_vector_paths: dict[str, Path]
 
@@ -173,6 +198,560 @@ class ExactPreflightSurface:
     source_surface: ExactProofSourceSurface
     dest_run_root: Path
     image_shape: tuple[int, int, int]
+
+
+@dataclass(frozen=True)
+class OracleSurface:
+    oracle_root: Path
+    manifest_path: Path | None
+    matlab_batch_dir: Path
+    matlab_vector_paths: dict[str, Path]
+    oracle_id: str | None
+    matlab_source_version: str | None
+    dataset_hash: str | None
+
+
+def _now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
+def _string_or_none(value: Any) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def _entity_id_from_path(path: Path) -> str:
+    return path.name or path.resolve().name
+
+
+def _resolve_python_commit() -> str | None:
+    try:
+        import subprocess
+
+        completed = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+    except OSError:
+        return None
+    commit = completed.stdout.strip()
+    return commit or None
+
+
+def _resolve_experiment_root(path: Path) -> Path | None:
+    resolved = path.expanduser().resolve()
+    for candidate in (resolved, *resolved.parents):
+        if candidate.name in EXPERIMENT_ROOT_SUBDIRS:
+            return candidate.parent
+        if all((candidate / subdir).is_dir() for subdir in EXPERIMENT_ROOT_SUBDIRS):
+            return candidate
+    return None
+
+
+def _ensure_experiment_root_layout(root: Path) -> None:
+    for subdir in EXPERIMENT_ROOT_SUBDIRS:
+        (root / subdir).mkdir(parents=True, exist_ok=True)
+
+
+def _load_jsonl_records(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    records: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        payload = json.loads(line)
+        if isinstance(payload, dict):
+            records.append(cast("dict[str, Any]", payload))
+    return records
+
+
+def _upsert_index_record(root: Path | None, payload: dict[str, Any]) -> None:
+    if root is None:
+        return
+    _ensure_experiment_root_layout(root)
+    index_path = root / EXPERIMENT_INDEX_PATH
+    payload_id = _string_or_none(payload.get("id")) or _entity_id_from_path(Path(payload["path"]))
+    payload_kind = _string_or_none(payload.get("kind")) or "artifact"
+    retained: list[dict[str, Any]] = []
+    for existing in _load_jsonl_records(index_path):
+        if (
+            _string_or_none(existing.get("id")) == payload_id
+            and _string_or_none(existing.get("kind")) == payload_kind
+        ):
+            continue
+        retained.append(existing)
+    retained.append(payload)
+    atomic_write_text(
+        index_path,
+        "".join(f"{stable_json_dumps(record)}\n" for record in retained),
+    )
+
+
+def _hashable_payload_summary(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        array = np.asarray(value)
+        return {
+            "kind": "ndarray",
+            "shape": list(array.shape),
+            "dtype": str(array.dtype),
+            "sha256": fingerprint_array(array),
+        }
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {
+            str(key): _hashable_payload_summary(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_hashable_payload_summary(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _payload_hash(payload: Any) -> str:
+    return fingerprint_jsonable(_hashable_payload_summary(payload))
+
+
+def _resolve_python_commit() -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+        )
+    except OSError:
+        return None
+    commit = completed.stdout.strip()
+    return commit or None
+
+
+def _write_hash_sidecar(path: Path) -> Path:
+    hash_path = path.with_name(f"{path.name}.sha256")
+    atomic_write_text(hash_path, fingerprint_file(path))
+    return hash_path
+
+
+def _write_payload_hash_sidecar(path: Path, payload: Any) -> Path:
+    hash_path = path.with_name(f"{path.name}.sha256")
+    atomic_write_text(hash_path, _payload_hash(payload))
+    return hash_path
+
+
+def _write_json_with_hash(path: Path, payload: dict[str, Any]) -> Path:
+    atomic_write_json(path, payload)
+    _write_hash_sidecar(path)
+    return path
+
+
+def _write_text_with_hash(path: Path, text: str) -> Path:
+    atomic_write_text(path, text)
+    _write_hash_sidecar(path)
+    return path
+
+
+def _write_joblib_with_hash(path: Path, payload: Any) -> Path:
+    atomic_joblib_dump(payload, path)
+    _write_payload_hash_sidecar(path, payload)
+    return path
+
+
+def _persist_normalized_payloads(
+    dest_run_root: Path,
+    *,
+    group_name: str,
+    payloads: dict[str, Any],
+) -> dict[str, str]:
+    written: dict[str, str] = {}
+    normalized_root = dest_run_root / NORMALIZED_DIR / group_name
+    normalized_root.mkdir(parents=True, exist_ok=True)
+    for name, payload in payloads.items():
+        artifact_path = normalized_root / f"{name}.pkl"
+        _write_joblib_with_hash(artifact_path, payload)
+        written[name] = str(artifact_path)
+    return written
+
+
+def _build_exact_param_storage(
+    params: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    audit = build_exact_params_audit(params)
+    shared_params = cast("dict[str, Any]", dict(audit.get("shared_method_params", {})))
+    derived_keys = sorted(set(params) - set(shared_params))
+    orchestration_params = {
+        key: _normalize_param_value(params[key])
+        for key in derived_keys
+        if key in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
+    }
+    python_only_params = {
+        key: _normalize_param_value(params[key])
+        for key in derived_keys
+        if key.startswith("parity_")
+    }
+    unclassified_params = {
+        key: _normalize_param_value(params[key])
+        for key in derived_keys
+        if key not in orchestration_params and key not in python_only_params
+    }
+    python_derived = {
+        "orchestration_params": orchestration_params,
+        "python_only_params": python_only_params,
+        "unclassified_params": unclassified_params,
+    }
+    param_diff = {
+        "shared_param_count": len(shared_params),
+        "shared_param_keys": sorted(shared_params),
+        "derived_param_keys": derived_keys,
+        "required_exact_values": cast(
+            "dict[str, Any]", dict(audit.get("required_exact_values", {}))
+        ),
+        "required_exact_mismatches": cast(
+            "list[dict[str, Any]]",
+            list(audit.get("required_exact_mismatches", [])),
+        ),
+        "disallowed_python_only_keys": cast(
+            "list[str]", list(audit.get("disallowed_python_only_keys", []))
+        ),
+        "unclassified_keys": cast("list[str]", list(audit.get("unclassified_keys", []))),
+        "shared_params_hash": fingerprint_jsonable(shared_params),
+        "python_derived_params_hash": fingerprint_jsonable(python_derived),
+    }
+    return shared_params, python_derived, param_diff
+
+
+def _persist_param_storage(dest_run_root: Path, params: dict[str, Any]) -> dict[str, Any]:
+    shared_params, python_derived, param_diff = _build_exact_param_storage(params)
+    _write_json_with_hash(dest_run_root / SHARED_PARAMS_PATH, shared_params)
+    _write_json_with_hash(dest_run_root / PYTHON_DERIVED_PARAMS_PATH, python_derived)
+    _write_json_with_hash(dest_run_root / PARAM_DIFF_PATH, param_diff)
+    return {
+        "shared_params": shared_params,
+        "python_derived_params": python_derived,
+        "param_diff": param_diff,
+    }
+
+
+def _load_oracle_surface(oracle_root: Path) -> OracleSurface:
+    resolved_root = oracle_root.expanduser().resolve()
+    manifest_path = resolved_root / ORACLE_MANIFEST_PATH
+    manifest = load_json_dict(manifest_path)
+    matlab_batch_dir = find_single_matlab_batch_dir(resolved_root)
+    return OracleSurface(
+        oracle_root=resolved_root,
+        manifest_path=manifest_path if manifest_path.is_file() else None,
+        matlab_batch_dir=matlab_batch_dir,
+        matlab_vector_paths=find_matlab_vector_paths(matlab_batch_dir),
+        oracle_id=_string_or_none(manifest.get("oracle_id")) if manifest else None,
+        matlab_source_version=(
+            _string_or_none(manifest.get("matlab_source_version")) if manifest else None
+        ),
+        dataset_hash=_string_or_none(manifest.get("dataset_hash")) if manifest else None,
+    )
+
+
+def _materialize_dataset_record(
+    experiment_root: Path | None,
+    *,
+    dataset_hash: str | None,
+    dataset_file: Path | None,
+) -> str | None:
+    resolved_hash = dataset_hash
+    if resolved_hash is None and dataset_file is not None and dataset_file.is_file():
+        resolved_hash = fingerprint_file(dataset_file)
+    if experiment_root is None or resolved_hash is None:
+        return resolved_hash
+
+    _ensure_experiment_root_layout(experiment_root)
+    dataset_root = experiment_root / "datasets" / resolved_hash
+    dataset_root.mkdir(parents=True, exist_ok=True)
+    input_file: Path | None = None
+    input_bytes: int | None = None
+    if dataset_file is not None and dataset_file.is_file():
+        input_root = dataset_root / DATASET_INPUT_DIR
+        input_root.mkdir(parents=True, exist_ok=True)
+        input_file = input_root / dataset_file.name
+        if input_file.exists():
+            existing_hash = fingerprint_file(input_file)
+            if existing_hash != resolved_hash:
+                raise ValueError(
+                    "dataset root already contains a different payload for this dataset hash: "
+                    f"{input_file}"
+                )
+        else:
+            copy2(dataset_file, input_file)
+        _write_hash_sidecar(input_file)
+        input_bytes = input_file.stat().st_size
+
+    manifest_path = dataset_root / DATASET_MANIFEST_PATH
+    existing_manifest = load_json_dict(manifest_path) or {}
+    manifest_payload = {
+        "manifest_version": 1,
+        "kind": "dataset",
+        "dataset_hash": resolved_hash,
+        "dataset_root": str(dataset_root),
+        "stored_input_file": (
+            str(input_file)
+            if input_file is not None
+            else _string_or_none(existing_manifest.get("stored_input_file"))
+        ),
+        "input_filename": (
+            dataset_file.name
+            if dataset_file is not None and dataset_file.is_file()
+            else _string_or_none(existing_manifest.get("input_filename"))
+        ),
+        "input_bytes": (
+            input_bytes
+            if input_bytes is not None
+            else existing_manifest.get("input_bytes")
+        ),
+        "source_file": (
+            str(dataset_file)
+            if dataset_file is not None
+            else _string_or_none(existing_manifest.get("source_file"))
+        ),
+        "retention": "preserved",
+        "timestamps": {
+            "created_at": _string_or_none(existing_manifest.get("created_at"))
+            or _string_or_none(
+                cast("dict[str, Any]", dict(existing_manifest.get("timestamps", {}))).get(
+                    "created_at"
+                )
+            )
+            or _now_iso(),
+            "updated_at": _now_iso(),
+        },
+    }
+    _write_json_with_hash(manifest_path, manifest_payload)
+    _upsert_index_record(
+        experiment_root,
+        {
+            "kind": "dataset",
+            "id": resolved_hash,
+            "path": str(dataset_root),
+            "status": "ready",
+            "dataset_hash": resolved_hash,
+            "updated_at": manifest_payload["timestamps"]["updated_at"],
+        },
+    )
+    return resolved_hash
+
+
+def _materialize_oracle_root(
+    *,
+    matlab_batch_dir: Path,
+    oracle_root: Path,
+    dataset_hash: str | None,
+    oracle_id: str | None,
+    matlab_source_version: str | None,
+) -> OracleSurface:
+    oracle_root = oracle_root.expanduser().resolve()
+    (oracle_root / METADATA_DIR).mkdir(parents=True, exist_ok=True)
+    normalized_root = oracle_root / NORMALIZED_DIR
+    hashes_root = oracle_root / HASHES_DIR
+    normalized_root.mkdir(parents=True, exist_ok=True)
+    hashes_root.mkdir(parents=True, exist_ok=True)
+
+    raw_results_root = oracle_root / "01_Input" / "matlab_results"
+    raw_results_root.mkdir(parents=True, exist_ok=True)
+    raw_batch_dir = raw_results_root / matlab_batch_dir.name
+    if not raw_batch_dir.exists():
+        copytree(matlab_batch_dir, raw_batch_dir)
+
+    vector_paths = find_matlab_vector_paths(raw_batch_dir)
+    normalized_payloads = load_normalized_matlab_vectors(raw_batch_dir, EXACT_STAGE_ORDER)
+    normalized_artifacts = _persist_normalized_payloads(
+        oracle_root,
+        group_name="oracle",
+        payloads=normalized_payloads,
+    )
+    raw_vector_hashes: dict[str, str] = {}
+    for stage, path in vector_paths.items():
+        raw_vector_hash = fingerprint_file(path)
+        raw_vector_hashes[stage] = raw_vector_hash
+        atomic_write_text(hashes_root / f"oracle_raw_{stage}.sha256", raw_vector_hash)
+
+    resolved_oracle_id = (
+        oracle_id or f"{matlab_batch_dir.name}_{fingerprint_jsonable(raw_vector_hashes)[:12]}"
+    )
+    manifest_payload = {
+        "manifest_version": 1,
+        "kind": "matlab_oracle",
+        "oracle_id": resolved_oracle_id,
+        "oracle_root": str(oracle_root),
+        "dataset_hash": dataset_hash,
+        "matlab_source_version": matlab_source_version,
+        "matlab_batch_dir": str(raw_batch_dir),
+        "raw_vector_hashes": raw_vector_hashes,
+        "normalized_artifacts": normalized_artifacts,
+        "timestamps": {
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+        },
+    }
+    _write_json_with_hash(oracle_root / ORACLE_MANIFEST_PATH, manifest_payload)
+    experiment_root = _resolve_experiment_root(oracle_root)
+    _upsert_index_record(
+        experiment_root,
+        {
+            "kind": "matlab_oracle",
+            "id": resolved_oracle_id,
+            "path": str(oracle_root),
+            "status": "ready",
+            "dataset_hash": dataset_hash,
+            "updated_at": manifest_payload["timestamps"]["updated_at"],
+        },
+    )
+    return OracleSurface(
+        oracle_root=oracle_root,
+        manifest_path=oracle_root / ORACLE_MANIFEST_PATH,
+        matlab_batch_dir=raw_batch_dir,
+        matlab_vector_paths=vector_paths,
+        oracle_id=resolved_oracle_id,
+        matlab_source_version=matlab_source_version,
+        dataset_hash=dataset_hash,
+    )
+
+
+def _resolve_oracle_surface(
+    source_run_root: Path,
+    *,
+    oracle_root: Path | None,
+) -> OracleSurface:
+    if oracle_root is not None:
+        return _load_oracle_surface(oracle_root)
+    run_manifest = load_json_dict(source_run_root / RUN_MANIFEST_PATH)
+    manifest_oracle_root = (
+        _string_or_none(run_manifest.get("oracle_root")) if run_manifest else None
+    )
+    if manifest_oracle_root is not None:
+        return _load_oracle_surface(Path(manifest_oracle_root))
+
+    matlab_batch_dir = find_single_matlab_batch_dir(source_run_root)
+    experiment_root = _resolve_experiment_root(source_run_root)
+    dataset_hash = _dataset_hash_from_run_root(source_run_root)
+    matlab_source_version = (
+        _string_or_none(run_manifest.get("matlab_source_version"))
+        if run_manifest is not None
+        else None
+    ) or "external/Vectorization-Public"
+    if experiment_root is None:
+        return _load_oracle_surface(source_run_root)
+
+    _ensure_experiment_root_layout(experiment_root)
+    resolved_oracle_id = f"{matlab_batch_dir.name}_{fingerprint_file(find_matlab_vector_paths(matlab_batch_dir)['edges'])[:12]}"
+    promoted_oracle_root = experiment_root / "oracles" / resolved_oracle_id
+    return _materialize_oracle_root(
+        matlab_batch_dir=matlab_batch_dir,
+        oracle_root=promoted_oracle_root,
+        dataset_hash=dataset_hash,
+        oracle_id=resolved_oracle_id,
+        matlab_source_version=matlab_source_version,
+    )
+
+
+def _dataset_hash_from_run_root(run_root: Path) -> str | None:
+    run_manifest = load_json_dict(run_root / RUN_MANIFEST_PATH)
+    if run_manifest is not None:
+        dataset_hash = _string_or_none(run_manifest.get("dataset_hash"))
+        if dataset_hash is not None:
+            return dataset_hash
+    run_snapshot = load_json_dict(run_root / RUN_SNAPSHOT_PATH)
+    if run_snapshot is not None:
+        dataset_hash = _string_or_none(run_snapshot.get("input_fingerprint"))
+        if dataset_hash is not None:
+            return dataset_hash
+    return None
+
+
+def _write_run_manifest(
+    dest_run_root: Path,
+    *,
+    run_kind: str,
+    status: str,
+    command: str,
+    dataset_hash: str | None,
+    oracle_surface: OracleSurface | None,
+    params_payload: dict[str, Any] | None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    source_manifest = load_json_dict(dest_run_root / RUN_MANIFEST_PATH) or {}
+    run_id = _string_or_none(source_manifest.get("run_id")) or _entity_id_from_path(dest_run_root)
+    experiment_root = _resolve_experiment_root(dest_run_root)
+    _materialize_dataset_record(
+        experiment_root,
+        dataset_hash=dataset_hash,
+        dataset_file=None,
+    )
+    timestamps = cast("dict[str, Any]", dict(source_manifest.get("timestamps", {})))
+    created_at = (
+        _string_or_none(timestamps.get("created_at"))
+        or _string_or_none(source_manifest.get("created_at"))
+        or _now_iso()
+    )
+    updated_at = _now_iso()
+    manifest_payload = {
+        "manifest_version": 1,
+        "kind": run_kind,
+        "run_id": run_id,
+        "command": command,
+        "run_root": str(dest_run_root),
+        "status": status,
+        "dataset_hash": dataset_hash,
+        "oracle_id": oracle_surface.oracle_id if oracle_surface is not None else None,
+        "oracle_root": str(oracle_surface.oracle_root) if oracle_surface is not None else None,
+        "python_commit": _string_or_none(source_manifest.get("python_commit"))
+        or _resolve_python_commit(),
+        "matlab_source_version": (
+            oracle_surface.matlab_source_version if oracle_surface is not None else None
+        ),
+        "timestamps": {
+            "created_at": created_at,
+            "updated_at": updated_at,
+            "completed_at": timestamps.get("completed_at"),
+        },
+        "retention": "disposable" if dest_run_root.parent.name == "runs" else "promoted",
+        "promotion_state": _string_or_none(source_manifest.get("promotion_state")) or "ephemeral",
+        "shared_params_hash": (
+            fingerprint_jsonable(load_json_dict(dest_run_root / SHARED_PARAMS_PATH) or {})
+            if (dest_run_root / SHARED_PARAMS_PATH).is_file()
+            else None
+        ),
+        "python_derived_params_hash": (
+            fingerprint_jsonable(load_json_dict(dest_run_root / PYTHON_DERIVED_PARAMS_PATH) or {})
+            if (dest_run_root / PYTHON_DERIVED_PARAMS_PATH).is_file()
+            else None
+        ),
+        "params_path": str(dest_run_root / VALIDATED_PARAMS_PATH)
+        if params_payload is not None
+        else None,
+        "analysis_dir": str(dest_run_root / ANALYSIS_DIR),
+        "normalized_dir": str(dest_run_root / NORMALIZED_DIR),
+        "hashes_dir": str(dest_run_root / HASHES_DIR),
+        "stage_metrics": source_manifest.get("stage_metrics", {}),
+    }
+    if extra:
+        manifest_payload.update(extra)
+    _write_json_with_hash(dest_run_root / RUN_MANIFEST_PATH, manifest_payload)
+    _upsert_index_record(
+        experiment_root,
+        {
+            "kind": run_kind,
+            "id": run_id,
+            "command": command,
+            "status": status,
+            "path": str(dest_run_root),
+            "dataset_hash": dataset_hash,
+            "oracle_id": oracle_surface.oracle_id if oracle_surface is not None else None,
+            "updated_at": updated_at,
+        },
+    )
+    return manifest_payload
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -198,7 +777,7 @@ def build_parser() -> argparse.ArgumentParser:
     rerun.add_argument(
         "--dest-run-root",
         required=True,
-        help="Fresh destination run root for the current-code experiment.",
+        help=f"Fresh destination run root for the current-code experiment. Recommended: {DEV_RUNS_ROOT}",
     )
     rerun.add_argument(
         "--input",
@@ -243,9 +822,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Existing staged comparison run root containing raw MATLAB vectors and exact-route provenance.",
     )
     prove.add_argument(
+        "--oracle-root",
+        help=(
+            "Optional promoted oracle root under <experiment-root>/oracles. "
+            "When omitted, the runner falls back to any oracle recorded in the source run "
+            "manifest, then to embedded MATLAB vectors under the source run root."
+        ),
+    )
+    prove.add_argument(
         "--dest-run-root",
         required=True,
-        help="Destination run root containing the current-code rerun Python checkpoints to prove.",
+        help=(
+            "Destination run root containing the current-code rerun Python checkpoints to prove. "
+            f"Recommended: {DEV_RUNS_ROOT}"
+        ),
     )
     prove.add_argument(
         "--stage",
@@ -267,7 +857,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate exact-route source/destination surfaces, memory budget, and process collisions.",
     )
     preflight.add_argument("--source-run-root", required=True)
-    preflight.add_argument("--dest-run-root", required=True)
+    preflight.add_argument(
+        "--oracle-root",
+        help="Optional promoted oracle root that replaces embedded MATLAB vectors from the source run.",
+    )
+    preflight.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Destination run root for the preflighted experiment. Recommended: {DEV_RUNS_ROOT}",
+    )
     preflight.add_argument(
         "--memory-safety-fraction",
         type=float,
@@ -286,7 +884,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Compare the shared Python watershed LUT builder against the checked-in fixture surface.",
     )
     prove_luts.add_argument("--source-run-root", required=True)
-    prove_luts.add_argument("--dest-run-root", required=True)
+    prove_luts.add_argument(
+        "--oracle-root",
+        help="Optional promoted oracle root that replaces embedded MATLAB vectors from the source run.",
+    )
+    prove_luts.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Destination run root for LUT proof artifacts. Recommended: {DEV_RUNS_ROOT}",
+    )
     prove_luts.set_defaults(handler=_handle_prove_luts)
 
     capture = subparsers.add_parser(
@@ -294,7 +900,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run only exact candidate generation and write a slim candidate checkpoint plus coverage report.",
     )
     capture.add_argument("--source-run-root", required=True)
-    capture.add_argument("--dest-run-root", required=True)
+    capture.add_argument(
+        "--oracle-root",
+        help="Optional promoted oracle root that replaces embedded MATLAB vectors from the source run.",
+    )
+    capture.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Destination run root for candidate artifacts. Recommended: {DEV_RUNS_ROOT}",
+    )
     capture.add_argument(
         "--debug-maps",
         action="store_true",
@@ -307,7 +921,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Replay exact edge choosing from a saved candidate snapshot without regenerating candidates.",
     )
     replay.add_argument("--source-run-root", required=True)
-    replay.add_argument("--dest-run-root", required=True)
+    replay.add_argument(
+        "--oracle-root",
+        help="Optional promoted oracle root that replaces embedded MATLAB vectors from the source run.",
+    )
+    replay.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Destination run root for replay artifacts. Recommended: {DEV_RUNS_ROOT}",
+    )
     replay.set_defaults(handler=_handle_replay_edges)
 
     fail_fast = subparsers.add_parser(
@@ -315,7 +937,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the fail-fast exact parity funnel and stop at the first failing gate.",
     )
     fail_fast.add_argument("--source-run-root", required=True)
-    fail_fast.add_argument("--dest-run-root", required=True)
+    fail_fast.add_argument(
+        "--oracle-root",
+        help="Optional promoted oracle root that replaces embedded MATLAB vectors from the source run.",
+    )
+    fail_fast.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Destination run root for fail-fast artifacts. Recommended: {DEV_RUNS_ROOT}",
+    )
     fail_fast.add_argument(
         "--memory-safety-fraction",
         type=float,
@@ -324,6 +954,38 @@ def build_parser() -> argparse.ArgumentParser:
     fail_fast.add_argument("--debug-maps", action="store_true")
     fail_fast.add_argument("--force", action="store_true")
     fail_fast.set_defaults(handler=_handle_fail_fast)
+
+    promote_oracle = subparsers.add_parser(
+        "promote-oracle",
+        help="Copy preserved MATLAB vectors into a standalone oracle root with manifest and hashes.",
+    )
+    promote_oracle.add_argument("--matlab-batch-dir", required=True)
+    promote_oracle.add_argument("--oracle-root", required=True)
+    promote_oracle.add_argument("--dataset-file")
+    promote_oracle.add_argument("--dataset-hash")
+    promote_oracle.add_argument("--oracle-id")
+    promote_oracle.add_argument("--matlab-source-version", default="external/Vectorization-Public")
+    promote_oracle.set_defaults(handler=_handle_promote_oracle)
+
+    promote_dataset = subparsers.add_parser(
+        "promote-dataset",
+        help="Copy an immutable input volume into datasets/ and register its manifest and hash.",
+    )
+    promote_dataset.add_argument("--dataset-file", required=True)
+    promote_dataset.add_argument(
+        "--experiment-root",
+        required=True,
+        help="Structured experiment root containing datasets/, oracles/, reports/, and runs/.",
+    )
+    promote_dataset.set_defaults(handler=_handle_promote_dataset)
+
+    promote_report = subparsers.add_parser(
+        "promote-report",
+        help="Copy a disposable run's analysis surface into reports/ with a report manifest.",
+    )
+    promote_report.add_argument("--run-root", required=True)
+    promote_report.add_argument("--report-root")
+    promote_report.set_defaults(handler=_handle_promote_report)
     return parser
 
 
@@ -355,7 +1017,11 @@ def validate_source_run_surface(source_run_root: Path) -> SourceRunSurface:
     )
 
 
-def validate_exact_proof_source_surface(source_run_root: Path) -> ExactProofSourceSurface:
+def validate_exact_proof_source_surface(
+    source_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
+) -> ExactProofSourceSurface:
     """Validate the staged source surface for full-artifact exact proof."""
     run_root = source_run_root.resolve()
     checkpoints_dir = run_root / CHECKPOINTS_DIR
@@ -393,23 +1059,25 @@ def validate_exact_proof_source_surface(source_run_root: Path) -> ExactProofSour
             f"({accepted}), found: {energy_origin!r}"
         )
 
-    matlab_batch_dir = find_single_matlab_batch_dir(run_root)
-    matlab_vector_paths = find_matlab_vector_paths(matlab_batch_dir)
+    oracle_surface = _resolve_oracle_surface(run_root, oracle_root=oracle_root)
     return ExactProofSourceSurface(
         run_root=run_root,
         checkpoints_dir=checkpoints_dir,
         validated_params_path=validated_params_path,
-        matlab_batch_dir=matlab_batch_dir,
-        matlab_vector_paths=matlab_vector_paths,
+        oracle_surface=oracle_surface,
+        matlab_batch_dir=oracle_surface.matlab_batch_dir,
+        matlab_vector_paths=oracle_surface.matlab_vector_paths,
     )
 
 
 def validate_exact_preflight_surface(
     source_run_root: Path,
     dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
 ) -> ExactPreflightSurface:
     """Validate the source exact surface and load the image shape needed for memory preflight."""
-    source_surface = validate_exact_proof_source_surface(source_run_root)
+    source_surface = validate_exact_proof_source_surface(source_run_root, oracle_root=oracle_root)
     dest_root = dest_run_root.expanduser().resolve()
     if dest_root.exists() and not dest_root.is_dir():
         raise ValueError(f"destination run root must be a directory path: {dest_root}")
@@ -431,12 +1099,17 @@ def build_exact_preflight_report(
     source_run_root: Path,
     dest_run_root: Path,
     *,
+    oracle_root: Path | None,
     memory_safety_fraction: float,
     force: bool,
 ) -> dict[str, Any]:
     """Build the fail-fast preflight report for a native-first exact run."""
     try:
-        surface = validate_exact_preflight_surface(source_run_root, dest_run_root)
+        surface = validate_exact_preflight_surface(
+            source_run_root,
+            dest_run_root,
+            oracle_root=oracle_root,
+        )
     except ValueError as exc:
         return {
             "passed": False,
@@ -453,13 +1126,21 @@ def build_exact_preflight_report(
     safety_fraction = float(max(min(memory_safety_fraction, 1.0), 0.05))
     allowed_memory_bytes = int(available_memory_bytes * safety_fraction)
     collisions = find_parity_process_collisions(surface.dest_run_root)
-    passed = bool(params_audit.get("passed")) and (
-        memory_estimate["estimated_required_bytes"] <= allowed_memory_bytes
-    ) and (force or not collisions)
+    passed = (
+        bool(params_audit.get("passed"))
+        and (memory_estimate["estimated_required_bytes"] <= allowed_memory_bytes)
+        and (force or not collisions)
+    )
     return {
         "passed": passed,
         "source_run_root": str(surface.source_surface.run_root),
         "dest_run_root": str(surface.dest_run_root),
+        "oracle_root": str(surface.source_surface.oracle_surface.oracle_root),
+        "oracle_id": surface.source_surface.oracle_surface.oracle_id,
+        "dataset_hash": (
+            _dataset_hash_from_run_root(surface.source_surface.run_root)
+            or surface.source_surface.oracle_surface.dataset_hash
+        ),
         "report_scope": "native-first exact preflight only",
         "image_shape": list(surface.image_shape),
         "memory_estimate": memory_estimate,
@@ -480,6 +1161,7 @@ def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
         f"Status: {'PASS' if report_payload.get('passed') else 'FAIL'}",
         f"Source run root: {report_payload.get('source_run_root')}",
         f"Destination run root: {report_payload.get('dest_run_root')}",
+        f"Oracle root: {report_payload.get('oracle_root')}",
     ]
     error_text = report_payload.get("error")
     if isinstance(error_text, str) and error_text.strip():
@@ -663,7 +1345,9 @@ def build_exact_params_audit(params: dict[str, Any]) -> dict[str, Any]:
         | set(EXACT_REQUIRED_PARAMETER_VALUES)
     )
     unclassified_keys = sorted(
-        key for key in param_keys if key not in known_keys and key not in disallowed_python_only_keys
+        key
+        for key in param_keys
+        if key not in known_keys and key not in disallowed_python_only_keys
     )
 
     return {
@@ -706,8 +1390,7 @@ def _raise_if_unfair_exact_params(params: dict[str, Any], *, params_path: Path) 
         problems.append(f"required exact setting mismatches: {mismatch_text}")
     details = "; ".join(problems) if problems else "unknown fairness mismatch"
     raise ValueError(
-        "exact-route params are not a fair MATLAB comparison in "
-        f"{params_path}: {details}"
+        f"exact-route params are not a fair MATLAB comparison in {params_path}: {details}"
     )
 
 
@@ -736,9 +1419,16 @@ def load_exact_params_file(source_surface: ExactProofSourceSurface) -> dict[str,
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:
     """Ensure the minimal staged directories used by the developer parity helpers."""
+    experiment_root = _resolve_experiment_root(dest_run_root)
+    if experiment_root is not None:
+        _ensure_experiment_root_layout(experiment_root)
+    (dest_run_root / EXPERIMENT_REFS_DIR).mkdir(parents=True, exist_ok=True)
+    (dest_run_root / EXPERIMENT_PARAMS_DIR).mkdir(parents=True, exist_ok=True)
     (dest_run_root / CHECKPOINTS_DIR).mkdir(parents=True, exist_ok=True)
-    (dest_run_root / "03_Analysis").mkdir(parents=True, exist_ok=True)
-    (dest_run_root / "99_Metadata").mkdir(parents=True, exist_ok=True)
+    (dest_run_root / ANALYSIS_DIR).mkdir(parents=True, exist_ok=True)
+    (dest_run_root / NORMALIZED_DIR).mkdir(parents=True, exist_ok=True)
+    (dest_run_root / HASHES_DIR).mkdir(parents=True, exist_ok=True)
+    (dest_run_root / METADATA_DIR).mkdir(parents=True, exist_ok=True)
 
 
 def write_capture_candidates_snapshot(
@@ -749,7 +1439,7 @@ def write_capture_candidates_snapshot(
     candidate_count: int = 0,
 ) -> None:
     """Persist lightweight run progress for long candidate-capture runs."""
-    atomic_write_json(
+    _write_json_with_hash(
         dest_run_root / RUN_SNAPSHOT_PATH,
         {
             "run_id": "capture-candidates",
@@ -769,6 +1459,7 @@ def write_capture_candidates_snapshot(
                     "units_total": 1,
                     "units_completed": 0,
                     "artifacts": {},
+                    "peak_memory_bytes": int(getattr(psutil.Process().memory_info(), "rss", 0)),
                 }
             },
             "optional_tasks": {},
@@ -965,8 +1656,8 @@ def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -
     if destination.exists():
         raise ValueError(f"destination run root already exists: {destination}")
 
+    ensure_dest_run_layout(destination)
     checkpoints_dir = destination / CHECKPOINTS_DIR
-    checkpoints_dir.mkdir(parents=True, exist_ok=False)
     for artifact in source_surface.checkpoints_dir.iterdir():
         target = checkpoints_dir / artifact.name
         if artifact.is_dir():
@@ -974,23 +1665,29 @@ def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -
         else:
             copy2(artifact, target)
 
-    metadata_dir = destination / "99_Metadata"
-    metadata_dir.mkdir(parents=True, exist_ok=True)
     (destination / "01_Input").mkdir(parents=True, exist_ok=True)
-    (destination / "03_Analysis").mkdir(parents=True, exist_ok=True)
-    copy2(source_surface.validated_params_path, metadata_dir / "source_validated_params.json")
-    copy2(source_surface.comparison_report_path, metadata_dir / "source_comparison_report.json")
+    refs_dir = destination / EXPERIMENT_REFS_DIR
+    copy2(source_surface.validated_params_path, refs_dir / "source_validated_params.json")
+    copy2(source_surface.comparison_report_path, refs_dir / "source_comparison_report.json")
     if source_surface.run_snapshot_path is not None:
-        copy2(source_surface.run_snapshot_path, metadata_dir / "source_run_snapshot.json")
+        copy2(source_surface.run_snapshot_path, refs_dir / "source_run_snapshot.json")
+    source_run_manifest = source_surface.run_root / RUN_MANIFEST_PATH
+    if source_run_manifest.is_file():
+        copy2(source_run_manifest, refs_dir / "source_run_manifest.json")
 
 
 def maybe_sync_exact_vertex_checkpoint(
     source_run_root: Path,
     dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
 ) -> bool:
     """Refresh the destination vertex checkpoint from canonical MATLAB vectors on the exact route."""
     try:
-        exact_surface = validate_exact_proof_source_surface(source_run_root)
+        exact_surface = validate_exact_proof_source_surface(
+            source_run_root,
+            oracle_root=oracle_root,
+        )
     except ValueError:
         return False
 
@@ -1004,8 +1701,8 @@ def maybe_sync_exact_vertex_checkpoint(
 def persist_experiment_summary(dest_run_root: Path, summary_payload: dict[str, Any]) -> None:
     """Persist the JSON and text summaries under 03_Analysis."""
     summary_text = render_experiment_summary(summary_payload)
-    atomic_write_json(dest_run_root / SUMMARY_JSON_PATH, summary_payload)
-    atomic_write_text(dest_run_root / SUMMARY_TEXT_PATH, summary_text)
+    _write_json_with_hash(dest_run_root / SUMMARY_JSON_PATH, summary_payload)
+    _write_text_with_hash(dest_run_root / SUMMARY_TEXT_PATH, summary_text)
 
 
 def persist_exact_proof_report(
@@ -1014,8 +1711,8 @@ def persist_exact_proof_report(
     report_payload: dict[str, Any],
 ) -> None:
     """Persist the JSON and text exact-proof reports."""
-    atomic_write_json(json_path, report_payload)
-    atomic_write_text(text_path, render_exact_proof_report(report_payload))
+    _write_json_with_hash(json_path, report_payload)
+    _write_text_with_hash(text_path, render_exact_proof_report(report_payload))
 
 
 def persist_text_and_json_report(
@@ -1026,8 +1723,8 @@ def persist_text_and_json_report(
     renderer: Any,
 ) -> None:
     """Persist a JSON report and its paired text rendering."""
-    atomic_write_json(json_path, report_payload)
-    atomic_write_text(text_path, str(renderer(report_payload)))
+    _write_json_with_hash(json_path, report_payload)
+    _write_text_with_hash(text_path, str(renderer(report_payload)))
 
 
 def _build_candidate_exact_proof_report(
@@ -1077,12 +1774,14 @@ def _run_preflight_exact(
     *,
     source_run_root: Path,
     dest_run_root: Path,
+    oracle_root: Path | None = None,
     memory_safety_fraction: float,
     force: bool,
 ) -> tuple[dict[str, Any], Path, Path]:
     report_payload = build_exact_preflight_report(
         source_run_root,
         dest_run_root,
+        oracle_root=oracle_root,
         memory_safety_fraction=memory_safety_fraction,
         force=force,
     )
@@ -1096,6 +1795,25 @@ def _run_preflight_exact(
         report_payload,
         renderer=render_exact_preflight_report,
     )
+    try:
+        source_surface = validate_exact_proof_source_surface(
+            source_run_root,
+            oracle_root=oracle_root,
+        )
+        params = load_exact_params_file(source_surface)
+        _persist_param_storage(dest_root, params)
+        _write_run_manifest(
+            dest_root,
+            run_kind="parity_run",
+            status="passed" if bool(report_payload.get("passed")) else "failed",
+            command="preflight-exact",
+            dataset_hash=_dataset_hash_from_run_root(source_run_root),
+            oracle_surface=source_surface.oracle_surface,
+            params_payload=params,
+            extra={"preflight_report": str(json_path)},
+        )
+    except ValueError:
+        pass
     return report_payload, json_path, text_path
 
 
@@ -1103,8 +1821,12 @@ def _run_prove_luts(
     *,
     source_run_root: Path,
     dest_run_root: Path,
+    oracle_root: Path | None = None,
 ) -> tuple[dict[str, Any], Path, Path]:
-    source_surface = validate_exact_proof_source_surface(source_run_root)
+    source_surface = validate_exact_proof_source_surface(
+        source_run_root,
+        oracle_root=oracle_root,
+    )
     params = load_exact_params_file(source_surface)
     energy_payload = _load_exact_energy_payload(source_surface)
     size_of_image = cast(
@@ -1127,6 +1849,7 @@ def _run_prove_luts(
     )
     dest_root = dest_run_root.expanduser().resolve()
     ensure_dest_run_layout(dest_root)
+    _persist_param_storage(dest_root, params)
     json_path = dest_root / LUT_PROOF_JSON_PATH
     text_path = dest_root / LUT_PROOF_TEXT_PATH
     persist_text_and_json_report(
@@ -1135,6 +1858,16 @@ def _run_prove_luts(
         report_payload,
         renderer=render_lut_proof_report,
     )
+    _write_run_manifest(
+        dest_root,
+        run_kind="parity_run",
+        status="passed" if bool(report_payload.get("passed")) else "failed",
+        command="prove-luts",
+        dataset_hash=_dataset_hash_from_run_root(source_run_root),
+        oracle_surface=source_surface.oracle_surface,
+        params_payload=params,
+        extra={"lut_report": str(json_path)},
+    )
     return report_payload, json_path, text_path
 
 
@@ -1142,15 +1875,20 @@ def _run_capture_candidates(
     *,
     source_run_root: Path,
     dest_run_root: Path,
+    oracle_root: Path | None = None,
     include_debug_maps: bool,
 ) -> tuple[dict[str, Any], dict[str, Any], Path, Path]:
-    source_surface = validate_exact_proof_source_surface(source_run_root)
+    source_surface = validate_exact_proof_source_surface(
+        source_run_root,
+        oracle_root=oracle_root,
+    )
     params = load_exact_params_file(source_surface)
     energy_payload = _load_exact_energy_payload(source_surface)
     vertices_payload = _load_exact_vertices_payload(source_surface)
 
     dest_root = dest_run_root.expanduser().resolve()
     ensure_dest_run_layout(dest_root)
+    _persist_param_storage(dest_root, params)
 
     energy = np.asarray(energy_payload["energy"], dtype=np.float32)
     scale_indices = energy_payload.get("scale_indices")
@@ -1202,10 +1940,18 @@ def _run_capture_candidates(
         candidates,
         include_debug_maps=include_debug_maps,
     )
-    atomic_joblib_dump(snapshot_payload, dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH)
+    _write_joblib_with_hash(dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH, snapshot_payload)
     matlab_edges = load_normalized_matlab_vectors(source_surface.matlab_batch_dir, ("edges",))[
         "edges"
     ]
+    _persist_normalized_payloads(
+        dest_root,
+        group_name="capture_candidates",
+        payloads={
+            "candidate_snapshot": snapshot_payload,
+            "matlab_edges": matlab_edges,
+        },
+    )
     coverage_report = build_candidate_coverage_report(matlab_edges, snapshot_payload)
     coverage_report.update(
         {
@@ -1223,6 +1969,19 @@ def _run_capture_candidates(
         coverage_report,
         renderer=render_candidate_coverage_report,
     )
+    _write_run_manifest(
+        dest_root,
+        run_kind="parity_run",
+        status="passed" if bool(coverage_report.get("passed")) else "failed",
+        command="capture-candidates",
+        dataset_hash=_dataset_hash_from_run_root(source_run_root),
+        oracle_surface=source_surface.oracle_surface,
+        params_payload=params,
+        extra={
+            "candidate_checkpoint_path": str(dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH),
+            "candidate_report": str(json_path),
+        },
+    )
     return coverage_report, snapshot_payload, json_path, text_path
 
 
@@ -1230,13 +1989,18 @@ def _run_replay_edges(
     *,
     source_run_root: Path,
     dest_run_root: Path,
+    oracle_root: Path | None = None,
 ) -> tuple[dict[str, Any], Path, Path]:
-    source_surface = validate_exact_proof_source_surface(source_run_root)
+    source_surface = validate_exact_proof_source_surface(
+        source_run_root,
+        oracle_root=oracle_root,
+    )
     params = load_exact_params_file(source_surface)
     energy_payload = _load_exact_energy_payload(source_surface)
     vertices_payload = _load_exact_vertices_payload(source_surface)
 
     dest_root = dest_run_root.expanduser().resolve()
+    ensure_dest_run_layout(dest_root)
     candidate_checkpoint_path = dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH
     if not candidate_checkpoint_path.is_file():
         raise ValueError(f"missing candidate checkpoint for replay: {candidate_checkpoint_path}")
@@ -1281,12 +2045,21 @@ def _run_replay_edges(
         size_of_image=tuple(int(value) for value in energy.shape),
     )
     chosen["lumen_radius_microns"] = lumen_radius_microns.astype(np.float32, copy=True)
-    atomic_joblib_dump(chosen, dest_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl")
+    _write_joblib_with_hash(dest_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl", chosen)
 
     matlab_edges = load_normalized_matlab_vectors(source_surface.matlab_batch_dir, ("edges",))
     python_edges = {
         "edges": normalize_python_stage_payload("edges", chosen),
     }
+    _persist_param_storage(dest_root, params)
+    _persist_normalized_payloads(
+        dest_root,
+        group_name="replay_edges",
+        payloads={
+            "matlab_edges": matlab_edges,
+            "python_edges": python_edges,
+        },
+    )
     report_payload = compare_exact_artifacts(matlab_edges, python_edges, ("edges",))
     report_payload.update(
         {
@@ -1298,6 +2071,16 @@ def _run_replay_edges(
     json_path = dest_root / EDGE_REPLAY_PROOF_JSON_PATH
     text_path = dest_root / EDGE_REPLAY_PROOF_TEXT_PATH
     persist_exact_proof_report(json_path, text_path, report_payload)
+    _write_run_manifest(
+        dest_root,
+        run_kind="parity_run",
+        status="passed" if bool(report_payload.get("passed")) else "failed",
+        command="replay-edges",
+        dataset_hash=_dataset_hash_from_run_root(source_run_root),
+        oracle_surface=source_surface.oracle_surface,
+        params_payload=params,
+        extra={"edge_replay_report": str(json_path)},
+    )
     return report_payload, json_path, text_path
 
 
@@ -1307,10 +2090,27 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
     input_file = resolve_input_file(source_surface, args.input)
     params = load_params_file(source_surface, args.params_file)
     copy_source_surface(source_surface, dest_run_root)
-    exact_vertex_sync = maybe_sync_exact_vertex_checkpoint(source_surface.run_root, dest_run_root)
+    _persist_param_storage(dest_run_root, params)
+    oracle_surface: OracleSurface | None = None
+    if bool(params.get("comparison_exact_network")):
+        try:
+            oracle_surface = _resolve_oracle_surface(source_surface.run_root, oracle_root=None)
+        except ValueError:
+            oracle_surface = None
+    exact_vertex_sync = maybe_sync_exact_vertex_checkpoint(
+        source_surface.run_root,
+        dest_run_root,
+        oracle_root=oracle_surface.oracle_root if oracle_surface is not None else None,
+    )
+    dataset_hash = fingerprint_file(input_file)
+    _materialize_dataset_record(
+        _resolve_experiment_root(dest_run_root),
+        dataset_hash=dataset_hash,
+        dataset_file=input_file,
+    )
 
-    atomic_write_json(
-        dest_run_root / "99_Metadata" / "experiment_provenance.json",
+    _write_json_with_hash(
+        dest_run_root / METADATA_DIR / "experiment_provenance.json",
         {
             "source_run_root": str(source_surface.run_root),
             "source_comparison_report": str(source_surface.comparison_report_path),
@@ -1321,8 +2121,11 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
                 else None
             ),
             "input_file": str(input_file),
+            "dataset_hash": dataset_hash,
             "rerun_from": args.rerun_from,
             "exact_vertex_checkpoint_sync": exact_vertex_sync,
+            "oracle_root": str(oracle_surface.oracle_root) if oracle_surface is not None else None,
+            "oracle_id": oracle_surface.oracle_id if oracle_surface is not None else None,
         },
     )
 
@@ -1350,6 +2153,16 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
         new_python_counts=read_python_counts_from_run(dest_run_root),
     )
     persist_experiment_summary(dest_run_root, summary_payload)
+    _write_run_manifest(
+        dest_run_root,
+        run_kind="parity_run",
+        status="completed",
+        command="rerun-python",
+        dataset_hash=dataset_hash,
+        oracle_surface=oracle_surface,
+        params_payload=params,
+        extra={"rerun_from": args.rerun_from},
+    )
     print(render_experiment_summary(summary_payload))
 
 
@@ -1369,9 +2182,14 @@ def _handle_summarize(args: argparse.Namespace) -> None:
 
 
 def _handle_prove_exact(args: argparse.Namespace) -> None:
-    source_surface = validate_exact_proof_source_surface(Path(args.source_run_root))
-    load_exact_params_file(source_surface)
+    source_surface = validate_exact_proof_source_surface(
+        Path(args.source_run_root),
+        oracle_root=Path(args.oracle_root) if getattr(args, "oracle_root", None) else None,
+    )
+    params = load_exact_params_file(source_surface)
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    ensure_dest_run_layout(dest_run_root)
+    _persist_param_storage(dest_run_root, params)
     checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
     if not checkpoints_dir.is_dir():
         raise ValueError(f"destination run root is missing python checkpoints: {checkpoints_dir}")
@@ -1403,8 +2221,24 @@ def _handle_prove_exact(args: argparse.Namespace) -> None:
                 "edge_checkpoint_path": str(edge_checkpoint_path),
             }
         )
+        _persist_normalized_payloads(
+            dest_run_root,
+            group_name="prove_exact",
+            payloads={
+                "matlab_edges": matlab_artifacts["edges"],
+                "candidate_edges": candidate_payload,
+            },
+        )
     else:
         python_artifacts = load_normalized_python_checkpoints(checkpoints_dir, selected_stages)
+        _persist_normalized_payloads(
+            dest_run_root,
+            group_name="prove_exact",
+            payloads={
+                "matlab_artifacts": matlab_artifacts,
+                "python_artifacts": python_artifacts,
+            },
+        )
         report_payload = compare_exact_artifacts(
             matlab_artifacts, python_artifacts, selected_stages
         )
@@ -1425,6 +2259,16 @@ def _handle_prove_exact(args: argparse.Namespace) -> None:
         args.report_path,
     )
     persist_exact_proof_report(report_json_path, report_text_path, report_payload)
+    _write_run_manifest(
+        dest_run_root,
+        run_kind="parity_run",
+        status="passed" if bool(report_payload.get("passed")) else "failed",
+        command="prove-exact",
+        dataset_hash=_dataset_hash_from_run_root(source_surface.run_root),
+        oracle_surface=source_surface.oracle_surface,
+        params_payload=params,
+        extra={"exact_report": str(report_json_path), "stage": args.stage},
+    )
 
     rendered = render_exact_proof_report(report_payload)
     print(rendered)
@@ -1436,6 +2280,7 @@ def _handle_preflight_exact(args: argparse.Namespace) -> None:
     report_payload, _json_path, _text_path = _run_preflight_exact(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
     )
@@ -1449,6 +2294,7 @@ def _handle_prove_luts(args: argparse.Namespace) -> None:
     report_payload, _json_path, _text_path = _run_prove_luts(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
     )
     rendered = render_lut_proof_report(report_payload)
     print(rendered)
@@ -1460,6 +2306,7 @@ def _handle_capture_candidates(args: argparse.Namespace) -> None:
     report_payload, _snapshot_payload, _json_path, _text_path = _run_capture_candidates(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         include_debug_maps=bool(args.debug_maps),
     )
     rendered = render_candidate_coverage_report(report_payload)
@@ -1472,6 +2319,7 @@ def _handle_replay_edges(args: argparse.Namespace) -> None:
     report_payload, _json_path, _text_path = _run_replay_edges(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
     )
     rendered = render_exact_proof_report(report_payload)
     print(rendered)
@@ -1482,9 +2330,11 @@ def _handle_replay_edges(args: argparse.Namespace) -> None:
 def _handle_fail_fast(args: argparse.Namespace) -> None:
     source_run_root = Path(args.source_run_root)
     dest_run_root = Path(args.dest_run_root)
+    oracle_root = Path(args.oracle_root) if args.oracle_root else None
     preflight_report, _json_path, _text_path = _run_preflight_exact(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
     )
@@ -1495,6 +2345,7 @@ def _handle_fail_fast(args: argparse.Namespace) -> None:
     lut_report, _json_path, _text_path = _run_prove_luts(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
     )
     print(render_lut_proof_report(lut_report))
     if not bool(lut_report.get("passed")):
@@ -1503,6 +2354,7 @@ def _handle_fail_fast(args: argparse.Namespace) -> None:
     candidate_report, _snapshot_payload, _json_path, _text_path = _run_capture_candidates(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
         include_debug_maps=bool(args.debug_maps),
     )
     print(render_candidate_coverage_report(candidate_report))
@@ -1512,6 +2364,7 @@ def _handle_fail_fast(args: argparse.Namespace) -> None:
     replay_report, _json_path, _text_path = _run_replay_edges(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
+        oracle_root=oracle_root,
     )
     print(render_exact_proof_report(replay_report))
     if not bool(replay_report.get("passed")):
@@ -1519,11 +2372,124 @@ def _handle_fail_fast(args: argparse.Namespace) -> None:
 
     exact_args = argparse.Namespace(
         source_run_root=str(source_run_root),
+        oracle_root=str(oracle_root) if oracle_root is not None else None,
         dest_run_root=str(dest_run_root),
         stage="all",
         report_path=None,
     )
     _handle_prove_exact(exact_args)
+
+
+def _handle_promote_oracle(args: argparse.Namespace) -> None:
+    matlab_batch_dir = Path(args.matlab_batch_dir).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve()
+    if not matlab_batch_dir.is_dir():
+        raise ValueError(f"MATLAB batch directory not found: {matlab_batch_dir}")
+    if oracle_root.exists():
+        raise ValueError(f"oracle root already exists: {oracle_root}")
+
+    experiment_root = _resolve_experiment_root(oracle_root) or oracle_root.parent.parent
+    _ensure_experiment_root_layout(experiment_root)
+    dataset_file = Path(args.dataset_file).expanduser().resolve() if args.dataset_file else None
+    dataset_hash = _materialize_dataset_record(
+        experiment_root,
+        dataset_hash=_string_or_none(args.dataset_hash),
+        dataset_file=dataset_file,
+    )
+    _materialize_oracle_root(
+        matlab_batch_dir=matlab_batch_dir,
+        oracle_root=oracle_root,
+        dataset_hash=dataset_hash,
+        oracle_id=_string_or_none(args.oracle_id),
+        matlab_source_version=_string_or_none(args.matlab_source_version),
+    )
+    print(str(oracle_root / ORACLE_MANIFEST_PATH))
+
+
+def _handle_promote_dataset(args: argparse.Namespace) -> None:
+    dataset_file = Path(args.dataset_file).expanduser().resolve()
+    if not dataset_file.is_file():
+        raise ValueError(f"dataset file not found: {dataset_file}")
+
+    experiment_root = Path(args.experiment_root).expanduser().resolve()
+    _ensure_experiment_root_layout(experiment_root)
+    dataset_hash = _materialize_dataset_record(
+        experiment_root,
+        dataset_hash=None,
+        dataset_file=dataset_file,
+    )
+    if dataset_hash is None:
+        raise ValueError(f"could not fingerprint dataset file: {dataset_file}")
+    print(str(experiment_root / "datasets" / dataset_hash / DATASET_MANIFEST_PATH))
+
+
+def _handle_promote_report(args: argparse.Namespace) -> None:
+    run_root = Path(args.run_root).expanduser().resolve()
+    if not run_root.is_dir():
+        raise ValueError(f"run root not found: {run_root}")
+    experiment_root = _resolve_experiment_root(run_root)
+    if experiment_root is None:
+        raise ValueError(f"run root is not under a structured experiment root: {run_root}")
+    _ensure_experiment_root_layout(experiment_root)
+
+    report_root = (
+        Path(args.report_root).expanduser().resolve()
+        if args.report_root
+        else experiment_root / "reports" / _entity_id_from_path(run_root)
+    )
+    if report_root.exists():
+        raise ValueError(f"report root already exists: {report_root}")
+
+    report_root.mkdir(parents=True, exist_ok=False)
+    for relative_dir in (EXPERIMENT_REFS_DIR, EXPERIMENT_PARAMS_DIR, ANALYSIS_DIR):
+        source_dir = run_root / relative_dir
+        if source_dir.is_dir():
+            copytree(source_dir, report_root / relative_dir)
+    (report_root / METADATA_DIR).mkdir(parents=True, exist_ok=True)
+
+    source_manifest = load_json_dict(run_root / RUN_MANIFEST_PATH) or {}
+    report_manifest = {
+        "manifest_version": 1,
+        "kind": "promoted_report",
+        "report_id": _entity_id_from_path(report_root),
+        "source_run_id": _string_or_none(source_manifest.get("run_id"))
+        or _entity_id_from_path(run_root),
+        "source_run_root": str(run_root),
+        "report_root": str(report_root),
+        "dataset_hash": source_manifest.get("dataset_hash"),
+        "oracle_id": source_manifest.get("oracle_id"),
+        "python_commit": source_manifest.get("python_commit") or _resolve_python_commit(),
+        "matlab_source_version": source_manifest.get("matlab_source_version"),
+        "status": "promoted",
+        "retention": "promoted",
+        "timestamps": {
+            "created_at": _now_iso(),
+            "updated_at": _now_iso(),
+        },
+    }
+    _write_json_with_hash(report_root / REPORT_MANIFEST_PATH, report_manifest)
+
+    if source_manifest:
+        source_manifest["promoted_report_root"] = str(report_root)
+        source_manifest["promotion_state"] = "promoted"
+        source_timestamps = cast("dict[str, Any]", dict(source_manifest.get("timestamps", {})))
+        source_timestamps["updated_at"] = _now_iso()
+        source_manifest["timestamps"] = source_timestamps
+        _write_json_with_hash(run_root / RUN_MANIFEST_PATH, source_manifest)
+
+    _upsert_index_record(
+        experiment_root,
+        {
+            "kind": "promoted_report",
+            "id": report_manifest["report_id"],
+            "status": "promoted",
+            "path": str(report_root),
+            "dataset_hash": report_manifest.get("dataset_hash"),
+            "oracle_id": report_manifest.get("oracle_id"),
+            "updated_at": report_manifest["timestamps"]["updated_at"],
+        },
+    )
+    print(str(report_root / REPORT_MANIFEST_PATH))
 
 
 def _expect_mapping(value: Any, label: str) -> dict[str, Any]:

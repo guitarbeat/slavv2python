@@ -20,6 +20,7 @@ Read these first when working on the live implementation:
 ## Workflow Guides
 
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
+- [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
 
 ## Adjacent Reference Docs
 

@@ -29,6 +29,13 @@ def _write_json(path: Path, payload: dict[str, object]) -> Path:
     return path
 
 
+def _build_experiment_root(tmp_path: Path) -> Path:
+    root = tmp_path / "live-parity"
+    for name in ("datasets", "oracles", "reports", "runs"):
+        (root / name).mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _cell(items: list[np.ndarray]) -> np.ndarray:
     cell = np.empty((len(items),), dtype=object)
     for index, item in enumerate(items):
@@ -169,8 +176,9 @@ def _exact_validated_params(**overrides: object) -> dict[str, object]:
 
 @pytest.mark.integration
 def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monkeypatch):
-    source_run_root = tmp_path / "source-run"
-    dest_run_root = tmp_path / "dest-run"
+    experiment_root = _build_experiment_root(tmp_path)
+    source_run_root = experiment_root / "runs" / "source-run"
+    dest_run_root = experiment_root / "runs" / "dest-run"
     input_file = tmp_path / "input.tif"
     input_file.write_bytes(b"placeholder-tiff")
 
@@ -316,8 +324,21 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
     assert summary_payload["new_python_counts"] == {"vertices": 4, "edges": 3, "strands": 2}
     assert summary_payload["diff_vs_matlab"] == {"vertices": 0, "edges": -2, "strands": -1}
     assert summary_payload["diff_vs_source_python"] == {"vertices": 0, "edges": 1, "strands": 1}
-    assert (dest_run_root / "99_Metadata" / "source_comparison_report.json").is_file()
-    assert (dest_run_root / "99_Metadata" / "source_validated_params.json").is_file()
+    assert (dest_run_root / "00_Refs" / "source_comparison_report.json").is_file()
+    assert (dest_run_root / "00_Refs" / "source_validated_params.json").is_file()
+    assert (dest_run_root / parity_experiment.SHARED_PARAMS_PATH).is_file()
+    assert (dest_run_root / parity_experiment.PYTHON_DERIVED_PARAMS_PATH).is_file()
+    run_manifest = json.loads(
+        (dest_run_root / parity_experiment.RUN_MANIFEST_PATH).read_text(encoding="utf-8")
+    )
+    assert run_manifest["dataset_hash"] == parity_experiment.fingerprint_file(input_file)
+    index_lines = (
+        (experiment_root / parity_experiment.EXPERIMENT_INDEX_PATH)
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+    assert any('"command":"rerun-python"' in line for line in index_lines)
 
 
 @pytest.mark.integration
@@ -469,7 +490,9 @@ def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
     )
     assert report_payload["passed"] is True
     assert report_payload["first_failure"] is None
-    assert report_payload["exact_route_gate"].endswith("(canonical: python_native_hessian)")
+    assert report_payload["exact_route_gate"] == (
+        "comparison_exact_network + python_native_hessian energy provenance"
+    )
 
 
 @pytest.mark.integration
@@ -653,6 +676,104 @@ def test_replay_edges_consumes_candidate_checkpoint_and_writes_proof(tmp_path, m
         (dest_run_root / parity_experiment.EDGE_REPLAY_PROOF_JSON_PATH).read_text(encoding="utf-8")
     )
     assert report_payload["passed"] is True
+
+
+@pytest.mark.integration
+def test_promote_dataset_copies_input_and_writes_manifest(tmp_path):
+    experiment_root = _build_experiment_root(tmp_path)
+    dataset_file = tmp_path / "input.tif"
+    dataset_file.write_bytes(b"tiff-payload")
+    dataset_hash = parity_experiment.fingerprint_file(dataset_file)
+
+    parity_experiment.main(
+        [
+            "promote-dataset",
+            "--dataset-file",
+            str(dataset_file),
+            "--experiment-root",
+            str(experiment_root),
+        ]
+    )
+
+    dataset_root = experiment_root / "datasets" / dataset_hash
+    manifest = json.loads(
+        (dataset_root / parity_experiment.DATASET_MANIFEST_PATH).read_text(encoding="utf-8")
+    )
+    assert manifest["dataset_hash"] == dataset_hash
+    assert manifest["stored_input_file"] == str(
+        dataset_root / parity_experiment.DATASET_INPUT_DIR / dataset_file.name
+    )
+    assert (dataset_root / parity_experiment.DATASET_INPUT_DIR / dataset_file.name).read_bytes() == (
+        b"tiff-payload"
+    )
+    assert (
+        dataset_root / parity_experiment.DATASET_INPUT_DIR / f"{dataset_file.name}.sha256"
+    ).is_file()
+    index_lines = (
+        (experiment_root / parity_experiment.EXPERIMENT_INDEX_PATH)
+        .read_text(encoding="utf-8")
+        .strip()
+        .splitlines()
+    )
+    assert any(f'"id":"{dataset_hash}"' in line and '"kind":"dataset"' in line for line in index_lines)
+
+
+@pytest.mark.integration
+def test_promote_oracle_writes_manifest_and_index(tmp_path):
+    experiment_root = _build_experiment_root(tmp_path)
+    matlab_batch_dir = (
+        tmp_path / "matlab-source" / "01_Input" / "matlab_results" / "batch_260421-151654"
+    )
+    matlab_batch_dir.parent.mkdir(parents=True, exist_ok=True)
+    _materialize_exact_matlab_batch(tmp_path / "matlab-source")
+    oracle_root = experiment_root / "oracles" / "oracle-a"
+    dataset_file = tmp_path / "input.tif"
+    dataset_file.write_bytes(b"tiff")
+
+    parity_experiment.main(
+        [
+            "promote-oracle",
+            "--matlab-batch-dir",
+            str(matlab_batch_dir),
+            "--oracle-root",
+            str(oracle_root),
+            "--dataset-file",
+            str(dataset_file),
+            "--oracle-id",
+            "oracle-a",
+        ]
+    )
+
+    manifest = json.loads(
+        (oracle_root / parity_experiment.ORACLE_MANIFEST_PATH).read_text(encoding="utf-8")
+    )
+    assert manifest["oracle_id"] == "oracle-a"
+    assert manifest["dataset_hash"] == parity_experiment.fingerprint_file(dataset_file)
+    assert (experiment_root / parity_experiment.EXPERIMENT_INDEX_PATH).is_file()
+
+
+@pytest.mark.integration
+def test_promote_report_copies_analysis_and_writes_manifest(tmp_path):
+    experiment_root = _build_experiment_root(tmp_path)
+    run_root = experiment_root / "runs" / "trial-a"
+    parity_experiment.ensure_dest_run_layout(run_root)
+    _write_json(run_root / parity_experiment.SUMMARY_JSON_PATH, {"passed": True})
+    _write_json(run_root / parity_experiment.RUN_MANIFEST_PATH, {"run_id": "trial-a"})
+
+    parity_experiment.main(
+        [
+            "promote-report",
+            "--run-root",
+            str(run_root),
+        ]
+    )
+
+    report_root = experiment_root / "reports" / "trial-a"
+    report_manifest = json.loads(
+        (report_root / parity_experiment.REPORT_MANIFEST_PATH).read_text(encoding="utf-8")
+    )
+    assert report_manifest["source_run_id"] == "trial-a"
+    assert (report_root / parity_experiment.SUMMARY_JSON_PATH).is_file()
 
 
 @pytest.mark.integration

@@ -1,7 +1,0 @@
-Exact preflight report
-Status: PASS
-Source run root: D:\slavv_comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial
-Destination run root: C:\Users\alw4834\Documents\slavv2python\dev\tmp_tests\edge_parity_live_trial_b
-Image shape: [121, 512, 512]
-Memory: estimated=1308426240 allowed=2873160499 available=3591450624
-Collision count: 0

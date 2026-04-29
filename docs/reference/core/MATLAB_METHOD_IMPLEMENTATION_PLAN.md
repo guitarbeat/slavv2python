@@ -30,7 +30,9 @@ When these sources differ, use this order:
 Implications:
 
 - The released MATLAB code is the executable specification for parity work.
-- Preserved MATLAB vectors are the oracle proof artifacts.
+- Preserved MATLAB vectors are the oracle proof artifacts and should be stored
+  as standalone packages under the maintained `oracles/` experiment-root
+  surface.
 - The paper prose is explanatory context, not a higher-priority spec than the
   released MATLAB code.
 - Current Python docs must never overrule either the MATLAB source or proof
@@ -147,7 +149,8 @@ native exact parity is done.
    surfaces are materially closer.
 6. `dev/scripts/cli/parity_experiment.py` and `source/io/matlab_exact_proof.py`
    Preserve the proof harness as the acceptance gate for native-first exact
-   reruns.
+   reruns, with disposable trial runs under `runs/`, preserved MATLAB truth
+   under `oracles/`, and promoted summaries under `reports/`.
 
 ## Documentation Rules
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
 from source.runtime import RunContext, load_run_snapshot
@@ -12,8 +14,12 @@ from source.runtime.run_state import (
 )
 
 
-def test_run_context_persists_snapshot_lifecycle(tmp_path):
+def test_run_context_persists_snapshot_lifecycle(tmp_path, monkeypatch):
     run_dir = tmp_path / "run"
+    monkeypatch.setattr(
+        "source.runtime._run_state.context.RunContext._sample_process_memory_bytes",
+        staticmethod(lambda: 4096),
+    )
     context = build_run_context(
         run_dir,
         input_fingerprint="input-a",
@@ -49,6 +55,10 @@ def test_run_context_persists_snapshot_lifecycle(tmp_path):
     assert snapshot.optional_tasks["exports"].status == STATUS_COMPLETED
     assert snapshot.optional_tasks["exports"].artifacts["json"] == "network.json"
     assert target_stage_progress(snapshot) >= snapshot.overall_progress
+    run_manifest = json.loads((run_dir / "99_Metadata" / "run_manifest.json").read_text("utf-8"))
+    assert run_manifest["dataset_hash"] == "input-a"
+    assert run_manifest["stage_metrics"]["energy"]["peak_memory_bytes"] == 4096
+    assert run_manifest["stage_metrics"]["energy"]["elapsed_seconds"] >= 0.0
 
 
 def test_from_existing_preserves_existing_target_stage(tmp_path):

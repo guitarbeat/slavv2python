@@ -46,6 +46,12 @@ def test_dashboard_stage_frame_uses_placeholders_without_snapshot():
     assert set(frame["Source"]) == {"No run snapshot loaded"}
 
 
+def test_dashboard_stage_frame_uses_structured_snapshot_path_when_run_dir_is_known():
+    frame = web_app._dashboard_stage_frame(None, run_dir="run-dir")
+
+    assert set(frame["Source"]) == {r"run-dir\99_Metadata\run_snapshot.json"}
+
+
 def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     snapshot = RunSnapshot(
         run_id="run-123",
@@ -114,7 +120,9 @@ def test_dashboard_breakdown_frame_includes_live_stats_and_share_metrics():
     assert requested_row["Source"] == "session_state.share_report_metrics"
     assert task_row["Section"] == "Optional Tasks"
     assert task_row["Status"] == "completed"
+    assert task_row["Source"] == "99_Metadata/run_snapshot.json"
     assert runtime_row["Value"] == "1h 1m"
+    assert runtime_row["Source"] == "99_Metadata/run_snapshot.json"
     assert eta_row["Value"] == "1m 35.0s"
     assert resume_row["Value"] == "67% (2/3)"
 

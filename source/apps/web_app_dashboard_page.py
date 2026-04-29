@@ -244,7 +244,7 @@ def _render_dashboard_surface() -> None:
                 "\n".join(
                     [
                         "- The current shell focuses on the active run, network outputs, and share activity.",
-                        "- `Pipeline` rows come from `run_snapshot.json`.",
+                        "- `Pipeline` rows come from `99_Metadata/run_snapshot.json`.",
                         "- `Network` rows come from `processing_results` via `compute_shareable_stats()`.",
                         "- Placeholder rows mark the next data sources to wire once entities are finalized.",
                     ]

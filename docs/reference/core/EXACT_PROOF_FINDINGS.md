@@ -22,6 +22,8 @@ Use the other core docs for different jobs:
 - The canonical exact route is `comparison_exact_network=True` with
   `python_native_hessian` as the canonical exact-compatible energy provenance.
 - Preserved MATLAB vectors remain the oracle artifacts for `prove-exact`.
+- Maintained parity storage now separates preserved MATLAB truth under
+  `oracles/` from disposable reruns under `runs/`.
 - `100%` means artifact-level equality against preserved MATLAB vectors, not
   count-level similarity.
 
@@ -51,6 +53,12 @@ The strongest current interpretation is:
 The maintained exact route now rejects source runs whose saved
 `validated_params.json` still carries Python-only parity controls or omits the
 required MATLAB-shaped exact settings.
+
+Exact-route experiments should now also persist:
+
+- `01_Params/shared_params.json`
+- `01_Params/python_derived_params.json`
+- `01_Params/param_diff.json`
 
 Current live read on the preserved run root
 `20260421_accepted_budget_trial`:

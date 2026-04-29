@@ -26,6 +26,13 @@ def _write_json(path: Path, payload: dict[str, object]) -> Path:
     return path
 
 
+def _build_experiment_root(tmp_path: Path) -> Path:
+    root = tmp_path / "live-parity"
+    for name in ("datasets", "oracles", "reports", "runs"):
+        (root / name).mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _build_source_run_root(tmp_path: Path) -> Path:
     run_root = tmp_path / "source-run"
     materialize_checkpoint_surface(
@@ -137,6 +144,7 @@ def test_build_parser_prove_exact_defaults():
     assert args.command == "prove-exact"
     assert args.stage == "all"
     assert args.report_path is None
+    assert args.oracle_root is None
 
 
 def test_build_parser_fail_fast_defaults():
@@ -155,6 +163,44 @@ def test_build_parser_fail_fast_defaults():
     assert args.command == "fail-fast"
     assert args.force is False
     assert args.debug_maps is False
+    assert args.oracle_root is None
+
+
+def test_build_parser_promote_commands():
+    parser = parity_experiment.build_parser()
+
+    dataset_args = parser.parse_args(
+        [
+            "promote-dataset",
+            "--dataset-file",
+            "input.tif",
+            "--experiment-root",
+            "live-parity",
+        ]
+    )
+    oracle_args = parser.parse_args(
+        [
+            "promote-oracle",
+            "--matlab-batch-dir",
+            "matlab-batch",
+            "--oracle-root",
+            "oracle-root",
+        ]
+    )
+    report_args = parser.parse_args(
+        [
+            "promote-report",
+            "--run-root",
+            "run-root",
+        ]
+    )
+
+    assert dataset_args.command == "promote-dataset"
+    assert dataset_args.experiment_root == "live-parity"
+    assert oracle_args.command == "promote-oracle"
+    assert oracle_args.oracle_root == "oracle-root"
+    assert report_args.command == "promote-report"
+    assert report_args.report_root is None
 
 
 def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):
@@ -260,6 +306,9 @@ def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(
     surface = parity_experiment.validate_exact_proof_source_surface(run_root)
 
     assert surface.run_root == run_root.resolve()
+    assert surface.oracle_surface.oracle_root.parent.name == "oracles"
+    assert surface.oracle_surface.manifest_path is not None
+    assert surface.oracle_surface.manifest_path.is_file()
     assert surface.matlab_batch_dir.name == "batch_260421-151654"
     assert set(surface.matlab_vector_paths) == {"vertices", "edges", "network"}
 
@@ -355,6 +404,7 @@ def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
     report = parity_experiment.build_exact_preflight_report(
         run_root,
         tmp_path / "dest-run",
+        oracle_root=None,
         memory_safety_fraction=0.8,
         force=False,
     )
@@ -404,6 +454,7 @@ def test_build_exact_preflight_report_refuses_on_destination_collision(
     report = parity_experiment.build_exact_preflight_report(
         run_root,
         tmp_path / "dest-run",
+        oracle_root=None,
         memory_safety_fraction=0.8,
         force=False,
     )
@@ -448,6 +499,7 @@ def test_build_exact_preflight_report_flags_unfair_exact_params(tmp_path, monkey
     report = parity_experiment.build_exact_preflight_report(
         run_root,
         tmp_path / "dest-run",
+        oracle_root=None,
         memory_safety_fraction=0.8,
         force=False,
     )
@@ -468,6 +520,15 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
         run_root=source_run_root,
         checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
         validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
+        oracle_surface=parity_experiment.OracleSurface(
+            oracle_root=matlab_batch_dir,
+            manifest_path=None,
+            matlab_batch_dir=matlab_batch_dir,
+            matlab_vector_paths={},
+            oracle_id=None,
+            matlab_source_version=None,
+            dataset_hash=None,
+        ),
         matlab_batch_dir=matlab_batch_dir,
         matlab_vector_paths={},
     )
@@ -491,7 +552,7 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     monkeypatch.setattr(
         parity_experiment,
         "validate_exact_proof_source_surface",
-        lambda _run_root: source_surface,
+        lambda _run_root, oracle_root=None: source_surface,
     )
     monkeypatch.setattr(
         parity_experiment,
@@ -556,6 +617,40 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
         "(iterations=512, candidates=1)"
     )
     assert snapshot["stages"]["edges"]["detail"] == snapshot["current_detail"]
+
+
+def test_persist_param_storage_writes_split_param_files(tmp_path):
+    dest_run_root = (_build_experiment_root(tmp_path) / "runs" / "dest-run").resolve()
+    parity_experiment.ensure_dest_run_layout(dest_run_root)
+
+    parity_experiment._persist_param_storage(
+        dest_run_root,
+        {
+            "comparison_exact_network": True,
+            "direction_method": "hessian",
+            "discrete_tracing": False,
+            "edge_method": "tracing",
+            "energy_method": "hessian",
+            "energy_projection_mode": "matlab",
+            "energy_storage_format": "joblib",
+            "parity_candidate_salvage_mode": "legacy",
+        },
+    )
+
+    shared_params = json.loads(
+        (dest_run_root / parity_experiment.SHARED_PARAMS_PATH).read_text(encoding="utf-8")
+    )
+    python_derived = json.loads(
+        (dest_run_root / parity_experiment.PYTHON_DERIVED_PARAMS_PATH).read_text(encoding="utf-8")
+    )
+    param_diff = json.loads(
+        (dest_run_root / parity_experiment.PARAM_DIFF_PATH).read_text(encoding="utf-8")
+    )
+
+    assert shared_params["energy_projection_mode"] == "matlab"
+    assert python_derived["orchestration_params"]["comparison_exact_network"] is True
+    assert python_derived["python_only_params"]["parity_candidate_salvage_mode"] == "legacy"
+    assert "parity_candidate_salvage_mode" in param_diff["disallowed_python_only_keys"]
 
 
 def test_build_experiment_summary_computes_deltas(tmp_path):

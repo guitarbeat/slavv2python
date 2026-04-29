@@ -30,6 +30,7 @@ class StageSnapshot:
     completed_at: str | None = None
     elapsed_seconds: float = 0.0
     eta_seconds: float | None = None
+    peak_memory_bytes: int = 0
 
 
 @dataclass

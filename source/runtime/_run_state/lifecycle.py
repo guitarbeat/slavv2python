@@ -135,6 +135,7 @@ def fail_stage_snapshot(snapshot: RunSnapshot, *, stage: str, message: str) -> S
     stage_snapshot = snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
     stage_snapshot.status = STATUS_FAILED
     stage_snapshot.updated_at = _now_iso()
+    stage_snapshot.completed_at = _now_iso()
     stage_snapshot.detail = message
     snapshot.status = STATUS_FAILED
     snapshot.current_stage = stage

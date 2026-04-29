@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -17,7 +17,7 @@ def _dashboard_snapshot_source(run_dir: str | None) -> str:
     """Return the most specific snapshot source label available."""
     if not run_dir:
         return "No run snapshot loaded"
-    return os.path.join(run_dir, "run_snapshot.json")
+    return str(Path(run_dir) / "99_Metadata" / "run_snapshot.json")
 
 
 def _dashboard_stage_frame(snapshot: Any | None, run_dir: str | None = None) -> pd.DataFrame:
@@ -35,7 +35,7 @@ def _dashboard_stage_frame(snapshot: Any | None, run_dir: str | None = None) -> 
                     if stage_snapshot
                     else "Waiting for a processed run"
                 ),
-                "Source": "run_snapshot.json"
+                "Source": "99_Metadata/run_snapshot.json"
                 if snapshot is not None
                 else _dashboard_snapshot_source(run_dir),
             }
@@ -48,7 +48,11 @@ def _dashboard_run_throughput_rows(
     run_dir: str | None = None,
 ) -> list[dict[str, object]]:
     """Build per-run throughput metrics from the persisted snapshot."""
-    source = "run_snapshot.json" if snapshot is not None else _dashboard_snapshot_source(run_dir)
+    source = (
+        "99_Metadata/run_snapshot.json"
+        if snapshot is not None
+        else _dashboard_snapshot_source(run_dir)
+    )
     if snapshot is None:
         return [
             {
@@ -172,7 +176,7 @@ def _dashboard_optional_task_rows(
                 "Progress": int(task.progress * 100),
                 "Value": f"{int(task.progress * 100)}%",
                 "Status": task.status,
-                "Source": "run_snapshot.json",
+                "Source": "99_Metadata/run_snapshot.json",
                 "Notes": task.detail or "Tracked optional work",
             }
             for task_name, task in sorted(optional_tasks.items())
@@ -185,7 +189,7 @@ def _dashboard_optional_task_rows(
             "Value": "0 tracked" if snapshot is not None else DASHBOARD_PLACEHOLDER,
             "Status": "idle" if snapshot is not None else "placeholder",
             "Source": (
-                "run_snapshot.json optional_tasks"
+                "99_Metadata/run_snapshot.json optional_tasks"
                 if snapshot is not None
                 else _dashboard_snapshot_source(run_dir)
             ),
