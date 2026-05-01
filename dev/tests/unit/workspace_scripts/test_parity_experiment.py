@@ -75,8 +75,19 @@ def _build_source_run_root(tmp_path: Path) -> Path:
 
 def _materialize_exact_matlab_batch(run_root: Path) -> Path:
     batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260421-151654"
+    data_dir = batch_dir / "data"
     vectors_dir = batch_dir / "vectors"
+    data_dir.mkdir(parents=True, exist_ok=True)
     vectors_dir.mkdir(parents=True, exist_ok=True)
+    savemat(
+        data_dir / "energy_260421.mat",
+        {
+            "energy": np.zeros((2, 2, 2), dtype=np.float64),
+            "scale_indices": np.ones((2, 2, 2), dtype=np.int16),
+            "energy_4d": np.zeros((2, 2, 2, 1), dtype=np.float64),
+            "lumen_radius_microns": np.array([1.0], dtype=np.float64),
+        },
+    )
     savemat(
         vectors_dir / "vertices_260421.mat",
         {
@@ -187,6 +198,17 @@ def test_build_parser_promote_commands():
             "oracle-root",
         ]
     )
+    init_args = parser.parse_args(
+        [
+            "init-exact-run",
+            "--dataset-root",
+            "dataset-root",
+            "--oracle-root",
+            "oracle-root",
+            "--dest-run-root",
+            "dest-run",
+        ]
+    )
     report_args = parser.parse_args(
         [
             "promote-report",
@@ -199,6 +221,9 @@ def test_build_parser_promote_commands():
     assert dataset_args.experiment_root == "live-parity"
     assert oracle_args.command == "promote-oracle"
     assert oracle_args.oracle_root == "oracle-root"
+    assert init_args.command == "init-exact-run"
+    assert init_args.stop_after == "vertices"
+    assert init_args.energy_storage_format == "npy"
     assert report_args.command == "promote-report"
     assert report_args.report_root is None
 
@@ -310,7 +335,7 @@ def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(
     assert surface.oracle_surface.manifest_path is not None
     assert surface.oracle_surface.manifest_path.is_file()
     assert surface.matlab_batch_dir.name == "batch_260421-151654"
-    assert set(surface.matlab_vector_paths) == {"vertices", "edges", "network"}
+    assert set(surface.matlab_vector_paths) == {"energy", "vertices", "edges", "network"}
 
 
 def test_validate_exact_proof_source_surface_requires_exact_route_gate(tmp_path):
@@ -511,6 +536,178 @@ def test_build_exact_preflight_report_flags_unfair_exact_params(tmp_path, monkey
     ]
 
 
+def test_find_parity_process_collisions_ignores_current_process_ancestry(monkeypatch, tmp_path):
+    dest_run_root = tmp_path / "dest-run"
+    dest_run_root.mkdir()
+
+    class _FakeProcess:
+        def __init__(self, pid: int, cmdline: list[str] | None = None) -> None:
+            self.pid = pid
+            self.info = {
+                "pid": pid,
+                "name": "python.exe",
+                "cmdline": cmdline or [],
+            }
+
+        def parents(self) -> list[object]:
+            return [_FakeProcess(22), _FakeProcess(11)]
+
+    normalized_dest = str(dest_run_root.resolve())
+    matching_cmdline = [
+        "python.exe",
+        "dev/scripts/cli/parity_experiment.py",
+        "fail-fast",
+        "--dest-run-root",
+        normalized_dest,
+    ]
+    monkeypatch.setattr(parity_experiment.psutil, "Process", lambda: _FakeProcess(33))
+    monkeypatch.setattr(
+        parity_experiment.psutil,
+        "process_iter",
+        lambda _attrs: iter(
+            [
+                _FakeProcess(33, matching_cmdline),
+                _FakeProcess(22, matching_cmdline),
+                _FakeProcess(11, matching_cmdline),
+                _FakeProcess(44, matching_cmdline),
+            ]
+        ),
+    )
+
+    collisions = parity_experiment.find_parity_process_collisions(dest_run_root)
+
+    assert collisions == [
+        {
+            "pid": 44,
+            "name": "python.exe",
+            "cmdline": matching_cmdline,
+        }
+    ]
+
+
+def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_run(
+    tmp_path, monkeypatch
+):
+    source_run_root = tmp_path / "source-run"
+    dest_run_root = tmp_path / "dest-run"
+    matlab_batch_dir = tmp_path / "matlab-batch"
+    matlab_batch_dir.mkdir()
+    source_surface = parity_experiment.ExactProofSourceSurface(
+        run_root=source_run_root,
+        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
+        oracle_surface=parity_experiment.OracleSurface(
+            oracle_root=matlab_batch_dir,
+            manifest_path=None,
+            matlab_batch_dir=matlab_batch_dir,
+            matlab_vector_paths={},
+            oracle_id="oracle-a",
+            matlab_source_version="matlab-a",
+            dataset_hash="dataset-a",
+        ),
+        matlab_batch_dir=matlab_batch_dir,
+        matlab_vector_paths={},
+    )
+
+    monkeypatch.setattr(
+        parity_experiment,
+        "validate_exact_proof_source_surface",
+        lambda *_args, **_kwargs: source_surface,
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "load_exact_params_file",
+        lambda _surface: {"microns_per_voxel": [0.916, 0.916, 1.99688]},
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "_load_exact_energy_payload",
+        lambda _surface: {
+            "energy": np.zeros((64, 512, 512), dtype=np.float32),
+            "lumen_radius_microns": np.array([1.5, 2.0], dtype=np.float32),
+        },
+    )
+    monkeypatch.setattr(
+        parity_experiment,
+        "load_builtin_lut_fixture",
+        lambda: {
+            "size_of_image": [121, 512, 512],
+            "microns_per_voxel": [1.0, 1.0, 1.0],
+            "lumen_radius_microns": [1.0, 2.0],
+            "scales": {"0": {}},
+        },
+    )
+
+    report, _json_path, _text_path = parity_experiment._run_prove_luts(
+        source_run_root=source_run_root,
+        dest_run_root=dest_run_root,
+        oracle_root=None,
+    )
+
+    assert report["passed"] is True
+    assert report["skipped"] is True
+    assert report["skip_reason"] == "builtin LUT fixture inputs do not match the source exact run"
+    assert report["source_inputs"]["size_of_image"] == [64, 512, 512]
+    assert report["fixture_inputs"]["size_of_image"] == [121, 512, 512]
+
+
+def test_load_exact_vertices_payload_uses_curated_vertex_surface(tmp_path):
+    source_run_root = tmp_path / "source-run"
+    materialize_checkpoint_surface(source_run_root, stages=("vertices",))
+
+    batch_dir = tmp_path / "batch"
+    vectors_dir = batch_dir / "vectors"
+    vectors_dir.mkdir(parents=True, exist_ok=True)
+    savemat(
+        vectors_dir / "curated_vertices_1.mat",
+        {
+            "vertex_space_subscripts": np.array([[4.0, 5.0, 6.0]], dtype=np.float64),
+            "vertex_scale_subscripts": np.array([3.0], dtype=np.float64),
+            "vertex_energies": np.array([-9.0], dtype=np.float64),
+        },
+    )
+    savemat(
+        vectors_dir / "edges_1.mat",
+        {
+            "edges2vertices": np.empty((0, 2), dtype=np.int16),
+            "edge_space_subscripts": np.empty((0,), dtype=object),
+            "edge_scale_subscripts": np.empty((0,), dtype=object),
+            "edge_energies": np.empty((0,), dtype=object),
+            "mean_edge_energies": np.empty((0,), dtype=np.float64),
+            "vertex_space_subscripts": np.array([[100.0, 200.0, 10.0]], dtype=np.float64),
+            "vertex_scale_subscripts": np.array([9.0], dtype=np.float64),
+            "vertex_energies": np.array([-1.0], dtype=np.float64),
+        },
+    )
+
+    source_surface = parity_experiment.ExactProofSourceSurface(
+        run_root=source_run_root,
+        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
+        oracle_surface=parity_experiment.OracleSurface(
+            oracle_root=batch_dir,
+            manifest_path=None,
+            matlab_batch_dir=batch_dir,
+            matlab_vector_paths={},
+            oracle_id=None,
+            matlab_source_version=None,
+            dataset_hash=None,
+        ),
+        matlab_batch_dir=batch_dir,
+        matlab_vector_paths={},
+    )
+
+    payload = parity_experiment._load_exact_vertices_payload(source_surface)
+
+    np.testing.assert_array_equal(
+        payload["positions"],
+        np.array([[3.0, 4.0, 5.0]], dtype=np.float32),
+    )
+    np.testing.assert_array_equal(payload["scales"], np.array([2], dtype=np.int16))
+    np.testing.assert_array_equal(payload["energies"], np.array([-9.0], dtype=np.float32))
+    assert payload["count"] == 1
+
+
 def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     source_run_root = tmp_path / "source-run"
     dest_run_root = tmp_path / "dest-run"
@@ -651,6 +848,69 @@ def test_persist_param_storage_writes_split_param_files(tmp_path):
     assert python_derived["orchestration_params"]["comparison_exact_network"] is True
     assert python_derived["python_only_params"]["parity_candidate_salvage_mode"] == "legacy"
     assert "parity_candidate_salvage_mode" in param_diff["disallowed_python_only_keys"]
+
+
+def test_derive_exact_params_from_oracle_includes_released_matlab_edge_constants(tmp_path):
+    run_root = tmp_path / "source-run"
+    matlab_batch_dir = _materialize_exact_matlab_batch(run_root)
+    settings_dir = matlab_batch_dir / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    savemat(
+        settings_dir / "energy_260421.mat",
+        {
+            "microns_per_voxel": np.array([0.5, 0.5, 1.0], dtype=np.float64),
+            "radius_of_smallest_vessel_in_microns": 1.5,
+            "radius_of_largest_vessel_in_microns": 40.0,
+            "sample_index_of_refraction": 1.33,
+            "numerical_aperture": 0.95,
+            "excitation_wavelength_in_microns": 0.95,
+            "scales_per_octave": 6,
+            "max_voxels_per_node_energy": 1000000,
+            "gaussian_to_ideal_ratio": 0.5,
+            "spherical_to_annular_ratio": 0.5,
+            "approximating_PSF": 1,
+        },
+    )
+    savemat(
+        settings_dir / "vertices_260421.mat",
+        {
+            "space_strel_apothem": 1,
+            "energy_upper_bound": 0,
+            "max_voxels_per_node": 6000,
+            "length_dilation_ratio": 1,
+        },
+    )
+    savemat(
+        settings_dir / "edges_260421.mat",
+        {
+            "max_edge_length_per_origin_radius": 30,
+            "space_strel_apothem_edges": 1,
+            "number_of_edges_per_vertex": 4,
+        },
+    )
+    savemat(settings_dir / "network_260421.mat", {"sigma_strand_smoothing": 1})
+    oracle_surface = parity_experiment.OracleSurface(
+        oracle_root=run_root,
+        manifest_path=None,
+        matlab_batch_dir=matlab_batch_dir,
+        matlab_vector_paths=parity_experiment.find_matlab_vector_paths(matlab_batch_dir),
+        oracle_id="oracle-a",
+        matlab_source_version="matlab-a",
+        dataset_hash="dataset-a",
+    )
+
+    params, _settings_paths, _settings_payloads = parity_experiment.derive_exact_params_from_oracle(
+        oracle_surface
+    )
+
+    assert params["step_size_per_origin_radius"] == 1.0
+    assert params["max_edge_energy"] == 0.0
+    assert params["edge_number_tolerance"] == 2
+    assert params["distance_tolerance_per_origin_radius"] == 3.0
+    assert params["distance_tolerance"] == 3.0
+    assert params["radius_tolerance"] == 0.5
+    assert params["energy_tolerance"] == 1.0
+    assert params["direction_tolerance"] == 1.0
 
 
 def test_build_experiment_summary_computes_deltas(tmp_path):

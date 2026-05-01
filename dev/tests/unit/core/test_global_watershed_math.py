@@ -14,6 +14,8 @@ from source.core._edge_candidates.global_watershed import (
     _matlab_global_watershed_reset_join_locations,
     _matlab_global_watershed_reveal_unclaimed_strel,
     _matlab_global_watershed_scale_pointer_map,
+    _matlab_global_watershed_seed_index_range,
+    _matlab_global_watershed_tolerance_mask,
     _matlab_global_watershed_trace_half,
 )
 
@@ -128,6 +130,37 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim
             size_map_flat=np.zeros((8,), dtype=np.int16),
             lut_size=4,
         )
+
+
+def test_matlab_global_watershed_tolerance_mask_tracks_suppressed_energies():
+    initial = _matlab_global_watershed_tolerance_mask(
+        np.array([-2.0, -1.0], dtype=np.float32),
+        current_vertex_energy=-1.0,
+        energy_tolerance=1.0,
+    )
+    suppressed = _matlab_global_watershed_tolerance_mask(
+        np.array([0.0, -1.0], dtype=np.float32),
+        current_vertex_energy=-1.0,
+        energy_tolerance=1.0,
+    )
+
+    assert initial.tolist() == [True, True]
+    assert suppressed.tolist() == [False, True]
+
+
+def test_matlab_global_watershed_seed_index_range_matches_origin_only_fanout():
+    assert list(
+        _matlab_global_watershed_seed_index_range(
+            current_pointer_value=0,
+            edge_number_tolerance=4,
+        )
+    ) == [1, 2, 3, 4]
+    assert list(
+        _matlab_global_watershed_seed_index_range(
+            current_pointer_value=7,
+            edge_number_tolerance=4,
+        )
+    ) == [1]
 
 
 def test_matlab_global_watershed_insert_available_location_primary_seed_keeps_sorted_order():

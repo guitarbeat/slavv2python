@@ -73,6 +73,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
 
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+    assert resumable["energy_origin"] == direct["energy_origin"]
 
 
 def test_direct_and_resumable_hessian_paper_projection_match(tmp_path):
@@ -102,6 +103,7 @@ def test_direct_and_resumable_hessian_paper_projection_match(tmp_path):
     assert "energy_4d" not in resumable
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
+    assert resumable["energy_origin"] == direct["energy_origin"]
 
 
 def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
@@ -136,6 +138,7 @@ def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
     npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])
+    assert resumable["energy_origin"] == direct["energy_origin"]
 
 
 def test_resumable_energy_zarr_storage_requires_optional_dependency(monkeypatch, tmp_path):

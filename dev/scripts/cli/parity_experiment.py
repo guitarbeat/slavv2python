@@ -9,19 +9,21 @@ import json
 import subprocess
 import sys
 import time
+from contextlib import suppress
 from dataclasses import asdict, dataclass
+from itertools import permutations
 from pathlib import Path
 from shutil import copy2, copytree
 from typing import Any, cast
 
 import numpy as np
 import psutil
+from scipy.io import loadmat
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SOURCE_DIR = REPO_ROOT / "source"
 DEV_RUNS_ROOT = REPO_ROOT / "dev" / "runs"
-if str(SOURCE_DIR) not in sys.path:
-    sys.path.insert(0, str(SOURCE_DIR))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from source import SLAVVProcessor
 from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
@@ -82,6 +84,7 @@ REPORT_MANIFEST_PATH = METADATA_DIR / "report_manifest.json"
 DATASET_MANIFEST_PATH = METADATA_DIR / "dataset_manifest.json"
 EXPERIMENT_INDEX_PATH = Path("index.jsonl")
 EXPERIMENT_ROOT_SUBDIRS = ("datasets", "oracles", "reports", "runs")
+ORACLE_DISCOVERY_STAGES = ("energy", *EXACT_STAGE_ORDER)
 DATASET_INPUT_DIR = Path("01_Input")
 COMPARISON_REPORT_PATH = ANALYSIS_DIR / "comparison_report.json"
 EDGE_CANDIDATE_CHECKPOINT_PATH = CHECKPOINTS_DIR / "checkpoint_edge_candidates.pkl"
@@ -94,6 +97,7 @@ LUT_PROOF_TEXT_PATH = ANALYSIS_DIR / "lut_proof.txt"
 PREFLIGHT_EXACT_JSON_PATH = ANALYSIS_DIR / "preflight_exact.json"
 PREFLIGHT_EXACT_TEXT_PATH = ANALYSIS_DIR / "preflight_exact.txt"
 RUN_SNAPSHOT_PATH = METADATA_DIR / "run_snapshot.json"
+EXPERIMENT_PROVENANCE_PATH = METADATA_DIR / "experiment_provenance.json"
 SUMMARY_JSON_PATH = ANALYSIS_DIR / "experiment_summary.json"
 SUMMARY_TEXT_PATH = ANALYSIS_DIR / "experiment_summary.txt"
 VALIDATED_PARAMS_PATH = METADATA_DIR / "validated_params.json"
@@ -108,12 +112,17 @@ EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
     {
         "approximating_PSF",
         "bandpass_window",
+        "direction_tolerance",
         "direction_method",
+        "distance_tolerance",
+        "distance_tolerance_per_origin_radius",
         "discrete_tracing",
         "edge_method",
+        "edge_number_tolerance",
         "energy_method",
         "energy_projection_mode",
         "energy_sign",
+        "energy_tolerance",
         "energy_upper_bound",
         "excitation_wavelength_in_microns",
         "gaussian_to_ideal_ratio",
@@ -126,6 +135,7 @@ EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
         "min_hair_length_in_microns",
         "number_of_edges_per_vertex",
         "numerical_aperture",
+        "radius_tolerance",
         "radius_of_largest_vessel_in_microns",
         "radius_of_smallest_vessel_in_microns",
         "sample_index_of_refraction",
@@ -165,6 +175,16 @@ EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL: tuple[tuple[str, int], ...] = (
     ("vertex_index_map", 4),
     ("size_map", 2),
 )
+MATLAB_EXACT_EDGE_SOURCE_CONSTANTS: dict[str, Any] = {
+    "step_size_per_origin_radius": 1.0,
+    "max_edge_energy": 0.0,
+    "distance_tolerance_per_origin_radius": 3.0,
+    "distance_tolerance": 3.0,
+    "edge_number_tolerance": 2,
+    "radius_tolerance": 0.5,
+    "energy_tolerance": 1.0,
+    "direction_tolerance": 1.0,
+}
 
 
 @dataclass(frozen=True)
@@ -209,6 +229,14 @@ class OracleSurface:
     oracle_id: str | None
     matlab_source_version: str | None
     dataset_hash: str | None
+
+
+@dataclass(frozen=True)
+class DatasetSurface:
+    dataset_root: Path
+    manifest_path: Path
+    input_file: Path
+    dataset_hash: str
 
 
 def _now_iso() -> str:
@@ -446,12 +474,187 @@ def _load_oracle_surface(oracle_root: Path) -> OracleSurface:
         oracle_root=resolved_root,
         manifest_path=manifest_path if manifest_path.is_file() else None,
         matlab_batch_dir=matlab_batch_dir,
-        matlab_vector_paths=find_matlab_vector_paths(matlab_batch_dir),
+        matlab_vector_paths=find_matlab_vector_paths(matlab_batch_dir, ORACLE_DISCOVERY_STAGES),
         oracle_id=_string_or_none(manifest.get("oracle_id")) if manifest else None,
         matlab_source_version=(
             _string_or_none(manifest.get("matlab_source_version")) if manifest else None
         ),
         dataset_hash=_string_or_none(manifest.get("dataset_hash")) if manifest else None,
+    )
+
+
+def _load_dataset_surface(dataset_root: Path) -> DatasetSurface:
+    resolved_root = dataset_root.expanduser().resolve()
+    manifest_path = resolved_root / DATASET_MANIFEST_PATH
+    manifest = load_json_dict(manifest_path)
+    if manifest is None:
+        raise ValueError(f"missing dataset manifest: {manifest_path}")
+    stored_input = _string_or_none(manifest.get("stored_input_file"))
+    dataset_hash = _string_or_none(manifest.get("dataset_hash"))
+    if stored_input is None:
+        raise ValueError(f"dataset manifest is missing stored_input_file: {manifest_path}")
+    if dataset_hash is None:
+        raise ValueError(f"dataset manifest is missing dataset_hash: {manifest_path}")
+    input_file = Path(stored_input).expanduser().resolve()
+    if not input_file.is_file():
+        raise ValueError(f"dataset input file not found: {input_file}")
+    actual_hash = fingerprint_file(input_file)
+    if actual_hash != dataset_hash:
+        raise ValueError(
+            "dataset manifest hash does not match stored input file: "
+            f"expected {dataset_hash}, found {actual_hash}"
+        )
+    return DatasetSurface(
+        dataset_root=resolved_root,
+        manifest_path=manifest_path,
+        input_file=input_file,
+        dataset_hash=dataset_hash,
+    )
+
+
+def _load_matlab_settings_payload(path: Path) -> dict[str, Any]:
+    payload = loadmat(path, squeeze_me=True, struct_as_record=False)
+    return {
+        str(key): value
+        for key, value in payload.items()
+        if not str(key).startswith("__")
+    }
+
+
+def _normalize_matlab_setting_value(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return _normalize_matlab_setting_value(value.tolist())
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, tuple):
+        return [_normalize_matlab_setting_value(item) for item in value]
+    if isinstance(value, list):
+        return [_normalize_matlab_setting_value(item) for item in value]
+    return value
+
+
+def _settings_timestamp_token_from_vector_name(vector_name: str, stage: str) -> str | None:
+    stem = Path(vector_name).stem
+    prefix_options = [f"{stage}_", f"curated_{stage}_"]
+    for prefix in prefix_options:
+        if not stem.startswith(prefix):
+            continue
+        remainder = stem[len(prefix) :]
+        timestamp = remainder.split("_", 1)[0]
+        if timestamp:
+            return timestamp
+    return None
+
+
+def _select_oracle_settings_paths(oracle_surface: OracleSurface) -> dict[str, Path]:
+    settings_dir = oracle_surface.matlab_batch_dir / "settings"
+    if not settings_dir.is_dir():
+        raise ValueError(f"missing MATLAB settings directory: {settings_dir}")
+
+    energy_candidates = sorted(settings_dir.glob("energy_*.mat"))
+    if len(energy_candidates) != 1:
+        joined = ", ".join(str(path) for path in energy_candidates)
+        raise ValueError(
+            f"expected one energy settings file under {settings_dir}, found: {joined}"
+        )
+
+    selected_paths = {"energy": energy_candidates[0]}
+    for stage in ("vertices", "edges", "network"):
+        vector_path = oracle_surface.matlab_vector_paths[stage]
+        timestamp = _settings_timestamp_token_from_vector_name(vector_path.name, stage)
+        if timestamp is None:
+            raise ValueError(
+                f"could not infer {stage} settings timestamp from vector file: {vector_path.name}"
+            )
+        settings_path = settings_dir / f"{stage}_{timestamp}.mat"
+        if not settings_path.is_file():
+            raise ValueError(f"missing MATLAB {stage} settings file: {settings_path}")
+        selected_paths[stage] = settings_path
+    return selected_paths
+
+
+def derive_exact_params_from_oracle(
+    oracle_surface: OracleSurface,
+) -> tuple[dict[str, Any], dict[str, str], dict[str, dict[str, Any]]]:
+    settings_paths = _select_oracle_settings_paths(oracle_surface)
+    settings_payloads = {
+        stage: _load_matlab_settings_payload(path) for stage, path in settings_paths.items()
+    }
+    energy_settings = settings_payloads["energy"]
+    vertex_settings = settings_payloads["vertices"]
+    edge_settings = settings_payloads["edges"]
+
+    params: dict[str, Any] = {
+        "comparison_exact_network": True,
+        "direction_method": "hessian",
+        "discrete_tracing": False,
+        "edge_method": "tracing",
+        "energy_method": "hessian",
+        "energy_projection_mode": "matlab",
+        "microns_per_voxel": _normalize_matlab_setting_value(
+            energy_settings["microns_per_voxel"]
+        ),
+        "radius_of_smallest_vessel_in_microns": _normalize_matlab_setting_value(
+            energy_settings["radius_of_smallest_vessel_in_microns"]
+        ),
+        "radius_of_largest_vessel_in_microns": _normalize_matlab_setting_value(
+            energy_settings["radius_of_largest_vessel_in_microns"]
+        ),
+        "sample_index_of_refraction": _normalize_matlab_setting_value(
+            energy_settings["sample_index_of_refraction"]
+        ),
+        "numerical_aperture": _normalize_matlab_setting_value(
+            energy_settings["numerical_aperture"]
+        ),
+        "excitation_wavelength_in_microns": _normalize_matlab_setting_value(
+            energy_settings["excitation_wavelength_in_microns"]
+        ),
+        "scales_per_octave": _normalize_matlab_setting_value(
+            energy_settings["scales_per_octave"]
+        ),
+        "max_voxels_per_node_energy": _normalize_matlab_setting_value(
+            energy_settings["max_voxels_per_node_energy"]
+        ),
+        "gaussian_to_ideal_ratio": _normalize_matlab_setting_value(
+            energy_settings["gaussian_to_ideal_ratio"]
+        ),
+        "spherical_to_annular_ratio": _normalize_matlab_setting_value(
+            energy_settings["spherical_to_annular_ratio"]
+        ),
+        "approximating_PSF": bool(_normalize_matlab_setting_value(energy_settings["approximating_PSF"])),
+        "space_strel_apothem": _normalize_matlab_setting_value(
+            vertex_settings["space_strel_apothem"]
+        ),
+        "energy_upper_bound": _normalize_matlab_setting_value(
+            vertex_settings["energy_upper_bound"]
+        ),
+        "max_voxels_per_node": _normalize_matlab_setting_value(
+            vertex_settings["max_voxels_per_node"]
+        ),
+        "length_dilation_ratio": _normalize_matlab_setting_value(
+            vertex_settings["length_dilation_ratio"]
+        ),
+        "max_edge_length_per_origin_radius": _normalize_matlab_setting_value(
+            edge_settings["max_edge_length_per_origin_radius"]
+        ),
+        "space_strel_apothem_edges": _normalize_matlab_setting_value(
+            edge_settings["space_strel_apothem_edges"]
+        ),
+        "number_of_edges_per_vertex": _normalize_matlab_setting_value(
+            edge_settings["number_of_edges_per_vertex"]
+        ),
+    }
+    params.update(MATLAB_EXACT_EDGE_SOURCE_CONSTANTS)
+    return (
+        params,
+        {stage: str(path) for stage, path in settings_paths.items()},
+        {
+            stage: {
+                str(key): _normalize_matlab_setting_value(value)
+                for key, value in payload.items()
+            }
+            for stage, payload in settings_payloads.items()
+        },
     )
 
 
@@ -563,7 +766,7 @@ def _materialize_oracle_root(
     if not raw_batch_dir.exists():
         copytree(matlab_batch_dir, raw_batch_dir)
 
-    vector_paths = find_matlab_vector_paths(raw_batch_dir)
+    vector_paths = find_matlab_vector_paths(raw_batch_dir, ORACLE_DISCOVERY_STAGES)
     normalized_payloads = load_normalized_matlab_vectors(raw_batch_dir, EXACT_STAGE_ORDER)
     normalized_artifacts = _persist_normalized_payloads(
         oracle_root,
@@ -644,7 +847,10 @@ def _resolve_oracle_surface(
         return _load_oracle_surface(source_run_root)
 
     _ensure_experiment_root_layout(experiment_root)
-    resolved_oracle_id = f"{matlab_batch_dir.name}_{fingerprint_file(find_matlab_vector_paths(matlab_batch_dir)['edges'])[:12]}"
+    resolved_oracle_id = (
+        f"{matlab_batch_dir.name}_"
+        f"{fingerprint_file(find_matlab_vector_paths(matlab_batch_dir, ORACLE_DISCOVERY_STAGES)['edges'])[:12]}"
+    )
     promoted_oracle_root = experiment_root / "oracles" / resolved_oracle_id
     return _materialize_oracle_root(
         matlab_batch_dir=matlab_batch_dir,
@@ -979,6 +1185,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
     promote_dataset.set_defaults(handler=_handle_promote_dataset)
 
+    init_exact_run = subparsers.add_parser(
+        "init-exact-run",
+        help=(
+            "Seed a fresh exact-route source run from a promoted dataset and oracle by "
+            "rerunning Python through energy or vertices."
+        ),
+    )
+    init_exact_run.add_argument("--dataset-root", required=True)
+    init_exact_run.add_argument("--oracle-root", required=True)
+    init_exact_run.add_argument(
+        "--dest-run-root",
+        required=True,
+        help=f"Fresh destination run root for the exact bootstrap. Recommended: {DEV_RUNS_ROOT}",
+    )
+    init_exact_run.add_argument(
+        "--stop-after",
+        choices=("energy", "vertices"),
+        default="vertices",
+        help="Bootstrap depth. 'vertices' is the maintained default for exact edge work.",
+    )
+    init_exact_run.add_argument(
+        "--energy-storage-format",
+        choices=("auto", "npy", "zarr"),
+        default="npy",
+        help="Orchestration-only energy checkpoint storage for the bootstrap run.",
+    )
+    init_exact_run.set_defaults(handler=_handle_init_exact_run)
+
     promote_report = subparsers.add_parser(
         "promote-report",
         help="Copy a disposable run's analysis surface into reports/ with a report manifest.",
@@ -1236,14 +1470,17 @@ def estimate_exact_route_memory(image_shape: tuple[int, int, int]) -> dict[str, 
 
 def find_parity_process_collisions(dest_run_root: Path) -> list[dict[str, Any]]:
     """Return live parity processes already targeting the same destination run root."""
-    current_pid = int(psutil.Process().pid)
+    current_process = psutil.Process()
+    ignored_pids = {int(current_process.pid)}
+    with suppress(psutil.Error, OSError):
+        ignored_pids.update(int(parent.pid) for parent in current_process.parents())
     collisions: list[dict[str, Any]] = []
     normalized_dest = str(dest_run_root.resolve()).lower()
     owner_commands = {"rerun-python", "capture-candidates", "replay-edges", "fail-fast"}
     for process in psutil.process_iter(["pid", "name", "cmdline"]):
         info = process.info
         pid = int(info.get("pid", -1))
-        if pid == current_pid:
+        if pid in ignored_pids:
             continue
         cmdline = info.get("cmdline") or []
         if not isinstance(cmdline, list):
@@ -1676,6 +1913,200 @@ def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -
         copy2(source_run_manifest, refs_dir / "source_run_manifest.json")
 
 
+def _copy_exact_bootstrap_refs(
+    dest_run_root: Path,
+    *,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+) -> None:
+    refs_dir = dest_run_root / EXPERIMENT_REFS_DIR
+    copy2(dataset_surface.manifest_path, refs_dir / "dataset_manifest.json")
+    if oracle_surface.manifest_path is not None and oracle_surface.manifest_path.is_file():
+        copy2(oracle_surface.manifest_path, refs_dir / "oracle_manifest.json")
+    selection_manifest_path = oracle_surface.matlab_batch_dir / "selection_manifest.json"
+    if selection_manifest_path.is_file():
+        copy2(selection_manifest_path, refs_dir / "oracle_selection_manifest.json")
+
+
+def _oracle_energy_size_of_image(oracle_surface: OracleSurface) -> tuple[int, int, int] | None:
+    energy_metadata_path = oracle_surface.matlab_vector_paths.get("energy")
+    if energy_metadata_path is None or not energy_metadata_path.is_file():
+        return None
+    energy_metadata = cast(
+        "dict[str, Any]",
+        loadmat(energy_metadata_path, squeeze_me=True, struct_as_record=False),
+    )
+    raw_size = energy_metadata.get("size_of_image")
+    if raw_size is None:
+        return None
+    size_vector = np.asarray(raw_size, dtype=np.int64).reshape(-1)
+    if size_vector.size != 3:
+        return None
+    return cast("tuple[int, int, int]", tuple(int(value) for value in size_vector))
+
+
+def _reorient_exact_input_volume(
+    image: np.ndarray,
+    oracle_surface: OracleSurface,
+) -> tuple[np.ndarray, tuple[int, int, int] | None, tuple[int, int, int] | None]:
+    expected_shape = _oracle_energy_size_of_image(oracle_surface)
+    if expected_shape is None:
+        return image, None, None
+
+    actual_shape = cast("tuple[int, int, int]", tuple(int(value) for value in image.shape))
+    if actual_shape == expected_shape:
+        return image, expected_shape, None
+
+    for permutation in permutations(range(image.ndim)):
+        if tuple(actual_shape[index] for index in permutation) == expected_shape:
+            return (
+                np.asarray(np.transpose(image, permutation)),
+                expected_shape,
+                cast("tuple[int, int, int]", tuple(int(index) for index in permutation)),
+            )
+
+    raise ValueError(
+        "loaded TIFF shape does not match oracle size_of_image under any axis permutation: "
+        f"loaded={actual_shape}, oracle={expected_shape}"
+    )
+
+
+def _update_run_snapshot_provenance(dest_run_root: Path, provenance_updates: dict[str, Any]) -> None:
+    snapshot_payload = load_json_dict(dest_run_root / RUN_SNAPSHOT_PATH) or {}
+    provenance = cast("dict[str, Any]", dict(snapshot_payload.get("provenance", {})))
+    provenance.update(provenance_updates)
+    snapshot_payload["provenance"] = provenance
+    if "input_fingerprint" not in snapshot_payload and "dataset_hash" in provenance_updates:
+        snapshot_payload["input_fingerprint"] = provenance_updates["dataset_hash"]
+    _write_json_with_hash(dest_run_root / RUN_SNAPSHOT_PATH, snapshot_payload)
+
+
+def _exact_bootstrap_provenance_updates(
+    *,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+    selected_settings_paths: dict[str, str],
+    oracle_size_of_image: tuple[int, int, int] | None,
+    input_axis_permutation: tuple[int, int, int] | None,
+    stop_after: str,
+) -> dict[str, Any]:
+    return {
+        "source": "parity_experiment.init-exact-run",
+        "input_file": str(dataset_surface.input_file),
+        "dataset_root": str(dataset_surface.dataset_root),
+        "dataset_hash": dataset_surface.dataset_hash,
+        "oracle_root": str(oracle_surface.oracle_root),
+        "oracle_id": oracle_surface.oracle_id,
+        "oracle_manifest": (
+            str(oracle_surface.manifest_path) if oracle_surface.manifest_path is not None else None
+        ),
+        "matlab_source_version": oracle_surface.matlab_source_version,
+        "selected_settings_paths": selected_settings_paths,
+        "oracle_size_of_image": list(oracle_size_of_image) if oracle_size_of_image is not None else None,
+        "input_axis_permutation": (
+            list(input_axis_permutation) if input_axis_permutation is not None else None
+        ),
+        "stop_after": stop_after,
+    }
+
+
+def _finalize_init_exact_run(
+    *,
+    dest_run_root: Path,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+    params: dict[str, Any],
+    selected_settings_paths: dict[str, str],
+    oracle_size_of_image: tuple[int, int, int] | None,
+    input_axis_permutation: tuple[int, int, int] | None,
+    stop_after: str,
+) -> None:
+    _write_json_with_hash(dest_run_root / VALIDATED_PARAMS_PATH, params)
+    _persist_param_storage(dest_run_root, params)
+    _update_run_snapshot_provenance(
+        dest_run_root,
+        _exact_bootstrap_provenance_updates(
+            dataset_surface=dataset_surface,
+            oracle_surface=oracle_surface,
+            selected_settings_paths=selected_settings_paths,
+            oracle_size_of_image=oracle_size_of_image,
+            input_axis_permutation=input_axis_permutation,
+            stop_after=stop_after,
+        ),
+    )
+    _write_run_manifest(
+        dest_run_root,
+        run_kind="parity_source_run",
+        status="seeded",
+        command="init-exact-run",
+        dataset_hash=dataset_surface.dataset_hash,
+        oracle_surface=oracle_surface,
+        params_payload=params,
+        extra={"seed_stop_after": stop_after},
+    )
+
+
+def _resolve_existing_init_exact_run(
+    *,
+    dest_run_root: Path,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+    stop_after: str,
+) -> bool:
+    if not dest_run_root.exists():
+        return False
+    if not dest_run_root.is_dir():
+        raise ValueError(f"destination run root must be a directory: {dest_run_root}")
+
+    provenance_path = dest_run_root / EXPERIMENT_PROVENANCE_PATH
+    provenance = load_json_dict(provenance_path)
+    if provenance is None:
+        raise ValueError(f"destination run root already exists: {dest_run_root}")
+
+    if _string_or_none(provenance.get("bootstrap_kind")) != "init-exact-run":
+        raise ValueError(
+            f"destination run root already exists but is not an init-exact-run bootstrap: {dest_run_root}"
+        )
+    if _string_or_none(provenance.get("dataset_hash")) != dataset_surface.dataset_hash:
+        raise ValueError(
+            "existing init-exact-run dataset hash does not match the requested dataset: "
+            f"{_string_or_none(provenance.get('dataset_hash'))!r} != {dataset_surface.dataset_hash!r}"
+        )
+    existing_oracle_id = _string_or_none(provenance.get("oracle_id"))
+    if existing_oracle_id != oracle_surface.oracle_id:
+        raise ValueError(
+            "existing init-exact-run oracle id does not match the requested oracle: "
+            f"{existing_oracle_id!r} != {oracle_surface.oracle_id!r}"
+        )
+    if _string_or_none(provenance.get("stop_after")) != stop_after:
+        raise ValueError(
+            "existing init-exact-run stop-after target does not match the requested bootstrap: "
+            f"{_string_or_none(provenance.get('stop_after'))!r} != {stop_after!r}"
+        )
+
+    snapshot_payload = load_json_dict(dest_run_root / RUN_SNAPSHOT_PATH) or {}
+    snapshot_status = _string_or_none(snapshot_payload.get("status"))
+    if snapshot_status == "running":
+        raise ValueError(
+            "destination run root already exists and the init-exact-run bootstrap is still active: "
+            f"{dest_run_root}"
+        )
+
+    checkpoint_dir = dest_run_root / CHECKPOINTS_DIR
+    required_checkpoints = [checkpoint_dir / "checkpoint_energy.pkl"]
+    if stop_after == "vertices":
+        required_checkpoints.append(checkpoint_dir / "checkpoint_vertices.pkl")
+    missing_checkpoints = [path for path in required_checkpoints if not path.is_file()]
+    if missing_checkpoints:
+        missing_text = ", ".join(str(path) for path in missing_checkpoints)
+        raise ValueError(
+            "destination run root already exists but the bootstrap checkpoints are incomplete: "
+            f"{missing_text}"
+        )
+
+    return True
+
+
 def maybe_sync_exact_vertex_checkpoint(
     source_run_root: Path,
     dest_run_root: Path,
@@ -1833,14 +2264,53 @@ def _run_prove_luts(
         "tuple[int, int, int]",
         tuple(int(value) for value in np.asarray(energy_payload["energy"]).shape),
     )
-    report_payload = compare_lut_fixture_payload(
-        load_builtin_lut_fixture(),
-        size_of_image=size_of_image,
-        microns_per_voxel=np.asarray(
-            params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
-        ),
-        lumen_radius_microns=np.asarray(energy_payload["lumen_radius_microns"], dtype=np.float32),
+    microns_per_voxel = np.asarray(
+        params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
+    ).reshape(-1)
+    lumen_radius_microns = np.asarray(
+        energy_payload["lumen_radius_microns"], dtype=np.float32
+    ).reshape(-1)
+    fixture_payload = load_builtin_lut_fixture()
+    fixture_size_of_image = tuple(int(value) for value in fixture_payload.get("size_of_image", []))
+    fixture_microns_per_voxel = np.asarray(
+        fixture_payload.get("microns_per_voxel", []), dtype=np.float32
+    ).reshape(-1)
+    fixture_lumen_radius_microns = np.asarray(
+        fixture_payload.get("lumen_radius_microns", []), dtype=np.float32
+    ).reshape(-1)
+    fixture_matches_source = (
+        fixture_size_of_image == size_of_image
+        and np.array_equal(fixture_microns_per_voxel, microns_per_voxel)
+        and np.array_equal(fixture_lumen_radius_microns, lumen_radius_microns)
     )
+    if fixture_matches_source:
+        report_payload = compare_lut_fixture_payload(
+            fixture_payload,
+            size_of_image=size_of_image,
+            microns_per_voxel=microns_per_voxel,
+            lumen_radius_microns=lumen_radius_microns,
+        )
+    else:
+        scales_payload = fixture_payload.get("scales", {})
+        report_payload = {
+            "passed": True,
+            "skipped": True,
+            "skip_reason": "builtin LUT fixture inputs do not match the source exact run",
+            "report_scope": "exact LUT parity only",
+            "size_of_image": list(size_of_image),
+            "scale_count": len(scales_payload) if isinstance(scales_payload, dict) else 0,
+            "stage_summaries": {},
+            "fixture_inputs": {
+                "size_of_image": list(fixture_size_of_image),
+                "microns_per_voxel": fixture_microns_per_voxel.tolist(),
+                "lumen_radius_microns": fixture_lumen_radius_microns.tolist(),
+            },
+            "source_inputs": {
+                "size_of_image": list(size_of_image),
+                "microns_per_voxel": microns_per_voxel.tolist(),
+                "lumen_radius_microns": lumen_radius_microns.tolist(),
+            },
+        }
     report_payload.update(
         {
             "source_run_root": str(source_surface.run_root),
@@ -2421,6 +2891,111 @@ def _handle_promote_dataset(args: argparse.Namespace) -> None:
     if dataset_hash is None:
         raise ValueError(f"could not fingerprint dataset file: {dataset_file}")
     print(str(experiment_root / "datasets" / dataset_hash / DATASET_MANIFEST_PATH))
+
+
+def _handle_init_exact_run(args: argparse.Namespace) -> None:
+    dataset_surface = _load_dataset_surface(Path(args.dataset_root))
+    oracle_surface = _load_oracle_surface(Path(args.oracle_root))
+    if (
+        oracle_surface.dataset_hash is not None
+        and oracle_surface.dataset_hash != dataset_surface.dataset_hash
+    ):
+        raise ValueError(
+            "dataset and oracle hashes do not match: "
+            f"{dataset_surface.dataset_hash} != {oracle_surface.dataset_hash}"
+        )
+
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    params, selected_settings_paths, selected_settings_payloads = derive_exact_params_from_oracle(
+        oracle_surface
+    )
+    params["energy_storage_format"] = str(args.energy_storage_format).strip()
+    resume_finalization_only = _resolve_existing_init_exact_run(
+        dest_run_root=dest_run_root,
+        dataset_surface=dataset_surface,
+        oracle_surface=oracle_surface,
+        stop_after=args.stop_after,
+    )
+
+    if resume_finalization_only:
+        provenance_payload = load_json_dict(dest_run_root / EXPERIMENT_PROVENANCE_PATH) or {}
+        raw_oracle_size = provenance_payload.get("oracle_size_of_image")
+        oracle_size_of_image = (
+            cast("tuple[int, int, int]", tuple(int(value) for value in raw_oracle_size))
+            if isinstance(raw_oracle_size, list) and len(raw_oracle_size) == 3
+            else _oracle_energy_size_of_image(oracle_surface)
+        )
+        raw_input_axis_permutation = provenance_payload.get("input_axis_permutation")
+        input_axis_permutation = (
+            cast(
+                "tuple[int, int, int]",
+                tuple(int(value) for value in raw_input_axis_permutation),
+            )
+            if isinstance(raw_input_axis_permutation, list) and len(raw_input_axis_permutation) == 3
+            else None
+        )
+    else:
+        image = load_tiff_volume(dataset_surface.input_file)
+        image, oracle_size_of_image, input_axis_permutation = _reorient_exact_input_volume(
+            image,
+            oracle_surface,
+        )
+        ensure_dest_run_layout(dest_run_root)
+        _persist_param_storage(dest_run_root, params)
+        _copy_exact_bootstrap_refs(
+            dest_run_root,
+            dataset_surface=dataset_surface,
+            oracle_surface=oracle_surface,
+        )
+        _write_json_with_hash(
+            dest_run_root / EXPERIMENT_PROVENANCE_PATH,
+            {
+                "bootstrap_kind": "init-exact-run",
+                "dataset_root": str(dataset_surface.dataset_root),
+                "dataset_manifest": str(dataset_surface.manifest_path),
+                "dataset_hash": dataset_surface.dataset_hash,
+                "input_file": str(dataset_surface.input_file),
+                "oracle_root": str(oracle_surface.oracle_root),
+                "oracle_manifest": (
+                    str(oracle_surface.manifest_path)
+                    if oracle_surface.manifest_path is not None
+                    else None
+                ),
+                "oracle_id": oracle_surface.oracle_id,
+                "matlab_batch_dir": str(oracle_surface.matlab_batch_dir),
+                "matlab_source_version": oracle_surface.matlab_source_version,
+                "selected_settings_paths": selected_settings_paths,
+                "selected_settings_payloads": selected_settings_payloads,
+                "oracle_size_of_image": (
+                    list(oracle_size_of_image) if oracle_size_of_image is not None else None
+                ),
+                "input_axis_permutation": (
+                    list(input_axis_permutation) if input_axis_permutation is not None else None
+                ),
+                "stop_after": args.stop_after,
+                "created_at": _now_iso(),
+            },
+        )
+
+        processor = SLAVVProcessor()
+        processor.process_image(
+            image,
+            params,
+            run_dir=str(dest_run_root),
+            stop_after=args.stop_after,
+        )
+
+    _finalize_init_exact_run(
+        dest_run_root=dest_run_root,
+        dataset_surface=dataset_surface,
+        oracle_surface=oracle_surface,
+        params=params,
+        selected_settings_paths=selected_settings_paths,
+        oracle_size_of_image=oracle_size_of_image,
+        input_axis_permutation=input_axis_permutation,
+        stop_after=args.stop_after,
+    )
+    print(str(dest_run_root / RUN_MANIFEST_PATH))
 
 
 def _handle_promote_report(args: argparse.Namespace) -> None:

@@ -100,6 +100,12 @@ Exact-route runs should split settings into:
 - `param_diff.json`: required exact values, Python-only controls, unclassified
   keys, and content hashes for the split payloads
 
+For MATLAB parity, `shared_params.json` must include both:
+
+- values loaded from the preserved MATLAB `settings/*.mat` files
+- released MATLAB source constants that are hard-coded in `.m` files and not
+  serialized into those settings artifacts
+
 This separation is the maintained fairness surface for deciding whether a run is
 actually comparing the same method.
 
@@ -124,6 +130,11 @@ python dev/scripts/cli/parity_experiment.py promote-oracle `
     --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
     --dataset-file D:\datasets\volume.tif `
     --oracle-id v22_a
+
+python dev/scripts/cli/parity_experiment.py init-exact-run `
+    --dataset-root D:\slavv_comparisons\experiments\live-parity\datasets\<dataset_hash> `
+    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
+    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run
 ```
 
 Run a disposable native-first trial:
@@ -146,5 +157,7 @@ python dev/scripts/cli/parity_experiment.py promote-report `
 
 - `prove-exact` still compares normalized Python checkpoints against preserved
   MATLAB vectors.
+- `init-exact-run` is the maintained bootstrap path when you have a preserved
+  dataset package and oracle package but no historical source run root.
 - The storage model does not change claim boundaries: MATLAB source and
   preserved MATLAB vectors remain the proof authority.

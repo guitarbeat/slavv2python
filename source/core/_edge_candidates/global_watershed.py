@@ -341,6 +341,28 @@ def _matlab_global_watershed_unit_vectors(
     return cast("np.ndarray", unit_vectors.astype(np.float32, copy=False))
 
 
+def _matlab_global_watershed_tolerance_mask(
+    adjusted_energies: np.ndarray,
+    *,
+    current_vertex_energy: float,
+    energy_tolerance: float,
+) -> np.ndarray:
+    """Mirror MATLAB's per-seed energy tolerance test on the current penalized strel energies."""
+    threshold = float(current_vertex_energy) * (1.0 - float(energy_tolerance))
+    return cast("np.ndarray", np.asarray(adjusted_energies, dtype=np.float32) < threshold)
+
+
+def _matlab_global_watershed_seed_index_range(
+    *,
+    current_pointer_value: int,
+    edge_number_tolerance: int,
+) -> range:
+    """Mirror MATLAB's seed count: only true origins emit multiple seeds."""
+    if int(current_pointer_value) == 0:
+        return range(1, int(edge_number_tolerance) + 1)
+    return range(1, 2)
+
+
 def _matlab_global_watershed_trace_half(
     start_linear: int,
     *,
@@ -557,6 +579,7 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     edge_number_tolerance = int(params.get("edge_number_tolerance", 2))
     energy_tolerance = float(params.get("energy_tolerance", 1.0))
+    radius_tolerance = float(params.get("radius_tolerance", 0.5))
     step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))
     distance_tolerance = float(params.get("distance_tolerance", 3.0))
 
@@ -645,17 +668,12 @@ def _generate_edge_candidates_matlab_global_watershed(
             current_forward_unit=current_forward_unit,
             microns_per_voxel=microns_per_voxel,
             lumen_radius_microns=lumen_radius_microns,
+            radius_tolerance=radius_tolerance,
             distance_tolerance=distance_tolerance,
         )
 
         # Sample ownership BEFORE claiming to determine growability/connectivity
         vertices_of_current_strel = vertex_index_map_flat[current_strel_linear]
-
-        # Identify tolerated candidates from PENALIZED energies
-        # MATLAB: is_energy_tolerated_in_strel = current_strel_energies < vertex_energies( current_vertex_index ) * energy_tolerance_coeff ;
-        is_energy_tolerated_in_strel = adjusted < (
-            float(vertex_energies[current_vertex_index - 1]) * (1.0 - energy_tolerance)
-        )
 
         _matlab_global_watershed_reveal_unclaimed_strel(
             current_vertex_index=current_vertex_index,
@@ -673,7 +691,17 @@ def _generate_edge_candidates_matlab_global_watershed(
             lut_size=current_strel["lut_size"],
         )
 
-        for seed_idx in range(1, edge_number_tolerance + 1):
+        for seed_idx in _matlab_global_watershed_seed_index_range(
+            current_pointer_value=current_pointer_value,
+            edge_number_tolerance=edge_number_tolerance,
+        ):
+            # MATLAB recomputes the tolerated-energy mask each seed after directional suppression
+            # mutates the current strel energies.
+            is_energy_tolerated_in_strel = _matlab_global_watershed_tolerance_mask(
+                adjusted,
+                current_vertex_energy=float(vertex_energies[current_vertex_index - 1]),
+                energy_tolerance=energy_tolerance,
+            )
             strel_idx = int(np.argmin(adjusted))
             next_location = int(current_strel_linear[strel_idx])
             next_vertex_index = int(vertices_of_current_strel[strel_idx])

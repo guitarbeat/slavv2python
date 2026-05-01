@@ -8,6 +8,7 @@ import numpy as np
 from scipy.io import savemat
 from source.io.matlab_exact_proof import (
     compare_exact_artifacts,
+    load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
     normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
@@ -44,7 +45,7 @@ def test_load_normalized_matlab_vertices_converts_one_based_indices(tmp_path):
 
     np.testing.assert_array_equal(
         payload["positions"],
-        np.array([[2.0, 1.0, 0.0], [5.0, 4.0, 3.0]], dtype=np.float64),
+        np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(payload["scales"], np.array([1, 3], dtype=np.int64))
     np.testing.assert_array_equal(payload["energies"], np.array([-3.5, -1.25], dtype=np.float64))
@@ -124,7 +125,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     np.testing.assert_array_equal(payload["connections"], np.array([[0, 1]], dtype=np.int64))
     np.testing.assert_array_equal(
         payload["traces"][0],
-        np.array([[3.0, 2.0, 1.0], [4.0, 3.0, 2.0]], dtype=np.float64),
+        np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(
         payload["scale_traces"][0],
@@ -132,7 +133,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     )
     np.testing.assert_array_equal(
         payload["bridge_vertex_positions"],
-        np.array([[5.0, 4.0, 3.0]], dtype=np.float64),
+        np.array([[3.0, 4.0, 5.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(payload["bridge_vertex_scales"], np.array([2], dtype=np.int64))
     np.testing.assert_array_equal(
@@ -141,7 +142,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     )
     np.testing.assert_array_equal(
         payload["bridge_edges"]["traces"][0],
-        np.array([[5.0, 4.0, 3.0], [6.0, 5.0, 4.0]], dtype=np.float64),
+        np.array([[3.0, 4.0, 5.0], [4.0, 5.0, 6.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(
         payload["bridge_edges"]["energies"],
@@ -176,7 +177,18 @@ def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
     from source.io.matlab_exact_proof import find_matlab_vector_paths
 
     vectors_dir = tmp_path / "batch" / "vectors"
+    data_dir = tmp_path / "batch" / "data"
     vectors_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    _write_mat(
+        data_dir / "energy_1.mat",
+        {
+            "energy": np.zeros((1, 1, 1), dtype=np.float64),
+            "scale_indices": np.ones((1, 1, 1), dtype=np.int16),
+            "energy_4d": np.zeros((1, 1, 1, 1), dtype=np.float64),
+            "lumen_radius_microns": np.array([1.0], dtype=np.float64),
+        },
+    )
     _write_mat(
         vectors_dir / "vertices_1.mat",
         {
@@ -215,9 +227,60 @@ def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
         },
     )
 
-    paths = find_matlab_vector_paths(vectors_dir.parent)
+    paths = find_matlab_vector_paths(vectors_dir.parent, ("energy", "vertices", "edges", "network"))
 
+    assert paths["energy"].name == "energy_1.mat"
     assert paths["vertices"].name == "curated_vertices_1.mat"
+
+
+def test_load_normalized_matlab_edge_input_vertices_prefers_embedded_edge_surface(tmp_path):
+    batch_dir = tmp_path / "batch"
+    vectors_dir = batch_dir / "vectors"
+    vectors_dir.mkdir(parents=True, exist_ok=True)
+    _write_mat(
+        vectors_dir / "curated_vertices_1.mat",
+        {
+            "vertex_space_subscripts": np.array([[100.0, 200.0, 10.0]], dtype=np.float64),
+            "vertex_scale_subscripts": np.array([9.2], dtype=np.float64),
+            "vertex_energies": np.array([-9.0], dtype=np.float64),
+        },
+    )
+    _write_mat(
+        vectors_dir / "edges_1.mat",
+        {
+            "edges2vertices": np.empty((0, 2), dtype=np.int16),
+            "edge_space_subscripts": np.empty((0,), dtype=object),
+            "edge_scale_subscripts": np.empty((0,), dtype=object),
+            "edge_energies": np.empty((0,), dtype=object),
+            "mean_edge_energies": np.empty((0,), dtype=np.float64),
+            "vertex_space_subscripts": np.array(
+                [[11.0, 21.0, 3.0], [31.0, 41.0, 5.0]], dtype=np.float64
+            ),
+            "vertex_scale_subscripts": np.array([2.6, 4.4], dtype=np.float64),
+            "vertex_energies": np.array([-3.0, -5.0], dtype=np.float64),
+        },
+    )
+    _write_mat(
+        vectors_dir / "network_1.mat",
+        {
+            "strands2vertices": np.empty((0, 2), dtype=np.int16),
+            "bifurcation_vertices": np.empty((0,), dtype=np.int16),
+            "strand_subscripts": np.empty((0,), dtype=object),
+            "strand_energies": np.empty((0,), dtype=object),
+            "mean_strand_energies": np.empty((0,), dtype=np.float64),
+            "vessel_directions": np.empty((0,), dtype=object),
+        },
+    )
+
+    payload = load_normalized_matlab_edge_input_vertices(batch_dir)
+
+    assert payload is not None
+    np.testing.assert_array_equal(
+        payload["positions"],
+        np.array([[10.0, 20.0, 2.0], [30.0, 40.0, 4.0]], dtype=np.float64),
+    )
+    np.testing.assert_array_equal(payload["scales"], np.array([2, 3], dtype=np.int64))
+    np.testing.assert_array_equal(payload["energies"], np.array([-3.0, -5.0], dtype=np.float64))
 
 
 def test_sync_exact_vertex_checkpoint_from_matlab_overwrites_parity_fields(tmp_path):
@@ -273,7 +336,7 @@ def test_sync_exact_vertex_checkpoint_from_matlab_overwrites_parity_fields(tmp_p
     updated = sync_exact_vertex_checkpoint_from_matlab(checkpoint_path, batch_dir)
     reloaded = load(checkpoint_path)
 
-    expected_positions = np.array([[5.0, 4.0, 3.0], [8.0, 7.0, 6.0]], dtype=np.float32)
+    expected_positions = np.array([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]], dtype=np.float32)
     expected_scales = np.array([2, 4], dtype=np.int16)
     expected_energies = np.array([-9.0, -7.0], dtype=np.float32)
 

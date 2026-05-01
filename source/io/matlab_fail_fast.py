@@ -130,14 +130,31 @@ def compare_lut_fixture_payload(
 
 def render_lut_proof_report(report_payload: dict[str, Any]) -> str:
     """Render a compact LUT-proof report."""
+    status = "SKIP" if report_payload.get("skipped") else (
+        "PASS" if report_payload.get("passed") else "FAIL"
+    )
     lines = [
         "Exact LUT proof report",
-        f"Status: {'PASS' if report_payload.get('passed') else 'FAIL'}",
+        f"Status: {status}",
         f"Image shape: {report_payload.get('size_of_image')}",
         f"Scale count: {report_payload.get('scale_count')}",
-        "",
-        "Scale summary",
     ]
+    if report_payload.get("skipped"):
+        lines.append(f"Reason: {report_payload.get('skip_reason')}")
+        fixture_inputs = report_payload.get("fixture_inputs")
+        source_inputs = report_payload.get("source_inputs")
+        if isinstance(fixture_inputs, dict):
+            lines.append(f"Fixture inputs: {fixture_inputs}")
+        if isinstance(source_inputs, dict):
+            lines.append(f"Source inputs: {source_inputs}")
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "",
+            "Scale summary",
+        ]
+    )
     for scale_key, summary in report_payload.get("stage_summaries", {}).items():
         lines.append(f"scale {scale_key}: {'PASS' if summary.get('passed') else 'FAIL'}")
     first_failure = report_payload.get("first_failure")

@@ -69,23 +69,28 @@ def find_single_matlab_batch_dir(run_root: Path) -> Path:
     return batch_dirs[0]
 
 
-def find_matlab_vector_paths(batch_dir: Path) -> dict[str, Path]:
-    """Locate the raw MATLAB vector files for vertices, edges, and network."""
+def find_matlab_vector_paths(
+    batch_dir: Path,
+    stages: tuple[str, ...] = EXACT_STAGE_ORDER,
+) -> dict[str, Path]:
+    """Locate the raw MATLAB exact-proof files for the requested stages."""
     vectors_dir = batch_dir / "vectors"
-    if not vectors_dir.is_dir():
-        raise ValueError(f"missing MATLAB vectors directory: {vectors_dir}")
-
-    stage_patterns: dict[str, tuple[str, ...]] = {
-        "vertices": ("curated_vertices*.mat", "vertices*.mat"),
-        "edges": ("edges*.mat", "curated_edges*.mat"),
-        "network": ("network*.mat",),
+    data_dir = batch_dir / "data"
+    stage_locations: dict[str, tuple[Path, tuple[str, ...]]] = {
+        "energy": (data_dir, ("energy*.mat",)),
+        "vertices": (vectors_dir, ("curated_vertices*.mat", "vertices*.mat")),
+        "edges": (vectors_dir, ("edges*.mat", "curated_edges*.mat")),
+        "network": (vectors_dir, ("network*.mat",)),
     }
     stage_paths: dict[str, Path] = {}
-    for stage in EXACT_STAGE_ORDER:
+    for stage in stages:
+        root_dir, patterns = stage_locations[stage]
+        if not root_dir.is_dir():
+            raise ValueError(f"missing MATLAB {stage} directory: {root_dir}")
         candidates: list[Path] = []
         seen: set[Path] = set()
-        for pattern in stage_patterns[stage]:
-            for path in sorted(vectors_dir.glob(pattern)):
+        for pattern in patterns:
+            for path in sorted(root_dir.glob(pattern)):
                 if not path.is_file() or path in seen:
                     continue
                 candidates.append(path)
@@ -93,11 +98,11 @@ def find_matlab_vector_paths(batch_dir: Path) -> dict[str, Path]:
             if candidates:
                 break
         if not candidates:
-            raise ValueError(f"missing raw MATLAB {stage} vector file under {vectors_dir}")
+            raise ValueError(f"missing raw MATLAB {stage} artifact under {root_dir}")
         if len(candidates) > 1:
             joined = ", ".join(str(path) for path in candidates)
             raise ValueError(
-                f"expected one raw MATLAB {stage} vector file under {vectors_dir}, found: {joined}"
+                f"expected one raw MATLAB {stage} artifact under {root_dir}, found: {joined}"
             )
         stage_paths[stage] = candidates[0]
     return stage_paths
@@ -108,7 +113,7 @@ def load_normalized_matlab_vectors(
     stages: tuple[str, ...] = EXACT_STAGE_ORDER,
 ) -> dict[str, dict[str, Any]]:
     """Load and normalize the requested raw MATLAB vector files."""
-    vector_paths = find_matlab_vector_paths(batch_dir)
+    vector_paths = find_matlab_vector_paths(batch_dir, stages)
     normalized: dict[str, dict[str, Any]] = {}
     for stage in stages:
         normalized[stage] = load_normalized_matlab_stage(vector_paths[stage], stage)
@@ -130,6 +135,25 @@ def load_normalized_matlab_stage(path: Path, stage: str) -> dict[str, Any]:
     if stage == "network":
         return _normalize_matlab_network_payload(matlab_payload)
     raise ValueError(f"unsupported exact-proof stage: {stage}")
+
+
+def load_normalized_matlab_edge_input_vertices(batch_dir: Path) -> dict[str, Any] | None:
+    """Load the vertex surface embedded in the preserved MATLAB edges artifact when present."""
+    edge_path = find_matlab_vector_paths(batch_dir, ("edges",)).get("edges")
+    if edge_path is None:
+        return None
+    matlab_payload = cast(
+        "dict[str, Any]",
+        loadmat(edge_path, squeeze_me=True, struct_as_record=False),
+    )
+    required_fields = (
+        "vertex_space_subscripts",
+        "vertex_scale_subscripts",
+        "vertex_energies",
+    )
+    if not all(field_name in matlab_payload for field_name in required_fields):
+        return None
+    return _normalize_matlab_vertex_fields_payload(matlab_payload)
 
 
 def load_normalized_python_checkpoints(
@@ -316,12 +340,20 @@ def render_exact_proof_report(report: dict[str, Any]) -> str:
 
 
 def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return _normalize_matlab_vertex_fields_payload(payload)
+
+
+def _normalize_matlab_vertex_fields_payload(
+    payload: dict[str, Any],
+    *,
+    spatial_field: str = "vertex_space_subscripts",
+    scale_field: str = "vertex_scale_subscripts",
+    energy_field: str = "vertex_energies",
+) -> dict[str, Any]:
     return {
-        "positions": _normalize_matlab_spatial_matrix(
-            _require_key(payload, "vertex_space_subscripts"),
-        ),
-        "scales": _normalize_matlab_int_vector(_require_key(payload, "vertex_scale_subscripts")),
-        "energies": _normalize_float_vector(_require_key(payload, "vertex_energies")),
+        "positions": _normalize_matlab_spatial_matrix(_require_key(payload, spatial_field)),
+        "scales": _normalize_matlab_int_vector(_require_key(payload, scale_field)),
+        "energies": _normalize_float_vector(_require_key(payload, energy_field)),
     }
 
 
@@ -571,9 +603,11 @@ def _normalize_connection_array(value: Any, *, one_based: bool = False) -> np.nd
 
 
 def _normalize_int_vector(value: Any, *, one_based: bool = False) -> np.ndarray:
-    array = np.asarray([] if value is None else value, dtype=np.int64).reshape(-1)
-    if one_based and array.size:
-        array = array - 1
+    array = np.asarray([] if value is None else value, dtype=np.float64).reshape(-1)
+    if array.size:
+        array = np.rint(array)
+        if one_based:
+            array = array - 1.0
     return cast("np.ndarray", array.astype(np.int64, copy=False))
 
 
@@ -610,7 +644,6 @@ def _normalize_spatial_matrix(value: Any, *, one_based: bool = False) -> np.ndar
     normalized = _normalize_float_matrix(value, columns=3, one_based=False)
     if normalized.size == 0:
         return normalized
-    normalized = normalized[:, ::-1]
     if one_based:
         normalized = normalized - 1.0
     return cast("np.ndarray", normalized.astype(np.float64, copy=False))
@@ -627,7 +660,7 @@ def _normalize_spatial_vector_list(value: Any) -> list[np.ndarray]:
     vectors: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
         normalized = _normalize_float_matrix(item, columns=3, one_based=False)
-        vectors.append(normalized[:, ::-1].astype(np.float64, copy=False))
+        vectors.append(normalized.astype(np.float64, copy=False))
     return vectors
 
 
@@ -659,9 +692,7 @@ def _normalize_spatial_scale_matrix_list(
         if normalized.size == 0:
             matrices.append(np.empty((0, 4), dtype=np.float64))
             continue
-        reordered = np.column_stack(
-            (normalized[:, 2], normalized[:, 1], normalized[:, 0], normalized[:, 3])
-        )
+        reordered = normalized
         if one_based:
             reordered = reordered - 1.0
         matrices.append(reordered.astype(np.float64, copy=False))
@@ -871,6 +902,7 @@ __all__ = [
     "compare_exact_artifacts",
     "find_matlab_vector_paths",
     "find_single_matlab_batch_dir",
+    "load_normalized_matlab_edge_input_vertices",
     "load_normalized_matlab_stage",
     "load_normalized_matlab_vectors",
     "load_normalized_python_checkpoints",

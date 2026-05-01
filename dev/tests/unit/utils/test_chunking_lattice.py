@@ -36,3 +36,31 @@ def test_chunking_lattice_keeps_output_slices_contiguous_when_margin_is_clamped(
         processed_z = output_slice[2].stop
 
     assert processed_z == shape[2]
+
+
+def test_chunking_lattice_clamps_negative_overlap_starts_without_empty_chunks():
+    shape = (4, 4, 20)
+    volume = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    lattice = get_chunking_lattice(shape, max_voxels=64, margin=10)
+
+    assert len(lattice) == 1
+    reconstructed = np.zeros_like(volume)
+    for chunk_slice, output_slice, inner_slice in lattice:
+        chunk = volume[chunk_slice]
+        assert 0 not in chunk.shape
+        reconstructed[output_slice] = chunk[inner_slice]
+
+    assert np.allclose(reconstructed, volume)
+
+
+def test_chunking_lattice_falls_back_to_full_volume_when_overlap_dominates_chunk_budget():
+    shape = (64, 512, 512)
+    lattice = get_chunking_lattice(shape, max_voxels=1_000_000, margin=412)
+
+    assert lattice == [
+        (
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+        )
+    ]

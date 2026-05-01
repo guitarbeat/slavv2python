@@ -43,6 +43,14 @@ def get_chunking_lattice(
         ]
 
     margin = min(margin, max_depth // 2)
+    if max_depth <= 2 * margin:
+        return [
+            (
+                (slice(0, y), slice(0, x), slice(0, z)),
+                (slice(0, y), slice(0, x), slice(0, z)),
+                (slice(0, y), slice(0, x), slice(0, z)),
+            )
+        ]
     core_depth = max_depth - 2 * margin
     if core_depth <= 0:
         core_depth = 1
@@ -53,16 +61,19 @@ def get_chunking_lattice(
         end = min(start + core_depth, z)
         pad_before = margin if start > 0 else 0
         pad_after = margin if end < z else 0
+        chunk_start = max(0, start - pad_before)
+        chunk_end = min(z, end + pad_after)
+        inner_start = start - chunk_start
         chunk_slice = (
             slice(0, y),
             slice(0, x),
-            slice(start - pad_before, end + pad_after),
+            slice(chunk_start, chunk_end),
         )
         output_slice = (slice(0, y), slice(0, x), slice(start, end))
         inner_slice = (
             slice(0, y),
             slice(0, x),
-            slice(pad_before, pad_before + (end - start)),
+            slice(inner_start, inner_start + (end - start)),
         )
         slices.append((chunk_slice, output_slice, inner_slice))
         start = end

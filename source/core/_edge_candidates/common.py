@@ -176,8 +176,12 @@ def _build_matlab_global_watershed_lut(
     }
 
 
-def _matlab_frontier_size_tolerance(lumen_radius_microns: np.ndarray) -> float:
-    """Return MATLAB's scale-index tolerance derived from ``radius_tolerance = 0.5``."""
+def _matlab_frontier_size_tolerance(
+    lumen_radius_microns: np.ndarray,
+    *,
+    radius_tolerance: float = 0.5,
+) -> float:
+    """Return MATLAB's scale-index tolerance from the released radius-tolerance constant."""
     radii = np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)
     if radii.size < 2:
         return float("inf")
@@ -187,7 +191,7 @@ def _matlab_frontier_size_tolerance(lumen_radius_microns: np.ndarray) -> float:
     size_ratio_per_index = float(positive_radii[1] / positive_radii[0])
     if not math.isfinite(size_ratio_per_index) or size_ratio_per_index <= 1.0:
         return float("inf")
-    return float(math.log(1.5) / math.log(size_ratio_per_index))
+    return float(math.log(1.0 + float(radius_tolerance)) / math.log(size_ratio_per_index))
 
 
 def _matlab_frontier_adjusted_neighbor_energies(
@@ -202,12 +206,16 @@ def _matlab_frontier_adjusted_neighbor_energies(
     current_forward_unit: np.ndarray | None,
     microns_per_voxel: np.ndarray,
     lumen_radius_microns: np.ndarray,
+    radius_tolerance: float = 0.5,
     distance_tolerance: float = 3.0,
 ) -> np.ndarray:
     """Apply MATLAB-style size, distance, and direction penalties to neighborhood energies."""
     adjusted = np.asarray(raw_energies, dtype=np.float64).copy()
 
-    size_tolerance = _matlab_frontier_size_tolerance(lumen_radius_microns)
+    size_tolerance = _matlab_frontier_size_tolerance(
+        lumen_radius_microns,
+        radius_tolerance=radius_tolerance,
+    )
     if neighbor_scale_indices is not None and math.isfinite(size_tolerance) and size_tolerance > 0:
         size_index_differences = np.asarray(
             neighbor_scale_indices,

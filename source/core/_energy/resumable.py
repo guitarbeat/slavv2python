@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from . import native_hessian
+from .provenance import energy_origin_for_method
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -212,6 +213,7 @@ def calculate_energy_field_resumable(
         "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
         "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
         "energy_sign": config["energy_sign"],
+        "energy_origin": energy_origin_for_method(str(config["energy_method"])),
         "image_shape": image.shape,
     }
     if returned_energy_4d is not None:
