@@ -239,6 +239,8 @@ def build_candidate_coverage_report(
         "matched_pair_count": len(matched_pairs),
         "missing_pair_count": len(missing_pairs),
         "extra_pair_count": len(extra_pairs),
+        "missing_pairs": missing_pairs,
+        "extra_pairs": extra_pairs,
         "matched_pair_samples": matched_pairs[:10],
         "missing_pair_samples": missing_pairs[:10],
         "extra_pair_samples": extra_pairs[:10],

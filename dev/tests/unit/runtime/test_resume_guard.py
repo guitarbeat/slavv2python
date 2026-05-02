@@ -12,7 +12,7 @@ from source.runtime._run_state.resume_guard import (
     fingerprint_mismatches,
     update_snapshot_fingerprints,
 )
-from source.runtime.run_state import STATUS_BLOCKED, STATUS_PENDING
+from source.runtime._run_state import STATUS_BLOCKED, STATUS_PENDING
 
 
 def test_resume_guard_blocks_mismatched_input(tmp_path):

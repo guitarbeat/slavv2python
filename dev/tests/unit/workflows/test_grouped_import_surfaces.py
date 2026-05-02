@@ -18,8 +18,12 @@ from source.workflows.pipeline_results import (
     finalize_pipeline_results as flat_finalize_pipeline_results,
 )
 from source.workflows.pipeline_runner import PipelineStageStep as FlatPipelineStageStep
-from source.workflows.pipeline_session import PreparedPipelineRun as AliasPreparedPipelineRun
-from source.workflows.pipeline_setup import PreparedPipelineRun as FlatPreparedPipelineRun
+from source.workflows.pipeline_session import (
+    PreparedPipelineRun as AliasPreparedPipelineRun,
+)
+from source.workflows.pipeline_setup import (
+    PreparedPipelineRun as FlatPreparedPipelineRun,
+)
 from source.workflows.stage_checkpoints import stage_artifacts as flat_stage_artifacts
 
 

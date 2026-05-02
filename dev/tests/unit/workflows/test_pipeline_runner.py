@@ -98,8 +98,18 @@ def test_build_standard_pipeline_steps_uses_canonical_stage_order():
         resolve_network=lambda: calls.append("network") or {"strands": []},
     )
 
-    assert [step.result_key for step in steps] == ["energy_data", "vertices", "edges", "network"]
-    assert [step.stage_name for step in steps] == ["energy", "vertices", "edges", "network"]
+    assert [step.result_key for step in steps] == [
+        "energy_data",
+        "vertices",
+        "edges",
+        "network",
+    ]
+    assert [step.stage_name for step in steps] == [
+        "energy",
+        "vertices",
+        "edges",
+        "network",
+    ]
     assert [step.progress_fraction for step in steps] == [0.4, 0.6, 0.8, 1.0]
     assert steps[0].resolve_fn() == {"energy": []}
     assert steps[3].resolve_fn() == {"strands": []}

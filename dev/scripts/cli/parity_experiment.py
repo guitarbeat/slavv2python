@@ -17,6 +17,7 @@ from shutil import copy2, copytree
 from typing import Any, cast
 
 import numpy as np
+import pandas as pd
 import psutil
 from scipy.io import loadmat
 
@@ -72,6 +73,7 @@ from source.runtime.run_state import (
 from source.utils.safe_unpickle import safe_load
 
 ANALYSIS_DIR = Path("03_Analysis")
+ANALYSIS_TABLES_DIR = ANALYSIS_DIR / "tables"
 CHECKPOINTS_DIR = Path("02_Output") / "python_results" / "checkpoints"
 EXPERIMENT_REFS_DIR = Path("00_Refs")
 EXPERIMENT_PARAMS_DIR = Path("01_Params")
@@ -92,6 +94,8 @@ EDGE_REPLAY_PROOF_JSON_PATH = ANALYSIS_DIR / "edge_replay_proof.json"
 EDGE_REPLAY_PROOF_TEXT_PATH = ANALYSIS_DIR / "edge_replay_proof.txt"
 EXACT_PROOF_JSON_PATH = ANALYSIS_DIR / "exact_proof.json"
 EXACT_PROOF_TEXT_PATH = ANALYSIS_DIR / "exact_proof.txt"
+GAP_DIAGNOSIS_JSON_PATH = ANALYSIS_DIR / "gap_diagnosis.json"
+GAP_DIAGNOSIS_TEXT_PATH = ANALYSIS_DIR / "gap_diagnosis.txt"
 LUT_PROOF_JSON_PATH = ANALYSIS_DIR / "lut_proof.json"
 LUT_PROOF_TEXT_PATH = ANALYSIS_DIR / "lut_proof.txt"
 PREFLIGHT_EXACT_JSON_PATH = ANALYSIS_DIR / "preflight_exact.json"
@@ -103,11 +107,17 @@ SUMMARY_TEXT_PATH = ANALYSIS_DIR / "experiment_summary.txt"
 VALIDATED_PARAMS_PATH = METADATA_DIR / "validated_params.json"
 CANDIDATE_COVERAGE_JSON_PATH = ANALYSIS_DIR / "candidate_coverage.json"
 CANDIDATE_COVERAGE_TEXT_PATH = ANALYSIS_DIR / "candidate_coverage.txt"
+CANDIDATE_PROGRESS_JSONL_PATH = ANALYSIS_DIR / "candidate_progress.jsonl"
+CANDIDATE_PROGRESS_PLOT_PATH = ANALYSIS_DIR / "candidate_progress.png"
+RECORDING_TABLES_INDEX_PATH = ANALYSIS_DIR / "recording_tables.json"
 SHARED_PARAMS_PATH = EXPERIMENT_PARAMS_DIR / "shared_params.json"
 PYTHON_DERIVED_PARAMS_PATH = EXPERIMENT_PARAMS_DIR / "python_derived_params.json"
 PARAM_DIFF_PATH = EXPERIMENT_PARAMS_DIR / "param_diff.json"
 HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
+EDGE_CANDIDATE_AUDIT_PATH = (
+    Path("02_Output") / "python_results" / "stages" / "edges" / "candidate_audit.json"
+)
 EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
     {
         "approximating_PSF",
@@ -514,11 +524,7 @@ def _load_dataset_surface(dataset_root: Path) -> DatasetSurface:
 
 def _load_matlab_settings_payload(path: Path) -> dict[str, Any]:
     payload = loadmat(path, squeeze_me=True, struct_as_record=False)
-    return {
-        str(key): value
-        for key, value in payload.items()
-        if not str(key).startswith("__")
-    }
+    return {str(key): value for key, value in payload.items() if not str(key).startswith("__")}
 
 
 def _normalize_matlab_setting_value(value: Any) -> Any:
@@ -554,9 +560,7 @@ def _select_oracle_settings_paths(oracle_surface: OracleSurface) -> dict[str, Pa
     energy_candidates = sorted(settings_dir.glob("energy_*.mat"))
     if len(energy_candidates) != 1:
         joined = ", ".join(str(path) for path in energy_candidates)
-        raise ValueError(
-            f"expected one energy settings file under {settings_dir}, found: {joined}"
-        )
+        raise ValueError(f"expected one energy settings file under {settings_dir}, found: {joined}")
 
     selected_paths = {"energy": energy_candidates[0]}
     for stage in ("vertices", "edges", "network"):
@@ -591,9 +595,7 @@ def derive_exact_params_from_oracle(
         "edge_method": "tracing",
         "energy_method": "hessian",
         "energy_projection_mode": "matlab",
-        "microns_per_voxel": _normalize_matlab_setting_value(
-            energy_settings["microns_per_voxel"]
-        ),
+        "microns_per_voxel": _normalize_matlab_setting_value(energy_settings["microns_per_voxel"]),
         "radius_of_smallest_vessel_in_microns": _normalize_matlab_setting_value(
             energy_settings["radius_of_smallest_vessel_in_microns"]
         ),
@@ -609,9 +611,7 @@ def derive_exact_params_from_oracle(
         "excitation_wavelength_in_microns": _normalize_matlab_setting_value(
             energy_settings["excitation_wavelength_in_microns"]
         ),
-        "scales_per_octave": _normalize_matlab_setting_value(
-            energy_settings["scales_per_octave"]
-        ),
+        "scales_per_octave": _normalize_matlab_setting_value(energy_settings["scales_per_octave"]),
         "max_voxels_per_node_energy": _normalize_matlab_setting_value(
             energy_settings["max_voxels_per_node_energy"]
         ),
@@ -621,7 +621,9 @@ def derive_exact_params_from_oracle(
         "spherical_to_annular_ratio": _normalize_matlab_setting_value(
             energy_settings["spherical_to_annular_ratio"]
         ),
-        "approximating_PSF": bool(_normalize_matlab_setting_value(energy_settings["approximating_PSF"])),
+        "approximating_PSF": bool(
+            _normalize_matlab_setting_value(energy_settings["approximating_PSF"])
+        ),
         "space_strel_apothem": _normalize_matlab_setting_value(
             vertex_settings["space_strel_apothem"]
         ),
@@ -650,8 +652,7 @@ def derive_exact_params_from_oracle(
         {stage: str(path) for stage, path in settings_paths.items()},
         {
             stage: {
-                str(key): _normalize_matlab_setting_value(value)
-                for key, value in payload.items()
+                str(key): _normalize_matlab_setting_value(value) for key, value in payload.items()
             }
             for stage, payload in settings_payloads.items()
         },
@@ -709,9 +710,7 @@ def _materialize_dataset_record(
             else _string_or_none(existing_manifest.get("input_filename"))
         ),
         "input_bytes": (
-            input_bytes
-            if input_bytes is not None
-            else existing_manifest.get("input_bytes")
+            input_bytes if input_bytes is not None else existing_manifest.get("input_bytes")
         ),
         "source_file": (
             str(dataset_file)
@@ -1017,6 +1016,34 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run root containing 03_Analysis/experiment_summary.{txt,json}.",
     )
     summarize.set_defaults(handler=_handle_summarize)
+
+    normalize = subparsers.add_parser(
+        "normalize-recordings",
+        help="Flatten recorded run artifacts into CSV/JSONL tables under 03_Analysis/tables.",
+    )
+    normalize.add_argument(
+        "--run-root",
+        required=True,
+        help="Run root containing run snapshot, manifest, and optional edge-analysis recordings.",
+    )
+    normalize.set_defaults(handler=_handle_normalize_recordings)
+
+    diagnose = subparsers.add_parser(
+        "diagnose-gaps",
+        help="Join candidate coverage with origin-level diagnostics to surface gap hotspots.",
+    )
+    diagnose.add_argument(
+        "--run-root",
+        required=True,
+        help="Run root containing candidate_coverage.json and optional origin-level diagnostics.",
+    )
+    diagnose.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Maximum hotspot rows to include for missing and extra gaps.",
+    )
+    diagnose.set_defaults(handler=_handle_diagnose_gaps)
 
     prove = subparsers.add_parser(
         "prove-exact",
@@ -1674,8 +1701,21 @@ def write_capture_candidates_snapshot(
     detail: str,
     iteration_count: int = 0,
     candidate_count: int = 0,
+    elapsed_seconds: float = 0.0,
+    telemetry_point_count: int = 0,
+    progress_artifacts: dict[str, Any] | None = None,
 ) -> None:
     """Persist lightweight run progress for long candidate-capture runs."""
+    progress_artifacts = dict(progress_artifacts or {})
+    artifact_payload: dict[str, str] = {
+        "edge_candidate_iterations": str(int(iteration_count)),
+        "edge_candidate_count": str(int(candidate_count)),
+        "candidate_progress_elapsed_seconds": f"{float(elapsed_seconds):.3f}",
+        "candidate_progress_point_count": str(int(telemetry_point_count)),
+    }
+    for key, value in progress_artifacts.items():
+        artifact_payload[str(key)] = str(value)
+
     _write_json_with_hash(
         dest_run_root / RUN_SNAPSHOT_PATH,
         {
@@ -1700,14 +1740,880 @@ def write_capture_candidates_snapshot(
                 }
             },
             "optional_tasks": {},
-            "artifacts": {
-                "edge_candidate_iterations": str(int(iteration_count)),
-                "edge_candidate_count": str(int(candidate_count)),
-            },
+            "artifacts": artifact_payload,
             "errors": [],
             "provenance": {},
         },
     )
+
+
+def _build_candidate_progress_record(
+    *,
+    phase: str,
+    detail: str,
+    started_at_monotonic: float,
+    iteration_count: int,
+    candidate_count: int,
+    previous_record: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Build one candidate-capture telemetry point."""
+    now_monotonic = time.monotonic()
+    elapsed_seconds = max(0.0, now_monotonic - started_at_monotonic)
+    memory_rss_bytes = int(getattr(psutil.Process().memory_info(), "rss", 0))
+
+    candidate_delta = int(candidate_count)
+    iteration_delta = int(iteration_count)
+    elapsed_delta = elapsed_seconds
+    if previous_record is not None:
+        candidate_delta -= int(previous_record.get("candidate_count", 0))
+        iteration_delta -= int(previous_record.get("iteration_count", 0))
+        elapsed_delta -= float(previous_record.get("elapsed_seconds", 0.0))
+
+    candidates_per_second = (
+        float(candidate_delta) / float(elapsed_delta) if elapsed_delta > 1e-9 else 0.0
+    )
+    candidates_per_iteration = (
+        float(candidate_delta) / float(iteration_delta) if iteration_delta > 0 else 0.0
+    )
+
+    return {
+        "timestamp": _now_iso(),
+        "phase": str(phase),
+        "detail": str(detail),
+        "iteration_count": int(iteration_count),
+        "candidate_count": int(candidate_count),
+        "elapsed_seconds": float(round(elapsed_seconds, 6)),
+        "memory_rss_bytes": memory_rss_bytes,
+        "candidate_delta": int(candidate_delta),
+        "iteration_delta": int(iteration_delta),
+        "elapsed_delta_seconds": float(round(max(0.0, elapsed_delta), 6)),
+        "candidates_per_second": float(round(candidates_per_second, 6)),
+        "candidates_per_iteration": float(round(candidates_per_iteration, 6)),
+    }
+
+
+def _write_candidate_progress_plot(
+    plot_path: Path,
+    telemetry_points: list[dict[str, Any]],
+) -> None:
+    """Render a lightweight candidate-capture progress plot."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+
+    import matplotlib.pyplot as plt
+
+    iterations = [int(point.get("iteration_count", 0)) for point in telemetry_points]
+    candidates = [int(point.get("candidate_count", 0)) for point in telemetry_points]
+    elapsed = [float(point.get("elapsed_seconds", 0.0)) for point in telemetry_points]
+    memory_mb = [
+        float(point.get("memory_rss_bytes", 0)) / (1024.0 * 1024.0) for point in telemetry_points
+    ]
+    candidate_rates = [float(point.get("candidates_per_second", 0.0)) for point in telemetry_points]
+
+    figure, axes = plt.subplots(2, 2, figsize=(12, 8), constrained_layout=True)
+    figure.suptitle("Candidate Capture Progress", fontsize=14)
+
+    axes[0, 0].plot(iterations, candidates, marker="o", linewidth=1.5, markersize=3)
+    axes[0, 0].set_title("Candidates vs Iteration")
+    axes[0, 0].set_xlabel("Iteration")
+    axes[0, 0].set_ylabel("Candidates")
+    axes[0, 0].grid(True, alpha=0.25)
+
+    axes[0, 1].plot(elapsed, candidates, marker="o", linewidth=1.5, markersize=3)
+    axes[0, 1].set_title("Candidates vs Elapsed Time")
+    axes[0, 1].set_xlabel("Elapsed seconds")
+    axes[0, 1].set_ylabel("Candidates")
+    axes[0, 1].grid(True, alpha=0.25)
+
+    axes[1, 0].plot(elapsed, candidate_rates, marker="o", linewidth=1.5, markersize=3)
+    axes[1, 0].set_title("Candidate Rate")
+    axes[1, 0].set_xlabel("Elapsed seconds")
+    axes[1, 0].set_ylabel("Candidates / second")
+    axes[1, 0].grid(True, alpha=0.25)
+
+    axes[1, 1].plot(elapsed, memory_mb, marker="o", linewidth=1.5, markersize=3)
+    axes[1, 1].set_title("Resident Memory")
+    axes[1, 1].set_xlabel("Elapsed seconds")
+    axes[1, 1].set_ylabel("Memory (MB)")
+    axes[1, 1].grid(True, alpha=0.25)
+
+    if telemetry_points:
+        last_point = telemetry_points[-1]
+        phase = str(last_point.get("phase", "unknown"))
+        detail = str(last_point.get("detail", ""))
+        figure.text(
+            0.5,
+            0.01,
+            f"Latest phase: {phase} | {detail}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    plot_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(plot_path, dpi=150)
+    plt.close(figure)
+
+
+def persist_candidate_progress_artifacts(
+    dest_run_root: Path,
+    telemetry_points: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Persist candidate-capture telemetry and the latest plot artifact."""
+    jsonl_path = dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH
+    jsonl_payload = "".join(f"{stable_json_dumps(dict(point))}\n" for point in telemetry_points)
+    atomic_write_text(jsonl_path, jsonl_payload)
+
+    artifact_summary: dict[str, Any] = {
+        "candidate_progress_jsonl": str(jsonl_path),
+        "candidate_progress_point_count": len(telemetry_points),
+    }
+
+    plot_path = dest_run_root / CANDIDATE_PROGRESS_PLOT_PATH
+    try:
+        _write_candidate_progress_plot(plot_path, telemetry_points)
+    except Exception as exc:  # pragma: no cover - defensive artifact path
+        artifact_summary["candidate_progress_plot_error"] = str(exc)
+    else:
+        artifact_summary["candidate_progress_plot"] = str(plot_path)
+
+    return artifact_summary
+
+
+def _read_jsonl_records(path: Path) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    if not path.is_file():
+        return records
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        payload = json.loads(stripped)
+        if isinstance(payload, dict):
+            records.append(cast("dict[str, Any]", payload))
+    return records
+
+
+def _coerce_table_cell(value: Any) -> Any:
+    normalized = _normalize_param_value(value)
+    if isinstance(normalized, float) and normalized != normalized:
+        return None
+    if isinstance(normalized, (list, dict)):
+        return stable_json_dumps(normalized)
+    return normalized
+
+
+def _persist_table_records(
+    tables_root: Path,
+    *,
+    table_name: str,
+    records: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not records:
+        return None
+
+    normalized_records = [
+        cast("dict[str, Any]", _normalize_param_value(dict(record))) for record in records
+    ]
+    frame = pd.json_normalize(normalized_records, sep=".")
+    frame = frame.reindex(sorted(frame.columns), axis=1)
+    frame = frame.apply(lambda column: column.map(_coerce_table_cell))
+
+    jsonl_path = tables_root / f"{table_name}.jsonl"
+    csv_path = tables_root / f"{table_name}.csv"
+
+    row_payloads = [
+        {str(key): _coerce_table_cell(value) for key, value in row.items()}
+        for row in frame.to_dict(orient="records")
+    ]
+    jsonl_text = "".join(f"{stable_json_dumps(row)}\n" for row in row_payloads)
+    atomic_write_text(jsonl_path, jsonl_text)
+    _write_hash_sidecar(jsonl_path)
+
+    csv_text = frame.to_csv(index=False)
+    atomic_write_text(csv_path, csv_text)
+    _write_hash_sidecar(csv_path)
+
+    return {
+        "name": table_name,
+        "row_count": len(row_payloads),
+        "column_count": len(frame.columns),
+        "columns": [str(column) for column in frame.columns.tolist()],
+        "jsonl_path": str(jsonl_path),
+        "csv_path": str(csv_path),
+    }
+
+
+def _build_run_snapshot_tables(
+    run_root: Path,
+    snapshot_payload: dict[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    run_id = _string_or_none(snapshot_payload.get("run_id")) or _entity_id_from_path(run_root)
+    root_row = {
+        **{
+            str(key): value
+            for key, value in snapshot_payload.items()
+            if key not in {"stages", "optional_tasks", "artifacts", "errors"}
+        },
+        "run_root": str(run_root),
+        "stage_count": len(snapshot_payload.get("stages", {})),
+        "optional_task_count": len(snapshot_payload.get("optional_tasks", {})),
+        "artifact_count": len(snapshot_payload.get("artifacts", {})),
+        "error_count": len(snapshot_payload.get("errors", [])),
+    }
+
+    stage_rows: list[dict[str, Any]] = []
+    stage_artifact_rows: list[dict[str, Any]] = []
+    for stage_key, stage_payload in sorted(
+        cast("dict[str, dict[str, Any]]", snapshot_payload.get("stages", {})).items()
+    ):
+        row = {
+            "run_root": str(run_root),
+            "run_id": run_id,
+            "stage_key": str(stage_key),
+            **{str(key): value for key, value in dict(stage_payload).items() if key != "artifacts"},
+            "artifact_count": len(stage_payload.get("artifacts", {})),
+        }
+        stage_rows.append(row)
+        for artifact_key, artifact_value in sorted(
+            cast("dict[str, Any]", stage_payload.get("artifacts", {})).items()
+        ):
+            stage_artifact_rows.append(
+                {
+                    "run_root": str(run_root),
+                    "run_id": run_id,
+                    "stage_key": str(stage_key),
+                    "artifact_key": str(artifact_key),
+                    "artifact_value": artifact_value,
+                }
+            )
+
+    optional_task_rows: list[dict[str, Any]] = []
+    optional_task_artifact_rows: list[dict[str, Any]] = []
+    for task_key, task_payload in sorted(
+        cast("dict[str, dict[str, Any]]", snapshot_payload.get("optional_tasks", {})).items()
+    ):
+        row = {
+            "run_root": str(run_root),
+            "run_id": run_id,
+            "task_key": str(task_key),
+            **{str(key): value for key, value in dict(task_payload).items() if key != "artifacts"},
+            "artifact_count": len(task_payload.get("artifacts", {})),
+        }
+        optional_task_rows.append(row)
+        for artifact_key, artifact_value in sorted(
+            cast("dict[str, Any]", task_payload.get("artifacts", {})).items()
+        ):
+            optional_task_artifact_rows.append(
+                {
+                    "run_root": str(run_root),
+                    "run_id": run_id,
+                    "task_key": str(task_key),
+                    "artifact_key": str(artifact_key),
+                    "artifact_value": artifact_value,
+                }
+            )
+
+    artifact_rows = [
+        {
+            "run_root": str(run_root),
+            "run_id": run_id,
+            "artifact_key": str(artifact_key),
+            "artifact_value": artifact_value,
+        }
+        for artifact_key, artifact_value in sorted(
+            cast("dict[str, Any]", snapshot_payload.get("artifacts", {})).items()
+        )
+    ]
+    error_rows = [
+        {
+            "run_root": str(run_root),
+            "run_id": run_id,
+            "error_index": error_index,
+            "error_payload": error_payload,
+        }
+        for error_index, error_payload in enumerate(
+            cast("list[Any]", snapshot_payload.get("errors", []))
+        )
+    ]
+
+    return {
+        "run_snapshot": [root_row],
+        "run_snapshot_stages": stage_rows,
+        "run_snapshot_stage_artifacts": stage_artifact_rows,
+        "run_snapshot_optional_tasks": optional_task_rows,
+        "run_snapshot_optional_task_artifacts": optional_task_artifact_rows,
+        "run_snapshot_artifacts": artifact_rows,
+        "run_snapshot_errors": error_rows,
+    }
+
+
+def _build_run_manifest_tables(
+    run_root: Path,
+    manifest_payload: dict[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    run_id = _string_or_none(manifest_payload.get("run_id")) or _entity_id_from_path(run_root)
+    root_row = {
+        **{str(key): value for key, value in manifest_payload.items() if key != "stage_metrics"},
+        "run_root": str(run_root),
+        "stage_metric_count": len(manifest_payload.get("stage_metrics", {})),
+    }
+    stage_metric_rows = [
+        {
+            "run_root": str(run_root),
+            "run_id": run_id,
+            "stage_key": str(stage_key),
+            **dict(stage_metric_payload),
+        }
+        for stage_key, stage_metric_payload in sorted(
+            cast("dict[str, dict[str, Any]]", manifest_payload.get("stage_metrics", {})).items()
+        )
+    ]
+    return {
+        "run_manifest": [root_row],
+        "run_manifest_stage_metrics": stage_metric_rows,
+    }
+
+
+def _build_candidate_audit_tables(
+    run_root: Path,
+    audit_payload: dict[str, Any],
+    *,
+    artifact_path: Path,
+) -> dict[str, list[dict[str, Any]]]:
+    per_origin_summary = cast("list[dict[str, Any]]", audit_payload.get("per_origin_summary", []))
+    metric_map_keys = (
+        "frontier_per_origin_candidate_counts",
+        "frontier_per_origin_terminal_accepts",
+        "frontier_per_origin_terminal_hits",
+        "frontier_per_origin_terminal_rejections",
+        "geodesic_per_origin_candidate_counts",
+        "watershed_per_origin_candidate_counts",
+    )
+    summary_payload = {
+        str(key): value
+        for key, value in audit_payload.items()
+        if key not in {"per_origin_summary", *metric_map_keys}
+    }
+    summary_row = {
+        **summary_payload,
+        "run_root": str(run_root),
+        "artifact_path": str(artifact_path),
+        "per_origin_row_count": len(per_origin_summary),
+    }
+    metric_rows: list[dict[str, Any]] = []
+    for metric_name in metric_map_keys:
+        metric_payload = cast("dict[str, Any]", audit_payload.get(metric_name, {}))
+        for origin_key, metric_value in sorted(
+            metric_payload.items(), key=lambda item: str(item[0])
+        ):
+            with suppress(ValueError, TypeError):
+                origin_key = int(origin_key)
+            metric_rows.append(
+                {
+                    "run_root": str(run_root),
+                    "artifact_path": str(artifact_path),
+                    "metric_name": metric_name,
+                    "origin_index": origin_key,
+                    "metric_value": metric_value,
+                }
+            )
+
+    per_origin_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            **dict(row),
+        }
+        for row in per_origin_summary
+    ]
+    return {
+        "candidate_audit_summary": [summary_row],
+        "candidate_audit_per_origin": per_origin_rows,
+        "candidate_audit_origin_metrics": metric_rows,
+    }
+
+
+def _build_candidate_coverage_tables(
+    run_root: Path,
+    coverage_payload: dict[str, Any],
+    *,
+    artifact_path: Path,
+) -> dict[str, list[dict[str, Any]]]:
+    top_missing = cast("list[dict[str, Any]]", coverage_payload.get("top_missing_vertices", []))
+    top_extra = cast("list[dict[str, Any]]", coverage_payload.get("top_extra_vertices", []))
+    missing_pairs = cast("list[list[int]]", coverage_payload.get("missing_pairs", []))
+    extra_pairs = cast("list[list[int]]", coverage_payload.get("extra_pairs", []))
+    summary_row = {
+        **{
+            str(key): value
+            for key, value in coverage_payload.items()
+            if key not in {"top_missing_vertices", "top_extra_vertices", "missing_pairs", "extra_pairs"}
+        },
+        "run_root": str(run_root),
+        "artifact_path": str(artifact_path),
+        "top_missing_vertex_count": len(top_missing),
+        "top_extra_vertex_count": len(top_extra),
+        "missing_pair_row_count": len(missing_pairs),
+        "extra_pair_row_count": len(extra_pairs),
+    }
+    missing_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            "rank": rank,
+            **dict(row),
+        }
+        for rank, row in enumerate(top_missing, start=1)
+    ]
+    extra_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            "rank": rank,
+            **dict(row),
+        }
+        for rank, row in enumerate(top_extra, start=1)
+    ]
+    missing_pair_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            "rank": rank,
+            "start_vertex": int(pair[0]),
+            "end_vertex": int(pair[1]),
+        }
+        for rank, pair in enumerate(missing_pairs, start=1)
+        if len(pair) >= 2
+    ]
+    extra_pair_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            "rank": rank,
+            "start_vertex": int(pair[0]),
+            "end_vertex": int(pair[1]),
+        }
+        for rank, pair in enumerate(extra_pairs, start=1)
+        if len(pair) >= 2
+    ]
+    return {
+        "candidate_coverage_summary": [summary_row],
+        "candidate_coverage_top_missing_vertices": missing_rows,
+        "candidate_coverage_top_extra_vertices": extra_rows,
+        "candidate_coverage_missing_pairs": missing_pair_rows,
+        "candidate_coverage_extra_pairs": extra_pair_rows,
+    }
+
+
+def _load_candidate_diagnostics_payload(run_root: Path) -> dict[str, Any] | None:
+    candidate_audit_payload = load_json_dict(run_root / EDGE_CANDIDATE_AUDIT_PATH)
+    if candidate_audit_payload is not None:
+        return candidate_audit_payload
+
+    checkpoint_path = run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+    if not checkpoint_path.is_file():
+        return None
+    checkpoint_payload = _expect_mapping(safe_load(checkpoint_path), str(checkpoint_path))
+    diagnostics = checkpoint_payload.get("diagnostics")
+    if not isinstance(diagnostics, dict):
+        return None
+    return cast("dict[str, Any]", diagnostics)
+
+
+def _build_gap_hotspot_rows(
+    vertex_rows: list[dict[str, Any]],
+    per_origin_summary: list[dict[str, Any]],
+    *,
+    gap_kind: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    origin_frame = pd.DataFrame(per_origin_summary)
+    if origin_frame.empty:
+        origin_frame = pd.DataFrame(columns=["origin_index"])
+    if "origin_index" in origin_frame.columns:
+        origin_frame["origin_index"] = pd.to_numeric(
+            origin_frame["origin_index"],
+            errors="coerce",
+        ).astype("Int64")
+
+    vertex_frame = pd.DataFrame(vertex_rows[: max(0, int(limit))])
+    if vertex_frame.empty:
+        return []
+    vertex_frame = vertex_frame.rename(columns={"vertex": "origin_index", "count": "gap_count"})
+    vertex_frame["origin_index"] = pd.to_numeric(
+        vertex_frame["origin_index"],
+        errors="coerce",
+    ).astype("Int64")
+
+    merged = vertex_frame.merge(origin_frame, how="left", on="origin_index", suffixes=("", "_audit"))
+    merged["gap_kind"] = gap_kind
+
+    columns = [
+        "gap_kind",
+        "rank",
+        "origin_index",
+        "gap_count",
+        "candidate_connection_count",
+        "fallback_candidate_count",
+        "frontier_candidate_count",
+        "geodesic_candidate_count",
+        "watershed_candidate_count",
+        "candidate_endpoint_pair_count",
+    ]
+    available_columns = [column for column in columns if column in merged.columns]
+    merged = merged.reindex(columns=available_columns)
+    merged = merged.replace({pd.NA: None})
+    return cast("list[dict[str, Any]]", merged.to_dict(orient="records"))
+
+
+def build_gap_diagnosis_report(
+    run_root: Path,
+    *,
+    limit: int = 10,
+    coverage_payload: dict[str, Any] | None = None,
+    audit_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a joined gap diagnosis from candidate coverage and origin-level diagnostics."""
+    normalized_run_root = run_root.expanduser().resolve()
+    coverage = coverage_payload or load_json_dict(normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH)
+    if coverage is None:
+        raise ValueError(
+            f"missing candidate coverage report under {normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH}"
+        )
+
+    audit = audit_payload if audit_payload is not None else _load_candidate_diagnostics_payload(normalized_run_root)
+    per_origin_summary = cast("list[dict[str, Any]]", (audit or {}).get("per_origin_summary", []))
+    diagnostic_counters = cast("dict[str, Any]", (audit or {}).get("diagnostic_counters", {}))
+    pair_source_breakdown = cast("dict[str, Any]", (audit or {}).get("pair_source_breakdown", {}))
+
+    warnings: list[str] = []
+    if audit is None:
+        warnings.append("No origin-level candidate audit was found; hotspot joins are limited.")
+    if audit is not None and audit.get("use_frontier_tracer") is False:
+        warnings.append("Exact frontier tracer was disabled in this recording.")
+    if int(diagnostic_counters.get("watershed_total_pairs", 0)) == 0:
+        warnings.append("No watershed candidate pairs were recorded.")
+    if (
+        int(pair_source_breakdown.get("fallback_only_pair_count", 0)) > 0
+        and int(pair_source_breakdown.get("frontier_only_pair_count", 0)) == 0
+        and int(pair_source_breakdown.get("watershed_only_pair_count", 0)) == 0
+        and int(pair_source_breakdown.get("geodesic_only_pair_count", 0)) == 0
+    ):
+        warnings.append("All recorded candidate endpoint pairs were fallback-only.")
+
+    top_missing_vertices = cast("list[dict[str, Any]]", coverage.get("top_missing_vertices", []))
+    top_extra_vertices = cast("list[dict[str, Any]]", coverage.get("top_extra_vertices", []))
+    hotspot_limit = max(1, int(limit))
+    top_missing_hotspots = _build_gap_hotspot_rows(
+        top_missing_vertices,
+        per_origin_summary,
+        gap_kind="missing",
+        limit=hotspot_limit,
+    )
+    top_extra_hotspots = _build_gap_hotspot_rows(
+        top_extra_vertices,
+        per_origin_summary,
+        gap_kind="extra",
+        limit=hotspot_limit,
+    )
+
+    return {
+        "run_root": str(normalized_run_root),
+        "created_at": _now_iso(),
+        "report_scope": "candidate gap diagnosis",
+        "passed": bool(coverage.get("passed")),
+        "missing_pair_count": int(coverage.get("missing_pair_count", 0)),
+        "extra_pair_count": int(coverage.get("extra_pair_count", 0)),
+        "matched_pair_count": int(coverage.get("matched_pair_count", 0)),
+        "matlab_pair_count": int(coverage.get("matlab_pair_count", 0)),
+        "python_pair_count": int(coverage.get("python_pair_count", 0)),
+        "missing_pair_samples": cast("list[list[int]]", coverage.get("missing_pair_samples", [])),
+        "extra_pair_samples": cast("list[list[int]]", coverage.get("extra_pair_samples", [])),
+        "missing_pairs": cast("list[list[int]]", coverage.get("missing_pairs", [])),
+        "extra_pairs": cast("list[list[int]]", coverage.get("extra_pairs", [])),
+        "warnings": warnings,
+        "audit_present": audit is not None,
+        "origin_summary_count": len(per_origin_summary),
+        "diagnostic_counters": diagnostic_counters,
+        "pair_source_breakdown": pair_source_breakdown,
+        "top_missing_vertices": top_missing_vertices[:hotspot_limit],
+        "top_extra_vertices": top_extra_vertices[:hotspot_limit],
+        "top_missing_hotspots": top_missing_hotspots,
+        "top_extra_hotspots": top_extra_hotspots,
+    }
+
+
+def render_gap_diagnosis_report(report_payload: dict[str, Any]) -> str:
+    """Render a concise gap diagnosis focused on actionable hotspots."""
+    lines = [
+        "Gap diagnosis report",
+        f"Status: {'PASS' if report_payload.get('passed') else 'FAIL'}",
+        (
+            "Counts: "
+            f"MATLAB={report_payload.get('matlab_pair_count', 0)} "
+            f"Python={report_payload.get('python_pair_count', 0)} "
+            f"matched={report_payload.get('matched_pair_count', 0)} "
+            f"missing={report_payload.get('missing_pair_count', 0)} "
+            f"extra={report_payload.get('extra_pair_count', 0)}"
+        ),
+    ]
+
+    warnings = cast("list[str]", report_payload.get("warnings", []))
+    if warnings:
+        lines.extend(["", "Warnings"])
+        lines.extend(f"- {warning}" for warning in warnings)
+
+    missing_hotspots = cast("list[dict[str, Any]]", report_payload.get("top_missing_hotspots", []))
+    if missing_hotspots:
+        lines.extend(["", "Top Missing Hotspots"])
+        for row in missing_hotspots:
+            lines.append(
+                "- "
+                f"origin={row.get('origin_index')} gap_count={row.get('gap_count')} "
+                f"candidates={row.get('candidate_connection_count')} "
+                f"fallback={row.get('fallback_candidate_count')} "
+                f"frontier={row.get('frontier_candidate_count')} "
+                f"watershed={row.get('watershed_candidate_count')}"
+            )
+
+    extra_hotspots = cast("list[dict[str, Any]]", report_payload.get("top_extra_hotspots", []))
+    if extra_hotspots:
+        lines.extend(["", "Top Extra Hotspots"])
+        for row in extra_hotspots:
+            lines.append(
+                "- "
+                f"origin={row.get('origin_index')} gap_count={row.get('gap_count')} "
+                f"candidates={row.get('candidate_connection_count')} "
+                f"fallback={row.get('fallback_candidate_count')} "
+                f"frontier={row.get('frontier_candidate_count')} "
+                f"watershed={row.get('watershed_candidate_count')}"
+            )
+
+    missing_samples = cast("list[list[int]]", report_payload.get("missing_pair_samples", []))
+    if missing_samples:
+        lines.append("")
+        lines.append(f"Missing pair samples: {missing_samples[:5]}")
+    extra_samples = cast("list[list[int]]", report_payload.get("extra_pair_samples", []))
+    if extra_samples:
+        lines.append(f"Extra pair samples: {extra_samples[:5]}")
+    return "\n".join(lines)
+
+
+def persist_gap_diagnosis_report(
+    run_root: Path,
+    *,
+    limit: int = 10,
+    coverage_payload: dict[str, Any] | None = None,
+    audit_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Persist a joined gap diagnosis report under ``03_Analysis``."""
+    normalized_run_root = run_root.expanduser().resolve()
+    ensure_dest_run_layout(normalized_run_root)
+    report_payload = build_gap_diagnosis_report(
+        normalized_run_root,
+        limit=limit,
+        coverage_payload=coverage_payload,
+        audit_payload=audit_payload,
+    )
+    persist_text_and_json_report(
+        normalized_run_root / GAP_DIAGNOSIS_JSON_PATH,
+        normalized_run_root / GAP_DIAGNOSIS_TEXT_PATH,
+        report_payload,
+        renderer=render_gap_diagnosis_report,
+    )
+    return report_payload
+
+
+def _build_gap_diagnosis_tables(
+    run_root: Path,
+    report_payload: dict[str, Any],
+    *,
+    artifact_path: Path,
+) -> dict[str, list[dict[str, Any]]]:
+    warning_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            "rank": rank,
+            "warning": warning,
+        }
+        for rank, warning in enumerate(cast("list[str]", report_payload.get("warnings", [])), start=1)
+    ]
+    missing_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            **dict(row),
+        }
+        for row in cast("list[dict[str, Any]]", report_payload.get("top_missing_hotspots", []))
+    ]
+    extra_rows = [
+        {
+            "run_root": str(run_root),
+            "artifact_path": str(artifact_path),
+            **dict(row),
+        }
+        for row in cast("list[dict[str, Any]]", report_payload.get("top_extra_hotspots", []))
+    ]
+    summary_row = {
+        **{
+            str(key): value
+            for key, value in report_payload.items()
+            if key
+            not in {
+                "warnings",
+                "top_missing_hotspots",
+                "top_extra_hotspots",
+                "top_missing_vertices",
+                "top_extra_vertices",
+                "missing_pairs",
+                "extra_pairs",
+                "missing_pair_samples",
+                "extra_pair_samples",
+                "diagnostic_counters",
+                "pair_source_breakdown",
+            }
+        },
+        "run_root": str(run_root),
+        "artifact_path": str(artifact_path),
+        "warning_count": len(warning_rows),
+        "missing_hotspot_count": len(missing_rows),
+        "extra_hotspot_count": len(extra_rows),
+    }
+    return {
+        "gap_diagnosis_summary": [summary_row],
+        "gap_diagnosis_warnings": warning_rows,
+        "gap_diagnosis_missing_hotspots": missing_rows,
+        "gap_diagnosis_extra_hotspots": extra_rows,
+    }
+
+
+def persist_recording_tables(run_root: Path) -> dict[str, Any]:
+    """Flatten workflow recordings into CSV/JSONL tables under ``03_Analysis/tables``."""
+    normalized_run_root = run_root.expanduser().resolve()
+    ensure_dest_run_layout(normalized_run_root)
+    tables_root = normalized_run_root / ANALYSIS_TABLES_DIR
+    tables_root.mkdir(parents=True, exist_ok=True)
+
+    table_entries: list[dict[str, Any]] = []
+    source_artifacts: list[str] = []
+
+    snapshot_payload = load_json_dict(normalized_run_root / RUN_SNAPSHOT_PATH)
+    if snapshot_payload is not None:
+        source_artifacts.append(str(normalized_run_root / RUN_SNAPSHOT_PATH))
+        for table_name, records in _build_run_snapshot_tables(
+            normalized_run_root,
+            snapshot_payload,
+        ).items():
+            table_entry = _persist_table_records(
+                tables_root,
+                table_name=table_name,
+                records=records,
+            )
+            if table_entry is not None:
+                table_entries.append(table_entry)
+
+    run_manifest_payload = load_json_dict(normalized_run_root / RUN_MANIFEST_PATH)
+    if run_manifest_payload is not None:
+        source_artifacts.append(str(normalized_run_root / RUN_MANIFEST_PATH))
+        for table_name, records in _build_run_manifest_tables(
+            normalized_run_root,
+            run_manifest_payload,
+        ).items():
+            table_entry = _persist_table_records(
+                tables_root,
+                table_name=table_name,
+                records=records,
+            )
+            if table_entry is not None:
+                table_entries.append(table_entry)
+
+    candidate_progress_records = _read_jsonl_records(
+        normalized_run_root / CANDIDATE_PROGRESS_JSONL_PATH
+    )
+    if candidate_progress_records:
+        source_artifacts.append(str(normalized_run_root / CANDIDATE_PROGRESS_JSONL_PATH))
+        table_entry = _persist_table_records(
+            tables_root,
+            table_name="candidate_progress",
+            records=[
+                {
+                    "run_root": str(normalized_run_root),
+                    **dict(record),
+                }
+                for record in candidate_progress_records
+            ],
+        )
+        if table_entry is not None:
+            table_entries.append(table_entry)
+
+    candidate_audit_path = normalized_run_root / EDGE_CANDIDATE_AUDIT_PATH
+    candidate_audit_payload = load_json_dict(candidate_audit_path)
+    if candidate_audit_payload is not None:
+        source_artifacts.append(str(candidate_audit_path))
+        for table_name, records in _build_candidate_audit_tables(
+            normalized_run_root,
+            candidate_audit_payload,
+            artifact_path=candidate_audit_path,
+        ).items():
+            table_entry = _persist_table_records(
+                tables_root,
+                table_name=table_name,
+                records=records,
+            )
+            if table_entry is not None:
+                table_entries.append(table_entry)
+
+    candidate_coverage_path = normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH
+    candidate_coverage_payload = load_json_dict(candidate_coverage_path)
+    if candidate_coverage_payload is not None:
+        source_artifacts.append(str(candidate_coverage_path))
+        for table_name, records in _build_candidate_coverage_tables(
+            normalized_run_root,
+            candidate_coverage_payload,
+            artifact_path=candidate_coverage_path,
+        ).items():
+            table_entry = _persist_table_records(
+                tables_root,
+                table_name=table_name,
+                records=records,
+            )
+            if table_entry is not None:
+                table_entries.append(table_entry)
+
+    gap_diagnosis_path = normalized_run_root / GAP_DIAGNOSIS_JSON_PATH
+    gap_diagnosis_payload = load_json_dict(gap_diagnosis_path)
+    if gap_diagnosis_payload is not None:
+        source_artifacts.append(str(gap_diagnosis_path))
+        for table_name, records in _build_gap_diagnosis_tables(
+            normalized_run_root,
+            gap_diagnosis_payload,
+            artifact_path=gap_diagnosis_path,
+        ).items():
+            table_entry = _persist_table_records(
+                tables_root,
+                table_name=table_name,
+                records=records,
+            )
+            if table_entry is not None:
+                table_entries.append(table_entry)
+
+    if not table_entries:
+        raise ValueError(f"no supported recording artifacts found under {normalized_run_root}")
+
+    index_payload = {
+        "run_root": str(normalized_run_root),
+        "created_at": _now_iso(),
+        "tables_root": str(tables_root),
+        "table_count": len(table_entries),
+        "row_count_total": sum(int(entry.get("row_count", 0)) for entry in table_entries),
+        "source_artifacts": source_artifacts,
+        "tables": table_entries,
+    }
+    _write_json_with_hash(normalized_run_root / RECORDING_TABLES_INDEX_PATH, index_payload)
+    return index_payload
 
 
 def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
@@ -1971,7 +2877,9 @@ def _reorient_exact_input_volume(
     )
 
 
-def _update_run_snapshot_provenance(dest_run_root: Path, provenance_updates: dict[str, Any]) -> None:
+def _update_run_snapshot_provenance(
+    dest_run_root: Path, provenance_updates: dict[str, Any]
+) -> None:
     snapshot_payload = load_json_dict(dest_run_root / RUN_SNAPSHOT_PATH) or {}
     provenance = cast("dict[str, Any]", dict(snapshot_payload.get("provenance", {})))
     provenance.update(provenance_updates)
@@ -2002,7 +2910,9 @@ def _exact_bootstrap_provenance_updates(
         ),
         "matlab_source_version": oracle_surface.matlab_source_version,
         "selected_settings_paths": selected_settings_paths,
-        "oracle_size_of_image": list(oracle_size_of_image) if oracle_size_of_image is not None else None,
+        "oracle_size_of_image": list(oracle_size_of_image)
+        if oracle_size_of_image is not None
+        else None,
         "input_axis_permutation": (
             list(input_axis_permutation) if input_axis_permutation is not None else None
         ),
@@ -2369,20 +3279,53 @@ def _run_capture_candidates(
         params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
     )
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
+    capture_started_at = time.monotonic()
+    telemetry_points: list[dict[str, Any]] = []
+    progress_artifacts: dict[str, Any] = {}
 
-    def _heartbeat(iteration_count: int, candidate_count: int) -> None:
+    def _record_progress(
+        *,
+        phase: str,
+        detail: str,
+        iteration_count: int = 0,
+        candidate_count: int = 0,
+    ) -> None:
+        nonlocal progress_artifacts
+        previous_record = telemetry_points[-1] if telemetry_points else None
+        progress_record = _build_candidate_progress_record(
+            phase=phase,
+            detail=detail,
+            started_at_monotonic=capture_started_at,
+            iteration_count=iteration_count,
+            candidate_count=candidate_count,
+            previous_record=previous_record,
+        )
+        telemetry_points.append(progress_record)
+        progress_artifacts = persist_candidate_progress_artifacts(dest_root, telemetry_points)
         write_capture_candidates_snapshot(
             dest_root,
-            detail=(
-                "Generating edge candidates through MATLAB-style frontier workflow "
-                f"(iterations={iteration_count}, candidates={candidate_count})"
-            ),
+            detail=detail,
+            iteration_count=iteration_count,
+            candidate_count=candidate_count,
+            elapsed_seconds=float(progress_record["elapsed_seconds"]),
+            telemetry_point_count=len(telemetry_points),
+            progress_artifacts=progress_artifacts,
+        )
+
+    def _heartbeat(iteration_count: int, candidate_count: int) -> None:
+        detail = (
+            "Generating edge candidates through MATLAB-style frontier workflow "
+            f"(iterations={iteration_count}, candidates={candidate_count})"
+        )
+        _record_progress(
+            phase="heartbeat",
+            detail=detail,
             iteration_count=iteration_count,
             candidate_count=candidate_count,
         )
 
-    write_capture_candidates_snapshot(
-        dest_root,
+    _record_progress(
+        phase="started",
         detail="Generating edge candidates through MATLAB-style frontier workflow",
     )
     candidates = _generate_edge_candidates_matlab_frontier(
@@ -2404,6 +3347,15 @@ def _run_capture_candidates(
         float(energy_payload.get("energy_sign", params.get("energy_sign", -1.0))),
         params,
         microns_per_voxel,
+    )
+    _record_progress(
+        phase="completed",
+        detail=(
+            "Completed edge candidate generation through MATLAB-style frontier workflow "
+            f"(candidates={len(candidates.get('traces', []))})"
+        ),
+        iteration_count=int(telemetry_points[-1]["iteration_count"]) if telemetry_points else 0,
+        candidate_count=len(candidates.get("traces", [])),
     )
 
     snapshot_payload = build_candidate_snapshot_payload(
@@ -2429,8 +3381,13 @@ def _run_capture_candidates(
             "dest_run_root": str(dest_root),
             "debug_maps_included": bool(include_debug_maps),
             "candidate_checkpoint_path": str(dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH),
+            "candidate_progress_point_count": len(telemetry_points),
+            "candidate_progress_elapsed_seconds": (
+                float(telemetry_points[-1]["elapsed_seconds"]) if telemetry_points else 0.0
+            ),
         }
     )
+    coverage_report.update(progress_artifacts)
     json_path = dest_root / CANDIDATE_COVERAGE_JSON_PATH
     text_path = dest_root / CANDIDATE_COVERAGE_TEXT_PATH
     persist_text_and_json_report(
@@ -2450,8 +3407,16 @@ def _run_capture_candidates(
         extra={
             "candidate_checkpoint_path": str(dest_root / EDGE_CANDIDATE_CHECKPOINT_PATH),
             "candidate_report": str(json_path),
+            "candidate_progress_jsonl": str(dest_root / CANDIDATE_PROGRESS_JSONL_PATH),
+            "candidate_progress_plot": str(dest_root / CANDIDATE_PROGRESS_PLOT_PATH),
         },
     )
+    persist_gap_diagnosis_report(
+        dest_root,
+        coverage_payload=coverage_report,
+        audit_payload=cast("dict[str, Any]", snapshot_payload.get("diagnostics", {})),
+    )
+    persist_recording_tables(dest_root)
     return coverage_report, snapshot_payload, json_path, text_path
 
 
@@ -2633,6 +3598,7 @@ def _handle_rerun_python(args: argparse.Namespace) -> None:
         params_payload=params,
         extra={"rerun_from": args.rerun_from},
     )
+    persist_recording_tables(dest_run_root)
     print(render_experiment_summary(summary_payload))
 
 
@@ -2649,6 +3615,27 @@ def _handle_summarize(args: argparse.Namespace) -> None:
             f"no experiment summary found under {run_root / SUMMARY_TEXT_PATH} or {run_root / SUMMARY_JSON_PATH}"
         )
     print(render_experiment_summary(summary_payload))
+
+
+def _handle_normalize_recordings(args: argparse.Namespace) -> None:
+    run_root = Path(args.run_root).expanduser().resolve()
+    index_payload = persist_recording_tables(run_root)
+    print(
+        "\n".join(
+            [
+                f"Normalized recording tables written under {run_root / ANALYSIS_TABLES_DIR}",
+                f"Table count: {index_payload['table_count']}",
+                f"Total rows: {index_payload['row_count_total']}",
+            ]
+        )
+    )
+
+
+def _handle_diagnose_gaps(args: argparse.Namespace) -> None:
+    run_root = Path(args.run_root).expanduser().resolve()
+    report_payload = persist_gap_diagnosis_report(run_root, limit=max(1, int(args.limit)))
+    persist_recording_tables(run_root)
+    print(render_gap_diagnosis_report(report_payload))
 
 
 def _handle_prove_exact(args: argparse.Namespace) -> None:

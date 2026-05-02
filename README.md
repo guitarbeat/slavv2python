@@ -1,4 +1,4 @@
-﻿# SLAVV Python
+# SLAVV Python
 
 Python implementation of SLAVV for 3D vascular network extraction from
 microscopy volumes. The public workflow is paper-first: run the native Python

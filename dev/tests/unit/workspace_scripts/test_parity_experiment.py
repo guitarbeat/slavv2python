@@ -216,6 +216,20 @@ def test_build_parser_promote_commands():
             "run-root",
         ]
     )
+    normalize_args = parser.parse_args(
+        [
+            "normalize-recordings",
+            "--run-root",
+            "run-root",
+        ]
+    )
+    diagnose_args = parser.parse_args(
+        [
+            "diagnose-gaps",
+            "--run-root",
+            "run-root",
+        ]
+    )
 
     assert dataset_args.command == "promote-dataset"
     assert dataset_args.experiment_root == "live-parity"
@@ -226,6 +240,10 @@ def test_build_parser_promote_commands():
     assert init_args.energy_storage_format == "npy"
     assert report_args.command == "promote-report"
     assert report_args.report_root is None
+    assert normalize_args.command == "normalize-recordings"
+    assert normalize_args.run_root == "run-root"
+    assert diagnose_args.command == "diagnose-gaps"
+    assert diagnose_args.limit == 10
 
 
 def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):
@@ -810,10 +828,171 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     )
     assert snapshot["current_stage"] == "edges"
     assert snapshot["current_detail"] == (
+        "Completed edge candidate generation through MATLAB-style frontier workflow (candidates=1)"
+    )
+    assert snapshot["stages"]["edges"]["detail"] == snapshot["current_detail"]
+    assert snapshot["artifacts"]["edge_candidate_iterations"] == "512"
+    assert snapshot["artifacts"]["edge_candidate_count"] == "1"
+    assert snapshot["artifacts"]["candidate_progress_point_count"] == "3"
+
+    progress_jsonl = dest_run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH
+    progress_plot = dest_run_root / parity_experiment.CANDIDATE_PROGRESS_PLOT_PATH
+    recording_index = dest_run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH
+    candidate_progress_csv = (
+        dest_run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv"
+    )
+    candidate_coverage_summary_jsonl = (
+        dest_run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_coverage_summary.jsonl"
+    )
+    assert progress_jsonl.is_file()
+    assert progress_plot.is_file()
+    assert recording_index.is_file()
+    assert candidate_progress_csv.is_file()
+    assert candidate_coverage_summary_jsonl.is_file()
+
+    progress_lines = progress_jsonl.read_text(encoding="utf-8").splitlines()
+    assert len(progress_lines) == 3
+    first_point = json.loads(progress_lines[0])
+    middle_point = json.loads(progress_lines[1])
+    last_point = json.loads(progress_lines[-1])
+    assert first_point["phase"] == "started"
+    assert middle_point["phase"] == "heartbeat"
+    assert middle_point["detail"] == (
         "Generating edge candidates through MATLAB-style frontier workflow "
         "(iterations=512, candidates=1)"
     )
-    assert snapshot["stages"]["edges"]["detail"] == snapshot["current_detail"]
+    assert last_point["phase"] == "completed"
+
+    recording_tables = json.loads(recording_index.read_text(encoding="utf-8"))
+    table_names = {entry["name"] for entry in recording_tables["tables"]}
+    assert "candidate_progress" in table_names
+    assert "candidate_coverage_summary" in table_names
+
+
+def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
+    run_root = tmp_path / "recorded-run"
+    materialize_run_snapshot(
+        run_root,
+        {
+            "run_id": "run-42",
+            "status": "completed",
+            "target_stage": "network",
+            "current_stage": "network",
+            "overall_progress": 1.0,
+            "stages": {
+                "edges": {
+                    "name": "edges",
+                    "status": "completed",
+                    "progress": 1.0,
+                    "detail": "Edges extracted",
+                    "artifacts": {
+                        "candidate_audit.json": "02_Output/python_results/stages/edges/candidate_audit.json"
+                    },
+                }
+            },
+            "optional_tasks": {
+                "exports": {
+                    "name": "exports",
+                    "status": "completed",
+                    "progress": 1.0,
+                    "detail": "Exported json",
+                    "artifacts": {"json": "output/network.json"},
+                }
+            },
+            "artifacts": {
+                "edges.candidate_audit.json": "02_Output/python_results/stages/edges/candidate_audit.json"
+            },
+            "errors": [],
+            "provenance": {"source": "test-builder"},
+            "last_event": "Run completed",
+        },
+    )
+    _write_json(
+        run_root / parity_experiment.RUN_MANIFEST_PATH,
+        {
+            "run_id": "run-42",
+            "kind": "slavv_run",
+            "status": "completed",
+            "stage_metrics": {
+                "edges": {
+                    "status": "completed",
+                    "elapsed_seconds": 1.5,
+                    "peak_memory_bytes": 1024,
+                }
+            },
+        },
+    )
+    _write_json(
+        run_root / parity_experiment.EDGE_CANDIDATE_AUDIT_PATH,
+        {
+            "candidate_connection_count": 2,
+            "candidate_origin_count": 1,
+            "candidate_traces": 2,
+            "diagnostic_counters": {"watershed_total_pairs": 1},
+            "pair_source_breakdown": {"fallback_only_pair_count": 1},
+            "frontier_per_origin_candidate_counts": {"7": 2},
+            "per_origin_summary": [
+                {
+                    "origin_index": 7,
+                    "candidate_connection_count": 2,
+                    "fallback_candidate_count": 1,
+                    "watershed_candidate_count": 1,
+                }
+            ],
+        },
+    )
+    progress_records = [
+        {"phase": "started", "iteration_count": 0, "candidate_count": 0},
+        {"phase": "completed", "iteration_count": 10, "candidate_count": 2},
+    ]
+    (run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH).parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    (run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH).write_text(
+        "".join(f"{json.dumps(record)}\n" for record in progress_records),
+        encoding="utf-8",
+    )
+
+    index_payload = parity_experiment.persist_recording_tables(run_root)
+
+    assert index_payload["table_count"] >= 6
+    assert (run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH).is_file()
+    assert (
+        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl"
+    ).is_file()
+    assert (
+        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv"
+    ).is_file()
+    assert (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv").is_file()
+
+    stage_rows = (
+        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    assert len(stage_rows) == 1
+    stage_row = json.loads(stage_rows[0])
+    assert stage_row["stage_key"] == "edges"
+    assert stage_row["artifact_count"] == 1
+
+    per_origin_rows = (
+        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    assert len(per_origin_rows) == 1
+    per_origin_row = json.loads(per_origin_rows[0])
+    assert per_origin_row["origin_index"] == 7
+
+    metric_rows = (
+        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_origin_metrics.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
+    assert len(metric_rows) == 1
+    metric_row = json.loads(metric_rows[0])
+    assert metric_row["metric_name"] == "frontier_per_origin_candidate_counts"
 
 
 def test_persist_param_storage_writes_split_param_files(tmp_path):

@@ -7,7 +7,7 @@ import json
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
 from source.runtime import RunContext, load_run_snapshot
-from source.runtime.run_state import (
+from source.runtime._run_state import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
     target_stage_progress,
