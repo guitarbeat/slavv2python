@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .._compat import bind_legacy_module
 
-_LEGACY_MODULE, __all__ = bind_legacy_module("source.apps.analysis_state")
+_LEGACY_MODULE, __all__ = bind_legacy_module("source.apps.state.analysis")
 
 
 def __getattr__(name: str):

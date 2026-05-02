@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+
 from source.visualization import NetworkVisualizer
 
 

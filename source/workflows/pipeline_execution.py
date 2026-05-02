@@ -1,17 +1,15 @@
-"""Preferred workflow name for pipeline execution helpers."""
+"""Compatibility wrapper for flat pipeline execution helpers."""
 
 from __future__ import annotations
 
-from .pipeline_runner import (
-    PipelineStageStep,
-    advance_pipeline_stage,
-    build_standard_pipeline_steps,
-    run_pipeline_stage_sequence,
-)
+from source.workflows._compat import bind_legacy_module
 
-__all__ = [
-    "PipelineStageStep",
-    "advance_pipeline_stage",
-    "build_standard_pipeline_steps",
-    "run_pipeline_stage_sequence",
-]
+_LEGACY_MODULE, __all__ = bind_legacy_module("source.workflows.pipeline.execution")
+
+
+def __getattr__(name: str):
+    return getattr(_LEGACY_MODULE, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

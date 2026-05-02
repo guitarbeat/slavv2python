@@ -1,17 +1,15 @@
-"""Preferred workflow name for stage artifact and checkpoint helpers."""
+"""Compatibility wrapper for flat stage-artifact helpers."""
 
 from __future__ import annotations
 
-from .stage_checkpoints import (
-    load_cached_stage_result,
-    persist_stage_result,
-    resolve_resumable_stage,
-    stage_artifacts,
-)
+from source.workflows._compat import bind_legacy_module
 
-__all__ = [
-    "load_cached_stage_result",
-    "persist_stage_result",
-    "resolve_resumable_stage",
-    "stage_artifacts",
-]
+_LEGACY_MODULE, __all__ = bind_legacy_module("source.workflows.pipeline.artifacts")
+
+
+def __getattr__(name: str):
+    return getattr(_LEGACY_MODULE, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

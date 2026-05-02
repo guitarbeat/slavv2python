@@ -4,6 +4,7 @@ import importlib
 
 import numpy as np
 import pytest
+
 from source.visualization import napari_curator
 
 

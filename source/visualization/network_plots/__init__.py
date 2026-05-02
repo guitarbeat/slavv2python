@@ -10,22 +10,22 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from .network_plot_helpers import NETWORK_COLOR_SCHEMES
-from .network_plot_spatial_2d import plot_2d_network as _plot_2d_network_impl
-from .network_plot_spatial_2d import plot_network_slice as _plot_network_slice_impl
-from .network_plot_spatial_3d import animate_strands_3d as _animate_strands_3d_impl
-from .network_plot_spatial_3d import plot_3d_network as _plot_3d_network_impl
-from .network_plot_spatial_3d import plot_flow_field as _plot_flow_field_impl
-from .network_plot_statistics import create_summary_dashboard as _create_summary_dashboard_impl
-from .network_plot_statistics import export_network_data as _export_network_data_impl
-from .network_plot_statistics import plot_degree_distribution as _plot_degree_distribution_impl
-from .network_plot_statistics import plot_depth_statistics as _plot_depth_statistics_impl
-from .network_plot_statistics import plot_energy_field as _plot_energy_field_impl
-from .network_plot_statistics import (
+from .helpers import NETWORK_COLOR_SCHEMES
+from .spatial_2d import plot_2d_network as _plot_2d_network_impl
+from .spatial_2d import plot_network_slice as _plot_network_slice_impl
+from .spatial_3d import animate_strands_3d as _animate_strands_3d_impl
+from .spatial_3d import plot_3d_network as _plot_3d_network_impl
+from .spatial_3d import plot_flow_field as _plot_flow_field_impl
+from .statistics import create_summary_dashboard as _create_summary_dashboard_impl
+from .statistics import export_network_data as _export_network_data_impl
+from .statistics import plot_degree_distribution as _plot_degree_distribution_impl
+from .statistics import plot_depth_statistics as _plot_depth_statistics_impl
+from .statistics import plot_energy_field as _plot_energy_field_impl
+from .statistics import (
     plot_length_weighted_histograms as _plot_length_weighted_histograms_impl,
 )
-from .network_plot_statistics import plot_radius_distribution as _plot_radius_distribution_impl
-from .network_plot_statistics import plot_strand_analysis as _plot_strand_analysis_impl
+from .statistics import plot_radius_distribution as _plot_radius_distribution_impl
+from .statistics import plot_strand_analysis as _plot_strand_analysis_impl
 
 if TYPE_CHECKING:
     import plotly.graph_objects as go

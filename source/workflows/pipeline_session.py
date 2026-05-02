@@ -1,4 +1,4 @@
-"""Preferred workflow name for pipeline session setup."""
+"""Compatibility alias for flat pipeline session setup helpers."""
 
 from __future__ import annotations
 

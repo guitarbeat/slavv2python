@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 import pytest
+
 from source.workflows.pipeline_stages import (
     resolve_edges_stage,
     resolve_energy_stage,

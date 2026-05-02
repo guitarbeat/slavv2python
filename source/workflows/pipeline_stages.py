@@ -1,10 +1,11 @@
-"""Shared helpers for pipeline stage resolution."""
+"""Compatibility facade for flat pipeline stage-resolution helpers."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .stage_checkpoints import resolve_resumable_stage
+from source.workflows.pipeline import resolution as _resolution
+from source.workflows.pipeline.artifacts import resolve_resumable_stage
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -23,23 +24,18 @@ def resolve_stage_with_checkpoint(
     logger,
 ) -> dict[str, Any]:
     """Resolve a pipeline stage with fallback, checkpoint reuse, and failure tracking."""
-    if run_context is None:
-        return fallback_fn()
-
-    controller = run_context.stage(stage_name)
-    try:
-        return resolve_resumable_stage(
-            controller,
-            force_rerun=force_rerun,
-            cached_log_label=cached_log_label,
-            cached_detail=cached_detail,
-            success_detail=success_detail,
-            compute_fn=lambda: compute_fn(controller),
-            logger=logger,
-        )
-    except Exception as exc:
-        run_context.fail_stage(stage_name, exc)
-        raise
+    return _resolution.resolve_stage_with_checkpoint(
+        run_context=run_context,
+        force_rerun=force_rerun,
+        stage_name=stage_name,
+        cached_log_label=cached_log_label,
+        cached_detail=cached_detail,
+        success_detail=success_detail,
+        fallback_fn=fallback_fn,
+        compute_fn=compute_fn,
+        logger=logger,
+        resolve_resumable_stage_fn=resolve_resumable_stage,
+    )
 
 
 def resolve_energy_stage(
@@ -51,16 +47,13 @@ def resolve_energy_stage(
     logger,
 ) -> dict[str, Any]:
     """Resolve the energy stage using the standard checkpoint contract."""
-    return resolve_stage_with_checkpoint(
+    return _resolution.resolve_energy_stage(
         run_context=run_context,
         force_rerun=force_rerun,
-        stage_name="energy",
-        cached_log_label="Energy Field",
-        cached_detail="Loaded energy checkpoint",
-        success_detail="Energy field ready",
         fallback_fn=fallback_fn,
-        compute_fn=resumable_fn,
+        resumable_fn=resumable_fn,
         logger=logger,
+        resolve_stage_with_checkpoint_fn=resolve_stage_with_checkpoint,
     )
 
 
@@ -73,16 +66,13 @@ def resolve_vertices_stage(
     logger,
 ) -> dict[str, Any]:
     """Resolve the vertices stage using the standard checkpoint contract."""
-    return resolve_stage_with_checkpoint(
+    return _resolution.resolve_vertices_stage(
         run_context=run_context,
         force_rerun=force_rerun,
-        stage_name="vertices",
-        cached_log_label="Vertices",
-        cached_detail="Loaded vertex checkpoint",
-        success_detail="Vertices extracted",
         fallback_fn=fallback_fn,
-        compute_fn=resumable_fn,
+        resumable_fn=resumable_fn,
         logger=logger,
+        resolve_stage_with_checkpoint_fn=resolve_stage_with_checkpoint,
     )
 
 
@@ -98,17 +88,16 @@ def resolve_edges_stage(
     logger,
 ) -> dict[str, Any]:
     """Resolve the edges stage while preserving the tracing/watershed switch."""
-    use_watershed = edge_method == "watershed"
-    return resolve_stage_with_checkpoint(
+    return _resolution.resolve_edges_stage(
         run_context=run_context,
         force_rerun=force_rerun,
-        stage_name="edges",
-        cached_log_label="Edges",
-        cached_detail="Loaded edge checkpoint",
-        success_detail="Edges extracted",
-        fallback_fn=watershed_fallback_fn if use_watershed else tracing_fallback_fn,
-        compute_fn=watershed_resumable_fn if use_watershed else tracing_resumable_fn,
+        edge_method=edge_method,
+        tracing_fallback_fn=tracing_fallback_fn,
+        watershed_fallback_fn=watershed_fallback_fn,
+        tracing_resumable_fn=tracing_resumable_fn,
+        watershed_resumable_fn=watershed_resumable_fn,
         logger=logger,
+        resolve_stage_with_checkpoint_fn=resolve_stage_with_checkpoint,
     )
 
 
@@ -121,16 +110,13 @@ def resolve_network_stage(
     logger,
 ) -> dict[str, Any]:
     """Resolve the network stage using the standard checkpoint contract."""
-    return resolve_stage_with_checkpoint(
+    return _resolution.resolve_network_stage(
         run_context=run_context,
         force_rerun=force_rerun,
-        stage_name="network",
-        cached_log_label="Network",
-        cached_detail="Loaded network checkpoint",
-        success_detail="Network constructed",
         fallback_fn=fallback_fn,
-        compute_fn=resumable_fn,
+        resumable_fn=resumable_fn,
         logger=logger,
+        resolve_stage_with_checkpoint_fn=resolve_stage_with_checkpoint,
     )
 
 

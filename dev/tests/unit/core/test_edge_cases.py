@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from source.core import SLAVVProcessor
 from source.core._edge_selection import conflict_painting as conflict_painting_module
 from source.core._edge_selection.cleanup import clean_edges_cycles_python

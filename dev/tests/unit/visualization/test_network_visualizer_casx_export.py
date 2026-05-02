@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 import pytest
+
 from source.visualization.network_plots import NetworkVisualizer
 
 

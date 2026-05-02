@@ -1,10 +1,12 @@
+"""Compatibility facade for the legacy flat Streamlit app surface."""
+
 from __future__ import annotations
 
 import warnings
 
 import streamlit as st
 
-from .app_services import (
+from source.apps.services.app import (
     _build_processing_run_dir,
     _has_full_network_results,
     _log_share_report_prepared_once,
@@ -15,21 +17,11 @@ from .app_services import (
     generate_share_report_data,
     load_run_snapshot,
 )
-from .app_services import (
-    apply_curated_results as _apply_curated_results,
-)
-from .app_services import (
-    run_interactive_curator as _run_interactive_curator,
-)
-from .web_app_analysis_page import show_analysis_page
-from .web_app_curation_page import show_ml_curation_page
-from .web_app_dashboard import (
-    DASHBOARD_BREAKDOWN_SECTIONS,
-    DASHBOARD_PLACEHOLDER,
-    _dashboard_breakdown_frame,
-    _dashboard_stage_frame,
-)
-from .web_app_dashboard_page import (
+from source.apps.services.app import apply_curated_results as _apply_curated_results
+from source.apps.services.app import run_interactive_curator as _run_interactive_curator
+from source.apps.streamlit.pages.analysis import show_analysis_page
+from source.apps.streamlit.pages.curation import show_ml_curation_page
+from source.apps.streamlit.pages.dashboard import (
     DASHBOARD_ASSUMPTION,
     DASHBOARD_RELEASE_URL,
     DASHBOARD_REPO_URL,
@@ -42,15 +34,21 @@ from .web_app_dashboard_page import (
     _toast_dashboard_feedback,
     show_dashboard_page,
 )
-from .web_app_processing_page import show_processing_page
-from .web_app_shell import main
-from .web_app_static_pages import show_about_page, show_home_page
-from .web_app_visualization_page import (
+from source.apps.streamlit.pages.processing import show_processing_page
+from source.apps.streamlit.pages.static import show_about_page, show_home_page
+from source.apps.streamlit.pages.visualization import (
     EXPORT_BUTTON_SPECS,
     show_visualization_page,
 )
-from .web_app_visualization_page import (
+from source.apps.streamlit.pages.visualization import (
     _render_export_download as _render_export_download_impl,
+)
+from source.apps.streamlit.shell import main
+from source.apps.web_app_dashboard import (
+    DASHBOARD_BREAKDOWN_SECTIONS,
+    DASHBOARD_PLACEHOLDER,
+    _dashboard_breakdown_frame,
+    _dashboard_stage_frame,
 )
 
 warnings.filterwarnings("ignore")

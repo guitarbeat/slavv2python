@@ -1,19 +1,15 @@
-"""Preferred workflow name for stage resolution helpers."""
+"""Compatibility wrapper for flat stage-resolution helpers."""
 
 from __future__ import annotations
 
-from .pipeline_stages import (
-    resolve_edges_stage,
-    resolve_energy_stage,
-    resolve_network_stage,
-    resolve_stage_with_checkpoint,
-    resolve_vertices_stage,
-)
+from source.workflows._compat import bind_legacy_module
 
-__all__ = [
-    "resolve_edges_stage",
-    "resolve_energy_stage",
-    "resolve_network_stage",
-    "resolve_stage_with_checkpoint",
-    "resolve_vertices_stage",
-]
+_LEGACY_MODULE, __all__ = bind_legacy_module("source.workflows.pipeline.resolution")
+
+
+def __getattr__(name: str):
+    return getattr(_LEGACY_MODULE, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

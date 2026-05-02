@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
+
 from source.core import SLAVVProcessor
 from source.core._energy import native_hessian
 from source.core._energy.config import _prepare_energy_config

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from dev.tests.support.payload_builders import build_processing_results
+
 from source.io import load_network_from_mat
 from source.visualization import NetworkVisualizer
 
