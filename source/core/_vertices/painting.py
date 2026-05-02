@@ -22,8 +22,8 @@ def paint_vertex_image(
     """
     Create a painted vertex-volume image (1-indexed, 0=background).
 
-    This paints ellipsoidal occupancy regions around each vertex and is used for geometric
-    overlap semantics rather than terminal center detection.
+    This paints ellipsoidal occupancy regions around each vertex for overlap-aware edge logic,
+    including maintained-path terminal detection that should treat entering a vertex body as a hit.
     """
     vertex_image = np.zeros(image_shape, dtype=np.uint16)
 

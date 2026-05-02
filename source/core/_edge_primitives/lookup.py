@@ -39,6 +39,7 @@ def near_vertex(
     microns_per_voxel: np.ndarray,
     tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
+    exclude_vertex: int | None = None,
 ) -> int | None:
     """Return the index of a nearby vertex if within its physical radius."""
     tolerance_microns = 0.5 * np.mean(microns_per_voxel)
@@ -46,20 +47,34 @@ def near_vertex(
     if tree is not None:
         pos_microns = np.asarray(pos * microns_per_voxel, dtype=np.float64)
         candidates = tree.query_ball_point(pos_microns, max_search_radius)
+        ranked_candidates: list[tuple[float, int]] = []
         for i in candidates:
+            if exclude_vertex is not None and int(i) == exclude_vertex:
+                continue
             vertex_pos = vertex_positions[i]
             vertex_scale = vertex_scales[i]
             radius = lumen_radius_microns[vertex_scale]
             diff = pos_microns - (vertex_pos * microns_per_voxel)
-            if np.linalg.norm(diff) <= radius + tolerance_microns:
-                return int(i)
+            distance = float(np.linalg.norm(diff))
+            if distance <= radius + tolerance_microns:
+                ranked_candidates.append((distance, int(i)))
+        if ranked_candidates:
+            ranked_candidates.sort(key=lambda item: item[0])
+            return int(ranked_candidates[0][1])
         return None
 
+    ranked_candidates = []
     for i, (vertex_pos, vertex_scale) in enumerate(zip(vertex_positions, vertex_scales)):
+        if exclude_vertex is not None and i == exclude_vertex:
+            continue
         radius = lumen_radius_microns[vertex_scale]
         diff = (pos - vertex_pos) * microns_per_voxel
-        if np.linalg.norm(diff) <= radius + tolerance_microns:
-            return int(i)
+        distance = float(np.linalg.norm(diff))
+        if distance <= radius + tolerance_microns:
+            ranked_candidates.append((distance, int(i)))
+    if ranked_candidates:
+        ranked_candidates.sort(key=lambda item: item[0])
+        return int(ranked_candidates[0][1])
     return None
 
 
@@ -71,6 +86,7 @@ def find_terminal_vertex(
     microns_per_voxel: np.ndarray,
     tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
+    exclude_vertex: int | None = None,
 ) -> int | None:
     """Find the index of a terminal vertex near a given position, if any."""
     return near_vertex(
@@ -81,4 +97,5 @@ def find_terminal_vertex(
         microns_per_voxel,
         tree=tree,
         max_search_radius=max_search_radius,
+        exclude_vertex=exclude_vertex,
     )

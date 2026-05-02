@@ -45,6 +45,7 @@ def build_edge_diagnostics(*, extra_fields: dict[str, object] | None = None) -> 
         "geodesic_join_supplement_count": 0,
         "terminal_direct_hit_count": 0,
         "terminal_reverse_center_hit_count": 0,
+        "terminal_reverse_volume_hit_count": 0,
         "terminal_reverse_near_hit_count": 0,
         "stop_reason_counts": _empty_stop_reason_counts(),
     }

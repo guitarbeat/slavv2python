@@ -22,7 +22,7 @@ from .edge_candidates import (
     _use_matlab_frontier_tracer,
 )
 from .edge_selection import choose_edges_for_workflow
-from .vertices import paint_vertex_center_image
+from .vertices import paint_vertex_center_image, paint_vertex_image
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -63,6 +63,7 @@ def extract_edges(
             params,
             empty_edges_result=_empty_edges_result,
             paint_vertex_center_image=paint_vertex_center_image,
+            paint_vertex_image=paint_vertex_image,
             use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
             generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
             finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
@@ -102,6 +103,7 @@ def extract_edges_resumable(
             add_vertices_to_edges_matlab_style=add_vertices_to_edges_matlab_style,
             finalize_edges_matlab_style=finalize_edges_matlab_style,
             paint_vertex_center_image=paint_vertex_center_image,
+            paint_vertex_image=paint_vertex_image,
             use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
         ),
     )

@@ -36,6 +36,7 @@ def extract_edges_resumable(
     add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
     finalize_edges_matlab_style: Callable[..., dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
+    paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
     use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
@@ -56,11 +57,31 @@ def extract_edges_resumable(
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-    lumen_radius_pixels_axes = energy_data["lumen_radius_pixels_axes"]
+    lumen_radius_pixels_axes = np.asarray(
+        energy_data.get(
+            "lumen_radius_pixels_axes",
+            np.repeat(
+                np.asarray(energy_data["lumen_radius_pixels"], dtype=np.float32).reshape(-1, 1),
+                3,
+                axis=1,
+            ),
+        ),
+        dtype=np.float32,
+    )
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")
     use_frontier = use_matlab_frontier_tracer(energy_data, params)
+    vertex_image: np.ndarray | None = None
+    if not use_frontier:
+        logger.info("Creating painted vertex occupancy image...")
+        vertex_image = paint_vertex_image(
+            vertex_positions,
+            vertex_scales,
+            lumen_radius_pixels_axes,
+            energy.shape,
+        )
+        logger.info("Painted vertex occupancy image created")
 
     stage_controller.begin(
         detail=(
@@ -120,18 +141,19 @@ def extract_edges_resumable(
         max_vertex_radius = np.max(lumen_radius_microns) if len(lumen_radius_microns) > 0 else 0.0
         max_search_radius = max_vertex_radius * 5.0
         candidates = generate_edge_candidates(
-            energy,
-            scale_indices,
-            vertex_positions,
-            vertex_scales,
-            energy_data["lumen_radius_pixels"],
-            lumen_radius_microns,
-            microns_per_voxel,
-            vertex_center_image,
-            tree,
-            max_search_radius,
-            params,
-            energy_sign,
+            energy=energy,
+            scale_indices=scale_indices,
+            vertex_positions=vertex_positions,
+            vertex_scales=vertex_scales,
+            lumen_radius_pixels=energy_data["lumen_radius_pixels"],
+            lumen_radius_microns=lumen_radius_microns,
+            microns_per_voxel=microns_per_voxel,
+            vertex_center_image=vertex_center_image,
+            vertex_image=vertex_image,
+            tree=tree,
+            max_search_radius=max_search_radius,
+            params=params,
+            energy_sign=energy_sign,
         )
 
         connection_sources = [str(value) for value in candidates.get("connection_sources", [])]

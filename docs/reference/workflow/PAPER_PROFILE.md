@@ -40,6 +40,30 @@ The `run` surface now resolves parameters in this order:
 That rule is the same across CLI, Streamlit, and direct library calls that pass
 `pipeline_profile`.
 
+## Maintained Edge-Tracing Semantics
+
+On the maintained public tracing path, terminal detection is not limited to
+exact center-voxel hits.
+
+- The tracer still prefers explicit vertex-center hits when they occur.
+- The maintained fallback path must also treat entry into a painted target
+  vertex body as a terminal hit.
+- If a paper-workflow run still looks too sparse after that, the next thing to
+  inspect is trace dynamics rather than export or center-only lookup logic.
+
+The current maintained debugging read on the real crop
+`180709_EL_center_crop_24x256x256` is:
+
+- wiring painted vertex occupancy into terminal detection materially improved
+  edge completion
+- direct terminal hits increased from `5` to `15`
+- chosen edges increased from `12` to `15`
+- `energy_rise_step_halving` remained the dominant stop reason
+
+That means current sparse-network debugging should start from continuous
+tracing behavior, not from the older red herring that the maintained path was
+only checking center voxels.
+
 ## Export Contract
 
 `network.json` is now a versioned authoritative export.

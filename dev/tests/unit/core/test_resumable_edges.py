@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import joblib
 import numpy as np
+
 from source.core._edges import resumable as resumable_edges
 from source.runtime import RunContext
 
@@ -51,8 +52,9 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         "diagnostics": {"candidate_traced_edge_count": 1},
     }
 
-    def fake_generate_edge_candidates(*args):
+    def fake_generate_edge_candidates(*args, **kwargs):
         calls["generate_args"] = args
+        calls["generate_kwargs"] = kwargs
         return candidates
 
     def fake_build_edge_candidate_audit(
@@ -97,11 +99,13 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
         finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
+        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(shape, dtype=np.int32),
         use_matlab_frontier_tracer=lambda *_args: False,
     )
 
     assert result is chosen
     assert "generate_args" in calls
+    assert "generate_kwargs" in calls
     assert "choose_args" in calls
     assert calls["audit"] == {
         "candidate_payload": candidates,
@@ -110,6 +114,7 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         "frontier_origin_counts": {0: 1},
         "supplement_origin_counts": {0: 2},
     }
+    assert calls["generate_kwargs"]["vertex_image"] is not None
     assert stage_controller.artifact_path("candidates.pkl").is_file()
     assert stage_controller.artifact_path("chosen_edges.pkl").is_file()
     assert stage_controller.artifact_path("candidate_audit.json").is_file()
@@ -178,7 +183,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
             heartbeat(7, len(frontier_candidates["connections"]))
         return frontier_candidates
 
-    def fake_generate_fallback(*_args):
+    def fake_generate_fallback(*_args, **_kwargs):
         calls.append("generate_fallback")
         return frontier_candidates
 
@@ -204,6 +209,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
         finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
+        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(shape, dtype=np.int32),
         use_matlab_frontier_tracer=lambda *_args: True,
     )
 

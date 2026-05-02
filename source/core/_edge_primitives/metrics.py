@@ -80,5 +80,7 @@ def _record_trace_diagnostics(
         diagnostics["terminal_direct_hit_count"] += 1
     elif terminal_resolution == "reverse_center_hit":
         diagnostics["terminal_reverse_center_hit_count"] += 1
+    elif terminal_resolution == "reverse_volume_hit":
+        diagnostics["terminal_reverse_volume_hit_count"] += 1
     elif terminal_resolution == "reverse_near_hit":
         diagnostics["terminal_reverse_near_hit_count"] += 1

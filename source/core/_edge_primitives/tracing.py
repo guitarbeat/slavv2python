@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 TraceMetadata: TypeAlias = "dict[str, Any]"
 TraceEdgeResult: TypeAlias = "list[np.ndarray] | tuple[list[np.ndarray], TraceMetadata]"
+_MIN_DISCRETE_STEP_SIZE = 0.5
+_MIN_CONTINUOUS_STEP_SIZE = 0.125
 
 
 def trace_edge(
@@ -40,8 +42,7 @@ def trace_edge(
     return_metadata: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, Any]]:
     """Trace an edge through the energy field with adaptive step sizing."""
-    if vertex_center_image is None:
-        vertex_center_image = vertex_image
+    min_step_size = _MIN_DISCRETE_STEP_SIZE if discrete_steps else _MIN_CONTINUOUS_STEP_SIZE
 
     trace: list[np.ndarray] = [np.asarray(start_pos, dtype=np.float32).copy()]
     stop_reason: str = "max_steps"
@@ -53,6 +54,7 @@ def trace_edge(
             stop_reason=reason,
             direct_terminal_vertex=terminal_vertex,
             vertex_center_image=vertex_center_image,
+            vertex_image=vertex_image,
             vertex_positions=vertex_positions,
             vertex_scales=vertex_scales,
             lumen_radius_microns=lumen_radius_microns,
@@ -150,7 +152,7 @@ def trace_edge(
                 energy_sign > 0 and current_energy < prev_energy
             ):
                 step_size *= 0.5
-                if step_size < 0.5:
+                if step_size < min_step_size:
                     return finish("energy_rise_step_halving")
                 attempt += 1
                 continue
@@ -209,9 +211,12 @@ def trace_edge(
                 current_dir_x *= inv_norm
                 current_dir_z *= inv_norm
 
+        terminal_vertex_idx: int | None = None
         if vertex_center_image is not None:
             terminal_vertex_idx = vertex_at_position(current_pos_arr, vertex_center_image)
-        else:
+        if terminal_vertex_idx is None and vertex_image is not None:
+            terminal_vertex_idx = vertex_at_position(current_pos_arr, vertex_image)
+        if terminal_vertex_idx is None:
             terminal_vertex_idx = near_vertex(
                 current_pos_arr,
                 vertex_positions,
@@ -220,6 +225,7 @@ def trace_edge(
                 microns_per_voxel,
                 tree=tree,
                 max_search_radius=max_search_radius,
+                exclude_vertex=origin_vertex_idx,
             )
         if origin_vertex_idx is not None and terminal_vertex_idx == origin_vertex_idx:
             terminal_vertex_idx = None

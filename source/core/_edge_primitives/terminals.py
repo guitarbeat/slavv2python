@@ -23,6 +23,7 @@ def _resolve_trace_terminal_vertex(
     tree: cKDTree | None = None,
     max_search_radius: float = 0.0,
     direct_terminal_vertex: int | None = None,
+    vertex_image: np.ndarray | None = None,
 ) -> tuple[int | None, str | None]:
     """Resolve a terminal vertex using MATLAB-style center hits plus tolerant fallback."""
     trace_array = np.asarray(edge_trace, dtype=np.float32).reshape(-1, 3)
@@ -43,6 +44,16 @@ def _resolve_trace_terminal_vertex(
             if terminal_vertex is not None and terminal_vertex != origin_vertex:
                 return int(terminal_vertex), "reverse_center_hit"
 
+    if vertex_image is not None:
+        terminal_vertex = vertex_at_position(trace_array[-1], vertex_image)
+        if terminal_vertex is not None and terminal_vertex != origin_vertex:
+            return int(terminal_vertex), "reverse_volume_hit"
+
+        for point in trace_array[-2::-1]:
+            terminal_vertex = vertex_at_position(point, vertex_image)
+            if terminal_vertex is not None and terminal_vertex != origin_vertex:
+                return int(terminal_vertex), "reverse_volume_hit"
+
     for point in trace_array[::-1]:
         terminal_vertex = near_vertex(
             point,
@@ -52,6 +63,7 @@ def _resolve_trace_terminal_vertex(
             microns_per_voxel,
             tree=tree,
             max_search_radius=max_search_radius,
+            exclude_vertex=origin_vertex,
         )
         if terminal_vertex is not None and terminal_vertex != origin_vertex:
             return int(terminal_vertex), "reverse_near_hit"
@@ -65,6 +77,7 @@ def _finalize_traced_edge(
     stop_reason: str,
     direct_terminal_vertex: int | None,
     vertex_center_image: np.ndarray | None,
+    vertex_image: np.ndarray | None = None,
     vertex_positions: np.ndarray,
     vertex_scales: np.ndarray,
     lumen_radius_microns: np.ndarray,
@@ -87,6 +100,7 @@ def _finalize_traced_edge(
         tree=tree,
         max_search_radius=max_search_radius,
         direct_terminal_vertex=direct_terminal_vertex,
+        vertex_image=vertex_image,
     )
 
     if terminal_vertex is not None:
