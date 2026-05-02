@@ -8,6 +8,7 @@ from dev.tests.support.network_builders import (
     build_authoritative_network_json_payload,
     build_network_object,
 )
+
 from source.apps.cli import (
     _build_cli_parser,
     _build_export_artifacts,
