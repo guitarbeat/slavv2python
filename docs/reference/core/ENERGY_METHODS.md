@@ -55,6 +55,9 @@ The default `hessian` backend also honors `energy_projection_mode`:
   estimate, spherical weighted scale estimate over negative energies, blended by
   `spherical_to_annular_ratio`, then sampled back onto the nearest scale.
 
+The maintained public `paper` profile selects `energy_projection_mode=paper` by
+default. `matlab_compat` keeps the legacy MATLAB-shaped `matlab` projection.
+
 CLI example:
 
 ```powershell

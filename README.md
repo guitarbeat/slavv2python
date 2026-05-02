@@ -1,7 +1,10 @@
 ﻿# SLAVV Python
 
 Python implementation of SLAVV for 3D vascular network extraction from
-microscopy volumes.
+microscopy volumes. The public workflow is paper-first: run the native Python
+pipeline with the default `paper` profile, export an authoritative
+`network.json`, and use the developer-only parity tooling separately when you
+need exact MATLAB artifact proof.
 
 ## Quick Start
 
@@ -11,12 +14,15 @@ python -m venv .venv
 pip install -e ".[app,dev]"
 slavv info
 slavv run -i data/slavv_test_volume.tif -o slavv_output --export csv json
+slavv analyze -i slavv_output\network.json
+slavv plot -i slavv_output\network.json -o plots.html
 ```
 
 ## Common Commands
 
 ```powershell
 slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a --export csv json
+slavv run -i volume.tif -o slavv_output --profile matlab_compat --export json
 slavv analyze -i slavv_output\network.json
 slavv plot -i slavv_output\network.json -o plots.html
 slavv-app
@@ -25,6 +31,15 @@ python -m ruff check source dev/tests
 python -m ruff format source dev/tests
 python -m mypy
 ```
+
+## Public Workflow
+
+- `paper` is the default CLI and Streamlit profile. It runs the maintained
+  native Python TIFF-to-network pipeline with paper-style Hessian projection.
+- `matlab_compat` remains available when you want the older MATLAB-shaped
+  defaults without entering the developer parity harness.
+- `network.json` is the authoritative versioned export consumed by
+  `slavv analyze` and `slavv plot`.
 
 ## What Is In This Repo
 
@@ -38,6 +53,7 @@ python -m mypy
 - [AGENTS.md](AGENTS.md)
 - [Documentation Index](docs/README.md)
 - [Reference Docs](docs/reference/README.md)
+- [Paper Profile Workflow](docs/reference/workflow/PAPER_PROFILE.md)
 - [MATLAB Method Implementation Plan](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [MATLAB Parity Mapping](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)
@@ -48,6 +64,9 @@ python -m mypy
 ## Notes
 
 - Structured `run_dir` metadata is the supported resumable workflow.
+- The public product goal is a complete native Python implementation of the
+  paper workflow; exact MATLAB artifact parity is a separate developer proof
+  track.
 - The legacy rich parity and MATLAB comparison harness has been removed from the
   public CLI surface.
 - A developer-only parity runner is available at

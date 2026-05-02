@@ -11,7 +11,7 @@ Repository guidance for coding agents working in `slavv2python`.
 
 ## Repository Map
 
-- `source/slavv/`: core package code, including processing, I/O, analysis, visualization, and app entry points
+- `source/`: core package code, including processing, I/O, analysis, visualization, and app entry points
 - `dev/tests/`: unit, integration, UI, and diagnostic coverage
 - `dev/scripts/`: maintained helper scripts and benchmarks
 - `docs/`: maintained reference docs for the current Python codebase
@@ -24,7 +24,7 @@ Repository guidance for coding agents working in `slavv2python`.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
 - `docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
-- `source/slavv/runtime/run_state.py`: structured run metadata and staged artifact locations.
+- `source/runtime/run_state.py`: structured run metadata and staged artifact locations.
 
 ## Setup
 
@@ -97,6 +97,7 @@ Package CLI:
 ```powershell
 slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
+slavv run -i volume.tif -o slavv_output --profile matlab_compat --export json
 slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
 ```
@@ -112,13 +113,14 @@ slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 Notes:
 
 - `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted.
-- `slavv analyze` can operate directly on the standard exported `network.json`.
+- The public CLI/app workflow defaults to the native `paper` profile.
+- `slavv analyze` can operate directly on the authoritative exported `network.json`.
 
 Streamlit app:
 
 ```powershell
 slavv-app
-python -m streamlit run source/slavv/apps/web_app.py
+python -m streamlit run source/apps/web_app.py
 ```
 
 The `slavv-app` launcher requires the `app` extra.
@@ -208,7 +210,7 @@ Notes:
 - `prove-exact` compares normalized Python checkpoints against preserved raw MATLAB vectors.
 - `runs/` is disposable; use `promote-report` when a summary should be kept.
 - `fail-fast` runs the cheap gates first and stops at the first failing gate before the full exact proof.
-- It does not recreate the removed rich parity diagnostics or old public parity CLI.
+- It stays confined to the maintained developer parity runner surface.
 
 ## Exact MATLAB Parity Rule
 
@@ -235,14 +237,14 @@ stages, the required goal is exact method parity, not approximate behavioral sim
 
 ## Repo-Specific Guardrails
 
-- Keep package code under `source/slavv/`.
+- Keep package code under `source/`.
 - Keep tests under `dev/tests/`; follow `dev/tests/README.md` for ownership-based placement and marker usage.
 - Pytest markers are assigned by folder in `dev/tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
 - Use the repo-local `tmp_path` fixture behavior in `dev/tests/conftest.py` when writing tests; temporary test artifacts should stay under `dev/tmp_tests/`, not ad-hoc temp roots.
 - Use `logging` in library code instead of `print()`. CLI commands may print user-facing summaries.
 - Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings such as `encoding="utf-8"` when writing repository-managed text artifacts.
 - Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
-- Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/slavv/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
+- Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
 - Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
 - For MATLAB-parity work, preserve method parity with the upstream MATLAB source before optimizing,
   simplifying, or generalizing the Python implementation.

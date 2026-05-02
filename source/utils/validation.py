@@ -5,6 +5,8 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
+from .pipeline_profiles import apply_pipeline_profile, normalize_pipeline_profile_name
+
 
 def _coerce_integral_parameter(name: str, value: Any) -> Any:
     """Accept MATLAB-style numeric scalars for integer pipeline settings."""
@@ -26,7 +28,11 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         joined = ", ".join(legacy_parity_keys)
         raise ValueError(f"legacy parity parameters are no longer supported: {joined}")
 
+    params = apply_pipeline_profile(params)
+
     validated: dict[str, Any] = {}
+    if "pipeline_profile" in params:
+        validated["pipeline_profile"] = normalize_pipeline_profile_name(params["pipeline_profile"])
 
     # Voxel size parameters
     try:

@@ -86,8 +86,7 @@ def test_json_export_handles_numpy_scalars_and_paths(tmp_path: Path) -> None:
     NetworkVisualizer().export_network_data(processing_results, out_path, format="json")
 
     exported = json.loads(out_path.read_text(encoding="utf-8"))
-    assert exported["edges"]["metadata"]["best_scale"] == 3
+    assert exported["schema"]["version"] == 2
+    assert exported["edges"].get("bridge_vertex_positions", []) == []
     assert exported["network"]["bifurcations"] == [0]
-    assert sorted(exported["network"]["adjacency"]["0"]) == [1, 2]
-    assert exported["network"]["graph_edges"]["0"] == [3, 4]
     assert exported["parameters"]["path"] == str(Path("nested") / "output")

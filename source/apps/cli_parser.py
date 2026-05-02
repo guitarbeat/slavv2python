@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 
+from source.utils import PIPELINE_PROFILE_CHOICES
+
 _EXPORT_FILE_NAMES = {
     "csv": "network.csv",
     "json": "network.json",
@@ -36,20 +38,31 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Structured run directory for resumable status tracking",
     )
     run_parser.add_argument(
+        "--profile",
+        dest="pipeline_profile",
+        choices=list(PIPELINE_PROFILE_CHOICES),
+        default="paper",
+        help=(
+            "Pipeline profile preset (default: paper). "
+            "'paper' is the primary native Python workflow; "
+            "'matlab_compat' preserves the legacy MATLAB-shaped defaults."
+        ),
+    )
+    run_parser.add_argument(
         "--energy-storage-format",
         choices=["auto", "npy", "zarr"],
-        default="auto",
+        default=None,
         help=(
-            "Storage format for resumable energy arrays (default: auto). "
-            "'zarr' is useful for larger persisted energy volumes."
+            "Storage format for resumable energy arrays. "
+            "When omitted, the selected profile default is used."
         ),
     )
     run_parser.add_argument(
         "--energy-method",
         choices=["hessian", "frangi", "sato", "simpleitk_objectness", "cupy_hessian"],
-        default="hessian",
+        default=None,
         help=(
-            "Energy computation method (default: hessian). "
+            "Energy computation method. "
             "'simpleitk_objectness' is experimental and spacing-aware; "
             "'cupy_hessian' is experimental and requires an NVIDIA GPU."
         ),
@@ -57,31 +70,109 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--energy-projection-mode",
         choices=["matlab", "paper"],
-        default="matlab",
+        default=None,
         help=(
-            "Projection mode for the default Hessian energy stack (default: matlab). "
+            "Projection mode for the default Hessian energy stack. "
             "'paper' uses the published blended scale-estimate projection."
         ),
     )
     run_parser.add_argument(
         "--edge-method",
         choices=["tracing", "watershed"],
-        default="tracing",
-        help="Edge extraction method (default: tracing)",
+        default=None,
+        help="Edge extraction method. When omitted, the selected profile default is used.",
     )
     run_parser.add_argument(
         "--vessel-radius",
         type=float,
-        default=1.5,
-        help="Smallest vessel radius in microns (default: 1.5)",
+        default=None,
+        help="Smallest vessel radius in microns. When omitted, the profile default is used.",
+    )
+    run_parser.add_argument(
+        "--largest-vessel-radius",
+        type=float,
+        default=None,
+        help="Largest vessel radius in microns. When omitted, the profile default is used.",
     )
     run_parser.add_argument(
         "--microns-per-voxel",
         type=float,
         nargs=3,
-        default=[1.0, 1.0, 1.0],
+        default=None,
         metavar=("Y", "X", "Z"),
-        help="Voxel size in microns (default: 1.0 1.0 1.0)",
+        help="Voxel size in microns. When omitted, the profile default is used.",
+    )
+    run_parser.add_argument(
+        "--scales-per-octave",
+        type=float,
+        default=None,
+        help="Scale density for multi-scale filtering. When omitted, the profile default is used.",
+    )
+    run_parser.add_argument(
+        "--gaussian-to-ideal-ratio",
+        type=float,
+        default=None,
+        help="Gaussian-vs-ideal matched-filter blend. When omitted, the profile default is used.",
+    )
+    run_parser.add_argument(
+        "--spherical-to-annular-ratio",
+        type=float,
+        default=None,
+        help="Spherical-vs-annular weighting ratio. When omitted, the profile default is used.",
+    )
+    run_parser.add_argument(
+        "--energy-upper-bound",
+        type=float,
+        default=None,
+        help="Upper energy bound for vertex and edge candidate acceptance.",
+    )
+    run_parser.add_argument(
+        "--space-strel-apothem",
+        type=int,
+        default=None,
+        help="Vertex suppression spacing in voxels.",
+    )
+    run_parser.add_argument(
+        "--space-strel-apothem-edges",
+        type=int,
+        default=None,
+        help="Edge exclusion spacing in voxels.",
+    )
+    run_parser.add_argument(
+        "--length-dilation-ratio",
+        type=float,
+        default=None,
+        help="Rendering-to-detection dilation ratio for exclusion volumes.",
+    )
+    run_parser.add_argument(
+        "--number-of-edges-per-vertex",
+        type=int,
+        default=None,
+        help="Maximum number of edge traces launched per seed vertex.",
+    )
+    run_parser.add_argument(
+        "--step-size-per-origin-radius",
+        type=float,
+        default=None,
+        help="Tracing step size relative to the origin vertex radius.",
+    )
+    run_parser.add_argument(
+        "--max-edge-length-per-origin-radius",
+        type=float,
+        default=None,
+        help="Maximum tracing length relative to the origin vertex radius.",
+    )
+    run_parser.add_argument(
+        "--max-edge-energy",
+        type=float,
+        default=None,
+        help="Maximum allowable energy along traced edges.",
+    )
+    run_parser.add_argument(
+        "--min-hair-length-in-microns",
+        type=float,
+        default=None,
+        help="Minimum terminal hair length to preserve during network cleanup.",
     )
     run_parser.add_argument(
         "--export",

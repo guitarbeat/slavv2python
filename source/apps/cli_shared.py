@@ -7,6 +7,8 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
+from source.utils import apply_pipeline_profile
+
 if TYPE_CHECKING:
     import argparse
 
@@ -18,14 +20,32 @@ _SIMPLE_LOG_FORMAT = "%(asctime)s %(message)s"
 
 def _build_pipeline_parameters(args: argparse.Namespace) -> dict:
     """Convert parsed CLI arguments to a SLAVV parameters dict."""
-    return {
+    requested_parameters = {
+        "pipeline_profile": args.pipeline_profile,
         "energy_method": args.energy_method,
         "energy_projection_mode": args.energy_projection_mode,
         "energy_storage_format": args.energy_storage_format,
         "edge_method": args.edge_method,
         "radius_of_smallest_vessel_in_microns": args.vessel_radius,
-        "microns_per_voxel": list(args.microns_per_voxel),
+        "radius_of_largest_vessel_in_microns": args.largest_vessel_radius,
+        "microns_per_voxel": list(args.microns_per_voxel) if args.microns_per_voxel else None,
+        "scales_per_octave": args.scales_per_octave,
+        "gaussian_to_ideal_ratio": args.gaussian_to_ideal_ratio,
+        "spherical_to_annular_ratio": args.spherical_to_annular_ratio,
+        "energy_upper_bound": args.energy_upper_bound,
+        "space_strel_apothem": args.space_strel_apothem,
+        "space_strel_apothem_edges": args.space_strel_apothem_edges,
+        "length_dilation_ratio": args.length_dilation_ratio,
+        "number_of_edges_per_vertex": args.number_of_edges_per_vertex,
+        "step_size_per_origin_radius": args.step_size_per_origin_radius,
+        "max_edge_length_per_origin_radius": args.max_edge_length_per_origin_radius,
+        "max_edge_energy": args.max_edge_energy,
+        "min_hair_length_in_microns": args.min_hair_length_in_microns,
     }
+    return apply_pipeline_profile(
+        requested_parameters,
+        default_profile=args.pipeline_profile,
+    )
 
 
 def _configure_logging(verbose: bool, *, format_string: str) -> None:

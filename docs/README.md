@@ -6,6 +6,10 @@ The documentation tree has two jobs:
 - `chapters/` for intentionally archival narratives that still help explain the
   current Python codebase
 
+Only `reference/` is a maintained source of truth for current behavior, public
+workflow, and parity status. Treat `chapters/` as historical context, not as an
+executable spec.
+
 ## Start Here
 
 1. [Repository README](../README.md)
@@ -20,6 +24,7 @@ The documentation tree has two jobs:
 - [MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 - [Energy Computation Methods](reference/core/ENERGY_METHODS.md)
+- [Paper Profile](reference/workflow/PAPER_PROFILE.md)
 - [Parity Experiment Storage](reference/workflow/PARITY_EXPERIMENT_STORAGE.md)
 
 ## Archive Entry Points

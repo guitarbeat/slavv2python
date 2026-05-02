@@ -10,7 +10,7 @@ Thank you for your interest in contributing! This guide will help you get starte
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   pip install -e "[app,dev]"
+   pip install -e ".[app,dev]"
    pre-commit install
    ```
 3. **Run tests before submitting a PR**
@@ -32,6 +32,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 
    for linting/formatting.
 - Add or update tests in `dev/tests/` as appropriate.
+- If your change affects the public workflow, keep the default `paper` profile,
+  authoritative `network.json`, and related docs aligned.
 
 ## Submitting a Pull Request
 
@@ -45,6 +47,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 - Address reviewer comments promptly.
 - Ensure parity and regression tests pass if your change affects core or parity logic.
+- Ensure CLI/app and export tests pass if your change affects the paper-facing
+  run, analyze, plot, or Streamlit workflow.
 
 ## Need Help?
 

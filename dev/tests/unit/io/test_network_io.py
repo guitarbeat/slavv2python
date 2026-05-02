@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from defusedxml.common import EntitiesForbidden
 from dev.tests.support.network_builders import (
+    build_authoritative_network_json_payload,
     build_minimal_network_json_payload,
     build_network_object,
     write_network_json_fixture,
@@ -43,6 +44,9 @@ class TestNetworkRoundtrip:
 
         path = save_network_to_json(network, tmp_path / "net.json")
         assert Path(path).exists()
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        assert payload["schema"]["version"] == 2
+        assert payload["metadata"]["image_shape"] == [5, 6, 7]
 
         loaded = load_network_from_json(path)
         assert np.allclose(loaded.vertices, network.vertices)
@@ -66,7 +70,8 @@ class TestNetworkRoundtrip:
         network = build_network_object(vertices=[], edges=[], radii=[])
 
         path = save_network_to_json(network, tmp_path / "empty.json")
-        payload = json.loads(Path(path).read_text())
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        assert payload["schema"]["version"] == 2
         assert payload["vertices"]["positions"] == []
         assert payload["edges"]["connections"] == []
 
@@ -156,6 +161,21 @@ class TestNetworkImport:
         write_network_json_fixture(
             json_path,
             payload=build_minimal_network_json_payload(),
+        )
+
+        network = load_network_from_json(json_path)
+
+        expected_vertices = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=float)
+        assert np.allclose(network.vertices, expected_vertices)
+        assert np.array_equal(network.edges, np.array([[0, 1]], dtype=int))
+        assert np.allclose(network.radii, np.array([4.0, 7.0], dtype=float))
+
+    def test_load_from_authoritative_json_file(self, tmp_path: Path) -> None:
+        """Test loading network from the authoritative versioned JSON format."""
+        json_path = tmp_path / "authoritative.json"
+        write_network_json_fixture(
+            json_path,
+            payload=build_authoritative_network_json_payload(),
         )
 
         network = load_network_from_json(json_path)

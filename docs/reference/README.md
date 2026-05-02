@@ -1,6 +1,8 @@
 ﻿# Reference Docs
 
 Use this folder for current, maintained technical references.
+These docs outrank archival chapters and paper prose when they describe the
+current Python product surface.
 
 ## Core Docs
 
@@ -16,9 +18,12 @@ Read these first when working on the live implementation:
    Supported energy backends, projection modes, and extension points.
 5. [Glossary](core/GLOSSARY.md)
    Shared parity and pipeline terminology.
+6. [Paper Profile](workflow/PAPER_PROFILE.md)
+   Public paper-first CLI/app workflow and authoritative JSON export contract.
 
 ## Workflow Guides
 
+- [Paper Profile](workflow/PAPER_PROFILE.md)
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 - [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
 
@@ -30,6 +35,9 @@ than alternate versions of the same content:
 - [Zarr Energy Storage](backends/ZARR_ENERGY_STORAGE.md)
 - [Napari Curator](backends/NAPARI_CURATOR.md)
 - [Papers](papers/README.md)
+
+The `papers/` folder is background reading, not the executable source of truth
+for current Python behavior or exact MATLAB parity claims.
 
 ## Live Status And Historical Context
 

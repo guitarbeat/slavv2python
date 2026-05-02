@@ -10,7 +10,7 @@ import logging
 import xml.etree.ElementTree as StdET
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 try:
     from defusedxml import ElementTree as DefusedElementTree
@@ -21,8 +21,15 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
+from .network_json import build_network_json_payload, load_network_json_payload
+
 logger = logging.getLogger(__name__)
 ReadET = DefusedElementTree or StdET
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from source.runtime import RunSnapshot
 
 
 @dataclass
@@ -259,17 +266,12 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
 
 def load_network_from_json(path: Union[str, Path]) -> Network:
     """Load network data from a JSON export."""
-    with open(Path(path)) as f:
-        data: dict[str, Any] = json.load(f)
-
+    data = load_network_json_payload(path)
     v_data = data.get("vertices", {})
     vertices = _normalize_vertices_array(v_data.get("positions", []))
-    radii_list = v_data.get("radii_microns", v_data.get("radii"))
-    radii = (
-        np.asarray(radii_list, dtype=float)
-        if radii_list is not None and len(radii_list) > 0
-        else None
-    )
+    radii = np.asarray(v_data.get("radii_microns", []), dtype=float).reshape(-1)
+    if radii.size == 0:
+        radii = None
     e_data = data.get("edges", {})
     edges = _normalize_edges_array(e_data.get("connections", []))
     return Network(vertices=vertices, edges=edges, radii=radii)
@@ -302,17 +304,69 @@ def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[
     return vertex_path, edge_path
 
 
-def save_network_to_json(network: Network, path: Union[str, Path]) -> Path:
-    """Save network data to a JSON file."""
-    data: dict[str, Any] = {
-        "vertices": {"positions": _normalize_vertices_array(network.vertices).tolist()},
-        "edges": {"connections": _normalize_edges_array(network.edges).tolist()},
+def _network_to_processing_results(network: Network) -> dict[str, Any]:
+    """Convert a basic network object into a minimal processing-results payload."""
+    vertices = _normalize_vertices_array(network.vertices)
+    edges = _normalize_edges_array(network.edges)
+    radii = (
+        np.asarray(network.radii, dtype=float).reshape(-1)
+        if network.radii is not None
+        else np.zeros((len(vertices),), dtype=float)
+    )
+    strands = _convert_edges_to_strands(edges) if len(vertices) else []
+    degrees = np.zeros((len(vertices),), dtype=np.int32)
+    for origin, destination in edges.tolist():
+        if 0 <= int(origin) < len(degrees):
+            degrees[int(origin)] += 1
+        if 0 <= int(destination) < len(degrees):
+            degrees[int(destination)] += 1
+    payload = {
+        "parameters": {"microns_per_voxel": [1.0, 1.0, 1.0]},
+        "vertices": {
+            "positions": vertices,
+            "radii_microns": radii,
+            "radii_pixels": radii.copy(),
+            "energies": np.zeros((len(vertices),), dtype=float),
+            "scales": np.zeros((len(vertices),), dtype=np.int16),
+        },
+        "edges": {
+            "connections": edges,
+            "traces": [],
+            "energies": np.zeros((len(edges),), dtype=float),
+        },
+        "network": {
+            "strands": strands,
+            "bifurcations": np.flatnonzero(degrees > 2).astype(np.int32, copy=False),
+            "orphans": np.flatnonzero(degrees == 0).astype(np.int32, copy=False),
+            "vertex_degrees": degrees,
+        },
     }
-    if network.radii is not None:
-        data["vertices"]["radii_microns"] = np.asarray(network.radii, dtype=float).tolist()
+    return payload
+
+
+def save_network_to_json(
+    network: Network | Mapping[str, Any],
+    path: Union[str, Path],
+    *,
+    run_snapshot: RunSnapshot | None = None,
+    run_dir: str | Path | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> Path:
+    """Save network data to the authoritative JSON export format."""
+    processing_results = (
+        _network_to_processing_results(network)
+        if isinstance(network, Network)
+        else dict(network)
+    )
+    data = build_network_json_payload(
+        processing_results,
+        run_snapshot=run_snapshot,
+        run_dir=run_dir,
+        metadata=metadata,
+    )
     json_path = Path(path)
-    with open(json_path, "w") as f:
-        json.dump(data, f)
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
     return json_path
 
 

@@ -2,11 +2,14 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-04-29
+**Last Updated**: 2026-04-30
 
 This is the maintained current-status owner for the native-first exact route.
 Use it for live proof status, current v22 watershed readouts, the first failing
 field, and the measured effect of parity-bearing fixes.
+
+This file is intentionally developer-facing. It does not define the acceptance
+gate for the public `paper` CLI/app workflow.
 
 Use the other core docs for different jobs:
 
@@ -53,6 +56,19 @@ The strongest current interpretation is:
 The maintained exact route now rejects source runs whose saved
 `validated_params.json` still carries Python-only parity controls or omits the
 required MATLAB-shaped exact settings.
+
+The fairness surface must include both serialized MATLAB settings and released
+MATLAB source constants that are not written into `settings/*.mat`. The current
+maintained exact bootstrap now records at least these source-level edge
+constants explicitly:
+
+- `step_size_per_origin_radius = 1`
+- `max_edge_energy = 0`
+- `edge_number_tolerance = 2`
+- `distance_tolerance_per_origin_radius = 3`
+- `energy_tolerance = 1`
+- `radius_tolerance = 0.5`
+- `direction_tolerance = 1`
 
 Exact-route experiments should now also persist:
 
@@ -129,6 +145,28 @@ explanation:
 - a size, distance, or direction penalty-formula mismatch story
 - pointer-generation corruption at creation time
 - immediate write/read corruption of `pointer_map_flat`
+
+### Red Herrings To Avoid
+
+These have now wasted enough time that they should be treated as explicit
+anti-patterns in future edge investigations:
+
+1. Do not use the vertex fields embedded inside the preserved raw `edges*.mat`
+   file as the upstream watershed input surface.
+   Those embedded vertices reflect the downstream post-`add_vertices_to_edges`
+   surface and can include vertices that are not present in the standalone
+   curated vertex artifact.
+2. Do not treat candidate coverage against the full final `edges.connections`
+   surface as a pure upstream watershed proof.
+   The preserved final edges artifact includes downstream bridge and added
+   vertex effects, so fail-fast candidate counts should be interpreted with
+   that limitation in mind.
+3. Do not assume the preserved 2019 oracle artifact package and the later
+   public MATLAB source are the same code vintage in every local control-flow
+   detail.
+   Use released MATLAB source as the canonical implementation reference, but
+   record and investigate any artifact-vs-source contradiction instead of
+   silently collapsing the two.
 
 ### Strongest Remaining Candidate Surfaces
 

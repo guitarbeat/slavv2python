@@ -30,6 +30,7 @@ def main():
     vascular networks from grayscale, volumetric microscopy images.
 
     This Python/Streamlit implementation is based on the MATLAB SLAVV algorithm by Samuel Alexander Mihelic.
+    The public workflow defaults to the native `paper` profile.
     """
     )
 

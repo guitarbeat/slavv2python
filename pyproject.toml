@@ -100,15 +100,15 @@ Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
-slavv-app = "apps.streamlit_launcher:main"
-slavv = "apps.cli:main"
+slavv-app = "source.apps.streamlit_launcher:main"
+slavv = "source.apps.cli:main"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
-where = ["source"]
-include = ["analysis*", "apps*", "core*", "io*", "models*", "runtime*", "utils*", "visualization*", "workflows*"]
+where = ["."]
+include = ["source", "source.*"]
 
 # ── Ruff (linter + formatter) ───────────────────────────────────────────────
 [tool.ruff]
@@ -146,7 +146,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["analysis", "apps", "core", "io", "models", "runtime", "utils", "visualization", "workflows"]
+known-first-party = ["source"]
 
 [tool.ruff.format]
 quote-style = "double"

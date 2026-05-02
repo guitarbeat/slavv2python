@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -91,13 +90,9 @@ def _convert_numpy(obj: Any) -> Any:
 
 def export_json(processing_results: dict[str, Any], output_path: str) -> str:
     """Export complete results as JSON."""
-    whitelist = {"vertices", "edges", "network", "parameters"}
-    data_to_export = {k: v for k, v in processing_results.items() if k in whitelist}
-    json_data = _convert_numpy(data_to_export)
+    from source.io import save_network_to_json
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(json_data, f, indent=2)
-
+    save_network_to_json(processing_results, output_path)
     logger.info(f"JSON export complete: {output_path}")
     return output_path
 

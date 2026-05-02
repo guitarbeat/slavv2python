@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-import json
 from typing import cast
 
 import networkx as nx
 import numpy as np
+
+from source.io.network_json import (
+    infer_image_shape_from_vertices as _infer_image_shape_from_vertices,
+)
+from source.io.network_json import (
+    load_network_json_payload,
+)
 
 from .cli_shared import _require_existing_file
 
@@ -80,53 +86,47 @@ def _build_strands_from_edge_connections(
     return strands
 
 
-def _infer_image_shape_from_vertices(vertex_positions: np.ndarray) -> tuple[int, int, int]:
-    """Infer a minimal positive image shape from exported vertex positions."""
-    if vertex_positions.size == 0:
-        return (1, 1, 1)
-    maxima = np.max(vertex_positions, axis=0)
-    inferred_axes = [max(1, int(np.ceil(float(axis_max))) + 1) for axis_max in maxima[:3]]
-    while len(inferred_axes) < 3:
-        inferred_axes.append(1)
-    return (inferred_axes[0], inferred_axes[1], inferred_axes[2])
-
-
 def _load_exported_network_json(path: str) -> dict:
     """Load exported JSON and rebuild the stats inputs expected by analysis helpers."""
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    data = load_network_json_payload(path)
+    vertices = cast("dict", data.get("vertices", {}))
+    edges = cast("dict", data.get("edges", {}))
+    network = cast("dict", data.get("network", {}))
 
-    vertices = data.get("vertices", {})
-    edges = data.get("edges", {})
     vertex_positions = np.asarray(vertices.get("positions", []), dtype=float)
     edge_connections = _normalize_exported_edge_connections(edges.get("connections", []))
     vertex_radii = np.asarray(vertices.get("radii_microns", []), dtype=float)
     if len(vertex_radii) != len(vertex_positions):
         vertex_radii = np.zeros(len(vertex_positions), dtype=float)
 
-    strands = _build_strands_from_edge_connections(
-        edge_connections,
-        vertex_count=len(vertex_positions),
-    )
-    graph = nx.Graph()
-    graph.add_nodes_from(range(len(vertex_positions)))
-    graph.add_edges_from(edge_connections.tolist())
-    bifurcations = np.fromiter(
-        (node for node, degree in graph.degree() if degree > 2),
-        dtype=int,
-    )
+    if not network.get("strands"):
+        network["strands"] = _build_strands_from_edge_connections(
+            edge_connections,
+            vertex_count=len(vertex_positions),
+        )
+    if len(np.asarray(network.get("bifurcations", []), dtype=int)) == 0:
+        graph = nx.Graph()
+        graph.add_nodes_from(range(len(vertex_positions)))
+        graph.add_edges_from(edge_connections.tolist())
+        network["bifurcations"] = np.fromiter(
+            (node for node, degree in graph.degree() if degree > 2),
+            dtype=int,
+        )
 
     return {
+        "metadata": data.get("metadata", {}),
         "vertices": {
+            **vertices,
             "positions": vertex_positions,
             "radii_microns": vertex_radii,
         },
-        "edges": {"connections": edge_connections},
-        "network": {
-            "strands": strands,
-            "bifurcations": bifurcations,
+        "edges": {
+            **edges,
+            "connections": edge_connections,
         },
+        "network": network,
         "parameters": data.get("parameters", {}),
+        "summary": data.get("summary", {}),
         "image_shape": tuple(
             data.get("image_shape", _infer_image_shape_from_vertices(vertex_positions))
         ),

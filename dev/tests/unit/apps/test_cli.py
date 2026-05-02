@@ -4,6 +4,10 @@ import json
 
 import numpy as np
 import pytest
+from dev.tests.support.network_builders import (
+    build_authoritative_network_json_payload,
+    build_network_object,
+)
 from source.apps.cli import (
     _build_cli_parser,
     _build_export_artifacts,
@@ -43,12 +47,13 @@ class TestBuildParser:
         args = parser.parse_args(["run", "-i", "volume.tif"])
         assert args.input == "volume.tif"
         assert args.output == "./slavv_output"
-        assert args.energy_storage_format == "auto"
-        assert args.energy_method == "hessian"
-        assert args.energy_projection_mode == "matlab"
-        assert args.edge_method == "tracing"
-        assert args.vessel_radius == 1.5
-        assert args.microns_per_voxel == [1.0, 1.0, 1.0]
+        assert args.pipeline_profile == "paper"
+        assert args.energy_storage_format is None
+        assert args.energy_method is None
+        assert args.energy_projection_mode is None
+        assert args.edge_method is None
+        assert args.vessel_radius is None
+        assert args.microns_per_voxel is None
         assert args.export == []
         assert args.verbose is False
 
@@ -129,8 +134,9 @@ class TestArgsToParameters:
         parser = _build_cli_parser()
         args = parser.parse_args(["run", "-i", "test.tif"])
         params = _build_pipeline_parameters(args)
+        assert params["pipeline_profile"] == "paper"
         assert params["energy_method"] == "hessian"
-        assert params["energy_projection_mode"] == "matlab"
+        assert params["energy_projection_mode"] == "paper"
         assert params["energy_storage_format"] == "auto"
         assert params["edge_method"] == "tracing"
         assert params["radius_of_smallest_vessel_in_microns"] == 1.5
@@ -217,40 +223,37 @@ class TestMainEntryPoint:
 
 def test_load_exported_network_json_preserves_parameters(tmp_path):
     path = tmp_path / "network.json"
-    path.write_text(
-        json.dumps(
-            {
-                "vertices": {
-                    "positions": [[1, 2, 3], [2, 2, 3]],
-                    "radii_microns": [1.5, 1.5],
-                },
-                "edges": {"connections": [[0, 1]]},
-                "parameters": {"microns_per_voxel": [0.5, 0.5, 2.0]},
-            }
+    payload = build_authoritative_network_json_payload(
+        network=build_network_object(
+            vertices=[[1, 2, 3], [2, 2, 3]],
+            edges=[[0, 1]],
+            radii=[1.5, 1.5],
         ),
-        encoding="utf-8",
+        parameters={"microns_per_voxel": [0.5, 0.5, 2.0], "pipeline_profile": "paper"}
     )
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
     result = _load_exported_network_json(str(path))
 
     np.testing.assert_array_equal(result["vertices"]["positions"], np.array([[1, 2, 3], [2, 2, 3]]))
     assert result["parameters"]["microns_per_voxel"] == [0.5, 0.5, 2.0]
     assert result["network"]["strands"] == [[0, 1]]
-    assert tuple(result["image_shape"]) == (3, 3, 4)
+    assert result["metadata"]["pipeline_profile"] == "paper"
+    assert tuple(result["image_shape"]) == (4, 4, 4)
 
 
 def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     path = tmp_path / "network.json"
     path.write_text(
         json.dumps(
-            {
-                "vertices": {
-                    "positions": [[0, 0, 0], [1, 0, 0], [2, 0, 0]],
-                    "radii_microns": [1.0, 1.0, 1.0],
-                },
-                "edges": {"connections": [[0, 1], [1, 2]]},
-                "parameters": {"microns_per_voxel": [1.0, 1.0, 1.0]},
-            }
+            build_authoritative_network_json_payload(
+                network=build_network_object(
+                    vertices=[[0, 0, 0], [1, 0, 0], [2, 0, 0]],
+                    edges=[[0, 1], [1, 2]],
+                    radii=[1.0, 1.0, 1.0],
+                ),
+                parameters={"microns_per_voxel": [1.0, 1.0, 1.0], "pipeline_profile": "paper"}
+            )
         ),
         encoding="utf-8",
     )
@@ -261,3 +264,17 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     assert "Topological Features:" in captured.out
     assert "Vertices: 3" in captured.out
     assert "Total Edge Length: 2.00 um" in captured.out
+
+
+def test_plot_command_writes_html_for_authoritative_json(tmp_path):
+    path = tmp_path / "network.json"
+    path.write_text(
+        json.dumps(build_authoritative_network_json_payload()),
+        encoding="utf-8",
+    )
+    out_path = tmp_path / "plots.html"
+
+    main(["plot", "-i", str(path), "-o", str(out_path)])
+
+    assert out_path.exists()
+    assert "html" in out_path.read_text(encoding="utf-8").lower()

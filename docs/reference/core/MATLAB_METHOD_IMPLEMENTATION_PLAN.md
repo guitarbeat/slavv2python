@@ -14,6 +14,8 @@ readouts.
 - resolve ambiguity between paper prose, released MATLAB source, and current
   Python status
 - define the canonical source-of-truth hierarchy for parity work
+- separate the public paper-complete Python product from artifact-proven exact
+  MATLAB parity
 - separate source-level porting from artifact-proven implementation
 - track the native-first transition from historical MATLAB-imported exact reruns
   to a canonical Python exact route
@@ -52,8 +54,12 @@ Use the following labels precisely:
   the Python stage matches preserved MATLAB vectors exactly under the maintained
   proof surface.
 - `Full paper method implemented in Python`:
-  Python reproduces the method end to end from raw image inputs without runtime
-  dependence on imported MATLAB energy artifacts.
+  users can run the maintained native Python TIFF-to-network workflow through
+  the public surfaces, receive the authoritative JSON export, and analyze or
+  visualize the result without MATLAB runtime dependencies.
+- `Exact MATLAB parity complete`:
+  the native-first exact route is artifact-proven at the maintained
+  `prove-exact` gate through `network`.
 
 Do not use `exact` or `100%` for a stage unless that stage is artifact-proven.
 
@@ -72,15 +78,28 @@ function boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
 
-| Stage | Truthful claim today | Main blocker |
+| Stage | Public paper-workflow claim | Exact-parity claim | Main blocker |
 | --- | --- | --- |
-| Energy / size image generation | Python has a native exact-route energy implementation and no longer depends on imported MATLAB energy at runtime | Keep MATLAB-oracle fixture coverage broad and direct/resumable parity green |
-| Vertex extraction | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges and network |
-| Edge extraction | Source-aligned on the native-first exact route | Candidate-generation and chooser proof are still red; see `EXACT_PROOF_FINDINGS.md` |
-| Edge cleanup / bridge insertion | Source-aligned | Downstream of unresolved edge mismatch |
-| Network / strand assembly | Source-aligned | Downstream of unresolved edge mismatch |
+| Energy / size image generation | Complete on the maintained native Python path, with paper-profile projection support | Python has a native exact-route implementation | Keep MATLAB-oracle fixture coverage broad and direct/resumable parity green |
+| Vertex extraction | Complete on the maintained native Python path | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges and network |
+| Edge extraction | Complete on the maintained native Python path for the public paper workflow | Source-aligned on the native-first exact route | Candidate-generation and chooser proof are still red; see `EXACT_PROOF_FINDINGS.md` |
+| Edge cleanup / bridge insertion | Complete on the maintained native Python path for the public paper workflow | Source-aligned | Downstream of unresolved edge mismatch |
+| Network / strand assembly | Complete on the maintained native Python path for the public paper workflow | Source-aligned | Downstream of unresolved edge mismatch |
 
-## What Must Be True Before We Claim Full Python Implementation
+## What Must Be True Before We Claim Full Paper Implementation
+
+1. `slavv run` and the Streamlit processing page expose a first-class `paper`
+   profile as the primary public workflow.
+2. The public `paper` workflow must run the native Python TIFF-to-network
+   pipeline without runtime dependence on imported MATLAB energy artifacts.
+3. `network.json` must be the authoritative versioned export, and
+   `slavv analyze` / `slavv plot` must consume it directly.
+4. Maintained docs must clearly distinguish the paper-complete public workflow
+   from the exact MATLAB proof track.
+5. CLI, app, and automated integration coverage must stay green for the paper
+   workflow on a maintained example dataset.
+
+## What Must Be True Before We Claim Exact MATLAB Parity Complete
 
 1. The native-first exact route must pass `prove-exact --stage all`.
 2. Maintained docs must describe `python_native_hessian` as the canonical
@@ -91,6 +110,18 @@ function boundaries while delegating into the maintained modular Python code.
    valid-mask surfaces.
 4. Vertices, edges, and network must be artifact-proven on the native-first
    exact route, with preserved MATLAB vectors still serving as the oracle.
+
+## Public Paper Workflow
+
+The maintained public workflow is now paper-first:
+
+- default public profile: `paper`
+- alternate legacy-oriented profile: `matlab_compat`
+- authoritative export: versioned `network.json`
+- public acceptance gate: CLI + Streamlit app + automated tests
+
+That public finish line is intentionally separate from the developer-only exact
+proof tooling.
 
 ## Implementation Phases
 
@@ -168,4 +199,6 @@ Apply these rules across parity docs:
   deviations
 - `EXACT_PROOF_FINDINGS.md`: live proof status and v22 watershed readouts
 - `ENERGY_METHODS.md`: maintained native energy backend surface
+- `../workflow/PAPER_PROFILE.md`: public paper-first CLI/app workflow and JSON
+  export contract
 - `../papers/journal.pcbi.1009451.pdf`: paper narrative and published methods

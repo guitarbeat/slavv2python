@@ -20,6 +20,8 @@ def save_network_export(
     output_dir: str,
     network_obj: Any,
     results: Mapping[str, Any],
+    run_snapshot: Any | None = None,
+    run_dir: str | None = None,
 ) -> str | None:
     """Persist one export format and return the written path when successful."""
     export_path = os.path.join(output_dir, _EXPORT_FILE_NAMES[format_type])
@@ -52,9 +54,18 @@ def save_network_export(
         save_network_to_vmv,
     )
 
+    if format_type == "json":
+        save_network_to_json(
+            results,
+            export_path,
+            run_snapshot=run_snapshot,
+            run_dir=run_dir,
+        )
+        logger.info("Saved %s to %s", format_type.upper(), export_path)
+        return export_path
+
     exporters = {
         "csv": save_network_to_csv,
-        "json": save_network_to_json,
         "casx": save_network_to_casx,
         "vmv": save_network_to_vmv,
     }

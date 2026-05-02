@@ -14,6 +14,9 @@ def calculate_exported_network_stats(
     statistics_fn,
 ) -> dict[str, Any]:
     """Calculate CLI analysis statistics from exported network results."""
+    summary = results.get("summary")
+    if isinstance(summary, dict) and summary:
+        return dict(summary)
     return statistics_fn(
         results["network"]["strands"],
         results["network"]["bifurcations"],

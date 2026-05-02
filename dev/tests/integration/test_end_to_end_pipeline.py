@@ -108,7 +108,7 @@ def test_end_to_end_pipeline(tmp_path):
 
     # JSON
     json_path = out_dir / "network.json"
-    save_network_to_json(net_obj, str(json_path))
+    save_network_to_json(results, str(json_path))
     assert json_path.exists()
     assert json_path.stat().st_size > 0
 

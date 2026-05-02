@@ -85,6 +85,7 @@ def _handle_run_command(args) -> None:
         _expand_export_formats(args.export),
         results,
     )
+    run_snapshot = load_run_snapshot(effective_run_dir) if effective_run_dir else None
     for warning_line in export_warnings:
         logger.warning(warning_line)
 
@@ -94,6 +95,8 @@ def _handle_run_command(args) -> None:
             output_dir=args.output,
             network_obj=network_obj,
             results=results,
+            run_snapshot=run_snapshot,
+            run_dir=effective_run_dir,
         )
 
     snapshot = update_run_export_task(

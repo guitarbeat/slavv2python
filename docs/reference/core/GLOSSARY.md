@@ -27,7 +27,7 @@ Maintain this reference for domain-specific and project-specific terms used thro
 
 | Term | Definition |
 | --- | --- |
-| **network.json** | The canonical portable JSON export for Python vascular networks, containing vertices, edges, and summary metrics. |
+| **network.json** | The authoritative versioned JSON export for Python vascular networks, containing schema metadata, validated parameters, vertices, edges, network topology, and optional precomputed summary statistics. |
 | **VMV / CASX** | Legacy network export formats still supported for interoperability. |
 | **Zarr** | An optional chunked, compressed, N-dimensional array format used for storing large energy volumes during resumable runs. |
 

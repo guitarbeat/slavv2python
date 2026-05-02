@@ -65,6 +65,30 @@ The active MATLAB sources for the native-first exact target are:
 
 ## Confirmed Structural Deviations Still Worth Tracking
 
+## Red Herrings To Avoid
+
+These are now explicit parity-investigation pitfalls:
+
+- Do not treat preserved `settings/*.mat` files as the complete MATLAB method
+  surface.
+  Important edge-stage constants such as `step_size_per_origin_radius`,
+  `max_edge_energy`, `edge_number_tolerance`, `distance_tolerance`, and
+  `radius_tolerance` can live only in released MATLAB source and still need to
+  be persisted into the exact params surface.
+- Do not feed the vertex fields embedded inside raw `edges*.mat` into upstream
+  watershed candidate generation.
+  The standalone curated vertex artifact is the correct upstream vertex surface;
+  the embedded edge-file vertices are downstream and can include added bridge
+  vertices.
+- Do not treat candidate coverage against the final preserved `edges` artifact
+  as an isolated proof of upstream watershed parity.
+  The final edge artifact already includes downstream bridge insertion effects.
+- Do not assume the preserved 2019 oracle batch and the later public
+  `Vectorization-Public` source are one-to-one in code vintage.
+  When artifact behavior and later source comments disagree, record the
+  discrepancy explicitly and avoid treating either side as silently
+  self-evident.
+
 ### 1. `get_edges_V300.m` and `get_edges_by_watershed.m`: control-flow surfaces remain the main open risk
 
 The live Python watershed path has absorbed the major pointer-lifecycle and
