@@ -17,11 +17,11 @@ runtime energy provenance.
 
 | Method | Where it lives | Best use | Notes |
 | --- | --- | --- | --- |
-| `hessian` | `source/core/energy.py` and `source/core/_energy/native_hessian.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
+| `hessian` | `source/core/energy.py` and `source/core/energy_internal/hessian_response.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
 | `frangi` | `skimage.filters.frangi` via `source/core/energy.py` | Quick vesselness experiments | Exploratory alternate backend. |
 | `sato` | `skimage.filters.sato` via `source/core/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed surface does not provide `sato`. |
-| `simpleitk_objectness` | `source/core/_energy/backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
-| `cupy_hessian` | `source/core/_energy/backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
+| `simpleitk_objectness` | `source/core/energy_internal/energy_backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
+| `cupy_hessian` | `source/core/energy_internal/energy_backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
 
 The CLI exposes the same options through:
 
@@ -221,7 +221,7 @@ When adding a new energy backend, update these surfaces together:
    evaluation.
 2. `source/utils/validation.py`
    Allow the new `energy_method` value in parameter validation.
-3. `source/apps/cli_parser.py` and `source/apps/cli_shared.py`
+3. `source/apps/cli/parser.py` and `source/apps/cli/shared.py`
    Expose the new choice through `slavv run --energy-method`.
 4. `dev/tests/unit/core/test_energy_methods.py`
    Add focused correctness coverage for the new backend.

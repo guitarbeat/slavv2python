@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     import numpy as np
 
-from source.core.pipeline import SLAVVProcessor
+from source.core.pipeline import SlavvPipeline
 from source.workflows import finalize_pipeline_results
 
 
@@ -15,7 +15,7 @@ def vectorize_v200(
     image: np.ndarray,
     params: dict[str, Any],
     *,
-    processor: SLAVVProcessor | None = None,
+    processor: SlavvPipeline | None = None,
     progress_callback: Callable[[float, str], None] | None = None,
     event_callback=None,
     run_dir: str | None = None,
@@ -23,8 +23,8 @@ def vectorize_v200(
     force_rerun_from: str | None = None,
 ) -> dict[str, Any]:
     """Mirror MATLAB ``vectorize_V200`` stage order on the maintained Python pipeline."""
-    active_processor = processor or SLAVVProcessor()
-    results = active_processor.process_image(
+    active_processor = processor or SlavvPipeline()
+    results = active_processor.run(
         image,
         params,
         progress_callback=progress_callback,

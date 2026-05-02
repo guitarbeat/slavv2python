@@ -32,6 +32,17 @@ python -m ruff format source dev/tests
 python -m mypy
 ```
 
+## Python API
+
+```python
+from source.core import SlavvPipeline
+from source.io import load_tiff_volume
+
+image = load_tiff_volume("volume.tif")
+pipeline = SlavvPipeline()
+results = pipeline.run(image, {"pipeline_profile": "paper"})
+```
+
 ## Public Workflow
 
 - `paper` is the default CLI and Streamlit profile. It runs the maintained
@@ -54,6 +65,7 @@ python -m mypy
 - [Documentation Index](docs/README.md)
 - [Reference Docs](docs/reference/README.md)
 - [Paper Profile Workflow](docs/reference/workflow/PAPER_PROFILE.md)
+- [Python Naming Guide](docs/reference/workflow/PYTHON_NAMING_GUIDE.md)
 - [MATLAB Method Implementation Plan](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [MATLAB Parity Mapping](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)

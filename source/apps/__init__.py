@@ -1,9 +1,16 @@
-"""User-facing applications for source.
+"""User-facing applications for SLAVV.
 
 Submodules
 ----------
 cli
-    Command-line interface (``slavv`` command).
-web_app
-    Streamlit web application.
+    Grouped command-line interface package for the ``slavv`` command.
+streamlit
+    Grouped Streamlit application package.
 """
+
+from __future__ import annotations
+
+__all__ = [
+    "cli",
+    "streamlit",
+]

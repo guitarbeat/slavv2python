@@ -1,15 +1,15 @@
-"""Workflow helpers for pipeline orchestration."""
+"""Workflow helpers for SLAVV pipeline orchestration."""
 
 from __future__ import annotations
 
-from .pipeline_results import finalize_pipeline_results, stop_after_stage_if_requested
-from .pipeline_runner import (
+from .pipeline_execution import (
     PipelineStageStep,
     advance_pipeline_stage,
     build_standard_pipeline_steps,
     run_pipeline_stage_sequence,
 )
-from .pipeline_setup import (
+from .pipeline_results import finalize_pipeline_results, stop_after_stage_if_requested
+from .pipeline_session import (
     PreparedPipelineRun,
     create_run_context,
     effective_run_dir,
@@ -20,18 +20,18 @@ from .pipeline_setup import (
     preprocess_image,
     validate_stage_control,
 )
-from .pipeline_stages import (
+from .stage_artifacts import (
+    load_cached_stage_result,
+    persist_stage_result,
+    resolve_resumable_stage,
+    stage_artifacts,
+)
+from .stage_resolution import (
     resolve_edges_stage,
     resolve_energy_stage,
     resolve_network_stage,
     resolve_stage_with_checkpoint,
     resolve_vertices_stage,
-)
-from .stage_checkpoints import (
-    load_cached_stage_result,
-    persist_stage_result,
-    resolve_resumable_stage,
-    stage_artifacts,
 )
 
 __all__ = [

@@ -44,7 +44,7 @@ def _handle_info_command() -> None:
 
 def _handle_run_command(args) -> None:
     """Execute the SLAVV processing pipeline."""
-    from source import SLAVVProcessor
+    from source import SlavvPipeline
     from source.io import Network, load_tiff_volume
     from source.runtime import RunContext, build_status_lines, load_run_snapshot
 
@@ -68,8 +68,8 @@ def _handle_run_command(args) -> None:
             print(line)
             last_event_line["value"] = line
 
-    processor = SLAVVProcessor()
-    results = processor.process_image(
+    processor = SlavvPipeline()
+    results = processor.run(
         image,
         parameters,
         event_callback=event_callback,

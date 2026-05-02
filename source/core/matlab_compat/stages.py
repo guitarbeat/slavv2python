@@ -8,11 +8,11 @@ if TYPE_CHECKING:
     import numpy as np
 
 from source.analysis._geometry.trace_ops import get_edge_metric as _get_edge_metric
-from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
 from source.core.edge_selection import choose_edges_for_workflow
 from source.core.edges import extract_edges
+from source.core.edges_internal.bridge_insertion import add_vertices_to_edges_matlab_style
 from source.core.energy import calculate_energy_field
-from source.core.graph import (
+from source.core.network import (
     _matlab_get_network_v190,
     _matlab_get_strand_objects,
     _matlab_sort_network_v180,

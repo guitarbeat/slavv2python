@@ -25,6 +25,7 @@ executable spec.
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 - [Energy Computation Methods](reference/core/ENERGY_METHODS.md)
 - [Paper Profile](reference/workflow/PAPER_PROFILE.md)
+- [Python Naming Guide](reference/workflow/PYTHON_NAMING_GUIDE.md)
 - [Parity Experiment Storage](reference/workflow/PARITY_EXPERIMENT_STORAGE.md)
 
 ## Archive Entry Points

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import numpy as np
 
-# from ..core import SLAVVProcessor  # Moved inside to avoid circular dependency
+# from ..core import SlavvPipeline  # Moved inside to avoid circular dependency
 
 
 def profile_process_image(
@@ -20,20 +20,20 @@ def profile_process_image(
     image : np.ndarray
         Input 3D volume (y, x, z).
     parameters : dict, optional
-        Processing parameters passed to :class:`SLAVVProcessor`. Defaults to an empty
-        dictionary, which uses MATLAB-equivalent defaults.
+        Processing parameters passed to :class:`source.core.SlavvPipeline`.
+        Defaults to an empty dictionary.
 
     Returns
     -------
     pstats.Stats
-        Profiling statistics for ``process_image``.
+        Profiling statistics for ``run``.
     """
     if parameters is None:
         parameters = {}
 
-    from ..core import SLAVVProcessor
+    from ..core import SlavvPipeline
 
     profiler = cProfile.Profile()
-    processor = SLAVVProcessor()
-    profiler.runcall(processor.process_image, image, parameters)
+    processor = SlavvPipeline()
+    profiler.runcall(processor.run, image, parameters)
     return pstats.Stats(profiler)

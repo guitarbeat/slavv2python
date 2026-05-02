@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import numpy as np
+
 from source.core._edges.bridge_vertices import (
     _matlab_bridge_search_target,
     add_vertices_to_edges_matlab_style,
 )
 from source.core._vertices.painting import paint_vertex_center_image, paint_vertex_image
-from source.core.graph import construct_network
+from source.core.network import construct_network
 
 
 def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_parent():

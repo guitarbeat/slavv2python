@@ -54,14 +54,14 @@ The active MATLAB sources for the native-first exact target are:
 | MATLAB surface | Live Python surface | Status | Notes |
 | --- | --- | --- | --- |
 | `vectorize_V200.m` | `source/core/matlab_compat/vectorize_v200.py`, `source/core/pipeline.py` | Source-aligned orchestration surface | The compat layer mirrors MATLAB stage order while delegating into the maintained modular pipeline. |
-| `get_energy_V202.m` and `energy_filter_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/energy.py`, `source/core/_energy/native_hessian.py`, `source/core/_energy/provenance.py` | Native exact-compatible source surface | Native matched filtering is the canonical exact-route energy implementation. |
-| `get_vertices_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/vertices.py`, `source/core/_vertices/extraction.py` | Source-aligned | The maintained exact route now starts from native energy rather than imported MATLAB energy. |
-| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/core/matlab_compat/stages.py`, `source/core/edges.py`, `source/core/_edges/standard.py`, `source/core/_edges/resumable.py`, `source/core/_edge_candidates/generate.py`, `source/core/_edge_candidates/global_watershed.py`, `source/core/_edge_candidates/common.py` | Source-aligned with known control-flow deviations | The exact route uses MATLAB-shaped tracing and shared-state maps, but a few remaining control-flow surfaces are still documented below. |
-| `get_edge_metric.m` | `source/core/matlab_compat/stages.py`, `source/analysis/_geometry/trace_ops.py`, `source/core/graph.py` | Source-aligned | The compat layer exposes a MATLAB-named wrapper while the maintained trace helpers stay modular. |
-| `choose_edges_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/edge_selection.py`, `source/core/_edge_selection/payloads.py`, `source/core/_edge_selection/conflict_painting.py`, `source/core/_edges/postprocess.py` | Ported; proof pending | Pre-paint filtering and chooser structure are aligned, but one remaining trace-order deviation is still tracked below. |
-| `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, `clean_edges_cycles.m` | `source/core/_edge_selection/cleanup.py` | Source-aligned | The current cleanup family matches the active MATLAB removal rules closely enough that it is no longer the first suspected mismatch surface. |
-| `add_vertices_to_edges.m` | `source/core/matlab_compat/stages.py`, `source/core/_edges/bridge_vertices.py`, `source/core/_edges/standard.py`, `source/core/_edges/resumable.py` | Ported; proof pending | Bridge insertion remains downstream of the unresolved edge mismatch. |
-| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `source/core/matlab_compat/stages.py`, `source/core/graph.py` | Ported; proof pending | Network decomposition and strand assembly remain downstream of edge proof. |
+| `get_energy_V202.m` and `energy_filter_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/energy.py`, `source/core/energy_internal/hessian_response.py`, `source/core/energy_internal/energy_provenance.py` | Native exact-compatible source surface | Native matched filtering is the canonical exact-route energy implementation. |
+| `get_vertices_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/vertices.py`, `source/core/vertices_internal/vertex_extraction.py` | Source-aligned | The maintained exact route now starts from native energy rather than imported MATLAB energy. |
+| `get_edges_V300.m` and `get_edges_by_watershed.m` | `source/core/matlab_compat/stages.py`, `source/core/edges.py`, `source/core/edges_internal/candidate_generation.py`, `source/core/edges_internal/matlab_frontier.py`, `source/core/edges_internal/edge_tracing.py`, `source/core/edges_internal/resumable_edges.py` | Source-aligned with known control-flow deviations | Preferred grouped facades delegate into historical `_edge_candidates/` and `_edges/` implementation modules where the remaining exact-route work still lives. |
+| `get_edge_metric.m` | `source/core/matlab_compat/stages.py`, `source/analysis/_geometry/trace_ops.py`, `source/core/network.py` | Source-aligned | The compat layer exposes a MATLAB-named wrapper while the maintained trace helpers stay modular. |
+| `choose_edges_V200.m` | `source/core/matlab_compat/stages.py`, `source/core/edge_selection.py`, `source/core/edges_internal/edge_selection.py`, `source/core/_edge_selection/conflict_painting.py`, `source/core/_edges/postprocess.py` | Ported; proof pending | Pre-paint filtering and chooser structure are aligned, but one remaining trace-order deviation is still tracked below. |
+| `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, `clean_edges_cycles.m` | `source/core/edges_internal/edge_cleanup.py` | Source-aligned | The preferred cleanup surface delegates into the historical cleanup implementation, which is no longer the first suspected mismatch surface. |
+| `add_vertices_to_edges.m` | `source/core/matlab_compat/stages.py`, `source/core/edges_internal/bridge_insertion.py`, `source/core/_edges/standard.py`, `source/core/_edges/resumable.py` | Ported; proof pending | Bridge insertion remains downstream of the unresolved edge mismatch. |
+| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `source/core/matlab_compat/stages.py`, `source/core/network.py`, `source/core/graph.py` | Ported; proof pending | `source/core/network.py` is the preferred network surface; strand assembly remains downstream of edge proof. |
 
 ## Confirmed Structural Deviations Still Worth Tracking
 
@@ -106,7 +106,8 @@ Treat these as the main native-first candidate-generation audit surfaces.
 
 **MATLAB** uses `randperm` over the per-edge trace positions before painting.
 
-**Python** still iterates traces sequentially in
+**Python** still iterates traces sequentially in the delegated implementation
+behind `source/core/edges_internal/edge_selection.py`, currently
 `source/core/_edge_selection/conflict_painting.py`.
 
 Why it matters:

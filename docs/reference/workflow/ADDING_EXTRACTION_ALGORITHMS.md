@@ -27,16 +27,16 @@ Most new extraction algorithms need coordinated changes in these files:
 | Surface | Why it matters |
 | --- | --- |
 | `source/utils/validation.py` | Validates new parameter values and sets defaults. |
-| `source/apps/cli_parser.py` and `source/apps/cli_shared.py` | Expose the new option on `slavv run`. |
+| `source/apps/cli/parser.py` and `source/apps/cli/shared.py` | Expose the new option on `slavv run`. |
 | `source/core/` and `source/workflows/` | Hold the implementation and the current pipeline orchestration. |
-| `source/runtime/run_state.py` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
+| `source/runtime/run_tracking/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
 | `dev/tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
 - `source/core/edges.py` for stage orchestration and resumable helpers
-- `source/core/_edge_candidates/` for candidate generation
-- `source/core/_edge_selection/` for choice and cleanup logic
+- `source/core/edges_internal/candidate_generation.py` and related helpers for candidate generation
+- `source/core/edges_internal/edge_selection.py` and `edge_cleanup.py` for choice and cleanup logic
 
 ## Recommended Workflow
 

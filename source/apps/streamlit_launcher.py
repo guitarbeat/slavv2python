@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
-_APP_PACKAGE = "source.apps"
-_WEB_APP_SCRIPT = "web_app.py"
+_APP_PACKAGE = "source.apps.streamlit"
+_WEB_APP_SCRIPT = "app.py"
 
 
 @contextmanager

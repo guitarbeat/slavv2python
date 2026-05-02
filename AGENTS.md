@@ -21,10 +21,11 @@ Repository guidance for coding agents working in `slavv2python`.
 - `docs/README.md`: index for maintained reference docs.
 - `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md`: canonical claim boundaries, source-of-truth hierarchy, and remaining work for fully implementing the released SLAVV method in Python.
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md`: canonical MATLAB-to-Python map for exact imported-MATLAB parity work.
+- `docs/reference/workflow/PYTHON_NAMING_GUIDE.md`: preferred Python names, grouped package surfaces, and compatibility policy for the live codebase.
 - `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
 - `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
 - `docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
-- `source/runtime/run_state.py`: structured run metadata and staged artifact locations.
+- `source/runtime/run_tracking/`: preferred runtime tracking package for structured run metadata and staged artifact locations.
 
 ## Setup
 
@@ -120,7 +121,7 @@ Streamlit app:
 
 ```powershell
 slavv-app
-python -m streamlit run source/apps/web_app.py
+python -m streamlit run source/apps/streamlit/app.py
 ```
 
 The `slavv-app` launcher requires the `app` extra.
@@ -238,6 +239,7 @@ stages, the required goal is exact method parity, not approximate behavioral sim
 ## Repo-Specific Guardrails
 
 - Keep package code under `source/`.
+- Prefer the grouped package surfaces described in `docs/reference/workflow/PYTHON_NAMING_GUIDE.md` for new first-party imports and examples.
 - Keep tests under `dev/tests/`; follow `dev/tests/README.md` for ownership-based placement and marker usage.
 - Pytest markers are assigned by folder in `dev/tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
 - Use the repo-local `tmp_path` fixture behavior in `dev/tests/conftest.py` when writing tests; temporary test artifacts should stay under `dev/tmp_tests/`, not ad-hoc temp roots.

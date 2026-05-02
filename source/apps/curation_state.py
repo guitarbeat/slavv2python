@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from source.core import SLAVVProcessor
+from source.core import SlavvPipeline
 from source.models import normalize_pipeline_result
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ def sync_curated_processing_results(
         else summarize_processing_counts(processing_results)
     )
 
-    rebuilt_network = SLAVVProcessor().construct_network(
+    rebuilt_network = SlavvPipeline().build_network(
         curated_edges,
         curated_vertices,
         typed_result.parameters,

@@ -10,7 +10,7 @@ from source.apps.processing_state import (
     store_processing_session_state,
     summarize_processing_metrics,
 )
-from source.core import SLAVVProcessor
+from source.core import SlavvPipeline
 from source.utils import (
     PIPELINE_PROFILE_CHOICES,
     get_pipeline_profile_defaults,
@@ -483,7 +483,7 @@ def show_processing_page() -> None:
                         st.error(f"Error loading TIFF file: {exc}")
                         st.stop()
 
-                    processor = SLAVVProcessor()
+                    processor = SlavvPipeline()
                     dashboard_placeholder = st.empty()
                     run_dir = app_services._build_processing_run_dir(
                         uploaded_file.getvalue(),
@@ -497,7 +497,7 @@ def show_processing_page() -> None:
                         with dashboard_placeholder.container():
                             app_services._render_run_dashboard(event.snapshot)
 
-                    results = processor.process_image(
+                    results = processor.run(
                         image,
                         validated_params,
                         event_callback=event_cb,

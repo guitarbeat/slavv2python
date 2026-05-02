@@ -158,12 +158,14 @@ docstring-code-format = true
 python_version = "3.9"
 mypy_path = "source"
 files = [
-    "source/apps/cli.py",
+    "source/apps/cli/__init__.py",
     "source/apps/share_report.py",
+    "source/apps/streamlit/app.py",
     "source/apps/streamlit_launcher.py",
     "source/apps/web_app.py",
     "source/analysis/geometry.py",
     "source/core/energy.py",
+    "source/core/network.py",
     "source/core/graph.py",
     "source/core/vertices.py",
     "source/core/edge_primitives.py",
@@ -172,6 +174,11 @@ files = [
     "source/core/edges.py",
     "source/core/pipeline.py",
     "source/runtime/run_state.py",
+    "source/runtime/run_tracking/__init__.py",
+    "source/workflows/pipeline_execution.py",
+    "source/workflows/pipeline_session.py",
+    "source/workflows/stage_artifacts.py",
+    "source/workflows/stage_resolution.py",
 ]
 warn_return_any = true
 warn_unused_configs = true

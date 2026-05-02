@@ -1,4 +1,4 @@
-"""Edge candidate generation helpers for source."""
+"""Edge candidate generation helpers for SLAVV."""
 
 from __future__ import annotations
 
@@ -9,16 +9,24 @@ from ._edge_candidates.audit import (
     _normalize_candidate_origin_counts,
 )
 from ._edge_candidates.candidate_manifest import _append_candidate_unit
-from ._edge_candidates.common import (
+from .edges_internal.candidate_generation import (
+    _finalize_matlab_parity_candidates,
+    _generate_edge_candidates,
+    _generate_edge_candidates_matlab_frontier,
+)
+from .edges_internal.edge_tracing import trace_edge
+from .edges_internal.matlab_frontier import (
     BoolArray,
     Float32Array,
     Float64Array,
     Int16Array,
     Int32Array,
     Int64Array,
+    _build_frontier_candidate_lifecycle,
     _candidate_endpoint_pair_set,
     _candidate_incident_pair_counts,
     _coord_to_matlab_linear_index,
+    _generate_edge_candidates_matlab_global_watershed,
     _matlab_frontier_edge_budget,
     _matlab_frontier_offsets,
     _matlab_linear_index_to_coord,
@@ -28,14 +36,7 @@ from ._edge_candidates.common import (
     _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
-from ._edge_candidates.generate import (
-    _finalize_matlab_parity_candidates,
-    _generate_edge_candidates,
-    _generate_edge_candidates_matlab_frontier,
-)
-from ._edge_candidates.global_watershed import _generate_edge_candidates_matlab_global_watershed
-from ._edge_candidates.lifecycle import _build_frontier_candidate_lifecycle
-from .edge_primitives import estimate_vessel_directions, generate_edge_directions, trace_edge
+from .edges_internal.trace_directions import estimate_vessel_directions, generate_edge_directions
 
 __all__ = [
     "BoolArray",

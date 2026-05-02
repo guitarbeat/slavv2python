@@ -1,11 +1,12 @@
 """
-Main pipeline orchestration for source.
-Coordinates the energy, tracing, and graph construction steps.
+Main pipeline orchestration for SLAVV.
+Coordinates the energy, tracing, and network construction steps.
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from .. import utils
@@ -25,7 +26,8 @@ from ..workflows import (
     validate_stage_control,
 )
 from . import edges as edge_ops
-from . import energy, graph
+from . import energy
+from . import network as network_ops
 from . import vertices as vertex_ops
 
 if TYPE_CHECKING:
@@ -34,8 +36,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SLAVVProcessor:
-    """Main class for SLAVV vectorization processing"""
+class SlavvPipeline:
+    """Main class for SLAVV vectorization processing."""
 
     def __init__(self):
         self.energy_data = None
@@ -43,7 +45,7 @@ class SLAVVProcessor:
         self.edges = None
         self.network = None
 
-    def process_image(
+    def run(
         self,
         image: np.ndarray,
         parameters: dict[str, Any],
@@ -139,6 +141,32 @@ class SLAVVProcessor:
             run_context.finalize_run(stop_after=stop_after)
         return cast("dict[str, Any]", finalize_pipeline_results(results))
 
+    def process_image(
+        self,
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        progress_callback: Callable[[float, str], None] | None = None,
+        event_callback: Callable[[ProgressEvent], None] | None = None,
+        run_dir: str | None = None,
+        stop_after: str | None = None,
+        force_rerun_from: str | None = None,
+    ) -> dict[str, Any]:
+        """Compatibility wrapper for the preferred ``run`` method."""
+        warnings.warn(
+            "`process_image()` is deprecated; use `run()` on `SlavvPipeline` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.run(
+            image,
+            parameters,
+            progress_callback=progress_callback,
+            event_callback=event_callback,
+            run_dir=run_dir,
+            stop_after=stop_after,
+            force_rerun_from=force_rerun_from,
+        )
+
     def _resolve_energy_stage(
         self,
         image: np.ndarray,
@@ -151,7 +179,7 @@ class SLAVVProcessor:
             resolve_energy_stage(
                 run_context=run_context,
                 force_rerun=force_rerun,
-                fallback_fn=lambda: self.calculate_energy_field(image, parameters),
+                fallback_fn=lambda: self.compute_energy(image, parameters),
                 resumable_fn=lambda controller: energy.calculate_energy_field_resumable(
                     image,
                     parameters,
@@ -236,8 +264,8 @@ class SLAVVProcessor:
             resolve_network_stage(
                 run_context=run_context,
                 force_rerun=force_rerun,
-                fallback_fn=lambda: self.construct_network(edges, vertices, parameters),
-                resumable_fn=lambda controller: graph.construct_network_resumable(
+                fallback_fn=lambda: self.build_network(edges, vertices, parameters),
+                resumable_fn=lambda controller: network_ops.construct_network_resumable(
                     edges,
                     vertices,
                     parameters,
@@ -247,11 +275,20 @@ class SLAVVProcessor:
             ),
         )
 
-    def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
-        """Calculate multi-scale energy field using Hessian. Delegates to ``energy`` module."""
+    def compute_energy(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
+        """Calculate the multi-scale energy field."""
         from source import utils as utils_module
 
         return energy.calculate_energy_field(image, params, utils_module.get_chunking_lattice)
+
+    def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
+        """Compatibility wrapper for the preferred ``compute_energy`` method."""
+        warnings.warn(
+            "`calculate_energy_field()` is deprecated; use `compute_energy()` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.compute_energy(image, params)
 
     def extract_vertices(
         self, energy_data: dict[str, Any], params: dict[str, Any]
@@ -272,8 +309,31 @@ class SLAVVProcessor:
         """Extract edges by watershed. Delegates to ``edges`` module."""
         return edge_ops.extract_edges_watershed(energy_data, vertices, params)
 
+    def build_network(
+        self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Construct the final network from traced edges and vertices."""
+        return network_ops.construct_network(edges, vertices, params)
+
     def construct_network(
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Construct network from traces. Delegates to ``graph`` module."""
-        return graph.construct_network(edges, vertices, params)
+        """Compatibility wrapper for the preferred ``build_network`` method."""
+        warnings.warn(
+            "`construct_network()` is deprecated; use `build_network()` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.build_network(edges, vertices, params)
+
+
+class SLAVVProcessor(SlavvPipeline):
+    """Compatibility alias for the preferred ``SlavvPipeline`` API."""
+
+    def __init__(self):
+        warnings.warn(
+            "`SLAVVProcessor` is deprecated; use `SlavvPipeline` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__()

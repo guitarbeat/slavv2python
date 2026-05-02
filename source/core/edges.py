@@ -1,16 +1,13 @@
-"""Edge extraction orchestration for source."""
+"""Edge extraction orchestration for SLAVV."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
 from ._edge_payloads import _empty_edge_diagnostics, _empty_edges_result
-from ._edges import resumable as _resumable
 from ._edges import standard as _standard
 from ._edges import units as _units
 from ._edges import watershed as _watershed
-from ._edges.bridge_vertices import add_vertices_to_edges_matlab_style
-from ._edges.postprocess import finalize_edges_matlab_style
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -21,7 +18,15 @@ from .edge_candidates import (
     _normalize_candidate_origin_counts,
     _use_matlab_frontier_tracer,
 )
-from .edge_selection import choose_edges_for_workflow
+from .edges_internal.bridge_insertion import add_vertices_to_edges_matlab_style
+from .edges_internal.edge_finalize import finalize_edges_matlab_style
+from .edges_internal.edge_selection import choose_edges_for_workflow
+from .edges_internal.resumable_edges import (
+    extract_edges_resumable as _extract_edges_resumable,
+)
+from .edges_internal.resumable_edges import (
+    extract_edges_watershed_resumable as _extract_edges_watershed_resumable,
+)
 from .vertices import paint_vertex_center_image, paint_vertex_image
 
 if TYPE_CHECKING:
@@ -86,7 +91,7 @@ def extract_edges_resumable(
 
     return cast(
         "dict[str, object]",
-        _resumable.extract_edges_resumable(
+        _extract_edges_resumable(
             energy_data,
             vertices,
             params,
@@ -120,7 +125,7 @@ def extract_edges_watershed_resumable(
 
     return cast(
         "dict[str, object]",
-        _resumable.extract_edges_watershed_resumable(
+        _extract_edges_watershed_resumable(
             energy_data,
             vertices,
             params,

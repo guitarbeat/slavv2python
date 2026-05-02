@@ -1,14 +1,13 @@
-"""Low-level edge tracing primitives for source."""
+"""Low-level edge tracing primitives for SLAVV."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from ._edge_primitives import directions as _directions
-from ._edge_primitives import lookup as _lookup
-from ._edge_primitives import metrics as _metrics
-from ._edge_primitives import terminals as _terminals
-from ._edge_primitives import tracing as _tracing
+from .edges_internal import edge_tracing as _tracing
+from .edges_internal import terminal_lookup as _lookup
+from .edges_internal import trace_directions as _directions
+from .edges_internal import trace_metrics as _metrics
 
 if TYPE_CHECKING:
     import numpy as np
@@ -26,7 +25,7 @@ _trace_energy_series = _metrics._trace_energy_series
 _edge_metric_from_energy_trace = _metrics._edge_metric_from_energy_trace
 _record_trace_diagnostics = _metrics._record_trace_diagnostics
 generate_edge_directions = _directions.generate_edge_directions
-_finalize_traced_edge = _terminals._finalize_traced_edge
+_finalize_traced_edge = _lookup._finalize_traced_edge
 trace_edge = _tracing.trace_edge
 
 

@@ -163,21 +163,24 @@ Acceptance gate:
 These are the concrete code surfaces that still need work before downstream
 native exact parity is done.
 
-1. `source/core/_edge_candidates/global_watershed.py`
-   Close the remaining candidate-generation gap against preserved MATLAB edge
-   pairs. Candidate emission still appears to be the first major downstream
-   mismatch surface.
-2. `source/core/_edge_selection/conflict_painting.py`
-   Replace sequential trace iteration with MATLAB-matching randomized trace
-   order if the exact route is going to claim literal chooser parity.
-3. `source/core/_edge_selection/cleanup.py`
+1. `source/core/edges_internal/candidate_generation.py`
+   The preferred candidate-generation surface still delegates into
+   `source/core/_edge_candidates/global_watershed.py`, where the remaining gap
+   against preserved MATLAB edge pairs appears to live.
+2. `source/core/edges_internal/edge_selection.py`
+   Replace sequential trace iteration in the delegated
+   `source/core/_edge_selection/conflict_painting.py` implementation with
+   MATLAB-matching randomized trace order if the exact route is going to claim
+   literal chooser parity.
+3. `source/core/edges_internal/edge_cleanup.py`
    Re-check crop, degree, orphan, and cycle cleanup whenever
    `edges.connections` improves but remains red.
-4. `source/core/_edges/bridge_vertices.py`
+4. `source/core/edges_internal/bridge_insertion.py`
    Keep the bridge path in sync with the exact-route proof surface.
-5. `source/core/graph.py`
+5. `source/core/network.py`
    Audit strand ordering and network assembly only after the upstream edge proof
-   surfaces are materially closer.
+   surfaces are materially closer; the current preferred surface delegates into
+   `source/core/graph.py`.
 6. `dev/scripts/cli/parity_experiment.py` and `source/io/matlab_exact_proof.py`
    Preserve the proof harness as the acceptance gate for native-first exact
    reruns, with disposable trial runs under `runs/`, preserved MATLAB truth

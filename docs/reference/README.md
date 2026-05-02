@@ -20,10 +20,13 @@ Read these first when working on the live implementation:
    Shared parity and pipeline terminology.
 6. [Paper Profile](workflow/PAPER_PROFILE.md)
    Public paper-first CLI/app workflow and authoritative JSON export contract.
+7. [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
+   Preferred Python names, package groupings, and compatibility policy.
 
 ## Workflow Guides
 
 - [Paper Profile](workflow/PAPER_PROFILE.md)
+- [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 - [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
 
