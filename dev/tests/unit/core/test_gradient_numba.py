@@ -1,4 +1,5 @@
 import numpy as np
+
 from source.core import energy as energy_module
 from source.core.edge_primitives import compute_gradient
 

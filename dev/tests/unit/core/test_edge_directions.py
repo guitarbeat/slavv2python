@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+
 from source.core.edge_primitives import generate_edge_directions
 
 

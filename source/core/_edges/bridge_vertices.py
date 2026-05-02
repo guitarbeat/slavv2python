@@ -7,12 +7,12 @@ from typing import Any, cast
 import numpy as np
 
 from .._edge_candidates.common import _matlab_frontier_offsets
-from .._edge_selection.payloads import (
+from .._vertices.painting import paint_vertex_center_image, paint_vertex_image
+from ..edges_internal.edge_selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
-from .._vertices.painting import paint_vertex_center_image, paint_vertex_image
 from ..graph import _matlab_edge_metrics
 
 

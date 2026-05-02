@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import numpy as np
+
 from source.core import SLAVVProcessor
 
 

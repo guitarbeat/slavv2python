@@ -115,7 +115,9 @@ def test_standard_extract_edges_uses_matlab_frontier_branch_when_enabled():
         params,
         empty_edges_result=lambda _vertex_positions: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
-        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(shape, dtype=np.int32),
+        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(
+            shape, dtype=np.int32
+        ),
         use_matlab_frontier_tracer=lambda _energy_data, _params: True,
         generate_edge_candidates_matlab_frontier=fake_generate_frontier,
         finalize_matlab_parity_candidates=fake_finalize,
