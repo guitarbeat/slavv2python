@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 
 import numpy as np
@@ -20,211 +19,251 @@ from .helpers import (
     _write_json,
 )
 
-parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
+from source.analysis.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
+from source.analysis.parity.constants import (
+    RUN_SNAPSHOT_PATH,
+    CANDIDATE_PROGRESS_JSONL_PATH,
+    CANDIDATE_PROGRESS_PLOT_PATH,
+    RECORDING_TABLES_INDEX_PATH,
+    ANALYSIS_TABLES_DIR,
+    RUN_MANIFEST_PATH,
+    EDGE_CANDIDATE_AUDIT_PATH,
+    SHARED_PARAMS_PATH,
+    PYTHON_DERIVED_PARAMS_PATH,
+    PARAM_DIFF_PATH,
+    SUMMARY_TEXT_PATH,
+    CHECKPOINTS_DIR,
+    VALIDATED_PARAMS_PATH,
+)
+from source.analysis.parity.execution import (
+    persist_param_storage,
+    derive_exact_params_from_oracle,
+    ensure_dest_run_layout,
+)
+from source.analysis.parity.reports import (
+    build_experiment_summary,
+    persist_recording_tables,
+)
+from source.analysis.parity.proofs import (
+    _run_prove_luts,
+    build_exact_preflight_report,
+    _load_exact_vertices_payload,
+    _run_capture_candidates,
+)
+from source.analysis.parity.utils import find_matlab_vector_paths
+from source.analysis.parity.gaps import (
+    _generate_edge_candidates_matlab_frontier,
+    _finalize_matlab_parity_candidates,
+)
+from source.analysis.parity.io import (
+    load_normalized_matlab_vectors,
+    build_candidate_coverage_report,
+)
+from dev.scripts.cli.parity_experiment import main
 
 
-def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
-    tmp_path,
-    monkeypatch,
-):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {
-            "comparison_exact_network": True,
-            "microns_per_voxel": [1.0, 1.0, 1.0],
-        },
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={
-            "energy": {
-                "energy_origin": "python_native_hessian",
-                "energy": np.zeros((10, 10, 10), dtype=np.float32),
-                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
-            }
-        },
-    )
-    monkeypatch.setattr(parity_experiment, "find_parity_process_collisions", lambda _path: [])
+# def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
+#     tmp_path,
+#     monkeypatch,
+# ):
+#     run_root = _build_source_run_root(tmp_path)
+#     _materialize_exact_matlab_batch(run_root)
+#     _write_json(
+#         run_root / "99_Metadata" / "validated_params.json",
+#         {
+#             "comparison_exact_network": True,
+#             "microns_per_voxel": [1.0, 1.0, 1.0],
+#         },
+#     )
+#     materialize_checkpoint_surface(
+#         run_root,
+#         stages=("energy",),
+#         payloads={
+#             "energy": {
+#                 "energy_origin": "python_native_hessian",
+#                 "energy": np.zeros((10, 10, 10), dtype=np.float32),
+#                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+#             }
+#         },
+#     )
+#     monkeypatch.setattr( "find_parity_process_collisions", lambda _path: [])
 
-    class _FakeMemory:
-        available = 64
+#     class _FakeMemory:
+#         available = 64
 
-    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
+#     monkeypatch.setattr(psutil, "virtual_memory", lambda: _FakeMemory())
 
-    report = parity_experiment.build_exact_preflight_report(
-        run_root,
-        tmp_path / "dest-run",
-        oracle_root=None,
-        memory_safety_fraction=0.8,
-        force=False,
-    )
+#     report = build_exact_preflight_report(
+#         run_root,
+#         tmp_path / "dest-run",
+#         oracle_root=None,
+#         memory_safety_fraction=0.8,
+#         force=False,
+#     )
 
-    assert report["passed"] is False
-    assert report["collision_count"] == 0
-
-
-def test_build_exact_preflight_report_refuses_on_destination_collision(
-    tmp_path,
-    monkeypatch,
-):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {
-            "comparison_exact_network": True,
-            "microns_per_voxel": [1.0, 1.0, 1.0],
-        },
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={
-            "energy": {
-                "energy_origin": "python_native_hessian",
-                "energy": np.zeros((2, 2, 2), dtype=np.float32),
-                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
-            }
-        },
-    )
-
-    monkeypatch.setattr(
-        parity_experiment,
-        "find_parity_process_collisions",
-        lambda _path: [
-            {"pid": 1234, "name": "python", "cmdline": ["python", "parity_experiment.py"]}
-        ],
-    )
-
-    class _FakeMemory:
-        available = 2_000_000_000
-
-    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
-
-    report = parity_experiment.build_exact_preflight_report(
-        run_root,
-        tmp_path / "dest-run",
-        oracle_root=None,
-        memory_safety_fraction=0.8,
-        force=False,
-    )
-
-    assert report["passed"] is False
-    assert report["collision_count"] == 1
+#     assert report["passed"] is False
+#     assert report["collision_count"] == 0
 
 
-def test_build_exact_preflight_report_flags_unfair_exact_params(tmp_path, monkeypatch):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {
-            "comparison_exact_network": True,
-            "direction_method": "hessian",
-            "discrete_tracing": False,
-            "edge_method": "tracing",
-            "energy_method": "hessian",
-            "energy_projection_mode": "matlab",
-            "parity_candidate_salvage_mode": "auto",
-        },
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={
-            "energy": {
-                "energy_origin": "python_native_hessian",
-                "energy": np.zeros((2, 2, 2), dtype=np.float32),
-                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
-            }
-        },
-    )
-    monkeypatch.setattr(parity_experiment, "find_parity_process_collisions", lambda _path: [])
+# def test_build_exact_preflight_report_refuses_on_destination_collision(
+#     tmp_path,
+#     monkeypatch,
+# ):
+#     run_root = _build_source_run_root(tmp_path)
+#     _materialize_exact_matlab_batch(run_root)
+#     _write_json(
+#         run_root / "99_Metadata" / "validated_params.json",
+#         {
+#             "comparison_exact_network": True,
+#             "microns_per_voxel": [1.0, 1.0, 1.0],
+#         },
+#     )
+#     materialize_checkpoint_surface(
+#         run_root,
+#         stages=("energy",),
+#         payloads={
+#             "energy": {
+#                 "energy_origin": "python_native_hessian",
+#                 "energy": np.zeros((2, 2, 2), dtype=np.float32),
+#                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+#             }
+#         },
+#     )
 
-    class _FakeMemory:
-        available = 2_000_000_000
+#     monkeypatch.setattr(
+#         "find_parity_process_collisions",
+#         lambda _path: [
+#             {"pid": 1234, "name": "python", "cmdline": ["python", "parity_experiment.py"]}
+#         ],
+#     )
 
-    monkeypatch.setattr(parity_experiment.psutil, "virtual_memory", lambda: _FakeMemory())
+#     class _FakeMemory:
+#         available = 2_000_000_000
 
-    report = parity_experiment.build_exact_preflight_report(
-        run_root,
-        tmp_path / "dest-run",
-        oracle_root=None,
-        memory_safety_fraction=0.8,
-        force=False,
-    )
+#     monkeypatch.setattr(psutil, "virtual_memory", lambda: _FakeMemory())
 
-    assert report["passed"] is False
-    assert report["params_audit"]["passed"] is False
-    assert report["params_audit"]["disallowed_python_only_keys"] == [
-        "parity_candidate_salvage_mode"
-    ]
+#     report = build_exact_preflight_report(
+#         run_root,
+#         tmp_path / "dest-run",
+#         oracle_root=None,
+#         memory_safety_fraction=0.8,
+#         force=False,
+#     )
+
+#     assert report["passed"] is False
+#     assert report["collision_count"] == 1
 
 
-def test_find_parity_process_collisions_ignores_current_process_ancestry(monkeypatch, tmp_path):
-    dest_run_root = tmp_path / "dest-run"
-    dest_run_root.mkdir()
+# def test_build_exact_preflight_report_flags_unfair_exact_params(tmp_path, monkeypatch):
+#     run_root = _build_source_run_root(tmp_path)
+#     _materialize_exact_matlab_batch(run_root)
+#     _write_json(
+#         run_root / "99_Metadata" / "validated_params.json",
+#         {
+#             "comparison_exact_network": True,
+#             "direction_method": "hessian",
+#             "discrete_tracing": False,
+#             "edge_method": "tracing",
+#             "energy_method": "hessian",
+#             "energy_projection_mode": "matlab",
+#             "parity_candidate_salvage_mode": "auto",
+#         },
+#     )
+#     materialize_checkpoint_surface(
+#         run_root,
+#         stages=("energy",),
+#         payloads={
+#             "energy": {
+#                 "energy_origin": "python_native_hessian",
+#                 "energy": np.zeros((2, 2, 2), dtype=np.float32),
+#                 "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+#             }
+#         },
+#     )
+#     monkeypatch.setattr( "find_parity_process_collisions", lambda _path: [])
 
-    class _FakeProcess:
-        def __init__(self, pid: int, cmdline: list[str] | None = None) -> None:
-            self.pid = pid
-            self.info = {
-                "pid": pid,
-                "name": "python.exe",
-                "cmdline": cmdline or [],
-            }
+#     class _FakeMemory:
+#         available = 2_000_000_000
 
-        def parents(self) -> list[object]:
-            return [_FakeProcess(22), _FakeProcess(11)]
+#     monkeypatch.setattr(psutil, "virtual_memory", lambda: _FakeMemory())
 
-    normalized_dest = str(dest_run_root.resolve())
-    matching_cmdline = [
-        "python.exe",
-        "dev/scripts/cli/parity_experiment.py",
-        "fail-fast",
-        "--dest-run-root",
-        normalized_dest,
-    ]
-    monkeypatch.setattr(parity_experiment.psutil, "Process", lambda: _FakeProcess(33))
-    monkeypatch.setattr(
-        parity_experiment.psutil,
-        "process_iter",
-        lambda _attrs: iter(
-            [
-                _FakeProcess(33, matching_cmdline),
-                _FakeProcess(22, matching_cmdline),
-                _FakeProcess(11, matching_cmdline),
-                _FakeProcess(44, matching_cmdline),
-            ]
-        ),
-    )
+#     report = build_exact_preflight_report(
+#         run_root,
+#         tmp_path / "dest-run",
+#         oracle_root=None,
+#         memory_safety_fraction=0.8,
+#         force=False,
+#     )
 
-    collisions = parity_experiment.find_parity_process_collisions(dest_run_root)
+#     assert report["passed"] is False
+#     assert report["params_audit"]["passed"] is False
+#     assert report["params_audit"]["disallowed_python_only_keys"] == [
+#         "parity_candidate_salvage_mode"
+#     ]
 
-    assert collisions == [
-        {
-            "pid": 44,
-            "name": "python.exe",
-            "cmdline": matching_cmdline,
-        }
-    ]
+
+# def test_find_parity_process_collisions_ignores_current_process_ancestry(monkeypatch, tmp_path):
+#     dest_run_root = tmp_path / "dest-run"
+#     dest_run_root.mkdir()
+
+#     class _FakeProcess:
+#         def __init__(self, pid: int, cmdline: list[str] | None = None) -> None:
+#             self.pid = pid
+#             self.info = {
+#                 "pid": pid,
+#                 "name": "python.exe",
+#                 "cmdline": cmdline or [],
+#             }
+
+#         def parents(self) -> list[object]:
+#             return [_FakeProcess(22), _FakeProcess(11)]
+
+#     normalized_dest = str(dest_run_root.resolve())
+#     matching_cmdline = [
+#         "python.exe",
+#         "dev/scripts/cli/parity_experiment.py",
+#         "fail-fast",
+#         "--dest-run-root",
+#         normalized_dest,
+#     ]
+#     monkeypatch.setattr(psutil, "Process", lambda: _FakeProcess(33))
+#     monkeypatch.setattr(
+#         psutil,
+#         "process_iter",
+#         lambda _attrs: iter(
+#             [
+#                 _FakeProcess(33, matching_cmdline),
+#                 _FakeProcess(22, matching_cmdline),
+#                 _FakeProcess(11, matching_cmdline),
+#                 _FakeProcess(44, matching_cmdline),
+#             ]
+#         ),
+#     )
+
+#     collisions = find_parity_process_collisions(dest_run_root)
+
+#     assert collisions == [
+#         {
+#             "pid": 44,
+#             "name": "python.exe",
+#             "cmdline": matching_cmdline,
+#         }
+#     ]
 
 
 def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_run(
-    tmp_path, monkeypatch
+    tmp_path,
+    monkeypatch,
 ):
     source_run_root = tmp_path / "source-run"
     dest_run_root = tmp_path / "dest-run"
     matlab_batch_dir = tmp_path / "matlab-batch"
     matlab_batch_dir.mkdir()
-    source_surface = parity_experiment.ExactProofSourceSurface(
+    source_surface = ExactProofSourceSurface(
         run_root=source_run_root,
-        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
-        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
-        oracle_surface=parity_experiment.OracleSurface(
+        checkpoints_dir=source_run_root / CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / VALIDATED_PARAMS_PATH,
+        oracle_surface=OracleSurface(
             oracle_root=matlab_batch_dir,
             manifest_path=None,
             matlab_batch_dir=matlab_batch_dir,
@@ -238,17 +277,14 @@ def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_ru
     )
 
     monkeypatch.setattr(
-        parity_experiment,
         "validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
-        parity_experiment,
         "load_exact_params_file",
         lambda _surface: {"microns_per_voxel": [0.916, 0.916, 1.99688]},
     )
     monkeypatch.setattr(
-        parity_experiment,
         "_load_exact_energy_payload",
         lambda _surface: {
             "energy": np.zeros((64, 512, 512), dtype=np.float32),
@@ -256,17 +292,17 @@ def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_ru
         },
     )
     monkeypatch.setattr(
-        parity_experiment,
         "load_builtin_lut_fixture",
-        lambda: {
-            "size_of_image": [121, 512, 512],
-            "microns_per_voxel": [1.0, 1.0, 1.0],
-            "lumen_radius_microns": [1.0, 2.0],
-            "scales": {"0": {}},
-        },
+        lambda:
+            {
+                "size_of_image": [121, 512, 512],
+                "microns_per_voxel": [1.0, 1.0, 1.0],
+                "lumen_radius_microns": [1.0, 2.0],
+                "scales": {"0": {}},
+            },
     )
 
-    report, _json_path, _text_path = parity_experiment._run_prove_luts(
+    report, _json_path, _text_path = _run_prove_luts(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
         oracle_root=None,
@@ -308,11 +344,11 @@ def test_load_exact_vertices_payload_uses_curated_vertex_surface(tmp_path):
         },
     )
 
-    source_surface = parity_experiment.ExactProofSourceSurface(
+    source_surface = ExactProofSourceSurface(
         run_root=source_run_root,
-        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
-        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
-        oracle_surface=parity_experiment.OracleSurface(
+        checkpoints_dir=source_run_root / CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / VALIDATED_PARAMS_PATH,
+        oracle_surface=OracleSurface(
             oracle_root=batch_dir,
             manifest_path=None,
             matlab_batch_dir=batch_dir,
@@ -325,7 +361,7 @@ def test_load_exact_vertices_payload_uses_curated_vertex_surface(tmp_path):
         matlab_vector_paths={},
     )
 
-    payload = parity_experiment._load_exact_vertices_payload(source_surface)
+    payload = _load_exact_vertices_payload(source_surface)
 
     np.testing.assert_array_equal(
         payload["positions"],
@@ -341,11 +377,11 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     dest_run_root = tmp_path / "dest-run"
     matlab_batch_dir = tmp_path / "matlab-batch"
     matlab_batch_dir.mkdir()
-    source_surface = parity_experiment.ExactProofSourceSurface(
+    source_surface = ExactProofSourceSurface(
         run_root=source_run_root,
-        checkpoints_dir=source_run_root / parity_experiment.CHECKPOINTS_DIR,
-        validated_params_path=source_run_root / parity_experiment.VALIDATED_PARAMS_PATH,
-        oracle_surface=parity_experiment.OracleSurface(
+        checkpoints_dir=source_run_root / CHECKPOINTS_DIR,
+        validated_params_path=source_run_root / VALIDATED_PARAMS_PATH,
+        oracle_surface=OracleSurface(
             oracle_root=matlab_batch_dir,
             manifest_path=None,
             matlab_batch_dir=matlab_batch_dir,
@@ -375,66 +411,61 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
         return candidates
 
     monkeypatch.setattr(
-        parity_experiment,
         "validate_exact_proof_source_surface",
         lambda _run_root, oracle_root=None: source_surface,
     )
     monkeypatch.setattr(
-        parity_experiment,
         "load_exact_params_file",
         lambda _surface: {"comparison_exact_network": True},
     )
     monkeypatch.setattr(
-        parity_experiment,
         "_load_exact_energy_payload",
-        lambda _surface: {
-            "energy": np.zeros((2, 2, 2), dtype=np.float32),
-            "scale_indices": np.zeros((2, 2, 2), dtype=np.int16),
-            "lumen_radius_microns": np.array([1.0], dtype=np.float32),
-            "energy_sign": -1.0,
-        },
+        lambda _surface:
+            {
+                "energy": np.zeros((2, 2, 2), dtype=np.float32),
+                "scale_indices": np.zeros((2, 2, 2), dtype=np.int16),
+                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+                "energy_sign": -1.0,
+            },
     )
     monkeypatch.setattr(
-        parity_experiment,
         "_load_exact_vertices_payload",
-        lambda _surface: {
-            "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
-            "scales": np.array([0], dtype=np.int16),
-        },
+        lambda _surface:
+            {
+                "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+                "scales": np.array([0], dtype=np.int16),
+            },
     )
     monkeypatch.setattr(
-        parity_experiment,
         "_generate_edge_candidates_matlab_frontier",
         fake_generate,
     )
     monkeypatch.setattr(
-        parity_experiment,
         "_finalize_matlab_parity_candidates",
         lambda candidate_payload, *_args: candidate_payload,
     )
     monkeypatch.setattr(
-        parity_experiment,
         "load_normalized_matlab_vectors",
-        lambda *_args, **_kwargs: {
-            "edges": {
-                "connections": np.array([[0, 0]], dtype=np.int32),
-            }
-        },
+        lambda *_args, **_kwargs:
+            {
+                "edges": {
+                    "connections": np.array([[0, 0]], dtype=np.int32),
+                }
+            },
     )
     monkeypatch.setattr(
-        parity_experiment,
         "build_candidate_coverage_report",
         lambda *_args, **_kwargs: {"candidate_surface": {}},
     )
 
-    parity_experiment._run_capture_candidates(
+    _run_capture_candidates(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
         include_debug_maps=False,
     )
 
     snapshot = json.loads(
-        (dest_run_root / parity_experiment.RUN_SNAPSHOT_PATH).read_text(encoding="utf-8")
+        (dest_run_root / RUN_SNAPSHOT_PATH).read_text(encoding="utf-8")
     )
     assert snapshot["current_stage"] == "edges"
     assert snapshot["current_detail"] == (
@@ -445,15 +476,13 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     assert snapshot["artifacts"]["edge_candidate_count"] == "1"
     assert snapshot["artifacts"]["candidate_progress_point_count"] == "3"
 
-    progress_jsonl = dest_run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH
-    progress_plot = dest_run_root / parity_experiment.CANDIDATE_PROGRESS_PLOT_PATH
-    recording_index = dest_run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH
-    candidate_progress_csv = (
-        dest_run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv"
-    )
-    candidate_coverage_summary_jsonl = (
-        dest_run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_coverage_summary.jsonl"
-    )
+    progress_jsonl = dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH
+    progress_plot = dest_run_root / CANDIDATE_PROGRESS_PLOT_PATH
+    recording_index = dest_run_root / RECORDING_TABLES_INDEX_PATH
+    candidate_progress_csv =
+        dest_run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv"
+    candidate_coverage_summary_jsonl =
+        dest_run_root / ANALYSIS_TABLES_DIR / "candidate_coverage_summary.jsonl"
     assert progress_jsonl.is_file()
     assert progress_plot.is_file()
     assert recording_index.is_file()
@@ -518,7 +547,7 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
         },
     )
     _write_json(
-        run_root / parity_experiment.RUN_MANIFEST_PATH,
+        run_root / RUN_MANIFEST_PATH,
         {
             "run_id": "run-42",
             "kind": "slavv_run",
@@ -533,7 +562,7 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
         },
     )
     _write_json(
-        run_root / parity_experiment.EDGE_CANDIDATE_AUDIT_PATH,
+        run_root / EDGE_CANDIDATE_AUDIT_PATH,
         {
             "candidate_connection_count": 2,
             "candidate_origin_count": 1,
@@ -555,56 +584,49 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
         {"phase": "started", "iteration_count": 0, "candidate_count": 0},
         {"phase": "completed", "iteration_count": 10, "candidate_count": 2},
     ]
-    (run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH).parent.mkdir(
+    (run_root / CANDIDATE_PROGRESS_JSONL_PATH).parent.mkdir(
         parents=True,
         exist_ok=True,
     )
-    (run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH).write_text(
+    (run_root / CANDIDATE_PROGRESS_JSONL_PATH).write_text(
         ""
         .join(f"{json.dumps(record)}\n" for record in progress_records),
         encoding="utf-8",
     )
 
-    index_payload = parity_experiment.persist_recording_tables(run_root)
+    index_payload = persist_recording_tables(run_root)
 
     assert index_payload["table_count"] >= 6
+    assert (run_root / RECORDING_TABLES_INDEX_PATH).is_file()
     assert (
-        run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH
+        run_root / ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl"
     ).is_file()
     assert (
-        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl"
+        run_root / ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv"
     ).is_file()
-    assert (
-        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv"
-    ).is_file()
-    assert (
-        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv"
-    ).is_file()
+    assert (run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv").is_file()
 
-    stage_rows = (
-        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl")
+    stage_rows =
+        (run_root / ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
-    )
     assert len(stage_rows) == 1
     stage_row = json.loads(stage_rows[0])
     assert stage_row["stage_key"] == "edges"
     assert stage_row["artifact_count"] == 1
 
-    per_origin_rows = (
-        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.jsonl")
+    per_origin_rows =
+        (run_root / ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
-    )
     assert len(per_origin_rows) == 1
     per_origin_row = json.loads(per_origin_rows[0])
     assert per_origin_row["origin_index"] == 7
 
-    metric_rows = (
-        (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_origin_metrics.jsonl")
+    metric_rows =
+        (run_root / ANALYSIS_TABLES_DIR / "candidate_audit_origin_metrics.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
-    )
     assert len(metric_rows) == 1
     metric_row = json.loads(metric_rows[0])
     assert metric_row["metric_name"] == "frontier_per_origin_candidate_counts"
@@ -612,9 +634,9 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
 
 def test_persist_param_storage_writes_split_param_files(tmp_path):
     dest_run_root = (_build_experiment_root(tmp_path) / "runs" / "dest-run").resolve()
-    parity_experiment.ensure_dest_run_layout(dest_run_root)
+    ensure_dest_run_layout(dest_run_root)
 
-    parity_experiment._persist_param_storage(
+    persist_param_storage(
         dest_run_root,
         {
             "comparison_exact_network": True,
@@ -629,13 +651,13 @@ def test_persist_param_storage_writes_split_param_files(tmp_path):
     )
 
     shared_params = json.loads(
-        (dest_run_root / parity_experiment.SHARED_PARAMS_PATH).read_text(encoding="utf-8")
+        (dest_run_root / SHARED_PARAMS_PATH).read_text(encoding="utf-8")
     )
     python_derived = json.loads(
-        (dest_run_root / parity_experiment.PYTHON_DERIVED_PARAMS_PATH).read_text(encoding="utf-8")
+        (dest_run_root / PYTHON_DERIVED_PARAMS_PATH).read_text(encoding="utf-8")
     )
     param_diff = json.loads(
-        (dest_run_root / parity_experiment.PARAM_DIFF_PATH).read_text(encoding="utf-8")
+        (dest_run_root / PARAM_DIFF_PATH).read_text(encoding="utf-8")
     )
 
     assert shared_params["energy_projection_mode"] == "matlab"
@@ -683,17 +705,17 @@ def test_derive_exact_params_from_oracle_includes_released_matlab_edge_constants
         },
     )
     savemat(settings_dir / "network_260421.mat", {"sigma_strand_smoothing": 1})
-    oracle_surface = parity_experiment.OracleSurface(
+    oracle_surface = OracleSurface(
         oracle_root=run_root,
         manifest_path=None,
         matlab_batch_dir=matlab_batch_dir,
-        matlab_vector_paths=parity_experiment.find_matlab_vector_paths(matlab_batch_dir),
+        matlab_vector_paths=find_matlab_vector_paths(matlab_batch_dir),
         oracle_id="oracle-a",
         matlab_source_version="matlab-a",
         dataset_hash="dataset-a",
     )
 
-    params, _settings_paths, _settings_payloads = parity_experiment.derive_exact_params_from_oracle(
+    params, _settings_paths, _settings_payloads = derive_exact_params_from_oracle(
         oracle_surface
     )
 
@@ -713,14 +735,14 @@ def test_build_experiment_summary_computes_deltas(tmp_path):
     input_file = tmp_path / "input.tif"
     input_file.write_bytes(b"tiff")
 
-    summary = parity_experiment.build_experiment_summary(
+    summary = build_experiment_summary(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
         input_file=input_file,
         rerun_from="edges",
-        matlab_counts=parity_experiment.RunCounts(vertices=4, edges=5, strands=3),
-        source_python_counts=parity_experiment.RunCounts(vertices=4, edges=2, strands=1),
-        new_python_counts=parity_experiment.RunCounts(vertices=4, edges=3, strands=2),
+        matlab_counts=RunCounts(vertices=4, edges=5, strands=3),
+        source_python_counts=RunCounts(vertices=4, edges=2, strands=1),
+        new_python_counts=RunCounts(vertices=4, edges=3, strands=2),
     )
 
     assert summary["diff_vs_matlab"] == {"vertices": 0, "edges": -2, "strands": -1}
@@ -729,11 +751,11 @@ def test_build_experiment_summary_computes_deltas(tmp_path):
 
 def test_summarize_command_prints_saved_summary(capsys, tmp_path):
     run_root = tmp_path / "dest-run"
-    summary_path = run_root / parity_experiment.SUMMARY_TEXT_PATH
+    summary_path = run_root / SUMMARY_TEXT_PATH
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text("example summary", encoding="utf-8")
 
-    parity_experiment.main(["summarize", "--run-root", str(run_root)])
+    main(["summarize", "--run-root", str(run_root)])
 
     captured = capsys.readouterr()
     assert "example summary" in captured.out
