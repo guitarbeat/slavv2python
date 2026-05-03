@@ -69,7 +69,8 @@ def _record_trace_diagnostics(
     trace_metadata: dict[str, Any],
 ) -> None:
     """Accumulate per-trace terminal-resolution and stop-reason diagnostics."""
-    if stop_reason := trace_metadata.get("stop_reason"):
+    stop_reason = trace_metadata.get("stop_reason")
+    if stop_reason:
         stop_reason_counts = diagnostics.setdefault(
             "stop_reason_counts", _empty_stop_reason_counts()
         )

@@ -63,13 +63,14 @@ def _render_export_download(
         update_run_task_fn = app_services._update_run_task
 
     with column:
-        if export_data := generate_export_data_fn(
+        export_data = generate_export_data_fn(
             vertices,
             edges,
             network,
             parameters,
             export_spec["format_type"],
-        ):
+        )
+        if export_data:
             update_run_task_fn(
                 run_dir,
                 "exports",

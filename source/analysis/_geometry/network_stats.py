@@ -245,7 +245,8 @@ def _pairwise_path_lengths(graph_obj: nx.Graph) -> list[float]:
 
 
 def _update_centrality_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
-    if betweenness := nx.betweenness_centrality(graph_obj, weight="weight"):
+    betweenness = nx.betweenness_centrality(graph_obj, weight="weight")
+    if betweenness:
         values = np.fromiter(betweenness.values(), dtype=float)
         stats["betweenness_mean"] = float(np.mean(values))
         stats["betweenness_std"] = float(np.std(values))
@@ -253,7 +254,8 @@ def _update_centrality_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None
         stats["betweenness_mean"] = 0.0
         stats["betweenness_std"] = 0.0
 
-    if closeness := nx.closeness_centrality(graph_obj, distance="weight"):
+    closeness = nx.closeness_centrality(graph_obj, distance="weight")
+    if closeness:
         values = np.fromiter(closeness.values(), dtype=float)
         stats["closeness_mean"] = float(np.mean(values))
         stats["closeness_std"] = float(np.std(values))
@@ -277,7 +279,8 @@ def _update_centrality_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None
 
 def _update_graph_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
     stats["num_edges"] = graph_obj.number_of_edges()
-    if degrees := [degree for _, degree in graph_obj.degree()]:
+    degrees = [degree for _, degree in graph_obj.degree()]
+    if degrees:
         stats["mean_degree"] = float(np.mean(degrees))
         stats["degree_std"] = float(np.std(degrees))
     else:
@@ -286,7 +289,8 @@ def _update_graph_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
 
     stats["num_connected_components"] = nx.number_connected_components(graph_obj)
     stats["num_endpoints"] = sum(degree == 1 for _, degree in graph_obj.degree())
-    if pairwise_lengths := _pairwise_path_lengths(graph_obj):
+    pairwise_lengths = _pairwise_path_lengths(graph_obj)
+    if pairwise_lengths:
         stats["avg_path_length"] = float(np.mean(pairwise_lengths))
         stats["network_diameter"] = float(np.max(pairwise_lengths))
     else:
@@ -308,12 +312,13 @@ def _update_branch_angle_stats(
     microns_per_voxel: list[float],
     bifurcations: np.ndarray,
 ) -> None:
-    if angles := calculate_branching_angles(
+    angles = calculate_branching_angles(
         strands,
         vertex_positions,
         microns_per_voxel,
         bifurcations,
-    ):
+    )
+    if angles:
         stats["mean_branch_angle"] = float(np.mean(angles))
         stats["branch_angle_std"] = float(np.std(angles))
         return

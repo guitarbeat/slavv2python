@@ -56,7 +56,8 @@ def fingerprint_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
     hasher = hashlib.sha256()
     with open(path, "rb") as handle:
         while True:
-            if chunk := handle.read(chunk_size):
+            chunk = handle.read(chunk_size)
+            if chunk:
                 hasher.update(chunk)
             else:
                 break

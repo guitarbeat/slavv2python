@@ -88,7 +88,7 @@ def run_pipeline_stage_sequence(
     """Execute sequential pipeline steps until completion or an early stop."""
     for step in steps:
         payload = step.resolve_fn()
-        if early_result := advance_pipeline_stage(
+        early_result = advance_pipeline_stage(
             results,
             result_key=step.result_key,
             payload=payload,
@@ -97,7 +97,8 @@ def run_pipeline_stage_sequence(
             progress_callback=progress_callback,
             stop_after=stop_after,
             run_context=run_context,
-        ):
+        )
+        if early_result:
             return early_result
     return None
 

@@ -41,7 +41,8 @@ def _get_cpu_info() -> dict[str, Any]:
         cpu_info["cores"] = psutil.cpu_count(logical=False)
         cpu_info["threads"] = psutil.cpu_count(logical=True)
 
-        if freq := psutil.cpu_freq():
+        freq = psutil.cpu_freq()
+        if freq:
             cpu_info["frequency_mhz"] = round(freq.current, 2)
     except ImportError:
         pass

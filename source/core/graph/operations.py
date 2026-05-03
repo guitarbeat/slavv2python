@@ -1,23 +1,20 @@
 """
-Network construction and graph theory operations for source.
-Handles the conversion of traced edges into a connected graph (strands, bifurcations).
+Graph manipulation and traversal logic for SLAVV.
 """
 
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import numpy as np
-from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 
-from ..utils.safe_unpickle import safe_load
-
-logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from source.runtime import StageController
+from .base import (
+    _matlab_find_nonzero_matrix_entries,
+    _matlab_lookup_edge_ids,
+    _matlab_network_lookup_tables,
+    _normalize_connections,
+)
 
 
 def trace_strand_sparse(
@@ -58,65 +55,6 @@ def sort_and_validate_strands_sparse(
         sorted_strands.append(strand)
 
     return sorted_strands, mismatched
-
-
-def _normalize_connections(edge_connections: Any) -> np.ndarray:
-    """Normalize edge connections to an ``(N, 2)`` int32 array."""
-    connections = np.asarray(edge_connections, dtype=np.int32)
-    if connections.size == 0:
-        empty_connections: np.ndarray = np.empty((0, 2), dtype=np.int32)
-        return empty_connections
-    normalized = connections.reshape(-1, 2)
-    return cast("np.ndarray", normalized)
-
-
-def _build_graph_state(
-    edge_traces: list[np.ndarray],
-    edge_scale_traces: list[np.ndarray],
-    edge_energy_traces: list[np.ndarray],
-    edge_connections: np.ndarray,
-    n_vertices: int,
-) -> tuple[
-    dict[int, set[int]],
-    dict[tuple[int, int], np.ndarray],
-    dict[tuple[int, int], np.ndarray],
-    dict[tuple[int, int], np.ndarray],
-    list[dict[str, Any]],
-]:
-    """Build sparse adjacency, undirected graph-edge storage, and dangling edge records."""
-    adjacency_list: dict[int, set[int]] = {i: set() for i in range(n_vertices)}
-    graph_edges: dict[tuple[int, int], np.ndarray] = {}
-    graph_edge_scales: dict[tuple[int, int], np.ndarray] = {}
-    graph_edge_energies: dict[tuple[int, int], np.ndarray] = {}
-    dangling_edges: list[dict[str, Any]] = []
-
-    for trace, scale_trace, energy_trace, (start_vertex, end_vertex) in zip(
-        edge_traces,
-        edge_scale_traces,
-        edge_energy_traces,
-        edge_connections,
-    ):
-        if start_vertex < 0 or end_vertex < 0:
-            dangling_edges.append(
-                {
-                    "start": int(start_vertex) if start_vertex >= 0 else None,
-                    "end": int(end_vertex) if end_vertex >= 0 else None,
-                    "trace": trace,
-                    "scale_trace": scale_trace,
-                    "energy_trace": energy_trace,
-                }
-            )
-            continue
-
-        v0, v1 = int(start_vertex), int(end_vertex)
-        adjacency_list[v0].add(v1)
-        adjacency_list[v1].add(v0)
-        key = (v0, v1) if v0 < v1 else (v1, v0)
-        graph_edges.setdefault(key, trace)
-        graph_edge_scales.setdefault(key, scale_trace)
-        graph_edge_energies.setdefault(key, energy_trace)
-
-    return adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges
 
 
 def _remove_short_hairs(
@@ -191,71 +129,6 @@ def _remove_cycles(
             parent[root1] = root0
 
     return cycles
-
-
-def _vertex_degrees(adjacency_list: dict[int, set[int]], n_vertices: int) -> np.ndarray:
-    """Return per-vertex degree counts."""
-    degrees = np.array([len(adjacency_list[i]) for i in range(n_vertices)], dtype=np.int32)
-    return cast("np.ndarray", degrees)
-
-
-def _matlab_find_nonzero_matrix_entries(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Return nonzero matrix coordinates using MATLAB's column-major ``find`` order."""
-    matrix = np.asarray(mask, dtype=bool)
-    n_rows, _n_cols = matrix.shape
-    flat_indices = np.flatnonzero(matrix.reshape(-1, order="F"))
-    rows = (flat_indices % n_rows).astype(np.int32, copy=False)
-    cols = (flat_indices // n_rows).astype(np.int32, copy=False)
-    return rows, cols
-
-
-def _matlab_lookup_edge_ids(
-    edge_lookup_table: sparse.csr_matrix,
-    row_vertices: np.ndarray,
-    col_vertices: np.ndarray,
-) -> np.ndarray:
-    """Look up directed edge ids while preserving input pair order."""
-    if row_vertices.size == 0:
-        return np.zeros((0,), dtype=np.int32)
-    edge_ids = np.array(
-        [
-            int(edge_lookup_table[int(row_vertex), int(col_vertex)])
-            for row_vertex, col_vertex in zip(
-                row_vertices.tolist(),
-                col_vertices.tolist(),
-            )
-        ],
-        dtype=np.int32,
-    )
-    return cast("np.ndarray", edge_ids[edge_ids > 0] - 1)
-
-
-def _matlab_network_lookup_tables(
-    edge_connections: np.ndarray,
-    n_vertices: int,
-) -> tuple[sparse.csr_matrix, sparse.csr_matrix]:
-    """Build MATLAB-shaped directed edge lookup and symmetric adjacency matrices."""
-    if edge_connections.size == 0 or n_vertices <= 0:
-        empty_lookup = sparse.csr_matrix((n_vertices, n_vertices), dtype=np.int32)
-        empty_adjacency = sparse.csr_matrix((n_vertices, n_vertices), dtype=bool)
-        return empty_lookup, empty_adjacency
-
-    normalized = np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2)
-    rows = normalized[:, 0].astype(np.int32, copy=False)
-    cols = normalized[:, 1].astype(np.int32, copy=False)
-    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
-    edge_lookup_table = sparse.csr_matrix(
-        (edge_ids, (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=np.int32,
-    )
-    adjacency_matrix = sparse.csr_matrix(
-        (np.ones((len(normalized),), dtype=bool), (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=bool,
-    )
-    adjacency_matrix = adjacency_matrix.maximum(adjacency_matrix.transpose()).astype(bool)
-    return edge_lookup_table, adjacency_matrix
 
 
 def _matlab_get_network_v190(
@@ -530,21 +403,48 @@ def _matlab_get_strand_objects(
     return strand_space_traces, strand_scale_traces, strand_energy_traces
 
 
-def _matlab_edge_metrics(energy_traces: list[np.ndarray]) -> np.ndarray:
-    """Mirror MATLAB ``get_edge_metric(..., 'max')`` over a list of traces."""
-    if not energy_traces:
-        return cast("np.ndarray", np.zeros((0,), dtype=np.float32))
-    metrics = np.asarray(
-        [
-            float(np.max(np.asarray(trace, dtype=np.float32)))
-            if np.asarray(trace).size
-            else float("nan")
-            for trace in energy_traces
-        ],
-        dtype=np.float32,
+def _matlab_network_topology(
+    edge_connections: np.ndarray,
+    edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
+    edge_energy_traces: list[np.ndarray],
+    n_vertices: int,
+) -> dict[str, Any]:
+    """Construct MATLAB-shaped strand topology and strand objects."""
+    (
+        _vertices_in_strands_unsorted,
+        edge_indices_in_strands_unsorted,
+        end_vertices_in_strands,
+        bifurcation_vertices,
+    ) = _matlab_get_network_v190(edge_connections, n_vertices)
+    (
+        vertex_indices_in_strands,
+        edge_indices_in_strands,
+        edge_backwards_in_strands,
+    ) = _matlab_sort_network_v180(
+        edge_connections,
+        end_vertices_in_strands,
+        edge_indices_in_strands_unsorted,
     )
-    metrics[np.isnan(metrics)] = np.float32(-1000.0)
-    return cast("np.ndarray", metrics)
+    strand_space_traces, strand_scale_traces, strand_energy_traces = _matlab_get_strand_objects(
+        edge_traces,
+        edge_scale_traces,
+        edge_energy_traces,
+        edge_indices_in_strands,
+        edge_backwards_in_strands,
+    )
+    return {
+        "strands": [strand.tolist() for strand in vertex_indices_in_strands],
+        "mismatched_strands": [],
+        "bifurcations": bifurcation_vertices.astype(np.int32, copy=False),
+        "edge_indices_in_strands": edge_indices_in_strands,
+        "edge_backwards_in_strands": edge_backwards_in_strands,
+        "end_vertices_in_strands": end_vertices_in_strands,
+        "strand_traces": strand_space_traces,
+        "strand_space_traces": strand_space_traces,
+        "strand_scale_traces": strand_scale_traces,
+        "strand_energy_traces": strand_energy_traces,
+    }
 
 
 def _matlab_interp1_implicit_axis(values: np.ndarray, query_points: np.ndarray) -> np.ndarray:
@@ -766,426 +666,3 @@ def _matlab_get_vessel_directions_v3(
         vessel_directions.append(np.asarray(unit_directions, dtype=np.float32))
 
     return vessel_directions
-
-
-def _matlab_network_topology(
-    edge_connections: np.ndarray,
-    edge_traces: list[np.ndarray],
-    edge_scale_traces: list[np.ndarray],
-    edge_energy_traces: list[np.ndarray],
-    n_vertices: int,
-) -> dict[str, Any]:
-    """Construct MATLAB-shaped strand topology and strand objects."""
-    (
-        _vertices_in_strands_unsorted,
-        edge_indices_in_strands_unsorted,
-        end_vertices_in_strands,
-        bifurcation_vertices,
-    ) = _matlab_get_network_v190(edge_connections, n_vertices)
-    (
-        vertex_indices_in_strands,
-        edge_indices_in_strands,
-        edge_backwards_in_strands,
-    ) = _matlab_sort_network_v180(
-        edge_connections,
-        end_vertices_in_strands,
-        edge_indices_in_strands_unsorted,
-    )
-    strand_space_traces, strand_scale_traces, strand_energy_traces = _matlab_get_strand_objects(
-        edge_traces,
-        edge_scale_traces,
-        edge_energy_traces,
-        edge_indices_in_strands,
-        edge_backwards_in_strands,
-    )
-    return {
-        "strands": [strand.tolist() for strand in vertex_indices_in_strands],
-        "mismatched_strands": [],
-        "bifurcations": bifurcation_vertices.astype(np.int32, copy=False),
-        "edge_indices_in_strands": edge_indices_in_strands,
-        "edge_backwards_in_strands": edge_backwards_in_strands,
-        "end_vertices_in_strands": end_vertices_in_strands,
-        "strand_traces": strand_space_traces,
-        "strand_space_traces": strand_space_traces,
-        "strand_scale_traces": strand_scale_traces,
-        "strand_energy_traces": strand_energy_traces,
-    }
-
-
-def _graph_state_ordered_edges(
-    graph_edges: dict[tuple[int, int], np.ndarray],
-    graph_edge_scales: dict[tuple[int, int], np.ndarray],
-    graph_edge_energies: dict[tuple[int, int], np.ndarray],
-) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
-    """Recover surviving edge connections, traces, and energy traces in insertion order."""
-    ordered_pairs = list(graph_edges.keys())
-    if not ordered_pairs:
-        return np.empty((0, 2), dtype=np.int32), [], [], []
-    connections = np.asarray(ordered_pairs, dtype=np.int32).reshape(-1, 2)
-    traces = [np.asarray(graph_edges[pair], dtype=np.float32) for pair in ordered_pairs]
-    scale_traces = [
-        np.asarray(graph_edge_scales[pair], dtype=np.float32).reshape(-1) for pair in ordered_pairs
-    ]
-    energy_traces = [
-        np.asarray(graph_edge_energies[pair], dtype=np.float32) for pair in ordered_pairs
-    ]
-    return cast("np.ndarray", connections), traces, scale_traces, energy_traces
-
-
-def _network_payload(
-    adjacency_list: dict[int, set[int]],
-    graph_edges: dict[tuple[int, int], np.ndarray],
-    graph_edge_scales: dict[tuple[int, int], np.ndarray],
-    graph_edge_energies: dict[tuple[int, int], np.ndarray],
-    dangling_edges: list[dict[str, Any]],
-    cycles: list[tuple[int, int]],
-    n_vertices: int,
-    *,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-) -> dict[str, Any]:
-    """Build the final network payload from shared graph state."""
-    (
-        pruned_connections,
-        pruned_traces,
-        pruned_scale_traces,
-        pruned_energy_traces,
-    ) = _graph_state_ordered_edges(
-        graph_edges,
-        graph_edge_scales,
-        graph_edge_energies,
-    )
-    topology = _matlab_network_topology(
-        pruned_connections,
-        pruned_traces,
-        pruned_scale_traces,
-        pruned_energy_traces,
-        n_vertices,
-    )
-    sigma_strand_smoothing = float(np.sqrt(2.0) / 2.0)
-    strand_space_traces = cast("list[np.ndarray]", topology["strand_space_traces"])
-    strand_scale_traces = cast("list[np.ndarray]", topology["strand_scale_traces"])
-    strand_energy_traces = cast("list[np.ndarray]", topology["strand_energy_traces"])
-    if sigma_strand_smoothing and np.asarray(lumen_radius_microns).size > 0:
-        (
-            strand_space_traces,
-            strand_scale_traces,
-            strand_energy_traces,
-        ) = _matlab_smooth_edges_v2(
-            strand_space_traces,
-            strand_scale_traces,
-            strand_energy_traces,
-            sigma_strand_smoothing,
-            lumen_radius_microns,
-            microns_per_voxel,
-        )
-    vessel_directions = _matlab_get_vessel_directions_v3(
-        strand_space_traces,
-        microns_per_voxel,
-    )
-    mean_strand_energies = _matlab_edge_metrics(strand_energy_traces)
-    strand_subscripts = [
-        np.column_stack((space_trace, scale_trace))
-        for space_trace, scale_trace in zip(
-            strand_space_traces,
-            strand_scale_traces,
-        )
-    ]
-    vertex_degrees = _vertex_degrees(adjacency_list, n_vertices)
-    orphans = np.where(vertex_degrees == 0)[0].astype(np.int32)
-
-    payload = {
-        "strands": topology["strands"],
-        "bifurcations": topology["bifurcations"],
-        "orphans": orphans,
-        "cycles": cycles,
-        "mismatched_strands": topology["mismatched_strands"],
-        "adjacency_list": adjacency_list,
-        "vertex_degrees": vertex_degrees,
-        "graph_edges": graph_edges,
-        "graph_edge_scales": graph_edge_scales,
-        "graph_edge_energies": graph_edge_energies,
-        "dangling_edges": dangling_edges,
-        "edge_indices_in_strands": topology["edge_indices_in_strands"],
-        "edge_backwards_in_strands": topology["edge_backwards_in_strands"],
-        "end_vertices_in_strands": topology["end_vertices_in_strands"],
-        "strand_subscripts": strand_subscripts,
-        "strand_traces": strand_space_traces,
-        "strand_space_traces": strand_space_traces,
-        "strand_scale_traces": strand_scale_traces,
-        "strand_energy_traces": strand_energy_traces,
-        "mean_strand_energies": mean_strand_energies,
-        "vessel_directions": vessel_directions,
-    }
-    return payload
-
-
-def construct_network(
-    edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-) -> dict[str, Any]:
-    """Construct network from traced edges and detected vertices."""
-    logger.info("Constructing network")
-
-    edge_traces = edges["traces"]
-    edge_scale_traces = edges.get(
-        "scale_traces",
-        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
-    )
-    edge_energy_traces = edges.get(
-        "energy_traces",
-        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
-    )
-    edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
-    bridge_vertex_positions = np.asarray(
-        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
-        dtype=np.float32,
-    ).reshape(-1, 3)
-    if bridge_vertex_positions.size:
-        vertex_positions = np.vstack([vertex_positions, bridge_vertex_positions]).astype(
-            np.float32,
-            copy=False,
-        )
-    n_vertices = len(vertex_positions)
-
-    microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    lumen_radius_microns = np.asarray(
-        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
-        dtype=np.float32,
-    ).reshape(-1)
-    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
-    remove_cycles = bool(params.get("remove_cycles", False))
-
-    adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
-        _build_graph_state(
-            edge_traces,
-            edge_scale_traces,
-            edge_energy_traces,
-            edge_connections,
-            n_vertices,
-        )
-    )
-
-    _remove_short_hairs(
-        graph_edges,
-        adjacency_list,
-        microns_per_voxel,
-        float(min_hair_length),
-        graph_edge_scales,
-        graph_edge_energies,
-    )
-    cycles = (
-        _remove_cycles(
-            graph_edges,
-            adjacency_list,
-            n_vertices,
-            graph_edge_scales,
-            graph_edge_energies,
-        )
-        if remove_cycles
-        else []
-    )
-
-    network = _network_payload(
-        adjacency_list,
-        graph_edges,
-        graph_edge_scales,
-        graph_edge_energies,
-        dangling_edges,
-        cycles,
-        n_vertices,
-        lumen_radius_microns=lumen_radius_microns,
-        microns_per_voxel=microns_per_voxel,
-    )
-
-    logger.info(
-        "Constructed network with %d strands, %d bifurcations, %d orphans, removed %d cycles, and %d mismatched strands",
-        len(network["strands"]),
-        len(network["bifurcations"]),
-        len(network["orphans"]),
-        len(network["cycles"]),
-        len(network["mismatched_strands"]),
-    )
-    return network
-
-
-def construct_network_resumable(
-    edges: dict[str, Any],
-    vertices: dict[str, Any],
-    params: dict[str, Any],
-    stage_controller: StageController,
-) -> dict[str, Any]:
-    """Construct a network while persisting stage-level substeps."""
-    from source.runtime.run_state import atomic_joblib_dump
-
-    edge_traces = edges["traces"]
-    edge_scale_traces = edges.get(
-        "scale_traces",
-        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
-    )
-    edge_energy_traces = edges.get(
-        "energy_traces",
-        [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
-    )
-    edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
-    bridge_vertex_positions = np.asarray(
-        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
-        dtype=np.float32,
-    ).reshape(-1, 3)
-    if bridge_vertex_positions.size:
-        vertex_positions = np.vstack([vertex_positions, bridge_vertex_positions]).astype(
-            np.float32,
-            copy=False,
-        )
-    n_vertices = len(vertex_positions)
-
-    microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    lumen_radius_microns = np.asarray(
-        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
-        dtype=np.float32,
-    ).reshape(-1)
-    min_hair_length = params.get("min_hair_length_in_microns", 0.0)
-    remove_cycles = bool(params.get("remove_cycles", False))
-
-    stage_controller.begin(detail="Building network graph", units_total=5, substage="adjacency")
-    adjacency_path = stage_controller.artifact_path("adjacency.pkl")
-    pruned_path = stage_controller.artifact_path("hair_pruned.pkl")
-    cycle_path = stage_controller.artifact_path("cycle_pruned.pkl")
-    strands_path = stage_controller.artifact_path("strands.pkl")
-
-    if not adjacency_path.exists():
-        adjacency_list, graph_edges, graph_edge_scales, graph_edge_energies, dangling_edges = (
-            _build_graph_state(
-                edge_traces,
-                edge_scale_traces,
-                edge_energy_traces,
-                edge_connections,
-                n_vertices,
-            )
-        )
-        atomic_joblib_dump(
-            {
-                "adjacency_list": adjacency_list,
-                "graph_edges": graph_edges,
-                "graph_edge_scales": graph_edge_scales,
-                "graph_edge_energies": graph_edge_energies,
-                "dangling_edges": dangling_edges,
-            },
-            adjacency_path,
-        )
-
-    adjacency_payload = safe_load(adjacency_path)
-    adjacency_list = adjacency_payload["adjacency_list"]
-    graph_edges = adjacency_payload["graph_edges"]
-    graph_edge_scales = adjacency_payload["graph_edge_scales"]
-    graph_edge_energies = adjacency_payload["graph_edge_energies"]
-    dangling_edges = adjacency_payload["dangling_edges"]
-    stage_controller.update(units_total=5, units_completed=1, substage="adjacency")
-
-    if min_hair_length > 0 and not pruned_path.exists():
-        _remove_short_hairs(
-            graph_edges,
-            adjacency_list,
-            microns_per_voxel,
-            float(min_hair_length),
-            graph_edge_scales,
-            graph_edge_energies,
-        )
-        atomic_joblib_dump(
-            {
-                "adjacency_list": adjacency_list,
-                "graph_edges": graph_edges,
-                "graph_edge_scales": graph_edge_scales,
-                "graph_edge_energies": graph_edge_energies,
-            },
-            pruned_path,
-        )
-    if pruned_path.exists():
-        pruned_payload = safe_load(pruned_path)
-        adjacency_list = pruned_payload["adjacency_list"]
-        graph_edges = pruned_payload["graph_edges"]
-        graph_edge_scales = pruned_payload["graph_edge_scales"]
-        graph_edge_energies = pruned_payload["graph_edge_energies"]
-    stage_controller.update(units_total=5, units_completed=2, substage="hair_prune")
-
-    cycles: list[tuple[int, int]] = []
-    if remove_cycles and graph_edges and not cycle_path.exists():
-        cycles = _remove_cycles(
-            graph_edges,
-            adjacency_list,
-            n_vertices,
-            graph_edge_scales,
-            graph_edge_energies,
-        )
-        atomic_joblib_dump(
-            {
-                "adjacency_list": adjacency_list,
-                "graph_edges": graph_edges,
-                "graph_edge_scales": graph_edge_scales,
-                "graph_edge_energies": graph_edge_energies,
-                "cycles": cycles,
-            },
-            cycle_path,
-        )
-    if cycle_path.exists():
-        cycle_payload = safe_load(cycle_path)
-        adjacency_list = cycle_payload["adjacency_list"]
-        graph_edges = cycle_payload["graph_edges"]
-        graph_edge_scales = cycle_payload["graph_edge_scales"]
-        graph_edge_energies = cycle_payload["graph_edge_energies"]
-        cycles = cycle_payload["cycles"]
-    stage_controller.update(units_total=5, units_completed=3, substage="cycle_prune")
-
-    if not strands_path.exists():
-        (
-            pruned_connections,
-            pruned_traces,
-            pruned_scale_traces,
-            pruned_energy_traces,
-        ) = _graph_state_ordered_edges(
-            graph_edges,
-            graph_edge_scales,
-            graph_edge_energies,
-        )
-        topology = _matlab_network_topology(
-            pruned_connections,
-            pruned_traces,
-            pruned_scale_traces,
-            pruned_energy_traces,
-            n_vertices,
-        )
-        atomic_joblib_dump(topology, strands_path)
-    topology = safe_load(strands_path)
-    stage_controller.update(units_total=5, units_completed=4, substage="strand_trace")
-
-    network = _network_payload(
-        adjacency_list,
-        graph_edges,
-        graph_edge_scales,
-        graph_edge_energies,
-        dangling_edges,
-        cycles,
-        n_vertices,
-        lumen_radius_microns=lumen_radius_microns,
-        microns_per_voxel=microns_per_voxel,
-    )
-    network["strands"] = topology["strands"]
-    network["mismatched_strands"] = topology["mismatched_strands"]
-    stage_controller.update(units_total=5, units_completed=5, substage="finalize")
-    return network
-
-
-__all__ = [
-    "_matlab_edge_metrics",
-    "_matlab_get_network_v190",
-    "_matlab_get_strand_objects",
-    "_matlab_get_vessel_directions_v3",
-    "_matlab_network_topology",
-    "_matlab_smooth_edges_v2",
-    "_matlab_sort_network_v180",
-    "construct_network",
-    "construct_network_resumable",
-    "sort_and_validate_strands_sparse",
-    "trace_strand_sparse",
-]

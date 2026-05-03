@@ -13,9 +13,16 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from source.analysis.parity.constants import (
-    DEV_RUNS_ROOT,
     EXACT_STAGE_ORDER,
     DEFAULT_MEMORY_SAFETY_FRACTION,
+)
+from source.analysis.parity.utils import fingerprint_file
+from source.io.tiff import load_tiff_volume
+from source.core.pipeline import SLAVVProcessor
+from source.core.edges import (
+    choose_edges_for_workflow,
+    add_vertices_to_edges_matlab_style,
+    finalize_edges_matlab_style,
 )
 from source.analysis.parity.cli import (
     handle_rerun_python,
@@ -30,9 +37,27 @@ from source.analysis.parity.cli import (
     handle_fail_fast,
     handle_promote_oracle,
     handle_promote_dataset,
-    handle_init_exact_run,
     handle_promote_report,
+    handle_init_exact_run,
+    handle_prove_exact as _handle_prove_exact,
 )
+from source.analysis.parity.proofs import (
+    run_exact_parity_proof,
+    run_exact_preflight,
+    run_candidate_capture,
+    run_edge_replay,
+    run_lut_proof,
+    run_exact_preflight as _run_preflight_exact,
+    run_lut_proof as _run_prove_luts,
+    run_candidate_capture as _run_capture_candidates,
+    run_edge_replay as _run_replay_edges,
+)
+from source.io.matlab_exact_proof import render_exact_proof_report
+from source.io.matlab_fail_fast import (
+    render_lut_proof_report,
+    render_candidate_coverage_report,
+)
+from source.analysis.parity.reports import render_exact_preflight_report
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the developer parity experiment parser."""
@@ -92,9 +117,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if hasattr(args, "handler"):
         args.handler(args)
     else:

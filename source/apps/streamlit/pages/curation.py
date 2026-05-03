@@ -468,7 +468,8 @@ def show_ml_curation_page():
             curation_stats = pd.DataFrame(
                 build_curation_stats_rows(baseline_counts, current_counts)
             )
-            if curation_mode := st.session_state.get("last_curation_mode"):
+            curation_mode = st.session_state.get("last_curation_mode")
+            if curation_mode:
                 st.caption(
                     f"Most recent curation mode: {curation_mode}. The network was rebuilt after the curated vertices and edges were applied."
                 )

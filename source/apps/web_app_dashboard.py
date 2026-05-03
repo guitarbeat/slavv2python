@@ -343,7 +343,8 @@ def filter_dashboard_breakdown(
 
     elif focus == "Pipeline":
         filtered = filtered[filtered["Section"].isin(["Pipeline", "Optional Tasks"])]
-    if normalized_sections := normalize_dashboard_sections(selected_sections):
+    normalized_sections = normalize_dashboard_sections(selected_sections)
+    if normalized_sections:
         filtered = filtered[filtered["Section"].isin(normalized_sections)]
 
     if not show_placeholders:

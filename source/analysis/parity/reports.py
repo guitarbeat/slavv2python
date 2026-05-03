@@ -15,6 +15,7 @@ from source.runtime.run_tracking.io import atomic_write_text
 
 from .constants import (
     ANALYSIS_TABLES_DIR,
+    CHECKPOINTS_DIR,
     CANDIDATE_COVERAGE_JSON_PATH,
     CANDIDATE_COVERAGE_TEXT_PATH,
     CANDIDATE_PROGRESS_JSONL_PATH,
@@ -183,6 +184,20 @@ def render_experiment_summary(summary_payload: dict[str, Any]) -> str:
         _format_delta(summary_payload.get("diff_vs_source_python", {})),
     ])
 
+def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
+    """Render a compact exact-preflight report."""
+    status = "PASS" if report_payload.get("passed") else "FAIL"
+    lines = [
+        "Exact preflight report",
+        f"Status: {status}",
+    ]
+    if "error" in report_payload:
+        lines.append(f"Error: {report_payload['error']}")
+    if "warnings" in report_payload:
+        for warning in report_payload["warnings"]:
+            lines.append(f"Warning: {warning}")
+    return "\n".join(lines)
+
 def persist_experiment_summary(dest_run_root: Path, summary_payload: dict[str, Any]) -> None:
     """Persist the JSON and text summaries."""
     summary_text = render_experiment_summary(summary_payload)
@@ -191,29 +206,56 @@ def persist_experiment_summary(dest_run_root: Path, summary_payload: dict[str, A
 
 def extract_matlab_counts(report_payload: dict[str, Any]) -> RunCounts:
     """Extract MATLAB counts from a comparison report."""
+    matlab = report_payload.get("matlab", {})
     return RunCounts(
-        vertices=int(report_payload.get("matlab_vertex_count", 0)),
-        edges=int(report_payload.get("matlab_edge_count", 0)),
-        strands=int(report_payload.get("matlab_strand_count", 0)),
+        vertices=int(matlab.get("vertices_count", 0)),
+        edges=int(matlab.get("edges_count", 0)),
+        strands=int(matlab.get("strand_count", 0)),
     )
 
 def extract_source_python_counts(report_payload: dict[str, Any]) -> RunCounts:
     """Extract source Python counts from a comparison report."""
+    python = report_payload.get("python", {})
     return RunCounts(
-        vertices=int(report_payload.get("python_vertex_count", 0)),
-        edges=int(report_payload.get("python_edge_count", 0)),
-        strands=int(report_payload.get("python_strand_count", 0)),
+        vertices=int(python.get("vertices_count", 0)),
+        edges=int(python.get("edges_count", 0)),
+        strands=int(python.get("network_strands_count", 0)),
     )
 
 def read_python_counts_from_run(run_root: Path) -> RunCounts:
     """Read counts from a processed Python run surface."""
-    snapshot = load_json_dict(run_root / RUN_SNAPSHOT_PATH) or {}
-    counts = snapshot.get("counts", {})
-    return RunCounts(
-        vertices=int(counts.get("vertices", 0)),
-        edges=int(counts.get("edges", 0)),
-        strands=int(counts.get("strands", 0)),
-    )
+    snapshot = load_json_dict(run_root / RUN_SNAPSHOT_PATH)
+    if snapshot:
+        counts = snapshot.get("counts", {})
+        return RunCounts(
+            vertices=int(counts.get("vertices", 0)),
+            edges=int(counts.get("edges", 0)),
+            strands=int(counts.get("strands", 0)),
+        )
+    
+    # Fallback to counting from checkpoints if snapshot is missing
+    from joblib import load
+    checkpoints_dir = run_root / CHECKPOINTS_DIR
+    vertices_path = checkpoints_dir / "checkpoint_vertices.pkl"
+    edges_path = checkpoints_dir / "checkpoint_edges.pkl"
+    network_path = checkpoints_dir / "checkpoint_network.pkl"
+    
+    vertices = 0
+    if vertices_path.is_file():
+        v_data = load(vertices_path)
+        vertices = len(v_data.get("positions", []))
+    
+    edges = 0
+    if edges_path.is_file():
+        e_data = load(edges_path)
+        edges = len(e_data.get("connections", []))
+        
+    strands = 0
+    if network_path.is_file():
+        n_data = load(network_path)
+        strands = len(n_data.get("strands", []))
+        
+    return RunCounts(vertices=vertices, edges=edges, strands=strands)
 
 def build_experiment_summary(
     *,
