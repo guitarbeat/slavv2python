@@ -1,4 +1,4 @@
-"Unit tests for the developer parity experiment runner execution and reporting."
+"""Unit tests for the developer parity experiment runner execution and reporting."""
 
 from __future__ import annotations
 
