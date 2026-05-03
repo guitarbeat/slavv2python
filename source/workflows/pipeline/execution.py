@@ -25,11 +25,11 @@ class PipelineStageStep:
 
 
 def build_standard_pipeline_steps(
-    *,
-    resolve_energy: Callable[[], dict[str, Any]],
-    resolve_vertices: Callable[[], dict[str, Any]],
-    resolve_edges: Callable[[], dict[str, Any]],
-    resolve_network: Callable[[], dict[str, Any]],
+        *,
+        resolve_energy: Callable[[], dict[str, Any]],
+        resolve_vertices: Callable[[], dict[str, Any]],
+        resolve_edges: Callable[[], dict[str, Any]],
+        resolve_network: Callable[[], dict[str, Any]],
 ) -> list[PipelineStageStep]:
     """Return the canonical SLAVV stage sequence with shared metadata."""
     return [
@@ -61,15 +61,15 @@ def build_standard_pipeline_steps(
 
 
 def advance_pipeline_stage(
-    results: dict[str, Any],
-    *,
-    result_key: str,
-    payload: dict[str, Any],
-    stage_name: str,
-    progress_fraction: float,
-    progress_callback: Callable[[float, str], None] | None,
-    stop_after: str | None,
-    run_context: RunContext | None,
+        results: dict[str, Any],
+        *,
+        result_key: str,
+        payload: dict[str, Any],
+        stage_name: str,
+        progress_fraction: float,
+        progress_callback: Callable[[float, str], None] | None,
+        stop_after: str | None,
+        run_context: RunContext | None,
 ) -> dict[str, Any] | None:
     """Record a stage payload, emit progress, and stop early if requested."""
     results[result_key] = payload
@@ -78,12 +78,12 @@ def advance_pipeline_stage(
 
 
 def run_pipeline_stage_sequence(
-    results: dict[str, Any],
-    *,
-    steps: list[PipelineStageStep],
-    progress_callback: Callable[[float, str], None] | None,
-    stop_after: str | None,
-    run_context: RunContext | None,
+        results: dict[str, Any],
+        *,
+        steps: list[PipelineStageStep],
+        progress_callback: Callable[[float, str], None] | None,
+        stop_after: str | None,
+        run_context: RunContext | None,
 ) -> dict[str, Any] | None:
     """Execute sequential pipeline steps until completion or an early stop."""
     for step in steps:

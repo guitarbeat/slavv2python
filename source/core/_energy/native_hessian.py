@@ -10,9 +10,9 @@ _WORST_RESOLUTION_TO_DOWNSAMPLE = 1.0 / 2.5
 
 
 def matlab_octave_resolution_factors(
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    scales_per_octave: float,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        scales_per_octave: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return MATLAB-style octave ids and per-scale integer downsampling factors."""
     number_of_scales = len(lumen_radius_microns)
@@ -48,11 +48,11 @@ def required_scale_stack(config: dict[str, Any]) -> bool:
 
 
 def project_energy_stack(
-    energy_4d: np.ndarray,
-    *,
-    energy_sign: float,
-    projection_mode: str,
-    spherical_to_annular_ratio: float,
+        energy_4d: np.ndarray,
+        *,
+        energy_sign: float,
+        projection_mode: str,
+        spherical_to_annular_ratio: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Project a per-scale energy stack into final energy and scale-index volumes."""
     if energy_sign >= 0:
@@ -84,7 +84,7 @@ def project_energy_stack(
         where=total_weight > 0,
     )
     blended_indices = spherical_to_annular_ratio * spherical_indices + (
-        1.0 - spherical_to_annular_ratio
+            1.0 - spherical_to_annular_ratio
     ) * annular_indices.astype(np.float32)
     sampled_indices = np.clip(np.rint(blended_indices), 0, energy_4d.shape[3] - 1).astype(np.int16)
     sampled_energy = np.take_along_axis(energy_4d, sampled_indices[..., None], axis=3)[..., 0]
@@ -100,9 +100,9 @@ def project_energy_stack(
 
 
 def compute_native_hessian_energy(
-    image: np.ndarray,
-    config: dict[str, Any],
-    scale_idx: int,
+        image: np.ndarray,
+        config: dict[str, Any],
+        scale_idx: int,
 ) -> np.ndarray:
     """Compute one scale of the MATLAB-style matched-filter Hessian energy."""
     debug_outputs = _compute_native_hessian_scale_debug(image, config, scale_idx)
@@ -110,16 +110,16 @@ def compute_native_hessian_energy(
 
 
 def _compute_native_hessian_scale_debug(
-    image: np.ndarray,
-    config: dict[str, Any],
-    scale_idx: int,
+        image: np.ndarray,
+        config: dict[str, Any],
+        scale_idx: int,
 ) -> dict[str, np.ndarray]:
     """Return one scale of native Hessian intermediates on the working grid."""
     resolution_factor = np.asarray(config["scale_resolution_factors"][scale_idx], dtype=np.int16)
     radius_microns = float(config["lumen_radius_microns"][scale_idx])
     microns_per_pixel = np.asarray(config["microns_per_voxel"], dtype=float) * resolution_factor
     pixels_per_sigma_psf = (
-        np.asarray(config["pixels_per_sigma_PSF"], dtype=float) / resolution_factor
+            np.asarray(config["pixels_per_sigma_PSF"], dtype=float) / resolution_factor
     )
 
     working_image = _downsample_volume(image, resolution_factor)
@@ -147,9 +147,9 @@ def _downsample_volume(image: np.ndarray, resolution_factor: np.ndarray) -> np.n
 
 
 def _upsample_volume(
-    volume: np.ndarray,
-    output_shape: tuple[int, int, int],
-    resolution_factor: np.ndarray,
+        volume: np.ndarray,
+        output_shape: tuple[int, int, int],
+        resolution_factor: np.ndarray,
 ) -> np.ndarray:
     factor_y, factor_x, factor_z = (float(value) for value in resolution_factor)
     if factor_y == factor_x == factor_z == 1.0 and volume.shape == output_shape:
@@ -171,13 +171,13 @@ def _upsample_volume(
 
 
 def _matched_hessian_energy(
-    image: np.ndarray,
-    *,
-    radius_of_lumen_in_microns: float,
-    microns_per_pixel: np.ndarray,
-    pixels_per_sigma_psf: np.ndarray,
-    gaussian_to_ideal_ratio: float,
-    spherical_to_annular_ratio: float,
+        image: np.ndarray,
+        *,
+        radius_of_lumen_in_microns: float,
+        microns_per_pixel: np.ndarray,
+        pixels_per_sigma_psf: np.ndarray,
+        gaussian_to_ideal_ratio: float,
+        spherical_to_annular_ratio: float,
 ) -> np.ndarray:
     return _matched_hessian_intermediates(
         image,
@@ -190,13 +190,13 @@ def _matched_hessian_energy(
 
 
 def _matched_hessian_intermediates(
-    image: np.ndarray,
-    *,
-    radius_of_lumen_in_microns: float,
-    microns_per_pixel: np.ndarray,
-    pixels_per_sigma_psf: np.ndarray,
-    gaussian_to_ideal_ratio: float,
-    spherical_to_annular_ratio: float,
+        image: np.ndarray,
+        *,
+        radius_of_lumen_in_microns: float,
+        microns_per_pixel: np.ndarray,
+        pixels_per_sigma_psf: np.ndarray,
+        gaussian_to_ideal_ratio: float,
+        spherical_to_annular_ratio: float,
 ) -> dict[str, np.ndarray]:
     image = image.astype(np.float32, copy=False)
     original_shape = image.shape
@@ -296,7 +296,7 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
 
 
 def _pixel_frequency_meshes(
-    shape: tuple[int, int, int],
+        shape: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     pixel_frequencies = [np.fft.fftfreq(length) for length in shape]
     return tuple(
@@ -310,13 +310,13 @@ def _pixel_frequency_meshes(
 
 
 def _matching_kernel_dft(
-    pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
-    *,
-    radius_of_lumen_in_microns: float,
-    microns_per_pixel: np.ndarray,
-    pixels_per_sigma_psf: np.ndarray,
-    gaussian_to_ideal_ratio: float,
-    spherical_to_annular_ratio: float,
+        pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
+        *,
+        radius_of_lumen_in_microns: float,
+        microns_per_pixel: np.ndarray,
+        pixels_per_sigma_psf: np.ndarray,
+        gaussian_to_ideal_ratio: float,
+        spherical_to_annular_ratio: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     y_pixel_freq_mesh, x_pixel_freq_mesh, z_pixel_freq_mesh = pixel_freq_meshes
     y_micron_freq_mesh = y_pixel_freq_mesh / microns_per_pixel[0]
@@ -326,8 +326,8 @@ def _matching_kernel_dft(
     microns_per_sigma_psf = pixels_per_sigma_psf * microns_per_pixel
     gaussian_lengths = gaussian_to_ideal_ratio * radius_of_lumen_in_microns + np.zeros(3)
     annular_pulse_lengths_squared = (
-        1.0 - gaussian_to_ideal_ratio**2
-    ) * radius_of_lumen_in_microns**2 + microns_per_sigma_psf**2
+                                            1.0 - gaussian_to_ideal_ratio ** 2
+                                    ) * radius_of_lumen_in_microns ** 2 + microns_per_sigma_psf ** 2
     sphere_pulse_lengths_squared = annular_pulse_lengths_squared.copy()
 
     radial_freq_mesh_gaussian = np.sqrt(
@@ -335,92 +335,92 @@ def _matching_kernel_dft(
         + (x_micron_freq_mesh * gaussian_lengths[1]) ** 2
         + (z_micron_freq_mesh * gaussian_lengths[2]) ** 2
     )
-    gaussian_kernel_dft = np.exp(-2.0 * np.pi**2 * radial_freq_mesh_gaussian**2)
+    gaussian_kernel_dft = np.exp(-2.0 * np.pi ** 2 * radial_freq_mesh_gaussian ** 2)
 
     radial_angular_freq_mesh_sphere = (
-        2.0
-        * np.pi
-        * np.sqrt(
-            y_micron_freq_mesh**2 * sphere_pulse_lengths_squared[0]
-            + x_micron_freq_mesh**2 * sphere_pulse_lengths_squared[1]
-            + z_micron_freq_mesh**2 * sphere_pulse_lengths_squared[2]
-        )
+            2.0
+            * np.pi
+            * np.sqrt(
+        y_micron_freq_mesh ** 2 * sphere_pulse_lengths_squared[0]
+        + x_micron_freq_mesh ** 2 * sphere_pulse_lengths_squared[1]
+        + z_micron_freq_mesh ** 2 * sphere_pulse_lengths_squared[2]
+    )
     )
     spherical_pulse_kernel_dft = np.ones_like(radial_angular_freq_mesh_sphere, dtype=np.float64)
     nonzero_sphere = radial_angular_freq_mesh_sphere != 0
     sphere_argument = radial_angular_freq_mesh_sphere[nonzero_sphere]
     spherical_pulse_kernel_dft[nonzero_sphere] = np.sqrt(np.pi / 2.0 / sphere_argument) * (
-        jv(2.5, sphere_argument) + jv(0.5, sphere_argument)
+            jv(2.5, sphere_argument) + jv(0.5, sphere_argument)
     )
 
     radial_angular_freq_mesh_annular = (
-        2.0
-        * np.pi
-        * np.sqrt(
-            y_micron_freq_mesh**2 * annular_pulse_lengths_squared[0]
-            + x_micron_freq_mesh**2 * annular_pulse_lengths_squared[1]
-            + z_micron_freq_mesh**2 * annular_pulse_lengths_squared[2]
-        )
+            2.0
+            * np.pi
+            * np.sqrt(
+        y_micron_freq_mesh ** 2 * annular_pulse_lengths_squared[0]
+        + x_micron_freq_mesh ** 2 * annular_pulse_lengths_squared[1]
+        + z_micron_freq_mesh ** 2 * annular_pulse_lengths_squared[2]
+    )
     )
     annular_pulse_kernel_dft = np.cos(radial_angular_freq_mesh_annular)
     matching_kernel_dft = gaussian_kernel_dft * (
-        (1.0 - spherical_to_annular_ratio) * annular_pulse_kernel_dft
-        + spherical_to_annular_ratio * spherical_pulse_kernel_dft
+            (1.0 - spherical_to_annular_ratio) * annular_pulse_kernel_dft
+            + spherical_to_annular_ratio * spherical_pulse_kernel_dft
     )
     derivative_weights_from_blurring = gaussian_lengths / microns_per_pixel
     return matching_kernel_dft, derivative_weights_from_blurring
 
 
 def _derivative_kernels_dft(
-    pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
-    derivative_weights: np.ndarray,
+        pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
+        derivative_weights: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     y_pixel_freq_mesh, x_pixel_freq_mesh, z_pixel_freq_mesh = pixel_freq_meshes
     curvatures_kernels_dft = np.zeros((6, *y_pixel_freq_mesh.shape), dtype=np.float64)
     gradient_kernels_dft = np.zeros((3, *y_pixel_freq_mesh.shape), dtype=np.complex128)
 
     curvatures_kernels_dft[0] = derivative_weights[0] ** 2 * (
-        np.cos(2.0 * np.pi * y_pixel_freq_mesh) - 1.0
+            np.cos(2.0 * np.pi * y_pixel_freq_mesh) - 1.0
     )
     curvatures_kernels_dft[1] = derivative_weights[1] ** 2 * (
-        np.cos(2.0 * np.pi * x_pixel_freq_mesh) - 1.0
+            np.cos(2.0 * np.pi * x_pixel_freq_mesh) - 1.0
     )
     curvatures_kernels_dft[2] = derivative_weights[2] ** 2 * (
-        np.cos(2.0 * np.pi * z_pixel_freq_mesh) - 1.0
+            np.cos(2.0 * np.pi * z_pixel_freq_mesh) - 1.0
     )
 
     yx_freq = y_pixel_freq_mesh * x_pixel_freq_mesh
     xz_freq = x_pixel_freq_mesh * z_pixel_freq_mesh
     zy_freq = z_pixel_freq_mesh * y_pixel_freq_mesh
     curvatures_kernels_dft[3] = (
-        derivative_weights[0]
-        * derivative_weights[1]
-        * (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0)
-        * np.sign(yx_freq)
-        / 4.0
+            derivative_weights[0]
+            * derivative_weights[1]
+            * (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0)
+            * np.sign(yx_freq)
+            / 4.0
     )
     curvatures_kernels_dft[4] = (
-        derivative_weights[1]
-        * derivative_weights[2]
-        * (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0)
-        * np.sign(xz_freq)
-        / 4.0
+            derivative_weights[1]
+            * derivative_weights[2]
+            * (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0)
+            * np.sign(xz_freq)
+            / 4.0
     )
     curvatures_kernels_dft[5] = (
-        derivative_weights[2]
-        * derivative_weights[0]
-        * (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0)
-        * np.sign(zy_freq)
-        / 4.0
+            derivative_weights[2]
+            * derivative_weights[0]
+            * (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0)
+            * np.sign(zy_freq)
+            / 4.0
     )
 
     gradient_kernels_dft[0] = (
-        1j * derivative_weights[0] * np.sin(2.0 * np.pi * y_pixel_freq_mesh) / 2.0
+            1j * derivative_weights[0] * np.sin(2.0 * np.pi * y_pixel_freq_mesh) / 2.0
     )
     gradient_kernels_dft[1] = (
-        1j * derivative_weights[1] * np.sin(2.0 * np.pi * x_pixel_freq_mesh) / 2.0
+            1j * derivative_weights[1] * np.sin(2.0 * np.pi * x_pixel_freq_mesh) / 2.0
     )
     gradient_kernels_dft[2] = (
-        1j * derivative_weights[2] * np.sin(2.0 * np.pi * z_pixel_freq_mesh) / 2.0
+            1j * derivative_weights[2] * np.sin(2.0 * np.pi * z_pixel_freq_mesh) / 2.0
     )
     return curvatures_kernels_dft, gradient_kernels_dft

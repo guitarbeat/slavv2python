@@ -55,12 +55,12 @@ def load_tiff_volume(file: Union[str, Path, IO[bytes]], *, memory_map: bool = Fa
 
 
 def dicom_to_tiff(
-    input_path: Union[str, Path],
-    output_path: Union[str, Path] | None = None,
-    *,
-    sort_by: str = "instance",
-    rescale: bool = True,
-    dtype: str = "uint16",
+        input_path: Union[str, Path],
+        output_path: Union[str, Path] | None = None,
+        *,
+        sort_by: str = "instance",
+        rescale: bool = True,
+        dtype: str = "uint16",
 ) -> Union[np.ndarray, Path]:
     """Load DICOM (single file, multi-frame, or series) and optionally write TIFF.
 

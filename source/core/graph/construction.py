@@ -9,13 +9,13 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from ...utils.safe_unpickle import safe_load
 from .base import (
     _build_graph_state,
     _graph_state_ordered_edges,
     _normalize_connections,
     _vertex_degrees,
 )
+from .metrics import _matlab_edge_metrics
 from .operations import (
     _matlab_get_vessel_directions_v3,
     _matlab_network_topology,
@@ -23,7 +23,7 @@ from .operations import (
     _remove_cycles,
     _remove_short_hairs,
 )
-from .metrics import _matlab_edge_metrics
+from ...utils.safe_unpickle import safe_load
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +32,16 @@ if TYPE_CHECKING:
 
 
 def _network_payload(
-    adjacency_list: dict[int, set[int]],
-    graph_edges: dict[tuple[int, int], np.ndarray],
-    graph_edge_scales: dict[tuple[int, int], np.ndarray],
-    graph_edge_energies: dict[tuple[int, int], np.ndarray],
-    dangling_edges: list[dict[str, Any]],
-    cycles: list[tuple[int, int]],
-    n_vertices: int,
-    *,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
+        adjacency_list: dict[int, set[int]],
+        graph_edges: dict[tuple[int, int], np.ndarray],
+        graph_edge_scales: dict[tuple[int, int], np.ndarray],
+        graph_edge_energies: dict[tuple[int, int], np.ndarray],
+        dangling_edges: list[dict[str, Any]],
+        cycles: list[tuple[int, int]],
+        n_vertices: int,
+        *,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
 ) -> dict[str, Any]:
     """Build the final network payload from shared graph state."""
     (
@@ -120,7 +120,7 @@ def _network_payload(
 
 
 def construct_network(
-    edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+        edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
 ) -> dict[str, Any]:
     """Construct network from traced edges and detected vertices."""
     logger.info("Constructing network")
@@ -209,10 +209,10 @@ def construct_network(
 
 
 def construct_network_resumable(
-    edges: dict[str, Any],
-    vertices: dict[str, Any],
-    params: dict[str, Any],
-    stage_controller: StageController,
+        edges: dict[str, Any],
+        vertices: dict[str, Any],
+        params: dict[str, Any],
+        stage_controller: StageController,
 ) -> dict[str, Any]:
     """Construct a network while persisting stage-level substeps."""
     from source.runtime.run_state import atomic_joblib_dump

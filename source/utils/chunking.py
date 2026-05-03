@@ -6,7 +6,7 @@ from __future__ import annotations
 
 
 def get_chunking_lattice(
-    shape: tuple[int, int, int], max_voxels: int, margin: int
+        shape: tuple[int, int, int], max_voxels: int, margin: int
 ) -> list[
     tuple[tuple[slice, slice, slice], tuple[slice, slice, slice], tuple[slice, slice, slice]]
 ]:

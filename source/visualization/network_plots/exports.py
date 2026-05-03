@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 def export_csv(
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    output_path: str,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        output_path: str,
 ) -> str:
     """Export data as CSV files."""
     base_path = Path(output_path).with_suffix("")
@@ -98,11 +98,11 @@ def export_json(processing_results: dict[str, Any], output_path: str) -> str:
 
 
 def export_vmv(
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    output_path: str,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        output_path: str,
 ) -> str:
     """Export in VMV format."""
     microns_per_voxel = parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])
@@ -181,7 +181,7 @@ def export_vmv(
                 r_v = vertex_radii[v] if v < len(vertex_radii) else 1.0
                 diffs = np.diff(trace_arr, axis=0)
                 diffs_phys = diffs * microns_per_voxel
-                seg_lens = np.sqrt(np.sum(diffs_phys**2, axis=1))
+                seg_lens = np.sqrt(np.sum(diffs_phys ** 2, axis=1))
                 cum_lens = np.concatenate(([0], np.cumsum(seg_lens)))
                 total_len = cum_lens[-1]
                 if total_len > 1e-6:
@@ -224,11 +224,11 @@ def export_vmv(
 
 
 def export_casx(
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    output_path: str,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        output_path: str,
 ) -> str:
     """Export in CASX format."""
     positions = np.asarray(vertices.get("positions", []), dtype=float)
@@ -270,7 +270,7 @@ def _casx_parameter_lines(parameters: dict[str, Any]) -> list[str]:
 
 
 def _casx_vertex_line(
-    index: int, pos: np.ndarray, radius: float, energies: Any, scales: Any
+        index: int, pos: np.ndarray, radius: float, energies: Any, scales: Any
 ) -> str:
     line = (
         f'      <Vertex id="{index}" x="{pos[1]:.3f}" y="{pos[0]:.3f}" '
@@ -284,7 +284,7 @@ def _casx_vertex_line(
 
 
 def _casx_vertex_lines(
-    positions: np.ndarray, radii_array: np.ndarray, energies: Any, scales: Any
+        positions: np.ndarray, radii_array: np.ndarray, energies: Any, scales: Any
 ) -> list[str]:
     lines = ["    <Vertices>"]
     for index, pos in enumerate(positions):
@@ -325,13 +325,13 @@ def _casx_bifurcation_lines(network: dict[str, Any]) -> list[str]:
 
 
 def _build_casx_xml(
-    parameters: dict[str, Any],
-    positions: np.ndarray,
-    radii_array: np.ndarray,
-    energies: Any,
-    scales: Any,
-    edges: dict[str, Any],
-    network: dict[str, Any],
+        parameters: dict[str, Any],
+        positions: np.ndarray,
+        radii_array: np.ndarray,
+        energies: Any,
+        scales: Any,
+        edges: dict[str, Any],
+        network: dict[str, Any],
 ) -> str:
     lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<CasX>"]
     lines.extend(_casx_parameter_lines(parameters))
@@ -358,11 +358,11 @@ def sanitize_for_matlab(data: Any) -> Any:
 
 
 def export_mat(
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    output_path: str,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        output_path: str,
 ) -> str:
     """Export data to MATLAB .mat format."""
     try:

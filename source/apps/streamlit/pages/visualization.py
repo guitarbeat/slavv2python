@@ -46,16 +46,16 @@ EXPORT_BUTTON_SPECS = (
 
 
 def _render_export_download(
-    column,
-    *,
-    run_dir: str | None,
-    vertices,
-    edges,
-    network,
-    parameters,
-    export_spec: dict[str, str],
-    generate_export_data_fn=None,
-    update_run_task_fn=None,
+        column,
+        *,
+        run_dir: str | None,
+        vertices,
+        edges,
+        network,
+        parameters,
+        export_spec: dict[str, str],
+        generate_export_data_fn=None,
+        update_run_task_fn=None,
 ) -> None:
     """Render one export button using a shared table-driven config."""
     if generate_export_data_fn is None or update_run_task_fn is None:

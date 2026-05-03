@@ -12,15 +12,15 @@ from source.workflows import finalize_pipeline_results
 
 
 def vectorize_v200(
-    image: np.ndarray,
-    params: dict[str, Any],
-    *,
-    processor: SlavvPipeline | None = None,
-    progress_callback: Callable[[float, str], None] | None = None,
-    event_callback=None,
-    run_dir: str | None = None,
-    stop_after: str | None = None,
-    force_rerun_from: str | None = None,
+        image: np.ndarray,
+        params: dict[str, Any],
+        *,
+        processor: SlavvPipeline | None = None,
+        progress_callback: Callable[[float, str], None] | None = None,
+        event_callback=None,
+        run_dir: str | None = None,
+        stop_after: str | None = None,
+        force_rerun_from: str | None = None,
 ) -> dict[str, Any]:
     """Mirror MATLAB ``vectorize_V200`` stage order on the maintained Python pipeline."""
     active_processor = processor or SlavvPipeline()

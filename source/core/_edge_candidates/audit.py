@@ -41,10 +41,10 @@ def _normalize_candidate_count_map(raw_counts: dict[Any, Any] | None) -> dict[st
 
 
 def _normalize_candidate_connection_sources(
-    raw_sources: Any,
-    candidate_connection_count: int,
-    *,
-    default_source: str = "unknown",
+        raw_sources: Any,
+        candidate_connection_count: int,
+        *,
+        default_source: str = "unknown",
 ) -> list[str]:
     """Return a normalized per-connection source label list."""
     return _normalize_connection_sources(
@@ -55,9 +55,9 @@ def _normalize_candidate_connection_sources(
 
 
 def _collect_candidate_source_maps(
-    connections: np.ndarray,
-    origin_indices: np.ndarray,
-    connection_sources: list[str],
+        connections: np.ndarray,
+        origin_indices: np.ndarray,
+        connection_sources: list[str],
 ) -> tuple[
     dict[int, int],
     dict[int, set[tuple[int, int]]],
@@ -125,27 +125,27 @@ def _collect_candidate_source_maps(
 
 
 def _build_origin_payload_rows(
-    *,
-    total_origin_counts: dict[int, int],
-    total_origin_pairs: dict[int, set[tuple[int, int]]],
-    source_origin_pair_sets: dict[str, dict[int, set[tuple[int, int]]]],
-    frontier_origin_counts: dict[int, int],
-    supplement_origin_counts: dict[int, int],
-    geodesic_origin_counts_int: dict[int, int],
-    frontier_terminal_hits_int: dict[int, int],
-    frontier_terminal_accepts_int: dict[int, int],
-    frontier_terminal_rejections_int: dict[int, int],
+        *,
+        total_origin_counts: dict[int, int],
+        total_origin_pairs: dict[int, set[tuple[int, int]]],
+        source_origin_pair_sets: dict[str, dict[int, set[tuple[int, int]]]],
+        frontier_origin_counts: dict[int, int],
+        supplement_origin_counts: dict[int, int],
+        geodesic_origin_counts_int: dict[int, int],
+        frontier_terminal_hits_int: dict[int, int],
+        frontier_terminal_accepts_int: dict[int, int],
+        frontier_terminal_rejections_int: dict[int, int],
 ) -> list[dict[str, Any]]:
     """Build the per-origin audit payload rows."""
     per_origin_payload: list[dict[str, Any]] = []
     all_origins = (
-        set(total_origin_counts.keys())
-        | set(frontier_origin_counts.keys())
-        | set(supplement_origin_counts.keys())
-        | set(geodesic_origin_counts_int.keys())
-        | set(frontier_terminal_hits_int.keys())
-        | set(frontier_terminal_accepts_int.keys())
-        | set(frontier_terminal_rejections_int.keys())
+            set(total_origin_counts.keys())
+            | set(frontier_origin_counts.keys())
+            | set(supplement_origin_counts.keys())
+            | set(geodesic_origin_counts_int.keys())
+            | set(frontier_terminal_hits_int.keys())
+            | set(frontier_terminal_accepts_int.keys())
+            | set(frontier_terminal_rejections_int.keys())
     )
     for origin_index in sorted(all_origins):
         frontier_count = int(frontier_origin_counts.get(origin_index, 0))
@@ -234,7 +234,7 @@ def _build_candidate_diagnostics(diag: Any) -> dict[str, int]:
 
 
 def _build_pair_source_breakdown(
-    pair_sources: dict[tuple[int, int], set[str]],
+        pair_sources: dict[tuple[int, int], set[str]],
 ) -> dict[str, Any]:
     """Build the pair-source overlap summary."""
     frontier_only_pairs = sorted(
@@ -264,11 +264,11 @@ def _build_pair_source_breakdown(
 
 
 def _build_edge_candidate_audit(
-    candidates: dict[str, Any],
-    vertex_count: int,
-    use_frontier_tracer: bool,
-    frontier_origin_counts: dict[int, int] | None = None,
-    supplement_origin_counts: dict[int, int] | None = None,
+        candidates: dict[str, Any],
+        vertex_count: int,
+        use_frontier_tracer: bool,
+        frontier_origin_counts: dict[int, int] | None = None,
+        supplement_origin_counts: dict[int, int] | None = None,
 ) -> dict[str, Any]:
     """Build a stable, JSON-serializable summary of edge-candidate provenance."""
     connections = np.asarray(

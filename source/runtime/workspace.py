@@ -3,25 +3,26 @@
 from __future__ import annotations
 
 import logging
-import os
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    pass
 
 logger = logging.getLogger(__name__)
 
+
 class FolderRole(Enum):
     """Canonical roles for repository directories."""
-    PACKAGE_ROOT = "PACKAGE_ROOT"      # source/
-    DEV_ROOT = "DEV_ROOT"              # dev/
-    DATASETS = "DATASETS"              # dev/datasets/
-    ORACLES = "ORACLES"                # dev/oracles/
-    RUNS = "RUNS"                      # dev/runs/
-    REPORTS = "REPORTS"                # dev/reports/
-    DOCS = "DOCS"                      # docs/
+    PACKAGE_ROOT = "PACKAGE_ROOT"  # source/
+    DEV_ROOT = "DEV_ROOT"  # dev/
+    DATASETS = "DATASETS"  # dev/datasets/
+    ORACLES = "ORACLES"  # dev/oracles/
+    RUNS = "RUNS"  # dev/runs/
+    REPORTS = "REPORTS"  # dev/reports/
+    DOCS = "DOCS"  # docs/
+
 
 def find_repo_root(start_path: Path | str | None = None) -> Path:
     """Find the repository root by looking for pyproject.toml."""
@@ -31,6 +32,7 @@ def find_repo_root(start_path: Path | str | None = None) -> Path:
             return parent
     raise RuntimeError("Could not find repository root (missing pyproject.toml)")
 
+
 def find_experiment_root(repo_root: Path | None = None) -> Path:
     """Find the canonical experiment root (usually repo/dev)."""
     root = repo_root or find_repo_root()
@@ -38,6 +40,7 @@ def find_experiment_root(repo_root: Path | None = None) -> Path:
     if not dev_path.exists():
         raise RuntimeError(f"Experiment root 'dev' not found in {root}")
     return dev_path
+
 
 class WorkspaceAuditor:
     """Audits the repository for structural violations."""
@@ -56,13 +59,13 @@ class WorkspaceAuditor:
     def audit_root(self) -> list[str]:
         """Check for non-standard folders and files in the repository root."""
         violations = []
-        
+
         # Check for unexpected top-level items
         for item in self.root.iterdir():
             name = item.name
             if name.startswith((".", "__")) and name not in self.CANONICAL_ROOT_FOLDERS:
                 continue
-            
+
             if item.is_dir():
                 if name not in self.CANONICAL_ROOT_FOLDERS and name != "slavv.egg-info":
                     violations.append(f"Non-standard root directory: {name}")
@@ -71,7 +74,7 @@ class WorkspaceAuditor:
                     # Allow common config files but flag others
                     if name not in {".gitmodules", ".sourcery.yaml", "pytest.ini"}:
                         violations.append(f"Non-standard root file: {name}")
-        
+
         return violations
 
     def audit_source(self) -> list[str]:
@@ -83,7 +86,7 @@ class WorkspaceAuditor:
 
         for item in source_dir.rglob("*.egg-info"):
             violations.append(f"Misplaced build artifact in source: {item.relative_to(self.root)}")
-        
+
         return violations
 
     def run_full_audit(self) -> dict[str, list[str]]:

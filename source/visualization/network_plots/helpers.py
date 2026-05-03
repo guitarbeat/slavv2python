@@ -32,11 +32,11 @@ def map_values_to_colors(values: np.ndarray, colorscale: str) -> list[str]:
 
 
 def add_colorbar(
-    fig: go.Figure,
-    values: np.ndarray,
-    colorscale: str,
-    title: str,
-    is_3d: bool = False,
+        fig: go.Figure,
+        values: np.ndarray,
+        colorscale: str,
+        title: str,
+        is_3d: bool = False,
 ) -> None:
     """Add a Plotly colorbar for the provided numeric values."""
     if values is None or len(values) == 0:

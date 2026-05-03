@@ -24,9 +24,9 @@ def build_processing_run_dir(upload_bytes: bytes, validated_params: dict[str, ob
 
 
 def load_processing_snapshot(
-    session_state: Mapping[str, Any],
-    *,
-    snapshot_loader,
+        session_state: Mapping[str, Any],
+        *,
+        snapshot_loader,
 ) -> RunSnapshot | None:
     """Load the current run snapshot from session state when a run dir exists."""
     run_dir = cast("str | None", session_state.get("current_run_dir"))
@@ -51,14 +51,14 @@ def summarize_processing_metrics(processing_results: Mapping[str, Any]) -> dict[
 
 
 def store_processing_session_state(
-    session_state: MutableMapping[str, Any],
-    *,
-    results: Mapping[str, Any],
-    validated_params: dict[str, Any],
-    image_shape: tuple[int, ...],
-    dataset_name: str,
-    run_dir: str | None,
-    final_snapshot: RunSnapshot | None,
+        session_state: MutableMapping[str, Any],
+        *,
+        results: Mapping[str, Any],
+        validated_params: dict[str, Any],
+        image_shape: tuple[int, ...],
+        dataset_name: str,
+        run_dir: str | None,
+        final_snapshot: RunSnapshot | None,
 ) -> None:
     """Persist completed processing state and clear derived stale session keys."""
     session_state["processing_results"] = dict(results)

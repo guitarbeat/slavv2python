@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from .global_watershed import _generate_edge_candidates_matlab_global_watershed
 from .._edge_payloads import _empty_edge_diagnostics
 from .._radius_utils import _scalar_radius
 from ..edge_primitives import (
@@ -16,7 +17,6 @@ from ..edge_primitives import (
     _trace_energy_series,
     _trace_scale_series,
 )
-from .global_watershed import _generate_edge_candidates_matlab_global_watershed
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
@@ -32,14 +32,14 @@ def _edge_candidates_facade() -> Any:
 
 
 def _generate_fallback_directions(
-    *,
-    energy: np.ndarray,
-    start_pos: np.ndarray,
-    start_radius: float,
-    microns_per_voxel: np.ndarray,
-    max_edges_per_vertex: int,
-    direction_method: str,
-    vertex_idx: int,
+        *,
+        energy: np.ndarray,
+        start_pos: np.ndarray,
+        start_radius: float,
+        microns_per_voxel: np.ndarray,
+        max_edges_per_vertex: int,
+        direction_method: str,
+        vertex_idx: int,
 ) -> np.ndarray:
     """Generate the direction set for one fallback tracing origin."""
     edge_candidates_facade = _edge_candidates_facade()
@@ -73,13 +73,13 @@ def _generate_fallback_directions(
 
 
 def _finalize_matlab_parity_candidates(
-    candidates: dict[str, Any],
-    energy: np.ndarray,
-    scale_indices: np.ndarray | None,
-    vertex_positions: np.ndarray,
-    energy_sign: float,
-    params: dict[str, Any],
-    microns_per_voxel: np.ndarray | None = None,
+        candidates: dict[str, Any],
+        energy: np.ndarray,
+        scale_indices: np.ndarray | None,
+        vertex_positions: np.ndarray,
+        energy_sign: float,
+        params: dict[str, Any],
+        microns_per_voxel: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Finalize MATLAB-parity candidates. Currently a pass-through as non-parity supplements are removed."""
     del energy, scale_indices, vertex_positions, energy_sign, params, microns_per_voxel
@@ -87,16 +87,16 @@ def _finalize_matlab_parity_candidates(
 
 
 def _generate_edge_candidates_matlab_frontier(
-    energy: np.ndarray,
-    scale_indices: np.ndarray | None,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    vertex_center_image: np.ndarray,
-    params: dict[str, Any],
-    *,
-    heartbeat: Any | None = None,
+        energy: np.ndarray,
+        scale_indices: np.ndarray | None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        vertex_center_image: np.ndarray,
+        params: dict[str, Any],
+        *,
+        heartbeat: Any | None = None,
 ) -> dict[str, Any]:
     """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
     candidates = _generate_edge_candidates_matlab_global_watershed(
@@ -123,31 +123,31 @@ def _generate_edge_candidates_matlab_frontier(
 
 
 def _trace_fallback_origin_candidates(
-    *,
-    energy: np.ndarray,
-    scale_indices: np.ndarray | None,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_pixels: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    vertex_center_image: np.ndarray | None,
-    vertex_image: np.ndarray | None,
-    tree: cKDTree,
-    max_search_radius: float,
-    energy_sign: float,
-    direction_method: str,
-    max_edges_per_vertex: int,
-    step_size_ratio: float,
-    max_edge_energy: float,
-    max_length_ratio: float,
-    discrete_tracing: bool,
-    energy_prepared: np.ndarray,
-    mpv_prepared: np.ndarray,
-    diagnostics: dict[str, Any],
-    vertex_idx: int,
-    start_pos: np.ndarray,
-    start_scale: np.ndarray | np.generic,
+        *,
+        energy: np.ndarray,
+        scale_indices: np.ndarray | None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_pixels: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        vertex_center_image: np.ndarray | None,
+        vertex_image: np.ndarray | None,
+        tree: cKDTree,
+        max_search_radius: float,
+        energy_sign: float,
+        direction_method: str,
+        max_edges_per_vertex: int,
+        step_size_ratio: float,
+        max_edge_energy: float,
+        max_length_ratio: float,
+        discrete_tracing: bool,
+        energy_prepared: np.ndarray,
+        mpv_prepared: np.ndarray,
+        diagnostics: dict[str, Any],
+        vertex_idx: int,
+        start_pos: np.ndarray,
+        start_scale: np.ndarray | np.generic,
 ) -> tuple[
     list[np.ndarray],
     list[list[int]],
@@ -236,19 +236,19 @@ def _trace_fallback_origin_candidates(
 
 
 def _generate_edge_candidates(
-    energy: np.ndarray,
-    scale_indices: np.ndarray | None,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_pixels: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    vertex_center_image: np.ndarray | None,
-    vertex_image: np.ndarray | None,
-    tree: cKDTree,
-    max_search_radius: float,
-    params: dict[str, Any],
-    energy_sign: float,
+        energy: np.ndarray,
+        scale_indices: np.ndarray | None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_pixels: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        vertex_center_image: np.ndarray | None,
+        vertex_image: np.ndarray | None,
+        tree: cKDTree,
+        max_search_radius: float,
+        params: dict[str, Any],
+        energy_sign: float,
 ) -> dict[str, Any]:
     """Generate directed edge candidates without final dedupe or degree pruning."""
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)

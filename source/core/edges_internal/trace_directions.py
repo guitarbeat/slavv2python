@@ -27,11 +27,11 @@ def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.n
 
 
 def estimate_vessel_directions(
-    energy: np.ndarray,
-    pos: np.ndarray,
-    radius: float,
-    microns_per_voxel: np.ndarray,
-    fallback_direction_generator: Callable[[int, int | None], np.ndarray],
+        energy: np.ndarray,
+        pos: np.ndarray,
+        radius: float,
+        microns_per_voxel: np.ndarray,
+        fallback_direction_generator: Callable[[int, int | None], np.ndarray],
 ) -> np.ndarray:
     """Estimate vessel directions at a vertex via local Hessian analysis."""
     sigma = max(radius / 2.0, 1.0)
@@ -61,7 +61,7 @@ def estimate_vessel_directions(
             mode="nearest",
             order="rc",
         )
-    hessian_elems = [h * (radius**2) for h in raw_hessian]
+    hessian_elems = [h * (radius ** 2) for h in raw_hessian]
     patch_center_arr = np.array(patch.shape, dtype=np.int64) // 2
     patch_center = tuple(int(value) for value in patch_center_arr.tolist())
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]

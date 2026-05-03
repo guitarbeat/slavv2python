@@ -39,11 +39,11 @@ def load_builtin_lut_fixture() -> dict[str, Any]:
 
 
 def compare_lut_fixture_payload(
-    fixture_payload: dict[str, Any],
-    *,
-    size_of_image: tuple[int, int, int],
-    microns_per_voxel: np.ndarray,
-    lumen_radius_microns: np.ndarray,
+        fixture_payload: dict[str, Any],
+        *,
+        size_of_image: tuple[int, int, int],
+        microns_per_voxel: np.ndarray,
+        lumen_radius_microns: np.ndarray,
 ) -> dict[str, Any]:
     """Compare the shared Python LUT builder against a checked-in fixture payload."""
     stage_summaries: dict[str, dict[str, Any]] = {}
@@ -173,9 +173,9 @@ def render_lut_proof_report(report_payload: dict[str, Any]) -> str:
 
 
 def build_candidate_snapshot_payload(
-    candidates: dict[str, Any],
-    *,
-    include_debug_maps: bool = False,
+        candidates: dict[str, Any],
+        *,
+        include_debug_maps: bool = False,
 ) -> dict[str, Any]:
     """Return a slim candidate payload suitable for replay and coverage checks."""
     snapshot = {
@@ -215,8 +215,8 @@ def build_candidate_snapshot_payload(
 
 
 def build_candidate_coverage_report(
-    matlab_edges_payload: dict[str, Any],
-    candidate_payload: dict[str, Any],
+        matlab_edges_payload: dict[str, Any],
+        candidate_payload: dict[str, Any],
 ) -> dict[str, Any]:
     """Compare raw Python candidate endpoint pairs against final MATLAB edge pairs."""
     matlab_pair_set = _candidate_endpoint_pair_set(
@@ -292,10 +292,10 @@ def _normalize_lut_fixture_entry(payload: dict[str, Any]) -> dict[str, np.ndarra
 
 
 def _compare_lut_scale_payload(
-    expected: dict[str, np.ndarray],
-    actual: dict[str, np.ndarray],
-    *,
-    field_path: str,
+        expected: dict[str, np.ndarray],
+        actual: dict[str, np.ndarray],
+        *,
+        field_path: str,
 ) -> dict[str, Any] | None:
     for field_name in ("linear_offsets", "local_subscripts", "r_over_R", "unit_vectors"):
         expected_array = np.asarray(expected[field_name])

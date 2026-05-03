@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_edges_watershed(
-    energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+        energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
 ) -> dict[str, Any]:
     """Extract edges using watershed segmentation seeded at vertices."""
     logger.info("Extracting edges via watershed")
@@ -57,7 +57,7 @@ def extract_edges_watershed(
             if pair in seen:
                 continue
             boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
-                ndi.binary_dilation(region, structure) & (labels == neighbor)
+                    ndi.binary_dilation(region, structure) & (labels == neighbor)
             )
             coords = np.argwhere(boundary)
             if coords.size == 0:

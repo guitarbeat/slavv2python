@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 def save_network_export(
-    format_type: str,
-    *,
-    output_dir: str,
-    network_obj: Any,
-    results: Mapping[str, Any],
-    run_snapshot: Any | None = None,
-    run_dir: str | None = None,
+        format_type: str,
+        *,
+        output_dir: str,
+        network_obj: Any,
+        results: Mapping[str, Any],
+        run_snapshot: Any | None = None,
+        run_dir: str | None = None,
 ) -> str | None:
     """Persist one export format and return the written path when successful."""
     export_path = os.path.join(output_dir, _EXPORT_FILE_NAMES[format_type])

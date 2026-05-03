@@ -8,22 +8,22 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from ...utils import calculate_path_length
 from .helpers import add_colorbar, map_values_to_colors
 from .layout import axis_labels, plot_2d_layout, plot_slice_layout, select_plot_axes
+from ...utils import calculate_path_length
 
 
 def plot_2d_network(
-    color_schemes: dict[str, str],
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    color_by: str = "energy",
-    projection_axis: int = 2,
-    show_vertices: bool = True,
-    show_edges: bool = True,
-    show_bifurcations: bool = True,
+        color_schemes: dict[str, str],
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        color_by: str = "energy",
+        projection_axis: int = 2,
+        show_vertices: bool = True,
+        show_edges: bool = True,
+        show_bifurcations: bool = True,
 ) -> go.Figure:
     """Create 2D network visualization with projection."""
     fig = go.Figure()
@@ -162,7 +162,7 @@ def plot_2d_network(
             colorscale = None
 
         edge_colorbar = (
-            show_edges and edge_traces and color_by in {"depth", "energy", "radius", "length"}
+                show_edges and edge_traces and color_by in {"depth", "energy", "radius", "length"}
         )
         marker_dict = {
             "size": 8,
@@ -212,17 +212,17 @@ def plot_2d_network(
 
 
 def plot_network_slice(
-    color_schemes: dict[str, str],
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    network: dict[str, Any],
-    parameters: dict[str, Any],
-    axis: int = 2,
-    center_in_microns: float = 0.0,
-    thickness_in_microns: float = 1.0,
-    color_by: str = "energy",
-    show_vertices: bool = True,
-    show_edges: bool = True,
+        color_schemes: dict[str, str],
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        network: dict[str, Any],
+        parameters: dict[str, Any],
+        axis: int = 2,
+        center_in_microns: float = 0.0,
+        thickness_in_microns: float = 1.0,
+        color_by: str = "energy",
+        show_vertices: bool = True,
+        show_edges: bool = True,
 ) -> go.Figure:
     """Create a 2D cross-sectional slice of the network."""
     microns_per_voxel = parameters.get("microns_per_voxel", [1.0, 1.0, 1.0])

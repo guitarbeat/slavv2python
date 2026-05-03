@@ -9,17 +9,17 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from ...models import normalize_pipeline_result
-from ...utils import calculate_path_length
 from .dashboard import add_summary_dashboard_traces
 from .exports import export_casx, export_csv, export_json, export_mat, export_vmv
 from .layout import distribution_layout, empty_figure, summary_dashboard_layout
+from ...models import normalize_pipeline_result
+from ...utils import calculate_path_length
 
 logger = logging.getLogger(__name__)
 
 
 def plot_energy_field(
-    self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
+        self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
 ) -> go.Figure:
     """
     Visualize energy field as 2D slice
@@ -63,7 +63,7 @@ def plot_energy_field(
 
 
 def plot_strand_analysis(
-    self, network: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
+        self, network: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
 ) -> go.Figure:
     """
     Create strand length and connectivity analysis
@@ -129,11 +129,11 @@ def plot_strand_analysis(
 
 
 def plot_depth_statistics(
-    self,
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    parameters: dict[str, Any],
-    n_bins: int = 10,
+        self,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        parameters: dict[str, Any],
+        n_bins: int = 10,
 ) -> go.Figure:
     """
     Create depth-resolved statistics
@@ -329,7 +329,7 @@ def create_summary_dashboard(self, processing_results: dict[str, Any]) -> go.Fig
 
 
 def export_network_data(
-    self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
+        self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
 ) -> str:
     """
     Export network data in various formats
@@ -365,11 +365,11 @@ def export_network_data(
 
 
 def plot_length_weighted_histograms(
-    self,
-    vertices: dict[str, Any],
-    edges: dict[str, Any],
-    parameters: dict[str, Any],
-    number_of_bins: int = 50,
+        self,
+        vertices: dict[str, Any],
+        edges: dict[str, Any],
+        parameters: dict[str, Any],
+        number_of_bins: int = 50,
 ) -> go.Figure:
     """Create length-weighted histograms of radius, depth, and inclination.
 

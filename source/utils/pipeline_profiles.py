@@ -98,9 +98,9 @@ def get_pipeline_profile_defaults(profile: str) -> dict[str, Any]:
 
 
 def apply_pipeline_profile(
-    parameters: Mapping[str, Any],
-    *,
-    default_profile: str | None = None,
+        parameters: Mapping[str, Any],
+        *,
+        default_profile: str | None = None,
 ) -> dict[str, Any]:
     """Seed profile defaults, then overlay explicit user parameters."""
     raw_parameters = dict(parameters)

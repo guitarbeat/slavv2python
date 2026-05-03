@@ -23,7 +23,6 @@ from source.apps.web_app_dashboard import (
     _dashboard_breakdown_frame,
     _dashboard_stage_frame,
 )
-
 from .pages.analysis import show_analysis_page
 from .pages.curation import show_ml_curation_page
 from .pages.dashboard import (
@@ -123,14 +122,14 @@ st.html(
 
 
 def _render_export_download(
-    column,
-    *,
-    run_dir: str | None,
-    vertices,
-    edges,
-    network,
-    parameters,
-    export_spec: dict[str, str],
+        column,
+        *,
+        run_dir: str | None,
+        vertices,
+        edges,
+        network,
+        parameters,
+        export_spec: dict[str, str],
 ):
     """Facade wrapper that preserves monkeypatch-friendly app helpers."""
     return _render_export_download_impl(

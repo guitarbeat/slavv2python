@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass(frozen=True)
 class RunCounts:
     """Vertex, edge, and strand counts for a run."""
     vertices: int
     edges: int
     strands: int
+
 
 @dataclass(frozen=True)
 class OracleSurface:
@@ -23,6 +25,7 @@ class OracleSurface:
     matlab_source_version: str | None
     dataset_hash: str | None
 
+
 @dataclass(frozen=True)
 class DatasetSurface:
     """Authority surface for a preserved dataset package."""
@@ -30,6 +33,7 @@ class DatasetSurface:
     manifest_path: Path
     input_file: Path
     dataset_hash: str
+
 
 @dataclass(frozen=True)
 class SourceRunSurface:
@@ -40,6 +44,7 @@ class SourceRunSurface:
     validated_params_path: Path
     run_snapshot_path: Path | None
 
+
 @dataclass(frozen=True)
 class ExactProofSourceSurface:
     """Surface for an exact-route proof against a MATLAB oracle."""
@@ -49,6 +54,7 @@ class ExactProofSourceSurface:
     oracle_surface: OracleSurface
     matlab_batch_dir: Path
     matlab_vector_paths: dict[str, Path]
+
 
 @dataclass(frozen=True)
 class ExactPreflightSurface:

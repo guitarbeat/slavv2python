@@ -62,7 +62,7 @@ PARAM_DIFF_PATH = EXPERIMENT_PARAMS_DIR / "param_diff.json"
 HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
 EDGE_CANDIDATE_AUDIT_PATH = (
-    Path("02_Output") / "python_results" / "stages" / "edges" / "candidate_audit.json"
+        Path("02_Output") / "python_results" / "stages" / "edges" / "candidate_audit.json"
 )
 
 # Parameter validation keys

@@ -17,24 +17,24 @@ from ..graph import _matlab_edge_metrics
 
 
 def _matlab_linear_indices_from_points(
-    points: np.ndarray,
-    image_shape: tuple[int, int, int],
+        points: np.ndarray,
+        image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     coords = np.rint(np.asarray(points, dtype=np.float32)[:, :3]).astype(np.int64, copy=False)
     coords[:, 0] = np.clip(coords[:, 0], 0, image_shape[0] - 1)
     coords[:, 1] = np.clip(coords[:, 1], 0, image_shape[1] - 1)
     coords[:, 2] = np.clip(coords[:, 2], 0, image_shape[2] - 1)
     linear = (
-        coords[:, 0]
-        + coords[:, 1] * image_shape[0]
-        + coords[:, 2] * image_shape[0] * image_shape[1]
+            coords[:, 0]
+            + coords[:, 1] * image_shape[0]
+            + coords[:, 2] * image_shape[0] * image_shape[1]
     ).astype(np.int64, copy=False)
     return cast("np.ndarray", linear)
 
 
 def _matlab_position_from_linear_index(
-    linear_index: int,
-    image_shape: tuple[int, int, int],
+        linear_index: int,
+        image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     y_dim, x_dim, _z_dim = image_shape
     xy_area = y_dim * x_dim
@@ -46,8 +46,8 @@ def _matlab_position_from_linear_index(
 
 
 def _matlab_repeated_endpoint_interior_indices(
-    edge_index_cells: list[np.ndarray],
-    vertex_linear_indices: np.ndarray,
+        edge_index_cells: list[np.ndarray],
+        vertex_linear_indices: np.ndarray,
 ) -> list[int]:
     if not edge_index_cells:
         return []
@@ -103,11 +103,11 @@ def _matlab_repeated_endpoint_interior_indices(
 
 
 def _can_place_bridge_vertex(
-    coord: np.ndarray,
-    scale_index: int,
-    existing_vertex_volume_image: np.ndarray,
-    lumen_radius_pixels_axes: np.ndarray,
-    image_shape: tuple[int, int, int],
+        coord: np.ndarray,
+        scale_index: int,
+        existing_vertex_volume_image: np.ndarray,
+        lumen_radius_pixels_axes: np.ndarray,
+        image_shape: tuple[int, int, int],
 ) -> bool:
     test_positions = np.asarray([coord], dtype=np.float32)
     test_scales = np.asarray([scale_index], dtype=np.int16)
@@ -124,21 +124,21 @@ def _can_place_bridge_vertex(
 
 
 def _matlab_bridge_search_target(
-    overlap_linear_index: int,
-    traces: list[np.ndarray],
-    scale_traces: list[np.ndarray],
-    child_edges: list[tuple[int, int]],
-    *,
-    scale_indices: np.ndarray | None,
-    energy: np.ndarray,
-    vertex_center_image: np.ndarray,
-    vertex_volume_image: np.ndarray,
-    lumen_radius_pixels_axes: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    image_shape: tuple[int, int, int],
-    strel_apothem: int,
-    max_edge_length_per_origin_radius: float,
+        overlap_linear_index: int,
+        traces: list[np.ndarray],
+        scale_traces: list[np.ndarray],
+        child_edges: list[tuple[int, int]],
+        *,
+        scale_indices: np.ndarray | None,
+        energy: np.ndarray,
+        vertex_center_image: np.ndarray,
+        vertex_volume_image: np.ndarray,
+        lumen_radius_pixels_axes: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        image_shape: tuple[int, int, int],
+        strel_apothem: int,
+        max_edge_length_per_origin_radius: float,
 ) -> dict[str, Any] | None:
     """Port MATLAB's local ``add_vertex_to_edge`` search over edge voxels."""
     if not traces:
@@ -240,12 +240,12 @@ def _matlab_bridge_search_target(
 
         neighbor_coords = current_coord[None, :] + cube_offsets
         valid_mask = (
-            (neighbor_coords[:, 0] >= 0)
-            & (neighbor_coords[:, 0] < shape[0])
-            & (neighbor_coords[:, 1] >= 0)
-            & (neighbor_coords[:, 1] < shape[1])
-            & (neighbor_coords[:, 2] >= 0)
-            & (neighbor_coords[:, 2] < shape[2])
+                (neighbor_coords[:, 0] >= 0)
+                & (neighbor_coords[:, 0] < shape[0])
+                & (neighbor_coords[:, 1] >= 0)
+                & (neighbor_coords[:, 1] < shape[1])
+                & (neighbor_coords[:, 2] >= 0)
+                & (neighbor_coords[:, 2] < shape[2])
         )
         valid_coords = np.asarray(neighbor_coords[valid_mask], dtype=np.int32)
         valid_distances = np.asarray(cube_distances[valid_mask], dtype=np.float32)
@@ -253,9 +253,9 @@ def _matlab_bridge_search_target(
 
         new_indices_considered: list[int] = []
         for _neighbor_coord, neighbor_linear, neighbor_distance in zip(
-            valid_coords,
-            valid_linear.tolist(),
-            valid_distances.tolist(),
+                valid_coords,
+                valid_linear.tolist(),
+                valid_distances.tolist(),
         ):
             previous_pointer_energy = float(pointer_energy_map.get(int(neighbor_linear), 0.0))
             if previous_pointer_energy <= current_energy:
@@ -363,11 +363,11 @@ def _matlab_bridge_search_target(
                 )
             )
             if _can_place_bridge_vertex(
-                current_coord,
-                current_scale,
-                vertex_volume_image,
-                lumen_radius_pixels_axes,
-                shape,
+                    current_coord,
+                    current_scale,
+                    vertex_volume_image,
+                    lumen_radius_pixels_axes,
+                    shape,
             ):
                 terminal_vertex_index = -1
                 terminal_kind = "new_vertex"
@@ -378,16 +378,16 @@ def _matlab_bridge_search_target(
 
 
 def add_vertices_to_edges_matlab_style(
-    chosen_edges: dict[str, Any],
-    vertices: dict[str, Any],
-    *,
-    energy: np.ndarray,
-    scale_indices: np.ndarray | None,
-    microns_per_voxel: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    lumen_radius_pixels_axes: np.ndarray,
-    size_of_image: tuple[int, int, int],
-    params: dict[str, Any] | None = None,
+        chosen_edges: dict[str, Any],
+        vertices: dict[str, Any],
+        *,
+        energy: np.ndarray,
+        scale_indices: np.ndarray | None,
+        microns_per_voxel: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        lumen_radius_pixels_axes: np.ndarray,
+        size_of_image: tuple[int, int, int],
+        params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Mirror MATLAB ``add_vertices_to_edges`` structural bridge insertion."""
     bridge_params = params or {}

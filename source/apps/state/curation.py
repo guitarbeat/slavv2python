@@ -25,11 +25,11 @@ def summarize_processing_counts(processing_results: dict[str, Any]) -> dict[str,
 
 
 def sync_curated_processing_results(
-    processing_results: dict[str, Any],
-    curated_vertices: dict[str, Any],
-    curated_edges: dict[str, Any],
-    *,
-    baseline_counts: dict[str, int] | None = None,
+        processing_results: dict[str, Any],
+        curated_vertices: dict[str, Any],
+        curated_edges: dict[str, Any],
+        *,
+        baseline_counts: dict[str, int] | None = None,
 ) -> tuple[dict[str, Any], dict[str, int], dict[str, int]]:
     """Return updated processing results with a rebuilt network and stable baseline counts."""
     typed_result = normalize_pipeline_result(processing_results)
@@ -53,11 +53,11 @@ def sync_curated_processing_results(
 
 
 def apply_curated_session_results(
-    session_state: MutableMapping[str, Any],
-    curated_vertices: dict[str, Any],
-    curated_edges: dict[str, Any],
-    *,
-    curation_mode: str,
+        session_state: MutableMapping[str, Any],
+        curated_vertices: dict[str, Any],
+        curated_edges: dict[str, Any],
+        *,
+        curation_mode: str,
 ) -> tuple[dict[str, int], dict[str, int]]:
     """Apply curated vertices and edges to session state and clear stale derived data."""
     updated_results, baseline_counts, current_counts = sync_curated_processing_results(
@@ -74,8 +74,8 @@ def apply_curated_session_results(
 
 
 def build_curation_stats_rows(
-    baseline_counts: dict[str, int],
-    current_counts: dict[str, int],
+        baseline_counts: dict[str, int],
+        current_counts: dict[str, int],
 ) -> list[dict[str, str | int]]:
     """Build curation comparison rows with signed deltas."""
     rows: list[dict[str, str | int]] = []

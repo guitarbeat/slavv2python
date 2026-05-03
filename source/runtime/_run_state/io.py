@@ -65,7 +65,7 @@ def fingerprint_file(path: str | Path, chunk_size: int = 1024 * 1024) -> str:
 
 
 def _replace_with_retry(
-    tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25
+        tmp_name: str, target: Path, *, attempts: int = 20, delay: float = 0.25
 ) -> None:
     """Retry atomic replacement to tolerate transient Windows file locks."""
     last_error = None

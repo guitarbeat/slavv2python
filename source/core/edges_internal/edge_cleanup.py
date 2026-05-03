@@ -10,9 +10,9 @@ from ..edge_primitives import _clip_trace_indices
 
 
 def clean_edges_vertex_degree_excess_python(
-    connections: np.ndarray,
-    metrics: np.ndarray,
-    max_edges_per_vertex: int,
+        connections: np.ndarray,
+        metrics: np.ndarray,
+        max_edges_per_vertex: int,
 ) -> np.ndarray:
     """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
     del metrics
@@ -39,8 +39,8 @@ def clean_edges_vertex_degree_excess_python(
         dtype=bool,
     )
     vertex_degrees = (
-        np.asarray(adjacency_matrix.sum(axis=0)).ravel()
-        + np.asarray(adjacency_matrix.sum(axis=1)).ravel()
+            np.asarray(adjacency_matrix.sum(axis=0)).ravel()
+            + np.asarray(adjacency_matrix.sum(axis=1)).ravel()
     )
     vertex_excess_degrees = vertex_degrees - int(max_edges_per_vertex)
     vertices_of_excess_degree = np.flatnonzero(vertex_excess_degrees > 0)
@@ -69,9 +69,9 @@ def clean_edges_vertex_degree_excess_python(
 
 
 def clean_edges_orphans_python(
-    traces: list[np.ndarray],
-    image_shape: tuple[int, int, int],
-    vertex_positions: np.ndarray,
+        traces: list[np.ndarray],
+        image_shape: tuple[int, int, int],
+        vertex_positions: np.ndarray,
 ) -> np.ndarray:
     """Remove edges whose endpoints do not touch a vertex or any interior edge voxel."""
     if not traces:

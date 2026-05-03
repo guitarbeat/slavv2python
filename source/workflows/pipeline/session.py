@@ -41,9 +41,9 @@ def validate_stage_control(stage_name: str | None, option_name: str) -> None:
 
 
 def emit_progress(
-    progress_callback: Callable[[float, str], None] | None,
-    fraction: float,
-    stage: str,
+        progress_callback: Callable[[float, str], None] | None,
+        fraction: float,
+        stage: str,
 ) -> None:
     """Emit a pipeline progress update when a callback is present."""
     if progress_callback:
@@ -51,8 +51,8 @@ def emit_progress(
 
 
 def effective_run_dir(
-    run_dir: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
+        run_dir: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
 ) -> str | None:
     """Return the effective run directory for this pipeline execution."""
     if run_dir is not None or event_callback is None:
@@ -61,14 +61,14 @@ def effective_run_dir(
 
 
 def create_run_context(
-    effective_run_dir_value: str | None,
-    input_fingerprint: str,
-    params_fingerprint: str,
-    image: np.ndarray,
-    stop_after: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
-    *,
-    run_context_factory: type[RunContext] | Callable[..., RunContext],
+        effective_run_dir_value: str | None,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        image: np.ndarray,
+        stop_after: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
+        *,
+        run_context_factory: type[RunContext] | Callable[..., RunContext],
 ) -> RunContext | None:
     """Create a run context when structured run tracking is enabled."""
     if effective_run_dir_value is None:
@@ -88,13 +88,13 @@ def create_run_context(
 
 
 def initialize_run_context(
-    run_context: RunContext | None,
-    *,
-    input_fingerprint: str,
-    params_fingerprint: str,
-    force_rerun_from: str | None,
-    parameters: dict[str, Any],
-    atomic_write_json_fn: Callable[[Any, Any], None] | None = None,
+        run_context: RunContext | None,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        force_rerun_from: str | None,
+        parameters: dict[str, Any],
+        atomic_write_json_fn: Callable[[Any, Any], None] | None = None,
 ) -> None:
     """Initialize the run context metadata and resume policy."""
     if atomic_write_json_fn is None:
@@ -130,11 +130,11 @@ def force_rerun_flags(force_rerun_from: str | None) -> dict[str, bool]:
 
 
 def preprocess_image(
-    image: np.ndarray,
-    parameters: dict[str, Any],
-    run_context: RunContext | None,
-    *,
-    preprocess_image_fn: Callable[[np.ndarray, dict[str, Any]], Any] | None = None,
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        run_context: RunContext | None,
+        *,
+        preprocess_image_fn: Callable[[np.ndarray, dict[str, Any]], Any] | None = None,
 ) -> np.ndarray:
     """Preprocess the image and update run-state bookkeeping."""
     if preprocess_image_fn is None:
@@ -152,21 +152,21 @@ def preprocess_image(
 
 
 def prepare_pipeline_run(
-    image: np.ndarray,
-    parameters: dict[str, Any],
-    *,
-    run_dir: str | None,
-    stop_after: str | None,
-    force_rerun_from: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
-    run_context_factory: type[RunContext] | Callable[..., RunContext],
-    validate_parameters_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
-    fingerprint_array_fn: Callable[[np.ndarray], str] | None = None,
-    fingerprint_jsonable_fn: Callable[[dict[str, Any]], str] | None = None,
-    effective_run_dir_fn: Callable[..., str | None] | None = None,
-    create_run_context_fn: Callable[..., RunContext | None] | None = None,
-    initialize_run_context_fn: Callable[..., None] | None = None,
-    force_rerun_flags_fn: Callable[[str | None], dict[str, bool]] | None = None,
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        *,
+        run_dir: str | None,
+        stop_after: str | None,
+        force_rerun_from: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
+        run_context_factory: type[RunContext] | Callable[..., RunContext],
+        validate_parameters_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        fingerprint_array_fn: Callable[[np.ndarray], str] | None = None,
+        fingerprint_jsonable_fn: Callable[[dict[str, Any]], str] | None = None,
+        effective_run_dir_fn: Callable[..., str | None] | None = None,
+        create_run_context_fn: Callable[..., RunContext | None] | None = None,
+        initialize_run_context_fn: Callable[..., None] | None = None,
+        force_rerun_flags_fn: Callable[[str | None], dict[str, bool]] | None = None,
 ) -> PreparedPipelineRun:
     """Validate inputs and prepare run-state bookkeeping for pipeline execution."""
     if validate_parameters_fn is None:

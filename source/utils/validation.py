@@ -57,8 +57,8 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     if validated["radius_of_smallest_vessel_in_microns"] <= 0:
         raise ValueError("radius_of_smallest_vessel_in_microns must be positive")
     if (
-        validated["radius_of_largest_vessel_in_microns"]
-        <= validated["radius_of_smallest_vessel_in_microns"]
+            validated["radius_of_largest_vessel_in_microns"]
+            <= validated["radius_of_smallest_vessel_in_microns"]
     ):
         raise ValueError("radius_of_largest_vessel_in_microns must be larger than smallest")
 
@@ -131,11 +131,11 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("edge_method must be 'tracing' or 'watershed'")
     validated["energy_method"] = params.get("energy_method", "hessian")
     if validated["energy_method"] not in (
-        "hessian",
-        "frangi",
-        "sato",
-        "simpleitk_objectness",
-        "cupy_hessian",
+            "hessian",
+            "frangi",
+            "sato",
+            "simpleitk_objectness",
+            "cupy_hessian",
     ):
         raise ValueError(
             "energy_method must be 'hessian', 'frangi', 'sato', "
@@ -173,11 +173,11 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["discrete_tracing"] = params.get("discrete_tracing", False)
 
     for key in (
-        "max_voxels_per_node_energy",
-        "space_strel_apothem",
-        "space_strel_apothem_edges",
-        "max_voxels_per_node",
-        "number_of_edges_per_vertex",
+            "max_voxels_per_node_energy",
+            "space_strel_apothem",
+            "space_strel_apothem_edges",
+            "max_voxels_per_node",
+            "number_of_edges_per_vertex",
     ):
         validated[key] = _coerce_integral_parameter(key, validated[key])
 

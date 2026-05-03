@@ -9,8 +9,8 @@ from .vector_math import safe_normalize_rows
 
 
 def evaluate_registration(
-    vectors_after: np.ndarray,
-    vectors_before: np.ndarray,
+        vectors_after: np.ndarray,
+        vectors_before: np.ndarray,
 ) -> tuple[float, np.ndarray, np.ndarray]:
     """Evaluate registration by finding pairwise best match scores between vector sets."""
     vectors_after_arr = np.asarray(vectors_after, dtype=float)
@@ -33,12 +33,12 @@ def evaluate_registration(
 
 
 def transform_vector_set(
-    positions: np.ndarray,
-    *,
-    matrix: np.ndarray | None = None,
-    scale: list[float] | None = None,
-    rotation: np.ndarray | None = None,
-    translate: list[float] | None = None,
+        positions: np.ndarray,
+        *,
+        matrix: np.ndarray | None = None,
+        scale: list[float] | None = None,
+        rotation: np.ndarray | None = None,
+        translate: list[float] | None = None,
 ) -> np.ndarray:
     """Apply geometric transforms to a set of positions."""
     pts = np.asarray(positions, dtype=float)
@@ -71,21 +71,21 @@ def transform_vector_set(
 
 
 def icp_register_rigid(
-    source: np.ndarray,
-    target: np.ndarray,
-    *,
-    with_scale: bool = False,
-    max_iters: int = 50,
-    tol: float = 1e-6,
+        source: np.ndarray,
+        target: np.ndarray,
+        *,
+        with_scale: bool = False,
+        max_iters: int = 50,
+        tol: float = 1e-6,
 ) -> tuple[np.ndarray, float]:
     """Iterative closest point (rigid) registration using Kabsch per iteration."""
     source_arr = np.asarray(source, dtype=float)
     target_arr = np.asarray(target, dtype=float)
     if (
-        source_arr.ndim != 2
-        or target_arr.ndim != 2
-        or source_arr.shape[1] != 3
-        or target_arr.shape[1] != 3
+            source_arr.ndim != 2
+            or target_arr.ndim != 2
+            or source_arr.shape[1] != 3
+            or target_arr.shape[1] != 3
     ):
         raise ValueError("source and target must be (N,3) arrays")
     if len(source_arr) == 0 or len(target_arr) == 0:
@@ -115,11 +115,11 @@ def icp_register_rigid(
             rotation_kabsch = v_transpose.T @ u_vals.T
         scale_kabsch = 1.0
         if with_scale:
-            denom = float(np.sum(source_centered**2))
+            denom = float(np.sum(source_centered ** 2))
             if denom > 0:
                 scale_kabsch = float(np.sum(singular_vals) / denom)
         translate_kabsch = target_matched.mean(axis=0) - scale_kabsch * (
-            rotation_kabsch @ source_arr.mean(axis=0)
+                rotation_kabsch @ source_arr.mean(axis=0)
         )
 
         rotation = rotation_kabsch @ rotation
@@ -140,12 +140,12 @@ def icp_register_rigid(
 
 
 def register_vector_sets(
-    source: np.ndarray,
-    target: np.ndarray,
-    *,
-    method: str = "rigid",
-    with_scale: bool = False,
-    return_error: bool = False,
+        source: np.ndarray,
+        target: np.ndarray,
+        *,
+        method: str = "rigid",
+        with_scale: bool = False,
+        return_error: bool = False,
 ) -> Any:
     """Register source points to target points and return a 4x4 transform."""
     source_arr = np.asarray(source, dtype=float)
@@ -182,7 +182,7 @@ def register_vector_sets(
         rotation = v_transpose.T @ u_vals.T
     scale = 1.0
     if with_scale:
-        denom = float(np.sum(source_centered**2))
+        denom = float(np.sum(source_centered ** 2))
         if denom > 0:
             scale = float(np.sum(singular_vals) / denom)
     translate = target_mean - scale * (rotation @ source_mean)
@@ -195,15 +195,15 @@ def register_vector_sets(
 
 
 def register_strands(
-    vertices_a: np.ndarray,
-    edges_a: np.ndarray,
-    vertices_b: np.ndarray,
-    edges_b: np.ndarray,
-    *,
-    method: str = "rigid",
-    with_scale: bool = False,
-    match_threshold: float = 2.0,
-    max_iters: int = 50,
+        vertices_a: np.ndarray,
+        edges_a: np.ndarray,
+        vertices_b: np.ndarray,
+        edges_b: np.ndarray,
+        *,
+        method: str = "rigid",
+        with_scale: bool = False,
+        match_threshold: float = 2.0,
+        max_iters: int = 50,
 ) -> dict[str, Any]:
     """Register and merge two networks (A onto B) and return the merged result."""
     vertices_a_arr = np.asarray(vertices_a, dtype=float)

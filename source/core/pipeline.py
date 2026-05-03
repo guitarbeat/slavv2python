@@ -9,6 +9,10 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, cast
 
+from . import edges as edge_ops
+from . import energy
+from . import network as network_ops
+from . import vertices as vertex_ops
 from .. import utils
 from ..runtime import ProgressEvent, RunContext
 from ..runtime.run_state import PREPROCESS_STAGE
@@ -25,10 +29,6 @@ from ..workflows import (
     run_pipeline_stage_sequence,
     validate_stage_control,
 )
-from . import edges as edge_ops
-from . import energy
-from . import network as network_ops
-from . import vertices as vertex_ops
 
 if TYPE_CHECKING:
     import numpy as np
@@ -46,14 +46,14 @@ class SlavvPipeline:
         self.network = None
 
     def run(
-        self,
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        progress_callback: Callable[[float, str], None] | None = None,
-        event_callback: Callable[[ProgressEvent], None] | None = None,
-        run_dir: str | None = None,
-        stop_after: str | None = None,
-        force_rerun_from: str | None = None,
+            self,
+            image: np.ndarray,
+            parameters: dict[str, Any],
+            progress_callback: Callable[[float, str], None] | None = None,
+            event_callback: Callable[[ProgressEvent], None] | None = None,
+            run_dir: str | None = None,
+            stop_after: str | None = None,
+            force_rerun_from: str | None = None,
     ) -> dict[str, Any]:
         """Complete SLAVV processing pipeline.
 
@@ -142,14 +142,14 @@ class SlavvPipeline:
         return cast("dict[str, Any]", finalize_pipeline_results(results))
 
     def process_image(
-        self,
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        progress_callback: Callable[[float, str], None] | None = None,
-        event_callback: Callable[[ProgressEvent], None] | None = None,
-        run_dir: str | None = None,
-        stop_after: str | None = None,
-        force_rerun_from: str | None = None,
+            self,
+            image: np.ndarray,
+            parameters: dict[str, Any],
+            progress_callback: Callable[[float, str], None] | None = None,
+            event_callback: Callable[[ProgressEvent], None] | None = None,
+            run_dir: str | None = None,
+            stop_after: str | None = None,
+            force_rerun_from: str | None = None,
     ) -> dict[str, Any]:
         """Compatibility wrapper for the preferred ``run`` method."""
         warnings.warn(
@@ -168,11 +168,11 @@ class SlavvPipeline:
         )
 
     def _resolve_energy_stage(
-        self,
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
+            self,
+            image: np.ndarray,
+            parameters: dict[str, Any],
+            run_context: RunContext | None,
+            force_rerun: bool,
     ) -> dict[str, Any]:
         return cast(
             "dict[str, Any]",
@@ -191,11 +191,11 @@ class SlavvPipeline:
         )
 
     def _resolve_vertices_stage(
-        self,
-        energy_data: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
+            self,
+            energy_data: dict[str, Any],
+            parameters: dict[str, Any],
+            run_context: RunContext | None,
+            force_rerun: bool,
     ) -> dict[str, Any]:
         return cast(
             "dict[str, Any]",
@@ -213,12 +213,12 @@ class SlavvPipeline:
         )
 
     def _resolve_edges_stage(
-        self,
-        energy_data: dict[str, Any],
-        vertices: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
+            self,
+            energy_data: dict[str, Any],
+            vertices: dict[str, Any],
+            parameters: dict[str, Any],
+            run_context: RunContext | None,
+            force_rerun: bool,
     ) -> dict[str, Any]:
         edge_method = parameters.get("edge_method", "tracing")
         return cast(
@@ -252,12 +252,12 @@ class SlavvPipeline:
         )
 
     def _resolve_network_stage(
-        self,
-        edges: dict[str, Any],
-        vertices: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
+            self,
+            edges: dict[str, Any],
+            vertices: dict[str, Any],
+            parameters: dict[str, Any],
+            run_context: RunContext | None,
+            force_rerun: bool,
     ) -> dict[str, Any]:
         return cast(
             "dict[str, Any]",
@@ -291,32 +291,32 @@ class SlavvPipeline:
         return self.compute_energy(image, params)
 
     def extract_vertices(
-        self, energy_data: dict[str, Any], params: dict[str, Any]
+            self, energy_data: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract vertices as local extrema. Delegates to ``vertices`` module."""
         result = vertex_ops.extract_vertices(energy_data, params)
         return cast("dict[str, Any]", result)
 
     def extract_edges(
-        self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+            self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract edges by tracing. Delegates to ``edges`` module."""
         return edge_ops.extract_edges(energy_data, vertices, params)
 
     def extract_edges_watershed(
-        self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+            self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract edges by watershed. Delegates to ``edges`` module."""
         return edge_ops.extract_edges_watershed(energy_data, vertices, params)
 
     def build_network(
-        self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+            self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Construct the final network from traced edges and vertices."""
         return network_ops.construct_network(edges, vertices, params)
 
     def construct_network(
-        self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
+            self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Compatibility wrapper for the preferred ``build_network`` method."""
         warnings.warn(

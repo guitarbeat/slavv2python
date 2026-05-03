@@ -4,7 +4,6 @@ Handles the conversion of traced edges into a connected graph (strands, bifurcat
 """
 
 from .construction import construct_network, construct_network_resumable
-from .operations import trace_strand_sparse, sort_and_validate_strands_sparse
 from .metrics import _matlab_edge_metrics
 from .operations import (
     _matlab_get_network_v190,
@@ -16,6 +15,7 @@ from .operations import (
     _remove_short_hairs,
     _remove_cycles,
 )
+from .operations import trace_strand_sparse, sort_and_validate_strands_sparse
 
 __all__ = [
     "_matlab_edge_metrics",

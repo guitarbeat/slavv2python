@@ -9,25 +9,25 @@ import pandas as pd
 
 from source.runtime.run_state import load_json_dict
 from source.runtime.run_tracking.io import atomic_write_json, atomic_write_text
-
 from .constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     EDGE_CANDIDATE_AUDIT_PATH,
     GAP_DIAGNOSIS_JSON_PATH,
     GAP_DIAGNOSIS_TEXT_PATH,
 )
+from .execution import ensure_dest_run_layout
 from .utils import (
     now_iso,
     write_hash_sidecar,
 )
-from .execution import ensure_dest_run_layout
+
 
 def _build_gap_hotspot_rows(
-    top_vertices: list[dict[str, Any]],
-    per_origin_summary: dict[str, dict[str, Any]],
-    *,
-    gap_kind: str,
-    limit: int = 10,
+        top_vertices: list[dict[str, Any]],
+        per_origin_summary: dict[str, dict[str, Any]],
+        *,
+        gap_kind: str,
+        limit: int = 10,
 ) -> list[dict[str, Any]]:
     """Join candidate coverage hotspots with origin-level diagnostic counters."""
     if not top_vertices:
@@ -47,14 +47,14 @@ def _build_gap_hotspot_rows(
         return cast("list[dict[str, Any]]", vertex_frame.to_dict(orient="records"))
 
     origin_frame = pd.DataFrame(origin_records)
-    
+
     # Ensure origin_index is int for merging
     vertex_frame["origin_index"] = pd.to_numeric(
-        vertex_frame["origin_index"], 
+        vertex_frame["origin_index"],
         errors="coerce"
     ).astype("Int64")
     origin_frame["origin_index"] = pd.to_numeric(
-        origin_frame["origin_index"], 
+        origin_frame["origin_index"],
         errors="coerce",
     ).astype("Int64")
 
@@ -78,19 +78,20 @@ def _build_gap_hotspot_rows(
     merged = merged.replace({pd.NA: None})
     return cast("list[dict[str, Any]]", merged.to_dict(orient="records"))
 
+
 def build_gap_diagnosis_report(
-    run_root: Path,
-    *,
-    limit: int = 10,
-    coverage_payload: dict[str, Any] | None = None,
-    audit_payload: dict[str, Any] | None = None,
+        run_root: Path,
+        *,
+        limit: int = 10,
+        coverage_payload: dict[str, Any] | None = None,
+        audit_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a joined gap diagnosis report payload."""
     normalized_run_root = run_root.expanduser().resolve()
-    
+
     coverage = coverage_payload or load_json_dict(normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH) or {}
     audit = audit_payload or load_json_dict(normalized_run_root / EDGE_CANDIDATE_AUDIT_PATH) or {}
-    
+
     per_origin_summary = cast("dict[str, dict[str, Any]]", audit.get("per_origin_summary", {}))
     diagnostic_counters = cast("dict[str, Any]", (audit or {}).get("diagnostic_counters", {}))
     pair_source_breakdown = cast("dict[str, Any]", (audit or {}).get("pair_source_breakdown", {}))
@@ -103,17 +104,17 @@ def build_gap_diagnosis_report(
     if int(diagnostic_counters.get("watershed_total_pairs", 0)) == 0:
         warnings.append("No watershed candidate pairs were recorded.")
     if (
-        int(pair_source_breakdown.get("fallback_only_pair_count", 0)) > 0
-        and int(pair_source_breakdown.get("frontier_only_pair_count", 0)) == 0
-        and int(pair_source_breakdown.get("watershed_only_pair_count", 0)) == 0
-        and int(pair_source_breakdown.get("geodesic_only_pair_count", 0)) == 0
+            int(pair_source_breakdown.get("fallback_only_pair_count", 0)) > 0
+            and int(pair_source_breakdown.get("frontier_only_pair_count", 0)) == 0
+            and int(pair_source_breakdown.get("watershed_only_pair_count", 0)) == 0
+            and int(pair_source_breakdown.get("geodesic_only_pair_count", 0)) == 0
     ):
         warnings.append("All recorded candidate endpoint pairs were fallback-only.")
 
     top_missing_vertices = cast("list[dict[str, Any]]", coverage.get("top_missing_vertices", []))
     top_extra_vertices = cast("list[dict[str, Any]]", coverage.get("top_extra_vertices", []))
     hotspot_limit = max(1, int(limit))
-    
+
     top_missing_hotspots = _build_gap_hotspot_rows(
         top_missing_vertices,
         per_origin_summary,
@@ -151,6 +152,7 @@ def build_gap_diagnosis_report(
         "top_missing_hotspots": top_missing_hotspots,
         "top_extra_hotspots": top_extra_hotspots,
     }
+
 
 def render_gap_diagnosis_report(report_payload: dict[str, Any]) -> str:
     """Render a concise gap diagnosis focused on actionable hotspots."""
@@ -207,12 +209,13 @@ def render_gap_diagnosis_report(report_payload: dict[str, Any]) -> str:
         lines.append(f"Extra pair samples: {extra_samples[:5]}")
     return "\n".join(lines)
 
+
 def persist_gap_diagnosis_report(
-    run_root: Path,
-    *,
-    limit: int = 10,
-    coverage_payload: dict[str, Any] | None = None,
-    audit_payload: dict[str, Any] | None = None,
+        run_root: Path,
+        *,
+        limit: int = 10,
+        coverage_payload: dict[str, Any] | None = None,
+        audit_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Persist a joined gap diagnosis report under 03_Analysis."""
     normalized_run_root = run_root.expanduser().resolve()
@@ -223,12 +226,12 @@ def persist_gap_diagnosis_report(
         coverage_payload=coverage_payload,
         audit_payload=audit_payload,
     )
-    
+
     atomic_write_json(normalized_run_root / GAP_DIAGNOSIS_JSON_PATH, report_payload)
     write_hash_sidecar(normalized_run_root / GAP_DIAGNOSIS_JSON_PATH)
-    
+
     report_text = render_gap_diagnosis_report(report_payload)
     atomic_write_text(normalized_run_root / GAP_DIAGNOSIS_TEXT_PATH, report_text)
     write_hash_sidecar(normalized_run_root / GAP_DIAGNOSIS_TEXT_PATH)
-    
+
     return report_payload

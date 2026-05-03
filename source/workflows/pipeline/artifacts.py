@@ -31,10 +31,10 @@ def load_cached_stage_result(stage_controller: Any, *, detail: str) -> dict[str,
 
 
 def persist_stage_result(
-    stage_controller: Any,
-    payload: dict[str, Any],
-    *,
-    detail: str,
+        stage_controller: Any,
+        payload: dict[str, Any],
+        *,
+        detail: str,
 ) -> dict[str, Any]:
     """Persist a stage payload and mark the stage complete."""
     stage_controller.save_checkpoint(payload)
@@ -46,14 +46,14 @@ def persist_stage_result(
 
 
 def resolve_resumable_stage(
-    stage_controller: Any,
-    *,
-    force_rerun: bool,
-    cached_log_label: str,
-    cached_detail: str,
-    success_detail: str,
-    compute_fn,
-    logger: Any,
+        stage_controller: Any,
+        *,
+        force_rerun: bool,
+        cached_log_label: str,
+        cached_detail: str,
+        success_detail: str,
+        compute_fn,
+        logger: Any,
 ) -> dict[str, Any]:
     """Load a cached stage or compute and persist a fresh stage payload."""
     if stage_controller.checkpoint_path.exists() and not force_rerun:

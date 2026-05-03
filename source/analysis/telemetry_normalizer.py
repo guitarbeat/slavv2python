@@ -78,7 +78,7 @@ class TelemetryNormalizer:
         # Often these are lists of events or a dict with nested structures.
         # We try to flatten the core 'events' or 'candidates' if they exist, 
         # otherwise flatten the whole root.
-        
+
         # If 'events' is a list, normalize that
         if "events" in data and isinstance(data["events"], list):
             df = pd.json_normalize(data["events"])
@@ -143,7 +143,7 @@ class TelemetryNormalizer:
                 continue
 
             base_name = f"{prefix}{name}"
-            
+
             # Export as CSV
             csv_path = self.output_dir / f"{base_name}.csv"
             df.to_csv(csv_path, index=False)

@@ -24,9 +24,9 @@ def list_available_visualizations(processing_results: Mapping[str, Any]) -> list
     if typed_result.energy_data is not None:
         available.append("Energy Field")
     if (
-        typed_result.vertices is not None
-        and typed_result.edges is not None
-        and typed_result.network is not None
+            typed_result.vertices is not None
+            and typed_result.edges is not None
+            and typed_result.network is not None
     ):
         available.extend(["2D Network", "3D Network", "Depth Projection", "Strand Analysis"])
 
@@ -37,14 +37,14 @@ def has_visualization_network(processing_results: Mapping[str, Any]) -> bool:
     """Return whether the payload contains the full network needed for exports."""
     typed_result = normalize_pipeline_result(processing_results)
     return (
-        typed_result.vertices is not None
-        and typed_result.edges is not None
-        and typed_result.network is not None
+            typed_result.vertices is not None
+            and typed_result.edges is not None
+            and typed_result.network is not None
     )
 
 
 def extract_visualization_export_payload(
-    processing_results: Mapping[str, Any],
+        processing_results: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Return normalized vertices, edges, network, and parameters for export consumers."""
     normalized = normalize_visualization_results(processing_results)
@@ -57,7 +57,7 @@ def extract_visualization_export_payload(
 
 
 def resolve_visualization_session_context(
-    session_state: Mapping[str, Any],
+        session_state: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Return session-derived context used by visualization exports and sharing."""
     return {

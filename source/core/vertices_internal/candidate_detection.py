@@ -20,7 +20,7 @@ def vertex_window_apothem(space_strel_apothem: int) -> int:
 
 
 def vertex_neighborhood_slices(
-    pos: np.ndarray, apothem: int, shape: tuple[int, int, int]
+        pos: np.ndarray, apothem: int, shape: tuple[int, int, int]
 ) -> tuple[slice, slice, slice]:
     """Return clipped cube slices centered on ``pos``."""
     y, x, z = (int(coord) for coord in pos)
@@ -32,9 +32,9 @@ def vertex_neighborhood_slices(
 
 
 def chunk_lattice_dimensions(
-    image_shape: tuple[int, int, int],
-    strel_size_pixels: np.ndarray,
-    max_voxels_per_node: float,
+        image_shape: tuple[int, int, int],
+        strel_size_pixels: np.ndarray,
+        max_voxels_per_node: float,
 ) -> tuple[int, int, int]:
     """Approximate MATLAB's 3D chunk lattice sizing."""
     target_voxels = max(max_voxels_per_node, 1.0)
@@ -48,9 +48,9 @@ def chunk_lattice_dimensions(
 
 
 def iter_overlapping_chunks(
-    image_shape: tuple[int, int, int],
-    lattice_dims: tuple[int, int, int],
-    overlap: tuple[int, int, int],
+        image_shape: tuple[int, int, int],
+        lattice_dims: tuple[int, int, int],
+        overlap: tuple[int, int, int],
 ):
     """Yield padded 3D chunk slices using MATLAB-like lattice borders."""
     overlap_arr: Int64Array = np.asarray(overlap, dtype=np.int64)
@@ -76,11 +76,11 @@ def iter_overlapping_chunks(
 
 
 def matlab_vertex_candidates_in_chunk(
-    energy: np.ndarray,
-    scale_indices: np.ndarray,
-    energy_sign: float,
-    energy_upper_bound: float,
-    space_strel_apothem: int,
+        energy: np.ndarray,
+        scale_indices: np.ndarray,
+        energy_sign: float,
+        energy_upper_bound: float,
+        space_strel_apothem: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Run MATLAB-style candidate scanning within one overlapped chunk."""
     apothem = vertex_window_apothem(space_strel_apothem)
@@ -89,9 +89,9 @@ def matlab_vertex_candidates_in_chunk(
         interior_mask[:] = True
     else:
         interior_mask[
-            apothem : energy.shape[0] - apothem,
-            apothem : energy.shape[1] - apothem,
-            apothem : energy.shape[2] - apothem,
+            apothem: energy.shape[0] - apothem,
+            apothem: energy.shape[1] - apothem,
+            apothem: energy.shape[2] - apothem,
         ] = True
 
     finite_mask = np.isfinite(energy)
@@ -145,13 +145,13 @@ def matlab_vertex_candidates_in_chunk(
 
 
 def matlab_vertex_candidates(
-    energy: np.ndarray,
-    scale_indices: np.ndarray,
-    energy_sign: float,
-    energy_upper_bound: float,
-    space_strel_apothem: int,
-    strel_size_pixels: np.ndarray,
-    max_voxels_per_node: float,
+        energy: np.ndarray,
+        scale_indices: np.ndarray,
+        energy_sign: float,
+        energy_upper_bound: float,
+        space_strel_apothem: int,
+        strel_size_pixels: np.ndarray,
+        max_voxels_per_node: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Find MATLAB-style candidate vertices on the projected energy volume."""
     apothem = vertex_window_apothem(space_strel_apothem)
@@ -195,12 +195,12 @@ def matlab_vertex_candidates(
 
 
 def crop_vertices_matlab_style(
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    vertex_energies: np.ndarray,
-    image_shape: tuple[int, int, int],
-    lumen_radius_pixels_axes: np.ndarray,
-    length_dilation_ratio: float,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        vertex_energies: np.ndarray,
+        image_shape: tuple[int, int, int],
+        lumen_radius_pixels_axes: np.ndarray,
+        length_dilation_ratio: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Crop MATLAB candidate vertices against image bounds and extreme scales."""
     if len(vertex_positions) == 0:
@@ -221,14 +221,14 @@ def crop_vertices_matlab_style(
     scale_is_min = scale_indices <= 0
     scale_is_max = scale_indices >= (len(lumen_radius_pixels_axes) - 1)
     excluded = (
-        (mins[:, 0] < 0)
-        | (mins[:, 1] < 0)
-        | (mins[:, 2] < 0)
-        | (maxs[:, 0] >= image_shape[0])
-        | (maxs[:, 1] >= image_shape[1])
-        | (maxs[:, 2] >= image_shape[2])
-        | scale_is_min
-        | scale_is_max
+            (mins[:, 0] < 0)
+            | (mins[:, 1] < 0)
+            | (mins[:, 2] < 0)
+            | (maxs[:, 0] >= image_shape[0])
+            | (maxs[:, 1] >= image_shape[1])
+            | (maxs[:, 2] >= image_shape[2])
+            | scale_is_min
+            | scale_is_max
     )
     keep = ~excluded
     return (
@@ -253,14 +253,14 @@ def ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
 
 
 def choose_vertices_matlab_style(
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    image_shape: tuple[int, int, int],
-    lumen_radius_pixels_axes: np.ndarray,
-    length_dilation_ratio: float,
-    start_index: int = 0,
-    end_index: int | None = None,
-    chosen_mask: np.ndarray | None = None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        image_shape: tuple[int, int, int],
+        lumen_radius_pixels_axes: np.ndarray,
+        length_dilation_ratio: float,
+        start_index: int = 0,
+        end_index: int | None = None,
+        chosen_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """Choose non-overlapping vertices with MATLAB's paint-and-check semantics."""
     n_vertices = len(vertex_positions)
@@ -287,12 +287,12 @@ def choose_vertices_matlab_style(
         center = np.rint(vertex_positions[index]).astype(np.int64)
         coords = template_cache[int(scale_indices[index])].astype(np.int64) + center
         valid = (
-            (coords[:, 0] >= 0)
-            & (coords[:, 0] < image_shape[0])
-            & (coords[:, 1] >= 0)
-            & (coords[:, 1] < image_shape[1])
-            & (coords[:, 2] >= 0)
-            & (coords[:, 2] < image_shape[2])
+                (coords[:, 0] >= 0)
+                & (coords[:, 0] < image_shape[0])
+                & (coords[:, 1] >= 0)
+                & (coords[:, 1] < image_shape[1])
+                & (coords[:, 2] >= 0)
+                & (coords[:, 2] < image_shape[2])
         )
         return coords[valid]
 

@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 
 def calculate_energy_field(
-    image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
+        image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
 ) -> dict[str, Any]:
     """
     Calculate multi-scale energy field using MATLAB-faithful matched filtering.
@@ -76,10 +76,10 @@ def calculate_energy_field(
 
 
 def calculate_energy_field_resumable(
-    image: np.ndarray,
-    params: dict[str, Any],
-    stage_controller: StageController,
-    get_chunking_lattice_func=None,
+        image: np.ndarray,
+        params: dict[str, Any],
+        stage_controller: StageController,
+        get_chunking_lattice_func=None,
 ) -> dict[str, Any]:
     """Compute energy with resumable chunk/scale units backed by memmaps."""
     return cast(

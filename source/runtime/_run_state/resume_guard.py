@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 
 def fingerprint_mismatches(
-    snapshot: RunSnapshot,
-    *,
-    input_fingerprint: str,
-    params_fingerprint: str,
+        snapshot: RunSnapshot,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
 ) -> list[str]:
     """Return the fingerprint dimensions that no longer match the saved run."""
     mismatch: list[str] = []
@@ -29,10 +29,10 @@ def fingerprint_mismatches(
 
 
 def update_snapshot_fingerprints(
-    snapshot: RunSnapshot,
-    *,
-    input_fingerprint: str,
-    params_fingerprint: str,
+        snapshot: RunSnapshot,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
 ) -> None:
     """Persist the current input and parameter fingerprints onto the snapshot."""
     snapshot.input_fingerprint = input_fingerprint
@@ -40,12 +40,12 @@ def update_snapshot_fingerprints(
 
 
 def apply_resume_reset(
-    snapshot: RunSnapshot,
-    *,
-    input_fingerprint: str,
-    params_fingerprint: str,
-    mismatch: list[str],
-    logger: logging.Logger,
+        snapshot: RunSnapshot,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        mismatch: list[str],
+        logger: logging.Logger,
 ) -> None:
     """Mark a snapshot as reset after an allowed rerun from the energy boundary."""
     logger.info(
@@ -64,9 +64,9 @@ def apply_resume_reset(
 def build_resume_block_message(mismatch: list[str]) -> str:
     """Build the standard error message for a blocked resume mismatch."""
     return (
-        "Resume blocked because the "
-        + " and ".join(mismatch)
-        + " fingerprint changed. Re-run with force_rerun_from='energy' to start a fresh pipeline."
+            "Resume blocked because the "
+            + " and ".join(mismatch)
+            + " fingerprint changed. Re-run with force_rerun_from='energy' to start a fresh pipeline."
     )
 
 

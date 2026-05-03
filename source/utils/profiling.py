@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import numpy as np
 
+
 # from ..core import SlavvPipeline  # Moved inside to avoid circular dependency
 
 
 def profile_process_image(
-    image: np.ndarray, parameters: dict[str, Any] | None = None
+        image: np.ndarray, parameters: dict[str, Any] | None = None
 ) -> pstats.Stats:
     """Profile the SLAVV pipeline on a 3D volume.
 

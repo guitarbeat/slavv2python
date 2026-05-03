@@ -4,8 +4,8 @@ import numpy as np
 
 
 def calculate_image_stats(
-    image: np.ndarray,
-    mask: np.ndarray,
+        image: np.ndarray,
+        mask: np.ndarray,
 ) -> tuple[float, float, float, float]:
     """Calculate mean and standard deviation of an image inside and outside a mask."""
     img_arr = np.asarray(image, dtype=float)

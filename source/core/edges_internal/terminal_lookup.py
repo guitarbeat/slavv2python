@@ -32,14 +32,14 @@ def vertex_at_position(pos: np.ndarray, vertex_image: np.ndarray) -> int | None:
 
 
 def near_vertex(
-    pos: np.ndarray,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    tree: cKDTree | None = None,
-    max_search_radius: float = 0.0,
-    exclude_vertex: int | None = None,
+        pos: np.ndarray,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        tree: cKDTree | None = None,
+        max_search_radius: float = 0.0,
+        exclude_vertex: int | None = None,
 ) -> int | None:
     """Return the index of a nearby vertex if within its physical radius."""
     tolerance_microns = 0.5 * np.mean(microns_per_voxel)
@@ -79,14 +79,14 @@ def near_vertex(
 
 
 def find_terminal_vertex(
-    pos: np.ndarray,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    tree: cKDTree | None = None,
-    max_search_radius: float = 0.0,
-    exclude_vertex: int | None = None,
+        pos: np.ndarray,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        tree: cKDTree | None = None,
+        max_search_radius: float = 0.0,
+        exclude_vertex: int | None = None,
 ) -> int | None:
     """Find the index of a terminal vertex near a given position, if any."""
     return near_vertex(
@@ -102,17 +102,17 @@ def find_terminal_vertex(
 
 
 def _resolve_trace_terminal_vertex(
-    edge_trace: list[np.ndarray] | np.ndarray,
-    vertex_center_image: np.ndarray | None,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    origin_vertex: int,
-    tree: cKDTree | None = None,
-    max_search_radius: float = 0.0,
-    direct_terminal_vertex: int | None = None,
-    vertex_image: np.ndarray | None = None,
+        edge_trace: list[np.ndarray] | np.ndarray,
+        vertex_center_image: np.ndarray | None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        origin_vertex: int,
+        tree: cKDTree | None = None,
+        max_search_radius: float = 0.0,
+        direct_terminal_vertex: int | None = None,
+        vertex_image: np.ndarray | None = None,
 ) -> tuple[int | None, str | None]:
     """Resolve a terminal vertex using MATLAB-style center hits plus tolerant fallback."""
     trace_array = np.asarray(edge_trace, dtype=np.float32).reshape(-1, 3)
@@ -161,19 +161,19 @@ def _resolve_trace_terminal_vertex(
 
 
 def _finalize_traced_edge(
-    edge_trace: list[np.ndarray] | np.ndarray,
-    *,
-    stop_reason: str,
-    direct_terminal_vertex: int | None,
-    vertex_center_image: np.ndarray | None,
-    vertex_image: np.ndarray | None = None,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    origin_vertex: int,
-    tree: cKDTree | None = None,
-    max_search_radius: float = 0.0,
+        edge_trace: list[np.ndarray] | np.ndarray,
+        *,
+        stop_reason: str,
+        direct_terminal_vertex: int | None,
+        vertex_center_image: np.ndarray | None,
+        vertex_image: np.ndarray | None = None,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        origin_vertex: int,
+        tree: cKDTree | None = None,
+        max_search_radius: float = 0.0,
 ) -> tuple[list[np.ndarray], dict[str, Any]]:
     """Finalize a raw trace by resolving its terminal vertex and normalizing metadata."""
     trace_array = np.asarray(edge_trace, dtype=np.float32).reshape(-1, 3)

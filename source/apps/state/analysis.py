@@ -23,8 +23,8 @@ def has_analysis_network(processing_results: Mapping[str, Any]) -> bool:
 
 
 def resolve_analysis_stats(
-    processing_results: Mapping[str, Any],
-    analysis_stats: Mapping[str, Any] | None,
+        processing_results: Mapping[str, Any],
+        analysis_stats: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     """Return existing analysis stats or derive baseline counts when absent."""
     if analysis_stats is not None:

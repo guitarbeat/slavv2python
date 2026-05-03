@@ -30,7 +30,6 @@ _log_share_report_prepared_once = log_share_report_prepared_once
 _render_run_dashboard = render_run_dashboard
 _update_run_task = update_run_task
 
-
 __all__ = [
     "_build_processing_run_dir",
     "_has_full_network_results",

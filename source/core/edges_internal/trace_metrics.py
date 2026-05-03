@@ -12,7 +12,7 @@ from ..energy import compute_gradient_impl
 
 
 def compute_gradient(
-    energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray
+        energy: np.ndarray, pos: np.ndarray, microns_per_voxel: np.ndarray
 ) -> np.ndarray:
     """Compute gradient at ``pos`` using central differences."""
     pos_int = np.round(pos).astype(np.int64)
@@ -65,8 +65,8 @@ def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
 
 
 def _record_trace_diagnostics(
-    diagnostics: dict[str, Any],
-    trace_metadata: dict[str, Any],
+        diagnostics: dict[str, Any],
+        trace_metadata: dict[str, Any],
 ) -> None:
     """Accumulate per-trace terminal-resolution and stop-reason diagnostics."""
     stop_reason = trace_metadata.get("stop_reason")

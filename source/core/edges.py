@@ -36,8 +36,8 @@ if TYPE_CHECKING:
 
 
 def _load_edge_units(
-    units_dir: Path,
-    n_vertices: int,
+        units_dir: Path,
+        n_vertices: int,
 ) -> tuple[dict[str, object], set[int]]:
     del n_vertices
     return cast(
@@ -47,7 +47,7 @@ def _load_edge_units(
 
 
 def extract_edges_watershed(
-    energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
+        energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
 ) -> dict[str, object]:
     """Extract edges using watershed segmentation seeded at vertices."""
     return cast(
@@ -57,7 +57,7 @@ def extract_edges_watershed(
 
 
 def extract_edges(
-    energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
+        energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
 ) -> dict[str, object]:
     """Extract edges by tracing from vertices through energy field."""
     return cast(
@@ -81,10 +81,10 @@ def extract_edges(
 
 
 def extract_edges_resumable(
-    energy_data: dict[str, object],
-    vertices: dict[str, object],
-    params: dict[str, object],
-    stage_controller: StageController,
+        energy_data: dict[str, object],
+        vertices: dict[str, object],
+        params: dict[str, object],
+        stage_controller: StageController,
 ) -> dict[str, object]:
     """Trace edges with per-origin persisted units."""
     from source.runtime.run_state import atomic_joblib_dump
@@ -115,10 +115,10 @@ def extract_edges_resumable(
 
 
 def extract_edges_watershed_resumable(
-    energy_data: dict[str, object],
-    vertices: dict[str, object],
-    params: dict[str, object],
-    stage_controller: StageController,
+        energy_data: dict[str, object],
+        vertices: dict[str, object],
+        params: dict[str, object],
+        stage_controller: StageController,
 ) -> dict[str, object]:
     """Extract watershed edges with per-label persisted units."""
     from source.runtime.run_state import atomic_joblib_dump

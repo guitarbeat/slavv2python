@@ -50,16 +50,16 @@ def estimate_run_eta(snapshot: RunSnapshot, *, now: float | None = None) -> floa
 
 
 def calculate_overall_progress(
-    stages: dict[str, StageSnapshot],
-    *,
-    preprocess_done: bool,
+        stages: dict[str, StageSnapshot],
+        *,
+        preprocess_done: bool,
 ) -> float:
     """Return normalized overall pipeline progress across preprocess and stage weights."""
     total = STAGE_WEIGHTS[PREPROCESS_STAGE] + sum(STAGE_WEIGHTS[stage] for stage in PIPELINE_STAGES)
     progress = STAGE_WEIGHTS[PREPROCESS_STAGE] if preprocess_done else 0.0
     for stage_name in PIPELINE_STAGES:
         progress += (
-            STAGE_WEIGHTS[stage_name] * stages.get(stage_name, StageSnapshot(stage_name)).progress
+                STAGE_WEIGHTS[stage_name] * stages.get(stage_name, StageSnapshot(stage_name)).progress
         )
     return float(max(0.0, min(1.0, progress / total)))
 
@@ -68,7 +68,7 @@ def preprocess_complete(stages: dict[str, StageSnapshot], *, snapshot: RunSnapsh
     """Return whether preprocess should count as complete for overall progress."""
     preprocess_stage = stages.get(PREPROCESS_STAGE, StageSnapshot(name=PREPROCESS_STAGE))
     return bool(snapshot and snapshot.artifacts.get("preprocess_done")) or (
-        preprocess_stage.status == STATUS_COMPLETED
+            preprocess_stage.status == STATUS_COMPLETED
     )
 
 

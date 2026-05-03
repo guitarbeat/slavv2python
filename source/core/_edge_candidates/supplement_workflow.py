@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from .._edge_payloads import _merge_edge_diagnostics
 from .candidate_manifest import _append_candidate_unit
+from .._edge_payloads import _merge_edge_diagnostics
 
 
 def _new_supplement_payload(
-    candidate_source: str,
-    *,
-    diagnostics: dict[str, Any] | None = None,
+        candidate_source: str,
+        *,
+        diagnostics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a normalized candidate supplement payload shell."""
     return {
@@ -28,15 +28,15 @@ def _new_supplement_payload(
 
 
 def _append_supplement_row(
-    payload: dict[str, Any],
-    *,
-    pair: tuple[int, int],
-    trace: Any,
-    energy_trace: Any,
-    scale_trace: Any,
-    metric: float,
-    origin_index: int,
-    connection_source: str | None = None,
+        payload: dict[str, Any],
+        *,
+        pair: tuple[int, int],
+        trace: Any,
+        energy_trace: Any,
+        scale_trace: Any,
+        metric: float,
+        origin_index: int,
+        connection_source: str | None = None,
 ) -> None:
     """Append one accepted candidate row to a supplement payload."""
     source_label = connection_source or str(payload.get("candidate_source", "unknown"))
@@ -50,11 +50,11 @@ def _append_supplement_row(
 
 
 def _increment_origin_count(
-    diagnostics: dict[str, Any],
-    origin_counts: dict[int, int],
-    origin_index: int,
-    *,
-    key: str,
+        diagnostics: dict[str, Any],
+        origin_counts: dict[int, int],
+        origin_index: int,
+        *,
+        key: str,
 ) -> int:
     """Increment and persist per-origin supplement counts."""
     origin_counts[origin_index] = origin_counts.get(origin_index, 0) + 1

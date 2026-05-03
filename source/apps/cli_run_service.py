@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 
 
 def resolve_effective_run_dir(
-    *,
-    run_dir: str | None,
-    output_dir: str,
+        *,
+        run_dir: str | None,
+        output_dir: str,
 ) -> str | None:
     """Resolve the effective resumable run directory for a CLI run."""
     return run_dir or f"{output_dir}/_slavv_run"
@@ -46,8 +46,8 @@ def build_exportable_network(results: Mapping[str, Any], *, network_factory):
 
 
 def filter_export_formats(
-    requested_formats: list[str],
-    results: Mapping[str, Any],
+        requested_formats: list[str],
+        results: Mapping[str, Any],
 ) -> tuple[list[str], list[str]]:
     """Return runnable export formats and any warning messages."""
     warnings: list[str] = []
@@ -65,13 +65,13 @@ def filter_export_formats(
 
 
 def update_run_export_task(
-    *,
-    effective_run_dir: str | None,
-    export_formats: list[str],
-    output_dir: str,
-    snapshot_loader,
-    context_factory,
-    artifact_builder: Callable[[str, list[str]], dict[str, str]],
+        *,
+        effective_run_dir: str | None,
+        export_formats: list[str],
+        output_dir: str,
+        snapshot_loader,
+        context_factory,
+        artifact_builder: Callable[[str, list[str]], dict[str, str]],
 ):
     """Load and update the run snapshot after CLI exports complete."""
     snapshot = None
@@ -94,11 +94,11 @@ def update_run_export_task(
 
 
 def build_run_completion_lines(
-    *,
-    effective_run_dir: str | None,
-    output_dir: str,
-    snapshot,
-    status_line_builder,
+        *,
+        effective_run_dir: str | None,
+        output_dir: str,
+        snapshot,
+        status_line_builder,
 ) -> list[str]:
     """Build the CLI output lines for a completed run."""
     lines: list[str] = []

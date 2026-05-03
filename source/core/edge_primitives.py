@@ -30,7 +30,7 @@ trace_edge = _tracing.trace_edge
 
 
 def estimate_vessel_directions(
-    energy: np.ndarray, pos: np.ndarray, radius: float, microns_per_voxel: np.ndarray
+        energy: np.ndarray, pos: np.ndarray, radius: float, microns_per_voxel: np.ndarray
 ) -> np.ndarray:
     """Estimate vessel directions at a vertex via local Hessian analysis."""
     return cast(

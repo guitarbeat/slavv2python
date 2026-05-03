@@ -61,9 +61,9 @@ _CUPY_PARAMETER_WARNING = (
 def _warn_simpleitk_parameter_mismatches(params: dict[str, Any]) -> None:
     """Warn when SimpleITK backend ignores MATLAB-style tuning controls."""
     if (
-        not bool(params.get("approximating_PSF", True))
-        or float(params.get("spherical_to_annular_ratio", 1.0)) != 1.0
-        or float(params.get("gaussian_to_ideal_ratio", 1.0)) != 1.0
+            not bool(params.get("approximating_PSF", True))
+            or float(params.get("spherical_to_annular_ratio", 1.0)) != 1.0
+            or float(params.get("gaussian_to_ideal_ratio", 1.0)) != 1.0
     ):
         logger.warning(
             "SimpleITK objectness backend uses its own objectness path; "
@@ -118,12 +118,12 @@ def _require_simpleitk_backend() -> Any:
 
 
 def _cupy_matched_filter_derivative(
-    image: np.ndarray,
-    sigma_object: np.ndarray,
-    sigma_background: np.ndarray | None,
-    spherical_to_annular_ratio: float,
-    order: tuple[int, int, int],
-    microns_per_voxel: np.ndarray,
+        image: np.ndarray,
+        sigma_object: np.ndarray,
+        sigma_background: np.ndarray | None,
+        spherical_to_annular_ratio: float,
+        order: tuple[int, int, int],
+        microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Evaluate matched-kernel derivatives with CuPy ndimage kernels."""
     cupy_module = _require_cupy_backend()
@@ -134,7 +134,7 @@ def _cupy_matched_filter_derivative(
             image_gpu, sigma=tuple(sigma_background), order=order
         )
         derivative_gpu = spherical_to_annular_ratio * derivative_gpu + (
-            1.0 - spherical_to_annular_ratio
+                1.0 - spherical_to_annular_ratio
         ) * (derivative_gpu - background_gpu)
     scale = np.prod(np.power(microns_per_voxel, order))
     if scale > 0:
@@ -144,12 +144,12 @@ def _cupy_matched_filter_derivative(
 
 
 def _cupy_matlab_hessian_energy(
-    image: np.ndarray,
-    sigma_object: np.ndarray,
-    sigma_background: np.ndarray | None,
-    spherical_to_annular_ratio: float,
-    microns_per_voxel: np.ndarray,
-    energy_sign: float,
+        image: np.ndarray,
+        sigma_object: np.ndarray,
+        sigma_background: np.ndarray | None,
+        spherical_to_annular_ratio: float,
+        microns_per_voxel: np.ndarray,
+        energy_sign: float,
 ) -> np.ndarray:
     """GPU variant of the legacy Gaussian/Hessian approximation path."""
     grad_y = _cupy_matched_filter_derivative(
@@ -268,10 +268,10 @@ def _cupy_matlab_hessian_energy(
 
 
 def _simpleitk_objectness_energy(
-    image: np.ndarray,
-    sigma_world: float,
-    microns_per_voxel: np.ndarray,
-    energy_sign: float,
+        image: np.ndarray,
+        sigma_world: float,
+        microns_per_voxel: np.ndarray,
+        energy_sign: float,
 ) -> np.ndarray:
     """Compute one scale of spacing-aware vessel objectness with SimpleITK."""
     sitk_module = _require_simpleitk_backend()

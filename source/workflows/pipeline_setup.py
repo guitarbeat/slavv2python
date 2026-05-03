@@ -23,31 +23,31 @@ def validate_stage_control(stage_name: str | None, option_name: str) -> None:
 
 
 def emit_progress(
-    progress_callback: Callable[[float, str], None] | None,
-    fraction: float,
-    stage: str,
+        progress_callback: Callable[[float, str], None] | None,
+        fraction: float,
+        stage: str,
 ) -> None:
     """Emit a pipeline progress update when a callback is present."""
     _session.emit_progress(progress_callback, fraction, stage)
 
 
 def effective_run_dir(
-    run_dir: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
+        run_dir: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
 ) -> str | None:
     """Return the effective run directory for this pipeline execution."""
     return _session.effective_run_dir(run_dir, event_callback)
 
 
 def create_run_context(
-    effective_run_dir_value: str | None,
-    input_fingerprint: str,
-    params_fingerprint: str,
-    image: np.ndarray,
-    stop_after: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
-    *,
-    run_context_factory: type[RunContext] | Callable[..., RunContext],
+        effective_run_dir_value: str | None,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        image: np.ndarray,
+        stop_after: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
+        *,
+        run_context_factory: type[RunContext] | Callable[..., RunContext],
 ) -> RunContext | None:
     """Create a run context when structured run tracking is enabled."""
     return _session.create_run_context(
@@ -62,12 +62,12 @@ def create_run_context(
 
 
 def initialize_run_context(
-    run_context: RunContext | None,
-    *,
-    input_fingerprint: str,
-    params_fingerprint: str,
-    force_rerun_from: str | None,
-    parameters: dict[str, Any],
+        run_context: RunContext | None,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        force_rerun_from: str | None,
+        parameters: dict[str, Any],
 ) -> None:
     """Initialize the run context metadata and resume policy."""
     _session.initialize_run_context(
@@ -86,9 +86,9 @@ def force_rerun_flags(force_rerun_from: str | None) -> dict[str, bool]:
 
 
 def preprocess_image(
-    image: np.ndarray,
-    parameters: dict[str, Any],
-    run_context: RunContext | None,
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        run_context: RunContext | None,
 ) -> np.ndarray:
     """Preprocess the image and update run-state bookkeeping."""
     return _session.preprocess_image(
@@ -100,14 +100,14 @@ def preprocess_image(
 
 
 def prepare_pipeline_run(
-    image: np.ndarray,
-    parameters: dict[str, Any],
-    *,
-    run_dir: str | None,
-    stop_after: str | None,
-    force_rerun_from: str | None,
-    event_callback: Callable[[ProgressEvent], None] | None,
-    run_context_factory: type[RunContext] | Callable[..., RunContext],
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        *,
+        run_dir: str | None,
+        stop_after: str | None,
+        force_rerun_from: str | None,
+        event_callback: Callable[[ProgressEvent], None] | None,
+        run_context_factory: type[RunContext] | Callable[..., RunContext],
 ) -> PreparedPipelineRun:
     """Validate inputs and prepare run-state bookkeeping for pipeline execution."""
     return _session.prepare_pipeline_run(

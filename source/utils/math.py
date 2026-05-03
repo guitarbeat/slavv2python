@@ -17,10 +17,10 @@ def calculate_path_length(path: np.ndarray) -> float:
 
 
 def weighted_ks_test(
-    sample1: np.ndarray,
-    sample2: np.ndarray,
-    weights1: np.ndarray | None = None,
-    weights2: np.ndarray | None = None,
+        sample1: np.ndarray,
+        sample2: np.ndarray,
+        weights1: np.ndarray | None = None,
+        weights2: np.ndarray | None = None,
 ) -> float:
     """Compute the two-sample weighted Kolmogorov-Smirnov statistic."""
     sample1 = np.asarray(sample1)

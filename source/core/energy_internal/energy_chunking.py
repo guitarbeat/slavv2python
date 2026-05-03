@@ -7,7 +7,6 @@ from typing import Any, cast
 import numpy as np
 
 from source.core import energy_storage as _energy_storage
-
 from . import energy_backends as backends
 from . import hessian_response as native_hessian
 from .energy_provenance import energy_origin_for_method
@@ -30,13 +29,13 @@ def _remove_storage_path(path: Any) -> None:
 
 
 def _open_energy_storage_array(
-    path: Any,
-    *,
-    mode: str,
-    dtype: Any,
-    shape: tuple[int, ...],
-    fill_value: float | int | None = None,
-    storage_format: str,
+        path: Any,
+        *,
+        mode: str,
+        dtype: Any,
+        shape: tuple[int, ...],
+        fill_value: float | int | None = None,
+        storage_format: str,
 ) -> Any:
     """Open a resumable energy array in either NPY memmap or Zarr format."""
     return _energy_storage.open_energy_storage_array(
@@ -51,10 +50,10 @@ def _open_energy_storage_array(
 
 
 def _energy_lattice(
-    image_shape: tuple[int, ...],
-    max_voxels: int,
-    margin: int,
-    get_chunking_lattice_func,
+        image_shape: tuple[int, ...],
+        max_voxels: int,
+        margin: int,
+        get_chunking_lattice_func,
 ) -> list[
     tuple[tuple[slice, slice, slice], tuple[slice, slice, slice], tuple[slice, slice, slice]]
 ]:
@@ -74,11 +73,11 @@ def _energy_lattice(
 
 
 def _energy_result_payload(
-    config: dict[str, Any],
-    image_shape: tuple[int, ...],
-    energy_3d: np.ndarray,
-    scale_indices: np.ndarray,
-    energy_4d: np.ndarray | None = None,
+        config: dict[str, Any],
+        image_shape: tuple[int, ...],
+        energy_3d: np.ndarray,
+        scale_indices: np.ndarray,
+        energy_4d: np.ndarray | None = None,
 ) -> dict[str, Any]:
     result = {
         "energy": energy_3d,
@@ -98,10 +97,10 @@ def _energy_result_payload(
 
 
 def _best_energy_outputs(
-    image_shape: tuple[int, ...],
-    energy_sign: float,
-    n_scales: int,
-    return_all_scales: bool,
+        image_shape: tuple[int, ...],
+        energy_sign: float,
+        n_scales: int,
+        return_all_scales: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     fill_value = np.inf if energy_sign < 0 else -np.inf
     energy_3d = np.full(image_shape, fill_value, dtype=np.float32)
@@ -117,8 +116,8 @@ def _returned_energy_4d(config: dict[str, Any], energy_4d: np.ndarray | None) ->
 
 
 def _project_scale_stack(
-    config: dict[str, Any],
-    energy_4d: np.ndarray,
+        config: dict[str, Any],
+        energy_4d: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     energy_3d, scale_indices = native_hessian.project_energy_stack(
         energy_4d,
@@ -130,11 +129,11 @@ def _project_scale_stack(
 
 
 def _update_best_energy(
-    energy_3d: np.ndarray,
-    scale_indices: np.ndarray,
-    energy_scale: np.ndarray,
-    scale_idx: int,
-    energy_sign: float,
+        energy_3d: np.ndarray,
+        scale_indices: np.ndarray,
+        energy_scale: np.ndarray,
+        scale_idx: int,
+        energy_sign: float,
 ) -> None:
     mask = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
     energy_3d[mask] = energy_scale[mask]
@@ -154,7 +153,7 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
     sigma_scale = np.asarray(sigma_scale, dtype=float)
 
     if config["approximating_PSF"]:
-        sigma_object = np.sqrt(sigma_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
+        sigma_object = np.sqrt(sigma_scale ** 2 + config["pixels_per_sigma_PSF"] ** 2)
     else:
         sigma_object = sigma_scale
 
@@ -177,7 +176,7 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
         if config["spherical_to_annular_ratio"] < 1.0:
             annular_scale = sigma_scale * 1.5
             if config["approximating_PSF"]:
-                sigma_background = np.sqrt(annular_scale**2 + config["pixels_per_sigma_PSF"] ** 2)
+                sigma_background = np.sqrt(annular_scale ** 2 + config["pixels_per_sigma_PSF"] ** 2)
             else:
                 sigma_background = annular_scale
         else:
@@ -195,8 +194,8 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
 
 
 def _compute_direct_energy_outputs(
-    image: np.ndarray,
-    config: dict[str, Any],
+        image: np.ndarray,
+        config: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     n_scales = len(config["lumen_radius_microns"])
     if native_hessian.required_scale_stack(config):
@@ -226,12 +225,12 @@ def _compute_direct_energy_outputs(
 
 
 def _calculate_energy_field_chunked(
-    image: np.ndarray,
-    params: dict[str, Any],
-    config: dict[str, Any],
-    lattice,
-    get_chunking_lattice_func,
-    calculate_energy_field,
+        image: np.ndarray,
+        params: dict[str, Any],
+        config: dict[str, Any],
+        lattice,
+        get_chunking_lattice_func,
+        calculate_energy_field,
 ) -> dict[str, Any]:
     if native_hessian.required_scale_stack(config):
         n_scales = len(config["lumen_radius_microns"])

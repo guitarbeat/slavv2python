@@ -15,10 +15,10 @@ def _normalize_manifest_candidate_index(value: Any) -> int | None:
 
 
 def _update_origin_lifecycle_summary(
-    summary: dict[str, Any],
-    *,
-    event: dict[str, Any],
-    chosen_final_edge: bool,
+        summary: dict[str, Any],
+        *,
+        event: dict[str, Any],
+        chosen_final_edge: bool,
 ) -> None:
     """Update one per-origin lifecycle summary row from a frontier event."""
     summary["terminal_hit_count"] += 1
@@ -29,10 +29,10 @@ def _update_origin_lifecycle_summary(
         summary["claim_reassignment_count"] += 1
         reassignment_reason = event.get("claim_reassignment_reason")
         if (
-            isinstance(reassignment_reason, str)
-            and reassignment_reason
-            and reassignment_reason not in summary["claim_reassignment_samples"]
-            and len(summary["claim_reassignment_samples"]) < 3
+                isinstance(reassignment_reason, str)
+                and reassignment_reason
+                and reassignment_reason not in summary["claim_reassignment_samples"]
+                and len(summary["claim_reassignment_samples"]) < 3
         ):
             summary["claim_reassignment_samples"].append(reassignment_reason)
     if event["survived_candidate_manifest"]:
@@ -43,9 +43,9 @@ def _update_origin_lifecycle_summary(
             summary["final_cleanup_loss_count"] += 1
         endpoint_pair = event.get("emitted_endpoint_pair")
         if (
-            isinstance(endpoint_pair, list)
-            and endpoint_pair not in summary["emitted_endpoint_pair_samples"]
-            and len(summary["emitted_endpoint_pair_samples"]) < 3
+                isinstance(endpoint_pair, list)
+                and endpoint_pair not in summary["emitted_endpoint_pair_samples"]
+                and len(summary["emitted_endpoint_pair_samples"]) < 3
         ):
             summary["emitted_endpoint_pair_samples"].append(endpoint_pair)
         return
@@ -53,17 +53,17 @@ def _update_origin_lifecycle_summary(
     summary["rejected_terminal_count"] += 1
     rejection_reason = event.get("rejection_reason")
     if (
-        isinstance(rejection_reason, str)
-        and rejection_reason
-        and rejection_reason not in summary["rejection_reason_samples"]
-        and len(summary["rejection_reason_samples"]) < 3
+            isinstance(rejection_reason, str)
+            and rejection_reason
+            and rejection_reason not in summary["rejection_reason_samples"]
+            and len(summary["rejection_reason_samples"]) < 3
     ):
         summary["rejection_reason_samples"].append(rejection_reason)
 
 
 def _build_frontier_candidate_lifecycle(
-    candidates: dict[str, Any],
-    chosen_candidate_indices: np.ndarray | list[int] | None = None,
+        candidates: dict[str, Any],
+        chosen_candidate_indices: np.ndarray | list[int] | None = None,
 ) -> dict[str, Any]:
     """Build a JSON-friendly frontier lifecycle artifact for shared-neighborhood audits."""
     raw_events = candidates.get("frontier_lifecycle_events", [])
@@ -86,7 +86,7 @@ def _build_frontier_candidate_lifecycle(
             event.get("manifest_candidate_index")
         )
         chosen_final_edge = (
-            manifest_candidate_index is not None and manifest_candidate_index in chosen_indices
+                manifest_candidate_index is not None and manifest_candidate_index in chosen_indices
         )
         event["seed_origin_index"] = seed_origin_index
         event["terminal_vertex_index"] = int(event.get("terminal_vertex_index", -1))

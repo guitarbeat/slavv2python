@@ -124,14 +124,14 @@ st.html(
 
 
 def _render_export_download(
-    column,
-    *,
-    run_dir: str | None,
-    vertices,
-    edges,
-    network,
-    parameters,
-    export_spec: dict[str, str],
+        column,
+        *,
+        run_dir: str | None,
+        vertices,
+        edges,
+        network,
+        parameters,
+        export_spec: dict[str, str],
 ):
     """Facade wrapper that preserves monkeypatch-friendly app helpers."""
     return _render_export_download_impl(

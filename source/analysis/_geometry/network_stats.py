@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 
 
 def calculate_branching_angles(
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    microns_per_voxel: list[float],
-    bifurcations: np.ndarray,
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        microns_per_voxel: list[float],
+        bifurcations: np.ndarray,
 ) -> list[float]:
     """Compute pairwise angles at each bifurcation."""
     vertex_positions_arr = np.asarray(vertex_positions, dtype=float)
@@ -56,10 +56,10 @@ def calculate_branching_angles(
 
 
 def calculate_surface_area(
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    radii: np.ndarray,
-    microns_per_voxel: list[float],
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        radii: np.ndarray,
+        microns_per_voxel: list[float],
 ) -> float:
     """Compute total vessel surface area."""
     vertex_positions_arr = np.asarray(vertex_positions, dtype=float)
@@ -79,10 +79,10 @@ def calculate_surface_area(
 
 
 def calculate_vessel_volume(
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    radii: np.ndarray,
-    microns_per_voxel: list[float],
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        radii: np.ndarray,
+        microns_per_voxel: list[float],
 ) -> float:
     """Compute total vessel volume."""
     vertex_positions_arr = np.asarray(vertex_positions, dtype=float)
@@ -90,7 +90,7 @@ def calculate_vessel_volume(
     scale = np.asarray(microns_per_voxel, dtype=float)
     return float(
         sum(
-            np.pi * radius**2 * length
+            np.pi * radius ** 2 * length
             for length, radius in _iter_segment_lengths_and_radii(
                 strands,
                 vertex_positions_arr,
@@ -102,10 +102,10 @@ def calculate_vessel_volume(
 
 
 def _iter_segment_lengths_and_radii(
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    radii: np.ndarray,
-    scale: np.ndarray,
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        radii: np.ndarray,
+        scale: np.ndarray,
 ) -> Iterator[tuple[float, float]]:
     """Yield scaled segment lengths with their midpoint radii."""
     for strand in strands:
@@ -120,13 +120,13 @@ def _iter_segment_lengths_and_radii(
 
 
 def calculate_network_statistics(
-    strands: list[list[int]],
-    bifurcations: np.ndarray,
-    vertex_positions: np.ndarray,
-    radii: np.ndarray,
-    microns_per_voxel: list[float],
-    image_shape: tuple[int, ...],
-    edge_energies: np.ndarray | None = None,
+        strands: list[list[int]],
+        bifurcations: np.ndarray,
+        vertex_positions: np.ndarray,
+        radii: np.ndarray,
+        microns_per_voxel: list[float],
+        image_shape: tuple[int, ...],
+        edge_energies: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Calculate aggregate metrics for a traced vascular network."""
     stats: dict[str, Any] = {
@@ -178,10 +178,10 @@ def calculate_network_statistics(
 
 
 def _network_graph_components(
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    radii: np.ndarray,
-    microns_per_voxel: list[float],
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        radii: np.ndarray,
+        microns_per_voxel: list[float],
 ) -> tuple[nx.Graph, list[float], list[float], list[float], list[float]]:
     graph_obj = nx.Graph()
     graph_obj.add_nodes_from(range(len(vertex_positions)))
@@ -218,10 +218,10 @@ def _network_graph_components(
 
 
 def _update_mean_std_stats(
-    stats: dict[str, Any],
-    values: list[float],
-    mean_key: str,
-    std_key: str,
+        stats: dict[str, Any],
+        values: list[float],
+        mean_key: str,
+        std_key: str,
 ) -> None:
     if values:
         stats[mean_key] = float(np.mean(values))
@@ -306,11 +306,11 @@ def _update_graph_stats(stats: dict[str, Any], graph_obj: nx.Graph) -> None:
 
 
 def _update_branch_angle_stats(
-    stats: dict[str, Any],
-    strands: list[list[int]],
-    vertex_positions: np.ndarray,
-    microns_per_voxel: list[float],
-    bifurcations: np.ndarray,
+        stats: dict[str, Any],
+        strands: list[list[int]],
+        vertex_positions: np.ndarray,
+        microns_per_voxel: list[float],
+        bifurcations: np.ndarray,
 ) -> None:
     angles = calculate_branching_angles(
         strands,

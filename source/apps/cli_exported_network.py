@@ -13,7 +13,6 @@ from source.io.network_json import (
 from source.io.network_json import (
     load_network_json_payload,
 )
-
 from .cli_shared import _require_existing_file
 
 
@@ -31,7 +30,7 @@ def _normalize_exported_edge_connections(raw_connections: object) -> np.ndarray:
 
 
 def _build_strands_from_edge_connections(
-    edge_connections: np.ndarray, *, vertex_count: int
+        edge_connections: np.ndarray, *, vertex_count: int
 ) -> list[list[int]]:
     """Reconstruct strand-like paths from exported edge connections."""
     if vertex_count == 0 or edge_connections.size == 0:

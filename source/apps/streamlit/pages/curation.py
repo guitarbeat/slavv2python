@@ -19,10 +19,10 @@ from source.apps.state.curation import (
 
 
 def _apply_curated_results(
-    curated_vertices: dict[str, object],
-    curated_edges: dict[str, object],
-    *,
-    curation_mode: str,
+        curated_vertices: dict[str, object],
+        curated_edges: dict[str, object],
+        *,
+        curation_mode: str,
 ) -> tuple[dict[str, int], dict[str, int]]:
     """Sync curated vertices and edges into session state with a rebuilt network."""
     return curation_services.apply_curated_results(
@@ -100,7 +100,7 @@ def show_ml_curation_page():
                     detail="Interactive curator launched",
                 )
                 with st.status(
-                    "Interactive Curator running in new window...", expanded=True
+                        "Interactive Curator running in new window...", expanded=True
                 ) as status:
                     st.warning(
                         "[!] Please check your taskbar for the new 3D window. Closing the window will save and continue."

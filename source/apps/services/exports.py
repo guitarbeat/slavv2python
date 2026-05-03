@@ -65,17 +65,17 @@ def has_full_network_results(results: Mapping[str, Any]) -> bool:
     """Return True when a full network exists and exports can be offered."""
     typed_result = normalize_pipeline_result(results)
     return (
-        typed_result.vertices is not None
-        and typed_result.edges is not None
-        and typed_result.network is not None
+            typed_result.vertices is not None
+            and typed_result.edges is not None
+            and typed_result.network is not None
     )
 
 
 @st.cache_data(show_spinner=False)
 def generate_share_report_data(
-    processing_results: Mapping[str, Any],
-    dataset_name: str,
-    image_shape: tuple[int, int, int],
+        processing_results: Mapping[str, Any],
+        dataset_name: str,
+        image_shape: tuple[int, int, int],
 ) -> str:
     """Generate a self-contained HTML share report."""
     typed_result = normalize_pipeline_result(processing_results)
@@ -117,12 +117,12 @@ def build_run_task_dir(upload_bytes: bytes, validated_params: dict[str, object])
 
 
 def update_run_task(
-    run_dir: str | None,
-    task_name: str,
-    *,
-    status: str,
-    detail: str,
-    artifacts: dict[str, str] | None = None,
+        run_dir: str | None,
+        task_name: str,
+        *,
+        status: str,
+        detail: str,
+        artifacts: dict[str, str] | None = None,
 ) -> None:
     """Attach optional task progress to the active run."""
     if not run_dir:

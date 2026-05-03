@@ -21,10 +21,10 @@ BoolArray: TypeAlias = "np.ndarray"
 
 
 def normalize_candidate_connection_sources(
-    raw_sources: Any,
-    candidate_connection_count: int,
-    *,
-    default_source: str = "unknown",
+        raw_sources: Any,
+        candidate_connection_count: int,
+        *,
+        default_source: str = "unknown",
 ) -> list[str]:
     """Return a normalized per-connection source label list."""
     if candidate_connection_count <= 0:
@@ -65,8 +65,8 @@ def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
 
 
 def _matlab_frontier_offsets(
-    strel_apothem: int,
-    microns_per_voxel: np.ndarray,
+        strel_apothem: int,
+        microns_per_voxel: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Construct MATLAB-style cube-neighborhood offsets with Y-fastest ordering."""
     local_range = np.arange(-strel_apothem, strel_apothem + 1, dtype=np.int32)
@@ -79,11 +79,11 @@ def _matlab_frontier_offsets(
 
 
 def _matlab_frontier_scale_offsets(
-    scale_index: int,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    *,
-    step_size_per_origin_radius: float,
+        scale_index: int,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        *,
+        step_size_per_origin_radius: float,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Construct MATLAB's scale-dependent spherical strel plus 27-neighborhood box."""
     local_geometry = _build_matlab_local_strel_geometry(
@@ -99,11 +99,11 @@ def _matlab_frontier_scale_offsets(
 
 
 def _build_matlab_local_strel_geometry(
-    scale_index: int,
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    *,
-    step_size_per_origin_radius: float,
+        scale_index: int,
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        *,
+        step_size_per_origin_radius: float,
 ) -> dict[str, np.ndarray]:
     """Port MATLAB ``calculate_linear_strel_range`` local geometry for one scale."""
     radii_microns = float(
@@ -117,9 +117,9 @@ def _build_matlab_local_strel_geometry(
             for y in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):
                 linf_distance = max(abs(y), abs(x), abs(z))
                 radial_l2_distance_squared = (
-                    (float(y) / float(radii_pixels[0])) ** 2
-                    + (float(x) / float(radii_pixels[1])) ** 2
-                    + (float(z) / float(radii_pixels[2])) ** 2
+                        (float(y) / float(radii_pixels[0])) ** 2
+                        + (float(x) / float(radii_pixels[1])) ** 2
+                        + (float(z) / float(radii_pixels[2])) ** 2
                 )
                 if radial_l2_distance_squared <= 1.0 or linf_distance <= 1:
                     offsets.append([y, x, z])
@@ -128,7 +128,7 @@ def _build_matlab_local_strel_geometry(
         microns_per_voxel,
         dtype=np.float64,
     )
-    distance_lut = np.sqrt(np.sum(relative_distances**2, axis=1))
+    distance_lut = np.sqrt(np.sum(relative_distances ** 2, axis=1))
     unit_vectors = np.zeros_like(relative_distances, dtype=np.float64)
     valid = distance_lut > 1e-12
     unit_vectors[valid] = relative_distances[valid] / distance_lut[valid, None]
@@ -146,12 +146,12 @@ def _build_matlab_local_strel_geometry(
 
 
 def _build_matlab_global_watershed_lut(
-    scale_index: int,
-    *,
-    size_of_image: tuple[int, int, int],
-    lumen_radius_microns: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    step_size_per_origin_radius: float,
+        scale_index: int,
+        *,
+        size_of_image: tuple[int, int, int],
+        lumen_radius_microns: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        step_size_per_origin_radius: float,
 ) -> dict[str, np.ndarray]:
     """Build MATLAB watershed LUT fields for one scale exactly enough for parity checks."""
     local_geometry = _build_matlab_local_strel_geometry(
@@ -163,9 +163,9 @@ def _build_matlab_global_watershed_lut(
     local_subscripts = np.asarray(local_geometry["local_subscripts"], dtype=np.int32)
     cum_prod_image_dims = np.cumprod(np.asarray(size_of_image, dtype=np.int64))
     linear_offsets = (
-        local_subscripts[:, 0].astype(np.int64, copy=False)
-        + local_subscripts[:, 1].astype(np.int64, copy=False) * int(cum_prod_image_dims[0])
-        + local_subscripts[:, 2].astype(np.int64, copy=False) * int(cum_prod_image_dims[1])
+            local_subscripts[:, 0].astype(np.int64, copy=False)
+            + local_subscripts[:, 1].astype(np.int64, copy=False) * int(cum_prod_image_dims[0])
+            + local_subscripts[:, 2].astype(np.int64, copy=False) * int(cum_prod_image_dims[1])
     )
     return {
         "linear_offsets": linear_offsets.astype(np.int64, copy=False),
@@ -177,9 +177,9 @@ def _build_matlab_global_watershed_lut(
 
 
 def _matlab_frontier_size_tolerance(
-    lumen_radius_microns: np.ndarray,
-    *,
-    radius_tolerance: float = 0.5,
+        lumen_radius_microns: np.ndarray,
+        *,
+        radius_tolerance: float = 0.5,
 ) -> float:
     """Return MATLAB's scale-index tolerance from the released radius-tolerance constant."""
     radii = np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)
@@ -195,19 +195,19 @@ def _matlab_frontier_size_tolerance(
 
 
 def _matlab_frontier_adjusted_neighbor_energies(
-    raw_energies: np.ndarray,
-    *,
-    neighbor_offsets: np.ndarray,
-    neighbor_distances_microns: np.ndarray,
-    neighbor_scale_indices: np.ndarray | None,
-    propagated_scale_index: int,
-    current_distance_microns: float,
-    origin_radius_microns: float,
-    current_forward_unit: np.ndarray | None,
-    microns_per_voxel: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    radius_tolerance: float = 0.5,
-    distance_tolerance: float = 3.0,
+        raw_energies: np.ndarray,
+        *,
+        neighbor_offsets: np.ndarray,
+        neighbor_distances_microns: np.ndarray,
+        neighbor_scale_indices: np.ndarray | None,
+        propagated_scale_index: int,
+        current_distance_microns: float,
+        origin_radius_microns: float,
+        current_forward_unit: np.ndarray | None,
+        microns_per_voxel: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        radius_tolerance: float = 0.5,
+        distance_tolerance: float = 3.0,
 ) -> np.ndarray:
     """Apply MATLAB-style size, distance, and direction penalties to neighborhood energies."""
     adjusted = np.asarray(raw_energies, dtype=np.float64).copy()
@@ -226,8 +226,8 @@ def _matlab_frontier_adjusted_neighbor_energies(
     safe_origin_radius = max(float(origin_radius_microns), 1e-6)
     local_r_over_R = np.asarray(neighbor_distances_microns, dtype=np.float64) / safe_origin_radius
     local_distance_adjustment = (
-        1.0 - np.cos(np.pi * np.minimum(1.0, (4.0 / 3.0) * local_r_over_R))
-    ) / 2.0
+                                        1.0 - np.cos(np.pi * np.minimum(1.0, (4.0 / 3.0) * local_r_over_R))
+                                ) / 2.0
     with np.errstate(invalid="ignore"):
         adjusted *= local_distance_adjustment
 
@@ -252,7 +252,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
             )
             valid = neighbor_norms > 1e-12
             directional_alignment[valid] = (
-                np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
+                    np.sum(neighbor_vectors[valid] * forward, axis=1) / neighbor_norms[valid]
             )
             directional_alignment[directional_alignment < 0.0] = 0.0
             with np.errstate(invalid="ignore"):
@@ -264,10 +264,10 @@ def _matlab_frontier_adjusted_neighbor_energies(
 
 
 def _matlab_frontier_directional_suppression_factors(
-    neighbor_offsets: np.ndarray,
-    *,
-    selected_index: int,
-    microns_per_voxel: np.ndarray,
+        neighbor_offsets: np.ndarray,
+        *,
+        selected_index: int,
+        microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Return MATLAB's continuous same-direction suppression factors for a chosen seed."""
     neighbor_vectors = np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
@@ -282,13 +282,13 @@ def _matlab_frontier_directional_suppression_factors(
 
 
 def _matlab_frontier_select_seed_moves(
-    adjusted_neighbor_energies: np.ndarray,
-    *,
-    neighbor_offsets: np.ndarray,
-    microns_per_voxel: np.ndarray,
-    current_is_source: bool,
-    edge_budget: int,
-    current_branch_order: int,
+        adjusted_neighbor_energies: np.ndarray,
+        *,
+        neighbor_offsets: np.ndarray,
+        microns_per_voxel: np.ndarray,
+        current_is_source: bool,
+        edge_budget: int,
+        current_branch_order: int,
 ) -> list[tuple[int, int]]:
     """Choose MATLAB-style seed moves from one strel using directional suppression."""
     if len(adjusted_neighbor_energies) == 0:
@@ -314,10 +314,10 @@ def _matlab_frontier_select_seed_moves(
 
 
 def _matlab_frontier_insert_available_location(
-    available_entries: list[tuple[float, int]],
-    *,
-    linear_index: int,
-    energy: float,
+        available_entries: list[tuple[float, int]],
+        *,
+        linear_index: int,
+        energy: float,
 ) -> None:
     """Insert one MATLAB frontier location into worst-to-best energy order."""
     insert_at = len(available_entries)
@@ -329,8 +329,8 @@ def _matlab_frontier_insert_available_location(
 
 
 def _matlab_frontier_pop_best_available_location(
-    available_entries: list[tuple[float, int]],
-    available_map: dict[int, float],
+        available_entries: list[tuple[float, int]],
+        available_map: dict[int, float],
 ) -> tuple[float, int] | None:
     """Pop the MATLAB frontier's best currently valid available location."""
     while available_entries:
@@ -358,8 +358,8 @@ def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np
 
 
 def _path_coords_from_linear_indices(
-    path_linear: list[int],
-    shape: tuple[int, int, int],
+        path_linear: list[int],
+        shape: tuple[int, int, int],
 ) -> np.ndarray:
     """Convert a linear-index path into origin-to-terminal spatial coordinates."""
     coords = [_matlab_linear_index_to_coord(index, shape) for index in reversed(path_linear)]
@@ -368,9 +368,9 @@ def _path_coords_from_linear_indices(
 
 
 def _path_max_energy_from_linear_indices(
-    path_linear: list[int],
-    energy: np.ndarray,
-    shape: tuple[int, int, int],
+        path_linear: list[int],
+        energy: np.ndarray,
+        shape: tuple[int, int, int],
 ) -> float:
     """Return the maximum sampled energy along a linear-index path."""
     if not path_linear:
@@ -395,8 +395,8 @@ def _candidate_endpoint_pair_set(connections: np.ndarray) -> set[tuple[int, int]
 
 
 def _vertex_center_linear_lookup(
-    vertex_positions: np.ndarray,
-    image_shape: tuple[int, int, int],
+        vertex_positions: np.ndarray,
+        image_shape: tuple[int, int, int],
 ) -> dict[int, int]:
     """Map rounded vertex centers to their vertex indices."""
     if len(vertex_positions) == 0:
@@ -412,12 +412,12 @@ def _vertex_center_linear_lookup(
 
 
 def _trace_local_geodesic_between_vertices(
-    energy: np.ndarray,
-    start: np.ndarray,
-    end: np.ndarray,
-    energy_sign: float,
-    *,
-    box_margin_voxels: int,
+        energy: np.ndarray,
+        start: np.ndarray,
+        end: np.ndarray,
+        energy_sign: float,
+        *,
+        box_margin_voxels: int,
 ) -> np.ndarray | None:
     """Trace a local geodesic path between two vertices inside a bounded subvolume."""
     image_shape = energy.shape
@@ -441,9 +441,9 @@ def _trace_local_geodesic_between_vertices(
     upper = np.minimum(np.maximum(start_coord, end_coord) + dynamic_margin + 1, image_shape)
     patch = np.asarray(
         energy[
-            lower[0] : upper[0],
-            lower[1] : upper[1],
-            lower[2] : upper[2],
+            lower[0]: upper[0],
+            lower[1]: upper[1],
+            lower[2]: upper[2],
         ],
         dtype=np.float64,
     )

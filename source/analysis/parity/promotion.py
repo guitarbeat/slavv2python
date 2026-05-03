@@ -5,16 +5,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from shutil import copy2, copytree
-from typing import Any, cast
 
-from source.runtime.run_state import fingerprint_file, fingerprint_jsonable, load_json_dict
 from source.io.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     find_matlab_vector_paths,
-    find_single_matlab_batch_dir,
     load_normalized_matlab_vectors,
 )
-
+from source.runtime.run_state import fingerprint_file, fingerprint_jsonable, load_json_dict
 from .constants import (
     ANALYSIS_DIR,
     DATASET_INPUT_DIR,
@@ -28,10 +25,9 @@ from .constants import (
     ORACLE_MANIFEST_PATH,
     REPORT_MANIFEST_PATH,
     RUN_MANIFEST_PATH,
-    RUN_SNAPSHOT_PATH,
 )
-from .models import DatasetSurface, OracleSurface
 from .index import ensure_experiment_root_layout, resolve_experiment_root, upsert_index_record
+from .models import OracleSurface
 from .utils import (
     entity_id_from_path,
     now_iso,
@@ -43,11 +39,12 @@ from .utils import (
     persist_normalized_payloads,
 )
 
+
 def materialize_dataset_record(
-    experiment_root: Path | None,
-    *,
-    dataset_hash: str | None,
-    dataset_file: Path | None,
+        experiment_root: Path | None,
+        *,
+        dataset_hash: str | None,
+        dataset_file: Path | None,
 ) -> str | None:
     """Fingerprint and catalog a dataset in the experiment tree."""
     resolved_hash = dataset_hash
@@ -59,7 +56,7 @@ def materialize_dataset_record(
     ensure_experiment_root_layout(experiment_root)
     dataset_root = experiment_root / "datasets" / resolved_hash
     dataset_root.mkdir(parents=True, exist_ok=True)
-    
+
     input_file: Path | None = None
     input_bytes: int | None = None
     if dataset_file is not None and dataset_file.is_file():
@@ -103,13 +100,14 @@ def materialize_dataset_record(
     })
     return resolved_hash
 
+
 def materialize_oracle_root(
-    *,
-    matlab_batch_dir: Path,
-    oracle_root: Path,
-    dataset_hash: str | None,
-    oracle_id: str | None,
-    matlab_source_version: str | None,
+        *,
+        matlab_batch_dir: Path,
+        oracle_root: Path,
+        dataset_hash: str | None,
+        oracle_id: str | None,
+        matlab_source_version: str | None,
 ) -> OracleSurface:
     """Stash a raw MATLAB batch into a structured oracle root with normalized artifacts."""
     oracle_root = oracle_root.expanduser().resolve()
@@ -128,7 +126,7 @@ def materialize_oracle_root(
     normalized_artifacts = persist_normalized_payloads(
         oracle_root, group_name="oracle", payloads=normalized_payloads
     )
-    
+
     raw_vector_hashes: dict[str, str] = {}
     for stage, path in vector_paths.items():
         h = fingerprint_file(path)
@@ -149,7 +147,7 @@ def materialize_oracle_root(
         "timestamps": {"created_at": now_iso(), "updated_at": now_iso()},
     }
     write_json_with_hash(oracle_root / ORACLE_MANIFEST_PATH, manifest)
-    
+
     upsert_index_record(resolve_experiment_root(oracle_root), {
         "kind": "matlab_oracle",
         "id": resolved_id,
@@ -158,7 +156,7 @@ def materialize_oracle_root(
         "dataset_hash": dataset_hash,
         "updated_at": manifest["timestamps"]["updated_at"],
     })
-    
+
     return OracleSurface(
         oracle_root=oracle_root,
         manifest_path=oracle_root / ORACLE_MANIFEST_PATH,
@@ -168,6 +166,7 @@ def materialize_oracle_root(
         matlab_source_version=matlab_source_version,
         dataset_hash=dataset_hash,
     )
+
 
 def handle_promote_oracle(args: argparse.Namespace) -> None:
     """Command handler for promoting a MATLAB batch to an oracle."""
@@ -192,6 +191,7 @@ def handle_promote_oracle(args: argparse.Namespace) -> None:
     )
     print(str(oracle_root / ORACLE_MANIFEST_PATH))
 
+
 def handle_promote_dataset(args: argparse.Namespace) -> None:
     """Command handler for promoting a raw file to a cataloged dataset."""
     dataset_file = Path(args.dataset_file).expanduser().resolve()
@@ -203,6 +203,7 @@ def handle_promote_dataset(args: argparse.Namespace) -> None:
     if ds_hash is None:
         raise ValueError(f"Could not fingerprint dataset: {dataset_file}")
     print(str(exp_root / "datasets" / ds_hash / DATASET_MANIFEST_PATH))
+
 
 def handle_promote_report(args: argparse.Namespace) -> None:
     """Command handler for promoting a disposable run to a stable report."""

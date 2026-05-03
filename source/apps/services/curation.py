@@ -8,11 +8,11 @@ from source.apps.state.curation import apply_curated_session_results
 
 
 def apply_curated_results(
-    session_state,
-    curated_vertices: dict[str, object],
-    curated_edges: dict[str, object],
-    *,
-    curation_mode: str,
+        session_state,
+        curated_vertices: dict[str, object],
+        curated_edges: dict[str, object],
+        *,
+        curation_mode: str,
 ) -> tuple[dict[str, int], dict[str, int]]:
     """Sync curated vertices and edges into session state with a rebuilt network."""
     return apply_curated_session_results(
@@ -24,10 +24,10 @@ def apply_curated_results(
 
 
 def run_interactive_curator(
-    energy_data: Any,
-    vertices_data: Any,
-    edges_data: Any,
-    backend: str = "qt",
+        energy_data: Any,
+        vertices_data: Any,
+        edges_data: Any,
+        backend: str = "qt",
 ):
     """Import desktop curator backends lazily so the web app can load without GUI deps."""
     backend_name = str(backend).strip().lower()

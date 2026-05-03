@@ -21,11 +21,11 @@ def _normalize_connections(edge_connections: Any) -> np.ndarray:
 
 
 def _build_graph_state(
-    edge_traces: list[np.ndarray],
-    edge_scale_traces: list[np.ndarray],
-    edge_energy_traces: list[np.ndarray],
-    edge_connections: np.ndarray,
-    n_vertices: int,
+        edge_traces: list[np.ndarray],
+        edge_scale_traces: list[np.ndarray],
+        edge_energy_traces: list[np.ndarray],
+        edge_connections: np.ndarray,
+        n_vertices: int,
 ) -> tuple[
     dict[int, set[int]],
     dict[tuple[int, int], np.ndarray],
@@ -41,10 +41,10 @@ def _build_graph_state(
     dangling_edges: list[dict[str, Any]] = []
 
     for trace, scale_trace, energy_trace, (start_vertex, end_vertex) in zip(
-        edge_traces,
-        edge_scale_traces,
-        edge_energy_traces,
-        edge_connections,
+            edge_traces,
+            edge_scale_traces,
+            edge_energy_traces,
+            edge_connections,
     ):
         if start_vertex < 0 or end_vertex < 0:
             dangling_edges.append(
@@ -86,9 +86,9 @@ def _matlab_find_nonzero_matrix_entries(mask: np.ndarray) -> tuple[np.ndarray, n
 
 
 def _matlab_lookup_edge_ids(
-    edge_lookup_table: sparse.csr_matrix,
-    row_vertices: np.ndarray,
-    col_vertices: np.ndarray,
+        edge_lookup_table: sparse.csr_matrix,
+        row_vertices: np.ndarray,
+        col_vertices: np.ndarray,
 ) -> np.ndarray:
     """Look up directed edge ids while preserving input pair order."""
     if row_vertices.size == 0:
@@ -97,9 +97,9 @@ def _matlab_lookup_edge_ids(
         [
             int(edge_lookup_table[int(row_vertex), int(col_vertex)])
             for row_vertex, col_vertex in zip(
-                row_vertices.tolist(),
-                col_vertices.tolist(),
-            )
+            row_vertices.tolist(),
+            col_vertices.tolist(),
+        )
         ],
         dtype=np.int32,
     )
@@ -107,8 +107,8 @@ def _matlab_lookup_edge_ids(
 
 
 def _matlab_network_lookup_tables(
-    edge_connections: np.ndarray,
-    n_vertices: int,
+        edge_connections: np.ndarray,
+        n_vertices: int,
 ) -> tuple[sparse.csr_matrix, sparse.csr_matrix]:
     """Build MATLAB-shaped directed edge lookup and symmetric adjacency matrices."""
     if edge_connections.size == 0 or n_vertices <= 0:
@@ -135,9 +135,9 @@ def _matlab_network_lookup_tables(
 
 
 def _graph_state_ordered_edges(
-    graph_edges: dict[tuple[int, int], np.ndarray],
-    graph_edge_scales: dict[tuple[int, int], np.ndarray],
-    graph_edge_energies: dict[tuple[int, int], np.ndarray],
+        graph_edges: dict[tuple[int, int], np.ndarray],
+        graph_edge_scales: dict[tuple[int, int], np.ndarray],
+        graph_edge_energies: dict[tuple[int, int], np.ndarray],
 ) -> tuple[np.ndarray, list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Recover surviving edge connections, traces, and energy traces in insertion order."""
     ordered_pairs = list(graph_edges.keys())

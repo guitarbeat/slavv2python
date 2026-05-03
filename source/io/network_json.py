@@ -181,10 +181,10 @@ def _select_fields(payload: Mapping[str, Any], allowed_fields: tuple[str, ...]) 
 
 
 def _build_authoritative_topology(
-    *,
-    vertices: Mapping[str, Any],
-    edges: Mapping[str, Any],
-    network: Mapping[str, Any],
+        *,
+        vertices: Mapping[str, Any],
+        edges: Mapping[str, Any],
+        network: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Build the public topology block, computing missing basics when needed."""
     vertex_positions = _normalize_vertices_array(vertices.get("positions", []))
@@ -211,12 +211,12 @@ def _build_authoritative_topology(
 
 
 def _build_summary_block(
-    *,
-    vertices: Mapping[str, Any],
-    edges: Mapping[str, Any],
-    network: Mapping[str, Any],
-    parameters: Mapping[str, Any],
-    image_shape: tuple[int, int, int],
+        *,
+        vertices: Mapping[str, Any],
+        edges: Mapping[str, Any],
+        network: Mapping[str, Any],
+        parameters: Mapping[str, Any],
+        image_shape: tuple[int, int, int],
 ) -> dict[str, Any] | None:
     """Calculate analysis-ready summary statistics when the payload is complete enough."""
     if "positions" not in vertices:
@@ -241,12 +241,12 @@ def _build_summary_block(
 
 
 def _build_metadata(
-    *,
-    parameters: Mapping[str, Any],
-    image_shape: tuple[int, int, int],
-    run_snapshot: RunSnapshot | None,
-    run_dir: str | Path | None,
-    metadata: Mapping[str, Any] | None,
+        *,
+        parameters: Mapping[str, Any],
+        image_shape: tuple[int, int, int],
+        run_snapshot: RunSnapshot | None,
+        run_dir: str | Path | None,
+        metadata: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     """Build the public metadata block for authoritative exports."""
     stage_provenance: dict[str, Any] = {}
@@ -277,11 +277,11 @@ def _build_metadata(
 
 
 def build_network_json_payload(
-    processing_results: Mapping[str, Any],
-    *,
-    run_snapshot: RunSnapshot | None = None,
-    run_dir: str | Path | None = None,
-    metadata: Mapping[str, Any] | None = None,
+        processing_results: Mapping[str, Any],
+        *,
+        run_snapshot: RunSnapshot | None = None,
+        run_dir: str | Path | None = None,
+        metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the authoritative versioned JSON payload for public network exports."""
     normalized_results = normalize_pipeline_result(processing_results).to_dict()

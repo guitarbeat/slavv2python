@@ -6,11 +6,11 @@ import numpy as np
 
 
 def select_energy_storage_format(
-    storage_format: str,
-    *,
-    total_voxels: int,
-    max_voxels: int,
-    require_zarr_backend: Callable[[], Any],
+        storage_format: str,
+        *,
+        total_voxels: int,
+        max_voxels: int,
+        require_zarr_backend: Callable[[], Any],
 ) -> str:
     """Choose the resumable energy storage backend."""
     if storage_format == "auto":
@@ -49,14 +49,14 @@ def zarr_chunks_for_shape(shape: tuple[int, ...]) -> tuple[int, ...]:
 
 
 def open_energy_storage_array(
-    path: Any,
-    *,
-    mode: str,
-    dtype: Any,
-    shape: tuple[int, ...],
-    fill_value: float | int | None,
-    storage_format: str,
-    require_zarr_backend: Callable[[], Any],
+        path: Any,
+        *,
+        mode: str,
+        dtype: Any,
+        shape: tuple[int, ...],
+        fill_value: float | int | None,
+        storage_format: str,
+        require_zarr_backend: Callable[[], Any],
 ) -> Any:
     """Open a resumable energy array in either NPY memmap or Zarr format."""
     if storage_format == "zarr":

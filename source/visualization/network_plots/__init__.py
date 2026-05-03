@@ -44,16 +44,16 @@ class NetworkVisualizer:
         self.color_schemes = dict(NETWORK_COLOR_SCHEMES)
 
     def plot_2d_network(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        color_by: str = "energy",
-        projection_axis: int = 2,
-        show_vertices: bool = True,
-        show_edges: bool = True,
-        show_bifurcations: bool = True,
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            network: dict[str, Any],
+            parameters: dict[str, Any],
+            color_by: str = "energy",
+            projection_axis: int = 2,
+            show_vertices: bool = True,
+            show_edges: bool = True,
+            show_bifurcations: bool = True,
     ) -> go.Figure:
         return _plot_2d_network_impl(
             self.color_schemes,
@@ -69,17 +69,17 @@ class NetworkVisualizer:
         )
 
     def plot_network_slice(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        axis: int = 2,
-        center_in_microns: float = 0.0,
-        thickness_in_microns: float = 1.0,
-        color_by: str = "energy",
-        show_vertices: bool = True,
-        show_edges: bool = True,
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            network: dict[str, Any],
+            parameters: dict[str, Any],
+            axis: int = 2,
+            center_in_microns: float = 0.0,
+            thickness_in_microns: float = 1.0,
+            color_by: str = "energy",
+            show_vertices: bool = True,
+            show_edges: bool = True,
     ) -> go.Figure:
         return _plot_network_slice_impl(
             self.color_schemes,
@@ -96,16 +96,16 @@ class NetworkVisualizer:
         )
 
     def plot_3d_network(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        color_by: str = "energy",
-        show_vertices: bool = True,
-        show_edges: bool = True,
-        show_bifurcations: bool = True,
-        opacity_by: str | None = None,
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            network: dict[str, Any],
+            parameters: dict[str, Any],
+            color_by: str = "energy",
+            show_vertices: bool = True,
+            show_edges: bool = True,
+            show_bifurcations: bool = True,
+            opacity_by: str | None = None,
     ) -> go.Figure:
         return _plot_3d_network_impl(
             self,
@@ -121,39 +121,39 @@ class NetworkVisualizer:
         )
 
     def animate_strands_3d(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            network: dict[str, Any],
+            parameters: dict[str, Any],
     ) -> go.Figure:
         return _animate_strands_3d_impl(self, vertices, edges, network, parameters)
 
     def plot_flow_field(
-        self,
-        edges: dict[str, Any],
-        parameters: dict[str, Any],
+            self,
+            edges: dict[str, Any],
+            parameters: dict[str, Any],
     ) -> go.Figure:
         return _plot_flow_field_impl(self, edges, parameters)
 
     def plot_energy_field(
-        self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
+            self, energy_data: dict[str, Any], slice_axis: int = 2, slice_index: int | None = None
     ) -> go.Figure:
         return _plot_energy_field_impl(
             self, energy_data, slice_axis=slice_axis, slice_index=slice_index
         )
 
     def plot_strand_analysis(
-        self, network: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
+            self, network: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
     ) -> go.Figure:
         return _plot_strand_analysis_impl(self, network, vertices, parameters)
 
     def plot_depth_statistics(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        parameters: dict[str, Any],
-        n_bins: int = 10,
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            parameters: dict[str, Any],
+            n_bins: int = 10,
     ) -> go.Figure:
         return _plot_depth_statistics_impl(self, vertices, edges, parameters, n_bins=n_bins)
 
@@ -167,16 +167,16 @@ class NetworkVisualizer:
         return _create_summary_dashboard_impl(self, processing_results)
 
     def export_network_data(
-        self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
+            self, processing_results: dict[str, Any], output_path: str, format: str = "csv"
     ) -> str:
         return _export_network_data_impl(self, processing_results, output_path, format=format)
 
     def plot_length_weighted_histograms(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        parameters: dict[str, Any],
-        number_of_bins: int = 50,
+            self,
+            vertices: dict[str, Any],
+            edges: dict[str, Any],
+            parameters: dict[str, Any],
+            number_of_bins: int = 50,
     ) -> go.Figure:
         return _plot_length_weighted_histograms_impl(
             self,

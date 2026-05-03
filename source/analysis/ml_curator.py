@@ -93,11 +93,11 @@ def _edge_energy_features(trace: np.ndarray, energy_field: np.ndarray) -> list[f
 
 
 def _connected_vertex_features(
-    start_vertex: Any,
-    end_vertex: Any,
-    vertex_energies: np.ndarray,
-    vertex_radii: Any,
-    edge_length: float,
+        start_vertex: Any,
+        end_vertex: Any,
+        vertex_energies: np.ndarray,
+        vertex_radii: Any,
+        edge_length: float,
 ) -> list[float]:
     if start_vertex is not None:
         start_energy = vertex_energies[start_vertex]
@@ -159,7 +159,7 @@ class MLCurator:
         self.edge_trained = False
 
     def extract_vertex_features(
-        self, vertices: dict[str, Any], energy_data: dict[str, Any], image_shape: tuple[int, ...]
+            self, vertices: dict[str, Any], energy_data: dict[str, Any], image_shape: tuple[int, ...]
     ) -> np.ndarray:
         """
         Extract features for vertex classification
@@ -262,7 +262,7 @@ class MLCurator:
         return np.array(features)
 
     def extract_edge_features(
-        self, edges: dict[str, Any], vertices: dict[str, Any], energy_data: dict[str, Any]
+            self, edges: dict[str, Any], vertices: dict[str, Any], energy_data: dict[str, Any]
     ) -> np.ndarray:
         """
         Extract features for edge classification
@@ -318,7 +318,7 @@ class MLCurator:
         return np.array(features)
 
     def train_vertex_classifier(
-        self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
+            self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
     ) -> dict[str, Any]:
         """Train vertex classifier using provided features and labels.
 
@@ -398,7 +398,7 @@ class MLCurator:
         return results
 
     def train_edge_classifier(
-        self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
+            self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"
     ) -> dict[str, Any]:
         """Train edge classifier using provided features and labels.
 
@@ -477,11 +477,11 @@ class MLCurator:
         return results
 
     def curate_vertices(
-        self,
-        vertices: dict[str, Any],
-        energy_data: dict[str, Any],
-        image_shape: tuple[int, ...],
-        confidence_threshold: float = 0.5,
+            self,
+            vertices: dict[str, Any],
+            energy_data: dict[str, Any],
+            image_shape: tuple[int, ...],
+            confidence_threshold: float = 0.5,
     ) -> dict[str, Any]:
         """
         Curate vertices using trained classifier
@@ -529,11 +529,11 @@ class MLCurator:
         return curated_vertices
 
     def curate_edges(
-        self,
-        edges: dict[str, Any],
-        vertices: dict[str, Any],
-        energy_data: dict[str, Any],
-        confidence_threshold: float = 0.5,
+            self,
+            edges: dict[str, Any],
+            vertices: dict[str, Any],
+            energy_data: dict[str, Any],
+            confidence_threshold: float = 0.5,
     ) -> dict[str, Any]:
         """
         Curate edges using trained classifier
@@ -629,7 +629,7 @@ class MLCurator:
                 logger.error(f"Unexpected error loading edge model from {edge_path}: {e}")
 
     def generate_training_data(
-        self, processing_results: list[dict[str, Any]], manual_annotations: list[dict[str, Any]]
+            self, processing_results: list[dict[str, Any]], manual_annotations: list[dict[str, Any]]
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Generate training data from processing results and manual annotations
@@ -686,7 +686,7 @@ class MLCurator:
         return vertex_features, vertex_labels, edge_features, edge_labels
 
     def aggregate_training_data(
-        self, data_dir: Any, file_pattern: str = "*_results.json"
+            self, data_dir: Any, file_pattern: str = "*_results.json"
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Aggregate features from multiple result snippets for training."""
         return load_aggregated_training_data(data_dir, file_pattern=file_pattern)

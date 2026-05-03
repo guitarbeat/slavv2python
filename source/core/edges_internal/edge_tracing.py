@@ -20,25 +20,25 @@ _MIN_CONTINUOUS_STEP_SIZE = 0.125
 
 
 def trace_edge(
-    energy: np.ndarray,
-    start_pos: np.ndarray,
-    direction: np.ndarray,
-    step_size: float,
-    max_edge_energy: float,
-    vertex_positions: np.ndarray,
-    vertex_scales: np.ndarray,
-    lumen_radius_pixels: np.ndarray,
-    lumen_radius_microns: np.ndarray,
-    max_steps: int,
-    microns_per_voxel: np.ndarray,
-    energy_sign: float,
-    discrete_steps: bool = False,
-    vertex_center_image: np.ndarray | None = None,
-    vertex_image: np.ndarray | None = None,
-    tree: cKDTree | None = None,
-    max_search_radius: float = 0.0,
-    origin_vertex_idx: int | None = None,
-    return_metadata: bool = False,
+        energy: np.ndarray,
+        start_pos: np.ndarray,
+        direction: np.ndarray,
+        step_size: float,
+        max_edge_energy: float,
+        vertex_positions: np.ndarray,
+        vertex_scales: np.ndarray,
+        lumen_radius_pixels: np.ndarray,
+        lumen_radius_microns: np.ndarray,
+        max_steps: int,
+        microns_per_voxel: np.ndarray,
+        energy_sign: float,
+        discrete_steps: bool = False,
+        vertex_center_image: np.ndarray | None = None,
+        vertex_image: np.ndarray | None = None,
+        tree: cKDTree | None = None,
+        max_search_radius: float = 0.0,
+        origin_vertex_idx: int | None = None,
+        return_metadata: bool = False,
 ) -> list[np.ndarray] | tuple[list[np.ndarray], dict[str, Any]]:
     """Trace an edge through the energy field with adaptive step sizing."""
     min_step_size = _MIN_DISCRETE_STEP_SIZE if discrete_steps else _MIN_CONTINUOUS_STEP_SIZE
@@ -104,9 +104,9 @@ def trace_edge(
             next_pos_x = current_pos_x + current_dir_x * step_size
             next_pos_z = current_pos_z + current_dir_z * step_size
             if not (
-                math.isfinite(next_pos_y)
-                and math.isfinite(next_pos_x)
-                and math.isfinite(next_pos_z)
+                    math.isfinite(next_pos_y)
+                    and math.isfinite(next_pos_x)
+                    and math.isfinite(next_pos_z)
             ):
                 return finish("nan")
 
@@ -115,9 +115,9 @@ def trace_edge(
                 r_next_pos_x = round(next_pos_x)
                 r_next_pos_z = round(next_pos_z)
                 if (
-                    r_next_pos_y == round(current_pos_y)
-                    and r_next_pos_x == round(current_pos_x)
-                    and r_next_pos_z == round(current_pos_z)
+                        r_next_pos_y == round(current_pos_y)
+                        and r_next_pos_x == round(current_pos_x)
+                        and r_next_pos_z == round(current_pos_z)
                 ):
                     return finish("max_steps")
                 next_pos_y, next_pos_x, next_pos_z = (
@@ -127,12 +127,12 @@ def trace_edge(
                 )
 
             if (
-                next_pos_y < 0
-                or next_pos_y >= dim_y
-                or next_pos_x < 0
-                or next_pos_x >= dim_x
-                or next_pos_z < 0
-                or next_pos_z >= dim_z
+                    next_pos_y < 0
+                    or next_pos_y >= dim_y
+                    or next_pos_x < 0
+                    or next_pos_x >= dim_x
+                    or next_pos_z < 0
+                    or next_pos_z >= dim_z
             ):
                 return finish("bounds")
 
@@ -144,11 +144,11 @@ def trace_edge(
                 return finish("nan")
 
             if (energy_sign < 0 and current_energy > max_edge_energy) or (
-                energy_sign > 0 and current_energy < max_edge_energy
+                    energy_sign > 0 and current_energy < max_edge_energy
             ):
                 return finish("energy_threshold")
             if (energy_sign < 0 and current_energy > prev_energy) or (
-                energy_sign > 0 and current_energy < prev_energy
+                    energy_sign > 0 and current_energy < prev_energy
             ):
                 step_size *= 0.5
                 if step_size < min_step_size:
@@ -189,7 +189,7 @@ def trace_edge(
         grad_x = (energy[gp_y, gp_x + 1, gp_z] - energy[gp_y, gp_x - 1, gp_z]) * inv_mpv_2x_x
         grad_z = (energy[gp_y, gp_x, gp_z + 1] - energy[gp_y, gp_x, gp_z - 1]) * inv_mpv_2x_z
 
-        grad_norm = math.sqrt(grad_y**2 + grad_x**2 + grad_z**2)
+        grad_norm = math.sqrt(grad_y ** 2 + grad_x ** 2 + grad_z ** 2)
 
         if grad_norm > 1e-12:
             dot_prod = grad_y * current_dir_y + grad_x * current_dir_x + grad_z * current_dir_z
@@ -203,7 +203,7 @@ def trace_edge(
             current_dir_x = current_dir_x - sign * perp_grad_x
             current_dir_z = current_dir_z - sign * perp_grad_z
 
-            norm = math.sqrt(current_dir_y**2 + current_dir_x**2 + current_dir_z**2)
+            norm = math.sqrt(current_dir_y ** 2 + current_dir_x ** 2 + current_dir_z ** 2)
             if norm > 1e-12:
                 inv_norm = 1.0 / norm
                 current_dir_y *= inv_norm

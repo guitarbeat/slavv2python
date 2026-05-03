@@ -19,10 +19,10 @@ def finalize_pipeline_results(results: dict[str, Any]) -> dict[str, Any]:
 
 
 def stop_after_stage_if_requested(
-    stop_after: str | None,
-    stage_name: str,
-    results: dict[str, Any],
-    run_context: RunContext | None,
+        stop_after: str | None,
+        stage_name: str,
+        results: dict[str, Any],
+        run_context: RunContext | None,
 ) -> dict[str, Any] | None:
     """Finalize and return results when the requested stop stage has completed."""
     if stop_after != stage_name:

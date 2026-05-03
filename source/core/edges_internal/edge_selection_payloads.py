@@ -13,10 +13,10 @@ from .._edge_payloads import _empty_edges_result, build_edge_diagnostics
 
 
 def normalize_candidate_connection_sources(
-    raw_sources: Any,
-    candidate_connection_count: int,
-    *,
-    default_source: str = "unknown",
+        raw_sources: Any,
+        candidate_connection_count: int,
+        *,
+        default_source: str = "unknown",
 ) -> list[str]:
     """Return a normalized per-connection source label list."""
     return _normalize_connection_sources(
@@ -33,9 +33,9 @@ def empty_edge_diagnostics() -> dict[str, Any]:
 
 
 def initialize_edge_selection_diagnostics(
-    candidates: dict[str, Any],
-    connections: np.ndarray,
-    traces: list[np.ndarray],
+        candidates: dict[str, Any],
+        connections: np.ndarray,
+        traces: list[np.ndarray],
 ) -> dict[str, Any]:
     """Initialize chooser diagnostics from candidate-stage counters and counts."""
     diagnostics = empty_edge_diagnostics()
@@ -56,12 +56,12 @@ def initialize_edge_selection_diagnostics(
 
 
 def prepare_candidate_indices_for_cleanup(
-    connections: np.ndarray,
-    metrics: np.ndarray,
-    energy_traces: list[np.ndarray],
-    diagnostics: dict[str, Any],
-    *,
-    reject_nonnegative_energy_edges: bool = True,
+        connections: np.ndarray,
+        metrics: np.ndarray,
+        energy_traces: list[np.ndarray],
+        diagnostics: dict[str, Any],
+        *,
+        reject_nonnegative_energy_edges: bool = True,
 ) -> list[int]:
     """Apply MATLAB ``clean_edge_pairs`` ordering before downstream cleanup."""
     valid = (connections[:, 0] != connections[:, 1]) & (connections[:, 1] >= 0)
@@ -117,15 +117,15 @@ def prepare_candidate_indices_for_cleanup(
 
 
 def build_selected_edges_result(
-    final_indices: list[int],
-    traces: list[np.ndarray],
-    connections: np.ndarray,
-    metrics: np.ndarray,
-    energy_traces: list[np.ndarray],
-    scale_traces: list[np.ndarray],
-    connection_sources: list[str],
-    vertex_positions: np.ndarray,
-    diagnostics: dict[str, Any],
+        final_indices: list[int],
+        traces: list[np.ndarray],
+        connections: np.ndarray,
+        metrics: np.ndarray,
+        energy_traces: list[np.ndarray],
+        scale_traces: list[np.ndarray],
+        connection_sources: list[str],
+        vertex_positions: np.ndarray,
+        diagnostics: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the canonical chosen-edge payload from candidate indices."""
     result = cast("dict[str, Any]", _empty_edges_result(vertex_positions))

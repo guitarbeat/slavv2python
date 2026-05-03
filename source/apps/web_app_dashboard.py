@@ -44,8 +44,8 @@ def _dashboard_stage_frame(snapshot: Any | None, run_dir: str | None = None) -> 
 
 
 def _dashboard_run_throughput_rows(
-    snapshot: Any | None,
-    run_dir: str | None = None,
+        snapshot: Any | None,
+        run_dir: str | None = None,
 ) -> list[dict[str, object]]:
     """Build per-run throughput metrics from the persisted snapshot."""
     source = (
@@ -138,11 +138,11 @@ def _dashboard_run_throughput_rows(
 
 
 def _dashboard_breakdown_frame(
-    snapshot: Any | None,
-    stats: dict[str, Any] | None,
-    share_metrics: dict[str, Any],
-    *,
-    run_dir: str | None = None,
+        snapshot: Any | None,
+        stats: dict[str, Any] | None,
+        share_metrics: dict[str, Any],
+        *,
+        run_dir: str | None = None,
 ) -> pd.DataFrame:
     """Return a dashboard breakdown table that is safe to render without live data."""
     rows = [
@@ -165,7 +165,7 @@ def _dashboard_breakdown_frame(
 
 
 def _dashboard_optional_task_rows(
-    snapshot: Any | None, *, run_dir: str | None = None
+        snapshot: Any | None, *, run_dir: str | None = None
 ) -> list[dict[str, Any]]:
     optional_tasks = {} if snapshot is None else snapshot.optional_tasks
     if optional_tasks:
@@ -203,7 +203,7 @@ def _dashboard_optional_task_rows(
 
 
 def _dashboard_network_stat_spec(
-    stats: dict[str, Any] | None,
+        stats: dict[str, Any] | None,
 ) -> list[tuple[str, float | int | None, str]]:
     return [
         ("Strands", None if stats is None else int(stats.get("num_strands", 0)), "count"),
@@ -317,9 +317,9 @@ def _build_dashboard_placeholder_trend() -> Any:
 
 
 def normalize_dashboard_sections(
-    selected_sections,
-    *,
-    breakdown_sections: tuple[str, ...] = DASHBOARD_BREAKDOWN_SECTIONS,
+        selected_sections,
+        *,
+        breakdown_sections: tuple[str, ...] = DASHBOARD_BREAKDOWN_SECTIONS,
 ) -> list[str]:
     """Normalize the selected pills value to a stable list."""
     if not selected_sections:
@@ -330,11 +330,11 @@ def normalize_dashboard_sections(
 
 
 def filter_dashboard_breakdown(
-    frame: pd.DataFrame,
-    *,
-    focus: str = "Overview",
-    selected_sections=None,
-    show_placeholders: bool = True,
+        frame: pd.DataFrame,
+        *,
+        focus: str = "Overview",
+        selected_sections=None,
+        show_placeholders: bool = True,
 ) -> pd.DataFrame:
     """Apply focus and section filters to the breakdown table."""
     filtered = frame.copy()
@@ -354,10 +354,10 @@ def filter_dashboard_breakdown(
 
 
 def build_dashboard_backlog_frame(
-    metric_requests: list[dict[str, Any]] | None,
-    *,
-    repo_url: str,
-    release_url: str,
+        metric_requests: list[dict[str, Any]] | None,
+        *,
+        repo_url: str,
+        release_url: str,
 ) -> pd.DataFrame:
     """Build an editable backlog for follow-on dashboard work."""
     rows = [

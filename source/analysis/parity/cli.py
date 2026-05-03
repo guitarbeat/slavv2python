@@ -5,6 +5,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from source.runtime.run_state import load_json_dict
+from .constants import (
+    EXPERIMENT_PROVENANCE_PATH,
+    METADATA_DIR,
+    RUN_MANIFEST_PATH,
+    SUMMARY_JSON_PATH,
+    SUMMARY_TEXT_PATH,
+)
 from .execution import (
     copy_source_surface,
     derive_exact_params_from_oracle,
@@ -18,13 +26,16 @@ from .execution import (
     validate_source_run_surface,
     write_run_manifest,
 )
-from source.runtime.run_state import load_json_dict
+from .gaps import (
+    persist_gap_diagnosis_report,
+    render_gap_diagnosis_report,
+)
+from .models import ExactProofSourceSurface, OracleSurface
 from .proofs import (
     run_candidate_capture,
     run_edge_replay,
     run_exact_parity_proof,
     run_exact_preflight,
-    run_lut_proof,
 )
 from .reports import (
     build_experiment_summary,
@@ -35,22 +46,11 @@ from .reports import (
     read_python_counts_from_run,
     render_experiment_summary,
 )
-from .gaps import (
-    persist_gap_diagnosis_report,
-    render_gap_diagnosis_report,
-)
 from .utils import (
     fingerprint_file,
     write_json_with_hash,
 )
-from .constants import (
-    EXPERIMENT_PROVENANCE_PATH,
-    METADATA_DIR,
-    RUN_MANIFEST_PATH,
-    SUMMARY_JSON_PATH,
-    SUMMARY_TEXT_PATH,
-)
-from .models import ExactProofSourceSurface, OracleSurface
+
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
     """Orchestrate a Python-only rerun from a source comparison root."""
@@ -59,27 +59,27 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
 
     source_surface = validate_source_run_surface(Path(args.source_run_root))
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    
+
     # Resolve input and params
-    repo_root = Path.cwd() # Assume CWD is repo root as per AGENTS.md
+    repo_root = Path.cwd()  # Assume CWD is repo root as per AGENTS.md
     input_file = resolve_input_file(source_surface, args.input, repo_root=repo_root)
     params = load_params_file(source_surface, args.params_file)
-    
+
     # Setup destination
     copy_source_surface(source_surface, dest_run_root)
     persist_param_storage(dest_run_root, params)
-    
+
     # Sync exact vertex if needed
     oracle_surface: OracleSurface | None = None
     # (Simplified oracle resolution for now)
-    
+
     exact_vertex_sync = maybe_sync_exact_vertex_checkpoint(
         source_surface.run_root,
         dest_run_root,
     )
-    
+
     dataset_hash = fingerprint_file(input_file)
-    
+
     # Record provenance
     write_json_with_hash(
         dest_run_root / METADATA_DIR / "experiment_provenance.json",
@@ -91,7 +91,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
             "exact_vertex_checkpoint_sync": exact_vertex_sync,
         },
     )
-    
+
     # Run processing
     image = load_tiff_volume(input_file)
     processor = SLAVVProcessor()
@@ -101,7 +101,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
         run_dir=str(dest_run_root),
         force_rerun_from=args.rerun_from,
     )
-    
+
     # Generate summary
     report_payload = load_json_dict(source_surface.comparison_report_path) or {}
     summary_payload = build_experiment_summary(
@@ -114,7 +114,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
         new_python_counts=read_python_counts_from_run(dest_run_root),
     )
     persist_experiment_summary(dest_run_root, summary_payload)
-    
+
     # Write manifest
     write_run_manifest(
         dest_run_root,
@@ -126,9 +126,10 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
         params_payload=params,
         extra={"rerun_from": args.rerun_from},
     )
-    
+
     persist_recording_tables(dest_run_root)
     print(render_experiment_summary(summary_payload))
+
 
 def handle_summarize(args: argparse.Namespace) -> None:
     """Print the saved experiment summary for a destination run root."""
@@ -145,6 +146,7 @@ def handle_summarize(args: argparse.Namespace) -> None:
         )
     print(render_experiment_summary(summary_payload))
 
+
 def handle_normalize_recordings(args: argparse.Namespace) -> None:
     """Flatten recorded run artifacts into CSV/JSONL tables."""
     run_root = Path(args.run_root).expanduser().resolve()
@@ -158,6 +160,7 @@ def handle_normalize_recordings(args: argparse.Namespace) -> None:
         )
     )
 
+
 def handle_diagnose_gaps(args: argparse.Namespace) -> None:
     """Join candidate coverage with origin-level diagnostics to surface gap hotspots."""
     run_root = Path(args.run_root).expanduser().resolve()
@@ -165,12 +168,13 @@ def handle_diagnose_gaps(args: argparse.Namespace) -> None:
     persist_recording_tables(run_root)
     print(render_gap_diagnosis_report(report_payload))
 
+
 def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
     # (Simplified resolution for now, should use ExactProofSourceSurface)
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve()
-    
+
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
         run_root=run_root,
@@ -180,7 +184,7 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
         matlab_batch_dir=oracle_surface.matlab_batch_dir,
         matlab_vector_paths=oracle_surface.matlab_vector_paths,
     )
-    
+
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
     run_exact_parity_proof(
         source_surface,
@@ -188,6 +192,7 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
         stage_arg=args.stage,
         report_path_arg=args.report_path,
     )
+
 
 def handle_preflight_exact(args: argparse.Namespace) -> None:
     """Verify that a destination run root is ready for an exact proof."""
@@ -199,15 +204,17 @@ def handle_preflight_exact(args: argparse.Namespace) -> None:
         force=bool(args.force),
     )
 
+
 def handle_prove_luts(args: argparse.Namespace) -> None:
     """Verify exact parity for lookup tables."""
     pass
+
 
 def handle_capture_candidates(args: argparse.Namespace) -> None:
     """Capture candidate pairs from a Python run for parity comparison."""
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve()
-    
+
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
         run_root=run_root,
@@ -217,7 +224,7 @@ def handle_capture_candidates(args: argparse.Namespace) -> None:
         matlab_batch_dir=oracle_surface.matlab_batch_dir,
         matlab_vector_paths=oracle_surface.matlab_vector_paths,
     )
-    
+
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
     run_candidate_capture(
         source_surface,
@@ -225,11 +232,12 @@ def handle_capture_candidates(args: argparse.Namespace) -> None:
         include_debug_maps=bool(args.debug_maps),
     )
 
+
 def handle_replay_edges(args: argparse.Namespace) -> None:
     """Replay edge discovery from candidates for parity verification."""
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve()
-    
+
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
         run_root=run_root,
@@ -239,29 +247,34 @@ def handle_replay_edges(args: argparse.Namespace) -> None:
         matlab_batch_dir=oracle_surface.matlab_batch_dir,
         matlab_vector_paths=oracle_surface.matlab_vector_paths,
     )
-    
+
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
     run_edge_replay(source_surface, dest_run_root)
+
 
 def handle_fail_fast(args: argparse.Namespace) -> None:
     """Run cheap gates first and stop at the first failing gate."""
     # Simplified fail-fast for now
     handle_preflight_exact(args)
 
+
 def handle_promote_oracle(args: argparse.Namespace) -> None:
     """Promote a MATLAB batch to a structured oracle root."""
     from .promotion import handle_promote_oracle as handler
     handler(args)
+
 
 def handle_promote_dataset(args: argparse.Namespace) -> None:
     """Promote a raw file to a cataloged dataset."""
     from .promotion import handle_promote_dataset as handler
     handler(args)
 
+
 def handle_promote_report(args: argparse.Namespace) -> None:
     """Promote a disposable run to a stable report."""
     from .promotion import handle_promote_report as handler
     handler(args)
+
 
 def handle_init_exact_run(args: argparse.Namespace) -> None:
     """Initialize a fresh run root for an exact parity experiment."""
@@ -276,7 +289,7 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
 
     dataset_surface = load_dataset_surface(Path(args.dataset_root))
     oracle_surface = load_oracle_surface(Path(args.oracle_root))
-    
+
     if oracle_surface.dataset_hash and oracle_surface.dataset_hash != dataset_surface.dataset_hash:
         raise ValueError(
             f"dataset and oracle hashes do not match: {dataset_surface.dataset_hash} != {oracle_surface.dataset_hash}"
@@ -287,7 +300,7 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
         oracle_surface
     )
     params["energy_storage_format"] = str(args.energy_storage_format).strip()
-    
+
     resume_finalization_only = _resolve_existing_init_exact_run(
         dest_run_root=dest_run_root,
         dataset_surface=dataset_surface,
@@ -318,7 +331,7 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
             dataset_surface=dataset_surface,
             oracle_surface=oracle_surface,
         )
-        
+
         write_json_with_hash(
             dest_run_root / EXPERIMENT_PROVENANCE_PATH,
             {

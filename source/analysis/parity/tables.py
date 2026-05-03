@@ -6,25 +6,12 @@ from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
+
 from source.runtime.run_tracking.io import atomic_write_text, stable_json_dumps
-from .constants import (
-    ANALYSIS_DIR,
-    ANALYSIS_TABLES_DIR,
-    CANDIDATE_PROGRESS_JSONL_PATH,
-    CANDIDATE_COVERAGE_JSON_PATH,
-    GAP_DIAGNOSIS_JSON_PATH,
-    RECORDING_TABLES_INDEX_PATH,
-    RUN_MANIFEST_PATH,
-    RUN_SNAPSHOT_PATH,
-    EDGE_CANDIDATE_AUDIT_PATH,
-)
 from .io import (
-    entity_id_from_path,
-    now_iso,
     write_hash_sidecar,
-    write_json_with_hash,
-    string_or_none,
 )
+
 
 def _coerce_table_cell(value: Any) -> Any:
     from .execution import _normalize_param_value
@@ -35,11 +22,12 @@ def _coerce_table_cell(value: Any) -> Any:
         return stable_json_dumps(normalized)
     return normalized
 
+
 def _persist_table_records(
-    tables_root: Path,
-    *,
-    table_name: str,
-    records: list[dict[str, Any]],
+        tables_root: Path,
+        *,
+        table_name: str,
+        records: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
     if not records:
         return None
