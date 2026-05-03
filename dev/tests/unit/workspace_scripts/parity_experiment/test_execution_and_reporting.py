@@ -1,10 +1,9 @@
-"""Unit tests for the developer parity experiment runner."""
+"Unit tests for the developer parity experiment runner execution and reporting."
 
 from __future__ import annotations
 
 import importlib
 import json
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -14,403 +13,14 @@ from dev.tests.support.run_state_builders import (
 )
 from scipy.io import savemat
 
+from .helpers import (
+    _build_experiment_root,
+    _build_source_run_root,
+    _materialize_exact_matlab_batch,
+    _write_json,
+)
+
 parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-
-def _write_json(path: Path, payload: dict[str, object]) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    return path
-
-
-def _build_experiment_root(tmp_path: Path) -> Path:
-    root = tmp_path / "live-parity"
-    for name in ("datasets", "oracles", "reports", "runs"):
-        (root / name).mkdir(parents=True, exist_ok=True)
-    return root
-
-
-def _build_source_run_root(tmp_path: Path) -> Path:
-    run_root = tmp_path / "source-run"
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy", "vertices", "edges", "network"),
-    )
-    _write_json(
-        run_root / "03_Analysis" / "comparison_report.json",
-        {
-            "matlab": {
-                "vertices_count": 4,
-                "edges_count": 5,
-                "strand_count": 3,
-            },
-            "python": {
-                "vertices_count": 4,
-                "edges_count": 2,
-                "network_strands_count": 1,
-            },
-            "vertices": {
-                "matlab_count": 4,
-                "python_count": 4,
-            },
-            "edges": {
-                "matlab_count": 5,
-                "python_count": 2,
-            },
-            "network": {
-                "matlab_strand_count": 3,
-                "python_strand_count": 1,
-            },
-        },
-    )
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {"number_of_edges_per_vertex": 4},
-    )
-    return run_root
-
-
-def _materialize_exact_matlab_batch(run_root: Path) -> Path:
-    batch_dir = run_root / "01_Input" / "matlab_results" / "batch_260421-151654"
-    data_dir = batch_dir / "data"
-    vectors_dir = batch_dir / "vectors"
-    data_dir.mkdir(parents=True, exist_ok=True)
-    vectors_dir.mkdir(parents=True, exist_ok=True)
-    savemat(
-        data_dir / "energy_260421.mat",
-        {
-            "energy": np.zeros((2, 2, 2), dtype=np.float64),
-            "scale_indices": np.ones((2, 2, 2), dtype=np.int16),
-            "energy_4d": np.zeros((2, 2, 2, 1), dtype=np.float64),
-            "lumen_radius_microns": np.array([1.0], dtype=np.float64),
-        },
-    )
-    savemat(
-        vectors_dir / "vertices_260421.mat",
-        {
-            "vertex_space_subscripts": [[1.0, 2.0, 3.0]],
-            "vertex_scale_subscripts": [2],
-            "vertex_energies": [-1.0],
-        },
-    )
-    savemat(
-        vectors_dir / "edges_260421.mat",
-        {
-            "edges2vertices": [[1, 1]],
-            "edge_space_subscripts": [],
-            "edge_scale_subscripts": [],
-            "edge_energies": [],
-            "mean_edge_energies": [],
-        },
-    )
-    savemat(
-        vectors_dir / "network_260421.mat",
-        {
-            "strands2vertices": [],
-            "bifurcation_vertices": [],
-            "strand_subscripts": [],
-            "strand_energies": [],
-            "mean_strand_energies": [],
-            "vessel_directions": [],
-        },
-    )
-    return batch_dir
-
-
-def test_build_parser_rerun_python_defaults():
-    parser = parity_experiment.build_parser()
-
-    args = parser.parse_args(
-        [
-            "rerun-python",
-            "--source-run-root",
-            "source-run",
-            "--dest-run-root",
-            "dest-run",
-        ]
-    )
-
-    assert args.command == "rerun-python"
-    assert args.rerun_from == "edges"
-    assert args.params_file is None
-    assert args.input is None
-
-
-def test_build_parser_prove_exact_defaults():
-    parser = parity_experiment.build_parser()
-
-    args = parser.parse_args(
-        [
-            "prove-exact",
-            "--source-run-root",
-            "source-run",
-            "--dest-run-root",
-            "dest-run",
-        ]
-    )
-
-    assert args.command == "prove-exact"
-    assert args.stage == "all"
-    assert args.report_path is None
-    assert args.oracle_root is None
-
-
-def test_build_parser_fail_fast_defaults():
-    parser = parity_experiment.build_parser()
-
-    args = parser.parse_args(
-        [
-            "fail-fast",
-            "--source-run-root",
-            "source-run",
-            "--dest-run-root",
-            "dest-run",
-        ]
-    )
-
-    assert args.command == "fail-fast"
-    assert args.force is False
-    assert args.debug_maps is False
-    assert args.oracle_root is None
-
-
-def test_build_parser_promote_commands():
-    parser = parity_experiment.build_parser()
-
-    dataset_args = parser.parse_args(
-        [
-            "promote-dataset",
-            "--dataset-file",
-            "input.tif",
-            "--experiment-root",
-            "live-parity",
-        ]
-    )
-    oracle_args = parser.parse_args(
-        [
-            "promote-oracle",
-            "--matlab-batch-dir",
-            "matlab-batch",
-            "--oracle-root",
-            "oracle-root",
-        ]
-    )
-    init_args = parser.parse_args(
-        [
-            "init-exact-run",
-            "--dataset-root",
-            "dataset-root",
-            "--oracle-root",
-            "oracle-root",
-            "--dest-run-root",
-            "dest-run",
-        ]
-    )
-    report_args = parser.parse_args(
-        [
-            "promote-report",
-            "--run-root",
-            "run-root",
-        ]
-    )
-    normalize_args = parser.parse_args(
-        [
-            "normalize-recordings",
-            "--run-root",
-            "run-root",
-        ]
-    )
-    diagnose_args = parser.parse_args(
-        [
-            "diagnose-gaps",
-            "--run-root",
-            "run-root",
-        ]
-    )
-
-    assert dataset_args.command == "promote-dataset"
-    assert dataset_args.experiment_root == "live-parity"
-    assert oracle_args.command == "promote-oracle"
-    assert oracle_args.oracle_root == "oracle-root"
-    assert init_args.command == "init-exact-run"
-    assert init_args.stop_after == "vertices"
-    assert init_args.energy_storage_format == "npy"
-    assert report_args.command == "promote-report"
-    assert report_args.report_root is None
-    assert normalize_args.command == "normalize-recordings"
-    assert normalize_args.run_root == "run-root"
-    assert diagnose_args.command == "diagnose-gaps"
-    assert diagnose_args.limit == 10
-
-
-def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-
-    surface = parity_experiment.validate_source_run_surface(run_root)
-
-    assert surface.run_root == run_root.resolve()
-    assert surface.checkpoints_dir == run_root.resolve() / parity_experiment.CHECKPOINTS_DIR
-    assert surface.comparison_report_path.is_file()
-    assert surface.validated_params_path.is_file()
-    assert surface.run_snapshot_path is None
-
-
-def test_validate_source_run_surface_reports_missing_artifacts(tmp_path):
-    run_root = tmp_path / "source-run"
-    run_root.mkdir(parents=True, exist_ok=True)
-
-    with pytest.raises(ValueError, match="missing required artifacts"):
-        parity_experiment.validate_source_run_surface(run_root)
-
-
-def test_resolve_input_file_uses_run_snapshot_provenance(tmp_path):
-    repo_root = tmp_path / "repo"
-    input_file = repo_root / "data" / "slavv_test_volume.tif"
-    input_file.parent.mkdir(parents=True, exist_ok=True)
-    input_file.write_bytes(b"tiff")
-
-    run_root = _build_source_run_root(tmp_path)
-    materialize_run_snapshot(
-        run_root,
-        {
-            "run_id": "run-1",
-            "provenance": {
-                "input_file": "data/slavv_test_volume.tif",
-            },
-        },
-    )
-    surface = parity_experiment.validate_source_run_surface(run_root)
-
-    resolved = parity_experiment.resolve_input_file(
-        surface,
-        None,
-        repo_root=repo_root,
-    )
-
-    assert resolved == input_file.resolve()
-
-
-def test_resolve_input_file_requires_snapshot_or_explicit_input(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    surface = parity_experiment.validate_source_run_surface(run_root)
-
-    with pytest.raises(ValueError, match="no --input was provided"):
-        parity_experiment.resolve_input_file(surface, None)
-
-
-def test_load_params_file_uses_source_default_and_override(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    surface = parity_experiment.validate_source_run_surface(run_root)
-    override = _write_json(tmp_path / "override_params.json", {"edge_method": "tracing"})
-
-    default_params = parity_experiment.load_params_file(surface, None)
-    override_params = parity_experiment.load_params_file(surface, str(override))
-
-    assert default_params == {"number_of_edges_per_vertex": 4}
-    assert override_params == {"edge_method": "tracing"}
-
-
-def test_load_params_file_rejects_python_only_parity_controls_on_exact_route(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    surface = parity_experiment.validate_source_run_surface(run_root)
-    override = _write_json(
-        tmp_path / "override_params.json",
-        {
-            "comparison_exact_network": True,
-            "edge_method": "tracing",
-            "energy_method": "hessian",
-            "direction_method": "hessian",
-            "energy_projection_mode": "matlab",
-            "discrete_tracing": False,
-            "parity_watershed_candidate_mode": "all_contacts",
-        },
-    )
-
-    with pytest.raises(ValueError, match="disallowed Python-only parity keys"):
-        parity_experiment.load_params_file(surface, str(override))
-
-
-def test_validate_exact_proof_source_surface_accepts_exact_compatible_artifacts(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={"energy": {"energy_origin": "python_native_hessian"}},
-    )
-
-    surface = parity_experiment.validate_exact_proof_source_surface(run_root)
-
-    assert surface.run_root == run_root.resolve()
-    assert surface.oracle_surface.oracle_root.parent.name == "oracles"
-    assert surface.oracle_surface.manifest_path is not None
-    assert surface.oracle_surface.manifest_path.is_file()
-    assert surface.matlab_batch_dir.name == "batch_260421-151654"
-    assert set(surface.matlab_vector_paths) == {"energy", "vertices", "edges", "network"}
-
-
-def test_validate_exact_proof_source_surface_requires_exact_route_gate(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={"energy": {"energy_origin": "python_native_hessian"}},
-    )
-
-    with pytest.raises(ValueError, match="comparison_exact_network"):
-        parity_experiment.validate_exact_proof_source_surface(run_root)
-
-
-def test_validate_exact_proof_source_surface_requires_exact_compatible_energy_origin(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {"comparison_exact_network": True},
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={"energy": {"energy_origin": "matlab_batch_hdf5"}},
-    )
-
-    with pytest.raises(ValueError, match="exact-compatible"):
-        parity_experiment.validate_exact_proof_source_surface(run_root)
-
-
-def test_load_exact_params_file_rejects_python_only_parity_controls(tmp_path):
-    run_root = _build_source_run_root(tmp_path)
-    _materialize_exact_matlab_batch(run_root)
-    _write_json(
-        run_root / "99_Metadata" / "validated_params.json",
-        {
-            "comparison_exact_network": True,
-            "edge_method": "tracing",
-            "energy_method": "hessian",
-            "direction_method": "hessian",
-            "energy_projection_mode": "matlab",
-            "discrete_tracing": False,
-            "parity_candidate_salvage_mode": "auto",
-        },
-    )
-    materialize_checkpoint_surface(
-        run_root,
-        stages=("energy",),
-        payloads={"energy": {"energy_origin": "python_native_hessian"}},
-    )
-
-    surface = parity_experiment.validate_exact_proof_source_surface(run_root)
-
-    with pytest.raises(ValueError, match="disallowed Python-only parity keys"):
-        parity_experiment.load_exact_params_file(surface)
 
 
 def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
@@ -950,21 +560,26 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
         exist_ok=True,
     )
     (run_root / parity_experiment.CANDIDATE_PROGRESS_JSONL_PATH).write_text(
-        "".join(f"{json.dumps(record)}\n" for record in progress_records),
+        ""
+        .join(f"{json.dumps(record)}\n" for record in progress_records),
         encoding="utf-8",
     )
 
     index_payload = parity_experiment.persist_recording_tables(run_root)
 
     assert index_payload["table_count"] >= 6
-    assert (run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH).is_file()
+    assert (
+        run_root / parity_experiment.RECORDING_TABLES_INDEX_PATH
+    ).is_file()
     assert (
         run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl"
     ).is_file()
     assert (
         run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv"
     ).is_file()
-    assert (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv").is_file()
+    assert (
+        run_root / parity_experiment.ANALYSIS_TABLES_DIR / "candidate_progress.csv"
+    ).is_file()
 
     stage_rows = (
         (run_root / parity_experiment.ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl")
