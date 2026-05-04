@@ -99,6 +99,14 @@ def _materialize_exact_matlab_batch(run_root: Path) -> Path:
     return batch_dir
 
 
+def _exact_energy_payload() -> dict[str, object]:
+    return {
+        "energy": np.zeros((2, 2, 2), dtype=np.float32),
+        "lumen_radius_microns": np.array([1.0, 1.5, 2.0], dtype=np.float32),
+        "energy_origin": "python_native_hessian",
+    }
+
+
 def _exact_vertex_payload() -> dict[str, object]:
     return {
         "positions": np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32),

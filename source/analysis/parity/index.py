@@ -49,7 +49,12 @@ def upsert_index_record(root: Path | None, payload: dict[str, Any]) -> None:
     index_path = root / EXPERIMENT_INDEX_PATH
 
     # Identify unique record
-    payload_id = str(payload.get("id", Path(payload["path"]).name))
+    payload_id = str(
+        payload.get("id")
+        or payload.get("run_id")
+        or (Path(payload["path"]).name if "path" in payload else None)
+        or (Path(payload["run_root"]).name if "run_root" in payload else "unknown")
+    )
     payload_kind = str(payload.get("kind", "artifact"))
 
     retained: list[dict[str, Any]] = []

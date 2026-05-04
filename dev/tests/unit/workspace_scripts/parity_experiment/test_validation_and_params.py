@@ -76,7 +76,7 @@ def test_resolve_input_file_requires_snapshot_or_explicit_input(tmp_path):
     surface = validate_source_run_surface(run_root)
 
     with pytest.raises(ValueError, match="no --input was provided"):
-        resolve_input_file(surface, None)
+        resolve_input_file(surface, None, repo_root=tmp_path)
 
 
 def test_load_params_file_uses_source_default_and_override(tmp_path):

@@ -51,7 +51,12 @@ def _persist_table_records(
     normalized_records = [
         cast("dict[str, Any]", normalize_value(dict(record))) for record in records
     ]
-    frame = pd.json_normalize(normalized_records, sep=".")
+    try:
+        from pandas import json_normalize
+        frame = json_normalize(normalized_records, sep=".")
+    except ImportError:
+        from pandas.io.json import json_normalize
+        frame = json_normalize(normalized_records, sep=".")
     frame = frame.reindex(sorted(frame.columns), axis=1)
     frame = frame.apply(lambda column: column.map(_coerce_table_cell))
 
@@ -105,6 +110,7 @@ def _build_run_snapshot_tables(
             "run_id": run_id,
             "stage_key": str(stage_key),
             **{str(key): value for key, value in dict(stage_payload).items() if key != "artifacts"},
+            "artifact_count": len(stage_payload.get("artifacts", {})),
         }
         stage_rows.append(row)
         for artifact_key, artifact_value in sorted(
@@ -140,6 +146,46 @@ def persist_recording_tables(run_root: Path) -> dict[str, Any]:
         for table_name, records in _build_run_snapshot_tables(run_root, snapshot_payload).items():
             entry = _persist_table_records(tables_root, table_name=table_name, records=records)
             if entry: table_entries.append(entry)
+
+    from .constants import EDGE_CANDIDATE_AUDIT_PATH, CANDIDATE_PROGRESS_JSONL_PATH
+    audit_payload = load_json_dict(run_root / EDGE_CANDIDATE_AUDIT_PATH)
+    if audit_payload:
+        source_artifacts.append(str(run_root / EDGE_CANDIDATE_AUDIT_PATH))
+        # root row
+        root_row = {str(k): v for k, v in audit_payload.items() if k != "per_origin_summary"}
+        entry = _persist_table_records(tables_root, table_name="candidate_audit", records=[root_row])
+        if entry: table_entries.append(entry)
+
+        # per origin summary
+        per_origin = audit_payload.get("per_origin_summary", [])
+        entry = _persist_table_records(tables_root, table_name="candidate_audit_per_origin", records=per_origin)
+        if entry: table_entries.append(entry)
+
+        # origin metrics
+        frontier_counts = audit_payload.get("frontier_per_origin_candidate_counts", {})
+        metric_records = []
+        for origin_idx, count in frontier_counts.items():
+            metric_records.append({
+                "origin_index": int(origin_idx),
+                "metric_name": "frontier_per_origin_candidate_counts",
+                "metric_value": count,
+            })
+        entry = _persist_table_records(tables_root, table_name="candidate_audit_origin_metrics", records=metric_records)
+        if entry: table_entries.append(entry)
+    from .constants import CANDIDATE_COVERAGE_JSON_PATH
+    coverage_report = load_json_dict(run_root / CANDIDATE_COVERAGE_JSON_PATH)
+    if coverage_report:
+        source_artifacts.append(str(run_root / CANDIDATE_COVERAGE_JSON_PATH))
+        entry = _persist_table_records(tables_root, table_name="candidate_coverage_summary", records=[coverage_report])
+        if entry: table_entries.append(entry)
+
+    if (run_root / CANDIDATE_PROGRESS_JSONL_PATH).is_file():
+        source_artifacts.append(str(run_root / CANDIDATE_PROGRESS_JSONL_PATH))
+        lines = (run_root / CANDIDATE_PROGRESS_JSONL_PATH).read_text(encoding="utf-8").splitlines()
+        import json
+        records = [json.loads(line) for line in lines if line.strip()]
+        entry = _persist_table_records(tables_root, table_name="candidate_progress", records=records)
+        if entry: table_entries.append(entry)
 
     index_payload = {
         "run_root": str(run_root),

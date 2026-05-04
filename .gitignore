@@ -1,175 +1,175 @@
-## Byte-compiled / optimized / DLL files
-#__pycache__/
-#*.py[cod]
-#*$py.class
-#
-## C extensions
-#*.so
-#
-## Distribution / packaging
-#.Python
-#build/
-#develop-eggs/
-#dist/
-#downloads/
-#eggs/
-#.eggs/
-#lib/
-#lib64/
-#parts/
-#sdist/
-#var/
-#wheels/
-#share/python-wheels/
-#*.egg-info/
-#.installed.cfg
-#*.egg
-#MANIFEST
-#
-## PyInstaller
-#*.manifest
-#*.spec
-#
-## Installer logs
-#pip-log.txt
-#pip-delete-this-directory.txt
-#
-## Unit test / coverage reports
-#htmlcov/
-#.tox/
-#.nox/
-#.coverage
-#.coverage.*
-#.cache
-#nosetests.xml
-#coverage.xml
-#*.cover
-#*.py,cover
-#.hypothesis/
-#.pytest_cache/
-#cover/
-#
-## Translations
-#*.mo
-#*.pot
-#
-## Logs and debugging
-#*.log
-#
-## Django stuff
-#local_settings.py
-#db.sqlite3
-#db.sqlite3-journal
-#
-## Flask stuff
-#instance/
-#.webassets-cache
-#
-## Scrapy stuff
-#.scrapy
-#
-## Sphinx documentation
-#docs/_build/
-#
-## PyBuilder
-#.pybuilder/
-#target/
-#
-## Jupyter Notebook
-#.ipynb_checkpoints
-#
-## IPython
-#profile_default/
-#ipython_config.py
-#
-## Environments
-#.env
-#.venv*
-#env/
-#venv/
-#ENV/
-#env.bak/
-#venv.bak/
-#
-## Spyder project settings
-#.spyderproject
-#.spyproject
-#
-## Rope project settings
-#.ropeproject
-#
-## mkdocs documentation
-#/site
-#
-## mypy
-#.mypy_cache/
-#.dmypy.json
-#dmypy.json
-#
-## Pyre type checker
-#.pyre/
-#
-## pytype static type analyzer
-#.pytype/
-#
-## Cython debug symbols
-#cython_debug/
-#
-## IDE
-#.idea/
-#.vscode/
-#
-## macOS
-#.DS_Store
-#
-## Windows
-#Thumbs.db
-#ehthumbs.db
-#Desktop.ini
-#
-## Linux
-#*~
-#
-## Project-specific
-#*.zip
-#pmd-bin-*/
-#blender_resources/bbp-blender-*/
-#data/slavv_test_volume.tif
-#*.pdb
-#*.exe
-#*.dll
-#*.so
-#*.dylib
-#*.tif
-#*.tiff
-#*.mat
-#tutorial_output/
-#tutorial_output/*.pkl
-#tutorial_output/*.vmv
-#tutorial_output/*.casx
-#tutorial_output/tutorial_parameters.json
-#*.pkl
-#bfg.jar
-#
-## Comparison and run outputs
-#comparison_output/
-#comparison_output_*/
-#comparisons/*
-#!comparisons/README.md
-#comparison_results/
-#comparison_results_test_run/
-#workspace/tmp_parity_current_venv/
-#workspace/tmp_comparison_params_*.json
-#dev/datasets/*
-#!dev/datasets/.gitkeep
-#dev/oracles/*
-#!dev/oracles/.gitkeep
-#dev/reports/*
-#!dev/reports/.gitkeep
-#dev/runs/*
-#!dev/runs/.gitkeep
-#dev/tmp_tests/*
-#!dev/tmp_tests/.gitkeep
-#
-## Exclude external directory from all scans
-#external/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Logs and debugging
+*.log
+
+# Django stuff
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Environments
+.env
+.venv*
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Project-specific
+*.zip
+pmd-bin-*/
+blender_resources/bbp-blender-*/
+data/slavv_test_volume.tif
+*.pdb
+*.exe
+*.dll
+*.so
+*.dylib
+*.tif
+*.tiff
+*.mat
+tutorial_output/
+tutorial_output/*.pkl
+tutorial_output/*.vmv
+tutorial_output/*.casx
+tutorial_output/tutorial_parameters.json
+*.pkl
+bfg.jar
+
+# Comparison and run outputs
+comparison_output/
+comparison_output_*/
+comparisons/*
+!comparisons/README.md
+comparison_results/
+comparison_results_test_run/
+workspace/tmp_parity_current_venv/
+workspace/tmp_comparison_params_*.json
+dev/datasets/*
+!dev/datasets/.gitkeep
+dev/oracles/*
+!dev/oracles/.gitkeep
+dev/reports/*
+!dev/reports/.gitkeep
+dev/runs/*
+!dev/runs/.gitkeep
+dev/tmp_tests/*
+!dev/tmp_tests/.gitkeep
+
+# Exclude external directory from all scans
+external/

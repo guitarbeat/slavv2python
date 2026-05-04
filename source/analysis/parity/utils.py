@@ -143,3 +143,8 @@ def persist_normalized_payloads(
         write_joblib_with_hash(artifact_path, payload)
         written[name] = str(artifact_path)
     return written
+def atomic_write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
+    """Write records to a JSONL file."""
+    import json
+    lines = [json.dumps(r) for r in records]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -50,13 +50,15 @@ from source.analysis.parity.proofs import (
     _load_exact_vertices_payload,
     _run_capture_candidates,
 )
-from source.analysis.parity.utils import find_matlab_vector_paths
-from source.analysis.parity.gaps import (
+from source.io.matlab_exact_proof import (
+    find_matlab_vector_paths,
+    load_normalized_matlab_vectors,
+)
+from source.core.edge_candidates import (
     _generate_edge_candidates_matlab_frontier,
     _finalize_matlab_parity_candidates,
 )
-from source.analysis.parity.io import (
-    load_normalized_matlab_vectors,
+from source.io.matlab_fail_fast import (
     build_candidate_coverage_report,
 )
 from dev.scripts.cli.parity_experiment import main
@@ -277,22 +279,22 @@ def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_ru
     )
 
     monkeypatch.setattr(
-        "validate_exact_proof_source_surface",
+        "source.analysis.parity.execution.validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
-        "load_exact_params_file",
-        lambda _surface: {"microns_per_voxel": [0.916, 0.916, 1.99688]},
+        "source.analysis.parity.execution.load_params_file",
+        lambda _surface, _params_arg=None: {"microns_per_voxel": [0.916, 0.916, 1.99688]},
     )
     monkeypatch.setattr(
-        "_load_exact_energy_payload",
+        "source.analysis.parity.proofs._load_exact_energy_payload",
         lambda _surface: {
             "energy": np.zeros((64, 512, 512), dtype=np.float32),
             "lumen_radius_microns": np.array([1.5, 2.0], dtype=np.float32),
         },
     )
     monkeypatch.setattr(
-        "load_builtin_lut_fixture",
+        "source.io.matlab_fail_fast.load_builtin_lut_fixture",
         lambda:
             {
                 "size_of_image": [121, 512, 512],
@@ -411,25 +413,24 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
         return candidates
 
     monkeypatch.setattr(
-        "validate_exact_proof_source_surface",
+        "source.analysis.parity.execution.validate_exact_proof_source_surface",
         lambda _run_root, oracle_root=None: source_surface,
     )
     monkeypatch.setattr(
-        "load_exact_params_file",
-        lambda _surface: {"comparison_exact_network": True},
+        "source.analysis.parity.execution.load_params_file",
+        lambda _surface, _params_arg=None: {"comparison_exact_network": True},
     )
     monkeypatch.setattr(
-        "_load_exact_energy_payload",
-        lambda _surface:
-            {
-                "energy": np.zeros((2, 2, 2), dtype=np.float32),
-                "scale_indices": np.zeros((2, 2, 2), dtype=np.int16),
-                "lumen_radius_microns": np.array([1.0], dtype=np.float32),
-                "energy_sign": -1.0,
-            },
+        "source.analysis.parity.proofs._load_exact_energy_payload",
+        lambda _surface: {
+            "energy": np.zeros((2, 2, 2), dtype=np.float32),
+            "scale_indices": np.zeros((2, 2, 2), dtype=np.int16),
+            "lumen_radius_microns": np.array([1.0], dtype=np.float32),
+            "energy_sign": -1.0,
+        },
     )
     monkeypatch.setattr(
-        "_load_exact_vertices_payload",
+        "source.analysis.parity.proofs._load_exact_vertices_payload",
         lambda _surface:
             {
                 "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
@@ -437,15 +438,15 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
             },
     )
     monkeypatch.setattr(
-        "_generate_edge_candidates_matlab_frontier",
+        "source.core.edge_candidates._generate_edge_candidates_matlab_frontier",
         fake_generate,
     )
     monkeypatch.setattr(
-        "_finalize_matlab_parity_candidates",
+        "source.core.edge_candidates._finalize_matlab_parity_candidates",
         lambda candidate_payload, *_args: candidate_payload,
     )
     monkeypatch.setattr(
-        "load_normalized_matlab_vectors",
+        "source.analysis.parity.proofs.load_normalized_matlab_vectors",
         lambda *_args, **_kwargs:
             {
                 "edges": {
@@ -454,7 +455,16 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
             },
     )
     monkeypatch.setattr(
-        "build_candidate_coverage_report",
+        "source.analysis.parity.proofs._load_matlab",
+        lambda *_args, **_kwargs:
+            {
+                "edges": {
+                    "connections": np.array([[0, 0]], dtype=np.int32),
+                }
+            },
+    )
+    monkeypatch.setattr(
+        "source.io.matlab_fail_fast.build_candidate_coverage_report",
         lambda *_args, **_kwargs: {"candidate_surface": {}},
     )
 
@@ -479,10 +489,12 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     progress_jsonl = dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH
     progress_plot = dest_run_root / CANDIDATE_PROGRESS_PLOT_PATH
     recording_index = dest_run_root / RECORDING_TABLES_INDEX_PATH
-    candidate_progress_csv =
+    candidate_progress_csv = (
         dest_run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv"
-    candidate_coverage_summary_jsonl =
+    )
+    candidate_coverage_summary_jsonl = (
         dest_run_root / ANALYSIS_TABLES_DIR / "candidate_coverage_summary.jsonl"
+    )
     assert progress_jsonl.is_file()
     assert progress_plot.is_file()
     assert recording_index.is_file()
@@ -606,27 +618,30 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
     ).is_file()
     assert (run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv").is_file()
 
-    stage_rows =
+    stage_rows = (
         (run_root / ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
+    )
     assert len(stage_rows) == 1
     stage_row = json.loads(stage_rows[0])
     assert stage_row["stage_key"] == "edges"
     assert stage_row["artifact_count"] == 1
 
-    per_origin_rows =
+    per_origin_rows = (
         (run_root / ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
+    )
     assert len(per_origin_rows) == 1
     per_origin_row = json.loads(per_origin_rows[0])
     assert per_origin_row["origin_index"] == 7
 
-    metric_rows =
+    metric_rows = (
         (run_root / ANALYSIS_TABLES_DIR / "candidate_audit_origin_metrics.jsonl")
         .read_text(encoding="utf-8")
         .splitlines()
+    )
     assert len(metric_rows) == 1
     metric_row = json.loads(metric_rows[0])
     assert metric_row["metric_name"] == "frontier_per_origin_candidate_counts"

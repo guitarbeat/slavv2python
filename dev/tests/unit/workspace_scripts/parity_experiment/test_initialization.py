@@ -423,8 +423,8 @@ def test_init_exact_run_can_finalize_existing_completed_seed(tmp_path, monkeypat
             )
             return {"parameters": parameters}
 
-    monkeypatch.setattr(parity_experiment, "load_tiff_volume", _fake_load_tiff)
-    monkeypatch.setattr(parity_experiment, "SLAVVProcessor", FirstProcessor)
+    monkeypatch.setattr("source.io.tiff.load_tiff_volume", _fake_load_tiff)
+    monkeypatch.setattr("source.core.pipeline.SLAVVProcessor", FirstProcessor)
 
     dest_run_root = experiment_root / "runs" / "seed-c"
     parity_experiment.main(
@@ -445,7 +445,7 @@ def test_init_exact_run_can_finalize_existing_completed_seed(tmp_path, monkeypat
         def process_image(self, *_args, **_kwargs):
             raise AssertionError("completed seed should finalize without rerunning process_image")
 
-    monkeypatch.setattr(parity_experiment, "SLAVVProcessor", SecondProcessor)
+    monkeypatch.setattr("source.core.pipeline.SLAVVProcessor", SecondProcessor)
     parity_experiment.main(
         [
             "init-exact-run",

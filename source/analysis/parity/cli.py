@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
 import argparse
 from pathlib import Path
 
@@ -12,6 +13,13 @@ from .constants import (
     RUN_MANIFEST_PATH,
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
+)
+from .proofs import (
+    run_candidate_capture,
+    run_edge_replay,
+    run_exact_parity_proof,
+    run_exact_preflight,
+    run_lut_proof,
 )
 from .execution import (
     copy_source_surface,
@@ -30,6 +38,7 @@ from .gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
 )
+from .utils import fingerprint_file, now_iso
 from .models import ExactProofSourceSurface, OracleSurface
 from .proofs import (
     run_candidate_capture,
@@ -173,7 +182,9 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
     # (Simplified resolution for now, should use ExactProofSourceSurface)
     run_root = Path(args.source_run_root).expanduser().resolve()
-    oracle_root = Path(args.oracle_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    if not oracle_root and (run_root / "01_Input" / "matlab_results").is_dir():
+        oracle_root = run_root
 
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
@@ -186,34 +197,47 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
     )
 
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    run_exact_parity_proof(
+    report, _, _ = run_exact_parity_proof(
         source_surface,
         dest_run_root,
-        stage_arg=args.stage,
-        report_path_arg=args.report_path,
+        stage_arg=getattr(args, "stage", "all"),
+        report_path_arg=getattr(args, "report_path", None),
     )
+    if not report.get("passed"):
+        import sys
+        sys.exit(1)
 
 
 def handle_preflight_exact(args: argparse.Namespace) -> None:
     """Verify that a destination run root is ready for an exact proof."""
-    run_exact_preflight(
+    report, _, _ = run_exact_preflight(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
     )
+    if not report.get("passed"):
+        import sys
+        sys.exit(1)
 
 
 def handle_prove_luts(args: argparse.Namespace) -> None:
     """Verify exact parity for lookup tables."""
-    pass
+    report, _, _ = run_lut_proof(
+        source_run_root=Path(args.source_run_root),
+        dest_run_root=Path(args.dest_run_root),
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+    )
+    if not report.get("passed"):
+        import sys
+        sys.exit(1)
 
 
 def handle_capture_candidates(args: argparse.Namespace) -> None:
     """Capture candidate pairs from a Python run for parity comparison."""
     run_root = Path(args.source_run_root).expanduser().resolve()
-    oracle_root = Path(args.oracle_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
 
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
@@ -226,17 +250,20 @@ def handle_capture_candidates(args: argparse.Namespace) -> None:
     )
 
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    run_candidate_capture(
+    report, _, _ = run_candidate_capture(
         source_surface,
         dest_run_root,
-        include_debug_maps=bool(args.debug_maps),
+        include_debug_maps=bool(getattr(args, "debug_maps", False)),
     )
+    if not report.get("passed"):
+        import sys
+        sys.exit(1)
 
 
 def handle_replay_edges(args: argparse.Namespace) -> None:
     """Replay edge discovery from candidates for parity verification."""
     run_root = Path(args.source_run_root).expanduser().resolve()
-    oracle_root = Path(args.oracle_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
 
     oracle_surface = load_oracle_surface(oracle_root)
     source_surface = ExactProofSourceSurface(
@@ -249,13 +276,28 @@ def handle_replay_edges(args: argparse.Namespace) -> None:
     )
 
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    run_edge_replay(source_surface, dest_run_root)
+    report, _, _ = run_edge_replay(source_surface, dest_run_root)
+    if not report.get("passed"):
+        import sys
+        sys.exit(1)
 
 
 def handle_fail_fast(args: argparse.Namespace) -> None:
     """Run cheap gates first and stop at the first failing gate."""
-    # Simplified fail-fast for now
+    # 1. Preflight
     handle_preflight_exact(args)
+    
+    # 2. LUT Proof
+    handle_prove_luts(args)
+    
+    # 3. Candidate Capture
+    handle_capture_candidates(args)
+    
+    # 4. Edge Replay
+    handle_replay_edges(args)
+    
+    # 5. Final Exact Proof
+    handle_prove_exact(args)
 
 
 def handle_promote_oracle(args: argparse.Namespace) -> None:
@@ -288,7 +330,8 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
     )
 
     dataset_surface = load_dataset_surface(Path(args.dataset_root))
-    oracle_surface = load_oracle_surface(Path(args.oracle_root))
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    oracle_surface = load_oracle_surface(oracle_root)
 
     if oracle_surface.dataset_hash and oracle_surface.dataset_hash != dataset_surface.dataset_hash:
         raise ValueError(
