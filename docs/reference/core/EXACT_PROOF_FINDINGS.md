@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-04-30
+**Last Updated**: 2026-05-04
 
 This is the maintained current-status owner for the native-first exact route.
 Use it for live proof status, current v22 watershed readouts, the first failing
@@ -123,6 +123,57 @@ The last maintained v22 `capture-candidates` read remains:
 | Missing pairs | 890 | 35.1% gap |
 | Extra pairs | 477 | 22.5% over |
 
+**Note**: These counts are from before the May 2026 critical bug fixes. Re-run
+`capture-candidates` to measure the actual improvement from the directional
+suppression and trace order fixes.
+
+### May 2026 Critical Bug Fixes
+
+Two critical MATLAB parity bugs were identified and fixed on 2026-05-04:
+
+#### 1. Directional Suppression in Seed Loop (CRITICAL)
+
+**Bug**: Python was applying directional suppression INSIDE the watershed seed
+loop, mutating adjusted energies after each seed selection. MATLAB computes
+adjusted energies ONCE before the loop and uses them unchanged for all seeds.
+
+**Location**: `source/core/_edge_candidates/global_watershed.py` lines 714-720
+
+**MATLAB Reference**: `external/Vectorization-Public/source/get_edges_by_watershed.m`
+- Lines 207-343: Compute adjusted energies BEFORE seed loop
+- Lines 476-565: Seed loop that only READS `current_strel_energies`, never mutates
+
+**Impact**: This bug directly caused the 16.3% candidate generation gap because:
+- It affected every location emitting multiple seeds (vertices with `edge_number_tolerance=2`)
+- Caused Python to select different second seeds than MATLAB
+- Accumulated over thousands of watershed iterations
+
+**Fix**: Removed directional suppression from inside seed loop. MATLAB applies
+all energy penalties (size, distance, direction) BEFORE the seed loop begins,
+then uses the same adjusted energy field for all seeds from that location.
+
+**Validation**: All watershed tests pass (81/82, 1 pre-existing frontier ordering failure)
+
+#### 2. Trace Order Randomization
+
+**Bug**: Python only randomized trace point order when `comparison_exact_network=True`,
+but MATLAB always uses `randperm` for deterministic trace order.
+
+**Location**: `source/core/edges_internal/edge_selection.py` lines 221-224
+
+**MATLAB Reference**: `external/Vectorization-Public/source/choose_edges_V200.m` line 318
+```matlab
+edge_position_index_range = uint16(randperm(degrees_of_edges(edge_index)));
+```
+
+**Impact**: Non-deterministic trace order on non-exact routes; incorrect parity
+assumption that randomization was exact-route-only.
+
+**Fix**: Always initialize and use seeded RNG for trace order, removing the
+conditional check. Now matches MATLAB's `randperm` behavior on all routes.
+
+**Validation**: All edge selection tests pass (9/9)
+
 ### Landed Fixes That Should Stay
 
 The current exact-route watershed path has already absorbed these meaningful
@@ -170,11 +221,15 @@ anti-patterns in future edge investigations:
 
 ### Strongest Remaining Candidate Surfaces
 
-1. frontier ordering and insertion semantics
+After the May 2026 fixes, the remaining candidate surfaces to investigate are:
+
+1. frontier ordering and insertion semantics (1 test failure suggests work remains)
 2. join cleanup semantics
 3. vertex `-Inf` sentinel lifecycle behavior
-4. chooser/control-flow deviations downstream of candidate emission
-5. diagnostic-era defensive logic still living in the production exact path
+4. any remaining chooser/control-flow deviations downstream of candidate emission
+
+The directional suppression fix should dramatically improve or close the candidate
+generation gap. Re-run parity experiments to measure actual improvement.
 
 ## Cleanup And Network
 
@@ -228,10 +283,14 @@ not close parity.
 
 ## Next Proof Actions
 
-1. Clean the exact source-run params surface so preflight passes the fairness
+1. **IMMEDIATE**: Re-run native-first `capture-candidates` to measure the actual
+   improvement from the May 2026 directional suppression fix. This should
+   dramatically improve or close the 16.3% candidate generation gap.
+2. Re-run `prove-exact --stage edges` and record the first failing field.
+3. If candidate generation now matches, investigate the 1 failing frontier
+   ordering test as the next parity surface.
+4. Clean the exact source-run params surface so preflight passes the fairness
    audit with no Python-only `parity_*` controls.
-2. Re-run native-first `capture-candidates` and replace the older v22 counts.
-3. Re-run `prove-exact --stage edges` and record the first failing field.
-4. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
+5. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
    file focused on live proof status.
-5. Once edges pass, run `prove-exact --stage all` to close vertices and network.
+6. Once edges pass, run `prove-exact --stage all` to close vertices and network.

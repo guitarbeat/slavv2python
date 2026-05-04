@@ -8,15 +8,15 @@ from typing import Any, cast
 import numpy as np
 from scipy import sparse
 
+from .._edge_payloads import _empty_edge_diagnostics
+from ..edge_primitives import (
+    _edge_metric_from_energy_trace,
+)
 from .common import (
     _build_matlab_global_watershed_lut,
     _coord_to_matlab_linear_index,
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
-)
-from .._edge_payloads import _empty_edge_diagnostics
-from ..edge_primitives import (
-    _edge_metric_from_energy_trace,
 )
 
 
@@ -33,8 +33,8 @@ def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np
 
 
 def _initialize_matlab_global_watershed_state(
-        energy: np.ndarray,
-        vertex_positions: np.ndarray,
+    energy: np.ndarray,
+    vertex_positions: np.ndarray,
 ) -> dict[str, Any]:
     """Build MATLAB-shaped shared maps for global watershed edge discovery."""
     shape: tuple[int, int, int] = (
@@ -92,13 +92,13 @@ def _initialize_matlab_global_watershed_state(
 
 
 def _matlab_global_watershed_current_strel(
-        current_linear: int,
-        *,
-        current_scale_label: int,
-        shape: tuple[int, int, int],
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        step_size_per_origin_radius: float,
+    current_linear: int,
+    *,
+    current_scale_label: int,
+    shape: tuple[int, int, int],
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    step_size_per_origin_radius: float,
 ) -> dict[str, np.ndarray]:
     """Build the in-bounds MATLAB strel around one current location."""
     current_coord = _matlab_linear_index_to_coord(int(current_linear), shape)
@@ -123,12 +123,12 @@ def _matlab_global_watershed_current_strel(
 
     strel_coords = current_coord[None, :] + offsets
     valid_mask = (
-            (strel_coords[:, 0] >= 0)
-            & (strel_coords[:, 0] < shape[0])
-            & (strel_coords[:, 1] >= 0)
-            & (strel_coords[:, 1] < shape[1])
-            & (strel_coords[:, 2] >= 0)
-            & (strel_coords[:, 2] < shape[2])
+        (strel_coords[:, 0] >= 0)
+        & (strel_coords[:, 0] < shape[0])
+        & (strel_coords[:, 1] >= 0)
+        & (strel_coords[:, 1] < shape[1])
+        & (strel_coords[:, 2] >= 0)
+        & (strel_coords[:, 2] < shape[2])
     )
     valid_coords = np.asarray(strel_coords[valid_mask], dtype=np.int32)
     valid_offsets = np.asarray(offsets[valid_mask], dtype=np.int32)
@@ -165,25 +165,25 @@ def _matlab_global_watershed_current_strel(
         "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float32)[valid_mask],
         "lut_size": len(offsets),  # Store for debugging
         "scale_label_clipped": current_scale_index
-                               + 1,  # Clipped scale for consistent pointer/size_map usage
+        + 1,  # Clipped scale for consistent pointer/size_map usage
     }
 
 
 def _matlab_global_watershed_reveal_unclaimed_strel(
-        *,
-        current_vertex_index: int,
-        current_scale_label: int,
-        current_d_over_r: float,
-        valid_linear: np.ndarray,
-        strel_pointer_indices: np.ndarray,
-        strel_distance_microns: np.ndarray,
-        strel_adjusted_energies: np.ndarray,
-        vertex_index_map_flat: np.ndarray,
-        energy_map_flat: np.ndarray,
-        pointer_map_flat: np.ndarray,
-        d_over_r_map_flat: np.ndarray,
-        size_map_flat: np.ndarray,
-        lut_size: int,
+    *,
+    current_vertex_index: int,
+    current_scale_label: int,
+    current_d_over_r: float,
+    valid_linear: np.ndarray,
+    strel_pointer_indices: np.ndarray,
+    strel_distance_microns: np.ndarray,
+    strel_adjusted_energies: np.ndarray,
+    vertex_index_map_flat: np.ndarray,
+    energy_map_flat: np.ndarray,
+    pointer_map_flat: np.ndarray,
+    d_over_r_map_flat: np.ndarray,
+    size_map_flat: np.ndarray,
+    lut_size: int,
 ) -> dict[str, np.ndarray]:
     """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels.
 
@@ -224,8 +224,8 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
         )
         pointer_map_flat[claim_linear] = claim_pointers
         d_over_r_map_flat[claim_linear] = (
-                np.asarray(strel_distance_microns[is_without_vertex], dtype=np.float32)
-                + current_d_over_r
+            np.asarray(strel_distance_microns[is_without_vertex], dtype=np.float32)
+            + current_d_over_r
         )
         size_map_flat[claim_linear] = np.int16(current_scale_label)
 
@@ -236,13 +236,13 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
 
 
 def _matlab_global_watershed_insert_available_location(
-        available_locations: list[int],
-        *,
-        next_location: int,
-        next_energy: float,
-        energy_lookup: Any,
-        seed_idx: int,
-        is_current_location_clear: bool,
+    available_locations: list[int],
+    *,
+    next_location: int,
+    next_energy: float,
+    energy_lookup: Any,
+    seed_idx: int,
+    is_current_location_clear: bool,
 ) -> list[int]:
     """Insert one location into MATLAB's worst-to-best available-location list."""
 
@@ -284,10 +284,10 @@ def _matlab_global_watershed_insert_available_location(
 
 
 def _matlab_global_watershed_reset_join_locations(
-        available_locations: list[int],
-        *,
-        next_vertex_locations: np.ndarray,
-        is_current_location_clear: bool,
+    available_locations: list[int],
+    *,
+    next_vertex_locations: np.ndarray,
+    is_current_location_clear: bool,
 ) -> tuple[list[int], bool]:
     """Mirror MATLAB's indexed available-location removal during watershed joins.
 
@@ -326,8 +326,8 @@ def _matlab_global_watershed_reset_join_locations(
 
 
 def _matlab_global_watershed_unit_vectors(
-        offsets: np.ndarray,
-        microns_per_voxel: np.ndarray,
+    offsets: np.ndarray,
+    microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Return MATLAB-style unit vectors for one local strel."""
     vectors: np.ndarray = np.asarray(offsets, dtype=np.float64) * np.asarray(
@@ -342,10 +342,10 @@ def _matlab_global_watershed_unit_vectors(
 
 
 def _matlab_global_watershed_tolerance_mask(
-        adjusted_energies: np.ndarray,
-        *,
-        current_vertex_energy: float,
-        energy_tolerance: float,
+    adjusted_energies: np.ndarray,
+    *,
+    current_vertex_energy: float,
+    energy_tolerance: float,
 ) -> np.ndarray:
     """Mirror MATLAB's per-seed energy tolerance test on the current penalized strel energies."""
     threshold = float(current_vertex_energy) * (1.0 - float(energy_tolerance))
@@ -353,9 +353,9 @@ def _matlab_global_watershed_tolerance_mask(
 
 
 def _matlab_global_watershed_seed_index_range(
-        *,
-        current_pointer_value: int,
-        edge_number_tolerance: int,
+    *,
+    current_pointer_value: int,
+    edge_number_tolerance: int,
 ) -> range:
     """Mirror MATLAB's seed count: only true origins emit multiple seeds."""
     if int(current_pointer_value) == 0:
@@ -364,14 +364,14 @@ def _matlab_global_watershed_seed_index_range(
 
 
 def _matlab_global_watershed_trace_half(
-        start_linear: int,
-        *,
-        pointer_map: np.ndarray,
-        size_map: np.ndarray,
-        shape: tuple[int, int, int],
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        step_size_per_origin_radius: float,
+    start_linear: int,
+    *,
+    pointer_map: np.ndarray,
+    size_map: np.ndarray,
+    shape: tuple[int, int, int],
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    step_size_per_origin_radius: float,
 ) -> list[int]:
     """Trace one MATLAB watershed half-edge back to its zero-pointer origin using flat views."""
     pointer_map_flat = pointer_map.ravel(order="F")
@@ -418,8 +418,8 @@ def _matlab_global_watershed_trace_half(
 
 
 def _coords_from_linear_trace(
-        linear_trace: list[int],
-        shape: tuple[int, int, int],
+    linear_trace: list[int],
+    shape: tuple[int, int, int],
 ) -> np.ndarray:
     """Convert a MATLAB-order linear trace into an ordered spatial path."""
     coords = [_matlab_linear_index_to_coord(index, shape) for index in linear_trace]
@@ -427,8 +427,8 @@ def _coords_from_linear_trace(
 
 
 def _sample_volume_from_matlab_linear_trace(
-        linear_trace: list[int],
-        volume: np.ndarray,
+    linear_trace: list[int],
+    volume: np.ndarray,
 ) -> np.ndarray:
     """Sample one volume exactly at normalized MATLAB-order linear indices."""
     if not linear_trace:
@@ -442,12 +442,12 @@ def _sample_volume_from_matlab_linear_trace(
 
 
 def _matlab_global_watershed_finalize_edge_trace(
-        half_1: list[int],
-        half_2: list[int],
-        *,
-        shape: tuple[int, int, int],
-        energy_map: np.ndarray,
-        scale_image: np.ndarray | None,
+    half_1: list[int],
+    half_2: list[int],
+    *,
+    shape: tuple[int, int, int],
+    energy_map: np.ndarray,
+    scale_image: np.ndarray | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Build one MATLAB-style edge trace and sample its payloads by linear index."""
     full_linear_trace = [*list(reversed(half_1)), *half_2]
@@ -467,12 +467,12 @@ def _matlab_global_watershed_finalize_edge_trace(
 
 
 def _matlab_global_watershed_scale_pointer_map(
-        pointer_map: np.ndarray,
-        size_map: np.ndarray,
-        *,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        step_size_per_origin_radius: float,
+    pointer_map: np.ndarray,
+    size_map: np.ndarray,
+    *,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    step_size_per_origin_radius: float,
 ) -> np.ndarray:
     """Apply MATLAB's final pointer-map scaling by scale-specific strel length."""
     scaled_pointer_map = np.zeros(pointer_map.shape, dtype=np.float32)
@@ -495,22 +495,22 @@ def _matlab_global_watershed_scale_pointer_map(
         )
     strel_lengths = unique_lengths[scale_indices]
     scaled_pointer_map[pointer_mask] = (
-            1000.0 / np.maximum(strel_lengths, 1.0) * pointer_map[pointer_mask].astype(np.float32)
+        1000.0 / np.maximum(strel_lengths, 1.0) * pointer_map[pointer_mask].astype(np.float32)
     )
     return cast("np.ndarray", scaled_pointer_map)
 
 
 def _generate_edge_candidates_matlab_global_watershed(
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        _vertex_center_image: np.ndarray,
-        params: dict[str, Any],
-        *,
-        heartbeat: Any | None = None,
+    energy: np.ndarray,
+    scale_indices: np.ndarray | None,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    _vertex_center_image: np.ndarray,
+    params: dict[str, Any],
+    *,
+    heartbeat: Any | None = None,
 ) -> dict[str, Any]:
     """Generate candidates with MATLAB's one-pass global shared-state watershed search."""
     del _vertex_center_image
@@ -659,11 +659,11 @@ def _generate_edge_candidates_matlab_global_watershed(
             current_strel_energies,
             neighbor_offsets=current_strel_offsets,
             neighbor_distances_microns=current_strel_r_over_R
-                                       * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
+            * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
             neighbor_scale_indices=size_map_flat[current_strel_linear],
             propagated_scale_index=current_scale_label,
             current_distance_microns=current_d_over_r
-                                     * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
+            * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
             origin_radius_microns=max(float(lumen_radius_microns[current_scale_index]), 1e-6),
             current_forward_unit=current_forward_unit,
             microns_per_voxel=microns_per_voxel,
@@ -692,11 +692,13 @@ def _generate_edge_candidates_matlab_global_watershed(
         )
 
         for seed_idx in _matlab_global_watershed_seed_index_range(
-                current_pointer_value=current_pointer_value,
-                edge_number_tolerance=edge_number_tolerance,
+            current_pointer_value=current_pointer_value,
+            edge_number_tolerance=edge_number_tolerance,
         ):
-            # MATLAB recomputes the tolerated-energy mask each seed after directional suppression
-            # mutates the current strel energies.
+            # MATLAB recomputes the tolerated-energy mask for each seed using the SAME adjusted energies
+            # The adjusted energies are computed ONCE before the seed loop (lines 658-673 above)
+            # and are NOT mutated inside the loop. MATLAB does not apply directional suppression
+            # between seeds - it uses the same energy field for all seeds from one location.
             is_energy_tolerated_in_strel = _matlab_global_watershed_tolerance_mask(
                 adjusted,
                 current_vertex_energy=float(vertex_energies[current_vertex_index - 1]),
@@ -711,13 +713,12 @@ def _generate_edge_candidates_matlab_global_watershed(
                     available_locations = available_locations[:-1]
                     is_current_location_clear = True
             else:
-                from .common import _matlab_frontier_directional_suppression_factors
-
-                adjusted *= _matlab_frontier_directional_suppression_factors(
-                    current_strel_offsets,
-                    selected_index=strel_idx,
-                    microns_per_voxel=microns_per_voxel,
-                )
+                # CRITICAL FIX: Do NOT apply directional suppression here!
+                # MATLAB does not mutate current_strel_energies inside the seed loop.
+                # All seeds from one location use the same adjusted energy field.
+                # The directional penalty (line 338 in MATLAB) is applied BEFORE the seed loop
+                # at lines 325-343, only when pointer_map(current_location) > 0.
+                # That penalty is already included in the 'adjusted' array computed at line 658-673.
 
                 if next_vertex_index == 0:
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
@@ -744,7 +745,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                     )
 
                     if not bool(
-                            vertex_adjacency_matrix[next_vertex_index - 1, current_vertex_index - 1]
+                        vertex_adjacency_matrix[next_vertex_index - 1, current_vertex_index - 1]
                     ):
                         vertex_adjacency_matrix[
                             current_vertex_index - 1,
@@ -768,13 +769,13 @@ def _generate_edge_candidates_matlab_global_watershed(
                         other_half_start = next_location
                         if next_vertex_index != number_of_vertices + 1:
                             is_vertex_b_origin = (
-                                                         pointer_map[
-                                                             current_strel_coords[:, 0],
-                                                             current_strel_coords[:, 1],
-                                                             current_strel_coords[:, 2],
-                                                         ]
-                                                         == 0
-                                                 ) & (vertices_of_current_strel == next_vertex_index)
+                                pointer_map[
+                                    current_strel_coords[:, 0],
+                                    current_strel_coords[:, 1],
+                                    current_strel_coords[:, 2],
+                                ]
+                                == 0
+                            ) & (vertices_of_current_strel == next_vertex_index)
                             if np.any(is_vertex_b_origin):
                                 other_half_start = int(current_strel_linear[is_vertex_b_origin][0])
 

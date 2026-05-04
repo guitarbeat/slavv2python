@@ -6,6 +6,8 @@ from typing import Any, cast
 
 import numpy as np
 
+from .._edge_payloads import _empty_edges_result
+from .._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
 from .edge_cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
@@ -17,8 +19,6 @@ from .edge_selection_payloads import (
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
-from .._edge_payloads import _empty_edges_result
-from .._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
 
 EXACT_ROUTE_CHOOSER_SEED = 0
 
@@ -39,9 +39,9 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
         dtype=np.int32,
     )
     distances = (
-            (offsets[:, 0].astype(np.float64) ** 2) / (safe_radii[0] ** 2)
-            + (offsets[:, 1].astype(np.float64) ** 2) / (safe_radii[1] ** 2)
-            + (offsets[:, 2].astype(np.float64) ** 2) / (safe_radii[2] ** 2)
+        (offsets[:, 0].astype(np.float64) ** 2) / (safe_radii[0] ** 2)
+        + (offsets[:, 1].astype(np.float64) ** 2) / (safe_radii[1] ** 2)
+        + (offsets[:, 2].astype(np.float64) ** 2) / (safe_radii[2] ** 2)
     )
     kept = offsets[distances <= 1.0]
     if kept.size == 0:
@@ -50,9 +50,9 @@ def _construct_structuring_element_offsets_matlab(radii: np.ndarray) -> np.ndarr
 
 
 def _offset_coords_matlab(
-        position: np.ndarray,
-        offsets: np.ndarray,
-        image_shape: tuple[int, int, int],
+    position: np.ndarray,
+    offsets: np.ndarray,
+    image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     """Apply offsets with MATLAB's edge-handling rule of snapping overflow back to center."""
     base = np.rint(position[:3]).astype(np.int32)
@@ -64,8 +64,8 @@ def _offset_coords_matlab(
 
 
 def _matlab_edge_endpoint_positions_and_scales(
-        trace: np.ndarray,
-        scale_trace: np.ndarray,
+    trace: np.ndarray,
+    scale_trace: np.ndarray,
 ) -> tuple[tuple[np.ndarray, int], tuple[np.ndarray, int]]:
     """Return MATLAB-style endpoint positions and endpoint scales from one edge trace."""
     trace_array = np.asarray(trace, dtype=np.float32).reshape(-1, 3)
@@ -83,9 +83,9 @@ def _matlab_edge_endpoint_positions_and_scales(
 
 
 def _snapshot_endpoint_influences_matlab(
-        endpoint_coord_groups: list[np.ndarray],
-        painted_image: np.ndarray,
-        painted_source_image: np.ndarray,
+    endpoint_coord_groups: list[np.ndarray],
+    painted_image: np.ndarray,
+    painted_source_image: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Snapshot and clear MATLAB endpoint influences as one concatenated coordinate list."""
     if not endpoint_coord_groups:
@@ -121,13 +121,13 @@ def _snapshot_endpoint_influences_matlab(
 
 
 def _choose_edges_matlab_style(
-        candidates: dict[str, Any],
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray,
-        image_shape: tuple[int, int, int],
-        params: dict[str, Any],
+    candidates: dict[str, Any],
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+    params: dict[str, Any],
 ) -> dict[str, Any]:
     """Choose final edges using MATLAB-shaped filtering and cleanup semantics."""
     traces = candidates["traces"]
@@ -160,10 +160,14 @@ def _choose_edges_matlab_style(
         candidates.get("connection_sources"),
         len(connections),
     )
+    # MATLAB always uses randperm for trace order in conflict painting (choose_edges_V200.m:318)
+    # Python must match this for exact parity, not just on comparison_exact_network route
     use_exact_route_permutation = bool(params.get("comparison_exact_network", False))
-    chooser_rng = (
-        np.random.default_rng(EXACT_ROUTE_CHOOSER_SEED) if use_exact_route_permutation else None
-    )
+
+    # Always use seeded RNG for deterministic MATLAB-matching behavior
+    chooser_rng = np.random.default_rng(EXACT_ROUTE_CHOOSER_SEED)
+    diagnostics["chooser_seed"] = EXACT_ROUTE_CHOOSER_SEED
+
     if use_exact_route_permutation:
         diagnostics["exact_route_chooser_seed"] = EXACT_ROUTE_CHOOSER_SEED
 
@@ -199,8 +203,8 @@ def _choose_edges_matlab_style(
         endpoint_coord_groups: list[np.ndarray] = []
 
         for endpoint_position, endpoint_scale in _matlab_edge_endpoint_positions_and_scales(
-                trace,
-                scale_trace,
+            trace,
+            scale_trace,
         ):
             scale_index = int(np.clip(endpoint_scale, 0, len(lumen_radius_pixels_axes) - 1))
             coords = _offset_coords_matlab(
@@ -218,10 +222,9 @@ def _choose_edges_matlab_style(
         )
 
         chosen = True
-        if chooser_rng is not None:
-            point_index_range = chooser_rng.permutation(len(trace)).tolist()
-        else:
-            point_index_range = list(range(len(trace)))
+        # MATLAB always uses randperm(degrees_of_edges(edge_index)) for trace point order
+        # See choose_edges_V200.m line 318: edge_position_index_range = uint16(randperm(...))
+        point_index_range = chooser_rng.permutation(len(trace)).tolist()
 
         for point_index in point_index_range:
             point = trace[point_index]
@@ -250,7 +253,7 @@ def _choose_edges_matlab_style(
                     {},
                 )
                 conflict_rejected_by_source[current_source] = (
-                        int(conflict_rejected_by_source.get(current_source, 0)) + 1
+                    int(conflict_rejected_by_source.get(current_source, 0)) + 1
                 )
                 conflict_blocking_source_counts = diagnostics.setdefault(
                     "conflict_blocking_source_counts",
@@ -259,19 +262,19 @@ def _choose_edges_matlab_style(
                 conflict_source_pairs = diagnostics.setdefault("conflict_source_pairs", {})
                 for blocking_source in blocking_sources:
                     conflict_blocking_source_counts[blocking_source] = (
-                            int(conflict_blocking_source_counts.get(blocking_source, 0)) + 1
+                        int(conflict_blocking_source_counts.get(blocking_source, 0)) + 1
                     )
                     pair_key = f"{current_source}->{blocking_source}"
                     conflict_source_pairs[pair_key] = (
-                            int(conflict_source_pairs.get(pair_key, 0)) + 1
+                        int(conflict_source_pairs.get(pair_key, 0)) + 1
                     )
                 chosen = False
                 break
 
         if chosen:
             for vertex_index, coords in zip(
-                    (start_vertex, end_vertex),
-                    endpoint_coord_groups,
+                (start_vertex, end_vertex),
+                endpoint_coord_groups,
             ):
                 painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
                 painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = current_source_code
@@ -365,13 +368,13 @@ def _choose_edges_matlab_style(
 
 
 def choose_edges_for_workflow(
-        candidates: dict[str, Any],
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray,
-        image_shape: tuple[int, int, int],
-        params: dict[str, Any],
+    candidates: dict[str, Any],
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_microns: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray,
+    image_shape: tuple[int, int, int],
+    params: dict[str, Any],
 ) -> dict[str, Any]:
     """Route edge cleanup through the maintained workflow-specific chooser."""
     result = _choose_edges_matlab_style(
