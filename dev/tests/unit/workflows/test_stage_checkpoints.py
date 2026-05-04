@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from source.workflows.stage_checkpoints import (
+from source.workflows import (
     load_cached_stage_result,
     persist_stage_result,
     resolve_resumable_stage,

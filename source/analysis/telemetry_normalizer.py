@@ -15,6 +15,13 @@ from typing import Any
 
 import pandas as pd
 
+# Compatibility helper for older pandas
+try:
+    from pandas import json_normalize
+except ImportError:
+    from pandas.io.json import json_normalize
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -63,7 +70,7 @@ class TelemetryNormalizer:
             return pd.DataFrame()
 
         # Flatten top-level metrics
-        df = pd.json_normalize(data)
+        df = json_normalize(data)
         logger.info(f"Normalized run snapshot: {len(df)} rows")
         return df
 
@@ -81,9 +88,9 @@ class TelemetryNormalizer:
 
         # If 'events' is a list, normalize that
         if "events" in data and isinstance(data["events"], list):
-            df = pd.json_normalize(data["events"])
+            df = json_normalize(data["events"])
         else:
-            df = pd.json_normalize(data)
+            df = json_normalize(data)
 
         # Ensure requested parity fields are present or defaulted
         required_fields = ["candidate_connection_count", "watershed_total_pairs", "use_frontier_tracer"]
@@ -104,7 +111,7 @@ class TelemetryNormalizer:
         if not data:
             return pd.DataFrame()
 
-        df = pd.json_normalize(data)
+        df = json_normalize(data)
         logger.info(f"Normalized run manifest: {len(df)} rows")
         return df
 
@@ -123,7 +130,11 @@ class TelemetryNormalizer:
         }
 
         for filename, normalizer in targets.items():
+            # Check both root and 99_Metadata
             file_path = run_path / filename
+            if not file_path.exists():
+                file_path = run_path / "99_Metadata" / filename
+
             if file_path.exists():
                 data = self.load_json(file_path)
                 df = normalizer(data)

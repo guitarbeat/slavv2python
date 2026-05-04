@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from source.workflows.pipeline_session import (
+from source.workflows.pipeline_setup import (
     PreparedPipelineRun,
     create_run_context,
     effective_run_dir,

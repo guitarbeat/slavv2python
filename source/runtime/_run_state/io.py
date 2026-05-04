@@ -156,7 +156,7 @@ def load_run_snapshot(path_or_dir: str | Path) -> RunSnapshot | None:
 def _ensure_stage_map(existing: dict[str, StageSnapshot] | None = None) -> dict[str, StageSnapshot]:
     stages = {name: StageSnapshot(name=name) for name in TRACKED_RUN_STAGES}
     if existing:
-        stages |= existing
+        stages.update(existing)
         for name in TRACKED_RUN_STAGES:
             stages.setdefault(name, StageSnapshot(name=name))
     return stages
