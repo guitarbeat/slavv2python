@@ -695,10 +695,8 @@ def _generate_edge_candidates_matlab_global_watershed(
             current_pointer_value=current_pointer_value,
             edge_number_tolerance=edge_number_tolerance,
         ):
-            # MATLAB recomputes the tolerated-energy mask for each seed using the SAME adjusted energies
-            # The adjusted energies are computed ONCE before the seed loop (lines 658-673 above)
-            # and are NOT mutated inside the loop. MATLAB does not apply directional suppression
-            # between seeds - it uses the same energy field for all seeds from one location.
+            # MATLAB recomputes the tolerated-energy mask each seed after directional suppression
+            # mutates the current strel energies.
             is_energy_tolerated_in_strel = _matlab_global_watershed_tolerance_mask(
                 adjusted,
                 current_vertex_energy=float(vertex_energies[current_vertex_index - 1]),
@@ -713,12 +711,13 @@ def _generate_edge_candidates_matlab_global_watershed(
                     available_locations = available_locations[:-1]
                     is_current_location_clear = True
             else:
-                # CRITICAL FIX: Do NOT apply directional suppression here!
-                # MATLAB does not mutate current_strel_energies inside the seed loop.
-                # All seeds from one location use the same adjusted energy field.
-                # The directional penalty (line 338 in MATLAB) is applied BEFORE the seed loop
-                # at lines 325-343, only when pointer_map(current_location) > 0.
-                # That penalty is already included in the 'adjusted' array computed at line 658-673.
+                from .common import _matlab_frontier_directional_suppression_factors
+
+                adjusted *= _matlab_frontier_directional_suppression_factors(
+                    current_strel_offsets,
+                    selected_index=strel_idx,
+                    microns_per_voxel=microns_per_voxel,
+                )
 
                 if next_vertex_index == 0:
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
