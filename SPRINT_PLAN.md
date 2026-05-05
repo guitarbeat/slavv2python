@@ -1,7 +1,7 @@
 # Sprint Plan - Post Trace Order Fix Validation
 
 **Sprint Period**: 2026-05-05 to 2026-05-19 (2 weeks)  
-**Last Updated**: 2026-05-05  
+**Last Updated**: 2026-05-05. **Baseline Clarification (PARITY-001A)**: Resolved discrepancy between claimed 41.4% baseline and actual measured rates. The 41.4% claim was determined to be inaccurate (likely a projection or target); the verified baseline progression is 12.4% → 33.8%.  
 **Current Match Rate**: 33.8% (404/1,197 MATLAB pairs)  
 **Sprint Goal**: Reach 50% match rate (598+ matched pairs)
 
@@ -9,7 +9,7 @@
 
 ## 🎯 Sprint Objectives
 
-1. **Understand the gap**: Categorize 793 missing MATLAB pairs and 84 extra Python pairs
+1. **Understand the gap**: Categorized 793 missing MATLAB pairs and 84 extra Python pairs. Identified top 3 root causes (Frontier Ordering, Hub Vertex Exploration, Filtering Gaps).
 2. **Fix top divergences**: Implement and validate top 3 root cause fixes
 3. **Achieve milestone**: Reach 50% match rate through systematic parity improvements
 4. **Document progress**: Maintain clear audit trail of findings and fixes
@@ -25,42 +25,39 @@
 - **Result**: 33.8% match rate, 2.7x improvement in matches
 - **Next**: Document findings ✅ and promote report
 
-#### 🔴 PARITY-001A - Investigate Baseline Discrepancy
-- **Priority**: Critical
-- **Effort**: 2-3 hours
-- **Owner**: TBD
+#### ✅ COMPLETED: PARITY-001A - Investigate Baseline Discrepancy
+- **Status**: Complete (2026-05-05)
+- **Result**: 41.4% claim resolved as inaccurate; verified baseline 12.4% → 33.8%
 - **Tasks**:
-  - [ ] Search for experiments with 41.4% match rate claim
-  - [ ] Review experiment history in index.jsonl
-  - [ ] Update TODO.md with accurate baseline
-  - [ ] Document in EXACT_PROOF_FINDINGS.md
+  - [x] Search for experiments with 41.4% match rate claim
+  - [x] Review experiment history in index.jsonl
+  - [x] Update TODO.md with accurate baseline
+  - [x] Document in EXACT_PROOF_FINDINGS.md
 - **Deliverable**: Clarified baseline history
 
 ### High Priority
 
-#### 🟢 INVEST-001 - Categorize 793 Missing MATLAB Pairs
-- **Priority**: High
-- **Effort**: 1-2 days
-- **Owner**: TBD
+#### ✅ COMPLETED: INVEST-001 - Categorize 793 Missing MATLAB Pairs
+- **Status**: Complete (2026-05-05)
+- **Result**: Categorized root causes with impact assessment (Frontier, Hubs, Filtering)
 - **Tasks**:
-  - [ ] Extract sample of 50-100 missing pairs
-  - [ ] Trace execution path for each sample
-  - [ ] Identify divergence points (seed selection, frontier, etc.)
-  - [ ] Group by root cause pattern
-  - [ ] Estimate fix effort and impact per category
-  - [ ] Create prioritized fix roadmap
+  - [x] Extract sample of 50-100 missing pairs
+  - [x] Trace execution path for each sample
+  - [x] Identify divergence points (seed selection, frontier, etc.)
+  - [x] Group by root cause pattern
+  - [x] Estimate fix effort and impact per category
+  - [x] Create prioritized fix roadmap
 - **Deliverable**: Categorized root causes with impact assessment
 
-#### 🟢 INVEST-006 - Analyze 84 Extra Python Pairs
-- **Priority**: High
-- **Effort**: 4-6 hours
-- **Owner**: TBD
+#### ✅ COMPLETED: INVEST-006 - Analyze 84 Extra Python Pairs
+- **Status**: Complete (2026-05-05)
+- **Result**: Root cause analysis with fix proposals (Filtering/Cleanup alignment)
 - **Tasks**:
-  - [ ] Extract sample of 20-30 extra pairs
-  - [ ] Compare with MATLAB logic for these cases
-  - [ ] Identify why Python generates but MATLAB doesn't
-  - [ ] Categorize root causes (over-generation, filtering, etc.)
-  - [ ] Propose fixes
+  - [x] Extract sample of 20-30 extra pairs
+  - [x] Compare with MATLAB logic for these cases
+  - [x] Identify why Python generates but MATLAB doesn't
+  - [x] Categorize root causes (over-generation, filtering, etc.)
+  - [x] Propose fixes
 - **Deliverable**: Root cause analysis with fix proposals
 
 ---

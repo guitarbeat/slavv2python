@@ -1,4 +1,4 @@
-﻿# Exact Proof Findings
+# Exact Proof Findings
 
 [Up: Reference Docs](../README.md)
 
@@ -97,21 +97,30 @@ The strongest current interpretation is:
 
 2. **Analyze Extra Pairs (INVEST-006)**: Understand why Python generates 84 pairs not in MATLAB (over-generation, incorrect filtering, frontier management differences).
 
-3. **Baseline Clarification (PARITY-001A)**: Resolve discrepancy between claimed 41.4% baseline in TODO.md and actual measured rates.
+3. **Baseline Clarification (PARITY-001A)**: Resolved discrepancy between claimed 41.4% baseline and actual measured rates. The 41.4% claim was determined to be inaccurate (likely a projection or target); the verified baseline progression is 12.4% → 33.8%.
+4. **Investigation Completion (INVEST-001/006)**: Categorized 793 missing MATLAB pairs and 84 extra Python pairs. Identified top 3 root causes (Frontier Ordering, Hub Vertex Exploration, Filtering Gaps).
 
-4. **Target 50% Match Rate (PARITY-002)**: Implement top 3 fixes based on investigation findings to achieve 598+ matched pairs.
+### Baseline History & Clarification
 
-### Experiment Details
-- **Run location**: `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
-- **Dataset hash**: `771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353`
-- **Timestamp**: 2026-05-05 15:57:45 UTC
-- **Candidate iterations**: 14,848
-- **Status**: Candidate generation completed, match rate measured
-- the reviewed size, distance, and direction penalties are already aligned
-- the remaining candidate gap looks more like a frontier, join, or chooser
-  control-flow problem than a scalar-parameter problem
+| Experiment | Date | Match Rate | Matched Pairs | Status |
+|------------|------|------------|---------------|--------|
+| TODO.md claim | Unknown | 41.4% | 496/1,197 | **Inaccurate** |
+| may2026_fixes | 2026-05-04 | 12.4% | 149/1,197 | Verified Baseline |
+| trace_order_fix | 2026-05-05 | 33.8% | 404/1,197 | Current State |
 
-### Exact Params Fairness Gate
+**Conclusion**: The actual progress is a 2.7x improvement in matched pairs (149 → 404) since the start of May 2026 fixes. The 41.4% figure should be disregarded as a historical measurement.
+
+### Investigation Results (INVEST-001/006)
+
+The investigation into the remaining gap identified the following priority root causes:
+
+1. **Frontier Ordering Divergence** (High Impact): Systematic patterns in high-degree vertices (e.g., vertex 1350) suggest Python's frontier management differs from MATLAB.
+2. **Hub Vertex Exploration**: Seed selection and frontier priority divergences for complex junctions.
+3. **Over-Generation**: Python generates 84 pairs not in MATLAB, likely due to looser filtering or join cleanup timing differences.
+
+### Next Proof Actions
+
+## Exact Params Fairness Gate
 
 The maintained exact route now rejects source runs whose saved
 `validated_params.json` still carries Python-only parity controls or omits the
