@@ -458,8 +458,8 @@ def run_lut_proof(
     from .utils import write_json_with_hash
     from source.io.matlab_fail_fast import load_builtin_lut_fixture
 
-    source_surface = validate_exact_proof_source_surface(source_run_root, oracle_root)
-    params = load_params_file(source_surface)
+    source_surface = validate_exact_proof_source_surface(source_run_root)
+    params = load_params_file(source_surface, None)
     
     energy_payload = _load_exact_energy_payload(source_surface)
     source_inputs = {

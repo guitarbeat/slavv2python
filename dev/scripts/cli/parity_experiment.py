@@ -130,6 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Prove LUTs
     luts = subparsers.add_parser("prove-luts")
     luts.add_argument("--source-run-root", required=True)
+    luts.add_argument("--oracle-root")
     luts.add_argument("--dest-run-root", required=True)
     luts.set_defaults(handler=handle_prove_luts)
 

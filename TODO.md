@@ -1,115 +1,103 @@
 # SLAVV Python Parity TODO
 
 **Last Updated:** 2026-05-05
-**Version:** 2.1 (Enhanced)
-**Current Status:** 496/1197 Python candidates (41.4% match rate) - 58.6% gap remains
+**Version:** 2.2 (Trace Order Fix Results)
+**Current Status:** 404/1197 Python candidates (33.8% match rate) - 66.2% gap remains
+**Previous Baseline:** 149/1197 (12.4% match rate) from may2026_fixes run
 
 ---
 
 ## 📊 Executive Summary
 
 ### Task Overview
-| Category | Total | Critical | High | Medium | Low |
-|----------|-------|----------|------|--------|-----|
-| **Parity & Validation** | 8 | 2 | 3 | 2 | 1 |
-| **Bug Fixes** | 2 | 1 | 1 | 0 | 0 |
-| **Investigation** | 5 | 0 | 3 | 2 | 0 |
-| **Testing** | 3 | 0 | 1 | 2 | 0 |
-| **Documentation** | 4 | 0 | 0 | 2 | 2 |
-| **Technical Debt** | 3 | 0 | 0 | 2 | 1 |
-| **Performance** | 2 | 0 | 0 | 1 | 1 |
-| **DevOps** | 1 | 0 | 0 | 1 | 0 |
-| **TOTAL** | **28** | **3** | **8** | **12** | **5** |
+| Category | Total | Critical | High | Medium | Low | Completed |
+|----------|-------|----------|------|--------|-----|-----------|
+| **Parity & Validation** | 9 | 3 | 3 | 2 | 1 | 1 |
+| **Bug Fixes** | 2 | 1 | 1 | 0 | 0 | 1 |
+| **Investigation** | 6 | 0 | 3 | 3 | 0 | 0 |
+| **Testing** | 3 | 0 | 1 | 2 | 0 | 0 |
+| **Documentation** | 4 | 0 | 0 | 2 | 2 | 0 |
+| **Technical Debt** | 3 | 0 | 0 | 2 | 1 | 0 |
+| **Performance** | 2 | 0 | 0 | 1 | 1 | 0 |
+| **DevOps** | 1 | 0 | 0 | 1 | 0 | 0 |
+| **TOTAL** | **30** | **4** | **8** | **13** | **5** | **2** |
 
-### Current Parity Metrics
-- **Python Candidates Generated:** 1,197
-- **MATLAB Pairs Matched:** 496 (41.4%)
-- **Missing MATLAB Pairs:** 701 (58.6%)
+### Current Parity Metrics (trace_order_fix run - 2026-05-05)
+- **MATLAB Total Candidates:** 1,197
+- **Python Candidates Generated:** 488
+- **MATLAB Pairs Matched:** 404 (33.8% of MATLAB total)
+- **Missing MATLAB Pairs:** 793 (66.2%)
+- **Extra Python Pairs:** 84 (not in MATLAB)
 - **Test Suite Status:** 25/25 passing (100%)
-- **Critical Blocker:** Trace order fix validation pending
+- **Oracle:** `180709_E_batch_190910-103039`
+- **Experiment Status:** Candidate generation completed, match rate measured
+
+### Previous Baseline (may2026_fixes run - 2026-05-04)
+- **Python Candidates Generated:** 169
+- **MATLAB Pairs Matched:** 149 (12.4% of MATLAB total)
+- **Missing MATLAB Pairs:** 1,048 (87.6%)
+- **Extra Python Pairs:** 20
 
 ### Sprint Goals (Next 2 Weeks)
-1. ⏳ Validate trace order fix impact on match rate (PARITY-001 - Ready to execute)
+1. ✅ Validate trace order fix impact on match rate (PARITY-001 - **COMPLETED**: 33.8% match rate, 2.7x improvement)
 2. ✅ Fix failing test (BUG-001 - Completed: numpy boolean comparison fix)
-3. ⏳ Achieve >50% match rate (PARITY-002 - Blocked by PARITY-001)
-4. ⏳ Identify root cause for 50% of missing pairs (INVEST-001 - Blocked by PARITY-001)
+3. 🔴 **CRITICAL**: Investigate match rate regression (PARITY-001A - NEW: Expected improvement, got 33.8% vs 41.4% baseline)
+4. ⏳ Achieve >50% match rate (PARITY-002 - Blocked by PARITY-001A investigation)
+5. ⏳ Identify root cause for 66% missing pairs (INVEST-001 - Ready to start with new baseline)
 
 ---
 
 ## 🔴 Critical Priority Tasks
 
-### [CRITICAL] PARITY-001: Validate Trace Order Fix Impact
-**Priority:** Critical | **Effort:** Medium (4-6 hours) | **Status:** 🔴 Blocked - Awaiting Execution
+### [CRITICAL] PARITY-001: Validate Trace Order Fix Impact - ✅ COMPLETED
+**Priority:** Critical | **Effort:** Medium (4-6 hours) | **Status:** ✅ Complete (2026-05-05)
 
-**Description:**  
+**Description:**
 Run comprehensive parity experiment to measure the impact of the trace order randomization fix implemented on 2026-05-05. This fix ensures deterministic candidate generation by using seeded RNG for trace order shuffling.
 
+**Results Summary:**
+- ✅ Parity experiment completed with trace order fix
+- ✅ Match rate measured: **404/1197 (33.8%)**
+- ✅ Python candidates generated: **488** (up from 169 in may2026_fixes)
+- ✅ **2.7x improvement** in matched pairs (149 → 404)
+- ✅ **2.9x improvement** in Python candidate generation (169 → 488)
+- ⚠️ Still 793 missing MATLAB pairs (66.2% gap)
+- ⚠️ 84 extra Python pairs not in MATLAB
+
 **Acceptance Criteria:**
-- [ ] Parity experiment completed with trace order fix
-- [ ] Match rate measured and compared to 41.4% baseline
-- [ ] Results documented in `EXACT_PROOF_FINDINGS.md`
-- [ ] Report promoted to permanent storage
+- [x] Parity experiment completed with trace order fix
+- [x] Match rate measured and compared to baseline (33.8% vs 12.4% previous)
+- [ ] Results documented in `EXACT_PROOF_FINDINGS.md` (pending)
+- [ ] Report promoted to permanent storage (pending)
 
-**Implementation Steps:**
-```powershell
-# 1. Promote oracle (if not already done)
-python dev/scripts/cli/parity_experiment.py promote-oracle `
-    --matlab-batch-dir D:\incoming\batch_260421-151654 `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dataset-file D:\datasets\volume.tif `
-    --oracle-id v22_a
+**Actual Paths Used:**
+- **Oracle:** `D:\slavv_comparisons\experiments\live-parity\oracles\180709_E_batch_190910-103039`
+- **Run Root:** `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
+- **Dataset Hash:** `771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353`
+- **Experiment Timestamp:** 2026-05-05 15:57:45 UTC
 
-# 2. Run fail-fast gates
-python dev/scripts/cli/parity_experiment.py preflight-exact `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-
-python dev/scripts/cli/parity_experiment.py prove-luts `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-
-# 3. Capture and compare candidates
-python dev/scripts/cli/parity_experiment.py capture-candidates `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-
-# 4. Replay edge selection
-python dev/scripts/cli/parity_experiment.py replay-edges `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-
-# 5. Rerun Python pipeline
-python dev/scripts/cli/parity_experiment.py rerun-python `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix `
-    --rerun-from edges
-
-# 6. Generate summary
-python dev/scripts/cli/parity_experiment.py summarize `
-    --run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-
-# 7. Run full exact proof
-python dev/scripts/cli/parity_experiment.py prove-exact `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix `
-    --stage all
-
-# 8. Promote report
-python dev/scripts/cli/parity_experiment.py promote-report `
-    --run-root D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix
-```
+**Key Findings:**
+1. **Significant improvement in candidate generation**: 169 → 488 candidates (2.9x)
+2. **Significant improvement in matches**: 149 → 404 matches (2.7x)
+3. **Match rate**: 33.8% (404/1197 MATLAB pairs)
+4. **Still missing**: 793 MATLAB pairs (66.2%)
+5. **Extra candidates**: 84 Python pairs not in MATLAB
+6. **Top missing vertices**: 1350 (5 pairs), 229 (4 pairs), 92 (4 pairs)
+7. **Top extra vertices**: 1127 (3 pairs), 914 (2 pairs), 41 (2 pairs)
 
 **Files Modified:**
 - `source/core/edges_internal/edge_selection.py` (trace order fix)
 
-**Dependencies:** None  
-**Blocks:** PARITY-002, INVEST-001, INVEST-002  
-**Labels:** `parity`, `validation`, `critical`, `determinism`
+**Dependencies:** None
+**Blocks:** None (completed, unblocks INVEST-001)
+**Unblocks:** INVEST-001, PARITY-002 (after PARITY-001A investigation)
+**Labels:** `parity`, `validation`, `critical`, `determinism`, `completed`
+
+**Next Steps:**
+1. Document findings in `EXACT_PROOF_FINDINGS.md`
+2. Promote report to permanent storage
+3. Investigate why 66.2% of MATLAB pairs are still missing (INVEST-001)
+4. Analyze the 84 extra Python pairs (INVEST-006)
 
 ---
 
@@ -141,39 +129,66 @@ The `test_reveal_unclaimed_only_claims_zero_vertex_voxels` test was failing due 
 
 ---
 
+### [CRITICAL] PARITY-001A: Investigate Baseline Discrepancy - NEW
+**Priority:** Critical | **Effort:** Small (2-3 hours) | **Status:** 🔴 Urgent
+
+**Description:**
+The TODO.md previously claimed a 41.4% (496/1197) baseline, but actual experiments show:
+- `may2026_fixes`: 12.4% (149/1197)
+- `trace_order_fix`: 33.8% (404/1197)
+
+Need to clarify where the 41.4% baseline came from and whether it represents a different experiment or measurement error.
+
+**Acceptance Criteria:**
+- [ ] Locate source of 41.4% baseline claim
+- [ ] Verify if other experiments exist with higher match rates
+- [ ] Update TODO.md with accurate historical baseline
+- [ ] Document experiment lineage in EXACT_PROOF_FINDINGS.md
+
+**Dependencies:** None
+**Blocks:** PARITY-002
+**Labels:** `investigation`, `critical`, `baseline`, `clarification`
+
+---
+
 ### [CRITICAL] PARITY-002: Achieve 50% Match Rate Milestone
 **Priority:** Critical | **Effort:** Large (2-3 days) | **Status:** 🟡 Planned
 
-**Description:**  
-Improve the MATLAB parity match rate from the current 41.4% baseline to at least 50%. This requires identifying and fixing the most impactful divergences between Python and MATLAB implementations.
+**Description:**
+Improve the MATLAB parity match rate from the current 33.8% baseline to at least 50%. This requires identifying and fixing the most impactful divergences between Python and MATLAB implementations.
 
 **Acceptance Criteria:**
 - [ ] Match rate ≥ 50% (598+ matched pairs out of 1,197)
-- [ ] Top 3 root causes for missing pairs identified and documented
+- [ ] Top 3 root causes for missing 793 pairs identified and documented
 - [ ] Fixes implemented and validated with parity experiments
 - [ ] Regression tests added for fixed divergences
 - [ ] Updated metrics in `EXACT_PROOF_FINDINGS.md`
 
 **Approach:**
-1. Complete PARITY-001 to establish new baseline
-2. Complete BUG-001 to fix frontier ordering
-3. Run INVEST-001 to categorize missing pairs
+1. ✅ Complete PARITY-001 to establish new baseline (33.8%)
+2. ✅ Complete BUG-001 to fix test suite
+3. Run INVEST-001 to categorize 793 missing pairs
 4. Prioritize fixes by impact (number of affected pairs)
 5. Implement top 3 fixes iteratively with validation
 
-**Dependencies:** PARITY-001, BUG-001, INVEST-001  
-**Blocks:** PARITY-003  
+**Dependencies:** PARITY-001 (✅), BUG-001 (✅), INVEST-001, PARITY-001A
+**Blocks:** PARITY-003
 **Labels:** `parity`, `critical`, `milestone`, `match-rate`
 
 ---
 
 ## 🟠 High Priority Tasks
 
-### [HIGH] INVEST-001: Categorize 701 Missing MATLAB Pairs
-**Priority:** High | **Effort:** Large (1-2 days) | **Status:** 🟡 Planned
+### [HIGH] INVEST-001: Categorize 793 Missing MATLAB Pairs
+**Priority:** High | **Effort:** Large (1-2 days) | **Status:** 🟢 Ready to Start
 
-**Description:**  
-Systematically analyze the 701 Python candidates that have no MATLAB match to identify patterns and root causes. This investigation will guide prioritization of parity fixes.
+**Description:**
+Systematically analyze the 793 MATLAB pairs that have no Python match to identify patterns and root causes. This investigation will guide prioritization of parity fixes. The trace_order_fix experiment provides a solid baseline for this analysis.
+
+**Current Data (trace_order_fix):**
+- **Missing MATLAB pairs:** 793 (66.2%)
+- **Sample missing pairs:** [0,134], [0,529], [2,17], [2,329], [3,329], [5,888], [6,7], [6,9], [7,8], [12,31]
+- **Top missing vertices:** 1350 (5 pairs), 229 (4 pairs), 92 (4 pairs), 29 (4 pairs), 469 (4 pairs)
 
 **Acceptance Criteria:**
 - [ ] Sample of 50-100 missing pairs extracted and analyzed
@@ -197,9 +212,9 @@ Systematically analyze the 701 Python candidates that have no MATLAB match to id
 - Trace execution order subtleties
 - Candidate filtering differences
 
-**Dependencies:** PARITY-001 (for updated baseline)  
-**Blocks:** PARITY-002, INVEST-002, INVEST-003  
-**Labels:** `investigation`, `high`, `parity`, `analysis`
+**Dependencies:** PARITY-001 (✅ completed)
+**Blocks:** PARITY-002, INVEST-002, INVEST-003
+**Labels:** `investigation`, `high`, `parity`, `analysis`, `ready`
 
 ---
 
@@ -336,10 +351,40 @@ Investigate how MATLAB handles `-Inf` vertex sentinels throughout the watershed 
 
 ---
 
+### [HIGH] INVEST-006: Analyze 84 Extra Python Pairs - NEW
+**Priority:** High | **Effort:** Medium (4-6 hours) | **Status:** 🟢 Ready to Start
+
+**Description:**
+Investigate the 84 Python candidate pairs that were generated but don't exist in MATLAB. Understanding why Python generates these extra pairs will help identify divergences in the candidate generation logic.
+
+**Current Data (trace_order_fix):**
+- **Extra Python pairs:** 84
+- **Sample extra pairs:** [15,351], [23,84], [24,445], [25,914], [28,1122], [33,34], [41,326], [41,410], [57,663], [62,142]
+- **Top extra vertices:** 1127 (3 pairs), 914 (2 pairs), 41 (2 pairs), 72 (2 pairs)
+
+**Acceptance Criteria:**
+- [ ] Sample of 20-30 extra pairs analyzed
+- [ ] Root causes identified (over-generation, incorrect filtering, etc.)
+- [ ] Comparison with MATLAB logic for these specific cases
+- [ ] Fixes proposed and prioritized
+- [ ] Findings documented
+
+**Hypotheses to Test:**
+- Python generates candidates that MATLAB filters out
+- Python has looser candidate acceptance criteria
+- Frontier management differences lead to extra exploration
+- Join cleanup timing differences
+
+**Dependencies:** PARITY-001 (✅)
+**Blocks:** PARITY-002
+**Labels:** `investigation`, `high`, `parity`, `extra-candidates`, `divergence`
+
+---
+
 ### [MEDIUM] INVEST-005: Execution Trace Comparison Framework
 **Priority:** Medium | **Effort:** Large (1-2 days) | **Status:** 🔵 Future
 
-**Description:**  
+**Description:**
 Develop a framework for detailed execution trace comparison between Python and MATLAB for specific missing candidates. This will enable systematic debugging of divergences.
 
 **Acceptance Criteria:**
@@ -355,7 +400,7 @@ Develop a framework for detailed execution trace comparison between Python and M
 - Trace comparison and visualization tools
 - Automated divergence detection
 
-**Dependencies:** INVEST-001  
+**Dependencies:** INVEST-001
 **Labels:** `investigation`, `medium`, `tooling`, `tracing`, `debugging`
 
 ---
@@ -594,12 +639,21 @@ Standardize code style across the watershed algorithm implementation, ensuring c
 
 ## 📋 Completed Work (2026-05-05)
 
-### ✅ Trace Order Randomization Fix
+### ✅ Trace Order Randomization Fix & Validation (PARITY-001)
 **File:** `source/core/edges_internal/edge_selection.py`
 **Issue:** Trace order was randomized without seeded RNG, causing non-deterministic results
 **Fix:** Always use seeded RNG (`np.random.default_rng(seed)`) for trace order shuffling
 **Impact:** Ensures deterministic candidate generation for parity testing
-**Status:** ✅ Implemented and ready for validation
+**Status:** ✅ Implemented and validated
+
+**Validation Results (trace_order_fix experiment):**
+- **Match rate:** 33.8% (404/1197 MATLAB pairs)
+- **Python candidates:** 488 (up from 169)
+- **Improvement:** 2.7x more matches, 2.9x more candidates
+- **Remaining gap:** 793 missing MATLAB pairs (66.2%)
+- **Extra candidates:** 84 Python pairs not in MATLAB
+- **Experiment date:** 2026-05-05 15:57:45 UTC
+- **Run location:** `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
 
 ### ✅ Directional Suppression Investigation
 **File:** `source/core/_edge_candidates/global_watershed.py`
@@ -697,17 +751,21 @@ python dev/scripts/cli/parity_experiment.py fail-fast \
 
 ## 🎯 Success Metrics & Milestones
 
-### Sprint 1 (Next 2 Weeks) - Foundation
-- [ ] **PARITY-001:** Trace order fix validated (Ready to execute)
-- [x] **BUG-001:** Test suite fixed (numpy boolean comparison)
-- [ ] **PARITY-002:** 50% match rate achieved (Blocked by PARITY-001)
-- [ ] **INVEST-001:** Missing pairs categorized (Blocked by PARITY-001)
+### Sprint 1 (Next 2 Weeks) - Foundation & Investigation
+- [x] **PARITY-001:** Trace order fix validated ✅ (33.8% match rate achieved)
+- [x] **BUG-001:** Test suite fixed ✅ (numpy boolean comparison)
+- [ ] **PARITY-001A:** Investigate baseline discrepancy (NEW - Critical)
+- [ ] **INVEST-001:** Categorize 793 missing pairs (Ready to start)
+- [ ] **INVEST-006:** Analyze 84 extra Python pairs (NEW - Ready to start)
+- [ ] Document findings in EXACT_PROOF_FINDINGS.md
+- [ ] Promote trace_order_fix report to permanent storage
 
-### Sprint 2 (Weeks 3-4) - Deep Investigation
+### Sprint 2 (Weeks 3-4) - Deep Investigation & Fixes
 - [ ] **INVEST-002:** Frontier semantics aligned
 - [ ] **INVEST-003:** Join cleanup verified
+- [ ] **PARITY-002:** 50% match rate achieved (target: 598+ matches)
 - [ ] **TEST-001:** Test coverage expanded
-- [ ] Match rate > 60%
+- [ ] Match rate > 40% (stretch: > 50%)
 
 ### Month 2 - Implementation & Optimization
 - [ ] **PARITY-003:** 80% match rate achieved
@@ -730,7 +788,34 @@ python dev/scripts/cli/parity_experiment.py fail-fast \
 
 ---
 
-**Document Version:** 2.0  
-**Next Review:** 2026-05-12  
-**Maintainer:** Development Team  
-**Status:** Active Development
+---
+
+## 📝 Change Log
+
+### Version 2.2 (2026-05-05)
+- ✅ Updated with trace_order_fix experiment results
+- ✅ PARITY-001 marked complete with validation metrics
+- ✅ Added PARITY-001A (baseline discrepancy investigation)
+- ✅ Added INVEST-006 (analyze 84 extra Python pairs)
+- ✅ Updated current status: 33.8% match rate (404/1197)
+- ✅ Updated task counts: 30 total tasks (2 completed)
+- ✅ Corrected INVEST-001 to reflect 793 missing pairs
+- ✅ Updated sprint goals with actual completion status
+- ✅ Documented actual experiment paths and oracle ID
+
+### Version 2.1 (2026-05-05)
+- Enhanced task categorization and priority levels
+- Added comprehensive acceptance criteria
+- Expanded investigation tasks
+
+### Version 2.0 (2026-05-05)
+- Initial comprehensive TODO structure
+- Organized by priority levels
+- Added sprint planning sections
+
+---
+
+**Document Version:** 2.2
+**Next Review:** 2026-05-12
+**Maintainer:** Development Team
+**Status:** Active Development - Post trace_order_fix validation

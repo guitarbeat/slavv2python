@@ -47,6 +47,66 @@ The strongest current interpretation is:
   candidate or chooser counts are treated as trustworthy parity evidence
 - the pointer-lifecycle fixes were real and should stay
 - the reviewed MATLAB and Python watershed constants are already aligned
+
+## May 2026 Trace Order Fix Validation
+
+**Date**: 2026-05-05  
+**Experiment**: `trace_order_fix`  
+**Oracle**: `180709_E_batch_190910-103039`  
+**Status**: Validation complete, significant improvement observed
+
+### Fix Applied
+- **File**: `source/core/edges_internal/edge_selection.py`
+- **Issue**: Trace order was randomized without seeded RNG, causing non-deterministic results
+- **Fix**: Always use seeded RNG (`np.random.default_rng(seed)`) for trace order shuffling
+- **Impact**: Ensures deterministic candidate generation for parity testing
+
+### Results Summary
+
+| Metric | may2026_fixes (baseline) | trace_order_fix | Improvement |
+|--------|--------------------------|-----------------|-------------|
+| Python candidates | 169 | 488 | 2.9x |
+| Matched MATLAB pairs | 149 | 404 | 2.7x |
+| Match rate | 12.4% | 33.8% | +21.4 pp |
+| Missing MATLAB pairs | 1,048 | 793 | -255 pairs |
+| Extra Python pairs | 20 | 84 | +64 pairs |
+
+### Key Findings
+
+1. **Significant Improvement**: The trace order fix resulted in a 2.7x improvement in matched pairs (149 → 404) and 2.9x improvement in candidate generation (169 → 488).
+
+2. **Match Rate**: Achieved 33.8% match rate (404/1,197 MATLAB pairs), up from 12.4% baseline.
+
+3. **Remaining Gap**: Still missing 793 MATLAB pairs (66.2% of total), indicating substantial work remains.
+
+4. **Extra Candidates**: Python now generates 84 pairs not present in MATLAB, suggesting potential over-generation or filtering differences.
+
+5. **Top Missing Vertices**: Vertex 1350 (5 missing pairs), 229 (4 pairs), 92 (4 pairs), 29 (4 pairs), 469 (4 pairs).
+
+6. **Top Extra Vertices**: Vertex 1127 (3 extra pairs), 914 (2 pairs), 41 (2 pairs), 72 (2 pairs).
+
+### Sample Missing Pairs
+[0,134], [0,529], [2,17], [2,329], [3,329], [5,888], [6,7], [6,9], [7,8], [12,31]
+
+### Sample Extra Pairs
+[15,351], [23,84], [24,445], [25,914], [28,1122], [33,34], [41,326], [41,410], [57,663], [62,142]
+
+### Next Steps
+
+1. **Investigate Missing Pairs (INVEST-001)**: Categorize the 793 missing MATLAB pairs to identify root causes (frontier ordering, join cleanup, sentinel lifecycle, etc.).
+
+2. **Analyze Extra Pairs (INVEST-006)**: Understand why Python generates 84 pairs not in MATLAB (over-generation, incorrect filtering, frontier management differences).
+
+3. **Baseline Clarification (PARITY-001A)**: Resolve discrepancy between claimed 41.4% baseline in TODO.md and actual measured rates.
+
+4. **Target 50% Match Rate (PARITY-002)**: Implement top 3 fixes based on investigation findings to achieve 598+ matched pairs.
+
+### Experiment Details
+- **Run location**: `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
+- **Dataset hash**: `771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353`
+- **Timestamp**: 2026-05-05 15:57:45 UTC
+- **Candidate iterations**: 14,848
+- **Status**: Candidate generation completed, match rate measured
 - the reviewed size, distance, and direction penalties are already aligned
 - the remaining candidate gap looks more like a frontier, join, or chooser
   control-flow problem than a scalar-parameter problem
