@@ -22,6 +22,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         description="SLAVV - Segmentation-Less, Automated, Vascular Vectorization",
     )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
+    parser.add_argument("--tui", action="store_true", help="Launch interactive TUI wizard/monitor")
     subparsers = parser.add_subparsers(dest="command")
 
     run_parser = subparsers.add_parser("run", help="Run the SLAVV pipeline on a TIFF volume")

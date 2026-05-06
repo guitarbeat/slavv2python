@@ -27,6 +27,20 @@ CLI_COMMAND_HANDLERS: dict[str, Callable[[object], None]] = {
 
 def dispatch_cli_command(parser, args) -> None:
     """Dispatch parsed CLI args to the matching command handler."""
+    if getattr(args, "tui", False) or args.command is None:
+        from .cli.tui import is_tui_available, run_monitor_if_supported, run_wizard_if_supported
+
+        if is_tui_available():
+            result = run_wizard_if_supported()
+            if result and result.get("execute_now"):
+                print("\n⚙️ Settings configured! Launching Live Monitor...")
+                run_monitor_if_supported()
+            return
+        if getattr(args, "tui", False):
+            print("Error: TUI dependencies (questionary, textual) are not installed.")
+            print('Please run: pip install -e ".[tui]"')
+            sys.exit(1)
+
     handler = CLI_COMMAND_HANDLERS.get(args.command)
     if handler is None:
         parser.print_help()
