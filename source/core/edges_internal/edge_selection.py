@@ -135,6 +135,10 @@ def _choose_edges_matlab_style(
     metrics = np.asarray(candidates["metrics"], dtype=np.float32).reshape(-1)
     energy_traces = candidates["energy_traces"]
     scale_traces = candidates["scale_traces"]
+    connection_sources = normalize_candidate_connection_sources(
+        candidates.get("connection_sources"),
+        len(connections),
+    )
     diagnostics = initialize_edge_selection_diagnostics(candidates, connections, traces)
 
     if len(traces) == 0:
@@ -142,11 +146,35 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
+    # 1. MATLAB crops edges (out-of-bounds) BEFORE choosing best unique trajectories.
+    # See vectorize_V200.m:3595 (crop) then 3620 (clean_edge_pairs).
+    all_discovery_indices = list(range(len(traces)))
+    kept_after_crop, cropped_edge_count = prefilter_edge_indices_for_cleanup_matlab_style(
+        all_discovery_indices,
+        traces,
+        scale_traces,
+        energy_traces,
+        lumen_radius_microns=np.asarray(lumen_radius_microns, dtype=np.float32),
+        microns_per_voxel=np.asarray(
+            params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+            dtype=np.float32,
+        ),
+        size_of_image=image_shape,
+    )
+    diagnostics["cropped_edge_count"] = cropped_edge_count
+
+    if not kept_after_crop:
+        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
+        empty["diagnostics"] = diagnostics
+        return empty
+
+    # 2. Choose best unique trajectories from in-bounds candidates.
     filtered_indices = prepare_candidate_indices_for_cleanup(
         connections,
         metrics,
         energy_traces,
         diagnostics,
+        subset_indices=kept_after_crop,
         reject_nonnegative_energy_edges=not bool(
             candidates.get("matlab_global_watershed_exact", False)
         ),
@@ -156,10 +184,6 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    connection_sources = normalize_candidate_connection_sources(
-        candidates.get("connection_sources"),
-        len(connections),
-    )
     # MATLAB always uses randperm for trace order in conflict painting (choose_edges_V200.m:318)
     # Python must match this for exact parity, not just on comparison_exact_network route
     use_exact_route_permutation = bool(params.get("comparison_exact_network", False))
@@ -193,6 +217,11 @@ def _choose_edges_matlab_style(
             edge_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return edge_offset_cache[scale]
 
+    # Determine if conflict painting should be performed
+    use_conflict_painting = bool(
+        params.get("comparison_exact_network_use_conflict_painting", True)
+    )
+
     chosen_indices: list[int] = []
     for index in filtered_indices:
         start_vertex, end_vertex = (int(value) for value in connections[index])
@@ -200,84 +229,95 @@ def _choose_edges_matlab_style(
         current_source_code = source_code_by_label.get(current_source, 0)
         trace = np.asarray(traces[index], dtype=np.float32)
         scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
-        endpoint_coord_groups: list[np.ndarray] = []
 
-        for endpoint_position, endpoint_scale in _matlab_edge_endpoint_positions_and_scales(
-            trace,
-            scale_trace,
-        ):
-            scale_index = int(np.clip(endpoint_scale, 0, len(lumen_radius_pixels_axes) - 1))
-            coords = _offset_coords_matlab(
-                endpoint_position,
-                vertex_offsets(scale_index),
-                image_shape,
+        endpoint_coord_groups: list[np.ndarray] = []
+        endpoint_coords: np.ndarray = np.zeros((0, 3), dtype=np.int32)
+        endpoint_snapshot: np.ndarray = np.zeros((0,), dtype=np.int32)
+        endpoint_source_snapshot: np.ndarray = np.zeros((0,), dtype=np.uint8)
+
+        if use_conflict_painting:
+            for endpoint_position, endpoint_scale in _matlab_edge_endpoint_positions_and_scales(
+                trace,
+                scale_trace,
+            ):
+                scale_index = int(np.clip(endpoint_scale, 0, len(lumen_radius_pixels_axes) - 1))
+                coords = _offset_coords_matlab(
+                    endpoint_position,
+                    vertex_offsets(scale_index),
+                    image_shape,
+                )
+                endpoint_coord_groups.append(coords)
+            endpoint_coords, endpoint_snapshot, endpoint_source_snapshot = (
+                _snapshot_endpoint_influences_matlab(
+                    endpoint_coord_groups,
+                    painted_image,
+                    painted_source_image,
+                )
             )
-            endpoint_coord_groups.append(coords)
-        endpoint_coords, endpoint_snapshot, endpoint_source_snapshot = (
-            _snapshot_endpoint_influences_matlab(
-                endpoint_coord_groups,
-                painted_image,
-                painted_source_image,
-            )
-        )
 
         chosen = True
-        # MATLAB always uses randperm(degrees_of_edges(edge_index)) for trace point order
-        # See choose_edges_V200.m line 318: edge_position_index_range = uint16(randperm(...))
-        point_index_range = chooser_rng.permutation(len(trace)).tolist()
+        if use_conflict_painting:
+            # MATLAB always uses randperm(degrees_of_edges(edge_index)) for trace point order
+            # See choose_edges_V200.m line 318: edge_position_index_range = uint16(randperm(...))
+            point_index_range = chooser_rng.permutation(len(trace)).tolist()
 
-        for point_index in point_index_range:
-            point = trace[point_index]
-            scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
-            coords = _offset_coords_matlab(point, edge_offsets(scale_value), image_shape)
-            if coords.size == 0:
-                continue
-            conflicting = {
-                int(value)
-                for value in painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].tolist()
-                if int(value) not in {0, start_vertex + 1, end_vertex + 1}
-            }
-            if conflicting:
-                diagnostics["conflict_rejected_count"] += 1
-                blocking_sources = {
-                    source_label_by_code.get(int(value), "unknown")
-                    for value in painted_source_image[
+            for point_index in point_index_range:
+                point = trace[point_index]
+                scale_value = int(scale_trace[min(point_index, len(scale_trace) - 1)])
+                coords = _offset_coords_matlab(point, edge_offsets(scale_value), image_shape)
+                if coords.size == 0:
+                    continue
+                conflicting = {
+                    int(value)
+                    for value in painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].tolist()
+                    if int(value) not in {0, start_vertex + 1, end_vertex + 1}
+                }
+                if conflicting:
+                    diagnostics["conflict_rejected_count"] += 1
+                    blocking_sources = {
+                        source_label_by_code.get(int(value), "unknown")
+                        for value in painted_source_image[
+                            coords[:, 0],
+                            coords[:, 1],
+                            coords[:, 2],
+                        ].tolist()
+                        if int(value) != 0
+                    }
+                    conflict_rejected_by_source = diagnostics.setdefault(
+                        "conflict_rejected_by_source",
+                        {},
+                    )
+                    conflict_rejected_by_source[current_source] = (
+                        int(conflict_rejected_by_source.get(current_source, 0)) + 1
+                    )
+                    conflict_blocking_source_counts = diagnostics.setdefault(
+                        "conflict_blocking_source_counts",
+                        {},
+                    )
+                    conflict_source_pairs = diagnostics.setdefault("conflict_source_pairs", {})
+                    for blocking_source in blocking_sources:
+                        conflict_blocking_source_counts[blocking_source] = (
+                            int(conflict_blocking_source_counts.get(blocking_source, 0)) + 1
+                        )
+                        pair_key = f"{current_source}->{blocking_source}"
+                        conflict_source_pairs[pair_key] = (
+                            int(conflict_source_pairs.get(pair_key, 0)) + 1
+                        )
+                    chosen = False
+                    break
+
+        if chosen:
+            if use_conflict_painting:
+                for vertex_index, coords in zip(
+                    (start_vertex, end_vertex),
+                    endpoint_coord_groups,
+                ):
+                    painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
+                    painted_source_image[
                         coords[:, 0],
                         coords[:, 1],
                         coords[:, 2],
-                    ].tolist()
-                    if int(value) != 0
-                }
-                conflict_rejected_by_source = diagnostics.setdefault(
-                    "conflict_rejected_by_source",
-                    {},
-                )
-                conflict_rejected_by_source[current_source] = (
-                    int(conflict_rejected_by_source.get(current_source, 0)) + 1
-                )
-                conflict_blocking_source_counts = diagnostics.setdefault(
-                    "conflict_blocking_source_counts",
-                    {},
-                )
-                conflict_source_pairs = diagnostics.setdefault("conflict_source_pairs", {})
-                for blocking_source in blocking_sources:
-                    conflict_blocking_source_counts[blocking_source] = (
-                        int(conflict_blocking_source_counts.get(blocking_source, 0)) + 1
-                    )
-                    pair_key = f"{current_source}->{blocking_source}"
-                    conflict_source_pairs[pair_key] = (
-                        int(conflict_source_pairs.get(pair_key, 0)) + 1
-                    )
-                chosen = False
-                break
-
-        if chosen:
-            for vertex_index, coords in zip(
-                (start_vertex, end_vertex),
-                endpoint_coord_groups,
-            ):
-                painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = vertex_index + 1
-                painted_source_image[coords[:, 0], coords[:, 1], coords[:, 2]] = current_source_code
+                    ] = current_source_code
             chosen_indices.append(index)
         elif endpoint_coords.size:
             painted_image[
@@ -291,24 +331,6 @@ def _choose_edges_matlab_style(
                 endpoint_coords[:, 2],
             ] = endpoint_source_snapshot
 
-    if not chosen_indices:
-        empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
-        empty["diagnostics"] = diagnostics
-        return empty
-
-    chosen_indices, cropped_edge_count = prefilter_edge_indices_for_cleanup_matlab_style(
-        chosen_indices,
-        traces,
-        scale_traces,
-        energy_traces,
-        lumen_radius_microns=np.asarray(lumen_radius_microns, dtype=np.float32),
-        microns_per_voxel=np.asarray(
-            params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-            dtype=np.float32,
-        ),
-        size_of_image=image_shape,
-    )
-    diagnostics["cropped_edge_count"] = cropped_edge_count
     if not chosen_indices:
         empty = cast("dict[str, Any]", _empty_edges_result(vertex_positions))
         empty["diagnostics"] = diagnostics

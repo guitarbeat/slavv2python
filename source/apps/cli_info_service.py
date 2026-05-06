@@ -11,9 +11,9 @@ from .cli_reporting import build_info_lines
 
 
 def load_info_lines(
-        *,
-        version: str,
-        system_info: Mapping[str, object],
+    *,
+    version: str,
+    system_info: Mapping[str, object],
 ) -> list[str]:
     """Build the printable lines for the CLI info command."""
     return build_info_lines(version, system_info)

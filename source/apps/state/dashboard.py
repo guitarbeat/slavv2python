@@ -30,10 +30,10 @@ def normalize_dashboard_results(processing_results: Mapping[str, Any]) -> dict[s
 
 
 def resolve_dashboard_stats(
-        results: Mapping[str, Any] | None,
-        *,
-        image_shape: tuple[int, int, int],
-        stats_builder: Callable[..., dict[str, Any]] = compute_shareable_stats,
+    results: Mapping[str, Any] | None,
+    *,
+    image_shape: tuple[int, int, int],
+    stats_builder: Callable[..., dict[str, Any]] = compute_shareable_stats,
 ) -> dict[str, Any] | None:
     """Compute dashboard statistics when a full network result is available."""
     if not results or not has_full_network_results(results):
@@ -42,10 +42,10 @@ def resolve_dashboard_stats(
 
 
 def load_dashboard_context(
-        session_state: Mapping[str, object],
-        *,
-        snapshot_loader: Callable[[str], RunSnapshot | None] = load_run_snapshot,
-        stats_builder: Callable[..., dict[str, Any]] = compute_shareable_stats,
+    session_state: Mapping[str, object],
+    *,
+    snapshot_loader: Callable[[str], RunSnapshot | None] = load_run_snapshot,
+    stats_builder: Callable[..., dict[str, Any]] = compute_shareable_stats,
 ) -> DashboardContext:
     """Load dashboard context from session state and run metadata."""
     run_dir = cast("str | None", session_state.get("current_run_dir"))

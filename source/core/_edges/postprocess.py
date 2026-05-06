@@ -55,13 +55,13 @@ def normalize_edges_matlab_style(chosen_edges: dict[str, Any]) -> dict[str, Any]
 
 
 def _matlab_crop_edges_v200(
-        edge_space_subscripts: list[np.ndarray],
-        edge_scale_subscripts: list[np.ndarray],
-        edge_energies: list[np.ndarray],
-        *,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        size_of_image: tuple[int, int, int],
+    edge_space_subscripts: list[np.ndarray],
+    edge_scale_subscripts: list[np.ndarray],
+    edge_energies: list[np.ndarray],
+    *,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    size_of_image: tuple[int, int, int],
 ) -> np.ndarray:
     """Mirror MATLAB ``crop_edges_V200`` on chosen edge trajectories."""
     n_edges = len(edge_space_subscripts)
@@ -74,7 +74,7 @@ def _matlab_crop_edges_v200(
     excluded: np.ndarray = np.zeros((n_edges,), dtype=bool)
 
     for edge_index, (space_trace, scale_trace, _energy_trace) in enumerate(
-            zip(edge_space_subscripts, edge_scale_subscripts, edge_energies)
+        zip(edge_space_subscripts, edge_scale_subscripts, edge_energies)
     ):
         if len(space_trace) == 0:
             continue
@@ -102,14 +102,14 @@ def _matlab_crop_edges_v200(
 
 
 def prefilter_edge_indices_for_cleanup_matlab_style(
-        candidate_indices: list[int],
-        traces: list[np.ndarray],
-        scale_traces: list[np.ndarray],
-        energy_traces: list[np.ndarray],
-        *,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        size_of_image: tuple[int, int, int],
+    candidate_indices: list[int],
+    traces: list[np.ndarray],
+    scale_traces: list[np.ndarray],
+    energy_traces: list[np.ndarray],
+    *,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    size_of_image: tuple[int, int, int],
 ) -> tuple[list[int], int]:
     """Use MATLAB's pre-clean smoothing + crop logic to filter edge indices."""
     from ..graph import _matlab_smooth_edges_v2
@@ -194,11 +194,11 @@ def _apply_edge_mask(chosen_edges: dict[str, Any], keep_mask: np.ndarray) -> dic
 
 
 def finalize_edges_matlab_style(
-        chosen_edges: dict[str, Any],
-        *,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        size_of_image: tuple[int, int, int],
+    chosen_edges: dict[str, Any],
+    *,
+    lumen_radius_microns: np.ndarray,
+    microns_per_voxel: np.ndarray,
+    size_of_image: tuple[int, int, int],
 ) -> dict[str, Any]:
     """Apply MATLAB's final post-clean edge smoothing and normalization sequence."""
     from ..graph import _matlab_edge_metrics, _matlab_smooth_edges_v2

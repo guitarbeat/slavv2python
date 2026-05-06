@@ -9,9 +9,9 @@ if TYPE_CHECKING:
 
 
 def calculate_exported_network_stats(
-        results: Mapping[str, Any],
-        *,
-        statistics_fn,
+    results: Mapping[str, Any],
+    *,
+    statistics_fn,
 ) -> dict[str, Any]:
     """Calculate CLI analysis statistics from exported network results."""
     summary = results.get("summary")

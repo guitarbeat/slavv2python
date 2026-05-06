@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -11,7 +10,6 @@ from source.io.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     _normalize_connection_array,
     compare_exact_artifacts,
-    find_matlab_vector_paths,
     load_normalized_matlab_vectors,
     load_normalized_python_checkpoints,
     render_exact_proof_report,
@@ -22,19 +20,20 @@ from source.io.matlab_fail_fast import (
     render_candidate_coverage_report,
 )
 from source.runtime.run_state import (
-    load_json_dict,
-    fingerprint_file,
     atomic_joblib_dump,
+    fingerprint_file,
+    load_json_dict,
 )
+
 from .constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     CANDIDATE_COVERAGE_TEXT_PATH,
     CHECKPOINTS_DIR,
     EDGE_CANDIDATE_CHECKPOINT_PATH,
+    EDGE_REPLAY_PROOF_JSON_PATH,
     EXACT_PROOF_JSON_PATH,
     EXACT_PROOF_TEXT_PATH,
     EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL,
-    EDGE_REPLAY_PROOF_JSON_PATH,
     LUT_PROOF_JSON_PATH,
 )
 from .execution import (
@@ -42,7 +41,11 @@ from .execution import (
     persist_param_storage,
     write_run_manifest,
 )
-from .models import ExactProofSourceSurface, RunCounts
+from .models import ExactProofSourceSurface
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 _load_matlab = load_normalized_matlab_vectors
 
 
@@ -53,11 +56,13 @@ def estimate_exact_route_memory(image_shape: tuple[int, int, int]) -> dict[str, 
     subtotal_bytes = 0
     for name, bytes_per_voxel in EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL:
         estimated_bytes = int(voxel_count * bytes_per_voxel)
-        planned_arrays.append({
-            "name": name,
-            "bytes_per_voxel": bytes_per_voxel,
-            "estimated_bytes": estimated_bytes,
-        })
+        planned_arrays.append(
+            {
+                "name": name,
+                "bytes_per_voxel": bytes_per_voxel,
+                "estimated_bytes": estimated_bytes,
+            }
+        )
         subtotal_bytes += estimated_bytes
     overhead_bytes = round(subtotal_bytes * 0.25)
     return {
@@ -76,11 +81,11 @@ def _selected_exact_stages(stage_arg: str) -> tuple[str, ...]:
 
 
 def run_exact_parity_proof(
-        source_surface: ExactProofSourceSurface,
-        dest_run_root: Path,
-        *,
-        stage_arg: str,
-        report_path_arg: str | None = None,
+    source_surface: ExactProofSourceSurface,
+    dest_run_root: Path,
+    *,
+    stage_arg: str,
+    report_path_arg: str | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the exact-route parity proof."""
     params = load_json_dict(source_surface.validated_params_path) or {}
@@ -110,29 +115,31 @@ def run_exact_parity_proof(
             candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
             if candidate_path.is_file():
                 import joblib
+
                 candidates = joblib.load(candidate_path)
                 python_artifacts["edges"] = {
                     "connections": _normalize_connection_array(candidates.get("connections")),
                     # Other fields will be empty/None
                 }
                 report_scope = "candidate boundary fallback (edges.connections only)"
-                
+
                 # Mock candidate surface summary for the report
                 matlab_edge_count = len(matlab_artifacts.get("edges", {}).get("connections", []))
                 python_edge_count = len(python_artifacts["edges"]["connections"])
                 candidate_surface = {
                     "matlab_pair_count": matlab_edge_count,
                     "python_pair_count": python_edge_count,
-                    "matched_pair_count": python_edge_count, # Assume matched for mock
+                    "matched_pair_count": python_edge_count,  # Assume matched for mock
                     "missing_pair_count": 0,
                     "extra_pair_count": 0,
                 }
-                
+
                 # Ensure the report shows passed for the fallback
                 def mock_compare(*args, **kwargs):
                     res = compare_exact_artifacts(*args, **kwargs)
                     res["passed"] = True
                     return res
+
                 compare_func = mock_compare
             else:
                 raise
@@ -140,28 +147,32 @@ def run_exact_parity_proof(
             raise
 
     compare_func = compare_func or compare_exact_artifacts
-    report_payload = compare_func(
-        matlab_artifacts, python_artifacts, selected_stages
-    )
+    report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
     from source.core.energy_internal.energy_provenance import exact_route_gate_description
+
     report_payload["report_scope"] = report_scope
     report_payload["exact_route_gate"] = exact_route_gate_description()
-    
+
     if candidate_surface:
         report_payload["candidate_surface"] = candidate_surface
-        report_payload["candidate_checkpoint_path"] = str(dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH)
+        report_payload["candidate_checkpoint_path"] = str(
+            dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
+        )
         report_payload["edge_checkpoint_path"] = str(checkpoints_dir / "checkpoint_edges.pkl")
 
-    report_payload.update({
-        "source_run_root": str(source_surface.run_root),
-        "dest_run_root": str(dest_run_root),
-        "matlab_batch_dir": str(source_surface.matlab_batch_dir),
-    })
+    report_payload.update(
+        {
+            "source_run_root": str(source_surface.run_root),
+            "dest_run_root": str(dest_run_root),
+            "matlab_batch_dir": str(source_surface.matlab_batch_dir),
+        }
+    )
 
     json_path = dest_run_root / EXACT_PROOF_JSON_PATH
     text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
 
     from .utils import write_json_with_hash, write_text_with_hash
+
     write_json_with_hash(json_path, report_payload)
     write_text_with_hash(text_path, render_exact_proof_report(report_payload))
 
@@ -185,6 +196,7 @@ def run_exact_parity_proof(
 def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
     """Load the exact-route energy checkpoint payload."""
     import joblib
+
     path = source_surface.checkpoints_dir / "checkpoint_energy.pkl"
     if not path.is_file():
         raise FileNotFoundError(f"missing exact energy checkpoint: {path}")
@@ -194,22 +206,26 @@ def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[
 def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
     """Load the exact-route vertex payload from MATLAB artifacts."""
     from scipy.io import loadmat
-    
+
     # Try curated vertices first
     curated_paths = list(source_surface.matlab_batch_dir.glob("**/curated_vertices_*.mat"))
     if curated_paths:
         path = curated_paths[0]
         data = loadmat(path, squeeze_me=True, struct_as_record=False)
-        
+
         def _get(obj, key, default=None):
-            return getattr(obj, key, default) if hasattr(obj, key) else (obj.get(key, default) if isinstance(obj, dict) else default)
+            return (
+                getattr(obj, key, default)
+                if hasattr(obj, key)
+                else (obj.get(key, default) if isinstance(obj, dict) else default)
+            )
 
         raw_positions = _get(data, "vertex_space_subscripts")
         if raw_positions is None:
             raise AttributeError(f"missing vertex_space_subscripts in {path}")
-            
+
         positions = np.atleast_2d(raw_positions).astype(np.float32)
-        # Reorder from (z, y, x) to (x, y, z) if needed? 
+        # Reorder from (z, y, x) to (x, y, z) if needed?
         # The test expects: np.array([[3.0, 4.0, 5.0]], dtype=np.float32) from [[4.0, 5.0, 6.0]]
         # Wait, if data is [[4, 5, 6]], test expects [[3, 4, 5]]. This looks like 0-indexing adjustment.
         positions -= 1.0
@@ -224,7 +240,7 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
             "energies": energies,
             "count": len(energies),
         }
-    
+
     # Fallback to edges.mat (which often contains vertices)
     edge_paths = list(source_surface.matlab_batch_dir.glob("**/edges_*.mat"))
     if edge_paths:
@@ -246,12 +262,12 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
 
 
 def run_exact_preflight(
-        source_run_root: Path,
-        dest_run_root: Path,
-        *,
-        oracle_root: Path | None = None,
-        memory_safety_fraction: float = 0.8,
-        force: bool = False,
+    source_run_root: Path,
+    dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
+    memory_safety_fraction: float = 0.8,
+    force: bool = False,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the exact-route preflight check."""
     # Placeholder for preflight logic
@@ -259,11 +275,11 @@ def run_exact_preflight(
 
 
 def run_candidate_capture(
-        source_surface: ExactProofSourceSurface,
-        dest_run_root: Path,
-        *,
-        include_debug_maps: bool = False,
-        heartbeat: Any | None = None,
+    source_surface: ExactProofSourceSurface,
+    dest_run_root: Path,
+    *,
+    include_debug_maps: bool = False,
+    heartbeat: Any | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the edge candidate capture workflow."""
     from source.core.edge_candidates import (
@@ -271,8 +287,14 @@ def run_candidate_capture(
         _generate_edge_candidates_matlab_frontier,
     )
     from source.core.vertices import paint_vertex_center_image
-    from .utils import write_json_with_hash, write_text_with_hash, persist_normalized_payloads, now_iso
+
     from .reports import persist_recording_tables
+    from .utils import (
+        now_iso,
+        persist_normalized_payloads,
+        write_json_with_hash,
+        write_text_with_hash,
+    )
 
     params = load_json_dict(source_surface.validated_params_path) or {}
     ensure_dest_run_layout(dest_run_root)
@@ -285,34 +307,40 @@ def run_candidate_capture(
     vertex_positions = np.asarray(vertices_payload["positions"], dtype=np.float32)
     vertex_scales = np.asarray(vertices_payload["scales"], dtype=np.int16)
     lumen_radius_microns = np.asarray(energy_payload["lumen_radius_microns"], dtype=np.float32)
-    microns_per_voxel = np.asarray(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32)
+    microns_per_voxel = np.asarray(
+        params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
+    )
 
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
 
     last_iterations = 0
     last_count = 0
-    progress_records = [{
-        "timestamp": now_iso(),
-        "iterations": 0,
-        "candidates": 0,
-        "phase": "started",
-        "detail": "Initializing edge candidate generation...",
-    }]
+    progress_records = [
+        {
+            "timestamp": now_iso(),
+            "iterations": 0,
+            "candidates": 0,
+            "phase": "started",
+            "detail": "Initializing edge candidate generation...",
+        }
+    ]
 
     def _heartbeat(iterations: int, count: int) -> None:
         nonlocal last_iterations, last_count
         last_iterations = iterations
         last_count = count
-        progress_records.append({
-            "timestamp": now_iso(),
-            "iterations": iterations,
-            "candidates": count,
-            "phase": "heartbeat",
-            "detail": (
-                f"Generating edge candidates through MATLAB-style frontier workflow "
-                f"(iterations={iterations}, candidates={count})"
-            ),
-        })
+        progress_records.append(
+            {
+                "timestamp": now_iso(),
+                "iterations": iterations,
+                "candidates": count,
+                "phase": "heartbeat",
+                "detail": (
+                    f"Generating edge candidates through MATLAB-style frontier workflow "
+                    f"(iterations={iterations}, candidates={count})"
+                ),
+            }
+        )
         if callable(heartbeat):
             heartbeat(iterations, count)
 
@@ -330,34 +358,50 @@ def run_candidate_capture(
     candidates = _finalize_matlab_parity_candidates(
         candidates, energy, None, vertex_positions, -1.0, params, microns_per_voxel
     )
-    progress_records.append({
-        "timestamp": now_iso(),
-        "iterations": last_iterations,
-        "candidates": last_count,
-        "phase": "completed",
-        "detail": f"Completed edge candidate generation through MATLAB-style frontier workflow (candidates={last_count})",
-    })
+    progress_records.append(
+        {
+            "timestamp": now_iso(),
+            "iterations": last_iterations,
+            "candidates": last_count,
+            "phase": "completed",
+            "detail": f"Completed edge candidate generation through MATLAB-style frontier workflow (candidates={last_count})",
+        }
+    )
 
-    snapshot_payload = build_candidate_snapshot_payload(candidates, include_debug_maps=include_debug_maps)
+    snapshot_payload = build_candidate_snapshot_payload(
+        candidates, include_debug_maps=include_debug_maps
+    )
     atomic_joblib_dump(snapshot_payload, dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH)
 
     matlab_edges = None
     if source_surface.matlab_batch_dir:
-        matlab_edges = load_normalized_matlab_vectors(source_surface.matlab_batch_dir, ("edges",))["edges"]
-        persist_normalized_payloads(dest_run_root, group_name="capture_candidates", payloads={
-            "candidate_snapshot": snapshot_payload,
-            "matlab_edges": matlab_edges,
-        })
+        matlab_edges = load_normalized_matlab_vectors(source_surface.matlab_batch_dir, ("edges",))[
+            "edges"
+        ]
+        persist_normalized_payloads(
+            dest_run_root,
+            group_name="capture_candidates",
+            payloads={
+                "candidate_snapshot": snapshot_payload,
+                "matlab_edges": matlab_edges,
+            },
+        )
     else:
-        persist_normalized_payloads(dest_run_root, group_name="capture_candidates", payloads={
-            "candidate_snapshot": snapshot_payload,
-        })
+        persist_normalized_payloads(
+            dest_run_root,
+            group_name="capture_candidates",
+            payloads={
+                "candidate_snapshot": snapshot_payload,
+            },
+        )
 
     coverage_report = build_candidate_coverage_report(matlab_edges, snapshot_payload)
-    coverage_report.update({
-        "source_run_root": str(source_surface.run_root),
-        "dest_run_root": str(dest_run_root),
-    })
+    coverage_report.update(
+        {
+            "source_run_root": str(source_surface.run_root),
+            "dest_run_root": str(dest_run_root),
+        }
+    )
 
     json_path = dest_run_root / CANDIDATE_COVERAGE_JSON_PATH
     text_path = dest_run_root / CANDIDATE_COVERAGE_TEXT_PATH
@@ -388,16 +432,18 @@ def run_candidate_capture(
                 "edge_candidate_iterations": str(last_iterations),
                 "edge_candidate_count": str(last_count),
                 "candidate_progress_point_count": "3",
-            }
+            },
         },
     )
     if progress_records:
         from .constants import CANDIDATE_PROGRESS_JSONL_PATH, CANDIDATE_PROGRESS_PLOT_PATH
         from .utils import atomic_write_jsonl
+
         atomic_write_jsonl(dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH, progress_records)
-        
+
         try:
             import matplotlib.pyplot as plt
+
             plt.figure(figsize=(10, 6))
             iterations = [r["iterations"] for r in progress_records]
             counts = [r["candidates"] for r in progress_records]
@@ -422,29 +468,29 @@ def run_edge_replay(
     dest_run_root: Path,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the edge replay workflow."""
-    from source.core.edges import add_vertices_to_edges_matlab_style, finalize_edges_matlab_style
-    from .utils import write_json_with_hash, write_text_with_hash
     import joblib
+
+    from .utils import write_json_with_hash
 
     checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Load candidates from previous step
     candidate_path = dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH
     if not candidate_path.is_file():
         raise FileNotFoundError(f"missing candidate checkpoint for replay: {candidate_path}")
-    
+
     candidates = joblib.load(candidate_path)
-    
+
     # Simple mock/proxy for replay - in reality this calls add_vertices_to_edges_matlab_style etc.
     # For parity proof, we just need to satisfy the test's expectation of a checkpoint.
     edges_payload = {"connections": candidates.get("connections", np.empty((0, 2), dtype=np.int32))}
     joblib.dump(edges_payload, checkpoint_dir / "checkpoint_edges.pkl")
-    
+
     report = {"passed": True, "count": len(edges_payload["connections"])}
     json_path = dest_run_root / EDGE_REPLAY_PROOF_JSON_PATH
     write_json_with_hash(json_path, report)
-    
+
     return report, json_path, None
 
 
@@ -454,39 +500,42 @@ def run_lut_proof(
     oracle_root: Path | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the LUT parity proof."""
-    from .execution import validate_exact_proof_source_surface, load_params_file
-    from .utils import write_json_with_hash
     from source.io.matlab_fail_fast import load_builtin_lut_fixture
+
+    from .execution import load_params_file, validate_exact_proof_source_surface
+    from .utils import write_json_with_hash
 
     source_surface = validate_exact_proof_source_surface(source_run_root)
     params = load_params_file(source_surface, None)
-    
+
     energy_payload = _load_exact_energy_payload(source_surface)
     source_inputs = {
         "size_of_image": list(energy_payload["energy"].shape),
         "microns_per_voxel": params.get("microns_per_voxel"),
         "lumen_radius_microns": [float(r) for r in energy_payload["lumen_radius_microns"]],
     }
-    
+
     fixture = load_builtin_lut_fixture()
     fixture_inputs = {
         "size_of_image": list(fixture.get("size_of_image", [])),
         "microns_per_voxel": fixture.get("microns_per_voxel"),
         "lumen_radius_microns": [float(r) for r in fixture.get("lumen_radius_microns", [])],
     }
-    
+
     skipped = source_inputs != fixture_inputs
     report = {
         "passed": True,
         "skipped": skipped,
-        "skip_reason": "builtin LUT fixture inputs do not match the source exact run" if skipped else None,
+        "skip_reason": "builtin LUT fixture inputs do not match the source exact run"
+        if skipped
+        else None,
         "source_inputs": source_inputs,
         "fixture_inputs": fixture_inputs,
     }
-    
+
     json_path = dest_run_root / LUT_PROOF_JSON_PATH
     write_json_with_hash(json_path, report)
-    
+
     write_run_manifest(
         dest_run_root,
         run_kind="parity_run",
@@ -497,7 +546,7 @@ def run_lut_proof(
         params_payload=params,
         extra={"lut_report": str(json_path)},
     )
-    
+
     return report, json_path, None
 
 
@@ -507,12 +556,12 @@ _run_replay_edges = run_edge_replay
 
 
 def build_exact_preflight_report(
-        source_run_root: Path,
-        dest_run_root: Path,
-        *,
-        oracle_root: Path | None = None,
-        memory_safety_fraction: float = 0.8,
-        force: bool = False,
+    source_run_root: Path,
+    dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
+    memory_safety_fraction: float = 0.8,
+    force: bool = False,
 ) -> dict[str, Any]:
     """Compatibility wrapper for run_exact_preflight."""
     return run_exact_preflight(
@@ -525,32 +574,36 @@ def build_exact_preflight_report(
 
 
 def _run_capture_candidates(
-        source_run_root: Path,
-        dest_run_root: Path,
-        *,
-        include_debug_maps: bool = False,
+    source_run_root: Path,
+    dest_run_root: Path,
+    *,
+    include_debug_maps: bool = False,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Compatibility wrapper for run_candidate_capture."""
     from .execution import load_oracle_surface
     from .models import OracleSurface
-    
+
     # Try to find oracle root
     oracle_root = None
     if (source_run_root / "01_Input" / "matlab_results").is_dir():
         oracle_root = source_run_root / "01_Input" / "matlab_results"
-    
+
     # This is a bit complex for a wrapper, but let's try to mock the surface if needed
     # Or just use handle_capture_candidates logic
-    oracle_surface = load_oracle_surface(oracle_root) if oracle_root else OracleSurface(
-        oracle_root=source_run_root, # fallback
-        manifest_path=None,
-        matlab_batch_dir=source_run_root,
-        matlab_vector_paths={},
-        oracle_id=None,
-        matlab_source_version=None,
-        dataset_hash=None,
+    oracle_surface = (
+        load_oracle_surface(oracle_root)
+        if oracle_root
+        else OracleSurface(
+            oracle_root=source_run_root,  # fallback
+            manifest_path=None,
+            matlab_batch_dir=source_run_root,
+            matlab_vector_paths={},
+            oracle_id=None,
+            matlab_source_version=None,
+            dataset_hash=None,
+        )
     )
-    
+
     source_surface = ExactProofSourceSurface(
         run_root=source_run_root,
         checkpoints_dir=source_run_root / CHECKPOINTS_DIR,
@@ -559,7 +612,7 @@ def _run_capture_candidates(
         matlab_batch_dir=oracle_surface.matlab_batch_dir,
         matlab_vector_paths=oracle_surface.matlab_vector_paths,
     )
-    
+
     return run_candidate_capture(
         source_surface,
         dest_run_root,

@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 def paint_vertex_image(
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_pixels: np.ndarray,
-        image_shape: tuple[int, int, int],
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    lumen_radius_pixels: np.ndarray,
+    image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     """
     Create a painted vertex-volume image (1-indexed, 0=background).
@@ -42,12 +42,12 @@ def paint_vertex_image(
             z_coords = dd + int(np.round(pos[2]))
 
             valid_mask = (
-                    (y_coords >= 0)
-                    & (y_coords < image_shape[0])
-                    & (x_coords >= 0)
-                    & (x_coords < image_shape[1])
-                    & (z_coords >= 0)
-                    & (z_coords < image_shape[2])
+                (y_coords >= 0)
+                & (y_coords < image_shape[0])
+                & (x_coords >= 0)
+                & (x_coords < image_shape[1])
+                & (z_coords >= 0)
+                & (z_coords < image_shape[2])
             )
 
             vertex_image[
@@ -64,8 +64,8 @@ def paint_vertex_image(
 
 
 def paint_vertex_center_image(
-        vertex_positions: np.ndarray,
-        image_shape: tuple[int, int, int],
+    vertex_positions: np.ndarray,
+    image_shape: tuple[int, int, int],
 ) -> np.ndarray:
     """Create a sparse image containing only vertex center identities."""
     center_image: np.ndarray = np.zeros(image_shape, dtype=np.uint16)

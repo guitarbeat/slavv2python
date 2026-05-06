@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from ..cli_exported_network import (
+    _build_strands_from_edge_connections,
+    _infer_image_shape_from_vertices,
+    _load_exported_network_json,
+    _load_exported_results,
+    _normalize_exported_edge_connections,
+)
 from .commands import (
     _handle_analyze_command,
     _handle_info_command,
@@ -21,13 +28,6 @@ from .shared import (
     _configure_logging,
     _expand_export_formats,
     _require_existing_file,
-)
-from ..cli_exported_network import (
-    _build_strands_from_edge_connections,
-    _infer_image_shape_from_vertices,
-    _load_exported_network_json,
-    _load_exported_results,
-    _normalize_exported_edge_connections,
 )
 
 __all__ = [

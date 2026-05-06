@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from dev.tests.support.run_state_builders import build_run_context
+
 from source.runtime import load_run_snapshot
 from source.runtime._run_state.models import RunSnapshot
 from source.runtime._run_state.resume_guard import (

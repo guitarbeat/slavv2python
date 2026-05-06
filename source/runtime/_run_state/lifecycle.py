@@ -33,14 +33,14 @@ def mark_preprocess_complete_snapshot(snapshot: RunSnapshot, *, overall_progress
 
 
 def begin_stage_snapshot(
-        snapshot: RunSnapshot,
-        *,
-        stage: str,
-        detail: str = "",
-        units_total: int = 0,
-        units_completed: int = 0,
-        substage: str = "",
-        resumed: bool = False,
+    snapshot: RunSnapshot,
+    *,
+    stage: str,
+    detail: str = "",
+    units_total: int = 0,
+    units_completed: int = 0,
+    substage: str = "",
+    resumed: bool = False,
 ) -> StageSnapshot:
     """Begin a stage and return the mutated stage snapshot."""
     stage_snapshot = snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
@@ -65,15 +65,15 @@ def begin_stage_snapshot(
 
 
 def update_stage_snapshot(
-        snapshot: RunSnapshot,
-        *,
-        stage: str,
-        detail: str | None = None,
-        units_total: int | None = None,
-        units_completed: int | None = None,
-        progress: float | None = None,
-        substage: str | None = None,
-        resumed: bool | None = None,
+    snapshot: RunSnapshot,
+    *,
+    stage: str,
+    detail: str | None = None,
+    units_total: int | None = None,
+    units_completed: int | None = None,
+    progress: float | None = None,
+    substage: str | None = None,
+    resumed: bool | None = None,
 ) -> StageSnapshot:
     """Update an in-flight stage and return the mutated stage snapshot."""
     stage_snapshot = snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
@@ -103,12 +103,12 @@ def update_stage_snapshot(
 
 
 def complete_stage_snapshot(
-        snapshot: RunSnapshot,
-        *,
-        stage: str,
-        detail: str = "",
-        artifacts: dict[str, str] | None = None,
-        resumed: bool | None = None,
+    snapshot: RunSnapshot,
+    *,
+    stage: str,
+    detail: str = "",
+    artifacts: dict[str, str] | None = None,
+    resumed: bool | None = None,
 ) -> StageSnapshot:
     """Complete a stage and return the mutated stage snapshot."""
     stage_snapshot = snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
@@ -146,13 +146,13 @@ def fail_stage_snapshot(snapshot: RunSnapshot, *, stage: str, message: str) -> S
 
 
 def update_optional_task_snapshot(
-        snapshot: RunSnapshot,
-        *,
-        name: str,
-        status: str,
-        detail: str = "",
-        progress: float | None = None,
-        artifacts: dict[str, str] | None = None,
+    snapshot: RunSnapshot,
+    *,
+    name: str,
+    status: str,
+    detail: str = "",
+    progress: float | None = None,
+    artifacts: dict[str, str] | None = None,
 ) -> TaskSnapshot:
     """Update an optional task and return the mutated task snapshot."""
     task = snapshot.optional_tasks.setdefault(name, TaskSnapshot(name=name))

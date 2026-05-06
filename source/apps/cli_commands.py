@@ -109,10 +109,10 @@ def _handle_run_command(args) -> None:
     )
 
     for line in build_run_completion_lines(
-            effective_run_dir=effective_run_dir,
-            output_dir=args.output,
-            snapshot=snapshot,
-            status_line_builder=build_status_lines,
+        effective_run_dir=effective_run_dir,
+        output_dir=args.output,
+        snapshot=snapshot,
+        status_line_builder=build_status_lines,
     ):
         print(line)
 

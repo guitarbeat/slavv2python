@@ -1,4 +1,5 @@
 import numpy as np
+
 from source.core.energy import spherical_structuring_element
 
 

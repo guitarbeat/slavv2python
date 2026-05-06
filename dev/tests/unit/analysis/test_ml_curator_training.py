@@ -1,6 +1,7 @@
 import json
 
 import numpy as np
+
 from source.analysis.ml_curator_training import load_aggregated_training_data
 
 

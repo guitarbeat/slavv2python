@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.express as px
 import pytest
+
 from source.visualization import NetworkVisualizer
 
 

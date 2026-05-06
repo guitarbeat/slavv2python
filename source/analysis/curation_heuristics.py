@@ -11,10 +11,10 @@ except ImportError:  # pragma: no cover - fallback for direct execution
 
 
 def choose_vertices(
-        vertices: dict[str, Any],
-        min_energy: float = 0.0,
-        min_radius: float = 0.0,
-        energy_sign: float = -1.0,
+    vertices: dict[str, Any],
+    min_energy: float = 0.0,
+    min_radius: float = 0.0,
+    energy_sign: float = -1.0,
 ) -> np.ndarray:
     energies = vertices["energies"] * energy_sign
     radii = vertices.get("radii_microns", vertices.get("radii_pixels"))
@@ -24,10 +24,10 @@ def choose_vertices(
 
 
 def choose_edges(
-        edges: dict[str, Any],
-        min_energy: float = 0.0,
-        min_length: float = 0.0,
-        energy_sign: float = -1.0,
+    edges: dict[str, Any],
+    min_energy: float = 0.0,
+    min_length: float = 0.0,
+    energy_sign: float = -1.0,
 ) -> np.ndarray:
     energies = edges["energies"] * energy_sign
     lengths = np.array([calculate_path_length(trace) for trace in edges["traces"]])
@@ -36,10 +36,10 @@ def choose_edges(
 
 
 def extract_uncurated_info(
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        energy_data: dict[str, Any],
-        image_shape: tuple[int, ...],
+    vertices: dict[str, Any],
+    edges: dict[str, Any],
+    energy_data: dict[str, Any],
+    image_shape: tuple[int, ...],
 ) -> dict[str, np.ndarray]:
     try:
         from .ml_curator import MLCurator

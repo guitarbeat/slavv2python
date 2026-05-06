@@ -1,9 +1,10 @@
+import io
+
 import numpy as np
 import pytest
 import tifffile
-from source.io import load_tiff_volume
 
-import io
+from source.io import load_tiff_volume
 
 
 def test_load_tiff_volume_valid():

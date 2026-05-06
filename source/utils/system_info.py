@@ -68,8 +68,8 @@ def _get_memory_info() -> dict[str, Any]:
         import psutil
 
         mem = psutil.virtual_memory()
-        memory_info["total_gb"] = round(mem.total / (1024 ** 3), 2)
-        memory_info["available_gb"] = round(mem.available / (1024 ** 3), 2)
+        memory_info["total_gb"] = round(mem.total / (1024**3), 2)
+        memory_info["available_gb"] = round(mem.available / (1024**3), 2)
     except ImportError:
         pass
 

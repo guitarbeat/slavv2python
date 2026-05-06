@@ -181,10 +181,10 @@ def _select_fields(payload: Mapping[str, Any], allowed_fields: tuple[str, ...]) 
 
 
 def _build_authoritative_topology(
-        *,
-        vertices: Mapping[str, Any],
-        edges: Mapping[str, Any],
-        network: Mapping[str, Any],
+    *,
+    vertices: Mapping[str, Any],
+    edges: Mapping[str, Any],
+    network: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Build the public topology block, computing missing basics when needed."""
     vertex_positions = _normalize_vertices_array(vertices.get("positions", []))
@@ -196,14 +196,20 @@ def _build_authoritative_topology(
     if edge_connections.size:
         graph.add_edges_from(edge_connections.tolist())
 
-    computed_degrees = np.array([graph.degree(node) for node in range(vertex_count)], dtype=np.int32)
+    computed_degrees = np.array(
+        [graph.degree(node) for node in range(vertex_count)], dtype=np.int32
+    )
     topology = _select_fields(network, _NETWORK_EXPORT_FIELDS)
-    topology.setdefault("strands", _convert_edges_to_strands(edge_connections, vertex_count=vertex_count))
+    topology.setdefault(
+        "strands", _convert_edges_to_strands(edge_connections, vertex_count=vertex_count)
+    )
     topology.setdefault(
         "bifurcations",
         np.flatnonzero(computed_degrees > 2).astype(np.int32, copy=False),
     )
-    topology.setdefault("orphans", np.flatnonzero(computed_degrees == 0).astype(np.int32, copy=False))
+    topology.setdefault(
+        "orphans", np.flatnonzero(computed_degrees == 0).astype(np.int32, copy=False)
+    )
     topology.setdefault("vertex_degrees", computed_degrees)
     topology.setdefault("mismatched_strands", [])
     topology.setdefault("cycles", [])
@@ -211,12 +217,12 @@ def _build_authoritative_topology(
 
 
 def _build_summary_block(
-        *,
-        vertices: Mapping[str, Any],
-        edges: Mapping[str, Any],
-        network: Mapping[str, Any],
-        parameters: Mapping[str, Any],
-        image_shape: tuple[int, int, int],
+    *,
+    vertices: Mapping[str, Any],
+    edges: Mapping[str, Any],
+    network: Mapping[str, Any],
+    parameters: Mapping[str, Any],
+    image_shape: tuple[int, int, int],
 ) -> dict[str, Any] | None:
     """Calculate analysis-ready summary statistics when the payload is complete enough."""
     if "positions" not in vertices:
@@ -241,12 +247,12 @@ def _build_summary_block(
 
 
 def _build_metadata(
-        *,
-        parameters: Mapping[str, Any],
-        image_shape: tuple[int, int, int],
-        run_snapshot: RunSnapshot | None,
-        run_dir: str | Path | None,
-        metadata: Mapping[str, Any] | None,
+    *,
+    parameters: Mapping[str, Any],
+    image_shape: tuple[int, int, int],
+    run_snapshot: RunSnapshot | None,
+    run_dir: str | Path | None,
+    metadata: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     """Build the public metadata block for authoritative exports."""
     stage_provenance: dict[str, Any] = {}
@@ -277,22 +283,26 @@ def _build_metadata(
 
 
 def build_network_json_payload(
-        processing_results: Mapping[str, Any],
-        *,
-        run_snapshot: RunSnapshot | None = None,
-        run_dir: str | Path | None = None,
-        metadata: Mapping[str, Any] | None = None,
+    processing_results: Mapping[str, Any],
+    *,
+    run_snapshot: RunSnapshot | None = None,
+    run_dir: str | Path | None = None,
+    metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the authoritative versioned JSON payload for public network exports."""
     normalized_results = normalize_pipeline_result(processing_results).to_dict()
     parameters = cast("dict[str, Any]", dict(normalized_results.get("parameters", {})))
     vertices = cast(
         "dict[str, Any]",
-        _select_fields(cast("Mapping[str, Any]", normalized_results.get("vertices", {})), _VERTEX_EXPORT_FIELDS),
+        _select_fields(
+            cast("Mapping[str, Any]", normalized_results.get("vertices", {})), _VERTEX_EXPORT_FIELDS
+        ),
     )
     edges = cast(
         "dict[str, Any]",
-        _select_fields(cast("Mapping[str, Any]", normalized_results.get("edges", {})), _EDGE_EXPORT_FIELDS),
+        _select_fields(
+            cast("Mapping[str, Any]", normalized_results.get("edges", {})), _EDGE_EXPORT_FIELDS
+        ),
     )
     topology = _build_authoritative_topology(
         vertices=cast("Mapping[str, Any]", vertices),
@@ -346,7 +356,10 @@ def load_network_json_payload(path: str | Path) -> dict[str, Any]:
         payload = cast("dict[str, Any]", json.load(handle))
 
     schema = cast("dict[str, Any]", payload.get("schema", {}))
-    if schema.get("name") == NETWORK_JSON_SCHEMA_NAME and schema.get("version") == NETWORK_JSON_SCHEMA_VERSION:
+    if (
+        schema.get("name") == NETWORK_JSON_SCHEMA_NAME
+        and schema.get("version") == NETWORK_JSON_SCHEMA_VERSION
+    ):
         metadata = cast("dict[str, Any]", payload.get("metadata", {}))
         vertices = cast("dict[str, Any]", dict(payload.get("vertices", {})))
         edges = cast("dict[str, Any]", dict(payload.get("edges", {})))
@@ -358,7 +371,9 @@ def load_network_json_payload(path: str | Path) -> dict[str, Any]:
             "image_shape": list(
                 payload.get(
                     "image_shape",
-                    infer_image_shape_from_vertices(payload.get("vertices", {}).get("positions", [])),
+                    infer_image_shape_from_vertices(
+                        payload.get("vertices", {}).get("positions", [])
+                    ),
                 )
             ),
             "microns_per_voxel": list(
@@ -377,7 +392,9 @@ def load_network_json_payload(path: str | Path) -> dict[str, Any]:
         edges=edges,
         network=network,
     )
-    radii_microns = _normalize_numeric_vector(vertices.get("radii_microns", vertices.get("radii", [])), dtype=float)
+    radii_microns = _normalize_numeric_vector(
+        vertices.get("radii_microns", vertices.get("radii", [])), dtype=float
+    )
     if radii_microns.size == 0 and len(vertex_positions) > 0:
         radii_microns = np.zeros((len(vertex_positions),), dtype=float)
     radii_pixels = _normalize_numeric_vector(vertices.get("radii_pixels", []), dtype=float)
@@ -392,7 +409,10 @@ def load_network_json_payload(path: str | Path) -> dict[str, Any]:
         "metadata": metadata,
         "parameters": parameters,
         "image_shape": tuple(
-            int(axis) for axis in metadata.get("image_shape", infer_image_shape_from_vertices(vertex_positions))
+            int(axis)
+            for axis in metadata.get(
+                "image_shape", infer_image_shape_from_vertices(vertex_positions)
+            )
         ),
         "vertices": {
             "positions": vertex_positions,
@@ -421,7 +441,9 @@ def load_network_json_payload(path: str | Path) -> dict[str, Any]:
         },
         "network": {
             "strands": [list(strand) for strand in topology.get("strands", [])],
-            "bifurcations": _normalize_numeric_vector(topology.get("bifurcations", []), dtype=np.int32),
+            "bifurcations": _normalize_numeric_vector(
+                topology.get("bifurcations", []), dtype=np.int32
+            ),
             "orphans": _normalize_numeric_vector(topology.get("orphans", []), dtype=np.int32),
             "cycles": _normalize_optional_list(topology.get("cycles", [])),
             "mismatched_strands": _normalize_optional_list(topology.get("mismatched_strands", [])),

@@ -23,9 +23,7 @@ def test_finalize_pipeline_results_returns_plain_dict_payload():
     finalized = finalize_pipeline_results(payload)
 
     assert finalized["metadata"] == {"source": "workflow"}
-    assert np.array_equal(
-        finalized["vertices"]["positions"], payload["vertices"]["positions"]
-    )
+    assert np.array_equal(finalized["vertices"]["positions"], payload["vertices"]["positions"])
 
 
 def test_stop_after_stage_if_requested_finalizes_run_context():

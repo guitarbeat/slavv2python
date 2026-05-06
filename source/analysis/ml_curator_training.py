@@ -63,7 +63,7 @@ def _load_training_payload(file_path: Path) -> dict[str, Any] | None:
 
 
 def _collect_training_arrays(
-        loaded: dict[str, Any],
+    loaded: dict[str, Any],
 ) -> tuple[np.ndarray | None, np.ndarray | None, np.ndarray | None, np.ndarray | None]:
     return (
         _to_2d_array(_pick(loaded, ["vertex_features", "v_features", "v_feat"]), float),
@@ -74,12 +74,12 @@ def _collect_training_arrays(
 
 
 def _append_matching_arrays(
-        feature_chunks: list[np.ndarray],
-        label_chunks: list[np.ndarray],
-        features: np.ndarray | None,
-        labels: np.ndarray | None,
-        file_path: Path,
-        label_name: str,
+    feature_chunks: list[np.ndarray],
+    label_chunks: list[np.ndarray],
+    features: np.ndarray | None,
+    labels: np.ndarray | None,
+    file_path: Path,
+    label_name: str,
 ) -> None:
     if features is None or labels is None:
         return
@@ -94,7 +94,7 @@ def _append_matching_arrays(
 
 
 def _combine_training_chunks(
-        feature_chunks: list[np.ndarray], label_chunks: list[np.ndarray]
+    feature_chunks: list[np.ndarray], label_chunks: list[np.ndarray]
 ) -> tuple[np.ndarray, np.ndarray]:
     features = np.vstack(feature_chunks) if feature_chunks else np.array([])
     labels = np.hstack(label_chunks) if label_chunks else np.array([])
@@ -102,8 +102,8 @@ def _combine_training_chunks(
 
 
 def load_aggregated_training_data(
-        data_dir: str | Path,
-        file_pattern: str = "*_results.json",
+    data_dir: str | Path,
+    file_pattern: str = "*_results.json",
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Load and aggregate training features from multiple result payloads."""
     data_dir = Path(data_dir)

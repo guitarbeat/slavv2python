@@ -3,23 +3,29 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast, TYPE_CHECKING
 
 import numpy as np
 
-from .global_watershed import _generate_edge_candidates_matlab_global_watershed
+if TYPE_CHECKING:
+    from scipy.spatial import cKDTree
+    from .common import Float32Array, Int32Array, Int16Array, Float64Array
+else:
+    Int16Array = np.ndarray
+    Int32Array = np.ndarray
+    Float32Array = np.ndarray
+    Float64Array = np.ndarray
+
 from .._edge_payloads import _empty_edge_diagnostics
 from .._radius_utils import _scalar_radius
-from ..edge_primitives import (
-    TraceMetadata,
+from ..edges_internal.edge_tracing import TraceMetadata
+from ..edges_internal.trace_metrics import (
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,
     _trace_energy_series,
     _trace_scale_series,
 )
-
-if TYPE_CHECKING:
-    from scipy.spatial import cKDTree
+from .global_watershed import _generate_edge_candidates_matlab_global_watershed, ExecutionTracer
 
 logger = logging.getLogger(__name__)
 
@@ -32,20 +38,20 @@ def _edge_candidates_facade() -> Any:
 
 
 def _generate_fallback_directions(
-        *,
-        energy: np.ndarray,
-        start_pos: np.ndarray,
-        start_radius: float,
-        microns_per_voxel: np.ndarray,
-        max_edges_per_vertex: int,
-        direction_method: str,
-        vertex_idx: int,
-) -> np.ndarray:
+    *,
+    energy: Float32Array,
+    start_pos: Float32Array,
+    start_radius: float,
+    microns_per_voxel: Float32Array,
+    max_edges_per_vertex: int,
+    direction_method: str,
+    vertex_idx: int,
+) -> Float32Array:
     """Generate the direction set for one fallback tracing origin."""
     edge_candidates_facade = _edge_candidates_facade()
     if direction_method == "hessian":
         directions = cast(
-            "np.ndarray",
+            Float32Array,
             edge_candidates_facade.estimate_vessel_directions(
                 energy,
                 start_pos,
@@ -55,16 +61,16 @@ def _generate_fallback_directions(
         )
         if directions.shape[0] < max_edges_per_vertex:
             extra = cast(
-                "np.ndarray",
+                Float32Array,
                 edge_candidates_facade.generate_edge_directions(
                     max_edges_per_vertex - directions.shape[0],
                     seed=vertex_idx,
                 ),
             )
-            return cast("np.ndarray", np.vstack([directions, extra]))
-        return cast("np.ndarray", directions[:max_edges_per_vertex])
+            return cast(Float32Array, np.vstack([directions, extra]))
+        return cast(Float32Array, directions[:max_edges_per_vertex])
     return cast(
-        "np.ndarray",
+        Float32Array,
         edge_candidates_facade.generate_edge_directions(
             max_edges_per_vertex,
             seed=vertex_idx,
@@ -73,30 +79,38 @@ def _generate_fallback_directions(
 
 
 def _finalize_matlab_parity_candidates(
-        candidates: dict[str, Any],
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        vertex_positions: np.ndarray,
-        energy_sign: float,
-        params: dict[str, Any],
-        microns_per_voxel: np.ndarray | None = None,
+    candidates: dict[str, Any],
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
+    vertex_positions: Float32Array,
+    energy_sign: float,
+    params: dict[str, Any],
+    microns_per_voxel: Float32Array | None = None,
 ) -> dict[str, Any]:
-    """Finalize MATLAB-parity candidates. Currently a pass-through as non-parity supplements are removed."""
-    del energy, scale_indices, vertex_positions, energy_sign, params, microns_per_voxel
+    """Finalize MATLAB-parity candidates, ensuring they are sorted by energy quality."""
+    from .common import _reorder_candidate_payload
+
+    metrics = np.asarray(candidates.get("metrics", []), dtype=np.float32)
+    if metrics.size > 0:
+        # MATLAB sorts edges by metrics (max energy) in ascending order (best first)
+        sort_order = np.argsort(metrics, kind="stable")
+        candidates = _reorder_candidate_payload(candidates, sort_order)
+
     return candidates
 
 
 def _generate_edge_candidates_matlab_frontier(
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        vertex_center_image: np.ndarray,
-        params: dict[str, Any],
-        *,
-        heartbeat: Any | None = None,
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
+    vertex_positions: Float32Array,
+    vertex_scales: Int32Array,
+    lumen_radius_microns: Float32Array,
+    microns_per_voxel: Float32Array,
+    vertex_center_image: Float32Array,
+    params: dict[str, Any],
+    *,
+    heartbeat: Any | None = None,
+    tracer: ExecutionTracer | None = None,
 ) -> dict[str, Any]:
     """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
     candidates = _generate_edge_candidates_matlab_global_watershed(
@@ -109,6 +123,7 @@ def _generate_edge_candidates_matlab_frontier(
         vertex_center_image,
         params,
         heartbeat=heartbeat,
+        tracer=tracer,
     )
     per_origin_candidate_counts = candidates["diagnostics"].get(
         "frontier_per_origin_candidate_counts",
@@ -123,37 +138,37 @@ def _generate_edge_candidates_matlab_frontier(
 
 
 def _trace_fallback_origin_candidates(
-        *,
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_pixels: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        vertex_center_image: np.ndarray | None,
-        vertex_image: np.ndarray | None,
-        tree: cKDTree,
-        max_search_radius: float,
-        energy_sign: float,
-        direction_method: str,
-        max_edges_per_vertex: int,
-        step_size_ratio: float,
-        max_edge_energy: float,
-        max_length_ratio: float,
-        discrete_tracing: bool,
-        energy_prepared: np.ndarray,
-        mpv_prepared: np.ndarray,
-        diagnostics: dict[str, Any],
-        vertex_idx: int,
-        start_pos: np.ndarray,
-        start_scale: np.ndarray | np.generic,
+    *,
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
+    vertex_positions: Float32Array,
+    vertex_scales: Int32Array,
+    lumen_radius_pixels: Float32Array,
+    lumen_radius_microns: Float32Array,
+    microns_per_voxel: Float32Array,
+    vertex_center_image: Float32Array | None,
+    vertex_image: Float32Array | None,
+    tree: cKDTree,
+    max_search_radius: float,
+    energy_sign: float,
+    direction_method: str,
+    max_edges_per_vertex: int,
+    step_size_ratio: float,
+    max_edge_energy: float,
+    max_length_ratio: float,
+    discrete_tracing: bool,
+    energy_prepared: Float64Array,
+    mpv_prepared: Float64Array,
+    diagnostics: dict[str, Any],
+    vertex_idx: int,
+    start_pos: Float32Array,
+    start_scale: int,
 ) -> tuple[
-    list[np.ndarray],
+    list[Float32Array],
     list[list[int]],
     list[float],
-    list[np.ndarray],
-    list[np.ndarray],
+    list[Float32Array],
+    list[Float32Array],
     list[int],
     list[str],
 ]:
@@ -173,11 +188,11 @@ def _trace_fallback_origin_candidates(
         vertex_idx=vertex_idx,
     )
 
-    traces: list[np.ndarray] = []
+    traces: list[Float32Array] = []
     connections: list[list[int]] = []
     metrics: list[float] = []
-    energy_traces: list[np.ndarray] = []
-    scale_traces: list[np.ndarray] = []
+    energy_traces: list[Float32Array] = []
+    scale_traces: list[Float32Array] = []
     origin_indices: list[int] = []
     connection_sources: list[str] = []
 
@@ -204,7 +219,7 @@ def _trace_fallback_origin_candidates(
             return_metadata=True,
         )
         edge_trace, trace_metadata = cast(
-            "tuple[list[np.ndarray], TraceMetadata]",
+            "tuple[list[Float32Array], TraceMetadata]",
             trace_result,
         )
         if len(edge_trace) <= 1:
@@ -236,19 +251,19 @@ def _trace_fallback_origin_candidates(
 
 
 def _generate_edge_candidates(
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        lumen_radius_pixels: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        vertex_center_image: np.ndarray | None,
-        vertex_image: np.ndarray | None,
-        tree: cKDTree,
-        max_search_radius: float,
-        params: dict[str, Any],
-        energy_sign: float,
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
+    vertex_positions: Float32Array,
+    vertex_scales: Int32Array,
+    lumen_radius_pixels: Float32Array,
+    lumen_radius_microns: Float32Array,
+    microns_per_voxel: Float32Array,
+    vertex_center_image: Float32Array | None,
+    vertex_image: Float32Array | None,
+    tree: cKDTree,
+    max_search_radius: float,
+    params: dict[str, Any],
+    energy_sign: float,
 ) -> dict[str, Any]:
     """Generate directed edge candidates without final dedupe or degree pruning."""
     max_edges_per_vertex = params.get("number_of_edges_per_vertex", 4)
@@ -258,11 +273,11 @@ def _generate_edge_candidates(
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
 
-    traces: list[np.ndarray] = []
+    traces: list[Float32Array] = []
     connections: list[list[int]] = []
     metrics: list[float] = []
-    energy_traces: list[np.ndarray] = []
-    scale_traces: list[np.ndarray] = []
+    energy_traces: list[Float32Array] = []
+    scale_traces: list[Float32Array] = []
     origin_indices: list[int] = []
     connection_sources: list[str] = []
     diagnostics = _empty_edge_diagnostics()
@@ -303,7 +318,7 @@ def _generate_edge_candidates(
             diagnostics=diagnostics,
             vertex_idx=vertex_idx,
             start_pos=start_pos,
-            start_scale=start_scale,
+            start_scale=int(start_scale),
         )
         traces.extend(unit_traces)
         connections.extend(unit_connections)

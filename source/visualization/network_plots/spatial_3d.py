@@ -9,24 +9,24 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
+from ...utils import calculate_path_length
 from .helpers import add_colorbar
 from .layout import plot_3d_layout
-from ...utils import calculate_path_length
 
 logger = logging.getLogger(__name__)
 
 
 def plot_3d_network(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
-        color_by: str = "energy",
-        show_vertices: bool = True,
-        show_edges: bool = True,
-        show_bifurcations: bool = True,
-        opacity_by: str | None = None,
+    self,
+    vertices: dict[str, Any],
+    edges: dict[str, Any],
+    network: dict[str, Any],
+    parameters: dict[str, Any],
+    color_by: str = "energy",
+    show_vertices: bool = True,
+    show_edges: bool = True,
+    show_bifurcations: bool = True,
+    opacity_by: str | None = None,
 ) -> go.Figure:
     """Create 3D network visualization.
 
@@ -210,7 +210,7 @@ def plot_3d_network(
             colorscale = None
 
         edge_colorbar = (
-                show_edges and edge_traces and color_by in {"depth", "energy", "radius", "length"}
+            show_edges and edge_traces and color_by in {"depth", "energy", "radius", "length"}
         )
         marker_dict = {
             "size": 6,
@@ -277,11 +277,11 @@ def plot_3d_network(
 
 
 def animate_strands_3d(
-        self,
-        vertices: dict[str, Any],
-        edges: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
+    self,
+    vertices: dict[str, Any],
+    edges: dict[str, Any],
+    network: dict[str, Any],
+    parameters: dict[str, Any],
 ) -> go.Figure:
     """Animate strands sequentially in 3D.
 
@@ -377,9 +377,9 @@ def animate_strands_3d(
 
 
 def plot_flow_field(
-        self,
-        edges: dict[str, Any],
-        parameters: dict[str, Any],
+    self,
+    edges: dict[str, Any],
+    parameters: dict[str, Any],
 ) -> go.Figure:
     """Render edge directions as a 3D flow field.
 

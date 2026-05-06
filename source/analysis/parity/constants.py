@@ -62,30 +62,57 @@ PARAM_DIFF_PATH = EXPERIMENT_PARAMS_DIR / "param_diff.json"
 HEARTBEAT_INTERVAL_ITERATIONS = 512
 DEFAULT_MEMORY_SAFETY_FRACTION = 0.8
 EDGE_CANDIDATE_AUDIT_PATH = (
-        Path("02_Output") / "python_results" / "stages" / "edges" / "candidate_audit.json"
+    Path("02_Output") / "python_results" / "stages" / "edges" / "candidate_audit.json"
 )
 
 # Parameter validation keys
 EXACT_SHARED_METHOD_PARAMETER_KEYS = frozenset(
     {
-        "approximating_PSF", "bandpass_window", "direction_tolerance",
-        "direction_method", "distance_tolerance", "distance_tolerance_per_origin_radius",
-        "discrete_tracing", "edge_method", "edge_number_tolerance", "energy_method",
-        "energy_projection_mode", "energy_sign", "energy_tolerance", "energy_upper_bound",
-        "excitation_wavelength_in_microns", "gaussian_to_ideal_ratio", "length_dilation_ratio",
-        "max_edge_energy", "max_edge_length_per_origin_radius", "max_voxels_per_node",
-        "max_voxels_per_node_energy", "microns_per_voxel", "min_hair_length_in_microns",
-        "number_of_edges_per_vertex", "numerical_aperture", "radius_tolerance",
-        "radius_of_largest_vessel_in_microns", "radius_of_smallest_vessel_in_microns",
-        "sample_index_of_refraction", "scales_per_octave", "sigma_per_influence_edges",
-        "sigma_per_influence_vertices", "space_strel_apothem", "space_strel_apothem_edges",
-        "spherical_to_annular_ratio", "step_size_per_origin_radius",
+        "approximating_PSF",
+        "bandpass_window",
+        "direction_tolerance",
+        "direction_method",
+        "distance_tolerance",
+        "distance_tolerance_per_origin_radius",
+        "discrete_tracing",
+        "edge_method",
+        "edge_number_tolerance",
+        "energy_method",
+        "energy_projection_mode",
+        "energy_sign",
+        "energy_tolerance",
+        "energy_upper_bound",
+        "excitation_wavelength_in_microns",
+        "gaussian_to_ideal_ratio",
+        "length_dilation_ratio",
+        "max_edge_energy",
+        "max_edge_length_per_origin_radius",
+        "max_voxels_per_node",
+        "max_voxels_per_node_energy",
+        "microns_per_voxel",
+        "min_hair_length_in_microns",
+        "number_of_edges_per_vertex",
+        "numerical_aperture",
+        "radius_tolerance",
+        "radius_of_largest_vessel_in_microns",
+        "radius_of_smallest_vessel_in_microns",
+        "sample_index_of_refraction",
+        "scales_per_octave",
+        "sigma_per_influence_edges",
+        "sigma_per_influence_vertices",
+        "space_strel_apothem",
+        "space_strel_apothem_edges",
+        "spherical_to_annular_ratio",
+        "step_size_per_origin_radius",
     }
 )
 
 EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS = frozenset(
     {
-        "comparison_exact_network", "energy_storage_format", "return_all_scales",
+        "comparison_exact_network",
+        "comparison_exact_network_use_conflict_painting",
+        "energy_storage_format",
+        "return_all_scales",
     }
 )
 
@@ -99,9 +126,16 @@ EXACT_REQUIRED_PARAMETER_VALUES: dict[str, Any] = {
 }
 
 EXACT_ROUTE_ARRAY_BYTES_PER_VOXEL: tuple[tuple[str, int], ...] = (
-    ("energy", 4), ("scale_indices", 2), ("vertex_center_image", 4),
-    ("energy_map_temp", 4), ("energy_map", 4), ("branch_order_map", 1),
-    ("d_over_r_map", 4), ("pointer_map", 4), ("vertex_index_map", 4), ("size_map", 2),
+    ("energy", 4),
+    ("scale_indices", 2),
+    ("vertex_center_image", 4),
+    ("energy_map_temp", 4),
+    ("energy_map", 4),
+    ("branch_order_map", 1),
+    ("d_over_r_map", 4),
+    ("pointer_map", 4),
+    ("vertex_index_map", 4),
+    ("size_map", 2),
 )
 
 MATLAB_EXACT_EDGE_SOURCE_CONSTANTS: dict[str, Any] = {

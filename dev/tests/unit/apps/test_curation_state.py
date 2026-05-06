@@ -5,6 +5,7 @@ from dev.tests.support.payload_builders import (
     build_processing_results,
     build_vertices_payload,
 )
+
 from source.apps.curation_state import (
     apply_curated_session_results,
     build_curation_stats_rows,

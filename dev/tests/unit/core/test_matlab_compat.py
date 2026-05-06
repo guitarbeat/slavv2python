@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+
 from source.core.matlab_compat import stages, vectorize_v200
 
 

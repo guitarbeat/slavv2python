@@ -15,6 +15,7 @@ from source.runtime.run_tracking.io import (
     fingerprint_file,
     fingerprint_jsonable,
 )
+
 from .constants import NORMALIZED_DIR
 
 
@@ -57,6 +58,7 @@ def payload_hash(payload: Any) -> str:
 
 def _hashable_payload_summary(value: Any) -> Any:
     import numpy as np
+
     if isinstance(value, np.ndarray):
         array = np.asarray(value)
         return {
@@ -115,10 +117,10 @@ def write_joblib_with_hash(path: Path, payload: Any) -> Path:
 
 
 def persist_normalized_payloads(
-        dest_run_root: Path,
-        *,
-        group_name: str,
-        payloads: dict[str, Any],
+    dest_run_root: Path,
+    *,
+    group_name: str,
+    payloads: dict[str, Any],
 ) -> dict[str, str]:
     """Persist normalized checkpoints for comparison."""
     written: dict[str, str] = {}

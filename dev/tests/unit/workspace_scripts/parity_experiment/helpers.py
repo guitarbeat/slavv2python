@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 from dev.tests.support.run_state_builders import (
     materialize_checkpoint_surface,
-    materialize_run_snapshot,
 )
 from scipy.io import savemat
 

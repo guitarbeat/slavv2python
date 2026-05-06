@@ -4,9 +4,9 @@ from __future__ import annotations
 
 
 def load_status_snapshot(
-        run_dir: str,
-        *,
-        snapshot_loader,
+    run_dir: str,
+    *,
+    snapshot_loader,
 ):
     """Load a run snapshot from the structured run directory."""
     return snapshot_loader(run_dir)

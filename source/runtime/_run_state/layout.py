@@ -51,8 +51,8 @@ class RunLayout:
 
 
 def resolve_run_layout(
-        *,
-        run_dir: str | Path | None,
+    *,
+    run_dir: str | Path | None,
 ) -> RunLayout:
     """Resolve a structured filesystem layout for run-state bookkeeping."""
     if run_dir is None:

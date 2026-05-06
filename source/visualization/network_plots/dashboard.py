@@ -9,10 +9,10 @@ import plotly.graph_objects as go
 
 
 def add_summary_dashboard_traces(
-        fig: go.Figure,
-        vertices: dict[str, Any],
-        network: dict[str, Any],
-        parameters: dict[str, Any],
+    fig: go.Figure,
+    vertices: dict[str, Any],
+    network: dict[str, Any],
+    parameters: dict[str, Any],
 ) -> None:
     """Populate the summary dashboard subplots with derived traces."""
     vertex_positions = vertices["positions"]

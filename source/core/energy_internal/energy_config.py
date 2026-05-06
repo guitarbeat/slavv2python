@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def _matlab_lumen_radius_range(
-        radius_smallest: float, radius_largest: float, scales_per_octave: float
+    radius_smallest: float, radius_largest: float, scales_per_octave: float
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return MATLAB-aligned scale ordinates and lumen radii."""
     largest_per_smallest_volume_ratio = (radius_largest / radius_smallest) ** 3
@@ -55,14 +55,14 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
             coefficient, exponent = 0.325, 0.91
         microns_per_sigma_psf = np.array(
             [
-                excitation_wavelength / (2 ** 0.5) * coefficient / (numerical_aperture ** exponent),
-                excitation_wavelength / (2 ** 0.5) * coefficient / (numerical_aperture ** exponent),
+                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
+                excitation_wavelength / (2**0.5) * coefficient / (numerical_aperture**exponent),
                 excitation_wavelength
-                / (2 ** 0.5)
+                / (2**0.5)
                 * 0.532
                 / (
-                        sample_index_of_refraction
-                        - (sample_index_of_refraction ** 2 - numerical_aperture ** 2) ** 0.5
+                    sample_index_of_refraction
+                    - (sample_index_of_refraction**2 - numerical_aperture**2) ** 0.5
                 ),
             ],
             dtype=float,
@@ -86,7 +86,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
 
     largest_pixels_per_radius = lumen_radius_microns[-1] / microns_per_voxel
     if approximating_psf:
-        chunk_support = np.sqrt(pixels_per_sigma_psf ** 2 + largest_pixels_per_radius ** 2)
+        chunk_support = np.sqrt(pixels_per_sigma_psf**2 + largest_pixels_per_radius**2)
     else:
         chunk_support = largest_pixels_per_radius
     margin = int(np.ceil(np.max(6.0 * chunk_support)))

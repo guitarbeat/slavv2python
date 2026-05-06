@@ -30,6 +30,7 @@ from source.core.edges import (
 from source.analysis.parity.cli import (
     handle_rerun_python,
     handle_summarize,
+    handle_trace_vertex,
     handle_normalize_recordings,
     handle_diagnose_gaps,
     handle_prove_exact,
@@ -47,6 +48,7 @@ from source.analysis.parity.cli import (
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python
 _handle_summarize = handle_summarize
+_handle_trace_vertex = handle_trace_vertex
 _handle_normalize_recordings = handle_normalize_recordings
 _handle_diagnose_gaps = handle_diagnose_gaps
 _handle_prove_exact = handle_prove_exact
@@ -92,6 +94,13 @@ def build_parser() -> argparse.ArgumentParser:
     rerun.add_argument("--rerun-from", choices=("edges", "network"), default="edges")
     rerun.add_argument("--params-file")
     rerun.set_defaults(handler=handle_rerun_python)
+
+    # Trace Vertex
+    trace_vertex = subparsers.add_parser("trace-vertex")
+    trace_vertex.add_argument("--source-run-root", required=True)
+    trace_vertex.add_argument("--vertex-idx", type=int, required=True)
+    trace_vertex.add_argument("--output-trace", required=True)
+    trace_vertex.set_defaults(handler=handle_trace_vertex)
 
     # Summarize
     summarize = subparsers.add_parser("summarize")

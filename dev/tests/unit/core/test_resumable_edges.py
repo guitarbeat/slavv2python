@@ -99,7 +99,9 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
         finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
-        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(shape, dtype=np.int32),
+        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(
+            shape, dtype=np.int32
+        ),
         use_matlab_frontier_tracer=lambda *_args: False,
     )
 
@@ -209,7 +211,9 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
         finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
         paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
-        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(shape, dtype=np.int32),
+        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(
+            shape, dtype=np.int32
+        ),
         use_matlab_frontier_tracer=lambda *_args: True,
     )
 

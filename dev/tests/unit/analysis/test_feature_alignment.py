@@ -1,4 +1,5 @@
 import numpy as np
+
 from source.analysis import MLCurator
 from source.utils import calculate_path_length
 

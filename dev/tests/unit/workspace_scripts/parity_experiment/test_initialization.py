@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 from scipy.io import savemat
 
-from .support import _build_experiment_root, _materialize_exact_matlab_batch
 from source.analysis.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_PROVENANCE_PATH,
@@ -20,13 +19,13 @@ from source.analysis.parity.constants import (
     VALIDATED_PARAMS_PATH,
 )
 
+from .support import _build_experiment_root, _materialize_exact_matlab_batch
+
 parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
 
 
 @pytest.mark.integration
-def test_init_exact_run_bootstraps_source_surface_from_dataset_and_oracle(
-    tmp_path, monkeypatch
-):
+def test_init_exact_run_bootstraps_source_surface_from_dataset_and_oracle(tmp_path, monkeypatch):
     experiment_root = _build_experiment_root(tmp_path)
     dataset_file = tmp_path / "input.tif"
     dataset_file.write_bytes(b"tiff-payload")
@@ -153,9 +152,7 @@ def test_init_exact_run_bootstraps_source_surface_from_dataset_and_oracle(
         ]
     )
 
-    params = json.loads(
-        (dest_run_root / VALIDATED_PARAMS_PATH).read_text(encoding="utf-8")
-    )
+    params = json.loads((dest_run_root / VALIDATED_PARAMS_PATH).read_text(encoding="utf-8"))
     assert params["comparison_exact_network"] is True
     assert params["microns_per_voxel"] == [0.5, 0.5, 1.0]
     assert params["step_size_per_origin_radius"] == 1.0
@@ -167,17 +164,13 @@ def test_init_exact_run_bootstraps_source_surface_from_dataset_and_oracle(
     assert (dest_run_root / "00_Refs" / "dataset_manifest.json").is_file()
     assert (dest_run_root / "00_Refs" / "oracle_manifest.json").is_file()
     provenance = json.loads(
-        (dest_run_root / EXPERIMENT_PROVENANCE_PATH).read_text(
-            encoding="utf-8"
-        )
+        (dest_run_root / EXPERIMENT_PROVENANCE_PATH).read_text(encoding="utf-8")
     )
     assert provenance["dataset_hash"] == dataset_hash
     assert provenance["oracle_id"] == "oracle-a"
     assert provenance["oracle_size_of_image"] == [2, 2, 2]
     assert provenance["input_axis_permutation"] is None
-    run_manifest = json.loads(
-        (dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8")
-    )
+    run_manifest = json.loads((dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8"))
     assert run_manifest["command"] == "init-exact-run"
     assert run_manifest["oracle_id"] == "oracle-a"
     surface = parity_experiment.validate_exact_proof_source_surface(dest_run_root)
@@ -185,9 +178,7 @@ def test_init_exact_run_bootstraps_source_surface_from_dataset_and_oracle(
 
 
 @pytest.mark.integration
-def test_init_exact_run_reorients_input_volume_to_match_oracle_energy_shape(
-    tmp_path, monkeypatch
-):
+def test_init_exact_run_reorients_input_volume_to_match_oracle_energy_shape(tmp_path, monkeypatch):
     experiment_root = _build_experiment_root(tmp_path)
     dataset_file = tmp_path / "input.tif"
     dataset_file.write_bytes(b"tiff")
@@ -310,9 +301,7 @@ def test_init_exact_run_reorients_input_volume_to_match_oracle_energy_shape(
     )
 
     provenance = json.loads(
-        (dest_run_root / EXPERIMENT_PROVENANCE_PATH).read_text(
-            encoding="utf-8"
-        )
+        (dest_run_root / EXPERIMENT_PROVENANCE_PATH).read_text(encoding="utf-8")
     )
     assert provenance["oracle_size_of_image"] == [4, 5, 3]
     assert provenance["input_axis_permutation"] == [1, 2, 0]
@@ -460,14 +449,10 @@ def test_init_exact_run_can_finalize_existing_completed_seed(tmp_path, monkeypat
         ]
     )
 
-    run_manifest = json.loads(
-        (dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8")
-    )
+    run_manifest = json.loads((dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8"))
     assert run_manifest["kind"] == "parity_source_run"
     assert run_manifest["command"] == "init-exact-run"
-    snapshot_payload = json.loads(
-        (dest_run_root / RUN_SNAPSHOT_PATH).read_text(encoding="utf-8")
-    )
+    snapshot_payload = json.loads((dest_run_root / RUN_SNAPSHOT_PATH).read_text(encoding="utf-8"))
     assert snapshot_payload["provenance"]["input_file"] == str(
         dataset_root / "01_Input" / dataset_file.name
     )

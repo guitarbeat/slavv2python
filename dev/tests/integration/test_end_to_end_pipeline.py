@@ -10,6 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+
 from source.core import SLAVVProcessor
 from source.io import (
     Network,

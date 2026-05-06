@@ -25,16 +25,16 @@ from .system_info import get_system_info
 from .validation import validate_parameters
 
 __all__ = [
+    "PIPELINE_PROFILE_CHOICES",
+    "apply_pipeline_profile",
     "calculate_path_length",
     "format_size",
     "format_time",
     "fourier_transform_even",
     "generate_synthetic_vessel_volume",
     "get_chunking_lattice",
-    "get_system_info",
-    "PIPELINE_PROFILE_CHOICES",
-    "apply_pipeline_profile",
     "get_pipeline_profile_defaults",
+    "get_system_info",
     "preprocess_image",
     "profile_process_image",
     "validate_parameters",

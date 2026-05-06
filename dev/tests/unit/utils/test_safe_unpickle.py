@@ -2,6 +2,7 @@ import pickle
 
 import numpy as np
 import pytest
+
 from source.utils.safe_unpickle import safe_load
 
 

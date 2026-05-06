@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, cast, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from .._edge_candidates.common import BoolArray, Float32Array, Int16Array, Int32Array, Int64Array
+else:
+    Int16Array = np.ndarray
+    Int32Array = np.ndarray
+    Int64Array = np.ndarray
+    Float32Array = np.ndarray
+    BoolArray = np.ndarray
 
 from .._edge_candidates.common import _matlab_frontier_offsets
 from .._vertices.painting import paint_vertex_center_image, paint_vertex_image
@@ -17,37 +26,37 @@ from ..graph import _matlab_edge_metrics
 
 
 def _matlab_linear_indices_from_points(
-        points: np.ndarray,
-        image_shape: tuple[int, int, int],
-) -> np.ndarray:
+    points: Float32Array,
+    image_shape: tuple[int, int, int],
+) -> Int64Array:
     coords = np.rint(np.asarray(points, dtype=np.float32)[:, :3]).astype(np.int64, copy=False)
     coords[:, 0] = np.clip(coords[:, 0], 0, image_shape[0] - 1)
     coords[:, 1] = np.clip(coords[:, 1], 0, image_shape[1] - 1)
     coords[:, 2] = np.clip(coords[:, 2], 0, image_shape[2] - 1)
     linear = (
-            coords[:, 0]
-            + coords[:, 1] * image_shape[0]
-            + coords[:, 2] * image_shape[0] * image_shape[1]
+        coords[:, 0]
+        + coords[:, 1] * image_shape[0]
+        + coords[:, 2] * image_shape[0] * image_shape[1]
     ).astype(np.int64, copy=False)
-    return cast("np.ndarray", linear)
+    return cast(Int64Array, linear)
 
 
 def _matlab_position_from_linear_index(
-        linear_index: int,
-        image_shape: tuple[int, int, int],
-) -> np.ndarray:
+    linear_index: int,
+    image_shape: tuple[int, int, int],
+) -> Int32Array:
     y_dim, x_dim, _z_dim = image_shape
     xy_area = y_dim * x_dim
     z_coord = linear_index // xy_area
     remainder = linear_index - z_coord * xy_area
     x_coord = remainder // y_dim
     y_coord = remainder - x_coord * y_dim
-    return cast("np.ndarray", np.asarray([y_coord, x_coord, z_coord], dtype=np.int32))
+    return cast(Int32Array, np.asarray([y_coord, x_coord, z_coord], dtype=np.int32))
 
 
 def _matlab_repeated_endpoint_interior_indices(
-        edge_index_cells: list[np.ndarray],
-        vertex_linear_indices: np.ndarray,
+    edge_index_cells: list[Int64Array],
+    vertex_linear_indices: Int64Array,
 ) -> list[int]:
     if not edge_index_cells:
         return []
@@ -103,11 +112,11 @@ def _matlab_repeated_endpoint_interior_indices(
 
 
 def _can_place_bridge_vertex(
-        coord: np.ndarray,
-        scale_index: int,
-        existing_vertex_volume_image: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray,
-        image_shape: tuple[int, int, int],
+    coord: Int32Array,
+    scale_index: int,
+    existing_vertex_volume_image: Float32Array,
+    lumen_radius_pixels_axes: Float32Array,
+    image_shape: tuple[int, int, int],
 ) -> bool:
     test_positions = np.asarray([coord], dtype=np.float32)
     test_scales = np.asarray([scale_index], dtype=np.int16)
@@ -123,28 +132,15 @@ def _can_place_bridge_vertex(
     return not bool(np.any(existing_vertex_volume_image[candidate_mask]))
 
 
-def _matlab_bridge_search_target(
-        overlap_linear_index: int,
-        traces: list[np.ndarray],
-        scale_traces: list[np.ndarray],
-        child_edges: list[tuple[int, int]],
-        *,
-        scale_indices: np.ndarray | None,
-        energy: np.ndarray,
-        vertex_center_image: np.ndarray,
-        vertex_volume_image: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        microns_per_voxel: np.ndarray,
-        image_shape: tuple[int, int, int],
-        strel_apothem: int,
-        max_edge_length_per_origin_radius: float,
-) -> dict[str, Any] | None:
-    """Port MATLAB's local ``add_vertex_to_edge`` search over edge voxels."""
-    if not traces:
-        return None
-
-    shape = image_shape
+def _matlab_bridge_initialize_size_maps(
+    *,
+    traces: list[Float32Array],
+    scale_traces: list[Float32Array],
+    shape: tuple[int, int, int],
+    scale_indices: Int16Array | None,
+    energy: Float32Array,
+) -> tuple[Float32Array, Int16Array, BoolArray]:
+    """Initialize local energy and size maps over active traces."""
     edge_energy_map: np.ndarray = np.zeros(shape, dtype=np.float32)
     edge_size_map: np.ndarray = np.zeros(shape, dtype=np.int16)
     edge_mask: np.ndarray = np.zeros(shape, dtype=bool)
@@ -161,17 +157,178 @@ def _matlab_bridge_search_target(
             coords[:, 2],
         ].astype(np.float32, copy=False)
         if scale_indices is not None and scale_indices.size:
+            # Corrected: scale_indices is 0-based. Convert to 1-based labels for internal discovery state.
             edge_size_map[coords[:, 0], coords[:, 1], coords[:, 2]] = scale_indices[
                 coords[:, 0],
                 coords[:, 1],
                 coords[:, 2],
-            ].astype(np.int16, copy=False)
+            ].astype(np.int16, copy=False) + np.int16(1)
         else:
+            # scale_trace from discovery is already 1-based.
             rounded_scales = np.rint(np.asarray(scale_trace, dtype=np.float32)).astype(
                 np.int16,
                 copy=False,
             )
             edge_size_map[coords[:, 0], coords[:, 1], coords[:, 2]] = rounded_scales
+
+    return (
+        cast(Float32Array, edge_energy_map),
+        cast(Int16Array, edge_size_map),
+        cast(BoolArray, edge_mask),
+    )
+
+
+def _matlab_bridge_separate_active_edges(
+    *,
+    traces: list[Float32Array],
+    scale_traces: list[Float32Array],
+    energy_traces: list[Float32Array],
+    connection_sources: list[str],
+    chosen_candidate_indices: Int32Array,
+    connections: Int32Array,
+    edge_index_cells: list[Int64Array],
+    overlap_indices: list[int],
+) -> tuple[
+    list[Float32Array],
+    list[Float32Array],
+    list[Float32Array],
+    list[str],
+    Int32Array,
+    Int32Array,
+    list[Float32Array],
+    list[Float32Array],
+    list[Float32Array],
+    list[str],
+    Int32Array,
+    Int32Array,
+]:
+    """Separate edges into active (containing structural overlaps) and inactive sets."""
+    inactive_traces: list[Float32Array] = []
+    inactive_scale_traces: list[Float32Array] = []
+    inactive_energy_traces: list[Float32Array] = []
+    inactive_connection_sources: list[str] = []
+    inactive_candidate_indices: Int32Array = np.empty((0,), dtype=np.int32)
+    inactive_connections: Int32Array = np.empty((0, 2), dtype=np.int32)
+
+    overlap_index_set = {int(index) for index in overlap_indices}
+    active_edge_indices = [
+        edge_index
+        for edge_index, edge_indices_at_edge in enumerate(edge_index_cells)
+        if any(
+            int(linear_index) in overlap_index_set for linear_index in edge_indices_at_edge.tolist()
+        )
+    ]
+    inactive_edge_indices = [
+        edge_index
+        for edge_index in range(len(traces))
+        if edge_index not in set(active_edge_indices)
+    ]
+    if inactive_edge_indices:
+        inactive_traces = [traces[edge_index] for edge_index in inactive_edge_indices]
+        inactive_scale_traces = [scale_traces[edge_index] for edge_index in inactive_edge_indices]
+        inactive_energy_traces = [energy_traces[edge_index] for edge_index in inactive_edge_indices]
+        inactive_connection_sources = [
+            connection_sources[edge_index] for edge_index in inactive_edge_indices
+        ]
+        inactive_candidate_indices = chosen_candidate_indices[
+            np.asarray(inactive_edge_indices, dtype=np.int32)
+        ]
+        inactive_connections = np.asarray(
+            connections[np.asarray(inactive_edge_indices, dtype=np.int32)],
+            dtype=np.int32,
+        ).reshape(-1, 2)
+
+    active_traces = [traces[edge_index] for edge_index in active_edge_indices]
+    active_scale_traces = [scale_traces[edge_index] for edge_index in active_edge_indices]
+    active_energy_traces = [energy_traces[edge_index] for edge_index in active_edge_indices]
+    active_connection_sources = [
+        connection_sources[edge_index] for edge_index in active_edge_indices
+    ]
+    active_candidate_indices = chosen_candidate_indices[
+        np.asarray(active_edge_indices, dtype=np.int32)
+    ]
+    active_connections = np.asarray(
+        connections[np.asarray(active_edge_indices, dtype=np.int32)],
+        dtype=np.int32,
+    ).reshape(-1, 2)
+
+    return (
+        active_traces,
+        active_scale_traces,
+        active_energy_traces,
+        active_connection_sources,
+        active_candidate_indices,
+        active_connections,
+        inactive_traces,
+        inactive_scale_traces,
+        inactive_energy_traces,
+        inactive_connection_sources,
+        inactive_candidate_indices,
+        inactive_connections,
+    )
+
+
+def _matlab_bridge_build_bridge_payload(
+    *,
+    bridge_connections: list[list[int]],
+    bridge_edges2vertices: list[list[int]],
+    bridge_traces: list[Float32Array],
+    bridge_scale_traces: list[Float32Array],
+    bridge_energy_traces: list[Float32Array],
+    bridge_mean_energies: Float32Array,
+) -> dict[str, Any]:
+    """Build the internal bridge-edge artifact payload."""
+    return {
+        "connections": (
+            np.asarray(bridge_connections, dtype=np.int32).reshape(-1, 2)
+            if bridge_connections
+            else np.empty((0, 2), dtype=np.int32)
+        ),
+        "edges2vertices": (
+            np.asarray(bridge_edges2vertices, dtype=np.int32).reshape(-1, 2)
+            if bridge_edges2vertices
+            else np.empty((0, 2), dtype=np.int32)
+        ),
+        "traces": bridge_traces,
+        "edge_space_subscripts": bridge_traces,
+        "scale_traces": bridge_scale_traces,
+        "edge_scale_subscripts": bridge_scale_traces,
+        "energy_traces": bridge_energy_traces,
+        "edge_energies": bridge_energy_traces,
+        "energies": bridge_mean_energies,
+        "mean_edge_energies": bridge_mean_energies.copy(),
+    }
+
+
+def _matlab_bridge_search_target(
+    overlap_linear_index: int,
+    traces: list[Float32Array],
+    scale_traces: list[Float32Array],
+    child_edges: list[tuple[int, int]],
+    *,
+    scale_indices: Int16Array | None,
+    energy: Float32Array,
+    vertex_center_image: Int32Array,
+    vertex_volume_image: Float32Array,
+    lumen_radius_pixels_axes: Float32Array,
+    lumen_radius_microns: Float32Array,
+    microns_per_voxel: Float32Array,
+    image_shape: tuple[int, int, int],
+    strel_apothem: int,
+    max_edge_length_per_origin_radius: float,
+) -> dict[str, Any] | None:
+    """Port MATLAB's local ``add_vertex_to_edge`` search over edge voxels."""
+    if not traces:
+        return None
+
+    shape = image_shape
+    edge_energy_map, edge_size_map, edge_mask = _matlab_bridge_initialize_size_maps(
+        traces=traces,
+        scale_traces=scale_traces,
+        shape=shape,
+        scale_indices=scale_indices,
+        energy=energy,
+    )
 
     for child_edge_index, _overlap_position in child_edges:
         child_coords = np.rint(
@@ -192,13 +349,11 @@ def _matlab_bridge_search_target(
 
     current_linear = int(overlap_linear_index)
     current_coord = _matlab_position_from_linear_index(current_linear, shape)
-    current_scale_index = int(
-        np.clip(
-            edge_size_map[int(current_coord[0]), int(current_coord[1]), int(current_coord[2])],
-            0,
-            max(len(lumen_radius_microns) - 1, 0),
-        )
+    # Corrected: edge_size_map contains 1-based labels. Subtract 1 to get index.
+    current_scale_label = int(
+        edge_size_map[int(current_coord[0]), int(current_coord[1]), int(current_coord[2])]
     )
+    current_scale_index = int(np.clip(current_scale_label - 1, 0, max(len(lumen_radius_microns) - 1, 0)))
     if len(lumen_radius_microns) == 0:
         return None
     max_edge_length_in_microns = float(max_edge_length_per_origin_radius) * float(
@@ -240,12 +395,12 @@ def _matlab_bridge_search_target(
 
         neighbor_coords = current_coord[None, :] + cube_offsets
         valid_mask = (
-                (neighbor_coords[:, 0] >= 0)
-                & (neighbor_coords[:, 0] < shape[0])
-                & (neighbor_coords[:, 1] >= 0)
-                & (neighbor_coords[:, 1] < shape[1])
-                & (neighbor_coords[:, 2] >= 0)
-                & (neighbor_coords[:, 2] < shape[2])
+            (neighbor_coords[:, 0] >= 0)
+            & (neighbor_coords[:, 0] < shape[0])
+            & (neighbor_coords[:, 1] >= 0)
+            & (neighbor_coords[:, 1] < shape[1])
+            & (neighbor_coords[:, 2] >= 0)
+            & (neighbor_coords[:, 2] < shape[2])
         )
         valid_coords = np.asarray(neighbor_coords[valid_mask], dtype=np.int32)
         valid_distances = np.asarray(cube_distances[valid_mask], dtype=np.float32)
@@ -253,9 +408,9 @@ def _matlab_bridge_search_target(
 
         new_indices_considered: list[int] = []
         for _neighbor_coord, neighbor_linear, neighbor_distance in zip(
-                valid_coords,
-                valid_linear.tolist(),
-                valid_distances.tolist(),
+            valid_coords,
+            valid_linear.tolist(),
+            valid_distances.tolist(),
         ):
             previous_pointer_energy = float(pointer_energy_map.get(int(neighbor_linear), 0.0))
             if previous_pointer_energy <= current_energy:
@@ -288,12 +443,17 @@ def _matlab_bridge_search_target(
                 trace_coords[:, 2].astype(np.int32),
             ].astype(np.float32, copy=False)
             if scale_indices is not None and scale_indices.size:
-                trace_scale = scale_indices[
-                    trace_coords[:, 0].astype(np.int32),
-                    trace_coords[:, 1].astype(np.int32),
-                    trace_coords[:, 2].astype(np.int32),
-                ].astype(np.float32, copy=False)
+                # Corrected: scale_indices is 0-based. Convert to 1-based for trace metadata.
+                trace_scale = (
+                    scale_indices[
+                        trace_coords[:, 0].astype(np.int32),
+                        trace_coords[:, 1].astype(np.int32),
+                        trace_coords[:, 2].astype(np.int32),
+                    ].astype(np.float32, copy=False)
+                    + np.float32(1.0)
+                )
             else:
+                # edge_size_map is already 1-based.
                 trace_scale = edge_size_map[
                     trace_coords[:, 0].astype(np.int32),
                     trace_coords[:, 1].astype(np.int32),
@@ -303,7 +463,9 @@ def _matlab_bridge_search_target(
             if terminal_kind == "existing_vertex":
                 return {
                     "kind": "existing_vertex",
-                    "terminal_vertex": cast("int", terminal_vertex_index),
+                    "terminal_vertex": int(terminal_vertex_index)
+                    if terminal_vertex_index is not None
+                    else -1,
                     "trace": trace_coords,
                     "scale_trace": trace_scale.copy(),
                     "energy_trace": trace_energy.copy(),
@@ -363,11 +525,11 @@ def _matlab_bridge_search_target(
                 )
             )
             if _can_place_bridge_vertex(
-                    current_coord,
-                    current_scale,
-                    vertex_volume_image,
-                    lumen_radius_pixels_axes,
-                    shape,
+                current_coord,
+                current_scale,
+                vertex_volume_image,
+                lumen_radius_pixels_axes,
+                shape,
             ):
                 terminal_vertex_index = -1
                 terminal_kind = "new_vertex"
@@ -378,16 +540,16 @@ def _matlab_bridge_search_target(
 
 
 def add_vertices_to_edges_matlab_style(
-        chosen_edges: dict[str, Any],
-        vertices: dict[str, Any],
-        *,
-        energy: np.ndarray,
-        scale_indices: np.ndarray | None,
-        microns_per_voxel: np.ndarray,
-        lumen_radius_microns: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray,
-        size_of_image: tuple[int, int, int],
-        params: dict[str, Any] | None = None,
+    chosen_edges: dict[str, Any],
+    vertices: dict[str, Any],
+    *,
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
+    microns_per_voxel: Float32Array,
+    lumen_radius_microns: Float32Array,
+    lumen_radius_pixels_axes: Float32Array,
+    size_of_image: tuple[int, int, int],
+    params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Mirror MATLAB ``add_vertices_to_edges`` structural bridge insertion."""
     bridge_params = params or {}
@@ -407,15 +569,14 @@ def add_vertices_to_edges_matlab_style(
         chosen_edges["bridge_vertex_positions"] = np.empty((0, 3), dtype=np.float32)
         chosen_edges["bridge_vertex_scales"] = np.empty((0,), dtype=np.int16)
         chosen_edges["bridge_vertex_energies"] = np.empty((0,), dtype=np.float32)
-        chosen_edges["bridge_edges"] = {
-            "connections": np.empty((0, 2), dtype=np.int32),
-            "edges2vertices": np.empty((0, 2), dtype=np.int32),
-            "traces": [],
-            "scale_traces": [],
-            "energy_traces": [],
-            "energies": np.empty((0,), dtype=np.float32),
-            "mean_edge_energies": np.empty((0,), dtype=np.float32),
-        }
+        chosen_edges["bridge_edges"] = _matlab_bridge_build_bridge_payload(
+            bridge_connections=[],
+            bridge_edges2vertices=[],
+            bridge_traces=[],
+            bridge_scale_traces=[],
+            bridge_energy_traces=[],
+            bridge_mean_energies=np.empty((0,), dtype=np.float32),
+        )
         return chosen_edges
 
     scale_traces = [
@@ -448,66 +609,47 @@ def add_vertices_to_edges_matlab_style(
         vertex_linear_indices,
     )
 
-    inactive_traces: list[np.ndarray] = []
-    inactive_scale_traces: list[np.ndarray] = []
-    inactive_energy_traces: list[np.ndarray] = []
-    inactive_connection_sources: list[str] = []
-    inactive_candidate_indices: np.ndarray = np.empty((0,), dtype=np.int32)
-    inactive_connections: np.ndarray = np.empty((0, 2), dtype=np.int32)
-    if overlap_indices:
-        overlap_index_set = {int(index) for index in overlap_indices}
-        active_edge_indices = [
-            edge_index
-            for edge_index, edge_indices_at_edge in enumerate(edge_index_cells)
-            if any(
-                int(linear_index) in overlap_index_set
-                for linear_index in edge_indices_at_edge.tolist()
-            )
-        ]
-        inactive_edge_indices = [
-            edge_index
-            for edge_index in range(len(traces))
-            if edge_index not in set(active_edge_indices)
-        ]
-        if inactive_edge_indices:
-            inactive_traces = [traces[edge_index] for edge_index in inactive_edge_indices]
-            inactive_scale_traces = [
-                scale_traces[edge_index] for edge_index in inactive_edge_indices
-            ]
-            inactive_energy_traces = [
-                energy_traces[edge_index] for edge_index in inactive_edge_indices
-            ]
-            inactive_connection_sources = [
-                connection_sources[edge_index] for edge_index in inactive_edge_indices
-            ]
-            inactive_candidate_indices = chosen_candidate_indices[
-                np.asarray(inactive_edge_indices, dtype=np.int32)
-            ]
-            inactive_connections = np.asarray(
-                connections[np.asarray(inactive_edge_indices, dtype=np.int32)],
-                dtype=np.int32,
-            ).reshape(-1, 2)
+    if not overlap_indices:
+        # Pass-through if no structural bridge candidates found
+        return chosen_edges
 
-        traces = [traces[edge_index] for edge_index in active_edge_indices]
-        scale_traces = [scale_traces[edge_index] for edge_index in active_edge_indices]
-        energy_traces = [energy_traces[edge_index] for edge_index in active_edge_indices]
-        connection_sources = [connection_sources[edge_index] for edge_index in active_edge_indices]
-        chosen_candidate_indices = chosen_candidate_indices[
-            np.asarray(active_edge_indices, dtype=np.int32)
-        ]
-        connections = np.asarray(
-            connections[np.asarray(active_edge_indices, dtype=np.int32)],
-            dtype=np.int32,
-        ).reshape(-1, 2)
+    # MATLAB sorts new structural vertices by local energy before processing them
+    overlap_energies = energy.ravel(order="F")[np.asarray(overlap_indices, dtype=np.int64)]
+    sort_order = np.argsort(overlap_energies, kind="stable")
+    overlap_indices = [overlap_indices[i] for i in sort_order.tolist()]
+
+    (
+        traces,
+        scale_traces,
+        energy_traces,
+        connection_sources,
+        chosen_candidate_indices,
+        connections,
+        inactive_traces,
+        inactive_scale_traces,
+        inactive_energy_traces,
+        inactive_connection_sources,
+        inactive_candidate_indices,
+        inactive_connections,
+    ) = _matlab_bridge_separate_active_edges(
+        traces=traces,
+        scale_traces=scale_traces,
+        energy_traces=energy_traces,
+        connection_sources=connection_sources,
+        chosen_candidate_indices=chosen_candidate_indices,
+        connections=connections,
+        edge_index_cells=edge_index_cells,
+        overlap_indices=overlap_indices,
+    )
 
     bridge_vertex_positions: list[np.ndarray] = []
     bridge_vertex_scales: list[int] = []
     bridge_vertex_energies: list[float] = []
     bridge_connections: list[list[int]] = []
     bridge_edges2vertices: list[list[int]] = []
-    bridge_traces: list[np.ndarray] = []
-    bridge_scale_traces: list[np.ndarray] = []
-    bridge_energy_traces: list[np.ndarray] = []
+    bridge_traces: list[Float32Array] = []
+    bridge_scale_traces: list[Float32Array] = []
+    bridge_energy_traces: list[Float32Array] = []
 
     for overlap_linear_index in overlap_indices:
         if not traces:
@@ -737,29 +879,22 @@ def add_vertices_to_edges_matlab_style(
         if bridge_vertex_energies
         else np.empty((0,), dtype=np.float32)
     )
-    bridge_payload = {
-        "connections": (
-            np.asarray(bridge_connections, dtype=np.int32).reshape(-1, 2)
-            if bridge_connections
-            else np.empty((0, 2), dtype=np.int32)
-        ),
-        "edges2vertices": (
-            np.asarray(bridge_edges2vertices, dtype=np.int32).reshape(-1, 2)
-            if bridge_edges2vertices
-            else np.empty((0, 2), dtype=np.int32)
-        ),
-        "traces": bridge_traces,
-        "edge_space_subscripts": bridge_traces,
-        "scale_traces": bridge_scale_traces,
-        "edge_scale_subscripts": bridge_scale_traces,
-        "energy_traces": bridge_energy_traces,
-        "edge_energies": bridge_energy_traces,
-        "energies": bridge_mean_energies,
-        "mean_edge_energies": bridge_mean_energies.copy(),
-    }
-    rebuilt["bridge_edges"] = bridge_payload
+    rebuilt["bridge_edges"] = _matlab_bridge_build_bridge_payload(
+        bridge_connections=bridge_connections,
+        bridge_edges2vertices=bridge_edges2vertices,
+        bridge_traces=bridge_traces,
+        bridge_scale_traces=bridge_scale_traces,
+        bridge_energy_traces=bridge_energy_traces,
+        bridge_mean_energies=bridge_mean_energies,
+    )
     rebuilt["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
     return cast("dict[str, Any]", rebuilt)
 
 
-__all__ = ["add_vertices_to_edges_matlab_style"]
+__all__ = [
+    "add_vertices_to_edges_matlab_style",
+    "_matlab_bridge_search_target",
+    "_matlab_linear_indices_from_points",
+    "_matlab_position_from_linear_index",
+    "_matlab_repeated_endpoint_interior_indices",
+]

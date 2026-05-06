@@ -1,4 +1,5 @@
 import numpy as np
+
 from source.analysis import (
     calculate_network_statistics,
     calculate_surface_area,

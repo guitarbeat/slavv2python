@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
 from source.runtime.run_state import load_json_dict
 from source.runtime.run_tracking.io import atomic_write_json, atomic_write_text
+
 from .constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     EDGE_CANDIDATE_AUDIT_PATH,
@@ -21,13 +21,16 @@ from .utils import (
     write_hash_sidecar,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def _build_gap_hotspot_rows(
-        top_vertices: list[dict[str, Any]],
-        per_origin_summary: dict[str, dict[str, Any]],
-        *,
-        gap_kind: str,
-        limit: int = 10,
+    top_vertices: list[dict[str, Any]],
+    per_origin_summary: dict[str, dict[str, Any]],
+    *,
+    gap_kind: str,
+    limit: int = 10,
 ) -> list[dict[str, Any]]:
     """Join candidate coverage hotspots with origin-level diagnostic counters."""
     if not top_vertices:
@@ -50,15 +53,16 @@ def _build_gap_hotspot_rows(
 
     # Ensure origin_index is int for merging
     vertex_frame["origin_index"] = pd.to_numeric(
-        vertex_frame["origin_index"],
-        errors="coerce"
+        vertex_frame["origin_index"], errors="coerce"
     ).astype("Int64")
     origin_frame["origin_index"] = pd.to_numeric(
         origin_frame["origin_index"],
         errors="coerce",
     ).astype("Int64")
 
-    merged = vertex_frame.merge(origin_frame, how="left", on="origin_index", suffixes=("", "_audit"))
+    merged = vertex_frame.merge(
+        origin_frame, how="left", on="origin_index", suffixes=("", "_audit")
+    )
     merged["gap_kind"] = gap_kind
 
     columns = [
@@ -80,16 +84,18 @@ def _build_gap_hotspot_rows(
 
 
 def build_gap_diagnosis_report(
-        run_root: Path,
-        *,
-        limit: int = 10,
-        coverage_payload: dict[str, Any] | None = None,
-        audit_payload: dict[str, Any] | None = None,
+    run_root: Path,
+    *,
+    limit: int = 10,
+    coverage_payload: dict[str, Any] | None = None,
+    audit_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a joined gap diagnosis report payload."""
     normalized_run_root = run_root.expanduser().resolve()
 
-    coverage = coverage_payload or load_json_dict(normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH) or {}
+    coverage = (
+        coverage_payload or load_json_dict(normalized_run_root / CANDIDATE_COVERAGE_JSON_PATH) or {}
+    )
     audit = audit_payload or load_json_dict(normalized_run_root / EDGE_CANDIDATE_AUDIT_PATH) or {}
 
     per_origin_summary = cast("dict[str, dict[str, Any]]", audit.get("per_origin_summary", {}))
@@ -104,10 +110,10 @@ def build_gap_diagnosis_report(
     if int(diagnostic_counters.get("watershed_total_pairs", 0)) == 0:
         warnings.append("No watershed candidate pairs were recorded.")
     if (
-            int(pair_source_breakdown.get("fallback_only_pair_count", 0)) > 0
-            and int(pair_source_breakdown.get("frontier_only_pair_count", 0)) == 0
-            and int(pair_source_breakdown.get("watershed_only_pair_count", 0)) == 0
-            and int(pair_source_breakdown.get("geodesic_only_pair_count", 0)) == 0
+        int(pair_source_breakdown.get("fallback_only_pair_count", 0)) > 0
+        and int(pair_source_breakdown.get("frontier_only_pair_count", 0)) == 0
+        and int(pair_source_breakdown.get("watershed_only_pair_count", 0)) == 0
+        and int(pair_source_breakdown.get("geodesic_only_pair_count", 0)) == 0
     ):
         warnings.append("All recorded candidate endpoint pairs were fallback-only.")
 
@@ -211,11 +217,11 @@ def render_gap_diagnosis_report(report_payload: dict[str, Any]) -> str:
 
 
 def persist_gap_diagnosis_report(
-        run_root: Path,
-        *,
-        limit: int = 10,
-        coverage_payload: dict[str, Any] | None = None,
-        audit_payload: dict[str, Any] | None = None,
+    run_root: Path,
+    *,
+    limit: int = 10,
+    coverage_payload: dict[str, Any] | None = None,
+    audit_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Persist a joined gap diagnosis report under 03_Analysis."""
     normalized_run_root = run_root.expanduser().resolve()

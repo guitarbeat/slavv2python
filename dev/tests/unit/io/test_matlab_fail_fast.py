@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+
 from source.core._edge_candidates.common import _build_matlab_global_watershed_lut
 from source.io.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,

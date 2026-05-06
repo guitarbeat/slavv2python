@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.io import savemat
+
 from source.io.matlab_exact_proof import (
     compare_exact_artifacts,
     load_normalized_matlab_edge_input_vertices,

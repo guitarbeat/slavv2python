@@ -16,9 +16,9 @@ def get_edges_for_vertex(connections: np.ndarray, vertex_index: int) -> np.ndarr
 
 
 def get_edge_metric(
-        trace: np.ndarray,
-        energy: np.ndarray | None = None,
-        method: str = "mean_energy",
+    trace: np.ndarray,
+    energy: np.ndarray | None = None,
+    method: str = "mean_energy",
 ) -> float:
     """Compute a simple metric for a single edge trace."""
     arr = np.asarray(trace)

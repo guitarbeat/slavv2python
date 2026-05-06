@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 from shutil import copy2, copytree
+from typing import TYPE_CHECKING
 
 from source.io.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
@@ -12,6 +12,7 @@ from source.io.matlab_exact_proof import (
     load_normalized_matlab_vectors,
 )
 from source.runtime.run_state import fingerprint_file, fingerprint_jsonable, load_json_dict
+
 from .constants import (
     ANALYSIS_DIR,
     DATASET_INPUT_DIR,
@@ -31,20 +32,23 @@ from .models import OracleSurface
 from .utils import (
     entity_id_from_path,
     now_iso,
+    persist_normalized_payloads,
     resolve_python_commit,
     string_or_none,
     write_hash_sidecar,
     write_json_with_hash,
     write_text_with_hash,
-    persist_normalized_payloads,
 )
+
+if TYPE_CHECKING:
+    import argparse
 
 
 def materialize_dataset_record(
-        experiment_root: Path | None,
-        *,
-        dataset_hash: str | None,
-        dataset_file: Path | None,
+    experiment_root: Path | None,
+    *,
+    dataset_hash: str | None,
+    dataset_file: Path | None,
 ) -> str | None:
     """Fingerprint and catalog a dataset in the experiment tree."""
     resolved_hash = dataset_hash
@@ -81,33 +85,42 @@ def materialize_dataset_record(
         "kind": "dataset",
         "dataset_hash": resolved_hash,
         "dataset_root": str(dataset_root),
-        "stored_input_file": str(input_file) if input_file else existing_manifest.get("stored_input_file"),
-        "input_filename": dataset_file.name if dataset_file else existing_manifest.get("input_filename"),
-        "input_bytes": input_bytes if input_bytes is not None else existing_manifest.get("input_bytes"),
+        "stored_input_file": str(input_file)
+        if input_file
+        else existing_manifest.get("stored_input_file"),
+        "input_filename": dataset_file.name
+        if dataset_file
+        else existing_manifest.get("input_filename"),
+        "input_bytes": input_bytes
+        if input_bytes is not None
+        else existing_manifest.get("input_bytes"),
         "timestamps": {
             "created_at": existing_manifest.get("timestamps", {}).get("created_at", now_iso()),
             "updated_at": now_iso(),
         },
     }
     write_json_with_hash(manifest_path, manifest_payload)
-    upsert_index_record(experiment_root, {
-        "kind": "dataset",
-        "id": resolved_hash,
-        "path": str(dataset_root),
-        "status": "ready",
-        "dataset_hash": resolved_hash,
-        "updated_at": manifest_payload["timestamps"]["updated_at"],
-    })
+    upsert_index_record(
+        experiment_root,
+        {
+            "kind": "dataset",
+            "id": resolved_hash,
+            "path": str(dataset_root),
+            "status": "ready",
+            "dataset_hash": resolved_hash,
+            "updated_at": manifest_payload["timestamps"]["updated_at"],
+        },
+    )
     return resolved_hash
 
 
 def materialize_oracle_root(
-        *,
-        matlab_batch_dir: Path,
-        oracle_root: Path,
-        dataset_hash: str | None,
-        oracle_id: str | None,
-        matlab_source_version: str | None,
+    *,
+    matlab_batch_dir: Path,
+    oracle_root: Path,
+    dataset_hash: str | None,
+    oracle_id: str | None,
+    matlab_source_version: str | None,
 ) -> OracleSurface:
     """Stash a raw MATLAB batch into a structured oracle root with normalized artifacts."""
     oracle_root = oracle_root.expanduser().resolve()
@@ -133,7 +146,9 @@ def materialize_oracle_root(
         raw_vector_hashes[stage] = h
         write_text_with_hash(oracle_root / HASHES_DIR / f"oracle_raw_{stage}.sha256", h)
 
-    resolved_id = oracle_id or f"{matlab_batch_dir.name}_{fingerprint_jsonable(raw_vector_hashes)[:12]}"
+    resolved_id = (
+        oracle_id or f"{matlab_batch_dir.name}_{fingerprint_jsonable(raw_vector_hashes)[:12]}"
+    )
     manifest = {
         "manifest_version": 1,
         "kind": "matlab_oracle",
@@ -148,14 +163,17 @@ def materialize_oracle_root(
     }
     write_json_with_hash(oracle_root / ORACLE_MANIFEST_PATH, manifest)
 
-    upsert_index_record(resolve_experiment_root(oracle_root), {
-        "kind": "matlab_oracle",
-        "id": resolved_id,
-        "path": str(oracle_root),
-        "status": "ready",
-        "dataset_hash": dataset_hash,
-        "updated_at": manifest["timestamps"]["updated_at"],
-    })
+    upsert_index_record(
+        resolve_experiment_root(oracle_root),
+        {
+            "kind": "matlab_oracle",
+            "id": resolved_id,
+            "path": str(oracle_root),
+            "status": "ready",
+            "dataset_hash": dataset_hash,
+            "updated_at": manifest["timestamps"]["updated_at"],
+        },
+    )
 
     return OracleSurface(
         oracle_root=oracle_root,
@@ -245,20 +263,25 @@ def handle_promote_report(args: argparse.Namespace) -> None:
     write_json_with_hash(report_root / REPORT_MANIFEST_PATH, report_manifest)
 
     # Update source run
-    src_manifest.update({
-        "promoted_report_root": str(report_root),
-        "promotion_state": "promoted",
-    })
+    src_manifest.update(
+        {
+            "promoted_report_root": str(report_root),
+            "promotion_state": "promoted",
+        }
+    )
     src_manifest.setdefault("timestamps", {})["updated_at"] = now_iso()
     write_json_with_hash(run_root / RUN_MANIFEST_PATH, src_manifest)
 
-    upsert_index_record(exp_root, {
-        "kind": "promoted_report",
-        "id": report_manifest["report_id"],
-        "status": "promoted",
-        "path": str(report_root),
-        "dataset_hash": report_manifest.get("dataset_hash"),
-        "oracle_id": report_manifest.get("oracle_id"),
-        "updated_at": report_manifest["timestamps"]["updated_at"],
-    })
+    upsert_index_record(
+        exp_root,
+        {
+            "kind": "promoted_report",
+            "id": report_manifest["report_id"],
+            "status": "promoted",
+            "path": str(report_root),
+            "dataset_hash": report_manifest.get("dataset_hash"),
+            "oracle_id": report_manifest.get("oracle_id"),
+            "updated_at": report_manifest["timestamps"]["updated_at"],
+        },
+    )
     print(str(report_root / REPORT_MANIFEST_PATH))

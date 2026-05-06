@@ -1,0 +1,63 @@
+{
+  "derived_param_keys": [
+    "energy_storage_format",
+    "pipeline_profile",
+    "return_all_scales"
+  ],
+  "disallowed_python_only_keys": [],
+  "python_derived_params_hash": "b43cedc4d9cb109e83b721652639db04dcc6c2732d3cb71b3cff279564f60854",
+  "required_exact_mismatches": [
+    {
+      "expected": true,
+      "found": null,
+      "key": "comparison_exact_network"
+    },
+    {
+      "expected": "matlab",
+      "found": "paper",
+      "key": "energy_projection_mode"
+    }
+  ],
+  "required_exact_values": {
+    "comparison_exact_network": true,
+    "direction_method": "hessian",
+    "discrete_tracing": false,
+    "edge_method": "tracing",
+    "energy_method": "hessian",
+    "energy_projection_mode": "matlab"
+  },
+  "shared_param_count": 30,
+  "shared_param_keys": [
+    "approximating_PSF",
+    "bandpass_window",
+    "direction_method",
+    "discrete_tracing",
+    "edge_method",
+    "energy_method",
+    "energy_projection_mode",
+    "energy_sign",
+    "energy_upper_bound",
+    "excitation_wavelength_in_microns",
+    "gaussian_to_ideal_ratio",
+    "length_dilation_ratio",
+    "max_edge_energy",
+    "max_edge_length_per_origin_radius",
+    "max_voxels_per_node",
+    "max_voxels_per_node_energy",
+    "microns_per_voxel",
+    "min_hair_length_in_microns",
+    "number_of_edges_per_vertex",
+    "numerical_aperture",
+    "radius_of_largest_vessel_in_microns",
+    "radius_of_smallest_vessel_in_microns",
+    "sample_index_of_refraction",
+    "scales_per_octave",
+    "sigma_per_influence_edges",
+    "sigma_per_influence_vertices",
+    "space_strel_apothem",
+    "space_strel_apothem_edges",
+    "spherical_to_annular_ratio",
+    "step_size_per_origin_radius"
+  ],
+  "shared_params_hash": "f99323cde0513e5c16d862babc35053d901685690962602f3be309fc60eb5e40"
+}

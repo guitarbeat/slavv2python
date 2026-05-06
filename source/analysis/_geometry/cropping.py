@@ -6,20 +6,20 @@ import numpy as np
 
 
 def crop_vertices(
-        vertex_positions: np.ndarray,
-        bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]],
+    vertex_positions: np.ndarray,
+    bounds: tuple[tuple[float, float], tuple[float, float], tuple[float, float]],
 ) -> tuple[np.ndarray, np.ndarray]:
     """Crop vertices to an axis-aligned bounding box."""
     vertex_positions_arr = np.asarray(vertex_positions)
     bounds_arr = np.asarray(bounds, dtype=float)
 
     mask = (
-            (vertex_positions_arr[:, 0] >= bounds_arr[0, 0])
-            & (vertex_positions_arr[:, 0] <= bounds_arr[0, 1])
-            & (vertex_positions_arr[:, 1] >= bounds_arr[1, 0])
-            & (vertex_positions_arr[:, 1] <= bounds_arr[1, 1])
-            & (vertex_positions_arr[:, 2] >= bounds_arr[2, 0])
-            & (vertex_positions_arr[:, 2] <= bounds_arr[2, 1])
+        (vertex_positions_arr[:, 0] >= bounds_arr[0, 0])
+        & (vertex_positions_arr[:, 0] <= bounds_arr[0, 1])
+        & (vertex_positions_arr[:, 1] >= bounds_arr[1, 0])
+        & (vertex_positions_arr[:, 1] <= bounds_arr[1, 1])
+        & (vertex_positions_arr[:, 2] >= bounds_arr[2, 0])
+        & (vertex_positions_arr[:, 2] <= bounds_arr[2, 1])
     )
     return cast("np.ndarray", vertex_positions_arr[mask]), mask
 
@@ -33,8 +33,8 @@ def crop_edges(edge_indices: np.ndarray, vertex_mask: np.ndarray) -> tuple[np.nd
 
 
 def crop_vertices_by_mask(
-        vertex_positions: np.ndarray,
-        mask_volume: np.ndarray,
+    vertex_positions: np.ndarray,
+    mask_volume: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Crop vertices by a 3D binary mask."""
     vertex_positions_arr = np.asarray(vertex_positions)
@@ -42,12 +42,12 @@ def crop_vertices_by_mask(
 
     coords = np.floor(vertex_positions_arr).astype(int)
     in_bounds = (
-            (coords[:, 0] >= 0)
-            & (coords[:, 0] < mask_volume_arr.shape[0])
-            & (coords[:, 1] >= 0)
-            & (coords[:, 1] < mask_volume_arr.shape[1])
-            & (coords[:, 2] >= 0)
-            & (coords[:, 2] < mask_volume_arr.shape[2])
+        (coords[:, 0] >= 0)
+        & (coords[:, 0] < mask_volume_arr.shape[0])
+        & (coords[:, 1] >= 0)
+        & (coords[:, 1] < mask_volume_arr.shape[1])
+        & (coords[:, 2] >= 0)
+        & (coords[:, 2] < mask_volume_arr.shape[2])
     )
 
     mask: np.ndarray = np.zeros(len(vertex_positions_arr), dtype=bool)

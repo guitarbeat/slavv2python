@@ -19,25 +19,25 @@ logger = logging.getLogger(__name__)
 
 
 def extract_edges_resumable(
-        energy_data: dict[str, Any],
-        vertices: dict[str, Any],
-        params: dict[str, Any],
-        stage_controller: StageController,
-        *,
-        atomic_joblib_dump: Callable[..., None],
-        empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
-        build_edge_candidate_audit: Callable[..., dict[str, Any]],
-        build_frontier_candidate_lifecycle: Callable[..., dict[str, Any]],
-        finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
-        normalize_candidate_origin_counts: Callable[..., dict[int, int]],
-        generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
-        generate_edge_candidates: Callable[..., dict[str, Any]],
-        choose_edges_for_workflow: Callable[..., dict[str, Any]],
-        add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
-        finalize_edges_matlab_style: Callable[..., dict[str, Any]],
-        paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
-        paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
-        use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
+    energy_data: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+    *,
+    atomic_joblib_dump: Callable[..., None],
+    empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
+    build_edge_candidate_audit: Callable[..., dict[str, Any]],
+    build_frontier_candidate_lifecycle: Callable[..., dict[str, Any]],
+    finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
+    normalize_candidate_origin_counts: Callable[..., dict[int, int]],
+    generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
+    generate_edge_candidates: Callable[..., dict[str, Any]],
+    choose_edges_for_workflow: Callable[..., dict[str, Any]],
+    add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
+    finalize_edges_matlab_style: Callable[..., dict[str, Any]],
+    paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
+    paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
+    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
     from source.io.matlab_fail_fast import build_candidate_snapshot_payload
@@ -187,7 +187,7 @@ def extract_edges_resumable(
     atomic_joblib_dump(candidates, candidate_manifest_path)
     if use_frontier:
         candidate_checkpoint_path = (
-                stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
+            stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
         )
         candidate_checkpoint_payload = build_candidate_snapshot_payload(candidates)
         atomic_joblib_dump(candidate_checkpoint_payload, candidate_checkpoint_path)
@@ -245,14 +245,14 @@ def extract_edges_resumable(
 
 
 def extract_edges_watershed_resumable(
-        energy_data: dict[str, Any],
-        vertices: dict[str, Any],
-        params: dict[str, Any],
-        stage_controller: StageController,
-        *,
-        atomic_joblib_dump: Callable[..., None],
-        append_candidate_unit: Callable[..., None],
-        empty_edge_diagnostics: Callable[[], dict[str, Any]],
+    energy_data: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
+    *,
+    atomic_joblib_dump: Callable[..., None],
+    append_candidate_unit: Callable[..., None],
+    empty_edge_diagnostics: Callable[[], dict[str, Any]],
 ) -> dict[str, Any]:
     """Extract watershed edges with per-label persisted units."""
     energy = energy_data["energy"]
@@ -308,7 +308,7 @@ def extract_edges_watershed_resumable(
             if pair in seen_pairs:
                 continue
             boundary = (ndi.binary_dilation(labels == neighbor, structure) & region) | (
-                    ndi.binary_dilation(region, structure) & (labels == neighbor)
+                ndi.binary_dilation(region, structure) & (labels == neighbor)
             )
             coords = np.argwhere(boundary)
             if coords.size == 0:

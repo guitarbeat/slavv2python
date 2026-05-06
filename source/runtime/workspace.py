@@ -5,16 +5,13 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
 
 class FolderRole(Enum):
     """Canonical roles for repository directories."""
+
     PACKAGE_ROOT = "PACKAGE_ROOT"  # source/
     DEV_ROOT = "DEV_ROOT"  # dev/
     DATASETS = "DATASETS"  # dev/datasets/
@@ -27,7 +24,7 @@ class FolderRole(Enum):
 def find_repo_root(start_path: Path | str | None = None) -> Path:
     """Find the repository root by looking for pyproject.toml."""
     current = Path(start_path or Path.cwd()).resolve()
-    for parent in [current] + list(current.parents):
+    for parent in [current, *list(current.parents)]:
         if (parent / "pyproject.toml").exists():
             return parent
     raise RuntimeError("Could not find repository root (missing pyproject.toml)")
@@ -45,12 +42,15 @@ def find_experiment_root(repo_root: Path | None = None) -> Path:
 class WorkspaceAuditor:
     """Audits the repository for structural violations."""
 
-    CANONICAL_ROOT_FOLDERS = {
-        "source", "dev", "docs", "external", ".github", ".git"
-    }
+    CANONICAL_ROOT_FOLDERS = {"source", "dev", "docs", "external", ".github", ".git"}
 
     CANONICAL_ROOT_FILES = {
-        "pyproject.toml", "README.md", "LICENSE", "CHANGELOG.md", "AGENTS.md", ".gitignore"
+        "pyproject.toml",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md",
+        "AGENTS.md",
+        ".gitignore",
     }
 
     def __init__(self, repo_root: Path | None = None):
@@ -70,7 +70,9 @@ class WorkspaceAuditor:
                 if name not in self.CANONICAL_ROOT_FOLDERS and name != "slavv.egg-info":
                     violations.append(f"Non-standard root directory: {name}")
             elif item.is_file():
-                if name not in self.CANONICAL_ROOT_FILES and not name.endswith((".ini", ".yaml", ".yml", ".md")):
+                if name not in self.CANONICAL_ROOT_FILES and not name.endswith(
+                    (".ini", ".yaml", ".yml", ".md")
+                ):
                     # Allow common config files but flag others
                     if name not in {".gitmodules", ".sourcery.yaml", "pytest.ini"}:
                         violations.append(f"Non-standard root file: {name}")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from source.core import SLAVVProcessor
 from source.runtime import load_run_snapshot
 from source.runtime.run_state import STATUS_BLOCKED, STATUS_FAILED

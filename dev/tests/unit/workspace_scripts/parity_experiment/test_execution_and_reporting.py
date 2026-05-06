@@ -5,64 +5,52 @@ from __future__ import annotations
 import json
 
 import numpy as np
-import pytest
+from dev.scripts.cli.parity_experiment import main
 from dev.tests.support.run_state_builders import (
     materialize_checkpoint_surface,
     materialize_run_snapshot,
 )
 from scipy.io import savemat
 
-from .helpers import (
-    _build_experiment_root,
-    _build_source_run_root,
-    _materialize_exact_matlab_batch,
-    _write_json,
-)
-
-from source.analysis.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
 from source.analysis.parity.constants import (
-    RUN_SNAPSHOT_PATH,
+    ANALYSIS_TABLES_DIR,
     CANDIDATE_PROGRESS_JSONL_PATH,
     CANDIDATE_PROGRESS_PLOT_PATH,
-    RECORDING_TABLES_INDEX_PATH,
-    ANALYSIS_TABLES_DIR,
-    RUN_MANIFEST_PATH,
-    EDGE_CANDIDATE_AUDIT_PATH,
-    SHARED_PARAMS_PATH,
-    PYTHON_DERIVED_PARAMS_PATH,
-    PARAM_DIFF_PATH,
-    SUMMARY_TEXT_PATH,
     CHECKPOINTS_DIR,
+    EDGE_CANDIDATE_AUDIT_PATH,
+    PARAM_DIFF_PATH,
+    PYTHON_DERIVED_PARAMS_PATH,
+    RECORDING_TABLES_INDEX_PATH,
+    RUN_MANIFEST_PATH,
+    RUN_SNAPSHOT_PATH,
+    SHARED_PARAMS_PATH,
+    SUMMARY_TEXT_PATH,
     VALIDATED_PARAMS_PATH,
 )
 from source.analysis.parity.execution import (
-    persist_param_storage,
     derive_exact_params_from_oracle,
     ensure_dest_run_layout,
+    persist_param_storage,
+)
+from source.analysis.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
+from source.analysis.parity.proofs import (
+    _load_exact_vertices_payload,
+    _run_capture_candidates,
+    _run_prove_luts,
 )
 from source.analysis.parity.reports import (
     build_experiment_summary,
     persist_recording_tables,
 )
-from source.analysis.parity.proofs import (
-    _run_prove_luts,
-    build_exact_preflight_report,
-    _load_exact_vertices_payload,
-    _run_capture_candidates,
-)
 from source.io.matlab_exact_proof import (
     find_matlab_vector_paths,
-    load_normalized_matlab_vectors,
 )
-from source.core.edge_candidates import (
-    _generate_edge_candidates_matlab_frontier,
-    _finalize_matlab_parity_candidates,
-)
-from source.io.matlab_fail_fast import (
-    build_candidate_coverage_report,
-)
-from dev.scripts.cli.parity_experiment import main
 
+from .helpers import (
+    _build_experiment_root,
+    _materialize_exact_matlab_batch,
+    _write_json,
+)
 
 # def test_build_exact_preflight_report_refuses_when_memory_budget_is_too_large(
 #     tmp_path,
@@ -295,13 +283,12 @@ def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_ru
     )
     monkeypatch.setattr(
         "source.io.matlab_fail_fast.load_builtin_lut_fixture",
-        lambda:
-            {
-                "size_of_image": [121, 512, 512],
-                "microns_per_voxel": [1.0, 1.0, 1.0],
-                "lumen_radius_microns": [1.0, 2.0],
-                "scales": {"0": {}},
-            },
+        lambda: {
+            "size_of_image": [121, 512, 512],
+            "microns_per_voxel": [1.0, 1.0, 1.0],
+            "lumen_radius_microns": [1.0, 2.0],
+            "scales": {"0": {}},
+        },
     )
 
     report, _json_path, _text_path = _run_prove_luts(
@@ -431,11 +418,10 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         "source.analysis.parity.proofs._load_exact_vertices_payload",
-        lambda _surface:
-            {
-                "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
-                "scales": np.array([0], dtype=np.int16),
-            },
+        lambda _surface: {
+            "positions": np.array([[0.0, 0.0, 0.0]], dtype=np.float32),
+            "scales": np.array([0], dtype=np.int16),
+        },
     )
     monkeypatch.setattr(
         "source.core.edge_candidates._generate_edge_candidates_matlab_frontier",
@@ -447,21 +433,19 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(
         "source.analysis.parity.proofs.load_normalized_matlab_vectors",
-        lambda *_args, **_kwargs:
-            {
-                "edges": {
-                    "connections": np.array([[0, 0]], dtype=np.int32),
-                }
-            },
+        lambda *_args, **_kwargs: {
+            "edges": {
+                "connections": np.array([[0, 0]], dtype=np.int32),
+            }
+        },
     )
     monkeypatch.setattr(
         "source.analysis.parity.proofs._load_matlab",
-        lambda *_args, **_kwargs:
-            {
-                "edges": {
-                    "connections": np.array([[0, 0]], dtype=np.int32),
-                }
-            },
+        lambda *_args, **_kwargs: {
+            "edges": {
+                "connections": np.array([[0, 0]], dtype=np.int32),
+            }
+        },
     )
     monkeypatch.setattr(
         "source.io.matlab_fail_fast.build_candidate_coverage_report",
@@ -474,9 +458,7 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
         include_debug_maps=False,
     )
 
-    snapshot = json.loads(
-        (dest_run_root / RUN_SNAPSHOT_PATH).read_text(encoding="utf-8")
-    )
+    snapshot = json.loads((dest_run_root / RUN_SNAPSHOT_PATH).read_text(encoding="utf-8"))
     assert snapshot["current_stage"] == "edges"
     assert snapshot["current_detail"] == (
         "Completed edge candidate generation through MATLAB-style frontier workflow (candidates=1)"
@@ -489,9 +471,7 @@ def test_capture_candidates_persists_heartbeat_detail(tmp_path, monkeypatch):
     progress_jsonl = dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH
     progress_plot = dest_run_root / CANDIDATE_PROGRESS_PLOT_PATH
     recording_index = dest_run_root / RECORDING_TABLES_INDEX_PATH
-    candidate_progress_csv = (
-        dest_run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv"
-    )
+    candidate_progress_csv = dest_run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv"
     candidate_coverage_summary_jsonl = (
         dest_run_root / ANALYSIS_TABLES_DIR / "candidate_coverage_summary.jsonl"
     )
@@ -601,8 +581,7 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
         exist_ok=True,
     )
     (run_root / CANDIDATE_PROGRESS_JSONL_PATH).write_text(
-        ""
-        .join(f"{json.dumps(record)}\n" for record in progress_records),
+        "".join(f"{json.dumps(record)}\n" for record in progress_records),
         encoding="utf-8",
     )
 
@@ -610,12 +589,8 @@ def test_persist_recording_tables_flattens_existing_run_artifacts(tmp_path):
 
     assert index_payload["table_count"] >= 6
     assert (run_root / RECORDING_TABLES_INDEX_PATH).is_file()
-    assert (
-        run_root / ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl"
-    ).is_file()
-    assert (
-        run_root / ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv"
-    ).is_file()
+    assert (run_root / ANALYSIS_TABLES_DIR / "run_snapshot_stages.jsonl").is_file()
+    assert (run_root / ANALYSIS_TABLES_DIR / "candidate_audit_per_origin.csv").is_file()
     assert (run_root / ANALYSIS_TABLES_DIR / "candidate_progress.csv").is_file()
 
     stage_rows = (
@@ -665,15 +640,11 @@ def test_persist_param_storage_writes_split_param_files(tmp_path):
         },
     )
 
-    shared_params = json.loads(
-        (dest_run_root / SHARED_PARAMS_PATH).read_text(encoding="utf-8")
-    )
+    shared_params = json.loads((dest_run_root / SHARED_PARAMS_PATH).read_text(encoding="utf-8"))
     python_derived = json.loads(
         (dest_run_root / PYTHON_DERIVED_PARAMS_PATH).read_text(encoding="utf-8")
     )
-    param_diff = json.loads(
-        (dest_run_root / PARAM_DIFF_PATH).read_text(encoding="utf-8")
-    )
+    param_diff = json.loads((dest_run_root / PARAM_DIFF_PATH).read_text(encoding="utf-8"))
 
     assert shared_params["energy_projection_mode"] == "matlab"
     assert python_derived["orchestration_params"]["comparison_exact_network"] is True
@@ -730,9 +701,7 @@ def test_derive_exact_params_from_oracle_includes_released_matlab_edge_constants
         dataset_hash="dataset-a",
     )
 
-    params, _settings_paths, _settings_payloads = derive_exact_params_from_oracle(
-        oracle_surface
-    )
+    params, _settings_paths, _settings_payloads = derive_exact_params_from_oracle(oracle_surface)
 
     assert params["step_size_per_origin_radius"] == 1.0
     assert params["max_edge_energy"] == 0.0

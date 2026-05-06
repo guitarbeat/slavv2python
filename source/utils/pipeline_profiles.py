@@ -44,6 +44,7 @@ _PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
         "direction_method": "hessian",
         "return_all_scales": False,
         "discrete_tracing": False,
+        "comparison_exact_network_use_conflict_painting": True,
     },
     "matlab_compat": {
         "pipeline_profile": "matlab_compat",
@@ -78,6 +79,7 @@ _PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
         "direction_method": "hessian",
         "return_all_scales": False,
         "discrete_tracing": False,
+        "comparison_exact_network_use_conflict_painting": False,
     },
 }
 
@@ -98,9 +100,9 @@ def get_pipeline_profile_defaults(profile: str) -> dict[str, Any]:
 
 
 def apply_pipeline_profile(
-        parameters: Mapping[str, Any],
-        *,
-        default_profile: str | None = None,
+    parameters: Mapping[str, Any],
+    *,
+    default_profile: str | None = None,
 ) -> dict[str, Any]:
     """Seed profile defaults, then overlay explicit user parameters."""
     raw_parameters = dict(parameters)
@@ -111,11 +113,7 @@ def apply_pipeline_profile(
     normalized_profile = normalize_pipeline_profile_name(str(requested_profile))
     resolved_parameters = get_pipeline_profile_defaults(normalized_profile)
     resolved_parameters.update(
-        {
-            key: value
-            for key, value in raw_parameters.items()
-            if value is not None
-        }
+        {key: value for key, value in raw_parameters.items() if value is not None}
     )
     resolved_parameters["pipeline_profile"] = normalized_profile
     return resolved_parameters

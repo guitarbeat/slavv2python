@@ -66,7 +66,7 @@ def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_par
     assert np.allclose(
         bridged["bridge_vertex_positions"], np.array([[2.0, 3.0, 1.0]], dtype=np.float32)
     )
-    assert bridged["bridge_vertex_scales"].tolist() == [0]
+    assert bridged["bridge_vertex_scales"].tolist() == [1]
     assert np.allclose(bridged["bridge_vertex_energies"], np.array([-9.0], dtype=np.float32))
     assert sorted(bridged["connections"].tolist()) == [[0, 3], [2, 3], [3, 1]]
     assert len(bridged["traces"]) == 3

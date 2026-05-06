@@ -4,27 +4,27 @@ from __future__ import annotations
 
 import importlib
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
 from dev.tests.support.run_state_builders import materialize_checkpoint_surface
 
+from source.analysis.parity import cli
+from source.analysis.parity.constants import (
+    CHECKPOINTS_DIR,
+    EDGE_REPLAY_PROOF_JSON_PATH,
+    EXACT_PROOF_JSON_PATH,
+)
+
 from .support import (
-    _exact_energy_payload,
     _exact_edge_payload,
+    _exact_energy_payload,
     _exact_network_payload,
     _exact_validated_params,
     _exact_vertex_payload,
     _fail_report,
     _materialize_exact_matlab_batch,
     _pass_report,
-)
-from source.analysis.parity import cli
-from source.analysis.parity.constants import (
-    CHECKPOINTS_DIR,
-    EDGE_REPLAY_PROOF_JSON_PATH,
-    EXACT_PROOF_JSON_PATH,
 )
 
 parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
@@ -76,9 +76,7 @@ def test_prove_exact_writes_pass_report_for_matching_artifacts(tmp_path):
         ]
     )
 
-    report_payload = json.loads(
-        (dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8")
-    )
+    report_payload = json.loads((dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8"))
     assert report_payload["passed"] is True
     assert report_payload["first_failure"] is None
     assert report_payload["exact_route_gate"] == (
@@ -126,9 +124,7 @@ def test_prove_exact_reports_first_edge_mismatch(tmp_path):
             ]
         )
 
-    report_payload = json.loads(
-        (dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8")
-    )
+    report_payload = json.loads((dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8"))
     assert report_payload["passed"] is False
     assert report_payload["first_failing_stage"] == "edges"
     assert report_payload["first_failing_field_path"] == "edges.energies"
@@ -185,9 +181,7 @@ def test_prove_exact_falls_back_to_candidate_checkpoint_when_edges_checkpoint_mi
         ]
     )
 
-    report_payload = json.loads(
-        (dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8")
-    )
+    report_payload = json.loads((dest_run_root / EXACT_PROOF_JSON_PATH).read_text(encoding="utf-8"))
     assert report_payload["passed"] is True
     assert report_payload["report_scope"] == "candidate boundary fallback (edges.connections only)"
     assert report_payload["candidate_surface"]["matlab_pair_count"] == 1
@@ -302,42 +296,62 @@ def test_fail_fast_stops_at_first_failing_gate(
     )
     monkeypatch.setattr(parity_experiment, "render_exact_proof_report", lambda _report: "replay")
 
-    monkeypatch.setattr(cli, "run_exact_preflight", lambda *args, **kwargs: (
-        order.append("preflight")
-        or (
-            (_fail_report(expected_field) if failing_step == "preflight" else _pass_report()),
-            dest_run_root / "a.json",
-            dest_run_root / "a.txt",
-        )
-    ))
-    monkeypatch.setattr(cli, "run_lut_proof", lambda *args, **kwargs: (
-        order.append("luts")
-        or (
-            (_fail_report(expected_field) if failing_step == "luts" else _pass_report()),
-            dest_run_root / "b.json",
-            dest_run_root / "b.txt",
-        )
-    ))
-    monkeypatch.setattr(cli, "run_candidate_capture", lambda *args, **kwargs: (
-        order.append("candidates")
-        or (
-            (_fail_report(expected_field) if failing_step == "candidates" else _pass_report()),
-            dest_run_root / "c.json",
-            dest_run_root / "c.txt",
-        )
-    ))
-    monkeypatch.setattr(cli, "run_edge_replay", lambda *args, **kwargs: (
-        order.append("replay")
-        or (
-            (_fail_report(expected_field) if failing_step == "replay" else _pass_report()),
-            dest_run_root / "d.json",
-            dest_run_root / "d.txt",
-        )
-    ))
-    monkeypatch.setattr(cli, "run_exact_parity_proof", lambda *args, **kwargs: (
-        order.append("prove-exact")
-        or (_pass_report(), dest_run_root / "e.json", dest_run_root / "e.txt")
-    ))
+    monkeypatch.setattr(
+        cli,
+        "run_exact_preflight",
+        lambda *args, **kwargs: (
+            order.append("preflight")
+            or (
+                (_fail_report(expected_field) if failing_step == "preflight" else _pass_report()),
+                dest_run_root / "a.json",
+                dest_run_root / "a.txt",
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_lut_proof",
+        lambda *args, **kwargs: (
+            order.append("luts")
+            or (
+                (_fail_report(expected_field) if failing_step == "luts" else _pass_report()),
+                dest_run_root / "b.json",
+                dest_run_root / "b.txt",
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_candidate_capture",
+        lambda *args, **kwargs: (
+            order.append("candidates")
+            or (
+                (_fail_report(expected_field) if failing_step == "candidates" else _pass_report()),
+                dest_run_root / "c.json",
+                dest_run_root / "c.txt",
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_edge_replay",
+        lambda *args, **kwargs: (
+            order.append("replay")
+            or (
+                (_fail_report(expected_field) if failing_step == "replay" else _pass_report()),
+                dest_run_root / "d.json",
+                dest_run_root / "d.txt",
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_exact_parity_proof",
+        lambda *args, **kwargs: (
+            order.append("prove-exact")
+            or (_pass_report(), dest_run_root / "e.json", dest_run_root / "e.txt")
+        ),
+    )
 
     with pytest.raises(SystemExit, match="1"):
         parity_experiment.main(
@@ -372,26 +386,46 @@ def test_fail_fast_reaches_final_exact_proof_when_all_gates_pass(tmp_path, monke
     )
     monkeypatch.setattr(parity_experiment, "render_exact_proof_report", lambda _report: "replay")
 
-    monkeypatch.setattr(cli, "run_exact_preflight", lambda *args, **kwargs: (
-        order.append("preflight")
-        or (_pass_report(), dest_run_root / "a.json", dest_run_root / "a.txt")
-    ))
-    monkeypatch.setattr(cli, "run_lut_proof", lambda *args, **kwargs: (
-        order.append("luts")
-        or (_pass_report(), dest_run_root / "b.json", dest_run_root / "b.txt")
-    ))
-    monkeypatch.setattr(cli, "run_candidate_capture", lambda *args, **kwargs: (
-        order.append("candidates")
-        or (_pass_report(), dest_run_root / "c.json", dest_run_root / "c.txt")
-    ))
-    monkeypatch.setattr(cli, "run_edge_replay", lambda *args, **kwargs: (
-        order.append("replay")
-        or (_pass_report(), dest_run_root / "d.json", dest_run_root / "d.txt")
-    ))
-    monkeypatch.setattr(cli, "run_exact_parity_proof", lambda *args, **kwargs: (
-        order.append("prove-exact")
-        or (_pass_report(), dest_run_root / "e.json", dest_run_root / "e.txt")
-    ))
+    monkeypatch.setattr(
+        cli,
+        "run_exact_preflight",
+        lambda *args, **kwargs: (
+            order.append("preflight")
+            or (_pass_report(), dest_run_root / "a.json", dest_run_root / "a.txt")
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_lut_proof",
+        lambda *args, **kwargs: (
+            order.append("luts")
+            or (_pass_report(), dest_run_root / "b.json", dest_run_root / "b.txt")
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_candidate_capture",
+        lambda *args, **kwargs: (
+            order.append("candidates")
+            or (_pass_report(), dest_run_root / "c.json", dest_run_root / "c.txt")
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_edge_replay",
+        lambda *args, **kwargs: (
+            order.append("replay")
+            or (_pass_report(), dest_run_root / "d.json", dest_run_root / "d.txt")
+        ),
+    )
+    monkeypatch.setattr(
+        cli,
+        "run_exact_parity_proof",
+        lambda *args, **kwargs: (
+            order.append("prove-exact")
+            or (_pass_report(), dest_run_root / "e.json", dest_run_root / "e.txt")
+        ),
+    )
 
     parity_experiment.main(
         [

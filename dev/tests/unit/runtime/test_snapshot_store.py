@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dev.tests.support.run_state_builders import build_snapshot_dict, materialize_run_snapshot
+
 from source.runtime._run_state.layout import resolve_run_layout
 from source.runtime._run_state.models import RunSnapshot, StageSnapshot
 from source.runtime._run_state.snapshot_store import emit_progress_event, load_or_create_snapshot

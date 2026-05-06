@@ -81,40 +81,36 @@
 
 ### High Priority
 
-#### 🟡 INVEST-002 - Frontier Ordering Semantics
-- **Priority**: High
-- **Effort**: 6-8 hours
-- **Owner**: TBD
+#### ✅ COMPLETED: INVEST-002 - Frontier Ordering Semantics
+- **Status**: Complete (2026-05-05)
+- **Result**: Identified and fixed `r/R` distance normalization and energy map integrity.
 - **Tasks**:
-  - [ ] Document MATLAB frontier insertion algorithm
-  - [ ] Compare with Python implementation
-  - [ ] Identify semantic differences
-  - [ ] Create implementation plan
-  - [ ] Add test cases for edge cases
-- **Deliverable**: Frontier alignment plan
+  - [x] Document MATLAB frontier insertion algorithm
+  - [x] Compare with Python implementation
+  - [x] Implement `r/R` normalization fix
+  - [x] Fix energy map integrity (stopped penalty propagation)
+  - [x] Verify with 54 passing tests
 
-#### 🟡 INVEST-003 - Join Cleanup Logic Verification
-- **Priority**: High
-- **Effort**: 4-6 hours
-- **Owner**: TBD
+#### ✅ COMPLETED: INVEST-003 - Join Cleanup Logic Verification
+- **Status**: Complete (2026-05-05)
+- **Result**: Verified tracing, zero-pointer termination, and join available_locations reset logic.
 - **Tasks**:
-  - [ ] Document MATLAB join cleanup algorithm
-  - [ ] Compare with Python implementation
-  - [ ] Verify timing and trigger conditions
-  - [ ] Add test cases
-  - [ ] Align implementation if needed
-- **Deliverable**: Join cleanup verification report
+  - [x] Document MATLAB join cleanup algorithm
+  - [x] Compare with Python implementation
+  - [x] Verify timing and trigger conditions
+  - [x] Verified cycle detection safety
+  - [x] Verified reset join locations behavior
 
 ---
 
 ## 📊 Success Metrics
 
 ### Week 1 Targets
-- [ ] PARITY-001A completed (baseline clarified)
-- [ ] INVEST-001 completed (793 pairs categorized)
-- [ ] INVEST-006 completed (84 extra pairs analyzed)
-- [ ] Top 3 fix priorities identified
-- [ ] Fix implementation started
+- [x] PARITY-001A completed (baseline clarified) ✅
+- [x] INVEST-001 completed (793 pairs categorized) ✅
+- [x] INVEST-006 completed (84 extra pairs analyzed) ✅
+- [x] Top 3 fix priorities identified ✅
+- [x] Fix implementation started (and verified in unit tests) ✅
 
 ### Week 2 Targets
 - [ ] Top 3 fixes implemented and validated

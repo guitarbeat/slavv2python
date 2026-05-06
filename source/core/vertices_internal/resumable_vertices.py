@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from ...runtime.run_state import atomic_joblib_dump
+from ...utils.safe_unpickle import safe_load
 from .candidate_detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,
@@ -17,17 +19,15 @@ from .vertex_results import (
     empty_vertices_result,
     sort_vertex_order,
 )
-from ...runtime.run_state import atomic_joblib_dump
-from ...utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
     from source.runtime import StageController
 
 
 def extract_vertices_resumable(
-        energy_data: dict[str, Any],
-        params: dict[str, Any],
-        stage_controller: StageController,
+    energy_data: dict[str, Any],
+    params: dict[str, Any],
+    stage_controller: StageController,
 ) -> dict[str, Any]:
     """Extract vertices with persisted MATLAB-style scan, crop, and choose state."""
     energy = energy_data["energy"]

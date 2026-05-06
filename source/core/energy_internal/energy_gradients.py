@@ -46,13 +46,13 @@ def _compute_gradient_impl_python(energy, pos_int, microns_per_voxel):
         pos_z = shape_z - 2
 
     grad[0] = (energy[pos_y + 1, pos_x, pos_z] - energy[pos_y - 1, pos_x, pos_z]) / (
-            2.0 * microns_per_voxel[0]
+        2.0 * microns_per_voxel[0]
     )
     grad[1] = (energy[pos_y, pos_x + 1, pos_z] - energy[pos_y, pos_x - 1, pos_z]) / (
-            2.0 * microns_per_voxel[1]
+        2.0 * microns_per_voxel[1]
     )
     grad[2] = (energy[pos_y, pos_x, pos_z + 1] - energy[pos_y, pos_x, pos_z - 1]) / (
-            2.0 * microns_per_voxel[2]
+        2.0 * microns_per_voxel[2]
     )
 
     return grad
@@ -99,9 +99,9 @@ _NUMBA_ACCELERATION_ENABLED = _NUMBA_AVAILABLE
 
 
 def compute_gradient_impl(
-        energy: np.ndarray,
-        pos_int: np.ndarray | tuple[int, int, int],
-        microns_per_voxel: np.ndarray,
+    energy: np.ndarray,
+    pos_int: np.ndarray | tuple[int, int, int],
+    microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Compute a local energy gradient with optional Numba acceleration."""
     global _NUMBA_ACCELERATION_ENABLED
@@ -119,11 +119,11 @@ def compute_gradient_impl(
 
 
 def compute_gradient_fast(
-        energy: np.ndarray,
-        p0: int,
-        p1: int,
-        p2: int,
-        inv_mpv_2x: np.ndarray,
+    energy: np.ndarray,
+    p0: int,
+    p1: int,
+    p2: int,
+    inv_mpv_2x: np.ndarray,
 ) -> np.ndarray:
     """Compute a local energy gradient without allocating a position array."""
     global _NUMBA_ACCELERATION_ENABLED
@@ -153,11 +153,11 @@ def spherical_structuring_element(radius: int, microns_per_voxel: np.ndarray) ->
     ]
     yy, xx, zz = np.meshgrid(*ranges, indexing="ij")
     dist2 = (
-            (yy * microns_per_voxel[0]) ** 2
-            + (xx * microns_per_voxel[1]) ** 2
-            + (zz * microns_per_voxel[2]) ** 2
+        (yy * microns_per_voxel[0]) ** 2
+        + (xx * microns_per_voxel[1]) ** 2
+        + (zz * microns_per_voxel[2]) ** 2
     )
-    return (dist2 <= r_phys ** 2).astype(bool)  # type: ignore[no-any-return]
+    return (dist2 <= r_phys**2).astype(bool)  # type: ignore[no-any-return]
 
 
 __all__ = [

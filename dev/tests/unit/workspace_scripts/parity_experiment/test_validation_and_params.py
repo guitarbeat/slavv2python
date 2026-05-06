@@ -4,24 +4,22 @@ from __future__ import annotations
 
 import pytest
 from dev.tests.support.run_state_builders import (
-    materialize_checkpoint_surface,
     materialize_run_snapshot,
+)
+
+from source.analysis.parity.constants import CHECKPOINTS_DIR
+from source.analysis.parity.execution import (
+    load_params_file,
+    # validate_exact_proof_source_surface,
+    # load_exact_params_file,
+    resolve_input_file,
+    validate_source_run_surface,
 )
 
 from .helpers import (
     _build_source_run_root,
-    _materialize_exact_matlab_batch,
     _write_json,
 )
-
-from source.analysis.parity.execution import (
-    validate_source_run_surface,
-    resolve_input_file,
-    load_params_file,
-    # validate_exact_proof_source_surface,
-    # load_exact_params_file,
-)
-from source.analysis.parity.constants import CHECKPOINTS_DIR
 
 
 def test_validate_source_run_surface_accepts_required_artifacts(tmp_path):

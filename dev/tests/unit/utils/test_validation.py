@@ -1,4 +1,5 @@
 import pytest
+
 from source.utils import validate_parameters
 
 
@@ -11,6 +12,13 @@ def test_validate_parameters_defaults():
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
     assert validated["sigma_per_influence_vertices"] == 1.0
     assert validated["sigma_per_influence_edges"] == 0.5
+    # Default for matlab_compat (which is the default profile if none specified)
+    assert validated["comparison_exact_network_use_conflict_painting"] is False
+
+
+def test_validate_parameters_paper_profile_enables_conflict_painting():
+    validated = validate_parameters({"pipeline_profile": "paper"})
+    assert validated["comparison_exact_network_use_conflict_painting"] is True
 
 
 def test_validate_parameters_preserves_edge_influence_overrides():

@@ -12,10 +12,11 @@ from .operations import (
     _matlab_network_topology,
     _matlab_smooth_edges_v2,
     _matlab_sort_network_v180,
-    _remove_short_hairs,
     _remove_cycles,
+    _remove_short_hairs,
+    sort_and_validate_strands_sparse,
+    trace_strand_sparse,
 )
-from .operations import trace_strand_sparse, sort_and_validate_strands_sparse
 
 __all__ = [
     "_matlab_edge_metrics",
@@ -25,8 +26,8 @@ __all__ = [
     "_matlab_network_topology",
     "_matlab_smooth_edges_v2",
     "_matlab_sort_network_v180",
-    "_remove_short_hairs",
     "_remove_cycles",
+    "_remove_short_hairs",
     "construct_network",
     "construct_network_resumable",
     "sort_and_validate_strands_sparse",

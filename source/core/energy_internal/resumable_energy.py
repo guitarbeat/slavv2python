@@ -34,9 +34,9 @@ def _config_hash(config: dict[str, Any]) -> str:
 
 
 def _artifact_paths(
-        stage_controller: StageController,
-        *,
-        storage_format: str,
+    stage_controller: StageController,
+    *,
+    storage_format: str,
 ) -> tuple[Path, Path, Path]:
     energy_suffix = ".zarr" if storage_format == "zarr" else ".npy"
     return (
@@ -47,36 +47,36 @@ def _artifact_paths(
 
 
 def _clear_stale_artifacts(
-        stage_controller: StageController,
-        *,
-        keep_paths: tuple[Path, Path, Path],
-        remove_storage_path,
+    stage_controller: StageController,
+    *,
+    keep_paths: tuple[Path, Path, Path],
+    remove_storage_path,
 ) -> None:
     for legacy_path in (
-            stage_controller.artifact_path("best_energy.npy"),
-            stage_controller.artifact_path("best_scale.npy"),
-            stage_controller.artifact_path("energy_4d.npy"),
-            stage_controller.artifact_path("best_energy.zarr"),
-            stage_controller.artifact_path("best_scale.zarr"),
-            stage_controller.artifact_path("energy_4d.zarr"),
+        stage_controller.artifact_path("best_energy.npy"),
+        stage_controller.artifact_path("best_scale.npy"),
+        stage_controller.artifact_path("energy_4d.npy"),
+        stage_controller.artifact_path("best_energy.zarr"),
+        stage_controller.artifact_path("best_scale.zarr"),
+        stage_controller.artifact_path("energy_4d.zarr"),
     ):
         if legacy_path not in keep_paths:
             remove_storage_path(legacy_path)
 
 
 def calculate_energy_field_resumable(
-        image: np.ndarray,
-        params: dict[str, Any],
-        stage_controller: StageController,
-        *,
-        get_chunking_lattice_func,
-        prepare_energy_config,
-        select_energy_storage_format,
-        energy_lattice,
-        remove_storage_path,
-        open_energy_storage_array,
-        compute_energy_scale,
-        project_scale_stack,
+    image: np.ndarray,
+    params: dict[str, Any],
+    stage_controller: StageController,
+    *,
+    get_chunking_lattice_func,
+    prepare_energy_config,
+    select_energy_storage_format,
+    energy_lattice,
+    remove_storage_path,
+    open_energy_storage_array,
+    compute_energy_scale,
+    project_scale_stack,
 ) -> dict[str, Any]:
     """Compute energy with resumable chunk/scale units backed by persistent arrays."""
     config = prepare_energy_config(image, params)

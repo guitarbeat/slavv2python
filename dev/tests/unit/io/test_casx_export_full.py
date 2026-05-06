@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 
 import numpy as np
+
 from source.visualization import NetworkVisualizer
 
 

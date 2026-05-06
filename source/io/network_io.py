@@ -66,8 +66,8 @@ def _build_vertex_id_map(vertex_ids: list[int]) -> dict[int, int]:
 
 
 def _remap_edge_pairs(
-        edge_pairs: list[list[int]],
-        vertex_id_map: dict[int, int] | None,
+    edge_pairs: list[list[int]],
+    vertex_id_map: dict[int, int] | None,
 ) -> np.ndarray:
     """Normalize edge references against explicit vertex IDs when provided."""
     if vertex_id_map is None:
@@ -345,18 +345,16 @@ def _network_to_processing_results(network: Network) -> dict[str, Any]:
 
 
 def save_network_to_json(
-        network: Network | Mapping[str, Any],
-        path: Union[str, Path],
-        *,
-        run_snapshot: RunSnapshot | None = None,
-        run_dir: str | Path | None = None,
-        metadata: Mapping[str, Any] | None = None,
+    network: Network | Mapping[str, Any],
+    path: Union[str, Path],
+    *,
+    run_snapshot: RunSnapshot | None = None,
+    run_dir: str | Path | None = None,
+    metadata: Mapping[str, Any] | None = None,
 ) -> Path:
     """Save network data to the authoritative JSON export format."""
     processing_results = (
-        _network_to_processing_results(network)
-        if isinstance(network, Network)
-        else dict(network)
+        _network_to_processing_results(network) if isinstance(network, Network) else dict(network)
     )
     data = build_network_json_payload(
         processing_results,

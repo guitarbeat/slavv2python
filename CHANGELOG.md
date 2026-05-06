@@ -15,19 +15,25 @@ For current behavior and proof status, prefer:
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 
-## [Unreleased]
+## [Unreleased] - 2026-05-05
 
 ### Added
 
-- **New Analysis Metrics**: Extended network graph computations to include
-  volume, surface area, densities, and edge energy statistics.
-- **Paper-First Workflow Surface**: Added first-class `paper` and
-  `matlab_compat` pipeline profiles across the CLI and Streamlit app, with
-  `paper` as the public default.
-- **Authoritative Network JSON**: `network.json` is now a versioned export that
-  carries metadata, validated parameters, vertices, edges, topology, and
-  optional precomputed summary statistics for direct `analyze` and `plot`
-  consumption.
+- **Comprehensive Watershed Test Suite**: Expanded unit tests for the global watershed algorithm from 25 to 54 passing tests, covering frontier ordering, join cleanup, and penalty math.
+- **Normalized Distance Scaling**: Implemented correct `r/R` scaling for watershed energy penalties, matching MATLAB's relative penalty behavior across different vessel scales.
+
+### Changed
+
+- **Refactored Global Watershed Module**: Massively decomposed the 800+ line watershed orchestration function into modular, well-typed helpers for state initialization, size map preparation, and result assembly.
+- **Enhanced Type Safety**: Applied specialized numpy array type aliases (`Float32Array`, `Int64Array`, etc.) throughout the watershed and frontier modules to improve static analysis and readability.
+- **Improved Energy Map Integrity**: Refactored watershed discovery logic to stop propagating penalized energies back to the shared energy map, ensuring frontier sorting always uses original unpenalized energies as intended.
+
+### Fixed
+
+- **MATLAB Parity Fix: Distance Normalization**: Resolved a significant divergence where Python used absolute micron distances for penalties instead of normalized `r/R` ratios.
+- **MATLAB Parity Fix: Directional Suppression**: Verified and corrected the placement of directional suppression; confirmed that iterative suppression inside the seed loop matches MATLAB's ground truth.
+- **MATLAB Parity Fix: Trace Order RNG**: Verified the fix for deterministic trace order randomization in conflict painting using seeded RNG.
+- **Test Suite: Numpy Boolean Comparison**: Fixed a critical test suite failure caused by incorrect identity comparison (`is`) for numpy boolean elements.
 
 ### Changed
 

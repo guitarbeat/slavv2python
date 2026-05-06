@@ -18,7 +18,7 @@ from .base import (
 
 
 def trace_strand_sparse(
-        start: int, adjacency_list: dict[int, set[int]], visited: np.ndarray
+    start: int, adjacency_list: dict[int, set[int]], visited: np.ndarray
 ) -> list[int]:
     """Trace a strand through connected vertices using sparse adjacency list."""
     strand = [start]
@@ -38,7 +38,7 @@ def trace_strand_sparse(
 
 
 def sort_and_validate_strands_sparse(
-        strands: list[list[int]], adjacency_list: dict[int, set[int]]
+    strands: list[list[int]], adjacency_list: dict[int, set[int]]
 ) -> tuple[list[list[int]], list[list[int]]]:
     """Sort strands and identify mismatched orderings using sparse adjacency."""
     sorted_strands = []
@@ -58,12 +58,12 @@ def sort_and_validate_strands_sparse(
 
 
 def _remove_short_hairs(
-        graph_edges: dict[tuple[int, int], np.ndarray],
-        adjacency_list: dict[int, set[int]],
-        microns_per_voxel: np.ndarray,
-        min_hair_length: float,
-        graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
-        graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
+    graph_edges: dict[tuple[int, int], np.ndarray],
+    adjacency_list: dict[int, set[int]],
+    microns_per_voxel: np.ndarray,
+    min_hair_length: float,
+    graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
+    graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
 ) -> None:
     """Remove short terminal hairs in-place."""
     if min_hair_length <= 0:
@@ -76,7 +76,7 @@ def _remove_short_hairs(
                 np.linalg.norm(np.diff(trace, axis=0) * microns_per_voxel, axis=1)
             )
             if length < min_hair_length and (
-                    len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
+                len(adjacency_list[v0]) == 1 or len(adjacency_list[v1]) == 1
             ):
                 to_remove.append((v0, v1))
 
@@ -94,11 +94,11 @@ def _remove_short_hairs(
 
 
 def _remove_cycles(
-        graph_edges: dict[tuple[int, int], np.ndarray],
-        adjacency_list: dict[int, set[int]],
-        n_vertices: int,
-        graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
-        graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
+    graph_edges: dict[tuple[int, int], np.ndarray],
+    adjacency_list: dict[int, set[int]],
+    n_vertices: int,
+    graph_edge_scales: dict[tuple[int, int], np.ndarray] | None = None,
+    graph_edge_energies: dict[tuple[int, int], np.ndarray] | None = None,
 ) -> list[tuple[int, int]]:
     """Remove cycle-closing edges by building a spanning forest in best-to-worst order."""
     cycles: list[tuple[int, int]] = []
@@ -132,8 +132,8 @@ def _remove_cycles(
 
 
 def _matlab_get_network_v190(
-        edge_connections: np.ndarray,
-        n_vertices: int,
+    edge_connections: np.ndarray,
+    n_vertices: int,
 ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray], np.ndarray]:
     """Mirror MATLAB's ``get_network_V190`` strand and bifurcation decomposition."""
     normalized = _normalize_connections(edge_connections)
@@ -266,9 +266,9 @@ def _matlab_get_network_v190(
 
 
 def _matlab_sort_network_v180(
-        edge_connections: np.ndarray,
-        end_vertices_in_strands: list[np.ndarray],
-        edge_indices_in_strands: list[np.ndarray],
+    edge_connections: np.ndarray,
+    end_vertices_in_strands: list[np.ndarray],
+    edge_indices_in_strands: list[np.ndarray],
 ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Mirror MATLAB's ``sort_network_V180`` strand ordering."""
     normalized = _normalize_connections(edge_connections)
@@ -277,8 +277,8 @@ def _matlab_sort_network_v180(
     edge_backwards_in_strands: list[np.ndarray] = []
 
     for strand_end_vertices, strand_edge_indices in zip(
-            end_vertices_in_strands,
-            edge_indices_in_strands,
+        end_vertices_in_strands,
+        edge_indices_in_strands,
     ):
         strand_edge_indices_array = np.asarray(strand_edge_indices, dtype=np.int32).reshape(-1)
         if strand_edge_indices_array.size == 0:
@@ -344,11 +344,11 @@ def _matlab_sort_network_v180(
 
 
 def _matlab_get_strand_objects(
-        edge_traces: list[np.ndarray],
-        edge_scale_traces: list[np.ndarray],
-        edge_energy_traces: list[np.ndarray],
-        edge_indices_in_strands: list[np.ndarray],
-        edge_backwards_in_strands: list[np.ndarray],
+    edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
+    edge_energy_traces: list[np.ndarray],
+    edge_indices_in_strands: list[np.ndarray],
+    edge_backwards_in_strands: list[np.ndarray],
 ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Mirror MATLAB's ``get_strand_objects`` strand assembly from ordered edges."""
     strand_space_traces: list[np.ndarray] = []
@@ -356,8 +356,8 @@ def _matlab_get_strand_objects(
     strand_energy_traces: list[np.ndarray] = []
 
     for strand_edge_indices, strand_edge_backwards in zip(
-            edge_indices_in_strands,
-            edge_backwards_in_strands,
+        edge_indices_in_strands,
+        edge_backwards_in_strands,
     ):
         ordered_edge_indices = np.asarray(strand_edge_indices, dtype=np.int32).reshape(-1)
         backwards_flags = np.asarray(strand_edge_backwards, dtype=bool).reshape(-1)
@@ -404,11 +404,11 @@ def _matlab_get_strand_objects(
 
 
 def _matlab_network_topology(
-        edge_connections: np.ndarray,
-        edge_traces: list[np.ndarray],
-        edge_scale_traces: list[np.ndarray],
-        edge_energy_traces: list[np.ndarray],
-        n_vertices: int,
+    edge_connections: np.ndarray,
+    edge_traces: list[np.ndarray],
+    edge_scale_traces: list[np.ndarray],
+    edge_energy_traces: list[np.ndarray],
+    n_vertices: int,
 ) -> dict[str, Any]:
     """Construct MATLAB-shaped strand topology and strand objects."""
     (
@@ -462,12 +462,12 @@ def _matlab_interp1_implicit_axis(values: np.ndarray, query_points: np.ndarray) 
 
 
 def _matlab_smooth_edges_v2(
-        edge_space_subscripts: list[np.ndarray],
-        edge_scale_subscripts: list[np.ndarray],
-        edge_energies: list[np.ndarray],
-        smoothing_kernel_sigma_to_lumen_radius_ratio: float,
-        lumen_radius_in_microns_range: np.ndarray,
-        microns_per_voxel: np.ndarray,
+    edge_space_subscripts: list[np.ndarray],
+    edge_scale_subscripts: list[np.ndarray],
+    edge_energies: list[np.ndarray],
+    smoothing_kernel_sigma_to_lumen_radius_ratio: float,
+    lumen_radius_in_microns_range: np.ndarray,
+    microns_per_voxel: np.ndarray,
 ) -> tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     """Mirror the active local-neighbor branch of MATLAB ``smooth_edges_V2``."""
     if not edge_space_subscripts:
@@ -514,9 +514,9 @@ def _matlab_smooth_edges_v2(
                 / np.sum(energy_trace.astype(np.float64))
             )
             for scale_trace, energy_trace in zip(
-            smoothed_scale_subscripts,
-            smoothed_energies,
-        )
+                smoothed_scale_subscripts,
+                smoothed_energies,
+            )
         ],
         dtype=np.float64,
     )
@@ -527,8 +527,8 @@ def _matlab_smooth_edges_v2(
         )
     )
     microns_per_sigma = (
-            np.asarray(smoothing_kernel_sigma_to_lumen_radius_ratio, dtype=np.float64)
-            * average_lumen_radii
+        np.asarray(smoothing_kernel_sigma_to_lumen_radius_ratio, dtype=np.float64)
+        * average_lumen_radii
     )
 
     for edge_index in range(len(smoothed_space_subscripts)):
@@ -562,7 +562,7 @@ def _matlab_smooth_edges_v2(
         kernel_micron_domains = edge_cumulative_length[:, None] - edge_cumulative_length[None, :]
         sigma = float(microns_per_sigma[edge_index])
         kernel_sigma_domains = kernel_micron_domains / sigma
-        gaussian_kernels = np.exp(-(kernel_sigma_domains ** 2) / 2.0)
+        gaussian_kernels = np.exp(-(kernel_sigma_domains**2) / 2.0)
         energy_conv_kernel = np.sum(edge_energies_at_edge[:, None] * gaussian_kernels, axis=0)
         energy_conv_energy_conv_kernel = np.sum(
             (edge_energies_at_edge[:, None] ** 2) * gaussian_kernels,
@@ -576,7 +576,7 @@ def _matlab_smooth_edges_v2(
         )
         with np.errstate(divide="ignore", invalid="ignore"):
             edge_subscripts_smoothed = (
-                    subscript_conv_energy_conv_kernel / energy_conv_kernel[:, None]
+                subscript_conv_energy_conv_kernel / energy_conv_kernel[:, None]
             )
             edge_energies_smoothed = energy_conv_energy_conv_kernel / energy_conv_kernel
 
@@ -637,8 +637,8 @@ def _matlab_smooth_edges_v2(
 
 
 def _matlab_get_vessel_directions_v3(
-        strand_space_subscripts: list[np.ndarray],
-        microns_per_voxel: np.ndarray,
+    strand_space_subscripts: list[np.ndarray],
+    microns_per_voxel: np.ndarray,
 ) -> list[np.ndarray]:
     """Mirror MATLAB ``get_vessel_directions_V3`` over strand objects."""
     vessel_directions: list[np.ndarray] = []
@@ -660,7 +660,7 @@ def _matlab_get_vessel_directions_v3(
         else:
             directions = np.zeros((1, 3), dtype=np.float32)
 
-        norms = np.sqrt(np.sum(directions ** 2, axis=1, keepdims=True))
+        norms = np.sqrt(np.sum(directions**2, axis=1, keepdims=True))
         with np.errstate(divide="ignore", invalid="ignore"):
             unit_directions = directions / norms
         vessel_directions.append(np.asarray(unit_directions, dtype=np.float32))

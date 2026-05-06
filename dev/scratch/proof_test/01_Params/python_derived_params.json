@@ -1,0 +1,10 @@
+{
+  "orchestration_params": {
+    "energy_storage_format": "auto",
+    "return_all_scales": false
+  },
+  "python_only_params": {},
+  "unclassified_params": {
+    "pipeline_profile": "paper"
+  }
+}

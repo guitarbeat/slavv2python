@@ -21,12 +21,12 @@ if TYPE_CHECKING:
 
 
 def load_or_create_snapshot(
-        layout: RunLayout,
-        *,
-        input_fingerprint: str,
-        params_fingerprint: str,
-        target_stage: str | None,
-        provenance: dict[str, Any],
+    layout: RunLayout,
+    *,
+    input_fingerprint: str,
+    params_fingerprint: str,
+    target_stage: str | None,
+    provenance: dict[str, Any],
 ) -> RunSnapshot:
     """Load an existing snapshot or create a fresh one for the resolved layout."""
     layout.ensure_directories()
@@ -65,12 +65,12 @@ def persist_snapshot(snapshot: RunSnapshot, snapshot_path, *, start_time: float)
 
 
 def emit_progress_event(
-        snapshot: RunSnapshot,
-        event_callback: Callable[[ProgressEvent], None] | None,
-        *,
-        stage: str,
-        status: str,
-        detail: str = "",
+    snapshot: RunSnapshot,
+    event_callback: Callable[[ProgressEvent], None] | None,
+    *,
+    stage: str,
+    status: str,
+    detail: str = "",
 ) -> None:
     """Emit a deep-copied progress event if a callback is configured."""
     if event_callback is None:

@@ -18,7 +18,7 @@ def _merge_parameters(defaults: dict[str, Any], overrides: dict[str, Any] | None
 
 
 def _within_boundary_mask(
-        positions: np.ndarray, image_shape: tuple[int, int, int], boundary_margin: float
+    positions: np.ndarray, image_shape: tuple[int, int, int], boundary_margin: float
 ) -> np.ndarray:
     keep_mask = np.ones(len(positions), dtype=bool)
     for dim in range(3):
@@ -28,11 +28,11 @@ def _within_boundary_mask(
 
 
 def _has_local_contrast(
-        pos: np.ndarray,
-        radius: float,
-        energy_field: np.ndarray,
-        image_shape: tuple[int, int, int],
-        contrast_threshold: float,
+    pos: np.ndarray,
+    radius: float,
+    energy_field: np.ndarray,
+    image_shape: tuple[int, int, int],
+    contrast_threshold: float,
 ) -> bool:
     try:
         y, x, z = pos.astype(int)
@@ -73,11 +73,11 @@ def _build_original_to_curated_index(vertices: dict[str, Any]) -> dict[int, int]
 
 
 def _endpoint_matches_vertex(
-        trace_point: np.ndarray,
-        vertex_index: Any,
-        vertex_positions: np.ndarray,
-        original_to_curated_idx: dict[int, int],
-        max_connection_distance: float,
+    trace_point: np.ndarray,
+    vertex_index: Any,
+    vertex_positions: np.ndarray,
+    original_to_curated_idx: dict[int, int],
+    max_connection_distance: float,
 ) -> bool:
     if vertex_index is None:
         return True
@@ -91,15 +91,15 @@ class AutomaticCurator:
     """Automatic curation using heuristic rules (no ML training required)."""
 
     def __init__(
-            self,
-            vertex_parameters: dict[str, Any] | None = None,
-            edge_parameters: dict[str, Any] | None = None,
+        self,
+        vertex_parameters: dict[str, Any] | None = None,
+        edge_parameters: dict[str, Any] | None = None,
     ) -> None:
         self.vertex_parameters = vertex_parameters or {}
         self.edge_parameters = edge_parameters or {}
 
     def curate_vertices_automatic(
-            self, vertices: dict[str, Any], energy_data: dict[str, Any], parameters: dict[str, Any]
+        self, vertices: dict[str, Any], energy_data: dict[str, Any], parameters: dict[str, Any]
     ) -> dict[str, Any]:
         logger.info("Performing automatic vertex curation")
 
@@ -122,11 +122,11 @@ class AutomaticCurator:
             if not keep_mask[i]:
                 continue
             if not _has_local_contrast(
-                    pos,
-                    float(radii[i]),
-                    energy_field,
-                    image_shape,
-                    contrast_threshold,
+                pos,
+                float(radii[i]),
+                energy_field,
+                image_shape,
+                contrast_threshold,
             ):
                 keep_mask[i] = False
 
@@ -145,7 +145,7 @@ class AutomaticCurator:
         return curated_vertices
 
     def curate_edges_automatic(
-            self, edges: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
+        self, edges: dict[str, Any], vertices: dict[str, Any], parameters: dict[str, Any]
     ) -> dict[str, Any]:
         logger.info("Performing automatic edge curation")
 
@@ -162,7 +162,7 @@ class AutomaticCurator:
         max_tortuosity = params.get("max_edge_tortuosity", 3.0)
         for i, trace in enumerate(edge_traces):
             if keep_mask[i] and not _path_meets_tortuosity_requirement(
-                    np.array(trace), max_tortuosity
+                np.array(trace), max_tortuosity
             ):
                 keep_mask[i] = False
 
@@ -176,11 +176,11 @@ class AutomaticCurator:
             start_vertex, end_vertex = connection
             trace_arr = np.array(trace)
             if not _endpoint_matches_vertex(
-                    trace_arr[0],
-                    start_vertex,
-                    vertex_positions,
-                    original_to_curated_idx,
-                    max_connection_distance,
+                trace_arr[0],
+                start_vertex,
+                vertex_positions,
+                original_to_curated_idx,
+                max_connection_distance,
             ) or not _endpoint_matches_vertex(
                 trace_arr[-1],
                 end_vertex,

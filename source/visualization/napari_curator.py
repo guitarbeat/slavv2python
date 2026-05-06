@@ -44,8 +44,8 @@ def _load_napari_modules() -> dict[str, Any]:
 
 
 def _prepare_curator_payload(
-        vertices_data: dict[str, Any],
-        edges_data: dict[str, Any] | None,
+    vertices_data: dict[str, Any],
+    edges_data: dict[str, Any] | None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     vertices_copy = copy.deepcopy(vertices_data)
     edges_copy = copy.deepcopy(edges_data) if edges_data else {}
@@ -74,11 +74,11 @@ def _strip_false_status_rows(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def _rgba(
-        statuses: np.ndarray,
-        *,
-        true_rgb: tuple[float, float, float],
-        false_rgb: tuple[float, float, float],
-        hide_false: bool,
+    statuses: np.ndarray,
+    *,
+    true_rgb: tuple[float, float, float],
+    false_rgb: tuple[float, float, float],
+    hide_false: bool,
 ) -> np.ndarray:
     colors = np.zeros((len(statuses), 4), dtype=float)
     for idx, keep in enumerate(statuses.astype(bool)):
@@ -103,11 +103,11 @@ class NapariCuratorPrototype:
     """Experimental napari curator focused on point/edge review workflow."""
 
     def __init__(
-            self,
-            energy_data: np.ndarray,
-            vertices_data: dict[str, Any],
-            edges_data: dict[str, Any],
-            modules: dict[str, Any],
+        self,
+        energy_data: np.ndarray,
+        vertices_data: dict[str, Any],
+        edges_data: dict[str, Any],
+        modules: dict[str, Any],
     ) -> None:
         self.energy_data = energy_data
         self.vertices_data = vertices_data
@@ -289,9 +289,9 @@ class NapariCuratorPrototype:
 
 
 def run_curator_napari(
-        energy_data: np.ndarray,
-        vertices_data: dict[str, Any],
-        edges_data: dict[str, Any] | None = None,
+    energy_data: np.ndarray,
+    vertices_data: dict[str, Any],
+    edges_data: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     modules = _load_napari_modules()
     vertices_copy, edges_copy = _prepare_curator_payload(vertices_data, edges_data)

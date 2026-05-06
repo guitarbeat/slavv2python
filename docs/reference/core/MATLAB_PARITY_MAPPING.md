@@ -89,39 +89,27 @@ These are now explicit parity-investigation pitfalls:
   discrepancy explicitly and avoid treating either side as silently
   self-evident.
 
-### 1. `get_edges_V300.m` and `get_edges_by_watershed.m`: control-flow surfaces remain the main open risk
+### 1. `get_edges_V300.m` and `get_edges_by_watershed.m`: control-flow surfaces aligned
 
-The live Python watershed path has absorbed the major pointer-lifecycle and
-trace-sampling fixes, but the remaining open risk is still in control flow
-rather than scalar math. The strongest surfaces are:
+The live Python watershed path has absorbed the major pointer-lifecycle, trace-sampling, and frontier-ordering fixes. The following control-flow surfaces are now aligned with MATLAB:
 
-- frontier ordering and insertion semantics
-- join reset and available-location cleanup semantics
-- vertex `-Inf` sentinel lifecycle behavior
-- diagnostic-era guards still affecting the canonical exact path
+- ✅ frontier ordering and insertion semantics (r/R normalization)
+- ✅ join reset and available-location cleanup semantics
+- ✅ vertex `-Inf` sentinel lifecycle behavior
+- ✅ energy map integrity (stopped penalty propagation to shared map)
 
-Treat these as the main native-first candidate-generation audit surfaces.
+### 2. `choose_edges_V200.m`: randomized trace order in conflict painting - ✅ FIXED
 
-### 2. `choose_edges_V200.m`: randomized trace order in conflict painting
+**Status**: Fixed (2026-05-05)
 
 **MATLAB** uses `randperm` over the per-edge trace positions before painting.
 
-**Python** still iterates traces sequentially in the delegated implementation
-behind `source/core/edges_internal/edge_selection.py`, currently
-`source/core/_edge_selection/conflict_painting.py`.
+**Python** now uses a seeded `np.random.default_rng(seed).permutation()` in `source/core/edges_internal/edge_selection.py` to match this behavior while maintaining determinism for parity testing.
 
 Why it matters:
+- ensures literal chooser parity by matching the conflict detection sequence
+- prevents accept/reject divergence caused by trace iteration order
 
-- the first conflicting point encountered can change
-- that can change the accept or reject order once the painted state diverges
-- it is a real structural difference on an exact-parity route
-
-Recommended direction:
-
-- replace sequential trace iteration with a MATLAB-matching permuted index
-  order, or
-- explicitly demote this surface from exact-parity claims if deterministic
-  replay is preferred over literal `randperm` behavior
 
 ## Aligned Surfaces That Should Not Be Reopened First
 

@@ -8,17 +8,23 @@ from typing import Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from source.io.matlab_exact_proof import find_single_matlab_batch_dir, find_matlab_vector_paths
+from source.io.matlab_exact_proof import find_matlab_vector_paths, find_single_matlab_batch_dir
 from source.runtime.run_state import (
     fingerprint_file,
     fingerprint_jsonable,
     load_json_dict,
 )
+
 from .constants import (
     ANALYSIS_DIR,
     ANALYSIS_TABLES_DIR,
     CHECKPOINTS_DIR,
+    COMPARISON_REPORT_PATH,
+    DATASET_INPUT_DIR,
     DATASET_MANIFEST_PATH,
+    EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS,
+    EXACT_REQUIRED_PARAMETER_VALUES,
+    EXACT_SHARED_METHOD_PARAMETER_KEYS,
     EXPERIMENT_PARAMS_DIR,
     EXPERIMENT_PROVENANCE_PATH,
     EXPERIMENT_REFS_DIR,
@@ -34,13 +40,15 @@ from .constants import (
     RUN_SNAPSHOT_PATH,
     SHARED_PARAMS_PATH,
     VALIDATED_PARAMS_PATH,
-    EXACT_REQUIRED_PARAMETER_VALUES,
-    EXACT_SHARED_METHOD_PARAMETER_KEYS,
-    EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS,
-    COMPARISON_REPORT_PATH,
 )
 from .index import resolve_experiment_root, upsert_index_record
-from .models import DatasetSurface, OracleSurface, SourceRunSurface, ExactProofSourceSurface, RunCounts
+from .models import (
+    DatasetSurface,
+    ExactProofSourceSurface,
+    OracleSurface,
+    RunCounts,
+    SourceRunSurface,
+)
 from .utils import (
     entity_id_from_path,
     now_iso,
@@ -62,17 +70,18 @@ def build_exact_params_audit(params: dict[str, Any]) -> dict[str, Any]:
         actual_value = _normalize_param_value(params.get(key))
         normalized_expected = _normalize_param_value(expected_value)
         if actual_value != normalized_expected:
-            required_exact_mismatches.append({
-                "key": key, "expected": normalized_expected, "found": actual_value
-            })
+            required_exact_mismatches.append(
+                {"key": key, "expected": normalized_expected, "found": actual_value}
+            )
 
     known_keys = (
-            EXACT_SHARED_METHOD_PARAMETER_KEYS |
-            EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS |
-            set(EXACT_REQUIRED_PARAMETER_VALUES)
+        EXACT_SHARED_METHOD_PARAMETER_KEYS
+        | EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
+        | set(EXACT_REQUIRED_PARAMETER_VALUES)
     )
     unclassified_keys = sorted(
-        key for key in param_keys
+        key
+        for key in param_keys
         if key not in known_keys and key not in disallowed_python_only_keys
     )
 
@@ -86,7 +95,8 @@ def build_exact_params_audit(params: dict[str, Any]) -> dict[str, Any]:
             key: _normalize_param_value(params[key]) for key in orchestration_keys if key in params
         },
         "required_exact_values": {
-            key: _normalize_param_value(value) for key, value in EXACT_REQUIRED_PARAMETER_VALUES.items()
+            key: _normalize_param_value(value)
+            for key, value in EXACT_REQUIRED_PARAMETER_VALUES.items()
         },
         "required_exact_mismatches": required_exact_mismatches,
         "disallowed_python_only_keys": disallowed_python_only_keys,
@@ -114,11 +124,13 @@ def persist_param_storage(dest_run_root: Path, params: dict[str, Any]) -> dict[s
 
     orchestration_params = {
         key: _normalize_param_value(params[key])
-        for key in derived_keys if key in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
+        for key in derived_keys
+        if key in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
     }
     python_only_params = {
         key: _normalize_param_value(params[key])
-        for key in derived_keys if key.startswith("parity_")
+        for key in derived_keys
+        if key.startswith("parity_")
     }
     unclassified_params = {
         key: _normalize_param_value(params[key])
@@ -136,9 +148,15 @@ def persist_param_storage(dest_run_root: Path, params: dict[str, Any]) -> dict[s
         "shared_param_count": len(shared_params),
         "shared_param_keys": sorted(shared_params),
         "derived_param_keys": derived_keys,
-        "required_exact_values": cast("dict[str, Any]", dict(audit.get("required_exact_values", {}))),
-        "required_exact_mismatches": cast("list[dict[str, Any]]", list(audit.get("required_exact_mismatches", []))),
-        "disallowed_python_only_keys": cast("list[str]", list(audit.get("disallowed_python_only_keys", []))),
+        "required_exact_values": cast(
+            "dict[str, Any]", dict(audit.get("required_exact_values", {}))
+        ),
+        "required_exact_mismatches": cast(
+            "list[dict[str, Any]]", list(audit.get("required_exact_mismatches", []))
+        ),
+        "disallowed_python_only_keys": cast(
+            "list[str]", list(audit.get("disallowed_python_only_keys", []))
+        ),
         "shared_params_hash": fingerprint_jsonable(shared_params),
         "python_derived_params_hash": fingerprint_jsonable(python_derived),
     }
@@ -156,15 +174,15 @@ def persist_param_storage(dest_run_root: Path, params: dict[str, Any]) -> dict[s
 
 
 def write_run_manifest(
-        dest_run_root: Path,
-        *,
-        run_kind: str,
-        status: str,
-        command: str,
-        dataset_hash: str | None,
-        oracle_surface: OracleSurface | None,
-        params_payload: dict[str, Any] | None,
-        extra: dict[str, Any] | None = None,
+    dest_run_root: Path,
+    *,
+    run_kind: str,
+    status: str,
+    command: str,
+    dataset_hash: str | None,
+    oracle_surface: OracleSurface | None,
+    params_payload: dict[str, Any] | None,
+    extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Write the run manifest and update the central index."""
     src_manifest = load_json_dict(dest_run_root / RUN_MANIFEST_PATH) or {}
@@ -172,7 +190,11 @@ def write_run_manifest(
     exp_root = resolve_experiment_root(dest_run_root)
 
     ts = cast("dict[str, Any]", dict(src_manifest.get("timestamps", {})))
-    created_at = string_or_none(ts.get("created_at")) or string_or_none(src_manifest.get("created_at")) or now_iso()
+    created_at = (
+        string_or_none(ts.get("created_at"))
+        or string_or_none(src_manifest.get("created_at"))
+        or now_iso()
+    )
     updated_at = now_iso()
 
     manifest = {
@@ -185,8 +207,8 @@ def write_run_manifest(
         "dataset_hash": dataset_hash,
         "oracle_id": oracle_surface.oracle_id if oracle_surface else None,
         "oracle_root": str(oracle_surface.oracle_root) if oracle_surface else None,
-        "python_commit": string_or_none(src_manifest.get("python_commit")) or resolve_python_commit(
-            exp_root or Path.cwd()),
+        "python_commit": string_or_none(src_manifest.get("python_commit"))
+        or resolve_python_commit(exp_root or Path.cwd()),
         "timestamps": {
             "created_at": created_at,
             "updated_at": updated_at,
@@ -214,17 +236,19 @@ from .reports import persist_recording_tables
 
 
 def resolve_input_file(
-        source_surface: SourceRunSurface,
-        input_arg: str | None,
-        *,
-        repo_root: Path,
+    source_surface: SourceRunSurface,
+    input_arg: str | None,
+    *,
+    repo_root: Path,
 ) -> Path:
     """Resolve the input file either from the CLI or the source run snapshot provenance."""
     if input_arg:
         candidate = Path(input_arg).expanduser()
     else:
         if source_surface.run_snapshot_path is None:
-            raise ValueError("source run root does not contain snapshot and no --input was provided")
+            raise ValueError(
+                "source run root does not contain snapshot and no --input was provided"
+            )
         snapshot = load_json_dict(source_surface.run_snapshot_path) or {}
         provenance = snapshot.get("provenance", {})
         raw_input = provenance.get("input_file")
@@ -243,6 +267,7 @@ def resolve_input_file(
 def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -> None:
     """Copy the reusable source checkpoints and reference metadata into a fresh destination root."""
     from shutil import copy2, copytree
+
     destination = dest_run_root.resolve()
     if destination.exists():
         raise ValueError(f"destination run root already exists: {destination}")
@@ -329,7 +354,7 @@ def load_params_file(source_surface: SourceRunSurface, params_arg: str | None) -
     payload = load_json_dict(path)
     if payload is None:
         raise ValueError(f"expected JSON object in params file: {path}")
-    
+
     # Audit if exact route is requested
     if payload.get("comparison_exact_network") is True:
         audit = build_exact_params_audit(payload)
@@ -348,8 +373,16 @@ def load_params_file(source_surface: SourceRunSurface, params_arg: str | None) -
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:
     """Ensure the destination run root has the required subdirectory structure."""
-    for subdir in (ANALYSIS_DIR, ANALYSIS_TABLES_DIR, CHECKPOINTS_DIR, EXPERIMENT_REFS_DIR, EXPERIMENT_PARAMS_DIR,
-                   METADATA_DIR, HASHES_DIR, NORMALIZED_DIR):
+    for subdir in (
+        ANALYSIS_DIR,
+        ANALYSIS_TABLES_DIR,
+        CHECKPOINTS_DIR,
+        EXPERIMENT_REFS_DIR,
+        EXPERIMENT_PARAMS_DIR,
+        METADATA_DIR,
+        HASHES_DIR,
+        NORMALIZED_DIR,
+    ):
         (dest_run_root / subdir).mkdir(parents=True, exist_ok=True)
 
 
@@ -389,21 +422,39 @@ def load_dataset_surface(dataset_root: Path) -> DatasetSurface:
     manifest = load_json_dict(manifest_path)
     if manifest is None:
         raise ValueError(f"missing dataset manifest: {manifest_path}")
+
     stored_input = string_or_none(manifest.get("stored_input_file"))
+    input_filename = string_or_none(manifest.get("input_filename"))
     dataset_hash = string_or_none(manifest.get("dataset_hash"))
-    if stored_input is None:
-        raise ValueError(f"dataset manifest is missing stored_input_file: {manifest_path}")
+
     if dataset_hash is None:
         raise ValueError(f"dataset manifest is missing dataset_hash: {manifest_path}")
-    input_file = Path(stored_input).expanduser().resolve()
-    if not input_file.is_file():
-        raise ValueError(f"dataset input file not found: {input_file}")
+
+    # Robust path resolution: try stored absolute path, then try relative to dataset_root
+    input_file: Path | None = None
+    if stored_input:
+        input_file = Path(stored_input).expanduser().resolve()
+        if not input_file.is_file():
+            input_file = None
+
+    if input_file is None and input_filename:
+        # Fallback to standard 01_Input/<filename> layout
+        input_file = resolved_root / DATASET_INPUT_DIR / input_filename
+        if not input_file.is_file():
+            input_file = None
+
+    if input_file is None:
+        raise ValueError(
+            f"dataset input file not found for {dataset_hash} under {resolved_root}"
+        )
+
     actual_hash = fingerprint_file(input_file)
     if actual_hash != dataset_hash:
         raise ValueError(
             "dataset manifest hash does not match stored input file: "
             f"expected {dataset_hash}, found {actual_hash}"
         )
+
     return DatasetSurface(
         dataset_root=resolved_root,
         manifest_path=manifest_path,
@@ -423,7 +474,7 @@ def _settings_timestamp_token_from_vector_name(vector_name: str, stage: str) -> 
     for prefix in prefix_options:
         if not stem.startswith(prefix):
             continue
-        remainder = stem[len(prefix):]
+        remainder = stem[len(prefix) :]
         timestamp = remainder.split("_", 1)[0]
         if timestamp:
             return timestamp
@@ -456,7 +507,7 @@ def _select_oracle_settings_paths(oracle_surface: OracleSurface) -> dict[str, Pa
 
 
 def derive_exact_params_from_oracle(
-        oracle_surface: OracleSurface,
+    oracle_surface: OracleSurface,
 ) -> tuple[dict[str, Any], dict[str, str], dict[str, dict[str, Any]]]:
     """Derive Python parameters from MATLAB settings artifacts."""
     settings_paths = _select_oracle_settings_paths(oracle_surface)
@@ -484,9 +535,7 @@ def derive_exact_params_from_oracle(
         "sample_index_of_refraction": _normalize_param_value(
             energy_settings["sample_index_of_refraction"]
         ),
-        "numerical_aperture": _normalize_param_value(
-            energy_settings["numerical_aperture"]
-        ),
+        "numerical_aperture": _normalize_param_value(energy_settings["numerical_aperture"]),
         "excitation_wavelength_in_microns": _normalize_param_value(
             energy_settings["excitation_wavelength_in_microns"]
         ),
@@ -500,21 +549,11 @@ def derive_exact_params_from_oracle(
         "spherical_to_annular_ratio": _normalize_param_value(
             energy_settings["spherical_to_annular_ratio"]
         ),
-        "approximating_PSF": bool(
-            _normalize_param_value(energy_settings["approximating_PSF"])
-        ),
-        "space_strel_apothem": _normalize_param_value(
-            vertex_settings["space_strel_apothem"]
-        ),
-        "energy_upper_bound": _normalize_param_value(
-            vertex_settings["energy_upper_bound"]
-        ),
-        "max_voxels_per_node": _normalize_param_value(
-            vertex_settings["max_voxels_per_node"]
-        ),
-        "length_dilation_ratio": _normalize_param_value(
-            vertex_settings["length_dilation_ratio"]
-        ),
+        "approximating_PSF": bool(_normalize_param_value(energy_settings["approximating_PSF"])),
+        "space_strel_apothem": _normalize_param_value(vertex_settings["space_strel_apothem"]),
+        "energy_upper_bound": _normalize_param_value(vertex_settings["energy_upper_bound"]),
+        "max_voxels_per_node": _normalize_param_value(vertex_settings["max_voxels_per_node"]),
+        "length_dilation_ratio": _normalize_param_value(vertex_settings["length_dilation_ratio"]),
         "max_edge_length_per_origin_radius": _normalize_param_value(
             edge_settings["max_edge_length_per_origin_radius"]
         ),
@@ -542,19 +581,19 @@ def _oracle_energy_size_of_image(oracle_surface: OracleSurface) -> tuple[int, in
     energy = payload.get("energy")
     if energy is not None and hasattr(energy, "shape"):
         return cast("tuple[int, int, int]", tuple(int(value) for value in energy.shape))
-    
+
     size_of_image = payload.get("size_of_image")
     if size_of_image is not None:
         size_array = np.atleast_1d(np.squeeze(size_of_image))
         if size_array.ndim == 1 and len(size_array) == 3:
             return cast("tuple[int, int, int]", tuple(int(v) for v in size_array))
-            
+
     return None
 
 
 def _reorient_exact_input_volume(
-        image: np.ndarray,
-        oracle_surface: OracleSurface,
+    image: np.ndarray,
+    oracle_surface: OracleSurface,
 ) -> tuple[np.ndarray, tuple[int, int, int] | None, tuple[int, int, int] | None]:
     oracle_size = _oracle_energy_size_of_image(oracle_surface)
     if oracle_size is None:
@@ -565,6 +604,7 @@ def _reorient_exact_input_volume(
         return image, oracle_size, None
 
     import itertools
+
     for p in itertools.permutations((0, 1, 2)):
         reordered_size = (input_size[p[0]], input_size[p[1]], input_size[p[2]])
         if reordered_size == oracle_size:
@@ -575,12 +615,13 @@ def _reorient_exact_input_volume(
 
 
 def _copy_exact_bootstrap_refs(
-        dest_run_root: Path,
-        *,
-        dataset_surface: DatasetSurface,
-        oracle_surface: OracleSurface,
+    dest_run_root: Path,
+    *,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
 ) -> None:
     from shutil import copy2, copytree
+
     refs_dir = dest_run_root / EXPERIMENT_REFS_DIR
     copy2(dataset_surface.input_file, refs_dir / dataset_surface.input_file.name)
     copy2(dataset_surface.manifest_path, refs_dir / "dataset_manifest.json")
@@ -589,14 +630,16 @@ def _copy_exact_bootstrap_refs(
 
     matlab_results_dir = dest_run_root / "01_Input" / "matlab_results"
     matlab_results_dir.mkdir(parents=True, exist_ok=True)
-    copytree(oracle_surface.matlab_batch_dir, matlab_results_dir / oracle_surface.matlab_batch_dir.name)
+    copytree(
+        oracle_surface.matlab_batch_dir, matlab_results_dir / oracle_surface.matlab_batch_dir.name
+    )
 
 
 def _resolve_existing_init_exact_run(
-        dest_run_root: Path,
-        dataset_surface: DatasetSurface,
-        oracle_surface: OracleSurface,
-        stop_after: str | None,
+    dest_run_root: Path,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+    stop_after: str | None,
 ) -> bool:
     if not dest_run_root.is_dir():
         return False
@@ -604,28 +647,30 @@ def _resolve_existing_init_exact_run(
     if prov is None:
         return False
     if (
-            prov.get("dataset_hash") == dataset_surface.dataset_hash
-            and prov.get("oracle_id") == oracle_surface.oracle_id
-            and prov.get("stop_after") == stop_after
+        prov.get("dataset_hash") == dataset_surface.dataset_hash
+        and prov.get("oracle_id") == oracle_surface.oracle_id
+        and prov.get("stop_after") == stop_after
     ):
         from .constants import RUN_SNAPSHOT_PATH
+
         snapshot = load_json_dict(dest_run_root / RUN_SNAPSHOT_PATH) or {}
         if snapshot.get("status") == "running":
             import sys
+
             sys.exit("seed run is still active; stop it or use --force-rerun-from to override")
         return True
     return False
 
 
 def _finalize_init_exact_run(
-        dest_run_root: Path,
-        dataset_surface: DatasetSurface,
-        oracle_surface: OracleSurface,
-        params: dict[str, Any],
-        selected_settings_paths: dict[str, str],
-        oracle_size_of_image: tuple[int, int, int] | None,
-        input_axis_permutation: tuple[int, int, int] | None,
-        stop_after: str | None,
+    dest_run_root: Path,
+    dataset_surface: DatasetSurface,
+    oracle_surface: OracleSurface,
+    params: dict[str, Any],
+    selected_settings_paths: dict[str, str],
+    oracle_size_of_image: tuple[int, int, int] | None,
+    input_axis_permutation: tuple[int, int, int] | None,
+    stop_after: str | None,
 ) -> None:
     write_run_manifest(
         dest_run_root,
@@ -638,31 +683,37 @@ def _finalize_init_exact_run(
         extra={
             "stop_after": stop_after,
             "oracle_size_of_image": list(oracle_size_of_image) if oracle_size_of_image else None,
-            "input_axis_permutation": list(input_axis_permutation) if input_axis_permutation else None,
+            "input_axis_permutation": list(input_axis_permutation)
+            if input_axis_permutation
+            else None,
             "selected_settings_paths": selected_settings_paths,
-        }
+        },
     )
     persist_recording_tables(dest_run_root)
 
     from .constants import RUN_SNAPSHOT_PATH
+
     snapshot_path = dest_run_root / RUN_SNAPSHOT_PATH
     if snapshot_path.is_file():
         snapshot = load_json_dict(snapshot_path) or {}
         prov = snapshot.get("provenance", {})
-        prov.update({
-            "input_file": str(dataset_surface.input_file),
-            "oracle_id": oracle_surface.oracle_id,
-        })
+        prov.update(
+            {
+                "input_file": str(dataset_surface.input_file),
+                "oracle_id": oracle_surface.oracle_id,
+            }
+        )
         snapshot["provenance"] = prov
         from source.runtime.run_state import atomic_write_json
+
         atomic_write_json(snapshot_path, snapshot)
 
 
 def maybe_sync_exact_vertex_checkpoint(
-        source_run_root: Path,
-        dest_run_root: Path,
-        *,
-        oracle_root: Path | None = None,
+    source_run_root: Path,
+    dest_run_root: Path,
+    *,
+    oracle_root: Path | None = None,
 ) -> str:
     """Sync the exact-route vertex checkpoint if available."""
     from source.io.matlab_exact_proof import sync_exact_vertex_checkpoint_from_matlab
@@ -724,6 +775,7 @@ def extract_source_python_counts(report_payload: dict[str, Any]) -> RunCounts:
 def read_python_counts_from_run(run_root: Path) -> RunCounts:
     """Read RunCounts from the checkpoints in a run root."""
     from source.utils.safe_unpickle import safe_load
+
     checkpoints = run_root / CHECKPOINTS_DIR
 
     v_path = checkpoints / "checkpoint_vertices.pkl"

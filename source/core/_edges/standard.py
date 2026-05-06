@@ -12,20 +12,20 @@ logger = logging.getLogger(__name__)
 
 
 def extract_edges(
-        energy_data: dict[str, Any],
-        vertices: dict[str, Any],
-        params: dict[str, Any],
-        *,
-        empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
-        paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
-        paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
-        use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
-        generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
-        finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
-        generate_edge_candidates: Callable[..., dict[str, Any]],
-        choose_edges_for_workflow: Callable[..., dict[str, Any]],
-        add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
-        finalize_edges_matlab_style: Callable[..., dict[str, Any]],
+    energy_data: dict[str, Any],
+    vertices: dict[str, Any],
+    params: dict[str, Any],
+    *,
+    empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
+    paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
+    paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
+    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
+    generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
+    finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
+    generate_edge_candidates: Callable[..., dict[str, Any]],
+    choose_edges_for_workflow: Callable[..., dict[str, Any]],
+    add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
+    finalize_edges_matlab_style: Callable[..., dict[str, Any]],
 ) -> dict[str, Any]:
     """Extract edges by tracing from vertices through energy field."""
     logger.info("Extracting edges")

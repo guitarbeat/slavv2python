@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import cProfile
+import os
 import pstats
 from typing import TYPE_CHECKING, Any
+
+import psutil
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-# from ..core import SlavvPipeline  # Moved inside to avoid circular dependency
+def get_process_memory_usage() -> float:
+    """Return the current process memory usage (RSS) in megabytes."""
+    process = psutil.Process(os.getpid())
+    return float(process.memory_info().rss) / (1024.0 * 1024.0)
 
 
 def profile_process_image(
-        image: np.ndarray, parameters: dict[str, Any] | None = None
+    image: np.ndarray, parameters: dict[str, Any] | None = None
 ) -> pstats.Stats:
     """Profile the SLAVV pipeline on a 3D volume.
 

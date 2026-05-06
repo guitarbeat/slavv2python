@@ -38,10 +38,10 @@ def plot_2d_layout(projection_axis: int, x_label: str, y_label: str) -> dict[str
 
 
 def plot_slice_layout(
-        center_in_microns: float,
-        axis: int,
-        x_label: str,
-        y_label: str,
+    center_in_microns: float,
+    axis: int,
+    x_label: str,
+    y_label: str,
 ) -> dict[str, Any]:
     """Return the shared layout options for slice figures."""
     return {
@@ -56,13 +56,13 @@ def plot_slice_layout(
 
 
 def plot_3d_layout(
-        title: str,
-        *,
-        showlegend: bool,
-        width: int = 800,
-        height: int = 600,
-        updatemenus: list[dict[str, Any]] | None = None,
-        sliders: list[dict[str, Any]] | None = None,
+    title: str,
+    *,
+    showlegend: bool,
+    width: int = 800,
+    height: int = 600,
+    updatemenus: list[dict[str, Any]] | None = None,
+    sliders: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Return shared layout options for 3D network figures."""
     layout: dict[str, Any] = {
@@ -85,13 +85,13 @@ def plot_3d_layout(
 
 
 def distribution_layout(
-        title: str,
-        xaxis_title: str,
-        yaxis_title: str,
-        *,
-        width: int,
-        height: int,
-        showlegend: bool = False,
+    title: str,
+    xaxis_title: str,
+    yaxis_title: str,
+    *,
+    width: int,
+    height: int,
+    showlegend: bool = False,
 ) -> dict[str, Any]:
     """Return shared layout options for 1D histogram/bar figures."""
     return {

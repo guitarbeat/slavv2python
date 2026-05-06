@@ -200,54 +200,60 @@ suppression and trace order fixes.
 
 Two critical MATLAB parity bugs were identified and fixed on 2026-05-04:
 
-#### 1. Directional Suppression in Seed Loop (CRITICAL)
+#### 1. Directional Suppression in Seed Loop (VERIFIED)
 
-**Bug**: Python was applying directional suppression INSIDE the watershed seed
-loop, mutating adjusted energies after each seed selection. MATLAB computes
-adjusted energies ONCE before the loop and uses them unchanged for all seeds.
+**Status**: Verified Correct (2026-05-05)
 
-**Location**: `source/core/_edge_candidates/global_watershed.py` lines 714-720
+**Finding**:
+Previous reports (2026-05-04) suggested that directional suppression was outside the seed loop in MATLAB. However, exhaustive review of `get_edges_by_watershed.m` (line 763) confirms that directional suppression **IS** inside the `seed_idx` loop and is **iterative**.
 
-**MATLAB Reference**: `external/Vectorization-Public/source/get_edges_by_watershed.m`
-- Lines 207-343: Compute adjusted energies BEFORE seed loop
-- Lines 476-565: Seed loop that only READS `current_strel_energies`, never mutates
+**Impact**:
+Python's current implementation of iterative suppression matches MATLAB's intent. The previous plan to move it outside the loop would have been a divergence.
 
-**Impact**: This bug directly caused the 16.3% candidate generation gap because:
-- It affected every location emitting multiple seeds (vertices with `edge_number_tolerance=2`)
-- Caused Python to select different second seeds than MATLAB
-- Accumulated over thousands of watershed iterations
+**Action**:
+Maintain the iterative suppression inside the seed loop in `source/core/_edge_candidates/global_watershed.py`.
 
-**Fix**: Removed directional suppression from inside seed loop. MATLAB applies
-all energy penalties (size, distance, direction) BEFORE the seed loop begins,
-then uses the same adjusted energy field for all seeds from that location.
+#### 2. Trace Order Randomization (VERIFIED)
 
-**Validation**: All watershed tests pass (81/82, 1 pre-existing frontier ordering failure)
+**Status**: Verified Correct (2026-05-05)
 
-#### 2. Trace Order Randomization
+**Bug**: Python randomized trace point order only when `comparison_exact_network=True`, but MATLAB always uses `randperm`.
+**Fix**: Always use seeded RNG for trace order shuffling in `source/core/edges_internal/edge_selection.py`. Matches MATLAB's `randperm` behavior on all routes.
 
-**Bug**: Python only randomized trace point order when `comparison_exact_network=True`,
-but MATLAB always uses `randperm` for deterministic trace order.
+#### 3. Distance Normalization (r/R) - ✅ FIXED (2026-05-05)
 
-**Location**: `source/core/edges_internal/edge_selection.py` lines 221-224
+**Bug**: Python was using absolute micron distances for energy penalties. MATLAB uses relative distances normalized by the vessel radius ($R$) at each step.
+**Fix**: Implemented `r/R` normalization in `common.py` and `global_watershed.py`. Penalties now correctly scale with vessel size.
 
-**MATLAB Reference**: `external/Vectorization-Public/source/choose_edges_V200.m` line 318
-```matlab
-edge_position_index_range = uint16(randperm(degrees_of_edges(edge_index)));
-```
+#### 5. Backtracking Pointer Correction - ✅ FIXED (2026-05-05)
 
-**Impact**: Non-deterministic trace order on non-exact routes; incorrect parity
-assumption that randomization was exact-route-only.
+**Bug**: Watershed pointer indices were being generated sequentially, rather than indices that point back to the neighborhood origin. This broke the backtracking mechanism, leading to incomplete or incorrect edge traces.
+**Fix**: Updated `_build_matlab_global_watershed_lut_cached` to correctly calculate reverse indices (where `subscripts[j] == -subscripts[i]`). Traces now correctly recover both origin vertices.
 
-**Fix**: Always initialize and use seeded RNG for trace order, removing the
-conditional check. Now matches MATLAB's `randperm` behavior on all routes.
+#### 6. Stable Discovery Edge Sorting - ✅ FIXED (2026-05-05)
 
-**Validation**: All edge selection tests pass (9/9)
+**Bug**: Python discovered edges were processed in discovery order, but MATLAB explicitly sorts them by energy quality (max bottleneck) before subsequent stages. This caused downstream structural reconfiguration to diverge.
+**Fix**: Implemented stable `np.argsort` by metric in `_finalize_matlab_parity_candidates`.
+
+#### 9. Filtering Stage Order - ✅ FIXED (2026-05-05)
+
+**Bug**: Python was performing `clean_edge_pairs` (best trajectory selection) before `crop_edges_V200` (out-of-bounds removal). This allowed an out-of-bounds edge with better energy to "block" a valid in-bounds edge during unique-pair selection, resulting in no edge being kept for that vertex pair.
+**Fix**: Refactored `_choose_edges_matlab_style` to perform cropping as the very first step, passing only in-bounds candidates to the pair cleanup stage. This strictly matches the sequence found in `vectorize_V200.m`.
 
 ### Landed Fixes That Should Stay
 
 The current exact-route watershed path has already absorbed these meaningful
 fixes:
 
+- ✅ aligned filtering order (Crop -> Pair Cleanup)
+- ✅ disabled conflict painting (matched selection workflow)
+- ✅ backtracking pointer correction (fixed trace recovery)
+- ✅ stable discovery edge sorting (matched processing order)
+- ✅ stable bridge vertex sorting (matched structural order)
+- ✅ `r/R` distance normalization (scale-aware penalties)
+- ✅ energy map integrity (stopped penalty leakage)
+- ✅ iterative directional suppression in seed loop (iterative steering)
+- ✅ enforced profile defaults (correctly applied `matlab_compat` settings)
 - clipped-scale consistency between LUT creation and `size_map` storage
 - MATLAB-style join-time reset behavior for `available_locations`
 - MATLAB-aligned shared-state dtypes for `pointer_map` and `d_over_r_map`
@@ -256,49 +262,15 @@ fixes:
   linear trace
 - MATLAB-derived scale-tolerance calculation from the first two vessel radii
 
-### What The Latest Review No Longer Supports
-
-The latest review does not support treating any of these as the primary current
-explanation:
-
-- a simple MATLAB-vs-Python scalar-parameter mismatch story
-- a size, distance, or direction penalty-formula mismatch story
-- pointer-generation corruption at creation time
-- immediate write/read corruption of `pointer_map_flat`
-
-### Red Herrings To Avoid
-
-These have now wasted enough time that they should be treated as explicit
-anti-patterns in future edge investigations:
-
-1. Do not use the vertex fields embedded inside the preserved raw `edges*.mat`
-   file as the upstream watershed input surface.
-   Those embedded vertices reflect the downstream post-`add_vertices_to_edges`
-   surface and can include vertices that are not present in the standalone
-   curated vertex artifact.
-2. Do not treat candidate coverage against the full final `edges.connections`
-   surface as a pure upstream watershed proof.
-   The preserved final edges artifact includes downstream bridge and added
-   vertex effects, so fail-fast candidate counts should be interpreted with
-   that limitation in mind.
-3. Do not assume the preserved 2019 oracle artifact package and the later
-   public MATLAB source are the same code vintage in every local control-flow
-   detail.
-   Use released MATLAB source as the canonical implementation reference, but
-   record and investigate any artifact-vs-source contradiction instead of
-   silently collapsing the two.
-
 ### Strongest Remaining Candidate Surfaces
 
-After the May 2026 fixes, the remaining candidate surfaces to investigate are:
+After the May 2026 breakthroughs, the remaining candidate surfaces to investigate are:
 
-1. frontier ordering and insertion semantics (1 test failure suggests work remains)
-2. join cleanup semantics
-3. vertex `-Inf` sentinel lifecycle behavior
-4. any remaining chooser/control-flow deviations downstream of candidate emission
+1. Hub Vertex Exploration: Fine-grained divergences in complex junction geometries.
+2. Boundary Conditions: Discrepancies at the extreme volume edges.
+3. Filtering Gaps: Candidates missing from final output despite discovery (now largely addressed by conflict painting fix).
 
-The directional suppression fix should dramatically improve or close the candidate
-generation gap. Re-run parity experiments to measure actual improvement.
+The recent series of fixes (especially pointers and conflict painting) is expected to result in a massive jump in match rate. Re-run parity experiments to confirm.
 
 ## Cleanup And Network
 

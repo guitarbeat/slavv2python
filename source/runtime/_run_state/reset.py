@@ -42,9 +42,9 @@ def clear_stage_runtime_artifacts(controller: StageController) -> None:
 
 
 def reset_stage_snapshots(
-        stages: dict[str, StageSnapshot],
-        *,
-        start_stage: str,
+    stages: dict[str, StageSnapshot],
+    *,
+    start_stage: str,
 ) -> list[str]:
     """Reset stage snapshots from the requested stage onward and return affected stages."""
     if start_stage not in PIPELINE_STAGES:

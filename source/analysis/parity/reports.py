@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from pathlib import Path
-from typing import Any, cast
-
-import pandas as pd
+from typing import TYPE_CHECKING, Any, cast
 
 from source.runtime.run_state import load_json_dict, stable_json_dumps
 from source.runtime.run_tracking.io import atomic_write_text
+
 from .constants import (
     ANALYSIS_TABLES_DIR,
     CHECKPOINTS_DIR,
@@ -21,13 +19,16 @@ from .constants import (
 from .models import RunCounts
 from .utils import (
     entity_id_from_path,
+    normalize_value,
     now_iso,
     string_or_none,
-    normalize_value,
     write_hash_sidecar,
     write_json_with_hash,
     write_text_with_hash,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _coerce_table_cell(value: Any) -> Any:
@@ -40,10 +41,10 @@ def _coerce_table_cell(value: Any) -> Any:
 
 
 def _persist_table_records(
-        tables_root: Path,
-        *,
-        table_name: str,
-        records: list[dict[str, Any]],
+    tables_root: Path,
+    *,
+    table_name: str,
+    records: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
     if not records:
         return None
@@ -53,9 +54,11 @@ def _persist_table_records(
     ]
     try:
         from pandas import json_normalize
+
         frame = json_normalize(normalized_records, sep=".")
     except ImportError:
         from pandas.io.json import json_normalize
+
         frame = json_normalize(normalized_records, sep=".")
     frame = frame.reindex(sorted(frame.columns), axis=1)
     frame = frame.apply(lambda column: column.map(_coerce_table_cell))
@@ -86,8 +89,8 @@ def _persist_table_records(
 
 
 def _build_run_snapshot_tables(
-        run_root: Path,
-        snapshot_payload: dict[str, Any],
+    run_root: Path,
+    snapshot_payload: dict[str, Any],
 ) -> dict[str, list[dict[str, Any]]]:
     run_id = string_or_none(snapshot_payload.get("run_id")) or entity_id_from_path(run_root)
     root_row = {
@@ -103,7 +106,7 @@ def _build_run_snapshot_tables(
     stage_rows: list[dict[str, Any]] = []
     stage_artifact_rows: list[dict[str, Any]] = []
     for stage_key, stage_payload in sorted(
-            cast("dict[str, dict[str, Any]]", snapshot_payload.get("stages", {})).items()
+        cast("dict[str, dict[str, Any]]", snapshot_payload.get("stages", {})).items()
     ):
         row = {
             "run_root": str(run_root),
@@ -114,15 +117,17 @@ def _build_run_snapshot_tables(
         }
         stage_rows.append(row)
         for artifact_key, artifact_value in sorted(
-                cast("dict[str, Any]", stage_payload.get("artifacts", {})).items()
+            cast("dict[str, Any]", stage_payload.get("artifacts", {})).items()
         ):
-            stage_artifact_rows.append({
-                "run_root": str(run_root),
-                "run_id": run_id,
-                "stage_key": str(stage_key),
-                "artifact_key": str(artifact_key),
-                "artifact_value": artifact_value,
-            })
+            stage_artifact_rows.append(
+                {
+                    "run_root": str(run_root),
+                    "run_id": run_id,
+                    "stage_key": str(stage_key),
+                    "artifact_key": str(artifact_key),
+                    "artifact_value": artifact_value,
+                }
+            )
 
     return {
         "run_snapshot": [root_row],
@@ -145,47 +150,68 @@ def persist_recording_tables(run_root: Path) -> dict[str, Any]:
         source_artifacts.append(str(run_root / RUN_SNAPSHOT_PATH))
         for table_name, records in _build_run_snapshot_tables(run_root, snapshot_payload).items():
             entry = _persist_table_records(tables_root, table_name=table_name, records=records)
-            if entry: table_entries.append(entry)
+            if entry:
+                table_entries.append(entry)
 
-    from .constants import EDGE_CANDIDATE_AUDIT_PATH, CANDIDATE_PROGRESS_JSONL_PATH
+    from .constants import CANDIDATE_PROGRESS_JSONL_PATH, EDGE_CANDIDATE_AUDIT_PATH
+
     audit_payload = load_json_dict(run_root / EDGE_CANDIDATE_AUDIT_PATH)
     if audit_payload:
         source_artifacts.append(str(run_root / EDGE_CANDIDATE_AUDIT_PATH))
         # root row
         root_row = {str(k): v for k, v in audit_payload.items() if k != "per_origin_summary"}
-        entry = _persist_table_records(tables_root, table_name="candidate_audit", records=[root_row])
-        if entry: table_entries.append(entry)
+        entry = _persist_table_records(
+            tables_root, table_name="candidate_audit", records=[root_row]
+        )
+        if entry:
+            table_entries.append(entry)
 
         # per origin summary
         per_origin = audit_payload.get("per_origin_summary", [])
-        entry = _persist_table_records(tables_root, table_name="candidate_audit_per_origin", records=per_origin)
-        if entry: table_entries.append(entry)
+        entry = _persist_table_records(
+            tables_root, table_name="candidate_audit_per_origin", records=per_origin
+        )
+        if entry:
+            table_entries.append(entry)
 
         # origin metrics
         frontier_counts = audit_payload.get("frontier_per_origin_candidate_counts", {})
         metric_records = []
         for origin_idx, count in frontier_counts.items():
-            metric_records.append({
-                "origin_index": int(origin_idx),
-                "metric_name": "frontier_per_origin_candidate_counts",
-                "metric_value": count,
-            })
-        entry = _persist_table_records(tables_root, table_name="candidate_audit_origin_metrics", records=metric_records)
-        if entry: table_entries.append(entry)
+            metric_records.append(
+                {
+                    "origin_index": int(origin_idx),
+                    "metric_name": "frontier_per_origin_candidate_counts",
+                    "metric_value": count,
+                }
+            )
+        entry = _persist_table_records(
+            tables_root, table_name="candidate_audit_origin_metrics", records=metric_records
+        )
+        if entry:
+            table_entries.append(entry)
     from .constants import CANDIDATE_COVERAGE_JSON_PATH
+
     coverage_report = load_json_dict(run_root / CANDIDATE_COVERAGE_JSON_PATH)
     if coverage_report:
         source_artifacts.append(str(run_root / CANDIDATE_COVERAGE_JSON_PATH))
-        entry = _persist_table_records(tables_root, table_name="candidate_coverage_summary", records=[coverage_report])
-        if entry: table_entries.append(entry)
+        entry = _persist_table_records(
+            tables_root, table_name="candidate_coverage_summary", records=[coverage_report]
+        )
+        if entry:
+            table_entries.append(entry)
 
     if (run_root / CANDIDATE_PROGRESS_JSONL_PATH).is_file():
         source_artifacts.append(str(run_root / CANDIDATE_PROGRESS_JSONL_PATH))
         lines = (run_root / CANDIDATE_PROGRESS_JSONL_PATH).read_text(encoding="utf-8").splitlines()
         import json
+
         records = [json.loads(line) for line in lines if line.strip()]
-        entry = _persist_table_records(tables_root, table_name="candidate_progress", records=records)
-        if entry: table_entries.append(entry)
+        entry = _persist_table_records(
+            tables_root, table_name="candidate_progress", records=records
+        )
+        if entry:
+            table_entries.append(entry)
 
     index_payload = {
         "run_root": str(run_root),
@@ -209,22 +235,24 @@ def render_experiment_summary(summary_payload: dict[str, Any]) -> str:
     source_python = summary_payload.get("source_python_counts", {})
     new_python = summary_payload.get("new_python_counts", {})
 
-    return "\n".join([
-        "Parity experiment summary",
-        f"Source run root: {summary_payload.get('source_run_root')}",
-        f"Destination run root: {summary_payload.get('dest_run_root')}",
-        f"Rerun from: {summary_payload.get('rerun_from')}",
-        "",
-        "Counts",
-        f"MATLAB: vertices={matlab.get('vertices')} edges={matlab.get('edges')} strands={matlab.get('strands')}",
-        f"Source Python: vertices={source_python.get('vertices')} edges={source_python.get('edges')} strands={source_python.get('strands')}",
-        f"New Python: vertices={new_python.get('vertices')} edges={new_python.get('edges')} strands={new_python.get('strands')}",
-        "",
-        "Delta vs MATLAB",
-        _format_delta(summary_payload.get("diff_vs_matlab", {})),
-        "Delta vs source Python",
-        _format_delta(summary_payload.get("diff_vs_source_python", {})),
-    ])
+    return "\n".join(
+        [
+            "Parity experiment summary",
+            f"Source run root: {summary_payload.get('source_run_root')}",
+            f"Destination run root: {summary_payload.get('dest_run_root')}",
+            f"Rerun from: {summary_payload.get('rerun_from')}",
+            "",
+            "Counts",
+            f"MATLAB: vertices={matlab.get('vertices')} edges={matlab.get('edges')} strands={matlab.get('strands')}",
+            f"Source Python: vertices={source_python.get('vertices')} edges={source_python.get('edges')} strands={source_python.get('strands')}",
+            f"New Python: vertices={new_python.get('vertices')} edges={new_python.get('edges')} strands={new_python.get('strands')}",
+            "",
+            "Delta vs MATLAB",
+            _format_delta(summary_payload.get("diff_vs_matlab", {})),
+            "Delta vs source Python",
+            _format_delta(summary_payload.get("diff_vs_source_python", {})),
+        ]
+    )
 
 
 def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
@@ -282,6 +310,7 @@ def read_python_counts_from_run(run_root: Path) -> RunCounts:
 
     # Fallback to counting from checkpoints if snapshot is missing
     from joblib import load
+
     checkpoints_dir = run_root / CHECKPOINTS_DIR
     vertices_path = checkpoints_dir / "checkpoint_vertices.pkl"
     edges_path = checkpoints_dir / "checkpoint_edges.pkl"
@@ -306,14 +335,14 @@ def read_python_counts_from_run(run_root: Path) -> RunCounts:
 
 
 def build_experiment_summary(
-        *,
-        source_run_root: Path,
-        dest_run_root: Path,
-        input_file: Path,
-        rerun_from: str,
-        matlab_counts: RunCounts,
-        source_python_counts: RunCounts,
-        new_python_counts: RunCounts,
+    *,
+    source_run_root: Path,
+    dest_run_root: Path,
+    input_file: Path,
+    rerun_from: str,
+    matlab_counts: RunCounts,
+    source_python_counts: RunCounts,
+    new_python_counts: RunCounts,
 ) -> dict[str, Any]:
     """Build the experiment summary payload."""
 

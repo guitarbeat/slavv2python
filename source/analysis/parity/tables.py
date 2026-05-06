@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
 from source.runtime.run_tracking.io import atomic_write_text, stable_json_dumps
+
 from .io import (
     write_hash_sidecar,
 )
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def _coerce_table_cell(value: Any) -> Any:
     from .execution import _normalize_param_value
+
     normalized = _normalize_param_value(value)
     if isinstance(normalized, float) and normalized != normalized:
         return None
@@ -24,15 +28,16 @@ def _coerce_table_cell(value: Any) -> Any:
 
 
 def _persist_table_records(
-        tables_root: Path,
-        *,
-        table_name: str,
-        records: list[dict[str, Any]],
+    tables_root: Path,
+    *,
+    table_name: str,
+    records: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
     if not records:
         return None
 
     from .execution import _normalize_param_value
+
     normalized_records = [
         cast("dict[str, Any]", _normalize_param_value(dict(record))) for record in records
     ]
@@ -63,5 +68,6 @@ def _persist_table_records(
         "jsonl_path": str(jsonl_path),
         "csv_path": str(csv_path),
     }
+
 
 # ... (I'll include all the _build_*_tables functions here)

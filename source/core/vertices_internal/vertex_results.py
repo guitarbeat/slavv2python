@@ -24,11 +24,11 @@ def empty_vertices_result() -> dict[str, Any]:
 
 
 def build_vertices_result(
-        vertex_positions: np.ndarray,
-        vertex_scales: np.ndarray,
-        vertex_energies: np.ndarray,
-        lumen_radius_pixels: np.ndarray,
-        lumen_radius_microns: np.ndarray,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    vertex_energies: np.ndarray,
+    lumen_radius_pixels: np.ndarray,
+    lumen_radius_microns: np.ndarray,
 ) -> dict[str, Any]:
     """Build the canonical vertex payload with normalized dtypes."""
     vertex_positions = vertex_positions.astype(np.float32)
@@ -47,8 +47,8 @@ def build_vertices_result(
 
 
 def coerce_radius_axes(
-        lumen_radius_pixels: np.ndarray,
-        lumen_radius_pixels_axes: np.ndarray | None,
+    lumen_radius_pixels: np.ndarray,
+    lumen_radius_pixels_axes: np.ndarray | None,
 ) -> np.ndarray:
     """Normalize scale radii into a ``(num_scales, 3)`` axis-aware array."""
     if lumen_radius_pixels_axes is not None:
@@ -62,10 +62,10 @@ def coerce_radius_axes(
 
 
 def sort_vertex_order(
-        vertex_positions: np.ndarray,
-        vertex_energies: np.ndarray,
-        image_shape: tuple[int, int, int],
-        energy_sign: float,
+    vertex_positions: np.ndarray,
+    vertex_energies: np.ndarray,
+    image_shape: tuple[int, int, int],
+    energy_sign: float,
 ) -> np.ndarray:
     """Sort vertices like MATLAB: by energy, then by column-major linear index for ties."""
     if len(vertex_positions) == 0:
@@ -90,7 +90,7 @@ def matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np
     """Return MATLAB-style column-major linear indices for 0-based coordinates."""
     coords = np.asarray(coords, dtype=np.int64)
     linear_indices: Int64Array = (
-            coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
+        coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
     )
     return cast("np.ndarray", linear_indices)
 

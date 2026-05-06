@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 
 
 def _load_edge_units(
-        units_dir: Path,
-        append_candidate_unit: Any,
-        empty_edge_diagnostics: Any,
+    units_dir: Path,
+    append_candidate_unit: Any,
+    empty_edge_diagnostics: Any,
 ) -> tuple[dict[str, Any], set[int]]:
     payload = {
         "traces": [],

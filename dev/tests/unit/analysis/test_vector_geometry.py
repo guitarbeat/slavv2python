@@ -1,4 +1,5 @@
 import numpy as np
+
 from source.analysis import (
     evaluate_registration,
     get_edge_metric,

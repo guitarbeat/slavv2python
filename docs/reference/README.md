@@ -12,19 +12,26 @@ Read these first when working on the live implementation:
    Claim boundaries, source-of-truth hierarchy, and remaining roadmap.
 2. [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
    MATLAB-to-Python surface map and confirmed structural deviations.
-3. [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
+3. [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md)
+   Technical design, shared state management, and parity details for the discovery algorithm.
+4. [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
    Live proof status, current v22 watershed read, and the first failing field.
-4. [Energy Computation Methods](core/ENERGY_METHODS.md)
+5. [Energy Computation Methods](core/ENERGY_METHODS.md)
    Supported energy backends, projection modes, and extension points.
-5. [Glossary](core/GLOSSARY.md)
+6. [Glossary](core/GLOSSARY.md)
    Shared parity and pipeline terminology.
-6. [Paper Profile](workflow/PAPER_PROFILE.md)
+7. [Paper Profile](workflow/PAPER_PROFILE.md)
    Public paper-first CLI/app workflow and authoritative JSON export contract.
-7. [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
+8. [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
    Preferred Python names, package groupings, and compatibility policy.
+
+9. [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
+   Technical instructions and best practices for MATLAB parity alignment.
 
 ## Workflow Guides
 
+- [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
+- [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
 - [Paper Profile](workflow/PAPER_PROFILE.md)
 - [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)

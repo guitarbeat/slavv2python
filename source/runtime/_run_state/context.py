@@ -11,6 +11,7 @@ from typing import Any, Callable, cast
 import psutil
 
 from source.utils.safe_unpickle import safe_load
+
 from .constants import (
     PIPELINE_STAGES,
     PREPROCESS_STAGE,
@@ -103,13 +104,13 @@ class StageController:
         atomic_joblib_dump(data, self.checkpoint_path)
 
     def begin(
-            self,
-            *,
-            detail: str = "",
-            units_total: int = 0,
-            units_completed: int = 0,
-            substage: str = "",
-            resumed: bool = False,
+        self,
+        *,
+        detail: str = "",
+        units_total: int = 0,
+        units_completed: int = 0,
+        substage: str = "",
+        resumed: bool = False,
     ) -> None:
         self.run_context.begin_stage(
             self.name,
@@ -121,14 +122,14 @@ class StageController:
         )
 
     def update(
-            self,
-            *,
-            detail: str | None = None,
-            units_total: int | None = None,
-            units_completed: int | None = None,
-            progress: float | None = None,
-            substage: str | None = None,
-            resumed: bool | None = None,
+        self,
+        *,
+        detail: str | None = None,
+        units_total: int | None = None,
+        units_completed: int | None = None,
+        progress: float | None = None,
+        substage: str | None = None,
+        resumed: bool | None = None,
     ) -> None:
         self.run_context.update_stage(
             self.name,
@@ -141,11 +142,11 @@ class StageController:
         )
 
     def complete(
-            self,
-            *,
-            detail: str = "",
-            artifacts: dict[str, str] | None = None,
-            resumed: bool | None = None,
+        self,
+        *,
+        detail: str = "",
+        artifacts: dict[str, str] | None = None,
+        resumed: bool | None = None,
     ) -> None:
         manifest = {
             "stage": self.name,
@@ -167,14 +168,14 @@ class RunContext:
     """Shared run ledger and file layout for resumable processing."""
 
     def __init__(
-            self,
-            *,
-            run_dir: str | Path,
-            input_fingerprint: str = "",
-            params_fingerprint: str = "",
-            target_stage: str | None = "network",
-            provenance: dict[str, Any] | None = None,
-            event_callback: Callable[[ProgressEvent], None] | None = None,
+        self,
+        *,
+        run_dir: str | Path,
+        input_fingerprint: str = "",
+        params_fingerprint: str = "",
+        target_stage: str | None = "network",
+        provenance: dict[str, Any] | None = None,
+        event_callback: Callable[[ProgressEvent], None] | None = None,
     ):
         self.layout = resolve_run_layout(
             run_dir=run_dir,
@@ -202,11 +203,11 @@ class RunContext:
 
     @classmethod
     def from_existing(
-            cls,
-            run_dir: str | Path,
-            *,
-            target_stage: str | None = None,
-            event_callback: Callable[[ProgressEvent], None] | None = None,
+        cls,
+        run_dir: str | Path,
+        *,
+        target_stage: str | None = None,
+        event_callback: Callable[[ProgressEvent], None] | None = None,
     ) -> RunContext:
         return cls(
             run_dir=run_dir,
@@ -228,11 +229,11 @@ class RunContext:
         atomic_write_json(self.manifest_path, self._build_run_manifest())
 
     def ensure_resume_allowed(
-            self,
-            *,
-            input_fingerprint: str,
-            params_fingerprint: str,
-            force_rerun_from: str | None = None,
+        self,
+        *,
+        input_fingerprint: str,
+        params_fingerprint: str,
+        force_rerun_from: str | None = None,
     ) -> None:
         mismatch = fingerprint_mismatches(
             self.snapshot,
@@ -299,14 +300,14 @@ class RunContext:
         self.emit_event(current_stage or self.snapshot.current_stage, status, detail=detail)
 
     def begin_stage(
-            self,
-            stage: str,
-            *,
-            detail: str = "",
-            units_total: int = 0,
-            units_completed: int = 0,
-            substage: str = "",
-            resumed: bool = False,
+        self,
+        stage: str,
+        *,
+        detail: str = "",
+        units_total: int = 0,
+        units_completed: int = 0,
+        substage: str = "",
+        resumed: bool = False,
     ) -> None:
         begin_stage_snapshot(
             self.snapshot,
@@ -323,15 +324,15 @@ class RunContext:
         self.emit_event(stage, STATUS_RUNNING, detail=detail)
 
     def update_stage(
-            self,
-            stage: str,
-            *,
-            detail: str | None = None,
-            units_total: int | None = None,
-            units_completed: int | None = None,
-            progress: float | None = None,
-            substage: str | None = None,
-            resumed: bool | None = None,
+        self,
+        stage: str,
+        *,
+        detail: str | None = None,
+        units_total: int | None = None,
+        units_completed: int | None = None,
+        progress: float | None = None,
+        substage: str | None = None,
+        resumed: bool | None = None,
     ) -> None:
         stage_snapshot = update_stage_snapshot(
             self.snapshot,
@@ -351,12 +352,12 @@ class RunContext:
         self.emit_event(stage, STATUS_RUNNING, detail=stage_snapshot.detail)
 
     def complete_stage(
-            self,
-            stage: str,
-            *,
-            detail: str = "",
-            artifacts: dict[str, str] | None = None,
-            resumed: bool | None = None,
+        self,
+        stage: str,
+        *,
+        detail: str = "",
+        artifacts: dict[str, str] | None = None,
+        resumed: bool | None = None,
     ) -> None:
         stage_snapshot = complete_stage_snapshot(
             self.snapshot,
@@ -379,13 +380,13 @@ class RunContext:
         self.emit_event(stage, STATUS_FAILED, detail=message)
 
     def update_optional_task(
-            self,
-            name: str,
-            *,
-            status: str,
-            detail: str = "",
-            progress: float | None = None,
-            artifacts: dict[str, str] | None = None,
+        self,
+        name: str,
+        *,
+        status: str,
+        detail: str = "",
+        progress: float | None = None,
+        artifacts: dict[str, str] | None = None,
     ) -> None:
         update_optional_task_snapshot(
             self.snapshot,
@@ -422,9 +423,9 @@ class RunContext:
         return estimate_run_eta(snapshot)
 
     def _calculate_overall_progress(
-            self,
-            stages: dict[str, StageSnapshot],
-            preprocess_done: bool | None = None,
+        self,
+        stages: dict[str, StageSnapshot],
+        preprocess_done: bool | None = None,
     ) -> float:
         if preprocess_done is None:
             preprocess_done = preprocess_complete(stages, snapshot=getattr(self, "snapshot", None))
@@ -464,8 +465,8 @@ class RunContext:
             "target_stage": self.snapshot.target_stage,
             "current_stage": self.snapshot.current_stage,
             "dataset_hash": provenance.get("dataset_hash")
-                            or self.snapshot.input_fingerprint
-                            or None,
+            or self.snapshot.input_fingerprint
+            or None,
             "params_fingerprint": self.snapshot.params_fingerprint or None,
             "oracle_id": provenance.get("oracle_id"),
             "python_commit": provenance.get("python_commit") or self._resolve_python_commit(),

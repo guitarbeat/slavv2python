@@ -59,7 +59,9 @@ def test_legacy_processor_alias_matches_preferred_pipeline():
         legacy = SLAVVProcessor().process_image(image, {})
 
     assert preferred.keys() == legacy.keys()
-    np.testing.assert_array_equal(preferred["vertices"]["positions"], legacy["vertices"]["positions"])
+    np.testing.assert_array_equal(
+        preferred["vertices"]["positions"], legacy["vertices"]["positions"]
+    )
     np.testing.assert_array_equal(preferred["edges"]["connections"], legacy["edges"]["connections"])
 
 

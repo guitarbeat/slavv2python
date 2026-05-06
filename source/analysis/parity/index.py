@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from source.runtime.run_tracking.io import atomic_write_text, stable_json_dumps
+
 from .constants import EXPERIMENT_INDEX_PATH, EXPERIMENT_ROOT_SUBDIRS
 
 
@@ -59,10 +60,7 @@ def upsert_index_record(root: Path | None, payload: dict[str, Any]) -> None:
 
     retained: list[dict[str, Any]] = []
     for existing in load_jsonl_records(index_path):
-        if (
-                str(existing.get("id")) == payload_id
-                and str(existing.get("kind")) == payload_kind
-        ):
+        if str(existing.get("id")) == payload_id and str(existing.get("kind")) == payload_kind:
             continue
         retained.append(existing)
 

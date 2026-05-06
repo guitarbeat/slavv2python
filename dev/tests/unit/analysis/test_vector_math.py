@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from source.analysis._geometry import angle_degrees, safe_normalize_rows, scaled_positions
 
 

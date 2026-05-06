@@ -70,8 +70,8 @@ def find_single_matlab_batch_dir(run_root: Path) -> Path:
 
 
 def find_matlab_vector_paths(
-        batch_dir: Path,
-        stages: tuple[str, ...] = EXACT_STAGE_ORDER,
+    batch_dir: Path,
+    stages: tuple[str, ...] = EXACT_STAGE_ORDER,
 ) -> dict[str, Path]:
     """Locate the raw MATLAB exact-proof files for the requested stages."""
     vectors_dir = batch_dir / "vectors"
@@ -109,8 +109,8 @@ def find_matlab_vector_paths(
 
 
 def load_normalized_matlab_vectors(
-        batch_dir: Path,
-        stages: tuple[str, ...] = EXACT_STAGE_ORDER,
+    batch_dir: Path,
+    stages: tuple[str, ...] = EXACT_STAGE_ORDER,
 ) -> dict[str, dict[str, Any]]:
     """Load and normalize the requested raw MATLAB vector files."""
     vector_paths = find_matlab_vector_paths(batch_dir, stages)
@@ -157,8 +157,8 @@ def load_normalized_matlab_edge_input_vertices(batch_dir: Path) -> dict[str, Any
 
 
 def load_normalized_python_checkpoints(
-        checkpoints_dir: Path,
-        stages: tuple[str, ...] = EXACT_STAGE_ORDER,
+    checkpoints_dir: Path,
+    stages: tuple[str, ...] = EXACT_STAGE_ORDER,
 ) -> dict[str, dict[str, Any]]:
     """Load and normalize the requested Python checkpoint payloads."""
     normalized: dict[str, dict[str, Any]] = {}
@@ -174,8 +174,8 @@ def load_normalized_python_checkpoints(
 
 
 def sync_exact_vertex_checkpoint_from_matlab(
-        checkpoint_path: Path,
-        batch_dir: Path,
+    checkpoint_path: Path,
+    batch_dir: Path,
 ) -> dict[str, Any]:
     """Overwrite vertex checkpoint parity fields from the canonical MATLAB vector surface."""
     payload = safe_load(checkpoint_path)
@@ -246,9 +246,9 @@ def normalize_python_stage_payload(stage: str, payload: dict[str, Any]) -> dict[
 
 
 def compare_exact_artifacts(
-        matlab_artifacts: dict[str, dict[str, Any]],
-        python_artifacts: dict[str, dict[str, Any]],
-        stages: tuple[str, ...],
+    matlab_artifacts: dict[str, dict[str, Any]],
+    python_artifacts: dict[str, dict[str, Any]],
+    stages: tuple[str, ...],
 ) -> dict[str, Any]:
     """Compare normalized MATLAB and Python artifacts stage by stage."""
     stage_summaries: dict[str, dict[str, Any]] = {}
@@ -344,11 +344,11 @@ def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any
 
 
 def _normalize_matlab_vertex_fields_payload(
-        payload: dict[str, Any],
-        *,
-        spatial_field: str = "vertex_space_subscripts",
-        scale_field: str = "vertex_scale_subscripts",
-        energy_field: str = "vertex_energies",
+    payload: dict[str, Any],
+    *,
+    spatial_field: str = "vertex_space_subscripts",
+    scale_field: str = "vertex_scale_subscripts",
+    energy_field: str = "vertex_energies",
 ) -> dict[str, Any]:
     return {
         "positions": _normalize_matlab_spatial_matrix(_require_key(payload, spatial_field)),
@@ -503,8 +503,8 @@ def _normalize_matlab_connections(value: Any) -> np.ndarray:
 
 
 def _normalize_optional_matlab_connections(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
 ) -> np.ndarray:
     value = _optional_field(payload, *field_names)
     return _normalize_matlab_connections(value)
@@ -515,8 +515,8 @@ def _normalize_matlab_int_vector(value: Any) -> np.ndarray:
 
 
 def _normalize_optional_matlab_int_vector(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
 ) -> np.ndarray:
     return _normalize_int_vector(_optional_field(payload, *field_names), one_based=True)
 
@@ -530,10 +530,10 @@ def _normalize_matlab_spatial_matrix(value: Any) -> np.ndarray:
 
 
 def _normalize_optional_matlab_float_matrix(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
-        *,
-        columns: int,
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
+    *,
+    columns: int,
 ) -> np.ndarray:
     return _normalize_float_matrix(
         _optional_field(payload, *field_names), columns=columns, one_based=True
@@ -541,8 +541,8 @@ def _normalize_optional_matlab_float_matrix(
 
 
 def _normalize_optional_matlab_spatial_matrix(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
 ) -> np.ndarray:
     return _normalize_spatial_matrix(_optional_field(payload, *field_names), one_based=True)
 
@@ -556,10 +556,10 @@ def _normalize_matlab_spatial_matrix_list(value: Any) -> list[np.ndarray]:
 
 
 def _normalize_optional_matlab_float_matrix_list(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
-        *,
-        columns: int,
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
+    *,
+    columns: int,
 ) -> list[np.ndarray]:
     return _normalize_float_matrix_list(
         _optional_field(payload, *field_names), columns=columns, one_based=True
@@ -567,8 +567,8 @@ def _normalize_optional_matlab_float_matrix_list(
 
 
 def _normalize_optional_matlab_spatial_matrix_list(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
 ) -> list[np.ndarray]:
     return _normalize_spatial_matrix_list(_optional_field(payload, *field_names), one_based=True)
 
@@ -582,8 +582,8 @@ def _normalize_matlab_spatial_scale_matrix_list(value: Any) -> list[np.ndarray]:
 
 
 def _normalize_optional_matlab_float_vector_list(
-        payload: dict[str, Any],
-        field_names: tuple[str, ...],
+    payload: dict[str, Any],
+    field_names: tuple[str, ...],
 ) -> list[np.ndarray]:
     return _normalize_float_vector_list(_optional_field(payload, *field_names), one_based=True)
 
@@ -665,10 +665,10 @@ def _normalize_spatial_vector_list(value: Any) -> list[np.ndarray]:
 
 
 def _normalize_float_matrix_list(
-        value: Any,
-        *,
-        columns: int,
-        one_based: bool = False,
+    value: Any,
+    *,
+    columns: int,
+    one_based: bool = False,
 ) -> list[np.ndarray]:
     matrices: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
@@ -684,7 +684,7 @@ def _normalize_spatial_matrix_list(value: Any, *, one_based: bool = False) -> li
 
 
 def _normalize_spatial_scale_matrix_list(
-        value: Any, *, one_based: bool = False
+    value: Any, *, one_based: bool = False
 ) -> list[np.ndarray]:
     matrices: list[np.ndarray] = []
     for item in _coerce_sequence_items(value):
@@ -729,10 +729,10 @@ def _optional_field(payload: dict[str, Any], *field_names: str) -> Any:
 
 
 def _compare_dict(
-        matlab_payload: dict[str, Any],
-        python_payload: dict[str, Any],
-        *,
-        path: str,
+    matlab_payload: dict[str, Any],
+    python_payload: dict[str, Any],
+    *,
+    path: str,
 ) -> dict[str, Any] | None:
     for key, matlab_value in matlab_payload.items():
         field_path = f"{path}.{key}"
@@ -756,11 +756,11 @@ def _compare_dict(
 
 
 def _compare_value(
-        matlab_value: Any,
-        python_value: Any,
-        *,
-        path: str,
-        field_path: str,
+    matlab_value: Any,
+    python_value: Any,
+    *,
+    path: str,
+    field_path: str,
 ) -> dict[str, Any] | None:
     if isinstance(matlab_value, dict):
         if not isinstance(python_value, dict):
@@ -861,11 +861,11 @@ def _row_signature(row: np.ndarray) -> tuple[Any, ...]:
 
 
 def _mismatch(
-        stage: str,
-        field_path: str,
-        mismatch_type: str,
-        matlab_value: Any,
-        python_value: Any,
+    stage: str,
+    field_path: str,
+    mismatch_type: str,
+    matlab_value: Any,
+    python_value: Any,
 ) -> dict[str, Any]:
     return {
         "stage": stage,

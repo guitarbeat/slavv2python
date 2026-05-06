@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from dev.tests.support.network_builders import build_network_object
 from scipy.io import savemat
+
 from source.io import load_network_from_mat
 
 

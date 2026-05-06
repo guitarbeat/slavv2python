@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass(frozen=True)
 class RunCounts:
     """Vertex, edge, and strand counts for a run."""
+
     vertices: int
     edges: int
     strands: int
@@ -17,6 +21,7 @@ class RunCounts:
 @dataclass(frozen=True)
 class OracleSurface:
     """Authority surface for a preserved MATLAB truth package."""
+
     oracle_root: Path
     manifest_path: Path | None
     matlab_batch_dir: Path
@@ -29,6 +34,7 @@ class OracleSurface:
 @dataclass(frozen=True)
 class DatasetSurface:
     """Authority surface for a preserved dataset package."""
+
     dataset_root: Path
     manifest_path: Path
     input_file: Path
@@ -38,6 +44,7 @@ class DatasetSurface:
 @dataclass(frozen=True)
 class SourceRunSurface:
     """Surface for a source run root used as a comparison baseline."""
+
     run_root: Path
     checkpoints_dir: Path
     comparison_report_path: Path
@@ -48,6 +55,7 @@ class SourceRunSurface:
 @dataclass(frozen=True)
 class ExactProofSourceSurface:
     """Surface for an exact-route proof against a MATLAB oracle."""
+
     run_root: Path
     checkpoints_dir: Path
     validated_params_path: Path
@@ -59,6 +67,7 @@ class ExactProofSourceSurface:
 @dataclass(frozen=True)
 class ExactPreflightSurface:
     """Surface for an exact-route preflight check."""
+
     source_surface: ExactProofSourceSurface
     dest_run_root: Path
     image_shape: tuple[int, int, int]

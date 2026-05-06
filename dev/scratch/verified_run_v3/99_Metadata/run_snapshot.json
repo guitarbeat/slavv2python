@@ -1,0 +1,139 @@
+{
+  "artifacts": {
+    "energy.best_energy.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_energy.npy",
+    "energy.best_scale.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_scale.npy",
+    "energy.checkpoint": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "preprocess_done": "true",
+    "vertices.candidates.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\candidates.pkl",
+    "vertices.checkpoint": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.chosen_mask.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\chosen_mask.pkl",
+    "vertices.cropped_candidates.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\cropped_candidates.pkl"
+  },
+  "created_at": "2026-05-06T01:58:05Z",
+  "current_detail": "index 16966571 is out of bounds for axis 0 with size 16777216",
+  "current_stage": "edges",
+  "elapsed_seconds": 11769.291696071625,
+  "errors": [
+    {
+      "at": "2026-05-06T05:14:14Z",
+      "message": "index 16966571 is out of bounds for axis 0 with size 16777216",
+      "stage": "edges"
+    }
+  ],
+  "eta_seconds": 9627.680251836779,
+  "input_fingerprint": "f3d0a7c8dc8bac8524aaae3ee398f246250c7dab97486ad0cc144ed2d21344ea",
+  "last_event": "index 16966571 is out of bounds for axis 0 with size 16777216",
+  "optional_tasks": {},
+  "overall_progress": 0.5499999999999999,
+  "params_fingerprint": "6a570fbcd26f1ce09a7934bd772010df3c91a2bc8b1ff960c994b9755142e7a1",
+  "provenance": {
+    "image_shape": [
+      512,
+      512,
+      64
+    ],
+    "layout": "structured",
+    "source": "pipeline",
+    "stop_after": "edges"
+  },
+  "run_id": "9526efc659fd",
+  "stages": {
+    "edges": {
+      "artifacts": {},
+      "completed_at": "2026-05-06T05:14:14Z",
+      "detail": "index 16966571 is out of bounds for axis 0 with size 16777216",
+      "elapsed_seconds": 26.0,
+      "eta_seconds": null,
+      "name": "edges",
+      "peak_memory_bytes": 1034969088,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": "2026-05-06T05:13:48Z",
+      "status": "failed",
+      "substage": "generate_candidates",
+      "units_completed": 0,
+      "units_total": 3,
+      "updated_at": "2026-05-06T05:14:14Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_energy.npy",
+        "best_scale.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_scale.npy",
+        "checkpoint": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl"
+      },
+      "completed_at": "2026-05-06T05:05:51Z",
+      "detail": "Energy field ready",
+      "elapsed_seconds": 11266.528585672379,
+      "eta_seconds": 0.0,
+      "name": "energy",
+      "peak_memory_bytes": 587575296,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-06T01:58:05Z",
+      "status": "completed",
+      "substage": "scale_chunks",
+      "units_completed": 6336,
+      "units_total": 6336,
+      "updated_at": "2026-05-06T05:05:51Z"
+    },
+    "network": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "network",
+      "peak_memory_bytes": 0,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-05-06T01:58:05Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 471625728,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-06T01:58:05Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-05-06T01:58:05Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "candidates.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\candidates.pkl",
+        "checkpoint": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "chosen_mask.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\chosen_mask.pkl",
+        "cropped_candidates.pkl": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\vertices\\cropped_candidates.pkl"
+      },
+      "completed_at": "2026-05-06T05:13:48Z",
+      "detail": "Vertices extracted",
+      "elapsed_seconds": 477.665078163147,
+      "eta_seconds": 0.0,
+      "name": "vertices",
+      "peak_memory_bytes": 592072704,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-06T05:05:51Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 526,
+      "units_total": 526,
+      "updated_at": "2026-05-06T05:13:48Z"
+    }
+  },
+  "status": "failed",
+  "target_stage": "edges",
+  "updated_at": "2026-05-06T05:14:14Z"
+}

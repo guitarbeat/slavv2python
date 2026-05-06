@@ -52,7 +52,7 @@ class TelemetryNormalizer:
             return {}
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to decode JSON from {path}: {e}")
@@ -83,7 +83,7 @@ class TelemetryNormalizer:
             return pd.DataFrame()
 
         # Often these are lists of events or a dict with nested structures.
-        # We try to flatten the core 'events' or 'candidates' if they exist, 
+        # We try to flatten the core 'events' or 'candidates' if they exist,
         # otherwise flatten the whole root.
 
         # If 'events' is a list, normalize that
@@ -93,7 +93,11 @@ class TelemetryNormalizer:
             df = json_normalize(data)
 
         # Ensure requested parity fields are present or defaulted
-        required_fields = ["candidate_connection_count", "watershed_total_pairs", "use_frontier_tracer"]
+        required_fields = [
+            "candidate_connection_count",
+            "watershed_total_pairs",
+            "use_frontier_tracer",
+        ]
         for field in required_fields:
             if field not in df.columns:
                 # Try to find them in nested paths if they weren't flattened perfectly

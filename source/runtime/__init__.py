@@ -21,9 +21,9 @@ __all__ = [
     "StageController",
     "StageSnapshot",
     "TaskSnapshot",
-    "build_status_lines",
-    "load_run_snapshot",
-    "find_repo_root",
-    "find_experiment_root",
     "WorkspaceAuditor",
+    "build_status_lines",
+    "find_experiment_root",
+    "find_repo_root",
+    "load_run_snapshot",
 ]

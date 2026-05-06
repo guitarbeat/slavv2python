@@ -19,12 +19,6 @@ from dev.tests.support.run_state_builders import (
     materialize_run_snapshot,
 )
 
-from .support import (
-    _build_experiment_root,
-    _exact_validated_params,
-    _materialize_exact_matlab_batch,
-    _write_json,
-)
 from source.analysis.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_INDEX_PATH,
@@ -32,6 +26,13 @@ from source.analysis.parity.constants import (
     RUN_MANIFEST_PATH,
     SHARED_PARAMS_PATH,
     SUMMARY_JSON_PATH,
+)
+
+from .support import (
+    _build_experiment_root,
+    _exact_validated_params,
+    _materialize_exact_matlab_batch,
+    _write_json,
 )
 
 parity_experiment = importlib.import_module("dev.scripts.cli.parity_experiment")
@@ -108,9 +109,7 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
             },
         },
     )
-    source_edges_checkpoint = (
-        source_run_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl"
-    )
+    source_edges_checkpoint = source_run_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl"
     source_edges_bytes = source_edges_checkpoint.read_bytes()
 
     calls: list[dict[str, object]] = []
@@ -179,9 +178,7 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
         }
     ]
 
-    summary_payload = json.loads(
-        (dest_run_root / SUMMARY_JSON_PATH).read_text(encoding="utf-8")
-    )
+    summary_payload = json.loads((dest_run_root / SUMMARY_JSON_PATH).read_text(encoding="utf-8"))
     assert summary_payload["matlab_counts"] == {"vertices": 4, "edges": 5, "strands": 3}
     assert summary_payload["source_python_counts"] == {"vertices": 4, "edges": 2, "strands": 1}
     assert summary_payload["new_python_counts"] == {"vertices": 4, "edges": 3, "strands": 2}
@@ -191,15 +188,10 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
     assert (dest_run_root / "00_Refs" / "source_validated_params.json").is_file()
     assert (dest_run_root / SHARED_PARAMS_PATH).is_file()
     assert (dest_run_root / PYTHON_DERIVED_PARAMS_PATH).is_file()
-    run_manifest = json.loads(
-        (dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8")
-    )
+    run_manifest = json.loads((dest_run_root / RUN_MANIFEST_PATH).read_text(encoding="utf-8"))
     assert run_manifest["dataset_hash"] == parity_experiment.fingerprint_file(input_file)
     index_lines = (
-        (experiment_root / EXPERIMENT_INDEX_PATH)
-        .read_text(encoding="utf-8")
-        .strip()
-        .splitlines()
+        (experiment_root / EXPERIMENT_INDEX_PATH).read_text(encoding="utf-8").strip().splitlines()
     )
     assert any('"command":"rerun-python"' in line for line in index_lines)
 
@@ -256,9 +248,7 @@ def test_rerun_python_syncs_exact_vertex_checkpoint_from_matlab(tmp_path, monkey
         ):
             from joblib import load
 
-            checkpoint_vertices = load(
-                Path(run_dir) / CHECKPOINTS_DIR / "checkpoint_vertices.pkl"
-            )
+            checkpoint_vertices = load(Path(run_dir) / CHECKPOINTS_DIR / "checkpoint_vertices.pkl")
             np.testing.assert_array_equal(
                 checkpoint_vertices["positions"],
                 np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float32),

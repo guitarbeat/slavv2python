@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_processing_results
+
 from source.apps.processing_state import (
     build_processing_run_dir,
     load_processing_snapshot,

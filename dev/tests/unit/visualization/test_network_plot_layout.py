@@ -28,9 +28,7 @@ def test_layout_helpers_return_expected_titles():
     assert layout["width"] == 800
     assert layout["height"] == 600
 
-    slice_layout = plot_slice_layout(
-        12.5, 0, f"Y ({MICRON_LABEL})", f"Z ({MICRON_LABEL})"
-    )
+    slice_layout = plot_slice_layout(12.5, 0, f"Y ({MICRON_LABEL})", f"Z ({MICRON_LABEL})")
     assert slice_layout["title"] == f"Network Slice at 12.5 {MICRON_LABEL} along Y"
     assert slice_layout["xaxis_title"] == f"Y ({MICRON_LABEL})"
     assert slice_layout["yaxis_title"] == f"Z ({MICRON_LABEL})"

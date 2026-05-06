@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
+
 from source.apps.visualization_state import (
     extract_visualization_export_payload,
     has_visualization_network,

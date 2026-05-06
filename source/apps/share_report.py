@@ -36,7 +36,7 @@ def _format_share_report_value(value: Any) -> str:
 
 
 def _build_share_report_parameter_rows(
-        parameters: Mapping[str, Any],
+    parameters: Mapping[str, Any],
 ) -> list[tuple[str, str]]:
     """Return a compact subset of processing parameters for the report."""
     selected_keys = [
@@ -57,7 +57,7 @@ def _build_share_report_parameter_rows(
 
 
 def compute_shareable_stats(
-        processing_results: Mapping[str, Any], image_shape: tuple[int, int, int] | None = None
+    processing_results: Mapping[str, Any], image_shape: tuple[int, int, int] | None = None
 ) -> dict[str, Any]:
     """Compute headline network statistics for the share report."""
     result = normalize_pipeline_result(processing_results)
@@ -81,7 +81,7 @@ def compute_shareable_stats(
 
 
 def build_share_report_signature(
-        dataset_name: str, processing_results: Mapping[str, Any], stats: Mapping[str, Any]
+    dataset_name: str, processing_results: Mapping[str, Any], stats: Mapping[str, Any]
 ) -> str:
     """Build a stable signature used to dedupe report-ready tracking in a session."""
     result = normalize_pipeline_result(processing_results)
@@ -109,7 +109,7 @@ def make_share_report_filename(dataset_name: str) -> str:
 
 
 def _build_share_report_distribution_figure(
-        visualizer: NetworkVisualizer, results: Mapping[str, Any]
+    visualizer: NetworkVisualizer, results: Mapping[str, Any]
 ):
     """Build a secondary figure for the report, with a resilient fallback."""
     try:
@@ -124,9 +124,9 @@ def _build_share_report_distribution_figure(
 
 
 def build_share_report_html(
-        processing_results: Mapping[str, Any],
-        dataset_name: str,
-        image_shape: tuple[int, int, int] | None = None,
+    processing_results: Mapping[str, Any],
+    dataset_name: str,
+    image_shape: tuple[int, int, int] | None = None,
 ) -> dict[str, Any]:
     """Build a self-contained HTML share report and related metadata."""
     typed_result = normalize_pipeline_result(processing_results)
@@ -366,11 +366,11 @@ def _resolve_share_event_log_path(state: Mapping[str, Any] | None = None) -> Pat
 
 
 def record_share_event(
-        state: MutableMapping[str, Any],
-        event_name: str,
-        dataset_name: str,
-        report_signature: str,
-        extra: Mapping[str, Any] | None = None,
+    state: MutableMapping[str, Any],
+    event_name: str,
+    dataset_name: str,
+    report_signature: str,
+    extra: Mapping[str, Any] | None = None,
 ) -> Path:
     """Append a local share event and mirror simple counters in session state."""
     metrics = dict(state.get("share_report_metrics", {}))

@@ -12,16 +12,16 @@ if TYPE_CHECKING:
 
 
 def resolve_stage_with_checkpoint(
-        *,
-        run_context,
-        force_rerun: bool,
-        stage_name: str,
-        cached_log_label: str,
-        cached_detail: str,
-        success_detail: str,
-        fallback_fn,
-        compute_fn,
-        logger,
+    *,
+    run_context,
+    force_rerun: bool,
+    stage_name: str,
+    cached_log_label: str,
+    cached_detail: str,
+    success_detail: str,
+    fallback_fn,
+    compute_fn,
+    logger,
 ) -> dict[str, Any]:
     """Resolve a pipeline stage with fallback, checkpoint reuse, and failure tracking."""
     return _resolution.resolve_stage_with_checkpoint(
@@ -39,12 +39,12 @@ def resolve_stage_with_checkpoint(
 
 
 def resolve_energy_stage(
-        *,
-        run_context,
-        force_rerun: bool,
-        fallback_fn: Callable[[], dict[str, Any]],
-        resumable_fn: Callable[[Any], dict[str, Any]],
-        logger,
+    *,
+    run_context,
+    force_rerun: bool,
+    fallback_fn: Callable[[], dict[str, Any]],
+    resumable_fn: Callable[[Any], dict[str, Any]],
+    logger,
 ) -> dict[str, Any]:
     """Resolve the energy stage using the standard checkpoint contract."""
     return _resolution.resolve_energy_stage(
@@ -58,12 +58,12 @@ def resolve_energy_stage(
 
 
 def resolve_vertices_stage(
-        *,
-        run_context,
-        force_rerun: bool,
-        fallback_fn: Callable[[], dict[str, Any]],
-        resumable_fn: Callable[[Any], dict[str, Any]],
-        logger,
+    *,
+    run_context,
+    force_rerun: bool,
+    fallback_fn: Callable[[], dict[str, Any]],
+    resumable_fn: Callable[[Any], dict[str, Any]],
+    logger,
 ) -> dict[str, Any]:
     """Resolve the vertices stage using the standard checkpoint contract."""
     return _resolution.resolve_vertices_stage(
@@ -77,15 +77,15 @@ def resolve_vertices_stage(
 
 
 def resolve_edges_stage(
-        *,
-        run_context,
-        force_rerun: bool,
-        edge_method: str,
-        tracing_fallback_fn: Callable[[], dict[str, Any]],
-        watershed_fallback_fn: Callable[[], dict[str, Any]],
-        tracing_resumable_fn: Callable[[Any], dict[str, Any]],
-        watershed_resumable_fn: Callable[[Any], dict[str, Any]],
-        logger,
+    *,
+    run_context,
+    force_rerun: bool,
+    edge_method: str,
+    tracing_fallback_fn: Callable[[], dict[str, Any]],
+    watershed_fallback_fn: Callable[[], dict[str, Any]],
+    tracing_resumable_fn: Callable[[Any], dict[str, Any]],
+    watershed_resumable_fn: Callable[[Any], dict[str, Any]],
+    logger,
 ) -> dict[str, Any]:
     """Resolve the edges stage while preserving the tracing/watershed switch."""
     return _resolution.resolve_edges_stage(
@@ -102,12 +102,12 @@ def resolve_edges_stage(
 
 
 def resolve_network_stage(
-        *,
-        run_context,
-        force_rerun: bool,
-        fallback_fn: Callable[[], dict[str, Any]],
-        resumable_fn: Callable[[Any], dict[str, Any]],
-        logger,
+    *,
+    run_context,
+    force_rerun: bool,
+    fallback_fn: Callable[[], dict[str, Any]],
+    resumable_fn: Callable[[Any], dict[str, Any]],
+    logger,
 ) -> dict[str, Any]:
     """Resolve the network stage using the standard checkpoint contract."""
     return _resolution.resolve_network_stage(

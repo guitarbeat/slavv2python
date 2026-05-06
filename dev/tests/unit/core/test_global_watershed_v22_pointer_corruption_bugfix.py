@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from source.core._edge_candidates.common import _build_matlab_global_watershed_lut
 from source.core._edge_candidates.global_watershed import (
     _matlab_global_watershed_current_strel,
@@ -29,7 +30,7 @@ class TestBugConditionOutOfRangeScalePointerValidity:
     """
 
     @pytest.mark.parametrize(
-        "current_scale_label,expected_clipped_label",
+        ("current_scale_label", "expected_clipped_label"),
         [
             # Out-of-range cases that should trigger clipping
             (0, 1),  # Below valid range
@@ -185,9 +186,12 @@ class TestBugConditionOutOfRangeScalePointerValidity:
 
         # All coordinates should be in bounds
         coords = current_strel["coords"]
-        assert np.all(coords[:, 0] >= 0) and np.all(coords[:, 0] < shape[0])
-        assert np.all(coords[:, 1] >= 0) and np.all(coords[:, 1] < shape[1])
-        assert np.all(coords[:, 2] >= 0) and np.all(coords[:, 2] < shape[2])
+        assert np.all(coords[:, 0] >= 0)
+        assert np.all(coords[:, 0] < shape[0])
+        assert np.all(coords[:, 1] >= 0)
+        assert np.all(coords[:, 1] < shape[1])
+        assert np.all(coords[:, 2] >= 0)
+        assert np.all(coords[:, 2] < shape[2])
 
     def test_multiple_out_of_range_scales_at_different_locations(self):
         """Test multiple out-of-range scales at different spatial locations.

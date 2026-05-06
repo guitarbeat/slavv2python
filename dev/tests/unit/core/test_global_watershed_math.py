@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+
 from source.core._edge_candidates import global_watershed as global_watershed_module
 from source.core._edge_candidates.generate import _finalize_matlab_parity_candidates
 from source.core._edge_candidates.global_watershed import (
@@ -47,7 +48,7 @@ def test_initialize_matlab_global_watershed_state_matches_shared_map_layout():
     assert np.isneginf(energy_map_temp.ravel(order="F")[center_linear])
     assert np.isneginf(energy_map_temp.ravel(order="F")[border_vertex_linear])
     assert vertex_index_map.ravel(order="F")[center_linear] == 1
-    assert vertex_index_map.ravel(order="F")[border_vertex_linear] == 3
+    assert vertex_index_map.ravel(order="F")[border_vertex_linear] == 2
     assert vertex_index_map.ravel(order="F")[0] == 3
     assert adjacency.shape == (3, 3)
     assert np.array_equal(adjacency, np.eye(3, dtype=bool))
@@ -67,7 +68,7 @@ def test_matlab_global_watershed_current_strel_filters_to_in_bounds_coords():
     assert np.all(strel["coords"] < np.array([3, 3, 3], dtype=np.int32))
     assert len(strel["coords"]) < 27
     assert strel["pointer_indices"].dtype == np.uint64
-    assert strel["pointer_indices"].tolist() == [14, 15, 17, 18, 23, 24, 26, 27]
+    assert strel["pointer_indices"].tolist() == [14, 13, 11, 10, 5, 4, 2, 1]
 
 
 def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_voxels():
@@ -90,9 +91,7 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_
         valid_linear=np.array([13, 22], dtype=np.int64),
         strel_pointer_indices=np.array([9, 10], dtype=np.uint64),
         strel_r_over_R=np.array([0.0, 0.5], dtype=np.float32),
-        strel_adjusted_energies=np.array([-5.0, -6.0], dtype=np.float32),
         vertex_index_map_flat=vertex_index_map.ravel(order="F"),
-        energy_map_flat=energy_map.ravel(order="F"),
         pointer_map_flat=pointer_map.ravel(order="F"),
         d_over_r_map_flat=d_over_r_map.ravel(order="F"),
         size_map_flat=size_map.ravel(order="F"),
@@ -107,7 +106,6 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_only_claims_zero_vertex_
     assert d_over_r_map[1, 1, 1] == 2.5
     assert size_map[1, 1, 1] == 4
     assert vertex_index_map[1, 1, 2] == 2
-    assert energy_map[1, 1, 2] == -6.0
     assert pointer_map[1, 1, 2] == 10
     assert d_over_r_map[1, 1, 2] == np.float32(1.75)
     assert size_map[1, 1, 2] == 3
@@ -122,9 +120,7 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim
             valid_linear=np.array([1], dtype=np.int64),
             strel_pointer_indices=np.array([99], dtype=np.uint64),
             strel_r_over_R=np.array([0.25], dtype=np.float32),
-            strel_adjusted_energies=np.array([-1.0], dtype=np.float32),
             vertex_index_map_flat=np.zeros((8,), dtype=np.uint32),
-            energy_map_flat=np.zeros((8,), dtype=np.float32),
             pointer_map_flat=np.zeros((8,), dtype=np.uint64),
             d_over_r_map_flat=np.zeros((8,), dtype=np.float64),
             size_map_flat=np.zeros((8,), dtype=np.int16),

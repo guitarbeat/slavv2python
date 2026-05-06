@@ -230,7 +230,7 @@ def test_load_exported_network_json_preserves_parameters(tmp_path):
             edges=[[0, 1]],
             radii=[1.5, 1.5],
         ),
-        parameters={"microns_per_voxel": [0.5, 0.5, 2.0], "pipeline_profile": "paper"}
+        parameters={"microns_per_voxel": [0.5, 0.5, 2.0], "pipeline_profile": "paper"},
     )
     path.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -253,7 +253,7 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
                     edges=[[0, 1], [1, 2]],
                     radii=[1.0, 1.0, 1.0],
                 ),
-                parameters={"microns_per_voxel": [1.0, 1.0, 1.0], "pipeline_profile": "paper"}
+                parameters={"microns_per_voxel": [1.0, 1.0, 1.0], "pipeline_profile": "paper"},
             )
         ),
         encoding="utf-8",

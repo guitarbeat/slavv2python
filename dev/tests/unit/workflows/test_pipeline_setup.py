@@ -115,9 +115,7 @@ def test_initialize_run_context_writes_params_and_marks_running(monkeypatch):
         }
     ]
     assert run_context.reset_calls == ["vertices"]
-    assert writes == [
-        (Path("run-root") / "99_Metadata" / "validated_params.json", {"alpha": 1})
-    ]
+    assert writes == [(Path("run-root") / "99_Metadata" / "validated_params.json", {"alpha": 1})]
     assert run_context.status_calls[0]["status"] == "running"
     assert run_context.status_calls[0]["current_stage"] == "preprocess"
 

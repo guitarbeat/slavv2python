@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 def export_pipeline_results(
-        results: dict[str, Any],
-        output_dir: Union[str, Path],
-        base_name: str = "result",
+    results: dict[str, Any],
+    output_dir: Union[str, Path],
+    base_name: str = "result",
 ) -> list[Path]:
     """Export all standard components of a pipeline result to files.
 
@@ -49,10 +49,10 @@ def export_pipeline_results(
 
 
 def partition_network(
-        network: Network,
-        chunks: tuple[int, int],
-        overlap: float = 0.0,
-        output_dir: Union[str, Path] | None = None,
+    network: Network,
+    chunks: tuple[int, int],
+    overlap: float = 0.0,
+    output_dir: Union[str, Path] | None = None,
 ) -> dict[tuple[int, int], Network]:
     """Partition a network into spatial (Y, X) bins.
 
@@ -80,10 +80,10 @@ def partition_network(
             x_max = min_coords[1] + (x_i + 1) * x_step + overlap
 
             mask = (
-                    (vertices[:, 0] >= y_min)
-                    & (vertices[:, 0] <= y_max)
-                    & (vertices[:, 1] >= x_min)
-                    & (vertices[:, 1] <= x_max)
+                (vertices[:, 0] >= y_min)
+                & (vertices[:, 0] <= y_max)
+                & (vertices[:, 1] >= x_min)
+                & (vertices[:, 1] <= x_max)
             )
             if not np.any(mask):
                 continue
@@ -128,5 +128,5 @@ def parse_registration_file(path: Union[str, Path]) -> tuple[np.ndarray, np.ndar
         logger.warning("Expected %d coordinate triplets, found %d", 2 * num_images, len(coords))
 
     starts = np.array(coords[:num_images])
-    dims = np.array(coords[num_images: 2 * num_images])
+    dims = np.array(coords[num_images : 2 * num_images])
     return starts, dims
