@@ -384,7 +384,7 @@ def record_share_event(
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }
     if extra:
-        event |= dict(extra)
+        event.update(extra)
 
     log_path = _resolve_share_event_log_path(state)
     log_path.parent.mkdir(parents=True, exist_ok=True)

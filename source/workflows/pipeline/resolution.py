@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .artifacts import resolve_resumable_stage
 
@@ -28,7 +28,7 @@ def resolve_stage_with_checkpoint(
         resolve_resumable_stage_fn = resolve_resumable_stage
 
     if run_context is None:
-        return fallback_fn()
+        return cast("dict[str, Any]", fallback_fn())
 
     controller = run_context.stage(stage_name)
     try:

@@ -85,9 +85,9 @@ def prepare_candidate_indices_for_cleanup(
             ],
             dtype=bool,
         )
-        diagnostics["negative_energy_rejected_count"] = (
-            int(diagnostics.get("negative_energy_rejected_count", 0)) + int(np.sum(nonnegative_max))
-        )
+        diagnostics["negative_energy_rejected_count"] = int(
+            diagnostics.get("negative_energy_rejected_count", 0)
+        ) + int(np.sum(nonnegative_max))
         filtered_indices = filtered_indices[~nonnegative_max]
 
     if filtered_indices.size == 0:

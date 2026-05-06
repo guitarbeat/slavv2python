@@ -418,8 +418,12 @@ class TestPreservationInRangeScaleBehavior:
                 pointer_indices = current_strel["pointer_indices"]
                 lut_size = current_strel["lut_size"]
 
-                # All pointers must be in valid range
-                assert np.all(pointer_indices >= 1) and np.all(pointer_indices <= lut_size), (
+                assert np.all(pointer_indices >= 1), (
+                    f"INVALID POINTERS at location {current_linear}, scale {current_scale_label}: "
+                    f"Range [{np.min(pointer_indices)}, {np.max(pointer_indices)}], "
+                    f"Valid [1, {lut_size}]"
+                )
+                assert np.all(pointer_indices <= lut_size), (
                     f"INVALID POINTERS at location {current_linear}, scale {current_scale_label}: "
                     f"Range [{np.min(pointer_indices)}, {np.max(pointer_indices)}], "
                     f"Valid [1, {lut_size}]"
@@ -563,17 +567,29 @@ class TestPreservationInRangeScaleBehavior:
             coords = current_strel["coords"]
 
             # Verify all coordinates are in bounds
-            assert np.all(coords[:, 0] >= 0) and np.all(coords[:, 0] < shape[0]), (
+            assert np.all(coords[:, 0] >= 0), (
+                f"X COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
+                f"Range [{np.min(coords[:, 0])}, {np.max(coords[:, 0])}], Valid [0, {shape[0]})"
+            )
+            assert np.all(coords[:, 0] < shape[0]), (
                 f"X COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
                 f"Range [{np.min(coords[:, 0])}, {np.max(coords[:, 0])}], Valid [0, {shape[0]})"
             )
 
-            assert np.all(coords[:, 1] >= 0) and np.all(coords[:, 1] < shape[1]), (
+            assert np.all(coords[:, 1] >= 0), (
+                f"Y COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
+                f"Range [{np.min(coords[:, 1])}, {np.max(coords[:, 1])}], Valid [0, {shape[1]})"
+            )
+            assert np.all(coords[:, 1] < shape[1]), (
                 f"Y COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
                 f"Range [{np.min(coords[:, 1])}, {np.max(coords[:, 1])}], Valid [0, {shape[1]})"
             )
 
-            assert np.all(coords[:, 2] >= 0) and np.all(coords[:, 2] < shape[2]), (
+            assert np.all(coords[:, 2] >= 0), (
+                f"Z COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
+                f"Range [{np.min(coords[:, 2])}, {np.max(coords[:, 2])}], Valid [0, {shape[2]})"
+            )
+            assert np.all(coords[:, 2] < shape[2]), (
                 f"Z COORDINATES OUT OF BOUNDS at location {current_linear}, scale {current_scale_label}: "
                 f"Range [{np.min(coords[:, 2])}, {np.max(coords[:, 2])}], Valid [0, {shape[2]})"
             )

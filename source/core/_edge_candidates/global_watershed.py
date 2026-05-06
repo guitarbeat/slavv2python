@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy import sparse
@@ -19,7 +19,6 @@ else:
     BoolArray = np.ndarray
 
 from .._edge_payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
-from .._radius_utils import _scalar_radius
 from .common import (
     _build_matlab_global_watershed_lut,
     _coord_to_matlab_linear_index,
@@ -126,7 +125,7 @@ def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> In
     border_mask[:, shape[1] - 1, :] = True
     border_mask[:, :, 0] = True
     border_mask[:, :, shape[2] - 1] = True
-    return cast(Int64Array, np.flatnonzero(border_mask.ravel(order="F")).astype(np.int64))
+    return cast("Int64Array", np.flatnonzero(border_mask.ravel(order="F")).astype(np.int64))
 
 
 def _initialize_matlab_global_watershed_state(
@@ -313,8 +312,10 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     valid_linear: Int64Array,
     strel_pointer_indices: Int64Array,
     strel_r_over_R: Float32Array,
+    adjusted_energies: Float32Array,
     vertex_index_map_flat: Int32Array,
     pointer_map_flat: Int64Array,
+    energy_map_flat: Float32Array,
     d_over_r_map_flat: Float64Array,
     size_map_flat: Int16Array,
     lut_size: int,
@@ -329,9 +330,8 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     is also written with current_scale_label so that during backtracking, we can reconstruct
     the correct LUT and interpret the pointer correctly.
 
-    NOTE: This function does NOT update the energy map. MATLAB uses original energies
-    (unpenalized) for frontier sorting. Propagation of penalized energies to the map
-    is a known divergence that has been removed.
+    NOTE: This function updates the energy map with penalized energies. MATLAB uses
+    these penalized values for the final edge energy traces.
     """
     if len(strel_pointer_indices) != len(valid_linear):
         raise AssertionError(
@@ -357,6 +357,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
             )
         vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
         pointer_map_flat[claim_linear] = claim_pointers
+        energy_map_flat[claim_linear] = adjusted_energies[is_without_vertex]
         d_over_r_map_flat[claim_linear] = (
             np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float32) + current_d_over_r
         )
@@ -431,9 +432,9 @@ def _matlab_global_watershed_reset_join_locations(
 
     updated_locations = list(available_locations)
     locations_to_reset = sorted(
-        {int(value) for value in np.asarray(next_vertex_locations, dtype=np.int64).tolist()}.intersection(
-            updated_locations
-        )
+        {
+            int(value) for value in np.asarray(next_vertex_locations, dtype=np.int64).tolist()
+        }.intersection(updated_locations)
     )
 
     if not is_current_location_clear:
@@ -471,7 +472,7 @@ def _matlab_global_watershed_unit_vectors(
     unit_vectors: np.ndarray = np.zeros_like(vectors, dtype=np.float64)
     valid_mask = norms > 1e-12
     unit_vectors[valid_mask] = vectors[valid_mask] / norms[valid_mask, None]
-    return cast(Float32Array, unit_vectors.astype(np.float32, copy=False))
+    return cast("Float32Array", unit_vectors.astype(np.float32, copy=False))
 
 
 def _matlab_global_watershed_tolerance_mask(
@@ -482,7 +483,7 @@ def _matlab_global_watershed_tolerance_mask(
 ) -> BoolArray:
     """Mirror MATLAB's per-seed energy tolerance test on the current penalized strel energies."""
     threshold = float(current_vertex_energy) * (1.0 - float(energy_tolerance))
-    return cast(BoolArray, np.asarray(adjusted_energies, dtype=np.float32) < threshold)
+    return cast("BoolArray", np.asarray(adjusted_energies, dtype=np.float32) < threshold)
 
 
 def _matlab_global_watershed_seed_index_range(
@@ -532,7 +533,7 @@ def _matlab_global_watershed_trace_half(
         if pointer_value > len(linear_offsets):
             break
 
-        next_linear = int(current_linear + linear_offsets[pointer_value - 1])
+        next_linear = int(current_linear - linear_offsets[pointer_value - 1])
         if next_linear in seen:
             # Prevent infinite loops from cycles
             break
@@ -671,15 +672,15 @@ def _generate_edge_candidates_matlab_global_watershed(
         int(energy_map_raw.shape[2]),
     )
     state = _initialize_matlab_global_watershed_state(energy_map_raw, vertex_positions)
-    vertex_locations = cast(Int64Array, state["vertex_locations"])
-    vertex_energies = cast(Float32Array, state["vertex_energies"])
-    energy_map_temp = cast(Float32Array, state["energy_map_temp"])
-    branch_order_map = cast(Int16Array, state["branch_order_map"])
-    d_over_r_map = cast(Float64Array, state["d_over_r_map"])
-    pointer_map = cast(Int64Array, state["pointer_map"])
-    vertex_index_map = cast(Int32Array, state["vertex_index_map"])
-    available_locations = [int(value) for value in cast(Int64Array, state["available_locations"])]
-    vertex_adjacency_matrix = cast(Any, state["vertex_adjacency_matrix"])
+    vertex_locations = cast("Int64Array", state["vertex_locations"])
+    vertex_energies = cast("Float32Array", state["vertex_energies"])
+    energy_map_temp = cast("Float32Array", state["energy_map_temp"])
+    branch_order_map = cast("Int16Array", state["branch_order_map"])
+    d_over_r_map = cast("Float64Array", state["d_over_r_map"])
+    pointer_map = cast("Int64Array", state["pointer_map"])
+    vertex_index_map = cast("Int32Array", state["vertex_index_map"])
+    available_locations = [int(value) for value in cast("Int64Array", state["available_locations"])]
+    vertex_adjacency_matrix = cast("Any", state["vertex_adjacency_matrix"])
     number_of_vertices = len(vertex_locations)
 
     energy_map = np.array(energy_map_raw, dtype=np.float32, order="F", copy=True)
@@ -749,11 +750,11 @@ def _generate_edge_candidates_matlab_global_watershed(
             "scale_label_clipped", current_scale_label
         )
 
-        current_strel_r_over_R = cast(Float32Array, current_strel["r_over_R"])
-        current_strel_coords = cast(Int32Array, current_strel["coords"])
-        current_strel_linear = cast(Int64Array, current_strel["linear_indices"])
-        current_strel_offsets = cast(Int32Array, current_strel["offsets"])
-        current_strel_pointer_indices = cast(Int64Array, current_strel["pointer_indices"])
+        current_strel_r_over_R = cast("Float32Array", current_strel["r_over_R"])
+        current_strel_coords = cast("Int32Array", current_strel["coords"])
+        current_strel_linear = cast("Int64Array", current_strel["linear_indices"])
+        current_strel_offsets = cast("Int32Array", current_strel["offsets"])
+        current_strel_pointer_indices = cast("Int64Array", current_strel["pointer_indices"])
 
         current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
             np.float32, copy=False
@@ -796,8 +797,10 @@ def _generate_edge_candidates_matlab_global_watershed(
             valid_linear=current_strel_linear,
             strel_pointer_indices=current_strel_pointer_indices,
             strel_r_over_R=current_strel_r_over_R,
+            adjusted_energies=adjusted,
             vertex_index_map_flat=vertex_index_map_flat,
             pointer_map_flat=pointer_map_flat,
+            energy_map_flat=energy_map.ravel(order="F"),
             d_over_r_map_flat=d_over_r_map_flat,
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],

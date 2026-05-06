@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("streamlit")
+
 from source.apps.cli import main as cli_main
 from source.apps.services.exports import generate_export_data as canonical_generate_export_data
 from source.apps.state.analysis import (

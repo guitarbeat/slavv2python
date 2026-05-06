@@ -218,9 +218,7 @@ def _choose_edges_matlab_style(
         return edge_offset_cache[scale]
 
     # Determine if conflict painting should be performed
-    use_conflict_painting = bool(
-        params.get("comparison_exact_network_use_conflict_painting", True)
-    )
+    use_conflict_painting = bool(params.get("comparison_exact_network_use_conflict_painting", True))
 
     chosen_indices: list[int] = []
     for index in filtered_indices:

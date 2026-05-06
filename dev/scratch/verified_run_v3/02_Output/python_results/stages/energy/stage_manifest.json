@@ -1,9 +1,0 @@
-{
-  "artifacts": {
-    "best_energy.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_energy.npy",
-    "best_scale.npy": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\stages\\energy\\best_scale.npy"
-  },
-  "checkpoint": "C:\\Users\\alw4834\\Documents\\slavv2python\\dev\\scratch\\verified_run_v3\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
-  "completed_at": "2026-05-06T05:05:51Z",
-  "stage": "energy"
-}

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
+pytest.importorskip("streamlit")
+
 from dev.tests.support.payload_builders import build_processing_results
 
 from source.apps.dashboard_state import (

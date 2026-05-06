@@ -5,9 +5,10 @@ A simple Streamlit application to visualize normalized telemetry tables.
 Run with: streamlit run dev/scripts/analysis/dashboard_snippet.py
 """
 
-import streamlit as st
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 st.set_page_config(page_title="SLAVV Telemetry Review", layout="wide")
 
@@ -30,12 +31,14 @@ if not files:
 
 selected_file = st.sidebar.selectbox("Select Table", files, format_func=lambda x: x.name)
 
+
 # Data Loading
 @st.cache_data
 def load_data(file_path):
     if file_path.suffix == ".jsonl":
         return pd.read_json(file_path, lines=True)
     return pd.read_csv(file_path)
+
 
 df = load_data(selected_file)
 
@@ -49,11 +52,11 @@ with col1:
 with col2:
     st.subheader("Summary Metrics")
     st.write(f"**Total Records:** {len(df)}")
-    
+
     # Specific parity metrics if available
     parity_fields = ["candidate_connection_count", "watershed_total_pairs"]
     available_parity = [f for f in parity_fields if f in df.columns]
-    
+
     if available_parity:
         for field in available_parity:
             val = df[field].iloc[0] if not df.empty else 0
@@ -65,9 +68,9 @@ with col2:
 if not df.empty:
     st.markdown("---")
     st.subheader("Analysis Plots")
-    
+
     # Try to plot something interesting if 'timestamp' or index exists
-    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
     if numeric_cols:
         y_axis = st.selectbox("Select Metric to Plot", numeric_cols)
         st.line_chart(df[y_axis])

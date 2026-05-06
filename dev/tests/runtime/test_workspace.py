@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
@@ -23,9 +24,6 @@ def test_find_repo_root_discovery(tmp_path: Path):
     sub.mkdir(parents=True)
 
     assert find_repo_root(sub) == repo
-
-
-from unittest.mock import patch
 
 
 def test_find_repo_root_failure(tmp_path: Path):

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import math
 from typing import Any, cast
-from typing_extensions import TypeAlias
 
 import numpy as np
+from typing_extensions import TypeAlias
 
 TraceMetadata: TypeAlias = "dict[str, Any]"
 

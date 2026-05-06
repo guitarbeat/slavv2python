@@ -613,8 +613,10 @@ def test_reveal_unclaimed_only_claims_zero_vertex_voxels():
         valid_linear=np.array([13, 22], dtype=np.int64),  # [1,1,1] and [1,1,2]
         strel_pointer_indices=np.array([10, 11], dtype=np.uint64),
         strel_r_over_R=np.array([0.5, 0.6], dtype=np.float32) / 1.0,
+        adjusted_energies=np.array([-5.0, -10.0], dtype=np.float32),
         vertex_index_map_flat=vertex_index_map.ravel(order="F"),
         pointer_map_flat=pointer_map.ravel(order="F"),
+        energy_map_flat=energy_map.ravel(order="F"),
         d_over_r_map_flat=d_over_r_map.ravel(order="F"),
         size_map_flat=size_map.ravel(order="F"),
         lut_size=27,

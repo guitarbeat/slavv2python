@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import math
 from typing import Any, cast
 
@@ -147,8 +148,6 @@ def _build_matlab_local_strel_geometry(
     }
 
 
-import functools
-
 @functools.lru_cache(maxsize=128)
 def _build_matlab_global_watershed_lut_cached(
     scale_index: int,
@@ -166,15 +165,9 @@ def _build_matlab_global_watershed_lut_cached(
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
     local_subscripts = np.asarray(local_geometry["local_subscripts"], dtype=np.int32)
-    # Corrected: MATLAB pointer indices are the indices into the LUT that point BACK to the center.
-    # If local_subscripts[i] is [dy, dx, dz], then pointer_indices[i] is the index j such that
-    # local_subscripts[j] is [-dy, -dx, -dz].
-    # Using a dictionary for O(N) lookup instead of O(N^2) search.
-    subscript_to_idx = {tuple(sub.tolist()): i + 1 for i, sub in enumerate(local_subscripts)}
-    pointer_indices = np.zeros(len(local_subscripts), dtype=np.uint64)
-    for i, sub in enumerate(local_subscripts):
-        reverse_sub = tuple((-sub).tolist())
-        pointer_indices[i] = np.uint64(subscript_to_idx.get(reverse_sub, 0))
+    # MATLAB's pointer_map stores the index into the LUT that was used to REACH the voxel.
+    # To trace BACK, you subtract the offset corresponding to that index.
+    pointer_indices = np.arange(1, len(local_subscripts) + 1, dtype=np.uint64)
 
     cum_prod_image_dims = np.cumprod(np.asarray(size_of_image, dtype=np.int64))
     linear_offsets = (
@@ -204,7 +197,9 @@ def _build_matlab_global_watershed_lut(
     return _build_matlab_global_watershed_lut_cached(
         int(scale_index),
         size_of_image=size_of_image,
-        lumen_radius_microns_tuple=tuple(np.asarray(lumen_radius_microns, dtype=np.float32).tolist()),
+        lumen_radius_microns_tuple=tuple(
+            np.asarray(lumen_radius_microns, dtype=np.float32).tolist()
+        ),
         microns_per_voxel_tuple=tuple(np.asarray(microns_per_voxel, dtype=np.float32).tolist()),
         step_size_per_origin_radius=float(step_size_per_origin_radius),
     )
@@ -537,9 +532,7 @@ def _reorder_candidate_payload(
     if "metrics" in candidates:
         reordered["metrics"] = np.asarray(candidates["metrics"][sort_idx], dtype=np.float32)
     if "energy_traces" in candidates:
-        reordered["energy_traces"] = [
-            candidates["energy_traces"][i] for i in sort_idx.tolist()
-        ]
+        reordered["energy_traces"] = [candidates["energy_traces"][i] for i in sort_idx.tolist()]
     if "scale_traces" in candidates:
         reordered["scale_traces"] = [candidates["scale_traces"][i] for i in sort_idx.tolist()]
     if "origin_indices" in candidates:

@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 if TYPE_CHECKING:
-    from .._edge_candidates.common import BoolArray, Float32Array, Int16Array, Int32Array, Int64Array
+    from .._edge_candidates.common import (
+        BoolArray,
+        Float32Array,
+        Int16Array,
+        Int32Array,
+        Int64Array,
+    )
 else:
     Int16Array = np.ndarray
     Int32Array = np.ndarray
@@ -38,7 +44,7 @@ def _matlab_linear_indices_from_points(
         + coords[:, 1] * image_shape[0]
         + coords[:, 2] * image_shape[0] * image_shape[1]
     ).astype(np.int64, copy=False)
-    return cast(Int64Array, linear)
+    return cast("Int64Array", linear)
 
 
 def _matlab_position_from_linear_index(
@@ -51,7 +57,7 @@ def _matlab_position_from_linear_index(
     remainder = linear_index - z_coord * xy_area
     x_coord = remainder // y_dim
     y_coord = remainder - x_coord * y_dim
-    return cast(Int32Array, np.asarray([y_coord, x_coord, z_coord], dtype=np.int32))
+    return cast("Int32Array", np.asarray([y_coord, x_coord, z_coord], dtype=np.int32))
 
 
 def _matlab_repeated_endpoint_interior_indices(
@@ -172,9 +178,9 @@ def _matlab_bridge_initialize_size_maps(
             edge_size_map[coords[:, 0], coords[:, 1], coords[:, 2]] = rounded_scales
 
     return (
-        cast(Float32Array, edge_energy_map),
-        cast(Int16Array, edge_size_map),
-        cast(BoolArray, edge_mask),
+        cast("Float32Array", edge_energy_map),
+        cast("Int16Array", edge_size_map),
+        cast("BoolArray", edge_mask),
     )
 
 
@@ -353,7 +359,9 @@ def _matlab_bridge_search_target(
     current_scale_label = int(
         edge_size_map[int(current_coord[0]), int(current_coord[1]), int(current_coord[2])]
     )
-    current_scale_index = int(np.clip(current_scale_label - 1, 0, max(len(lumen_radius_microns) - 1, 0)))
+    current_scale_index = int(
+        np.clip(current_scale_label - 1, 0, max(len(lumen_radius_microns) - 1, 0))
+    )
     if len(lumen_radius_microns) == 0:
         return None
     max_edge_length_in_microns = float(max_edge_length_per_origin_radius) * float(
@@ -444,14 +452,11 @@ def _matlab_bridge_search_target(
             ].astype(np.float32, copy=False)
             if scale_indices is not None and scale_indices.size:
                 # Corrected: scale_indices is 0-based. Convert to 1-based for trace metadata.
-                trace_scale = (
-                    scale_indices[
-                        trace_coords[:, 0].astype(np.int32),
-                        trace_coords[:, 1].astype(np.int32),
-                        trace_coords[:, 2].astype(np.int32),
-                    ].astype(np.float32, copy=False)
-                    + np.float32(1.0)
-                )
+                trace_scale = scale_indices[
+                    trace_coords[:, 0].astype(np.int32),
+                    trace_coords[:, 1].astype(np.int32),
+                    trace_coords[:, 2].astype(np.int32),
+                ].astype(np.float32, copy=False) + np.float32(1.0)
             else:
                 # edge_size_map is already 1-based.
                 trace_scale = edge_size_map[
@@ -892,9 +897,9 @@ def add_vertices_to_edges_matlab_style(
 
 
 __all__ = [
-    "add_vertices_to_edges_matlab_style",
     "_matlab_bridge_search_target",
     "_matlab_linear_indices_from_points",
     "_matlab_position_from_linear_index",
     "_matlab_repeated_endpoint_interior_indices",
+    "add_vertices_to_edges_matlab_style",
 ]

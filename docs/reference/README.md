@@ -8,32 +8,28 @@ current Python product surface.
 
 Read these first when working on the live implementation:
 
-1. [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
-   Claim boundaries, source-of-truth hierarchy, and remaining roadmap.
-2. [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
-   MATLAB-to-Python surface map and confirmed structural deviations.
-3. [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md)
-   Technical design, shared state management, and parity details for the discovery algorithm.
-4. [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
-   Live proof status, current v22 watershed read, and the first failing field.
-5. [Energy Computation Methods](core/ENERGY_METHODS.md)
-   Supported energy backends, projection modes, and extension points.
-6. [Glossary](core/GLOSSARY.md)
-   Shared parity and pipeline terminology.
-7. [Paper Profile](workflow/PAPER_PROFILE.md)
-   Public paper-first CLI/app workflow and authoritative JSON export contract.
-8. [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
-   Preferred Python names, package groupings, and compatibility policy.
-
-9. [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
-   Technical instructions and best practices for MATLAB parity alignment.
+- [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
+  Claim boundaries, source-of-truth hierarchy, and remaining roadmap.
+- [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
+  MATLAB-to-Python surface map and confirmed structural deviations.
+- [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md)
+  Technical design, shared state management, and parity details for the discovery algorithm.
+- [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
+  Live proof status, current v22 watershed read, and breakthrough status.
+- [Energy Computation Methods](core/ENERGY_METHODS.md)
+  Supported energy backends, projection modes, and extension points.
+- [Glossary](core/GLOSSARY.md)
+  Shared parity and pipeline terminology.
+- [Paper Profile](workflow/PAPER_PROFILE.md)
+  Public paper-first CLI/app workflow and authoritative JSON export contract.
+- [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
+  Preferred Python names, package groupings, and compatibility policy.
 
 ## Workflow Guides
 
 - [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
+  Technical instructions and best practices for MATLAB parity alignment.
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
-- [Paper Profile](workflow/PAPER_PROFILE.md)
-- [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 - [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
 

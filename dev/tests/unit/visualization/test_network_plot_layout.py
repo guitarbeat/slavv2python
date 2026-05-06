@@ -1,4 +1,4 @@
-from source.visualization.network_plot_layout import (
+from source.visualization.network_plots.layout import (
     AXIS_NAMES,
     axis_labels,
     distribution_layout,

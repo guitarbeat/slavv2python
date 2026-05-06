@@ -164,7 +164,7 @@ files = [
     "source/analysis/geometry.py",
     "source/core/energy.py",
     "source/core/network.py",
-    "source/core/graph.py",
+    "source/core/graph/__init__.py",
     "source/core/vertices.py",
     "source/core/edge_primitives.py",
     "source/core/edge_candidates.py",
@@ -173,10 +173,10 @@ files = [
     "source/core/pipeline.py",
     "source/runtime/run_state.py",
     "source/runtime/run_tracking/__init__.py",
-    "source/workflows/pipeline_execution.py",
-    "source/workflows/pipeline_session.py",
-    "source/workflows/stage_artifacts.py",
-    "source/workflows/stage_resolution.py",
+    "source/workflows/pipeline/execution.py",
+    "source/workflows/pipeline/session.py",
+    "source/workflows/pipeline/artifacts.py",
+    "source/workflows/pipeline/resolution.py",
 ]
 warn_return_any = true
 warn_unused_configs = true
@@ -189,4 +189,35 @@ ignore_missing_imports = true      # don't error on 3rd-party stubs
 follow_imports = "skip"
 show_error_codes = true
 pretty = true
+
+# â”€â”€ Pytest (unit/integration tests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+[tool.pytest.ini_options]
+testpaths = "dev/tests"
+norecursedirs = [
+    "external",
+    "external/blender_resources",
+    "external/Vectorization-Public",
+    "experiments",
+    ".pytest_tmp",
+    "dev/tmp_tests",
+    "tmp_fixture",
+]
+python_files = "test_*.py"
+addopts = "-v --tb=short -p no:cacheprovider"
+markers = [
+    "unit: fast unit tests",
+    "integration: integration tests across components",
+    "ui: Streamlit/visualization UI-facing tests",
+    "diagnostic: environment and setup diagnostics",
+    "slow: long-running tests",
+    "regression: regression-focused behavior tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:sklearn.*",
+    "ignore::DeprecationWarning:pandas.*",
+    "ignore::DeprecationWarning:numba.*",
+    "ignore:.*invalid escape sequence.*:DeprecationWarning",
+    "ignore:.*np.bool.*:DeprecationWarning",
+    "ignore:.*np.float.*:DeprecationWarning",
+]
 

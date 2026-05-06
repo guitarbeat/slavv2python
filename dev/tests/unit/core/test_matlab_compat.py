@@ -74,7 +74,7 @@ def test_vectorize_v200_delegates_to_slavv_processor():
             self.edges = {"edges": True}
             self.network = {"network": True}
 
-        def process_image(
+        def run(
             self,
             image_arg,
             params_arg,

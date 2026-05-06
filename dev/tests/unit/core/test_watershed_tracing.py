@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
-from source.core._edge_candidates.global_watershed import _generate_edge_candidates_matlab_global_watershed
+
+from source.core._edge_candidates.global_watershed import (
+    _generate_edge_candidates_matlab_global_watershed,
+)
 from source.core._edge_candidates.tracing import ExecutionTracer
 
 
@@ -29,22 +32,19 @@ def test_global_watershed_execution_tracing():
     energy[1, 0, 1] = -10.0
     energy[1, 1, 1] = -5.0
     energy[1, 2, 1] = -10.0
-    
-    vertex_positions = np.array([
-        [1.0, 0.0, 1.0],
-        [1.0, 2.0, 1.0]
-    ], dtype=np.float32)
+
+    vertex_positions = np.array([[1.0, 0.0, 1.0], [1.0, 2.0, 1.0]], dtype=np.float32)
     vertex_scales = np.zeros((2,), dtype=np.int32)
     lumen_radius_microns = np.array([1.0], dtype=np.float32)
     microns_per_voxel = np.ones((3,), dtype=np.float32)
-    
+
     tracer = MockTracer()
     params = {
         "edge_number_tolerance": 1,
         "energy_tolerance": 1.0,
         "step_size_per_origin_radius": 1.0,
     }
-    
+
     _generate_edge_candidates_matlab_global_watershed(
         energy,
         None,
@@ -54,15 +54,15 @@ def test_global_watershed_execution_tracing():
         microns_per_voxel,
         np.zeros_like(energy),
         params,
-        tracer=tracer
+        tracer=tracer,
     )
-    
+
     # Verify tracer captured events
     assert len(tracer.iteration_starts) > 0
     assert len(tracer.seed_selected) > 0
     assert len(tracer.joins) == 1
-    
+
     # Check join details
     v_start, v_end, h1, h2 = tracer.joins[0]
     assert {v_start, v_end} == {1, 2}
-    assert len(h1) + len(h2) >= 3 # Should be at least 3 points total for this path
+    assert len(h1) + len(h2) >= 3  # Should be at least 3 points total for this path

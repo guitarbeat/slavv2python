@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .results import stop_after_stage_if_requested
 from .session import emit_progress
@@ -74,7 +74,10 @@ def advance_pipeline_stage(
     """Record a stage payload, emit progress, and stop early if requested."""
     results[result_key] = payload
     emit_progress(progress_callback, progress_fraction, stage_name)
-    return stop_after_stage_if_requested(stop_after, stage_name, results, run_context)
+    return cast(
+        "dict[str, Any] | None",
+        stop_after_stage_if_requested(stop_after, stage_name, results, run_context),
+    )
 
 
 def run_pipeline_stage_sequence(

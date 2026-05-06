@@ -14,17 +14,17 @@ from source.workflows.pipeline import (
     finalize_pipeline_results as grouped_finalize_pipeline_results,
 )
 from source.workflows.pipeline import stage_artifacts as grouped_stage_artifacts
-from source.workflows.pipeline_results import (
+from source.workflows.pipeline.artifacts import stage_artifacts as flat_stage_artifacts
+from source.workflows.pipeline.execution import PipelineStageStep as FlatPipelineStageStep
+from source.workflows.pipeline.results import (
     finalize_pipeline_results as flat_finalize_pipeline_results,
 )
-from source.workflows.pipeline_runner import PipelineStageStep as FlatPipelineStageStep
-from source.workflows.pipeline_session import (
+from source.workflows.pipeline.session import (
     PreparedPipelineRun as AliasPreparedPipelineRun,
 )
 from source.workflows.pipeline_setup import (
     PreparedPipelineRun as FlatPreparedPipelineRun,
 )
-from source.workflows.stage_checkpoints import stage_artifacts as flat_stage_artifacts
 
 
 def test_grouped_workflow_import_surfaces_resolve_consistently():

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
 
 from source.runtime import find_repo_root
 
@@ -12,38 +11,44 @@ REPO_ROOT = find_repo_root(__file__)
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from source.analysis.parity.constants import (
-    EXACT_STAGE_ORDER,
-    DEFAULT_MEMORY_SAFETY_FRACTION,
-)
-from source.analysis.parity.execution import ensure_dest_run_layout, write_run_manifest, validate_exact_proof_source_surface
-from source.analysis.parity.proofs import CHECKPOINTS_DIR
-from source.analysis.parity.promotion import materialize_dataset_record as _materialize_dataset_record
-from source.analysis.parity.utils import fingerprint_file
-from source.io.tiff import load_tiff_volume
-from source.core.pipeline import SLAVVProcessor
-from source.core.edges import (
-    choose_edges_for_workflow,
-    add_vertices_to_edges_matlab_style,
-    finalize_edges_matlab_style,
-)
 from source.analysis.parity.cli import (
+    handle_capture_candidates,
+    handle_diagnose_gaps,
+    handle_fail_fast,
+    handle_init_exact_run,
+    handle_normalize_recordings,
+    handle_preflight_exact,
+    handle_promote_dataset,
+    handle_promote_oracle,
+    handle_promote_report,
+    handle_prove_exact,
+    handle_prove_luts,
+    handle_replay_edges,
     handle_rerun_python,
     handle_summarize,
     handle_trace_vertex,
-    handle_normalize_recordings,
-    handle_diagnose_gaps,
-    handle_prove_exact,
-    handle_preflight_exact,
-    handle_prove_luts,
-    handle_capture_candidates,
-    handle_replay_edges,
-    handle_fail_fast,
-    handle_promote_oracle,
-    handle_promote_dataset,
-    handle_promote_report,
-    handle_init_exact_run,
 )
+from source.analysis.parity.constants import (
+    DEFAULT_MEMORY_SAFETY_FRACTION,
+    EXACT_STAGE_ORDER,
+)
+from source.runtime._run_state.io import fingerprint_file
+from source.analysis.parity.execution import (
+    validate_exact_proof_source_surface,
+    ensure_dest_run_layout,
+)
+from source.analysis.parity.promotion import (
+    materialize_dataset_record as _materialize_dataset_record,
+)
+from source.core.edges_internal.edge_selection import choose_edges_for_workflow
+from source.analysis.parity.reports import render_exact_preflight_report
+from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
+from source.io.matlab_fail_fast import (
+    render_lut_proof_report,
+    render_candidate_coverage_report,
+)
+from source.io.matlab_exact_proof import render_exact_proof_report
+from source.core._edges.postprocess import finalize_edges_matlab_style
 
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python
@@ -57,23 +62,7 @@ _handle_prove_luts = handle_prove_luts
 _handle_capture_candidates = handle_capture_candidates
 _handle_replay_edges = handle_replay_edges
 _handle_fail_fast = handle_fail_fast
-from source.analysis.parity.proofs import (
-    run_exact_parity_proof,
-    run_exact_preflight,
-    run_candidate_capture,
-    run_edge_replay,
-    run_lut_proof,
-    run_exact_preflight as _run_preflight_exact,
-    run_lut_proof as _run_prove_luts,
-    run_candidate_capture as _run_capture_candidates,
-    run_edge_replay as _run_replay_edges,
-)
-from source.io.matlab_exact_proof import render_exact_proof_report
-from source.io.matlab_fail_fast import (
-    render_lut_proof_report,
-    render_candidate_coverage_report,
-)
-from source.analysis.parity.reports import render_exact_preflight_report
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the developer parity experiment parser."""
@@ -132,7 +121,9 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--source-run-root", required=True)
     preflight.add_argument("--oracle-root")
     preflight.add_argument("--dest-run-root", required=True)
-    preflight.add_argument("--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION)
+    preflight.add_argument(
+        "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
+    )
     preflight.add_argument("--force", action="store_true")
     preflight.set_defaults(handler=handle_preflight_exact)
 
@@ -163,7 +154,9 @@ def build_parser() -> argparse.ArgumentParser:
     fail_fast.add_argument("--source-run-root", required=True)
     fail_fast.add_argument("--oracle-root")
     fail_fast.add_argument("--dest-run-root", required=True)
-    fail_fast.add_argument("--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION)
+    fail_fast.add_argument(
+        "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
+    )
     fail_fast.add_argument("--force", action="store_true")
     fail_fast.add_argument("--debug-maps", action="store_true")
     fail_fast.set_defaults(handler=handle_fail_fast)
@@ -201,6 +194,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
+
 def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -208,6 +202,7 @@ def main(argv: list[str] | None = None) -> None:
         args.handler(args)
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

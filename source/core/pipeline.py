@@ -313,7 +313,7 @@ class SlavvPipeline:
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Construct the final network from traced edges and vertices."""
-        return network_ops.construct_network(edges, vertices, params)
+        return cast("dict[str, Any]", network_ops.construct_network(edges, vertices, params))
 
     def construct_network(
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]

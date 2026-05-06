@@ -67,7 +67,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
 
     # Resolve input and params
-    repo_root = Path.cwd()  # Assume CWD is repo root as per AGENTS.md
+    repo_root = Path.cwd()  # Assume CWD is repo root as per GEMINI.md
     input_file = resolve_input_file(source_surface, args.input, repo_root=repo_root)
     params = load_params_file(source_surface, args.params_file)
 
@@ -139,9 +139,10 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
 def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
+
     from source.core._edge_candidates import (
-        _generate_edge_candidates_matlab_global_watershed,
         JsonExecutionTracer,
+        _generate_edge_candidates_matlab_global_watershed,
     )
     from source.io.matlab_exact_proof import load_normalized_python_checkpoints
 
@@ -163,7 +164,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     vertex_idx = args.vertex_idx
     if vertex_idx < 0 or vertex_idx >= len(vertex_data["positions"]):
         raise ValueError(
-            f"vertex index {vertex_idx} out of range [0, {len(vertex_data['positions'])-1}]"
+            f"vertex index {vertex_idx} out of range [0, {len(vertex_data['positions']) - 1}]"
         )
 
     v_pos = np.asarray(vertex_data["positions"][vertex_idx : vertex_idx + 1], dtype=np.float32)

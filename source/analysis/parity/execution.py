@@ -232,9 +232,6 @@ def write_run_manifest(
     return manifest
 
 
-from .reports import persist_recording_tables
-
-
 def resolve_input_file(
     source_surface: SourceRunSurface,
     input_arg: str | None,
@@ -444,9 +441,7 @@ def load_dataset_surface(dataset_root: Path) -> DatasetSurface:
             input_file = None
 
     if input_file is None:
-        raise ValueError(
-            f"dataset input file not found for {dataset_hash} under {resolved_root}"
-        )
+        raise ValueError(f"dataset input file not found for {dataset_hash} under {resolved_root}")
 
     actual_hash = fingerprint_file(input_file)
     if actual_hash != dataset_hash:
@@ -686,9 +681,10 @@ def _finalize_init_exact_run(
             "input_axis_permutation": list(input_axis_permutation)
             if input_axis_permutation
             else None,
-            "selected_settings_paths": selected_settings_paths,
         },
     )
+    from .reports import persist_recording_tables
+
     persist_recording_tables(dest_run_root)
 
     from .constants import RUN_SNAPSHOT_PATH

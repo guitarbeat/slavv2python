@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +43,21 @@ def find_experiment_root(repo_root: Path | None = None) -> Path:
 class WorkspaceAuditor:
     """Audits the repository for structural violations."""
 
-    CANONICAL_ROOT_FOLDERS = {"source", "dev", "docs", "external", ".github", ".git"}
+    CANONICAL_ROOT_FOLDERS: ClassVar[set[str]] = {
+        "source",
+        "dev",
+        "docs",
+        "external",
+        ".github",
+        ".git",
+    }
 
-    CANONICAL_ROOT_FILES = {
+    CANONICAL_ROOT_FILES: ClassVar[set[str]] = {
         "pyproject.toml",
         "README.md",
         "LICENSE",
         "CHANGELOG.md",
-        "AGENTS.md",
+        "GEMINI.md",
         ".gitignore",
     }
 
@@ -66,16 +74,19 @@ class WorkspaceAuditor:
             if name.startswith((".", "__")) and name not in self.CANONICAL_ROOT_FOLDERS:
                 continue
 
-            if item.is_dir():
-                if name not in self.CANONICAL_ROOT_FOLDERS and name != "slavv.egg-info":
-                    violations.append(f"Non-standard root directory: {name}")
-            elif item.is_file():
-                if name not in self.CANONICAL_ROOT_FILES and not name.endswith(
-                    (".ini", ".yaml", ".yml", ".md")
-                ):
-                    # Allow common config files but flag others
-                    if name not in {".gitmodules", ".sourcery.yaml", "pytest.ini"}:
-                        violations.append(f"Non-standard root file: {name}")
+            if (
+                item.is_dir()
+                and name not in self.CANONICAL_ROOT_FOLDERS
+                and name != "slavv.egg-info"
+            ):
+                violations.append(f"Non-standard root directory: {name}")
+            elif (
+                item.is_file()
+                and name not in self.CANONICAL_ROOT_FILES
+                and not name.endswith((".ini", ".yaml", ".yml", ".md"))
+                and name not in {".gitmodules", ".sourcery.yaml"}
+            ):
+                violations.append(f"Non-standard root file: {name}")
 
         return violations
 

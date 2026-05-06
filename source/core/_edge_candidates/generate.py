@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
-    from .common import Float32Array, Int32Array, Int16Array, Float64Array
+
+    from ..edges_internal.edge_tracing import TraceMetadata
+    from .common import Float32Array, Float64Array, Int16Array, Int32Array
 else:
     Int16Array = np.ndarray
     Int32Array = np.ndarray
@@ -18,14 +20,13 @@ else:
 
 from .._edge_payloads import _empty_edge_diagnostics
 from .._radius_utils import _scalar_radius
-from ..edges_internal.edge_tracing import TraceMetadata
 from ..edges_internal.trace_metrics import (
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,
     _trace_energy_series,
     _trace_scale_series,
 )
-from .global_watershed import _generate_edge_candidates_matlab_global_watershed, ExecutionTracer
+from .global_watershed import ExecutionTracer, _generate_edge_candidates_matlab_global_watershed
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def _generate_fallback_directions(
     edge_candidates_facade = _edge_candidates_facade()
     if direction_method == "hessian":
         directions = cast(
-            Float32Array,
+            "Float32Array",
             edge_candidates_facade.estimate_vessel_directions(
                 energy,
                 start_pos,
@@ -61,16 +62,16 @@ def _generate_fallback_directions(
         )
         if directions.shape[0] < max_edges_per_vertex:
             extra = cast(
-                Float32Array,
+                "Float32Array",
                 edge_candidates_facade.generate_edge_directions(
                     max_edges_per_vertex - directions.shape[0],
                     seed=vertex_idx,
                 ),
             )
-            return cast(Float32Array, np.vstack([directions, extra]))
-        return cast(Float32Array, directions[:max_edges_per_vertex])
+            return cast("Float32Array", np.vstack([directions, extra]))
+        return cast("Float32Array", directions[:max_edges_per_vertex])
     return cast(
-        Float32Array,
+        "Float32Array",
         edge_candidates_facade.generate_edge_directions(
             max_edges_per_vertex,
             seed=vertex_idx,

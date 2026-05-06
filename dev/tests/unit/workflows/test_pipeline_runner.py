@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from source.workflows.pipeline_runner import (
+from source.workflows.pipeline.execution import (
     PipelineStageStep,
     advance_pipeline_stage,
     build_standard_pipeline_steps,

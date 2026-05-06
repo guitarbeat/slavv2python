@@ -1,7 +1,7 @@
 # SLAVV Python Parity TODO
 
-**Last Updated:** 2026-05-05
-**Version:** 2.3 (Exact Route Breakthrough)
+**Last Updated:** 2026-05-06
+**Version:** 2.4 (Exact Route Breakthrough)
 **Current Status:** 404/1197 Python candidates (33.8% baseline) - **Projected ~80% after May 2026 Breakthroughs**
 **Previous Baseline:** 12.4% (149/1197) from may2026_fixes run
 **Target Baseline:** 80% (958/1197) by end of Sprint 1
@@ -13,23 +13,23 @@
 ### Task Overview
 | Category | Total | Critical | High | Medium | Low | Completed |
 |----------|-------|----------|------|--------|-----|-----------|
-| **Parity & Validation** | 10 | 4 | 3 | 2 | 1 | 6 |
-| **Bug Fixes** | 2 | 2 | 0 | 0 | 0 | 2 |
+| **Parity & Validation** | 11 | 4 | 3 | 3 | 1 | 7 |
+| **Bug Fixes** | 3 | 3 | 0 | 0 | 0 | 3 |
 | **Investigation** | 6 | 0 | 3 | 3 | 0 | 4 |
 | **Testing** | 3 | 0 | 1 | 2 | 0 | 3 |
 | **Documentation** | 4 | 0 | 0 | 2 | 2 | 4 |
 | **Technical Debt** | 3 | 0 | 0 | 2 | 1 | 3 |
 | **Performance** | 2 | 0 | 0 | 1 | 1 | 1 |
 | **DevOps** | 1 | 0 | 0 | 1 | 0 | 0 |
-| **TOTAL** | **31** | **6** | **7** | **13** | **5** | **23** |
+| **TOTAL** | **33** | **7** | **7** | **14** | **5** | **25** |
 
 
-### Current Parity Metrics (Verified Roadmap - 2026-05-05)
+### Current Parity Metrics (Verified Roadmap - 2026-05-06)
 - **MATLAB Total Candidates:** 1,197
 - **Python Candidates Generated:** 488 (trace_order_fix baseline)
 - **MATLAB Pairs Matched:** 404 (33.8% of MATLAB total)
 - **Projected Match Rate:** **~80%** (Major fixes for Conflict Painting, Pointers, and Sorting landed)
-- **Test Suite Status:** 63/63 passing (100%)
+- **Test Suite Status:** 188/188 passing (100%)
 - **Experiment Status:** `verified_run_v3` active in background.
 
 ### Recent Baseline Progress
@@ -44,8 +44,37 @@
 4. ⏳ Achieve 80% match rate (PARITY-002 - **ACTIVE**: Breakthrough fixes landed)
 5. ✅ Identify root cause for 66% missing pairs (INVEST-001 - **COMPLETED**: Conflict Painting, Pointers, Sorting)
 6. ✅ Analyze 84 extra Python pairs (INVEST-006 - **COMPLETED**: Energy Integrity)
+7. ✅ Evaluate Agentic Parity Loop feasibility (PARITY-004 - **COMPLETED**)
+8. ✅ Resolve vectorized delegation unit test crash (BUG-002 - **COMPLETED**)
 
-### 🚀 Breakthrough Progress (May 2026)
+---
+
+## 🗓 Current Sprint Details (2026-05-05 to 2026-05-19)
+
+### Week 1 Tasks (2026-05-05 to 2026-05-12)
+- ✅ **PARITY-001**: Trace Order Fix Validation (Complete)
+- ✅ **PARITY-001A**: Investigate Baseline Discrepancy (Complete)
+- ✅ **INVEST-001**: Categorize 793 Missing MATLAB Pairs (Complete)
+- ✅ **INVEST-006**: Analyze 84 Extra Python Pairs (Complete)
+- ✅ **PARITY-004**: Evaluate Agentic Parity Loop Feasibility (Complete)
+- ✅ **BUG-002**: Align test_vectorize_v200 mock with active pipeline API (Complete)
+
+### Week 2 Tasks (2026-05-12 to 2026-05-19)
+- ⏳ **PARITY-002**: Achieve 80% Match Rate (Target 958+ matched pairs)
+- ⏳ **INVEST-005**: Execution Trace Comparison Framework (Active)
+
+### 📊 Success Metrics
+- **Match Rate Target**: Reach ≥ 80% (958/1,197 matched pairs)
+- **Regression Coverage**: 100% pass rate for new parity fixes
+- **Documentation**: Audit trail of all breakthrough findings in `EXACT_PROOF_FINDINGS.md`
+
+### 🚧 Risks & Mitigations
+- **Complexity**: Root causes for the remaining 20% may be highly vertex-specific. Mitigation: Focus on systematic gaps (Hubs, Boundaries) first.
+- **Regressions**: Parity fixes might affect non-exact routes. Mitigation: Maintain `paper` profile as the baseline for behavioral testing.
+
+---
+
+## 🚀 Breakthrough Progress (May 2026)
 - ✅ **FIXED**: Candidate Selection Divergence (Disabled conflict painting for parity).
 - ✅ **FIXED**: Backtracking Pointer Correction (Reverse indices for trace recovery).
 - ✅ **FIXED**: Stable Discovery Edge Sorting (Matched processing order).
