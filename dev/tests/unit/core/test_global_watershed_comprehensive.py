@@ -21,6 +21,7 @@ from source.core._edge_candidates.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
+from source.core._edge_candidates.generate import _finalize_matlab_parity_candidates
 from source.core._edge_candidates.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
@@ -784,6 +785,85 @@ def test_finalize_edge_trace_samples_correctly():
     # Verify scale sampling
     assert scale_trace.dtype == np.int16
     assert len(scale_trace) == 3
+
+
+@pytest.mark.unit
+def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim_pointers():
+    with pytest.raises(AssertionError, match="invalid claim pointers"):
+        _matlab_global_watershed_reveal_unclaimed_strel(
+            current_vertex_index=1,
+            current_scale_label=2,
+            current_d_over_r=0.5,
+            valid_linear=np.array([1], dtype=np.int64),
+            strel_pointer_indices=np.array([99], dtype=np.uint64),
+            strel_r_over_R=np.array([0.25], dtype=np.float32),
+            adjusted_energies=np.array([-5.0], dtype=np.float32),
+            vertex_index_map_flat=np.zeros((8,), dtype=np.uint32),
+            pointer_map_flat=np.zeros((8,), dtype=np.uint64),
+            energy_map_flat=np.zeros((8,), dtype=np.float32),
+            d_over_r_map_flat=np.zeros((8,), dtype=np.float64),
+            size_map_flat=np.zeros((8,), dtype=np.int16),
+            lut_size=4,
+        )
+
+
+@pytest.mark.unit
+def test_generate_edge_candidates_matlab_global_watershed_uses_configured_step_size(
+    monkeypatch,
+):
+    import source.core._edge_candidates.global_watershed as global_watershed_module
+    observed_step_sizes: list[float] = []
+
+    def fake_current_strel(*_args, **kwargs):
+        observed_step_sizes.append(float(kwargs["step_size_per_origin_radius"]))
+        raise RuntimeError("captured step size")
+
+    monkeypatch.setattr(
+        global_watershed_module,
+        "_matlab_global_watershed_current_strel",
+        fake_current_strel,
+    )
+
+    with pytest.raises(RuntimeError, match="captured step size"):
+        _generate_edge_candidates_matlab_global_watershed(
+            np.full((3, 3, 3), -1.0, dtype=np.float32),
+            np.zeros((3, 3, 3), dtype=np.int16),
+            np.array([[1.0, 1.0, 1.0]], dtype=np.float32),
+            np.array([0], dtype=np.int16),
+            lumen_radius_microns=np.array([1.0], dtype=np.float32),
+            microns_per_voxel=np.ones((3,), dtype=np.float32),
+            _vertex_center_image=np.zeros((3, 3, 3), dtype=np.int32),
+            params={"step_size_per_origin_radius": 2.5},
+        )
+
+    assert observed_step_sizes == [2.5]
+
+
+@pytest.mark.unit
+def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_payload():
+    candidates = {
+        "traces": [],
+        "connections": np.zeros((0, 2), dtype=np.int32),
+        "metrics": np.zeros((0,), dtype=np.float32),
+        "energy_traces": [],
+        "scale_traces": [],
+        "origin_indices": np.zeros((0,), dtype=np.int32),
+        "connection_sources": [],
+        "diagnostics": {},
+        "matlab_global_watershed_exact": True,
+    }
+
+    finalized = _finalize_matlab_parity_candidates(
+        candidates,
+        energy=np.zeros((3, 3, 3), dtype=np.float32),
+        scale_indices=np.zeros((3, 3, 3), dtype=np.int16),
+        vertex_positions=np.zeros((0, 3), dtype=np.float32),
+        energy_sign=-1.0,
+        params={"comparison_exact_network": True},
+        microns_per_voxel=np.ones((3,), dtype=np.float32),
+    )
+
+    assert finalized is candidates
 
 
 # Made with Bob

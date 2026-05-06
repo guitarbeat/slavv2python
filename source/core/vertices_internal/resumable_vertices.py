@@ -44,6 +44,7 @@ def extract_vertices_resumable(
     length_dilation_ratio = params.get("length_dilation_ratio", 1.0)
     max_voxels_per_node = params.get("max_voxels_per_node", 6000)
     block_size = int(params.get("resume_vertex_block_size", 256))
+    n_jobs = int(params.get("n_jobs", 1))
 
     candidate_path = stage_controller.artifact_path("candidates.pkl")
     cropped_path = stage_controller.artifact_path("cropped_candidates.pkl")
@@ -64,6 +65,7 @@ def extract_vertices_resumable(
             space_strel_apothem,
             lumen_radius_pixels_axes[0],
             max_voxels_per_node,
+            n_jobs=n_jobs,
         )
         atomic_joblib_dump(
             {"positions": positions, "scales": scales, "energies": energies},

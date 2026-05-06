@@ -300,3 +300,12 @@ def test_cupy_direct_and_resumable_paths_match(monkeypatch, tmp_path):
     npt.assert_allclose(direct["energy"], resumable["energy"])
     npt.assert_array_equal(direct["scale_indices"], resumable["scale_indices"])
     npt.assert_allclose(direct["energy_4d"], resumable["energy_4d"])
+
+
+def test_anisotropic_structuring_element():
+    strel_iso = energy_module.spherical_structuring_element(1, np.array([1.0, 1.0, 1.0]))
+    strel_aniso = energy_module.spherical_structuring_element(1, np.array([1.0, 1.0, 2.0]))
+    assert strel_iso.shape == (3, 3, 3)
+    assert strel_iso[1, 1, 2]
+    assert not strel_aniso[1, 1, 2]
+

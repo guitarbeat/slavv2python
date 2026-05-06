@@ -159,16 +159,14 @@ class MLCurator:
         self.edge_trained = False
 
     def extract_vertex_features(
-        self, vertices: dict[str, Any], energy_data: dict[str, Any], image_shape: tuple[int, ...]
+        self,
+        vertices: dict[str, Any],
+        energy_data: dict[str, Any],
+        image_shape: tuple[int, ...],
+        n_jobs: int = 1,
     ) -> np.ndarray:
         """
         Extract features for vertex classification
-
-        Features include:
-        - Energy value and statistics
-        - Scale information
-        - Local neighborhood properties
-        - Spatial position features
         """
         positions = vertices["positions"]
         energies = vertices["energies"]
@@ -177,9 +175,8 @@ class MLCurator:
         energy_field = energy_data["energy"]
 
         n_vertices = len(positions)
-        features = []
 
-        for i in range(n_vertices):
+        def _worker(i: int):
             pos = positions[i]
             energy = energies[i]
             scale = scales[i]
@@ -257,34 +254,33 @@ class MLCurator:
             except Exception:
                 vertex_features.extend([0, 0, 0, 0])
 
-            features.append(vertex_features)
+            return vertex_features
 
+        features = Parallel(n_jobs=n_jobs)(delayed(_worker)(i) for i in range(n_vertices))
         return np.array(features)
 
     def extract_edge_features(
-        self, edges: dict[str, Any], vertices: dict[str, Any], energy_data: dict[str, Any]
+        self,
+        edges: dict[str, Any],
+        vertices: dict[str, Any],
+        energy_data: dict[str, Any],
+        n_jobs: int = 1,
     ) -> np.ndarray:
         """
         Extract features for edge classification
-
-        Features include:
-        - Edge length and tortuosity
-        - Energy statistics along edge
-        - Connection properties
-        - Geometric features
         """
         edge_traces = edges["traces"]
         edge_connections = edges["connections"]
-        vertices["positions"]
         vertex_energies = vertices["energies"]
         vertex_radii = vertices.get("radii_pixels", vertices.get("radii", []))
         energy_field = energy_data["energy"]
 
-        features = []
+        def _worker(i: int):
+            trace = edge_traces[i]
+            connection = edge_connections[i]
 
-        for _i, (trace, connection) in enumerate(zip(edge_traces, edge_connections)):
             if len(trace) < 2:
-                continue
+                return None
 
             trace = np.array(trace)
             start_vertex, end_vertex = connection
@@ -298,6 +294,32 @@ class MLCurator:
                 edge_length,
                 euclidean_distance,
                 tortuosity,
+            ]
+
+            # Energy statistics along edge
+            edge_energy_metrics = _edge_energy_features(trace, energy_field)
+            edge_features.extend(edge_energy_metrics)
+
+            # Connected vertex features
+            connected_vertex_metrics = _connected_vertex_features(
+                start_vertex,
+                end_vertex,
+                vertex_energies,
+                vertex_radii,
+                edge_length,
+            )
+            edge_features.extend(connected_vertex_metrics)
+
+            # Direction change features
+            direction_metrics = _direction_change_features(trace)
+            edge_features.extend(direction_metrics)
+
+            return edge_features
+
+        results = Parallel(n_jobs=n_jobs)(delayed(_worker)(i) for i in range(len(edge_traces)))
+        features = [res for res in results if res is not None]
+
+        return np.array(features)
                 len(trace),  # Number of points in trace
             ]
 

@@ -28,9 +28,10 @@ def test_find_repo_root_discovery(tmp_path: Path):
 
 def test_find_repo_root_failure(tmp_path: Path):
     """Test that it raises RuntimeError if no pyproject.toml is found."""
-    with patch("pathlib.Path.exists", return_value=False):
-        with pytest.raises(RuntimeError, match="Could not find repository root"):
-            find_repo_root(tmp_path)
+    with patch("pathlib.Path.exists", return_value=False), pytest.raises(
+        RuntimeError, match="Could not find repository root"
+    ):
+        find_repo_root(tmp_path)
 
 
 def test_find_experiment_root(tmp_path: Path):

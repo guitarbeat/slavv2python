@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from bisect import bisect_left, bisect_right
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -386,35 +387,62 @@ def _matlab_global_watershed_insert_available_location(
     if not available_locations:
         return [int(next_location)]
 
-    if seed_idx == 1:
-        if _energy_for(available_locations[0]) <= float(next_energy):
-            insert_at = 0
-        else:
-            insert_at = 0
-            for idx, linear_index in enumerate(available_locations):
-                if _energy_for(linear_index) > float(next_energy):
-                    insert_at = idx + 1
-    else:
-        if _energy_for(available_locations[-1]) >= float(next_energy):
-            insert_at = (
-                len(available_locations)
-                if is_current_location_clear
-                else len(available_locations) - 1
-            )
-        else:
-            insert_at = next(
-                idx
-                for idx, linear_index in enumerate(available_locations)
-                if _energy_for(linear_index) < float(next_energy)
-            )
+    # available_locations is sorted worst-to-best (energies are typically negative, so ascending)
+    # worst = lowest energy (more negative), best = highest energy (closest to 0)
+    # Popping happens from the right (available_locations[-1]) which is the "best" location.
 
-    prefix = available_locations[:insert_at]
-    suffix = (
-        available_locations[insert_at:]
-        if is_current_location_clear
-        else available_locations[insert_at:-1]
-    )
-    return [*prefix, int(next_location), *suffix]
+    target_energy = float(next_energy)
+
+    if seed_idx == 1:
+        # Insert at the "worst" end.
+        if _energy_for(available_locations[0]) <= target_energy:
+            insert_at = 0
+        else:
+            # Binary search for the first element >= target_energy
+            # Since it's sorted worst-to-best, we want the index where energy_lookup[idx] <= target_energy
+            # But the list is sorted ASCENDING.
+            # So we want the index of the first element >= target_energy?
+            # Wait, worst-to-best means [worst, ..., best].
+            # If next_energy is "worse" than the current worst, it goes at index 0.
+            low = 0
+            high = len(available_locations)
+            while low < high:
+                mid = (low + high) // 2
+                if _energy_for(available_locations[mid]) > target_energy:
+                    low = mid + 1
+                else:
+                    high = mid
+            insert_at = low
+    else:
+        # Insert at the "best" end.
+        last_search_idx = len(available_locations) - 1
+        if not is_current_location_clear:
+            last_search_idx -= 1
+
+        if last_search_idx < 0 or _energy_for(available_locations[last_search_idx]) >= target_energy:
+            insert_at = last_search_idx + 1
+        else:
+            low = 0
+            high = last_search_idx + 1
+            while low < high:
+                mid = (low + high) // 2
+                if _energy_for(available_locations[mid]) > target_energy:
+                    low = mid + 1
+                else:
+                    high = mid
+            insert_at = low
+
+    if not is_current_location_clear:
+        # The caller hasn't popped the current location yet, but we want to effectively replace it
+        # or insert before it.
+        # MATLAB logic: suffix = available_locations[insert_at:-1]
+        # This means the last element is DROPPED.
+        available_locations.pop()
+        available_locations.insert(insert_at, int(next_location))
+    else:
+        available_locations.insert(insert_at, int(next_location))
+
+    return available_locations
 
 
 def _matlab_global_watershed_reset_join_locations(

@@ -1,5 +1,8 @@
+import importlib
+import warnings
 import numpy as np
 import plotly.graph_objects as go
+import pytest
 
 from source.visualization import NetworkVisualizer
 
@@ -33,3 +36,28 @@ def test_create_summary_dashboard_builds_expected_panels():
         "Radii",
         "Vertex Count by Depth",
     ]
+
+
+def test_app_main_runs():
+    """Smoke test that Streamlit app main executes without error."""
+    st = pytest.importorskip("streamlit")
+    from source.apps import web_app as app
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        app.main()
+
+
+def test_app_sets_wide_layout(monkeypatch):
+    st = pytest.importorskip("streamlit")
+    called = {}
+
+    def fake_config(**kwargs):
+        called.update(kwargs)
+
+    monkeypatch.setattr(st, "set_page_config", fake_config)
+    from source.apps import web_app as app
+
+    importlib.reload(app)
+    assert called.get("layout") == "wide"
+

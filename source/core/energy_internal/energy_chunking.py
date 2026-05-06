@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 import numpy as np
+from joblib import Parallel, delayed
 
 from source.core import energy_storage as _energy_storage
 
@@ -199,10 +200,14 @@ def _compute_direct_energy_outputs(
     config: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     n_scales = len(config["lumen_radius_microns"])
+    n_jobs = int(config.get("n_jobs", 1))
+
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_compute_energy_scale)(image, config, scale_idx) for scale_idx in range(n_scales)
+    )
+
     if native_hessian.required_scale_stack(config):
-        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-        for scale_idx in range(n_scales):
-            energy_4d[..., scale_idx] = _compute_energy_scale(image, config, scale_idx)
+        energy_4d = np.stack(results, axis=3).astype(np.float32)
         return _project_scale_stack(config, energy_4d)
 
     energy_3d, scale_indices, energy_4d = _best_energy_outputs(
@@ -211,8 +216,7 @@ def _compute_direct_energy_outputs(
         n_scales,
         bool(config["return_all_scales"]),
     )
-    for scale_idx in range(n_scales):
-        energy_scale = _compute_energy_scale(image, config, scale_idx)
+    for scale_idx, energy_scale in enumerate(results):
         if energy_4d is not None:
             energy_4d[..., scale_idx] = energy_scale
         _update_best_energy(
@@ -233,18 +237,31 @@ def _calculate_energy_field_chunked(
     get_chunking_lattice_func,
     calculate_energy_field,
 ) -> dict[str, Any]:
+    n_jobs = int(config.get("n_jobs", 1))
+
+    def _worker(chunk_slice, out_slice, inner_slice, return_all_scales: bool):
+        chunk_img = image[chunk_slice]
+        sub_params = params.copy()
+        sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
+        sub_params["return_all_scales"] = return_all_scales
+        sub_params["n_jobs"] = 1  # Disable nested parallelism
+        chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
+        return out_slice, inner_slice, chunk_data
+
     if native_hessian.required_scale_stack(config):
         n_scales = len(config["lumen_radius_microns"])
         energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
-        for chunk_slice, out_slice, inner_slice in lattice:
-            chunk_img = image[chunk_slice]
-            sub_params = params.copy()
-            sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
-            sub_params["return_all_scales"] = True
-            chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
+
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(_worker)(chunk_slice, out_slice, inner_slice, True)
+            for chunk_slice, out_slice, inner_slice in lattice
+        )
+
+        for out_slice, inner_slice, chunk_data in results:
             energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
                 (*inner_slice, slice(None))
             ]
+
         energy_3d, scale_indices, returned_energy_4d = _project_scale_stack(config, energy_4d)
         return _energy_result_payload(
             config,
@@ -256,14 +273,16 @@ def _calculate_energy_field_chunked(
 
     energy_3d = np.empty(image.shape, dtype=np.float32)
     scale_indices = np.empty(image.shape, dtype=np.int16)
-    for chunk_slice, out_slice, inner_slice in lattice:
-        chunk_img = image[chunk_slice]
-        sub_params = params.copy()
-        sub_params["max_voxels_per_node_energy"] = chunk_img.size + 1
-        sub_params["return_all_scales"] = False
-        chunk_data = calculate_energy_field(chunk_img, sub_params, get_chunking_lattice_func)
+
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_worker)(chunk_slice, out_slice, inner_slice, False)
+        for chunk_slice, out_slice, inner_slice in lattice
+    )
+
+    for out_slice, inner_slice, chunk_data in results:
         energy_3d[out_slice] = chunk_data["energy"][inner_slice]
         scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
+
     return _energy_result_payload(config, image.shape, energy_3d, scale_indices)
 
 

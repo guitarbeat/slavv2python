@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput, useApp } from 'ink';
+import { Box, Text, useInput, useApp, useStdout } from 'ink';
 import chalk from 'chalk';
 import { WizardConfig } from './clack-wizard.js';
 
@@ -26,6 +26,7 @@ const SLAVV_LOG_TEMPLATES = [
 
 export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
   const { exit } = useApp();
+  const { stdout } = useStdout();
 
   // 1. Interactive input state
   const [inputText, setInputText] = useState('');
@@ -46,6 +47,7 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
   const [currentLogTemplateIndex, setCurrentLogTemplateIndex] = useState(0);
   const [currentTypedText, setCurrentTypedText] = useState('');
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [isWaitingForNextLog, setIsWaitingForNextLog] = useState(false);
 
   // Blinking cursor effect for command input
   useEffect(() => {
@@ -78,26 +80,31 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
   useEffect(() => {
     if (isPaused) return;
 
-    // Typewriter character writing ticker
     const targetText = SLAVV_LOG_TEMPLATES[currentLogTemplateIndex];
-    const typingTimeout = setTimeout(() => {
-      if (currentCharIndex < targetText.length) {
-        setCurrentTypedText((prev) => prev + targetText[currentCharIndex]);
-        setCurrentCharIndex((prev) => prev + 1);
-      } else {
-        // Log typing completed! Wait 3 seconds, then push to completed and start next
-        const completeLogTimeout = setTimeout(() => {
-          setCompletedLogs((prev) => [...prev.slice(-15), `[INFO] ${targetText}`]);
-          setCurrentLogTemplateIndex((prev) => (prev + 1) % SLAVV_LOG_TEMPLATES.length);
-          setCurrentTypedText('');
-          setCurrentCharIndex(0);
-        }, 2000);
-        return () => clearTimeout(completeLogTimeout);
-      }
-    }, 25); // Typing speed in milliseconds
 
-    return () => clearTimeout(typingTimeout);
-  }, [currentLogTemplateIndex, currentCharIndex, isPaused]);
+    if (!isWaitingForNextLog) {
+      if (currentCharIndex < targetText.length) {
+        const typingTimeout = setTimeout(() => {
+          setCurrentTypedText((prev) => prev + targetText[currentCharIndex]);
+          setCurrentCharIndex((prev) => prev + 1);
+        }, 25);
+        return () => clearTimeout(typingTimeout);
+      } else {
+        // Line finished typing, set waiting state
+        setIsWaitingForNextLog(true);
+      }
+    } else {
+      // Waiting state: delay before pushing to completed and starting next line
+      const nextLineTimeout = setTimeout(() => {
+        setCompletedLogs((prev) => [...prev.slice(-15), `[INFO] ${targetText}`]);
+        setCurrentLogTemplateIndex((prev) => (prev + 1) % SLAVV_LOG_TEMPLATES.length);
+        setCurrentTypedText('');
+        setCurrentCharIndex(0);
+        setIsWaitingForNextLog(false);
+      }, 2000);
+      return () => clearTimeout(nextLineTimeout);
+    }
+  }, [currentLogTemplateIndex, currentCharIndex, isPaused, isWaitingForNextLog]);
 
   // Handle Command Submission
   const handleCommand = (cmd: string) => {
@@ -117,6 +124,7 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
       setCompletedLogs([]);
       setCurrentTypedText('');
       setCurrentCharIndex(0);
+      setIsWaitingForNextLog(false);
     } else if (trimmed === 'help') {
       setCompletedLogs((prev) => [
         ...prev,
@@ -143,8 +151,22 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
       setInputText('');
     } else if (key.backspace) {
       setInputText(inputText.slice(0, -1));
-    } else if (input && !key.ctrl && !key.meta) {
-      setInputText(inputText + input);
+    } else if (
+      input &&
+      !key.ctrl &&
+      !key.meta &&
+      !key.upArrow &&
+      !key.downArrow &&
+      !key.leftArrow &&
+      !key.rightArrow &&
+      !key.escape &&
+      !key.pageUp &&
+      !key.pageDown
+    ) {
+      // Filter out non-printable/control characters that might slip through
+      if (input.charCodeAt(0) >= 32 || input === '\t') {
+        setInputText(inputText + input);
+      }
     }
   });
 
@@ -158,8 +180,10 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
     return `[${filledStr}${emptyStr}] ${percentage}%`;
   };
 
+  const terminalHeight = stdout?.rows || 24;
+
   return (
-    <Box flexDirection="column" width="100%" height={24} paddingX={1}>
+    <Box flexDirection="column" width="100%" height={terminalHeight} paddingX={1}>
       {/* HEADER SECTION */}
       <Box
         borderStyle="double"
@@ -196,7 +220,7 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
             <Text>
               Threads: <Text color="green" bold>{config.threadLimit} Cores</Text>
             </Text>
-            <Text>
+            <Text ellipsizeMode="end">
               Output: <Text color="gray">{config.outputDir.length > 22 ? config.outputDir.slice(0, 19) + '...' : config.outputDir}</Text>
             </Text>
           </Box>

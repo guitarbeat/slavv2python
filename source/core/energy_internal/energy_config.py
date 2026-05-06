@@ -122,6 +122,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "lumen_radius_pixels_axes": lumen_radius_pixels_axes,
         "pixels_per_sigma_PSF": pixels_per_sigma_psf,
         "microns_per_sigma_PSF": microns_per_sigma_psf,
+        "n_jobs": int(params.get("n_jobs", 1)),
     }
 
 

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
+from joblib import Parallel, delayed
 from skimage.draw import ellipsoid
 from typing_extensions import TypeAlias
 
@@ -152,16 +155,15 @@ def matlab_vertex_candidates(
     space_strel_apothem: int,
     strel_size_pixels: np.ndarray,
     max_voxels_per_node: float,
+    *,
+    n_jobs: int = 1,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Find MATLAB-style candidate vertices on the projected energy volume."""
     apothem = vertex_window_apothem(space_strel_apothem)
     overlap = (apothem, apothem, apothem)
     lattice_dims = chunk_lattice_dimensions(energy.shape, strel_size_pixels, max_voxels_per_node)
 
-    accepted_positions: list[np.ndarray] = []
-    accepted_scales: list[np.ndarray] = []
-    accepted_energies: list[np.ndarray] = []
-    for chunk_slice in iter_overlapping_chunks(energy.shape, lattice_dims, overlap):
+    def _worker(chunk_slice):
         chunk_positions, chunk_scales, chunk_energies = matlab_vertex_candidates_in_chunk(
             energy[chunk_slice],
             scale_indices[chunk_slice],
@@ -170,15 +172,29 @@ def matlab_vertex_candidates(
             space_strel_apothem,
         )
         if len(chunk_positions) == 0:
-            continue
+            return None
 
         chunk_offset = np.array(
             [chunk_slice[0].start, chunk_slice[1].start, chunk_slice[2].start],
             dtype=np.int32,
         )
-        accepted_positions.append(chunk_positions + chunk_offset)
-        accepted_scales.append(chunk_scales)
-        accepted_energies.append(chunk_energies)
+        return chunk_positions + chunk_offset, chunk_scales, chunk_energies
+
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_worker)(chunk_slice)
+        for chunk_slice in iter_overlapping_chunks(energy.shape, lattice_dims, overlap)
+    )
+
+    accepted_positions: list[np.ndarray] = []
+    accepted_scales: list[np.ndarray] = []
+    accepted_energies: list[np.ndarray] = []
+
+    for res in results:
+        if res is not None:
+            pos, scales, energies = res
+            accepted_positions.append(pos)
+            accepted_scales.append(scales)
+            accepted_energies.append(energies)
 
     if not accepted_positions:
         return (

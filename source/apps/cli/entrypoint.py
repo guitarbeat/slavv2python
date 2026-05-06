@@ -20,3 +20,7 @@ def main(argv=None):
         return
 
     dispatch_cli_command(parser, args)
+
+
+if __name__ == "__main__":
+    main()

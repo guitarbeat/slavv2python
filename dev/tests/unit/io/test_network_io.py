@@ -18,6 +18,7 @@ from source.io import (
     load_network_from_csv,
     load_network_from_json,
     load_network_from_vmv,
+    partition_network,
     save_network_to_csv,
     save_network_to_json,
 )
@@ -221,3 +222,11 @@ class TestNetworkImport:
         network = load_network_from_csv(prefix)
 
         assert np.array_equal(network.edges, np.array([[1, 0]], dtype=int))
+
+
+def test_partition_network_rejects_nonpositive_chunks():
+    network = build_network_object(vertices=[[0.0, 0.0, 0.0]], edges=[], radii=[])
+
+    with pytest.raises(ValueError, match="chunks must contain positive"):
+        partition_network(network, (0, 1))
+

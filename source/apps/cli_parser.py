@@ -176,6 +176,13 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Minimum terminal hair length to preserve during network cleanup.",
     )
     run_parser.add_argument(
+        "-j",
+        "--n-jobs",
+        type=int,
+        default=1,
+        help="Number of parallel jobs for processing (default: 1). Use -1 for all cores.",
+    )
+    run_parser.add_argument(
         "--export",
         nargs="+",
         choices=["csv", "json", "mat", "casx", "vmv", "all"],

@@ -41,6 +41,7 @@ def _build_pipeline_parameters(args: argparse.Namespace) -> dict:
         "max_edge_length_per_origin_radius": args.max_edge_length_per_origin_radius,
         "max_edge_energy": args.max_edge_energy,
         "min_hair_length_in_microns": args.min_hair_length_in_microns,
+        "n_jobs": args.n_jobs,
     }
     return apply_pipeline_profile(
         requested_parameters,

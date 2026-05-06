@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from joblib import Parallel, delayed
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
@@ -58,6 +59,7 @@ def _generate_fallback_directions(
                 start_pos,
                 start_radius,
                 microns_per_voxel,
+                edge_candidates_facade.generate_edge_directions,
             ),
         )
         if directions.shape[0] < max_edges_per_vertex:
@@ -160,7 +162,6 @@ def _trace_fallback_origin_candidates(
     discrete_tracing: bool,
     energy_prepared: Float64Array,
     mpv_prepared: Float64Array,
-    diagnostics: dict[str, Any],
     vertex_idx: int,
     start_pos: Float32Array,
     start_scale: int,
@@ -172,8 +173,15 @@ def _trace_fallback_origin_candidates(
     list[Float32Array],
     list[int],
     list[str],
+    dict[str, Any],
 ]:
     """Trace all fallback candidate directions for a single origin vertex."""
+    from .._edge_payloads import (
+        _edge_metric_from_energy_trace,
+        _empty_edge_diagnostics,
+        _record_trace_diagnostics,
+    )
+
     edge_candidates_facade = _edge_candidates_facade()
     start_radius = _scalar_radius(lumen_radius_pixels[start_scale])
     step_size = start_radius * step_size_ratio
@@ -196,6 +204,7 @@ def _trace_fallback_origin_candidates(
     scale_traces: list[Float32Array] = []
     origin_indices: list[int] = []
     connection_sources: list[str] = []
+    unit_diagnostics = _empty_edge_diagnostics()
 
     for direction in directions:
         trace_result = edge_candidates_facade.trace_edge(
@@ -230,7 +239,7 @@ def _trace_fallback_origin_candidates(
         terminal_vertex = trace_metadata["terminal_vertex"]
         energy_trace = _trace_energy_series(edge_arr, energy)
         scale_trace = _trace_scale_series(edge_arr, scale_indices)
-        _record_trace_diagnostics(diagnostics, trace_metadata)
+        _record_trace_diagnostics(unit_diagnostics, trace_metadata)
 
         traces.append(edge_arr)
         connections.append([vertex_idx, terminal_vertex if terminal_vertex is not None else -1])
@@ -248,6 +257,7 @@ def _trace_fallback_origin_candidates(
         scale_traces,
         origin_indices,
         connection_sources,
+        unit_diagnostics,
     )
 
 
@@ -273,6 +283,7 @@ def _generate_edge_candidates(
     max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     discrete_tracing = params.get("discrete_tracing", False)
     direction_method = params.get("direction_method", "hessian")
+    n_jobs = int(params.get("n_jobs", 1))
 
     traces: list[Float32Array] = []
     connections: list[list[int]] = []
@@ -283,19 +294,13 @@ def _generate_edge_candidates(
     connection_sources: list[str] = []
     diagnostics = _empty_edge_diagnostics()
 
+    from .._edge_payloads import _merge_edge_diagnostics
+
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
 
-    for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales)):
-        (
-            unit_traces,
-            unit_connections,
-            unit_metrics,
-            unit_energy_traces,
-            unit_scale_traces,
-            unit_origin_indices,
-            unit_connection_sources,
-        ) = _trace_fallback_origin_candidates(
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_trace_fallback_origin_candidates)(
             energy=energy,
             scale_indices=scale_indices,
             vertex_positions=vertex_positions,
@@ -316,11 +321,23 @@ def _generate_edge_candidates(
             discrete_tracing=discrete_tracing,
             energy_prepared=energy_prepared,
             mpv_prepared=mpv_prepared,
-            diagnostics=diagnostics,
             vertex_idx=vertex_idx,
             start_pos=start_pos,
             start_scale=int(start_scale),
         )
+        for vertex_idx, (start_pos, start_scale) in enumerate(zip(vertex_positions, vertex_scales))
+    )
+
+    for (
+        unit_traces,
+        unit_connections,
+        unit_metrics,
+        unit_energy_traces,
+        unit_scale_traces,
+        unit_origin_indices,
+        unit_connection_sources,
+        unit_diagnostics,
+    ) in results:
         traces.extend(unit_traces)
         connections.extend(unit_connections)
         metrics.extend(unit_metrics)
@@ -328,6 +345,7 @@ def _generate_edge_candidates(
         scale_traces.extend(unit_scale_traces)
         origin_indices.extend(unit_origin_indices)
         connection_sources.extend(unit_connection_sources)
+        _merge_edge_diagnostics(diagnostics, unit_diagnostics)
 
     candidates = {
         "traces": traces,
