@@ -56,10 +56,10 @@ def test_energy_adjustments_size_penalty():
     adjusted = _matlab_frontier_adjusted_neighbor_energies(
         raw_energies,
         neighbor_offsets=np.array([[1, 0, 0], [1, 0, 0]], dtype=np.int32),
-        neighbor_distances_microns=np.array([1.0, 1.0], dtype=np.float32),
+        neighbor_r_over_R=np.array([1.0, 1.0], dtype=np.float32) / 2.0,
         neighbor_scale_indices=neighbor_scale_indices,
         propagated_scale_index=0,  # Current scale is 0
-        current_distance_microns=0.0,
+        current_d_over_r=0.0,
         origin_radius_microns=2.0,
         current_forward_unit=None,
         microns_per_voxel=np.ones((3,), dtype=np.float32),
@@ -87,10 +87,10 @@ def test_energy_adjustments_distance_penalty():
     near_adjusted = _matlab_frontier_adjusted_neighbor_energies(
         np.array([-5.0], dtype=np.float32),
         neighbor_offsets=np.array([[1, 0, 0]], dtype=np.int32),
-        neighbor_distances_microns=np.array([0.5], dtype=np.float32),
+        neighbor_r_over_R=np.array([0.5], dtype=np.float32) / 1.0,
         neighbor_scale_indices=np.array([0], dtype=np.int16),
         propagated_scale_index=0,
-        current_distance_microns=0.0,  # Near origin
+        current_d_over_r=0.0,  # Near origin
         origin_radius_microns=1.0,
         current_forward_unit=None,
         microns_per_voxel=np.ones((3,), dtype=np.float32),
@@ -100,10 +100,10 @@ def test_energy_adjustments_distance_penalty():
     far_adjusted = _matlab_frontier_adjusted_neighbor_energies(
         np.array([-5.0], dtype=np.float32),
         neighbor_offsets=np.array([[1, 0, 0]], dtype=np.int32),
-        neighbor_distances_microns=np.array([0.5], dtype=np.float32),
+        neighbor_r_over_R=np.array([0.5], dtype=np.float32) / 1.0,
         neighbor_scale_indices=np.array([0], dtype=np.int16),
         propagated_scale_index=0,
-        current_distance_microns=3.0,  # Far from origin
+        current_d_over_r=3.0 / 1.0,  # Far from origin
         origin_radius_microns=1.0,
         current_forward_unit=None,
         microns_per_voxel=np.ones((3,), dtype=np.float32),
@@ -128,10 +128,10 @@ def test_energy_adjustments_direction_penalty():
     adjusted = _matlab_frontier_adjusted_neighbor_energies(
         raw_energies,
         neighbor_offsets=neighbor_offsets,
-        neighbor_distances_microns=np.array([1.0, 1.0], dtype=np.float32),
+        neighbor_r_over_R=np.array([1.0, 1.0], dtype=np.float32) / 2.0,
         neighbor_scale_indices=np.array([0, 0], dtype=np.int16),
         propagated_scale_index=0,
-        current_distance_microns=0.0,
+        current_d_over_r=0.0,
         origin_radius_microns=2.0,
         current_forward_unit=np.array([1.0, 0.0, 0.0], dtype=np.float32),  # Forward in +X
         microns_per_voxel=np.ones((3,), dtype=np.float32),
@@ -635,7 +635,7 @@ def test_reveal_unclaimed_only_claims_zero_vertex_voxels():
         current_d_over_r=1.0,
         valid_linear=np.array([13, 22], dtype=np.int64),  # [1,1,1] and [1,1,2]
         strel_pointer_indices=np.array([10, 11], dtype=np.uint64),
-        strel_distance_microns=np.array([0.5, 0.6], dtype=np.float32),
+        strel_r_over_R=np.array([0.5, 0.6], dtype=np.float32) / 1.0,
         strel_adjusted_energies=np.array([-5.0, -6.0], dtype=np.float32),
         vertex_index_map_flat=vertex_index_map.ravel(order="F"),
         energy_map_flat=energy_map.ravel(order="F"),

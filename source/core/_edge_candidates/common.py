@@ -198,10 +198,10 @@ def _matlab_frontier_adjusted_neighbor_energies(
         raw_energies: np.ndarray,
         *,
         neighbor_offsets: np.ndarray,
-        neighbor_distances_microns: np.ndarray,
+        neighbor_r_over_R: np.ndarray,
         neighbor_scale_indices: np.ndarray | None,
         propagated_scale_index: int,
-        current_distance_microns: float,
+        current_d_over_r: float,
         origin_radius_microns: float,
         current_forward_unit: np.ndarray | None,
         microns_per_voxel: np.ndarray,
@@ -223,18 +223,16 @@ def _matlab_frontier_adjusted_neighbor_energies(
         ) - float(propagated_scale_index)
         adjusted *= np.exp(-0.5 * np.square(size_index_differences / size_tolerance))
 
-    safe_origin_radius = max(float(origin_radius_microns), 1e-6)
-    local_r_over_R = np.asarray(neighbor_distances_microns, dtype=np.float64) / safe_origin_radius
+    local_r_over_R = np.asarray(neighbor_r_over_R, dtype=np.float64)
     local_distance_adjustment = (
                                         1.0 - np.cos(np.pi * np.minimum(1.0, (4.0 / 3.0) * local_r_over_R))
                                 ) / 2.0
     with np.errstate(invalid="ignore"):
         adjusted *= local_distance_adjustment
 
-    current_d_over_r = float(current_distance_microns) / safe_origin_radius
     safe_distance_tolerance = max(float(distance_tolerance), 1e-6)
     total_distance_adjustment = math.exp(
-        -0.5 * ((3.0 * current_d_over_r / safe_distance_tolerance) ** 2)
+        -0.5 * ((3.0 * float(current_d_over_r) / safe_distance_tolerance) ** 2)
     )
     with np.errstate(invalid="ignore"):
         adjusted *= total_distance_adjustment

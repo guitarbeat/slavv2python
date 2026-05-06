@@ -176,7 +176,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     current_d_over_r: float,
     valid_linear: np.ndarray,
     strel_pointer_indices: np.ndarray,
-    strel_distance_microns: np.ndarray,
+    strel_r_over_R: np.ndarray,
     strel_adjusted_energies: np.ndarray,
     vertex_index_map_flat: np.ndarray,
     energy_map_flat: np.ndarray,
@@ -224,7 +224,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
         )
         pointer_map_flat[claim_linear] = claim_pointers
         d_over_r_map_flat[claim_linear] = (
-            np.asarray(strel_distance_microns[is_without_vertex], dtype=np.float32)
+            np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float32)
             + current_d_over_r
         )
         size_map_flat[claim_linear] = np.int16(current_scale_label)
@@ -658,12 +658,10 @@ def _generate_edge_candidates_matlab_global_watershed(
         adjusted = _matlab_frontier_adjusted_neighbor_energies(
             current_strel_energies,
             neighbor_offsets=current_strel_offsets,
-            neighbor_distances_microns=current_strel_r_over_R
-            * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
+            neighbor_r_over_R=current_strel_r_over_R,
             neighbor_scale_indices=size_map_flat[current_strel_linear],
             propagated_scale_index=current_scale_label,
-            current_distance_microns=current_d_over_r
-            * max(float(lumen_radius_microns[current_scale_index]), 1e-6),
+            current_d_over_r=current_d_over_r,
             origin_radius_microns=max(float(lumen_radius_microns[current_scale_index]), 1e-6),
             current_forward_unit=current_forward_unit,
             microns_per_voxel=microns_per_voxel,
@@ -681,7 +679,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             current_d_over_r=current_d_over_r,
             valid_linear=current_strel_linear,
             strel_pointer_indices=current_strel_pointer_indices,
-            strel_distance_microns=current_strel["distance_microns"],
+            strel_r_over_R=current_strel_r_over_R,
             strel_adjusted_energies=adjusted,
             vertex_index_map_flat=vertex_index_map_flat,
             energy_map_flat=energy_map_temp_flat,
