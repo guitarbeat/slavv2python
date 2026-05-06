@@ -27,28 +27,10 @@ Locate the relevant logic in `external/Vectorization-Public/source/get_edges_by_
 
 ---
 
-## 🔍 Common Divergence Patterns
-
-### 1. Distance Normalization (r/R)
-MATLAB often uses relative distances normalized by the vessel radius ($R$) at each step.
-- **Divergence**: Python used absolute micron distances for energy penalties.
-- **Fix**: Use `r/R` ratios for local distance and size tolerances.
-
-### 2. Energy Map Integrity
-The global watershed algorithm maintains shared state.
-- **Divergence**: Python incorrectly wrote penalized (suppressed) energies back to the shared map.
-- **Truth**: MATLAB uses unpenalized original energies for frontier sorting (`energy_map_temp`). Penalties are applied locally during seed selection only.
-
-### 3. Iterative Directional Suppression
-- **Divergence**: A previous finding incorrectly suggested suppression was outside the seed loop.
-- **Truth**: Suppression **is** iterative inside the `seed_idx` loop. Each chosen seed suppresses the local field for subsequent seeds of the same vertex.
-
----
-
 ## 🛠️ Debugging Techniques
 
 ### Execution Tracing
-When a specific edge is missing, trace the primary primary seed from the origin vertex:
+When a specific edge is missing, use the `ExecutionTracer` to compare Python events against MATLAB:
 1. Verify `current_strel_energies` matches MATLAB's local field.
 2. Verify `adjusted` energies (after penalties) lead to the same `strel_idx`.
 3. Check `available_locations` insertion to ensure the frontier priority is maintained.
@@ -64,4 +46,5 @@ Always add a regression test in `dev/tests/unit/core/test_global_watershed_compr
 
 - `docs/reference/core/EXACT_PROOF_FINDINGS.md`: Live status of proven vs. diverging logic.
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md`: Structural map between MATLAB functions and Python modules.
+- `docs/reference/core/WATERSHED_IMPLEMENTATION_NOTES.md`: Detailed technical notes on watershed parity and divergence patterns.
 - `TODO.md`: Prioritized task list for remaining parity work.

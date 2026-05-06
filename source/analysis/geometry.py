@@ -5,7 +5,7 @@ Handles registration, spatial metrics, and statistical analysis of the vascular 
 
 from __future__ import annotations
 
-from ._geometry import (
+from .geometry_internal import (
     calculate_branching_angles,
     calculate_image_stats,
     calculate_network_statistics,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import joblib
 import numpy as np
 
-from source.core._edges import resumable as resumable_edges
+from source.core.edges_internal import resumable_edges
 from source.runtime import RunContext
 
 

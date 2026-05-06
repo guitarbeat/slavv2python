@@ -26,7 +26,7 @@ from .analysis import (
     subsample_vectors,
     transform_vector_set,
 )
-from .core import SlavvPipeline, SLAVVProcessor
+from .core import SlavvPipeline
 from .utils import (
     get_chunking_lattice,
     preprocess_image,
@@ -60,7 +60,6 @@ __all__ = [
     "AutomaticCurator",
     "MLCurator",
     "NetworkVisualizer",
-    "SLAVVProcessor",
     "SlavvPipeline",
     "calculate_branching_angles",
     "calculate_network_statistics",

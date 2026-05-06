@@ -10,8 +10,8 @@ import numpy as np
 from skimage.graph import route_through_array
 from typing_extensions import TypeAlias
 
-from .._energy.provenance import is_exact_compatible_energy_origin
-from .._vertices.payloads import matlab_linear_indices as _matlab_linear_indices
+from ..energy_internal.energy_provenance import is_exact_compatible_energy_origin
+from ..vertices_internal.vertex_results import matlab_linear_indices as _matlab_linear_indices
 
 Int16Array: TypeAlias = "np.ndarray"
 Int32Array: TypeAlias = "np.ndarray"

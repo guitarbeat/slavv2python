@@ -1,29 +1,18 @@
-"""Preferred internal name for run-tracking constants."""
-
 from __future__ import annotations
 
-from .._run_state.constants import (
-    PIPELINE_STAGES,
-    PREPROCESS_STAGE,
-    STAGE_WEIGHTS,
-    STATUS_BLOCKED,
-    STATUS_COMPLETED,
-    STATUS_COMPLETED_TARGET,
-    STATUS_FAILED,
-    STATUS_PENDING,
-    STATUS_RUNNING,
-    TRACKED_RUN_STAGES,
-)
-
-__all__ = [
-    "PIPELINE_STAGES",
-    "PREPROCESS_STAGE",
-    "STAGE_WEIGHTS",
-    "STATUS_BLOCKED",
-    "STATUS_COMPLETED",
-    "STATUS_COMPLETED_TARGET",
-    "STATUS_FAILED",
-    "STATUS_PENDING",
-    "STATUS_RUNNING",
-    "TRACKED_RUN_STAGES",
-]
+PREPROCESS_STAGE = "preprocess"
+PIPELINE_STAGES = ["energy", "vertices", "edges", "network"]
+TRACKED_RUN_STAGES = [PREPROCESS_STAGE, *PIPELINE_STAGES]
+STAGE_WEIGHTS = {
+    PREPROCESS_STAGE: 0.05,
+    "energy": 0.35,
+    "vertices": 0.15,
+    "edges": 0.30,
+    "network": 0.15,
+}
+STATUS_PENDING = "pending"
+STATUS_RUNNING = "running"
+STATUS_COMPLETED = "completed"
+STATUS_COMPLETED_TARGET = "completed_target"
+STATUS_FAILED = "failed"
+STATUS_BLOCKED = "resume_blocked"

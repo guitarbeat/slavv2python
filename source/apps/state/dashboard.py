@@ -9,9 +9,9 @@ try:
 except ImportError:
     from typing_extensions import TypedDict
 
-from source.apps._state_utils import normalize_state_results
+from . import normalize_state_results
 from source.apps.services.exports import has_full_network_results
-from source.apps.share_report import compute_shareable_stats
+from ..services.share_report import compute_shareable_stats
 from source.runtime import RunSnapshot, load_run_snapshot
 
 if TYPE_CHECKING:

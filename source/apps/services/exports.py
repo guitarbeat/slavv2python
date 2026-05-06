@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import streamlit as st
 
-from source.apps.share_report import build_share_report_html, record_share_event
+from .share_report import build_share_report_html, record_share_event
 from source.apps.state.processing import build_processing_run_dir
 from source.models import normalize_pipeline_result
 from source.runtime import RunContext

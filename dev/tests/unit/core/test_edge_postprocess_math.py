@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from source.core._edges.postprocess import (
+from source.core.edges_internal.edge_finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
     finalize_edges_matlab_style,

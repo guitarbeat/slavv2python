@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-from .cli_reporting import build_info_lines
+from .reporting import build_info_lines
 
 
 def load_info_lines(

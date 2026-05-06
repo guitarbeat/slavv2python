@@ -3,7 +3,7 @@ import pytest
 
 def test_share_report_requires_full_network_results():
     pytest.importorskip("streamlit")
-    from source.apps import web_app
+    from source.apps.services.app import _has_full_network_results
 
-    assert web_app._has_full_network_results({"energy_data": {}}) is False
-    assert web_app._has_full_network_results({"vertices": {}, "edges": {}, "network": {}}) is True
+    assert _has_full_network_results({"energy_data": {}}) is False
+    assert _has_full_network_results({"vertices": {}, "edges": {}, "network": {}}) is True

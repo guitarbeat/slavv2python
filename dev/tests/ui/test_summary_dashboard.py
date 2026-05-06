@@ -41,12 +41,12 @@ def test_create_summary_dashboard_builds_expected_panels():
 
 def test_app_main_runs():
     """Smoke test that Streamlit app main executes without error."""
-    st = pytest.importorskip("streamlit")
-    from source.apps import web_app as app
+    pytest.importorskip("streamlit")
+    from source.apps.streamlit.shell import main
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        app.main()
+        main()
 
 
 def test_app_sets_wide_layout(monkeypatch):
@@ -57,7 +57,7 @@ def test_app_sets_wide_layout(monkeypatch):
         called.update(kwargs)
 
     monkeypatch.setattr(st, "set_page_config", fake_config)
-    from source.apps import web_app as app
+    from source.apps.streamlit import app
 
     importlib.reload(app)
     assert called.get("layout") == "wide"

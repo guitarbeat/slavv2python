@@ -1,12 +1,12 @@
-﻿---
-applyTo: "tests/**/*.py"
+---
+applyTo: "dev/tests/**/*.py"
 description: "Use when creating or modifying tests. Enforces ownership-based test placement, folder-derived markers, and repo-local tmp_path behavior."
 ---
 # Test Authoring Instructions
 
 ## Placement
 
-- Keep tests under `tests/` and place files by owning surface, not task history.
+- Keep tests organized by owning surface, not task history.
 - Use `dev/tests/unit/<owner>/` for package-owned unit behavior (`analysis`, `apps`, `core`, `io`, `parity`, `runtime`, `utils`).
 - Use `dev/tests/unit/workspace_scripts/` for maintained helpers under `dev/scripts/`.
 - Use `dev/tests/integration/` for cross-component workflows.
@@ -30,5 +30,4 @@ description: "Use when creating or modifying tests. Enforces ownership-based tes
 
 - Follow and link to `dev/tests/README.md` for placement conventions.
 - Follow `dev/tests/conftest.py` for fixture and marker behavior.
-- When tests touch comparison/parity behavior, preserve staged layout semantics documented in `docs/reference/COMPARISON_LAYOUT.md`.
-
+- When tests touch comparison/parity behavior, preserve staged layout semantics documented in `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md`.

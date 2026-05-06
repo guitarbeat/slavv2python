@@ -7,7 +7,6 @@ Repository guidance for coding agents working in `slavv2python`.
 - Work from the repository root.
 - Prefer PowerShell-friendly commands on Windows.
 - Treat the commands in this file as the canonical workflows for the repo.
-- Historical references to `biome` or `dev/examples/run_tutorial.py` are stale and do not apply to this project.
 
 ## Repository Map
 

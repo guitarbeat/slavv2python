@@ -48,7 +48,7 @@ from source.io.matlab_fail_fast import (
     render_candidate_coverage_report,
 )
 from source.io.matlab_exact_proof import render_exact_proof_report
-from source.core._edges.postprocess import finalize_edges_matlab_style
+from source.core.edges_internal.edge_finalize import finalize_edges_matlab_style
 
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python

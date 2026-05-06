@@ -38,6 +38,22 @@ The algorithm relies on five primary 3D spatial maps, all using **Fortran-order 
 
 ## ⚖️ Parity Details
 
+### Common Divergence Patterns
+
+#### 1. Distance Normalization (r/R)
+MATLAB often uses relative distances normalized by the vessel radius ($R$) at each step.
+-   **Divergence**: Python used absolute micron distances for energy penalties.
+-   **Fix**: Use `r/R` ratios for local distance and size tolerances.
+
+#### 2. Energy Map Integrity
+The global watershed algorithm maintains shared state.
+-   **Divergence**: Python incorrectly wrote penalized (suppressed) energies back to the shared map.
+-   **Truth**: MATLAB uses unpenalized original energies for frontier sorting (`energy_map_temp`). Penalties are applied locally during seed selection only.
+
+#### 3. Iterative Directional Suppression
+-   **Divergence**: A previous finding incorrectly suggested suppression was outside the seed loop.
+-   **Truth**: Suppression **is** iterative inside the `seed_idx` loop. Each chosen seed suppresses the local field for subsequent seeds of the same vertex.
+
 ### Two-Tier Penalty System
 MATLAB applies penalties in two distinct stages:
 1.  **Discovery (Static)**: Size, absolute distance, and initial direction penalties are applied *once* per strel expansion to find the best primary seed.

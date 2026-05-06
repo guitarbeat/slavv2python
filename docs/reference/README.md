@@ -32,6 +32,8 @@ Read these first when working on the live implementation:
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 - [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
+- [Proactive Agent Guide](workflow/PROACTIVE_AGENT_GUIDE.md)
+  Architecture and protocols for proactive AI agent behaviors.
 
 ## Adjacent Reference Docs
 

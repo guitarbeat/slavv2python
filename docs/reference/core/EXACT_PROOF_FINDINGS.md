@@ -53,7 +53,8 @@ The strongest current interpretation is:
 **Date**: 2026-05-05  
 **Experiment**: `trace_order_fix`  
 **Oracle**: `180709_E_batch_190910-103039`  
-**Status**: Validation complete, significant improvement observed
+**Location**: `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
+**Status**: Validation complete, leading diagnostic trail for edges
 
 ### Fix Applied
 - **File**: `source/core/edges_internal/edge_selection.py`
@@ -61,15 +62,29 @@ The strongest current interpretation is:
 - **Fix**: Always use seeded RNG (`np.random.default_rng(seed)`) for trace order shuffling
 - **Impact**: Ensures deterministic candidate generation for parity testing
 
-### Results Summary
+### Results Summary (Measured on D: Drive)
 
-| Metric | may2026_fixes (baseline) | trace_order_fix | Improvement |
-|--------|--------------------------|-----------------|-------------|
+| Metric | Baseline (v2.3) | trace_order_fix | Improvement |
+|--------|-----------------|-----------------|-------------|
 | Python candidates | 169 | 488 | 2.9x |
 | Matched MATLAB pairs | 149 | 404 | 2.7x |
 | Match rate | 12.4% | 33.8% | +21.4 pp |
 | Missing MATLAB pairs | 1,048 | 793 | -255 pairs |
 | Extra Python pairs | 20 | 84 | +64 pairs |
+
+## Large-Scale D: Drive Audit (2026-05-06)
+
+An audit of `D:\slavv_comparisons` was performed to synchronize historical runs with the modern repository state.
+
+### Findings
+- The old `REVIEW_SUMMARY.md` on the D: drive is **obsolete** and references runs (e.g., `20260418_network_gate_trial`) that have been deleted.
+- The `trace_order_fix` run is the current **source of truth** for edge candidate diagnostic work.
+- Multiple abandoned intermediate runs (`180709_E_edges_a` through `l`) were identified as failed and have been purged.
+
+### Cleanup Actions
+- **Purged**: all intermediate `runs/180709_E_edges_*` to reclaim space.
+- **Retained**: `trace_order_fix`, `180709_E_may2026_fixes`, and the canonical `180709_E_batch_190910-103039` oracle.
+- **Audit Log**: A detailed summary is preserved at `D:\slavv_comparisons\AUDIT_2026_05_06.md`.
 
 ### Key Findings
 

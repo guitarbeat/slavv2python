@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from source.core._edges.bridge_vertices import (
-    _matlab_bridge_search_target,
+from source.core.edges_internal.bridge_insertion import (
+    _matlab_bridge_candidates,
     add_vertices_to_edges_matlab_style,
 )
-from source.core._vertices.painting import paint_vertex_center_image, paint_vertex_image
+from source.core.vertices_internal.vertex_painting import paint_vertex_center_image, paint_vertex_image
+
 from source.core.network import construct_network
 
 

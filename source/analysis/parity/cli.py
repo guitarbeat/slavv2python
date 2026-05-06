@@ -140,7 +140,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
 
-    from source.core._edge_candidates import (
+    from source.core._edge_candidates_internal import (
         JsonExecutionTracer,
         _generate_edge_candidates_matlab_global_watershed,
     )
@@ -470,3 +470,4 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
         stop_after=args.stop_after,
     )
     print(str(dest_run_root / RUN_MANIFEST_PATH))
+

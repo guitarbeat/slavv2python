@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .._edge_payloads import (
+from ..edge_payloads import (
     _clip_trace_indices,
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,

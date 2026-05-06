@@ -32,4 +32,3 @@ executable spec.
 
 - [v22 Pointer Corruption Archive](chapters/v22-pointer-corruption/README.md)
 - [Translation Pair Analysis Archive](chapters/translation_pair_analysis/README.md)
-- [Kiro Hooks Archive](chapters/kiro/README.md)

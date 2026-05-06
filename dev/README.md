@@ -1,7 +1,7 @@
 # Development Workspace
 
 This directory holds maintained developer-facing assets that support the
-package source under `source/slavv/`.
+package source under `source/`.
 
 ## Directory Map
 

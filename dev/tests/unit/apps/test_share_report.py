@@ -8,7 +8,7 @@ from dev.tests.support.payload_builders import (
     build_vertices_payload,
 )
 
-from source.apps.share_report import (
+from source.apps.services.share_report import (
     build_share_report_html,
     make_share_report_filename,
     record_share_event,

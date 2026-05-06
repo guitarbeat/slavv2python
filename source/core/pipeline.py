@@ -6,7 +6,6 @@ Coordinates the energy, tracing, and network construction steps.
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from .. import utils
@@ -141,32 +140,6 @@ class SlavvPipeline:
             run_context.finalize_run(stop_after=stop_after)
         return cast("dict[str, Any]", finalize_pipeline_results(results))
 
-    def process_image(
-        self,
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        progress_callback: Callable[[float, str], None] | None = None,
-        event_callback: Callable[[ProgressEvent], None] | None = None,
-        run_dir: str | None = None,
-        stop_after: str | None = None,
-        force_rerun_from: str | None = None,
-    ) -> dict[str, Any]:
-        """Compatibility wrapper for the preferred ``run`` method."""
-        warnings.warn(
-            "`process_image()` is deprecated; use `run()` on `SlavvPipeline` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.run(
-            image,
-            parameters,
-            progress_callback=progress_callback,
-            event_callback=event_callback,
-            run_dir=run_dir,
-            stop_after=stop_after,
-            force_rerun_from=force_rerun_from,
-        )
-
     def _resolve_energy_stage(
         self,
         image: np.ndarray,
@@ -281,15 +254,6 @@ class SlavvPipeline:
 
         return energy.calculate_energy_field(image, params, utils_module.get_chunking_lattice)
 
-    def calculate_energy_field(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
-        """Compatibility wrapper for the preferred ``compute_energy`` method."""
-        warnings.warn(
-            "`calculate_energy_field()` is deprecated; use `compute_energy()` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.compute_energy(image, params)
-
     def extract_vertices(
         self, energy_data: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
@@ -314,26 +278,3 @@ class SlavvPipeline:
     ) -> dict[str, Any]:
         """Construct the final network from traced edges and vertices."""
         return cast("dict[str, Any]", network_ops.construct_network(edges, vertices, params))
-
-    def construct_network(
-        self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Compatibility wrapper for the preferred ``build_network`` method."""
-        warnings.warn(
-            "`construct_network()` is deprecated; use `build_network()` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.build_network(edges, vertices, params)
-
-
-class SLAVVProcessor(SlavvPipeline):
-    """Compatibility alias for the preferred ``SlavvPipeline`` API."""
-
-    def __init__(self):
-        warnings.warn(
-            "`SLAVVProcessor` is deprecated; use `SlavvPipeline` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__()

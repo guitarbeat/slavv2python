@@ -1,10 +1,18 @@
-"""Grouped CLI status-service surface for SLAVV."""
+"""Resumable run status reporting for the SLAVV CLI."""
 
 from __future__ import annotations
 
-from ..cli_status_service import build_status_output_lines, load_status_snapshot
+from typing import TYPE_CHECKING
 
-__all__ = [
-    "build_status_output_lines",
-    "load_status_snapshot",
-]
+if TYPE_CHECKING:
+    from ...runtime import RunSnapshot
+
+
+def build_run_status_lines(snapshot: RunSnapshot) -> list[str]:
+    """Format a multi-line status report from a run snapshot."""
+    from ...runtime import build_status_lines
+
+    return build_status_lines(snapshot)
+
+
+__all__ = ["build_run_status_lines"]

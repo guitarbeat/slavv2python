@@ -6,10 +6,10 @@ from typing import Any, cast
 
 import numpy as np
 
-from .._edge_candidates.common import (
+from ..edge_candidates_internal.common import (
     normalize_candidate_connection_sources as _normalize_connection_sources,
 )
-from .._edge_payloads import _empty_edges_result, build_edge_diagnostics
+from ..edge_payloads import _empty_edges_result, build_edge_diagnostics
 
 
 def normalize_candidate_connection_sources(

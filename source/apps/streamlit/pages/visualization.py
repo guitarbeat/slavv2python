@@ -249,7 +249,7 @@ def show_visualization_page() -> None:
             help="Download a self-contained HTML report to share with collaborators.",
         )
         if downloaded:
-            from source.apps.share_report import record_share_event
+            from ...services.share_report import record_share_event
 
             record_share_event(
                 st.session_state,

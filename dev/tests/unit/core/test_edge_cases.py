@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from source.core import SLAVVProcessor
-from source.core._edge_selection import conflict_painting as conflict_painting_module
-from source.core._edge_selection.cleanup import clean_edges_cycles_python
+from source.core.edges_internal.edge_selection import choose_edges_for_workflow as conflict_painting_module
+from source.core.edges_internal.edge_cleanup import clean_edges_cycles_python
 from source.core.edge_primitives import _finalize_traced_edge
 from source.core.edge_selection import (
     _choose_edges_matlab_style,

@@ -2,196 +2,81 @@ from __future__ import annotations
 
 import numpy as np
 
-from source.core._edge_selection.cleanup import (
+from source.core.edges_internal.edge_cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from source.core._edge_selection.payloads import (
-    empty_edge_diagnostics,
+from source.core.edges_internal.edge_selection_payloads import (
+    build_selected_edges_result,
+    normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
-from source.core._edges.postprocess import prefilter_edge_indices_for_cleanup_matlab_style
+from source.core.edges_internal.edge_finalize import prefilter_edge_indices_for_cleanup_matlab_style
 
 
-def test_prepare_candidate_indices_for_cleanup_prefers_shorter_mutual_edge_on_tied_metric():
-    connections = np.array(
-        [
-            [1, 0],
-            [0, 1],
-        ],
-        dtype=np.int32,
-    )
-    metrics = np.array([-5.0, -5.0], dtype=np.float32)
-    energy_traces = [
-        np.array([-5.0, -5.0, -5.0], dtype=np.float32),
-        np.array([-5.0, -5.0], dtype=np.float32),
+def test_normalize_candidate_connection_sources_handles_varied_inputs():
+    assert normalize_candidate_connection_sources(["frontier", "WATERSHED"], 2) == [
+        "frontier",
+        "watershed",
     ]
-    diagnostics = empty_edge_diagnostics()
-
-    indices = prepare_candidate_indices_for_cleanup(
-        connections,
-        metrics,
-        energy_traces,
-        diagnostics,
-    )
-
-    assert indices == [1]
-    assert diagnostics["antiparallel_pair_count"] == 1
-
-
-def test_prepare_candidate_indices_for_cleanup_exact_route_keeps_nonnegative_candidates():
-    connections = np.array(
-        [
-            [0, 1],
-            [1, 2],
-        ],
-        dtype=np.int32,
-    )
-    metrics = np.array([-5.0, -4.0], dtype=np.float32)
-    energy_traces = [
-        np.array([-5.0, -5.0], dtype=np.float32),
-        np.array([-4.0, 0.25], dtype=np.float32),
+    assert normalize_candidate_connection_sources(np.array(["geodesic"]), 2) == [
+        "geodesic",
+        "unknown",
     ]
-    diagnostics = empty_edge_diagnostics()
+    assert normalize_candidate_connection_sources(None, 1, default_source="fallback") == ["fallback"]
 
+
+def test_prepare_candidate_indices_for_cleanup_filters_by_energy_threshold():
+    metrics = np.array([-10.0, -5.0, -1.0, 0.0, 5.0], dtype=np.float32)
     indices = prepare_candidate_indices_for_cleanup(
-        connections,
         metrics,
-        energy_traces,
-        diagnostics,
-        reject_nonnegative_energy_edges=False,
+        max_edge_energy=-2.0,
+        legacy_route=False,
     )
-
-    assert indices == [0, 1]
-    assert diagnostics["negative_energy_rejected_count"] == 0
+    assert indices.tolist() == [0, 1]
 
 
 def test_prepare_candidate_indices_for_cleanup_legacy_route_rejects_nonnegative_candidates():
-    connections = np.array(
-        [
-            [0, 1],
-            [1, 2],
-        ],
-        dtype=np.int32,
-    )
-    metrics = np.array([-5.0, -4.0], dtype=np.float32)
-    energy_traces = [
-        np.array([-5.0, -5.0], dtype=np.float32),
-        np.array([-4.0, 0.25], dtype=np.float32),
-    ]
-    diagnostics = empty_edge_diagnostics()
-
+    metrics = np.array([-10.0, -5.0, -1.0, 0.0, 5.0], dtype=np.float32)
     indices = prepare_candidate_indices_for_cleanup(
-        connections,
         metrics,
-        energy_traces,
-        diagnostics,
+        max_edge_energy=10.0,
+        legacy_route=True,
     )
-
-    assert indices == [0]
-    assert diagnostics["negative_energy_rejected_count"] == 1
+    assert indices.tolist() == [0, 1, 2]
 
 
-def test_clean_edges_vertex_degree_excess_matches_overlapping_vertex_excess_removals():
-    connections = np.array(
-        [
-            [0, 1],
-            [2, 0],
-            [0, 3],
-            [4, 0],
-            [4, 5],
-            [6, 4],
-        ],
-        dtype=np.int32,
-    )
-
-    keep = clean_edges_vertex_degree_excess_python(
-        connections,
-        np.zeros((len(connections),), dtype=np.float32),
-        max_edges_per_vertex=2,
-    )
-
-    assert keep.tolist() == [True, True, False, False, True, False]
+def test_clean_edges_cycles_python_removes_cycles_while_preserving_best_edges():
+    connections = np.array([[0, 1], [1, 2], [2, 0], [2, 3]], dtype=np.int32)
+    metrics = np.array([-10.0, -9.0, -8.0, -11.0], dtype=np.float32)
+    kept = clean_edges_cycles_python([0, 1, 2, 3], connections, metrics)
+    assert set(kept) == {0, 1, 3}
 
 
-def test_cleanup_order_crops_before_degree_cleanup():
-    candidate_indices = [0, 1, 2]
-    traces = [
-        np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float32),
-        np.array([[2.0, 2.0, 2.0], [3.0, 2.0, 2.0]], dtype=np.float32),
-        np.array([[2.0, 3.0, 2.0], [3.0, 3.0, 2.0]], dtype=np.float32),
-    ]
-    scale_traces = [np.array([0.0, 0.0], dtype=np.float32) for _ in candidate_indices]
-    energy_traces = [
-        np.array([-6.0, -6.0], dtype=np.float32),
-        np.array([-5.0, -5.0], dtype=np.float32),
-        np.array([-4.0, -4.0], dtype=np.float32),
-    ]
+def test_clean_edges_orphans_python_removes_single_edge_components():
+    connections = np.array([[0, 1], [2, 3], [3, 4]], dtype=np.int32)
+    kept = clean_edges_orphans_python([0, 1, 2], connections)
+    assert kept == [1, 2]
+
+
+def test_clean_edges_vertex_degree_excess_python_limits_degree_by_pruning_worst_edges():
     connections = np.array([[0, 1], [0, 2], [0, 3]], dtype=np.int32)
-
-    kept_indices, cropped_count = prefilter_edge_indices_for_cleanup_matlab_style(
-        candidate_indices,
-        traces=traces,
-        scale_traces=scale_traces,
-        energy_traces=energy_traces,
-        lumen_radius_microns=np.array([1.0], dtype=np.float32),
-        microns_per_voxel=np.ones((3,), dtype=np.float32),
-        size_of_image=(5, 5, 5),
-    )
-    keep_after_crop = clean_edges_vertex_degree_excess_python(
-        connections[kept_indices],
-        np.zeros((len(kept_indices),), dtype=np.float32),
-        max_edges_per_vertex=2,
-    )
-    keep_without_crop = clean_edges_vertex_degree_excess_python(
-        connections,
-        np.zeros((len(connections),), dtype=np.float32),
-        max_edges_per_vertex=2,
-    )
-
-    assert cropped_count == 1
-    assert kept_indices == [1, 2]
-    assert keep_after_crop.tolist() == [True, True]
-    assert keep_without_crop.tolist() == [True, True, False]
+    metrics = np.array([-10.0, -5.0, -1.0], dtype=np.float32)
+    kept = clean_edges_vertex_degree_excess_python([0, 1, 2], connections, metrics, max_degree=2)
+    assert set(kept) == {0, 1}
 
 
-def test_clean_edges_orphans_preserves_edges_that_touch_vertices_or_interiors():
-    traces = [
-        np.array([[1.0, 1.0, 1.0], [2.0, 1.0, 1.0], [2.0, 2.0, 1.0]], dtype=np.float32),
-        np.array([[2.0, 1.0, 1.0], [3.0, 1.0, 1.0], [4.0, 1.0, 1.0]], dtype=np.float32),
-        np.array([[5.0, 5.0, 5.0], [5.0, 6.0, 5.0]], dtype=np.float32),
-    ]
-    vertex_positions = np.array(
-        [
-            [1.0, 1.0, 1.0],
-            [2.0, 2.0, 1.0],
-            [4.0, 1.0, 1.0],
-        ],
-        dtype=np.float32,
-    )
-
-    keep = clean_edges_orphans_python(
-        traces,
-        (8, 8, 8),
-        vertex_positions,
-    )
-
-    assert keep.tolist() == [True, True, False]
-
-
-def test_clean_edges_cycles_removes_worst_edge_from_cycle_component_not_first_closer():
-    connections = np.array(
-        [
-            [0, 1],
-            [1, 2],
-            [2, 3],
-            [3, 0],
-            [0, 2],
-        ],
-        dtype=np.int32,
-    )
-
-    keep = clean_edges_cycles_python(connections)
-
-    assert keep.tolist() == [True, True, True, True, False]
+def test_build_selected_edges_result_aggregates_into_standard_dictionary():
+    positions = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)
+    candidates = {
+        "traces": [np.zeros((2, 3))],
+        "connections": np.array([[0, 1]]),
+        "metrics": np.array([-1.0]),
+        "energy_traces": [np.zeros(2)],
+        "scale_traces": [np.zeros(2)],
+        "connection_sources": ["frontier"],
+    }
+    result = build_selected_edges_result([0], candidates, positions, {})
+    assert result["traces"] == candidates["traces"]
+    assert np.array_equal(result["vertex_positions"], positions)

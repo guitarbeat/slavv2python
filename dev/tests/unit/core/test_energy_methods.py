@@ -8,7 +8,7 @@ import pytest
 
 from source.core import SLAVVProcessor
 from source.core import energy as energy_module
-from source.core._energy import backends as energy_backends
+from source.core.energy_internal import energy_backends
 from source.runtime import RunContext
 from source.utils import get_chunking_lattice
 

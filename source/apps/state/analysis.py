@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from source.apps._state_utils import normalize_state_results
+from . import normalize_state_results
 from source.apps.state.curation import summarize_processing_counts
 from source.models import normalize_pipeline_result
 
