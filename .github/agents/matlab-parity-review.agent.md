@@ -1,5 +1,5 @@
 ---
-description: "Use when you want an audit-style review of MATLAB parity/comparison behavior without making code edits. Keywords: parity review, MATLAB parity audit, comparison workflow review, run_layout, run_state, import-matlab, legacy checkpoints."
+description: "Use when you want an audit-style review of MATLAB parity/comparison behavior without making code edits. Keywords: parity review, MATLAB parity audit, comparison workflow review, run_layout, run_state, import-matlab, resumable run_dir."
 name: "MATLAB Parity Review"
 tools: [read, search, execute]
 user-invocable: true
@@ -15,7 +15,7 @@ Your job is to audit parity/comparison/import behavior and staged run-root layou
 
 ## Approach
 1. Locate the relevant parity/runtime/CLI entrypoints and their tests.
-2. Trace staged layout semantics (`01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`) and legacy compatibility paths.
+2. Trace staged layout semantics (`01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/`).
 3. Identify mismatches, nondeterminism sources, and brittle assumptions.
 4. Recommend minimal diffs and the exact tests to add/update.
 5. Optionally run read-only validation commands (pytest selection, ruff, mypy) to support findings.

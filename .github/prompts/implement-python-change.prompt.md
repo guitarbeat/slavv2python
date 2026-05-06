@@ -15,13 +15,13 @@ Use the user-provided arguments as the source of truth:
 ## Required Workflow
 1. Locate the relevant code paths and existing tests before editing.
 2. Apply a minimal, focused implementation change.
-3. Add or update tests in ownership-aligned test locations under `tests/`.
+3. Add or update tests in ownership-aligned test locations under `dev/tests/`.
 4. Run and report the standard validation gate:
-   - `python -m ruff format --check source tests`
-   - `python -m ruff check source tests`
+   - `python -m ruff format --check source dev/tests`
+   - `python -m ruff check source dev/tests`
    - `python -m mypy`
    - `python -m pytest -m "unit or integration"`
-5. If the change touches parity/runtime behavior, also run relevant parity checks (for example `dev/tests/diagnostic/test_comparison_setup.py`) and preserve staged-layout plus legacy-compatibility expectations.
+5. If the change touches parity/runtime behavior, also run relevant parity checks (for example `dev/tests/diagnostic/test_comparison_setup.py`) and preserve staged-layout expectations.
 6. If a command fails, attempt the smallest practical fix related to the requested change, then re-run the affected checks.
 
 ## Output Format

@@ -148,7 +148,6 @@ Exact-route experiments should now also persist:
 Current live read on the preserved run root
 `20260421_accepted_budget_trial`:
 
-- saved params still include Python-only `parity_*` controls
 - `energy_projection_mode` is not explicitly recorded as `matlab`
 
 Until that params surface is cleaned up, the run is not a fully fair
@@ -331,7 +330,7 @@ not close parity.
 3. If candidate generation now matches, investigate the 1 failing frontier
    ordering test as the next parity surface.
 4. Clean the exact source-run params surface so preflight passes the fairness
-   audit with no Python-only `parity_*` controls.
+   audit with MATLAB-shaped exact settings.
 5. Keep `MATLAB_PARITY_MAPPING.md` focused on structural deviations and this
    file focused on live proof status.
 6. Once edges pass, run `prove-exact --stage all` to close vertices and network.
