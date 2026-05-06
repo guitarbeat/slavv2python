@@ -812,6 +812,7 @@ def test_generate_edge_candidates_matlab_global_watershed_uses_configured_step_s
     monkeypatch,
 ):
     import source.core._edge_candidates.global_watershed as global_watershed_module
+
     observed_step_sizes: list[float] = []
 
     def fake_current_strel(*_args, **kwargs):

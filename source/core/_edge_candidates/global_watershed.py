@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from bisect import bisect_left, bisect_right
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -419,7 +418,10 @@ def _matlab_global_watershed_insert_available_location(
         if not is_current_location_clear:
             last_search_idx -= 1
 
-        if last_search_idx < 0 or _energy_for(available_locations[last_search_idx]) >= target_energy:
+        if (
+            last_search_idx < 0
+            or _energy_for(available_locations[last_search_idx]) >= target_energy
+        ):
             insert_at = last_search_idx + 1
         else:
             low = 0

@@ -1,5 +1,6 @@
 import importlib
 import warnings
+
 import numpy as np
 import plotly.graph_objects as go
 import pytest
@@ -60,4 +61,3 @@ def test_app_sets_wide_layout(monkeypatch):
 
     importlib.reload(app)
     assert called.get("layout") == "wide"
-

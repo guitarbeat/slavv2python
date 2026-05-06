@@ -22,8 +22,6 @@ else:
 from .._edge_payloads import _empty_edge_diagnostics
 from .._radius_utils import _scalar_radius
 from ..edges_internal.trace_metrics import (
-    _edge_metric_from_energy_trace,
-    _record_trace_diagnostics,
     _trace_energy_series,
     _trace_scale_series,
 )

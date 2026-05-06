@@ -89,4 +89,3 @@ def test_generate_edge_directions_properties():
 
     # Directions should be unique
     assert len(np.unique(np.round(dirs5, 6), axis=0)) == 5
-

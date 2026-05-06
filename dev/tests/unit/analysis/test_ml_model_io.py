@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
@@ -84,4 +85,3 @@ def test_materialize_model_source_supports_uploaded_file_objects(tmp_path):
 
     with materialize_model_source(_UploadedModel(source_path)) as materialized_path:
         assert Path(materialized_path).read_bytes() == b"model-bytes"
-

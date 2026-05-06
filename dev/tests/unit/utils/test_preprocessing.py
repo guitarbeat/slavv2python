@@ -1,4 +1,5 @@
 from pstats import Stats
+
 import numpy as np
 
 # Ensure module path
@@ -57,4 +58,3 @@ def test_profile_process_image_returns_stats():
     stats = profile_process_image(volume, {})
     assert isinstance(stats, Stats)
     assert any(func[0].endswith("pipeline.py") and func[2] == "run" for func in stats.stats)
-

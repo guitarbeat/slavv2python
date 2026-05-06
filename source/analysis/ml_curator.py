@@ -17,6 +17,7 @@ from typing import Any
 
 import joblib
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import cross_val_score, train_test_split
@@ -294,6 +295,7 @@ class MLCurator:
                 edge_length,
                 euclidean_distance,
                 tortuosity,
+                len(trace),  # Number of points in trace
             ]
 
             # Energy statistics along edge
@@ -318,24 +320,6 @@ class MLCurator:
 
         results = Parallel(n_jobs=n_jobs)(delayed(_worker)(i) for i in range(len(edge_traces)))
         features = [res for res in results if res is not None]
-
-        return np.array(features)
-                len(trace),  # Number of points in trace
-            ]
-
-            edge_features.extend(_edge_energy_features(trace, energy_field))
-            edge_features.extend(
-                _connected_vertex_features(
-                    start_vertex,
-                    end_vertex,
-                    vertex_energies,
-                    vertex_radii,
-                    edge_length,
-                )
-            )
-            edge_features.extend(_direction_change_features(trace))
-
-            features.append(edge_features)
 
         return np.array(features)
 
@@ -400,7 +384,6 @@ class MLCurator:
 
         # Predictions for detailed metrics
         y_pred = self.vertex_classifier.predict(X_test)
-        self.vertex_classifier.predict_proba(X_test)[:, 1]
 
         results = {
             "method": method,

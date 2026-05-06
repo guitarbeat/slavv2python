@@ -13,7 +13,6 @@ from source.analysis import (
 from source.analysis._geometry import angle_degrees, safe_normalize_rows, scaled_positions
 
 
-
 def test_resample_vectors_straight_line():
     trace = np.array([[0.0, 0.0], [10.0, 0.0]])
     resampled = resample_vectors(trace, step=1.0)
@@ -157,4 +156,3 @@ def test_scaled_positions_applies_per_axis_scale() -> None:
 def test_scaled_positions_rejects_mismatched_scale_dimension() -> None:
     with pytest.raises(ValueError, match="scale length must match"):
         scaled_positions(np.array([[1.0, 2.0, 3.0]], dtype=float), [1.0, 2.0])
-
