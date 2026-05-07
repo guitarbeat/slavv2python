@@ -44,7 +44,7 @@ class WorkspaceAuditor:
     """Audits the repository for structural violations."""
 
     CANONICAL_ROOT_FOLDERS: ClassVar[set[str]] = {
-        "source",
+        "slavv_python",
         "workspace",
         "docs",
         "external",
@@ -57,7 +57,7 @@ class WorkspaceAuditor:
         "README.md",
         "LICENSE",
         "CHANGELOG.md",
-        "GEMINI.md",
+        "ANTIGRAVITY.md",
         ".gitignore",
     }
 
@@ -93,12 +93,12 @@ class WorkspaceAuditor:
     def audit_source(self) -> list[str]:
         """Check for misplaced build artifacts in slavv_python/."""
         violations = []
-        source_dir = self.root / "source"
+        source_dir = self.root / "slavv_python"
         if not source_dir.exists():
-            return ["Missing source directory"]
+            return ["Missing slavv_python directory"]
 
         for item in source_dir.rglob("*.egg-info"):
-            violations.append(f"Misplaced build artifact in source: {item.relative_to(self.root)}")
+            violations.append(f"Misplaced build artifact in slavv_python: {item.relative_to(self.root)}")
 
         return violations
 

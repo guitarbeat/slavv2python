@@ -1,4 +1,4 @@
-﻿# Documentation
+# Documentation
 
 The documentation tree has two jobs:
 
@@ -13,7 +13,7 @@ executable spec.
 ## Start Here
 
 1. [Repository README](../README.md)
-2. [Agent and workflow guide](../GEMINI.md)
+2. [Agent and workflow guide](../ANTIGRAVITY.md)
 3. [Reference index](reference/README.md)
 4. [Chapter index](chapters/README.md)
 5. [Test placement guide](../workspace/tests/README.md)

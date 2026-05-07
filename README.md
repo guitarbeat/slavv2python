@@ -61,7 +61,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## Documentation
 
-- [GEMINI.md](GEMINI.md)
+- [ANTIGRAVITY.md](ANTIGRAVITY.md)
 - [Documentation Index](docs/README.md)
 - [Reference Docs](docs/reference/README.md)
 - [Paper Profile Workflow](docs/reference/workflow/PAPER_PROFILE.md)
