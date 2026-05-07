@@ -249,7 +249,7 @@ def render_experiment_summary(summary_payload: dict[str, Any]) -> str:
             "",
             "Delta vs MATLAB",
             _format_delta(summary_payload.get("diff_vs_matlab", {})),
-            "Delta vs source Python",
+            "Delta vs slavv_python Python",
             _format_delta(summary_payload.get("diff_vs_source_python", {})),
         ]
     )
@@ -288,7 +288,7 @@ def extract_matlab_counts(report_payload: dict[str, Any]) -> RunCounts:
 
 
 def extract_source_python_counts(report_payload: dict[str, Any]) -> RunCounts:
-    """Extract source Python counts from a comparison report."""
+    """Extract slavv_python Python counts from a comparison report."""
     python = report_payload.get("python", {})
     return RunCounts(
         vertices=int(python.get("vertices_count", 0)),

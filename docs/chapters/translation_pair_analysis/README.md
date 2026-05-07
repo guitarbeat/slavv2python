@@ -85,8 +85,8 @@ The claimed 41.4% baseline in TODO.md was found to be inaccurate:
 ## Tools and Scripts
 
 - **investigate_translation_pairs.py:** Analysis script for categorizing pairs and identifying root causes
-  - Location: `workspace/scripts/cli/investigate_translation_pairs.py`
-  - Usage: `python workspace/scripts/cli/investigate_translation_pairs.py`
+  - Location: `scripts/cli/investigate_translation_pairs.py`
+  - Usage: `python scripts/cli/investigate_translation_pairs.py`
 
 ## Implementation Roadmap
 

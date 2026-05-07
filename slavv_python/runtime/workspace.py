@@ -50,6 +50,8 @@ class WorkspaceAuditor:
         "external",
         ".github",
         ".git",
+        "scripts",
+        "tests",
     }
 
     CANONICAL_ROOT_FILES: ClassVar[set[str]] = {
@@ -106,5 +108,5 @@ class WorkspaceAuditor:
         """Run all audit checks."""
         return {
             "root": self.audit_root(),
-            "source": self.audit_source(),
+            "slavv_python": self.audit_source(),
         }

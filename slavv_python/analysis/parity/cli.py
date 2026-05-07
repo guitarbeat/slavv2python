@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
-    """Orchestrate a Python-only rerun from a source comparison root."""
+    """Orchestrate a Python-only rerun from a slavv_python comparison root."""
     from slavv_python.core.pipeline import SLAVVProcessor
     from slavv_python.io.tiff import load_tiff_volume
 
@@ -139,6 +139,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
 def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
+
     from slavv_python.core.edge_candidates_internal import (
         JsonExecutionTracer,
         _generate_edge_candidates_matlab_global_watershed,

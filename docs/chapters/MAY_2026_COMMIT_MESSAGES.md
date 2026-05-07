@@ -30,7 +30,7 @@ Changes:
   Removed directional suppression from inside seed loop
   Added detailed comments explaining MATLAB behavior
   
-- workspace/tests/unit/core/test_watershed_seed_suppression_bug.py (new):
+- tests/unit/core/test_watershed_seed_suppression_bug.py (new):
   Demonstration test showing the bug's mechanism and impact
 
 Validation:
@@ -84,7 +84,7 @@ docs: document May 2026 critical MATLAB parity bug fixes
 Updated EXACT_PROOF_FINDINGS.md to document:
 - Directional suppression bug in watershed seed loop (CRITICAL)
 - Trace order randomization bug in edge selection
-- Impact analysis and MATLAB source references
+- Impact analysis and MATLAB slavv_python references
 - Updated next proof actions prioritizing candidate measurement
 
 Changes:
@@ -106,7 +106,7 @@ To create these commits (assuming changes are staged appropriately):
 ```powershell
 # Commit 1: Watershed fix
 git add slavv_python/core/_edge_candidates/global_watershed.py
-git add workspace/tests/unit/core/test_watershed_seed_suppression_bug.py
+git add tests/unit/core/test_watershed_seed_suppression_bug.py
 git commit -F commit1.txt
 
 # Commit 2: Edge selection fix
@@ -123,7 +123,7 @@ Or as a single commit if preferred:
 ```powershell
 git add slavv_python/core/_edge_candidates/global_watershed.py
 git add slavv_python/core/edges_internal/edge_selection.py
-git add workspace/tests/unit/core/test_watershed_seed_suppression_bug.py
+git add tests/unit/core/test_watershed_seed_suppression_bug.py
 git add docs/reference/core/EXACT_PROOF_FINDINGS.md
 git commit -m "fix: critical MATLAB parity bugs in watershed and edge selection
 

@@ -18,7 +18,7 @@ def normalize_candidate_connection_sources(
     *,
     default_source: str = "unknown",
 ) -> list[str]:
-    """Return a normalized per-connection source label list."""
+    """Return a normalized per-connection slavv_python label list."""
     return _normalize_connection_sources(
         raw_sources,
         candidate_connection_count,

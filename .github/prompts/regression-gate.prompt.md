@@ -7,9 +7,9 @@ Run the standard regression gate for this repository and summarize results by pr
 
 ## Commands
 
-1. `python -m compileall source workspace/scripts`
-2. `python -m ruff format --check source workspace/tests`
-3. `python -m ruff check source workspace/tests`
+1. `python -m compileall slavv_python scripts`
+2. `python -m ruff format --check slavv_python tests`
+3. `python -m ruff check slavv_python tests`
 4. `python -m mypy`
 5. `python -m pytest -m "unit or integration"`
 

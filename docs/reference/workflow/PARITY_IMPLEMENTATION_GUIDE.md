@@ -9,9 +9,9 @@ This guide provides technical instructions and best practices for aligning the S
 ## 🚀 Parity Workflow
 
 ### 1. Identify the Gap
-Use `workspace/scripts/cli/parity_experiment.py` to measure current match rates against a canonical oracle.
+Use `scripts/cli/parity_experiment.py` to measure current match rates against a canonical oracle.
 ```powershell
-python workspace/scripts/cli/parity_experiment.py prove-exact --stage edges ...
+python scripts/cli/parity_experiment.py prove-exact --stage edges ...
 ```
 
 ### 2. Categorize missing pairs
@@ -36,7 +36,7 @@ When a specific edge is missing, use the `ExecutionTracer` to compare Python eve
 3. Check `available_locations` insertion to ensure the frontier priority is maintained.
 
 ### Unit Testing
-Always add a regression test in `workspace/tests/unit/core/test_global_watershed_comprehensive.py` before applying a fix.
+Always add a regression test in `tests/unit/core/test_global_watershed_comprehensive.py` before applying a fix.
 - Use small 3x3x3 or 5x5x5 volumes to verify exact numerical parity.
 - Mock the `available_locations` list to test specific insertion/removal edge cases.
 

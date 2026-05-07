@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-This document is the maintained source map for the native-first exact route in
+This document is the maintained slavv_python map for the native-first exact route in
 the live Python tree.
 
 Use this file for MATLAB-to-Python mapping and confirmed structural deviations.
@@ -11,7 +11,7 @@ Use `MATLAB_METHOD_IMPLEMENTATION_PLAN.md` for claim boundaries and
 
 ## Scope
 
-- Canonical MATLAB source lives under `external/Vectorization-Public/slavv_python/`.
+- Canonical MATLAB slavv_python lives under `external/Vectorization-Public/slavv_python/`.
 - The parity-facing Python shim now lives under `slavv_python/core/matlab_compat/`.
 - The canonical exact route is `comparison_exact_network=True` with
   exact-compatible energy provenance; `python_native_hessian` is the only
@@ -54,7 +54,7 @@ The active MATLAB sources for the native-first exact target are:
 | MATLAB surface | Live Python surface | Status | Notes |
 | --- | --- | --- | --- |
 | `vectorize_V200.m` | `slavv_python/core/matlab_compat/vectorize_v200.py`, `slavv_python/core/pipeline.py` | Source-aligned orchestration surface | The compat layer mirrors MATLAB stage order while delegating into the maintained modular pipeline. |
-| `get_energy_V202.m` and `energy_filter_V200.m` | `slavv_python/core/matlab_compat/stages.py`, `slavv_python/core/energy.py`, `slavv_python/core/energy_internal/hessian_response.py`, `slavv_python/core/energy_internal/energy_provenance.py` | Native exact-compatible source surface | Native matched filtering is the canonical exact-route energy implementation. |
+| `get_energy_V202.m` and `energy_filter_V200.m` | `slavv_python/core/matlab_compat/stages.py`, `slavv_python/core/energy.py`, `slavv_python/core/energy_internal/hessian_response.py`, `slavv_python/core/energy_internal/energy_provenance.py` | Native exact-compatible slavv_python surface | Native matched filtering is the canonical exact-route energy implementation. |
 | `get_vertices_V200.m` | `slavv_python/core/matlab_compat/stages.py`, `slavv_python/core/vertices.py`, `slavv_python/core/vertices_internal/vertex_extraction.py` | Source-aligned | The maintained exact route now starts from native energy rather than imported MATLAB energy. |
 | `get_edges_V300.m` and `get_edges_by_watershed.m` | `slavv_python/core/matlab_compat/stages.py`, `slavv_python/core/edges.py`, `slavv_python/core/edges_internal/candidate_generation.py`, `slavv_python/core/edges_internal/matlab_frontier.py`, `slavv_python/core/edges_internal/edge_tracing.py`, `slavv_python/core/edges_internal/resumable_edges.py` | Source-aligned with known control-flow deviations | Preferred grouped facades delegate into historical `_edge_candidates/` and `_edges/` implementation modules where the remaining exact-route work still lives. |
 | `get_edge_metric.m` | `slavv_python/core/matlab_compat/stages.py`, `slavv_python/analysis/_geometry/trace_ops.py`, `slavv_python/core/network.py` | Source-aligned | The compat layer exposes a MATLAB-named wrapper while the maintained trace helpers stay modular. |
@@ -73,7 +73,7 @@ These are now explicit parity-investigation pitfalls:
   surface.
   Important edge-stage constants such as `step_size_per_origin_radius`,
   `max_edge_energy`, `edge_number_tolerance`, `distance_tolerance`, and
-  `radius_tolerance` can live only in released MATLAB source and still need to
+  `radius_tolerance` can live only in released MATLAB slavv_python and still need to
   be persisted into the exact params surface.
 - Do not feed the vertex fields embedded inside raw `edges*.mat` into upstream
   watershed candidate generation.
@@ -84,8 +84,8 @@ These are now explicit parity-investigation pitfalls:
   as an isolated proof of upstream watershed parity.
   The final edge artifact already includes downstream bridge insertion effects.
 - Do not assume the preserved 2019 oracle batch and the later public
-  `Vectorization-Public` source are one-to-one in code vintage.
-  When artifact behavior and later source comments disagree, record the
+  `Vectorization-Public` slavv_python are one-to-one in code vintage.
+  When artifact behavior and later slavv_python comments disagree, record the
   discrepancy explicitly and avoid treating either side as silently
   self-evident.
 

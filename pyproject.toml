@@ -112,13 +112,13 @@ license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["source", "slavv_python.*"]
+include = ["slavv_python", "slavv_python.*"]
 
 # â”€â”€ Ruff (linter + formatter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.ruff]
 target-version = "py39"
 line-length = 100
-src = ["source", "workspace/tests"]
+src = ["slavv_python", "tests"]
 
 exclude = ["external/*"]
 
@@ -150,7 +150,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["source"]
+known-first-party = ["slavv_python"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -160,7 +160,7 @@ docstring-code-format = true
 # â”€â”€ Mypy (static type checking) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.mypy]
 python_version = "3.11"
-mypy_path = "source"
+mypy_path = "slavv_python"
 files = [
     "slavv_python/apps/cli/__init__.py",
     "slavv_python/apps/streamlit/app.py",
@@ -196,7 +196,7 @@ pretty = true
 
 # â”€â”€ Pytest (unit/integration tests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.pytest.ini_options]
-testpaths = "workspace/tests"
+testpaths = "tests"
 norecursedirs = [
     "external",
     "external/blender_resources",

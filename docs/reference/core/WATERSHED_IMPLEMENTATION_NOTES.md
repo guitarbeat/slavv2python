@@ -68,7 +68,7 @@ To ensure writes to `ravel(order="F")` views persist in the underlying 3D arrays
 
 ## 🧪 Verification
 
-Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `workspace/tests/unit/core/test_global_watershed_comprehensive.py`. These tests verify:
+Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `tests/unit/core/test_global_watershed_comprehensive.py`. These tests verify:
 -   Exact pointer values match MATLAB LUT indexing.
 -   Frontier insertion order matches MATLAB's descending energy priority.
 -   Join logic correctly removes specific indices from the frontier.

@@ -129,20 +129,20 @@ penalty reviews came back aligned.
 These were the core investigation commands used during the April 2026 funnel:
 
 ```powershell
-python workspace/scripts/cli/parity_experiment.py preflight-exact `
-    --source-run-root workspace\comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
-    --dest-run-root workspace\comparisons\experiments\live-parity\runs\my_current_code_trial
+python scripts/cli/parity_experiment.py preflight-exact `
+    --source-run-root workspace\runs\20260421_accepted_budget_trial `
+    --dest-run-root workspace\runs\my_current_code_trial
 
-python workspace/scripts/cli/parity_experiment.py prove-luts `
-    --source-run-root workspace\comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
-    --dest-run-root workspace\comparisons\experiments\live-parity\runs\my_current_code_trial
+python scripts/cli/parity_experiment.py prove-luts `
+    --source-run-root workspace\runs\20260421_accepted_budget_trial `
+    --dest-run-root workspace\runs\my_current_code_trial
 
-python workspace/scripts/cli/parity_experiment.py capture-candidates `
-    --source-run-root workspace\comparisons\experiments\live-parity\runs\20260421_accepted_budget_trial `
-    --dest-run-root workspace\comparisons\experiments\live-parity\runs\my_current_code_trial
+python scripts/cli/parity_experiment.py capture-candidates `
+    --source-run-root workspace\runs\20260421_accepted_budget_trial `
+    --dest-run-root workspace\runs\my_current_code_trial
 
-python workspace/scripts/cli/parity_experiment.py summarize `
-    --run-root workspace\comparisons\experiments\live-parity\runs\my_current_code_trial
+python scripts/cli/parity_experiment.py summarize `
+    --run-root workspace\runs\my_current_code_trial
 ```
 
 These commands matter historically because they separate:

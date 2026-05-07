@@ -44,7 +44,7 @@ than alternate versions of the same content:
 - [Napari Curator](backends/NAPARI_CURATOR.md)
 - [Papers](papers/README.md)
 
-The `papers/` folder is background reading, not the executable source of truth
+The `papers/` folder is background reading, not the executable slavv_python of truth
 for current Python behavior or exact MATLAB parity claims.
 
 ## Live Status And Historical Context

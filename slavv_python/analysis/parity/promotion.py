@@ -262,7 +262,7 @@ def handle_promote_report(args: argparse.Namespace) -> None:
     }
     write_json_with_hash(report_root / REPORT_MANIFEST_PATH, report_manifest)
 
-    # Update source run
+    # Update slavv_python run
     src_manifest.update(
         {
             "promoted_report_root": str(report_root),

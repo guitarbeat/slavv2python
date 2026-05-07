@@ -11,7 +11,7 @@ trials, or promoting durable summaries.
 Use a dedicated experiment root such as:
 
 ```text
-workspace\comparisons\experiments\live-parity\
+workspace\
   datasets\
   oracles\
   runs\
@@ -40,8 +40,8 @@ runs\<run_id>\
   99_Metadata\
 ```
 
-- `00_Refs/` stores copied source references such as prior comparison reports,
-  source run snapshots, source run manifests, and oracle manifests.
+- `00_Refs/` stores copied slavv_python references such as prior comparison reports,
+  slavv_python run snapshots, slavv_python run manifests, and oracle manifests.
 - `01_Params/` stores:
   - `shared_params.json`
   - `python_derived_params.json`
@@ -86,7 +86,7 @@ The dataset manifest should record at least:
 
 - `dataset_hash`
 - stored input path
-- original source path
+- original slavv_python path
 - input byte size
 - timestamps and retention policy
 
@@ -103,7 +103,7 @@ Exact-route runs should split settings into:
 For MATLAB parity, `shared_params.json` must include both:
 
 - values loaded from the preserved MATLAB `settings/*.mat` files
-- released MATLAB source constants that are hard-coded in `.m` files and not
+- released MATLAB slavv_python constants that are hard-coded in `.m` files and not
   serialized into those settings artifacts
 
 This separation is the maintained fairness surface for deciding whether a run is
@@ -114,43 +114,43 @@ actually comparing the same method.
 - Treat everything under `runs/` as disposable.
 - Use `promote-report` to copy analysis artifacts into `reports/` when a run
   should be kept for discussion or recordkeeping.
-- Treat `oracles/` as preserved source material, not scratch space.
+- Treat `oracles/` as preserved slavv_python material, not scratch space.
 
 ## Canonical Commands
 
 Promote a MATLAB batch into an oracle:
 
 ```powershell
-python workspace/scripts/cli/parity_experiment.py promote-dataset `
+python scripts/cli/parity_experiment.py promote-dataset `
     --dataset-file C:\path\to\volume.tif `
-    --experiment-root workspace\comparisons\experiments\live-parity
+    --experiment-root workspace
 
-python workspace/scripts/cli/parity_experiment.py promote-oracle `
+python scripts/cli/parity_experiment.py promote-oracle `
     --matlab-batch-dir D:\incoming\batch_260421-151654 `
-    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
+    --oracle-root workspace\oracles\v22_a `
     --dataset-file D:\datasets\volume.tif `
     --oracle-id v22_a
 
-python workspace/scripts/cli/parity_experiment.py init-exact-run `
-    --dataset-root workspace\comparisons\experiments\live-parity\datasets\<dataset_hash> `
-    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root workspace\comparisons\experiments\live-parity\runs\seed_run
+python scripts/cli/parity_experiment.py init-exact-run `
+    --dataset-root workspace\datasets\<dataset_hash> `
+    --oracle-root workspace\oracles\v22_a `
+    --dest-run-root workspace\runs\seed_run
 ```
 
 Run a disposable native-first trial:
 
 ```powershell
-python workspace/scripts/cli/parity_experiment.py preflight-exact `
-    --source-run-root workspace\comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root workspace\comparisons\experiments\live-parity\runs\trial_b
+python scripts/cli/parity_experiment.py preflight-exact `
+    --source-run-root workspace\runs\seed_run `
+    --oracle-root workspace\oracles\v22_a `
+    --dest-run-root workspace\runs\trial_b
 ```
 
 Promote a kept summary:
 
 ```powershell
-python workspace/scripts/cli/parity_experiment.py promote-report `
-    --run-root workspace\comparisons\experiments\live-parity\runs\trial_b
+python scripts/cli/parity_experiment.py promote-report `
+    --run-root workspace\runs\trial_b
 ```
 
 ## Notes
@@ -158,6 +158,6 @@ python workspace/scripts/cli/parity_experiment.py promote-report `
 - `prove-exact` still compares normalized Python checkpoints against preserved
   MATLAB vectors.
 - `init-exact-run` is the maintained bootstrap path when you have a preserved
-  dataset package and oracle package but no historical source run root.
-- The storage model does not change claim boundaries: MATLAB source and
+  dataset package and oracle package but no historical slavv_python run root.
+- The storage model does not change claim boundaries: MATLAB slavv_python and
   preserved MATLAB vectors remain the proof authority.

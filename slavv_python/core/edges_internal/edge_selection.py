@@ -224,7 +224,7 @@ def _choose_edges_matlab_style(
     for index in filtered_indices:
         start_vertex, end_vertex = (int(value) for value in connections[index])
         current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
-        current_source_code = source_code_by_label.get(current_source, 0)
+        current_source_code = slavv_python_code_by_label.get(current_source, 0)
         trace = np.asarray(traces[index], dtype=np.float32)
         scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
 

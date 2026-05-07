@@ -49,7 +49,7 @@ def _normalize_candidate_connection_sources(
     *,
     default_source: str = "unknown",
 ) -> list[str]:
-    """Return a normalized per-connection source label list."""
+    """Return a normalized per-connection slavv_python label list."""
     return _normalize_connection_sources(
         raw_sources,
         candidate_connection_count,
@@ -162,10 +162,10 @@ def _build_origin_payload_rows(
         total_count = int(total_origin_counts.get(origin_index, 0))
         fallback_count = max(0, total_count - frontier_count - supplement_count - geodesic_count)
         candidate_pairs = total_origin_pairs.get(origin_index, set())
-        frontier_pairs = source_origin_pair_sets["frontier"].get(origin_index, set())
-        watershed_pairs = source_origin_pair_sets["watershed"].get(origin_index, set())
-        geodesic_pairs = source_origin_pair_sets["geodesic"].get(origin_index, set())
-        fallback_pairs = source_origin_pair_sets["fallback"].get(origin_index, set())
+        frontier_pairs = slavv_python_origin_pair_sets["frontier"].get(origin_index, set())
+        watershed_pairs = slavv_python_origin_pair_sets["watershed"].get(origin_index, set())
+        geodesic_pairs = slavv_python_origin_pair_sets["geodesic"].get(origin_index, set())
+        fallback_pairs = slavv_python_origin_pair_sets["fallback"].get(origin_index, set())
         per_origin_payload.append(
             {
                 "origin_index": origin_index,
@@ -340,15 +340,15 @@ def _build_edge_candidate_audit(
     frontier_connection_count = (
         sum(frontier_origin_counts.values())
         if frontier_origin_counts
-        else len([source for source in connection_sources if source == "frontier"])
+        else len([source for slavv_python in connection_sources if slavv_python == "frontier"])
     )
     supplement_connection_count = (
         sum(supplement_origin_counts.values())
         if supplement_origin_counts
-        else len([source for source in connection_sources if source == "watershed"])
+        else len([source for slavv_python in connection_sources if slavv_python == "watershed"])
     )
     geodesic_connection_count = len(
-        [source for source in connection_sources if source == "geodesic"]
+        [source for slavv_python in connection_sources if slavv_python == "geodesic"]
     )
     fallback_connection_count = max(
         0,

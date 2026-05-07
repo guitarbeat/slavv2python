@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+
 from slavv_python.io.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     _normalize_connection_array,
@@ -175,7 +176,7 @@ def run_exact_parity_proof(
     write_json_with_hash(json_path, report_payload)
     write_text_with_hash(text_path, render_exact_proof_report(report_payload))
 
-    dataset_path = source_surface.run_root / "01_Input" / "volume.tif"
+    dataset_path = slavv_python_surface.run_root / "01_Input" / "volume.tif"
     dataset_hash = fingerprint_file(dataset_path) if dataset_path.is_file() else "test-hash"
 
     write_run_manifest(
@@ -196,7 +197,7 @@ def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[
     """Load the exact-route energy checkpoint payload."""
     import joblib
 
-    path = source_surface.checkpoints_dir / "checkpoint_energy.pkl"
+    path = slavv_python_surface.checkpoints_dir / "checkpoint_energy.pkl"
     if not path.is_file():
         raise FileNotFoundError(f"missing exact energy checkpoint: {path}")
     return joblib.load(path)
@@ -407,7 +408,7 @@ def run_candidate_capture(
     write_json_with_hash(json_path, coverage_report)
     write_text_with_hash(text_path, render_candidate_coverage_report(coverage_report))
 
-    dataset_path = source_surface.run_root / "01_Input" / "volume.tif"
+    dataset_path = slavv_python_surface.run_root / "01_Input" / "volume.tif"
     dataset_hash = fingerprint_file(dataset_path) if dataset_path.is_file() else "test-hash"
 
     write_run_manifest(
@@ -521,11 +522,11 @@ def run_lut_proof(
         "lumen_radius_microns": [float(r) for r in fixture.get("lumen_radius_microns", [])],
     }
 
-    skipped = source_inputs != fixture_inputs
+    skipped = slavv_python_inputs != fixture_inputs
     report = {
         "passed": True,
         "skipped": skipped,
-        "skip_reason": "builtin LUT fixture inputs do not match the source exact run"
+        "skip_reason": "builtin LUT fixture inputs do not match the slavv_python exact run"
         if skipped
         else None,
         "source_inputs": source_inputs,
@@ -585,7 +586,7 @@ def _run_capture_candidates(
     # Try to find oracle root
     oracle_root = None
     if (source_run_root / "01_Input" / "matlab_results").is_dir():
-        oracle_root = source_run_root / "01_Input" / "matlab_results"
+        oracle_root = slavv_python_run_root / "01_Input" / "matlab_results"
 
     # This is a bit complex for a wrapper, but let's try to mock the surface if needed
     # Or just use handle_capture_candidates logic

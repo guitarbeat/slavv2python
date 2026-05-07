@@ -211,9 +211,9 @@ When adding a new energy backend, update these surfaces together:
    Allow the new `energy_method` value in parameter validation.
 3. `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py`
    Expose the new choice through `slavv run --energy-method`.
-4. `workspace/tests/unit/core/test_energy_methods.py`
+4. `tests/unit/core/test_energy_methods.py`
    Add focused correctness coverage for the new backend.
-5. `workspace/tests/unit/core/test_energy_field_storage.py`
+5. `tests/unit/core/test_energy_field_storage.py`
    Add or extend regression coverage if the direct and resumable paths need to
    remain aligned.
 6. Documentation

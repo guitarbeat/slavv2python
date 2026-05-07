@@ -26,12 +26,12 @@ Thank you for your interest in contributing! This guide will help you get starte
 - Use:
   
    ```powershell
-    python -m ruff check source workspace/tests --fix
-    python -m ruff format source workspace/tests
+    python -m ruff check slavv_python tests --fix
+    python -m ruff format slavv_python tests
    ```
 
    for linting/formatting.
-- Add or update tests in `workspace/tests/` as appropriate.
+- Add or update tests in `tests/` as appropriate.
 - If your change affects the public workflow, keep the default `paper` profile,
   authoritative `network.json`, and related docs aligned.
 

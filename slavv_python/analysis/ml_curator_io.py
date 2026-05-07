@@ -11,7 +11,7 @@ from typing import Any
 
 @contextmanager
 def materialize_model_source(model_source: Any | None):
-    """Yield a filesystem path for a model source that may be file-like."""
+    """Yield a filesystem path for a model slavv_python that may be file-like."""
     if model_source is None:
         yield None
         return
@@ -25,7 +25,7 @@ def materialize_model_source(model_source: Any | None):
     elif hasattr(model_source, "read"):
         payload = model_source.read()
     else:
-        raise TypeError("model source must be a path or file-like object")
+        raise TypeError("model slavv_python must be a path or file-like object")
 
     if isinstance(payload, str):
         payload = payload.encode("utf-8")

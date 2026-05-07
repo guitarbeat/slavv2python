@@ -6,7 +6,7 @@ The documentation tree has two jobs:
 - `chapters/` for intentionally archival narratives that still help explain the
   current Python codebase
 
-Only `reference/` is a maintained source of truth for current behavior, public
+Only `reference/` is a maintained slavv_python of truth for current behavior, public
 workflow, and parity status. Treat `chapters/` as historical context, not as an
 executable spec.
 
@@ -16,7 +16,7 @@ executable spec.
 2. [Agent and workflow guide](../AGENTS.md)
 3. [Reference index](reference/README.md)
 4. [Chapter index](chapters/README.md)
-5. [Test placement guide](../workspace/tests/README.md)
+5. [Test placement guide](../tests/README.md)
 
 ## Core Maintained References
 

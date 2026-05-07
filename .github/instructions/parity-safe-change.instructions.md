@@ -17,11 +17,11 @@ applyTo: "slavv_python/{analysis/parity,runtime}/**/*.py"
 ## Validation Expectations
 
 - Run parity diagnostic coverage when parity/comparison behavior changes:
-  - `python -m pytest workspace/tests/diagnostic/test_comparison_setup.py`
+  - `python -m pytest tests/diagnostic/test_comparison_setup.py`
 - Run at least the standard boundary-crossing gate when changes cross module boundaries:
   - `python -m pytest -m "unit or integration"`
 - Use lint/type checks when editing Python modules:
-  - `python -m ruff check source workspace/tests`
+  - `python -m ruff check slavv_python tests`
   - `python -m mypy`
 
 ## Implementation Guardrails
@@ -35,4 +35,4 @@ applyTo: "slavv_python/{analysis/parity,runtime}/**/*.py"
 - `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md`
 - `slavv_python/analysis/parity/execution.py`
 - `slavv_python/runtime/run_state.py`
-- `workspace/tests/diagnostic/test_comparison_setup.py`
+- `tests/diagnostic/test_comparison_setup.py`

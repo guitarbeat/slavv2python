@@ -27,8 +27,8 @@ slavv analyze -i slavv_output\network.json
 slavv plot -i slavv_output\network.json -o plots.html
 slavv-app
 python -m pytest -m "unit or integration"
-python -m ruff check source workspace/tests
-python -m ruff format source workspace/tests
+python -m ruff check slavv_python tests
+python -m ruff format slavv_python tests
 python -m mypy
 ```
 
@@ -55,8 +55,8 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 ## What Is In This Repo
 
 - `slavv_python/`: pipeline, runtime, I/O, analysis, visualization, CLI, and app code
-- `workspace/tests/`: unit, integration, and UI coverage
-- `workspace/scripts/`: maintained helper scripts and benchmarks
+- `tests/`: unit, integration, and UI coverage
+- `scripts/`: maintained helper scripts and benchmarks
 - `docs/`: maintained reference docs plus archival investigation notes
 
 ## Documentation
@@ -70,7 +70,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - [MATLAB Parity Mapping](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 - [v22 Pointer Corruption Archive](docs/chapters/v22-pointer-corruption/README.md)
-- [Test Placement Guide](workspace/tests/README.md)
+- [Test Placement Guide](tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## Notes
@@ -82,6 +82,6 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - The legacy rich parity and MATLAB comparison harness has been removed from the
   public CLI surface.
 - A developer-only parity runner is available at
-  `workspace/scripts/cli/parity_experiment.py` for rerunning Python `edges` or
+  `scripts/cli/parity_experiment.py` for rerunning Python `edges` or
   `network` against reusable staged comparison roots and for exact artifact
   proof against preserved MATLAB vectors.

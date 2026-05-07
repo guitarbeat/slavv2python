@@ -21,9 +21,9 @@ Your job is to preserve and improve MATLAB-to-Python parity behavior while keepi
 3. Make minimal targeted edits in parity-related code paths.
 4. Add or update deterministic tests under ownership-aligned test folders.
 5. Validate with parity-first commands, then standard gates as needed:
-   - `python -m pytest workspace/tests/diagnostic/test_comparison_setup.py`
+   - `python -m pytest tests/diagnostic/test_comparison_setup.py`
    - `python -m pytest -m "unit or integration"`
-   - `python -m ruff check source workspace/tests`
+   - `python -m ruff check slavv_python tests`
    - `python -m mypy`
 6. Report behavior impact, compatibility notes, and validation outcomes.
 

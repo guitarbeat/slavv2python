@@ -43,7 +43,7 @@ class DatasetSurface:
 
 @dataclass(frozen=True)
 class SourceRunSurface:
-    """Surface for a source run root used as a comparison baseline."""
+    """Surface for a slavv_python run root used as a comparison baseline."""
 
     run_root: Path
     checkpoints_dir: Path

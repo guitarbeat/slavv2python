@@ -22,7 +22,7 @@ Use these core metrics when evaluating changes to the pipeline:
 ### 1. CPU Profiling (cProfile)
 Identify bottlenecks in the watershed loop or energy calculations.
 ```powershell
-python -m cProfile -s cumulative workspace/scripts/cli/parity_experiment.py ... > profile.txt
+python -m cProfile -s cumulative scripts/cli/parity_experiment.py ... > profile.txt
 ```
 
 ### 2. Memory Profiling
@@ -52,7 +52,7 @@ The watershed discovery emits progress heartbeats every 512 iterations or 5 seco
 Run a parity experiment on the `180709_E` dataset and record the metrics from the summary report.
 
 ### 2. Isolate Component
-Use unit tests in `workspace/tests/unit/core/test_global_watershed_comprehensive.py` with larger synthetic volumes (e.g., 64x64x64) to profile specific functions.
+Use unit tests in `tests/unit/core/test_global_watershed_comprehensive.py` with larger synthetic volumes (e.g., 64x64x64) to profile specific functions.
 
 ### 3. Optimize with Parity Guard
 Ensure that optimizations do not change functional semantics.

@@ -57,7 +57,7 @@ def run_tui_app(parser, args) -> None:
     from slavv_python.io import load_tiff_volume
 
     # 1. Try to run the Node/Clack wizard for setup
-    node_wizard_path = os.path.join(os.getcwd(), "source", "apps", "cli", "tui", "node_ui")
+    node_wizard_path = os.path.join(os.getcwd(), "slavv_python", "apps", "cli", "tui", "node_ui")
     config = None
 
     if os.path.exists(node_wizard_path):

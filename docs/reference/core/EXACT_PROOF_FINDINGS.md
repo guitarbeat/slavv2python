@@ -34,7 +34,7 @@ Use the other core docs for different jobs:
 
 | Component | Current state | Proof state | Main blocker |
 | --- | --- | --- | --- |
-| Native energy | Complete | Canonical exact-compatible source | Keep MATLAB-oracle fixture coverage green |
+| Native energy | Complete | Canonical exact-compatible slavv_python | Keep MATLAB-oracle fixture coverage green |
 | Vertices | Runnable on the native-first exact route | Proof pending downstream | Awaiting edge proof |
 | Edges | Active parity work | Not exact | Candidate-generation and chooser control flow |
 | Network | Source-aligned | Proof pending | Upstream edge parity |
@@ -53,7 +53,7 @@ The strongest current interpretation is:
 **Date**: 2026-05-05  
 **Experiment**: `trace_order_fix`  
 **Oracle**: `180709_E_batch_190910-103039`  
-**Location**: `workspace\comparisons\experiments\live-parity\runs\trace_order_fix`
+**Location**: `workspace\runs\trace_order_fix`
 **Status**: Validation complete, leading diagnostic trail for edges
 
 ### Fix Applied
@@ -137,12 +137,12 @@ The investigation into the remaining gap identified the following priority root 
 
 ## Exact Params Fairness Gate
 
-The maintained exact route now rejects source runs whose saved
+The maintained exact route now rejects slavv_python runs whose saved
 `validated_params.json` still carries Python-only parity controls or omits the
 required MATLAB-shaped exact settings.
 
 The fairness surface must include both serialized MATLAB settings and released
-MATLAB source constants that are not written into `settings/*.mat`. The current
+MATLAB slavv_python constants that are not written into `settings/*.mat`. The current
 maintained exact bootstrap now records at least these source-level edge
 constants explicitly:
 
@@ -171,7 +171,7 @@ available.
 
 ## Native Energy
 
-The maintained `hessian` path is now the canonical exact-compatible source for
+The maintained `hessian` path is now the canonical exact-compatible slavv_python for
 energy generation.
 
 Maintained native-energy coverage includes:

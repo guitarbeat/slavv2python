@@ -24,7 +24,7 @@ readouts.
 
 When these sources differ, use this order:
 
-1. Released MATLAB source under `external/Vectorization-Public/slavv_python/`
+1. Released MATLAB slavv_python under `external/Vectorization-Public/slavv_python/`
 2. Preserved MATLAB artifacts validated by `prove-exact`
 3. The paper PDF at `docs/reference/papers/journal.pcbi.1009451.pdf`
 4. Maintained Python docs such as `MATLAB_PARITY_MAPPING.md`
@@ -37,7 +37,7 @@ Implications:
   surface.
 - The paper prose is explanatory context, not a higher-priority spec than the
   released MATLAB code.
-- Current Python docs must never overrule either the MATLAB source or proof
+- Current Python docs must never overrule either the MATLAB slavv_python or proof
   artifacts.
 
 ## Claim Boundaries
@@ -103,7 +103,7 @@ function boundaries while delegating into the maintained modular Python code.
 
 1. The native-first exact route must pass `prove-exact --stage all`.
 2. Maintained docs must describe `python_native_hessian` as the canonical
-   exact-compatible source surface and must not describe imported MATLAB energy
+   exact-compatible slavv_python surface and must not describe imported MATLAB energy
    as the active runtime dependency.
 3. Native energy fixture coverage must remain green for projected energy,
    `scale_indices`, `energy_4d`, and key intermediates such as Laplacian and
@@ -181,7 +181,7 @@ native exact parity is done.
    Audit strand ordering and network assembly only after the upstream edge proof
    surfaces are materially closer; the current preferred surface delegates into
    `slavv_python/core/graph.py`.
-6. `workspace/scripts/cli/parity_experiment.py` and `slavv_python/io/matlab_exact_proof.py`
+6. `scripts/cli/parity_experiment.py` and `slavv_python/io/matlab_exact_proof.py`
    Preserve the proof harness as the acceptance gate for native-first exact
    reruns, with disposable trial runs under `runs/`, preserved MATLAB truth
    under `oracles/`, and promoted summaries under `reports/`.

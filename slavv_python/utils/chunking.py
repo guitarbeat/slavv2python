@@ -25,7 +25,7 @@ def get_chunking_lattice(
     -------
     list of tuples
         ``(chunk_slice, output_slice, inner_slice)`` where ``chunk_slice``
-        indexes the padded region in the source image, ``output_slice``
+        indexes the padded region in the slavv_python image, ``output_slice``
         corresponds to the destination region, and ``inner_slice`` selects the
         interior region of the chunk to copy into ``output_slice``.
     """

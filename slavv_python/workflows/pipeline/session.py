@@ -79,7 +79,7 @@ def create_run_context(
         params_fingerprint=params_fingerprint,
         target_stage=stop_after or "network",
         provenance={
-            "source": "pipeline",
+            "slavv_python": "pipeline",
             "image_shape": list(image.shape),
             "stop_after": stop_after or "network",
         },

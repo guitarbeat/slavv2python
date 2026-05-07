@@ -30,7 +30,7 @@ Most new extraction algorithms need coordinated changes in these files:
 | `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py` | Expose the new option on `slavv run`. |
 | `slavv_python/core/` and `slavv_python/workflows/` | Hold the implementation and the current pipeline orchestration. |
 | `slavv_python/runtime/run_tracking/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
-| `workspace/tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
+| `tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
@@ -55,7 +55,7 @@ For edge extraction specifically, the maintained split today is:
    If the algorithm adds durable artifacts or optional sub-steps, make sure
    run-state and stage-manifest surfaces can describe and rediscover them.
 6. Add tests in the owner-aligned location.
-   For core pipeline work, that usually means `workspace/tests/unit/core/`.
+   For core pipeline work, that usually means `tests/unit/core/`.
 7. Update docs.
    Add or refresh a focused reference note instead of leaving behavior only in
    code comments or TODO files.
@@ -124,8 +124,8 @@ For a new algorithm mode, aim to add:
 - regression coverage for any new diagnostics or persisted artifacts
 - `python -m mypy` coverage if you widen the typed surface
 
-Use the folder rules in `workspace/tests/README.md` and the repo-local `tmp_path`
-fixture from `workspace/tests/conftest.py`.
+Use the folder rules in `tests/README.md` and the repo-local `tmp_path`
+fixture from `tests/conftest.py`.
 
 ## Validation Commands
 
@@ -133,7 +133,7 @@ Run the smallest set that matches your change scope, then expand to the
 boundary-crossing gate when needed:
 
 ```powershell
-python -m ruff check source workspace/tests
+python -m ruff check slavv_python tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```
