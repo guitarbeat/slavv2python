@@ -1,4 +1,4 @@
-﻿# Parity Experiment Storage
+# Parity Experiment Storage
 
 [Up: Reference Docs](../README.md)
 
@@ -11,7 +11,7 @@ trials, or promoting durable summaries.
 Use a dedicated experiment root such as:
 
 ```text
-D:\slavv_comparisons\experiments\live-parity\
+workspace\comparisons\experiments\live-parity\
   datasets\
   oracles\
   runs\
@@ -123,34 +123,34 @@ Promote a MATLAB batch into an oracle:
 ```powershell
 python workspace/scripts/cli/parity_experiment.py promote-dataset `
     --dataset-file C:\path\to\volume.tif `
-    --experiment-root D:\slavv_comparisons\experiments\live-parity
+    --experiment-root workspace\comparisons\experiments\live-parity
 
 python workspace/scripts/cli/parity_experiment.py promote-oracle `
     --matlab-batch-dir D:\incoming\batch_260421-151654 `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
+    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
     --dataset-file D:\datasets\volume.tif `
     --oracle-id v22_a
 
 python workspace/scripts/cli/parity_experiment.py init-exact-run `
-    --dataset-root D:\slavv_comparisons\experiments\live-parity\datasets\<dataset_hash> `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run
+    --dataset-root workspace\comparisons\experiments\live-parity\datasets\<dataset_hash> `
+    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
+    --dest-run-root workspace\comparisons\experiments\live-parity\runs\seed_run
 ```
 
 Run a disposable native-first trial:
 
 ```powershell
 python workspace/scripts/cli/parity_experiment.py preflight-exact `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trial_b
+    --source-run-root workspace\comparisons\experiments\live-parity\runs\seed_run `
+    --oracle-root workspace\comparisons\experiments\live-parity\oracles\v22_a `
+    --dest-run-root workspace\comparisons\experiments\live-parity\runs\trial_b
 ```
 
 Promote a kept summary:
 
 ```powershell
 python workspace/scripts/cli/parity_experiment.py promote-report `
-    --run-root D:\slavv_comparisons\experiments\live-parity\runs\trial_b
+    --run-root workspace\comparisons\experiments\live-parity\runs\trial_b
 ```
 
 ## Notes

@@ -19,7 +19,7 @@ The rule of thumb is domain first, role second, historical detail last.
 
 Use these names in maintained docs, examples, and new first-party code:
 
-- preferred pipeline class: `source.core.SlavvPipeline`
+- preferred pipeline class: `slavv_python.core.SlavvPipeline`
 - preferred full-run method: `run()`
 - preferred energy method: `compute_energy()`
 - preferred network builder method: `build_network()`
@@ -38,17 +38,17 @@ results = pipeline.run(image, parameters)
 
 Use domain-first package names for maintained internal surfaces:
 
-- `source.core.network`
-- `source.core.energy_internal`
-- `source.core.vertices_internal`
-- `source.core.edges_internal`
-- `source.runtime.run_tracking`
-- `source.workflows.pipeline_session`
-- `source.workflows.pipeline_execution`
-- `source.workflows.stage_resolution`
-- `source.workflows.stage_artifacts`
-- `source.apps.cli`
-- `source.apps.streamlit`
+- `slavv_python.core.network`
+- `slavv_python.core.energy_internal`
+- `slavv_python.core.vertices_internal`
+- `slavv_python.core.edges_internal`
+- `slavv_python.runtime.run_tracking`
+- `slavv_python.workflows.pipeline_session`
+- `slavv_python.workflows.pipeline_execution`
+- `slavv_python.workflows.stage_resolution`
+- `slavv_python.workflows.stage_artifacts`
+- `slavv_python.apps.cli`
+- `slavv_python.apps.streamlit`
 
 Within a stage package, prefer role names such as:
 
@@ -69,13 +69,13 @@ truly cross-cutting and the name is still precise.
 These names still work for one migration cycle, but they are not the preferred
 surface for new code:
 
-- `source.core.SLAVVProcessor`
+- `slavv_python.core.SLAVVProcessor`
 - `process_image()`
 - `calculate_energy_field()`
 - `construct_network()`
-- `source.core.graph`
-- `source.runtime._run_state.*`
-- flat app modules such as `source.apps.cli_parser` or `source.apps.web_app_*`
+- `slavv_python.core.graph`
+- `slavv_python.runtime._run_state.*`
+- flat app modules such as `slavv_python.apps.cli_parser` or `slavv_python.apps.web_app_*`
 
 Compatibility names may emit `DeprecationWarning` in Python code. Public CLI
 behavior should stay quiet.
@@ -94,7 +94,7 @@ behavior should stay quiet.
 
 ## Migration Policy
 
-- Keep the `source` package root stable for now.
+- Keep the `slavv_python` package root stable for now.
 - Keep `slavv` and `slavv-app` entrypoints stable.
 - New maintained docs and examples should teach the preferred names first.
 - Old import paths can remain as shims during the compatibility window, but new

@@ -53,7 +53,7 @@ The strongest current interpretation is:
 **Date**: 2026-05-05  
 **Experiment**: `trace_order_fix`  
 **Oracle**: `180709_E_batch_190910-103039`  
-**Location**: `D:\slavv_comparisons\experiments\live-parity\runs\trace_order_fix`
+**Location**: `workspace\comparisons\experiments\live-parity\runs\trace_order_fix`
 **Status**: Validation complete, leading diagnostic trail for edges
 
 ### Fix Applied
@@ -74,7 +74,7 @@ The strongest current interpretation is:
 
 ## Large-Scale D: Drive Audit (2026-05-06)
 
-An audit of `D:\slavv_comparisons` was performed to synchronize historical runs with the modern repository state.
+An audit of `workspace\comparisons` was performed to synchronize historical runs with the modern repository state.
 
 ### Findings
 - The old `REVIEW_SUMMARY.md` on the D: drive is **obsolete** and references runs (e.g., `20260418_network_gate_trial`) that have been deleted.
@@ -84,7 +84,7 @@ An audit of `D:\slavv_comparisons` was performed to synchronize historical runs 
 ### Cleanup Actions
 - **Purged**: all intermediate `runs/180709_E_edges_*` to reclaim space.
 - **Retained**: `trace_order_fix`, `180709_E_may2026_fixes`, and the canonical `180709_E_batch_190910-103039` oracle.
-- **Audit Log**: A detailed summary is preserved at `D:\slavv_comparisons\AUDIT_2026_05_06.md`.
+- **Audit Log**: A detailed summary is preserved at `workspace\comparisons\AUDIT_2026_05_06.md`.
 
 ### Key Findings
 
