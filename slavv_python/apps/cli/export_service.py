@@ -3,31 +3,40 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ...io import Network
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 def save_network_export(
-    network: Network,
+    results: dict[str, Any],
     path: str,
     *,
     format: str,
 ) -> None:
-    """Export the network to the specified format and path."""
+    """Export the network results dictionary to the specified format and path."""
     logger.info(f"Exporting network to {path} ({format})...")
 
+    from ...visualization.network_plots.exports import (
+        export_casx,
+        export_json,
+        export_mat,
+        export_vmv,
+    )
+
+    vertices = results.get("vertices", {})
+    edges = results.get("edges", {})
+    network = results.get("network", {})
+    parameters = results.get("parameters", {})
+
     if format == "json":
-        network.save_json(path)
+        export_json(results, path)
     elif format == "mat":
-        network.save_mat(path)
+        export_mat(vertices, edges, network, parameters, path)
     elif format == "casx":
-        network.save_casx(path)
+        export_casx(vertices, edges, network, parameters, path)
     elif format == "vmv":
-        network.save_vmv(path)
+        export_vmv(vertices, edges, network, parameters, path)
     else:
         raise ValueError(f"Unsupported export format: {format}")
 

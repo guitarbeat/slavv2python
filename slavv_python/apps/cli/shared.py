@@ -48,14 +48,6 @@ def _require_existing_file(path: str) -> str:
     return path
 
 
-def _load_exported_results(path: str) -> dict[str, Any]:
-    """Load a network JSON export for CLI analysis/plotting."""
-    from ...io import Network
-
-    _require_existing_file(path)
-    return Network.load_json(path).to_pipeline_results()
-
-
 def _resolve_export_artifact_paths(output_dir: str, export_formats: list[str]) -> dict[str, str]:
     """Build run-state artifact paths for requested exports."""
     return {
@@ -66,7 +58,6 @@ def _resolve_export_artifact_paths(output_dir: str, export_formats: list[str]) -
 
 
 __all__ = [
-    "_load_exported_results",
     "_prepare_run_parameters",
     "_require_existing_file",
     "_resolve_export_artifact_paths",

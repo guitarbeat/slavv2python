@@ -9,7 +9,6 @@ from .analysis_service import calculate_exported_network_stats
 from .export_service import save_network_export
 from .exported_network import _load_exported_results
 from .run_service import (
-    build_exportable_network,
     build_run_completion_lines,
     filter_export_formats,
     format_run_event_line,
@@ -65,13 +64,12 @@ def _handle_run_command(args) -> None:
         return
 
     logger.info("Generating requested network exports...")
-    network = build_exportable_network(results)
     export_artifact_paths = _resolve_export_artifact_paths(args.output, export_formats)
 
     update_run_export_task(effective_run_dir, export_artifact_paths)
 
     for fmt, path in export_artifact_paths.items():
-        save_network_export(network, path, format=fmt)
+        save_network_export(results, path, format=fmt)
 
     # Use the structured runtime tracking for final reporting when available
     snapshot = load_run_snapshot(effective_run_dir)

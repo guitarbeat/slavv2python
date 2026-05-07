@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...io import Network
     from ...runtime import ProgressEvent, RunSnapshot
 
 
@@ -29,13 +28,6 @@ def filter_export_formats(requested_formats: list[str]) -> list[str]:
     if "all" in requested_formats:
         return ["json", "mat", "casx", "vmv"]
     return [fmt for fmt in requested_formats if fmt != "csv"]
-
-
-def build_exportable_network(results: dict[str, Any]) -> Network:
-    """Construct a high-level Network object from raw pipeline results."""
-    from ...io import Network
-
-    return Network.from_pipeline_results(results)
 
 
 def update_run_export_task(run_dir: str, artifact_paths: dict[str, str]) -> None:
@@ -72,7 +64,6 @@ def build_run_completion_lines(
 
 
 __all__ = [
-    "build_exportable_network",
     "build_run_completion_lines",
     "filter_export_formats",
     "format_run_event_line",
