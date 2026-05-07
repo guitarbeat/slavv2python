@@ -1688,7 +1688,7 @@ echo "📁 Checking credential files..."
 if [ -d ".credentials" ]; then
     for f in .credentials/*; do
         if [ -f "$f" ]; then
-            perms=$(stat -f "%Lp" "$f" 2>/dev/null || stat -c "%a" "$f" 2>/dev/null)
+            perms=$(stat -f "%Lp" "$f" 2>/workspace/null || stat -c "%a" "$f" 2>/workspace/null)
             if [ "$perms" != "600" ]; then
                 fail "$f has permissions $perms (should be 600)"
             else
@@ -1704,9 +1704,9 @@ echo ""
 # 2. Check for exposed secrets in common files
 echo "🔍 Scanning for exposed secrets..."
 SECRET_PATTERNS="(api[_-]?key|apikey|secret|password|token|auth).*[=:].{10,}"
-for f in $(ls *.md *.json *.yaml *.yml .env* 2>/dev/null || true); do
+for f in $(ls *.md *.json *.yaml *.yml .env* 2>/workspace/null || true); do
     if [ -f "$f" ]; then
-        matches=$(grep -iE "$SECRET_PATTERNS" "$f" 2>/dev/null | grep -v "example\|template\|placeholder\|your-\|<\|TODO" || true)
+        matches=$(grep -iE "$SECRET_PATTERNS" "$f" 2>/workspace/null | grep -v "example\|template\|placeholder\|your-\|<\|TODO" || true)
         if [ -n "$matches" ]; then
             warn "Possible secret in $f - review manually"
         fi

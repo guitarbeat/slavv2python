@@ -57,7 +57,7 @@ The strongest current interpretation is:
 **Status**: Validation complete, leading diagnostic trail for edges
 
 ### Fix Applied
-- **File**: `source/core/edges_internal/edge_selection.py`
+- **File**: `slavv_python/core/edges_internal/edge_selection.py`
 - **Issue**: Trace order was randomized without seeded RNG, causing non-deterministic results
 - **Fix**: Always use seeded RNG (`np.random.default_rng(seed)`) for trace order shuffling
 - **Impact**: Ensures deterministic candidate generation for parity testing
@@ -225,14 +225,14 @@ Previous reports (2026-05-04) suggested that directional suppression was outside
 Python's current implementation of iterative suppression matches MATLAB's intent. The previous plan to move it outside the loop would have been a divergence.
 
 **Action**:
-Maintain the iterative suppression inside the seed loop in `source/core/_edge_candidates/global_watershed.py`.
+Maintain the iterative suppression inside the seed loop in `slavv_python/core/_edge_candidates/global_watershed.py`.
 
 #### 2. Trace Order Randomization (VERIFIED)
 
 **Status**: Verified Correct (2026-05-05)
 
 **Bug**: Python randomized trace point order only when `comparison_exact_network=True`, but MATLAB always uses `randperm`.
-**Fix**: Always use seeded RNG for trace order shuffling in `source/core/edges_internal/edge_selection.py`. Matches MATLAB's `randperm` behavior on all routes.
+**Fix**: Always use seeded RNG for trace order shuffling in `slavv_python/core/edges_internal/edge_selection.py`. Matches MATLAB's `randperm` behavior on all routes.
 
 #### 3. Distance Normalization (r/R) - ✅ FIXED (2026-05-05)
 

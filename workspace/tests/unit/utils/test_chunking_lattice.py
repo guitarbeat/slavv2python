@@ -1,0 +1,66 @@
+import numpy as np
+from slavv_python.utils import get_chunking_lattice
+
+
+def test_chunking_lattice_returns_single_chunk_when_volume_fits():
+    shape = (10, 10, 10)
+    lattice = get_chunking_lattice(shape, max_voxels=2000, margin=1)
+
+    assert len(lattice) == 1
+    chunk_slice, output_slice, inner_slice = lattice[0]
+    assert chunk_slice == (slice(0, 10), slice(0, 10), slice(0, 10))
+    assert output_slice == chunk_slice
+    assert inner_slice == chunk_slice
+
+
+def test_chunking_lattice_reconstructs_volume():
+    shape = (4, 4, 6)
+    volume = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    lattice = get_chunking_lattice(shape, max_voxels=64, margin=1)
+    assert len(lattice) == 3
+
+    out = np.zeros_like(volume)
+    for chunk_slice, output_slice, inner_slice in lattice:
+        chunk = volume[chunk_slice]
+        out[output_slice] = chunk[inner_slice]
+    assert np.allclose(out, volume)
+
+
+def test_chunking_lattice_keeps_output_slices_contiguous_when_margin_is_clamped():
+    shape = (6, 6, 8)
+    lattice = get_chunking_lattice(shape, max_voxels=108, margin=5)
+
+    processed_z = 0
+    for _chunk_slice, output_slice, _inner_slice in lattice:
+        assert output_slice[2].start == processed_z
+        processed_z = output_slice[2].stop
+
+    assert processed_z == shape[2]
+
+
+def test_chunking_lattice_clamps_negative_overlap_starts_without_empty_chunks():
+    shape = (4, 4, 20)
+    volume = np.arange(np.prod(shape), dtype=float).reshape(shape)
+    lattice = get_chunking_lattice(shape, max_voxels=64, margin=10)
+
+    assert len(lattice) == 1
+    reconstructed = np.zeros_like(volume)
+    for chunk_slice, output_slice, inner_slice in lattice:
+        chunk = volume[chunk_slice]
+        assert 0 not in chunk.shape
+        reconstructed[output_slice] = chunk[inner_slice]
+
+    assert np.allclose(reconstructed, volume)
+
+
+def test_chunking_lattice_falls_back_to_full_volume_when_overlap_dominates_chunk_budget():
+    shape = (64, 512, 512)
+    lattice = get_chunking_lattice(shape, max_voxels=1_000_000, margin=412)
+
+    assert lattice == [
+        (
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+            (slice(0, 64), slice(0, 512), slice(0, 512)),
+        )
+    ]

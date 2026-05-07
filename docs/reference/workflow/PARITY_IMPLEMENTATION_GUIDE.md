@@ -9,9 +9,9 @@ This guide provides technical instructions and best practices for aligning the S
 ## 🚀 Parity Workflow
 
 ### 1. Identify the Gap
-Use `dev/scripts/cli/parity_experiment.py` to measure current match rates against a canonical oracle.
+Use `workspace/scripts/cli/parity_experiment.py` to measure current match rates against a canonical oracle.
 ```powershell
-python dev/scripts/cli/parity_experiment.py prove-exact --stage edges ...
+python workspace/scripts/cli/parity_experiment.py prove-exact --stage edges ...
 ```
 
 ### 2. Categorize missing pairs
@@ -21,7 +21,7 @@ Extract a sample of MATLAB pairs that Python fails to generate. Group them by to
 - **Growth**: Traces that terminate early or follow different local geodesics.
 
 ### 3. Source Audit
-Locate the relevant logic in `external/Vectorization-Public/source/get_edges_by_watershed.m`.
+Locate the relevant logic in `external/Vectorization-Public/slavv_python/get_edges_by_watershed.m`.
 - **Note**: Be careful with commented-out code in MATLAB. Always verify if a line is active.
 - **Note**: MATLAB uses Fortran-style (1-based, column-major) indexing. Python implementation uses `ravel(order="F")` to match this layout.
 
@@ -36,7 +36,7 @@ When a specific edge is missing, use the `ExecutionTracer` to compare Python eve
 3. Check `available_locations` insertion to ensure the frontier priority is maintained.
 
 ### Unit Testing
-Always add a regression test in `dev/tests/unit/core/test_global_watershed_comprehensive.py` before applying a fix.
+Always add a regression test in `workspace/tests/unit/core/test_global_watershed_comprehensive.py` before applying a fix.
 - Use small 3x3x3 or 5x5x5 volumes to verify exact numerical parity.
 - Mock the `available_locations` list to test specific insertion/removal edge cases.
 

@@ -11,7 +11,7 @@ need exact MATLAB artifact proof.
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e ".[app,dev]"
+pip install -e ".[app,workspace]"
 slavv info
 slavv run -i data/slavv_test_volume.tif -o slavv_output --export csv json
 slavv analyze -i slavv_output\network.json
@@ -21,22 +21,22 @@ slavv plot -i slavv_output\network.json -o plots.html
 ## Common Commands
 
 ```powershell
-slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a --export csv json
+slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a --export csv json
 slavv run -i volume.tif -o slavv_output --profile matlab_compat --export json
 slavv analyze -i slavv_output\network.json
 slavv plot -i slavv_output\network.json -o plots.html
 slavv-app
 python -m pytest -m "unit or integration"
-python -m ruff check source dev/tests
-python -m ruff format source dev/tests
+python -m ruff check source workspace/tests
+python -m ruff format source workspace/tests
 python -m mypy
 ```
 
 ## Python API
 
 ```python
-from source.core import SlavvPipeline
-from source.io import load_tiff_volume
+from slavv_python.core import SlavvPipeline
+from slavv_python.io import load_tiff_volume
 
 image = load_tiff_volume("volume.tif")
 pipeline = SlavvPipeline()
@@ -54,9 +54,9 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## What Is In This Repo
 
-- `source/`: pipeline, runtime, I/O, analysis, visualization, CLI, and app code
-- `dev/tests/`: unit, integration, and UI coverage
-- `dev/scripts/`: maintained helper scripts and benchmarks
+- `slavv_python/`: pipeline, runtime, I/O, analysis, visualization, CLI, and app code
+- `workspace/tests/`: unit, integration, and UI coverage
+- `workspace/scripts/`: maintained helper scripts and benchmarks
 - `docs/`: maintained reference docs plus archival investigation notes
 
 ## Documentation
@@ -70,7 +70,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - [MATLAB Parity Mapping](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 - [v22 Pointer Corruption Archive](docs/chapters/v22-pointer-corruption/README.md)
-- [Test Placement Guide](dev/tests/README.md)
+- [Test Placement Guide](workspace/tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
 ## Notes
@@ -82,6 +82,6 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - The legacy rich parity and MATLAB comparison harness has been removed from the
   public CLI surface.
 - A developer-only parity runner is available at
-  `dev/scripts/cli/parity_experiment.py` for rerunning Python `edges` or
+  `workspace/scripts/cli/parity_experiment.py` for rerunning Python `edges` or
   `network` against reusable staged comparison roots and for exact artifact
   proof against preserved MATLAB vectors.

@@ -28,7 +28,7 @@ Use these names in maintained docs, examples, and new first-party code:
 Example:
 
 ```python
-from source.core import SlavvPipeline
+from slavv_python.core import SlavvPipeline
 
 pipeline = SlavvPipeline()
 results = pipeline.run(image, parameters)

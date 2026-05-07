@@ -17,7 +17,7 @@ Python vs 2533 MATLAB candidates) because:
 - Caused Python to select different second seeds than MATLAB
 - Accumulated over thousands of watershed iterations
 
-MATLAB Reference (external/Vectorization-Public/source/get_edges_by_watershed.m):
+MATLAB Reference (external/Vectorization-Public/slavv_python/get_edges_by_watershed.m):
 - Lines 207-343: Compute adjusted energies BEFORE seed loop
 - Lines 476-565: Seed loop only READS current_strel_energies, never mutates
 
@@ -26,11 +26,11 @@ direction) BEFORE the seed loop begins, then uses the same adjusted
 energy field for all seeds from that location.
 
 Changes:
-- source/core/_edge_candidates/global_watershed.py (lines 694-720):
+- slavv_python/core/_edge_candidates/global_watershed.py (lines 694-720):
   Removed directional suppression from inside seed loop
   Added detailed comments explaining MATLAB behavior
   
-- dev/tests/unit/core/test_watershed_seed_suppression_bug.py (new):
+- workspace/tests/unit/core/test_watershed_seed_suppression_bug.py (new):
   Demonstration test showing the bug's mechanism and impact
 
 Validation:
@@ -56,14 +56,14 @@ This caused:
 - Non-deterministic trace order on non-exact routes
 - Incorrect parity assumption that randomization was exact-route-only
 
-MATLAB Reference (external/Vectorization-Public/source/choose_edges_V200.m):
+MATLAB Reference (external/Vectorization-Public/slavv_python/choose_edges_V200.m):
 - Line 318: edge_position_index_range = uint16(randperm(degrees_of_edges(edge_index)));
 
 MATLAB always uses randperm to randomize the order in which trace points
 are processed during conflict painting, regardless of execution mode.
 
 Changes:
-- source/core/edges_internal/edge_selection.py (lines 163-170, 220-225):
+- slavv_python/core/edges_internal/edge_selection.py (lines 163-170, 220-225):
   Always initialize and use seeded RNG for trace order
   Removed conditional check that prevented randomization on non-exact routes
   Now matches MATLAB's randperm behavior on all routes
@@ -105,12 +105,12 @@ To create these commits (assuming changes are staged appropriately):
 
 ```powershell
 # Commit 1: Watershed fix
-git add source/core/_edge_candidates/global_watershed.py
-git add dev/tests/unit/core/test_watershed_seed_suppression_bug.py
+git add slavv_python/core/_edge_candidates/global_watershed.py
+git add workspace/tests/unit/core/test_watershed_seed_suppression_bug.py
 git commit -F commit1.txt
 
 # Commit 2: Edge selection fix
-git add source/core/edges_internal/edge_selection.py
+git add slavv_python/core/edges_internal/edge_selection.py
 git commit -F commit2.txt
 
 # Commit 3: Documentation
@@ -121,9 +121,9 @@ git commit -F commit3.txt
 Or as a single commit if preferred:
 
 ```powershell
-git add source/core/_edge_candidates/global_watershed.py
-git add source/core/edges_internal/edge_selection.py
-git add dev/tests/unit/core/test_watershed_seed_suppression_bug.py
+git add slavv_python/core/_edge_candidates/global_watershed.py
+git add slavv_python/core/edges_internal/edge_selection.py
+git add workspace/tests/unit/core/test_watershed_seed_suppression_bug.py
 git add docs/reference/core/EXACT_PROOF_FINDINGS.md
 git commit -m "fix: critical MATLAB parity bugs in watershed and edge selection
 

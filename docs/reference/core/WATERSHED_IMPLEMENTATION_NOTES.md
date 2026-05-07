@@ -8,7 +8,7 @@ This document provides technical implementation details for the global watershed
 
 ## 🏗️ Architecture Overview
 
-The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `source/core/_edge_candidates/global_watershed.py`.
+The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/core/_edge_candidates/global_watershed.py`.
 
 ### Modular Decomposition
 To maintain readability, the 800+ line discovery logic is decomposed into specialized helpers:
@@ -68,7 +68,7 @@ To ensure writes to `ravel(order="F")` views persist in the underlying 3D arrays
 
 ## 🧪 Verification
 
-Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `dev/tests/unit/core/test_global_watershed_comprehensive.py`. These tests verify:
+Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `workspace/tests/unit/core/test_global_watershed_comprehensive.py`. These tests verify:
 -   Exact pointer values match MATLAB LUT indexing.
 -   Frontier insertion order matches MATLAB's descending energy priority.
 -   Join logic correctly removes specific indices from the frontier.

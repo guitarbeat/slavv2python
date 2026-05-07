@@ -121,17 +121,17 @@ actually comparing the same method.
 Promote a MATLAB batch into an oracle:
 
 ```powershell
-python dev/scripts/cli/parity_experiment.py promote-dataset `
+python workspace/scripts/cli/parity_experiment.py promote-dataset `
     --dataset-file C:\path\to\volume.tif `
     --experiment-root D:\slavv_comparisons\experiments\live-parity
 
-python dev/scripts/cli/parity_experiment.py promote-oracle `
+python workspace/scripts/cli/parity_experiment.py promote-oracle `
     --matlab-batch-dir D:\incoming\batch_260421-151654 `
     --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
     --dataset-file D:\datasets\volume.tif `
     --oracle-id v22_a
 
-python dev/scripts/cli/parity_experiment.py init-exact-run `
+python workspace/scripts/cli/parity_experiment.py init-exact-run `
     --dataset-root D:\slavv_comparisons\experiments\live-parity\datasets\<dataset_hash> `
     --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
     --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run
@@ -140,7 +140,7 @@ python dev/scripts/cli/parity_experiment.py init-exact-run `
 Run a disposable native-first trial:
 
 ```powershell
-python dev/scripts/cli/parity_experiment.py preflight-exact `
+python workspace/scripts/cli/parity_experiment.py preflight-exact `
     --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
     --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
     --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\trial_b
@@ -149,7 +149,7 @@ python dev/scripts/cli/parity_experiment.py preflight-exact `
 Promote a kept summary:
 
 ```powershell
-python dev/scripts/cli/parity_experiment.py promote-report `
+python workspace/scripts/cli/parity_experiment.py promote-report `
     --run-root D:\slavv_comparisons\experiments\live-parity\runs\trial_b
 ```
 

@@ -10,7 +10,7 @@ Thank you for your interest in contributing! This guide will help you get starte
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   pip install -e ".[app,dev]"
+   pip install -e ".[app,workspace]"
    pre-commit install
    ```
 3. **Run tests before submitting a PR**
@@ -26,12 +26,12 @@ Thank you for your interest in contributing! This guide will help you get starte
 - Use:
   
    ```powershell
-    python -m ruff check source dev/tests --fix
-    python -m ruff format source dev/tests
+    python -m ruff check source workspace/tests --fix
+    python -m ruff format source workspace/tests
    ```
 
    for linting/formatting.
-- Add or update tests in `dev/tests/` as appropriate.
+- Add or update tests in `workspace/tests/` as appropriate.
 - If your change affects the public workflow, keep the default `paper` profile,
   authoritative `network.json`, and related docs aligned.
 

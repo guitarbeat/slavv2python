@@ -16,7 +16,7 @@ executable spec.
 2. [Agent and workflow guide](../GEMINI.md)
 3. [Reference index](reference/README.md)
 4. [Chapter index](chapters/README.md)
-5. [Test placement guide](../dev/tests/README.md)
+5. [Test placement guide](../workspace/tests/README.md)
 
 ## Core Maintained References
 

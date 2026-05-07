@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "slavv"
+name = "slavv_python"
 version = "0.1.0"
 description = "Segmentation-Less, Automated, Vascular Vectorization - Python port"
 readme = "README.md"
@@ -73,7 +73,7 @@ napari = [
 accel = [
     "numba>=0.58.0",
 ]
-dev = [
+workspace = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.4.0",
@@ -104,21 +104,21 @@ Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
-slavv-app = "source.apps.streamlit_launcher:main"
-slavv = "source.apps.cli:main"
+slavv-app = "slavv_python.apps.streamlit_launcher:main"
+slavv = "slavv_python.apps.cli:main"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["source", "source.*"]
+include = ["source", "slavv_python.*"]
 
 # â”€â”€ Ruff (linter + formatter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.ruff]
 target-version = "py39"
 line-length = 100
-src = ["source", "dev/tests"]
+src = ["source", "workspace/tests"]
 
 exclude = ["external/*"]
 
@@ -162,25 +162,25 @@ docstring-code-format = true
 python_version = "3.11"
 mypy_path = "source"
 files = [
-    "source/apps/cli/__init__.py",
-    "source/apps/streamlit/app.py",
-    "source/apps/streamlit_launcher.py",
-    "source/analysis/geometry.py",
-    "source/core/energy.py",
-    "source/core/network.py",
-    "source/core/graph/__init__.py",
-    "source/core/vertices.py",
-    "source/core/edge_primitives.py",
-    "source/core/edge_candidates.py",
-    "source/core/edge_selection.py",
-    "source/core/edges.py",
-    "source/core/pipeline.py",
-    "source/runtime/run_state.py",
-    "source/runtime/run_tracking/__init__.py",
-    "source/workflows/pipeline/execution.py",
-    "source/workflows/pipeline/session.py",
-    "source/workflows/pipeline/artifacts.py",
-    "source/workflows/pipeline/resolution.py",
+    "slavv_python/apps/cli/__init__.py",
+    "slavv_python/apps/streamlit/app.py",
+    "slavv_python/apps/streamlit_launcher.py",
+    "slavv_python/analysis/geometry.py",
+    "slavv_python/core/energy.py",
+    "slavv_python/core/network.py",
+    "slavv_python/core/graph/__init__.py",
+    "slavv_python/core/vertices.py",
+    "slavv_python/core/edge_primitives.py",
+    "slavv_python/core/edge_candidates.py",
+    "slavv_python/core/edge_selection.py",
+    "slavv_python/core/edges.py",
+    "slavv_python/core/pipeline.py",
+    "slavv_python/runtime/run_state.py",
+    "slavv_python/runtime/run_tracking/__init__.py",
+    "slavv_python/workflows/pipeline/execution.py",
+    "slavv_python/workflows/pipeline/session.py",
+    "slavv_python/workflows/pipeline/artifacts.py",
+    "slavv_python/workflows/pipeline/resolution.py",
 ]
 warn_return_any = true
 warn_unused_configs = true
@@ -196,14 +196,14 @@ pretty = true
 
 # â”€â”€ Pytest (unit/integration tests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.pytest.ini_options]
-testpaths = "dev/tests"
+testpaths = "workspace/tests"
 norecursedirs = [
     "external",
     "external/blender_resources",
     "external/Vectorization-Public",
     "experiments",
     ".pytest_tmp",
-    "dev/tmp_tests",
+    "workspace/tmp_tests",
     "tmp_fixture",
 ]
 python_files = "test_*.py"

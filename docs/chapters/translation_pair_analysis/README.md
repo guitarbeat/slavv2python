@@ -80,13 +80,13 @@ The claimed 41.4% baseline in TODO.md was found to be inaccurate:
 
 - **INVESTIGATION_FINDINGS.md:** Complete analysis report with detailed findings
 - **README.md:** This file - investigation overview and navigation
-- **translation_pair_investigation_report.json:** Machine-readable detailed report (in dev/tmp_tests/investigations/)
+- **translation_pair_investigation_report.json:** Machine-readable detailed report (in workspace/tmp_tests/investigations/)
 
 ## Tools and Scripts
 
 - **investigate_translation_pairs.py:** Analysis script for categorizing pairs and identifying root causes
-  - Location: `dev/scripts/cli/investigate_translation_pairs.py`
-  - Usage: `python dev/scripts/cli/investigate_translation_pairs.py`
+  - Location: `workspace/scripts/cli/investigate_translation_pairs.py`
+  - Usage: `python workspace/scripts/cli/investigate_translation_pairs.py`
 
 ## Implementation Roadmap
 

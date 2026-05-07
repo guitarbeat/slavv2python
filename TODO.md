@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-05-06
 **Version:** 2.5 (Post-Cleanup / Parallel Optimization)
-**Current Status:** 404/1197 Python candidates (33.8% baseline)
+**Current Status:** 668/1197 Python candidates (55.8% match rate)
 **Projected Match Rate:** ~80% (Optimization and Parity fixes landed)
 
 ---
@@ -30,7 +30,7 @@ A new Python virtual environment is required to resolve dependency conflicts (e.
 Verify the 80% match rate milestone using the newly optimized and parallelized pipeline.
 
 **Next Steps:**
-- [ ] Complete `parallel_verification` run on D: drive to measure improvement.
+- [x] Complete `parallel_verification` run on D: drive to measure improvement.
 - [ ] Address Hub Vertex Exploration gaps (systematic junction divergences).
 - [ ] Investigate Boundary Condition discrepancies at volume edges.
 
@@ -46,7 +46,7 @@ Use the `ExecutionTracer` to isolate the first point of divergence between MATLA
 
 **Next Steps:**
 - [ ] Capture MATLAB trace for Vertex 1350.
-- [ ] Run Python `trace-vertex` for 1350 and compare.
+- [x] Run Python `trace-vertex` for 1350 and compare.
 
 ---
 

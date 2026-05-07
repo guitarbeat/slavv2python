@@ -161,16 +161,17 @@ comparison_results/
 comparison_results_test_run/
 workspace/tmp_parity_current_venv/
 workspace/tmp_comparison_params_*.json
-dev/datasets/*
-!dev/datasets/.gitkeep
-dev/oracles/*
-!dev/oracles/.gitkeep
-dev/reports/*
-!dev/reports/.gitkeep
-dev/runs/*
-!dev/runs/.gitkeep
-dev/tmp_tests/*
-!dev/tmp_tests/.gitkeep
+workspace/datasets/*
+!workspace/datasets/.gitkeep
+workspace/oracles/*
+!workspace/oracles/.gitkeep
+workspace/reports/*
+!workspace/reports/.gitkeep
+workspace/runs/*
+!workspace/runs/.gitkeep
+workspace/tmp_tests/*
+!workspace/tmp_tests/.gitkeep
+workspace/comparisons/
 
 # Exclude external directory from all scans
 external/

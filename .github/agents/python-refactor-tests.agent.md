@@ -18,11 +18,11 @@ Your job is to make code changes with the smallest safe diff, update or add test
 ## Approach
 1. Read the relevant module(s) and nearest tests first.
 2. Delegate read-heavy exploration to subagents when the code search space is large.
-3. Implement minimal, targeted code changes in `source/` or related scripts.
-4. Add or update focused tests under `dev/tests/` using the ownership-based layout.
+3. Implement minimal, targeted code changes in `slavv_python/` or related scripts.
+4. Add or update focused tests under `workspace/tests/` using the ownership-based layout.
 5. Run the standard validation gate by default; expand only when needed:
-   - `python -m ruff check source dev/tests`
-   - `python -m ruff format --check source dev/tests`
+   - `python -m ruff check source workspace/tests`
+   - `python -m ruff format --check source workspace/tests`
    - `python -m mypy`
    - `python -m pytest -m "unit or integration"`
 6. Report exactly what changed, why, and what was validated.

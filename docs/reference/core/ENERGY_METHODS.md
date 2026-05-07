@@ -6,7 +6,7 @@ This note explains the supported `energy_method` options in the maintained
 Python SLAVV pipeline, how they interact with the energy parameter surface, and
 where to extend the implementation when a new method is needed.
 
-The active validation surface lives in `source/utils/validation.py`.
+The active validation surface lives in `slavv_python/utils/validation.py`.
 
 When `comparison_exact_network` is enabled, the maintained exact route
 recognizes `python_native_hessian` as the only exact-compatible energy
@@ -17,11 +17,11 @@ runtime energy provenance.
 
 | Method | Where it lives | Best use | Notes |
 | --- | --- | --- | --- |
-| `hessian` | `source/core/energy.py` and `source/core/energy_internal/hessian_response.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
-| `frangi` | `skimage.filters.frangi` via `source/core/energy.py` | Quick vesselness experiments | Exploratory alternate backend. |
-| `sato` | `skimage.filters.sato` via `source/core/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed surface does not provide `sato`. |
-| `simpleitk_objectness` | `source/core/energy_internal/energy_backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
-| `cupy_hessian` | `source/core/energy_internal/energy_backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
+| `hessian` | `slavv_python/core/energy.py` and `slavv_python/core/energy_internal/hessian_response.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
+| `frangi` | `skimage.filters.frangi` via `slavv_python/core/energy.py` | Quick vesselness experiments | Exploratory alternate backend. |
+| `sato` | `skimage.filters.sato` via `slavv_python/core/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed surface does not provide `sato`. |
+| `simpleitk_objectness` | `slavv_python/core/energy_internal/energy_backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
+| `cupy_hessian` | `slavv_python/core/energy_internal/energy_backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
 
 The CLI exposes the same options through:
 
@@ -67,7 +67,7 @@ slavv run -i volume.tif -o slavv_output --energy-method hessian --energy-project
 ## Shared Parameters
 
 All energy methods still respect the shared energy configuration surface in
-`source/utils/validation.py`, especially:
+`slavv_python/utils/validation.py`, especially:
 
 - `radius_of_smallest_vessel_in_microns`
 - `radius_of_largest_vessel_in_microns`
@@ -216,16 +216,16 @@ surface.
 
 When adding a new energy backend, update these surfaces together:
 
-1. `source/core/energy.py`
+1. `slavv_python/core/energy.py`
    Add the implementation and wire it into both direct and resumable
    evaluation.
-2. `source/utils/validation.py`
+2. `slavv_python/utils/validation.py`
    Allow the new `energy_method` value in parameter validation.
-3. `source/apps/cli/parser.py` and `source/apps/cli/shared.py`
+3. `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py`
    Expose the new choice through `slavv run --energy-method`.
-4. `dev/tests/unit/core/test_energy_methods.py`
+4. `workspace/tests/unit/core/test_energy_methods.py`
    Add focused correctness coverage for the new backend.
-5. `dev/tests/unit/core/test_energy_field_storage.py`
+5. `workspace/tests/unit/core/test_energy_field_storage.py`
    Add or extend regression coverage if the direct and resumable paths need to
    remain aligned.
 6. Documentation
@@ -235,7 +235,7 @@ When adding a new energy backend, update these surfaces together:
 ## Contributor Notes
 
 - Keep library code on `logging`; do not add `print()` calls in
-  `source/core/energy.py`.
+  `slavv_python/core/energy.py`.
 - Preserve `float32` outputs for persisted energy volumes unless there is a
   deliberate format change.
 - If a new backend cannot support the resumable path cleanly, stop and document

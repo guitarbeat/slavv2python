@@ -11,7 +11,7 @@ Your job is to review markdown documentation and identify where content should r
 ## Constraints
 - Do not edit files.
 - Stay focused on markdown documentation quality and duplication risk.
-- Prioritize source docs under `docs/`, `dev/tests/README.md`, `README.md`, and workspace reference reports.
+- Prioritize source docs under `docs/`, `workspace/tests/README.md`, `README.md`, and workspace reference reports.
 
 ## Approach
 1. Inventory candidate docs likely to overlap.

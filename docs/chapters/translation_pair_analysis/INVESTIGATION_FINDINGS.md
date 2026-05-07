@@ -228,7 +228,7 @@ Frontier insertion/removal semantics differ between Python and MATLAB, causing:
 **Impact:** High (estimated 30-40% of missing pairs)
 
 **Investigation Steps:**
-1. Document MATLAB frontier insertion algorithm from source
+1. Document MATLAB frontier insertion algorithm from slavv_python
 2. Compare with Python implementation line-by-line
 3. Identify semantic differences in:
    - Insertion order (FIFO vs LIFO vs priority)
@@ -299,7 +299,7 @@ Python generates candidates that MATLAB filters out due to:
    - Insertion logic and priority calculation
    - Removal/invalidation conditions
    - Ordering semantics
-3. Compare with Python implementation in `source/core/_edge_candidates/global_watershed.py`
+3. Compare with Python implementation in `slavv_python/core/_edge_candidates/global_watershed.py`
 4. Identify and document all semantic differences
 5. Implement alignment fixes
 6. Add comprehensive frontier ordering tests

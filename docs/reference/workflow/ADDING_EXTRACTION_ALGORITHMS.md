@@ -9,7 +9,7 @@ reachable from the current `argparse` CLI and resumable pipeline.
 
 ## Design Rules
 
-- Keep package code under `source/`.
+- Keep package code under `slavv_python/`.
 - Preserve the existing `slavv` and `slavv-app` entrypoints in
   `pyproject.toml`.
 - Extend the current parameter-validation and pipeline-dispatch surfaces rather
@@ -26,17 +26,17 @@ Most new extraction algorithms need coordinated changes in these files:
 
 | Surface | Why it matters |
 | --- | --- |
-| `source/utils/validation.py` | Validates new parameter values and sets defaults. |
-| `source/apps/cli/parser.py` and `source/apps/cli/shared.py` | Expose the new option on `slavv run`. |
-| `source/core/` and `source/workflows/` | Hold the implementation and the current pipeline orchestration. |
-| `source/runtime/run_tracking/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
-| `dev/tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
+| `slavv_python/utils/validation.py` | Validates new parameter values and sets defaults. |
+| `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py` | Expose the new option on `slavv run`. |
+| `slavv_python/core/` and `slavv_python/workflows/` | Hold the implementation and the current pipeline orchestration. |
+| `slavv_python/runtime/run_tracking/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
+| `workspace/tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
-- `source/core/edges.py` for stage orchestration and resumable helpers
-- `source/core/edges_internal/candidate_generation.py` and related helpers for candidate generation
-- `source/core/edges_internal/edge_selection.py` and `edge_cleanup.py` for choice and cleanup logic
+- `slavv_python/core/edges.py` for stage orchestration and resumable helpers
+- `slavv_python/core/edges_internal/candidate_generation.py` and related helpers for candidate generation
+- `slavv_python/core/edges_internal/edge_selection.py` and `edge_cleanup.py` for choice and cleanup logic
 
 ## Recommended Workflow
 
@@ -55,7 +55,7 @@ For edge extraction specifically, the maintained split today is:
    If the algorithm adds durable artifacts or optional sub-steps, make sure
    run-state and stage-manifest surfaces can describe and rediscover them.
 6. Add tests in the owner-aligned location.
-   For core pipeline work, that usually means `dev/tests/unit/core/`.
+   For core pipeline work, that usually means `workspace/tests/unit/core/`.
 7. Update docs.
    Add or refresh a focused reference note instead of leaving behavior only in
    code comments or TODO files.
@@ -67,9 +67,9 @@ introducing a second registry.
 
 For example, the experimental `simpleitk_objectness` mode is integrated by:
 
-- extending validation in `source/utils/validation.py`
+- extending validation in `slavv_python/utils/validation.py`
 - extending `slavv run --energy-method` choices in the CLI parser surfaces
-- routing both direct and resumable execution through `source/core/energy.py`
+- routing both direct and resumable execution through `slavv_python/core/energy.py`
 - keeping the default `hessian` path unchanged unless the new backend is
   explicitly selected
 - documenting parameter differences when the backend cannot or should not
@@ -87,10 +87,10 @@ Its durable outcomes are now:
 
 ### Already adopted in the codebase
 
-- `SimpleITK` as an optional exploratory energy backend in `source/core/energy.py`
-- `CuPy` as an optional experimental GPU energy backend in `source/core/energy.py`
+- `SimpleITK` as an optional exploratory energy backend in `slavv_python/core/energy.py`
+- `CuPy` as an optional experimental GPU energy backend in `slavv_python/core/energy.py`
 - `Zarr` for resumable energy storage and staged persistence
-- `napari` as an optional curator surface in `source/visualization/napari_curator.py`
+- `napari` as an optional curator surface in `slavv_python/visualization/napari_curator.py`
 - `numba` as an optional acceleration path where the maintained code uses it
 
 ### Still-open future options
@@ -124,8 +124,8 @@ For a new algorithm mode, aim to add:
 - regression coverage for any new diagnostics or persisted artifacts
 - `python -m mypy` coverage if you widen the typed surface
 
-Use the folder rules in `dev/tests/README.md` and the repo-local `tmp_path`
-fixture from `dev/tests/conftest.py`.
+Use the folder rules in `workspace/tests/README.md` and the repo-local `tmp_path`
+fixture from `workspace/tests/conftest.py`.
 
 ## Validation Commands
 
@@ -133,7 +133,7 @@ Run the smallest set that matches your change scope, then expand to the
 boundary-crossing gate when needed:
 
 ```powershell
-python -m ruff check source dev/tests
+python -m ruff check source workspace/tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```

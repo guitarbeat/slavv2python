@@ -6,8 +6,8 @@ This note documents the experimental `napari`-based curator prototype that now
 exists alongside the maintained Qt/PyVista curator.
 
 The current production curator still lives in
-`source/visualization/interactive_curator.py`. The new prototype lives in
-`source/visualization/napari_curator.py` and is intended as a lower-code
+`slavv_python/visualization/interactive_curator.py`. The new prototype lives in
+`slavv_python/visualization/napari_curator.py` and is intended as a lower-code
 surface for image + point + path review.
 
 ## Why Add It
