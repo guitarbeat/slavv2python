@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from . import normalize_state_results
 from source.models import normalize_pipeline_result
+
+from . import normalize_state_results
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

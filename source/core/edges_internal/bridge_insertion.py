@@ -22,8 +22,8 @@ else:
     BoolArray = np.ndarray
 
 from ..edge_candidates_internal.common import _matlab_frontier_offsets
-from ..vertices_internal.vertex_painting import paint_vertex_center_image, paint_vertex_image
 from ..graph import _matlab_edge_metrics
+from ..vertices_internal.vertex_painting import paint_vertex_center_image, paint_vertex_image
 from .edge_selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,
@@ -899,5 +899,3 @@ def add_vertices_to_edges_matlab_style(
 __all__ = [
     "add_vertices_to_edges_matlab_style",
 ]
-
-

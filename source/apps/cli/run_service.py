@@ -19,7 +19,7 @@ def resolve_effective_run_dir(output_dir: str, run_dir_override: str | None) -> 
 
 def format_run_event_line(event: ProgressEvent) -> str:
     """Format a pipeline progress event for CLI printing."""
-    return f"[{event.stage}] stage={event.stage_progress*100:0.1f}% overall={event.overall_progress*100:0.1f}% - {event.detail}"
+    return f"[{event.stage}] stage={event.stage_progress * 100:0.1f}% overall={event.overall_progress * 100:0.1f}% - {event.detail}"
 
 
 def filter_export_formats(requested_formats: list[str]) -> list[str]:

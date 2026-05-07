@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-import os
 import sys
 
 from .analysis_service import calculate_exported_network_stats
 from .export_service import save_network_export
+from .exported_network import _load_exported_results
 from .run_service import (
     build_exportable_network,
     build_run_completion_lines,
@@ -16,7 +16,11 @@ from .run_service import (
     resolve_effective_run_dir,
     update_run_export_task,
 )
-from .shared import _load_exported_results, _prepare_run_parameters, _resolve_export_artifact_paths
+from .shared import (
+    _prepare_run_parameters,
+    _require_existing_file,
+    _resolve_export_artifact_paths,
+)
 from .status_service import build_run_status_lines
 
 _SIMPLE_LOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
@@ -25,8 +29,8 @@ _SIMPLE_LOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 def _handle_run_command(args) -> None:
     """Execute the SLAVV processing pipeline."""
     from ... import SlavvPipeline
-    from ...io import Network, load_tiff_volume
-    from ...runtime import RunContext, build_status_lines, load_run_snapshot
+    from ...io import load_tiff_volume
+    from ...runtime import load_run_snapshot
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
     logger = logging.getLogger("slavv.cli.run")
@@ -34,6 +38,7 @@ def _handle_run_command(args) -> None:
     effective_run_dir = resolve_effective_run_dir(args.output, args.run_dir)
     parameters = _prepare_run_parameters(args)
 
+    _require_existing_file(args.input)
     image = load_tiff_volume(args.input)
     pipeline = SlavvPipeline()
 
@@ -81,7 +86,7 @@ def _handle_run_command(args) -> None:
 
 def _handle_analyze_command(args) -> None:
     """Calculate and print statistics for an exported network."""
-    from ...utils import calculate_network_statistics
+    from ...analysis import calculate_network_statistics
 
     logging.basicConfig(level=logging.INFO, format=_SIMPLE_LOG_FORMAT)
     logger = logging.getLogger("slavv.cli.analyze")
@@ -139,12 +144,7 @@ def _handle_plot_command(args) -> None:
     visualizer = NetworkVisualizer()
 
     logger.info("Compiling interactive plots...")
-    fig = visualizer.create_summary_dashboard(
-        results.get("vertices", {}),
-        results.get("edges", {}),
-        results.get("parameters", {}),
-        number_of_bins=args.number_of_bins,
-    )
+    fig = visualizer.create_summary_dashboard(results)
 
     fig.write_html(args.output)
     print(f"Saved interactive plots to {args.output}")

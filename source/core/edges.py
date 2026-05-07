@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .edge_payloads import _empty_edge_diagnostics, _empty_edges_result
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -15,6 +14,7 @@ from .edge_candidates import (
     _normalize_candidate_origin_counts,
     _use_matlab_frontier_tracer,
 )
+from .edge_payloads import _empty_edge_diagnostics, _empty_edges_result
 from .edges_internal import edge_extraction_standard as _standard
 from .edges_internal import edge_extraction_watershed as _watershed
 from .edges_internal import edge_units as _units

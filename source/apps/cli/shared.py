@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from ...utils import apply_pipeline_profile
 from .parser import _EXPORT_FILE_NAMES
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 
 def _prepare_run_parameters(args) -> dict[str, Any]:

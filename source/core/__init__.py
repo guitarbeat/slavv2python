@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from .pipeline import SlavvPipeline
+from .pipeline import SlavvPipeline, SLAVVProcessor
 
 __all__ = [
+    "SLAVVProcessor",
     "SlavvPipeline",
 ]

@@ -9,10 +9,11 @@ try:
 except ImportError:
     from typing_extensions import TypedDict
 
-from . import normalize_state_results
 from source.apps.services.exports import has_full_network_results
-from ..services.share_report import compute_shareable_stats
 from source.runtime import RunSnapshot, load_run_snapshot
+
+from ..services.share_report import compute_shareable_stats
+from . import normalize_state_results
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping

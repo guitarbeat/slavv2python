@@ -3,12 +3,14 @@ from __future__ import annotations
 import numpy as np
 
 from source.core.edges_internal.bridge_insertion import (
-    _matlab_bridge_candidates,
+    _matlab_bridge_search_target,
     add_vertices_to_edges_matlab_style,
 )
-from source.core.vertices_internal.vertex_painting import paint_vertex_center_image, paint_vertex_image
-
 from source.core.network import construct_network
+from source.core.vertices_internal.vertex_painting import (
+    paint_vertex_center_image,
+    paint_vertex_image,
+)
 
 
 def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_parent():
@@ -231,7 +233,7 @@ def test_add_vertices_to_edges_matlab_style_has_no_parent_half_fallback(monkeypa
     }
 
     monkeypatch.setattr(
-        "source.core._edges.bridge_vertices._matlab_bridge_search_target",
+        "source.core.edges_internal.bridge_insertion._matlab_bridge_search_target",
         lambda *args, **kwargs: None,
     )
 

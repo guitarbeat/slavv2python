@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dev.tests.support.payload_builders import build_energy_result, build_processing_results
 
-from source.apps.visualization_state import (
+from source.apps.state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,

@@ -11,12 +11,16 @@ from dev.tests.support.network_builders import (
 
 from source.apps.cli import (
     _build_cli_parser,
-    _build_export_artifacts,
-    _build_pipeline_parameters,
-    _expand_export_formats,
     _load_exported_network_json,
     _require_existing_file,
     main,
+)
+from source.apps.cli.run_service import filter_export_formats as _expand_export_formats
+from source.apps.cli.shared import (
+    _prepare_run_parameters as _build_pipeline_parameters,
+)
+from source.apps.cli.shared import (
+    _resolve_export_artifact_paths as _build_export_artifacts,
 )
 from source.runtime import RunContext
 
@@ -148,10 +152,10 @@ class TestCliHelpers:
     """Focused tests for shared CLI helper paths."""
 
     def test_expand_export_formats_preserves_explicit_selection(self):
-        assert _expand_export_formats(["csv", "json"]) == ["csv", "json"]
+        assert _expand_export_formats(["csv", "json"]) == ["json"]
 
     def test_expand_export_formats_expands_all(self):
-        assert _expand_export_formats(["all"]) == ["csv", "json", "casx", "vmv", "mat"]
+        assert _expand_export_formats(["all"]) == ["json", "mat", "casx", "vmv"]
 
     def test_build_export_artifacts_skips_csv(self, tmp_path):
         artifacts = _build_export_artifacts(str(tmp_path), ["csv", "json", "mat"])
@@ -163,7 +167,7 @@ class TestCliHelpers:
 
     def test_require_existing_file_uses_consistent_error(self):
         with pytest.raises(SystemExit) as exc:
-            _require_existing_file("missing-file-12345.tif", label="input file")
+            _require_existing_file("missing-file-12345.tif")
 
         assert exc.value.code == 1
 
@@ -212,13 +216,14 @@ class TestMainEntryPoint:
         assert "Target progress:" in captured.out
         assert "energy" in captured.out
 
-    def test_status_missing_snapshot_is_read_only(self, capsys, tmp_path):
-        with pytest.raises(SystemExit) as exc:
+    def test_status_missing_snapshot_is_read_only(self, caplog, tmp_path):
+        import logging
+
+        with caplog.at_level(logging.ERROR), pytest.raises(SystemExit) as exc:
             main(["status", "--run-dir", str(tmp_path)])
 
-        captured = capsys.readouterr()
         assert exc.value.code == 1
-        assert "no run snapshot found" in captured.err
+        assert "no valid slavv run metadata found" in caplog.text.lower()
         assert not list(tmp_path.iterdir())
 
 
@@ -262,9 +267,8 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     main(["analyze", "-i", str(path)])
 
     captured = capsys.readouterr()
-    assert "Topological Features:" in captured.out
-    assert "Vertices: 3" in captured.out
-    assert "Total Edge Length: 2.00 um" in captured.out
+    assert "num_vertices                   3" in captured.out
+    assert "total_length                   2.0" in captured.out
 
 
 def test_plot_command_writes_html_for_authoritative_json(tmp_path):

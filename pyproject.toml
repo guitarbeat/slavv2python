@@ -163,10 +163,8 @@ python_version = "3.11"
 mypy_path = "source"
 files = [
     "source/apps/cli/__init__.py",
-    "source/apps/share_report.py",
     "source/apps/streamlit/app.py",
     "source/apps/streamlit_launcher.py",
-    "source/apps/web_app.py",
     "source/analysis/geometry.py",
     "source/core/energy.py",
     "source/core/network.py",

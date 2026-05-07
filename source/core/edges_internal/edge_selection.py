@@ -7,12 +7,12 @@ from typing import Any, cast
 import numpy as np
 
 from ..edge_payloads import _empty_edges_result
-from .edge_finalize import prefilter_edge_indices_for_cleanup_matlab_style
 from .edge_cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
+from .edge_finalize import prefilter_edge_indices_for_cleanup_matlab_style
 from .edge_selection_payloads import (
     build_selected_edges_result,
     initialize_edge_selection_diagnostics,

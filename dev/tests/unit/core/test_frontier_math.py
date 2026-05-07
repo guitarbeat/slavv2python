@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from source.core._edge_candidates.common import (
+from source.core.edge_candidates_internal.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
     _matlab_frontier_insert_available_location,

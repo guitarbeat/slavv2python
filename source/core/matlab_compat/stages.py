@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     import numpy as np
 
-from source.analysis._geometry.trace_ops import get_edge_metric as _get_edge_metric
+from source.analysis.geometry_internal.trace_ops import get_edge_metric as _get_edge_metric
 from source.core.edge_selection import choose_edges_for_workflow
 from source.core.edges import extract_edges
 from source.core.edges_internal.bridge_insertion import add_vertices_to_edges_matlab_style

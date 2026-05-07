@@ -4,9 +4,9 @@ from typing import cast
 
 import numpy as np
 
-from source.core._edge_candidates.candidate_manifest import _append_candidate_unit
-from source.core._edge_candidates.common import _use_matlab_frontier_tracer
-from source.core.edges_internal import standard_edge_extraction as standard_edges
+from source.core.edge_candidates_internal.candidate_manifest import _append_candidate_unit
+from source.core.edge_candidates_internal.common import _use_matlab_frontier_tracer
+from source.core.edges_internal import edge_extraction_standard as standard_edges
 
 
 def test_use_matlab_frontier_tracer_requires_exact_network_and_exact_compatible_energy_origin():

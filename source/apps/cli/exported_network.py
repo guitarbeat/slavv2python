@@ -14,7 +14,7 @@ from source.io.network_json import (
     load_network_json_payload,
 )
 
-from .cli_shared import _require_existing_file
+from .shared import _require_existing_file
 
 
 def _normalize_exported_edge_connections(raw_connections: object) -> np.ndarray:

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from . import normalize_state_results
 from source.apps.state.curation import summarize_processing_counts
 from source.models import normalize_pipeline_result
+
+from . import normalize_state_results
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
