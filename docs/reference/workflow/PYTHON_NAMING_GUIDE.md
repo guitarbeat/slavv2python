@@ -2,18 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
-Use this guide when naming or moving Python modules in the maintained SLAVV
-codebase.
+This guide defines naming conventions for Python modules in `slavv_python`.
 
 ## Goal
-
-Names should tell you three things quickly:
-
-1. the pipeline domain or stage
-2. the module's role in that domain
-3. whether the name is preferred API, stable internal API, or compatibility-only
-
-The rule of thumb is domain first, role second, historical detail last.
+Module names should indicate:
+1. Pipeline domain or stage (first)
+2. Module role (second)
+3. API classification (public, internal, or compatibility) (last)
 
 ## Preferred Public Names
 

@@ -1,4 +1,4 @@
-﻿# Energy Computation Methods
+# Energy Computation Methods
 
 [Up: Documentation Index](../../README.md)
 
@@ -199,18 +199,6 @@ Parameters honored here:
 
 Treat `cupy_hessian` as an experimental performance path rather than a parity
 surface.
-
-## Choosing A Method
-
-- Use `hessian` when you want the default production behavior and the most
-  faithful maintained raw-image implementation of the released MATLAB energy
-  stage.
-- Use `frangi` or `sato` when you are benchmarking alternate vesselness
-  backends or doing exploratory native-Python runs.
-- Use `simpleitk_objectness` when you specifically want SimpleITK spacing-aware
-  objectness behavior.
-- Use `cupy_hessian` when you want experimental GPU acceleration and accept
-  that it is not the default parity-oriented backend.
 
 ## Extending With A New Method
 
