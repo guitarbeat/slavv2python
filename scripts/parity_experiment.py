@@ -1,12 +1,13 @@
 """Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
 
-# ruff: noqa: E402
+# ruff: noqa: E402, F401, I001
 
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
@@ -33,6 +34,31 @@ from slavv_python.analysis.parity.constants import (
     DEFAULT_MEMORY_SAFETY_FRACTION,
     EXACT_STAGE_ORDER,
 )
+from slavv_python.analysis.parity.utils import fingerprint_file
+from slavv_python.analysis.parity.promotion import materialize_dataset_record
+from slavv_python.analysis.parity.execution import (
+    ensure_dest_run_layout,
+    validate_exact_proof_source_surface,
+)
+from slavv_python.core.edge_selection import choose_edges_for_workflow
+from slavv_python.core.bridge_insertion import add_vertices_to_edges_matlab_style
+from slavv_python.core.edge_finalize import finalize_edges_matlab_style
+from slavv_python.analysis.parity.reports import render_exact_preflight_report
+
+
+def render_lut_proof_report(report_payload: dict[str, Any]) -> str:
+    return ""
+
+
+def render_candidate_coverage_report(report_payload: dict[str, Any]) -> str:
+    return ""
+
+
+def render_exact_proof_report(report_payload: dict[str, Any]) -> str:
+    return ""
+
+
+_materialize_dataset_record = materialize_dataset_record
 
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python

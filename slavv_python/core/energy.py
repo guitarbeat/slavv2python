@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from .energy_internal.energy_chunking import (
+from .energy_chunking import (
     _calculate_energy_field_chunked,
     _compute_direct_energy_outputs,
     _compute_energy_scale,
@@ -20,14 +20,14 @@ from .energy_internal.energy_chunking import (
     _remove_storage_path,
     _select_energy_storage_format,
 )
-from .energy_internal.energy_config import _prepare_energy_config
-from .energy_internal.energy_gradients import (
+from .energy_config import _prepare_energy_config
+from .energy_gradients import (
     compute_gradient_fast,
     compute_gradient_impl,
     is_numba_acceleration_enabled,
     spherical_structuring_element,
 )
-from .energy_internal.resumable_energy import (
+from .resumable_energy import (
     calculate_energy_field_resumable as _calculate_energy_field_resumable,
 )
 

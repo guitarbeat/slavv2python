@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from slavv_python.core import SLAVVProcessor
+from slavv_python.core.edge_cleanup import clean_edges_cycles_python
 from slavv_python.core.edge_primitives import _finalize_traced_edge
 from slavv_python.core.edge_selection import (
     _choose_edges_matlab_style,
@@ -10,8 +11,7 @@ from slavv_python.core.edge_selection import (
     _offset_coords_matlab,
     _snapshot_endpoint_influences_matlab,
 )
-from slavv_python.core.edges_internal import edge_selection as conflict_painting_module
-from slavv_python.core.edge_cleanup import clean_edges_cycles_python
+from slavv_python.core import edge_selection as conflict_painting_module
 from slavv_python.core.graph import _remove_short_hairs
 from slavv_python.core.vertices import extract_vertices, paint_vertex_center_image
 
@@ -362,7 +362,7 @@ def test_snapshot_endpoint_influences_matlab_restores_overlap_from_combined_snap
         combined_coords[:, 0],
         combined_coords[:, 1],
         combined_coords[:, 2],
-    ] = slavv_python_snapshot
+    ] = source_snapshot
 
     assert painted_image[1, 2, 1] == 7
     assert painted_source_image[1, 2, 1] == 2

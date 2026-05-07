@@ -3,7 +3,7 @@ from __future__ import annotations
 import joblib
 import numpy as np
 
-from slavv_python.core.edges_internal import resumable_edges
+from slavv_python.core import resumable_edges
 from slavv_python.runtime import RunContext
 
 

@@ -6,8 +6,8 @@ import numpy as np
 import numpy.testing as npt
 
 from slavv_python.core import SLAVVProcessor
-from slavv_python.core.energy_internal import hessian_response as native_hessian
 from slavv_python.core.energy_config import _prepare_energy_config
+from slavv_python.core import hessian_response as native_hessian
 
 
 def test_native_hessian_matches_small_matlab_reference_fixture():

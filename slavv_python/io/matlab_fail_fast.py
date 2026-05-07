@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import numpy as np
 
-from ..core.edge_candidates_internal.common import (
+from ..core.common import (
     _build_matlab_global_watershed_lut,
     _candidate_endpoint_pair_set,
 )

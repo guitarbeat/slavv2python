@@ -96,7 +96,7 @@ def _materialize_bounded_stream(file_path: str, opener, max_size: int) -> str:
     try:
         with os.fdopen(fd, "wb") as temp_handle, opener(file_path, "rb") as source:
             while True:
-                chunk = slavv_python.read(_STREAM_CHUNK_SIZE)
+                chunk = source.read(_STREAM_CHUNK_SIZE)
                 if not chunk:
                     break
                 total_size += len(chunk)

@@ -109,8 +109,8 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
             },
         },
     )
-    source_edges_checkpoint = slavv_python_run_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl"
-    source_edges_bytes = slavv_python_edges_checkpoint.read_bytes()
+    source_edges_checkpoint = source_run_root / CHECKPOINTS_DIR / "checkpoint_edges.pkl"
+    source_edges_bytes = source_edges_checkpoint.read_bytes()
 
     calls: list[dict[str, object]] = []
 
@@ -168,7 +168,7 @@ def test_rerun_python_creates_fresh_dest_root_and_writes_summary(tmp_path, monke
         ]
     )
 
-    assert source_edges_checkpoint.read_bytes() == slavv_python_edges_bytes
+    assert source_edges_checkpoint.read_bytes() == source_edges_bytes
     assert calls == [
         {
             "shape": (2, 2, 2),

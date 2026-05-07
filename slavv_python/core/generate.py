@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
 
-    from ..edges_internal.edge_tracing import TraceMetadata
+    from .edges_internal.edge_tracing import TraceMetadata
     from .common import Float32Array, Float64Array, Int16Array, Int32Array
 else:
     Int16Array = np.ndarray
@@ -19,8 +19,8 @@ else:
     Float32Array = np.ndarray
     Float64Array = np.ndarray
 
-from ..edge_payloads import _empty_edge_diagnostics
-from ..radius_utils import _scalar_radius
+from .edge_payloads import _empty_edge_diagnostics
+from .radius_utils import _scalar_radius
 from .global_watershed import ExecutionTracer, _generate_edge_candidates_matlab_global_watershed
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def _edge_candidates_facade() -> Any:
     """Return the facade module to preserve patchable edge-candidate hooks in tests."""
-    from .. import edge_candidates as edge_candidates_facade
+    from . import edge_candidates as edge_candidates_facade
 
     return edge_candidates_facade
 
@@ -170,12 +170,12 @@ def _trace_fallback_origin_candidates(
     dict[str, Any],
 ]:
     """Trace all fallback candidate directions for a single origin vertex."""
-    from ..edge_payloads import (
+    from .edge_payloads import (
         _edge_metric_from_energy_trace,
         _empty_edge_diagnostics,
         _record_trace_diagnostics,
     )
-    from ..edges_internal.trace_metrics import (
+    from .trace_metrics import (
         _trace_energy_series,
         _trace_scale_series,
     )
@@ -292,7 +292,7 @@ def _generate_edge_candidates(
     connection_sources: list[str] = []
     diagnostics = _empty_edge_diagnostics()
 
-    from ..edge_payloads import _merge_edge_diagnostics
+    from .edge_payloads import _merge_edge_diagnostics
 
     energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)

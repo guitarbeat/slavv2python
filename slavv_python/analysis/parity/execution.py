@@ -291,7 +291,7 @@ def copy_source_surface(source_surface: SourceRunSurface, dest_run_root: Path) -
 
 def validate_source_run_surface(source_run_root: Path) -> SourceRunSurface:
     """Validate the reusable staged slavv_python surface for a Python rerun."""
-    run_root = slavv_python_run_root.resolve()
+    run_root = source_run_root.resolve()
     checkpoints_dir = run_root / CHECKPOINTS_DIR
     comparison_report_path = run_root / COMPARISON_REPORT_PATH
     validated_params_path = run_root / VALIDATED_PARAMS_PATH
@@ -319,7 +319,7 @@ def validate_source_run_surface(source_run_root: Path) -> SourceRunSurface:
 
 def validate_exact_proof_source_surface(source_run_root: Path) -> ExactProofSourceSurface:
     """Validate the authority surface for an exact-route proof against a MATLAB oracle."""
-    run_root = slavv_python_run_root.resolve()
+    run_root = source_run_root.resolve()
     manifest = load_json_dict(run_root / RUN_MANIFEST_PATH)
     if not manifest:
         raise ValueError(f"source run root is missing manifest: {run_root / RUN_MANIFEST_PATH}")
@@ -349,7 +349,7 @@ def load_params_file(source_surface: SourceRunSurface, params_arg: str | None) -
     if params_arg:
         path = Path(params_arg).expanduser().resolve()
     else:
-        path = slavv_python_surface.validated_params_path
+        path = source_surface.validated_params_path
 
     payload = load_json_dict(path)
     if payload is None:
@@ -717,7 +717,7 @@ def maybe_sync_exact_vertex_checkpoint(
     """Sync the exact-route vertex checkpoint if available."""
     from slavv_python.io.matlab_exact_proof import sync_exact_vertex_checkpoint_from_matlab
 
-    src_checkpoints = slavv_python_run_root / CHECKPOINTS_DIR
+    src_checkpoints = source_run_root / CHECKPOINTS_DIR
     dest_checkpoints = dest_run_root / CHECKPOINTS_DIR
     src_vertex = src_checkpoints / "checkpoint_vertices.pkl"
     dest_vertex = dest_checkpoints / "checkpoint_vertices.pkl"
@@ -728,12 +728,12 @@ def maybe_sync_exact_vertex_checkpoint(
     if oracle_root is None:
         # Try to find an oracle manifest or batch dir in the slavv_python run root
         if (source_run_root / ORACLE_MANIFEST_PATH).is_file():
-            oracle_root = slavv_python_run_root
+            oracle_root = source_run_root
         else:
             try:
                 # find_single_matlab_batch_dir will raise if multiple or none
                 find_single_matlab_batch_dir(source_run_root)
-                oracle_root = slavv_python_run_root
+                oracle_root = source_run_root
             except Exception:
                 return False
 

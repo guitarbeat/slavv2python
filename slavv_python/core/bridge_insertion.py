@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from ..edge_candidates_internal.common import (
+    from .common import (
         BoolArray,
         Float32Array,
         Int16Array,
@@ -21,9 +21,9 @@ else:
     Float32Array = np.ndarray
     BoolArray = np.ndarray
 
-from ..edge_candidates_internal.common import _matlab_frontier_offsets
-from ..graph import _matlab_edge_metrics
-from ..vertices_internal.vertex_painting import paint_vertex_center_image, paint_vertex_image
+from .common import _matlab_frontier_offsets
+from .graph import _matlab_edge_metrics
+from .vertex_painting import paint_vertex_center_image, paint_vertex_image
 from .edge_selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,

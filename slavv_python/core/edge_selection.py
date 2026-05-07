@@ -6,13 +6,13 @@ from typing import Any, cast
 
 import numpy as np
 
-from .edge_payloads import _empty_edges_result
 from .edge_cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
 from .edge_finalize import prefilter_edge_indices_for_cleanup_matlab_style
+from .edge_payloads import _empty_edges_result
 from .edge_selection_payloads import (
     build_selected_edges_result,
     initialize_edge_selection_diagnostics,
@@ -224,7 +224,7 @@ def _choose_edges_matlab_style(
     for index in filtered_indices:
         start_vertex, end_vertex = (int(value) for value in connections[index])
         current_source = connection_sources[index] if index < len(connection_sources) else "unknown"
-        current_source_code = slavv_python_code_by_label.get(current_source, 0)
+        current_source_code = source_code_by_label.get(current_source, 0)
         trace = np.asarray(traces[index], dtype=np.float32)
         scale_trace = np.asarray(scale_traces[index], dtype=np.int16)
 

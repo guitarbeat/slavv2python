@@ -11,7 +11,9 @@ from tests.support.payload_builders import build_energy_result, build_processing
 
 
 def test_normalize_analysis_results_returns_plain_dict_payload():
-    processing_results = build_processing_results(overrides={"metadata": {"slavv_python": "analysis"}})
+    processing_results = build_processing_results(
+        overrides={"metadata": {"slavv_python": "analysis"}}
+    )
 
     normalized = normalize_analysis_results(processing_results)
 

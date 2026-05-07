@@ -4,7 +4,7 @@ import pytest
 
 from slavv_python.core import SLAVVProcessor
 from slavv_python.core import energy as energy_module
-from slavv_python.core.energy_internal import energy_backends
+from slavv_python.core import energy_backends
 from slavv_python.runtime import RunContext
 from slavv_python.utils import get_chunking_lattice, validate_parameters
 

@@ -8,9 +8,9 @@ if TYPE_CHECKING:
     import numpy as np
 
 from slavv_python.analysis.trace_ops import get_edge_metric as _get_edge_metric
+from slavv_python.core.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.core.edge_selection import choose_edges_for_workflow
 from slavv_python.core.edges import extract_edges
-from slavv_python.core.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.core.energy import calculate_energy_field
 from slavv_python.core.network import (
     _matlab_get_network_v190,

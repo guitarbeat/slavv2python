@@ -1,28 +1,28 @@
 from __future__ import annotations
 
-from .cropping import crop_edges, crop_vertices, crop_vertices_by_mask
-from .image_stats import calculate_image_stats
-from .network_stats import (
+from ..cropping import crop_edges, crop_vertices, crop_vertices_by_mask
+from ..image_stats import calculate_image_stats
+from ..network_stats import (
     calculate_branching_angles,
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,
 )
-from .registration import (
+from ..registration import (
     evaluate_registration,
     icp_register_rigid,
     register_strands,
     register_vector_sets,
     transform_vector_set,
 )
-from .trace_ops import (
+from ..trace_ops import (
     get_edge_metric,
     get_edges_for_vertex,
     resample_vectors,
     smooth_edge_traces,
     subsample_vectors,
 )
-from .vector_math import angle_degrees, safe_normalize_rows, scaled_positions
+from ..vector_math import angle_degrees, safe_normalize_rows, scaled_positions
 
 __all__ = [
     "angle_degrees",

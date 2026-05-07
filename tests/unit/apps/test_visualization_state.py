@@ -46,7 +46,9 @@ def test_has_visualization_network_requires_vertices_edges_and_network():
 
 
 def test_extract_visualization_export_payload_returns_normalized_components():
-    processing_results = build_processing_results(overrides={"metadata": {"slavv_python": "viz-export"}})
+    processing_results = build_processing_results(
+        overrides={"metadata": {"slavv_python": "viz-export"}}
+    )
 
     vertices, edges, network, parameters = extract_visualization_export_payload(processing_results)
 

@@ -299,7 +299,10 @@ def test_run_prove_luts_skips_when_builtin_fixture_inputs_do_not_match_source_ru
 
     assert report["passed"] is True
     assert report["skipped"] is True
-    assert report["skip_reason"] == "builtin LUT fixture inputs do not match the slavv_python exact run"
+    assert (
+        report["skip_reason"]
+        == "builtin LUT fixture inputs do not match the slavv_python exact run"
+    )
     assert report["source_inputs"]["size_of_image"] == [64, 512, 512]
     assert report["fixture_inputs"]["size_of_image"] == [121, 512, 512]
 

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..edge_payloads import (
+from .edge_payloads import (
     _clip_trace_indices,
     _edge_metric_from_energy_trace,
     _record_trace_diagnostics,
     _trace_energy_series,
     _trace_scale_series,
 )
-from ..energy import compute_gradient_impl
+from .energy import compute_gradient_impl
 
 
 def compute_gradient(

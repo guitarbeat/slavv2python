@@ -18,7 +18,7 @@ else:
     Float64Array = np.ndarray
     BoolArray = np.ndarray
 
-from ..edge_payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
+from .edge_payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
 from .common import (
     _build_matlab_global_watershed_lut,
     _coord_to_matlab_linear_index,

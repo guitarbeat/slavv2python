@@ -15,16 +15,14 @@ from .edge_candidates import (
     _use_matlab_frontier_tracer,
 )
 from .edge_payloads import _empty_edge_diagnostics, _empty_edges_result
-from .edges_internal import edge_extraction_standard as _standard
-from .edges_internal import edge_extraction_watershed as _watershed
-from .edges_internal import edge_units as _units
-from .edges_internal.bridge_insertion import add_vertices_to_edges_matlab_style
-from .edges_internal.edge_finalize import finalize_edges_matlab_style
-from .edges_internal.edge_selection import choose_edges_for_workflow
-from .edges_internal.resumable_edges import (
+from . import edge_extraction_standard as _standard
+from . import edge_extraction_watershed as _watershed
+from . import edge_units as _units
+from .bridge_insertion import add_vertices_to_edges_matlab_style
+from .edge_finalize import finalize_edges_matlab_style
+from .edge_selection import choose_edges_for_workflow
+from .resumable_edges import (
     extract_edges_resumable as _extract_edges_resumable,
-)
-from .edges_internal.resumable_edges import (
     extract_edges_watershed_resumable as _extract_edges_watershed_resumable,
 )
 from .vertices import paint_vertex_center_image, paint_vertex_image

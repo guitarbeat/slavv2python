@@ -91,7 +91,7 @@ def icp_register_rigid(
     if len(source_arr) == 0 or len(target_arr) == 0:
         return np.eye(4), 0.0
 
-    source_mean = slavv_python_arr.mean(axis=0)
+    source_mean = source_arr.mean(axis=0)
     target_mean = target_arr.mean(axis=0)
     scale = 1.0
     rotation = np.eye(3)
@@ -105,9 +105,9 @@ def icp_register_rigid(
         _dists, idx = tree.query(source_projected, k=1)
         target_matched = target_arr[idx]
 
-        source_centered = slavv_python_arr - source_arr.mean(axis=0)
+        source_centered = source_arr - source_arr.mean(axis=0)
         target_centered = target_matched - target_matched.mean(axis=0)
-        covariance = slavv_python_centered.T @ target_centered
+        covariance = source_centered.T @ target_centered
         u_vals, singular_vals, v_transpose = np.linalg.svd(covariance)
         rotation_kabsch = v_transpose.T @ u_vals.T
         if np.linalg.det(rotation_kabsch) < 0:
@@ -152,7 +152,7 @@ def register_vector_sets(
     target_arr = np.asarray(target, dtype=float)
     if source_arr.shape != target_arr.shape or source_arr.ndim != 2 or source_arr.shape[1] != 3:
         raise ValueError("source and target must have shape (N, 3)")
-    num_points = slavv_python_arr.shape[0]
+    num_points = source_arr.shape[0]
     if method not in {"rigid", "affine"}:
         raise ValueError("method must be 'rigid' or 'affine'")
 
@@ -164,17 +164,17 @@ def register_vector_sets(
         transform = np.eye(4)
         transform[:3, :3] = affine_matrix[:3, :].T
         transform[:3, 3] = affine_matrix[3, :]
-        projected = slavv_python_h @ affine_matrix
+        projected = source_h @ affine_matrix
         err = float(np.sqrt(np.mean(np.sum((projected - target_arr) ** 2, axis=1))))
         return (transform, err) if return_error else transform
 
     if num_points < 3:
         raise ValueError("rigid registration requires at least 3 points")
-    source_mean = slavv_python_arr.mean(axis=0)
+    source_mean = source_arr.mean(axis=0)
     target_mean = target_arr.mean(axis=0)
-    source_centered = slavv_python_arr - source_mean
+    source_centered = source_arr - source_mean
     target_centered = target_arr - target_mean
-    covariance = slavv_python_centered.T @ target_centered
+    covariance = source_centered.T @ target_centered
     u_vals, singular_vals, v_transpose = np.linalg.svd(covariance)
     rotation = v_transpose.T @ u_vals.T
     if np.linalg.det(rotation) < 0:

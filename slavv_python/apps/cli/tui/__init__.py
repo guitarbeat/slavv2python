@@ -50,8 +50,6 @@ def run_tui_app(parser, args) -> None:
     import json
     import os
     import subprocess
-    import sys
-    from threading import Thread
 
     from slavv_python.core import SlavvPipeline
     from slavv_python.io import load_tiff_volume
@@ -148,7 +146,7 @@ def run_tui_app(parser, args) -> None:
 
     # Run in a thread or just normally?
     # If we have a dashboard, we should run the pipeline and then wait for dashboard to exit
-    results = pipeline.run(
+    pipeline.run(
         image,
         params,
         event_callback=_event_callback,

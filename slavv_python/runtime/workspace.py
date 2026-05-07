@@ -100,7 +100,9 @@ class WorkspaceAuditor:
             return ["Missing slavv_python directory"]
 
         for item in source_dir.rglob("*.egg-info"):
-            violations.append(f"Misplaced build artifact in slavv_python: {item.relative_to(self.root)}")
+            violations.append(
+                f"Misplaced build artifact in slavv_python: {item.relative_to(self.root)}"
+            )
 
         return violations
 

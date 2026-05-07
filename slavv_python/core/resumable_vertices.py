@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ...runtime.run_state import atomic_joblib_dump
-from ...utils.safe_unpickle import safe_load
+from ..runtime.run_state import atomic_joblib_dump
+from ..utils.safe_unpickle import safe_load
 from .candidate_detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,

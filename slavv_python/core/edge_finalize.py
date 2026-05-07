@@ -112,7 +112,7 @@ def prefilter_edge_indices_for_cleanup_matlab_style(
     size_of_image: tuple[int, int, int],
 ) -> tuple[list[int], int]:
     """Use MATLAB's pre-clean smoothing + crop logic to filter edge indices."""
-    from ..graph import _matlab_smooth_edges_v2
+    from .graph import _matlab_smooth_edges_v2
 
     if not candidate_indices:
         return [], 0
@@ -201,7 +201,7 @@ def finalize_edges_matlab_style(
     size_of_image: tuple[int, int, int],
 ) -> dict[str, Any]:
     """Apply MATLAB's final post-clean edge smoothing and normalization sequence."""
-    from ..graph import _matlab_edge_metrics, _matlab_smooth_edges_v2
+    from .graph import _matlab_edge_metrics, _matlab_smooth_edges_v2
 
     edge_space_traces = [
         np.asarray(trace, dtype=np.float32).copy() for trace in chosen_edges.get("traces", [])

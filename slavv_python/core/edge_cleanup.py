@@ -6,7 +6,7 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 
-from ..edge_primitives import _clip_trace_indices
+from .edge_payloads import _clip_trace_indices
 
 
 def clean_edges_vertex_degree_excess_python(

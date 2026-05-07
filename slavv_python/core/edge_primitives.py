@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from .edges_internal import edge_tracing as _tracing
-from .edges_internal import terminal_lookup as _lookup
-from .edges_internal import trace_directions as _directions
-from .edges_internal import trace_metrics as _metrics
+from . import edge_tracing as _tracing
+from . import terminal_lookup as _lookup
+from . import trace_directions as _directions
+from . import trace_metrics as _metrics
 
 if TYPE_CHECKING:
     import numpy as np

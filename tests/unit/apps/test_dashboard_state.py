@@ -14,7 +14,9 @@ from tests.support.payload_builders import build_processing_results
 
 
 def test_normalize_dashboard_results_returns_plain_dict_payload():
-    processing_results = build_processing_results(overrides={"metadata": {"slavv_python": "dashboard"}})
+    processing_results = build_processing_results(
+        overrides={"metadata": {"slavv_python": "dashboard"}}
+    )
 
     normalized = normalize_dashboard_results(processing_results)
 

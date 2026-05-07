@@ -69,8 +69,8 @@ def test_transform_vector_set_scale_translate():
 
 
 def test_register_vector_sets_rigid():
-    slavv_python = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=float)
-    target = slavv_python + np.array([10, 0, 0])
+    source = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=float)
+    target = source + np.array([10, 0, 0])
 
     transform, error = register_vector_sets(source, target, method="rigid", return_error=True)
 

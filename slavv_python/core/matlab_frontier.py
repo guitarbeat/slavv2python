@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..edge_candidates_internal.common import (
+from .common import (
     BoolArray,
     Float32Array,
     Float64Array,
@@ -21,10 +21,10 @@ from ..edge_candidates_internal.common import (
     _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
-from ..edge_candidates_internal.global_watershed import (
+from .global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
-from ..edge_candidates_internal.lifecycle import _build_frontier_candidate_lifecycle
+from .lifecycle import _build_frontier_candidate_lifecycle
 
 __all__ = [
     "BoolArray",

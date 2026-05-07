@@ -67,7 +67,9 @@ def test_store_processing_session_state_persists_processing_outputs():
         "share_report_prepared_signature": "abc123",
     }
     snapshot = RunSnapshot(run_id="run-123", stages={})
-    processing_results = build_processing_results(overrides={"metadata": {"slavv_python": "processing"}})
+    processing_results = build_processing_results(
+        overrides={"metadata": {"slavv_python": "processing"}}
+    )
 
     store_processing_session_state(
         session_state,

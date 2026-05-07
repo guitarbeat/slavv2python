@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.runtime.run_state import load_json_dict, stable_json_dumps
 from slavv_python.runtime.io import atomic_write_text
+from slavv_python.runtime.run_state import load_json_dict, stable_json_dumps
 
 from .constants import (
     ANALYSIS_TABLES_DIR,

@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import numpy.testing as npt
 
-from slavv_python.core.energy_internal import hessian_response as native_hessian
 from slavv_python.core.energy_config import _prepare_energy_config
+from slavv_python.core import hessian_response as native_hessian
 
 
 def test_matlab_projection_uses_per_voxel_minimum():
