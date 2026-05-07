@@ -10,7 +10,7 @@ from source.analysis import (
     smooth_edge_traces,
     transform_vector_set,
 )
-from source.analysis._geometry import angle_degrees, safe_normalize_rows, scaled_positions
+from source.analysis.geometry_internal import angle_degrees, safe_normalize_rows, scaled_positions
 
 
 def test_resample_vectors_straight_line():

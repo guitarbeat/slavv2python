@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from source.runtime._run_state.models import StageSnapshot
-from source.runtime._run_state.reset import (
+from source.runtime.run_tracking.models import StageSnapshot
+from source.runtime.run_tracking.reset import (
     clear_stage_runtime_artifacts,
     remove_stage_dir_contents,
     reset_stage_snapshots,

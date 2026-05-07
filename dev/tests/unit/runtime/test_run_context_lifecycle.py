@@ -8,17 +8,17 @@ import pytest
 from dev.tests.support.run_state_builders import build_run_context
 
 from source.runtime import RunContext, load_run_snapshot
-from source.runtime.run_tracking import (
+from source.runtime.run_state import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
-    target_stage_progress,
 )
+from source.runtime.run_tracking.status import target_stage_progress
 
 
 def test_run_context_persists_snapshot_lifecycle(tmp_path, monkeypatch):
     run_dir = tmp_path / "run"
     monkeypatch.setattr(
-        "source.runtime._run_state.context.RunContext._sample_process_memory_bytes",
+        "source.runtime.run_tracking.context.RunContext._sample_process_memory_bytes",
         staticmethod(lambda: 4096),
     )
     context = build_run_context(

@@ -20,7 +20,9 @@ from .run_tracking.io import (
     fingerprint_array,
     fingerprint_file,
     fingerprint_jsonable,
+    load_json_dict,
     load_run_snapshot,
+    stable_json_dumps,
 )
 from .run_tracking.models import ProgressEvent, RunSnapshot, StageSnapshot, TaskSnapshot
 from .run_tracking.status import build_status_lines
@@ -47,5 +49,7 @@ __all__ = [
     "fingerprint_array",
     "fingerprint_file",
     "fingerprint_jsonable",
+    "load_json_dict",
     "load_run_snapshot",
+    "stable_json_dumps",
 ]
