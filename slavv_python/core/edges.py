@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from . import edge_extraction_standard as _standard
+from . import edge_extraction_watershed as _watershed
+from . import edge_units as _units
+from .bridge_insertion import add_vertices_to_edges_matlab_style
 from .edge_candidates import (
     _append_candidate_unit,
     _build_edge_candidate_audit,
@@ -14,15 +18,13 @@ from .edge_candidates import (
     _normalize_candidate_origin_counts,
     _use_matlab_frontier_tracer,
 )
-from .edge_payloads import _empty_edge_diagnostics, _empty_edges_result
-from . import edge_extraction_standard as _standard
-from . import edge_extraction_watershed as _watershed
-from . import edge_units as _units
-from .bridge_insertion import add_vertices_to_edges_matlab_style
 from .edge_finalize import finalize_edges_matlab_style
+from .edge_payloads import _empty_edge_diagnostics, _empty_edges_result
 from .edge_selection import choose_edges_for_workflow
 from .resumable_edges import (
     extract_edges_resumable as _extract_edges_resumable,
+)
+from .resumable_edges import (
     extract_edges_watershed_resumable as _extract_edges_watershed_resumable,
 )
 from .vertices import paint_vertex_center_image, paint_vertex_image

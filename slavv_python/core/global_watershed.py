@@ -18,13 +18,13 @@ else:
     Float64Array = np.ndarray
     BoolArray = np.ndarray
 
-from .edge_payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
 from .common import (
     _build_matlab_global_watershed_lut,
     _coord_to_matlab_linear_index,
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
 )
+from .edge_payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
 from .tracing import ExecutionTracer, NullExecutionTracer
 
 

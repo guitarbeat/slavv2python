@@ -15,6 +15,7 @@ if str(repo_root) not in sys.path:
 
 from slavv_python.analysis.parity.cli import (
     handle_capture_candidates,
+    handle_dedupe,
     handle_diagnose_gaps,
     handle_fail_fast,
     handle_init_exact_run,
@@ -201,6 +202,13 @@ def build_parser() -> argparse.ArgumentParser:
     init_run.add_argument("--stop-after", default="vertices")
     init_run.add_argument("--energy-storage-format", default="npy")
     init_run.set_defaults(handler=handle_init_exact_run)
+
+    # Dedupe Index
+    dedupe = subparsers.add_parser("dedupe")
+    dedupe.add_argument(
+        "--dry-run", action="store_true", help="Preview deletions without modifying files."
+    )
+    dedupe.set_defaults(handler=handle_dedupe)
 
     return parser
 

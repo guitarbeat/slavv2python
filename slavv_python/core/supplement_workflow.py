@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from .edge_payloads import _merge_edge_diagnostics
 from .candidate_manifest import _append_candidate_unit
+from .edge_payloads import _merge_edge_diagnostics
 
 
 def _new_supplement_payload(

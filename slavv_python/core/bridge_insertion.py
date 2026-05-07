@@ -22,13 +22,13 @@ else:
     BoolArray = np.ndarray
 
 from .common import _matlab_frontier_offsets
-from .graph import _matlab_edge_metrics
-from .vertex_painting import paint_vertex_center_image, paint_vertex_image
 from .edge_selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
+from .graph import _matlab_edge_metrics
+from .vertex_painting import paint_vertex_center_image, paint_vertex_image
 
 
 def _matlab_linear_indices_from_points(

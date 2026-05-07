@@ -69,3 +69,65 @@ def upsert_index_record(root: Path | None, payload: dict[str, Any]) -> None:
         index_path,
         "".join(f"{stable_json_dumps(record)}\n" for record in retained),
     )
+
+
+def deduplicate_index_records(root: Path | None, dry_run: bool = False) -> list[dict[str, Any]]:
+    """Deduplicate index records and remove stale paths from index.jsonl.
+
+    Keeps only the latest record for each (id, kind) combination and
+    filters out records with non-existent paths.
+    """
+    if root is None:
+        return []
+    index_path = root / EXPERIMENT_INDEX_PATH
+    if not index_path.is_file():
+        return []
+
+    records = load_jsonl_records(index_path)
+    retained: list[dict[str, Any]] = []
+    removed: list[dict[str, Any]] = []
+
+    # Map (id, kind) to the index of the latest record
+    latest_indices = {}
+    for i, rec in enumerate(records):
+        rec_id = str(
+            rec.get("id")
+            or rec.get("run_id")
+            or (Path(rec["path"]).name if "path" in rec else None)
+            or (Path(rec["run_root"]).name if "run_root" in rec else "unknown")
+        )
+        rec_kind = str(rec.get("kind", "artifact"))
+        key = (rec_id, rec_kind)
+        latest_indices[key] = i
+
+    for i, rec in enumerate(records):
+        rec_id = str(
+            rec.get("id")
+            or rec.get("run_id")
+            or (Path(rec["path"]).name if "path" in rec else None)
+            or (Path(rec["run_root"]).name if "run_root" in rec else "unknown")
+        )
+        rec_kind = str(rec.get("kind", "artifact"))
+        key = (rec_id, rec_kind)
+
+        if latest_indices[key] != i:
+            removed.append(rec)
+            continue
+
+        # Check if path exists if present
+        path_val = rec.get("path") or rec.get("run_root")
+        if path_val:
+            p = Path(path_val)
+            if not p.exists():
+                removed.append(rec)
+                continue
+
+        retained.append(rec)
+
+    if not dry_run and removed:
+        atomic_write_text(
+            index_path,
+            "".join(f"{stable_json_dumps(record)}\n" for record in retained),
+        )
+
+    return removed

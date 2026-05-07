@@ -470,3 +470,34 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
         stop_after=args.stop_after,
     )
     print(str(dest_run_root / RUN_MANIFEST_PATH))
+
+
+def handle_dedupe(args: argparse.Namespace) -> None:
+    """Clean up and deduplicate index.jsonl in the experiment workspace root."""
+    from .index import deduplicate_index_records, resolve_experiment_root
+
+    repo_root = Path.cwd()
+    exp_root = resolve_experiment_root(repo_root / "workspace") or resolve_experiment_root(
+        repo_root
+    )
+    if not exp_root:
+        raise RuntimeError("Could not find experiment root directory from CWD.")
+
+    print(f"Auditing and deduplicating SLAVV index under {exp_root}...")
+    dry_run = getattr(args, "dry_run", False)
+    if dry_run:
+        print("[Dry Run Mode] No files will be modified on disk.")
+
+    removed = deduplicate_index_records(exp_root, dry_run=dry_run)
+
+    if removed:
+        print(f"\nFound {len(removed)} stale or duplicate records to remove:")
+        for r in removed:
+            print(f"  - ID: {r.get('id') or r.get('run_id')} (Kind: {r.get('kind')})")
+            print(f"    Path: {r.get('path') or r.get('run_root')}")
+        if not dry_run:
+            print("\nSuccessfully cleaned up and updated index.jsonl!")
+        else:
+            print("\nDry run completed. Run without --dry-run to apply these changes.")
+    else:
+        print("\nWorkspace index is already perfectly canonical and clean!")

@@ -4,9 +4,9 @@ from typing import cast
 
 import numpy as np
 
+from slavv_python.core import edge_extraction_standard as standard_edges
 from slavv_python.core.candidate_manifest import _append_candidate_unit
 from slavv_python.core.common import _use_matlab_frontier_tracer
-from slavv_python.core import edge_extraction_standard as standard_edges
 
 
 def test_use_matlab_frontier_tracer_requires_exact_network_and_exact_compatible_energy_origin():

@@ -19,6 +19,7 @@ from .common import (
     _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
+from .edge_tracing import trace_edge
 from .generate import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
@@ -27,7 +28,6 @@ from .generate import (
 from .lifecycle import (
     _build_frontier_candidate_lifecycle,
 )
-from .edge_tracing import trace_edge
 from .trace_directions import (
     estimate_vessel_directions,
     generate_edge_directions,

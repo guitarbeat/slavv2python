@@ -6,8 +6,8 @@ from typing import Any, cast
 
 import numpy as np
 
-from .edge_payloads import _merge_edge_diagnostics
 from .audit import _normalize_candidate_connection_sources
+from .edge_payloads import _merge_edge_diagnostics
 
 
 def _append_candidate_unit(target: dict[str, Any], unit_payload: dict[str, Any]) -> None:

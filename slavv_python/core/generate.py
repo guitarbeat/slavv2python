@@ -11,8 +11,8 @@ from joblib import Parallel, delayed
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
 
-    from .edges_internal.edge_tracing import TraceMetadata
     from .common import Float32Array, Float64Array, Int16Array, Int32Array
+    from .edges_internal.edge_tracing import TraceMetadata
 else:
     Int16Array = np.ndarray
     Int32Array = np.ndarray
@@ -20,8 +20,8 @@ else:
     Float64Array = np.ndarray
 
 from .edge_payloads import _empty_edge_diagnostics
-from .radius_utils import _scalar_radius
 from .global_watershed import ExecutionTracer, _generate_edge_candidates_matlab_global_watershed
+from .radius_utils import _scalar_radius
 
 logger = logging.getLogger(__name__)
 
