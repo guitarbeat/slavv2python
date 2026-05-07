@@ -9,6 +9,20 @@
 
 ## 🔴 Critical Priority Tasks
 
+### [CRITICAL] ENVIRONMENT-001: Set Up Python Virtual Environment - 📌 PINNED
+**Priority:** Critical | **Effort:** Low | **Status:** ⏳ Pending User Action
+
+**Description:**
+A new Python virtual environment is required to resolve dependency conflicts (e.g., NumPy version) and module import errors encountered during project installation. This step ensures an isolated and consistent development environment.
+
+**Next Steps:**
+- [ ] User: Create a new virtual environment using `python -m venv .venv` in the project root.
+- [ ] User: Activate the virtual environment (`.venv\Scripts\activate` on Windows or `source .venv/bin/activate` on macOS/Linux).
+- [ ] Agent: Once activated, agent will install project dependencies and verify the TUI application.
+
+---
+
+
 ### [CRITICAL] PARITY-002: Achieve 80% Match Rate Milestone - ⏳ ACTIVE
 **Priority:** Critical | **Effort:** Large (1-2 weeks) | **Status:** ⏳ Active (2026-05-06)
 

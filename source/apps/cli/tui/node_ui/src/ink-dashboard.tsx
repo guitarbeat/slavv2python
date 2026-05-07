@@ -230,126 +230,40 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
         </Text>
       </Box>
 
-      {/* BODY COLUMN SECTION */}
-      <Box flexDirection="row" width="100%" flexGrow={1} marginBottom={1}>
-        {/* LEFT COLUMN: METRICS & DETAILS (40% width) */}
-        <Box
-          borderStyle="round"
-          borderColor="blue"
-          width="40%"
-          flexDirection="column"
-          paddingX={1}
-          marginRight={1}
-        >
-          <Text bold color="yellow" underline>
-            ⚙️ SYSTEM PROFILE
-          </Text>
-          <Box flexDirection="column" marginY={1}>
-            <Text>
-              Profile: <Text color="green" bold>{config.environment.toUpperCase()}</Text>
-            </Text>
-            <Text>
-              Threads: <Text color="green" bold>{config.threadLimit} Cores</Text>
-            </Text>
-            <Text ellipsizeMode="end">
-              Output: <Text color="gray">{config.outputDir.length > 22 ? config.outputDir.slice(0, 19) + '...' : config.outputDir}</Text>
-            </Text>
-          </Box>
-
-          <Text bold color="yellow" underline>
-            📦 ENABLED MODULES
-          </Text>
-          <Box flexDirection="column" marginY={1}>
-            {config.modules.map((m) => {
-              const labelMap: Record<string, string> = {
-                preprocessing: '• Preprocessing & CLAHE',
-                feature_extraction: '• Hessian Feature Extract',
-                edge_detection: '• Global Watershed Grid',
-                vector_analysis: '• Skeleton & Vector Graph',
-              };
-              return (
-                <Text key={m} color="cyan">
-                  {labelMap[m] || `• ${m}`}
-                </Text>
-              );
-            })}
-          </Box>
-
-          <Text bold color="yellow" underline>
-            📈 LIVE METRICS
-          </Text>
-          <Box flexDirection="column" marginTop={1}>
-            <Text>
-              CPU Load: <Text color={cpuLoad > 85 ? 'red' : 'green'} bold>{cpuLoad}%</Text>
-            </Text>
-            <Text>
-              Memory: <Text color="green" bold>{memUsage} GB / 32 GB</Text>
-            </Text>
-            <Box flexDirection="column" marginTop={1}>
-              <Text>Progress:</Text>
-              <Text color="green" bold>
-                {renderProgressBar(pipelineProgress)}
-              </Text>
-            </Box>
-          </Box>
+      {/* METRICS SECTION */}
+      <Box flexDirection="row" justifyContent="space-between" width="100%" marginBottom={1}>
+        <Box borderStyle="single" paddingX={1} marginRight={1}>
+          <Text>CPU: {cpuLoad}%</Text>
         </Box>
-
-        {/* RIGHT COLUMN: RUNNING LOGS (60% width) */}
-        <Box
-          borderStyle="round"
-          borderColor="blue"
-          width="60%"
-          flexDirection="column"
-          paddingX={1}
-        >
-          <Text bold color="green" underline>
-            📋 PIPELINE LOG OPERATIONS
-          </Text>
-          <Box flexDirection="column" flexGrow={1} marginY={1}>
-            {completedLogs.map((log, index) => {
-              let logColor = 'white';
-              if (log.startsWith('[CMD]')) logColor = 'cyan';
-              else if (log.startsWith('[SYS]')) logColor = 'yellow';
-              else if (log.startsWith('[HELP]')) logColor = 'blue';
-              else if (log.startsWith('[WARN]')) logColor = 'red';
-              else if (log.includes('100% parity')) logColor = 'green';
-
-              return (
-                <Text key={index} color={logColor}>
-                  {log}
-                </Text>
-              );
-            })}
-            {/* The active typewriter stream log */}
-            {currentTypedText && (
-              <Text color="white" bold>
-                ⏱️ [INFO] {currentTypedText}
-                <Text color="cyan">{showCursor ? '▮' : ' '}</Text>
-              </Text>
-            )}
-          </Box>
-          <Box justifyContent="flex-end">
-            <Text color="gray" italic>
-              Status: {isPaused ? chalk.yellow('⏸️ PAUSED') : chalk.green('▶️ RUNNING')}
-            </Text>
-          </Box>
+        <Box borderStyle="single" paddingX={1} marginRight={1}>
+          <Text>MEM: {memUsage}GB</Text>
+        </Box>
+        <Box borderStyle="single" paddingX={1} flexGrow={1}>
+          <Text>Pipeline: {renderProgressBar(pipelineProgress)}</Text>
         </Box>
       </Box>
 
-      {/* FOOTER INPUT BOX */}
-      <Box borderStyle="single" borderColor="cyan" width="100%" paddingX={1}>
-        <Text bold color="cyan">
-          {'> '}
-        </Text>
-        <Text color="white">
-          {inputText}
-          {showCursor && <Text color="cyan">▮</Text>}
-        </Text>
-        {!inputText && (
-          <Text color="gray" italic>
-            {' '}Type command (help, pause, resume, clear, exit)...
-          </Text>
-        )}
+      {/* LOGS SECTION */}
+      <Box
+        flexGrow={1}
+        borderStyle="single"
+        borderColor="gray"
+        flexDirection="column"
+        paddingX={1}
+        marginBottom={1}
+        height={terminalHeight - 12} // Adjust height based on header/footer
+        overflow="hidden"
+      >
+        {completedLogs.map((log, i) => (
+          <Text key={i}>{log}</Text>
+        ))}
+        {currentTypedText && <Text>{currentTypedText}</Text>}
+      </Box>
+
+      {/* COMMAND INPUT SECTION */}
+      <Box flexDirection="row" borderStyle="single" borderColor="blue" paddingX={1}>
+        <Text color="green">{`CMD > ${inputText}`}</Text>
+        {showCursor && <Text color="green">_</Text>}
       </Box>
     </Box>
   );
