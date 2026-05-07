@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.edges_internal.bridge_insertion import (
+from slavv_python.core.bridge_insertion import (
     _matlab_bridge_search_target,
     add_vertices_to_edges_matlab_style,
 )
 from slavv_python.core.network import construct_network
-from slavv_python.core.vertices_internal.vertex_painting import (
+from slavv_python.core.vertex_painting import (
     paint_vertex_center_image,
     paint_vertex_image,
 )
@@ -233,7 +233,7 @@ def test_add_vertices_to_edges_matlab_style_has_no_parent_half_fallback(monkeypa
     }
 
     monkeypatch.setattr(
-        "slavv_python.core.edges_internal.bridge_insertion._matlab_bridge_search_target",
+        "slavv_python.core.bridge_insertion._matlab_bridge_search_target",
         lambda *args, **kwargs: None,
     )
 

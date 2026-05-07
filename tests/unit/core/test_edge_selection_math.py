@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.edges_internal.edge_cleanup import (
+from slavv_python.core.edge_cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv_python.core.edges_internal.edge_selection_payloads import (
+from slavv_python.core.edges_internal_edge_selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,

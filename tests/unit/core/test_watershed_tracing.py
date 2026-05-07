@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from slavv_python.core.edge_candidates_internal.global_watershed import (
+from slavv_python.core.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
-from slavv_python.core.edge_candidates_internal.tracing import ExecutionTracer
+from slavv_python.core.tracing import ExecutionTracer
 
 
 class MockTracer(ExecutionTracer):

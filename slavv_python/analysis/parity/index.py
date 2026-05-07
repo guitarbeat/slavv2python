@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from slavv_python.runtime.run_tracking.io import atomic_write_text, stable_json_dumps
+from slavv_python.runtime.io import atomic_write_text, stable_json_dumps
 
 from .constants import EXPERIMENT_INDEX_PATH, EXPERIMENT_ROOT_SUBDIRS
 

@@ -148,7 +148,7 @@ def run_exact_parity_proof(
 
     compare_func = compare_func or compare_exact_artifacts
     report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
-    from slavv_python.core.energy_internal.energy_provenance import exact_route_gate_description
+    from slavv_python.core.energy_provenance import exact_route_gate_description
 
     report_payload["report_scope"] = report_scope
     report_payload["exact_route_gate"] = exact_route_gate_description()

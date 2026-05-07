@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from slavv_python.runtime.run_tracking.lifecycle import (
+from slavv_python.runtime.lifecycle import (
     begin_stage_snapshot,
     complete_stage_snapshot,
     fail_stage_snapshot,
@@ -11,7 +11,7 @@ from slavv_python.runtime.run_tracking.lifecycle import (
     update_optional_task_snapshot,
     update_stage_snapshot,
 )
-from slavv_python.runtime.run_tracking.models import RunSnapshot, StageSnapshot
+from slavv_python.runtime.models import RunSnapshot, StageSnapshot
 
 
 def test_mark_preprocess_complete_snapshot_marks_artifacts_and_progress():

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.edge_candidates_internal.common import _build_matlab_global_watershed_lut
+from slavv_python.core.common import _build_matlab_global_watershed_lut
 from slavv_python.io.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,
     build_candidate_coverage_report,

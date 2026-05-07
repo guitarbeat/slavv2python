@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from slavv_python.runtime.run_tracking.layout import resolve_run_layout
+from slavv_python.runtime.layout import resolve_run_layout
 
 
 def test_resolve_run_layout_structured_uses_staged_directories(tmp_path):

@@ -11,7 +11,7 @@ from slavv_python.core.edge_selection import (
     _snapshot_endpoint_influences_matlab,
 )
 from slavv_python.core.edges_internal import edge_selection as conflict_painting_module
-from slavv_python.core.edges_internal.edge_cleanup import clean_edges_cycles_python
+from slavv_python.core.edge_cleanup import clean_edges_cycles_python
 from slavv_python.core.graph import _remove_short_hairs
 from slavv_python.core.vertices import extract_vertices, paint_vertex_center_image
 

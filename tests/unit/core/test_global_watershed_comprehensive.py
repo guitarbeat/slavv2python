@@ -17,12 +17,12 @@ import math
 import numpy as np
 import pytest
 
-from slavv_python.core.edge_candidates_internal.common import (
+from slavv_python.core.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
-from slavv_python.core.edge_candidates_internal.generate import _finalize_matlab_parity_candidates
-from slavv_python.core.edge_candidates_internal.global_watershed import (
+from slavv_python.core.generate import _finalize_matlab_parity_candidates
+from slavv_python.core.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
     _matlab_global_watershed_border_locations,
@@ -811,7 +811,7 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim
 def test_generate_edge_candidates_matlab_global_watershed_uses_configured_step_size(
     monkeypatch,
 ):
-    import slavv_python.core.edge_candidates_internal.global_watershed as global_watershed_module
+    import slavv_python.core.global_watershed as global_watershed_module
 
     observed_step_sizes: list[float] = []
 

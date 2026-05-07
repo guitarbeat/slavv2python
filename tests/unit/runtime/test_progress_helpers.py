@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import calendar
 
-from slavv_python.runtime.run_tracking.models import RunSnapshot, StageSnapshot
-from slavv_python.runtime.run_tracking.progress import (
+from slavv_python.runtime.models import RunSnapshot, StageSnapshot
+from slavv_python.runtime.progress import (
     calculate_overall_progress,
     estimate_run_eta,
     estimate_stage_eta,

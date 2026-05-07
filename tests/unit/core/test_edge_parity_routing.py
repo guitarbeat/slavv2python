@@ -4,8 +4,8 @@ from typing import cast
 
 import numpy as np
 
-from slavv_python.core.edge_candidates_internal.candidate_manifest import _append_candidate_unit
-from slavv_python.core.edge_candidates_internal.common import _use_matlab_frontier_tracer
+from slavv_python.core.candidate_manifest import _append_candidate_unit
+from slavv_python.core.common import _use_matlab_frontier_tracer
 from slavv_python.core.edges_internal import edge_extraction_standard as standard_edges
 
 

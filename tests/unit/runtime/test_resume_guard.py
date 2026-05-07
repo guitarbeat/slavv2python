@@ -7,8 +7,8 @@ from tests.support.run_state_builders import build_run_context
 
 from slavv_python.runtime import load_run_snapshot
 from slavv_python.runtime.run_tracking import STATUS_BLOCKED, STATUS_PENDING
-from slavv_python.runtime.run_tracking.models import RunSnapshot
-from slavv_python.runtime.run_tracking.resume_guard import (
+from slavv_python.runtime.models import RunSnapshot
+from slavv_python.runtime.resume_guard import (
     apply_resume_block,
     build_resume_block_message,
     fingerprint_mismatches,
