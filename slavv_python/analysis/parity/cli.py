@@ -67,7 +67,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
 
     # Resolve input and params
-    repo_root = Path.cwd()  # Assume CWD is repo root as per ANTIGRAVITY.md
+    repo_root = Path.cwd()  # Assume CWD is repo root as per AGENTS.md
     input_file = resolve_input_file(source_surface, args.input, repo_root=repo_root)
     params = load_params_file(source_surface, args.params_file)
 

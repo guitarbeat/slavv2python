@@ -57,7 +57,7 @@ class WorkspaceAuditor:
         "README.md",
         "LICENSE",
         "CHANGELOG.md",
-        "ANTIGRAVITY.md",
+        "AGENTS.md",
         ".gitignore",
     }
 

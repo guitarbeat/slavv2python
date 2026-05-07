@@ -1,4 +1,4 @@
-# AI Agent Repository Guide (ANTIGRAVITY.md)
+# AI Agent Repository Guide (AGENTS.md)
 
 This document provides canonical instructions, constraints, workflows, and guardrails for any AI coding agent working in the `slavv2python` repository. All agents must read and strictly adhere to these guidelines to ensure codebase consistency, exact mathematical/behavioral parity with MATLAB, and robust software architecture.
 
