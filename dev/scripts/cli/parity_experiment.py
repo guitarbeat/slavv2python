@@ -1,5 +1,7 @@
 """Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import argparse
@@ -32,23 +34,6 @@ from source.analysis.parity.constants import (
     DEFAULT_MEMORY_SAFETY_FRACTION,
     EXACT_STAGE_ORDER,
 )
-from source.runtime._run_state.io import fingerprint_file
-from source.analysis.parity.execution import (
-    validate_exact_proof_source_surface,
-    ensure_dest_run_layout,
-)
-from source.analysis.parity.promotion import (
-    materialize_dataset_record as _materialize_dataset_record,
-)
-from source.core.edges_internal.edge_selection import choose_edges_for_workflow
-from source.analysis.parity.reports import render_exact_preflight_report
-from source.core._edges.bridge_vertices import add_vertices_to_edges_matlab_style
-from source.io.matlab_fail_fast import (
-    render_lut_proof_report,
-    render_candidate_coverage_report,
-)
-from source.io.matlab_exact_proof import render_exact_proof_report
-from source.core.edges_internal.edge_finalize import finalize_edges_matlab_style
 
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python

@@ -38,7 +38,38 @@ export const InkDashboard: React.FC<InkDashboardProps> = ({ config }) => {
   const [pipelineProgress, setPipelineProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // 3. Typewriter Log Stream state
+  // 3. Listen for real-time progress from stdin
+  useEffect(() => {
+    const handleData = (data: Buffer) => {
+      try {
+        const str = data.toString().trim();
+        if (!str) return;
+
+        // Try to parse as JSON progress event
+        const event = JSON.parse(str);
+        if (event.type === 'progress') {
+          setPipelineProgress(event.value);
+        }
+        if (event.type === 'log') {
+          setCompletedLogs((prev) => [...prev.slice(-15), `[PIPE] ${event.message}`]);
+        }
+        if (event.type === 'metrics') {
+          if (event.cpu !== undefined) setCpuLoad(event.cpu);
+          if (event.mem !== undefined) setMemUsage(event.mem);
+        }
+      } catch (e) {
+        // Not a JSON event, treat as raw log
+        setCompletedLogs((prev) => [...prev.slice(-15), `[RAW] ${data.toString().trim()}`]);
+      }
+    };
+
+    process.stdin.on('data', handleData);
+    return () => {
+      process.stdin.removeListener('data', handleData);
+    };
+  }, []);
+
+  // 4. Typewriter Log Stream state
   const [completedLogs, setCompletedLogs] = useState<string[]>([
     `[INFO] Workspace verified: c:\\Users\\alw4834\\Documents\\slavv2python`,
     `[INFO] Project [${config.projectName}] initialized successfully.`,

@@ -1,99 +1,101 @@
-﻿# GEMINI.md
+# AI Agent Repository Guide (GEMINI.md)
 
-Repository guidance for coding agents working in `slavv2python`.
+This document provides canonical instructions, constraints, workflows, and guardrails for any AI coding agent working in the `slavv2python` repository. All agents must read and strictly adhere to these guidelines to ensure codebase consistency, exact mathematical/behavioral parity with MATLAB, and robust software architecture.
 
-## Scope
+---
 
-- Work from the repository root.
-- Prefer PowerShell-friendly commands on Windows.
-- Treat the commands in this file as the canonical workflows for the repo.
+## 🎯 Scope & Core Principles
 
-## Repository Map
+- **Work Location:** Always work from the repository root directory.
+- **Environment:** Prefer Windows PowerShell-friendly commands.
+- **Canonical Source of Truth:** Treat the workflows, commands, and rules in this file as the definitive guidance for the repo.
 
-- `source/`: core package code, including processing, I/O, analysis, visualization, and app entry points
-- `dev/tests/`: unit, integration, UI, and diagnostic coverage
-- `dev/scripts/`: maintained helper scripts and benchmarks
-- `docs/`: maintained reference docs for the current Python codebase
+---
 
-## Read First When Relevant
+## 🗺️ Repository Map
 
-- `docs/README.md`: index for maintained reference docs.
-- `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md`: canonical claim boundaries, source-of-truth hierarchy, and remaining work for fully implementing the released SLAVV method in Python.
-- `docs/reference/core/MATLAB_PARITY_MAPPING.md`: canonical MATLAB-to-Python map for exact imported-MATLAB parity work.
-- `docs/reference/workflow/PYTHON_NAMING_GUIDE.md`: preferred Python names, grouped package surfaces, and compatibility policy for the live codebase.
-- `dev/tests/README.md`: canonical test placement rules; new tests should mirror the owning package surface instead of the task name that introduced them.
-- `dev/tests/conftest.py`: shared pytest behavior, including folder-based markers and the repo-local `tmp_path` fixture rooted under `dev/tmp_tests/`.
-- `docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md`: contributor guide for adding new extraction algorithms.
-- `source/runtime/run_tracking/`: preferred runtime tracking package for structured run metadata and staged artifact locations.
+| Path | Purpose / Description |
+| :--- | :--- |
+| `source/` | Core package code (processing, I/O, analysis, visualization, app entry points). |
+| `dev/tests/` | Test suite covering unit, integration, UI, and diagnostics. |
+| `dev/scripts/` | Maintained developer helper scripts, runners, and benchmarks. |
+| `docs/` | Maintained reference documentation for the Python codebase. |
 
-## Setup
+---
 
-Create and activate a virtual environment:
+## 📖 Key Reference Documents
+
+Always read these files first when working on relevant surfaces:
+
+- **Index:** [docs/README.md](file:///d:/2P_Data/Aaron/slavv2python/docs/README.md) — Index for all maintained reference docs.
+- **MATLAB Parity Plan:** [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) — Canonical claim boundaries, source-of-truth hierarchy, and remaining implementation work.
+- **MATLAB-to-Python Map:** [docs/reference/core/MATLAB_PARITY_MAPPING.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_PARITY_MAPPING.md) — Function-to-function mapping for exact parity.
+- **Python Naming Guide:** [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/workflow/PYTHON_NAMING_GUIDE.md) — Preferred Python naming conventions and package surfaces.
+- **Testing Guide:** [dev/tests/README.md](file:///d:/2P_Data/Aaron/slavv2python/dev/tests/README.md) — Rules for test placement and markers.
+- **Shared Test Config:** [dev/tests/conftest.py](file:///d:/2P_Data/Aaron/slavv2python/dev/tests/conftest.py) — Shared pytest behavior and `tmp_path` setup.
+- **Extraction Algorithms:** [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) — Contributor guide for adding new extraction algorithms.
+- **Runtime Tracking:** `source/runtime/run_tracking/` — Structured run metadata and staged artifact locations.
+
+---
+
+## ⚙️ Setup & Installation
+
+To set up or recreate the local environment:
 
 ```powershell
+# Create and activate virtual environment
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
 
-Install the dependency set that matches the task:
+# Install dependency set matching your task
+pip install -e .                # Core package only
+pip install -e ".[app]"          # With Streamlit app dependencies
+pip install -e ".[app,dev]"      # Full developer environment (recommended)
 
-```powershell
-pip install -e .
-pip install -e ".[app]"
-pip install -e ".[app,dev]"
-```
-
-Install pre-commit hooks when working on repo changes:
-
-```powershell
+# Install pre-commit hooks
 pre-commit install
 ```
 
-## Canonical Commands
+---
 
-Format:
+## 🛠️ Canonical Quality Commands
 
+### Code Formatting
 ```powershell
 python -m ruff format source dev/tests
 python -m ruff format --check source dev/tests
 ```
 
-Lint:
-
+### Linting & Auto-fixes
 ```powershell
 python -m ruff check source dev/tests
 python -m ruff check source dev/tests --fix
 ```
 
-Type-check:
-
+### Type Checking
 ```powershell
 python -m mypy
 ```
+> [!NOTE]
+> The current `mypy` gate is run from the repo-root and covers the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
 
-Notes:
-
-- The current supported mypy gate is the repo-root `python -m mypy` command.
-- It currently covers the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
-
-Tests:
-
+### Running Tests
 ```powershell
 python -m pytest dev/tests/
 python -m pytest -m "unit or integration"
 ```
 
-Other useful checks:
-
+### Other Checks
 ```powershell
 python -m compileall source dev/scripts
 pre-commit run --all-files
 ```
 
-## CLI And App Workflows
+---
 
-Package CLI:
+## 🚀 CLI & Application Workflows
 
+### Package CLI Commands
 ```powershell
 slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
@@ -102,44 +104,34 @@ slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
 ```
 
-Useful `slavv run` options:
-
+### Advanced `slavv run` Options
 ```powershell
 slavv run -i volume.tif -o slavv_output --run-dir dev\runs\sample_a
 slavv run -i volume.tif -o slavv_output --stop-after edges
 slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 ```
+*Note: `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted. The CLI defaults to the native `paper` profile.*
 
-Notes:
-
-- `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted.
-- The public CLI/app workflow defaults to the native `paper` profile.
-- `slavv analyze` can operate directly on the authoritative exported `network.json`.
-
-Streamlit app:
-
+### Streamlit App
 ```powershell
 slavv-app
 python -m streamlit run source/apps/streamlit/app.py
 ```
+*Note: The launcher requires the `app` extra. The ML curation flow accepts `.joblib` and `.pkl` model files directly.*
 
-The `slavv-app` launcher requires the `app` extra.
-The ML curation flow accepts uploaded `.joblib` and `.pkl` model files directly.
+---
 
-## Recommended Workflows
+## 🔄 Recommended Workflows
 
-### Small Code Change
-
+### ⚡ Small Code Changes
 1. Read the impacted module and its nearest tests first.
-2. If you are adding or moving tests, verify placement against `dev/tests/README.md` and the marker behavior in `dev/tests/conftest.py`.
-3. Run the smallest targeted pytest command that covers the change.
-4. Run `python -m ruff check source dev/tests --fix` and `python -m ruff format source dev/tests` if you touched Python files.
-5. Finish with `python -m pytest -m "unit or integration"` when the change crosses module boundaries.
+2. Verify test placement against `dev/tests/README.md` and `dev/tests/conftest.py`.
+3. Run the smallest targeted `pytest` command covering the change.
+4. Format and lint: `ruff check --fix` and `ruff format`.
+5. Run full targeted suite: `python -m pytest -m "unit or integration"` if the change crosses module boundaries.
 
-### Regression Check
-
-Use this before pushing substantial package changes:
-
+### 🛡️ Regression Checks
+Run these checks before submitting substantial changes:
 ```powershell
 python -m compileall source dev/scripts
 python -m ruff format --check source dev/tests
@@ -147,110 +139,48 @@ python -m ruff check source dev/tests
 python -m mypy
 python -m pytest -m "unit or integration"
 ```
+*Note: If the change is UI-facing, also run tests in `dev/tests/ui/`.*
 
-If the change is UI-facing, also run the relevant `dev/tests/ui/` coverage.
-
-### Developer Parity Experiment
-
-Use this when you need a current-code rerun against a reusable staged comparison
-root plus a preserved MATLAB oracle package:
-
+### 🔬 Developer Parity Experiments
+Use this flow to compare current code runs against a staged comparison root and a preserved MATLAB oracle package:
 ```powershell
-python dev/scripts/cli/parity_experiment.py promote-oracle `
-    --matlab-batch-dir D:\incoming\batch_260421-151654 `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dataset-file D:\datasets\volume.tif `
-    --oracle-id v22_a
+# Promote oracle
+python dev/scripts/cli/parity_experiment.py promote-oracle --matlab-batch-dir D:\incoming\batch_260421-151654 --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a --dataset-file D:\datasets\volume.tif --oracle-id v22_a
 
-python dev/scripts/cli/parity_experiment.py preflight-exact `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+# Run preflight check
+python dev/scripts/cli/parity_experiment.py preflight-exact --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
 
-python dev/scripts/cli/parity_experiment.py prove-luts `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+# Prove lookup tables (LUTs)
+python dev/scripts/cli/parity_experiment.py prove-luts --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
 
-python dev/scripts/cli/parity_experiment.py capture-candidates `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
-
-python dev/scripts/cli/parity_experiment.py replay-edges `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
-
-python dev/scripts/cli/parity_experiment.py rerun-python `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial `
-    --rerun-from edges
-
-python dev/scripts/cli/parity_experiment.py summarize `
-    --run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
-
-python dev/scripts/cli/parity_experiment.py prove-exact `
-    --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run `
-    --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a `
-    --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial `
-    --stage all
-
-python dev/scripts/cli/parity_experiment.py promote-report `
-    --run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial
+# Run full exact proof comparison
+python dev/scripts/cli/parity_experiment.py prove-exact --source-run-root D:\slavv_comparisons\experiments\live-parity\runs\seed_run --oracle-root D:\slavv_comparisons\experiments\live-parity\oracles\v22_a --dest-run-root D:\slavv_comparisons\experiments\live-parity\runs\my_current_code_trial --stage all
 ```
 
-Notes:
+---
 
-- This runner is developer-only.
-- The maintained experiment root splits `datasets/`, `oracles/`, `runs/`, and
-  `reports/`, with `index.jsonl` at the root.
-- `preflight-exact`, `prove-luts`, `capture-candidates`, and `replay-edges` are the fail-fast debugging funnel for the imported-MATLAB exact route.
-- `rerun-python` and `summarize` provide count-level rerun summaries.
-- `prove-exact` compares normalized Python checkpoints against preserved raw MATLAB vectors.
-- `runs/` is disposable; use `promote-report` when a summary should be kept.
-- `fail-fast` runs the cheap gates first and stops at the first failing gate before the full exact proof.
-- It stays confined to the maintained developer parity runner surface.
+## 🧮 Exact MATLAB Parity Rule
 
-## Exact MATLAB Parity Rule
+For any MATLAB-parity-sensitive surface (especially the `edges` and `network` stages), the required goal is **exact mathematical and algorithm-level parity**, not approximate behavioral similarity.
 
-For any MATLAB-parity-sensitive surface, especially the imported-MATLAB `edges` and `network`
-stages, the required goal is exact method parity, not approximate behavioral similarity.
+- **Truth Source:** Treat the MATLAB source under `external/Vectorization-Public/source/` as the canonical implementation.
+- **Proof Gate:** Use `prove-exact` results and preserved MATLAB vectors as the proof gate.
+- **No Approximations:** Do not accept "close enough" replacements (e.g., heuristic supplements, local tracing deviations) unless explicitly approved and documented.
+- **1:1 Structure:** Python parity work must reproduce the same mathematical method and algorithm structure 1:1. Any undocumented deviation is a bug.
 
-- Treat `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md` as the canonical
-  claim-boundary document for what counts as source-aligned, artifact-proven, or fully
-  implemented in Python.
-- Treat the MATLAB source under `external/Vectorization-Public/source/` as the canonical
-  implementation.
-- Treat `prove-exact` results and preserved MATLAB vectors as the proof gate.
-- Treat the paper prose as explanatory context, not as a higher-priority spec than the released
-  MATLAB code.
-- Python parity work must reproduce the same mathematical method and algorithm structure 1:1 unless a
-  deviation is explicitly documented and approved as non-parity work.
-- Do not accept "close enough" replacements such as heuristic supplements, salvage passes, reordered
-  ownership logic, or simplified local tracing when the MATLAB source uses a different global/shared
-  method.
-- Any undocumented deviation between Python and MATLAB on a parity surface should be treated as a bug,
-  not as an implementation choice.
-- When working on parity, audit the current Python path against the MATLAB source and the maintained
-  mapping before making fixes.
+---
 
-## Repo-Specific Guardrails
+## 🚨 Repo-Specific Guardrails & Constraints
 
-- Keep package code under `source/`.
-- Prefer the grouped package surfaces described in `docs/reference/workflow/PYTHON_NAMING_GUIDE.md` for new first-party imports and examples.
-- Keep tests under `dev/tests/`; follow `dev/tests/README.md` for ownership-based placement and marker usage.
-- Pytest markers are assigned by folder in `dev/tests/conftest.py`; files with `regression` in the node id also receive the `regression` marker.
-- Use the repo-local `tmp_path` fixture behavior in `dev/tests/conftest.py` when writing tests; temporary test artifacts should stay under `dev/tmp_tests/`, not ad-hoc temp roots.
-- Use `logging` in library code instead of `print()`. CLI commands may print user-facing summaries.
-- Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings such as `encoding="utf-8"` when writing repository-managed text artifacts.
-- Prefer `from __future__ import annotations` in new Python modules to match the prevailing package style.
-- Keep CLI surfaces aligned with the current `argparse`-based entrypoints in `source/apps/`; do not introduce a new CLI framework unless the task explicitly calls for it.
-- Preserve the `source/` package layout and the existing console entrypoints declared in `pyproject.toml` (`slavv` and `slavv-app`).
-- For MATLAB-parity work, preserve method parity with the upstream MATLAB source before optimizing,
-  simplifying, or generalizing the Python implementation.
-- Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility has been removed.
-- Prefer searching with `rg`, but exclude noisy generated trees like `dev/tmp_tests/` and vendored assets under `external/blender_resources/` unless the task explicitly targets them.
-- Do not treat generated outputs under `comparisons/`, `comparison_output*/`, or cache directories as source inputs for code changes.
+> [!IMPORTANT]
+> **Max File Length:** Do not create or modify Python scripts to be more than **1000 lines** long. Keep files modular and focused.
 
-
+- **Package Layout:** Keep all package code under `source/`. Use the grouped package surfaces described in `PYTHON_NAMING_GUIDE.md`.
+- **Test Placement:** Keep tests under `dev/tests/` (following `dev/tests/README.md`). Files containing `regression` in the name automatically receive the `regression` marker.
+- **Temporary Files:** Use the repo-local `tmp_path` fixture in `dev/tests/conftest.py` for testing. Keep test artifacts under `dev/tmp_tests/`, not ad-hoc system temp roots.
+- **Logging:** Use the standard `logging` library in core/library code instead of `print()`. CLI commands may print user-facing console summaries.
+- **Path Handling:** Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings (e.g., `encoding="utf-8"`) when writing repository-managed text files.
+- **Type Annotations:** Prefer `from __future__ import annotations` in all Python modules to match the prevailing package style.
+- **CLI Framework:** Keep CLI surfaces aligned with the `argparse`-based entrypoints under `source/apps/`. Do not introduce new CLI frameworks.
+- **Resumability:** Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility is not supported.
+- **Search Exclusions:** When searching (e.g., with `rg`), exclude noisy generated directories like `dev/tmp_tests/` and vendored assets under `external/blender_resources/`.

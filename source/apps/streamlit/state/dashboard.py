@@ -2,4 +2,4 @@
 
 from __future__ import annotations
 
-from ...state.dashboard import *
+from ...state.dashboard import *  # noqa: F403

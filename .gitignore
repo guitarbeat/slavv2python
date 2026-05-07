@@ -131,6 +131,7 @@ Desktop.ini
 *~
 
 # Project-specific
+slavv_comparisons/
 *.zip
 pmd-bin-*/
 blender_resources/bbp-blender-*/
