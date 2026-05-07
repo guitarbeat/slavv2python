@@ -306,6 +306,7 @@ class SLAVVProcessor(SlavvPipeline):
         image: np.ndarray,
         params: dict[str, Any],
         progress_callback: Callable[[float, str], None] | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Legacy compatibility method for run."""
-        return self.run(image, params, progress_callback=progress_callback)
+        return self.run(image, params, progress_callback=progress_callback, **kwargs)

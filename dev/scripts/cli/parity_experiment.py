@@ -35,6 +35,22 @@ from source.analysis.parity.constants import (
     EXACT_STAGE_ORDER,
 )
 
+from source.runtime.run_state import fingerprint_file
+from source.analysis.parity.promotion import materialize_dataset_record as _materialize_dataset_record
+from source.analysis.parity.execution import (
+    ensure_dest_run_layout,
+    validate_exact_proof_source_surface,
+)
+
+from source.core.edges import (
+    choose_edges_for_workflow,
+    add_vertices_to_edges_matlab_style,
+    finalize_edges_matlab_style,
+)
+from source.analysis.parity.reports import render_exact_preflight_report
+from source.io.matlab_fail_fast import render_lut_proof_report, render_candidate_coverage_report
+from source.io.matlab_exact_proof import render_exact_proof_report
+
 # Internal aliases for test monkeypatching
 _handle_rerun_python = handle_rerun_python
 _handle_summarize = handle_summarize
