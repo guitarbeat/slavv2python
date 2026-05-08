@@ -42,6 +42,7 @@ There are many small files in `tests/unit/workspace_scripts/parity_experiment/`.
 ## Task List
 - [x] Audit `test_ml_curator_comprehensive.py` against its counterparts.
 - [x] Consolidate ML Curator tests and delete redundant files.
-- [ ] Merge `parity_experiment` tests into a single file.
 - [x] Merge `apps` state tests into a single file.
+- [x] Merge runtime helper tests into a single file.
+- [x] Merge `parity_experiment` tests into a single file.
 - [ ] Run full test suite to ensure parity.
