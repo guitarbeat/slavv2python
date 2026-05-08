@@ -25,7 +25,7 @@ from slavv_python.analysis.ml_curator_io import materialize_model_source
 from slavv_python.analysis.ml_curator_training import load_aggregated_training_data
 
 if TYPE_CHECKING:
-    from Any = object
+    Any = object
 
 
 class _UploadedModel:
