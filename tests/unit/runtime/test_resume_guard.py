@@ -6,6 +6,7 @@ import pytest
 from tests.support.run_state_builders import build_run_context
 
 from slavv_python.runtime import load_run_snapshot
+from slavv_python.runtime.constants import STATUS_BLOCKED, STATUS_PENDING
 from slavv_python.runtime.models import RunSnapshot
 from slavv_python.runtime.resume_guard import (
     apply_resume_block,
@@ -13,7 +14,6 @@ from slavv_python.runtime.resume_guard import (
     fingerprint_mismatches,
     update_snapshot_fingerprints,
 )
-from slavv_python.runtime.constants import STATUS_BLOCKED, STATUS_PENDING
 
 
 def test_resume_guard_blocks_mismatched_input(tmp_path):
