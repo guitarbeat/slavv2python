@@ -52,6 +52,7 @@ class WorkspaceAuditor:
         ".git",
         "scripts",
         "tests",
+        "ui",
     }
 
     CANONICAL_ROOT_FILES: ClassVar[set[str]] = {

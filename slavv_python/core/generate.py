@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from scipy.spatial import cKDTree
 
     from .common import Float32Array, Float64Array, Int16Array, Int32Array
-    from .edges_internal.edge_tracing import TraceMetadata
+    from .edge_tracing import TraceMetadata
 else:
     Int16Array = np.ndarray
     Int32Array = np.ndarray

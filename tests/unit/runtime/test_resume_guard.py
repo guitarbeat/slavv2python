@@ -13,7 +13,7 @@ from slavv_python.runtime.resume_guard import (
     fingerprint_mismatches,
     update_snapshot_fingerprints,
 )
-from slavv_python.runtime.run_tracking import STATUS_BLOCKED, STATUS_PENDING
+from slavv_python.runtime.constants import STATUS_BLOCKED, STATUS_PENDING
 
 
 def test_resume_guard_blocks_mismatched_input(tmp_path):

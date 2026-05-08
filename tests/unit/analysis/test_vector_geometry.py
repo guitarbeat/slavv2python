@@ -10,7 +10,7 @@ from slavv_python.analysis import (
     smooth_edge_traces,
     transform_vector_set,
 )
-from slavv_python.analysis.geometry_internal import (
+from slavv_python.analysis.vector_math import (
     angle_degrees,
     safe_normalize_rows,
     scaled_positions,

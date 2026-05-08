@@ -7,7 +7,7 @@ import calendar
 from tests.support.run_state_builders import build_run_context
 
 from slavv_python.runtime import RunContext
-from slavv_python.runtime.run_tracking import build_status_lines
+from slavv_python.runtime.status import build_status_lines
 
 
 def test_parse_time_uses_utc_epoch():
