@@ -159,19 +159,19 @@ comparisons/*
 !comparisons/README.md
 comparison_results/
 comparison_results_test_run/
-workspace/tmp_parity_current_venv/
-workspace/tmp_comparison_params_*.json
-workspace/datasets/*
-!workspace/datasets/.gitkeep
-workspace/oracles/*
-!workspace/oracles/.gitkeep
-workspace/reports/*
-!workspace/reports/.gitkeep
-workspace/runs/*
-!workspace/runs/.gitkeep
-workspace/tmp_tests/*
-!workspace/tmp_tests/.gitkeep
-workspace/comparisons/
+tmp_parity_current_venv/
+tmp_comparison_params_*.json
+datasets/*
+datasets/.gitkeep
+oracles/*
+oracles/.gitkeep
+reports/*
+reports/.gitkeep
+runs/*
+runs/.gitkeep
+tmp_tests/*
+tmp_tests/.gitkeep
+comparisons/
 
 # Exclude external directory from all scans
 external/
