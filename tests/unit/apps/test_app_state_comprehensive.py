@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("streamlit")
 
-from slavv_python.apps.dashboard_state import (
+from slavv_python.apps.state.dashboard import (
     load_dashboard_context,
     normalize_dashboard_results,
     resolve_dashboard_stats,

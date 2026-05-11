@@ -1,4 +1,4 @@
-﻿# MATLAB Method Implementation Plan
+# MATLAB Method Implementation Plan
 
 [Up: Reference Docs](../README.md)
 
@@ -160,8 +160,10 @@ Acceptance gate:
 
 ## Current File-Level Gap Checklist
 
-These are the concrete code surfaces that still need work before downstream
-native exact parity is done.
+> [!TIP]
+> The real-time checklist with exact source links and validation commands is now actively managed in the root [TODO.md Developer Dashboard](../../../TODO.md).
+
+These are the reference surfaces still under investigation:
 
 1. `slavv_python/core/edges_internal/candidate_generation.py`
    The preferred candidate-generation surface still delegates into

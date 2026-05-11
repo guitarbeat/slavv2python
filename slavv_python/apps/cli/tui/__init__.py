@@ -94,11 +94,12 @@ def run_tui_app(parser, args) -> None:
     # Wait, looking at clack-wizard.ts, it uses: projectName, environment, modules, outputDir, threadLimit
     # Python wizard uses: input_path, output_dir, profile, exports
 
-    input_path = config.get("input_path")
     if not input_path and "projectName" in config:
         # If it's the Node wizard, we might need to prompt for input path if it missed it
         # but for now let's assume standard mapping
         input_path = "volume.tif"  # Default
+
+    input_path = input_path or "volume.tif"  # Safety fallback
 
     output_dir = config.get("output_dir") or config.get("outputDir") or "./slavv_output"
     profile = config.get("profile") or "paper"

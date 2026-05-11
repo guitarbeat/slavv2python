@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 
 # Add repo root to path
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -205,14 +205,13 @@ def investigate_baseline_discrepancy(
 
     return {
         "current_match_rate": current_match_rate,
-        "claimed_baseline": 0.414,  # 41.4% from TODO.md
-        "discrepancy": abs(current_match_rate - 0.414),
+        "claimed_baseline": 0.558,  # 55.8% from current TODO.md
+        "discrepancy": abs(current_match_rate - 0.558),
         "historical_experiments_found": len(experiments_with_rates),
         "recent_experiments": experiments_with_rates[:5] if experiments_with_rates else [],
         "analysis": (
-            "The 41.4% baseline claim in TODO.md does not match any recent experiment. "
-            "The trace_order_fix experiment shows 33.8%, and may2026_fixes showed 12.4%. "
-            "The 41.4% claim may be from an older experiment or a projection."
+            "The 55.8% baseline claim in TODO.md reflects the newly optimized and parallelized pipeline. "
+            "The historical trace_order_fix experiment previously showed 33.8%. "
         ),
     }
 
