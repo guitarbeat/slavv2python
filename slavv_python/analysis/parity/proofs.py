@@ -570,7 +570,7 @@ def build_exact_preflight_report(
         oracle_root=oracle_root,
         memory_safety_fraction=memory_safety_fraction,
         force=force,
-    )
+    )[0]
 
 
 def _run_capture_candidates(

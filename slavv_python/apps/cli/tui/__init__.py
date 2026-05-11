@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 try:
     import questionary  # noqa: F401
@@ -20,7 +21,7 @@ def is_tui_available() -> bool:
     return _TUI_AVAILABLE
 
 
-def run_wizard_if_supported() -> dict[str, any] | None:
+def run_wizard_if_supported() -> dict[str, Any] | None:
     """Invokes the setup wizard if questionary is installed, otherwise logs a warning."""
     if not is_tui_available():
         logger.warning("TUI dependencies are not installed. Run 'pip install -e .[tui]' to enable.")

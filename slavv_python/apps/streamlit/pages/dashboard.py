@@ -17,7 +17,7 @@ from slavv_python.apps.web_app_dashboard import (
     build_dashboard_backlog_frame,
     filter_dashboard_breakdown,
 )
-from slavv_python.runtime.run_state import target_stage_progress
+from slavv_python.runtime.status import target_stage_progress
 from slavv_python.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:

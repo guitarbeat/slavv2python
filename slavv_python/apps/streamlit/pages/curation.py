@@ -9,7 +9,6 @@ import plotly.express as px
 import streamlit as st
 
 from slavv_python.analysis import AutomaticCurator, MLCurator
-from slavv_python.apps.services import app as app_services
 from slavv_python.apps.services import curation as curation_services
 from slavv_python.apps.services.exports import update_run_task
 from slavv_python.apps.state.curation import (
@@ -105,7 +104,7 @@ def show_ml_curation_page():
                     st.warning(
                         "[!] Please check your taskbar for the new 3D window. Closing the window will save and continue."
                     )
-                    curated_vertices, curated_edges = app_services._run_interactive_curator(
+                    curated_vertices, curated_edges = _run_interactive_curator(
                         results["energy_data"],
                         results["vertices"],
                         results["edges"],
@@ -113,7 +112,7 @@ def show_ml_curation_page():
                     )
                     status.update(label="Rebuilding network after curation...", state="running")
                     try:
-                        baseline_counts, current_counts = app_services._apply_curated_results(
+                        baseline_counts, current_counts = _apply_curated_results(
                             curated_vertices,
                             curated_edges,
                             curation_mode="Interactive (Manual GUI)",
@@ -245,7 +244,7 @@ def show_ml_curation_page():
                 )
                 status.update(label="Rebuilding network after curation...", state="running")
                 try:
-                    baseline_counts, current_counts = app_services._apply_curated_results(
+                    baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
                         curation_mode="Automatic (Rule-based)",
@@ -412,7 +411,7 @@ def show_ml_curation_page():
                 )
                 status.update(label="Rebuilding network after curation...", state="running")
                 try:
-                    baseline_counts, current_counts = app_services._apply_curated_results(
+                    baseline_counts, current_counts = _apply_curated_results(
                         curated_vertices,
                         curated_edges,
                         curation_mode="Machine Learning (Model-based)",
