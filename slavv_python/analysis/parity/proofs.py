@@ -304,6 +304,10 @@ def run_candidate_capture(
     vertices_payload = _load_exact_vertices_payload(source_surface)
 
     energy = np.asarray(energy_payload["energy"], dtype=np.float32)
+    scale_indices = energy_payload.get("scale_indices")
+    if scale_indices is not None:
+        scale_indices = np.asarray(scale_indices, dtype=np.int16)
+
     vertex_positions = np.asarray(vertices_payload["positions"], dtype=np.float32)
     vertex_scales = np.asarray(vertices_payload["scales"], dtype=np.int16)
     lumen_radius_microns = np.asarray(energy_payload["lumen_radius_microns"], dtype=np.float32)
@@ -346,7 +350,7 @@ def run_candidate_capture(
 
     candidates = _generate_edge_candidates_matlab_frontier(
         energy,
-        None,  # scale_indices
+        scale_indices,  # Now using loaded scale_indices instead of None
         vertex_positions,
         vertex_scales,
         lumen_radius_microns,
@@ -356,7 +360,13 @@ def run_candidate_capture(
         heartbeat=_heartbeat,
     )
     candidates = _finalize_matlab_parity_candidates(
-        candidates, energy, None, vertex_positions, -1.0, params, microns_per_voxel
+        candidates,
+        energy,
+        scale_indices,  # Now using loaded scale_indices instead of None
+        vertex_positions,
+        -1.0,
+        params,
+        microns_per_voxel,
     )
     progress_records.append(
         {

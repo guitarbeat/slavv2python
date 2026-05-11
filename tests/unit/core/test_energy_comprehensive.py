@@ -136,6 +136,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
 
 @pytest.mark.unit
 def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
+    pytest.importorskip("zarr")
     image = np.zeros((7, 7, 7), dtype=np.float32)
     image[3, :, 3] = 1.0
     params = validate_parameters(

@@ -1,0 +1,10 @@
+{
+  "artifacts": {
+    "candidate_audit.json": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation\\04_Edges\\candidate_audit.json",
+    "candidates.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation\\04_Edges\\candidates.pkl",
+    "chosen_edges.pkl": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation\\04_Edges\\chosen_edges.pkl"
+  },
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+  "completed_at": "2026-05-11T18:54:14Z",
+  "stage": "edges"
+}

@@ -172,7 +172,7 @@ def _initialize_matlab_global_watershed_state(
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
         energy_map_temp[coord[0], coord[1], coord[2]] = np.float32(-np.inf)
 
-    available_locations = vertex_locations[::-1].astype(np.int64, copy=False)
+    available_locations = vertex_locations.astype(np.int64, copy=False)[::-1]
     vertex_adjacency_matrix = sparse.identity(number_of_vertices + 1, format="lil", dtype=bool)
 
     return {
@@ -378,7 +378,15 @@ def _matlab_global_watershed_insert_available_location(
     seed_idx: int,
     is_current_location_clear: bool,
 ) -> list[int]:
-    """Insert one location into MATLAB's worst-to-best available-location list."""
+    """Insert one location into MATLAB's worst-to-best available-location list.
+
+    CRITICAL: available_locations is sorted by energy descending from high (worst) at
+    index 0 to low/best (-Inf) at the end. Elements are popped from the right (best).
+
+    When is_current_location_clear is False, the last element is the current active
+    location, whose energy has just been restored to its original value, making it
+    potentially unsorted relative to the rest of the list.
+    """
 
     def _energy_for(linear_index: int) -> float:
         return float(energy_lookup[int(linear_index)])
@@ -386,63 +394,95 @@ def _matlab_global_watershed_insert_available_location(
     if not available_locations:
         return [int(next_location)]
 
-    # available_locations is sorted worst-to-best (energies are typically negative, so ascending)
-    # worst = lowest energy (more negative), best = highest energy (closest to 0)
-    # Popping happens from the right (available_locations[-1]) which is the "best" location.
-
     target_energy = float(next_energy)
+    n = len(available_locations)
+
+    # 1. Identify the reliably sorted boundary
+    if not is_current_location_clear:
+        # The prefix excluding the current active node is fully sorted.
+        sorted_len = n - 1
+        energy_last = _energy_for(available_locations[-1])
+    else:
+        # The whole array is sorted.
+        sorted_len = n
+        energy_last = None
+
+    should_pop_current = not is_current_location_clear
+    insert_at = -1
+    append_at_end = False
 
     if seed_idx == 1:
-        # Insert at the "worst" end.
-        if _energy_for(available_locations[0]) <= target_energy:
+        # Simulate MATLAB: location_idx = 1 + find(energy > target, 1, 'last')
+        
+        # Fast path: new entry is even worse than the absolute worst start.
+        if sorted_len > 0 and _energy_for(available_locations[0]) <= target_energy:
             insert_at = 0
         else:
-            # Binary search for the first element >= target_energy
-            # Since it's sorted worst-to-best, we want the index where energy_lookup[idx] <= target_energy
-            # But the list is sorted ASCENDING.
-            # So we want the index of the first element >= target_energy?
-            # Wait, worst-to-best means [worst, ..., best].
-            # If next_energy is "worse" than the current worst, it goes at index 0.
-            low = 0
-            high = len(available_locations)
-            while low < high:
-                mid = (low + high) // 2
-                if _energy_for(available_locations[mid]) > target_energy:
-                    low = mid + 1
-                else:
-                    high = mid
-            insert_at = low
-    else:
-        # Insert at the "best" end.
-        last_search_idx = len(available_locations) - 1
-        if not is_current_location_clear:
-            last_search_idx -= 1
+            # MATLAB scans from the 'end'. If unsorted item at the end qualifies, IT takes priority.
+            if (not is_current_location_clear and 
+                energy_last is not None and 
+                energy_last > target_energy):
+                # QUIRK REPLICA: Match on the unsorted active node forces an Append without Pop.
+                # This matches MATLAB logic generating a location_idx = n + 1.
+                append_at_end = True
+                should_pop_current = False
+            else:
+                # Find first element <= target_energy in sorted prefix.
+                low = 0
+                high = sorted_len
+                while low < high:
+                    mid = (low + high) // 2
+                    if _energy_for(available_locations[mid]) > target_energy:
+                        low = mid + 1
+                    else:
+                        high = mid
+                insert_at = low
 
-        if (
-            last_search_idx < 0
-            or _energy_for(available_locations[last_search_idx]) >= target_energy
-        ):
-            insert_at = last_search_idx + 1
+    else:
+        # Simulate MATLAB: find(energy < target, 1, 'first')
+        
+        # Evaluated search endpoint per MATLAB line 542
+        search_end_val = energy_last if not is_current_location_clear else _energy_for(available_locations[-1])
+        
+        if search_end_val >= target_energy:
+            # Matches the explicit fast-path logic at MATLAB line 542.
+            if not is_current_location_clear:
+                insert_at = n - 1 # Replaces current_location
+            else:
+                append_at_end = True
         else:
+            # Find first element STRICTLY < target_energy.
             low = 0
-            high = last_search_idx + 1
+            high = sorted_len
             while low < high:
                 mid = (low + high) // 2
-                if _energy_for(available_locations[mid]) > target_energy:
+                # TIE BREAKING FIX: >= forces scan to skip duplicate energies, effectively 
+                # resulting in 'after-ties' placement matching the canonical logic.
+                if _energy_for(available_locations[mid]) >= target_energy:
                     low = mid + 1
                 else:
                     high = mid
-            insert_at = low
+            
+            # Handle boundary failure to locate in sorted prefix.
+            if not is_current_location_clear and low == sorted_len:
+                insert_at = n - 1
+            else:
+                insert_at = low
 
-    if not is_current_location_clear:
-        # The caller hasn't popped the current location yet, but we want to effectively replace it
-        # or insert before it.
-        # MATLAB logic: suffix = available_locations[insert_at:-1]
-        # This means the last element is DROPPED.
+    # -----------------------------------------------------------------
+    # RECONSTRUCTION: Applies MATLAB slice replacements
+    # -----------------------------------------------------------------
+    if should_pop_current:
         available_locations.pop()
-        available_locations.insert(insert_at, int(next_location))
+        if append_at_end:
+            available_locations.append(int(next_location))
+        else:
+            available_locations.insert(insert_at, int(next_location))
     else:
-        available_locations.insert(insert_at, int(next_location))
+        if append_at_end:
+            available_locations.append(int(next_location))
+        else:
+            available_locations.insert(insert_at, int(next_location))
 
     return available_locations
 
@@ -855,7 +895,7 @@ def _generate_edge_candidates_matlab_global_watershed(
 
             if not bool(is_energy_tolerated_in_strel[strel_idx]):
                 if not is_current_location_clear:
-                    available_locations = available_locations[:-1]
+                    available_locations.pop()
                     is_current_location_clear = True
             else:
                 from .common import _matlab_frontier_directional_suppression_factors
@@ -942,6 +982,10 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_1,
                             half_2,
                         )
+
+        if not is_current_location_clear:
+            available_locations.pop()
+            is_current_location_clear = True
 
         if heartbeat is not None:
             now = time.monotonic()
