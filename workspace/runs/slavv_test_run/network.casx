@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CasX>
+  <Parameters>
+    <Parameter name="pipeline_profile" value="paper"/>
+    <Parameter name="microns_per_voxel" value="1.0 1.0 1.0"/>
+    <Parameter name="radius_of_smallest_vessel_in_microns" value="1.5"/>
+    <Parameter name="radius_of_largest_vessel_in_microns" value="5.0"/>
+    <Parameter name="approximating_PSF" value="True"/>
+    <Parameter name="numerical_aperture" value="0.95"/>
+    <Parameter name="excitation_wavelength_in_microns" value="1.3"/>
+    <Parameter name="sample_index_of_refraction" value="1.33"/>
+    <Parameter name="scales_per_octave" value="1.5"/>
+    <Parameter name="gaussian_to_ideal_ratio" value="1.0"/>
+    <Parameter name="spherical_to_annular_ratio" value="1.0"/>
+    <Parameter name="energy_projection_mode" value="paper"/>
+    <Parameter name="energy_sign" value="-1.0"/>
+    <Parameter name="max_voxels_per_node_energy" value="100000"/>
+    <Parameter name="energy_upper_bound" value="0.0"/>
+    <Parameter name="space_strel_apothem" value="1"/>
+    <Parameter name="space_strel_apothem_edges" value="1"/>
+    <Parameter name="max_voxels_per_node" value="6000"/>
+    <Parameter name="length_dilation_ratio" value="1.0"/>
+    <Parameter name="number_of_edges_per_vertex" value="4"/>
+    <Parameter name="step_size_per_origin_radius" value="1.0"/>
+    <Parameter name="max_edge_length_per_origin_radius" value="60.0"/>
+    <Parameter name="sigma_per_influence_vertices" value="1.0"/>
+    <Parameter name="sigma_per_influence_edges" value="0.5"/>
+    <Parameter name="max_edge_energy" value="0.0"/>
+    <Parameter name="min_hair_length_in_microns" value="0.0"/>
+    <Parameter name="bandpass_window" value="0.0"/>
+    <Parameter name="edge_method" value="tracing"/>
+    <Parameter name="energy_method" value="hessian"/>
+    <Parameter name="direction_method" value="hessian"/>
+    <Parameter name="return_all_scales" value="False"/>
+    <Parameter name="energy_storage_format" value="auto"/>
+    <Parameter name="discrete_tracing" value="False"/>
+    <Parameter name="comparison_exact_network_use_conflict_painting" value="True"/>
+    <Parameter name="n_jobs" value="1"/>
+  </Parameters>
+  <Network>
+    <Vertices>
+      <Vertex id="0" x="179.000" y="20.000" z="175.000" radius="3.240" energy="-0.325" scale="6.000"/>
+      <Vertex id="1" x="217.000" y="12.000" z="4.000" radius="3.240" energy="-0.321" scale="6.000"/>
+      <Vertex id="2" x="138.000" y="8.000" z="93.000" radius="3.240" energy="-0.305" scale="6.000"/>
+      <Vertex id="3" x="115.000" y="6.000" z="101.000" radius="3.240" energy="-0.304" scale="6.000"/>
+      <Vertex id="4" x="152.000" y="12.000" z="80.000" radius="3.240" energy="-0.304" scale="6.000"/>
+      <Vertex id="5" x="219.000" y="6.000" z="208.000" radius="3.240" energy="-0.303" scale="6.000"/>
+      <Vertex id="6" x="130.000" y="6.000" z="94.000" radius="3.240" energy="-0.301" scale="6.000"/>
+      <Vertex id="7" x="210.000" y="4.000" z="52.000" radius="3.240" energy="-0.300" scale="6.000"/>
+      <Vertex id="8" x="158.000" y="7.000" z="220.000" radius="3.240" energy="-0.298" scale="6.000"/>
+      <Vertex id="9" x="157.000" y="9.000" z="227.000" radius="3.240" energy="-0.298" scale="6.000"/>
+      <Vertex id="10" x="173.000" y="13.000" z="206.000" radius="2.778" energy="-0.297" scale="5.000"/>
+      <Vertex id="11" x="159.000" y="6.000" z="206.000" radius="3.780" energy="-0.296" scale="7.000"/>
+      <Vertex id="12" x="208.000" y="3.000" z="61.000" radius="3.240" energy="-0.294" scale="6.000"/>
+      <Vertex id="13" x="154.000" y="6.000" z="181.000" radius="2.778" energy="-0.294" scale="5.000"/>
+      <Vertex id="14" x="104.000" y="3.000" z="133.000" radius="2.381" energy="-0.293" scale="4.000"/>
+      <Vertex id="15" x="144.000" y="9.000" z="90.000" radius="3.240" energy="-0.292" scale="6.000"/>
+      <Vertex id="16" x="215.000" y="10.000" z="12.000" radius="3.240" energy="-0.291" scale="6.000"/>
+      <Vertex id="17" x="136.000" y="16.000" z="141.000" radius="3.240" energy="-0.290" scale="6.000"/>
+      <Vertex id="18" x="164.000" y="3.000" z="194.000" radius="2.778" energy="-0.289" scale="5.000"/>
+      <Vertex id="19" x="118.000" y="3.000" z="137.000" radius="2.381" energy="-0.289" scale="4.000"/>
+      <Vertex id="20" x="123.000" y="5.000" z="96.000" radius="3.240" energy="-0.289" scale="6.000"/>
+      <Vertex id="21" x="150.000" y="11.000" z="188.000" radius="2.778" energy="-0.288" scale="5.000"/>
+      <Vertex id="22" x="29.000" y="4.000" z="246.000" radius="2.778" energy="-0.288" scale="5.000"/>
+      <Vertex id="23" x="198.000" y="4.000" z="198.000" radius="3.240" energy="-0.286" scale="6.000"/>
+      <Vertex id="24" x="106.000" y="3.000" z="69.000" radius="2.381" energy="-0.286" scale="4.000"/>
+      <Vertex id="25" x="107.000" y="14.000" z="180.000" radius="2.778" energy="-0.282" scale="5.000"/>
+      <Vertex id="26" x="111.000" y="15.000" z="185.000" radius="2.778" energy="-0.280" scale="5.000"/>
+      <Vertex id="27" x="50.000" y="15.000" z="101.000" radius="2.778" energy="-0.279" scale="5.000"/>
+      <Vertex id="28" x="6.000" y="7.000" z="190.000" radius="4.409" energy="-0.278" scale="8.000"/>
+      <Vertex id="29" x="214.000" y="8.000" z="36.000" radius="4.409" energy="-0.277" scale="8.000"/>
+      <Vertex id="30" x="184.000" y="10.000" z="200.000" radius="3.240" energy="-0.277" scale="6.000"/>
+      <Vertex id="31" x="164.000" y="5.000" z="137.000" radius="3.780" energy="-0.276" scale="7.000"/>
+      <Vertex id="32" x="102.000" y="13.000" z="175.000" radius="2.778" energy="-0.275" scale="5.000"/>
+      <Vertex id="33" x="222.000" y="20.000" z="77.000" radius="2.778" energy="-0.275" scale="5.000"/>
+      <Vertex id="34" x="245.000" y="4.000" z="101.000" radius="2.381" energy="-0.274" scale="4.000"/>
+      <Vertex id="35" x="183.000" y="12.000" z="184.000" radius="2.778" energy="-0.274" scale="5.000"/>
+      <Vertex id="36" x="44.000" y="12.000" z="238.000" radius="4.409" energy="-0.274" scale="8.000"/>
+      <Vertex id="37" x="62.000" y="4.000" z="91.000" radius="2.778" energy="-0.274" scale="5.000"/>
+      <Vertex id="38" x="96.000" y="17.000" z="80.000" radius="2.778" energy="-0.273" scale="5.000"/>
+      <Vertex id="39" x="104.000" y="6.000" z="110.000" radius="2.778" energy="-0.273" scale="5.000"/>
+      <Vertex id="40" x="155.000" y="13.000" z="74.000" radius="2.778" energy="-0.272" scale="5.000"/>
+      <Vertex id="41" x="175.000" y="2.000" z="188.000" radius="2.381" energy="-0.272" scale="4.000"/>
+      <Vertex id="42" x="115.000" y="9.000" z="53.000" radius="2.381" energy="-0.272" scale="4.000"/>
+      <Vertex id="43" x="155.000" y="6.000" z="169.000" radius="2.778" energy="-0.271" scale="5.000"/>
+      <Vertex id="44" x="247.000" y="5.000" z="98.000" radius="2.381" energy="-0.271" scale="4.000"/>
+      <Vertex id="45" x="245.000" y="14.000" z="198.000" radius="2.778" energy="-0.269" scale="5.000"/>
+      <Vertex id="46" x="80.000" y="15.000" z="85.000" radius="2.778" energy="-0.269" scale="5.000"/>
+      <Vertex id="47" x="132.000" y="20.000" z="69.000" radius="2.778" energy="-0.269" scale="5.000"/>
+      <Vertex id="48" x="155.000" y="4.000" z="143.000" radius="3.780" energy="-0.268" scale="7.000"/>
+      <Vertex id="49" x="70.000" y="12.000" z="98.000" radius="2.778" energy="-0.268" scale="5.000"/>
+      <Vertex id="50" x="67.000" y="3.000" z="91.000" radius="2.381" energy="-0.268" scale="4.000"/>
+      <Vertex id="51" x="93.000" y="14.000" z="163.000" radius="3.240" energy="-0.268" scale="6.000"/>
+      <Vertex id="52" x="119.000" y="18.000" z="80.000" radius="2.778" energy="-0.268" scale="5.000"/>
+      <Vertex id="53" x="54.000" y="7.000" z="89.000" radius="3.240" energy="-0.267" scale="6.000"/>
+      <Vertex id="54" x="243.000" y="3.000" z="106.000" radius="2.381" energy="-0.267" scale="4.000"/>
+      <Vertex id="55" x="51.000" y="10.000" z="83.000" radius="2.778" energy="-0.266" scale="5.000"/>
+      <Vertex id="56" x="66.000" y="12.000" z="108.000" radius="2.778" energy="-0.266" scale="5.000"/>
+      <Vertex id="57" x="133.000" y="17.000" z="153.000" radius="2.381" energy="-0.264" scale="4.000"/>
+      <Vertex id="58" x="247.000" y="17.000" z="109.000" radius="3.240" energy="-0.263" scale="6.000"/>
+      <Vertex id="59" x="151.000" y="4.000" z="150.000" radius="3.780" energy="-0.262" scale="7.000"/>
+      <Vertex id="60" x="184.000" y="11.000" z="191.000" radius="2.778" energy="-0.261" scale="5.000"/>
+      <Vertex id="61" x="158.000" y="14.000" z="69.000" radius="2.778" energy="-0.261" scale="5.000"/>
+      <Vertex id="62" x="142.000" y="12.000" z="138.000" radius="2.778" energy="-0.260" scale="5.000"/>
+      <Vertex id="63" x="127.000" y="19.000" z="74.000" radius="2.778" energy="-0.259" scale="5.000"/>
+      <Vertex id="64" x="247.000" y="15.000" z="204.000" radius="2.778" energy="-0.258" scale="5.000"/>
+      <Vertex id="65" x="139.000" y="18.000" z="184.000" radius="2.778" energy="-0.257" scale="5.000"/>
+      <Vertex id="66" x="247.000" y="16.000" z="214.000" radius="2.778" energy="-0.257" scale="5.000"/>
+      <Vertex id="67" x="212.000" y="3.000" z="205.000" radius="2.778" energy="-0.256" scale="5.000"/>
+      <Vertex id="68" x="106.000" y="18.000" z="81.000" radius="2.778" energy="-0.256" scale="5.000"/>
+      <Vertex id="69" x="100.000" y="2.000" z="74.000" radius="2.381" energy="-0.255" scale="4.000"/>
+      <Vertex id="70" x="128.000" y="17.000" z="158.000" radius="2.381" energy="-0.254" scale="4.000"/>
+      <Vertex id="71" x="237.000" y="20.000" z="77.000" radius="2.381" energy="-0.252" scale="4.000"/>
+      <Vertex id="72" x="111.000" y="14.000" z="158.000" radius="2.778" energy="-0.252" scale="5.000"/>
+      <Vertex id="73" x="121.000" y="16.000" z="159.000" radius="2.778" energy="-0.251" scale="5.000"/>
+      <Vertex id="74" x="249.000" y="17.000" z="221.000" radius="2.778" energy="-0.251" scale="5.000"/>
+      <Vertex id="75" x="144.000" y="16.000" z="187.000" radius="2.778" energy="-0.250" scale="5.000"/>
+      <Vertex id="76" x="189.000" y="6.000" z="204.000" radius="2.778" energy="-0.250" scale="5.000"/>
+      <Vertex id="77" x="110.000" y="19.000" z="196.000" radius="2.381" energy="-0.250" scale="4.000"/>
+      <Vertex id="78" x="112.000" y="18.000" z="82.000" radius="2.778" energy="-0.250" scale="5.000"/>
+      <Vertex id="79" x="86.000" y="16.000" z="82.000" radius="2.778" energy="-0.248" scale="5.000"/>
+      <Vertex id="80" x="135.000" y="16.000" z="148.000" radius="2.381" energy="-0.246" scale="4.000"/>
+      <Vertex id="81" x="86.000" y="2.000" z="85.000" radius="2.381" energy="-0.246" scale="4.000"/>
+      <Vertex id="82" x="11.000" y="13.000" z="27.000" radius="2.381" energy="-0.246" scale="4.000"/>
+      <Vertex id="83" x="236.000" y="2.000" z="126.000" radius="2.381" energy="-0.244" scale="4.000"/>
+      <Vertex id="84" x="202.000" y="5.000" z="190.000" radius="2.778" energy="-0.243" scale="5.000"/>
+      <Vertex id="85" x="37.000" y="17.000" z="63.000" radius="2.381" energy="-0.242" scale="4.000"/>
+      <Vertex id="86" x="217.000" y="15.000" z="198.000" radius="3.240" energy="-0.241" scale="6.000"/>
+      <Vertex id="87" x="207.000" y="5.000" z="179.000" radius="2.381" energy="-0.241" scale="4.000"/>
+      <Vertex id="88" x="176.000" y="19.000" z="121.000" radius="3.780" energy="-0.241" scale="7.000"/>
+      <Vertex id="89" x="66.000" y="2.000" z="237.000" radius="2.381" energy="-0.240" scale="4.000"/>
+      <Vertex id="90" x="205.000" y="5.000" z="184.000" radius="2.381" energy="-0.237" scale="4.000"/>
+      <Vertex id="91" x="160.000" y="6.000" z="251.000" radius="4.409" energy="-0.237" scale="8.000"/>
+      <Vertex id="92" x="99.000" y="14.000" z="157.000" radius="2.381" energy="-0.236" scale="4.000"/>
+      <Vertex id="93" x="162.000" y="16.000" z="61.000" radius="2.778" energy="-0.236" scale="5.000"/>
+      <Vertex id="94" x="231.000" y="12.000" z="188.000" radius="2.381" energy="-0.236" scale="4.000"/>
+      <Vertex id="95" x="250.000" y="17.000" z="234.000" radius="2.778" energy="-0.236" scale="5.000"/>
+      <Vertex id="96" x="77.000" y="2.000" z="88.000" radius="2.381" energy="-0.236" scale="4.000"/>
+      <Vertex id="97" x="30.000" y="17.000" z="56.000" radius="2.381" energy="-0.233" scale="4.000"/>
+      <Vertex id="98" x="250.000" y="6.000" z="93.000" radius="2.381" energy="-0.233" scale="4.000"/>
+      <Vertex id="99" x="240.000" y="2.000" z="121.000" radius="2.381" energy="-0.231" scale="4.000"/>
+      <Vertex id="100" x="90.000" y="12.000" z="119.000" radius="2.778" energy="-0.231" scale="5.000"/>
+      <Vertex id="101" x="91.000" y="2.000" z="83.000" radius="2.381" energy="-0.230" scale="4.000"/>
+      <Vertex id="102" x="12.000" y="19.000" z="223.000" radius="2.381" energy="-0.226" scale="4.000"/>
+      <Vertex id="103" x="111.000" y="7.000" z="60.000" radius="2.778" energy="-0.225" scale="5.000"/>
+      <Vertex id="104" x="11.000" y="19.000" z="234.000" radius="2.381" energy="-0.225" scale="4.000"/>
+      <Vertex id="105" x="46.000" y="5.000" z="230.000" radius="3.780" energy="-0.224" scale="7.000"/>
+      <Vertex id="106" x="17.000" y="5.000" z="5.000" radius="4.409" energy="-0.224" scale="8.000"/>
+      <Vertex id="107" x="59.000" y="17.000" z="105.000" radius="2.381" energy="-0.222" scale="4.000"/>
+      <Vertex id="108" x="4.000" y="6.000" z="117.000" radius="3.780" energy="-0.220" scale="7.000"/>
+      <Vertex id="109" x="240.000" y="15.000" z="130.000" radius="2.381" energy="-0.218" scale="4.000"/>
+      <Vertex id="110" x="239.000" y="15.000" z="134.000" radius="2.381" energy="-0.217" scale="4.000"/>
+      <Vertex id="111" x="237.000" y="13.000" z="190.000" radius="2.381" energy="-0.216" scale="4.000"/>
+      <Vertex id="112" x="155.000" y="21.000" z="2.000" radius="2.381" energy="-0.213" scale="4.000"/>
+      <Vertex id="113" x="216.000" y="15.000" z="33.000" radius="3.780" energy="-0.212" scale="7.000"/>
+      <Vertex id="114" x="86.000" y="19.000" z="123.000" radius="3.240" energy="-0.211" scale="6.000"/>
+      <Vertex id="115" x="229.000" y="2.000" z="134.000" radius="2.381" energy="-0.210" scale="4.000"/>
+      <Vertex id="116" x="15.000" y="20.000" z="214.000" radius="2.381" energy="-0.210" scale="4.000"/>
+      <Vertex id="117" x="173.000" y="19.000" z="43.000" radius="2.778" energy="-0.209" scale="5.000"/>
+      <Vertex id="118" x="17.000" y="19.000" z="203.000" radius="2.041" energy="-0.209" scale="3.000"/>
+      <Vertex id="119" x="246.000" y="15.000" z="79.000" radius="2.041" energy="-0.202" scale="3.000"/>
+      <Vertex id="120" x="100.000" y="5.000" z="126.000" radius="2.381" energy="-0.201" scale="4.000"/>
+      <Vertex id="121" x="222.000" y="11.000" z="190.000" radius="2.381" energy="-0.193" scale="4.000"/>
+      <Vertex id="122" x="114.000" y="18.000" z="23.000" radius="2.041" energy="-0.187" scale="3.000"/>
+      <Vertex id="123" x="240.000" y="15.000" z="119.000" radius="2.381" energy="-0.187" scale="4.000"/>
+      <Vertex id="124" x="130.000" y="10.000" z="139.000" radius="2.381" energy="-0.187" scale="4.000"/>
+      <Vertex id="125" x="99.000" y="3.000" z="10.000" radius="2.778" energy="-0.183" scale="5.000"/>
+      <Vertex id="126" x="241.000" y="14.000" z="115.000" radius="2.381" energy="-0.183" scale="4.000"/>
+      <Vertex id="127" x="167.000" y="18.000" z="52.000" radius="2.778" energy="-0.182" scale="5.000"/>
+      <Vertex id="128" x="125.000" y="9.000" z="138.000" radius="2.381" energy="-0.181" scale="4.000"/>
+      <Vertex id="129" x="212.000" y="20.000" z="82.000" radius="2.381" energy="-0.179" scale="4.000"/>
+      <Vertex id="130" x="118.000" y="13.000" z="39.000" radius="2.381" energy="-0.174" scale="4.000"/>
+      <Vertex id="131" x="223.000" y="2.000" z="142.000" radius="2.381" energy="-0.173" scale="4.000"/>
+      <Vertex id="132" x="68.000" y="5.000" z="7.000" radius="4.409" energy="-0.172" scale="8.000"/>
+      <Vertex id="133" x="128.000" y="20.000" z="210.000" radius="2.381" energy="-0.172" scale="4.000"/>
+      <Vertex id="134" x="47.000" y="21.000" z="144.000" radius="2.381" energy="-0.169" scale="4.000"/>
+      <Vertex id="135" x="71.000" y="4.000" z="22.000" radius="3.780" energy="-0.169" scale="7.000"/>
+      <Vertex id="136" x="76.000" y="4.000" z="7.000" radius="3.780" energy="-0.169" scale="7.000"/>
+      <Vertex id="137" x="89.000" y="4.000" z="24.000" radius="3.780" energy="-0.168" scale="7.000"/>
+      <Vertex id="138" x="8.000" y="8.000" z="130.000" radius="5.143" energy="-0.162" scale="9.000"/>
+      <Vertex id="139" x="69.000" y="18.000" z="38.000" radius="2.041" energy="-0.161" scale="3.000"/>
+      <Vertex id="140" x="137.000" y="3.000" z="23.000" radius="3.240" energy="-0.160" scale="6.000"/>
+      <Vertex id="141" x="125.000" y="20.000" z="216.000" radius="2.041" energy="-0.160" scale="3.000"/>
+      <Vertex id="142" x="131.000" y="3.000" z="21.000" radius="3.240" energy="-0.158" scale="6.000"/>
+      <Vertex id="143" x="108.000" y="3.000" z="14.000" radius="3.240" energy="-0.158" scale="6.000"/>
+      <Vertex id="144" x="56.000" y="5.000" z="18.000" radius="4.409" energy="-0.157" scale="8.000"/>
+      <Vertex id="145" x="214.000" y="3.000" z="161.000" radius="3.240" energy="-0.156" scale="6.000"/>
+      <Vertex id="146" x="115.000" y="3.000" z="19.000" radius="3.240" energy="-0.154" scale="6.000"/>
+      <Vertex id="147" x="38.000" y="5.000" z="14.000" radius="4.409" energy="-0.153" scale="8.000"/>
+      <Vertex id="148" x="195.000" y="3.000" z="126.000" radius="3.240" energy="-0.152" scale="6.000"/>
+      <Vertex id="149" x="199.000" y="3.000" z="138.000" radius="3.240" energy="-0.148" scale="6.000"/>
+      <Vertex id="150" x="180.000" y="12.000" z="134.000" radius="2.041" energy="-0.147" scale="3.000"/>
+      <Vertex id="151" x="47.000" y="5.000" z="16.000" radius="4.409" energy="-0.145" scale="8.000"/>
+      <Vertex id="152" x="211.000" y="17.000" z="95.000" radius="2.041" energy="-0.141" scale="3.000"/>
+      <Vertex id="153" x="88.000" y="6.000" z="243.000" radius="4.409" energy="-0.140" scale="8.000"/>
+      <Vertex id="154" x="16.000" y="8.000" z="186.000" radius="4.409" energy="-0.140" scale="8.000"/>
+      <Vertex id="155" x="118.000" y="16.000" z="28.000" radius="2.041" energy="-0.137" scale="3.000"/>
+      <Vertex id="156" x="133.000" y="6.000" z="233.000" radius="4.409" energy="-0.135" scale="8.000"/>
+      <Vertex id="157" x="236.000" y="14.000" z="143.000" radius="2.381" energy="-0.134" scale="4.000"/>
+      <Vertex id="158" x="83.000" y="6.000" z="190.000" radius="4.409" energy="-0.131" scale="8.000"/>
+      <Vertex id="159" x="101.000" y="6.000" z="205.000" radius="4.409" energy="-0.131" scale="8.000"/>
+      <Vertex id="160" x="67.000" y="6.000" z="176.000" radius="4.409" energy="-0.131" scale="8.000"/>
+      <Vertex id="161" x="126.000" y="6.000" z="228.000" radius="4.409" energy="-0.129" scale="8.000"/>
+      <Vertex id="162" x="210.000" y="17.000" z="103.000" radius="2.041" energy="-0.129" scale="3.000"/>
+      <Vertex id="163" x="144.000" y="7.000" z="248.000" radius="5.143" energy="-0.129" scale="9.000"/>
+      <Vertex id="164" x="109.000" y="6.000" z="215.000" radius="4.409" energy="-0.128" scale="8.000"/>
+      <Vertex id="165" x="189.000" y="13.000" z="134.000" radius="2.041" energy="-0.127" scale="3.000"/>
+      <Vertex id="166" x="20.000" y="3.000" z="130.000" radius="2.778" energy="-0.126" scale="5.000"/>
+      <Vertex id="167" x="25.000" y="6.000" z="139.000" radius="4.409" energy="-0.126" scale="8.000"/>
+      <Vertex id="168" x="2.000" y="16.000" z="44.000" radius="2.381" energy="-0.125" scale="4.000"/>
+      <Vertex id="169" x="76.000" y="6.000" z="185.000" radius="4.409" energy="-0.125" scale="8.000"/>
+      <Vertex id="170" x="5.000" y="18.000" z="126.000" radius="4.409" energy="-0.124" scale="8.000"/>
+      <Vertex id="171" x="44.000" y="6.000" z="155.000" radius="4.409" energy="-0.119" scale="8.000"/>
+      <Vertex id="172" x="51.000" y="5.000" z="159.000" radius="3.780" energy="-0.119" scale="7.000"/>
+      <Vertex id="173" x="78.000" y="16.000" z="31.000" radius="2.041" energy="-0.118" scale="3.000"/>
+      <Vertex id="174" x="123.000" y="7.000" z="251.000" radius="4.409" energy="-0.112" scale="8.000"/>
+      <Vertex id="175" x="48.000" y="4.000" z="206.000" radius="3.240" energy="-0.111" scale="6.000"/>
+      <Vertex id="176" x="87.000" y="19.000" z="20.000" radius="1.750" energy="-0.109" scale="2.000"/>
+      <Vertex id="177" x="58.000" y="8.000" z="172.000" radius="5.143" energy="-0.108" scale="9.000"/>
+      <Vertex id="178" x="25.000" y="8.000" z="187.000" radius="4.409" energy="-0.107" scale="8.000"/>
+      <Vertex id="179" x="6.000" y="8.000" z="168.000" radius="4.409" energy="-0.105" scale="8.000"/>
+      <Vertex id="180" x="36.000" y="6.000" z="193.000" radius="4.409" energy="-0.105" scale="8.000"/>
+      <Vertex id="181" x="25.000" y="20.000" z="36.000" radius="2.381" energy="-0.103" scale="4.000"/>
+      <Vertex id="182" x="30.000" y="4.000" z="191.000" radius="3.240" energy="-0.097" scale="6.000"/>
+      <Vertex id="183" x="97.000" y="8.000" z="244.000" radius="5.143" energy="-0.096" scale="9.000"/>
+      <Vertex id="184" x="137.000" y="18.000" z="250.000" radius="4.409" energy="-0.095" scale="8.000"/>
+      <Vertex id="185" x="35.000" y="8.000" z="152.000" radius="5.143" energy="-0.094" scale="9.000"/>
+      <Vertex id="186" x="86.000" y="8.000" z="232.000" radius="5.143" energy="-0.093" scale="9.000"/>
+      <Vertex id="187" x="71.000" y="6.000" z="222.000" radius="4.409" energy="-0.092" scale="8.000"/>
+      <Vertex id="188" x="48.000" y="8.000" z="198.000" radius="5.143" energy="-0.090" scale="9.000"/>
+      <Vertex id="189" x="145.000" y="21.000" z="31.000" radius="2.041" energy="-0.087" scale="3.000"/>
+      <Vertex id="190" x="91.000" y="8.000" z="204.000" radius="5.143" energy="-0.086" scale="9.000"/>
+      <Vertex id="191" x="215.000" y="18.000" z="43.000" radius="4.409" energy="-0.083" scale="8.000"/>
+      <Vertex id="192" x="59.000" y="13.000" z="7.000" radius="4.409" energy="-0.079" scale="8.000"/>
+      <Vertex id="193" x="38.000" y="15.000" z="240.000" radius="3.240" energy="-0.078" scale="6.000"/>
+      <Vertex id="194" x="5.000" y="8.000" z="158.000" radius="4.409" energy="-0.078" scale="8.000"/>
+      <Vertex id="195" x="241.000" y="8.000" z="118.000" radius="3.780" energy="-0.073" scale="7.000"/>
+      <Vertex id="196" x="80.000" y="6.000" z="242.000" radius="4.409" energy="-0.072" scale="8.000"/>
+      <Vertex id="197" x="10.000" y="3.000" z="174.000" radius="2.381" energy="-0.072" scale="4.000"/>
+      <Vertex id="198" x="51.000" y="19.000" z="87.000" radius="4.409" energy="-0.071" scale="8.000"/>
+      <Vertex id="199" x="224.000" y="17.000" z="150.000" radius="2.381" energy="-0.071" scale="4.000"/>
+      <Vertex id="200" x="212.000" y="14.000" z="119.000" radius="2.041" energy="-0.070" scale="3.000"/>
+      <Vertex id="201" x="210.000" y="14.000" z="126.000" radius="2.041" energy="-0.066" scale="3.000"/>
+      <Vertex id="202" x="117.000" y="8.000" z="235.000" radius="5.143" energy="-0.066" scale="9.000"/>
+      <Vertex id="203" x="31.000" y="20.000" z="24.000" radius="2.041" energy="-0.066" scale="3.000"/>
+      <Vertex id="204" x="20.000" y="8.000" z="174.000" radius="5.143" energy="-0.063" scale="9.000"/>
+      <Vertex id="205" x="197.000" y="13.000" z="134.000" radius="2.381" energy="-0.063" scale="4.000"/>
+      <Vertex id="206" x="115.000" y="11.000" z="24.000" radius="5.143" energy="-0.063" scale="9.000"/>
+      <Vertex id="207" x="85.000" y="17.000" z="25.000" radius="1.750" energy="-0.061" scale="2.000"/>
+      <Vertex id="208" x="174.000" y="14.000" z="135.000" radius="4.409" energy="-0.061" scale="8.000"/>
+      <Vertex id="209" x="204.000" y="14.000" z="132.000" radius="2.041" energy="-0.060" scale="3.000"/>
+      <Vertex id="210" x="221.000" y="5.000" z="34.000" radius="2.381" energy="-0.060" scale="4.000"/>
+      <Vertex id="211" x="143.000" y="7.000" z="234.000" radius="4.409" energy="-0.060" scale="8.000"/>
+      <Vertex id="212" x="35.000" y="6.000" z="140.000" radius="4.409" energy="-0.060" scale="8.000"/>
+      <Vertex id="213" x="20.000" y="4.000" z="14.000" radius="3.780" energy="-0.059" scale="7.000"/>
+      <Vertex id="214" x="21.000" y="21.000" z="3.000" radius="2.381" energy="-0.059" scale="4.000"/>
+      <Vertex id="215" x="51.000" y="20.000" z="16.000" radius="1.750" energy="-0.059" scale="2.000"/>
+      <Vertex id="216" x="102.000" y="20.000" z="203.000" radius="1.750" energy="-0.057" scale="2.000"/>
+      <Vertex id="217" x="41.000" y="14.000" z="9.000" radius="5.143" energy="-0.056" scale="9.000"/>
+      <Vertex id="218" x="29.000" y="8.000" z="179.000" radius="5.143" energy="-0.056" scale="9.000"/>
+      <Vertex id="219" x="40.000" y="20.000" z="20.000" radius="1.750" energy="-0.053" scale="2.000"/>
+      <Vertex id="220" x="170.000" y="6.000" z="46.000" radius="5.143" energy="-0.051" scale="9.000"/>
+      <Vertex id="221" x="185.000" y="7.000" z="114.000" radius="5.143" energy="-0.050" scale="9.000"/>
+      <Vertex id="222" x="147.000" y="7.000" z="28.000" radius="5.143" energy="-0.049" scale="9.000"/>
+      <Vertex id="223" x="42.000" y="16.000" z="152.000" radius="3.240" energy="-0.049" scale="6.000"/>
+      <Vertex id="224" x="215.000" y="2.000" z="106.000" radius="2.381" energy="-0.048" scale="4.000"/>
+      <Vertex id="225" x="36.000" y="20.000" z="21.000" radius="1.750" energy="-0.047" scale="2.000"/>
+      <Vertex id="226" x="125.000" y="15.000" z="97.000" radius="4.409" energy="-0.046" scale="8.000"/>
+      <Vertex id="227" x="68.000" y="15.000" z="9.000" radius="4.409" energy="-0.044" scale="8.000"/>
+      <Vertex id="228" x="95.000" y="9.000" z="18.000" radius="4.409" energy="-0.043" scale="8.000"/>
+      <Vertex id="229" x="40.000" y="8.000" z="203.000" radius="4.409" energy="-0.041" scale="8.000"/>
+      <Vertex id="230" x="223.000" y="2.000" z="122.000" radius="2.381" energy="-0.039" scale="4.000"/>
+      <Vertex id="231" x="34.000" y="8.000" z="170.000" radius="5.143" energy="-0.039" scale="9.000"/>
+      <Vertex id="232" x="78.000" y="11.000" z="235.000" radius="4.409" energy="-0.039" scale="8.000"/>
+      <Vertex id="233" x="111.000" y="3.000" z="232.000" radius="2.778" energy="-0.037" scale="5.000"/>
+      <Vertex id="234" x="78.000" y="11.000" z="14.000" radius="5.143" energy="-0.036" scale="9.000"/>
+      <Vertex id="235" x="64.000" y="21.000" z="10.000" radius="1.750" energy="-0.036" scale="2.000"/>
+      <Vertex id="236" x="182.000" y="9.000" z="95.000" radius="5.143" energy="-0.036" scale="9.000"/>
+      <Vertex id="237" x="86.000" y="4.000" z="64.000" radius="2.041" energy="-0.035" scale="3.000"/>
+      <Vertex id="238" x="98.000" y="3.000" z="220.000" radius="2.778" energy="-0.034" scale="5.000"/>
+      <Vertex id="239" x="45.000" y="21.000" z="18.000" radius="1.500" energy="-0.034" scale="1.000"/>
+      <Vertex id="240" x="17.000" y="10.000" z="126.000" radius="5.143" energy="-0.033" scale="9.000"/>
+      <Vertex id="241" x="68.000" y="3.000" z="192.000" radius="2.778" energy="-0.033" scale="5.000"/>
+      <Vertex id="242" x="110.000" y="2.000" z="244.000" radius="2.381" energy="-0.032" scale="4.000"/>
+      <Vertex id="243" x="83.000" y="3.000" z="220.000" radius="2.778" energy="-0.032" scale="5.000"/>
+      <Vertex id="244" x="32.000" y="2.000" z="177.000" radius="2.041" energy="-0.031" scale="3.000"/>
+      <Vertex id="245" x="41.000" y="3.000" z="166.000" radius="2.778" energy="-0.031" scale="5.000"/>
+      <Vertex id="246" x="92.000" y="3.000" z="216.000" radius="2.778" energy="-0.031" scale="5.000"/>
+      <Vertex id="247" x="27.000" y="3.000" z="152.000" radius="2.778" energy="-0.030" scale="5.000"/>
+      <Vertex id="248" x="27.000" y="11.000" z="194.000" radius="4.409" energy="-0.030" scale="8.000"/>
+      <Vertex id="249" x="209.000" y="5.000" z="27.000" radius="2.041" energy="-0.029" scale="3.000"/>
+      <Vertex id="250" x="22.000" y="3.000" z="149.000" radius="2.778" energy="-0.029" scale="5.000"/>
+      <Vertex id="251" x="102.000" y="15.000" z="247.000" radius="3.780" energy="-0.029" scale="7.000"/>
+      <Vertex id="252" x="77.000" y="3.000" z="204.000" radius="2.778" energy="-0.029" scale="5.000"/>
+      <Vertex id="253" x="87.000" y="14.000" z="199.000" radius="4.409" energy="-0.028" scale="8.000"/>
+      <Vertex id="254" x="71.000" y="2.000" z="201.000" radius="2.381" energy="-0.028" scale="4.000"/>
+      <Vertex id="255" x="123.000" y="13.000" z="230.000" radius="4.409" energy="-0.027" scale="8.000"/>
+      <Vertex id="256" x="80.000" y="15.000" z="225.000" radius="3.780" energy="-0.027" scale="7.000"/>
+      <Vertex id="257" x="63.000" y="2.000" z="199.000" radius="2.381" energy="-0.027" scale="4.000"/>
+      <Vertex id="258" x="84.000" y="20.000" z="10.000" radius="1.500" energy="-0.026" scale="1.000"/>
+      <Vertex id="259" x="111.000" y="15.000" z="221.000" radius="3.240" energy="-0.025" scale="6.000"/>
+      <Vertex id="260" x="64.000" y="14.000" z="198.000" radius="3.780" energy="-0.025" scale="7.000"/>
+      <Vertex id="261" x="41.000" y="9.000" z="145.000" radius="4.409" energy="-0.022" scale="8.000"/>
+      <Vertex id="262" x="91.000" y="2.000" z="123.000" radius="1.500" energy="-0.021" scale="1.000"/>
+      <Vertex id="263" x="118.000" y="20.000" z="232.000" radius="1.750" energy="-0.021" scale="2.000"/>
+      <Vertex id="264" x="15.000" y="17.000" z="138.000" radius="5.143" energy="-0.021" scale="9.000"/>
+      <Vertex id="265" x="31.000" y="21.000" z="160.000" radius="1.750" energy="-0.021" scale="2.000"/>
+      <Vertex id="266" x="82.000" y="7.000" z="130.000" radius="2.041" energy="-0.020" scale="3.000"/>
+      <Vertex id="267" x="68.000" y="17.000" z="216.000" radius="4.409" energy="-0.020" scale="8.000"/>
+      <Vertex id="268" x="67.000" y="15.000" z="184.000" radius="4.409" energy="-0.019" scale="8.000"/>
+      <Vertex id="269" x="82.000" y="2.000" z="74.000" radius="1.750" energy="-0.019" scale="2.000"/>
+      <Vertex id="270" x="18.000" y="17.000" z="184.000" radius="4.409" energy="-0.018" scale="8.000"/>
+      <Vertex id="271" x="6.000" y="16.000" z="88.000" radius="1.750" energy="-0.017" scale="2.000"/>
+      <Vertex id="272" x="6.000" y="11.000" z="87.000" radius="1.750" energy="-0.016" scale="2.000"/>
+      <Vertex id="273" x="55.000" y="18.000" z="169.000" radius="3.780" energy="-0.016" scale="7.000"/>
+      <Vertex id="274" x="92.000" y="20.000" z="208.000" radius="1.750" energy="-0.015" scale="2.000"/>
+      <Vertex id="275" x="116.000" y="21.000" z="246.000" radius="1.500" energy="-0.015" scale="1.000"/>
+      <Vertex id="276" x="88.000" y="17.000" z="232.000" radius="2.778" energy="-0.015" scale="5.000"/>
+      <Vertex id="277" x="9.000" y="18.000" z="172.000" radius="4.409" energy="-0.014" scale="8.000"/>
+      <Vertex id="278" x="87.000" y="19.000" z="209.000" radius="2.381" energy="-0.014" scale="4.000"/>
+      <Vertex id="279" x="119.000" y="18.000" z="99.000" radius="2.381" energy="-0.014" scale="4.000"/>
+      <Vertex id="280" x="147.000" y="20.000" z="138.000" radius="1.500" energy="-0.014" scale="1.000"/>
+      <Vertex id="281" x="60.000" y="17.000" z="205.000" radius="3.240" energy="-0.013" scale="6.000"/>
+      <Vertex id="282" x="6.000" y="12.000" z="175.000" radius="2.778" energy="-0.013" scale="5.000"/>
+      <Vertex id="283" x="80.000" y="17.000" z="196.000" radius="2.381" energy="-0.013" scale="4.000"/>
+      <Vertex id="284" x="16.000" y="21.000" z="173.000" radius="1.500" energy="-0.013" scale="1.000"/>
+      <Vertex id="285" x="219.000" y="14.000" z="223.000" radius="1.750" energy="-0.013" scale="2.000"/>
+      <Vertex id="286" x="52.000" y="21.000" z="187.000" radius="1.500" energy="-0.012" scale="1.000"/>
+      <Vertex id="287" x="84.000" y="21.000" z="210.000" radius="1.500" energy="-0.012" scale="1.000"/>
+      <Vertex id="288" x="78.000" y="18.000" z="209.000" radius="3.780" energy="-0.012" scale="7.000"/>
+      <Vertex id="289" x="23.000" y="20.000" z="163.000" radius="2.041" energy="-0.012" scale="3.000"/>
+      <Vertex id="290" x="192.000" y="12.000" z="7.000" radius="1.500" energy="-0.011" scale="1.000"/>
+      <Vertex id="291" x="61.000" y="14.000" z="92.000" radius="1.500" energy="-0.011" scale="1.000"/>
+      <Vertex id="292" x="31.000" y="14.000" z="245.000" radius="1.500" energy="-0.011" scale="1.000"/>
+      <Vertex id="293" x="16.000" y="21.000" z="164.000" radius="1.500" energy="-0.010" scale="1.000"/>
+      <Vertex id="294" x="99.000" y="17.000" z="239.000" radius="3.240" energy="-0.010" scale="6.000"/>
+      <Vertex id="295" x="147.000" y="12.000" z="223.000" radius="1.500" energy="-0.010" scale="1.000"/>
+      <Vertex id="296" x="127.000" y="15.000" z="237.000" radius="3.780" energy="-0.010" scale="7.000"/>
+      <Vertex id="297" x="48.000" y="19.000" z="197.000" radius="2.778" energy="-0.009" scale="5.000"/>
+      <Vertex id="298" x="107.000" y="18.000" z="236.000" radius="2.381" energy="-0.009" scale="4.000"/>
+      <Vertex id="299" x="58.000" y="16.000" z="91.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="300" x="22.000" y="19.000" z="149.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="301" x="51.000" y="19.000" z="176.000" radius="2.381" energy="-0.009" scale="4.000"/>
+      <Vertex id="302" x="108.000" y="18.000" z="229.000" radius="1.750" energy="-0.009" scale="2.000"/>
+      <Vertex id="303" x="190.000" y="18.000" z="203.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="304" x="149.000" y="7.000" z="214.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="305" x="249.000" y="15.000" z="121.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="306" x="100.000" y="17.000" z="213.000" radius="1.750" energy="-0.009" scale="2.000"/>
+      <Vertex id="307" x="191.000" y="11.000" z="169.000" radius="1.500" energy="-0.009" scale="1.000"/>
+      <Vertex id="308" x="36.000" y="18.000" z="187.000" radius="3.780" energy="-0.008" scale="7.000"/>
+      <Vertex id="309" x="28.000" y="19.000" z="144.000" radius="1.750" energy="-0.008" scale="2.000"/>
+      <Vertex id="310" x="146.000" y="9.000" z="225.000" radius="1.500" energy="-0.008" scale="1.000"/>
+      <Vertex id="311" x="46.000" y="17.000" z="203.000" radius="4.409" energy="-0.008" scale="8.000"/>
+      <Vertex id="312" x="72.000" y="18.000" z="193.000" radius="1.750" energy="-0.008" scale="2.000"/>
+      <Vertex id="313" x="203.000" y="14.000" z="105.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="314" x="244.000" y="2.000" z="24.000" radius="1.750" energy="-0.007" scale="2.000"/>
+      <Vertex id="315" x="127.000" y="15.000" z="23.000" radius="1.750" energy="-0.007" scale="2.000"/>
+      <Vertex id="316" x="66.000" y="20.000" z="202.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="317" x="65.000" y="19.000" z="191.000" radius="1.750" energy="-0.007" scale="2.000"/>
+      <Vertex id="318" x="231.000" y="9.000" z="24.000" radius="1.750" energy="-0.007" scale="2.000"/>
+      <Vertex id="319" x="151.000" y="21.000" z="152.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="320" x="85.000" y="16.000" z="189.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="321" x="56.000" y="19.000" z="198.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="322" x="39.000" y="19.000" z="163.000" radius="1.500" energy="-0.007" scale="1.000"/>
+      <Vertex id="323" x="102.000" y="18.000" z="112.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="324" x="43.000" y="9.000" z="63.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="325" x="197.000" y="11.000" z="22.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="326" x="139.000" y="11.000" z="51.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="327" x="15.000" y="12.000" z="241.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="328" x="235.000" y="6.000" z="141.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="329" x="95.000" y="19.000" z="231.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="330" x="248.000" y="12.000" z="172.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="331" x="42.000" y="19.000" z="183.000" radius="2.381" energy="-0.006" scale="4.000"/>
+      <Vertex id="332" x="135.000" y="10.000" z="177.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="333" x="7.000" y="18.000" z="186.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="334" x="105.000" y="17.000" z="224.000" radius="3.240" energy="-0.006" scale="6.000"/>
+      <Vertex id="335" x="90.000" y="16.000" z="193.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="336" x="248.000" y="16.000" z="10.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="337" x="212.000" y="3.000" z="194.000" radius="1.500" energy="-0.006" scale="1.000"/>
+      <Vertex id="338" x="43.000" y="11.000" z="115.000" radius="1.750" energy="-0.006" scale="2.000"/>
+      <Vertex id="339" x="79.000" y="18.000" z="189.000" radius="2.041" energy="-0.006" scale="3.000"/>
+      <Vertex id="340" x="71.000" y="15.000" z="225.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="341" x="10.000" y="9.000" z="102.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="342" x="210.000" y="9.000" z="89.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="343" x="78.000" y="2.000" z="157.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="344" x="59.000" y="19.000" z="189.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="345" x="79.000" y="7.000" z="158.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="346" x="165.000" y="21.000" z="150.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="347" x="180.000" y="11.000" z="82.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="348" x="210.000" y="16.000" z="171.000" radius="2.041" energy="-0.005" scale="3.000"/>
+      <Vertex id="349" x="75.000" y="12.000" z="125.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="350" x="114.000" y="5.000" z="180.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="351" x="81.000" y="17.000" z="201.000" radius="3.240" energy="-0.005" scale="6.000"/>
+      <Vertex id="352" x="167.000" y="13.000" z="155.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="353" x="145.000" y="19.000" z="177.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="354" x="69.000" y="18.000" z="190.000" radius="2.041" energy="-0.005" scale="3.000"/>
+      <Vertex id="355" x="242.000" y="11.000" z="169.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="356" x="87.000" y="19.000" z="216.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="357" x="61.000" y="4.000" z="132.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="358" x="108.000" y="19.000" z="240.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="359" x="22.000" y="19.000" z="175.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="360" x="44.000" y="20.000" z="179.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="361" x="113.000" y="17.000" z="228.000" radius="2.381" energy="-0.005" scale="4.000"/>
+      <Vertex id="362" x="25.000" y="19.000" z="188.000" radius="1.500" energy="-0.005" scale="1.000"/>
+      <Vertex id="363" x="211.000" y="4.000" z="244.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="364" x="174.000" y="15.000" z="65.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="365" x="5.000" y="7.000" z="64.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="366" x="15.000" y="18.000" z="42.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="367" x="142.000" y="10.000" z="167.000" radius="2.041" energy="-0.004" scale="3.000"/>
+      <Vertex id="368" x="17.000" y="8.000" z="222.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="369" x="252.000" y="20.000" z="56.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="370" x="23.000" y="19.000" z="180.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="371" x="11.000" y="3.000" z="102.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="372" x="86.000" y="11.000" z="106.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="373" x="183.000" y="17.000" z="84.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="374" x="204.000" y="21.000" z="77.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="375" x="51.000" y="20.000" z="121.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="376" x="81.000" y="16.000" z="235.000" radius="2.041" energy="-0.004" scale="3.000"/>
+      <Vertex id="377" x="219.000" y="17.000" z="94.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="378" x="9.000" y="19.000" z="190.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="379" x="196.000" y="13.000" z="109.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="380" x="198.000" y="11.000" z="8.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="381" x="143.000" y="19.000" z="107.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="382" x="147.000" y="16.000" z="149.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="383" x="185.000" y="17.000" z="96.000" radius="1.750" energy="-0.004" scale="2.000"/>
+      <Vertex id="384" x="131.000" y="12.000" z="194.000" radius="2.041" energy="-0.004" scale="3.000"/>
+      <Vertex id="385" x="118.000" y="10.000" z="174.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="386" x="231.000" y="18.000" z="161.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="387" x="133.000" y="19.000" z="234.000" radius="1.500" energy="-0.004" scale="1.000"/>
+      <Vertex id="388" x="235.000" y="14.000" z="246.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="389" x="105.000" y="18.000" z="109.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="390" x="251.000" y="14.000" z="19.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="391" x="194.000" y="15.000" z="124.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="392" x="219.000" y="14.000" z="251.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="393" x="128.000" y="13.000" z="53.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="394" x="247.000" y="19.000" z="58.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="395" x="41.000" y="19.000" z="175.000" radius="2.381" energy="-0.003" scale="4.000"/>
+      <Vertex id="396" x="175.000" y="17.000" z="71.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="397" x="8.000" y="7.000" z="211.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="398" x="6.000" y="2.000" z="62.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="399" x="208.000" y="13.000" z="143.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="400" x="59.000" y="20.000" z="193.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="401" x="210.000" y="18.000" z="143.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="402" x="230.000" y="18.000" z="65.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="403" x="112.000" y="17.000" z="233.000" radius="3.240" energy="-0.003" scale="6.000"/>
+      <Vertex id="404" x="28.000" y="13.000" z="74.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="405" x="112.000" y="19.000" z="106.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="406" x="247.000" y="16.000" z="62.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="407" x="75.000" y="15.000" z="68.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="408" x="40.000" y="15.000" z="50.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="409" x="219.000" y="12.000" z="95.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="410" x="172.000" y="5.000" z="172.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="411" x="211.000" y="12.000" z="240.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="412" x="239.000" y="14.000" z="242.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="413" x="131.000" y="7.000" z="73.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="414" x="175.000" y="14.000" z="73.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="415" x="188.000" y="8.000" z="17.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="416" x="22.000" y="4.000" z="71.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="417" x="203.000" y="21.000" z="205.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="418" x="24.000" y="8.000" z="63.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="419" x="233.000" y="13.000" z="161.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="420" x="121.000" y="7.000" z="78.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="421" x="3.000" y="4.000" z="72.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="422" x="206.000" y="10.000" z="248.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="423" x="220.000" y="18.000" z="143.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="424" x="203.000" y="13.000" z="234.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="425" x="253.000" y="5.000" z="49.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="426" x="134.000" y="11.000" z="110.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="427" x="7.000" y="15.000" z="65.000" radius="2.041" energy="-0.003" scale="3.000"/>
+      <Vertex id="428" x="76.000" y="18.000" z="15.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="429" x="136.000" y="7.000" z="67.000" radius="1.750" energy="-0.003" scale="2.000"/>
+      <Vertex id="430" x="214.000" y="17.000" z="174.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="431" x="23.000" y="6.000" z="43.000" radius="1.500" energy="-0.003" scale="1.000"/>
+      <Vertex id="432" x="96.000" y="18.000" z="60.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="433" x="250.000" y="17.000" z="174.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="434" x="216.000" y="14.000" z="229.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="435" x="173.000" y="13.000" z="70.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="436" x="175.000" y="17.000" z="79.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="437" x="189.000" y="18.000" z="207.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="438" x="88.000" y="2.000" z="154.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="439" x="29.000" y="5.000" z="32.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="440" x="11.000" y="9.000" z="209.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="441" x="230.000" y="14.000" z="227.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="442" x="155.000" y="16.000" z="32.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="443" x="26.000" y="3.000" z="102.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="444" x="109.000" y="18.000" z="95.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="445" x="160.000" y="13.000" z="37.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="446" x="25.000" y="13.000" z="86.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="447" x="160.000" y="16.000" z="34.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="448" x="28.000" y="5.000" z="57.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="449" x="222.000" y="5.000" z="243.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="450" x="193.000" y="2.000" z="227.000" radius="2.041" energy="-0.002" scale="3.000"/>
+      <Vertex id="451" x="22.000" y="18.000" z="74.000" radius="3.240" energy="-0.002" scale="6.000"/>
+      <Vertex id="452" x="7.000" y="10.000" z="60.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="453" x="61.000" y="15.000" z="50.000" radius="2.041" energy="-0.002" scale="3.000"/>
+      <Vertex id="454" x="201.000" y="8.000" z="235.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="455" x="164.000" y="8.000" z="159.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="456" x="119.000" y="17.000" z="151.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="457" x="18.000" y="4.000" z="87.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="458" x="235.000" y="9.000" z="215.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="459" x="164.000" y="11.000" z="27.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="460" x="202.000" y="5.000" z="16.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="461" x="69.000" y="21.000" z="52.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="462" x="181.000" y="16.000" z="73.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="463" x="125.000" y="20.000" z="58.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="464" x="24.000" y="3.000" z="97.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="465" x="22.000" y="19.000" z="94.000" radius="2.381" energy="-0.002" scale="4.000"/>
+      <Vertex id="466" x="187.000" y="10.000" z="13.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="467" x="211.000" y="17.000" z="157.000" radius="2.041" energy="-0.002" scale="3.000"/>
+      <Vertex id="468" x="227.000" y="12.000" z="169.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="469" x="34.000" y="10.000" z="92.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="470" x="210.000" y="6.000" z="238.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="471" x="180.000" y="15.000" z="65.000" radius="2.041" energy="-0.002" scale="3.000"/>
+      <Vertex id="472" x="239.000" y="5.000" z="72.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="473" x="86.000" y="11.000" z="47.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="474" x="27.000" y="6.000" z="84.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="475" x="169.000" y="11.000" z="224.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="476" x="66.000" y="19.000" z="50.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="477" x="93.000" y="8.000" z="46.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="478" x="33.000" y="19.000" z="171.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="479" x="168.000" y="16.000" z="224.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="480" x="236.000" y="2.000" z="207.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="481" x="143.000" y="16.000" z="167.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="482" x="89.000" y="18.000" z="143.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="483" x="90.000" y="14.000" z="63.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="484" x="217.000" y="20.000" z="123.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="485" x="156.000" y="20.000" z="34.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="486" x="130.000" y="17.000" z="193.000" radius="2.041" energy="-0.002" scale="3.000"/>
+      <Vertex id="487" x="169.000" y="7.000" z="234.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="488" x="166.000" y="3.000" z="166.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="489" x="217.000" y="10.000" z="234.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="490" x="186.000" y="6.000" z="11.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="491" x="222.000" y="14.000" z="232.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="492" x="156.000" y="12.000" z="36.000" radius="1.750" energy="-0.002" scale="2.000"/>
+      <Vertex id="493" x="90.000" y="8.000" z="50.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="494" x="235.000" y="2.000" z="56.000" radius="2.381" energy="-0.002" scale="4.000"/>
+      <Vertex id="495" x="242.000" y="11.000" z="15.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="496" x="230.000" y="13.000" z="167.000" radius="1.500" energy="-0.002" scale="1.000"/>
+      <Vertex id="497" x="4.000" y="7.000" z="68.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="498" x="45.000" y="10.000" z="40.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="499" x="235.000" y="11.000" z="205.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="500" x="14.000" y="3.000" z="72.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="501" x="166.000" y="14.000" z="28.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="502" x="235.000" y="10.000" z="238.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="503" x="207.000" y="18.000" z="159.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="504" x="230.000" y="8.000" z="218.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="505" x="140.000" y="6.000" z="123.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="506" x="37.000" y="18.000" z="104.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="507" x="33.000" y="6.000" z="102.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="508" x="136.000" y="15.000" z="20.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="509" x="205.000" y="20.000" z="175.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="510" x="8.000" y="14.000" z="55.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="511" x="228.000" y="7.000" z="120.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="512" x="176.000" y="16.000" z="161.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="513" x="44.000" y="21.000" z="54.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="514" x="168.000" y="20.000" z="162.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="515" x="168.000" y="8.000" z="168.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="516" x="241.000" y="18.000" z="69.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="517" x="173.000" y="15.000" z="151.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="518" x="214.000" y="7.000" z="232.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="519" x="70.000" y="16.000" z="56.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="520" x="233.000" y="7.000" z="242.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="521" x="9.000" y="17.000" z="59.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="522" x="182.000" y="14.000" z="218.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="523" x="183.000" y="17.000" z="67.000" radius="2.041" energy="-0.001" scale="3.000"/>
+      <Vertex id="524" x="232.000" y="4.000" z="240.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="525" x="39.000" y="10.000" z="103.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="526" x="232.000" y="19.000" z="169.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="527" x="247.000" y="17.000" z="157.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="528" x="232.000" y="8.000" z="6.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="529" x="137.000" y="10.000" z="115.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="530" x="249.000" y="7.000" z="57.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="531" x="23.000" y="19.000" z="89.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="532" x="160.000" y="16.000" z="42.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="533" x="58.000" y="16.000" z="63.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="534" x="54.000" y="7.000" z="131.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="535" x="72.000" y="17.000" z="49.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="536" x="178.000" y="18.000" z="91.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="537" x="92.000" y="20.000" z="101.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="538" x="230.000" y="18.000" z="108.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="539" x="134.000" y="7.000" z="121.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="540" x="179.000" y="6.000" z="226.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="541" x="143.000" y="9.000" z="124.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="542" x="154.000" y="11.000" z="23.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="543" x="126.000" y="9.000" z="116.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="544" x="153.000" y="9.000" z="100.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="545" x="240.000" y="13.000" z="90.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="546" x="101.000" y="15.000" z="140.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="547" x="177.000" y="7.000" z="223.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="548" x="211.000" y="15.000" z="220.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="549" x="186.000" y="16.000" z="70.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="550" x="85.000" y="7.000" z="49.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="551" x="99.000" y="4.000" z="59.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="552" x="132.000" y="8.000" z="117.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="553" x="171.000" y="14.000" z="88.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="554" x="24.000" y="10.000" z="92.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="555" x="119.000" y="19.000" z="116.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="556" x="204.000" y="15.000" z="65.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="557" x="178.000" y="7.000" z="237.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="558" x="237.000" y="10.000" z="229.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="559" x="245.000" y="2.000" z="46.000" radius="2.041" energy="-0.001" scale="3.000"/>
+      <Vertex id="560" x="163.000" y="2.000" z="160.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="561" x="226.000" y="10.000" z="227.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="562" x="155.000" y="16.000" z="39.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="563" x="21.000" y="11.000" z="96.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="564" x="183.000" y="13.000" z="225.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="565" x="27.000" y="16.000" z="82.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="566" x="177.000" y="15.000" z="155.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="567" x="243.000" y="2.000" z="54.000" radius="2.381" energy="-0.001" scale="4.000"/>
+      <Vertex id="568" x="240.000" y="16.000" z="46.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="569" x="19.000" y="19.000" z="104.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="570" x="30.000" y="12.000" z="105.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="571" x="84.000" y="16.000" z="145.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="572" x="119.000" y="16.000" z="121.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="573" x="148.000" y="9.000" z="122.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="574" x="15.000" y="13.000" z="99.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="575" x="204.000" y="9.000" z="217.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="576" x="154.000" y="10.000" z="112.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="577" x="128.000" y="19.000" z="115.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="578" x="238.000" y="15.000" z="5.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="579" x="216.000" y="14.000" z="138.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="580" x="39.000" y="10.000" z="110.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="581" x="160.000" y="13.000" z="23.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="582" x="194.000" y="9.000" z="221.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="583" x="166.000" y="5.000" z="176.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="584" x="22.000" y="8.000" z="109.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="585" x="224.000" y="15.000" z="241.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="586" x="162.000" y="15.000" z="28.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="587" x="199.000" y="18.000" z="222.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="588" x="229.000" y="6.000" z="225.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="589" x="229.000" y="21.000" z="221.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="590" x="192.000" y="19.000" z="221.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="591" x="40.000" y="16.000" z="125.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="592" x="124.000" y="20.000" z="122.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="593" x="16.000" y="11.000" z="49.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="594" x="78.000" y="18.000" z="3.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="595" x="167.000" y="19.000" z="32.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="596" x="125.000" y="9.000" z="112.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="597" x="248.000" y="19.000" z="34.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="598" x="195.000" y="2.000" z="175.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="599" x="33.000" y="7.000" z="107.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="600" x="51.000" y="7.000" z="121.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="601" x="112.000" y="6.000" z="119.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="602" x="232.000" y="16.000" z="46.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="603" x="134.000" y="15.000" z="124.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="604" x="196.000" y="12.000" z="224.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="605" x="129.000" y="13.000" z="120.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="606" x="175.000" y="12.000" z="219.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="607" x="42.000" y="14.000" z="131.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="608" x="176.000" y="15.000" z="89.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="609" x="121.000" y="8.000" z="124.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="610" x="232.000" y="17.000" z="51.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="611" x="21.000" y="14.000" z="83.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="612" x="172.000" y="6.000" z="150.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="613" x="167.000" y="17.000" z="80.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="614" x="48.000" y="15.000" z="125.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="615" x="182.000" y="8.000" z="216.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="616" x="233.000" y="5.000" z="94.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="617" x="168.000" y="13.000" z="77.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="618" x="207.000" y="20.000" z="154.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="619" x="243.000" y="19.000" z="40.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="620" x="89.000" y="19.000" z="104.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="621" x="180.000" y="6.000" z="154.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="622" x="122.000" y="17.000" z="199.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="623" x="118.000" y="11.000" z="120.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="624" x="146.000" y="20.000" z="123.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="625" x="38.000" y="7.000" z="119.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="626" x="185.000" y="9.000" z="223.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="627" x="240.000" y="15.000" z="66.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="628" x="240.000" y="17.000" z="32.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="629" x="244.000" y="4.000" z="62.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="630" x="175.000" y="8.000" z="152.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="631" x="237.000" y="20.000" z="60.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="632" x="48.000" y="11.000" z="123.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="633" x="122.000" y="12.000" z="124.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="634" x="100.000" y="5.000" z="54.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="635" x="135.000" y="20.000" z="117.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="636" x="156.000" y="8.000" z="102.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="637" x="236.000" y="6.000" z="50.000" radius="1.750" energy="-0.001" scale="2.000"/>
+      <Vertex id="638" x="34.000" y="19.000" z="123.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="639" x="244.000" y="14.000" z="36.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="640" x="234.000" y="13.000" z="157.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="641" x="230.000" y="11.000" z="101.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="642" x="244.000" y="11.000" z="39.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="643" x="246.000" y="11.000" z="45.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="644" x="238.000" y="10.000" z="40.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="645" x="92.000" y="19.000" z="247.000" radius="1.500" energy="-0.001" scale="1.000"/>
+      <Vertex id="646" x="239.000" y="7.000" z="65.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="647" x="39.000" y="9.000" z="122.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="648" x="99.000" y="16.000" z="56.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="649" x="146.000" y="18.000" z="118.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="650" x="36.000" y="11.000" z="116.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="651" x="82.000" y="6.000" z="51.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="652" x="243.000" y="18.000" z="161.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="653" x="203.000" y="16.000" z="154.000" radius="1.750" energy="-0.000" scale="2.000"/>
+      <Vertex id="654" x="236.000" y="17.000" z="57.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="655" x="234.000" y="10.000" z="92.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="656" x="21.000" y="13.000" z="107.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="657" x="234.000" y="9.000" z="54.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="658" x="192.000" y="15.000" z="144.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="659" x="136.000" y="17.000" z="111.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="660" x="149.000" y="11.000" z="109.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="661" x="115.000" y="4.000" z="120.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="662" x="192.000" y="15.000" z="78.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="663" x="129.000" y="6.000" z="109.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="664" x="32.000" y="18.000" z="118.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="665" x="136.000" y="21.000" z="123.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="666" x="234.000" y="19.000" z="40.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="667" x="153.000" y="16.000" z="108.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="668" x="194.000" y="5.000" z="216.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="669" x="243.000" y="7.000" z="44.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="670" x="238.000" y="6.000" z="37.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="671" x="90.000" y="19.000" z="56.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="672" x="246.000" y="6.000" z="35.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="673" x="231.000" y="5.000" z="42.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="674" x="158.000" y="11.000" z="118.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="675" x="236.000" y="13.000" z="51.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="676" x="158.000" y="18.000" z="27.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="677" x="186.000" y="14.000" z="223.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="678" x="98.000" y="7.000" z="50.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="679" x="248.000" y="10.000" z="42.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="680" x="130.000" y="5.000" z="125.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="681" x="198.000" y="7.000" z="219.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="682" x="233.000" y="6.000" z="56.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="683" x="96.000" y="10.000" z="49.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="684" x="176.000" y="15.000" z="94.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="685" x="175.000" y="14.000" z="99.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="686" x="124.000" y="16.000" z="188.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="687" x="219.000" y="16.000" z="137.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="688" x="141.000" y="18.000" z="235.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="689" x="195.000" y="18.000" z="144.000" radius="1.500" energy="-0.000" scale="1.000"/>
+      <Vertex id="690" x="198.000" y="17.000" z="151.000" radius="1.500" energy="-0.000" scale="1.000"/>
+    </Vertices>
+    <Edges>
+      <Edge id="0" start="50" end="37"/>
+      <Edge id="1" start="114" end="100"/>
+      <Edge id="2" start="194" end="179"/>
+      <Edge id="3" start="186" end="196"/>
+      <Edge id="4" start="198" end="53"/>
+      <Edge id="5" start="211" end="163"/>
+      <Edge id="6" start="212" end="185"/>
+      <Edge id="7" start="213" end="106"/>
+      <Edge id="8" start="233" end="202"/>
+      <Edge id="9" start="240" end="138"/>
+      <Edge id="10" start="247" end="185"/>
+      <Edge id="11" start="251" end="183"/>
+      <Edge id="12" start="255" end="161"/>
+      <Edge id="13" start="261" end="185"/>
+      <Edge id="14" start="240" end="264"/>
+      <Edge id="15" start="276" end="256"/>
+      <Edge id="16" start="296" end="202"/>
+      <Edge id="17" start="297" end="311"/>
+      <Edge id="18" start="321" end="188"/>
+      <Edge id="19" start="359" end="204"/>
+      <Edge id="20" start="362" end="178"/>
+      <Edge id="21" start="298" end="403"/>
+      <Edge id="22" start="511" end="230"/>
+    </Edges>
+    <Strands>
+      <Strand id="0">233 202 296</Strand>
+      <Strand id="1">138 240 264</Strand>
+      <Strand id="2">37 50</Strand>
+      <Strand id="3">100 114</Strand>
+      <Strand id="4">179 194</Strand>
+      <Strand id="5">186 196</Strand>
+      <Strand id="6">53 198</Strand>
+      <Strand id="7">163 211</Strand>
+      <Strand id="8">185 212</Strand>
+      <Strand id="9">106 213</Strand>
+      <Strand id="10">185 247</Strand>
+      <Strand id="11">183 251</Strand>
+      <Strand id="12">161 255</Strand>
+      <Strand id="13">185 261</Strand>
+      <Strand id="14">256 276</Strand>
+      <Strand id="15">297 311</Strand>
+      <Strand id="16">188 321</Strand>
+      <Strand id="17">204 359</Strand>
+      <Strand id="18">178 362</Strand>
+      <Strand id="19">298 403</Strand>
+      <Strand id="20">230 511</Strand>
+    </Strands>
+    <Bifurcations>
+      <Bifurcation id="0" vertex_id="185"/>
+    </Bifurcations>
+  </Network>
+</CasX>

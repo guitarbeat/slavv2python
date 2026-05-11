@@ -35,7 +35,7 @@ def update_run_export_task(run_dir: str, artifact_paths: dict[str, str]) -> None
     from ...runtime import RunContext
 
     run_context = RunContext(run_dir=run_dir, target_stage="network")
-    run_context.update_task(
+    run_context.update_optional_task(
         "exports",
         status="completed",
         progress=1.0,

@@ -1,0 +1,2 @@
+artifact_count,detail,run_id,run_root,stage_key,status
+0,Completed edge candidate generation through MATLAB-style frontier workflow (candidates=220),180709_E_may2026_fixes,D:\slavv_comparisons\experiments\live-parity\runs\180709_E_may2026_fixes,edges,failed

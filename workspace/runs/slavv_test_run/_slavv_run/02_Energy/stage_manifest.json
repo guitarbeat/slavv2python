@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "best_energy.zarr": "slavv_test_run\\_slavv_run\\02_Energy\\best_energy.zarr",
+    "best_scale.zarr": "slavv_test_run\\_slavv_run\\02_Energy\\best_scale.zarr",
+    "energy_4d.zarr": "slavv_test_run\\_slavv_run\\02_Energy\\energy_4d.zarr",
+    "stage_manifest.json": "slavv_test_run\\_slavv_run\\02_Energy\\stage_manifest.json"
+  },
+  "checkpoint": "slavv_test_run\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+  "completed_at": "2026-05-08T02:21:12Z",
+  "stage": "energy"
+}

@@ -345,11 +345,12 @@ def _build_casx_xml(
 
 
 def sanitize_for_matlab(data: Any) -> Any:
-    """Sanitize data structures for MATLAB export."""
+    """Sanitize data structures for MATLAB export, including 31-char key truncation."""
     if data is None:
         return []
     if isinstance(data, dict):
-        return {str(k): sanitize_for_matlab(v) for k, v in data.items()}
+        # MATLAB struct field names are restricted to 31 characters.
+        return {str(k)[:31]: sanitize_for_matlab(v) for k, v in data.items()}
     if isinstance(data, list):
         return [sanitize_for_matlab(v) for v in data]
     if isinstance(data, tuple):

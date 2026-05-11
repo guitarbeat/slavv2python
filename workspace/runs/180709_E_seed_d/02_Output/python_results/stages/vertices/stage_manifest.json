@@ -1,0 +1,10 @@
+{
+  "artifacts": {
+    "candidates.pkl": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\stages\\vertices\\candidates.pkl",
+    "chosen_mask.pkl": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\stages\\vertices\\chosen_mask.pkl",
+    "cropped_candidates.pkl": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\stages\\vertices\\cropped_candidates.pkl"
+  },
+  "checkpoint": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+  "completed_at": "2026-04-29T23:31:41Z",
+  "stage": "vertices"
+}

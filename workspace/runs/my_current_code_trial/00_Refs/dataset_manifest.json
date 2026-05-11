@@ -1,0 +1,15 @@
+{
+  "dataset_hash": "771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "dataset_root": "D:\\slavv_comparisons\\experiments\\live-parity\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "input_bytes": 33563783,
+  "input_filename": "180709_E.tif",
+  "kind": "dataset",
+  "manifest_version": 1,
+  "retention": "preserved",
+  "source_file": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\datasets\\180709_E.tif",
+  "stored_input_file": "D:\\slavv_comparisons\\experiments\\live-parity\\datasets\\771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353\\01_Input\\180709_E.tif",
+  "timestamps": {
+    "created_at": "2026-04-29T20:20:11Z",
+    "updated_at": "2026-05-01T01:35:43Z"
+  }
+}

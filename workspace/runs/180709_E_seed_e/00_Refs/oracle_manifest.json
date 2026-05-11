@@ -1,0 +1,23 @@
+{
+  "dataset_hash": "771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
+  "kind": "matlab_oracle",
+  "manifest_version": 1,
+  "matlab_batch_dir": "D:\\slavv_comparisons\\experiments\\live-parity\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical",
+  "matlab_source_version": "neurovasc-db:180709_E_vector.zip#batch_190910-103039",
+  "normalized_artifacts": {
+    "edges": "D:\\slavv_comparisons\\experiments\\live-parity\\oracles\\180709_E_batch_190910-103039\\03_Analysis\\normalized\\oracle\\edges.pkl",
+    "network": "D:\\slavv_comparisons\\experiments\\live-parity\\oracles\\180709_E_batch_190910-103039\\03_Analysis\\normalized\\oracle\\network.pkl",
+    "vertices": "D:\\slavv_comparisons\\experiments\\live-parity\\oracles\\180709_E_batch_190910-103039\\03_Analysis\\normalized\\oracle\\vertices.pkl"
+  },
+  "oracle_id": "180709_E_batch_190910-103039",
+  "oracle_root": "D:\\slavv_comparisons\\experiments\\live-parity\\oracles\\180709_E_batch_190910-103039",
+  "raw_vector_hashes": {
+    "edges": "ee8ab5b984e59f8f94c0724643f1117a7ef3a3e4303aa8625106a79c1a174ebf",
+    "network": "6d20127a6805eb209f2b726740d2e5117dc5e237661860f9548a5d52d7c82c78",
+    "vertices": "d984ff320efb830ffa0caf56e5d3412369348fdade1c0de6f1ca07e46aac9620"
+  },
+  "timestamps": {
+    "created_at": "2026-04-29T21:04:23Z",
+    "updated_at": "2026-04-29T21:04:23Z"
+  }
+}

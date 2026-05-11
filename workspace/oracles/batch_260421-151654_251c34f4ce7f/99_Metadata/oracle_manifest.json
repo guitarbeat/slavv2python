@@ -1,0 +1,24 @@
+{
+  "dataset_hash": null,
+  "kind": "matlab_oracle",
+  "manifest_version": 1,
+  "matlab_batch_dir": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_251c34f4ce7f\\01_Input\\matlab_results\\batch_260421-151654",
+  "matlab_source_version": "external/Vectorization-Public",
+  "normalized_artifacts": {
+    "edges": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_251c34f4ce7f\\03_Analysis\\normalized\\oracle\\edges.pkl",
+    "network": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_251c34f4ce7f\\03_Analysis\\normalized\\oracle\\network.pkl",
+    "vertices": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_251c34f4ce7f\\03_Analysis\\normalized\\oracle\\vertices.pkl"
+  },
+  "oracle_id": "batch_260421-151654_251c34f4ce7f",
+  "oracle_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_251c34f4ce7f",
+  "raw_vector_hashes": {
+    "edges": "251c34f4ce7fdc045c52bf65a1ca61db314331d181415a806c7ba07ad9c74d5b",
+    "energy": "6590d7e6282b8b0ded44b0d39a37757bce763073baef43547c2e6baae7c189e9",
+    "network": "6caff31b0bbf676e3e3b0e92885793e48d68a988a27271c512733d970fa688de",
+    "vertices": "77e1d584f6fe26d8af86d9e623d59dd48dca05e29272a8acdcd5982170cb54f5"
+  },
+  "timestamps": {
+    "created_at": "2026-05-01T01:30:54Z",
+    "updated_at": "2026-05-01T01:30:54Z"
+  }
+}
