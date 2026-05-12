@@ -27,7 +27,7 @@ np.float = float
 np.bool = np.bool_
 
 # Add repo root to path so `source` package imports are resolvable.
-repo_root = Path(__file__).resolve().parents[2]
+repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
@@ -54,7 +54,7 @@ def pytest_collection_modifyitems(items):
 @pytest.fixture
 def tmp_path():
     """Provide a writable temp directory without relying on pytest's lock-based tmpdir."""
-    dev_tmp_root = repo_root / "workspace" / "tmp_tests"
+    dev_tmp_root = repo_root / "tmp_tests"
     dev_tmp_root.mkdir(parents=True, exist_ok=True)
     path = dev_tmp_root / f"run-{uuid4().hex}"
     path.mkdir(parents=True, exist_ok=False)

@@ -1,5 +1,0 @@
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\vectorize_V200.m:3482:        step_size_per_origin_radius = 1 ;
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\vectorize_V200.m:3483:%             step_size_per_origin_radius = 2/3 ;
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\vectorize_V200.m:3484:%             step_size_per_origin_radius = 3/2 ;
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\vectorize_V200.m:3485:%         step_size_per_origin_radius = 4/3 ;
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\vectorize_V200.m:3492:                                  vertex_scale_subscripts, step_size_per_origin_radius, number_of_edges_per_vertex, max_edge_energy, ...

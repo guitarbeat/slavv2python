@@ -1,4 +1,0 @@
-D:\2P_Data\Aaron\slavv2python\slavv_python\core\global_watershed.py:809:        current_energy = float(energy_map_temp_flat[current_linear])
-D:\2P_Data\Aaron\slavv2python\slavv_python\core\global_watershed.py:814:            energy_map_temp_flat[current_linear] = current_energy
-D:\2P_Data\Aaron\slavv2python\slavv_python\core\global_watershed.py:846:        current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
-D:\2P_Data\Aaron\slavv2python\slavv_python\core\global_watershed.py:924:                            next_energy=float(energy_map_temp_flat[next_location]),

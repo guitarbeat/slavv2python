@@ -1,5 +1,5 @@
 {
-  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_fresh_run_2",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\measure2_fresh_run_2",
   "extra_pair_count": 824,
   "extra_pair_samples": [
     [
@@ -7685,7 +7685,7 @@
   "passed": false,
   "python_pair_count": 958,
   "report_scope": "candidate coverage only",
-  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\trace_order_fix",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\trace_order_fix",
   "top_extra_vertices": [
     {
       "count": 40,

@@ -1,7 +1,7 @@
 {
   "kind": "legacy_matlab_batch_selection",
-  "source_archive": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\180709_E_vector\\180709_E\\batch_190910-103039.zip",
-  "canonical_batch_dir": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_190910-103039_canonical",
+  "source_archive": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\180709_E_vector\\180709_E\\batch_190910-103039.zip",
+  "canonical_batch_dir": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_190910-103039_canonical",
   "selection_policy": {
     "vertices": "latest curated vertices payload present in archive",
     "edges": "latest edges payload present in archive",

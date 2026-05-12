@@ -1,4 +1,4 @@
-"""Comprehensive tests for the developer parity experiment runner.
+﻿"""Comprehensive tests for the developer parity experiment runner.
 Consolidated from multiple small test files to reduce overhead and improve maintainability.
 """
 
@@ -46,7 +46,7 @@ from slavv_python.analysis.parity.reports import (
     build_experiment_summary,
     persist_recording_tables,
 )
-from slavv_python.io.matlab_exact_proof import (
+from slavv_python.analysis.parity.matlab_exact_proof import (
     find_matlab_vector_paths,
 )
 from tests.support.run_state_builders import (
@@ -280,7 +280,7 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(
-        "slavv_python.io.matlab_fail_fast.load_builtin_lut_fixture",
+        "slavv_python.analysis.parity.matlab_fail_fast.load_builtin_lut_fixture",
         lambda: {"size_of_image": [20, 20, 20], "microns_per_voxel": [1.0, 1.0, 1.0]},
     )
 

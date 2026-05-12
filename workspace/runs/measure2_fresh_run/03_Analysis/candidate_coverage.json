@@ -1,5 +1,5 @@
 {
-  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_fresh_run",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\measure2_fresh_run",
   "extra_pair_count": 1182,
   "extra_pair_samples": [
     [
@@ -8985,7 +8985,7 @@
   "passed": false,
   "python_pair_count": 1349,
   "report_scope": "candidate coverage only",
-  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\fix_queue_inversion_v2",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\fix_queue_inversion_v2",
   "top_extra_vertices": [
     {
       "count": 66,

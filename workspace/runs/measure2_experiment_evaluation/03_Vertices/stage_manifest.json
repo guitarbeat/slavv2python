@@ -1,6 +1,6 @@
 {
   "artifacts": {},
-  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+  "checkpoint": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\measure2_experiment_evaluation\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
   "completed_at": "2026-05-11T18:49:20Z",
   "stage": "vertices"
 }

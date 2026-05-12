@@ -1,4 +1,4 @@
-"""Promotion logic for native-first MATLAB-oracle parity experiments."""
+﻿"""Promotion logic for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 from shutil import copy2, copytree
 from typing import TYPE_CHECKING
 
-from slavv_python.io.matlab_exact_proof import (
+from slavv_python.analysis.parity.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     find_matlab_vector_paths,
     load_normalized_matlab_vectors,

@@ -1,4 +1,4 @@
-"""CLI handlers for native-first MATLAB-oracle parity experiments."""
+﻿"""CLI handlers for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
         _generate_edge_candidates_matlab_global_watershed,
     )
     from slavv_python.core.tracing import JsonExecutionTracer
-    from slavv_python.io.matlab_exact_proof import load_normalized_python_checkpoints
+    from slavv_python.analysis.parity.matlab_exact_proof import load_normalized_python_checkpoints
 
     run_root = Path(args.source_run_root).expanduser().resolve()
     checkpoints_dir = run_root / "02_Output" / "python_results" / "checkpoints"
@@ -186,7 +186,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
         tracer=tracer,
     )
 
-    print(f"✅ Execution trace for vertex {vertex_idx} captured to {args.output_trace}")
+    print(f"âœ… Execution trace for vertex {vertex_idx} captured to {args.output_trace}")
 
 
 def handle_summarize(args: argparse.Namespace) -> None:

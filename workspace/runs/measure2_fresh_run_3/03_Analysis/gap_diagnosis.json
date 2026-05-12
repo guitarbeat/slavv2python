@@ -3627,7 +3627,7 @@
   "passed": false,
   "python_pair_count": 1025,
   "report_scope": "candidate gap diagnosis",
-  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_fresh_run_3",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\measure2_fresh_run_3",
   "top_extra_hotspots": [
     {
       "count": 11,

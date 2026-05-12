@@ -1,4 +1,4 @@
-"""Resumable edge extraction paths."""
+﻿"""Resumable edge extraction paths."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def extract_edges_resumable(
     use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
 ) -> dict[str, Any]:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
-    from slavv_python.io.matlab_fail_fast import build_candidate_snapshot_payload
+    from slavv_python.analysis.parity.matlab_fail_fast import build_candidate_snapshot_payload
     from slavv_python.runtime.run_state import atomic_write_json
 
     energy = energy_data["energy"]

@@ -32,12 +32,8 @@ def find_repo_root(start_path: Path | str | None = None) -> Path:
 
 
 def find_experiment_root(repo_root: Path | None = None) -> Path:
-    """Find the canonical experiment root (usually repo/workspace)."""
-    root = repo_root or find_repo_root()
-    dev_path = root / "workspace"
-    if not dev_path.exists():
-        raise RuntimeError(f"Experiment root 'workspace' not found in {root}")
-    return dev_path
+    """Find the canonical experiment root (repo root after flattening)."""
+    return repo_root or find_repo_root()
 
 
 class WorkspaceAuditor:
@@ -45,7 +41,6 @@ class WorkspaceAuditor:
 
     CANONICAL_ROOT_FOLDERS: ClassVar[set[str]] = {
         "slavv_python",
-        "workspace",
         "docs",
         "external",
         ".github",
@@ -53,6 +48,12 @@ class WorkspaceAuditor:
         "scripts",
         "tests",
         "ui",
+        "datasets",
+        "oracles",
+        "runs",
+        "reports",
+        "scratch",
+        "tmp_tests",
     }
 
     CANONICAL_ROOT_FILES: ClassVar[set[str]] = {
@@ -62,6 +63,7 @@ class WorkspaceAuditor:
         "CHANGELOG.md",
         "AGENTS.md",
         ".gitignore",
+        "index.jsonl",
     }
 
     def __init__(self, repo_root: Path | None = None):

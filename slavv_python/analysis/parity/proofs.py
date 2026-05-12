@@ -1,4 +1,4 @@
-"""Proof logic for native-first MATLAB-oracle parity experiments."""
+﻿"""Proof logic for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.io.matlab_exact_proof import (
+from slavv_python.analysis.parity.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     _normalize_connection_array,
     compare_exact_artifacts,
@@ -14,7 +14,7 @@ from slavv_python.io.matlab_exact_proof import (
     load_normalized_python_checkpoints,
     render_exact_proof_report,
 )
-from slavv_python.io.matlab_fail_fast import (
+from slavv_python.analysis.parity.matlab_fail_fast import (
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,
     render_candidate_coverage_report,
@@ -510,7 +510,7 @@ def run_lut_proof(
     oracle_root: Path | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the LUT parity proof."""
-    from slavv_python.io.matlab_fail_fast import load_builtin_lut_fixture
+    from slavv_python.analysis.parity.matlab_fail_fast import load_builtin_lut_fixture
 
     from .execution import load_params_file, validate_exact_proof_source_surface
     from .utils import write_json_with_hash

@@ -152,7 +152,10 @@ tutorial_output/tutorial_parameters.json
 *.pkl
 bfg.jar
 
-# Comparison and run outputs
+# Volatile workspace data (runs, oracles, datasets, scratch, reports)
+workspace/
+
+# Comparison and run outputs (legacy paths kept for safety)
 comparison_output/
 comparison_output_*/
 comparisons/*
@@ -161,17 +164,12 @@ comparison_results/
 comparison_results_test_run/
 tmp_parity_current_venv/
 tmp_comparison_params_*.json
-datasets/*
-datasets/.gitkeep
-oracles/*
-oracles/.gitkeep
-reports/*
-reports/.gitkeep
-runs/*
-runs/.gitkeep
 tmp_tests/*
 tmp_tests/.gitkeep
 comparisons/
+
+# Generated search index
+index.jsonl
 
 # Exclude external directory from all scans
 external/

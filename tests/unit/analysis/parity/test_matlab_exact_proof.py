@@ -1,4 +1,4 @@
-"""Unit tests for exact imported-MATLAB artifact proof helpers."""
+﻿"""Unit tests for exact imported-MATLAB artifact proof helpers."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.io import savemat
 
-from slavv_python.io.matlab_exact_proof import (
+from slavv_python.analysis.parity.matlab_exact_proof import (
     compare_exact_artifacts,
     load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
@@ -175,7 +175,7 @@ def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
 
 
 def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
-    from slavv_python.io.matlab_exact_proof import find_matlab_vector_paths
+    from slavv_python.analysis.parity.matlab_exact_proof import find_matlab_vector_paths
 
     vectors_dir = tmp_path / "batch" / "vectors"
     data_dir = tmp_path / "batch" / "data"

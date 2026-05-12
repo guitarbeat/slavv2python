@@ -177,10 +177,10 @@ For any MATLAB-parity-sensitive surface (especially the `edges` and `network` st
 
 - **Package Layout:** Keep all package code under `slavv_python/`. Use the grouped package surfaces described in `PYTHON_NAMING_GUIDE.md`.
 - **Test Placement:** Keep tests under `tests/` (following `tests/README.md`). Files containing `regression` in the name automatically receive the `regression` marker.
-- **Temporary Files:** Use the repo-local `tmp_path` fixture in `tests/conftest.py` for testing. Keep test artifacts under `workspace/tmp_tests/`, not ad-hoc system temp roots.
+- **Temporary Files:** Use the repo-local `tmp_path` fixture in `tests/conftest.py` for testing. Keep test artifacts under `tmp_tests/`, not ad-hoc system temp roots.
 - **Logging:** Use the standard `logging` library in core/library code instead of `print()`. CLI commands may print user-facing console summaries.
 - **Path Handling:** Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings (e.g., `encoding="utf-8"`) when writing repository-managed text files.
 - **Type Annotations:** Prefer `from __future__ import annotations` in all Python modules to match the prevailing package style.
 - **CLI Framework:** Keep CLI surfaces aligned with the `argparse`-based entrypoints under `slavv_python/apps/`. Do not introduce new CLI frameworks.
 - **Resumability:** Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility is not supported.
-- **Search Exclusions:** When searching (e.g., with `rg`), exclude noisy generated directories like `workspace/tmp_tests/` and vendored assets under `external/blender_resources/`.
+- **Search Exclusions:** When searching (e.g., with `rg`), exclude noisy generated directories like `tmp_tests/` and vendored assets under `external/blender_resources/`.

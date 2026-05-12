@@ -1,5 +1,5 @@
 {
-  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\candidate_fix_audit_v1",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\candidate_fix_audit_v1",
   "extra_pair_count": 355,
   "extra_pair_samples": [
     [
@@ -3665,7 +3665,7 @@
   "passed": false,
   "python_pair_count": 1025,
   "report_scope": "candidate coverage only",
-  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\180709_E_seed_e",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\180709_E_seed_e",
   "top_extra_vertices": [
     {
       "count": 11,

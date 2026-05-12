@@ -14,10 +14,10 @@
     64
   ],
   "selected_settings_paths": {
-    "edges": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\edges_190910-225419.mat",
-    "energy": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\energy_190910-103039.mat",
-    "network": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\network_190910-225419.mat",
-    "vertices": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\vertices_190910-172151.mat"
+    "edges": "D:\\2P_Data\\Aaron\\slavv2python\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\edges_190910-225419.mat",
+    "energy": "D:\\2P_Data\\Aaron\\slavv2python\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\energy_190910-103039.mat",
+    "network": "D:\\2P_Data\\Aaron\\slavv2python\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\network_190910-225419.mat",
+    "vertices": "D:\\2P_Data\\Aaron\\slavv2python\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical\\settings\\vertices_190910-172151.mat"
   },
   "stop_after": "vertices"
 }

@@ -2,16 +2,16 @@
   "dataset_hash": null,
   "kind": "matlab_oracle",
   "manifest_version": 1,
-  "matlab_batch_dir": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d\\01_Input\\matlab_results\\batch_260421-151654",
+  "matlab_batch_dir": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d\\01_Input\\matlab_results\\batch_260421-151654",
   "matlab_source_version": "external/Vectorization-Public",
   "normalized_artifacts": {
-    "edges": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\edges.pkl",
-    "energy": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\energy.pkl",
-    "network": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\network.pkl",
-    "vertices": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\vertices.pkl"
+    "edges": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\edges.pkl",
+    "energy": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\energy.pkl",
+    "network": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\network.pkl",
+    "vertices": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d\\03_Analysis\\normalized\\oracle\\vertices.pkl"
   },
   "oracle_id": "batch_260421-151654_60250a9d3a5d",
-  "oracle_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\oracles\\batch_260421-151654_60250a9d3a5d",
+  "oracle_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\oracles\\batch_260421-151654_60250a9d3a5d",
   "raw_vector_hashes": {
     "edges": "60250a9d3a5da3674572457ebdc3587ce24cb2eb72ac781d3e5f550773cfdd42",
     "energy": "48496065617ff74b801bbaf4f2136f9caf9dba7fbd701c91f17572b42baa6917",

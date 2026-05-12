@@ -1,9 +1,0 @@
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:471:	is_current_location_clear = false ;    
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:515:%             if ~ is_current_location_clear, available_locations( available_locations == current_location ) = [ ];  is_current_location_clear = true ; end
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:516:            if ~ is_current_location_clear, is_current_location_clear = true ; available_locations( end ) = [ ]; end
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:527:%                     if ~ is_current_location_cleared, available_locations( available_locations == current_location ) = next_location ;  is_current_location_cleared = true ; 
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:545:                            if is_current_location_clear                     
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:558:                    if  ~ is_current_location_clear 
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:559:                          is_current_location_clear = true ;
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:585:%                 if ~ is_current_location_clear,  locations_to_reset = [ locations_to_reset,  current_location ]; is_current_location_clear = true ; end %#ok<AGROW>
-D:\2P_Data\Aaron\slavv2python\external\Vectorization-Public\source\get_edges_by_watershed.m:586:                if ~ is_current_location_clear, is_current_location_clear = true ; ...

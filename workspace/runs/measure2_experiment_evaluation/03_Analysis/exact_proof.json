@@ -1,5 +1,5 @@
 {
-  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\measure2_experiment_evaluation",
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\measure2_experiment_evaluation",
   "exact_route_gate": "comparison_exact_network + python_native_hessian energy provenance",
   "first_failing_field_path": "edges.connections",
   "first_failing_stage": "edges",
@@ -38,10 +38,10 @@
     },
     "stage": "edges"
   },
-  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical",
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical",
   "passed": false,
   "report_scope": "exact route",
-  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\trace_order_fix",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\trace_order_fix",
   "stage_summaries": {
     "edges": {
       "field_count": 9,

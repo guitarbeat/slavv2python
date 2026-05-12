@@ -1,13 +1,13 @@
 {
   "dataset_hash": "3d55cd9da94eaabbc5c2445b390950d77e05888eeae71352a5b04c0887d0b24b",
-  "dataset_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\datasets\\3d55cd9da94eaabbc5c2445b390950d77e05888eeae71352a5b04c0887d0b24b",
+  "dataset_root": "C:\\Users\\alw4834\\Documents\\slavv2python\\datasets\\3d55cd9da94eaabbc5c2445b390950d77e05888eeae71352a5b04c0887d0b24b",
   "input_bytes": 16,
   "input_filename": "input.tif",
   "kind": "dataset",
   "manifest_version": 1,
   "retention": "preserved",
-  "source_file": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\tmp_tests\\run-19a1845b1ffc4d3d9111965b7deac687\\input.tif",
-  "stored_input_file": "C:\\Users\\alw4834\\Documents\\slavv2python\\workspace\\datasets\\3d55cd9da94eaabbc5c2445b390950d77e05888eeae71352a5b04c0887d0b24b\\01_Input\\input.tif",
+  "source_file": "C:\\Users\\alw4834\\Documents\\slavv2python\\tmp_tests\\run-19a1845b1ffc4d3d9111965b7deac687\\input.tif",
+  "stored_input_file": "C:\\Users\\alw4834\\Documents\\slavv2python\\datasets\\3d55cd9da94eaabbc5c2445b390950d77e05888eeae71352a5b04c0887d0b24b\\01_Input\\input.tif",
   "timestamps": {
     "created_at": "2026-04-29T20:15:16Z",
     "updated_at": "2026-05-01T01:30:56Z"

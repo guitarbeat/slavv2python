@@ -1,11 +1,11 @@
-"""Constants for native-first MATLAB-oracle parity experiments."""
+﻿"""Constants for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from slavv_python.io.matlab_exact_proof import EXACT_STAGE_ORDER
+from slavv_python.analysis.parity.matlab_exact_proof import EXACT_STAGE_ORDER
 
 # Directory structure constants
 ANALYSIS_DIR = Path("03_Analysis")

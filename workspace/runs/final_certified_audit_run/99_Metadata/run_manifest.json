@@ -20,7 +20,7 @@
   "python_commit": null,
   "retention": "disposable",
   "run_id": "b755cd0c0926",
-  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_certified_audit_run",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\final_certified_audit_run",
   "stage_metrics": {
     "edges": {
       "completed_at": null,
