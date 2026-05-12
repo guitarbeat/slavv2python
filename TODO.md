@@ -13,11 +13,11 @@
 
 ## Current Velocity
 
-- **Last Verified:** 167 / 1,197 matched pairs on a fresh exact run (generating 1,349 total candidates vs MATLAB's 1,197).
-- **Measurement Source:** `measure2_fresh_run` experiment, 2026-05-11
+- **Last Verified:** 670 / 1,197 matched pairs (56.0%) on a fresh exact run (generating 1,025 total candidates vs MATLAB's 1,197).
+- **Measurement Source:** `candidate_fix_audit_v1` experiment, 2026-05-12
 - **Target:** 80% (Measures 2 & 3 — in progress, not yet validated)
-- **Active Status:** Active Development — Debugging extra trace generation
-- **Last Updated:** 2026-05-11
+- **Active Status:** Active Development — Debugging missing trace generation
+- **Last Updated:** 2026-05-12
 
 > [!IMPORTANT]
 > Re-run `capture-candidates` on a fresh clean checkpoint and `prove-exact` after any code change to update
@@ -46,12 +46,12 @@ PAPER-001 (public workflow health)
 
 ### [CRITICAL] PARITY-002: Achieve 80% Match Rate Milestone — IN PROGRESS
 
-Close the gap from 167 to 80% matched MATLAB edge pairs on the native-first
+Close the gap from 670 to 80% matched MATLAB edge pairs on the native-first
 exact route.
 
 - **Proof Gate:** [EXACT_PROOF_FINDINGS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/EXACT_PROOF_FINDINGS.md)
 - **Validate command:** `python scripts/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
-- **Regression gate:** Improve the exact match count (currently 167) and reduce the extra candidate pairs (currently 1182) generated on a fresh clean run.
+- **Regression gate:** Improve the exact match count (currently 670) and close the gap on missing candidate pairs (currently 527 missing).
 
 #### Measure 2: Frontier Insertion & Trace Generation — IN PROGRESS
 
@@ -59,14 +59,15 @@ Fix seed selection, insertion semantics, and frontier ordering for high-degree
 vertices. We successfully debugged and implemented exact MATLAB behavior for
 `_matlab_global_watershed_insert_available_location`.
 
-- **Status:** Insertion logic fixed and verified against oracle tests. The previous `trace_order_fix` baseline (404 pairs) was determined to be a false baseline caused by an insertion bug ("the QUIRK") combined with contaminated mutated state in checkpoints.
+- **Status:** Directional suppression bug fixed and candidate surplus eliminated! Candidate count reduced from 1,349 to 1,025, boosting matched pairs from 167 to 670 (56.0% match rate).
 - [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/global_watershed.py)
 
 Next steps:
 - [x] Debug infinite-loop in `verify_watershed_fix.py` diagnostic run.
 - [x] Implement and verify exact MATLAB splice behavior for frontier insertions.
-- [ ] Diagnose why Python generates significantly more candidate traces (1,349) compared to MATLAB (1,197) on exact oracle inputs.
-- [ ] Investigate candidate generation loop and safety pop conditions to identify false positive trace creation.
+- [x] Diagnose why Python generates significantly more candidate traces (1,349) compared to MATLAB (1,197) on exact oracle inputs.
+- [x] Investigate candidate generation loop and safety pop conditions to identify false positive trace creation.
+- [ ] Analyze why 527 MATLAB traces are missing (target Top Missing Vertices: 1350, 92).
 
 #### Measure 3: Candidate Filtering Alignment — NOT STARTED
 

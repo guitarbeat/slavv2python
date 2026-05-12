@@ -437,7 +437,7 @@ def test_available_locations_insertion_maintains_order():
     available = [10, 20]  # Worst to best: [-1.0, -3.0]
 
     # Insert best energy
-    updated = _matlab_global_watershed_insert_available_location(
+    updated, _ = _matlab_global_watershed_insert_available_location(
         available,
         next_location=30,
         next_energy=-5.0,
@@ -466,7 +466,7 @@ def test_available_locations_secondary_seed_replaces_tail():
     energy_lookup = {10: -1.0, 20: -3.0, 30: -6.0}
     available = [10, 20, 30]
 
-    updated = _matlab_global_watershed_insert_available_location(
+    updated, _ = _matlab_global_watershed_insert_available_location(
         available,
         next_location=40,
         next_energy=-5.0,

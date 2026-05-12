@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-05-04
+**Last Updated**: 2026-05-12
 
 This is the maintained current-status owner for the native-first exact route.
 Use it for live proof status, current v22 watershed readouts, the first failing
@@ -47,6 +47,30 @@ The strongest current interpretation is:
   candidate or chooser counts are treated as trustworthy parity evidence
 - the pointer-lifecycle fixes were real and should stay
 - the reviewed MATLAB and Python watershed constants are already aligned
+
+## May 2026 Directional Suppression Scope Validation
+
+**Date**: 2026-05-12  
+**Experiment**: `candidate_fix_audit_v1`  
+**Oracle**: `180709_E_batch_190910-103039`  
+**Location**: `workspace\runs\candidate_fix_audit_v1`
+**Status**: Validation complete, major breakthrough in match rate
+
+### Fix Applied
+- **File**: `slavv_python/core/global_watershed.py`
+- **Issue**: Directional suppression was improperly scoped inside conditional logic, creating orphaned un-suppressed watersheds and redundant candidate pathways.
+- **Fix**: Moved `_matlab_frontier_directional_suppression_factors` application unconditionally to the bottom of the seed loop.
+- **Impact**: Eliminates the false proliferation of redundant candidate pathways.
+
+### Results Summary
+
+| Metric | Baseline (180709_E_seed_e) | candidate_fix_audit_v1 | Improvement |
+|--------|-----------------|-----------------|-------------|
+| Python candidates | 1,349 | 1,025 | -324 (Fixed surplus) |
+| Matched MATLAB pairs | 167 | 670 | **4.0x increase** |
+| Match rate | 14.0% | **56.0%** | +42.0 pp |
+| Missing MATLAB pairs | 1,030 | 527 | -503 pairs |
+| Extra Python pairs | 1,182 | 355 | -827 pairs |
 
 ## May 2026 Trace Order Fix Validation
 
