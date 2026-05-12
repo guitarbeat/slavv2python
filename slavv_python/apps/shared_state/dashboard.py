@@ -9,10 +9,10 @@ try:
 except ImportError:
     from typing_extensions import TypedDict
 
-from slavv_python.apps.services.exports import has_full_network_results
+from slavv_python.apps.shared_services.exports import has_full_network_results
 from slavv_python.runtime import RunSnapshot, load_run_snapshot
 
-from ..services.share_report import compute_shareable_stats
+from ..shared_services.share_report import compute_shareable_stats
 from . import normalize_state_results
 
 if TYPE_CHECKING:

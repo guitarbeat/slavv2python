@@ -1,10 +1,10 @@
-"""Focused app-facing helpers for curation workflows."""
+﻿"""Focused app-facing helpers for curation workflows."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from slavv_python.apps.state.curation import apply_curated_session_results
+from slavv_python.apps.shared_state.curation import apply_curated_session_results
 
 
 def apply_curated_results(

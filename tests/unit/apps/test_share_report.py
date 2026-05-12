@@ -1,8 +1,8 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pytest
 
-from slavv_python.apps.services.share_report import (
+from slavv_python.apps.shared_services.share_report import (
     build_share_report_html,
     make_share_report_filename,
     record_share_event,

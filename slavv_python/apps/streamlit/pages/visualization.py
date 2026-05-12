@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import streamlit as st
 
-from slavv_python.apps.services import app as app_services
-from slavv_python.apps.state.visualization import (
+from slavv_python.apps.shared_services import app as app_services
+from slavv_python.apps.shared_state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,
@@ -17,8 +17,8 @@ from slavv_python.visualization import NetworkVisualizer
 EXPORT_BUTTON_SPECS = (
     {
         "format_type": "vmv",
-        "label": "ðŸ“„ Download VMV",
-        "empty_label": "ðŸ“„ Export VMV",
+        "label": "Ã°Å¸â€œâ€ž Download VMV",
+        "empty_label": "Ã°Å¸â€œâ€ž Export VMV",
         "file_name": "network.vmv",
         "mime": "text/plain",
         "help": "Export network in VessMorphoVis (VMV) format",
@@ -26,8 +26,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "casx",
-        "label": "ðŸ“„ Download CASX",
-        "empty_label": "ðŸ“„ Export CASX",
+        "label": "Ã°Å¸â€œâ€ž Download CASX",
+        "empty_label": "Ã°Å¸â€œâ€ž Export CASX",
         "file_name": "network.casx",
         "mime": "application/xml",
         "help": "Export network in CASX XML format",
@@ -35,8 +35,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "csv",
-        "label": "ðŸ“Š Download CSV (Zip)",
-        "empty_label": "ðŸ“Š Export CSV",
+        "label": "Ã°Å¸â€œÅ  Download CSV (Zip)",
+        "empty_label": "Ã°Å¸â€œÅ  Export CSV",
         "file_name": "network_csv.zip",
         "mime": "application/zip",
         "help": "Export network data as Zipped CSVs (vertices & edges)",
@@ -249,7 +249,7 @@ def show_visualization_page() -> None:
             help="Download a self-contained HTML report to share with collaborators.",
         )
         if downloaded:
-            from ...services.share_report import record_share_event
+            from ...shared_services.share_report import record_share_event
 
             record_share_event(
                 st.session_state,

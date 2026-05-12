@@ -1,12 +1,12 @@
-"""Analysis page for the SLAVV Streamlit app."""
+﻿"""Analysis page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
-from slavv_python.apps.services.exports import update_run_task
-from slavv_python.apps.state.analysis import (
+from slavv_python.apps.shared_services.exports import update_run_task
+from slavv_python.apps.shared_state.analysis import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
     has_analysis_network,

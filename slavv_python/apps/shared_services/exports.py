@@ -1,4 +1,4 @@
-"""Focused app-facing helpers for exports and share reports."""
+﻿"""Focused app-facing helpers for exports and share reports."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import streamlit as st
 
-from slavv_python.apps.state.processing import build_processing_run_dir
+from slavv_python.apps.shared_state.processing import build_processing_run_dir
 from slavv_python.models import normalize_pipeline_result
 from slavv_python.runtime import RunContext
 from slavv_python.visualization import NetworkVisualizer

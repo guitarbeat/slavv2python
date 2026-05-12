@@ -1,10 +1,10 @@
-"""Helpers for normalized analysis-page state."""
+﻿"""Helpers for normalized analysis-page state."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.apps.state.curation import summarize_processing_counts
+from slavv_python.apps.shared_state.curation import summarize_processing_counts
 from slavv_python.models import normalize_pipeline_result
 
 from . import normalize_state_results

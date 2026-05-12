@@ -1,12 +1,12 @@
-"""Image processing page for the SLAVV Streamlit app."""
+﻿"""Image processing page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import numpy as np
 import streamlit as st
 
-from slavv_python.apps.services import app as app_services
-from slavv_python.apps.state.processing import (
+from slavv_python.apps.shared_services import app as app_services
+from slavv_python.apps.shared_state.processing import (
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
@@ -93,7 +93,7 @@ def show_processing_page() -> None:
     )
 
     if uploaded_file is not None:
-        st.success(f"Ã¢Å“â€¦ Uploaded: {uploaded_file.name}")
+        st.success(f"ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Uploaded: {uploaded_file.name}")
         st.json(
             {
                 "Filename": uploaded_file.name,
@@ -136,7 +136,7 @@ def show_processing_page() -> None:
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             microns_per_voxel_y = st.number_input(
-                "Y voxel size (ÃŽÂ¼m)",
+                "Y voxel size (ÃƒÅ½Ã‚Â¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_y"]),
@@ -145,7 +145,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in Y dimension. (MATLAB: microns_per_voxel(1))",
             )
             microns_per_voxel_x = st.number_input(
-                "X voxel size (ÃŽÂ¼m)",
+                "X voxel size (ÃƒÅ½Ã‚Â¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_x"]),
@@ -154,7 +154,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in X dimension. (MATLAB: microns_per_voxel(2))",
             )
             microns_per_voxel_z = st.number_input(
-                "Z voxel size (ÃŽÂ¼m)",
+                "Z voxel size (ÃƒÅ½Ã‚Â¼m)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_z"]),
@@ -180,13 +180,13 @@ def show_processing_page() -> None:
                     help="Numerical aperture of the microscope objective. (MATLAB: numerical_aperture)",
                 )
                 excitation_wavelength = st.number_input(
-                    "Excitation wavelength (ÃŽÂ¼m)",
+                    "Excitation wavelength (ÃƒÅ½Ã‚Â¼m)",
                     min_value=0.4,
                     max_value=3.0,
                     value=float(st.session_state["processing_excitation_wavelength"]),
                     step=0.1,
                     key="processing_excitation_wavelength",
-                    help="Laser excitation wavelength. Typical range: 0.7-3.0 ÃŽÂ¼m for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
+                    help="Laser excitation wavelength. Typical range: 0.7-3.0 ÃƒÅ½Ã‚Â¼m for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
                 )
                 if not (0.7 <= excitation_wavelength <= 3.0):
                     st.markdown('<div class="warning-box">', unsafe_allow_html=True)
@@ -209,7 +209,7 @@ def show_processing_page() -> None:
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             radius_smallest = st.number_input(
-                "Smallest vessel radius (ÃŽÂ¼m)",
+                "Smallest vessel radius (ÃƒÅ½Ã‚Â¼m)",
                 min_value=0.1,
                 max_value=100.0,
                 value=float(st.session_state["processing_radius_smallest"]),
@@ -218,7 +218,7 @@ def show_processing_page() -> None:
                 help="Radius of the smallest vessel to be detected in microns. (MATLAB: radius_of_smallest_vessel_in_microns)",
             )
             radius_largest = st.number_input(
-                "Largest vessel radius (ÃŽÂ¼m)",
+                "Largest vessel radius (ÃƒÅ½Ã‚Â¼m)",
                 min_value=1.0,
                 max_value=500.0,
                 value=float(st.session_state["processing_radius_largest"]),

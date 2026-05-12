@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from ...utils import PIPELINE_PROFILE_CHOICES
+from ...workflows import PIPELINE_PROFILE_CHOICES
 
 _EXPORT_FILE_NAMES = {
     "csv": "network.csv",

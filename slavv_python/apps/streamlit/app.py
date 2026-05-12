@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import warnings
 
 import streamlit as st
 
-from slavv_python.apps.services.app import (
+from slavv_python.apps.shared_services.app import (
     _build_processing_run_dir,
     _has_full_network_results,
     _log_share_report_prepared_once,
@@ -15,8 +15,8 @@ from slavv_python.apps.services.app import (
     generate_share_report_data,
     load_run_snapshot,
 )
-from slavv_python.apps.services.app import apply_curated_results as _apply_curated_results
-from slavv_python.apps.services.app import run_interactive_curator as _run_interactive_curator
+from slavv_python.apps.shared_services.app import apply_curated_results as _apply_curated_results
+from slavv_python.apps.shared_services.app import run_interactive_curator as _run_interactive_curator
 from slavv_python.apps.web_app_dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
@@ -54,7 +54,7 @@ warnings.filterwarnings("ignore")
 
 st.set_page_config(
     page_title="SLAVV - Vascular Vectorization",
-    page_icon="🩸",
+    page_icon="ðŸ©¸",
     layout="wide",
     initial_sidebar_state="expanded",
 )

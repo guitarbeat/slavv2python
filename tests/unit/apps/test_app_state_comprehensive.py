@@ -1,4 +1,4 @@
-"""Comprehensive tests for App State management across analysis, dashboard, processing, visualization, and curation."""
+﻿"""Comprehensive tests for App State management across analysis, dashboard, processing, visualization, and curation."""
 
 from __future__ import annotations
 
@@ -7,31 +7,31 @@ import pytest
 
 pytest.importorskip("streamlit")
 
-from slavv_python.apps.state.dashboard import (
+from slavv_python.apps.shared_state.dashboard import (
     load_dashboard_context,
     normalize_dashboard_results,
     resolve_dashboard_stats,
 )
-from slavv_python.apps.state.analysis import (
+from slavv_python.apps.shared_state.analysis import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
     has_analysis_network,
     normalize_analysis_results,
     resolve_analysis_stats,
 )
-from slavv_python.apps.state.curation import (
+from slavv_python.apps.shared_state.curation import (
     apply_curated_session_results,
     build_curation_stats_rows,
     summarize_processing_counts,
     sync_curated_processing_results,
 )
-from slavv_python.apps.state.processing import (
+from slavv_python.apps.shared_state.processing import (
     build_processing_run_dir,
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
 )
-from slavv_python.apps.state.visualization import (
+from slavv_python.apps.shared_state.visualization import (
     extract_visualization_export_payload,
     has_visualization_network,
     list_available_visualizations,

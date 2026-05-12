@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Any, cast
 import plotly.express as px
 import streamlit as st
 
-from slavv_python.apps.services.dashboard import render_run_dashboard
-from slavv_python.apps.state.dashboard import DashboardContext, load_dashboard_context
+from slavv_python.apps.shared_services.dashboard import render_run_dashboard
+from slavv_python.apps.shared_state.dashboard import DashboardContext, load_dashboard_context
 from slavv_python.apps.web_app_dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,

@@ -1,4 +1,4 @@
-"""Machine-learning curation page for the SLAVV Streamlit app."""
+﻿"""Machine-learning curation page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ import plotly.express as px
 import streamlit as st
 
 from slavv_python.analysis import AutomaticCurator, MLCurator
-from slavv_python.apps.services import curation as curation_services
-from slavv_python.apps.services.exports import update_run_task
-from slavv_python.apps.state.curation import (
+from slavv_python.apps.shared_services import curation as curation_services
+from slavv_python.apps.shared_services.exports import update_run_task
+from slavv_python.apps.shared_state.curation import (
     build_curation_stats_rows,
     summarize_processing_counts,
 )
@@ -167,7 +167,7 @@ def show_ml_curation_page():
                 help="Vertices with energy above this threshold will be removed.",
             )
             min_vertex_radius = st.number_input(
-                "Minimum Vertex Radius (Î¼m)",
+                "Minimum Vertex Radius (ÃŽÂ¼m)",
                 min_value=0.1,
                 max_value=10.0,
                 value=0.5,
@@ -192,7 +192,7 @@ def show_ml_curation_page():
                 help="Vertices in low-contrast regions will be removed.",
             )
             min_edge_length = st.number_input(
-                "Minimum Edge Length (Î¼m)",
+                "Minimum Edge Length (ÃŽÂ¼m)",
                 min_value=0.1,
                 max_value=20.0,
                 value=2.0,
@@ -208,7 +208,7 @@ def show_ml_curation_page():
                 help="Edges with tortuosity above this will be removed.",
             )
             max_connection_distance = st.number_input(
-                "Max Connection Distance (Î¼m)",
+                "Max Connection Distance (ÃŽÂ¼m)",
                 min_value=0.1,
                 max_value=10.0,
                 value=5.0,

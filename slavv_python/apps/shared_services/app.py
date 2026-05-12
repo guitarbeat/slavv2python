@@ -1,12 +1,12 @@
-"""Aggregated app-facing helpers shared by the Streamlit shell."""
+﻿"""Aggregated app-facing helpers shared by the Streamlit shell."""
 
 from __future__ import annotations
 
 import streamlit as st
 
-from slavv_python.apps.services.curation import apply_curated_results, run_interactive_curator
-from slavv_python.apps.services.dashboard import render_run_dashboard
-from slavv_python.apps.services.exports import (
+from slavv_python.apps.shared_services.curation import apply_curated_results, run_interactive_curator
+from slavv_python.apps.shared_services.dashboard import render_run_dashboard
+from slavv_python.apps.shared_services.exports import (
     build_run_task_dir,
     generate_export_data,
     generate_share_report_data,
