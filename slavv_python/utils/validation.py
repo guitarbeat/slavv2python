@@ -1,11 +1,11 @@
-"""Parameter validation functions for source."""
+﻿"""Parameter validation functions for source."""
 
 from __future__ import annotations
 
 import warnings
 from typing import Any
 
-from .pipeline_profiles import apply_pipeline_profile, normalize_pipeline_profile_name
+from slavv_python.workflows.profiles import apply_pipeline_profile, normalize_pipeline_profile_name
 
 
 def _coerce_integral_parameter(name: str, value: Any) -> Any:
@@ -74,7 +74,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         # Validate excitation wavelength (common range for two-photon microscopy)
         if not (0.7 <= validated["excitation_wavelength_in_microns"] <= 3.0):
             warnings.warn(
-                "Excitation wavelength outside typical range (0.7-3.0 Î¼m). "
+                "Excitation wavelength outside typical range (0.7-3.0 ÃŽÂ¼m). "
                 "This may indicate an error or unusual experimental setup.",
                 stacklevel=2,
             )

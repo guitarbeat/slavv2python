@@ -1,7 +1,0 @@
-{
-  "dataset_hash": "771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353",
-  "exact_vertex_checkpoint_sync": false,
-  "input_file": "D:\\2P_Data\\Aaron\\slavv2python\\datasets\\180709_E.tif",
-  "rerun_from": "edges",
-  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\runs\\trace_order_fix"
-}

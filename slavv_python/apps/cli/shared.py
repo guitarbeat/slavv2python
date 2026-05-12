@@ -1,4 +1,4 @@
-"""Shared internal helpers for the SLAVV CLI."""
+﻿"""Shared internal helpers for the SLAVV CLI."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 import sys
 from typing import Any
 
-from ...utils import apply_pipeline_profile
+from ...workflows import apply_pipeline_profile
 from .parser import _EXPORT_FILE_NAMES
 
 

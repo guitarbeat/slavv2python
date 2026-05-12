@@ -28,6 +28,12 @@ from .pipeline import (
     stop_after_stage_if_requested,
     validate_stage_control,
 )
+from .profiles import (
+    PIPELINE_PROFILE_CHOICES,
+    apply_pipeline_profile,
+    get_pipeline_profile_defaults,
+    normalize_pipeline_profile_name,
+)
 
 __all__ = [
     "PipelineStageStep",
@@ -54,4 +60,8 @@ __all__ = [
     "stage_artifacts",
     "stop_after_stage_if_requested",
     "validate_stage_control",
+    "PIPELINE_PROFILE_CHOICES",
+    "apply_pipeline_profile",
+    "get_pipeline_profile_defaults",
+    "normalize_pipeline_profile_name",
 ]

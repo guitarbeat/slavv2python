@@ -1,9 +1,0 @@
-{
-  "artifacts": {
-    "best_energy.npy": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\stages\\energy\\best_energy.npy",
-    "best_scale.npy": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\stages\\energy\\best_scale.npy"
-  },
-  "checkpoint": "D:\\slavv_comparisons\\experiments\\live-parity\\runs\\180709_E_seed_d\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
-  "completed_at": "2026-04-29T23:28:38Z",
-  "stage": "energy"
-}

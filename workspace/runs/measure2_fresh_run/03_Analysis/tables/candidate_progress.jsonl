@@ -1,9 +1,0 @@
-{"candidates":0,"detail":"Initializing edge candidate generation...","iterations":0,"phase":"started","timestamp":"2026-05-12T00:00:31Z"}
-{"candidates":1,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1, candidates=1)","iterations":1,"phase":"heartbeat","timestamp":"2026-05-12T00:00:34Z"}
-{"candidates":378,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=512, candidates=378)","iterations":512,"phase":"heartbeat","timestamp":"2026-05-12T00:00:35Z"}
-{"candidates":957,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1024, candidates=957)","iterations":1024,"phase":"heartbeat","timestamp":"2026-05-12T00:00:36Z"}
-{"candidates":1557,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1536, candidates=1557)","iterations":1536,"phase":"heartbeat","timestamp":"2026-05-12T00:00:36Z"}
-{"candidates":2037,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=2048, candidates=2037)","iterations":2048,"phase":"heartbeat","timestamp":"2026-05-12T00:00:37Z"}
-{"candidates":2098,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=2560, candidates=2098)","iterations":2560,"phase":"heartbeat","timestamp":"2026-05-12T00:00:37Z"}
-{"candidates":2154,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=3072, candidates=2154)","iterations":3072,"phase":"heartbeat","timestamp":"2026-05-12T00:00:37Z"}
-{"candidates":2154,"detail":"Completed edge candidate generation through MATLAB-style frontier workflow (candidates=2154)","iterations":3072,"phase":"completed","timestamp":"2026-05-12T00:01:24Z"}
