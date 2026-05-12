@@ -69,7 +69,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - [MATLAB Method Implementation Plan](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [MATLAB Parity Mapping](docs/reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)
-- [v22 Pointer Corruption Archive](docs/chapters/v22-pointer-corruption/README.md)
+- [v22 Pointer Corruption Archive](docs/investigations/v22-pointer-corruption/README.md)
 - [Test Placement Guide](tests/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 

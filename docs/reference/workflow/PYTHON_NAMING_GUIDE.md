@@ -34,9 +34,9 @@ results = pipeline.run(image, parameters)
 Use domain-first package names for maintained internal surfaces:
 
 - `slavv_python.core.network`
-- `slavv_python.core.energy_internal`
-- `slavv_python.core.vertices_internal`
-- `slavv_python.core.edges_internal`
+- `slavv_python.core.energy`
+- `slavv_python.core.vertices`
+- `slavv_python.core.edges`
 - `slavv_python.runtime.run_tracking`
 - `slavv_python.workflows.pipeline_session`
 - `slavv_python.workflows.pipeline_execution`
@@ -48,13 +48,12 @@ Use domain-first package names for maintained internal surfaces:
 Within a stage package, prefer role names such as:
 
 - `candidate_generation`
-- `edge_tracing`
-- `edge_selection`
+- `tracing`
+- `selection`
 - `bridge_insertion`
-- `vertex_selection`
-- `vertex_painting`
-- `energy_chunking`
-- `energy_provenance`
+- `painting`
+- `chunking`
+- `provenance`
 
 Avoid vague names like `standard`, `common`, or `payloads` unless the module is
 truly cross-cutting and the name is still precise.
@@ -83,7 +82,7 @@ behavior should stay quiet.
   `selection`, `finalize`, `resumable`.
 - Do not use leading underscores for package names that are part of normal
   day-to-day development.
-- Keep parity-specific names explicit under `matlab_compat`.
+- Keep parity-specific names explicit under `matlab_algorithms`.
 - When in doubt, optimize for stack traces and grep results that read like the
   pipeline itself.
 

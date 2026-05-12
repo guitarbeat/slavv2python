@@ -5,7 +5,7 @@
 | Link | Purpose |
 | :--- | :--- |
 | [Live Proof Status](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/EXACT_PROOF_FINDINGS.md) | Current v22 readouts and regression failures |
-| [Investigation Findings](file:///d:/2P_Data/Aaron/slavv2python/docs/chapters/translation_pair_analysis/INVESTIGATION_FINDINGS.md) | Deep analysis of missing/extra translation pairs |
+| [Investigation Findings](file:///d:/2P_Data/Aaron/slavv2python/docs/investigations/translation_pair_analysis/INVESTIGATION_FINDINGS.md) | Deep analysis of missing/extra translation pairs |
 | [Policy & Implementation Phases](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Canonical claim boundaries and long-term roadmap |
 | [Parity Mapping](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_PARITY_MAPPING.md) | Module-for-module structure against MATLAB |
 
@@ -50,7 +50,7 @@ Close the gap from 670 to 80% matched MATLAB edge pairs on the native-first
 exact route.
 
 - **Proof Gate:** [EXACT_PROOF_FINDINGS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/EXACT_PROOF_FINDINGS.md)
-- **Validate command:** `python scripts/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
+- **Validate command:** `python scripts/cli/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
 - **Regression gate:** Improve the exact match count (currently 670) and close the gap on missing candidate pairs (currently 527 missing).
 
 #### Measure 2: Frontier Insertion & Trace Generation — IN PROGRESS
@@ -60,7 +60,7 @@ vertices. We successfully debugged and implemented exact MATLAB behavior for
 `_matlab_global_watershed_insert_available_location`.
 
 - **Status:** Directional suppression bug fixed and candidate surplus eliminated! Candidate count reduced from 1,349 to 1,025, boosting matched pairs from 167 to 670 (56.0% match rate).
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/global_watershed.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/global_watershed.py)
 
 Next steps:
 - [x] Debug infinite-loop in `verify_watershed_fix.py` diagnostic run.
@@ -75,8 +75,8 @@ Tighten Python acceptance criteria to match MATLAB `get_edges_by_watershed`
 filters. Blocked until Measure 2 is validated to avoid measuring against a
 moving target.
 
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges_internal/candidate_generation.py)
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges_internal/edge_cleanup.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/candidate_generation.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/cleanup.py)
 
 Next steps:
 - [ ] Wait for Measure 2 validation.
@@ -153,8 +153,8 @@ Original scope was to isolate the first point of divergence for Hub Vertex 1350.
 The frontier insertion rewrite in Measure 2 addresses the root cause at a higher
 level.
 
-- **Inspect Tool:** [compare_execution_traces.py](file:///d:/2P_Data/Aaron/slavv2python/scripts/compare_execution_traces.py)
-- **Trace Command:** `python scripts/parity_experiment.py trace-vertex --source-run-root workspace/runs/seed --vertex-idx 1350 --output-trace trace.json`
+- **Inspect Tool:** [compare_execution_traces.py](file:///d:/2P_Data/Aaron/slavv2python/scripts/cli/compare_execution_traces.py)
+- **Trace Command:** `python scripts/cli/parity_experiment.py trace-vertex --source-run-root workspace/runs/seed --vertex-idx 1350 --output-trace trace.json`
 
 ---
 

@@ -1,4 +1,4 @@
-﻿# Adding Extraction Algorithms
+# Adding Extraction Algorithms
 
 [Up: Documentation Index](../../README.md)
 
@@ -29,14 +29,14 @@ Most new extraction algorithms need coordinated changes in these files:
 | `slavv_python/utils/validation.py` | Validates new parameter values and sets defaults. |
 | `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py` | Expose the new option on `slavv run`. |
 | `slavv_python/core/` and `slavv_python/workflows/` | Hold the implementation and the current pipeline orchestration. |
-| `slavv_python/runtime/run_tracking/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
+| `slavv_python/runtime/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
 | `tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
-- `slavv_python/core/edges.py` for stage orchestration and resumable helpers
-- `slavv_python/core/edges_internal/candidate_generation.py` and related helpers for candidate generation
-- `slavv_python/core/edges_internal/edge_selection.py` and `edge_cleanup.py` for choice and cleanup logic
+- `slavv_python/core/edges/edges.py` for stage orchestration and resumable helpers
+- `slavv_python/core/edges/candidate_generation.py` and related helpers for candidate generation
+- `slavv_python/core/edges/selection.py` and `cleanup.py` for choice and cleanup logic
 
 ## Recommended Workflow
 
@@ -69,7 +69,7 @@ For example, the experimental `simpleitk_objectness` mode is integrated by:
 
 - extending validation in `slavv_python/utils/validation.py`
 - extending `slavv run --energy-method` choices in the CLI parser surfaces
-- routing both direct and resumable execution through `slavv_python/core/energy.py`
+- routing both direct and resumable execution through `slavv_python/core/energy/energy.py`
 - keeping the default `hessian` path unchanged unless the new backend is
   explicitly selected
 - documenting parameter differences when the backend cannot or should not
@@ -87,8 +87,8 @@ Its durable outcomes are now:
 
 ### Already adopted in the codebase
 
-- `SimpleITK` as an optional exploratory energy backend in `slavv_python/core/energy.py`
-- `CuPy` as an optional experimental GPU energy backend in `slavv_python/core/energy.py`
+- `SimpleITK` as an optional exploratory energy backend in `slavv_python/core/energy/energy.py`
+- `CuPy` as an optional experimental GPU energy backend in `slavv_python/core/energy/energy.py`
 - `Zarr` for resumable energy storage and staged persistence
 - `napari` as an optional curator surface in `slavv_python/visualization/napari_curator.py`
 - `numba` as an optional acceleration path where the maintained code uses it

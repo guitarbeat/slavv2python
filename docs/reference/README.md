@@ -1,4 +1,4 @@
-﻿# Reference Docs
+# Reference Docs
 
 Use this folder for current, maintained technical references.
 These docs outrank archival chapters and paper prose when they describe the
@@ -51,5 +51,5 @@ for current Python behavior or exact MATLAB parity claims.
 
 - [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) is the maintained owner
   for live v22 and downstream proof status.
-- [v22 Pointer Corruption Archive](../chapters/v22-pointer-corruption/README.md)
+- [v22 Pointer Corruption Archive](../investigations/v22-pointer-corruption/README.md)
   preserves the April 2026 investigation trail and archived Kiro planning.

@@ -299,7 +299,7 @@ Python generates candidates that MATLAB filters out due to:
    - Insertion logic and priority calculation
    - Removal/invalidation conditions
    - Ordering semantics
-3. Compare with Python implementation in `slavv_python/core/_edge_candidates/global_watershed.py`
+3. Compare with Python implementation in `slavv_python/core/edges/global_watershed.py`
 4. Identify and document all semantic differences
 5. Implement alignment fixes
 6. Add comprehensive frontier ordering tests

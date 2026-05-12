@@ -34,7 +34,7 @@ Always read these files first when working on relevant surfaces:
 - **Testing Guide:** [tests/README.md](file:///d:/2P_Data/Aaron/slavv2python/tests/README.md) — Rules for test placement and markers.
 - **Shared Test Config:** [tests/conftest.py](file:///d:/2P_Data/Aaron/slavv2python/tests/conftest.py) — Shared pytest behavior and `tmp_path` setup.
 - **Extraction Algorithms:** [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) — Contributor guide for adding new extraction algorithms.
-- **Runtime Tracking:** `slavv_python/runtime/run_tracking/` — Structured run metadata and staged artifact locations.
+- **Runtime Tracking:** `slavv_python/runtime/` — Structured run metadata and staged artifact locations.
 
 ---
 

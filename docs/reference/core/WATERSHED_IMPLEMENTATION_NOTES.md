@@ -8,7 +8,7 @@ This document provides technical implementation details for the global watershed
 
 ## 🏗️ Architecture Overview
 
-The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/core/_edge_candidates/global_watershed.py`.
+The watershed discovery is implemented as a single-pass discovery over shared spatial maps. The implementation is located in `slavv_python/core/edges/global_watershed.py`.
 
 ### Modular Decomposition
 To maintain readability, the 800+ line discovery logic is decomposed into specialized helpers:
