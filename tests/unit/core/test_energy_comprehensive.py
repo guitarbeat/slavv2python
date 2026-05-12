@@ -8,9 +8,11 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from slavv_python.core import SLAVVProcessor, energy_backends, hessian_response as native_hessian
+from slavv_python.core import SLAVVProcessor
+from slavv_python.core.energy import backends as energy_backends
+from slavv_python.core.energy import hessian_response as native_hessian
 from slavv_python.core import energy as energy_module
-from slavv_python.core.energy_config import _prepare_energy_config
+from slavv_python.core.energy.config import _prepare_energy_config
 from slavv_python.runtime import RunContext
 from slavv_python.utils import get_chunking_lattice, validate_parameters
 

@@ -140,10 +140,10 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
 
-    from slavv_python.core.global_watershed import (
+    from slavv_python.core.edges.global_watershed import (
         _generate_edge_candidates_matlab_global_watershed,
     )
-    from slavv_python.core.tracing import JsonExecutionTracer
+    from slavv_python.core.edges.execution_tracing import JsonExecutionTracer
     from slavv_python.analysis.parity.matlab_exact_proof import load_normalized_python_checkpoints
 
     run_root = Path(args.source_run_root).expanduser().resolve()

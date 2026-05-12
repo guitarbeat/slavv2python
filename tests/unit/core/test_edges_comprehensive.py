@@ -11,37 +11,37 @@ import numpy as np
 import pytest
 
 from slavv_python.core import SLAVVProcessor
-from slavv_python.core import edge_extraction_standard as standard_edges
-from slavv_python.core import edge_selection as conflict_painting_module
-from slavv_python.core.candidate_manifest import _append_candidate_unit
-from slavv_python.core.common import _use_matlab_frontier_tracer
-from slavv_python.core.edge_cleanup import (
+from slavv_python.core.edges import extraction_standard as standard_edges
+from slavv_python.core.edges import selection as conflict_painting_module
+from slavv_python.core.edges.candidate_manifest import _append_candidate_unit
+from slavv_python.core.edges.common import _use_matlab_frontier_tracer
+from slavv_python.core.edges.cleanup import (
     clean_edges_cycles_python,
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv_python.core.edge_finalize import (
+from slavv_python.core.edges.finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
     finalize_edges_matlab_style,
     normalize_edges_matlab_style,
     prefilter_edge_indices_for_cleanup_matlab_style,
 )
-from slavv_python.core.edge_primitives import _finalize_traced_edge
-from slavv_python.core.edge_selection import (
+from slavv_python.core.edges.primitives import _finalize_traced_edge
+from slavv_python.core.edges.selection import (
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
     _matlab_edge_endpoint_positions_and_scales,
     _offset_coords_matlab,
     _snapshot_endpoint_influences_matlab,
 )
-from slavv_python.core.edge_selection_payloads import (
+from slavv_python.core.edges.selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
 from slavv_python.core.graph import _remove_short_hairs
-from slavv_python.core.vertices import extract_vertices, paint_vertex_center_image
+from slavv_python.core.vertices.vertices import extract_vertices, paint_vertex_center_image
 
 
 # ==============================================================================
@@ -84,7 +84,7 @@ def test_process_image_requires_3d():
 
 @pytest.mark.unit
 @patch(
-    "slavv_python.core.edge_candidates.estimate_vessel_directions",
+    "slavv_python.core.edges.candidates.estimate_vessel_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):

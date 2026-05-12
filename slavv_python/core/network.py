@@ -1,8 +1,8 @@
-"""Preferred network-construction facade for SLAVV."""
+﻿"""Preferred network-construction facade for SLAVV."""
 
 from __future__ import annotations
 
-from .graph import (
+from slavv_python.core.graph import (
     _matlab_edge_metrics,
     _matlab_get_network_v190,
     _matlab_get_strand_objects,

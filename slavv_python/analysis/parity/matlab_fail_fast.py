@@ -1,4 +1,4 @@
-"""Fail-fast parity helpers for the native-first exact route."""
+﻿"""Fail-fast parity helpers for the native-first exact route."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import numpy as np
 
-from ..core.common import (
+from slavv_python.core.edges.common import (
     _build_matlab_global_watershed_lut,
     _candidate_endpoint_pair_set,
 )

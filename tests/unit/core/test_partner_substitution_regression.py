@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.edge_selection import _choose_edges_matlab_style
+from slavv_python.core.edges.selection import _choose_edges_matlab_style
 
 
 def test_choose_edges_keeps_the_shared_neighborhood_frontier_partner():

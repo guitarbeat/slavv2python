@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from ..runtime.run_state import atomic_joblib_dump
-from ..utils.safe_unpickle import safe_load
+from slavv_python.runtime.run_state import atomic_joblib_dump
+from slavv_python.utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
     from pathlib import Path

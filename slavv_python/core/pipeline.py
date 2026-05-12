@@ -1,4 +1,4 @@
-"""
+﻿"""
 Main pipeline orchestration for SLAVV.
 Coordinates the energy, tracing, and network construction steps.
 """
@@ -8,10 +8,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from .. import utils
-from ..runtime import ProgressEvent, RunContext
-from ..runtime.run_state import PREPROCESS_STAGE
-from ..workflows import (
+from slavv_python import utils
+from slavv_python.runtime import ProgressEvent, RunContext
+from slavv_python.runtime.run_state import PREPROCESS_STAGE
+from slavv_python.workflows import (
     build_standard_pipeline_steps,
     emit_progress,
     finalize_pipeline_results,
@@ -24,10 +24,10 @@ from ..workflows import (
     run_pipeline_stage_sequence,
     validate_stage_control,
 )
-from . import edges as edge_ops
-from . import energy
-from . import network as network_ops
-from . import vertices as vertex_ops
+from slavv_python.core import edges as edge_ops
+from slavv_python.core import energy
+from slavv_python.core import network as network_ops
+from slavv_python.core import vertices as vertex_ops
 
 if TYPE_CHECKING:
     import numpy as np

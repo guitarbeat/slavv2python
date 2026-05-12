@@ -1,7 +1,7 @@
-import numpy as np
+﻿import numpy as np
 
 from slavv_python.core import energy as energy_module
-from slavv_python.core.edge_primitives import compute_gradient
+from slavv_python.core.edges.primitives import compute_gradient
 
 
 def test_compute_gradient_linear_field():

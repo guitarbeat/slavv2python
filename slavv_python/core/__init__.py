@@ -1,8 +1,8 @@
-"""Core SLAVV pipeline surface."""
+﻿"""Core SLAVV pipeline surface."""
 
 from __future__ import annotations
 
-from .pipeline import SlavvPipeline, SLAVVProcessor
+from slavv_python.core.pipeline import SlavvPipeline, SLAVVProcessor
 
 __all__ = [
     "SLAVVProcessor",

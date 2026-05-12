@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 import pytest
 
 from slavv_python.core import SLAVVProcessor
@@ -40,7 +40,7 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
     }
 
     monkeypatch.setattr(
-        "slavv_python.core.edge_candidates.estimate_vessel_directions",
+        "slavv_python.core.edges.candidates.estimate_vessel_directions",
         lambda *args, **kwargs: iter(()).throw(
             AssertionError("Hessian estimator should not be called")
         ),

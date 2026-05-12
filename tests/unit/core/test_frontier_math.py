@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import math
 
 import numpy as np
 
-from slavv_python.core.common import (
+from slavv_python.core.edges.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
     _matlab_frontier_insert_available_location,

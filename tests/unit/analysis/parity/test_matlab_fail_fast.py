@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from slavv_python.core.common import _build_matlab_global_watershed_lut
+from slavv_python.core.edges.common import _build_matlab_global_watershed_lut
 from slavv_python.analysis.parity.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,
     build_candidate_coverage_report,

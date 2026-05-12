@@ -1,4 +1,4 @@
-"""Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
+﻿"""Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
 
 # ruff: noqa: E402, F401, I001
 
@@ -41,9 +41,9 @@ from slavv_python.analysis.parity.execution import (
     ensure_dest_run_layout,
     validate_exact_proof_source_surface,
 )
-from slavv_python.core.edge_selection import choose_edges_for_workflow
-from slavv_python.core.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.core.edge_finalize import finalize_edges_matlab_style
+from slavv_python.core.edges.selection import choose_edges_for_workflow
+from slavv_python.core.edges.bridge_insertion import add_vertices_to_edges_matlab_style
+from slavv_python.core.edges.finalize import finalize_edges_matlab_style
 from slavv_python.analysis.parity.reports import render_exact_preflight_report
 
 

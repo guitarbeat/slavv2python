@@ -148,7 +148,7 @@ def run_exact_parity_proof(
 
     compare_func = compare_func or compare_exact_artifacts
     report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
-    from slavv_python.core.energy_provenance import exact_route_gate_description
+    from slavv_python.core.energy.provenance import exact_route_gate_description
 
     report_payload["report_scope"] = report_scope
     report_payload["exact_route_gate"] = exact_route_gate_description()
@@ -282,11 +282,11 @@ def run_candidate_capture(
     heartbeat: Any | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the edge candidate capture workflow."""
-    from slavv_python.core.edge_candidates import (
+    from slavv_python.core.edges.candidates import (
         _finalize_matlab_parity_candidates,
         _generate_edge_candidates_matlab_frontier,
     )
-    from slavv_python.core.vertices import paint_vertex_center_image
+    from slavv_python.core.vertices.vertices import paint_vertex_center_image
 
     from .reports import persist_recording_tables
     from .utils import (

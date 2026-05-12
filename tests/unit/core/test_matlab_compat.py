@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.matlab_compat import stages, vectorize_v200
+from slavv_python.core.edges.matlab_algorithms import stages, vectorize_v200
 
 
 def test_get_energy_v202_delegates_to_energy_facade(monkeypatch):

@@ -1,6 +1,6 @@
-import numpy as np
+﻿import numpy as np
 
-from slavv_python.core.edge_primitives import trace_edge
+from slavv_python.core.edges.primitives import trace_edge
 
 
 def test_discrete_tracing_steps_snap_to_voxels():
