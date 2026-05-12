@@ -1,6 +1,6 @@
 {
   "audit_present": false,
-  "created_at": "2026-05-12T00:25:35Z",
+  "created_at": "2026-05-12T16:41:26Z",
   "diagnostic_counters": {},
   "extra_pair_count": 355,
   "extra_pair_samples": [
@@ -3658,6 +3658,36 @@
       "gap_kind": "extra",
       "rank": 5,
       "vertex_index": 22
+    },
+    {
+      "count": 3,
+      "gap_kind": "extra",
+      "rank": 6,
+      "vertex_index": 9
+    },
+    {
+      "count": 3,
+      "gap_kind": "extra",
+      "rank": 7,
+      "vertex_index": 25
+    },
+    {
+      "count": 3,
+      "gap_kind": "extra",
+      "rank": 8,
+      "vertex_index": 506
+    },
+    {
+      "count": 3,
+      "gap_kind": "extra",
+      "rank": 9,
+      "vertex_index": 40
+    },
+    {
+      "count": 3,
+      "gap_kind": "extra",
+      "rank": 10,
+      "vertex_index": 649
     }
   ],
   "top_extra_vertices": [
@@ -3680,6 +3710,26 @@
     {
       "count": 3,
       "vertex_index": 22
+    },
+    {
+      "count": 3,
+      "vertex_index": 9
+    },
+    {
+      "count": 3,
+      "vertex_index": 25
+    },
+    {
+      "count": 3,
+      "vertex_index": 506
+    },
+    {
+      "count": 3,
+      "vertex_index": 40
+    },
+    {
+      "count": 3,
+      "vertex_index": 649
     }
   ],
   "top_missing_hotspots": [
@@ -3712,6 +3762,36 @@
       "gap_kind": "missing",
       "rank": 5,
       "vertex_index": 1341
+    },
+    {
+      "count": 4,
+      "gap_kind": "missing",
+      "rank": 6,
+      "vertex_index": 1353
+    },
+    {
+      "count": 4,
+      "gap_kind": "missing",
+      "rank": 7,
+      "vertex_index": 1356
+    },
+    {
+      "count": 3,
+      "gap_kind": "missing",
+      "rank": 8,
+      "vertex_index": 23
+    },
+    {
+      "count": 3,
+      "gap_kind": "missing",
+      "rank": 9,
+      "vertex_index": 29
+    },
+    {
+      "count": 3,
+      "gap_kind": "missing",
+      "rank": 10,
+      "vertex_index": 36
     }
   ],
   "top_missing_vertices": [
@@ -3734,6 +3814,26 @@
     {
       "count": 4,
       "vertex_index": 1341
+    },
+    {
+      "count": 4,
+      "vertex_index": 1353
+    },
+    {
+      "count": 4,
+      "vertex_index": 1356
+    },
+    {
+      "count": 3,
+      "vertex_index": 23
+    },
+    {
+      "count": 3,
+      "vertex_index": 29
+    },
+    {
+      "count": 3,
+      "vertex_index": 36
     }
   ],
   "warnings": [
