@@ -54,7 +54,7 @@ from tests.support.run_state_builders import (
     materialize_run_snapshot,
 )
 
-parity_experiment = importlib.import_module("scripts.parity_experiment")
+parity_experiment = importlib.import_module("scripts.cli.parity_experiment")
 
 if TYPE_CHECKING:
     Any = object

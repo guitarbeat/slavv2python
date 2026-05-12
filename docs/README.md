@@ -3,11 +3,11 @@
 The documentation tree has two jobs:
 
 - `reference/` for maintained technical guidance
-- `chapters/` for intentionally archival narratives that still help explain the
+- `investigations/` for intentionally archival narratives that still help explain the
   current Python codebase
 
 Only `reference/` is a maintained slavv_python of truth for current behavior, public
-workflow, and parity status. Treat `chapters/` as historical context, not as an
+workflow, and parity status. Treat `investigations/` as historical context, not as an
 executable spec.
 
 ## Start Here
@@ -15,7 +15,7 @@ executable spec.
 1. [Repository README](../README.md)
 2. [Agent and workflow guide](../AGENTS.md)
 3. [Reference index](reference/README.md)
-4. [Chapter index](chapters/README.md)
+4. [Investigation index](investigations/README.md)
 5. [Test placement guide](../tests/README.md)
 
 ## Core Maintained References
@@ -30,5 +30,5 @@ executable spec.
 
 ## Archive Entry Points
 
-- [v22 Pointer Corruption Archive](chapters/v22-pointer-corruption/README.md)
-- [Translation Pair Analysis Archive](chapters/translation_pair_analysis/README.md)
+- [v22 Pointer Corruption Archive](investigations/v22-pointer-corruption/README.md)
+- [Translation Pair Analysis Archive](investigations/translation_pair_analysis/README.md)
