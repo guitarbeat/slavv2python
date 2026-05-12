@@ -1,0 +1,10 @@
+candidates,detail,iterations,phase,timestamp
+0,Initializing edge candidate generation...,0,started,2026-05-11T23:52:12Z
+0,"Generating edge candidates through MATLAB-style frontier workflow (iterations=1, candidates=0)",1,heartbeat,2026-05-11T23:52:15Z
+295,"Generating edge candidates through MATLAB-style frontier workflow (iterations=512, candidates=295)",512,heartbeat,2026-05-11T23:52:15Z
+656,"Generating edge candidates through MATLAB-style frontier workflow (iterations=1024, candidates=656)",1024,heartbeat,2026-05-11T23:52:16Z
+826,"Generating edge candidates through MATLAB-style frontier workflow (iterations=1536, candidates=826)",1536,heartbeat,2026-05-11T23:52:16Z
+1155,"Generating edge candidates through MATLAB-style frontier workflow (iterations=2048, candidates=1155)",2048,heartbeat,2026-05-11T23:52:16Z
+1473,"Generating edge candidates through MATLAB-style frontier workflow (iterations=2560, candidates=1473)",2560,heartbeat,2026-05-11T23:52:16Z
+1654,"Generating edge candidates through MATLAB-style frontier workflow (iterations=3072, candidates=1654)",3072,heartbeat,2026-05-11T23:52:17Z
+1654,Completed edge candidate generation through MATLAB-style frontier workflow (candidates=1654),3072,completed,2026-05-11T23:52:43Z

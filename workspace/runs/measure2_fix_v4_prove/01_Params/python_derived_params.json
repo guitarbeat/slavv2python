@@ -1,0 +1,8 @@
+{
+  "orchestration_params": {
+    "comparison_exact_network": true,
+    "energy_storage_format": "npy"
+  },
+  "python_only_params": {},
+  "unclassified_params": {}
+}

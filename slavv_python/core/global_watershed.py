@@ -377,33 +377,56 @@ def _matlab_global_watershed_insert_available_location(
     energy_lookup: Float32Array,
     seed_idx: int,
     is_current_location_clear: bool,
-) -> list[int]:
+) -> tuple[list[int], bool]:
     """Insert one location into MATLAB's worst-to-best available-location list.
 
     CRITICAL: available_locations is sorted by energy descending from high (worst) at
     index 0 to low/best (-Inf) at the end. Elements are popped from the right (best).
 
-    When is_current_location_clear is False, the last element is the current active
-    location, whose energy has just been restored to its original value, making it
-    potentially unsorted relative to the rest of the list.
+    Exact replica of MATLAB get_edges_by_watershed.m lines 532-562.
+
+    MATLAB list convention:
+      - Index 0 (MATLAB: 1) = worst energy (largest value).
+      - Index -1 (MATLAB: end) = best energy (most negative / -Inf for vertices).
+      - Elements are popped from the right (best first).
+      - When is_current_location_clear is False, the LAST element is the active
+        node (unsorted relative to the rest). MATLAB's splice ALWAYS removes this
+        slot, so the current node is always popped.
+
+    seed_idx == 1 (MATLAB lines 532-541):
+        Fast path: if available_locations[0] <= target → location_idx = 1.
+        Otherwise: linear scan from the END across ALL elements (including the
+        unsorted current at [-1]) to find the last element with energy > target.
+
+    seed_idx > 1 (MATLAB lines 542-553):
+        Fast path checks available_locations[-1] (the current / unsorted node):
+            if end_energy >= target and ~is_current_location_clear:
+                location_idx = n      (inserts before current, which is then dropped)
+            if end_energy >= target and  is_current_location_clear:
+                location_idx = n + 1  (append at end)
+        Otherwise: linear scan across ALL elements for first element < target.
+
+    MATLAB splice (lines 558-562) always pops the 'end' slot when ~clear,
+    so was_current_popped is always True.
+
+    Returns:
+        (updated_available_locations, was_current_popped)
     """
 
     def _energy_for(linear_index: int) -> float:
         return float(energy_lookup[int(linear_index)])
 
     if not available_locations:
-        return [int(next_location)]
+        return [int(next_location)], True
 
     target_energy = float(next_energy)
     n = len(available_locations)
 
     # 1. Identify the reliably sorted boundary
     if not is_current_location_clear:
-        # The prefix excluding the current active node is fully sorted.
         sorted_len = n - 1
         energy_last = _energy_for(available_locations[-1])
     else:
-        # The whole array is sorted.
         sorted_len = n
         energy_last = None
 
@@ -412,22 +435,21 @@ def _matlab_global_watershed_insert_available_location(
     append_at_end = False
 
     if seed_idx == 1:
-        # Simulate MATLAB: location_idx = 1 + find(energy > target, 1, 'last')
-        
-        # Fast path: new entry is even worse than the absolute worst start.
+        # MATLAB: location_idx = 1 + find(energy > target, 1, 'last')
         if sorted_len > 0 and _energy_for(available_locations[0]) <= target_energy:
             insert_at = 0
         else:
-            # MATLAB scans from the 'end'. If unsorted item at the end qualifies, IT takes priority.
-            if (not is_current_location_clear and 
-                energy_last is not None and 
-                energy_last > target_energy):
-                # QUIRK REPLICA: Match on the unsorted active node forces an Append without Pop.
-                # This matches MATLAB logic generating a location_idx = n + 1.
+            # MATLAB scans from the 'end'. If unsorted active node qualifies, it takes priority.
+            # This results in location_idx = n+1, causing an append with the current node kept.
+            if (
+                not is_current_location_clear
+                and energy_last is not None
+                and energy_last > target_energy
+            ):
+                # QUIRK: active node stays in list (MATLAB location_idx = n+1 after splice).
                 append_at_end = True
                 should_pop_current = False
             else:
-                # Find first element <= target_energy in sorted prefix.
                 low = 0
                 high = sorted_len
                 while low < high:
@@ -437,54 +459,49 @@ def _matlab_global_watershed_insert_available_location(
                     else:
                         high = mid
                 insert_at = low
-
     else:
-        # Simulate MATLAB: find(energy < target, 1, 'first')
-        
-        # Evaluated search endpoint per MATLAB line 542
-        search_end_val = energy_last if not is_current_location_clear else _energy_for(available_locations[-1])
-        
+        # MATLAB: find(energy < target, 1, 'first')
+        # Fast-path checks available_locations[-1] (the current unsorted node).
+        search_end_val = (
+            _energy_for(available_locations[-1])
+            if is_current_location_clear
+            else energy_last
+        )
         if search_end_val >= target_energy:
-            # Matches the explicit fast-path logic at MATLAB line 542.
             if not is_current_location_clear:
-                insert_at = n - 1 # Replaces current_location
+                insert_at = n - 1  # insert before current slot
             else:
                 append_at_end = True
         else:
-            # Find first element STRICTLY < target_energy.
             low = 0
             high = sorted_len
             while low < high:
                 mid = (low + high) // 2
-                # TIE BREAKING FIX: >= forces scan to skip duplicate energies, effectively 
-                # resulting in 'after-ties' placement matching the canonical logic.
                 if _energy_for(available_locations[mid]) >= target_energy:
                     low = mid + 1
                 else:
                     high = mid
-            
-            # Handle boundary failure to locate in sorted prefix.
             if not is_current_location_clear and low == sorted_len:
                 insert_at = n - 1
             else:
                 insert_at = low
 
-    # -----------------------------------------------------------------
-    # RECONSTRUCTION: Applies MATLAB slice replacements
-    # -----------------------------------------------------------------
+    # Apply insertion
     if should_pop_current:
         available_locations.pop()
         if append_at_end:
             available_locations.append(int(next_location))
         else:
             available_locations.insert(insert_at, int(next_location))
+        return available_locations, True
     else:
+        # QUIRK: active node stays in list; but MATLAB sets is_current_location_clear=true,
+        # so we return True to prevent the safety pop from removing the current node.
         if append_at_end:
             available_locations.append(int(next_location))
         else:
             available_locations.insert(insert_at, int(next_location))
-
-    return available_locations
+        return available_locations, True
 
 
 def _matlab_global_watershed_reset_join_locations(
@@ -910,7 +927,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
                     branch_order_map_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
-                        available_locations = _matlab_global_watershed_insert_available_location(
+                        available_locations, _was_popped = _matlab_global_watershed_insert_available_location(
                             available_locations,
                             next_location=next_location,
                             next_energy=float(energy_map_temp_flat[next_location]),
@@ -918,7 +935,8 @@ def _generate_edge_candidates_matlab_global_watershed(
                             seed_idx=seed_idx,
                             is_current_location_clear=is_current_location_clear,
                         )
-                        is_current_location_clear = True
+                        if _was_popped:
+                            is_current_location_clear = True
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
                     (

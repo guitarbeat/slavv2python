@@ -1,0 +1,2 @@
+artifact_count,detail,run_id,run_root,stage_key,status
+0,Completed edge candidate generation through MATLAB-style frontier workflow (candidates=1654),measure2_fix_v4,D:\2P_Data\Aaron\slavv2python\workspace\runs\measure2_fix_v4,edges,failed
