@@ -494,14 +494,13 @@ def _matlab_global_watershed_insert_available_location(
         else:
             available_locations.insert(insert_at, int(next_location))
         return available_locations, True
+    # QUIRK: active node stays in list; but MATLAB sets is_current_location_clear=true,
+    # so we return True to prevent the safety pop from removing the current node.
+    if append_at_end:
+        available_locations.append(int(next_location))
     else:
-        # QUIRK: active node stays in list; but MATLAB sets is_current_location_clear=true,
-        # so we return True to prevent the safety pop from removing the current node.
-        if append_at_end:
-            available_locations.append(int(next_location))
-        else:
-            available_locations.insert(insert_at, int(next_location))
-        return available_locations, True
+        available_locations.insert(insert_at, int(next_location))
+    return available_locations, True
 
 
 def _matlab_global_watershed_reset_join_locations(
@@ -915,14 +914,6 @@ def _generate_edge_candidates_matlab_global_watershed(
                     available_locations.pop()
                     is_current_location_clear = True
             else:
-                from .common import _matlab_frontier_directional_suppression_factors
-
-                adjusted *= _matlab_frontier_directional_suppression_factors(
-                    current_strel_offsets,
-                    selected_index=strel_idx,
-                    microns_per_voxel=microns_per_voxel,
-                )
-
                 if next_vertex_index == 0:
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
                     branch_order_map_flat[next_location] = np.uint8(branch_order)
@@ -1000,6 +991,16 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_1,
                             half_2,
                         )
+
+            # MATLAB unconditionally applies suppression to mutate the strel landscape
+            # before the next seed is selected.
+            from .common import _matlab_frontier_directional_suppression_factors
+
+            adjusted *= _matlab_frontier_directional_suppression_factors(
+                current_strel_offsets,
+                selected_index=strel_idx,
+                microns_per_voxel=microns_per_voxel,
+            )
 
         if not is_current_location_clear:
             available_locations.pop()
