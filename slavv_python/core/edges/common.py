@@ -69,13 +69,21 @@ def _matlab_frontier_offsets(
     strel_apothem: int,
     microns_per_voxel: Float32Array,
 ) -> tuple[Int32Array, Float32Array]:
-    """Construct MATLAB-style cube-neighborhood offsets with Y-fastest ordering."""
+    """Construct MATLAB-style cube-neighborhood offsets with Y-fastest ordering.
+
+    The universe is realigned to [Z, X, Y] for exact parity. We preserve MATLAB's
+    logical tie-breaking (smallest Y changes fastest) by making the Y dimension
+    (index 2) the innermost loop.
+    """
     local_range = np.arange(-strel_apothem, strel_apothem + 1, dtype=np.int32)
+    # Loops: d0=Z (outer), d1=X (middle), d2=Y (inner/fastest)
     offsets = np.array(
-        [[y, x, z] for z in local_range for x in local_range for y in local_range],
+        [[d0, d1, d2] for d0 in local_range for d1 in local_range for d2 in local_range],
         dtype=np.int32,
     )
-    distances = np.sqrt(np.sum((offsets.astype(np.float64) * microns_per_voxel) ** 2, axis=1))
+    # relative_distances: [d0*dz, d1*dx, d2*dy]
+    relative_distances = offsets.astype(np.float64) * microns_per_voxel
+    distances = np.sqrt(np.sum(relative_distances**2, axis=1))
     return cast("Int32Array", offsets), cast(
         "Float32Array", distances.astype(np.float32, copy=False)
     )
@@ -108,24 +116,33 @@ def _build_matlab_local_strel_geometry(
     *,
     step_size_per_origin_radius: float,
 ) -> dict[str, np.ndarray]:
-    """Port MATLAB ``calculate_linear_strel_range`` local geometry for one scale."""
+    """Port MATLAB ``calculate_linear_strel_range`` local geometry for one scale.
+
+    The universe is realigned to [Z, X, Y] for exact parity. We preserve MATLAB's
+    logical tie-breaking (smallest Y changes fastest) by making the Y dimension
+    (index 2) the innermost loop.
+    """
     radii_microns = float(
         np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)]
     ) * float(step_size_per_origin_radius)
     radii_pixels = np.maximum(radii_microns / np.asarray(microns_per_voxel, dtype=np.float64), 1.0)
     rounded_radii = np.rint(radii_pixels).astype(np.int32, copy=False)
     offsets: list[list[int]] = []
-    for z in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):
-        for x in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):
-            for y in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):
-                linf_distance = max(abs(y), abs(x), abs(z))
+
+    # Realigned universe loops: d0=Z (outermost), d1=X, d2=Y (innermost/fastest)
+    # Radii indices: [0]=Z, [1]=X, [2]=Y
+    for d0 in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):
+        for d1 in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):
+            for d2 in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):
+                linf_distance = max(abs(d0), abs(d1), abs(d2))
                 radial_l2_distance_squared = (
-                    (float(y) / float(radii_pixels[0])) ** 2
-                    + (float(x) / float(radii_pixels[1])) ** 2
-                    + (float(z) / float(radii_pixels[2])) ** 2
+                    (float(d0) / float(radii_pixels[0])) ** 2
+                    + (float(d1) / float(radii_pixels[1])) ** 2
+                    + (float(d2) / float(radii_pixels[2])) ** 2
                 )
                 if radial_l2_distance_squared <= 1.0 or linf_distance <= 1:
-                    offsets.append([y, x, z])
+                    offsets.append([d0, d1, d2])
+
     offsets_array: Int32Array = np.asarray(offsets, dtype=np.int32)
     relative_distances = offsets_array.astype(np.float64, copy=False) * np.asarray(
         microns_per_voxel,

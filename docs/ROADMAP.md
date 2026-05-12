@@ -67,7 +67,8 @@ Next steps:
 - [x] Implement and verify exact MATLAB splice behavior for frontier insertions.
 - [x] Diagnose why Python generates significantly more candidate traces (1,349) compared to MATLAB (1,197) on exact oracle inputs.
 - [x] Investigate candidate generation loop and safety pop conditions to identify false positive trace creation.
-- [ ] Analyze why 527 MATLAB traces are missing (target Top Missing Vertices: 1350, 92).
+- [x] Analyze why 527 MATLAB traces are missing (target Top Missing Vertices: 1350, 92).
+    - **Findings:** Identified a major misalignment in the "Universe Realignment Fix". Strel offsets were not rotated to match the (Z, X, Y) layout, causing distance penalties to be applied to wrong dimensions (e.g., Y-offset scaled by dz). Fixed in `common.py`.
 
 #### Measure 3: Candidate Filtering Alignment — NOT STARTED
 
