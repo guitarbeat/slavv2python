@@ -13,7 +13,6 @@ from .stages import (
     get_vertices_v200,
     sort_network_v180,
 )
-
 from .vectorize_v200 import vectorize_v200
 
 __all__ = [

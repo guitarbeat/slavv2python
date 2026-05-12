@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from slavv_python.core.edges import tracing as _tracing
 from slavv_python.core.edges import terminal_lookup as _lookup
 from slavv_python.core.edges import trace_directions as _directions
 from slavv_python.core.edges import trace_metrics as _metrics
+from slavv_python.core.edges import tracing as _tracing
 
 if TYPE_CHECKING:
     import numpy as np

@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from typing_extensions import TypeAlias
 
-from slavv_python.core.edges.terminal_lookup import _finalize_traced_edge, near_vertex, vertex_at_position
+from slavv_python.core.edges.terminal_lookup import (
+    _finalize_traced_edge,
+    near_vertex,
+    vertex_at_position,
+)
 
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree

@@ -10,7 +10,11 @@ from slavv_python.core.edges.candidate_detection import (
     crop_vertices_matlab_style,
     matlab_vertex_candidates,
 )
-from slavv_python.core.vertices.results import build_vertices_result, coerce_radius_axes, empty_vertices_result
+from slavv_python.core.vertices.results import (
+    build_vertices_result,
+    coerce_radius_axes,
+    empty_vertices_result,
+)
 from slavv_python.core.vertices.selection import sort_vertex_order
 
 logger = logging.getLogger(__name__)

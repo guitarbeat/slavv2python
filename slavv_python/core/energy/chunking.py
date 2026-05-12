@@ -7,10 +7,9 @@ from typing import Any, cast
 import numpy as np
 from joblib import Parallel, delayed
 
-from slavv_python.core.energy import storage as _energy_storage
-
 from slavv_python.core.energy import backends as backends
 from slavv_python.core.energy import hessian_response as native_hessian
+from slavv_python.core.energy import storage as _energy_storage
 from slavv_python.core.energy.provenance import energy_origin_for_method
 
 

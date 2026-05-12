@@ -19,18 +19,18 @@ from slavv_python.core.edges.common import (
     _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
-from slavv_python.core.edges.tracing import trace_edge
 from slavv_python.core.edges.generate import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,
 )
-from slavv_python.core.lifecycle import (
-    _build_frontier_candidate_lifecycle,
-)
 from slavv_python.core.edges.trace_directions import (
     estimate_vessel_directions,
     generate_edge_directions,
+)
+from slavv_python.core.edges.tracing import trace_edge
+from slavv_python.core.lifecycle import (
+    _build_frontier_candidate_lifecycle,
 )
 
 __all__ = [

@@ -715,7 +715,9 @@ def maybe_sync_exact_vertex_checkpoint(
     oracle_root: Path | None = None,
 ) -> str:
     """Sync the exact-route vertex checkpoint if available."""
-    from slavv_python.analysis.parity.matlab_exact_proof import sync_exact_vertex_checkpoint_from_matlab
+    from slavv_python.analysis.parity.matlab_exact_proof import (
+        sync_exact_vertex_checkpoint_from_matlab,
+    )
 
     src_checkpoints = source_run_root / CHECKPOINTS_DIR
     dest_checkpoints = dest_run_root / CHECKPOINTS_DIR

@@ -10,7 +10,9 @@ if TYPE_CHECKING:
 
     from slavv_python.core.edges.common import Int32Array
 
-from slavv_python.core.edges.common import normalize_candidate_connection_sources as _normalize_connection_sources
+from slavv_python.core.edges.common import (
+    normalize_candidate_connection_sources as _normalize_connection_sources,
+)
 
 
 def _normalize_candidate_origin_counts(raw_counts: dict[Any, Any] | None) -> dict[str, int]:

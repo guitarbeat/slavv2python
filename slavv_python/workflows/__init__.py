@@ -36,17 +36,21 @@ from .profiles import (
 )
 
 __all__ = [
+    "PIPELINE_PROFILE_CHOICES",
     "PipelineStageStep",
     "PreparedPipelineRun",
     "advance_pipeline_stage",
+    "apply_pipeline_profile",
     "build_standard_pipeline_steps",
     "create_run_context",
     "effective_run_dir",
     "emit_progress",
     "finalize_pipeline_results",
     "force_rerun_flags",
+    "get_pipeline_profile_defaults",
     "initialize_run_context",
     "load_cached_stage_result",
+    "normalize_pipeline_profile_name",
     "persist_stage_result",
     "prepare_pipeline_run",
     "preprocess_image",
@@ -60,8 +64,4 @@ __all__ = [
     "stage_artifacts",
     "stop_after_stage_if_requested",
     "validate_stage_control",
-    "PIPELINE_PROFILE_CHOICES",
-    "apply_pipeline_profile",
-    "get_pipeline_profile_defaults",
-    "normalize_pipeline_profile_name",
 ]

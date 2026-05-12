@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.runtime.run_state import atomic_joblib_dump
-from slavv_python.utils.safe_unpickle import safe_load
 from slavv_python.core.edges.candidate_detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,
@@ -19,6 +17,8 @@ from slavv_python.core.vertices.results import (
     empty_vertices_result,
     sort_vertex_order,
 )
+from slavv_python.runtime.run_state import atomic_joblib_dump
+from slavv_python.utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
     from slavv_python.runtime import StageController

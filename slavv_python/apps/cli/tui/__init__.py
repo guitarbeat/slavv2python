@@ -51,20 +51,22 @@ def run_tui_app(parser, args) -> None:
     import json
     import os
     import subprocess
+    from pathlib import Path
 
     from slavv_python.core import SlavvPipeline
     from slavv_python.io import load_tiff_volume
 
-    # 1. Try to run the Node/Clack wizard for setup
-    node_wizard_path = os.path.join(os.getcwd(), "slavv_python", "apps", "cli", "tui", "node_ui")
+    # 1. Resolve the real Node/Clack wizard package adjacent to this file
+    tui_root = Path(__file__).parent.resolve()
+    node_wizard_path = tui_root / "node_ui"
     config = None
 
-    if os.path.exists(node_wizard_path):
+    if node_wizard_path.exists():
         try:
             # Run node wizard with --json flag to get the results
             result = subprocess.run(
                 ["npm", "run", "start", "--", "--json"],
-                cwd=node_wizard_path,
+                cwd=str(node_wizard_path),
                 capture_output=True,
                 text=True,
                 check=False,
@@ -116,11 +118,11 @@ def run_tui_app(parser, args) -> None:
 
     # 5. Spawn Node Dashboard if using the merged UI
     dashboard_proc = None
-    if os.path.exists(node_wizard_path):
+    if node_wizard_path.exists():
         try:
             dashboard_proc = subprocess.Popen(
                 ["npm", "run", "start", "--", "--dashboard", json.dumps(config)],
-                cwd=node_wizard_path,
+                cwd=str(node_wizard_path),
                 stdin=subprocess.PIPE,
                 text=True,
                 shell=True,

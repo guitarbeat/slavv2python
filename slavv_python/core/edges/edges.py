@@ -20,13 +20,13 @@ from slavv_python.core.edges.candidates import (
 )
 from slavv_python.core.edges.finalize import finalize_edges_matlab_style
 from slavv_python.core.edges.payloads import _empty_edge_diagnostics, _empty_edges_result
-from slavv_python.core.edges.selection import choose_edges_for_workflow
 from slavv_python.core.edges.resumable import (
     extract_edges_resumable as _extract_edges_resumable,
 )
 from slavv_python.core.edges.resumable import (
     extract_edges_watershed_resumable as _extract_edges_watershed_resumable,
 )
+from slavv_python.core.edges.selection import choose_edges_for_workflow
 from slavv_python.core.vertices import paint_vertex_center_image, paint_vertex_image
 
 if TYPE_CHECKING:

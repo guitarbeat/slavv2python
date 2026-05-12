@@ -10,7 +10,14 @@ from scipy import sparse
 
 if TYPE_CHECKING:
 
-    from slavv_python.core.edges.common import BoolArray, Float32Array, Float64Array, Int16Array, Int32Array, Int64Array
+    from slavv_python.core.edges.common import (
+        BoolArray,
+        Float32Array,
+        Float64Array,
+        Int16Array,
+        Int32Array,
+        Int64Array,
+    )
 else:
     Int16Array = np.ndarray
     Int32Array = np.ndarray
@@ -25,8 +32,8 @@ from slavv_python.core.edges.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
 )
-from slavv_python.core.edges.payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
 from slavv_python.core.edges.execution_tracing import ExecutionTracer, NullExecutionTracer
+from slavv_python.core.edges.payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
 
 
 def _coords_from_linear_trace(
@@ -395,7 +402,7 @@ def _matlab_global_watershed_insert_available_location(
         slot, so the current node is always popped.
 
     seed_idx == 1 (MATLAB lines 532-541):
-        Fast path: if available_locations[0] <= target â†’ location_idx = 1.
+        Fast path: if available_locations[0] <= target -> location_idx = 1.
         Otherwise: linear scan from the END across ALL elements (including the
         unsorted current at [-1]) to find the last element with energy > target.
 
@@ -996,7 +1003,9 @@ def _generate_edge_candidates_matlab_global_watershed(
             # MATLAB unconditionally applies suppression to mutate the strel landscape
             # before the next seed is selected.
 
-            from slavv_python.core.edges.common import _matlab_frontier_directional_suppression_factors
+            from slavv_python.core.edges.common import (
+                _matlab_frontier_directional_suppression_factors,
+            )
 
             adjusted *= _matlab_frontier_directional_suppression_factors(
                 current_strel_offsets,

@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from scipy.spatial import cKDTree
 
     from slavv_python.core.edges.common import Float32Array, Float64Array, Int16Array, Int32Array
-
     from slavv_python.core.edges.tracing import TraceMetadata
 else:
     Int16Array = np.ndarray
@@ -20,8 +19,11 @@ else:
     Float32Array = np.ndarray
     Float64Array = np.ndarray
 
+from slavv_python.core.edges.global_watershed import (
+    ExecutionTracer,
+    _generate_edge_candidates_matlab_global_watershed,
+)
 from slavv_python.core.edges.payloads import _empty_edge_diagnostics
-from slavv_python.core.edges.global_watershed import ExecutionTracer, _generate_edge_candidates_matlab_global_watershed
 from slavv_python.core.edges.radius_utils import _scalar_radius
 
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 def _edge_candidates_facade() -> Any:
     """Return the facade module to preserve patchable edge-candidate hooks in tests."""
- 
+
     from slavv_python.core.edges import candidates as edge_candidates_facade
 
     return edge_candidates_facade
@@ -222,7 +224,6 @@ def _trace_fallback_origin_candidates(
         _empty_edge_diagnostics,
         _record_trace_diagnostics,
     )
-
     from slavv_python.core.edges.trace_metrics import (
         _trace_energy_series,
         _trace_scale_series,
