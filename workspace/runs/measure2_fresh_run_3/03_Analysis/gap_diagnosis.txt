@@ -1,0 +1,24 @@
+Gap diagnosis report
+Status: FAIL
+Counts: MATLAB=1197 Python=1025 matched=670 missing=527 extra=355
+
+Warnings
+- No origin-level candidate audit was found; hotspot joins are limited.
+- No watershed candidate pairs were recorded.
+
+Top Missing Hotspots
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+
+Top Extra Hotspots
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+- origin=None gap_count=None candidates=None fallback=None frontier=None watershed=None
+
+Missing pair samples: [[0, 529], [2, 329], [3, 329], [6, 9], [11, 230]]
+Extra pair samples: [[2, 3], [2, 416], [3, 4], [4, 1173], [5, 22]]
