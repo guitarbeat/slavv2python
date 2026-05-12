@@ -1,0 +1,17 @@
+Exact proof report
+Status: PASS
+Stages: edges
+Scope: candidate boundary fallback (edges.connections only)
+
+Stage summary
+edges: FAIL
+
+Candidate surface
+Counts: MATLAB=1197 Python=1025 matched=1025 missing=0 extra=0
+
+First failure
+Stage: edges
+Field: edges.connections
+Mismatch: shape mismatch
+MATLAB: {'shape': [1197, 2], 'dtype': 'int64', 'values': [93, 55, 100, 43, 106, 96]}
+Python: {'shape': [1025, 2], 'dtype': 'int64', 'values': [156, 168, 118, 167, 55, 93]}

@@ -1,0 +1,57 @@
+{
+  "current_stage": "energy",
+  "dataset_hash": "f3d0a7c8dc8bac8524aaae3ee398f246250c7dab97486ad0cc144ed2d21344ea",
+  "kind": "slavv_run",
+  "manifest_version": 1,
+  "matlab_source_version": null,
+  "oracle_id": null,
+  "params_fingerprint": "80f75aa1f0e1e13608bd1bf72ce75c8e6a81af06fa32499eb57037d441500c0b",
+  "promotion_state": "ephemeral",
+  "provenance": {
+    "image_shape": [
+      512,
+      512,
+      64
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "vertices"
+  },
+  "python_commit": null,
+  "retention": "disposable",
+  "run_id": "b755cd0c0926",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_certified_audit_run",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    },
+    "energy": {
+      "completed_at": null,
+      "elapsed_seconds": 620.2223153114319,
+      "peak_memory_bytes": 581742592,
+      "status": "running"
+    },
+    "network": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    },
+    "vertices": {
+      "completed_at": null,
+      "elapsed_seconds": 0.0,
+      "peak_memory_bytes": 0,
+      "status": "pending"
+    }
+  },
+  "status": "running",
+  "target_stage": "vertices",
+  "timestamps": {
+    "completed_at": "2026-05-12T02:43:38Z",
+    "created_at": "2026-05-12T02:43:38Z",
+    "updated_at": "2026-05-12T02:53:58Z"
+  }
+}

@@ -1,0 +1,11 @@
+{"candidates":0,"detail":"Initializing edge candidate generation...","iterations":0,"phase":"started","timestamp":"2026-05-12T02:30:02Z"}
+{"candidates":0,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1, candidates=0)","iterations":1,"phase":"heartbeat","timestamp":"2026-05-12T02:30:05Z"}
+{"candidates":213,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=512, candidates=213)","iterations":512,"phase":"heartbeat","timestamp":"2026-05-12T02:30:06Z"}
+{"candidates":586,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1024, candidates=586)","iterations":1024,"phase":"heartbeat","timestamp":"2026-05-12T02:30:06Z"}
+{"candidates":976,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=1536, candidates=976)","iterations":1536,"phase":"heartbeat","timestamp":"2026-05-12T02:30:07Z"}
+{"candidates":1385,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=2048, candidates=1385)","iterations":2048,"phase":"heartbeat","timestamp":"2026-05-12T02:30:07Z"}
+{"candidates":1567,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=2560, candidates=1567)","iterations":2560,"phase":"heartbeat","timestamp":"2026-05-12T02:30:07Z"}
+{"candidates":1613,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=3072, candidates=1613)","iterations":3072,"phase":"heartbeat","timestamp":"2026-05-12T02:30:08Z"}
+{"candidates":1644,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=3584, candidates=1644)","iterations":3584,"phase":"heartbeat","timestamp":"2026-05-12T02:30:08Z"}
+{"candidates":1674,"detail":"Generating edge candidates through MATLAB-style frontier workflow (iterations=4096, candidates=1674)","iterations":4096,"phase":"heartbeat","timestamp":"2026-05-12T02:30:08Z"}
+{"candidates":1674,"detail":"Completed edge candidate generation through MATLAB-style frontier workflow (candidates=1674)","iterations":4096,"phase":"completed","timestamp":"2026-05-12T02:30:35Z"}

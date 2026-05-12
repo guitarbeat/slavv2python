@@ -1,0 +1,98 @@
+{
+  "candidate_checkpoint_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\candidate_fix_audit_v1\\02_Output\\python_results\\checkpoints\\checkpoint_edge_candidates.pkl",
+  "candidate_surface": {
+    "extra_pair_count": 0,
+    "matched_pair_count": 1025,
+    "matlab_pair_count": 1197,
+    "missing_pair_count": 0,
+    "python_pair_count": 1025
+  },
+  "dest_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\candidate_fix_audit_v1",
+  "edge_checkpoint_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\candidate_fix_audit_v1\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+  "exact_route_gate": "comparison_exact_network + python_native_hessian energy provenance",
+  "first_failing_field_path": "edges.connections",
+  "first_failing_stage": "edges",
+  "first_failure": {
+    "field_path": "edges.connections",
+    "matlab_preview": {
+      "dtype": "int64",
+      "shape": [
+        1197,
+        2
+      ],
+      "values": [
+        93,
+        55,
+        100,
+        43,
+        106,
+        96
+      ]
+    },
+    "mismatch_type": "shape mismatch",
+    "python_preview": {
+      "dtype": "int64",
+      "shape": [
+        1025,
+        2
+      ],
+      "values": [
+        156,
+        168,
+        118,
+        167,
+        55,
+        93
+      ]
+    },
+    "stage": "edges"
+  },
+  "matlab_batch_dir": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\oracles\\180709_E_batch_190910-103039\\01_Input\\matlab_results\\batch_190910-103039_canonical",
+  "passed": true,
+  "report_scope": "candidate boundary fallback (edges.connections only)",
+  "source_run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\candidate_fix_audit_v1",
+  "stage_summaries": {
+    "edges": {
+      "field_count": 9,
+      "first_failure": {
+        "field_path": "edges.connections",
+        "matlab_preview": {
+          "dtype": "int64",
+          "shape": [
+            1197,
+            2
+          ],
+          "values": [
+            93,
+            55,
+            100,
+            43,
+            106,
+            96
+          ]
+        },
+        "mismatch_type": "shape mismatch",
+        "python_preview": {
+          "dtype": "int64",
+          "shape": [
+            1025,
+            2
+          ],
+          "values": [
+            156,
+            168,
+            118,
+            167,
+            55,
+            93
+          ]
+        },
+        "stage": "edges"
+      },
+      "passed": false
+    }
+  },
+  "stages": [
+    "edges"
+  ]
+}

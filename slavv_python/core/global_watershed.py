@@ -463,9 +463,7 @@ def _matlab_global_watershed_insert_available_location(
         # MATLAB: find(energy < target, 1, 'first')
         # Fast-path checks available_locations[-1] (the current unsorted node).
         search_end_val = (
-            _energy_for(available_locations[-1])
-            if is_current_location_clear
-            else energy_last
+            _energy_for(available_locations[-1]) if is_current_location_clear else energy_last
         )
         if search_end_val >= target_energy:
             if not is_current_location_clear:
@@ -918,13 +916,15 @@ def _generate_edge_candidates_matlab_global_watershed(
                     branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
                     branch_order_map_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
-                        available_locations, _was_popped = _matlab_global_watershed_insert_available_location(
-                            available_locations,
-                            next_location=next_location,
-                            next_energy=float(energy_map_temp_flat[next_location]),
-                            energy_lookup=energy_map_temp_flat,
-                            seed_idx=seed_idx,
-                            is_current_location_clear=is_current_location_clear,
+                        available_locations, _was_popped = (
+                            _matlab_global_watershed_insert_available_location(
+                                available_locations,
+                                next_location=next_location,
+                                next_energy=float(energy_map_temp_flat[next_location]),
+                                energy_lookup=energy_map_temp_flat,
+                                seed_idx=seed_idx,
+                                is_current_location_clear=is_current_location_clear,
+                            )
                         )
                         if _was_popped:
                             is_current_location_clear = True

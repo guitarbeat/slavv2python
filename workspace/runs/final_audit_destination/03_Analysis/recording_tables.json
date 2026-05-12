@@ -1,0 +1,97 @@
+{
+  "created_at": "2026-05-12T02:56:57Z",
+  "run_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination",
+  "source_artifacts": [
+    "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\99_Metadata\\run_snapshot.json",
+    "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\candidate_coverage.json",
+    "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\candidate_progress.jsonl"
+  ],
+  "table_count": 4,
+  "tables": [
+    {
+      "column_count": 21,
+      "columns": [
+        "analysis_dir",
+        "command",
+        "current_detail",
+        "current_stage",
+        "dataset_hash",
+        "hashes_dir",
+        "kind",
+        "manifest_version",
+        "normalized_dir",
+        "oracle_id",
+        "oracle_root",
+        "params_path",
+        "python_commit",
+        "retention",
+        "run_id",
+        "run_root",
+        "stage_count",
+        "status",
+        "timestamps.completed_at",
+        "timestamps.created_at",
+        "timestamps.updated_at"
+      ],
+      "csv_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\run_snapshot.csv",
+      "jsonl_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\run_snapshot.jsonl",
+      "name": "run_snapshot",
+      "row_count": 1
+    },
+    {
+      "column_count": 6,
+      "columns": [
+        "artifact_count",
+        "detail",
+        "run_id",
+        "run_root",
+        "stage_key",
+        "status"
+      ],
+      "csv_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\run_snapshot_stages.csv",
+      "jsonl_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\run_snapshot_stages.jsonl",
+      "name": "run_snapshot_stages",
+      "row_count": 1
+    },
+    {
+      "column_count": 16,
+      "columns": [
+        "dest_run_root",
+        "extra_pair_count",
+        "extra_pair_samples",
+        "extra_pairs",
+        "matched_pair_count",
+        "matched_pair_samples",
+        "matlab_pair_count",
+        "missing_pair_count",
+        "missing_pair_samples",
+        "missing_pairs",
+        "passed",
+        "python_pair_count",
+        "report_scope",
+        "source_run_root",
+        "top_extra_vertices",
+        "top_missing_vertices"
+      ],
+      "csv_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\candidate_coverage_summary.csv",
+      "jsonl_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\candidate_coverage_summary.jsonl",
+      "name": "candidate_coverage_summary",
+      "row_count": 1
+    },
+    {
+      "column_count": 5,
+      "columns": [
+        "candidates",
+        "detail",
+        "iterations",
+        "phase",
+        "timestamp"
+      ],
+      "csv_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\candidate_progress.csv",
+      "jsonl_path": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables\\candidate_progress.jsonl",
+      "name": "candidate_progress",
+      "row_count": 10
+    }
+  ],
+  "tables_root": "D:\\2P_Data\\Aaron\\slavv2python\\workspace\\runs\\final_audit_destination\\03_Analysis\\tables"
+}

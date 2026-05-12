@@ -110,18 +110,61 @@ def _generate_edge_candidates_matlab_frontier(
     tracer: ExecutionTracer | None = None,
 ) -> dict[str, Any]:
     """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
+    # APPLY UNIVERSE REALIGNMENT FIX
+    # Investigations proved that Oracle data stores Axis 1 and 2 inverted relative to solver traversal.
+    # We transpose input volumes by (0, 2, 1) to make the physical grid coherent inside the engine.
+    aligned_energy = np.transpose(energy, (0, 2, 1)).copy(order="F")
+
+    aligned_scale_indices = None
+    if scale_indices is not None:
+        aligned_scale_indices = np.transpose(scale_indices, (0, 2, 1)).copy(order="F")
+
+    aligned_vertex_center_image = np.transpose(vertex_center_image, (0, 2, 1)).copy(order="F")
+
+    # 2. Align inputs to coherent system: swap Y and X coordinates of vertices
+    aligned_vertex_positions = vertex_positions.copy()
+    # Swap index 1 and 2 in copy
+    tmp = aligned_vertex_positions[:, 1].copy()
+    aligned_vertex_positions[:, 1] = aligned_vertex_positions[:, 2]
+    aligned_vertex_positions[:, 2] = tmp
+
+    # 3. Align physics microns: swap index 1 and 2 for complete theoretical robustness
+    aligned_microns = microns_per_voxel.copy()
+    if len(aligned_microns) >= 3:
+        tmp_m = aligned_microns[1]
+        aligned_microns[1] = aligned_microns[2]
+        aligned_microns[2] = tmp_m
+
+    # Execute watershed engine in the correctly-oriented spatial universe
     candidates = _generate_edge_candidates_matlab_global_watershed(
-        energy,
-        scale_indices,
-        vertex_positions,
+        aligned_energy,
+        aligned_scale_indices,
+        aligned_vertex_positions,
         vertex_scales,
         lumen_radius_microns,
-        microns_per_voxel,
-        vertex_center_image,
+        aligned_microns,
+        aligned_vertex_center_image,
         params,
         heartbeat=heartbeat,
         tracer=tracer,
     )
+
+    # 5. RE-SWAP BACK TO ORIGINAL UNIVERSE for external backwards compatibility
+    # Any generated trace positions are in coherent universe [Z, Y_aligned, X_aligned]
+    # We must swap dimension 1 and 2 back to match original untransposed file storage layouts.
+    if "traces" in candidates:
+        for t_idx, trace_arr in enumerate(candidates["traces"]):
+            if (
+                isinstance(trace_arr, np.ndarray)
+                and trace_arr.ndim == 2
+                and trace_arr.shape[1] >= 3
+            ):
+                # Make explicit copies to support memory layout changes downstream
+                fixed_trace = trace_arr.copy()
+                tmp_t = fixed_trace[:, 1].copy()
+                fixed_trace[:, 1] = fixed_trace[:, 2]
+                fixed_trace[:, 2] = tmp_t
+                candidates["traces"][t_idx] = fixed_trace
     per_origin_candidate_counts = candidates["diagnostics"].get(
         "frontier_per_origin_candidate_counts",
         {},
