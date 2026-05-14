@@ -15,6 +15,15 @@ For current behavior and proof status, prefer:
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-05-14
+
+### Fixed
+
+- **MATLAB Parity Fix: Vertex Priority**: Implemented priority selection for all vertices by initializing them to `-Inf` in the frontier map, ensuring they are processed as sources before exploratory traces leapfrog them.
+- **MATLAB Parity Fix: Frontier Splice Logic**: Corrected the off-by-one error in available-location insertion that caused drift from MATLAB's deterministic crawler ordering.
+- **MATLAB Parity Fix: Loop Break Condition**: Aligned the watershed loop termination to break immediately upon encountering non-negative energies, matching MATLAB early-exit semantics.
+- **MATLAB Parity Fix: Energy Tolerance Multiplier**: Verified and standardized the multiplier formula for energy thresholds (`1 - energy_tolerance`).
+
 ## [Unreleased] - 2026-05-05
 
 ### Added

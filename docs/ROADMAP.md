@@ -13,11 +13,11 @@
 
 ## Current Velocity
 
-- **Last Verified:** 930 / 1,197 matched pairs (77.7%) on a fresh exact run (generating 1,188 total candidates vs MATLAB's 1,197).
-- **Measurement Source:** `validation_strel_fix_output_v8` experiment, 2026-05-12
-- **Target:** 80% (Measures 2 & 3 — nearly achieved)
+- **Last Verified:** 958 / 1,197 matched pairs (80.0%) on a fresh exact run.
+- **Measurement Source:** `validation_strel_fix_output_v28` experiment, 2026-05-14
+- **Target:** 90% (Measure 3 — Candidate filtering alignment)
 - **Active Status:** Active Development — Tightening filtering criteria
-- **Last Updated:** 2026-05-12
+- **Last Updated:** 2026-05-14
 
 > [!IMPORTANT]
 > Re-run `capture-candidates` on a fresh clean checkpoint and `prove-exact` after any code change to update
@@ -53,22 +53,13 @@ exact route.
 - **Validate command:** `python scripts/cli/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
 - **Regression gate:** Improve the exact match count (currently 670) and close the gap on missing candidate pairs (currently 527 missing).
 
-#### Measure 2: Frontier Insertion & Trace Generation — IN PROGRESS
+#### Measure 2: Frontier Insertion & Trace Generation — COMPLETED
 
 Fix seed selection, insertion semantics, and frontier ordering for high-degree
-vertices. We successfully debugged and implemented exact MATLAB behavior for
-`_matlab_global_watershed_insert_available_location`.
+vertices.
 
-- **Status:** Directional suppression bug fixed and candidate surplus eliminated! Candidate count reduced from 1,349 to 1,025, boosting matched pairs from 167 to 670 (56.0% match rate).
+- **Status:** COMPLETED. Frontier ordering divergence resolved via exact splice logic and vertex priority initialization. Match rate: 80.0%.
 - [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/global_watershed.py)
-
-Next steps:
-- [x] Debug infinite-loop in `verify_watershed_fix.py` diagnostic run.
-- [x] Implement and verify exact MATLAB splice behavior for frontier insertions.
-- [x] Diagnose why Python generates significantly more candidate traces (1,349) compared to MATLAB (1,197) on exact oracle inputs.
-- [x] Investigate candidate generation loop and safety pop conditions to identify false positive trace creation.
-- [x] Analyze why 527 MATLAB traces are missing (target Top Missing Vertices: 1350, 92).
-    - **Findings:** Identified a major misalignment in the "Universe Realignment Fix". Strel offsets were not rotated to match the (Z, X, Y) layout, causing distance penalties to be applied to wrong dimensions (e.g., Y-offset scaled by dz). Fixed in `common.py`.
 
 #### Measure 3: Candidate Filtering Alignment — NOT STARTED
 
