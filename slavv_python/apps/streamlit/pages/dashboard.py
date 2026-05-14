@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
@@ -6,17 +6,17 @@ from typing import TYPE_CHECKING, Any, cast
 import plotly.express as px
 import streamlit as st
 
-from slavv_python.apps.shared_services.dashboard import render_run_dashboard
-from slavv_python.apps.shared_state.dashboard import DashboardContext, load_dashboard_context
-from slavv_python.apps.web_app_dashboard import (
+from slavv_python.apps.shared_services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
-    _build_dashboard_placeholder_trend,
-    _dashboard_breakdown_frame,
-    _dashboard_stage_frame,
     build_dashboard_backlog_frame,
+    build_dashboard_breakdown_frame,
+    build_dashboard_placeholder_trend,
+    build_dashboard_stage_frame,
     filter_dashboard_breakdown,
+    render_run_dashboard,
 )
+from slavv_python.apps.shared_state.dashboard import DashboardContext, load_dashboard_context
 from slavv_python.runtime.status import target_stage_progress
 from slavv_python.visualization import NetworkVisualizer
 
@@ -159,7 +159,7 @@ def _render_dashboard_surface() -> None:
         st.subheader("Trends")
         trend_col1, trend_col2 = st.columns(2, gap="large")
 
-        stage_frame = _dashboard_stage_frame(snapshot, run_dir=run_dir)
+        stage_frame = build_dashboard_stage_frame(snapshot, run_dir=run_dir)
         stage_fig = px.line(stage_frame, x="Stage", y="Progress (%)", markers=True)
         stage_fig.update_traces(line={"width": 3}, marker={"size": 10})
         stage_fig.update_layout(
@@ -189,12 +189,12 @@ def _render_dashboard_surface() -> None:
                     st.plotly_chart(depth_fig, use_container_width=True)
                     st.caption("Depth statistics reuse the existing analysis visualization.")
                 except Exception as exc:
-                    st.plotly_chart(_build_dashboard_placeholder_trend(), use_container_width=True)
+                    st.plotly_chart(build_dashboard_placeholder_trend(), use_container_width=True)
                     st.caption(
                         f"Depth trend placeholder shown because the live chart is unavailable: {exc}"
                     )
             else:
-                st.plotly_chart(_build_dashboard_placeholder_trend(), use_container_width=True)
+                st.plotly_chart(build_dashboard_placeholder_trend(), use_container_width=True)
                 st.caption(
                     "Placeholder trend slot for depth-resolved metrics once a complete network is available."
                 )
@@ -202,7 +202,7 @@ def _render_dashboard_surface() -> None:
     st.space("small")
 
     filtered_breakdown = filter_dashboard_breakdown(
-        _dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir),
+        build_dashboard_breakdown_frame(snapshot, stats, share_metrics, run_dir=run_dir),
         focus=st.session_state.get("dashboard_focus", "Overview"),
         selected_sections=st.session_state.get("dashboard_sections"),
         show_placeholders=st.session_state.get("dashboard_show_placeholders", True),

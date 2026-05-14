@@ -60,7 +60,7 @@ if TYPE_CHECKING:
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
     """Orchestrate a Python-only rerun from a slavv_python comparison root."""
-    from slavv_python.core.pipeline import SLAVVProcessor
+    from slavv_python.core.pipeline import SlavvPipeline
     from slavv_python.io.tiff import load_tiff_volume
 
     source_surface = validate_source_run_surface(Path(args.source_run_root))
@@ -99,8 +99,8 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
 
     # Run processing
     image = load_tiff_volume(input_file)
-    processor = SLAVVProcessor()
-    processor.process_image(
+    processor = SlavvPipeline()
+    processor.run(
         image,
         params,
         run_dir=str(dest_run_root),
@@ -406,7 +406,7 @@ def handle_promote_report(args: argparse.Namespace) -> None:
 
 def handle_init_exact_run(args: argparse.Namespace) -> None:
     """Initialize a fresh run root for an exact parity experiment."""
-    from slavv_python.core.pipeline import SLAVVProcessor
+    from slavv_python.core.pipeline import SlavvPipeline
     from slavv_python.io.tiff import load_tiff_volume
 
     from .execution import (
@@ -480,8 +480,8 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
             },
         )
 
-        processor = SLAVVProcessor()
-        processor.process_image(
+        processor = SlavvPipeline()
+        processor.run(
             image,
             params,
             run_dir=str(dest_run_root),

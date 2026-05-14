@@ -17,11 +17,11 @@ from slavv_python.apps.shared_services.app import (
 )
 from slavv_python.apps.shared_services.app import apply_curated_results as _apply_curated_results
 from slavv_python.apps.shared_services.app import run_interactive_curator as _run_interactive_curator
-from slavv_python.apps.web_app_dashboard import (
+from slavv_python.apps.shared_services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
-    _dashboard_breakdown_frame,
-    _dashboard_stage_frame,
+    build_dashboard_breakdown_frame,
+    build_dashboard_stage_frame,
 )
 
 from .pages.analysis import show_analysis_page
@@ -156,9 +156,9 @@ __all__ = [
     "DashboardContext",
     "_apply_curated_results",
     "_build_processing_run_dir",
-    "_dashboard_breakdown_frame",
     "_dashboard_context",
-    "_dashboard_stage_frame",
+    "build_dashboard_breakdown_frame",
+    "build_dashboard_stage_frame",
     "_has_full_network_results",
     "_init_dashboard_state",
     "_log_share_report_prepared_once",

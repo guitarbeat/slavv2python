@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from slavv_python.core import SLAVVProcessor
+from slavv_python.core import SlavvPipeline
 from slavv_python.io import (
     Network,
     load_tiff_volume,
@@ -85,8 +85,8 @@ def test_end_to_end_pipeline(tmp_path):
     }
 
     # 3. Process
-    processor = SLAVVProcessor()
-    results = processor.process_image(crop, params)
+    processor = SlavvPipeline()
+    results = processor.run(crop, params)
 
     # 4. Validate result structure
     assert "vertices" in results

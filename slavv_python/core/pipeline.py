@@ -278,35 +278,3 @@ class SlavvPipeline:
     ) -> dict[str, Any]:
         """Construct the final network from traced edges and vertices."""
         return cast("dict[str, Any]", network_ops.construct_network(edges, vertices, params))
-
-
-class SLAVVProcessor(SlavvPipeline):
-    """Legacy compatibility class for SlavvPipeline."""
-
-    def calculate_energy_field(
-        self,
-        image: np.ndarray,
-        params: dict[str, Any],
-        get_chunking_lattice_func: Callable | None = None,
-    ) -> dict[str, Any]:
-        """Legacy compatibility method for compute_energy."""
-        return energy.calculate_energy_field(image, params, get_chunking_lattice_func)
-
-    def construct_network(
-        self,
-        edges: dict[str, Any],
-        vertices: dict[str, Any],
-        params: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Legacy compatibility method for build_network."""
-        return self.build_network(edges, vertices, params)
-
-    def process_image(
-        self,
-        image: np.ndarray,
-        params: dict[str, Any],
-        progress_callback: Callable[[float, str], None] | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        """Legacy compatibility method for run."""
-        return self.run(image, params, progress_callback=progress_callback, **kwargs)

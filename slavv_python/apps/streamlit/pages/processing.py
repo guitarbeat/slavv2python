@@ -12,11 +12,8 @@ from slavv_python.apps.shared_state.processing import (
     summarize_processing_metrics,
 )
 from slavv_python.core import SlavvPipeline
-from slavv_python.utils import (
-    PIPELINE_PROFILE_CHOICES,
-    get_pipeline_profile_defaults,
-    validate_parameters,
-)
+from slavv_python.utils import validate_parameters
+from slavv_python.workflows.profiles import PIPELINE_PROFILE_CHOICES, get_pipeline_profile_defaults
 
 _PROFILE_WIDGET_DEFAULTS = {
     "processing_microns_per_voxel_y": lambda defaults: float(defaults["microns_per_voxel"][0]),
