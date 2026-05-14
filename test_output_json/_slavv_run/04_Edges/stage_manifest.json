@@ -1,0 +1,10 @@
+{
+  "artifacts": {
+    "candidate_audit.json": "test_output_json\\_slavv_run\\04_Edges\\candidate_audit.json",
+    "candidates.pkl": "test_output_json\\_slavv_run\\04_Edges\\candidates.pkl",
+    "chosen_edges.pkl": "test_output_json\\_slavv_run\\04_Edges\\chosen_edges.pkl"
+  },
+  "checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+  "completed_at": "2026-05-14T21:30:52Z",
+  "stage": "edges"
+}

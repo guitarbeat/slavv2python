@@ -1,0 +1,10 @@
+{
+  "artifacts": {
+    "candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\candidates.pkl",
+    "chosen_mask.pkl": "test_output\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+    "cropped_candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+  },
+  "checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+  "completed_at": "2026-05-14T21:29:15Z",
+  "stage": "vertices"
+}

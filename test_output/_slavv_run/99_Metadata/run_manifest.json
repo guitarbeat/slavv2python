@@ -1,0 +1,57 @@
+{
+  "current_stage": "network",
+  "dataset_hash": "946f8f93aca420c598cab40b6a0f60db28cb2887360f71e9eefd546dcf0ab9a8",
+  "kind": "slavv_run",
+  "manifest_version": 1,
+  "matlab_source_version": null,
+  "oracle_id": null,
+  "params_fingerprint": "4bd5f8f05ef8deca008ded0217a9c1dde5f01da4337de4c17292bd19ffe0edb1",
+  "promotion_state": "ephemeral",
+  "provenance": {
+    "image_shape": [
+      24,
+      256,
+      256
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "python_commit": null,
+  "retention": "disposable",
+  "run_id": "971e93b63b1f",
+  "run_root": "test_output\\_slavv_run",
+  "stage_metrics": {
+    "edges": {
+      "completed_at": "2026-05-14T21:29:25Z",
+      "elapsed_seconds": 10.748970985412598,
+      "peak_memory_bytes": 256253952,
+      "status": "completed"
+    },
+    "energy": {
+      "completed_at": "2026-05-14T21:29:11Z",
+      "elapsed_seconds": 78.0,
+      "peak_memory_bytes": 258715648,
+      "status": "completed"
+    },
+    "network": {
+      "completed_at": "2026-05-14T21:29:25Z",
+      "elapsed_seconds": 0.829937219619751,
+      "peak_memory_bytes": 252071936,
+      "status": "completed"
+    },
+    "vertices": {
+      "completed_at": "2026-05-14T21:29:15Z",
+      "elapsed_seconds": 4.710240602493286,
+      "peak_memory_bytes": 251392000,
+      "status": "completed"
+    }
+  },
+  "status": "completed",
+  "target_stage": "network",
+  "timestamps": {
+    "completed_at": "2026-05-14T21:29:25Z",
+    "created_at": "2026-05-14T21:27:53Z",
+    "updated_at": "2026-05-14T21:29:25Z"
+  }
+}

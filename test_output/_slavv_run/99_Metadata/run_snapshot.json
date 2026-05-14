@@ -1,0 +1,157 @@
+{
+  "artifacts": {
+    "edges.candidate_audit.json": "test_output\\_slavv_run\\04_Edges\\candidate_audit.json",
+    "edges.candidates.pkl": "test_output\\_slavv_run\\04_Edges\\candidates.pkl",
+    "edges.checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+    "edges.chosen_edges.pkl": "test_output\\_slavv_run\\04_Edges\\chosen_edges.pkl",
+    "energy.best_energy.zarr": "test_output\\_slavv_run\\02_Energy\\best_energy.zarr",
+    "energy.best_scale.zarr": "test_output\\_slavv_run\\02_Energy\\best_scale.zarr",
+    "energy.checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "energy.energy_4d.zarr": "test_output\\_slavv_run\\02_Energy\\energy_4d.zarr",
+    "network.adjacency.pkl": "test_output\\_slavv_run\\05_Network\\adjacency.pkl",
+    "network.checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+    "network.strands.pkl": "test_output\\_slavv_run\\05_Network\\strands.pkl",
+    "preprocess_done": "true",
+    "vertices.candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\candidates.pkl",
+    "vertices.checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.chosen_mask.pkl": "test_output\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+    "vertices.cropped_candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+  },
+  "created_at": "2026-05-14T21:27:53Z",
+  "current_detail": "Run completed",
+  "current_stage": "network",
+  "elapsed_seconds": 92.84347081184387,
+  "errors": [
+    {
+      "at": "2026-05-14T21:27:53Z",
+      "message": "Zarr is required for energy_storage_format='zarr'. Install it with `pip install -e \".[zarr]\"`, `pip install slavv[zarr]`, or `pip install zarr>=2.12.0`.",
+      "stage": "energy"
+    }
+  ],
+  "eta_seconds": 0.0,
+  "input_fingerprint": "946f8f93aca420c598cab40b6a0f60db28cb2887360f71e9eefd546dcf0ab9a8",
+  "last_event": "Run completed",
+  "optional_tasks": {},
+  "overall_progress": 1.0,
+  "params_fingerprint": "4bd5f8f05ef8deca008ded0217a9c1dde5f01da4337de4c17292bd19ffe0edb1",
+  "provenance": {
+    "image_shape": [
+      24,
+      256,
+      256
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "run_id": "971e93b63b1f",
+  "stages": {
+    "edges": {
+      "artifacts": {
+        "candidate_audit.json": "test_output\\_slavv_run\\04_Edges\\candidate_audit.json",
+        "candidates.pkl": "test_output\\_slavv_run\\04_Edges\\candidates.pkl",
+        "checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+        "chosen_edges.pkl": "test_output\\_slavv_run\\04_Edges\\chosen_edges.pkl"
+      },
+      "completed_at": "2026-05-14T21:29:25Z",
+      "detail": "Edges extracted",
+      "elapsed_seconds": 10.748970985412598,
+      "eta_seconds": 0.0,
+      "name": "edges",
+      "peak_memory_bytes": 256253952,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:29:15Z",
+      "status": "completed",
+      "substage": "choose_edges",
+      "units_completed": 3,
+      "units_total": 3,
+      "updated_at": "2026-05-14T21:29:25Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.zarr": "test_output\\_slavv_run\\02_Energy\\best_energy.zarr",
+        "best_scale.zarr": "test_output\\_slavv_run\\02_Energy\\best_scale.zarr",
+        "checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+        "energy_4d.zarr": "test_output\\_slavv_run\\02_Energy\\energy_4d.zarr"
+      },
+      "completed_at": "2026-05-14T21:29:11Z",
+      "detail": "Energy field ready",
+      "elapsed_seconds": 78.0,
+      "eta_seconds": 0.0,
+      "name": "energy",
+      "peak_memory_bytes": 258715648,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:27:53Z",
+      "status": "completed",
+      "substage": "scale_chunks",
+      "units_completed": 26,
+      "units_total": 26,
+      "updated_at": "2026-05-14T21:29:11Z"
+    },
+    "network": {
+      "artifacts": {
+        "adjacency.pkl": "test_output\\_slavv_run\\05_Network\\adjacency.pkl",
+        "checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+        "strands.pkl": "test_output\\_slavv_run\\05_Network\\strands.pkl"
+      },
+      "completed_at": "2026-05-14T21:29:25Z",
+      "detail": "Network constructed",
+      "elapsed_seconds": 0.829937219619751,
+      "eta_seconds": 0.0,
+      "name": "network",
+      "peak_memory_bytes": 252071936,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:29:25Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 5,
+      "units_total": 5,
+      "updated_at": "2026-05-14T21:29:25Z"
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-05-14T21:28:12Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 19.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 233476096,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:27:53Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-05-14T21:28:12Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\candidates.pkl",
+        "checkpoint": "test_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "chosen_mask.pkl": "test_output\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+        "cropped_candidates.pkl": "test_output\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+      },
+      "completed_at": "2026-05-14T21:29:15Z",
+      "detail": "Vertices extracted",
+      "elapsed_seconds": 4.710240602493286,
+      "eta_seconds": 0.0,
+      "name": "vertices",
+      "peak_memory_bytes": 251392000,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:29:11Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 7,
+      "units_total": 7,
+      "updated_at": "2026-05-14T21:29:15Z"
+    }
+  },
+  "status": "completed",
+  "target_stage": "network",
+  "updated_at": "2026-05-14T21:29:25Z"
+}

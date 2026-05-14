@@ -1,0 +1,165 @@
+{
+  "artifacts": {
+    "edges.candidate_audit.json": "test_output_json\\_slavv_run\\04_Edges\\candidate_audit.json",
+    "edges.candidates.pkl": "test_output_json\\_slavv_run\\04_Edges\\candidates.pkl",
+    "edges.checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+    "edges.chosen_edges.pkl": "test_output_json\\_slavv_run\\04_Edges\\chosen_edges.pkl",
+    "energy.best_energy.zarr": "test_output_json\\_slavv_run\\02_Energy\\best_energy.zarr",
+    "energy.best_scale.zarr": "test_output_json\\_slavv_run\\02_Energy\\best_scale.zarr",
+    "energy.checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "energy.energy_4d.zarr": "test_output_json\\_slavv_run\\02_Energy\\energy_4d.zarr",
+    "network.adjacency.pkl": "test_output_json\\_slavv_run\\05_Network\\adjacency.pkl",
+    "network.checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+    "network.strands.pkl": "test_output_json\\_slavv_run\\05_Network\\strands.pkl",
+    "preprocess_done": "true",
+    "vertices.candidates.pkl": "test_output_json\\_slavv_run\\03_Vertices\\candidates.pkl",
+    "vertices.checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.chosen_mask.pkl": "test_output_json\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+    "vertices.cropped_candidates.pkl": "test_output_json\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+  },
+  "created_at": "2026-05-14T21:29:39Z",
+  "current_detail": "Run completed",
+  "current_stage": "network",
+  "elapsed_seconds": 73.23228788375854,
+  "errors": [],
+  "eta_seconds": 0.0,
+  "input_fingerprint": "946f8f93aca420c598cab40b6a0f60db28cb2887360f71e9eefd546dcf0ab9a8",
+  "last_event": "Generated 1 export files",
+  "optional_tasks": {
+    "exports": {
+      "artifacts": {
+        "json_file": "network.json"
+      },
+      "completed_at": "2026-05-14T21:30:52Z",
+      "detail": "Generated 1 export files",
+      "elapsed_seconds": 0.0,
+      "name": "exports",
+      "progress": 1.0,
+      "started_at": null,
+      "status": "completed",
+      "updated_at": "2026-05-14T21:30:52Z"
+    }
+  },
+  "overall_progress": 1.0,
+  "params_fingerprint": "4bd5f8f05ef8deca008ded0217a9c1dde5f01da4337de4c17292bd19ffe0edb1",
+  "provenance": {
+    "image_shape": [
+      24,
+      256,
+      256
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "run_id": "898af33f0d1c",
+  "stages": {
+    "edges": {
+      "artifacts": {
+        "candidate_audit.json": "test_output_json\\_slavv_run\\04_Edges\\candidate_audit.json",
+        "candidates.pkl": "test_output_json\\_slavv_run\\04_Edges\\candidates.pkl",
+        "checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_edges.pkl",
+        "chosen_edges.pkl": "test_output_json\\_slavv_run\\04_Edges\\chosen_edges.pkl"
+      },
+      "completed_at": "2026-05-14T21:30:52Z",
+      "detail": "Edges extracted",
+      "elapsed_seconds": 10.155901193618774,
+      "eta_seconds": 0.0,
+      "name": "edges",
+      "peak_memory_bytes": 256028672,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:30:42Z",
+      "status": "completed",
+      "substage": "choose_edges",
+      "units_completed": 3,
+      "units_total": 3,
+      "updated_at": "2026-05-14T21:30:52Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.zarr": "test_output_json\\_slavv_run\\02_Energy\\best_energy.zarr",
+        "best_scale.zarr": "test_output_json\\_slavv_run\\02_Energy\\best_scale.zarr",
+        "checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+        "energy_4d.zarr": "test_output_json\\_slavv_run\\02_Energy\\energy_4d.zarr"
+      },
+      "completed_at": "2026-05-14T21:30:36Z",
+      "detail": "Energy field ready",
+      "elapsed_seconds": 57.0,
+      "eta_seconds": 0.0,
+      "name": "energy",
+      "peak_memory_bytes": 257310720,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:29:39Z",
+      "status": "completed",
+      "substage": "scale_chunks",
+      "units_completed": 26,
+      "units_total": 26,
+      "updated_at": "2026-05-14T21:30:36Z"
+    },
+    "network": {
+      "artifacts": {
+        "adjacency.pkl": "test_output_json\\_slavv_run\\05_Network\\adjacency.pkl",
+        "checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+        "strands.pkl": "test_output_json\\_slavv_run\\05_Network\\strands.pkl"
+      },
+      "completed_at": "2026-05-14T21:30:52Z",
+      "detail": "Network constructed",
+      "elapsed_seconds": 0.21900391578674316,
+      "eta_seconds": 0.0,
+      "name": "network",
+      "peak_memory_bytes": 251846656,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:30:52Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 5,
+      "units_total": 5,
+      "updated_at": "2026-05-14T21:30:52Z"
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-05-14T21:29:39Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 233725952,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:29:39Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-05-14T21:29:39Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "candidates.pkl": "test_output_json\\_slavv_run\\03_Vertices\\candidates.pkl",
+        "checkpoint": "test_output_json\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "chosen_mask.pkl": "test_output_json\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+        "cropped_candidates.pkl": "test_output_json\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+      },
+      "completed_at": "2026-05-14T21:30:42Z",
+      "detail": "Vertices extracted",
+      "elapsed_seconds": 6.093494892120361,
+      "eta_seconds": 0.0,
+      "name": "vertices",
+      "peak_memory_bytes": 251416576,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-14T21:30:36Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 7,
+      "units_total": 7,
+      "updated_at": "2026-05-14T21:30:42Z"
+    }
+  },
+  "status": "completed",
+  "target_stage": "network",
+  "updated_at": "2026-05-14T21:30:52Z"
+}
