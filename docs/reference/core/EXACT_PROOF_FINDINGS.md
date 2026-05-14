@@ -25,20 +25,21 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 
 A major architectural breakthrough was achieved in May 2026, dramatically narrowing the discrepancy gap in edge candidate generation.
 
-**Champion Experiment Path**: `workspace\runs\oracle_180709_E\solved_directional_suppression_scope_surplus`
+**Champion Experiment Path**: `workspace\runs\oracle_180709_E\validation_strel_fix_output_v8`
 
-### The Solution: Directional Suppression Scope Realignment
-- **Issue**: Directional suppression calculations were scoped inside a conditional block, causing Python to miss certain suppression triggers and flood the system with redundant trace candidates.
-- **Fix**: Promoted the suppression factor application to the global seed loop, ensuring iterative alignment with MATLAB’s math.
-- **Outcome**: Eliminated candidate surplus and delivered a **4.0x multiplier** in verified matched pairs.
+### The Solution: Universe Realignment & Vertex Coverage
+- **Issue 1**: Axis transposition in `generate.py` was `(0, 2, 1)` (swapping X and Y) instead of the required `(2, 1, 0)` to reach the `[Z, X, Y]` orientation expected by the engine. This caused spatial misalignment and out-of-bounds sampling.
+- **Issue 2**: The `curated_vertices` artifact in the oracle was an incomplete subset (1313 nodes), causing many valid oracle connections to refer to missing vertices in Python.
+- **Fix**: Corrected axis transpose to `(2, 1, 0)` and implemented fallback to the full vertex set (1380 nodes) embedded in the oracle's `edges` artifact.
+- **Outcome**: Successfully resolved Hub Vertex 1350 and boosted the match rate to **77.7%**, nearly reaching the 80% milestone.
 
 ### Final Mathematical Impact
 | Metric | Previous Baseline | Current High-Water Mark | Improvement |
 | :--- | :--- | :--- | :--- |
-| **Matched MATLAB Pairs** | 167 | **670** | **+400% Increase** |
-| **Total Match Rate** | 14.0% | **56.0%** | **Major Breakthrough** |
-| Missing Pairs | 1,030 | 527 | 🔻 Reduced by 503 |
-| Over-generated Pairs | 1,182 | 355 | 🔻 Reduced by 827 |
+| **Matched MATLAB Pairs** | 670 | **930** | **+39% Increase** |
+| **Total Match Rate** | 56.0% | **77.7%** | **Near Milestone** |
+| Missing Pairs | 527 | 267 | 🔻 Reduced by 260 |
+| Over-generated Pairs | 355 | 258 | 🔻 Reduced by 97 |
 
 ---
 

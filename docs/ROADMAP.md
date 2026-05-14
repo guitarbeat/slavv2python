@@ -13,10 +13,10 @@
 
 ## Current Velocity
 
-- **Last Verified:** 670 / 1,197 matched pairs (56.0%) on a fresh exact run (generating 1,025 total candidates vs MATLAB's 1,197).
-- **Measurement Source:** `candidate_fix_audit_v1` experiment, 2026-05-12
-- **Target:** 80% (Measures 2 & 3 — in progress, not yet validated)
-- **Active Status:** Active Development — Debugging missing trace generation
+- **Last Verified:** 930 / 1,197 matched pairs (77.7%) on a fresh exact run (generating 1,188 total candidates vs MATLAB's 1,197).
+- **Measurement Source:** `validation_strel_fix_output_v8` experiment, 2026-05-12
+- **Target:** 80% (Measures 2 & 3 — nearly achieved)
+- **Active Status:** Active Development — Tightening filtering criteria
 - **Last Updated:** 2026-05-12
 
 > [!IMPORTANT]

@@ -173,15 +173,44 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     # Setup tracer
     tracer = JsonExecutionTracer(args.output_trace)
 
+    # Run discovery with universe realignment
+    # We must use the same transpose/swap logic as _generate_edge_candidates_matlab_frontier
+    # in generate.py to ensure the engine sees the correct spatial orientation.
+
+    # 1. Align volumes to coherent system: [Y, X, Z] -> [Z, X, Y]
+    aligned_energy = np.transpose(np.asarray(energy_data["energy"], dtype=np.float32), (2, 1, 0)).copy(order="F")
+    
+    scale_indices = energy_data.get("scale_indices")
+    aligned_scale_indices = None
+    if scale_indices is not None:
+        aligned_scale_indices = np.transpose(np.asarray(scale_indices, dtype=np.int16), (2, 1, 0)).copy(order="F")
+
+    # 2. Align vertex positions: swap Z and Y [Y, X, Z] -> [Z, X, Y]
+    aligned_v_pos = v_pos.copy()
+    tmp = aligned_v_pos[:, 0].copy()
+    aligned_v_pos[:, 0] = aligned_v_pos[:, 2]
+    aligned_v_pos[:, 2] = tmp
+
+    # 3. Align physics microns: [dy, dx, dz] -> [dz, dx, dy]
+    microns_per_voxel = np.asarray(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32)
+    aligned_microns = microns_per_voxel.copy()
+    if len(aligned_microns) >= 3:
+        tmp_m = aligned_microns[0]
+        aligned_microns[0] = aligned_microns[2]
+        aligned_microns[2] = tmp_m
+
+    # 4. Setup dummy vertex center image (not used by watershed engine but required by signature)
+    aligned_vertex_center_image = np.zeros_like(aligned_energy)
+
     # Run discovery
     _generate_edge_candidates_matlab_global_watershed(
-        np.asarray(energy_data["energy"], dtype=np.float32),
-        None,  # scale_indices
-        v_pos,
+        aligned_energy,
+        aligned_scale_indices,
+        aligned_v_pos,
         v_scale,
         np.asarray(energy_data["lumen_radius_microns"], dtype=np.float32),
-        np.asarray(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32),
-        np.zeros_like(energy_data["energy"]),
+        aligned_microns,
+        aligned_vertex_center_image,
         params,
         tracer=tracer,
     )

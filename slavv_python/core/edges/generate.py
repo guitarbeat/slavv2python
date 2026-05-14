@@ -117,27 +117,27 @@ def _generate_edge_candidates_matlab_frontier(
     """Generate edge candidates using MATLAB's exact global shared-state watershed search."""
     # APPLY UNIVERSE REALIGNMENT FIX
     # Investigations proved that Oracle data stores Axis 1 and 2 inverted relative to solver traversal.
-    # We transpose input volumes by (0, 2, 1) to make the physical grid coherent inside the engine.
-    aligned_energy = np.transpose(energy, (0, 2, 1)).copy(order="F")
+    # We transpose input volumes by (2, 1, 0) to make the physical grid coherent [Z, X, Y] inside the engine.
+    aligned_energy = np.transpose(energy, (2, 1, 0)).copy(order="F")
 
     aligned_scale_indices = None
     if scale_indices is not None:
-        aligned_scale_indices = np.transpose(scale_indices, (0, 2, 1)).copy(order="F")
+        aligned_scale_indices = np.transpose(scale_indices, (2, 1, 0)).copy(order="F")
 
-    aligned_vertex_center_image = np.transpose(vertex_center_image, (0, 2, 1)).copy(order="F")
+    aligned_vertex_center_image = np.transpose(vertex_center_image, (2, 1, 0)).copy(order="F")
 
-    # 2. Align inputs to coherent system: swap Y and X coordinates of vertices
+    # 2. Align inputs to coherent system: swap Z and Y coordinates of vertices [Y, X, Z] -> [Z, X, Y]
     aligned_vertex_positions = vertex_positions.copy()
-    # Swap index 1 and 2 in copy
-    tmp = aligned_vertex_positions[:, 1].copy()
-    aligned_vertex_positions[:, 1] = aligned_vertex_positions[:, 2]
+    # Swap index 0 and 2 in copy
+    tmp = aligned_vertex_positions[:, 0].copy()
+    aligned_vertex_positions[:, 0] = aligned_vertex_positions[:, 2]
     aligned_vertex_positions[:, 2] = tmp
 
-    # 3. Align physics microns: swap index 1 and 2 for complete theoretical robustness
+    # 3. Align physics microns: swap index 0 and 2 for complete theoretical [dy, dx, dz] -> [dz, dx, dy]
     aligned_microns = microns_per_voxel.copy()
     if len(aligned_microns) >= 3:
-        tmp_m = aligned_microns[1]
-        aligned_microns[1] = aligned_microns[2]
+        tmp_m = aligned_microns[0]
+        aligned_microns[0] = aligned_microns[2]
         aligned_microns[2] = tmp_m
 
     # Execute watershed engine in the correctly-oriented spatial universe
@@ -155,8 +155,8 @@ def _generate_edge_candidates_matlab_frontier(
     )
 
     # 5. RE-SWAP BACK TO ORIGINAL UNIVERSE for external backwards compatibility
-    # Any generated trace positions are in coherent universe [Z, Y_aligned, X_aligned]
-    # We must swap dimension 1 and 2 back to match original untransposed file storage layouts.
+    # Any generated trace positions are in coherent universe [Z, X, Y]
+    # We must swap dimension 0 and 2 back to match original untransposed file storage layouts [Y, X, Z].
     if "traces" in candidates:
         for t_idx, trace_arr in enumerate(candidates["traces"]):
             if (
@@ -166,8 +166,8 @@ def _generate_edge_candidates_matlab_frontier(
             ):
                 # Make explicit copies to support memory layout changes downstream
                 fixed_trace = trace_arr.copy()
-                tmp_t = fixed_trace[:, 1].copy()
-                fixed_trace[:, 1] = fixed_trace[:, 2]
+                tmp_t = fixed_trace[:, 0].copy()
+                fixed_trace[:, 0] = fixed_trace[:, 2]
                 fixed_trace[:, 2] = tmp_t
                 candidates["traces"][t_idx] = fixed_trace
     per_origin_candidate_counts = candidates["diagnostics"].get(

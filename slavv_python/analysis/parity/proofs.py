@@ -207,18 +207,18 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
     """Load the exact-route vertex payload from MATLAB artifacts."""
     from scipy.io import loadmat
 
+    def _get(obj, key, default=None):
+        return (
+            getattr(obj, key, default)
+            if hasattr(obj, key)
+            else (obj.get(key, default) if isinstance(obj, dict) else default)
+        )
+
     # Try curated vertices first
     curated_paths = list(source_surface.matlab_batch_dir.glob("**/curated_vertices_*.mat"))
     if curated_paths:
         path = curated_paths[0]
         data = loadmat(path, squeeze_me=True, struct_as_record=False)
-
-        def _get(obj, key, default=None):
-            return (
-                getattr(obj, key, default)
-                if hasattr(obj, key)
-                else (obj.get(key, default) if isinstance(obj, dict) else default)
-            )
 
         raw_positions = _get(data, "vertex_space_subscripts")
         if raw_positions is None:
