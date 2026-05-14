@@ -749,8 +749,9 @@ def _generate_edge_candidates_matlab_global_watershed(
             energy_map_temp_flat[current_linear] = current_energy
 
         if current_energy >= 0.0:
-            available_locations.pop()
-            continue
+            # MATLAB: if min_available_energy >= 0, break, end
+            # Since available_locations is sorted worst-to-best, if the best is >= 0, everyone else is too.
+            break
 
         current_vertex_index = int(vertex_index_map_flat[current_linear])
         current_scale_label = int(size_map_flat[current_linear])
