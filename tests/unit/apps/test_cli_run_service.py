@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from types import SimpleNamespace
 
-from slavv_python.apps.cli.run_service import (
+from slavv_python.interface.cli.run_service import (
     build_run_completion_lines,
     filter_export_formats,
     format_run_event_line,

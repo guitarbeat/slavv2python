@@ -8,14 +8,13 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from slavv_python.core import SLAVVProcessor
-from slavv_python.core.energy import backends as energy_backends
-from slavv_python.core.energy import hessian_response as native_hessian
-from slavv_python.core import energy as energy_module
-from slavv_python.core.energy.config import _prepare_energy_config
-from slavv_python.runtime import RunContext
+from slavv_python.engine import SlavvPipeline
+from slavv_python.engine import energy as energy_module
+from slavv_python.processing.stages.energy import backends as energy_backends
+from slavv_python.processing.stages.energy import hessian_response as native_hessian
+from slavv_python.processing.stages.energy.config import _prepare_energy_config
+from slavv_python.engine.state import RunContext
 from slavv_python.utils import get_chunking_lattice, validate_parameters
-
 
 # ==============================================================================
 # Fake Backends for Testing (Inlined from test_energy_methods.py)
@@ -43,24 +42,36 @@ class _FakeSimpleITK:
     @staticmethod
     def HessianRecursiveGaussianImageFilter():  # noqa: N802
         class _Filter:
-            def SetSigma(self, sigma): self.sigma = sigma
-            def SetNormalizeAcrossScale(self, normalize): self.normalize = normalize
+            def SetSigma(self, sigma):
+                self.sigma = sigma
+
+            def SetNormalizeAcrossScale(self, normalize):
+                self.normalize = normalize
+
             def Execute(self, img):
                 res = _FakeSitkImage(img.array * (1.0 + self.sigma / 10.0))
                 res.spacing = img.spacing
                 return res
+
         return _Filter()
 
     @staticmethod
     def ObjectnessMeasureImageFilter():  # noqa: N802
         class _Filter:
-            def SetObjectDimension(self, dim): pass
-            def SetBrightObject(self, bright): pass
-            def SetScaleObjectnessMeasure(self, scale): pass
+            def SetObjectDimension(self, dim):
+                pass
+
+            def SetBrightObject(self, bright):
+                pass
+
+            def SetScaleObjectnessMeasure(self, scale):
+                pass
+
             def Execute(self, img):
                 res = _FakeSitkImage(np.abs(img.array))
                 res.spacing = img.spacing
                 return res
+
         return _Filter()
 
 
@@ -69,10 +80,12 @@ class _FakeCuPy:
     cuda = type("cuda", (), {"is_available": staticmethod(lambda: True)})()
 
     @staticmethod
-    def asarray(array, dtype=None): return np.asarray(array, dtype=dtype)
+    def asarray(array, dtype=None):
+        return np.asarray(array, dtype=dtype)
 
     @staticmethod
-    def asnumpy(array): return np.asarray(array)
+    def asnumpy(array):
+        return np.asarray(array)
 
 
 def _fake_cupy_energy_scale(image, sigma_object, *_args, **_kwargs):
@@ -91,8 +104,8 @@ def _fake_cupy_energy_scale(image, sigma_object, *_args, **_kwargs):
 def test_energy_field_no_full_storage():
     img = np.zeros((4, 4, 4), dtype=np.float32)
     params = validate_parameters({})
-    proc = SLAVVProcessor()
-    result = proc.calculate_energy_field(img, params)
+    proc = SlavvPipeline()
+    result = proc.compute_energy(img, params)
     assert "energy_4d" not in result
     assert result["energy"].shape == img.shape
 
@@ -101,8 +114,8 @@ def test_energy_field_no_full_storage():
 def test_energy_field_with_full_storage():
     img = np.zeros((4, 4, 4), dtype=np.float32)
     params = validate_parameters({"return_all_scales": True})
-    proc = SLAVVProcessor()
-    result = proc.calculate_energy_field(img, params)
+    proc = SlavvPipeline()
+    result = proc.compute_energy(img, params)
     assert "energy_4d" in result
 
 
@@ -110,9 +123,13 @@ def test_energy_field_with_full_storage():
 def test_energy_scale_range_matches_matlab_ordination():
     img = np.zeros((4, 4, 4), dtype=np.float32)
     params = validate_parameters(
-        {"radius_of_smallest_vessel_in_microns": 1.5, "radius_of_largest_vessel_in_microns": 50.0, "scales_per_octave": 1.5}
+        {
+            "radius_of_smallest_vessel_in_microns": 1.5,
+            "radius_of_largest_vessel_in_microns": 50.0,
+            "scales_per_octave": 1.5,
+        }
     )
-    result = SLAVVProcessor().calculate_energy_field(img, params)
+    result = SlavvPipeline().compute_energy(img, params)
     assert len(result["lumen_radius_microns"]) == 26
 
 
@@ -128,7 +145,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
             "scales_per_octave": 1.0,
         }
     )
-    direct = SLAVVProcessor().calculate_energy_field(image, params)
+    direct = SlavvPipeline().compute_energy(image, params)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
     resumable = energy_module.calculate_energy_field_resumable(
         image, params, run_context.stage("energy"), get_chunking_lattice
@@ -168,14 +185,14 @@ def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
 def test_alternative_energy_methods(method):
     image = np.zeros((9, 9, 9), dtype=np.float32)
     image[4, :, 4] = 1.0
-    proc = SLAVVProcessor()
+    proc = SlavvPipeline()
     params = {
         "energy_method": method,
         "radius_of_smallest_vessel_in_microns": 1.0,
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    result = proc.calculate_energy_field(image, params)
+    result = proc.compute_energy(image, params)
     assert result["energy"][4, 4, 4] < 0
 
 
@@ -190,7 +207,7 @@ def test_simpleitk_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    result = SLAVVProcessor().calculate_energy_field(image, params)
+    result = SlavvPipeline().compute_energy(image, params)
     assert result["energy"][4, 4, 4] < 0
 
 
@@ -199,7 +216,9 @@ def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
     image = np.zeros((9, 9, 9), dtype=np.float32)
     image[4, :, 4] = 1.0
     monkeypatch.setattr(energy_backends, "cp", _FakeCuPy)
-    monkeypatch.setattr(energy_backends, "cupy_ndimage", type("nd", (), {"gaussian_filter": lambda i, s, o: i})())
+    monkeypatch.setattr(
+        energy_backends, "cupy_ndimage", type("nd", (), {"gaussian_filter": lambda i, s, o: i})()
+    )
     monkeypatch.setattr(energy_backends, "_cupy_matlab_hessian_energy", _fake_cupy_energy_scale)
     params = {
         "energy_method": "cupy_hessian",
@@ -207,7 +226,7 @@ def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "radius_of_largest_vessel_in_microns": 2.0,
         "scales_per_octave": 1.0,
     }
-    result = SLAVVProcessor().calculate_energy_field(image, params)
+    result = SlavvPipeline().compute_energy(image, params)
     assert result["energy"][4, 4, 4] < 0
 
 

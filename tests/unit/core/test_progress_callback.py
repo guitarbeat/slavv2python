@@ -1,10 +1,10 @@
 import numpy as np
 
-from slavv_python.core import SLAVVProcessor
+from slavv_python.engine import SlavvPipeline
 
 
 def test_process_image_reports_progress():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     image = np.zeros((5, 5, 5), dtype=np.float32)
     image[2, 2, 2] = 1.0
     params = {
@@ -18,7 +18,7 @@ def test_process_image_reports_progress():
     def cb(fraction, stage):
         calls.append((fraction, stage))
 
-    processor.process_image(image, params, progress_callback=cb)
+    processor.run(image, params, progress_callback=cb)
 
     stages = [s for _, s in calls]
     assert stages == ["start", "preprocess", "energy", "vertices", "edges", "network"]

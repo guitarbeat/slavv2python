@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.analysis import (
+from slavv_python.analytics import (
     calculate_network_statistics,
     calculate_surface_area,
     calculate_vessel_volume,

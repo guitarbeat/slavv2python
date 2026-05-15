@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.io import Network
-from slavv_python.io.network_json import build_network_json_payload
+from slavv_python.storage.loaders import Network
+from slavv_python.storage.exporters.json_v1 import build_network_json_payload
 
 from .payload_builders import build_processing_results
 

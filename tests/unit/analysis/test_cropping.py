@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.analysis import crop_edges, crop_vertices, crop_vertices_by_mask
+from slavv_python.analytics import crop_edges, crop_vertices, crop_vertices_by_mask
 
 
 def test_crop_vertices_and_edges():

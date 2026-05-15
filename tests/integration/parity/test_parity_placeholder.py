@@ -12,7 +12,8 @@ import pytest
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Parity integration tests not yet implemented — see MATLAB_METHOD_IMPLEMENTATION_PLAN.md")
+@pytest.mark.skip(
+    reason="Parity integration tests not yet implemented — see MATLAB_METHOD_IMPLEMENTATION_PLAN.md"
+)
 def test_parity_integration_placeholder():
     """Placeholder: parity integration tests will live here."""
-    pass

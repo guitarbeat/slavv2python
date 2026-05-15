@@ -10,39 +10,33 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from slavv_python.core import SLAVVProcessor
-from slavv_python.core.edges import extraction_standard as standard_edges
-from slavv_python.core.edges import selection as conflict_painting_module
-from slavv_python.core.edges.candidate_manifest import _append_candidate_unit
-from slavv_python.core.edges.common import _use_matlab_frontier_tracer
-from slavv_python.core.edges.cleanup import (
+from slavv_python.engine import SlavvPipeline
+from slavv_python.processing.stages.edges import selection as conflict_painting_module
+from slavv_python.processing.stages.edges.candidate_manifest import _append_candidate_unit
+from slavv_python.processing.stages.edges.cleanup import (
     clean_edges_cycles_python,
-    clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv_python.core.edges.finalize import (
+from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
+from slavv_python.processing.stages.edges.finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,
-    finalize_edges_matlab_style,
     normalize_edges_matlab_style,
-    prefilter_edge_indices_for_cleanup_matlab_style,
 )
-from slavv_python.core.edges.primitives import _finalize_traced_edge
-from slavv_python.core.edges.selection import (
+from slavv_python.processing.stages.edges.primitives import _finalize_traced_edge
+from slavv_python.processing.stages.edges.selection import (
     _choose_edges_matlab_style,
     _construct_structuring_element_offsets_matlab,
     _matlab_edge_endpoint_positions_and_scales,
     _offset_coords_matlab,
     _snapshot_endpoint_influences_matlab,
 )
-from slavv_python.core.edges.selection_payloads import (
-    build_selected_edges_result,
+from slavv_python.processing.stages.edges.selection_payloads import (
     normalize_candidate_connection_sources,
     prepare_candidate_indices_for_cleanup,
 )
-from slavv_python.core.graph import _remove_short_hairs
-from slavv_python.core.vertices.vertices import extract_vertices, paint_vertex_center_image
-
+from slavv_python.processing.stages.network import _remove_short_hairs
+from slavv_python.processing.stages.vertices.vertices import extract_vertices, paint_vertex_center_image
 
 # ==============================================================================
 # Edge Cases and Lifecycle
@@ -51,7 +45,7 @@ from slavv_python.core.vertices.vertices import extract_vertices, paint_vertex_c
 
 @pytest.mark.unit
 def test_extract_handles_no_vertices():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     energy = np.ones((3, 3, 3), dtype=np.float32)
     energy_data = {
         "energy": energy,
@@ -63,7 +57,7 @@ def test_extract_handles_no_vertices():
 
     vertices = processor.extract_vertices(energy_data, {})
     edges = processor.extract_edges(energy_data, vertices, {})
-    network = processor.construct_network(edges, vertices, {})
+    network = processor.build_network(edges, vertices, {})
 
     assert vertices["positions"].shape == (0, 3)
     assert edges["connections"].shape == (0, 2)
@@ -72,9 +66,9 @@ def test_extract_handles_no_vertices():
 
 @pytest.mark.unit
 def test_process_image_requires_3d():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     with pytest.raises(ValueError, match="non-empty 3D array"):
-        processor.process_image(np.zeros((5, 5), dtype=np.float32), {})
+        processor.run(np.zeros((5, 5), dtype=np.float32), {})
 
 
 # ==============================================================================
@@ -84,11 +78,11 @@ def test_process_image_requires_3d():
 
 @pytest.mark.unit
 @patch(
-    "slavv_python.core.edges.candidates.estimate_vessel_directions",
+    "slavv_python.processing.stages.edges.candidates.estimate_vessel_directions",
     return_value=np.array([[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]], dtype=float),
 )
 def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     size = 21
     coords = np.indices((size, size, size))
     x, y, z = coords[0] - size // 2, coords[1] - size // 2, coords[2] - size // 2
@@ -195,7 +189,9 @@ def test_normalize_edges_matlab_style_matches_vectorize_v200_formulas():
         "traces": [np.zeros((2, 3), dtype=np.float32), np.zeros((2, 3), dtype=np.float32)],
     }
     normalized = normalize_edges_matlab_style(chosen_edges)
-    assert np.allclose(normalized["edge_endpoint_energies"], np.array([-6.0, -2.0], dtype=np.float32))
+    assert np.allclose(
+        normalized["edge_endpoint_energies"], np.array([-6.0, -2.0], dtype=np.float32)
+    )
     assert np.allclose(normalized["energies"], np.array([-0.5, -1.0], dtype=np.float32))
 
 
@@ -298,7 +294,9 @@ def test_remove_short_hairs_repeats_until_graph_is_stable():
 
 @pytest.mark.unit
 def test_offset_coords_matlab_snaps_out_of_bounds():
-    offsets = _construct_structuring_element_offsets_matlab(np.array([1.0, 1.0, 1.0], dtype=np.float32))
+    offsets = _construct_structuring_element_offsets_matlab(
+        np.array([1.0, 1.0, 1.0], dtype=np.float32)
+    )
     coords = _offset_coords_matlab(np.array([0.0, 0.0, 0.0], dtype=np.float32), offsets, (3, 3, 3))
     assert np.all(coords >= 0) and np.all(coords < 3)
 
@@ -331,7 +329,14 @@ def test_vertex_extraction_uses_matlab_paint_selection():
         "scale_indices": scale_indices,
         "lumen_radius_pixels": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
         "lumen_radius_pixels_axes": np.array(
-            [[0.5, 0.5, 0.5], [0.8, 0.8, 0.8], [1.0, 1.0, 1.0], [1.4, 1.4, 1.4], [1.8, 1.8, 1.8], [2.2, 2.2, 2.2]],
+            [
+                [0.5, 0.5, 0.5],
+                [0.8, 0.8, 0.8],
+                [1.0, 1.0, 1.0],
+                [1.4, 1.4, 1.4],
+                [1.8, 1.8, 1.8],
+                [2.2, 2.2, 2.2],
+            ],
             dtype=np.float32,
         ),
         "lumen_radius_microns": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
@@ -388,7 +393,9 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
     vertex_positions = np.array([[1, 1, 1], [1, 5, 1], [1, 3, 1], [3, 5, 1]], dtype=np.float32)
     vertex_scales = np.zeros(4, dtype=np.int16)
     chosen_frontier = np.array([[1, 1, 1], [1, 3, 1], [1, 5, 1]], dtype=np.float32)
-    rejected_watershed = np.array([[1, 3, 1], [1, 4, 1], [1, 5, 1], [2, 5, 1], [3, 5, 1]], dtype=np.float32)
+    rejected_watershed = np.array(
+        [[1, 3, 1], [1, 4, 1], [1, 5, 1], [2, 5, 1], [3, 5, 1]], dtype=np.float32
+    )
     candidates = {
         "traces": [chosen_frontier, rejected_watershed],
         "connections": np.array([[0, 1], [2, 3]], dtype=np.int32),
@@ -520,9 +527,15 @@ def test_choose_edges_uses_trace_endpoint_scales_for_vertex_influence():
         vertex_positions,
         vertex_scales,
         np.array([0.49, 1.0, 1.5, 2.5], dtype=np.float32),
-        np.array([[0.5, 0.5, 0.5], [1.0, 1.0, 1.0], [1.5, 1.5, 1.5], [2.5, 2.5, 2.5]], dtype=np.float32),
+        np.array(
+            [[0.5, 0.5, 0.5], [1.0, 1.0, 1.0], [1.5, 1.5, 1.5], [2.5, 2.5, 2.5]], dtype=np.float32
+        ),
         (20, 20, 20),
-        {"number_of_edges_per_vertex": 4, "sigma_per_influence_vertices": 1.0, "sigma_per_influence_edges": 0.5},
+        {
+            "number_of_edges_per_vertex": 4,
+            "sigma_per_influence_vertices": 1.0,
+            "sigma_per_influence_edges": 0.5,
+        },
     )
     assert chosen["connections"].tolist() == [[0, 1], [2, 3]]
 

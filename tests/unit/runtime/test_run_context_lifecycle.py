@@ -7,18 +7,18 @@ import json
 import pytest
 from tests.support.run_state_builders import build_run_context
 
-from slavv_python.runtime import RunContext, load_run_snapshot
-from slavv_python.runtime.run_state import (
+from slavv_python.engine.state import RunContext, load_run_snapshot
+from slavv_python.engine.state.tracker import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
 )
-from slavv_python.runtime.status import target_stage_progress
+from slavv_python.engine.state.status import target_stage_progress
 
 
 def test_run_context_persists_snapshot_lifecycle(tmp_path, monkeypatch):
     run_dir = tmp_path / "run"
     monkeypatch.setattr(
-        "slavv_python.runtime.context.RunContext._sample_process_memory_bytes",
+        "slavv_python.engine.context.RunContext._sample_process_memory_bytes",
         staticmethod(lambda: 4096),
     )
     context = build_run_context(

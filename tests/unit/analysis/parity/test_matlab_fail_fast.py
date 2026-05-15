@@ -1,14 +1,14 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.core.edges.common import _build_matlab_global_watershed_lut
-from slavv_python.analysis.parity.matlab_fail_fast import (
+from slavv_python.analytics.parity.matlab_fail_fast import (
     DEBUG_MAP_FIELDS,
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,
     compare_lut_fixture_payload,
 )
+from slavv_python.processing.stages.edges.common import _build_matlab_global_watershed_lut
 
 
 def _lut_fixture_payload() -> dict[str, object]:

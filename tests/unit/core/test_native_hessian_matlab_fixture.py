@@ -5,9 +5,9 @@ from pathlib import Path
 import numpy as np
 import numpy.testing as npt
 
-from slavv_python.core import SLAVVProcessor
-from slavv_python.core.energy import hessian_response as native_hessian
-from slavv_python.core.energy.config import _prepare_energy_config
+from slavv_python.engine import SlavvPipeline
+from slavv_python.processing.stages.energy import hessian_response as native_hessian
+from slavv_python.processing.stages.energy.config import _prepare_energy_config
 
 
 def test_native_hessian_matches_small_matlab_reference_fixture():
@@ -29,7 +29,7 @@ def test_native_hessian_matches_small_matlab_reference_fixture():
         "return_all_scales": True,
     }
 
-    result = SLAVVProcessor().calculate_energy_field(image, params)
+    result = SlavvPipeline().compute_energy(image, params)
 
     expected_energy = fixture["expected_energy"].astype(np.float32)
     expected_energy_4d = fixture["expected_energy_4d"].astype(np.float32)

@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import savemat
 from tests.support.network_builders import build_network_object
 
-from slavv_python.io import load_network_from_mat
+from slavv_python.storage.loaders import load_network_from_mat
 
 
 def test_mat_roundtrip(tmp_path: Path) -> None:

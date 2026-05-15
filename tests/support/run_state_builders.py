@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import joblib
 
-from slavv_python.runtime import RunContext
+from slavv_python.engine.state import RunContext
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

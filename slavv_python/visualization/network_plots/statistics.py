@@ -9,8 +9,8 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from ...models import normalize_pipeline_result
-from ...utils import calculate_path_length
+from slavv_python.schema import normalize_pipeline_result
+from slavv_python.utils import calculate_path_length
 from .dashboard import add_summary_dashboard_traces
 from .exports import export_casx, export_csv, export_json, export_mat, export_vmv
 from .layout import distribution_layout, empty_figure, summary_dashboard_layout

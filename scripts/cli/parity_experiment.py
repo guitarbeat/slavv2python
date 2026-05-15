@@ -1,4 +1,4 @@
-﻿"""Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
+"""Developer CLI wrapper for native-first MATLAB-oracle parity experiments."""
 
 # ruff: noqa: E402, F401, I001
 
@@ -13,7 +13,7 @@ repo_root = Path(__file__).resolve().parents[2]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from slavv_python.analysis.parity.cli import (
+from slavv_python.analytics.parity.cli import (
     handle_capture_candidates,
     handle_dedupe,
     handle_diagnose_gaps,
@@ -31,20 +31,20 @@ from slavv_python.analysis.parity.cli import (
     handle_summarize,
     handle_trace_vertex,
 )
-from slavv_python.analysis.parity.constants import (
+from slavv_python.analytics.parity.constants import (
     DEFAULT_MEMORY_SAFETY_FRACTION,
     EXACT_STAGE_ORDER,
 )
-from slavv_python.analysis.parity.utils import fingerprint_file
-from slavv_python.analysis.parity.promotion import materialize_dataset_record
-from slavv_python.analysis.parity.execution import (
+from slavv_python.analytics.parity.utils import fingerprint_file
+from slavv_python.analytics.parity.promotion import materialize_dataset_record
+from slavv_python.analytics.parity.execution import (
     ensure_dest_run_layout,
     validate_exact_proof_source_surface,
 )
-from slavv_python.core.edges.selection import choose_edges_for_workflow
-from slavv_python.core.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.core.edges.finalize import finalize_edges_matlab_style
-from slavv_python.analysis.parity.reports import render_exact_preflight_report
+from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
+from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
+from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
+from slavv_python.analytics.parity.reports import render_exact_preflight_report
 
 
 def render_lut_proof_report(report_payload: dict[str, Any]) -> str:

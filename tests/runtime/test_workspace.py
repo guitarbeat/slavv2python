@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from slavv_python.runtime.workspace import WorkspaceAuditor, find_experiment_root, find_repo_root
+from slavv_python.engine.environment import WorkspaceAuditor, find_experiment_root, find_repo_root
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -38,10 +38,9 @@ def test_find_experiment_root(tmp_path: Path):
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pyproject.toml").touch()
-    workspace = repo / "workspace"
-    workspace.mkdir()
 
-    assert find_experiment_root(repo) == workspace
+    # The experiment root is now flattened to the repo root itself
+    assert find_experiment_root(repo) == repo
 
 
 def test_auditor_detects_violations(tmp_path: Path):

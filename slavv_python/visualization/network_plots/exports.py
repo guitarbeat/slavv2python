@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ...utils import calculate_path_length
+from slavv_python.utils import calculate_path_length
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ def _convert_numpy(obj: Any) -> Any:
 
 def export_json(processing_results: dict[str, Any], output_path: str) -> str:
     """Export complete results as JSON."""
-    from slavv_python.io import save_network_to_json
+    from slavv_python.storage.loaders import save_network_to_json
 
     save_network_to_json(processing_results, output_path)
     logger.info(f"JSON export complete: {output_path}")

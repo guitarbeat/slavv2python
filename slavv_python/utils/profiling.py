@@ -38,7 +38,7 @@ def profile_process_image(
     if parameters is None:
         parameters = {}
 
-    from ..core import SlavvPipeline
+    from slavv_python.engine import SlavvPipeline
 
     profiler = cProfile.Profile()
     processor = SlavvPipeline()

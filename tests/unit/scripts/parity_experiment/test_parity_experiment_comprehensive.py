@@ -1,4 +1,4 @@
-﻿"""Comprehensive tests for the developer parity experiment runner.
+"""Comprehensive tests for the developer parity experiment runner.
 Consolidated from multiple small test files to reduce overhead and improve maintainability.
 """
 
@@ -6,52 +6,34 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
 from scipy.io import savemat
-
-from slavv_python.analysis.parity.constants import (
-    ANALYSIS_TABLES_DIR,
-    CANDIDATE_PROGRESS_JSONL_PATH,
-    CANDIDATE_PROGRESS_PLOT_PATH,
-    CHECKPOINTS_DIR,
-    EDGE_CANDIDATE_AUDIT_PATH,
-    EXPERIMENT_INDEX_PATH,
-    PARAM_DIFF_PATH,
-    PYTHON_DERIVED_PARAMS_PATH,
-    RECORDING_TABLES_INDEX_PATH,
-    RUN_MANIFEST_PATH,
-    RUN_SNAPSHOT_PATH,
-    SHARED_PARAMS_PATH,
-    SUMMARY_TEXT_PATH,
-    VALIDATED_PARAMS_PATH,
-)
-from slavv_python.analysis.parity.execution import (
-    derive_exact_params_from_oracle,
-    ensure_dest_run_layout,
-    persist_param_storage,
-)
-from slavv_python.analysis.parity.index import deduplicate_index_records
-from slavv_python.analysis.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
-from slavv_python.analysis.parity.proofs import (
-    _load_exact_vertices_payload,
-    _run_capture_candidates,
-    _run_prove_luts,
-)
-from slavv_python.analysis.parity.reports import (
-    build_experiment_summary,
-    persist_recording_tables,
-)
-from slavv_python.analysis.parity.matlab_exact_proof import (
-    find_matlab_vector_paths,
-)
 from tests.support.run_state_builders import (
     materialize_checkpoint_surface,
-    materialize_run_snapshot,
+)
+
+from slavv_python.analytics.parity.constants import (
+    CHECKPOINTS_DIR,
+    EXPERIMENT_INDEX_PATH,
+    VALIDATED_PARAMS_PATH,
+)
+from slavv_python.analytics.parity.execution import (
+    derive_exact_params_from_oracle,
+)
+from slavv_python.analytics.parity.index import deduplicate_index_records
+from slavv_python.analytics.parity.matlab_exact_proof import (
+    find_matlab_vector_paths,
+)
+from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
+from slavv_python.analytics.parity.proofs import (
+    _run_prove_luts,
+)
+from slavv_python.analytics.parity.reports import (
+    build_experiment_summary,
 )
 
 parity_experiment = importlib.import_module("scripts.cli.parity_experiment")
@@ -265,22 +247,22 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
     )
 
     monkeypatch.setattr(
-        "slavv_python.analysis.parity.execution.validate_exact_proof_source_surface",
+        "slavv_python.analytics.parity.execution.validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
-        "slavv_python.analysis.parity.execution.load_params_file",
+        "slavv_python.analytics.parity.execution.load_params_file",
         lambda _surface, _params_arg=None: {"microns_per_voxel": [1.0, 1.0, 1.0]},
     )
     monkeypatch.setattr(
-        "slavv_python.analysis.parity.proofs._load_exact_energy_payload",
+        "slavv_python.analytics.parity.proofs._load_exact_energy_payload",
         lambda _surface: {
             "energy": np.zeros((10, 10, 10)),
             "lumen_radius_microns": np.array([1.5, 2.0], dtype=np.float32),
         },
     )
     monkeypatch.setattr(
-        "slavv_python.analysis.parity.matlab_fail_fast.load_builtin_lut_fixture",
+        "slavv_python.analytics.parity.matlab_fail_fast.load_builtin_lut_fixture",
         lambda: {"size_of_image": [20, 20, 20], "microns_per_voxel": [1.0, 1.0, 1.0]},
     )
 

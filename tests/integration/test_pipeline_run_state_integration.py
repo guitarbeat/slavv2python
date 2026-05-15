@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from slavv_python.core import SlavvPipeline
-from slavv_python.runtime import load_run_snapshot
-from slavv_python.runtime.run_state import STATUS_BLOCKED, STATUS_FAILED
+from slavv_python.engine import SlavvPipeline
+from slavv_python.engine.state import load_run_snapshot
+from slavv_python.engine.state.tracker import STATUS_BLOCKED, STATUS_FAILED
 
 
 def test_process_image_blocks_reuse_when_parameters_change(tmp_path):
@@ -55,7 +55,7 @@ def test_preprocess_failure_marks_run_failed(tmp_path, monkeypatch):
     def _boom(_image, _parameters):
         raise RuntimeError("preprocess exploded")
 
-    monkeypatch.setattr("slavv_python.core.pipeline.utils.preprocess_image", _boom)
+    monkeypatch.setattr("slavv_python.engine.orchestrator.utils.preprocess_image", _boom)
 
     with pytest.raises(RuntimeError, match="preprocess exploded"):
         processor.run(image, {}, run_dir=str(run_dir))

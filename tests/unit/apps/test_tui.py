@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from slavv_python.apps.cli.tui import (
+from slavv_python.interface.cli.tui import (
     is_tui_available,
     run_monitor_if_supported,
     run_wizard_if_supported,
@@ -19,7 +19,7 @@ def test_is_tui_available():
     assert isinstance(avail, bool)
 
 
-@patch("slavv_python.apps.cli.tui._TUI_AVAILABLE", False)
+@patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", False)
 def test_tui_graceful_fallbacks_when_unavailable():
     """Verify that fallbacks work and don't raise errors when TUI is unavailable."""
     assert run_wizard_if_supported() is None
@@ -28,8 +28,8 @@ def test_tui_graceful_fallbacks_when_unavailable():
 
 
 @pytest.mark.skipif(not is_tui_available(), reason="TUI extra is not installed")
-@patch("slavv_python.apps.cli.tui._TUI_AVAILABLE", True)
-@patch("slavv_python.apps.cli.tui.wizard.run_setup_wizard")
+@patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", True)
+@patch("slavv_python.interface.cli.tui.wizard.run_setup_wizard")
 def test_run_wizard_if_supported_calls_implementation(mock_run):
     """Verify run_wizard_if_supported invokes implementation when available."""
     mock_run.return_value = {"input_path": "vol.tif", "execute_now": True}
@@ -39,8 +39,8 @@ def test_run_wizard_if_supported_calls_implementation(mock_run):
 
 
 @pytest.mark.skipif(not is_tui_available(), reason="TUI extra is not installed")
-@patch("slavv_python.apps.cli.tui._TUI_AVAILABLE", True)
-@patch("slavv_python.apps.cli.tui.runner_app.SLAVVPipelineApp")
+@patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", True)
+@patch("slavv_python.interface.cli.tui.runner_app.SLAVVPipelineApp")
 def test_run_monitor_if_supported_runs_app(mock_app_class):
     """Verify run_monitor_if_supported runs the Textual application."""
     mock_app_inst = MagicMock()
@@ -50,10 +50,10 @@ def test_run_monitor_if_supported_runs_app(mock_app_class):
 
 
 @pytest.mark.skipif(not is_tui_available(), reason="TUI extra is not installed")
-@patch("slavv_python.apps.cli.tui._TUI_AVAILABLE", True)
+@patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", True)
 def test_textual_app_reactive_states():
     """Test that SLAVVPipelineApp reactive states and watch methods operate correctly."""
-    from slavv_python.apps.cli.tui.runner_app import SLAVVPipelineApp
+    from slavv_python.interface.cli.tui.runner_app import SLAVVPipelineApp
 
     app = SLAVVPipelineApp()
     # The app is not running, but we can verify default states

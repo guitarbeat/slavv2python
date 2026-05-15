@@ -1,9 +1,10 @@
 import joblib
 import numpy as np
-from pathlib import Path
 
-data = joblib.load('workspace/runs/oracle_180709_E/validation_strel_fix/02_Output/python_results/checkpoints/checkpoint_vertices.pkl')
-energies = data['energies']
+data = joblib.load(
+    "workspace/runs/oracle_180709_E/validation_strel_fix/02_Output/python_results/checkpoints/checkpoint_vertices.pkl"
+)
+energies = data["energies"]
 
 # Sort indices by energy ascending (best first)
 # Matches load_normalized_matlab_stage logic

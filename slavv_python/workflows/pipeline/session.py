@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python import utils
-from slavv_python.runtime.run_state import (
+from slavv_python.engine.state.tracker import (
     PIPELINE_STAGES,
     PREPROCESS_STAGE,
     STATUS_RUNNING,
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-    from slavv_python.runtime import ProgressEvent, RunContext
+    from slavv_python.engine.state import ProgressEvent, RunContext
 
 
 @dataclass(frozen=True)

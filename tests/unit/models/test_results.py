@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from tests.support.payload_builders import build_energy_result, build_processing_results
 
-from slavv_python.models import (
+from slavv_python.schema import (
     EdgeSet,
     EnergyResult,
     NetworkResult,

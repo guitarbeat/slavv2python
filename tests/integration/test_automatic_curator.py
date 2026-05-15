@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.analysis import AutomaticCurator
+from slavv_python.analytics import AutomaticCurator
 
 
 def test_automatic_vertex_curation_filters_low_energy_vertices():

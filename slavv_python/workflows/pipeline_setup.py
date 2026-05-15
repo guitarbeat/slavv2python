@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from slavv_python import utils
-from slavv_python.runtime.run_state import (
+from slavv_python.engine.state.tracker import (
     atomic_write_json,
     fingerprint_array,
     fingerprint_jsonable,
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-    from slavv_python.runtime import ProgressEvent, RunContext
+    from slavv_python.engine.state import ProgressEvent, RunContext
 
 
 def validate_stage_control(stage_name: str | None, option_name: str) -> None:

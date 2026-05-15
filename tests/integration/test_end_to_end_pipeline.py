@@ -11,8 +11,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from slavv_python.core import SlavvPipeline
-from slavv_python.io import (
+from slavv_python.engine import SlavvPipeline
+from slavv_python.storage.loaders import (
     Network,
     load_tiff_volume,
     save_network_to_casx,

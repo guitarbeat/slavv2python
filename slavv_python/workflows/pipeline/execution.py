@@ -11,7 +11,7 @@ from .session import emit_progress
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from slavv_python.runtime import RunContext
+    from slavv_python.engine.state import RunContext
 
 
 @dataclass(frozen=True)

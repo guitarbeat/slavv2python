@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from slavv_python.io import load_network_from_mat
+from slavv_python.storage.loaders import load_network_from_mat
 from slavv_python.visualization import NetworkVisualizer
 from tests.support.payload_builders import build_processing_results
 

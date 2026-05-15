@@ -1,12 +1,12 @@
 import numpy as np
 
-from slavv_python.core import SLAVVProcessor
-from slavv_python.core.graph import construct_network_resumable, trace_strand_sparse
-from slavv_python.runtime import RunContext
+from slavv_python.engine import SlavvPipeline
+from slavv_python.processing.stages.network import construct_network_resumable, trace_strand_sparse
+from slavv_python.engine.state import RunContext
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     vertices = {
         "positions": np.array(
             [
@@ -36,7 +36,7 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
         ],
     }
 
-    network = processor.construct_network(edges, vertices, {"remove_cycles": True})
+    network = processor.build_network(edges, vertices, {"remove_cycles": True})
 
     cycle_pairs = [tuple(map(int, pair)) for pair in network["cycles"]]
     assert (0, 2) in cycle_pairs

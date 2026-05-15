@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from slavv_python.runtime.run_state import atomic_write_json
+from slavv_python.engine.state.tracker import atomic_write_json
 
 
 def test_atomic_write_json_replaces_previous_content(tmp_path):

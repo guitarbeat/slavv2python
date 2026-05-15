@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.models import normalize_pipeline_result
+from slavv_python.schema import normalize_pipeline_result
 
 if TYPE_CHECKING:
-    from slavv_python.runtime import RunContext
+    from slavv_python.engine.state import RunContext
 
 logger = logging.getLogger(__name__)
 

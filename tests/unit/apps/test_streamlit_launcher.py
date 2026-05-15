@@ -5,7 +5,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 
-from slavv_python.apps import streamlit_launcher
+from slavv_python.interface import streamlit_launcher
 
 
 def test_main_reports_missing_streamlit(monkeypatch, capsys):

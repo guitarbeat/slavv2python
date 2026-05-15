@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.core.graph import (
+from slavv_python.processing.stages.network import (
     _matlab_edge_metrics,
     _matlab_get_strand_objects,
     _matlab_get_vessel_directions_v3,

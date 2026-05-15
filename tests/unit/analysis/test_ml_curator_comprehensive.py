@@ -14,15 +14,15 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from tests.support.payload_builders import build_processing_results
 
-from slavv_python.analysis import MLCurator
-from slavv_python.analysis.ml_curator import DrewsCurator
-from slavv_python.analysis.ml_curator_features import (
+from slavv_python.analytics import MLCurator
+from slavv_python.analytics.curation.machine_learning import DrewsCurator
+from slavv_python.analytics.curation.machine_learning_features import (
     compute_local_gradient,
     feature_importance,
     in_bounds,
 )
-from slavv_python.analysis.ml_curator_io import materialize_model_source
-from slavv_python.analysis.ml_curator_training import load_aggregated_training_data
+from slavv_python.analytics.curation.machine_learning_io import materialize_model_source
+from slavv_python.analytics.curation.machine_learning_training import load_aggregated_training_data
 
 if TYPE_CHECKING:
     Any = object

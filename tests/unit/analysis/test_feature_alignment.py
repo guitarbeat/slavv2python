@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.analysis import MLCurator
+from slavv_python.analytics import MLCurator
 from slavv_python.utils import calculate_path_length
 
 

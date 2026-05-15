@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from slavv_python.core import SlavvPipeline
+from slavv_python.engine import SlavvPipeline
 from slavv_python.utils import validate_parameters
 
 

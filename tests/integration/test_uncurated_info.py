@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.analysis import extract_uncurated_info
+from slavv_python.analytics import extract_uncurated_info
 
 
 def test_extract_uncurated_info_shapes() -> None:

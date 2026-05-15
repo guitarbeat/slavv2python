@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from tests.support.run_state_builders import build_snapshot_dict, materialize_run_snapshot
 
-from slavv_python.runtime.layout import resolve_run_layout
-from slavv_python.runtime.models import RunSnapshot, StageSnapshot
-from slavv_python.runtime.snapshot_store import (
+from slavv_python.engine.state.layout import resolve_run_layout
+from slavv_python.engine.state.models import RunSnapshot, StageSnapshot
+from slavv_python.engine.state.snapshots import (
     emit_progress_event,
     load_or_create_snapshot,
 )

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from slavv_python.analysis import (
+from slavv_python.analytics import (
     evaluate_registration,
     get_edge_metric,
     get_edges_for_vertex,
@@ -10,7 +10,7 @@ from slavv_python.analysis import (
     smooth_edge_traces,
     transform_vector_set,
 )
-from slavv_python.analysis.vector_math import (
+from slavv_python.analytics.math import (
     angle_degrees,
     safe_normalize_rows,
     scaled_positions,

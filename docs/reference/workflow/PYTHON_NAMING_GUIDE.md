@@ -58,21 +58,18 @@ Within a stage package, prefer role names such as:
 Avoid vague names like `standard`, `common`, or `payloads` unless the module is
 truly cross-cutting and the name is still precise.
 
-## Compatibility Names
+## Compatibility Policy
 
-These names still work for one migration cycle, but they are not the preferred
-surface for new code:
+The codebase has been modernized to remove legacy shims. Previous names such as
+`SLAVVProcessor`, `process_image()`, and `slavv_python.core.graph` have been
+fully retired.
 
-- `slavv_python.core.SLAVVProcessor`
-- `process_image()`
-- `calculate_energy_field()`
-- `construct_network()`
-- `slavv_python.core.graph`
-- `slavv_python.runtime._run_state.*`
-- flat app modules such as `slavv_python.apps.cli_parser` or `slavv_python.apps.web_app_*`
-
-Compatibility names may emit `DeprecationWarning` in Python code. Public CLI
-behavior should stay quiet.
+### Stable Entrypoints
+- `slavv_python.core.SlavvPipeline`
+- `run()`
+- `compute_energy()`
+- `build_network()`
+- `slavv_python.core.network`
 
 ## Naming Rules
 

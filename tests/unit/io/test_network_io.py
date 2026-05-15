@@ -13,7 +13,7 @@ from tests.support.network_builders import (
     write_network_json_fixture,
 )
 
-from slavv_python.io import (
+from slavv_python.storage.loaders import (
     load_network_from_casx,
     load_network_from_csv,
     load_network_from_json,

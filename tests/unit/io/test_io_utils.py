@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import tifffile
 
-from slavv_python.io import load_tiff_volume
+from slavv_python.storage.loaders import load_tiff_volume
 
 
 def test_load_tiff_volume_valid():

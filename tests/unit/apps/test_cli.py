@@ -5,20 +5,20 @@ import json
 import numpy as np
 import pytest
 
-from slavv_python.apps.cli import (
+from slavv_python.interface.cli import (
     _build_cli_parser,
     _load_exported_network_json,
     _require_existing_file,
     main,
 )
-from slavv_python.apps.cli.run_service import filter_export_formats as _expand_export_formats
-from slavv_python.apps.cli.shared import (
+from slavv_python.interface.cli.run_service import filter_export_formats as _expand_export_formats
+from slavv_python.interface.cli.shared import (
     _prepare_run_parameters as _build_pipeline_parameters,
 )
-from slavv_python.apps.cli.shared import (
+from slavv_python.interface.cli.shared import (
     _resolve_export_artifact_paths as _build_export_artifacts,
 )
-from slavv_python.runtime import RunContext
+from slavv_python.engine.state import RunContext
 from tests.support.network_builders import (
     build_authoritative_network_json_payload,
     build_network_object,

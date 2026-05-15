@@ -1,10 +1,10 @@
 import numpy as np
 
-from slavv_python.core import SLAVVProcessor
+from slavv_python.engine import SlavvPipeline
 
 
 def test_extract_edges_watershed_two_vertices():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     energy = np.ones((5, 5, 5), dtype=np.float32)
     energy_data = {
         "energy": energy,
@@ -25,7 +25,7 @@ def test_extract_edges_watershed_two_vertices():
 
 
 def test_extract_edges_watershed_empty_connections_keep_two_columns():
-    processor = SLAVVProcessor()
+    processor = SlavvPipeline()
     energy = np.ones((5, 5, 5), dtype=np.float32)
     energy_data = {
         "energy": energy,

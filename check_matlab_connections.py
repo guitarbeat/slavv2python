@@ -1,11 +1,15 @@
-from scipy.io import loadmat
-import numpy as np
 from pathlib import Path
 
+from scipy.io import loadmat
+
 # Path to the MATLAB curated vertices and edges
-oracle_root = Path("workspace/oracles/180709_E_batch_190910-103039/01_Input/matlab_results/batch_190910-103039_canonical/vectors")
+oracle_root = Path(
+    "workspace/oracles/180709_E_batch_190910-103039/01_Input/matlab_results/batch_190910-103039_canonical/vectors"
+)
 vertices_path = oracle_root / "curated_vertices_full.mat"
-edges_path = oracle_root / "curated_vertices_full.mat" # Wait, curated_vertices_full.mat might have edges too
+edges_path = (
+    oracle_root / "curated_vertices_full.mat"
+)  # Wait, curated_vertices_full.mat might have edges too
 
 if not vertices_path.exists():
     print(f"Missing file: {vertices_path}")
@@ -14,13 +18,13 @@ if not vertices_path.exists():
 data = loadmat(vertices_path, squeeze_me=True, struct_as_record=False)
 
 # Check for edges2vertices
-if hasattr(data, 'edges2vertices'):
+if hasattr(data, "edges2vertices"):
     # loadmat with struct_as_record=False returns a dict-like object but attributes might be accessed via dot
     # Actually, if it's a dict, use keys.
     pass
 
 # Let's just use dict access
-edges = data['edges2vertices'] - 1 # 0-indexed
+edges = data["edges2vertices"] - 1  # 0-indexed
 
 v_target = 25
 connected_to = []

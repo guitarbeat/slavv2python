@@ -8,7 +8,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-from ...utils import calculate_path_length
+from slavv_python.utils import calculate_path_length
 from .helpers import add_colorbar, map_values_to_colors
 from .layout import axis_labels, plot_2d_layout, plot_slice_layout, select_plot_axes
 

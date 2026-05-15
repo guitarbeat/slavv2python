@@ -42,7 +42,7 @@ def test_create_summary_dashboard_builds_expected_panels():
 def test_app_main_runs():
     """Smoke test that Streamlit app main executes without error."""
     pytest.importorskip("streamlit")
-    from slavv_python.apps.streamlit.shell import main
+    from slavv_python.interface.streamlit.shell import main
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -57,7 +57,7 @@ def test_app_sets_wide_layout(monkeypatch):
         called.update(kwargs)
 
     monkeypatch.setattr(st, "set_page_config", fake_config)
-    from slavv_python.apps.streamlit import app
+    from slavv_python.interface.streamlit import app
 
     importlib.reload(app)
     assert called.get("layout") == "wide"

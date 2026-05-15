@@ -9,10 +9,11 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 import pytest
+from tests.support.run_state_builders import build_run_context
 
-from slavv_python.runtime import RunContext
-from slavv_python.runtime.layout import resolve_run_layout
-from slavv_python.runtime.lifecycle import (
+from slavv_python.engine.state import RunContext
+from slavv_python.engine.state.layout import resolve_run_layout
+from slavv_python.engine.state.lifecycle import (
     begin_stage_snapshot,
     complete_stage_snapshot,
     fail_stage_snapshot,
@@ -21,21 +22,20 @@ from slavv_python.runtime.lifecycle import (
     update_optional_task_snapshot,
     update_stage_snapshot,
 )
-from slavv_python.runtime.models import RunSnapshot, StageSnapshot
-from slavv_python.runtime.progress import (
+from slavv_python.engine.state.models import RunSnapshot, StageSnapshot
+from slavv_python.engine.state.progress import (
     calculate_overall_progress,
     estimate_run_eta,
     estimate_stage_eta,
     parse_run_time,
     preprocess_complete,
 )
-from slavv_python.runtime.reset import (
+from slavv_python.engine.state.reset import (
     clear_stage_runtime_artifacts,
     remove_stage_dir_contents,
     reset_stage_snapshots,
 )
-from slavv_python.runtime.status import build_status_lines
-from tests.support.run_state_builders import build_run_context
+from slavv_python.engine.state.status import build_status_lines
 
 
 class _DummyController:
