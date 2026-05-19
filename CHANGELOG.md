@@ -15,6 +15,14 @@ For current behavior and proof status, prefer:
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-05-15
+
+### Fixed
+
+- **MATLAB Parity Fix: Parameter Realignment**: Discovered and corrected a mismatch in `edge_number_tolerance` (2 -> 4), resolving missing connections for high-degree junction vertices.
+- **MATLAB Parity Fix: NaN Stability**: Fixed a critical bug where multiplying `-Inf` vertex priority by `0.0` suppression factors produced `NaNs`, corrupting the frontier seed selection order.
+- **Reliability: Python 3.7 Compatibility**: Fixed `ImportError` by migrating `typing.Protocol` to `typing_extensions.Protocol`.
+
 ## [Unreleased] - 2026-05-14
 
 ### Fixed

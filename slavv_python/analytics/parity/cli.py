@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from slavv_python.runtime.run_state import load_json_dict
+from slavv_python.engine.state import load_json_dict
 
 from .constants import (
     EXPERIMENT_PROVENANCE_PATH,
@@ -31,7 +31,7 @@ from .gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
 )
-from slavv_python.schema import ExactProofSourceSurface
+from .models import ExactProofSourceSurface
 from .proofs import (
     run_candidate_capture,
     run_edge_replay,
@@ -48,8 +48,7 @@ from .reports import (
     read_python_counts_from_run,
     render_experiment_summary,
 )
-from slavv_python.utils import (
-    fingerprint_file,
+from .utils import (fingerprint_file,
     now_iso,
     write_json_with_hash,
 )
@@ -60,8 +59,8 @@ if TYPE_CHECKING:
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
     """Orchestrate a Python-only rerun from a slavv_python comparison root."""
-    from slavv_python.core.pipeline import SlavvPipeline
-    from slavv_python.io.tiff import load_tiff_volume
+    from slavv_python.engine import SlavvPipeline
+    from slavv_python.storage import load_tiff_volume
 
     source_surface = validate_source_run_surface(Path(args.source_run_root))
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
@@ -140,7 +139,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
 
-    from slavv_python.analysis.parity.matlab_exact_proof import load_normalized_python_checkpoints
+    from slavv_python.analytics.parity.matlab_exact_proof import load_normalized_python_checkpoints
     from slavv_python.processing.stages.edges.execution_tracing import JsonExecutionTracer
     from slavv_python.processing.stages.edges.global_watershed import (
         _generate_edge_candidates_matlab_global_watershed,
@@ -406,8 +405,8 @@ def handle_promote_report(args: argparse.Namespace) -> None:
 
 def handle_init_exact_run(args: argparse.Namespace) -> None:
     """Initialize a fresh run root for an exact parity experiment."""
-    from slavv_python.core.pipeline import SlavvPipeline
-    from slavv_python.io.tiff import load_tiff_volume
+    from slavv_python.engine import SlavvPipeline
+    from slavv_python.storage import load_tiff_volume
 
     from .execution import (
         _copy_exact_bootstrap_refs,

@@ -6,12 +6,12 @@ from pathlib import Path
 from shutil import copy2, copytree
 from typing import TYPE_CHECKING
 
-from slavv_python.analysis.parity.matlab_exact_proof import (
+from slavv_python.analytics.parity.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     find_matlab_vector_paths,
     load_normalized_matlab_vectors,
 )
-from slavv_python.runtime.run_state import fingerprint_file, fingerprint_jsonable, load_json_dict
+from slavv_python.engine.state import fingerprint_file, fingerprint_jsonable, load_json_dict
 
 from .constants import (
     ANALYSIS_DIR,
@@ -28,9 +28,8 @@ from .constants import (
     RUN_MANIFEST_PATH,
 )
 from .index import ensure_experiment_root_layout, resolve_experiment_root, upsert_index_record
-from slavv_python.schema import OracleSurface
-from slavv_python.utils import (
-    entity_id_from_path,
+from .models import OracleSurface
+from .utils import (entity_id_from_path,
     now_iso,
     persist_normalized_payloads,
     resolve_python_commit,

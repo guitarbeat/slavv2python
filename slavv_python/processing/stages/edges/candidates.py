@@ -19,7 +19,7 @@ from slavv_python.processing.stages.edges.common import (
     _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
-from slavv_python.processing.stages.edges.generate import (
+from slavv_python.processing.stages.edges.candidate_generation import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,

@@ -8,11 +8,11 @@ from typing import Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from slavv_python.analysis.parity.matlab_exact_proof import (
+from slavv_python.analytics.parity.matlab_exact_proof import (
     find_matlab_vector_paths,
     find_single_matlab_batch_dir,
 )
-from slavv_python.runtime.run_state import (
+from slavv_python.engine.state import (
     fingerprint_file,
     fingerprint_jsonable,
     load_json_dict,
@@ -45,15 +45,13 @@ from .constants import (
     VALIDATED_PARAMS_PATH,
 )
 from .index import resolve_experiment_root, upsert_index_record
-from slavv_python.schema import (
-    DatasetSurface,
+from .models import (DatasetSurface,
     ExactProofSourceSurface,
     OracleSurface,
     RunCounts,
     SourceRunSurface,
 )
-from slavv_python.utils import (
-    entity_id_from_path,
+from .utils import (entity_id_from_path,
     now_iso,
     resolve_python_commit,
     string_or_none,
@@ -703,7 +701,7 @@ def _finalize_init_exact_run(
             }
         )
         snapshot["provenance"] = prov
-        from slavv_python.runtime.run_state import atomic_write_json
+        from slavv_python.engine.state import atomic_write_json
 
         atomic_write_json(snapshot_path, snapshot)
 
@@ -715,7 +713,7 @@ def maybe_sync_exact_vertex_checkpoint(
     oracle_root: Path | None = None,
 ) -> str:
     """Sync the exact-route vertex checkpoint if available."""
-    from slavv_python.analysis.parity.matlab_exact_proof import (
+    from slavv_python.analytics.parity.matlab_exact_proof import (
         sync_exact_vertex_checkpoint_from_matlab,
     )
 

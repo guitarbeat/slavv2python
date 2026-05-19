@@ -13,11 +13,11 @@
 
 ## Current Velocity
 
-- **Last Verified:** 958 / 1,197 matched pairs (80.0%) on a fresh exact run.
-- **Measurement Source:** `validation_strel_fix_output_v28` experiment, 2026-05-14
-- **Target:** 90% (Measure 3 — Candidate filtering alignment)
+- **Last Verified:** 1062 / 1,197 matched pairs (88.7%) on a fresh exact run.
+- **Measurement Source:** `validation_strel_fix_output_v29` experiment, 2026-05-15
+- **Target:** 95% (Measure 3 — Candidate filtering alignment)
 - **Active Status:** Active Development — Tightening filtering criteria
-- **Last Updated:** 2026-05-14
+- **Last Updated:** 2026-05-15
 
 > [!IMPORTANT]
 > Re-run `capture-candidates` on a fresh clean checkpoint and `prove-exact` after any code change to update

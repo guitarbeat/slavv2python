@@ -17,6 +17,7 @@ from ..context import RunContext, StageController
 from .io import (
     atomic_joblib_dump,
     atomic_write_json,
+    atomic_write_text,
     fingerprint_array,
     fingerprint_file,
     fingerprint_jsonable,
@@ -45,6 +46,7 @@ __all__ = [
     "TaskSnapshot",
     "atomic_joblib_dump",
     "atomic_write_json",
+    "atomic_write_text",
     "build_status_lines",
     "fingerprint_array",
     "fingerprint_file",

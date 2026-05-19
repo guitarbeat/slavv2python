@@ -12,6 +12,7 @@ from .tracker import (
     TRACKED_RUN_STAGES,
     atomic_joblib_dump,
     atomic_write_json,
+    atomic_write_text,
     build_status_lines,
     fingerprint_array,
     fingerprint_file,

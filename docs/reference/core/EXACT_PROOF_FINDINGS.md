@@ -16,7 +16,7 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 | :--- | :--- | :--- |
 | **NATIVE ENERGY** | ✅ **COMPLETED** | None (Canonical exact-compatible) |
 | **VERTICES** | ✅ **VERIFIED** | Successfully certified downstream |
-| **EDGES** | ✅ **VERIFIED** | Successfully reached 80% milestone |
+| **EDGES** | ✅ **VERIFIED** | Reached 88.7% milestone |
 | **NETWORK** | ⏳ **PENDING** | Awaiting upstream Edge closure |
 
 ---
@@ -25,20 +25,20 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 
 A major architectural breakthrough was achieved in May 2026, dramatically narrowing the discrepancy gap in edge candidate generation.
 
-**Champion Experiment Path**: `workspace\runs\oracle_180709_E\validation_strel_fix_output_v28`
+**Champion Experiment Path**: `workspace\runs\oracle_180709_E\validation_strel_fix_output_v29`
 
-### The Solution: Universe Realignment & Crawler Alignment
-- **Universe Realignment (v8)**: Corrected axis transpose to `(2, 1, 0)` and implemented full vertex set fallback. Match rate: **77.7%**.
-- **Crawler Alignment (v28)**: Fixed vertex priority initialization (-Inf), available-locations splice logic, and early loop-break conditions.
-- **Outcome**: Successfully reached the **80.0%** match rate milestone.
+### The Solution: Parameter Alignment & NaN Stability
+- **Parameter Alignment (v29)**: Discovered that the MATLAB oracle was generated with `edge_number_tolerance = 4`, while Python was hardcoded to 2. Aligning this parameter allowed high-degree vertices (hubs) to initiate sufficient exploratory traces.
+- **NaN Stability**: Fixed a floating-point instability where multiplying `-Inf` (vertex priority) by `0.0` (directional suppression factor) created `NaNs`, leading to incorrect seed selection in subsequent iterations.
+- **Outcome**: Successfully reached the **88.7%** match rate milestone (1062/1197 pairs).
 
 ### Final Mathematical Impact
-| Metric | Previous Baseline | Current High-Water Mark | Improvement |
+| Metric | Previous Baseline (v28) | Current High-Water Mark (v29) | Improvement |
 | :--- | :--- | :--- | :--- |
-| **Matched MATLAB Pairs** | 930 | **958** | **+28 Increase** |
-| **Total Match Rate** | 77.7% | **80.0%** | **Milestone Reached** |
-| Missing Pairs | 267 | 239 | 🔻 Reduced by 28 |
-| Over-generated Pairs | 258 | 263 | 🔺 Increased by 5 |
+| **Matched MATLAB Pairs** | 958 | **1062** | **+104 Increase** |
+| **Total Match Rate** | 80.0% | **88.7%** | **Milestone Reached** |
+| Missing Pairs | 239 | 135 | 🔻 Reduced by 104 |
+| Over-generated Pairs | 263 | 371 | 🔺 Increased by 108 |
 
 ---
 

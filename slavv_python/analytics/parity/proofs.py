@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.analysis.parity.matlab_exact_proof import (
+from slavv_python.analytics.parity.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
     _normalize_connection_array,
     compare_exact_artifacts,
@@ -14,12 +14,12 @@ from slavv_python.analysis.parity.matlab_exact_proof import (
     load_normalized_python_checkpoints,
     render_exact_proof_report,
 )
-from slavv_python.analysis.parity.matlab_fail_fast import (
+from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_coverage_report,
     build_candidate_snapshot_payload,
     render_candidate_coverage_report,
 )
-from slavv_python.runtime.run_state import (
+from slavv_python.engine.state import (
     atomic_joblib_dump,
     fingerprint_file,
     load_json_dict,
@@ -41,7 +41,7 @@ from .execution import (
     persist_param_storage,
     write_run_manifest,
 )
-from slavv_python.schema import ExactProofSourceSurface
+from .models import ExactProofSourceSurface
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -171,7 +171,7 @@ def run_exact_parity_proof(
     json_path = dest_run_root / EXACT_PROOF_JSON_PATH
     text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
 
-    from slavv_python.utils import write_json_with_hash, write_text_with_hash
+    from .utils import write_json_with_hash, write_text_with_hash
 
     write_json_with_hash(json_path, report_payload)
     write_text_with_hash(text_path, render_exact_proof_report(report_payload))
@@ -289,8 +289,7 @@ def run_candidate_capture(
     from slavv_python.processing.stages.vertices.vertices import paint_vertex_center_image
 
     from .reports import persist_recording_tables
-    from slavv_python.utils import (
-        now_iso,
+    from .utils import (now_iso,
         persist_normalized_payloads,
         write_json_with_hash,
         write_text_with_hash,
@@ -447,7 +446,7 @@ def run_candidate_capture(
     )
     if progress_records:
         from .constants import CANDIDATE_PROGRESS_JSONL_PATH, CANDIDATE_PROGRESS_PLOT_PATH
-        from slavv_python.utils import atomic_write_jsonl
+        from .utils import atomic_write_jsonl
 
         atomic_write_jsonl(dest_run_root / CANDIDATE_PROGRESS_JSONL_PATH, progress_records)
 
@@ -480,7 +479,7 @@ def run_edge_replay(
     """Orchestrate the edge replay workflow."""
     import joblib
 
-    from slavv_python.utils import write_json_with_hash
+    from .utils import write_json_with_hash
 
     checkpoint_dir = dest_run_root / "02_Output" / "python_results" / "checkpoints"
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -510,10 +509,10 @@ def run_lut_proof(
     oracle_root: Path | None = None,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the LUT parity proof."""
-    from slavv_python.analysis.parity.matlab_fail_fast import load_builtin_lut_fixture
+    from slavv_python.analytics.parity.matlab_fail_fast import load_builtin_lut_fixture
 
     from .execution import load_params_file, validate_exact_proof_source_surface
-    from slavv_python.utils import write_json_with_hash
+    from .utils import write_json_with_hash
 
     source_surface = validate_exact_proof_source_surface(source_run_root)
     params = load_params_file(source_surface, None)
@@ -591,7 +590,7 @@ def _run_capture_candidates(
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Compatibility wrapper for run_candidate_capture."""
     from .execution import load_oracle_surface
-    from slavv_python.schema import OracleSurface
+    from .models import OracleSurface
 
     # Try to find oracle root
     oracle_root = None

@@ -28,7 +28,7 @@ DEBUG_MAP_FIELDS: tuple[str, ...] = (
 def load_builtin_lut_fixture() -> dict[str, Any]:
     """Load the checked-in exact-LUT fixture payload."""
     fixture_text = (
-        resources.files("slavv_python.io.resources")
+        resources.files("slavv_python.storage.resources")
         .joinpath(LUT_FIXTURE_RESOURCE)
         .read_text(encoding="utf-8")
     )

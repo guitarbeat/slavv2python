@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
-from slavv_python.runtime.io import atomic_write_text, stable_json_dumps
+from slavv_python.engine.state import atomic_write_text, stable_json_dumps
 
 from slavv_python.storage import (
     write_hash_sidecar,

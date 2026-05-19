@@ -1,4 +1,10 @@
-"""Preferred internal name for edge cleanup helpers."""
+"""
+Edge Cleanup and Quality Control Engine.
+
+This module provides specialized filters for pruning vascular candidates, 
+ensuring the final graph adheres to biological topology constraints (e.g., 
+maximum branching degrees, orphan removal, and cycle breaking).
+"""
 
 from __future__ import annotations
 
@@ -8,250 +14,252 @@ from scipy.sparse.csgraph import connected_components
 
 from slavv_python.processing.stages.edges.payloads import _clip_trace_indices
 
+# --- TOPOLOGY FILTERS ---
 
-def clean_edges_vertex_degree_excess_python(
+def remove_excess_vertex_degrees(
     connections: np.ndarray,
     metrics: np.ndarray,
-    max_edges_per_vertex: int,
+    max_degree: int,
 ) -> np.ndarray:
-    """Mirror MATLAB's excess-degree cleanup on best-to-worst sorted edges."""
-    del metrics
-    if connections.size == 0 or max_edges_per_vertex <= 0:
+    """
+    Prunes edges from vertices exceeding the maximum biological degree.
+    
+    This filter mirrors MATLAB's greedy pruning: it keeps the best-ranked 
+    edges (by energy metric) and discards the surplus.
+    """
+    # 1. Validation & Setup
+    if connections.size == 0 or max_degree <= 0:
         return np.ones((len(connections),), dtype=bool)
 
-    normalized = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    keep: np.ndarray = np.ones((len(normalized),), dtype=bool)
-    n_vertices = int(np.max(normalized)) + 1 if normalized.size else 0
-    if n_vertices <= 0 or len(normalized) == 0:
-        return keep
+    edge_connections = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    keep_mask = np.ones((len(edge_connections),), dtype=bool)
+    
+    num_vertices = int(np.max(edge_connections)) + 1 if edge_connections.size else 0
+    if num_vertices <= 0:
+        return keep_mask
 
-    rows = normalized[:, 0].astype(np.int32, copy=False)
-    cols = normalized[:, 1].astype(np.int32, copy=False)
-    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
-    edge_lookup_table = sparse.csr_matrix(
-        (edge_ids, (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=np.int32,
+    # 2. Build Adjacency Structures
+    # Use Sparse matrices for efficient degree lookup and edge mapping
+    rows, cols = edge_connections[:, 0], edge_connections[:, 1]
+    edge_indices = np.arange(1, len(edge_connections) + 1, dtype=np.int32)
+    
+    # Map (u, v) -> edge_id (1-based for sparse matrix representation)
+    edge_map = sparse.csr_matrix(
+        (edge_indices, (rows, cols)), 
+        shape=(num_vertices, num_vertices), 
+        dtype=np.int32
     )
-    adjacency_matrix = sparse.csr_matrix(
-        (np.ones((len(normalized),), dtype=bool), (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=bool,
+    
+    # Calculate degree per vertex (sum of in-degree and out-degree)
+    binary_adjacency = sparse.csr_matrix(
+        (np.ones(len(edge_connections), dtype=bool), (rows, cols)),
+        shape=(num_vertices, num_vertices),
+        dtype=bool
     )
-    vertex_degrees = (
-        np.asarray(adjacency_matrix.sum(axis=0)).ravel()
-        + np.asarray(adjacency_matrix.sum(axis=1)).ravel()
-    )
-    vertex_excess_degrees = vertex_degrees - int(max_edges_per_vertex)
-    vertices_of_excess_degree = np.flatnonzero(vertex_excess_degrees > 0)
-    if vertices_of_excess_degree.size == 0:
-        return keep
+    degrees = np.asarray(binary_adjacency.sum(axis=0)).ravel() + \
+              np.asarray(binary_adjacency.sum(axis=1)).ravel()
 
-    edges_to_remove: list[int] = []
-    for vertex_index in vertices_of_excess_degree.tolist():
-        incoming_vertices = edge_lookup_table[:, vertex_index].nonzero()[0].astype(np.int32)
-        outgoing_vertices = edge_lookup_table[vertex_index, :].nonzero()[1].astype(np.int32)
-        edges_at_vertex = np.concatenate(
-            (
-                edge_lookup_table[incoming_vertices, vertex_index].toarray().ravel(),
-                edge_lookup_table[vertex_index, outgoing_vertices].toarray().ravel(),
-            )
-        )
-        if edges_at_vertex.size == 0:
+    # 3. Identify & Prune Over-connected Vertices
+    excess_vertices = np.flatnonzero(degrees > int(max_degree))
+    if excess_vertices.size == 0:
+        return keep_mask
+
+    pruned_edge_ids: list[int] = []
+    for v_idx in excess_vertices.tolist():
+        # Collect all edges touching this vertex
+        incident_edges = _get_incident_edge_ids(v_idx, edge_map)
+        if incident_edges.size == 0:
             continue
-        edges_at_vertex_descending = np.sort(edges_at_vertex)[::-1]
-        excess_degree = int(vertex_excess_degrees[vertex_index])
-        edges_to_remove.extend(edges_at_vertex_descending[:excess_degree].astype(int).tolist())
+            
+        # Sort by quality (MATLAB logic: higher ID = later generated/worse metric)
+        # and discard the surplus from the worst end.
+        worst_first = np.sort(incident_edges)[::-1]
+        surplus_count = int(degrees[v_idx] - max_degree)
+        pruned_edge_ids.extend(worst_first[:surplus_count].astype(int).tolist())
 
-    if edges_to_remove:
-        keep[np.asarray(edges_to_remove, dtype=np.int32) - 1] = False
-    return keep
+    # 4. Finalize Mask
+    if pruned_edge_ids:
+        # Convert 1-based edge IDs back to 0-based mask indices
+        keep_mask[np.asarray(pruned_edge_ids, dtype=np.int32) - 1] = False
+        
+    return keep_mask
 
-
-def clean_edges_orphans_python(
+def prune_orphan_edges(
     traces: list[np.ndarray],
-    image_shape: tuple[int, int, int],
+    volume_shape: tuple[int, int, int],
     vertex_positions: np.ndarray,
 ) -> np.ndarray:
-    """Remove edges whose endpoints do not touch a vertex or any interior edge voxel."""
+    """
+    Removes floating edges that do not connect to a vertex or valid neighbor.
+    
+    This filter prevents disconnected 'hairs' or noise traces from entering 
+    the final network.
+    """
     if not traces:
         return np.zeros((0,), dtype=bool)
 
-    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
-        np.int32,
-        copy=False,
-    )
-    vertex_coords[:, 0] = np.clip(vertex_coords[:, 0], 0, image_shape[0] - 1)
-    vertex_coords[:, 1] = np.clip(vertex_coords[:, 1], 0, image_shape[1] - 1)
-    vertex_coords[:, 2] = np.clip(vertex_coords[:, 2], 0, image_shape[2] - 1)
-    vertex_locations = {
-        int(y + x * image_shape[0] + z * image_shape[0] * image_shape[1])
-        for y, x, z in vertex_coords.tolist()
-    }
+    # 1. Map Vertices to Linear Index Space
+    vertex_locations = _get_linear_voxel_set(vertex_positions, volume_shape)
+    
+    # 2. Map Edges to Linear Index Space
+    edge_voxels = [
+        _get_linear_trace_voxels(trace, volume_shape) for trace in traces
+    ]
 
-    edge_locations_by_original_index: list[np.ndarray] = []
-    for trace in traces:
-        coords = _clip_trace_indices(np.asarray(trace, dtype=np.float32), image_shape)
-        edge_locations_by_original_index.append(
-            np.asarray(
-                coords[:, 0]
-                + coords[:, 1] * image_shape[0]
-                + coords[:, 2] * image_shape[0] * image_shape[1],
-                dtype=np.int64,
-            )
-        )
-
-    keep: np.ndarray = np.ones((len(edge_locations_by_original_index),), dtype=bool)
-    original_edge_indices = list(range(len(edge_locations_by_original_index)))
-    active_edge_locations = list(edge_locations_by_original_index)
-    searching_for_orphans = True
-    while searching_for_orphans:
-        number_of_edges = len(active_edge_locations)
-        if number_of_edges == 0:
+    keep_mask = np.ones((len(edge_voxels),), dtype=bool)
+    original_indices = list(range(len(edge_voxels)))
+    active_pool = list(edge_voxels)
+    
+    # 3. Recursive Pruning
+    # Removing one orphan may create a new orphan; loop until convergence.
+    while True:
+        if not active_pool:
+            break
+            
+        orphans = _find_orphan_indices(active_pool, vertex_locations)
+        if not orphans:
             break
 
-        edge_index_lut = [
-            np.full(edge_locations.shape, edge_index + 1, dtype=np.int32)
-            for edge_index, edge_locations in enumerate(active_edge_locations)
-        ]
-        interior_edge_locations = (
-            np.concatenate(
-                [
-                    edge_locations[1:-1]
-                    for edge_locations in active_edge_locations
-                    if edge_locations.size > 2
-                ],
-                axis=0,
-            )
-            if any(edge_locations.size > 2 for edge_locations in active_edge_locations)
-            else np.zeros((0,), dtype=np.int64)
-        )
-        exterior_edge_locations = np.concatenate(
-            [edge_locations[[0, -1]] for edge_locations in active_edge_locations],
-            axis=0,
-        )
-        exterior_edge_location_index2edge_index = np.concatenate(
-            [edge_indices[[0, -1]] for edge_indices in edge_index_lut],
-            axis=0,
-        )
-        union_locations = np.union1d(
-            interior_edge_locations, np.fromiter(vertex_locations, dtype=np.int64)
-        )
-        unique_exterior_locations, unique_exterior_indices = np.unique(
-            exterior_edge_locations,
-            return_index=True,
-        )
-        orphan_value_mask = ~np.isin(unique_exterior_locations, union_locations)
-        orphan_terminal_indices = unique_exterior_indices[orphan_value_mask]
-        edge_indices_to_remove = np.unique(
-            exterior_edge_location_index2edge_index[orphan_terminal_indices]
-        ).astype(np.int32, copy=False)
+        # Remove found orphans from the active pool and the global keep mask
+        for pool_idx in sorted(orphans, reverse=True):
+            keep_mask[original_indices[pool_idx]] = False
+            del original_indices[pool_idx]
+            del active_pool[pool_idx]
+            
+    return keep_mask
 
-        if edge_indices_to_remove.size == 0:
-            searching_for_orphans = False
-            continue
-
-        for current_edge_index in sorted(edge_indices_to_remove.tolist(), reverse=True):
-            keep[original_edge_indices[current_edge_index - 1]] = False
-            del original_edge_indices[current_edge_index - 1]
-            del active_edge_locations[current_edge_index - 1]
-    return keep
-
-
-def clean_edges_cycles_python(connections: np.ndarray) -> np.ndarray:
-    """Mirror MATLAB's cycle cleanup by removing the worst edge per cycle component."""
+def break_graph_cycles(connections: np.ndarray) -> np.ndarray:
+    """
+    Breaks cyclic loops by greedily removing the worst-ranked edge in each component.
+    
+    Biologically, small cycles are often artifacts of the discovery logic rather 
+    than real vascular topology.
+    """
     if connections.size == 0:
         return np.zeros((0,), dtype=bool)
 
-    normalized = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    keep: np.ndarray = np.ones((len(normalized),), dtype=bool)
-    n_vertices = int(np.max(normalized)) + 1
-    if n_vertices <= 0:
-        return keep
+    # 1. Build Interaction Graph
+    edges = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
+    keep_mask = np.ones((len(edges),), dtype=bool)
+    
+    num_vertices = int(np.max(edges)) + 1
+    rows, cols = edges[:, 0], edges[:, 1]
+    edge_ids = np.arange(1, len(edges) + 1, dtype=np.int32)
 
-    rows = normalized[:, 0].astype(np.int32, copy=False)
-    cols = normalized[:, 1].astype(np.int32, copy=False)
-    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
+    # Undirected adjacency for cycle detection
+    edge_lookup = sparse.csr_matrix((edge_ids, (rows, cols)), shape=(num_vertices, num_vertices))
+    adj = sparse.csr_matrix((np.ones(len(edges), dtype=bool), (rows, cols)), shape=(num_vertices, num_vertices))
+    undirected_adj = adj.maximum(adj.transpose()).astype(bool)
 
-    edge_lookup = sparse.csr_matrix(
-        (edge_ids, (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=np.int32,
-    )
-    adjacency = sparse.csr_matrix(
-        (np.ones((len(normalized),), dtype=bool), (rows, cols)),
-        shape=(n_vertices, n_vertices),
-        dtype=bool,
-    )
-    adjacency = adjacency.maximum(adjacency.transpose()).astype(bool)
+    # Only process vertices that have more than one connection (potential for cycles)
+    active_nodes = np.flatnonzero(np.asarray(undirected_adj.sum(axis=0)).ravel() > 1)
+    if active_nodes.size == 0:
+        return keep_mask
 
-    active_vertices = np.flatnonzero(np.asarray(adjacency.sum(axis=0)).ravel() > 1)
-    if active_vertices.size == 0:
-        return keep
+    # Sub-graph of candidates
+    sub_adj = undirected_adj[active_nodes][:, active_nodes].tocsr()
+    sub_lookup = edge_lookup[active_nodes][:, active_nodes].tocsr()
 
-    adjacency = adjacency[active_vertices][:, active_vertices].tocsr()
-    edge_lookup = edge_lookup[active_vertices][:, active_vertices].tocsr()
-
-    removed_edge_ids: list[int] = []
-    while adjacency.shape[0] > 0:
-        two_step = (adjacency @ adjacency).astype(bool)
-        cycle_adjacency = two_step.multiply(adjacency).astype(bool)
-        if cycle_adjacency.nnz == 0:
+    # 2. Greedily Break Cycles
+    removed_ids: list[int] = []
+    while sub_adj.shape[0] > 0:
+        # Detect triangles and larger loops using sparse matrix multiplication
+        cycle_candidates = (sub_adj @ sub_adj).astype(bool).multiply(sub_adj).astype(bool)
+        if cycle_candidates.nnz == 0:
             break
 
-        n_components, labels = connected_components(
-            cycle_adjacency,
-            directed=False,
-            connection="weak",
-            return_labels=True,
-        )
-        components = [
-            np.flatnonzero(labels == component_index)
-            for component_index in range(n_components)
-            if np.count_nonzero(labels == component_index) > 1
-        ]
+        # Find connected components within the cycle sub-graph
+        n_comp, labels = connected_components(cycle_candidates, directed=False)
+        components = [np.flatnonzero(labels == i) for i in range(n_comp) if np.count_nonzero(labels == i) > 1]
+        
         if not components:
             break
 
-        vertex_pairs_to_remove: list[tuple[int, int]] = []
-        cycle_vertex_mask = np.zeros((adjacency.shape[0],), dtype=bool)
+        dirty_nodes = np.zeros(sub_adj.shape[0], dtype=bool)
+        edges_to_kill: list[tuple[int, int]] = []
 
-        for component_vertices in components:
-            component_lookup = edge_lookup[component_vertices][:, component_vertices].tocoo()
-            if component_lookup.nnz == 0:
+        for comp_nodes in components:
+            comp_edges = sub_lookup[comp_nodes][:, comp_nodes].tocoo()
+            if comp_edges.nnz == 0:
                 continue
 
-            worst_edge_id = int(np.max(component_lookup.data))
-            removed_edge_ids.append(worst_edge_id)
-            first_match = int(np.flatnonzero(component_lookup.data == worst_edge_id)[0])
-            row = int(component_vertices[component_lookup.row[first_match]])
-            col = int(component_vertices[component_lookup.col[first_match]])
-            vertex_pairs_to_remove.append((row, col))
-            cycle_vertex_mask[component_vertices] = True
+            # Identify the worst edge in this specific cycle component
+            worst_id = int(np.max(comp_edges.data))
+            removed_ids.append(worst_id)
+            
+            # Map back to local subgraph coordinates to update the matrix
+            match_idx = int(np.flatnonzero(comp_edges.data == worst_id)[0])
+            u_local, v_local = comp_nodes[comp_edges.row[match_idx]], comp_nodes[comp_edges.col[match_idx]]
+            edges_to_kill.append((u_local, v_local))
+            dirty_nodes[comp_nodes] = True
 
-        if not vertex_pairs_to_remove:
-            break
+        # Update subgraph state
+        sub_adj = sub_adj.tolil()
+        sub_lookup = sub_lookup.tolil()
+        for u, v in edges_to_kill:
+            sub_adj[u, v] = sub_adj[v, u] = False
+            sub_lookup[u, v] = sub_lookup[v, u] = 0
+            
+        sub_adj = sub_adj.tocsr()[dirty_nodes][:, dirty_nodes]
+        sub_lookup = sub_lookup.tocsr()[dirty_nodes][:, dirty_nodes]
 
-        adjacency = adjacency.tolil(copy=True)
-        edge_lookup = edge_lookup.tolil(copy=True)
-        for row, col in vertex_pairs_to_remove:
-            adjacency[row, col] = False
-            adjacency[col, row] = False
-            edge_lookup[row, col] = 0
-            edge_lookup[col, row] = 0
-        adjacency = adjacency.tocsr()
-        edge_lookup = edge_lookup.tocsr()
+    if removed_ids:
+        keep_mask[np.asarray(sorted(set(removed_ids))) - 1] = False
+        
+    return keep_mask
 
-        adjacency = adjacency[cycle_vertex_mask][:, cycle_vertex_mask].tocsr()
-        edge_lookup = edge_lookup[cycle_vertex_mask][:, cycle_vertex_mask].tocsr()
+# --- INTERNAL HELPERS ---
 
-    if removed_edge_ids:
-        keep[np.asarray(sorted(set(removed_edge_ids)), dtype=np.int32) - 1] = False
-    return keep
+def _get_incident_edge_ids(v_idx: int, edge_map: sparse.csr_matrix) -> np.ndarray:
+    """Retrieves all edge IDs (in/out) connected to a specific vertex."""
+    incoming = edge_map[:, v_idx].nonzero()[0]
+    outgoing = edge_map[v_idx, :].nonzero()[1]
+    
+    return np.concatenate([
+        edge_map[incoming, v_idx].toarray().ravel(),
+        edge_map[v_idx, outgoing].toarray().ravel()
+    ])
 
+def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) -> set[int]:
+    """Converts (N, 3) coordinates to a set of 1D linear voxel indices."""
+    coords = np.rint(positions).astype(np.int32)
+    coords[:, 0] = np.clip(coords[:, 0], 0, shape[0] - 1)
+    coords[:, 1] = np.clip(coords[:, 1], 0, shape[1] - 1)
+    coords[:, 2] = np.clip(coords[:, 2], 0, shape[2] - 1)
+    
+    return {int(y + x * shape[0] + z * shape[0] * shape[1]) for y, x, z in coords.tolist()}
+
+def _get_linear_trace_voxels(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
+    """Maps a trace path to linear voxel indices."""
+    c = _clip_trace_indices(np.asarray(trace, dtype=np.float32), shape)
+    return np.asarray(c[:, 0] + c[:, 1] * shape[0] + c[:, 2] * shape[0] * shape[1], dtype=np.int64)
+
+def _find_orphan_indices(active_edge_voxels: list[np.ndarray], vertex_voxels: set[int]) -> list[int]:
+    """Identifies edges whose endpoints are not anchored to any vertex or existing interior edge."""
+    # Build reference of all 'grounded' voxels (vertices + interior segments of current edges)
+    grounded_voxels = np.fromiter(vertex_voxels, dtype=np.int64)
+    interior_voxels = np.concatenate([e[1:-1] for e in active_edge_voxels if e.size > 2], axis=0) \
+                      if any(e.size > 2 for e in active_edge_voxels) else np.zeros(0, dtype=np.int64)
+    
+    anchor_set = np.union1d(grounded_voxels, interior_voxels)
+    
+    orphan_edges: list[int] = []
+    for i, voxels in enumerate(active_edge_voxels):
+        endpoints = voxels[[0, -1]]
+        # If neither end of the edge touches an anchor, it's an orphan
+        if not np.any(np.isin(endpoints, anchor_set)):
+            orphan_edges.append(i)
+            
+    return orphan_edges
+
+
+# --- LEGACY PROXIES ---
+clean_edges_vertex_degree_excess_python = remove_excess_vertex_degrees
+clean_edges_orphans_python = prune_orphan_edges
+clean_edges_cycles_python = break_graph_cycles
 
 __all__ = [
-    "clean_edges_cycles_python",
-    "clean_edges_orphans_python",
-    "clean_edges_vertex_degree_excess_python",
+    "break_graph_cycles",
+    "prune_orphan_edges",
+    "remove_excess_vertex_degrees",
 ]

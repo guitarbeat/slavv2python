@@ -942,6 +942,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                 selected_index=strel_idx,
                 microns_per_voxel=microns_per_voxel,
             )
+            adjusted[~np.isfinite(adjusted)] = np.inf
 
         if not is_current_location_clear:
             available_locations.pop()
