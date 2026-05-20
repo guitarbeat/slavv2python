@@ -4,7 +4,7 @@ from .curation.automated import AutomaticCurator
 from .curation.machine_learning import MLCurator, DrewsCurator
 from .metrics.topology import calculate_network_statistics, calculate_surface_area, calculate_vessel_volume
 from .math import calculate_path_length
-from .registration import evaluate_registration
+from .registration import evaluate_registration, register_vector_sets
 from .cropping import crop_edges, crop_vertices, crop_vertices_by_mask
 from .trace_ops import get_edge_metric, get_edges_for_vertex
 
@@ -23,6 +23,7 @@ __all__ = [
     "calculate_vessel_volume",
     "calculate_path_length",
     "evaluate_registration",
+    "register_vector_sets",
     "crop_edges",
     "crop_vertices",
     "crop_vertices_by_mask",
