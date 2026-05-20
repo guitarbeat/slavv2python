@@ -161,6 +161,21 @@ def dicom_to_tiff(
     if output_path is not None:
         outp = Path(output_path)
         outp.parent.mkdir(parents=True, exist_ok=True)
-        tifffile.imwrite(str(outp), volume)
+        save_tiff_volume(outp, volume)
         return outp
     return volume
+
+
+def save_tiff_volume(file: Union[str, Path], volume: np.ndarray) -> None:
+    """Save a 3D volume to a TIFF file.
+
+    Parameters
+    ----------
+    file:
+        Destination path.
+    volume:
+        3D NumPy array to save.
+    """
+    import tifffile
+
+    tifffile.imwrite(str(file), volume)

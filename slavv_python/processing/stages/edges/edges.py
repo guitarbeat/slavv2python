@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
 from slavv_python.processing.stages.edges import extraction_standard as _standard
 from slavv_python.processing.stages.edges import extraction_watershed as _watershed
 from slavv_python.processing.stages.edges import units as _units
+from slavv_python.processing.stages.edges.audit import (
+    _build_edge_candidate_audit,
+    _normalize_candidate_origin_counts,
+)
 from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.processing.stages.edges.candidate_generation import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,
 )
+from slavv_python.processing.stages.edges.candidate_manifest import _append_candidate_unit
+from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
 from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
 from slavv_python.processing.stages.edges.payloads import _empty_edge_diagnostics, _empty_edges_result
 from slavv_python.processing.stages.edges.resumable import (
@@ -93,10 +100,10 @@ def extract_edges_resumable(
             stage_controller,
             atomic_joblib_dump=atomic_joblib_dump,
             empty_edges_result=_empty_edges_result,
-            build_edge_candidate_audit=None,
-            build_frontier_candidate_lifecycle=None,
+            build_edge_candidate_audit=_build_edge_candidate_audit,
+            build_frontier_candidate_lifecycle=_build_frontier_candidate_lifecycle,
             finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
-            normalize_candidate_origin_counts=None,
+            normalize_candidate_origin_counts=_normalize_candidate_origin_counts,
             generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
             generate_edge_candidates=_generate_edge_candidates,
             choose_edges_for_workflow=choose_edges_for_workflow,
@@ -104,7 +111,7 @@ def extract_edges_resumable(
             finalize_edges_matlab_style=finalize_edges_matlab_style,
             paint_vertex_center_image=paint_vertex_center_image,
             paint_vertex_image=paint_vertex_image,
-            use_matlab_frontier_tracer=lambda *args: True,
+            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
         ),
     )
 
@@ -126,7 +133,7 @@ def extract_edges_watershed_resumable(
             params,
             stage_controller=stage_controller,
             atomic_joblib_dump=atomic_joblib_dump,
-            append_candidate_unit=None,
+            append_candidate_unit=_append_candidate_unit,
             empty_edge_diagnostics=_empty_edge_diagnostics,
         ),
     )

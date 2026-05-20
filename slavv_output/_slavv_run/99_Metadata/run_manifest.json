@@ -1,5 +1,5 @@
 {
-  "current_stage": "edges",
+  "current_stage": "network",
   "dataset_hash": "3e5c369342cea853c33db0a9441cc9edc1e6b6c3793f5d512eb25715a73bef74",
   "kind": "slavv_run",
   "manifest_version": 1,
@@ -19,39 +19,39 @@
   },
   "python_commit": null,
   "retention": "disposable",
-  "run_id": "ea563a25e539",
+  "run_id": "bc888eb4558c",
   "run_root": "slavv_output\\_slavv_run",
   "stage_metrics": {
     "edges": {
-      "completed_at": null,
-      "elapsed_seconds": 3.0521154403686523,
-      "peak_memory_bytes": 192188416,
-      "status": "running"
+      "completed_at": "2026-05-20T23:48:05Z",
+      "elapsed_seconds": 18.4299213886261,
+      "peak_memory_bytes": 180523008,
+      "status": "completed"
     },
     "energy": {
-      "completed_at": "2026-05-20T23:41:22Z",
-      "elapsed_seconds": 45.25774264335632,
-      "peak_memory_bytes": 179736576,
+      "completed_at": "2026-05-20T23:47:45Z",
+      "elapsed_seconds": 8.66006588935852,
+      "peak_memory_bytes": 179511296,
       "status": "completed"
     },
     "network": {
-      "completed_at": null,
-      "elapsed_seconds": 0.0,
-      "peak_memory_bytes": 0,
-      "status": "pending"
+      "completed_at": "2026-05-20T23:48:05Z",
+      "elapsed_seconds": 0.6998746395111084,
+      "peak_memory_bytes": 180670464,
+      "status": "completed"
     },
     "vertices": {
-      "completed_at": "2026-05-20T23:41:24Z",
-      "elapsed_seconds": 2.714811086654663,
-      "peak_memory_bytes": 179736576,
+      "completed_at": "2026-05-20T23:47:47Z",
+      "elapsed_seconds": 2.1544077396392822,
+      "peak_memory_bytes": 179511296,
       "status": "completed"
     }
   },
-  "status": "running",
+  "status": "completed",
   "target_stage": "network",
   "timestamps": {
-    "completed_at": "2026-05-20T23:41:24Z",
-    "created_at": "2026-05-20T23:40:36Z",
-    "updated_at": "2026-05-20T23:41:27Z"
+    "completed_at": "2026-05-20T23:48:05Z",
+    "created_at": "2026-05-20T23:47:37Z",
+    "updated_at": "2026-05-20T23:48:05Z"
   }
 }

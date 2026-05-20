@@ -23,6 +23,7 @@ from .tracker import (
 )
 from .models import ProgressEvent, RunSnapshot, StageSnapshot, TaskSnapshot
 from .snapshots import emit_progress_event, load_or_create_snapshot, persist_snapshot
+from ..context import RunContext, StageController
 
 __all__ = [
     "PIPELINE_STAGES",
@@ -38,6 +39,8 @@ __all__ = [
     "RunSnapshot",
     "StageSnapshot",
     "TaskSnapshot",
+    "RunContext",
+    "StageController",
     "atomic_joblib_dump",
     "atomic_write_json",
     "build_status_lines",

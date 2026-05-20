@@ -77,14 +77,14 @@ def _restore_to_physical_grid(traces: list[np.ndarray]) -> None:
 # --- CORE GENERATION STRATEGIES ---
 
 def generate_watershed_candidates(
-    energy_field: Float32Array,
-    scale_field: Int16Array | None,
+    energy: Float32Array,
+    scale_indices: Int16Array | None,
     vertex_positions: Float32Array,
     vertex_scales: Int32Array,
-    radii_microns: Float32Array,
+    lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
-    vertex_mask: Float32Array,
-    parameters: dict[str, Any],
+    vertex_center_image: Float32Array,
+    params: dict[str, Any],
     **kwargs: Any
 ) -> dict[str, Any]:
     """
@@ -95,13 +95,13 @@ def generate_watershed_candidates(
     """
     # 1. Align universe to internal engine grid
     # These create fresh copies or new views; they do NOT mutate the inputs.
-    energy_zxy, pos_zxy = _align_to_internal_grid(energy_field, vertex_positions)
-    mask_zxy, _ = _align_to_internal_grid(vertex_mask)
+    energy_zxy, pos_zxy = _align_to_internal_grid(energy, vertex_positions)
+    mask_zxy, _ = _align_to_internal_grid(vertex_center_image)
     
     # Scale field needs the same transposition if it exists
     scales_zxy = None
-    if scale_field is not None:
-        scales_zxy = np.transpose(scale_field, (2, 1, 0)).copy(order="F")
+    if scale_indices is not None:
+        scales_zxy = np.transpose(scale_indices, (2, 1, 0)).copy(order="F")
     
     # Explicit copy for mpv and swap Y/Z
     mpv_zxy = microns_per_voxel.copy().astype(np.float64)
@@ -116,10 +116,10 @@ def generate_watershed_candidates(
         cast("Int16Array", scales_zxy),
         cast("Float32Array", pos_zxy),
         vertex_scales,
-        radii_microns,
+        lumen_radius_microns,
         mpv_zxy,
         cast("np.ndarray", mask_zxy),
-        parameters,
+        params,
         **kwargs
     )
 
@@ -130,15 +130,15 @@ def generate_watershed_candidates(
     return cast("dict[str, Any]", candidates)
 
 def generate_directional_candidates(
-    energy_field: Float32Array,
+    energy: Float32Array,
     scale_indices: Int16Array | None,
     vertex_positions: Float32Array,
     vertex_scales: Int32Array,
-    radii_pixels: Float32Array,
-    radii_microns: Float32Array,
+    lumen_radius_pixels: Float32Array,
+    lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
-    spatial_tree: cKDTree,
-    parameters: dict[str, Any],
+    tree: cKDTree,
+    params: dict[str, Any],
     energy_sign: float = -1.0,
     **kwargs: Any
 ) -> dict[str, Any]:
@@ -147,10 +147,10 @@ def generate_directional_candidates(
     
     This is the standard performance-oriented route for public workflows.
     """
-    n_jobs = int(parameters.get("n_jobs", 1))
+    n_jobs = int(params.get("n_jobs", 1))
     
     # Energy prepared once for shared memory
-    energy_prepared = np.ascontiguousarray(energy_field, dtype=np.float64)
+    energy_prepared = np.ascontiguousarray(energy, dtype=np.float64)
     mpv_prepared = np.asarray(microns_per_voxel, dtype=np.float64)
     
     from slavv_python.processing.stages.edges import candidates as tracing_facade
@@ -160,15 +160,15 @@ def generate_directional_candidates(
             vertex_idx=v_idx,
             start_pos=pos,
             start_scale=int(scale),
-            energy=energy_field,
+            energy=energy,
             scale_indices=scale_indices,
             vertex_positions=vertex_positions,
             vertex_scales=vertex_scales,
-            radii_pixels=radii_pixels,
-            radii_microns=radii_microns,
+            radii_pixels=lumen_radius_pixels,
+            radii_microns=lumen_radius_microns,
             mpv=microns_per_voxel,
-            tree=spatial_tree,
-            params=parameters,
+            tree=tree,
+            params=params,
             sign=energy_sign,
             facade=tracing_facade,
             energy_prepared=energy_prepared,
@@ -209,7 +209,12 @@ def _trace_vertex_unit(
     max_length_ratio = params.get("max_edge_length_per_origin_radius", 60.0)
     max_edge_energy = params.get("max_edge_energy", 0.0)
     discrete_tracing = params.get("discrete_tracing", False)
-    max_search_radius = kwargs.get("max_search_radius", 5.0)
+    
+    # Extract max_search_radius from kwargs if present, otherwise default to 5.0
+    # We remove it from kwargs to avoid "multiple values for keyword argument" error
+    # when calling facade.trace_edge below.
+    local_kwargs = dict(kwargs)
+    max_search_radius = local_kwargs.pop("max_search_radius", 5.0)
     
     step_size = start_radius * step_size_ratio
     max_length = start_radius * max_length_ratio
@@ -247,7 +252,7 @@ def _trace_vertex_unit(
             max_search_radius=max_search_radius,
             origin_vertex_idx=vertex_idx,
             return_metadata=True,
-            **kwargs
+            **local_kwargs
         )
         edge_trace, trace_metadata = cast("tuple[list[np.ndarray], TraceMetadata]", trace_result)
         

@@ -7,6 +7,7 @@ from .lifecycle import (
     _normalize_manifest_candidate_index,
     _update_origin_lifecycle_summary,
 )
+from ..processing.stages import energy
 
 __all__ = [
     "SlavvPipeline",
@@ -14,4 +15,5 @@ __all__ = [
     "StageController",
     "find_repo_root",
     "find_experiment_root",
+    "energy",
 ]

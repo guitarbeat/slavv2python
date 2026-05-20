@@ -32,7 +32,7 @@ def filter_export_formats(requested_formats: list[str]) -> list[str]:
 
 def update_run_export_task(run_dir: str, artifact_paths: dict[str, str]) -> None:
     """Record export status in the structured run metadata."""
-    from slavv_python.engine.state import RunContext
+    from slavv_python.engine.context import RunContext
 
     run_context = RunContext(run_dir=run_dir, target_stage="network")
     run_context.update_optional_task(

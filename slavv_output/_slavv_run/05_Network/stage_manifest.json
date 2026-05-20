@@ -1,0 +1,9 @@
+{
+  "artifacts": {
+    "adjacency.pkl": "slavv_output\\_slavv_run\\05_Network\\adjacency.pkl",
+    "strands.pkl": "slavv_output\\_slavv_run\\05_Network\\strands.pkl"
+  },
+  "checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_network.pkl",
+  "completed_at": "2026-05-20T23:48:05Z",
+  "stage": "network"
+}

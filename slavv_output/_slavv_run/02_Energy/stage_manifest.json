@@ -5,6 +5,6 @@
     "energy_4d.zarr": "slavv_output\\_slavv_run\\02_Energy\\energy_4d.zarr"
   },
   "checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
-  "completed_at": "2026-05-20T23:41:22Z",
+  "completed_at": "2026-05-20T23:47:45Z",
   "stage": "energy"
 }
