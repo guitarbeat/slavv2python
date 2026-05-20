@@ -1,0 +1,141 @@
+{
+  "artifacts": {
+    "energy.best_energy.zarr": "slavv_output\\_slavv_run\\02_Energy\\best_energy.zarr",
+    "energy.best_scale.zarr": "slavv_output\\_slavv_run\\02_Energy\\best_scale.zarr",
+    "energy.checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+    "energy.energy_4d.zarr": "slavv_output\\_slavv_run\\02_Energy\\energy_4d.zarr",
+    "preprocess_done": "true",
+    "vertices.candidates.pkl": "slavv_output\\_slavv_run\\03_Vertices\\candidates.pkl",
+    "vertices.checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+    "vertices.chosen_mask.pkl": "slavv_output\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+    "vertices.cropped_candidates.pkl": "slavv_output\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+  },
+  "created_at": "2026-05-20T23:40:36Z",
+  "current_detail": "Generating edge candidates through MATLAB-style frontier workflow (iterations=4096, candidates=1236)",
+  "current_stage": "edges",
+  "elapsed_seconds": 51.05211544036865,
+  "errors": [
+    {
+      "at": "2026-05-20T23:40:37Z",
+      "message": "Zarr is required for energy_storage_format='zarr'. Install it with `pip install -e \".[zarr]\"`, `pip install slavv[zarr]`, or `pip install zarr>=2.12.0`.",
+      "stage": "energy"
+    }
+  ],
+  "eta_seconds": 41.76991263302891,
+  "input_fingerprint": "3e5c369342cea853c33db0a9441cc9edc1e6b6c3793f5d512eb25715a73bef74",
+  "last_event": "Generating edge candidates through MATLAB-style frontier workflow (iterations=4096, candidates=1236)",
+  "optional_tasks": {},
+  "overall_progress": 0.5499999999999999,
+  "params_fingerprint": "4bd5f8f05ef8deca008ded0217a9c1dde5f01da4337de4c17292bd19ffe0edb1",
+  "provenance": {
+    "image_shape": [
+      64,
+      64,
+      64
+    ],
+    "layout": "structured",
+    "slavv_python": "pipeline",
+    "stop_after": "network"
+  },
+  "run_id": "ea563a25e539",
+  "stages": {
+    "edges": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "Generating edge candidates through MATLAB-style frontier workflow (iterations=4096, candidates=1236)",
+      "elapsed_seconds": 3.0521154403686523,
+      "eta_seconds": null,
+      "name": "edges",
+      "peak_memory_bytes": 192188416,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": "2026-05-20T23:41:24Z",
+      "status": "running",
+      "substage": "generate_candidates",
+      "units_completed": 0,
+      "units_total": 3,
+      "updated_at": "2026-05-20T23:41:27Z"
+    },
+    "energy": {
+      "artifacts": {
+        "best_energy.zarr": "slavv_output\\_slavv_run\\02_Energy\\best_energy.zarr",
+        "best_scale.zarr": "slavv_output\\_slavv_run\\02_Energy\\best_scale.zarr",
+        "checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_energy.pkl",
+        "energy_4d.zarr": "slavv_output\\_slavv_run\\02_Energy\\energy_4d.zarr"
+      },
+      "completed_at": "2026-05-20T23:41:22Z",
+      "detail": "Energy field ready",
+      "elapsed_seconds": 45.25774264335632,
+      "eta_seconds": 0.0,
+      "name": "energy",
+      "peak_memory_bytes": 179736576,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-20T23:40:37Z",
+      "status": "completed",
+      "substage": "scale_chunks",
+      "units_completed": 26,
+      "units_total": 26,
+      "updated_at": "2026-05-20T23:41:22Z"
+    },
+    "network": {
+      "artifacts": {},
+      "completed_at": null,
+      "detail": "",
+      "elapsed_seconds": 0.0,
+      "eta_seconds": null,
+      "name": "network",
+      "peak_memory_bytes": 0,
+      "progress": 0.0,
+      "resumed": false,
+      "started_at": null,
+      "status": "pending",
+      "substage": "",
+      "units_completed": 0,
+      "units_total": 0,
+      "updated_at": null
+    },
+    "preprocess": {
+      "artifacts": {},
+      "completed_at": "2026-05-20T23:41:10Z",
+      "detail": "Preprocessing complete",
+      "elapsed_seconds": 33.0,
+      "eta_seconds": null,
+      "name": "preprocess",
+      "peak_memory_bytes": 173252608,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-20T23:40:37Z",
+      "status": "completed",
+      "substage": "",
+      "units_completed": 1,
+      "units_total": 1,
+      "updated_at": "2026-05-20T23:41:10Z"
+    },
+    "vertices": {
+      "artifacts": {
+        "candidates.pkl": "slavv_output\\_slavv_run\\03_Vertices\\candidates.pkl",
+        "checkpoint": "slavv_output\\_slavv_run\\02_Output\\python_results\\checkpoints\\checkpoint_vertices.pkl",
+        "chosen_mask.pkl": "slavv_output\\_slavv_run\\03_Vertices\\chosen_mask.pkl",
+        "cropped_candidates.pkl": "slavv_output\\_slavv_run\\03_Vertices\\cropped_candidates.pkl"
+      },
+      "completed_at": "2026-05-20T23:41:24Z",
+      "detail": "Vertices extracted",
+      "elapsed_seconds": 2.714811086654663,
+      "eta_seconds": 0.0,
+      "name": "vertices",
+      "peak_memory_bytes": 179736576,
+      "progress": 1.0,
+      "resumed": false,
+      "started_at": "2026-05-20T23:41:22Z",
+      "status": "completed",
+      "substage": "finalize",
+      "units_completed": 17,
+      "units_total": 17,
+      "updated_at": "2026-05-20T23:41:24Z"
+    }
+  },
+  "status": "running",
+  "target_stage": "network",
+  "updated_at": "2026-05-20T23:41:27Z"
+}
