@@ -14,7 +14,7 @@ Module names should indicate:
 
 Use these names in maintained docs, examples, and new first-party code:
 
-- preferred pipeline class: `slavv_python.core.SlavvPipeline`
+- preferred pipeline class: `slavv_python.engine.SlavvPipeline` (also re-exported as `slavv_python.SlavvPipeline`)
 - preferred full-run method: `run()`
 - preferred energy method: `compute_energy()`
 - preferred network builder method: `build_network()`
@@ -23,7 +23,7 @@ Use these names in maintained docs, examples, and new first-party code:
 Example:
 
 ```python
-from slavv_python.core import SlavvPipeline
+from slavv_python import SlavvPipeline
 
 pipeline = SlavvPipeline()
 results = pipeline.run(image, parameters)
@@ -33,17 +33,17 @@ results = pipeline.run(image, parameters)
 
 Use domain-first package names for maintained internal surfaces:
 
-- `slavv_python.core.network`
-- `slavv_python.core.energy`
-- `slavv_python.core.vertices`
-- `slavv_python.core.edges`
-- `slavv_python.runtime.run_tracking`
-- `slavv_python.workflows.pipeline_session`
-- `slavv_python.workflows.pipeline_execution`
-- `slavv_python.workflows.stage_resolution`
-- `slavv_python.workflows.stage_artifacts`
-- `slavv_python.apps.cli`
-- `slavv_python.apps.streamlit`
+- `slavv_python.processing.stages.network`
+- `slavv_python.processing.stages.energy`
+- `slavv_python.processing.stages.vertices`
+- `slavv_python.processing.stages.edges`
+- `slavv_python.engine.state`
+- `slavv_python.workflows.pipeline`
+- `slavv_python.workflows.pipeline_setup`
+- `slavv_python.workflows.pipeline_stages`
+- `slavv_python.workflows.profiles`
+- `slavv_python.interface.cli`
+- `slavv_python.interface.streamlit`
 
 Within a stage package, prefer role names such as:
 
@@ -65,11 +65,11 @@ The codebase has been modernized to remove legacy shims. Previous names such as
 fully retired.
 
 ### Stable Entrypoints
-- `slavv_python.core.SlavvPipeline`
+- `slavv_python.engine.SlavvPipeline` (re-exported from `slavv_python`)
 - `run()`
 - `compute_energy()`
 - `build_network()`
-- `slavv_python.core.network`
+- `slavv_python.processing.stages.network`
 
 ## Naming Rules
 

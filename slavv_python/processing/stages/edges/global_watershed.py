@@ -168,16 +168,16 @@ def _initialize_matlab_global_watershed_state(
         vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(number_of_vertices + 1)
 
     # Vertices take precedence over border
-    vertex_energies = np.empty((number_of_vertices,), dtype=np.float32)
+    vertex_energies = np.empty((number_of_vertices,), dtype=np.float64)
     for vertex_offset, linear_index in enumerate(vertex_locations):
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
         vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(vertex_offset + 1)
-        vertex_energies[vertex_offset] = np.float32(energy[coord[0], coord[1], coord[2]])
+        vertex_energies[vertex_offset] = np.float64(energy[coord[0], coord[1], coord[2]])
 
-    energy_map_temp = np.array(energy, dtype=np.float32, order="F", copy=True)
+    energy_map_temp = np.array(energy, dtype=np.float64, order="F", copy=True)
     for linear_index in vertex_locations:
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
-        energy_map_temp[coord[0], coord[1], coord[2]] = np.float32(-np.inf)
+        energy_map_temp[coord[0], coord[1], coord[2]] = np.float64(-np.inf)
 
     available_locations = vertex_locations.astype(np.int64, copy=False)[::-1]
     vertex_adjacency_matrix = sparse.identity(number_of_vertices + 1, format="lil", dtype=bool)
@@ -319,10 +319,10 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     valid_linear: Int64Array,
     strel_pointer_indices: Int64Array,
     strel_r_over_R: Float32Array,
-    adjusted_energies: Float32Array,
+    adjusted_energies: Float64Array,
     vertex_index_map_flat: Int32Array,
     pointer_map_flat: Int64Array,
-    energy_map_flat: Float32Array,
+    energy_map_flat: Float64Array,
     d_over_r_map_flat: Float64Array,
     size_map_flat: Int16Array,
     lut_size: int,
@@ -688,8 +688,8 @@ def _generate_edge_candidates_matlab_global_watershed(
     )
     state = _initialize_matlab_global_watershed_state(energy_map_raw, vertex_positions)
     vertex_locations = cast("Int64Array", state["vertex_locations"])
-    vertex_energies = cast("Float32Array", state["vertex_energies"])
-    energy_map_temp = cast("Float32Array", state["energy_map_temp"])
+    vertex_energies = cast("Float64Array", state["vertex_energies"])
+    energy_map_temp = cast("Float64Array", state["energy_map_temp"])
     branch_order_map = cast("Int16Array", state["branch_order_map"])
     d_over_r_map = cast("Float64Array", state["d_over_r_map"])
     pointer_map = cast("Int64Array", state["pointer_map"])
@@ -703,7 +703,7 @@ def _generate_edge_candidates_matlab_global_watershed(
     vertex_adjacency_matrix = cast("Any", state["vertex_adjacency_matrix"])
     number_of_vertices = len(vertex_locations)
 
-    energy_map = np.array(energy_map_raw, dtype=np.float32, order="F", copy=True)
+    energy_map = np.array(energy_map_raw, dtype=np.float64, order="F", copy=True)
     size_map, original_scale_image = _matlab_global_watershed_prepare_size_map(
         shape, scale_indices, vertex_positions, vertex_scales, lumen_radius_microns
     )
@@ -780,7 +780,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_strel_pointer_indices = cast("Int64Array", current_strel["pointer_indices"])
 
         current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
-            np.float32, copy=False
+            np.float64, copy=False
         )
         current_d_over_r = float(d_over_r_map_flat[current_linear])
         current_forward_unit: np.ndarray | None = None

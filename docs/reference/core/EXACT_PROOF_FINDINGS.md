@@ -65,6 +65,8 @@ The audit system mandates these exact value bindings (derived from source-hardco
 
 The core codebase has absorbed the following permanent fixes, ensuring structural stability:
 
+*   ✅ **Double-Precision Energy Alignment**: Forced all core watershed maps (`energy_map_temp`, `vertex_energies`) and neighborhood penalty calculations to `float64`. This prevents precision-induced tie-breaking divergences where `float32` would collapse distinct energy values into identical bits, causing different seed selections than MATLAB's `double`.
+*   ✅ **Stable Frontier Splicing**: Verified and anchored the `available_locations` insertion logic to mirror MATLAB's `find(..., 'last')` and `find(..., 'first')` behavior, ensuring stable FIFO/LIFO handling for identical energy seeds.
 *   ✅ **Backtracking Pointer Correction**: Fixed reverse-index logic, allowing trace recovery back to the origin vertex.
 *   ✅ **Stable Discovery Sorting**: Forces deterministic processing orders matching MATLAB's explicit energy quality sorting.
 *   ✅ **Trace Order Randomization**: Anchored native shuffling to a stable, reproducible seeded RNG generator.
@@ -76,8 +78,7 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active Blockers & Immediate Next Steps
 
-While the 56% match rate is a milestone, we must close the remaining **527 missing pairs**.
+While the 88.7% match rate is a milestone, we must close the remaining **135 missing pairs**.
 
-1.  **Frontier Ordering Divergence** (High Priority): Investigate fine-grained seed selection priority mismatches within the edge watershed crawler.
-2.  **Hub Vertex Complexities**: Audit high-degree junction exploration logic where branching decisions diverge near high-density clusters.
-3.  **Run Final Proof Loop**: Once Edge closures improve beyond 95%, execute `prove-exact --stage all` to lock down full pipeline certification.
+1.  **Hub Vertex Complexities**: Audit high-degree junction exploration logic where branching decisions diverge near high-density clusters, potentially requiring a custom tie-break on linear indices.
+2.  **Run Final Proof Loop**: Once Edge closures improve beyond 95%, execute `prove-exact --stage all` to lock down full pipeline certification.

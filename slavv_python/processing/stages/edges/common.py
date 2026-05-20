@@ -303,8 +303,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
                 adjusted *= directional_alignment
 
     adjusted[~np.isfinite(adjusted)] = np.inf
-    result: Float32Array = adjusted.astype(np.float32, copy=False)
-    return cast("np.ndarray", result)
+    return cast("np.ndarray", adjusted.astype(np.float64, copy=False))
 
 
 def _matlab_frontier_directional_suppression_factors(

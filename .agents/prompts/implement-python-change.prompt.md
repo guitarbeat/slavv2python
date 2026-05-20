@@ -1,4 +1,4 @@
-﻿---
+---
 description: "Implement a Python code change with a minimal diff, add/update ownership-aligned tests, and run the standard validation gate."
 name: "Implement Python Change"
 argument-hint: "Change request + target files/modules + constraints"
@@ -7,10 +7,16 @@ agent: "agent"
 Implement the requested Python code change in this repository with the smallest safe diff.
 
 ## Inputs
-Use the user-provided arguments as the slavv_python of truth:
+Use the user-provided arguments as the source of truth:
 - What behavior must change
 - Where to change it (files/modules if known)
 - Constraints (backward compatibility, parity expectations, performance, etc.)
+
+## Context
+Before editing, check:
+- `AGENTS.md` — Repository map and guardrails
+- `docs/reference/workflow/PYTHON_NAMING_GUIDE.md` — Naming conventions
+- `tests/README.md` — Test placement by owner surface
 
 ## Required Workflow
 1. Locate the relevant code paths and existing tests before editing.
@@ -21,7 +27,7 @@ Use the user-provided arguments as the slavv_python of truth:
    - `python -m ruff check slavv_python tests`
    - `python -m mypy`
    - `python -m pytest -m "unit or integration"`
-5. If the change touches parity/runtime behavior, also run relevant parity checks (for example `tests/diagnostic/test_comparison_setup.py`) and preserve staged-layout expectations.
+5. If the change touches parity behavior, also run `python -m pytest tests/integration/parity/` and preserve staged-layout expectations.
 6. If a command fails, attempt the smallest practical fix related to the requested change, then re-run the affected checks.
 
 ## Output Format
@@ -35,6 +41,6 @@ Return the result in this structure:
 ## Guardrails
 - Preserve existing public APIs unless the request explicitly changes them.
 - Do not include unrelated refactors.
+- Do not create or modify Python files to exceed 1000 lines.
 - Prefer deterministic tests and avoid brittle timing-based assertions.
 - Keep logging/CLI conventions and repository style consistent with surrounding code.
-

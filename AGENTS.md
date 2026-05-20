@@ -1,46 +1,93 @@
-# AI Agent Repository Guide (AGENTS.md)
+# AI Agent Repository Guide
 
-This document provides canonical instructions, constraints, workflows, and guardrails for any AI coding agent working in the `slavv2python` repository. All agents must read and strictly adhere to these guidelines to ensure codebase consistency, exact mathematical/behavioral parity with MATLAB, and robust software architecture.
+Canonical instructions for any AI coding agent working in the `slavv2python` repository.
 
 ---
 
-## 🎯 Scope & Core Principles
+## Scope & Core Principles
 
 - **Work Location:** Always work from the repository root directory.
 - **Environment:** Prefer Windows PowerShell-friendly commands.
-- **Canonical Source of Truth:** Treat the workflows, commands, and rules in this file as the definitive guidance for the repo.
+- **Source of Truth:** This file is the definitive guidance. When in doubt, defer here.
 
 ---
 
-## 🗺️ Repository Map
+## Repository Map
 
-| Path | Purpose / Description |
-| :--- | :--- |
-| `slavv_python/` | Core package code (processing, I/O, analysis, visualization, app entry points). |
-| `tests/` | Test suite covering unit, integration, UI, and diagnostics. |
-| `scripts/` | Maintained developer helper scripts, runners, and benchmarks. |
-| `docs/` | Maintained reference documentation for the Python codebase. |
+```
+slavv2python/
+├── slavv_python/                       # Main package
+│   ├── engine/                         # Pipeline orchestration & lifecycle
+│   │   └── state/                      # Run tracking, snapshots, resume
+│   ├── processing/                     # Scientific computation
+│   │   ├── image/                      # Normalization, tiling
+│   │   └── stages/                     # Pipeline stages
+│   │       ├── energy/                 # Hessian filtering, backends
+│   │       ├── vertices/               # Extraction, painting, selection
+│   │       ├── edges/                  # Watershed, tracing, selection, cleanup
+│   │       │   └── matlab_algorithms/  # MATLAB-shaped parity shims
+│   │       └── network/               # Strand assembly, graph construction
+│   ├── analytics/                      # Analysis & metrics
+│   │   ├── parity/                     # MATLAB exact proof harness
+│   │   ├── curation/                   # Automated & ML curators
+│   │   └── metrics/                    # Intensity, topology metrics
+│   ├── storage/                        # Data I/O
+│   │   ├── loaders/                    # TIFF, network loaders
+│   │   └── exporters/                  # JSON v1 exporter
+│   ├── interface/                      # User-facing surfaces
+│   │   ├── cli/                        # argparse CLI
+│   │   ├── streamlit/                  # Streamlit web app
+│   │   └── shared_services/            # Cross-UI service layer
+│   ├── visualization/                  # Plotting & rendering
+│   ├── workflows/                      # Pipeline orchestration helpers, profiles
+│   ├── schema/                         # Data models
+│   └── utils/                          # Validation, math, formatting
+│
+├── tests/                              # Test suite
+│   ├── unit/                           # By-owner unit tests
+│   ├── integration/                    # End-to-end & parity tests
+│   ├── ui/                             # Streamlit & visualization tests
+│   ├── runtime/                        # Run-state management tests
+│   └── support/                        # Shared test builders & fixtures
+│
+├── scripts/                            # Developer scripts
+│   ├── cli/                            # Parity experiment harness
+│   └── diagnostics/                    # MATLAB artifact inspection
+│
+├── docs/                               # Documentation
+│   ├── reference/                      # Maintained technical references
+│   └── investigations/                 # Archival investigation narratives
+│
+├── workspace/                          # Developer experiment workspace
+│   ├── oracles/                        # Preserved MATLAB oracle vectors
+│   ├── runs/                           # Experiment trial runs
+│   ├── reports/                        # Promoted proof summaries
+│   ├── datasets/                       # Test datasets
+│   └── scratch/                        # Temporary scratch files
+│
+└── external/                           # Vendored dependencies
+    └── Vectorization-Public/           # Canonical MATLAB source (submodule)
+```
 
 ---
 
-## 📖 Key Reference Documents
+## Key Reference Documents
 
-Always read these files first when working on relevant surfaces:
+Read these first when working on relevant surfaces:
 
-- **Index:** [docs/README.md](file:///d:/2P_Data/Aaron/slavv2python/docs/README.md) — Index for all maintained reference docs.
-- **MATLAB Parity Plan:** [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) — Canonical claim boundaries, source-of-truth hierarchy, and remaining implementation work.
-- **MATLAB-to-Python Map:** [docs/reference/core/MATLAB_PARITY_MAPPING.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/MATLAB_PARITY_MAPPING.md) — Function-to-function mapping for exact parity.
-- **Python Naming Guide:** [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/workflow/PYTHON_NAMING_GUIDE.md) — Preferred Python naming conventions and package surfaces.
-- **Testing Guide:** [tests/README.md](file:///d:/2P_Data/Aaron/slavv2python/tests/README.md) — Rules for test placement and markers.
-- **Shared Test Config:** [tests/conftest.py](file:///d:/2P_Data/Aaron/slavv2python/tests/conftest.py) — Shared pytest behavior and `tmp_path` setup.
-- **Extraction Algorithms:** [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) — Contributor guide for adding new extraction algorithms.
-- **Runtime Tracking:** `slavv_python/runtime/` — Structured run metadata and staged artifact locations.
+| Document | Path | Purpose |
+|:---------|:-----|:--------|
+| Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
+| MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
+| MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
+| Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
+| Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
+| Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
+| Project Status | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Comprehensive codebase health & parity status |
 
 ---
 
-## ⚙️ Setup & Installation
-
-To set up or recreate the local environment:
+## Setup & Installation
 
 ```powershell
 # Create and activate virtual environment
@@ -48,8 +95,8 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
 # Install dependency set matching your task
-pip install -e .                # Core package only
-pip install -e ".[app]"          # With Streamlit app dependencies
+pip install -e .                       # Core package only
+pip install -e ".[app]"                # With Streamlit app dependencies
 pip install -e ".[app,workspace]"      # Full developer environment (recommended)
 
 # Install pre-commit hooks
@@ -58,17 +105,11 @@ pre-commit install
 
 ---
 
-## 🛠️ Canonical Quality Commands
+## Quality Commands
 
-### Code Formatting
+### Formatting & Linting
 ```powershell
 python -m ruff format slavv_python tests
-python -m ruff format --check slavv_python tests
-```
-
-### Linting & Auto-fixes
-```powershell
-python -m ruff check slavv_python tests
 python -m ruff check slavv_python tests --fix
 ```
 
@@ -76,8 +117,6 @@ python -m ruff check slavv_python tests --fix
 ```powershell
 python -m mypy
 ```
-> [!NOTE]
-> The current `mypy` gate is run from the repo-root and covers the CLI, Streamlit launcher, share-report, web app, run-state, and selected core pipeline modules.
 
 ### Running Tests
 ```powershell
@@ -85,17 +124,21 @@ python -m pytest tests/
 python -m pytest -m "unit or integration"
 ```
 
-### Other Checks
+### Full Regression Gate
+Run before substantial changes:
 ```powershell
 python -m compileall slavv_python scripts
-pre-commit run --all-files
+python -m ruff format --check slavv_python tests
+python -m ruff check slavv_python tests
+python -m mypy
+python -m pytest -m "unit or integration"
 ```
 
 ---
 
-## 🚀 CLI & Application Workflows
+## CLI & Application Workflows
 
-### Package CLI Commands
+### Core CLI
 ```powershell
 slavv info
 slavv run -i volume.tif -o slavv_output --export csv json
@@ -104,83 +147,83 @@ slavv analyze -i slavv_output/network.json
 slavv plot -i slavv_output/network.json -o plots.html
 ```
 
-### Advanced `slavv run` Options
+### Advanced Options
 ```powershell
 slavv run -i volume.tif -o slavv_output --run-dir workspace\runs\sample_a
 slavv run -i volume.tif -o slavv_output --stop-after edges
 slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 ```
-*Note: `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted. The CLI defaults to the native `paper` profile.*
+
+> [!NOTE]
+> `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted. The CLI defaults to the native `paper` profile.
 
 ### Streamlit App
 ```powershell
 slavv-app
-python -m streamlit run slavv_python/apps/streamlit/app.py
+python -m streamlit run slavv_python/interface/streamlit/app.py
 ```
-*Note: The launcher requires the `app` extra. The ML curation flow accepts `.joblib` and `.pkl` model files directly.*
 
 ---
 
-## 🔄 Recommended Workflows
+## Developer Workflows
 
-### ⚡ Small Code Changes
-1. Read the impacted module and its nearest tests first.
-2. Verify test placement against `tests/README.md` and `tests/conftest.py`.
-3. Run the smallest targeted `pytest` command covering the change.
+### Small Code Changes
+1. Read the impacted module and its nearest tests.
+2. Verify test placement against `tests/README.md`.
+3. Run the smallest targeted `pytest` command.
 4. Format and lint: `ruff check --fix` and `ruff format`.
-5. Run full targeted suite: `python -m pytest -m "unit or integration"` if the change crosses module boundaries.
+5. Run full suite if the change crosses module boundaries.
 
-### 🛡️ Regression Checks
-Run these checks before submitting substantial changes:
-```powershell
-python -m compileall slavv_python scripts
-python -m ruff format --check slavv_python tests
-python -m ruff check slavv_python tests
-python -m mypy
-python -m pytest -m "unit or integration"
-```
-*Note: If the change is UI-facing, also run tests in `tests/ui/`.*
-
-### 🔬 Developer Parity Experiments
-Use this flow to compare current code runs against a staged comparison root and a preserved MATLAB oracle package:
+### Parity Experiments
 ```powershell
 # Promote oracle
-python scripts/cli/parity_experiment.py promote-oracle --matlab-batch-dir D:\incoming\batch_260421-151654 --oracle-root workspace\oracles\v22_a --dataset-file D:\datasets\volume.tif --oracle-id v22_a
+python scripts/cli/parity_experiment.py promote-oracle \
+  --matlab-batch-dir D:\incoming\batch_260421-151654 \
+  --oracle-root workspace\oracles\v22_a \
+  --dataset-file D:\datasets\volume.tif \
+  --oracle-id v22_a
 
 # Run preflight check
-python scripts/cli/parity_experiment.py preflight-exact --source-run-root workspace\runs\seed_run --oracle-root workspace\oracles\v22_a --dest-run-root workspace\runs\my_current_code_trial
-
-# Prove lookup tables (LUTs)
-python scripts/cli/parity_experiment.py prove-luts --source-run-root workspace\runs\seed_run --oracle-root workspace\oracles\v22_a --dest-run-root workspace\runs\my_current_code_trial
+python scripts/cli/parity_experiment.py preflight-exact \
+  --source-run-root workspace\runs\seed_run \
+  --oracle-root workspace\oracles\v22_a \
+  --dest-run-root workspace\runs\my_current_code_trial
 
 # Run full exact proof comparison
-python scripts/cli/parity_experiment.py prove-exact --source-run-root workspace\runs\seed_run --oracle-root workspace\oracles\v22_a --dest-run-root workspace\runs\my_current_code_trial --stage all
+python scripts/cli/parity_experiment.py prove-exact \
+  --source-run-root workspace\runs\seed_run \
+  --oracle-root workspace\oracles\v22_a \
+  --dest-run-root workspace\runs\my_current_code_trial \
+  --stage all
 ```
 
 ---
 
-## 🧮 Exact MATLAB Parity Rule
+## Exact MATLAB Parity Rule
 
-For any MATLAB-parity-sensitive surface (especially the `edges` and `network` stages), the required goal is **exact mathematical and algorithm-level parity**, not approximate behavioral similarity.
+For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages):
 
-- **Truth Source:** Treat the MATLAB slavv_python under `external/Vectorization-Public/slavv_python/` as the canonical implementation.
-- **Proof Gate:** Use `prove-exact` results and preserved MATLAB vectors as the proof gate.
-- **No Approximations:** Do not accept "close enough" replacements (e.g., heuristic supplements, local tracing deviations) unless explicitly approved and documented.
-- **1:1 Structure:** Python parity work must reproduce the same mathematical method and algorithm structure 1:1. Any undocumented deviation is a bug.
+- **Truth Source:** The MATLAB code under `external/Vectorization-Public/` is the canonical implementation.
+- **Proof Gate:** Use `prove-exact` results and preserved MATLAB oracle vectors.
+- **No Approximations:** Do not accept "close enough" replacements unless explicitly approved and documented.
+- **1:1 Structure:** Python parity work must reproduce the same mathematical method and algorithm structure. Any undocumented deviation is a bug.
 
 ---
 
-## 🚨 Repo-Specific Guardrails & Constraints
+## Guardrails & Constraints
 
 > [!IMPORTANT]
-> **Max File Length:** Do not create or modify Python scripts to be more than **1000 lines** long. Keep files modular and focused.
+> **Max File Length:** Do not create or modify Python scripts to be more than **1000 lines** long.
 
-- **Package Layout:** Keep all package code under `slavv_python/`. Use the grouped package surfaces described in `PYTHON_NAMING_GUIDE.md`.
-- **Test Placement:** Keep tests under `tests/` (following `tests/README.md`). Files containing `regression` in the name automatically receive the `regression` marker.
-- **Temporary Files:** Use the repo-local `tmp_path` fixture in `tests/conftest.py` for testing. Keep test artifacts under `tmp_tests/`, not ad-hoc system temp roots.
-- **Logging:** Use the standard `logging` library in core/library code instead of `print()`. CLI commands may print user-facing console summaries.
-- **Path Handling:** Prefer `pathlib.Path` for filesystem-heavy code and use explicit text encodings (e.g., `encoding="utf-8"`) when writing repository-managed text files.
-- **Type Annotations:** Prefer `from __future__ import annotations` in all Python modules to match the prevailing package style.
-- **CLI Framework:** Keep CLI surfaces aligned with the `argparse`-based entrypoints under `slavv_python/apps/`. Do not introduce new CLI frameworks.
-- **Resumability:** Keep only the structured `run_dir` resumable surface; legacy checkpoint compatibility is not supported.
-- **Search Exclusions:** When searching (e.g., with `rg`), exclude noisy generated directories like `tmp_tests/` and vendored assets under `external/blender_resources/`.
+| Rule | Detail |
+|:-----|:-------|
+| **Package Layout** | All package code under `slavv_python/`. Use surfaces from `PYTHON_NAMING_GUIDE.md`. |
+| **Test Placement** | Tests under `tests/` per `tests/README.md`. Files with `regression` in the name get the `regression` marker automatically. |
+| **Temporary Files** | Use the repo-local `tmp_path` fixture from `tests/conftest.py`. Test artifacts go in `tmp_tests/`. |
+| **Logging** | Use `logging` in library code, not `print()`. CLI may print user-facing summaries. |
+| **Path Handling** | Prefer `pathlib.Path`. Use explicit `encoding="utf-8"` for text files. |
+| **Type Annotations** | Prefer `from __future__ import annotations` in all modules. |
+| **CLI Framework** | Keep CLI under `slavv_python/interface/cli/` (argparse). No new CLI frameworks. |
+| **Resumability** | Only the structured `run_dir` surface; no legacy checkpoint compatibility. |
+| **Search Exclusions** | Exclude `tmp_tests/`, `external/blender_resources/`, and cache directories when searching. |
+| **Scratch Files** | One-off scripts, logs, and experiment artifacts go in `workspace/scratch/`, not the repo root. |

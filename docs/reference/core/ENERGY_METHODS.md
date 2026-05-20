@@ -17,11 +17,11 @@ runtime energy provenance.
 
 | Method | Where it lives | Best use | Notes |
 | --- | --- | --- | --- |
-| `hessian` | `slavv_python/core/energy/energy.py` and `slavv_python/core/energy/hessian_response.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
-| `frangi` | `skimage.filters.frangi` via `slavv_python/core/energy/energy.py` | Quick vesselness experiments | Exploratory alternate backend. |
-| `sato` | `skimage.filters.sato` via `slavv_python/core/energy/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed surface does not provide `sato`. |
-| `simpleitk_objectness` | `slavv_python/core/energy/backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
-| `cupy_hessian` | `slavv_python/core/energy/backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
+| `hessian` | `slavv_python/processing/stages/energy/energy.py` and `slavv_python/processing/stages/energy/hessian_response.py` | Default production and parity-oriented raw-image runs | Native matched-filter implementation modeled on the released MATLAB energy path. |
+| `frangi` | `skimage.filters.frangi` via `slavv_python/processing/stages/energy/energy.py` | Quick vesselness experiments | Exploratory alternate backend. |
+| `sato` | `skimage.filters.sato` via `slavv_python/processing/stages/energy/energy.py` | Alternate vesselness experiments | Falls back to `hessian` if the installed surface does not provide `sato`. |
+| `simpleitk_objectness` | `slavv_python/processing/stages/energy/backends.py` | Spacing-aware exploratory comparisons | Experimental, non-parity backend. |
+| `cupy_hessian` | `slavv_python/processing/stages/energy/backends.py` | NVIDIA GPU acceleration experiments | Experimental performance path built on the legacy Gaussian/Hessian approximation work. |
 
 The CLI exposes the same options through:
 
@@ -204,12 +204,12 @@ surface.
 
 When adding a new energy backend, update these surfaces together:
 
-1. `slavv_python/core/energy/energy.py`
+1. `slavv_python/processing/stages/energy/energy.py`
    Add the implementation and wire it into both direct and resumable
    evaluation.
 2. `slavv_python/utils/validation.py`
    Allow the new `energy_method` value in parameter validation.
-3. `slavv_python/apps/cli/parser.py` and `slavv_python/apps/cli/shared.py`
+3. `slavv_python/interface/cli/parser.py` and `slavv_python/interface/cli/shared.py`
    Expose the new choice through `slavv run --energy-method`.
 4. `tests/unit/core/test_energy_methods.py`
    Add focused correctness coverage for the new backend.
@@ -223,7 +223,7 @@ When adding a new energy backend, update these surfaces together:
 ## Contributor Notes
 
 - Keep library code on `logging`; do not add `print()` calls in
-  `slavv_python/core/energy/energy.py`.
+  `slavv_python/processing/stages/energy/energy.py`.
 - Preserve `float32` outputs for persisted energy volumes unless there is a
   deliberate format change.
 - If a new backend cannot support the resumable path cleanly, stop and document

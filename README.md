@@ -35,8 +35,7 @@ python -m mypy
 ## Python API
 
 ```python
-from slavv_python.core import SlavvPipeline
-from slavv_python.io import load_tiff_volume
+from slavv_python import SlavvPipeline, load_tiff_volume
 
 image = load_tiff_volume("volume.tif")
 pipeline = SlavvPipeline()
@@ -54,7 +53,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## What Is In This Repo
 
-- `slavv_python/`: pipeline, runtime, I/O, analysis, visualization, CLI, and app code
+- `slavv_python/`: engine, processing stages, analytics, storage, visualization, interface, and workflow code
 - `tests/`: unit, integration, and UI coverage
 - `scripts/`: maintained helper scripts and benchmarks
 - `docs/`: maintained reference docs plus archival investigation notes

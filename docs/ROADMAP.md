@@ -59,7 +59,7 @@ Fix seed selection, insertion semantics, and frontier ordering for high-degree
 vertices.
 
 - **Status:** COMPLETED. Frontier ordering divergence resolved via exact splice logic and vertex priority initialization. Match rate: 80.0%.
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/global_watershed.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/global_watershed.py)
 
 #### Measure 3: Candidate Filtering Alignment — NOT STARTED
 
@@ -67,8 +67,8 @@ Tighten Python acceptance criteria to match MATLAB `get_edges_by_watershed`
 filters. Blocked until Measure 2 is validated to avoid measuring against a
 moving target.
 
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/candidate_generation.py)
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/core/edges/cleanup.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/candidate_generation.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/cleanup.py)
 
 Next steps:
 - [ ] Wait for Measure 2 validation.

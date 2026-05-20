@@ -104,8 +104,8 @@ Homepage = "https://github.com/UTFOIL/slavv2python"
 Repository = "https://github.com/UTFOIL/slavv2python"
 
 [project.scripts]
-slavv-app = "slavv_python.apps.streamlit_launcher:main"
-slavv = "slavv_python.apps.cli:main"
+slavv-app = "slavv_python.interface.streamlit_launcher:main"
+slavv = "slavv_python.interface.cli:main"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
@@ -162,17 +162,16 @@ docstring-code-format = true
 python_version = "3.11"
 mypy_path = "slavv_python"
 files = [
-    "slavv_python/apps/cli/__init__.py",
-    "slavv_python/apps/streamlit/app.py",
-    "slavv_python/apps/streamlit_launcher.py",
-    "slavv_python/analysis/geometry.py",
-    "slavv_python/core/energy/",
-    "slavv_python/core/network.py",
-    "slavv_python/core/graph/",
-    "slavv_python/core/vertices/",
-    "slavv_python/core/edges/",
-    "slavv_python/core/pipeline.py",
-    "slavv_python/runtime/run_state.py",
+    "slavv_python/interface/cli/__init__.py",
+    "slavv_python/interface/streamlit/app.py",
+    "slavv_python/interface/streamlit_launcher.py",
+    "slavv_python/analytics/",
+    "slavv_python/processing/stages/energy/",
+    "slavv_python/processing/stages/network/",
+    "slavv_python/processing/stages/vertices/",
+    "slavv_python/processing/stages/edges/",
+    "slavv_python/engine/orchestrator.py",
+    "slavv_python/engine/state/",
     "slavv_python/workflows/",
 ]
 warn_return_any = true
