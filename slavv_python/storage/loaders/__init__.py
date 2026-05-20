@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from .network import (
     Network,
+    load_network,
     load_network_from_json,
     load_network_from_mat,
     load_network_from_casx,
+    load_network_from_csv,
+    load_network_from_vmv,
     save_network_to_json,
     save_network_to_casx,
     save_network_to_csv,
@@ -16,9 +19,12 @@ from .tiff import (
 
 __all__ = [
     "Network",
+    "load_network",
     "load_network_from_json",
     "load_network_from_mat",
     "load_network_from_casx",
+    "load_network_from_csv",
+    "load_network_from_vmv",
     "save_network_to_json",
     "save_network_to_casx",
     "save_network_to_csv",

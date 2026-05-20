@@ -32,3 +32,12 @@ def get_edge_metric(
 
     e_series = _trace_energy_series(trace, energy)
     return _edge_metric_from_energy_trace(e_series)
+
+
+def get_edges_for_vertex(connections: np.ndarray, vertex_idx: int) -> list[int]:
+    """Return the indices of all edges connected to the specified vertex."""
+    conn_arr = np.asarray(connections, dtype=int)
+    if conn_arr.size == 0:
+        return []
+    mask = (conn_arr[:, 0] == vertex_idx) | (conn_arr[:, 1] == vertex_idx)
+    return np.where(mask)[0].tolist()

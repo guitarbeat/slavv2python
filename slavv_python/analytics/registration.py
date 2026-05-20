@@ -5,7 +5,7 @@ from typing import Any, cast
 import numpy as np
 from scipy.spatial import cKDTree
 
-from .vector_math import safe_normalize_rows
+from .math import safe_normalize_rows
 
 
 def evaluate_registration(
