@@ -51,3 +51,50 @@ def scaled_positions(positions: np.ndarray, scale: list[float] | np.ndarray) -> 
     if positions_arr.shape[-1] != scale_arr.shape[0]:
         raise ValueError("scale length must match positions coordinate dimension")
     return positions_arr * scale_arr
+
+
+def resample_vectors(trace: np.ndarray, step: float = 1.0) -> np.ndarray:
+    """Linearly resample a polyline path at regular intervals."""
+    trace_arr = np.asarray(trace, dtype=float)
+    if len(trace_arr) < 2:
+        return trace_arr
+
+    # Cumulative distance along the path
+    diffs = np.diff(trace_arr, axis=0)
+    dists = np.linalg.norm(diffs, axis=1)
+    cum_dists = np.concatenate(([0.0], np.cumsum(dists)))
+
+    total_len = float(cum_dists[-1])
+    if total_len == 0:
+        return trace_arr[0:1].copy()
+
+    # Interpolation target distances
+    new_dists = np.arange(0, total_len, step)
+    if total_len > new_dists[-1]:
+        new_dists = np.concatenate((new_dists, [total_len]))
+
+    # Interpolate each coordinate axis
+    resampled = np.empty((len(new_dists), trace_arr.shape[1]), dtype=float)
+    for i in range(trace_arr.shape[1]):
+        resampled[:, i] = np.interp(new_dists, cum_dists, trace_arr[:, i])
+
+    return resampled
+
+
+def smooth_edge_traces(traces: list[np.ndarray], sigma: float = 1.0) -> list[np.ndarray]:
+    """Apply Gaussian smoothing to a set of polyline paths."""
+    from scipy.ndimage import gaussian_filter1d
+
+    smoothed = []
+    for trace in traces:
+        trace_arr = np.asarray(trace, dtype=float)
+        if len(trace_arr) < 2:
+            smoothed.append(trace_arr.copy())
+            continue
+
+        s_trace = np.empty_like(trace_arr)
+        for i in range(trace_arr.shape[1]):
+            s_trace[:, i] = gaussian_filter1d(trace_arr[:, i], sigma=sigma, mode="nearest")
+        smoothed.append(s_trace)
+
+    return smoothed

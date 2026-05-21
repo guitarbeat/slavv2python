@@ -18,6 +18,9 @@ from .operations import (
     trace_strand_sparse,
 )
 
+# Alias for top-level orchestrator and legacy tests
+build_network = construct_network
+
 __all__ = [
     "_matlab_edge_metrics",
     "_matlab_get_network_v190",
@@ -30,6 +33,7 @@ __all__ = [
     "_remove_short_hairs",
     "construct_network",
     "construct_network_resumable",
+    "build_network",
     "sort_and_validate_strands_sparse",
     "trace_strand_sparse",
 ]

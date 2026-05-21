@@ -338,6 +338,7 @@ def sort_candidates_by_quality(
     sign: float = -1.0,
     params: dict[str, Any] | None = None,
     microns_per_voxel: np.ndarray | None = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
     from slavv_python.processing.stages.edges.common import _reorder_candidate_payload

@@ -6,11 +6,11 @@ import numpy as np
 def crop_vertices(
     vertices: np.ndarray, bounds: tuple[tuple[float, float], ...]
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Crop vertices to those within the specified [min, max) bounds per axis."""
+    """Crop vertices to those within the specified [min, max] bounds per axis."""
     vertices_arr = np.asarray(vertices, dtype=float)
     mask = np.ones(vertices_arr.shape[0], dtype=bool)
     for i, (vmin, vmax) in enumerate(bounds):
-        mask &= (vertices_arr[:, i] >= vmin) & (vertices_arr[:, i] < vmax)
+        mask &= (vertices_arr[:, i] >= vmin) & (vertices_arr[:, i] <= vmax)
     return vertices_arr[mask], mask
 
 

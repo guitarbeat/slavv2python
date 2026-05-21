@@ -50,7 +50,8 @@ def _has_local_contrast(
 
 
 def _vertex_output_radii(vertices: dict[str, Any]) -> np.ndarray:
-    return vertices.get("radii_microns", vertices.get("radii", []))
+    radii = vertices.get("radii_microns", vertices.get("radii_pixels", vertices.get("radii", [])))
+    return np.asarray(radii, dtype=float)
 
 
 def _path_meets_length_requirement(trace: np.ndarray, min_length: float) -> bool:
@@ -106,7 +107,9 @@ class AutomaticCurator:
         positions = vertices["positions"]
         energies = vertices["energies"]
         scales = vertices["scales"]
-        radii = vertices.get("radii_pixels", vertices.get("radii", []))
+        radii = vertices.get("radii_pixels", vertices.get("radii_microns", vertices.get("radii", [])))
+        # Convert to numpy array to avoid TypeError in comparisons
+        radii = np.asarray(radii, dtype=float)
 
         params = _merge_parameters(self.vertex_parameters, parameters)
         image_shape = energy_data.get("image_shape", (100, 100, 50))

@@ -7,6 +7,8 @@ vascular networks from 3D microscopy images.
 
 from __future__ import annotations
 
+__version__ = "0.1.0"
+
 # 1. ENGINE (Pipeline Control)
 from .engine import SlavvPipeline, find_repo_root
 

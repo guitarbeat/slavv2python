@@ -42,8 +42,12 @@ def _normalize_vertices_array(vertices: Any) -> np.ndarray:
 def _normalize_edges_array(edges: Any) -> np.ndarray:
     """Coerce input edges to a (M, 2) int32 array."""
     arr = np.asarray(edges, dtype=np.int32)
-    if arr.ndim == 1 and arr.size == 0:
-        return np.empty((0, 2), dtype=np.int32)
+    if arr.ndim == 1:
+        if arr.size == 0:
+            return np.empty((0, 2), dtype=np.int32)
+        if arr.size == 2:
+            arr = arr.reshape(1, 2)
+
     if arr.ndim != 2 or arr.shape[1] < 2:
         raise ValueError(f"edges must be (M, 2+), got {arr.shape}")
     return arr[:, :2]
@@ -89,7 +93,7 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
     else:
         edges = _normalize_edges_array(e_struct if e_struct is not None else [])
 
-    return Network(vertices=vertices, edges=edges, radii=radii)
+    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
 
 
 def load_network_from_casx(path: Union[str, Path]) -> Network:
@@ -118,7 +122,7 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
     vertices = _normalize_vertices_array(vert_list)
     edges = _remap_edge_pairs(edge_list, _build_vertex_id_map(vertex_ids))
     radii = np.asarray(radii_list, dtype=float) if radii_list else None
-    return Network(vertices=vertices, edges=edges, radii=radii)
+    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
 
 
 def load_network_from_vmv(path: Union[str, Path]) -> Network:
@@ -183,12 +187,13 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
         vertex_id_map = _build_vertex_id_map(v_df["vertex_id"].astype(int).tolist())
     edge_pairs = e_df[["start_vertex", "end_vertex"]].to_numpy(int).tolist()
     edges = _remap_edge_pairs(edge_pairs, vertex_id_map)
-    return Network(vertices=vertices, edges=edges, radii=radii)
+    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
 
 
 def load_network_from_json(path: Union[str, Path]) -> Network:
     """Load network data from a JSON export."""
-    from .json_v1 import load_network_json_payload
+    from ..exporters.json_v1 import load_network_json_payload
+
     data = load_network_json_payload(path)
     v_data = data.get("vertices", {})
     vertices = _normalize_vertices_array(v_data.get("positions", []))
@@ -197,7 +202,7 @@ def load_network_from_json(path: Union[str, Path]) -> Network:
         radii = None
     e_data = data.get("edges", {})
     edges = _normalize_edges_array(e_data.get("connections", []))
-    return Network(vertices=vertices, edges=edges, radii=radii)
+    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
 
 
 def load_network(path: Union[str, Path]) -> Network:
@@ -248,15 +253,69 @@ def save_network_to_csv(network: Network, base_path: Union[str, Path]) -> tuple[
     return vertex_path, edge_path
 
 
+def _network_to_processing_results(network: Network) -> dict[str, Any]:
+    """Convert a basic network object into a minimal processing-results payload."""
+    vertices = _normalize_vertices_array(network.vertices)
+    edges = _normalize_edges_array(network.edges)
+    radii = (
+        np.asarray(network.radii, dtype=float).reshape(-1)
+        if network.radii is not None
+        else np.zeros((len(vertices),), dtype=float)
+    )
+    # Note: simplified strands for export-only
+    degrees = np.zeros((len(vertices),), dtype=np.int32)
+    for origin, destination in edges.tolist():
+        if 0 <= int(origin) < len(degrees):
+            degrees[int(origin)] += 1
+        if 0 <= int(destination) < len(degrees):
+            degrees[int(destination)] += 1
+    payload = {
+        "parameters": {"microns_per_voxel": [1.0, 1.0, 1.0]},
+        "vertices": {
+            "positions": vertices,
+            "radii_microns": radii,
+            "radii_pixels": radii.copy(),
+            "energies": np.zeros((len(vertices),), dtype=float),
+            "scales": np.zeros((len(vertices),), dtype=np.int16),
+        },
+        "edges": {
+            "connections": edges,
+            "traces": [],
+            "energies": np.zeros((len(edges),), dtype=float),
+        },
+        "network": {
+            "strands": [],
+            "vertex_degrees": degrees,
+        },
+    }
+    return payload
+
+
 def save_network_to_json(
     network: Network | Mapping[str, Any],
     path: Union[str, Path],
     **kwargs: Any
 ) -> Path:
     """Save network data to the authoritative JSON export format."""
+    from ..exporters.json_v1 import build_network_json_payload
+
+    processing_results = (
+        _network_to_processing_results(network) if isinstance(network, Network) else dict(network)
+    )
+    # Extract known build arguments from kwargs
+    run_snapshot = kwargs.get("run_snapshot")
+    run_dir = kwargs.get("run_dir")
+    metadata = kwargs.get("metadata")
+
+    data = build_network_json_payload(
+        processing_results,
+        run_snapshot=run_snapshot,
+        run_dir=run_dir,
+        metadata=metadata,
+    )
     json_path = Path(path)
     with open(json_path, "w", encoding="utf-8") as f:
-        json.dump({}, f)
+        json.dump(data, f, indent=2)
     return json_path
 
 

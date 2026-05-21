@@ -20,17 +20,29 @@ def get_edge_metric(
     trace:
         (N, 3) or (N, 4) array of coordinates.
     energy:
-        Optional energy field for sampling. If None, returns 0.0.
+        Optional energy field for sampling. Required for energy-based methods.
     method:
-        Metric name. Currently only "max_energy" is supported.
+        Metric name: "max_energy" (default), "mean_energy", "min_energy", or "length".
     """
+    if method == "length":
+        from .math import calculate_path_length
+        return calculate_path_length(trace)
+
     if energy is None:
         return 0.0
-    if method != "max_energy":
-        # Fallback for future methods
-        pass
 
     e_series = _trace_energy_series(trace, energy)
+    if not e_series.size:
+        return 0.0
+
+    if method == "mean_energy":
+        return float(np.mean(e_series))
+    if method == "median_energy":
+        return float(np.median(e_series))
+    if method == "min_energy":
+        return float(np.min(e_series))
+
+    # Default to max_energy for everything else
     return _edge_metric_from_energy_trace(e_series)
 
 
