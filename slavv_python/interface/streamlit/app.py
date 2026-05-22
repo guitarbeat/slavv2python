@@ -66,12 +66,17 @@ st.set_page_config(
 st.html(
     """
 <style>
+    :root {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
         color: #1f77b4;
         text-align: center;
         margin-bottom: 2rem;
+        text-wrap: balance;
     }
     .section-header {
         font-size: 1.5rem;
@@ -81,6 +86,10 @@ st.html(
         margin-bottom: 1rem;
         border-bottom: 2px solid #3498db;
         padding-bottom: 0.5rem;
+        text-wrap: balance;
+    }
+    p, li, .stMarkdown {
+        text-wrap: pretty;
     }
     .parameter-info {
         background-color: #f8f9fa;
@@ -88,6 +97,7 @@ st.html(
         border-radius: 0.5rem;
         border-left: 4px solid #17a2b8;
         margin: 1rem 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .warning-box {
         background-color: #fff3cd;
@@ -95,6 +105,7 @@ st.html(
         border-radius: 0.5rem;
         border-left: 4px solid #ffc107;
         margin: 1rem 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .success-box {
         background-color: #d4edda;
@@ -102,13 +113,24 @@ st.html(
         border-radius: 0.5rem;
         border-left: 4px solid #28a745;
         margin: 1rem 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .metric-card {
         background-color: #ffffff;
         padding: 1.5rem;
         border-radius: 0.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 
+            0 2px 4px rgba(0,0,0,0.05),
+            0 1px 2px rgba(0,0,0,0.1);
         margin: 0.5rem 0;
+        font-variant-numeric: tabular-nums;
+        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 4px 6px rgba(0,0,0,0.05),
+            0 2px 4px rgba(0,0,0,0.1);
     }
     @media (max-width: 768px) {
         .main-header {

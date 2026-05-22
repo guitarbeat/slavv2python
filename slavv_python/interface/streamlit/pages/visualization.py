@@ -103,9 +103,10 @@ def show_visualization_page() -> None:
 
     st.markdown(
         """
-    Visualize the vectorized vascular network in 2D and 3D. This section provides interactive tools to explore the results.
-    Corresponds to `Visual` and `SpecialOutput` parameters in MATLAB.
-    """
+        <p>Visualize the vectorized vascular network in 2D and 3D. This section provides interactive tools to explore the results.
+        Corresponds to <code>Visual</code> and <code>SpecialOutput</code> parameters in MATLAB.</p>
+        """,
+        unsafe_allow_html=True,
     )
 
     results = normalize_visualization_results(st.session_state["processing_results"])

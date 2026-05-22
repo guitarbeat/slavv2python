@@ -1,0 +1,66 @@
+# Technical Architecture
+
+[Up: Reference Docs](../README.md)
+
+This document provides a high-level overview of the SLAVV Python engine's architecture, design patterns, and internal state management.
+
+---
+
+## 🏗️ Core Engine Components
+
+The Python implementation is built around a centralized, resumable processing engine located in `slavv_python.engine`.
+
+### 1. The Orchestrator (`SlavvPipeline`)
+The `SlavvPipeline` class is the primary entry point for running the extraction workflow. It manages the transition between stages and handles the delegation to specialized operation modules.
+
+- **Stateless Operation**: The pipeline itself does not hold large data in memory; it retrieves and persists stage results via the `RunContext`.
+- **Stage Encapsulation**: Each major phase (Energy, Vertices, Edges, Network) is encapsulated in its own operation module.
+
+### 2. Run Context & Stage Controllers
+The `RunContext` manages the filesystem layout and persistent state for a single pipeline execution.
+
+- **Resumable State**: It tracks "fingerprints" of input images and parameters to determine if a cached stage result can be reused.
+- **StageController**: Each stage receives a controller that provides paths for artifacts (checkpoints, metrics, logs) and manages progress reporting.
+
+### 3. Typed Result Objects (`slavv_python.schema.results`)
+All data passed between stages is wrapped in validated, bit-accurate dataclass models:
+
+- `EnergyResult`: Multiscale energy volumes and metadata.
+- `VertexSet`: Coordinate sets, radii, and discovery scales.
+- `EdgeSet`: Traces (list of coord arrays), connectivity matrices, and endpoint energies.
+- `NetworkResult`: Final topology, strands, and bifurcations.
+
+---
+
+## 🔄 Processing Workflow
+
+The pipeline follows a strict linear execution order to maintain MATLAB compatibility:
+
+1.  **Preprocessing**: Normalization and bandpass filtering of the input TIFF.
+2.  **Energy Field**: Multiscale Hessian enhancement (using local tiling for large volumes).
+3.  **Vertex Extraction**: Seed point discovery via local maxima suppression.
+4.  **Edge Extraction**: Vessel tracing using either watershed-guided expansion or directional seeding.
+5.  **Network Construction**: Graph assembly, cycle breaking, and strand smoothing.
+
+---
+
+## 🛡️ Design Principles
+
+### Parity-First Architecture
+The engine is designed to allow "surgical" parity alignments. Logic that must match MATLAB exactly is isolated in `matlab_algorithms/` subdirectories, while the maintained Python workflow reuses these primitives.
+
+### Memory Safety
+For large 2-photon volumes, the engine uses:
+- **Tiled Processing**: Energy computation and vertex discovery are performed in overlapping chunks.
+- **Disk-Backed Storage**: Large 4D energy stacks can be stored in `Zarr` format to avoid OOM (Out-of-Memory) errors.
+
+### Bit-Accurate Precision
+Following the **May 2026 breakthrough**, all core watershed and energy calculations are forced to `float64` to prevent tie-breaking divergences caused by lower-precision accumulation.
+
+---
+
+## 📈 Extension Points
+
+- **Energy Backends**: New enhancement algorithms can be added to `slavv_python.processing.stages.energy.backends`.
+- **Curation Layers**: Automated or ML-based refinement logic lives in `slavv_python.analytics.curation`.
+- **Export Formats**: Support for new research formats can be added to `slavv_python.storage.exporters`.

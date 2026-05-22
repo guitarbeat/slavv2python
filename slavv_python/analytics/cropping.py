@@ -30,7 +30,11 @@ def crop_vertices_by_mask(
     mask = np.zeros(vertices_arr.shape[0], dtype=bool)
     shape = mask_volume.shape
     for i, pos in enumerate(v_int):
-        if 0 <= pos[0] < shape[0] and 0 <= pos[1] < shape[1] and 0 <= pos[2] < shape[2]:
-            if mask_volume[pos[0], pos[1], pos[2]]:
-                mask[i] = True
+        if (
+            0 <= pos[0] < shape[0]
+            and 0 <= pos[1] < shape[1]
+            and 0 <= pos[2] < shape[2]
+            and mask_volume[pos[0], pos[1], pos[2]]
+        ):
+            mask[i] = True
     return vertices_arr[mask], mask

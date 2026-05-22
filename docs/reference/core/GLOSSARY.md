@@ -22,6 +22,15 @@ Maintain this reference for domain-specific and project-specific terms used thro
 | **Staged Run** | A structured run directory that follows the canonical `01_Input/`, `02_Output/`, `03_Analysis/`, `99_Metadata/` layout. |
 | **Checkpoint** | A persisted intermediate state of a run (e.g., `vertices.pkl`, `edges.pkl`). Checkpoints allow the pipeline to resume from a specific stage without recomputing earlier steps. |
 | **Energy** | A pre-processed image volume (e.g., vesselness, objectness, or Hessian map) that serves as the numerical input for vertex and edge extraction. |
+| **Typed Result Objects** | Structured, validated dataclass models (e.g., `EnergyResult`, `VertexSet`, `EdgeSet`) that serve as the internal and external contract for pipeline stage data. |
+
+## Parity & Verification
+
+| Term | Definition |
+| --- | --- |
+| **Oracle** | A canonical MATLAB output directory used as the "ground truth" for verifying Python implementation parity. |
+| **Exact Proof** | The process of verifying that Python produces bit-accurate or mathematically equivalent results to the MATLAB oracle. |
+| **Parity Experiment** | A structured run that compares a Python pipeline execution against a specific MATLAB oracle, producing matched/missing/extra pair metrics. |
 
 ## Data Formats
 

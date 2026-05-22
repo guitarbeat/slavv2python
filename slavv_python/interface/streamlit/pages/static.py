@@ -50,9 +50,17 @@ def show_home_page():
     with col2, st.container(height=400):
         st.markdown("### Quick Stats")
 
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Supported Image Types", "TIFF", help="3D grayscale TIFF images")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Processing Steps", "4", help="Energy -> Vertices -> Edges -> Network")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Export Formats", "5+", help="VMV, CASX, MAT, CSV, JSON")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("### System Requirements")
         st.markdown("""

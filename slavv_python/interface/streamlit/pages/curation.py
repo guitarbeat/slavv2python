@@ -142,17 +142,21 @@ def show_ml_curation_page():
                     )
                     c1, c2 = st.columns(2, gap="small")
                     with c1:
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                         st.metric(
                             "Vertices",
                             current_counts["Vertices"],
                             delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         )
+                        st.markdown('</div>', unsafe_allow_html=True)
                     with c2:
+                        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                         st.metric(
                             "Edges",
                             current_counts["Edges"],
                             delta=current_counts["Edges"] - baseline_counts["Edges"],
                         )
+                        st.markdown('</div>', unsafe_allow_html=True)
 
     elif curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
@@ -274,19 +278,23 @@ def show_ml_curation_page():
                 )
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Vertices",
                         current_counts["Vertices"],
                         delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         help="Change relative to the pre-curation baseline",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col2:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Edges",
                         current_counts["Edges"],
                         delta=current_counts["Edges"] - baseline_counts["Edges"],
                         help="Change relative to the pre-curation baseline",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     elif curation_type == "Machine Learning (Model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
@@ -446,19 +454,23 @@ def show_ml_curation_page():
                 )
                 col1, col2 = st.columns(2, gap="small")
                 with col1:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Vertices",
                         current_counts["Vertices"],
                         delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         help="Change relative to the pre-curation baseline",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col2:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Edges",
                         current_counts["Edges"],
                         delta=current_counts["Edges"] - baseline_counts["Edges"],
                         help="Change relative to the pre-curation baseline",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.button("[Stats] Show Curation Statistics", width=250):
         st.markdown("### [Graph] Curation Results")

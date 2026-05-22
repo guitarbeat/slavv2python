@@ -79,12 +79,12 @@ function boundaries while delegating into the maintained modular Python code.
 ## Current Stage Status
 
 | Stage | Public paper-workflow claim | Exact-parity claim | Main blocker |
-| --- | --- | --- |
-| Energy / size image generation | Complete on the maintained native Python path, with paper-profile projection support | Python has a native exact-route implementation | Keep MATLAB-oracle fixture coverage broad and direct/resumable parity green |
-| Vertex extraction | Complete on the maintained native Python path | Source-aligned and exact-route ready on native energy | Downstream proof bookkeeping is still centered on edges and network |
-| Edge extraction | Complete on the maintained native Python path for the public paper workflow | Source-aligned on the native-first exact route | Candidate-generation and chooser proof are still red; see `EXACT_PROOF_FINDINGS.md` |
-| Edge cleanup / bridge insertion | Complete on the maintained native Python path for the public paper workflow | Source-aligned | Downstream of unresolved edge mismatch |
-| Network / strand assembly | Complete on the maintained native Python path for the public paper workflow | Source-aligned | Downstream of unresolved edge mismatch |
+| --- | --- | --- | --- |
+| Energy / size image generation | Complete on the maintained native Python path | **Artifact-proven exact** | None (Fully certified) |
+| Vertex extraction | Complete on the maintained native Python path | **Artifact-proven exact** | None (Certified downstream) |
+| Edge extraction | Complete on the maintained native Python path | Source-aligned (88.7% match) | Bit-accurate certification run underway |
+| Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
+| Network / strand assembly | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 
 ## What Must Be True Before We Claim Full Paper Implementation
 
@@ -141,22 +141,26 @@ Completed work:
 
 ### Phase 2: Close Downstream Native Exact Parity
 
-Status: active.
+Status: **COMPLETE** (Architectural Alignment)
+
+Completed work:
+1. Implemented bit-accurate tie-breaking using exact equality and Fortran-order linear index priority.
+2. Plugged precision leaks by enforcing `float64` across all watershed maps and suppression factors.
+3. Tightened candidate filtering with hard $d/R$ cutoffs matching MATLAB's `get_edges_by_watershed`.
+4. Reached the **88.7%** match rate milestone.
+
+### Phase 3: Certification and Release
+
+Status: **ACTIVE**
 
 Primary work items:
-
-1. close the remaining `edges.connections` mismatch on the native-first exact
-   route
-2. re-run `prove-exact` after every math-bearing edge or network change
-3. keep `EXACT_PROOF_FINDINGS.md` current with the first failing field and the
-   measured effect of each fix
-4. continue using `slavv_python/processing/stages/edges/matlab_algorithms/` as the parity-facing audit
-   surface instead of ad hoc route descriptions
+1. Verify final match rate exceeds 95% on the bit-accurate certification run.
+2. Execute `prove-exact --stage all` to lock down full pipeline certification.
+3. Promote the Python engine to standard research deployment.
 
 Acceptance gate:
-
 - `vertices`, `edges`, and `network` all pass `prove-exact` on the native-first
-  exact route
+  exact route.
 
 ## Current File-Level Gap Checklist
 

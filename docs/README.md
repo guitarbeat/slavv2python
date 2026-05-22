@@ -13,10 +13,12 @@ executable spec.
 ## Start Here
 
 1. [Repository README](../README.md)
-2. [Agent and workflow guide](../GEMINI.md)
-3. [Reference index](reference/README.md)
-4. [Investigation index](investigations/README.md)
-5. [Test placement guide](../tests/README.md)
+2. [Tutorial](TUTORIAL.md) — Get started with your first extraction.
+3. [Roadmap](ROADMAP.md) — Project status and active milestones.
+4. [Agent and workflow guide](../GEMINI.md)
+5. [Reference index](reference/README.md)
+6. [Investigation index](investigations/README.md)
+7. [Test placement guide](../tests/README.md)
 
 ## Core Maintained References
 

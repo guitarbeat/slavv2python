@@ -527,29 +527,37 @@ def show_processing_page() -> None:
                 processing_metrics = summarize_processing_metrics(results)
                 col1, col2, col3, col4 = st.columns(4, gap="small", vertical_alignment="center")
                 with col1:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Vertices Found",
                         processing_metrics["vertices"] if "vertices" in results else "N/A",
                         help="Total vertices detected in the volume",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col2:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Edges Extracted",
                         processing_metrics["edges"] if "edges" in results else "N/A",
                         help="Number of vessel segments traced",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col3:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Network Strands",
                         processing_metrics["strands"] if "network" in results else "N/A",
                         help="Connected components in the network",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
                 with col4:
+                    st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
                         "Bifurcations",
                         processing_metrics["bifurcations"] if "network" in results else "N/A",
                         help="Detected branching points",
                     )
+                    st.markdown('</div>', unsafe_allow_html=True)
             except Exception as exc:
                 st.error(f"Processing failed: {exc!s}")
     else:

@@ -67,7 +67,7 @@ class DrewsCurator:
         energies = edges["energies"]
 
         keep = []
-        for i, (trace, conn) in enumerate(zip(traces, connections)):
+        for i, (trace, _conn) in enumerate(zip(traces, connections)):
             length = calculate_path_length(np.array(trace))
             dist = np.linalg.norm(np.array(trace[-1]) - np.array(trace[0]))
             tort = length / dist if dist > 0 else 1.0

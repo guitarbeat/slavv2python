@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from slavv_python.schema.results import VertexSet
 
@@ -31,15 +32,13 @@ def test_vertex_set_deepening(tmp_path):
     assert np.array_equal(loaded_set.scales, vertex_set.scales)
     assert loaded_set.extra["metadata"] == "test"
 
+
 def test_vertex_set_validation():
     positions = np.array([[1, 2, 3]], dtype=float)
-    scales = np.array([0, 1], dtype=int) # Mismatch
+    scales = np.array([0, 1], dtype=int)  # Mismatch
     energies = np.array([0.5], dtype=float)
     lumen_radius_pixels = np.array([1.5, 2.5], dtype=float)
     lumen_radius_microns = np.array([15.0, 25.0], dtype=float)
 
-    try:
+    with pytest.raises(ValueError, match="Vertex attribute mismatch"):
         VertexSet.create(positions, scales, energies, lumen_radius_pixels, lumen_radius_microns)
-        assert False, "Should have raised ValueError"
-    except ValueError as e:
-        assert "Vertex attribute mismatch" in str(e)

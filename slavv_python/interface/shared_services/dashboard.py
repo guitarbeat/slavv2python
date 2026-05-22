@@ -31,13 +31,21 @@ def render_run_dashboard(snapshot) -> None:
     st.markdown("### Run Status")
     col1, col2, col3, col4 = st.columns(4, gap="small")
     with col1:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Run", snapshot.run_id)
+        st.markdown('</div>', unsafe_allow_html=True)
     with col2:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Overall", f"{overall_pct}%")
+        st.markdown('</div>', unsafe_allow_html=True)
     with col3:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Target", f"{target_pct}%")
+        st.markdown('</div>', unsafe_allow_html=True)
     with col4:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Stage", current_stage)
+        st.markdown('</div>', unsafe_allow_html=True)
     st.progress(overall_pct, text=f"Overall pipeline progress: {overall_pct}%")
     st.progress(
         target_pct,

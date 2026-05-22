@@ -24,12 +24,17 @@ Read these first when working on the live implementation:
   Public paper-first CLI/app workflow and authoritative JSON export contract.
 - [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
   Preferred Python names, package groupings, and compatibility policy.
+- [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md)
+  Engine design, component overview, and processing workflow.
 
 ## Workflow Guides
 
 - [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
   Technical instructions and best practices for MATLAB parity alignment.
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
+  Methodology and tools for measuring and optimizing processing speed.
+- [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md)
+  Mandatory steps for stable research deployments and parity promotion.
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
 - [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
 - [Proactive Agent Guide](workflow/PROACTIVE_AGENT_GUIDE.md)
