@@ -24,23 +24,23 @@ if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
 
 
-from slavv_python.schema.results import VertexSet
+from slavv_python.schema.results import EnergyResult, VertexSet
 
 def extract_vertices_resumable(
-    energy_data: dict[str, Any],
+    energy_data: EnergyResult,
     params: dict[str, Any],
     stage_controller: StageController,
 ) -> VertexSet:
     """Extract vertices with persisted MATLAB-style scan, crop, and choose state."""
-    energy = energy_data["energy"]
-    scale_indices = energy_data["scale_indices"]
-    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    energy = energy_data.energy
+    scale_indices = energy_data.scale_indices
+    lumen_radius_pixels = energy_data.lumen_radius_pixels
     lumen_radius_pixels_axes = coerce_radius_axes(
         lumen_radius_pixels,
-        energy_data.get("lumen_radius_pixels_axes"),
+        energy_data.extra.get("lumen_radius_pixels_axes"),
     )
-    energy_sign = energy_data.get("energy_sign", -1.0)
-    lumen_radius_microns = energy_data["lumen_radius_microns"]
+    energy_sign = energy_data.extra.get("energy_sign", -1.0)
+    lumen_radius_microns = energy_data.lumen_radius_microns
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)
     length_dilation_ratio = params.get("length_dilation_ratio", 1.0)

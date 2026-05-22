@@ -7,20 +7,21 @@ from typing import Any, cast
 import numpy as np
 from typing_extensions import TypeAlias
 
+from slavv_python.schema.results import VertexSet
+
 Int64Array: TypeAlias = "np.ndarray"
 Float32Array: TypeAlias = "np.ndarray"
 
 
-def empty_vertices_result() -> dict[str, Any]:
+def empty_vertices_result() -> VertexSet:
     """Return the canonical empty vertex payload."""
-    return {
-        "positions": np.empty((0, 3), dtype=np.float32),
-        "scales": np.empty((0,), dtype=np.int16),
-        "energies": np.empty((0,), dtype=np.float32),
-        "radii_pixels": np.empty((0,), dtype=np.float32),
-        "radii_microns": np.empty((0,), dtype=np.float32),
-        "radii": np.empty((0,), dtype=np.float32),
-    }
+    return VertexSet.create(
+        vertex_positions=np.empty((0, 3), dtype=np.float32),
+        vertex_scales=np.empty((0,), dtype=np.int16),
+        vertex_energies=np.empty((0,), dtype=np.float32),
+        lumen_radius_pixels=np.empty((0,), dtype=np.float32),
+        lumen_radius_microns=np.empty((0,), dtype=np.float32),
+    )
 
 
 def build_vertices_result(
@@ -29,21 +30,15 @@ def build_vertices_result(
     vertex_energies: np.ndarray,
     lumen_radius_pixels: np.ndarray,
     lumen_radius_microns: np.ndarray,
-) -> dict[str, Any]:
-    """Build the canonical vertex payload with normalized dtypes."""
-    vertex_positions = vertex_positions.astype(np.float32)
-    vertex_scales = vertex_scales.astype(np.int16)
-    vertex_energies = vertex_energies.astype(np.float32)
-    radii_pixels = lumen_radius_pixels[vertex_scales].astype(np.float32)
-    radii_microns = lumen_radius_microns[vertex_scales].astype(np.float32)
-    return {
-        "positions": vertex_positions,
-        "scales": vertex_scales,
-        "energies": vertex_energies,
-        "radii_pixels": radii_pixels,
-        "radii_microns": radii_microns,
-        "radii": radii_microns,
-    }
+) -> VertexSet:
+    """Build the canonical vertex payload using the deep VertexSet schema."""
+    return VertexSet.create(
+        vertex_positions=vertex_positions,
+        vertex_scales=vertex_scales,
+        vertex_energies=vertex_energies,
+        lumen_radius_pixels=lumen_radius_pixels,
+        lumen_radius_microns=lumen_radius_microns,
+    )
 
 
 def coerce_radius_axes(

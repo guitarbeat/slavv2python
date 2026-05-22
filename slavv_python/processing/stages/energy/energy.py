@@ -30,6 +30,7 @@ from slavv_python.processing.stages.energy.gradients import (
 from slavv_python.processing.stages.energy.resumable import (
     calculate_energy_field_resumable as _calculate_energy_field_resumable,
 )
+from slavv_python.schema.results import EnergyResult
 
 if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 
 def calculate_energy_field(
     image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
-) -> dict[str, Any]:
+) -> EnergyResult:
     """
     Calculate multi-scale energy field using MATLAB-faithful matched filtering.
 
@@ -58,7 +59,7 @@ def calculate_energy_field(
     )
     if len(lattice) > 1:
         return cast(
-            "dict[str, Any]",
+            "EnergyResult",
             _calculate_energy_field_chunked(
                 image,
                 params,
@@ -69,10 +70,7 @@ def calculate_energy_field(
             ),
         )
     energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
-    return cast(
-        "dict[str, Any]",
-        _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d),
-    )
+    return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
 
 
 def calculate_energy_field_resumable(
@@ -80,10 +78,10 @@ def calculate_energy_field_resumable(
     params: dict[str, Any],
     stage_controller: StageController,
     get_chunking_lattice_func=None,
-) -> dict[str, Any]:
+) -> EnergyResult:
     """Compute energy with resumable chunk/scale units backed by memmaps."""
     return cast(
-        "dict[str, Any]",
+        "EnergyResult",
         _calculate_energy_field_resumable(
             image,
             params,

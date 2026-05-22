@@ -14,7 +14,7 @@ Use the user-provided arguments as the source of truth:
 
 ## Context
 Before editing, check:
-- `AGENTS.md` — Repository map and guardrails
+- `GEMINI.md` — Repository map and guardrails
 - `docs/reference/workflow/PYTHON_NAMING_GUIDE.md` — Naming conventions
 - `tests/README.md` — Test placement by owner surface
 

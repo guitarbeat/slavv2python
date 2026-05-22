@@ -34,30 +34,30 @@ def test_native_hessian_matches_small_matlab_reference_fixture():
     expected_energy = fixture["expected_energy"].astype(np.float32)
     expected_energy_4d = fixture["expected_energy_4d"].astype(np.float32)
     expected_scale_indices = fixture["expected_scale_indices"].astype(np.int16)
-    finite_energy_mask = np.isfinite(expected_energy) & np.isfinite(result["energy"])
+    finite_energy_mask = np.isfinite(expected_energy) & np.isfinite(result.energy)
 
     npt.assert_allclose(
-        result["lumen_radius_microns"],
+        result.lumen_radius_microns,
         fixture["lumen_radius_microns"].astype(np.float32),
         rtol=1e-7,
         atol=1e-7,
     )
     npt.assert_allclose(
-        result["energy"][finite_energy_mask],
+        result.energy[finite_energy_mask],
         expected_energy[finite_energy_mask],
         rtol=1e-4,
         atol=1e-4,
     )
     npt.assert_array_equal(
-        result["scale_indices"],
+        result.scale_indices,
         expected_scale_indices,
     )
     for scale_idx in range(expected_energy_4d.shape[3]):
         finite_scale_mask = np.isfinite(expected_energy_4d[..., scale_idx]) & np.isfinite(
-            result["energy_4d"][..., scale_idx]
+            result.extra["energy_4d"][..., scale_idx]
         )
         npt.assert_allclose(
-            result["energy_4d"][..., scale_idx][finite_scale_mask],
+            result.extra["energy_4d"][..., scale_idx][finite_scale_mask],
             expected_energy_4d[..., scale_idx][finite_scale_mask],
             rtol=1e-4,
             atol=1e-4,

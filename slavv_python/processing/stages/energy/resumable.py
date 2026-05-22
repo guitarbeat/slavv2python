@@ -10,6 +10,7 @@ import numpy as np
 
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
 from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
+from slavv_python.schema.results import EnergyResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -77,7 +78,7 @@ def calculate_energy_field_resumable(
     open_energy_storage_array,
     compute_energy_scale,
     project_scale_stack,
-) -> dict[str, Any]:
+) -> EnergyResult:
     """Compute energy with resumable chunk/scale units backed by persistent arrays."""
     config = prepare_energy_config(image, params)
     config_hash = _config_hash(config)
@@ -206,24 +207,6 @@ def calculate_energy_field_resumable(
         elif bool(config["return_all_scales"]):
             returned_energy_4d = np.asarray(energy_4d)
 
-from slavv_python.schema.results import EnergyResult
-
-def calculate_energy_field_resumable(
-    image: np.ndarray,
-    params: dict[str, Any],
-    stage_controller: StageController,
-    *,
-    get_chunking_lattice_func,
-    prepare_energy_config,
-    select_energy_storage_format,
-    energy_lattice,
-    remove_storage_path,
-    open_energy_storage_array,
-    compute_energy_scale,
-    project_scale_stack,
-) -> EnergyResult:
-    """Compute energy with resumable chunk/scale units backed by persistent arrays."""
-    # ... (rest of the logic remains same until result building) ...
     result = EnergyResult.create(
         energy=result_energy,
         scale_indices=result_scale,
@@ -238,6 +221,7 @@ def calculate_energy_field_resumable(
     )
     if returned_energy_4d is not None:
         result.extra["energy_4d"] = returned_energy_4d
+
     return result
 
 

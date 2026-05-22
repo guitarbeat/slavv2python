@@ -22,7 +22,7 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 ## Making Changes
 
-- Follow the repo's [AGENTS.md](AGENTS.md) for canonical workflows and test placement.
+- Follow the repo's [GEMINI.md](GEMINI.md) for canonical workflows and test placement.
 - Use:
   
    ```powershell

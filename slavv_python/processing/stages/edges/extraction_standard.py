@@ -8,44 +8,48 @@ from typing import Any, Callable, cast
 import numpy as np
 from scipy.spatial import cKDTree
 
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
+
 logger = logging.getLogger(__name__)
 
 
 def extract_edges(
-    energy_data: dict[str, Any],
-    vertices: dict[str, Any],
+    energy_data: EnergyResult,
+    vertices: VertexSet,
     params: dict[str, Any],
     *,
     empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
     paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
-    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
+    use_matlab_frontier_tracer: Callable[[EnergyResult, dict[str, Any]], bool],
     generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
     finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
     generate_edge_candidates: Callable[..., dict[str, Any]],
     choose_edges_for_workflow: Callable[..., dict[str, Any]],
     add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
     finalize_edges_matlab_style: Callable[..., dict[str, Any]],
-) -> dict[str, Any]:
+) -> EdgeSet:
     """Extract edges by tracing from vertices through energy field."""
     logger.info("Extracting edges")
 
-    energy = energy_data["energy"]
-    vertex_positions = vertices["positions"]
-    vertex_scales = vertices["scales"]
-    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
-    lumen_radius_microns = energy_data["lumen_radius_microns"]
-    energy_sign = energy_data.get("energy_sign", -1.0)
+    energy = energy_data.energy
+    vertex_positions = vertices.positions
+    vertex_scales = vertices.scales
+    lumen_radius_pixels = energy_data.lumen_radius_pixels
+    lumen_radius_microns = energy_data.lumen_radius_microns
+    energy_sign = energy_data.extra.get("energy_sign", -1.0)
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
-    scale_indices = energy_data.get("scale_indices")
+    scale_indices = energy_data.scale_indices
 
     if len(vertex_positions) == 0:
         logger.info("Extracted 0 edges")
-        return cast("dict[str, Any]", empty_edges_result(vertex_positions))
+        # For simplicity, we create from empty dict or just use EdgeSet.create
+        empty_dict = empty_edges_result(vertex_positions)
+        return EdgeSet.from_dict(empty_dict)
 
     lumen_radius_pixels_axes = np.asarray(
-        energy_data.get(
+        energy_data.extra.get(
             "lumen_radius_pixels_axes",
             np.repeat(np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1), 3, axis=1),
         ),
@@ -118,7 +122,7 @@ def extract_edges(
     if use_frontier:
         chosen = add_vertices_to_edges_matlab_style(
             chosen,
-            vertices,
+            vertices.to_dict(), # Back to dict for legacy internal functions if needed, but let's see
             energy=energy,
             scale_indices=scale_indices,
             microns_per_voxel=microns_per_voxel,
@@ -139,4 +143,4 @@ def extract_edges(
         len(chosen["traces"]),
         chosen["diagnostics"]["candidate_traced_edge_count"],
     )
-    return chosen
+    return EdgeSet.from_dict(chosen)

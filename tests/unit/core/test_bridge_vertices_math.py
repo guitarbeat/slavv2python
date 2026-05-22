@@ -7,6 +7,7 @@ from slavv_python.processing.stages.edges.bridge_insertion import (
     add_vertices_to_edges_matlab_style,
 )
 from slavv_python.processing.stages.network import construct_network
+from slavv_python.schema.results import EdgeSet, VertexSet
 from slavv_python.processing.stages.vertices.painting import (
     paint_vertex_center_image,
     paint_vertex_image,
@@ -108,13 +109,13 @@ def test_construct_network_uses_bridge_vertices_when_connections_reference_them(
     }
 
     network = construct_network(
-        edges,
-        vertices,
+        EdgeSet.from_dict(edges),
+        VertexSet.from_dict(vertices),
         {"microns_per_voxel": [1.0, 1.0, 1.0], "remove_cycles": False},
     )
 
-    assert len(network["adjacency_list"]) == 4
-    assert set(network["adjacency_list"][3]) == {0, 1, 2}
+    assert len(network.extra["adjacency_list"]) == 4
+    assert set(network.extra["adjacency_list"][3]) == {0, 1, 2}
 
 
 def test_matlab_bridge_search_target_can_turn_through_branch_to_existing_vertex():

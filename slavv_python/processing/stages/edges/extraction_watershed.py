@@ -9,18 +9,20 @@ import numpy as np
 import scipy.ndimage as ndi
 from skimage.segmentation import watershed
 
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
+
 logger = logging.getLogger(__name__)
 
 
 def extract_edges_watershed(
-    energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-) -> dict[str, Any]:
+    energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
+) -> EdgeSet:
     """Extract edges using watershed segmentation seeded at vertices."""
     logger.info("Extracting edges via watershed")
 
-    energy = energy_data["energy"]
-    energy_sign = float(energy_data.get("energy_sign", -1.0))
-    vertex_positions = vertices["positions"]
+    energy = energy_data.energy
+    energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
+    vertex_positions = vertices.positions
 
     markers = np.zeros_like(energy, dtype=np.int32)
     idxs = np.floor(vertex_positions).astype(int)
@@ -72,9 +74,9 @@ def extract_edges_watershed(
 
     logger.info("Extracted %d watershed edges", len(edges))
 
-    return {
-        "traces": edges,
-        "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
-        "energies": np.asarray(edge_energies, dtype=np.float32),
-        "vertex_positions": vertex_positions.astype(np.float32),
-    }
+    return EdgeSet.create(
+        traces=edges,
+        connections=np.asarray(connections, dtype=np.int32).reshape(-1, 2),
+        energies=np.asarray(edge_energies, dtype=np.float32),
+        vertex_positions=vertex_positions.astype(np.float32),
+    )

@@ -49,6 +49,10 @@ from .state.resume_policy import (
     update_snapshot_fingerprints,
 )
 from .state.snapshots import emit_progress_event, load_or_create_snapshot, persist_snapshot
+from .state.tracker import (
+    fingerprint_array,
+    fingerprint_jsonable,
+)
 
 logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -200,6 +204,78 @@ class RunContext:
             provenance=provenance or {},
         )
         self.persist()
+
+    @classmethod
+    def prepare(
+        cls,
+        image: np.ndarray,
+        parameters: dict[str, Any],
+        *,
+        run_dir: str | Path | None = None,
+        stop_after: str | None = None,
+        force_rerun_from: str | None = None,
+        event_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> tuple[dict[str, Any], RunContext | None, dict[str, bool]]:
+        """
+        Validate inputs and prepare the run context for pipeline execution.
+        
+        Returns:
+            (validated_parameters, run_context, force_rerun_flags)
+        """
+        from slavv_python.utils import validate_parameters
+
+        # 1. Validate and Fingerprint
+        validated_params = validate_parameters(parameters)
+        input_hash = fingerprint_array(image)
+        params_hash = fingerprint_jsonable(validated_params)
+
+        # 2. Resolve Run Directory
+        effective_dir = run_dir
+        if effective_dir is None and event_callback is not None:
+            import tempfile
+            effective_dir = tempfile.mkdtemp(prefix="slavv_run_")
+
+        # 3. Create Context
+        context = None
+        if effective_dir:
+            context = cls(
+                run_dir=effective_dir,
+                input_fingerprint=input_hash,
+                params_fingerprint=params_hash,
+                target_stage=stop_after or "network",
+                provenance={
+                    "slavv_python": "pipeline",
+                    "image_shape": list(image.shape),
+                    "stop_after": stop_after or "network",
+                },
+                event_callback=event_callback,
+            )
+            
+            # 4. Initialize Context (Resume Policy)
+            context.ensure_resume_allowed(
+                input_fingerprint=input_hash,
+                params_fingerprint=params_hash,
+                force_rerun_from=force_rerun_from,
+            )
+            if force_rerun_from in PIPELINE_STAGES:
+                context.reset_pipeline_state_from(force_rerun_from)
+            
+            params_path = context.metadata_dir / "validated_params.json"
+            atomic_write_json(params_path, validated_params)
+            context.mark_run_status(
+                STATUS_RUNNING,
+                current_stage=PREPROCESS_STAGE,
+                detail="Starting SLAVV processing pipeline",
+            )
+
+        # 5. Calculate Force Rerun Flags
+        rerun_flags = dict.fromkeys(PIPELINE_STAGES, False)
+        if force_rerun_from in PIPELINE_STAGES:
+            start_idx = PIPELINE_STAGES.index(force_rerun_from)
+            for stage_name in PIPELINE_STAGES[start_idx:]:
+                rerun_flags[stage_name] = True
+
+        return validated_params, context, rerun_flags
 
     @classmethod
     def from_existing(

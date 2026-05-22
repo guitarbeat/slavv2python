@@ -106,8 +106,8 @@ def test_energy_field_no_full_storage():
     params = validate_parameters({})
     proc = SlavvPipeline()
     result = proc.compute_energy(img, params)
-    assert "energy_4d" not in result
-    assert result["energy"].shape == img.shape
+    assert "energy_4d" not in result.extra
+    assert result.energy.shape == img.shape
 
 
 @pytest.mark.unit
@@ -116,7 +116,7 @@ def test_energy_field_with_full_storage():
     params = validate_parameters({"return_all_scales": True})
     proc = SlavvPipeline()
     result = proc.compute_energy(img, params)
-    assert "energy_4d" in result
+    assert "energy_4d" in result.extra
 
 
 @pytest.mark.unit
@@ -130,7 +130,7 @@ def test_energy_scale_range_matches_matlab_ordination():
         }
     )
     result = SlavvPipeline().compute_energy(img, params)
-    assert len(result["lumen_radius_microns"]) == 26
+    assert len(result.lumen_radius_microns) == 26
 
 
 @pytest.mark.unit
@@ -150,7 +150,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
     resumable = energy_module.calculate_energy_field_resumable(
         image, params, run_context.stage("energy"), get_chunking_lattice
     )
-    npt.assert_allclose(direct["energy"], resumable["energy"])
+    npt.assert_allclose(direct.energy, resumable.energy)
 
 
 @pytest.mark.unit
@@ -193,7 +193,7 @@ def test_alternative_energy_methods(method):
         "scales_per_octave": 1.0,
     }
     result = proc.compute_energy(image, params)
-    assert result["energy"][4, 4, 4] < 0
+    assert result.energy[4, 4, 4] < 0
 
 
 @pytest.mark.unit
@@ -208,7 +208,7 @@ def test_simpleitk_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "scales_per_octave": 1.0,
     }
     result = SlavvPipeline().compute_energy(image, params)
-    assert result["energy"][4, 4, 4] < 0
+    assert result.energy[4, 4, 4] < 0
 
 
 @pytest.mark.unit
@@ -227,7 +227,7 @@ def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
         "scales_per_octave": 1.0,
     }
     result = SlavvPipeline().compute_energy(image, params)
-    assert result["energy"][4, 4, 4] < 0
+    assert result.energy[4, 4, 4] < 0
 
 
 # ==============================================================================
@@ -266,6 +266,3 @@ def test_native_energy_config_wires_projection_mode_and_octaves():
         },
     )
     assert config["energy_projection_mode"] == "paper"
-
-
-# Made with Bob

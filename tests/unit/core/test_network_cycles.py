@@ -3,11 +3,12 @@ import numpy as np
 from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.state import RunContext
 from slavv_python.processing.stages.network import construct_network_resumable, trace_strand_sparse
+from slavv_python.schema.results import EdgeSet, VertexSet
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():
     processor = SlavvPipeline()
-    vertices = {
+    vertices = VertexSet.from_dict({
         "positions": np.array(
             [
                 [0.0, 0.0, 0.0],
@@ -17,8 +18,8 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
             ],
             dtype=float,
         ),
-    }
-    edges = {
+    })
+    edges = EdgeSet.from_dict({
         "connections": np.array(
             [
                 [0, 1],
@@ -34,19 +35,19 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
             np.array([[2.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=float),
             np.array([[1.0, 0.0, 0.0], [1.0, 1.0, 0.0]], dtype=float),
         ],
-    }
+    })
 
     network = processor.build_network(edges, vertices, {"remove_cycles": True})
 
-    cycle_pairs = [tuple(map(int, pair)) for pair in network["cycles"]]
+    cycle_pairs = [tuple(map(int, pair)) for pair in network.extra["cycles"]]
     assert (0, 2) in cycle_pairs
-    assert 2 not in network["adjacency_list"][0]
-    assert len(network["strands"]) >= 1
-    assert len(network["mismatched_strands"]) == 0
+    assert 2 not in network.extra["adjacency_list"][0]
+    assert len(network.strands) >= 1
+    assert len(network.extra["mismatched_strands"]) == 0
 
 
 def test_construct_network_resumable_persists_standard_topology(tmp_path):
-    vertices = {
+    vertices = VertexSet.from_dict({
         "positions": np.array(
             [
                 [0.0, 0.0, 0.0],
@@ -57,8 +58,8 @@ def test_construct_network_resumable_persists_standard_topology(tmp_path):
             ],
             dtype=float,
         ),
-    }
-    edges = {
+    })
+    edges = EdgeSet.from_dict({
         "connections": np.array(
             [
                 [0, 1],
@@ -74,7 +75,7 @@ def test_construct_network_resumable_persists_standard_topology(tmp_path):
             np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
             np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
         ],
-    }
+    })
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="network")
 
     network = construct_network_resumable(
@@ -84,8 +85,8 @@ def test_construct_network_resumable_persists_standard_topology(tmp_path):
         run_context.stage("network"),
     )
 
-    assert network["strands"]
-    assert network["mismatched_strands"] == []
+    assert network.strands
+    assert network.extra["mismatched_strands"] == []
     assert run_context.stage("network").artifact_path("strands.pkl").exists()
 
 

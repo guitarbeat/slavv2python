@@ -11,7 +11,7 @@ Your job is to make code changes with the smallest safe diff, update or add test
 ## Context
 
 Always check these before making changes:
-- `AGENTS.md` — Repository map, guardrails, and quality commands
+- `GEMINI.md` — Repository map, guardrails, and quality commands
 - `docs/reference/workflow/PYTHON_NAMING_GUIDE.md` — Naming conventions
 - `tests/README.md` — Test placement rules
 

@@ -11,6 +11,7 @@ from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
 from slavv_python.processing.stages.edges.units import _load_edge_units
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def extract_edges_resumable(
-    energy_data: dict[str, Any],
-    vertices: dict[str, Any],
+    energy_data: EnergyResult,
+    vertices: VertexSet,
     params: dict[str, Any],
     stage_controller: StageController,
     *,
@@ -37,31 +38,31 @@ def extract_edges_resumable(
     finalize_edges_matlab_style: Callable[..., dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, ...]], np.ndarray],
     paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray],
-    use_matlab_frontier_tracer: Callable[[dict[str, Any], dict[str, Any]], bool],
-) -> dict[str, Any]:
+    use_matlab_frontier_tracer: Callable[[EnergyResult, dict[str, Any]], bool],
+) -> EdgeSet:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
     from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
     from slavv_python.engine.state.tracker import atomic_write_json
 
-    energy = energy_data["energy"]
-    vertex_positions = vertices["positions"]
-    vertex_scales = vertices["scales"]
-    lumen_radius_microns = energy_data["lumen_radius_microns"]
-    scale_indices = energy_data.get("scale_indices")
-    energy_sign = energy_data.get("energy_sign", -1.0)
+    energy = energy_data.energy
+    vertex_positions = vertices.positions
+    vertex_scales = vertices.scales
+    lumen_radius_microns = energy_data.lumen_radius_microns
+    scale_indices = energy_data.scale_indices
+    energy_sign = energy_data.extra.get("energy_sign", -1.0)
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
 
     if len(vertex_positions) == 0:
-        return cast("dict[str, Any]", empty_edges_result(vertex_positions))
+        return EdgeSet.from_dict(empty_edges_result(vertex_positions))
 
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
     lumen_radius_pixels_axes = np.asarray(
-        energy_data.get(
+        energy_data.extra.get(
             "lumen_radius_pixels_axes",
             np.repeat(
-                np.asarray(energy_data["lumen_radius_pixels"], dtype=np.float32).reshape(-1, 1),
+                np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32).reshape(-1, 1),
                 3,
                 axis=1,
             ),
@@ -145,7 +146,7 @@ def extract_edges_resumable(
             scale_indices=scale_indices,
             vertex_positions=vertex_positions,
             vertex_scales=vertex_scales,
-            lumen_radius_pixels=energy_data["lumen_radius_pixels"],
+            lumen_radius_pixels=energy_data.lumen_radius_pixels,
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             vertex_center_image=vertex_center_image,
@@ -225,15 +226,20 @@ def extract_edges_resumable(
         microns_per_voxel=microns_per_voxel,
         size_of_image=energy.shape,
     )
-    chosen["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
+    chosen_dict = (
+        chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
+    )
+    chosen_dict["lumen_radius_microns"] = np.asarray(
+        lumen_radius_microns, dtype=np.float32
+    ).copy()
     if use_frontier and candidates.get("frontier_lifecycle_events"):
         candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
         candidate_lifecycle = build_frontier_candidate_lifecycle(
             candidates,
-            chosen.get("chosen_candidate_indices"),
+            chosen_dict.get("chosen_candidate_indices"),
         )
         atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
-    atomic_joblib_dump(chosen, chosen_manifest_path)
+    atomic_joblib_dump(chosen_dict, chosen_manifest_path)
     stage_controller.update(
         units_total=3,
         units_completed=3,
@@ -241,23 +247,23 @@ def extract_edges_resumable(
         detail=("Selected MATLAB-style terminal edges" if use_frontier else "Selected final edges"),
         resumed=False,
     )
-    return chosen
+    return EdgeSet.from_dict(chosen_dict)
 
 
 def extract_edges_watershed_resumable(
-    energy_data: dict[str, Any],
-    vertices: dict[str, Any],
+    energy_data: EnergyResult,
+    vertices: VertexSet,
     params: dict[str, Any],
     stage_controller: StageController,
     *,
     atomic_joblib_dump: Callable[..., None],
     append_candidate_unit: Callable[..., None],
     empty_edge_diagnostics: Callable[[], dict[str, Any]],
-) -> dict[str, Any]:
+) -> EdgeSet:
     """Extract watershed edges with per-label persisted units."""
-    energy = energy_data["energy"]
-    energy_sign = float(energy_data.get("energy_sign", -1.0))
-    vertex_positions = vertices["positions"]
+    energy = energy_data.energy
+    energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
+    vertex_positions = vertices.positions
     markers = np.zeros_like(energy, dtype=np.int32)
     idxs = np.floor(vertex_positions).astype(int)
     idxs = np.clip(idxs, 0, np.array(energy.shape) - 1)
@@ -348,12 +354,12 @@ def extract_edges_watershed_resumable(
             resumed=bool(completed - {origin_index}),
         )
 
-    return {
-        "traces": edges,
-        "connections": np.asarray(connections, dtype=np.int32).reshape(-1, 2),
-        "energies": np.asarray(edge_energies, dtype=np.float32),
-        "vertex_positions": vertex_positions.astype(np.float32),
-    }
+    return EdgeSet.create(
+        traces=edges,
+        connections=np.asarray(connections, dtype=np.int32).reshape(-1, 2),
+        energies=np.asarray(edge_energies, dtype=np.float32),
+        vertex_positions=vertex_positions.astype(np.float32),
+    )
 
 
 __all__ = [

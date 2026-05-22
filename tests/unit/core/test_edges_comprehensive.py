@@ -40,6 +40,7 @@ from slavv_python.processing.stages.vertices.vertices import (
     extract_vertices,
     paint_vertex_center_image,
 )
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 # ==============================================================================
 # Edge Cases and Lifecycle
@@ -50,21 +51,21 @@ from slavv_python.processing.stages.vertices.vertices import (
 def test_extract_handles_no_vertices():
     processor = SlavvPipeline()
     energy = np.ones((3, 3, 3), dtype=np.float32)
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": energy,
         "scale_indices": np.zeros_like(energy, dtype=np.int16),
         "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
         "lumen_radius_microns": np.array([1.0], dtype=np.float32),
         "energy_sign": -1.0,
-    }
+    })
 
     vertices = processor.extract_vertices(energy_data, {})
     edges = processor.extract_edges(energy_data, vertices, {})
     network = processor.build_network(edges, vertices, {})
 
-    assert vertices["positions"].shape == (0, 3)
-    assert edges["connections"].shape == (0, 2)
-    assert len(network["adjacency_list"]) == 0
+    assert vertices.positions.shape == (0, 3)
+    assert edges.connections.shape == (0, 2)
+    assert len(network.extra["adjacency_list"]) == 0
 
 
 @pytest.mark.unit
@@ -91,17 +92,18 @@ def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
     x, y, z = coords[0] - size // 2, coords[1] - size // 2, coords[2] - size // 2
     energy = -(x**2 + z**2).astype(float)
 
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": energy,
+        "scale_indices": np.zeros_like(energy, dtype=np.int16),
         "lumen_radius_pixels": np.array([2.0], dtype=float),
         "lumen_radius_microns": np.array([2.0], dtype=float),
         "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
         "energy_sign": -1.0,
-    }
-    vertices = {
+    })
+    vertices = VertexSet.from_dict({
         "positions": np.array([[10.0, 10.0, 10.0]], dtype=float),
         "scales": np.array([0], dtype=int),
-    }
+    })
     params = {
         "number_of_edges_per_vertex": 2,
         "step_size_per_origin_radius": 2.0,
@@ -109,7 +111,7 @@ def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
         "microns_per_voxel": [1.0, 1.0, 1.0],
     }
     edges = processor.extract_edges(energy_data, vertices, params)
-    assert edges["diagnostics"]["candidate_traced_edge_count"] == 2
+    assert edges.extra["diagnostics"]["candidate_traced_edge_count"] == 2
 
 
 @pytest.mark.unit
@@ -327,7 +329,7 @@ def test_vertex_extraction_uses_matlab_paint_selection():
     scale_indices[5, 5, 5] = 2
     scale_indices[6, 5, 5] = 2
 
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": energy,
         "scale_indices": scale_indices,
         "lumen_radius_pixels": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
@@ -344,7 +346,7 @@ def test_vertex_extraction_uses_matlab_paint_selection():
         ),
         "lumen_radius_microns": np.array([0.5, 0.8, 1.0, 1.4, 1.8, 2.2], dtype=np.float32),
         "energy_sign": -1.0,
-    }
+    })
     params = {
         "energy_upper_bound": 0.0,
         "space_strel_apothem": 1,
@@ -352,8 +354,8 @@ def test_vertex_extraction_uses_matlab_paint_selection():
         "length_dilation_ratio": 1.0,
     }
     vertices = extract_vertices(energy_data, params)
-    assert len(vertices["positions"]) == 1
-    assert np.allclose(vertices["positions"][0], [5, 5, 5])
+    assert len(vertices.positions) == 1
+    assert np.allclose(vertices.positions[0], [5, 5, 5])
 
 
 @pytest.mark.unit

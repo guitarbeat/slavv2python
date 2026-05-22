@@ -11,6 +11,7 @@ from slavv_python.processing.stages.energy import backends as backends
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
 from slavv_python.processing.stages.energy import storage as _energy_storage
 from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
+from slavv_python.schema.results import EnergyResult
 
 
 def _select_energy_storage_format(config: dict[str, Any], total_voxels: int) -> str:
@@ -79,21 +80,21 @@ def _energy_result_payload(
     energy_3d: np.ndarray,
     scale_indices: np.ndarray,
     energy_4d: np.ndarray | None = None,
-) -> dict[str, Any]:
-    result = {
-        "energy": energy_3d,
-        "scale_indices": scale_indices,
-        "lumen_radius_microns": config["lumen_radius_microns"],
-        "lumen_radius_pixels": config["lumen_radius_pixels"],
-        "lumen_radius_pixels_axes": config["lumen_radius_pixels_axes"],
-        "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
-        "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
-        "energy_sign": config["energy_sign"],
-        "energy_origin": energy_origin_for_method(str(config["energy_method"])),
-        "image_shape": image_shape,
-    }
+) -> EnergyResult:
+    result = EnergyResult.create(
+        energy=energy_3d,
+        scale_indices=scale_indices,
+        lumen_radius_microns=config["lumen_radius_microns"],
+        lumen_radius_pixels=config["lumen_radius_pixels"],
+        image_shape=image_shape,
+        lumen_radius_pixels_axes=config["lumen_radius_pixels_axes"],
+        pixels_per_sigma_PSF=config["pixels_per_sigma_PSF"],
+        microns_per_sigma_PSF=config["microns_per_sigma_PSF"],
+        energy_sign=config["energy_sign"],
+        energy_origin=energy_origin_for_method(str(config["energy_method"])),
+    )
     if energy_4d is not None:
-        result["energy_4d"] = energy_4d
+        result.extra["energy_4d"] = energy_4d
     return result
 
 
@@ -235,7 +236,7 @@ def _calculate_energy_field_chunked(
     lattice,
     get_chunking_lattice_func,
     calculate_energy_field,
-) -> dict[str, Any]:
+) -> EnergyResult:
     n_jobs = int(config.get("n_jobs", 1))
 
     def _worker(chunk_slice, out_slice, inner_slice, return_all_scales: bool):
@@ -257,7 +258,7 @@ def _calculate_energy_field_chunked(
         )
 
         for out_slice, inner_slice, chunk_data in results:
-            energy_4d[(*out_slice, slice(None))] = chunk_data["energy_4d"][
+            energy_4d[(*out_slice, slice(None))] = chunk_data.extra["energy_4d"][
                 (*inner_slice, slice(None))
             ]
 
@@ -279,8 +280,8 @@ def _calculate_energy_field_chunked(
     )
 
     for out_slice, inner_slice, chunk_data in results:
-        energy_3d[out_slice] = chunk_data["energy"][inner_slice]
-        scale_indices[out_slice] = chunk_data["scale_indices"][inner_slice]
+        energy_3d[out_slice] = chunk_data.energy[inner_slice]
+        scale_indices[out_slice] = chunk_data.scale_indices[inner_slice]
 
     return _energy_result_payload(config, image.shape, energy_3d, scale_indices)
 

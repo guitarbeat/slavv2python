@@ -13,7 +13,7 @@ executable spec.
 ## Start Here
 
 1. [Repository README](../README.md)
-2. [Agent and workflow guide](../AGENTS.md)
+2. [Agent and workflow guide](../GEMINI.md)
 3. [Reference index](reference/README.md)
 4. [Investigation index](investigations/README.md)
 5. [Test placement guide](../tests/README.md)

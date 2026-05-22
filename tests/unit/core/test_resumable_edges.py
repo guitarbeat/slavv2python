@@ -5,24 +5,25 @@ import numpy as np
 
 from slavv_python.engine.state import RunContext
 from slavv_python.processing.stages.edges import resumable as resumable_edges
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 
 def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     stage_controller = run_context.stage("edges")
 
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": np.zeros((3, 3, 3), dtype=np.float32),
         "scale_indices": np.zeros((3, 3, 3), dtype=np.int16),
         "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
         "lumen_radius_microns": np.array([1.0], dtype=np.float32),
         "lumen_radius_pixels_axes": np.ones((1, 3), dtype=np.float32),
         "energy_sign": -1.0,
-    }
-    vertices = {
+    })
+    vertices = VertexSet.from_dict({
         "positions": np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float32),
         "scales": np.array([0, 0], dtype=np.int16),
-    }
+    })
     params = {
         "microns_per_voxel": [1.0, 1.0, 1.0],
         "number_of_edges_per_vertex": 4,
@@ -41,16 +42,16 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
             "watershed_per_origin_candidate_counts": {"0": 2},
         },
     }
-    chosen = {
+    chosen = EdgeSet.from_dict({
         "traces": candidates["traces"],
         "connections": candidates["connections"],
         "energies": np.array([-1.0], dtype=np.float32),
         "energy_traces": candidates["energy_traces"],
         "scale_traces": candidates["scale_traces"],
-        "vertex_positions": vertices["positions"],
+        "vertex_positions": vertices.positions,
         "connection_sources": ["frontier"],
         "diagnostics": {"candidate_traced_edge_count": 1},
-    }
+    })
 
     def fake_generate_edge_candidates(*args, **kwargs):
         calls["generate_args"] = args
@@ -105,7 +106,9 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         use_matlab_frontier_tracer=lambda *_args: False,
     )
 
-    assert result is chosen
+    assert len(result.traces) == len(chosen.traces)
+    assert np.array_equal(result.connections, chosen.connections)
+    assert result.extra["lumen_radius_microns"] == [1.0]
     assert "generate_args" in calls
     assert "generate_kwargs" in calls
     assert "choose_args" in calls
@@ -126,7 +129,7 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     stage_controller = run_context.stage("edges")
 
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": np.zeros((3, 3, 3), dtype=np.float32),
         "scale_indices": np.zeros((3, 3, 3), dtype=np.int16),
         "lumen_radius_pixels": np.array([1.0], dtype=np.float32),
@@ -134,11 +137,11 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         "lumen_radius_pixels_axes": np.ones((1, 3), dtype=np.float32),
         "energy_sign": -1.0,
         "energy_origin": "python_native_hessian",
-    }
-    vertices = {
+    })
+    vertices = VertexSet.from_dict({
         "positions": np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float32),
         "scales": np.array([0, 0], dtype=np.int16),
-    }
+    })
     params = {
         "comparison_exact_network": True,
         "microns_per_voxel": [1.0, 1.0, 1.0],
@@ -161,17 +164,17 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
             "watershed_per_origin_candidate_counts": {"0": 1},
         },
     }
-    chosen = {
+    chosen = EdgeSet.from_dict({
         "traces": frontier_candidates["traces"],
         "connections": frontier_candidates["connections"],
         "energies": np.array([-1.0], dtype=np.float32),
         "energy_traces": frontier_candidates["energy_traces"],
         "scale_traces": frontier_candidates["scale_traces"],
-        "vertex_positions": vertices["positions"],
+        "vertex_positions": vertices.positions,
         "connection_sources": ["frontier"],
         "chosen_candidate_indices": np.array([0], dtype=np.int32),
         "diagnostics": {"candidate_traced_edge_count": 1},
-    }
+    })
     calls: list[str] = []
 
     def fake_finalize(*_args):
@@ -217,7 +220,9 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         use_matlab_frontier_tracer=lambda *_args: True,
     )
 
-    assert result is chosen
+    assert len(result.traces) == len(chosen.traces)
+    assert np.array_equal(result.connections, chosen.connections)
+    assert result.extra["lumen_radius_microns"] == [1.0]
     assert calls == ["generate_frontier", "finalize"]
     assert stage_controller.artifact_path("candidate_lifecycle.json").is_file()
     candidate_checkpoint_path = run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"

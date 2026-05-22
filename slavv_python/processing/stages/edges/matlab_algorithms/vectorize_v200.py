@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     import numpy as np
 
 from slavv_python.engine.orchestrator import SlavvPipeline
-from slavv_python.workflows import finalize_pipeline_results
 
 
 def vectorize_v200(
@@ -33,17 +32,7 @@ def vectorize_v200(
         stop_after=stop_after,
         force_rerun_from=force_rerun_from,
     )
-    if {"energy_data", "vertices", "edges", "network"} <= results.keys():
-        return results
-    return finalize_pipeline_results(
-        {
-            "parameters": results.get("parameters", params),
-            "energy_data": active_processor.energy_data,
-            "vertices": active_processor.vertices,
-            "edges": active_processor.edges,
-            "network": active_processor.network,
-        }
-    )
+    return results
 
 
 __all__ = ["vectorize_v200"]

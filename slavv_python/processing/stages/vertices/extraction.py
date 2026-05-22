@@ -16,23 +16,24 @@ from slavv_python.processing.stages.vertices.results import (
     empty_vertices_result,
 )
 from slavv_python.processing.stages.vertices.selection import sort_vertex_order
+from slavv_python.schema.results import EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
 
 
-def extract_vertices(energy_data: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
+def extract_vertices(energy_data: EnergyResult, params: dict[str, Any]) -> VertexSet:
     """Extract vertices as local extrema in the energy field."""
     logger.info("Extracting vertices")
 
-    energy = energy_data["energy"]
-    scale_indices = energy_data["scale_indices"]
-    lumen_radius_pixels = energy_data["lumen_radius_pixels"]
+    energy = energy_data.energy
+    scale_indices = energy_data.scale_indices
+    lumen_radius_pixels = energy_data.lumen_radius_pixels
     lumen_radius_pixels_axes = coerce_radius_axes(
         lumen_radius_pixels,
-        energy_data.get("lumen_radius_pixels_axes"),
+        energy_data.extra.get("lumen_radius_pixels_axes"),
     )
-    energy_sign = energy_data.get("energy_sign", -1.0)
-    lumen_radius_microns = energy_data["lumen_radius_microns"]
+    energy_sign = energy_data.extra.get("energy_sign", -1.0)
+    lumen_radius_microns = energy_data.lumen_radius_microns
 
     energy_upper_bound = params.get("energy_upper_bound", 0.0)
     space_strel_apothem = params.get("space_strel_apothem", 1)

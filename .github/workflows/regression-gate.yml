@@ -35,4 +35,4 @@ jobs:
       run: python -m mypy
       
     - name: Unit Tests (Pytest)
-      run: python -m pytest tests/unit
+      run: python -m pytest tests/unit tests/integration/test_paper_profile_ci.py

@@ -11,9 +11,23 @@ they were still active.
 For current behavior and proof status, prefer:
 
 - [README.md](README.md)
-- [AGENTS.md](AGENTS.md)
+- [GEMINI.md](GEMINI.md)
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
+
+## [Unreleased] - 2026-05-22
+
+### Added
+
+- **CI Paper Profile Integration Test**: Implemented `test_paper_profile_ci.py` using synthetic TIFF data to ensure the paper profile pipeline works in CI/CD without real dataset dependencies.
+- **CI Regression Gate Update**: Updated GitHub Actions workflow to run the new synthetic integration test along with unit tests.
+
+### Fixed
+
+- **Test Suite: Object Attribute Access**: Resolved 20+ unit test failures by updating tests to use attributes (`.energy`, `.traces`, etc.) instead of subscripting (`["energy"]`) on the new typed `EnergyResult`, `EdgeSet`, `VertexSet`, and `NetworkResult` objects.
+- **Resumable Edge Extraction**: Fixed bugs in `resumable_edges.py` where `EnergyResult` and `EdgeSet` objects were being subscripted or incorrectly assigned, resolving critical failures when running with checkpoints.
+- **Network Construction Result**: Fixed a `TypeError` in `construct_network` where it attempted item assignment on a typed result object.
+- **Edge Candidate Seeding**: Fixed `IndexError` in edge tracing when `scale_indices` were missing from the energy result payload.
 
 ## [Unreleased] - 2026-05-15
 

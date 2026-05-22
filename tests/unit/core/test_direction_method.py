@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from slavv_python.engine import SlavvPipeline
+from slavv_python.schema.results import EnergyResult, VertexSet
 from slavv_python.utils import validate_parameters
 
 
@@ -23,14 +24,15 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
 
     vertex_pos = np.array([[10.0, 10.0, 10.0]], dtype=float)
     vertex_scales = np.array([0], dtype=int)
-    energy_data = {
+    energy_data = EnergyResult.from_dict({
         "energy": energy,
+        "scale_indices": np.zeros_like(energy, dtype=np.int16),
         "lumen_radius_pixels": np.array([2.0], dtype=float),
         "lumen_radius_microns": np.array([2.0], dtype=float),
         "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
         "energy_sign": -1.0,
-    }
-    vertices = {"positions": vertex_pos, "scales": vertex_scales}
+    })
+    vertices = VertexSet.from_dict({"positions": vertex_pos, "scales": vertex_scales})
     params = {
         "number_of_edges_per_vertex": 2,
         "step_size_per_origin_radius": 2.0,
@@ -47,5 +49,5 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
     )
 
     edges = processor.extract_edges(energy_data, vertices, params)
-    assert len(edges["traces"]) == 0
-    assert edges["diagnostics"]["candidate_traced_edge_count"] == 2
+    assert len(edges.traces) == 0
+    assert edges.extra["diagnostics"]["candidate_traced_edge_count"] == 2

@@ -336,15 +336,25 @@ class PipelineResult:
         return cls(
             parameters=parameters,
             energy_data=(
-                EnergyResult.from_dict(energy_payload) if isinstance(energy_payload, dict) else None
+                energy_payload if isinstance(energy_payload, EnergyResult)
+                else EnergyResult.from_dict(energy_payload) if isinstance(energy_payload, dict)
+                else None
             ),
-            vertices=VertexSet.from_dict(vertices_payload)
-            if isinstance(vertices_payload, dict)
-            else None,
-            edges=EdgeSet.from_dict(edges_payload) if isinstance(edges_payload, dict) else None,
-            network=NetworkResult.from_dict(network_payload)
-            if isinstance(network_payload, dict)
-            else None,
+            vertices=(
+                vertices_payload if isinstance(vertices_payload, VertexSet)
+                else VertexSet.from_dict(vertices_payload) if isinstance(vertices_payload, dict)
+                else None
+            ),
+            edges=(
+                edges_payload if isinstance(edges_payload, EdgeSet)
+                else EdgeSet.from_dict(edges_payload) if isinstance(edges_payload, dict)
+                else None
+            ),
+            network=(
+                network_payload if isinstance(network_payload, NetworkResult)
+                else NetworkResult.from_dict(network_payload) if isinstance(network_payload, dict)
+                else None
+            ),
             extra=payload_copy,
         )
 

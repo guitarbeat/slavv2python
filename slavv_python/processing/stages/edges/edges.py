@@ -33,6 +33,7 @@ from slavv_python.processing.stages.edges.resumable import (
 )
 from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
 from slavv_python.processing.stages.vertices import paint_vertex_center_image, paint_vertex_image
+from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -52,21 +53,21 @@ def _load_edge_units(
 
 
 def extract_edges_watershed(
-    energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
-) -> dict[str, object]:
+    energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
+) -> EdgeSet:
     """Extract edges using watershed segmentation seeded at vertices."""
     return cast(
-        "dict[str, object]",
+        "EdgeSet",
         _watershed.extract_edges_watershed(energy_data, vertices, params),
     )
 
 
 def extract_edges(
-    energy_data: dict[str, object], vertices: dict[str, object], params: dict[str, object]
-) -> dict[str, object]:
+    energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
+) -> EdgeSet:
     """Extract edges by tracing from vertices through energy field."""
     return cast(
-        "dict[str, object]",
+        "EdgeSet",
         _standard.extract_edges(
             energy_data,
             vertices,
@@ -86,16 +87,16 @@ def extract_edges(
 
 
 def extract_edges_resumable(
-    energy_data: dict[str, object],
-    vertices: dict[str, object],
-    params: dict[str, object],
+    energy_data: EnergyResult,
+    vertices: VertexSet,
+    params: dict[str, Any],
     stage_controller: StageController,
-) -> dict[str, object]:
+) -> EdgeSet:
     """Trace edges with per-origin persisted units."""
     from slavv_python.engine.state.tracker import atomic_joblib_dump
 
     return cast(
-        "dict[str, object]",
+        "EdgeSet",
         _extract_edges_resumable(
             energy_data,
             vertices,
@@ -120,16 +121,16 @@ def extract_edges_resumable(
 
 
 def extract_edges_watershed_resumable(
-    energy_data: dict[str, object],
-    vertices: dict[str, object],
-    params: dict[str, object],
+    energy_data: EnergyResult,
+    vertices: VertexSet,
+    params: dict[str, Any],
     stage_controller: StageController,
-) -> dict[str, object]:
+) -> EdgeSet:
     """Extract watershed edges with per-label persisted units."""
     from slavv_python.engine.state.tracker import atomic_joblib_dump
 
     return cast(
-        "dict[str, object]",
+        "EdgeSet",
         _extract_edges_watershed_resumable(
             energy_data,
             vertices,

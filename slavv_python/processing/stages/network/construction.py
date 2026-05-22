@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from slavv_python.schema.results import EdgeSet, NetworkResult, VertexSet
 from slavv_python.utils.safe_unpickle import safe_load
 
 from .base import (
@@ -43,7 +44,7 @@ def _network_payload(
     *,
     lumen_radius_microns: np.ndarray,
     microns_per_voxel: np.ndarray,
-) -> dict[str, Any]:
+) -> NetworkResult:
     """Build the final network payload from shared graph state."""
     (
         pruned_connections,
@@ -94,51 +95,50 @@ def _network_payload(
     vertex_degrees = _vertex_degrees(adjacency_list, n_vertices)
     orphans = np.where(vertex_degrees == 0)[0].astype(np.int32)
 
-    payload = {
-        "strands": topology["strands"],
-        "bifurcations": topology["bifurcations"],
-        "orphans": orphans,
-        "cycles": cycles,
-        "mismatched_strands": topology["mismatched_strands"],
-        "adjacency_list": adjacency_list,
-        "vertex_degrees": vertex_degrees,
-        "graph_edges": graph_edges,
-        "graph_edge_scales": graph_edge_scales,
-        "graph_edge_energies": graph_edge_energies,
-        "dangling_edges": dangling_edges,
-        "edge_indices_in_strands": topology["edge_indices_in_strands"],
-        "edge_backwards_in_strands": topology["edge_backwards_in_strands"],
-        "end_vertices_in_strands": topology["end_vertices_in_strands"],
-        "strand_subscripts": strand_subscripts,
-        "strand_traces": strand_space_traces,
-        "strand_space_traces": strand_space_traces,
-        "strand_scale_traces": strand_scale_traces,
-        "strand_energy_traces": strand_energy_traces,
-        "mean_strand_energies": mean_strand_energies,
-        "vessel_directions": vessel_directions,
-    }
-    return payload
+    return NetworkResult.create(
+        strands=topology["strands"],
+        bifurcations=topology["bifurcations"],
+        vertex_degrees=vertex_degrees,
+        orphans=orphans,
+        cycles=cycles,
+        mismatched_strands=topology["mismatched_strands"],
+        adjacency_list=adjacency_list,
+        graph_edges=graph_edges,
+        graph_edge_scales=graph_edge_scales,
+        graph_edge_energies=graph_edge_energies,
+        dangling_edges=dangling_edges,
+        edge_indices_in_strands=topology["edge_indices_in_strands"],
+        edge_backwards_in_strands=topology["edge_backwards_in_strands"],
+        end_vertices_in_strands=topology["end_vertices_in_strands"],
+        strand_subscripts=strand_subscripts,
+        strand_traces=strand_space_traces,
+        strand_space_traces=strand_space_traces,
+        strand_scale_traces=strand_scale_traces,
+        strand_energy_traces=strand_energy_traces,
+        mean_strand_energies=mean_strand_energies,
+        vessel_directions=vessel_directions,
+    )
 
 
 def construct_network(
-    edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-) -> dict[str, Any]:
+    edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]
+) -> NetworkResult:
     """Construct network from traced edges and detected vertices."""
     logger.info("Constructing network")
 
-    edge_traces = edges["traces"]
-    edge_scale_traces = edges.get(
+    edge_traces = edges.traces
+    edge_scale_traces = edges.extra.get(
         "scale_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
-    edge_energy_traces = edges.get(
+    edge_energy_traces = edges.extra.get(
         "energy_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
-    edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
+    edge_connections = _normalize_connections(edges.connections)
+    vertex_positions = np.asarray(vertices.positions, dtype=np.float32)
     bridge_vertex_positions = np.asarray(
-        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
+        edges.extra.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
         dtype=np.float32,
     ).reshape(-1, 3)
     if bridge_vertex_positions.size:
@@ -150,7 +150,7 @@ def construct_network(
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     lumen_radius_microns = np.asarray(
-        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
+        edges.extra.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
         dtype=np.float32,
     ).reshape(-1)
     min_hair_length = params.get("min_hair_length_in_microns", 0.0)
@@ -186,7 +186,7 @@ def construct_network(
         else []
     )
 
-    network = _network_payload(
+    return _network_payload(
         adjacency_list,
         graph_edges,
         graph_edge_scales,
@@ -198,39 +198,29 @@ def construct_network(
         microns_per_voxel=microns_per_voxel,
     )
 
-    logger.info(
-        "Constructed network with %d strands, %d bifurcations, %d orphans, removed %d cycles, and %d mismatched strands",
-        len(network["strands"]),
-        len(network["bifurcations"]),
-        len(network["orphans"]),
-        len(network["cycles"]),
-        len(network["mismatched_strands"]),
-    )
-    return network
-
 
 def construct_network_resumable(
-    edges: dict[str, Any],
-    vertices: dict[str, Any],
+    edges: EdgeSet,
+    vertices: VertexSet,
     params: dict[str, Any],
     stage_controller: StageController,
-) -> dict[str, Any]:
+) -> NetworkResult:
     """Construct a network while persisting stage-level substeps."""
     from slavv_python.engine.state.tracker import atomic_joblib_dump
 
-    edge_traces = edges["traces"]
-    edge_scale_traces = edges.get(
+    edge_traces = edges.traces
+    edge_scale_traces = edges.extra.get(
         "scale_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
-    edge_energy_traces = edges.get(
+    edge_energy_traces = edges.extra.get(
         "energy_traces",
         [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
     )
-    edge_connections = _normalize_connections(edges["connections"])
-    vertex_positions = np.asarray(vertices["positions"], dtype=np.float32)
+    edge_connections = _normalize_connections(edges.connections)
+    vertex_positions = np.asarray(vertices.positions, dtype=np.float32)
     bridge_vertex_positions = np.asarray(
-        edges.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
+        edges.extra.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
         dtype=np.float32,
     ).reshape(-1, 3)
     if bridge_vertex_positions.size:
@@ -242,7 +232,7 @@ def construct_network_resumable(
 
     microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
     lumen_radius_microns = np.asarray(
-        edges.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
+        edges.extra.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
         dtype=np.float32,
     ).reshape(-1)
     min_hair_length = params.get("min_hair_length_in_microns", 0.0)
@@ -370,7 +360,5 @@ def construct_network_resumable(
         lumen_radius_microns=lumen_radius_microns,
         microns_per_voxel=microns_per_voxel,
     )
-    network["strands"] = topology["strands"]
-    network["mismatched_strands"] = topology["mismatched_strands"]
     stage_controller.update(units_total=5, units_completed=5, substage="finalize")
     return network

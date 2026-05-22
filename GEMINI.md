@@ -1,6 +1,6 @@
-# AI Agent Repository Guide
+# SLAVV Repository Guide & Instructions (GEMINI.md)
 
-Canonical instructions for any AI coding agent working in the `slavv2python` repository.
+Canonical instructions, domain glossary, and architecture guidelines for any AI coding agent working in the `slavv2python` repository. This file is automatically loaded into the AI's context.
 
 ---
 
@@ -12,9 +12,52 @@ Canonical instructions for any AI coding agent working in the `slavv2python` rep
 
 ---
 
+## Domain Glossary
+
+### Lowest Linear Index Priority
+The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized.
+
+### Pipeline
+The authoritative sequence of computational stages (Energy → Vertices → Edges → Network) required to transform a 3D vascular volume into a vectorized graph representation.
+
+### Vertex
+A localized point of interest in the vascular volume, characterized by a 3D position, an estimated radius, and a local energy value.
+
+### Seed Vertex
+A [Vertex](#vertex) identified directly from the energy field as a local minimum. These serve as the initial discovery points for the [Pipeline](#pipeline).
+
+### Bridge Vertex
+A structural [Vertex](#vertex) inserted during edge selection to resolve overlaps or connectivity gaps. These are topologically necessary but were not originally identified as energy minima.
+
+### Vertex Set
+The authoritative collection of [Vertices](#vertex) for a given stage of a [Run](#run). A Vertex Set can contain both Seed and Bridge vertices.
+
+### Edge Discovery
+The process of identifying potential connectivity between [Vertices](#vertex) by analyzing the energy field.
+
+### Tracing Discovery
+An [Edge Discovery](#edge-discovery) strategy that identifies centerlines via frontier propagation from individual Seed Vertices.
+
+### Watershed Discovery
+An [Edge Discovery](#edge-discovery) strategy that partitions the volume into regional influence zones (catchment basins) to identify adjacent [Vertices](#vertex).
+
+### Run State
+The complete collection of data persisted during a [Run](#run).
+
+### Stage Result
+The authoritative output of a [Pipeline](#pipeline) stage, serving as the interface for subsequent stages.
+
+### Checkpoint
+Internal state persisted during a stage's execution to allow a [Run](#run) to recover from interruption or to skip recalculation.
+
+### Artifact
+Supplemental data produced by a stage for diagnostics, auditing, or visualization that is not strictly required for [Pipeline](#pipeline) progression.
+
+---
+
 ## Repository Map
 
-```
+```text
 slavv2python/
 ├── slavv_python/                       # Main package
 │   ├── engine/                         # Pipeline orchestration & lifecycle
@@ -55,6 +98,7 @@ slavv2python/
 │   └── diagnostics/                    # MATLAB artifact inspection
 │
 ├── docs/                               # Documentation
+│   ├── ROADMAP.md                      # Primary project status and active roadmap
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
@@ -77,13 +121,13 @@ Read these first when working on relevant surfaces:
 
 | Document | Path | Purpose |
 |:---------|:-----|:--------|
+| Project Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) | Comprehensive codebase health, active priorities & parity status |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
-| Project Status | [PROJECT_STATUS.md](PROJECT_STATUS.md) | Comprehensive codebase health & parity status |
 
 ---
 
