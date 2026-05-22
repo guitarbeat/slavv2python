@@ -31,8 +31,14 @@ from slavv_python.processing.stages.edges.common import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
 )
-from slavv_python.processing.stages.edges.execution_tracing import ExecutionTracer, NullExecutionTracer
-from slavv_python.processing.stages.edges.payloads import _edge_metric_from_energy_trace, _empty_edge_diagnostics
+from slavv_python.processing.stages.edges.execution_tracing import (
+    ExecutionTracer,
+    NullExecutionTracer,
+)
+from slavv_python.processing.stages.edges.payloads import (
+    _edge_metric_from_energy_trace,
+    _empty_edge_diagnostics,
+)
 
 
 def _coords_from_linear_trace(
@@ -347,7 +353,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
         )
 
     vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
-    is_without_vertex = (vertices_of_current_strel == 0) & (pointer_map_flat[valid_linear] == 0)
+    is_without_vertex = vertices_of_current_strel == 0  # MATLAB: vertex_index_map( current_strel ) == 0
     if np.any(is_without_vertex):
         claim_linear = valid_linear[is_without_vertex]
         claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
@@ -357,10 +363,6 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
                 "Global watershed produced invalid claim pointers for one strel: "
                 f"scale={current_scale_label}, lut_size={lut_size}, "
                 f"sample={bad_pointers[:5].tolist()}"
-            )
-        if np.any(pointer_map_flat[claim_linear] != 0):
-            raise AssertionError(
-                "Global watershed attempted to overwrite an existing pointer on the exact route."
             )
         vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
         pointer_map_flat[claim_linear] = claim_pointers
@@ -385,45 +387,51 @@ def _matlab_global_watershed_insert_available_location(
     seed_idx: int,
     is_current_location_clear: bool,
 ) -> tuple[list[int], bool]:
-    """Insert one location into MATLAB's worst-to-best available-location list."""
+    """Insert one location into MATLAB's worst-to-best available-location list.
 
-    def _energy_for(linear_index: int) -> float:
-        return float(energy_lookup[int(linear_index)])
+    The list is sorted primarily by energy (descending: worst to best) and
+    secondarily by linear index (descending: highest to lowest).
+    Since we pop from the end, the 'best' voxel (lowest energy, lowest index)
+    is at the very end of the list.
+
+    This implements 'Lowest Linear Index Priority' for exact MATLAB parity.
+    """
+    del seed_idx  # Redundant with unique composite keys
 
     if not available_locations:
         return [int(next_location)], True
 
     target_energy = float(next_energy)
+    target_index = int(next_location)
     n = len(available_locations)
 
-    if seed_idx == 1:
-        # MATLAB: location_idx = 1 + find(energy > target, 1, 'last')
-        low = 0
-        high = n
-        while low < high:
-            mid = (low + high) // 2
-            if _energy_for(available_locations[mid]) > target_energy:
-                low = mid + 1
-            else:
-                high = mid
-        insert_at = low
-    else:
-        # MATLAB: find(energy < target, 1, 'first')
-        low = 0
-        high = n
-        while low < high:
-            mid = (low + high) // 2
-            if _energy_for(available_locations[mid]) >= target_energy:
-                low = mid + 1
-            else:
-                high = mid
-        insert_at = low
+    # Binary search for the insertion point.
+    # available_locations is sorted 'worst to best' (High Energy -> Low Energy).
+    # Ties are broken by Linear Index (High Index -> Low Index).
+    # We want to find the first index 'i' where available_locations[i] is 'better' than next.
+    low = 0
+    high = n if is_current_location_clear else n - 1
+
+    while low < high:
+        mid = (low + high) // 2
+        mid_loc = available_locations[mid]
+        mid_energy = float(energy_lookup[mid_loc])
+
+        # Comparison logic: Is 'mid' worse than 'target'?
+        # 'Worse' means higher energy OR (equal energy and higher index).
+        is_mid_worse = (mid_energy > target_energy) or (
+            np.isclose(mid_energy, target_energy) and mid_loc > target_index
+        )
+
+        if is_mid_worse:
+            low = mid + 1
+        else:
+            high = mid
+
+    insert_at = low
 
     # Apply insertion and handle pop to match MATLAB splice
     if not is_current_location_clear:
-        # Splice replaces segment [insert_at : end] and pops one from the original end
-        # In MATLAB: [ 1 : location_idx - 1 ); next_location; available_locations( location_idx : end - 1 ) ]
-        # This always results in the original end being removed.
         available_locations.pop()
         available_locations.insert(insert_at, int(next_location))
     else:
@@ -829,6 +837,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             lut_size=current_strel["lut_size"],
         )
 
+
         for seed_idx in _matlab_global_watershed_seed_index_range(
             current_pointer_value=current_pointer_value,
             edge_number_tolerance=edge_number_tolerance,
@@ -970,3 +979,4 @@ def _generate_edge_candidates_matlab_global_watershed(
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
+
