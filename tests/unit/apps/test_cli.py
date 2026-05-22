@@ -5,6 +5,7 @@ import json
 import numpy as np
 import pytest
 
+from slavv_python.engine.state import RunContext
 from slavv_python.interface.cli import (
     _build_cli_parser,
     _load_exported_network_json,
@@ -18,7 +19,6 @@ from slavv_python.interface.cli.shared import (
 from slavv_python.interface.cli.shared import (
     _resolve_export_artifact_paths as _build_export_artifacts,
 )
-from slavv_python.engine.state import RunContext
 from tests.support.network_builders import (
     build_authoritative_network_json_payload,
     build_network_object,

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Main pipeline orchestration for SLAVV.
 Coordinates the energy, tracing, and network construction steps.
 """
@@ -9,24 +9,19 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from slavv_python import utils
+from slavv_python.engine.executor import StageExecutor
+from slavv_python.engine.context import RunContext
+from slavv_python.engine.state.models import ProgressEvent
+from slavv_python.engine.state.tracker import PREPROCESS_STAGE
 from slavv_python.processing.stages import edges as edge_ops
 from slavv_python.processing.stages import energy
 from slavv_python.processing.stages import network as network_ops
 from slavv_python.processing.stages import vertices as vertex_ops
-from slavv_python.engine.context import RunContext
-from slavv_python.engine.state.models import ProgressEvent
-from slavv_python.engine.state.tracker import PREPROCESS_STAGE
 from slavv_python.workflows import (
-    build_standard_pipeline_steps,
     emit_progress,
     finalize_pipeline_results,
     prepare_pipeline_run,
     preprocess_image,
-    resolve_edges_stage,
-    resolve_energy_stage,
-    resolve_network_stage,
-    resolve_vertices_stage,
-    run_pipeline_stage_sequence,
     validate_stage_control,
 )
 
@@ -55,32 +50,13 @@ class SlavvPipeline:
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
     ) -> dict[str, Any]:
-        """Complete SLAVV processing pipeline.
-
-        Args:
-            image: 3D input image array (y, x, z)
-            parameters: Dictionary of processing parameters
-            progress_callback: Optional callable receiving ``(fraction, stage)``
-                updates as the pipeline advances from 0.0 to 1.0.
-            event_callback: Optional structured callback receiving ``ProgressEvent``
-                snapshots whenever run state changes.
-            run_dir: Optional structured run directory. When provided, staged
-                metadata and artifacts are persisted under this root.
-            stop_after: Optional string ('energy', 'vertices', 'edges', 'network').
-                The pipeline will return early after completing the specified stage.
-            force_rerun_from: Optional string ('energy', 'vertices', 'edges', 'network').
-                If provided, checkpoints for this stage and all subsequent stages will be
-                ignored, forcing recalculation.
-        Returns:
-            Dictionary containing all processing results
-        """
+        """Complete SLAVV processing pipeline."""
         if image.ndim != 3 or 0 in image.shape:
             raise ValueError("Input image must be a non-empty 3D array")
         validate_stage_control(stop_after, "stop_after")
         validate_stage_control(force_rerun_from, "force_rerun_from")
 
         logger.info("Starting SLAVV processing pipeline")
-
         emit_progress(progress_callback, 0.0, "start")
 
         prepared_run = prepare_pipeline_run(
@@ -97,157 +73,67 @@ class SlavvPipeline:
         force_rerun = prepared_run.force_rerun
 
         results = {"parameters": parameters}
+        executor = StageExecutor(run_context, progress_callback, results)
+
         image = preprocess_image(image, parameters, run_context)
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
-        early_result = run_pipeline_stage_sequence(
-            results,
-            steps=build_standard_pipeline_steps(
-                resolve_energy=lambda: self._resolve_energy_stage(
-                    image,
-                    parameters,
-                    run_context,
-                    force_rerun["energy"],
-                ),
-                resolve_vertices=lambda: self._resolve_vertices_stage(
-                    cast("dict[str, Any]", results["energy_data"]),
-                    parameters,
-                    run_context,
-                    force_rerun["vertices"],
-                ),
-                resolve_edges=lambda: self._resolve_edges_stage(
-                    cast("dict[str, Any]", results["energy_data"]),
-                    cast("dict[str, Any]", results["vertices"]),
-                    parameters,
-                    run_context,
-                    force_rerun["edges"],
-                ),
-                resolve_network=lambda: self._resolve_network_stage(
-                    cast("dict[str, Any]", results["edges"]),
-                    cast("dict[str, Any]", results["vertices"]),
-                    parameters,
-                    run_context,
-                    force_rerun["network"],
-                ),
+
+        # 1. Energy
+        executor.execute(
+            "energy", "energy_data", 0.4,
+            compute_fn=lambda c: energy.calculate_energy_field_resumable(
+                image, parameters, c, utils.get_chunking_lattice
             ),
-            progress_callback=progress_callback,
-            stop_after=stop_after,
-            run_context=run_context,
+            fallback_fn=lambda: self.compute_energy(image, parameters),
+            force_rerun=force_rerun["energy"],
+            log_label="Energy Field"
         )
-        if early_result:
-            return cast("dict[str, Any]", early_result)
+        if stop_after == "energy":
+            return self._finalize_run(run_context, results, stop_after)
+
+        # 2. Vertices
+        executor.execute(
+            "vertices", "vertices", 0.6,
+            compute_fn=lambda c: vertex_ops.extract_vertices_resumable(
+                results["energy_data"], parameters, c
+            ),
+            fallback_fn=lambda: self.extract_vertices(results["energy_data"], parameters),
+            force_rerun=force_rerun["vertices"],
+        )
+        if stop_after == "vertices":
+            return self._finalize_run(run_context, results, stop_after)
+
+        # 3. Edges
+        from slavv_python.processing.stages.edges.manager import EdgeManager
+        executor.execute(
+            "edges", "edges", 0.8,
+            compute_fn=lambda c: EdgeManager.run_resumable(
+                results["energy_data"], results["vertices"], parameters, c
+            ),
+            fallback_fn=lambda: self.extract_edges(results["energy_data"], results["vertices"], parameters),
+            force_rerun=force_rerun["edges"],
+        )
+        if stop_after == "edges":
+            return self._finalize_run(run_context, results, stop_after)
+
+        # 4. Network
+        executor.execute(
+            "network", "network", 1.0,
+            compute_fn=lambda c: network_ops.construct_network_resumable(
+                results["edges"], results["vertices"], parameters, c
+            ),
+            fallback_fn=lambda: self.build_network(results["edges"], results["vertices"], parameters),
+            force_rerun=force_rerun["network"],
+        )
 
         logger.info("SLAVV processing pipeline completed")
+        return self._finalize_run(run_context, results, stop_after)
+
+    def _finalize_run(self, run_context, results, stop_after):
+        """Finalize state and return normalized results."""
         if run_context is not None:
             run_context.finalize_run(stop_after=stop_after)
         return cast("dict[str, Any]", finalize_pipeline_results(results))
-
-    def _resolve_energy_stage(
-        self,
-        image: np.ndarray,
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
-    ) -> dict[str, Any]:
-        return cast(
-            "dict[str, Any]",
-            resolve_energy_stage(
-                run_context=run_context,
-                force_rerun=force_rerun,
-                fallback_fn=lambda: self.compute_energy(image, parameters),
-                resumable_fn=lambda controller: energy.calculate_energy_field_resumable(
-                    image,
-                    parameters,
-                    controller,
-                    utils.get_chunking_lattice,
-                ),
-                logger=logger,
-            ),
-        )
-
-    def _resolve_vertices_stage(
-        self,
-        energy_data: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
-    ) -> dict[str, Any]:
-        return cast(
-            "dict[str, Any]",
-            resolve_vertices_stage(
-                run_context=run_context,
-                force_rerun=force_rerun,
-                fallback_fn=lambda: self.extract_vertices(energy_data, parameters),
-                resumable_fn=lambda controller: vertex_ops.extract_vertices_resumable(
-                    energy_data,
-                    parameters,
-                    controller,
-                ),
-                logger=logger,
-            ),
-        )
-
-    def _resolve_edges_stage(
-        self,
-        energy_data: dict[str, Any],
-        vertices: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
-    ) -> dict[str, Any]:
-        edge_method = parameters.get("edge_method", "tracing")
-        return cast(
-            "dict[str, Any]",
-            resolve_edges_stage(
-                run_context=run_context,
-                force_rerun=force_rerun,
-                edge_method=edge_method,
-                tracing_fallback_fn=lambda: self.extract_edges(energy_data, vertices, parameters),
-                watershed_fallback_fn=lambda: self.extract_edges_watershed(
-                    energy_data,
-                    vertices,
-                    parameters,
-                ),
-                tracing_resumable_fn=lambda controller: edge_ops.extract_edges_resumable(
-                    energy_data,
-                    vertices,
-                    parameters,
-                    controller,
-                ),
-                watershed_resumable_fn=lambda controller: (
-                    edge_ops.extract_edges_watershed_resumable(
-                        energy_data,
-                        vertices,
-                        parameters,
-                        controller,
-                    )
-                ),
-                logger=logger,
-            ),
-        )
-
-    def _resolve_network_stage(
-        self,
-        edges: dict[str, Any],
-        vertices: dict[str, Any],
-        parameters: dict[str, Any],
-        run_context: RunContext | None,
-        force_rerun: bool,
-    ) -> dict[str, Any]:
-        return cast(
-            "dict[str, Any]",
-            resolve_network_stage(
-                run_context=run_context,
-                force_rerun=force_rerun,
-                fallback_fn=lambda: self.build_network(edges, vertices, parameters),
-                resumable_fn=lambda controller: network_ops.construct_network_resumable(
-                    edges,
-                    vertices,
-                    parameters,
-                    controller,
-                ),
-                logger=logger,
-            ),
-        )
 
     def compute_energy(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate the multi-scale energy field."""

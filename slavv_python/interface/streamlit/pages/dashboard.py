@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 import plotly.express as px
 import streamlit as st
 
+from slavv_python.engine.state.status import target_stage_progress
 from slavv_python.interface.shared_services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
@@ -17,7 +18,6 @@ from slavv_python.interface.shared_services.dashboard import (
     render_run_dashboard,
 )
 from slavv_python.interface.shared_state.dashboard import DashboardContext, load_dashboard_context
-from slavv_python.engine.state.status import target_stage_progress
 from slavv_python.visualization import NetworkVisualizer
 
 if TYPE_CHECKING:

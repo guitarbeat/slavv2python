@@ -1,4 +1,4 @@
-﻿"""Analysis page for the SLAVV Streamlit app."""
+"""Analysis page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 

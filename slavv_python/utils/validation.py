@@ -1,4 +1,4 @@
-﻿"""Parameter validation functions for source."""
+"""Parameter validation functions for source."""
 
 from __future__ import annotations
 

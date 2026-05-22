@@ -7,6 +7,7 @@ import pytest
 
 pytest.importorskip("streamlit")
 
+from slavv_python.engine.state.tracker import RunSnapshot
 from slavv_python.interface.shared_state.analysis import (
     build_analysis_connectivity_rows,
     build_analysis_full_stats_rows,
@@ -37,7 +38,6 @@ from slavv_python.interface.shared_state.visualization import (
     normalize_visualization_results,
     resolve_visualization_session_context,
 )
-from slavv_python.engine.state.tracker import RunSnapshot
 from tests.support.payload_builders import (
     build_edges_payload,
     build_energy_result,

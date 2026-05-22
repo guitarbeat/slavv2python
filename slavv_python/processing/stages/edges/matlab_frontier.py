@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
 from slavv_python.processing.stages.edges.common import (
     BoolArray,
     Float32Array,
@@ -24,7 +25,6 @@ from slavv_python.processing.stages.edges.common import (
 from slavv_python.processing.stages.edges.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
-from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
 
 __all__ = [
     "BoolArray",

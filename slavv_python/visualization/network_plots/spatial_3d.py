@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from slavv_python.utils import calculate_path_length
+
 from .helpers import add_colorbar
 from .layout import plot_3d_layout
 

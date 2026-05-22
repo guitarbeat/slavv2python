@@ -1,5 +1,7 @@
 # SLAVV Python
 
+> 🔴 **Active Developer Priority:** [Active TODO Queue](TODO.md) (Product-first health track).
+
 Python implementation of SLAVV for 3D vascular network extraction from
 microscopy volumes. The public workflow is paper-first: run the native Python
 pipeline with the default `paper` profile, export an authoritative
@@ -60,6 +62,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## Documentation
 
+- [Active TODO Priority Queue](TODO.md)
 - [AGENTS.md](AGENTS.md)
 - [Documentation Index](docs/README.md)
 - [Reference Docs](docs/reference/README.md)

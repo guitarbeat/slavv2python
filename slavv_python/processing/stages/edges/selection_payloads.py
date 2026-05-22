@@ -9,7 +9,10 @@ import numpy as np
 from slavv_python.processing.stages.edges.audit import (
     _normalize_candidate_connection_sources as _normalize_connection_sources,
 )
-from slavv_python.processing.stages.edges.payloads import _empty_edges_result, build_edge_diagnostics
+from slavv_python.processing.stages.edges.payloads import (
+    _empty_edges_result,
+    build_edge_diagnostics,
+)
 
 
 def normalize_candidate_connection_sources(

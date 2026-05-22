@@ -158,13 +158,18 @@ The current development environment lacks `git-annex`, blocking the retrieval of
 
 ## 8. Immediate Action Items
 
-### High
-1. **Linear-Index Tie-Breaking** — Implement secondary sort key in watershed to bridge the final 11.3% parity gap.
-2. **Restore ML Components** — Replace stubs in `analytics.curation.machine_learning` with real logic or restored modules.
+### 🔴 Critical (Priority 1: Product Health)
+1. **Integration Test Suite** — Add robust integration test covering the native `paper` profile pipeline (TIFF-to-network-to-export) in the CI/CD regression gate.
 
-### Medium
-3. **Retrieve Real Data** — Execute `git annex get external/` in a compatible environment for multi-dataset testing.
-4. **Update Integration Tests** — Refine the integration suite to match the new `float64` precision expectations.
+### 🟡 High (Priority 2: Quality & Stability)
+2. **Restore ML Components** — Replace stubs in `analytics.curation.machine_learning` with real logic or restored modules.
+3. **Refine Test Suite** — Update unit and integration tests to resolve minor float64 expectation mismatches and ensure 100% pass rate.
+
+### 🟢 Medium (Priority 3: Parity Track — PAUSED)
+> [!NOTE]
+> Parity-specific tasks are paused until the Priority 1 & 2 product health milestones are fully green and locked in.
+4. **Linear-Index Tie-Breaking** — Implement secondary sort key in watershed to bridge the final 11.3% parity gap.
+5. **Retrieve Real Data** — Execute `git annex get external/` in a compatible environment for multi-dataset testing.
 
 ---
 

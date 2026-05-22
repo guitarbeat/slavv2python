@@ -21,7 +21,10 @@ from slavv_python.processing.stages.edges.candidate_generation import (
 from slavv_python.processing.stages.edges.candidate_manifest import _append_candidate_unit
 from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
 from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
-from slavv_python.processing.stages.edges.payloads import _empty_edge_diagnostics, _empty_edges_result
+from slavv_python.processing.stages.edges.payloads import (
+    _empty_edge_diagnostics,
+    _empty_edges_result,
+)
 from slavv_python.processing.stages.edges.resumable import (
     extract_edges_resumable as _extract_edges_resumable,
 )
@@ -71,7 +74,7 @@ def extract_edges(
             empty_edges_result=_empty_edges_result,
             paint_vertex_center_image=paint_vertex_center_image,
             paint_vertex_image=paint_vertex_image,
-            use_matlab_frontier_tracer=lambda *args: True, # Force for audit
+            use_matlab_frontier_tracer=_use_matlab_frontier_tracer,
             generate_edge_candidates_matlab_frontier=_generate_edge_candidates_matlab_frontier,
             finalize_matlab_parity_candidates=_finalize_matlab_parity_candidates,
             generate_edge_candidates=_generate_edge_candidates,

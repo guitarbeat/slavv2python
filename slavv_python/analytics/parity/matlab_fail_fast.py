@@ -1,4 +1,4 @@
-﻿"""Fail-fast parity helpers for the native-first exact route."""
+"""Fail-fast parity helpers for the native-first exact route."""
 
 from __future__ import annotations
 

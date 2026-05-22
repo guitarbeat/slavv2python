@@ -1,4 +1,4 @@
-﻿"""Promotion logic for native-first MATLAB-oracle parity experiments."""
+"""Promotion logic for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -29,7 +29,8 @@ from .constants import (
 )
 from .index import ensure_experiment_root_layout, resolve_experiment_root, upsert_index_record
 from .models import OracleSurface
-from .utils import (entity_id_from_path,
+from .utils import (
+    entity_id_from_path,
     now_iso,
     persist_normalized_payloads,
     resolve_python_commit,

@@ -7,8 +7,8 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.schema import normalize_pipeline_result
 from slavv_python.engine.state.tracker import fingerprint_jsonable
+from slavv_python.schema import normalize_pipeline_result
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping

@@ -1,4 +1,4 @@
-﻿"""Focused app-facing helpers for curation workflows."""
+"""Focused app-facing helpers for curation workflows."""
 
 from __future__ import annotations
 

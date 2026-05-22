@@ -84,7 +84,6 @@ def dicom_to_tiff(
     """
     try:
         import pydicom  # type: ignore
-        import tifffile
     except Exception as exc:
         raise RuntimeError(
             "dicom_to_tiff requires 'pydicom' and 'tifffile' to be installed"

@@ -8,11 +8,11 @@ import pytest
 from tests.support.run_state_builders import build_run_context
 
 from slavv_python.engine.state import RunContext, load_run_snapshot
+from slavv_python.engine.state.status import target_stage_progress
 from slavv_python.engine.state.tracker import (
     STATUS_COMPLETED,
     STATUS_COMPLETED_TARGET,
 )
-from slavv_python.engine.state.status import target_stage_progress
 
 
 def test_run_context_persists_snapshot_lifecycle(tmp_path, monkeypatch):

@@ -26,37 +26,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 warnings.filterwarnings("ignore")
-try:
-    from slavv_python.schema import normalize_pipeline_result
-    from slavv_python.analytics.math import calculate_path_length
-    from slavv_python.utils.safe_unpickle import safe_load
-    from .automated import AutomaticCurator
-    from slavv_python.processing.stages.edges.terminal_lookup import in_bounds
-    
-    # Missing helpers - stubbed to allow app launch
-    def compute_local_gradient(*args, **kwargs): return np.zeros(3)
-    def feature_importance(*args, **kwargs): return {}
-    def materialize_model_source(source):
-        from contextlib import contextmanager
-        @contextmanager
-        def _temp(): yield source
-        return _temp()
-    def load_aggregated_training_data(*args, **kwargs): return np.array([]), np.array([]), np.array([]), np.array([])
+from slavv_python.analytics.math import calculate_path_length
+from slavv_python.processing.stages.edges.terminal_lookup import in_bounds
+from slavv_python.schema import normalize_pipeline_result
+from slavv_python.utils.safe_unpickle import safe_load
 
-except ImportError:  # pragma: no cover
-    from slavv_python.analytics.curation.automated import AutomaticCurator
-    from slavv_python.schema import normalize_pipeline_result
-    from slavv_python.analytics.math import calculate_path_length
-    from slavv_python.utils.safe_unpickle import safe_load
-    from slavv_python.processing.stages.edges.terminal_lookup import in_bounds
-    def compute_local_gradient(*args, **kwargs): return np.zeros(3)
-    def feature_importance(*args, **kwargs): return {}
-    def materialize_model_source(source):
-        from contextlib import contextmanager
-        @contextmanager
-        def _temp(): yield source
-        return _temp()
-    def load_aggregated_training_data(*args, **kwargs): return np.array([]), np.array([]), np.array([]), np.array([])
+from .automated import AutomaticCurator
+from .machine_learning_features import compute_local_gradient, feature_importance
+from .machine_learning_io import materialize_model_source
+from .machine_learning_training import load_aggregated_training_data
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -66,11 +45,13 @@ __all__ = [
     "AutomaticCurator",
     "DrewsCurator",
     "MLCurator",
+    "extract_uncurated_info",
 ]
 
 
 class DrewsCurator:
     """Heuristic curation based on length, tortuosity, and endpoint gaps."""
+
     def __init__(self, min_length_radius_ratio=2.0, max_tortuosity=1.2, max_endpoint_gap=5.0):
         self.min_ratio = min_length_radius_ratio
         self.max_tort = max_tortuosity
@@ -80,21 +61,24 @@ class DrewsCurator:
         """Apply heuristic filters to edges."""
         # Minimal implementation to satisfy tests
         from ..math import calculate_path_length
+
         traces = edges["traces"]
         connections = edges["connections"]
         energies = edges["energies"]
-        
+
         keep = []
         for i, (trace, conn) in enumerate(zip(traces, connections)):
             length = calculate_path_length(np.array(trace))
             dist = np.linalg.norm(np.array(trace[-1]) - np.array(trace[0]))
             tort = length / dist if dist > 0 else 1.0
-            
+
             # Simple length check for the test's 'too short' case
-            if length < 1.0: continue
-            if tort > self.max_tort: continue
+            if length < 1.0:
+                continue
+            if tort > self.max_tort:
+                continue
             keep.append(i)
-            
+
         return {
             "traces": [traces[i] for i in keep],
             "connections": [connections[i] for i in keep],
@@ -729,3 +713,37 @@ class MLCurator:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Aggregate features from multiple result snippets for training."""
         return load_aggregated_training_data(data_dir, file_pattern=file_pattern)
+
+
+def extract_uncurated_info(
+    vertices: dict[str, Any],
+    edges: dict[str, Any],
+    energy_data: dict[str, Any],
+    image_shape: tuple[int, ...],
+) -> dict[str, np.ndarray]:
+    """Extract vertex and edge feature arrays without classification.
+
+    Mirrors MATLAB's ``uncuratedInfoExtractor.m`` by deriving feature sets for
+    quality-assurance datasets before any ML-based curation.
+
+    Parameters
+    ----------
+    vertices:
+        Dictionary containing vertex ``positions``, ``energies``, ``scales``, and
+        optional ``radii_pixels``.
+    edges:
+        Dictionary with edge ``traces`` and ``connections``.
+    energy_data:
+        Dictionary providing the ``energy`` field used for feature extraction.
+    image_shape:
+        Shape of the original image volume, used for normalized coordinates.
+
+    Returns
+    -------
+    dict
+        ``{"vertex_features": ..., "edge_features": ...}`` feature arrays.
+    """
+    curator = MLCurator()
+    vertex_features = curator.extract_vertex_features(vertices, energy_data, image_shape)
+    edge_features = curator.extract_edge_features(edges, vertices, energy_data)
+    return {"vertex_features": vertex_features, "edge_features": edge_features}

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import warnings
 
@@ -15,8 +15,12 @@ from slavv_python.interface.shared_services.app import (
     generate_share_report_data,
     load_run_snapshot,
 )
-from slavv_python.interface.shared_services.app import apply_curated_results as _apply_curated_results
-from slavv_python.interface.shared_services.app import run_interactive_curator as _run_interactive_curator
+from slavv_python.interface.shared_services.app import (
+    apply_curated_results as _apply_curated_results,
+)
+from slavv_python.interface.shared_services.app import (
+    run_interactive_curator as _run_interactive_curator,
+)
 from slavv_python.interface.shared_services.dashboard import (
     DASHBOARD_BREAKDOWN_SECTIONS,
     DASHBOARD_PLACEHOLDER,
@@ -157,8 +161,6 @@ __all__ = [
     "_apply_curated_results",
     "_build_processing_run_dir",
     "_dashboard_context",
-    "build_dashboard_breakdown_frame",
-    "build_dashboard_stage_frame",
     "_has_full_network_results",
     "_init_dashboard_state",
     "_log_share_report_prepared_once",
@@ -170,6 +172,8 @@ __all__ = [
     "_run_interactive_curator",
     "_toast_dashboard_feedback",
     "_update_run_task",
+    "build_dashboard_breakdown_frame",
+    "build_dashboard_stage_frame",
     "cached_load_tiff_volume",
     "generate_export_data",
     "generate_share_report_data",

@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from tests.support.run_state_builders import build_run_context
 
-from slavv_python.engine.state import load_run_snapshot
 from slavv_python.engine.constants import STATUS_BLOCKED, STATUS_PENDING
+from slavv_python.engine.state import load_run_snapshot
 from slavv_python.engine.state.models import RunSnapshot
 from slavv_python.engine.state.resume_policy import (
     apply_resume_block,

@@ -1,4 +1,4 @@
-﻿"""CLI handlers for native-first MATLAB-oracle parity experiments."""
+"""CLI handlers for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -48,7 +48,8 @@ from .reports import (
     read_python_counts_from_run,
     render_experiment_summary,
 )
-from .utils import (fingerprint_file,
+from .utils import (
+    fingerprint_file,
     now_iso,
     write_json_with_hash,
 )
@@ -177,12 +178,16 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     # in generate.py to ensure the engine sees the correct spatial orientation.
 
     # 1. Align volumes to coherent system: [Y, X, Z] -> [Z, X, Y]
-    aligned_energy = np.transpose(np.asarray(energy_data["energy"], dtype=np.float32), (2, 1, 0)).copy(order="F")
-    
+    aligned_energy = np.transpose(
+        np.asarray(energy_data["energy"], dtype=np.float32), (2, 1, 0)
+    ).copy(order="F")
+
     scale_indices = energy_data.get("scale_indices")
     aligned_scale_indices = None
     if scale_indices is not None:
-        aligned_scale_indices = np.transpose(np.asarray(scale_indices, dtype=np.int16), (2, 1, 0)).copy(order="F")
+        aligned_scale_indices = np.transpose(
+            np.asarray(scale_indices, dtype=np.int16), (2, 1, 0)
+        ).copy(order="F")
 
     # 2. Align vertex positions: swap Z and Y [Y, X, Z] -> [Z, X, Y]
     aligned_v_pos = v_pos.copy()
@@ -191,7 +196,9 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     aligned_v_pos[:, 2] = tmp
 
     # 3. Align physics microns: [dy, dx, dz] -> [dz, dx, dy]
-    microns_per_voxel = np.asarray(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32)
+    microns_per_voxel = np.asarray(
+        params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=np.float32
+    )
     aligned_microns = microns_per_voxel.copy()
     if len(aligned_microns) >= 3:
         tmp_m = aligned_microns[0]

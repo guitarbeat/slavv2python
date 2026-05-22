@@ -28,7 +28,10 @@ from slavv_python.processing.stages.edges.selection_payloads import (
     prepare_candidate_indices_for_cleanup,
 )
 from slavv_python.processing.stages.network import _matlab_edge_metrics
-from slavv_python.processing.stages.vertices.painting import paint_vertex_center_image, paint_vertex_image
+from slavv_python.processing.stages.vertices.painting import (
+    paint_vertex_center_image,
+    paint_vertex_image,
+)
 
 
 def _matlab_linear_indices_from_points(

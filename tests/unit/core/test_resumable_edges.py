@@ -3,8 +3,8 @@ from __future__ import annotations
 import joblib
 import numpy as np
 
-from slavv_python.processing.stages.edges import resumable as resumable_edges
 from slavv_python.engine.state import RunContext
+from slavv_python.processing.stages.edges import resumable as resumable_edges
 
 
 def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):

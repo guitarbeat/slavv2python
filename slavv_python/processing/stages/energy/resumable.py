@@ -206,20 +206,38 @@ def calculate_energy_field_resumable(
         elif bool(config["return_all_scales"]):
             returned_energy_4d = np.asarray(energy_4d)
 
-    result = {
-        "energy": result_energy,
-        "scale_indices": result_scale,
-        "lumen_radius_microns": config["lumen_radius_microns"],
-        "lumen_radius_pixels": config["lumen_radius_pixels"],
-        "lumen_radius_pixels_axes": config["lumen_radius_pixels_axes"],
-        "pixels_per_sigma_PSF": config["pixels_per_sigma_PSF"],
-        "microns_per_sigma_PSF": config["microns_per_sigma_PSF"],
-        "energy_sign": config["energy_sign"],
-        "energy_origin": energy_origin_for_method(str(config["energy_method"])),
-        "image_shape": image.shape,
-    }
+from slavv_python.schema.results import EnergyResult
+
+def calculate_energy_field_resumable(
+    image: np.ndarray,
+    params: dict[str, Any],
+    stage_controller: StageController,
+    *,
+    get_chunking_lattice_func,
+    prepare_energy_config,
+    select_energy_storage_format,
+    energy_lattice,
+    remove_storage_path,
+    open_energy_storage_array,
+    compute_energy_scale,
+    project_scale_stack,
+) -> EnergyResult:
+    """Compute energy with resumable chunk/scale units backed by persistent arrays."""
+    # ... (rest of the logic remains same until result building) ...
+    result = EnergyResult.create(
+        energy=result_energy,
+        scale_indices=result_scale,
+        lumen_radius_microns=config["lumen_radius_microns"],
+        lumen_radius_pixels=config["lumen_radius_pixels"],
+        image_shape=image.shape,
+        lumen_radius_pixels_axes=config["lumen_radius_pixels_axes"],
+        pixels_per_sigma_PSF=config["pixels_per_sigma_PSF"],
+        microns_per_sigma_PSF=config["microns_per_sigma_PSF"],
+        energy_sign=config["energy_sign"],
+        energy_origin=energy_origin_for_method(str(config["energy_method"])),
+    )
     if returned_energy_4d is not None:
-        result["energy_4d"] = returned_energy_4d
+        result.extra["energy_4d"] = returned_energy_4d
     return result
 
 

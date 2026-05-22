@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from slavv_python.engine.state.tracker import atomic_joblib_dump
 from slavv_python.processing.stages.edges.candidate_detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,
@@ -17,18 +18,19 @@ from slavv_python.processing.stages.vertices.results import (
     empty_vertices_result,
     sort_vertex_order,
 )
-from slavv_python.engine.state.tracker import atomic_joblib_dump
 from slavv_python.utils.safe_unpickle import safe_load
 
 if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
 
 
+from slavv_python.schema.results import VertexSet
+
 def extract_vertices_resumable(
     energy_data: dict[str, Any],
     params: dict[str, Any],
     stage_controller: StageController,
-) -> dict[str, Any]:
+) -> VertexSet:
     """Extract vertices with persisted MATLAB-style scan, crop, and choose state."""
     energy = energy_data["energy"]
     scale_indices = energy_data["scale_indices"]
@@ -78,7 +80,13 @@ def extract_vertices_resumable(
     vertex_scales = candidate_data["scales"]
     vertex_energies = candidate_data["energies"]
     if len(vertex_positions) == 0:
-        return empty_vertices_result()
+        return VertexSet.create(
+            np.empty((0, 3), dtype=np.float32),
+            np.empty((0,), dtype=np.int16),
+            np.empty((0,), dtype=np.float32),
+            lumen_radius_pixels,
+            lumen_radius_microns,
+        )
 
     if not cropped_path.exists():
         positions, scales, energies = crop_vertices_matlab_style(
@@ -105,7 +113,13 @@ def extract_vertices_resumable(
     vertex_scales = ordered["scales"]
     vertex_energies = ordered["energies"]
     if len(vertex_positions) == 0:
-        return empty_vertices_result()
+        return VertexSet.create(
+            np.empty((0, 3), dtype=np.float32),
+            np.empty((0,), dtype=np.int16),
+            np.empty((0,), dtype=np.float32),
+            lumen_radius_pixels,
+            lumen_radius_microns,
+        )
 
     chosen_mask = (
         safe_load(chosen_mask_path)
@@ -151,7 +165,7 @@ def extract_vertices_resumable(
         units_completed=3 + total_blocks,
         substage="finalize",
     )
-    return build_vertices_result(
+    return VertexSet.create(
         vertex_positions[chosen_mask],
         vertex_scales[chosen_mask],
         vertex_energies[chosen_mask],

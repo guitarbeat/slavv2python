@@ -1,4 +1,4 @@
-﻿"""Execution and parameter logic for native-first MATLAB-oracle parity experiments."""
+"""Execution and parameter logic for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -45,13 +45,15 @@ from .constants import (
     VALIDATED_PARAMS_PATH,
 )
 from .index import resolve_experiment_root, upsert_index_record
-from .models import (DatasetSurface,
+from .models import (
+    DatasetSurface,
     ExactProofSourceSurface,
     OracleSurface,
     RunCounts,
     SourceRunSurface,
 )
-from .utils import (entity_id_from_path,
+from .utils import (
+    entity_id_from_path,
     now_iso,
     resolve_python_commit,
     string_or_none,

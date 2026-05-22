@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 
 from ..processing.stages.edges.payloads import _edge_metric_from_energy_trace, _trace_energy_series
@@ -26,6 +24,7 @@ def get_edge_metric(
     """
     if method == "length":
         from .math import calculate_path_length
+
         return calculate_path_length(trace)
 
     if energy is None:

@@ -2,20 +2,15 @@ from __future__ import annotations
 
 import json
 import logging
-import xml.etree.ElementTree as StdET
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Union
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
 from defusedxml import ElementTree as ReadET
 from scipy.io import loadmat
-
-from .tiff import load_tiff_volume, save_tiff_volume
-
-if TYPE_CHECKING:
-    from slavv_python.engine.state.models import RunSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +53,9 @@ def _build_vertex_id_map(vertex_ids: list[int]) -> dict[int, int]:
     return {original_id: i for i, original_id in enumerate(vertex_ids)}
 
 
-def _remap_edge_pairs(edge_pairs: list[list[int]], vertex_id_map: dict[int, int] | None) -> np.ndarray:
+def _remap_edge_pairs(
+    edge_pairs: list[list[int]], vertex_id_map: dict[int, int] | None
+) -> np.ndarray:
     """Remap edge pairs using a vertex ID map."""
     if vertex_id_map is None:
         return _normalize_edges_array(edge_pairs)
@@ -93,7 +90,11 @@ def load_network_from_mat(path: Union[str, Path]) -> Network:
     else:
         edges = _normalize_edges_array(e_struct if e_struct is not None else [])
 
-    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
+    return Network(
+        vertices=vertices,
+        edges=edges,
+        radii=radii if (radii is not None and radii.size > 0) else None,
+    )
 
 
 def load_network_from_casx(path: Union[str, Path]) -> Network:
@@ -122,7 +123,11 @@ def load_network_from_casx(path: Union[str, Path]) -> Network:
     vertices = _normalize_vertices_array(vert_list)
     edges = _remap_edge_pairs(edge_list, _build_vertex_id_map(vertex_ids))
     radii = np.asarray(radii_list, dtype=float) if radii_list else None
-    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
+    return Network(
+        vertices=vertices,
+        edges=edges,
+        radii=radii if (radii is not None and radii.size > 0) else None,
+    )
 
 
 def load_network_from_vmv(path: Union[str, Path]) -> Network:
@@ -187,7 +192,11 @@ def load_network_from_csv(path: Union[str, Path]) -> Network:
         vertex_id_map = _build_vertex_id_map(v_df["vertex_id"].astype(int).tolist())
     edge_pairs = e_df[["start_vertex", "end_vertex"]].to_numpy(int).tolist()
     edges = _remap_edge_pairs(edge_pairs, vertex_id_map)
-    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
+    return Network(
+        vertices=vertices,
+        edges=edges,
+        radii=radii if (radii is not None and radii.size > 0) else None,
+    )
 
 
 def load_network_from_json(path: Union[str, Path]) -> Network:
@@ -202,7 +211,11 @@ def load_network_from_json(path: Union[str, Path]) -> Network:
         radii = None
     e_data = data.get("edges", {})
     edges = _normalize_edges_array(e_data.get("connections", []))
-    return Network(vertices=vertices, edges=edges, radii=radii if (radii is not None and radii.size > 0) else None)
+    return Network(
+        vertices=vertices,
+        edges=edges,
+        radii=radii if (radii is not None and radii.size > 0) else None,
+    )
 
 
 def load_network(path: Union[str, Path]) -> Network:
@@ -292,9 +305,7 @@ def _network_to_processing_results(network: Network) -> dict[str, Any]:
 
 
 def save_network_to_json(
-    network: Network | Mapping[str, Any],
-    path: Union[str, Path],
-    **kwargs: Any
+    network: Network | Mapping[str, Any], path: Union[str, Path], **kwargs: Any
 ) -> Path:
     """Save network data to the authoritative JSON export format."""
     from ..exporters.json_v1 import build_network_json_payload

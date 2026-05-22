@@ -1,4 +1,4 @@
-﻿"""Constants for native-first MATLAB-oracle parity experiments."""
+"""Constants for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 

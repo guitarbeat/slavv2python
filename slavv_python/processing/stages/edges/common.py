@@ -11,7 +11,9 @@ from skimage.graph import route_through_array
 from typing_extensions import TypeAlias
 
 from slavv_python.processing.stages.energy.provenance import is_exact_compatible_energy_origin
-from slavv_python.processing.stages.vertices.results import matlab_linear_indices as _matlab_linear_indices
+from slavv_python.processing.stages.vertices.results import (
+    matlab_linear_indices as _matlab_linear_indices,
+)
 
 Int16Array: TypeAlias = "np.ndarray"
 Int32Array: TypeAlias = "np.ndarray"

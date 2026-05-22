@@ -11,7 +11,9 @@ from slavv_python.processing.stages.edges.cleanup import (
     clean_edges_orphans_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv_python.processing.stages.edges.finalize import prefilter_edge_indices_for_cleanup_matlab_style
+from slavv_python.processing.stages.edges.finalize import (
+    prefilter_edge_indices_for_cleanup_matlab_style,
+)
 from slavv_python.processing.stages.edges.payloads import _empty_edges_result
 from slavv_python.processing.stages.edges.selection_payloads import (
     build_selected_edges_result,

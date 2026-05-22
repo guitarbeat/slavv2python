@@ -27,9 +27,10 @@ _SIMPLE_LOG_FORMAT = "%(levelname)s:%(name)s:%(message)s"
 
 def _handle_run_command(args) -> None:
     """Execute the SLAVV processing pipeline."""
-    from ... import SlavvPipeline
-    from slavv_python.storage import load_tiff_volume
     from slavv_python.engine.state import load_run_snapshot
+    from slavv_python.storage import load_tiff_volume
+
+    from ... import SlavvPipeline
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
     logger = logging.getLogger("slavv_python.cli.run")
@@ -122,8 +123,9 @@ def _handle_status_command(args) -> None:
 
 def _handle_info_command(args) -> None:
     """Print version and system information."""
-    from ... import __version__
     from slavv_python.utils import get_system_info
+
+    from ... import __version__
     from .info_service import load_info_lines
 
     system_info = get_system_info()

@@ -1,8 +1,8 @@
 import numpy as np
 
 from slavv_python.engine import SlavvPipeline
-from slavv_python.processing.stages.network import construct_network_resumable, trace_strand_sparse
 from slavv_python.engine.state import RunContext
+from slavv_python.processing.stages.network import construct_network_resumable, trace_strand_sparse
 
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():

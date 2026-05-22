@@ -31,9 +31,9 @@ __all__ = [
     "_matlab_sort_network_v180",
     "_remove_cycles",
     "_remove_short_hairs",
+    "build_network",
     "construct_network",
     "construct_network_resumable",
-    "build_network",
     "sort_and_validate_strands_sparse",
     "trace_strand_sparse",
 ]

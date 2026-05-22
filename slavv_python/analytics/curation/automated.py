@@ -21,6 +21,8 @@ def _within_boundary_mask(
     positions: np.ndarray, image_shape: tuple[int, int, int], boundary_margin: float
 ) -> np.ndarray:
     keep_mask = np.ones(len(positions), dtype=bool)
+    if boundary_margin <= 0:
+        return keep_mask
     for dim in range(3):
         keep_mask &= positions[:, dim] > boundary_margin
         keep_mask &= positions[:, dim] < image_shape[dim] - boundary_margin
@@ -82,6 +84,8 @@ def _endpoint_matches_vertex(
 ) -> bool:
     if vertex_index is None:
         return True
+    if len(vertex_positions) == 0:
+        return True
     if vertex_index not in original_to_curated_idx:
         return False
     vertex_pos = vertex_positions[original_to_curated_idx[vertex_index]]
@@ -107,7 +111,9 @@ class AutomaticCurator:
         positions = vertices["positions"]
         energies = vertices["energies"]
         scales = vertices["scales"]
-        radii = vertices.get("radii_pixels", vertices.get("radii_microns", vertices.get("radii", [])))
+        radii = vertices.get(
+            "radii_pixels", vertices.get("radii_microns", vertices.get("radii", []))
+        )
         # Convert to numpy array to avoid TypeError in comparisons
         radii = np.asarray(radii, dtype=float)
 

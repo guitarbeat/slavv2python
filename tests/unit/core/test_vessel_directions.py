@@ -3,7 +3,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from slavv_python.processing.stages.edges.primitives import estimate_vessel_directions, generate_edge_directions
+from slavv_python.processing.stages.edges.primitives import (
+    estimate_vessel_directions,
+    generate_edge_directions,
+)
 
 
 def test_estimate_vessel_directions_axis_aligned():

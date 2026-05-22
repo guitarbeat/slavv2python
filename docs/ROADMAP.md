@@ -13,104 +13,72 @@
 
 ## Current Velocity
 
-- **Last Verified:** 1062 / 1,197 matched pairs (88.7%) on a fresh exact run.
-- **Measurement Source:** `validation_strel_fix_output_v29` experiment, 2026-05-15
-- **Target:** 95% (Measure 3 — Candidate filtering alignment)
-- **Active Status:** Active Development — Tightening filtering criteria
-- **Last Updated:** 2026-05-15
+- **Active Priority:** **PAPER-001 (Public Paper Workflow Health)** — Fully Verified end-to-end (2026-05-20).
+- **Parity Status:** 1062 / 1,197 matched pairs (88.7%) on a fresh exact run. **PAUSED** pending integration test suite expansion.
+- **Measurement Source:** `validation_strel_fix_output_v29` experiment
+- **Target:** 95% parity match rate (PARITY-002) after product workflow stabilization.
+- **Last Updated:** 2026-05-20
 
 > [!IMPORTANT]
-> Re-run `capture-candidates` on a fresh clean checkpoint and `prove-exact` after any code change to update
-> this metric. Do not compare against the contaminated `trace_order_fix` baseline.
+> The parity track is paused. Ensure the native paper-profile pipeline and downstream CLI commands (`slavv run`, `slavv analyze`, `slavv plot`) remain fully operational before chasing the remaining 11.3% tie-breaking edge cases.
 
 ---
 
 ## Task Dependencies
 
 ```
-PARITY-002 (80% match)
-├── Measure 2: Frontier insertion algorithm (in progress)
-│   └── [RISK] PERF-001 frontier optimization may have introduced insertion-order bugs
-├── Measure 3: Candidate filtering alignment (not started)
-│   └── Depends on Measure 2 validation to avoid wasted gap analysis
-├── Boundary conditions investigation (not started)
-└── PARITY-003 (100% exact parity, downstream)
+PAPER-001 (public workflow health) 🔴 [CRITICAL]
+└── Verified end-to-end, needs paper-profile integration tests
 
-PAPER-001 (public workflow health)
-└── Independent of parity work — tracks `slavv run` / export / app functionality
+PARITY-002 (88.7% match) 🟡 [HIGH] — PAUSED
+├── Measure 2: Frontier insertion algorithm (completed)
+├── Measure 3: Candidate filtering alignment (not started)
+│   └── Depends on post-stabilization gap analysis
+└── PARITY-003 (100% exact parity, downstream)
 ```
 
 ---
 
 ## Critical Priority
 
-### [CRITICAL] PARITY-002: Achieve 80% Match Rate Milestone — IN PROGRESS
+### [CRITICAL] PAPER-001: Public Paper Workflow Health — ACTIVE PRIORITY
 
-Close the gap from 670 to 80% matched MATLAB edge pairs on the native-first
-exact route.
+Ensure the public-facing `slavv run` workflow produces valid output without MATLAB runtime dependencies. The core product flow must remain verified end-to-end.
 
-- **Proof Gate:** [EXACT_PROOF_FINDINGS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/EXACT_PROOF_FINDINGS.md)
-- **Validate command:** `python scripts/cli/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
-- **Regression gate:** Improve the exact match count (currently 670) and close the gap on missing candidate pairs (currently 527 missing).
-
-#### Measure 2: Frontier Insertion & Trace Generation — COMPLETED
-
-Fix seed selection, insertion semantics, and frontier ordering for high-degree
-vertices.
-
-- **Status:** COMPLETED. Frontier ordering divergence resolved via exact splice logic and vertex priority initialization. Match rate: 80.0%.
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/global_watershed.py)
-
-#### Measure 3: Candidate Filtering Alignment — NOT STARTED
-
-Tighten Python acceptance criteria to match MATLAB `get_edges_by_watershed`
-filters. Blocked until Measure 2 is validated to avoid measuring against a
-moving target.
-
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/candidate_generation.py)
-- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/cleanup.py)
+- **Proof Gate:** `TODO.md` / `PROJECT_STATUS.md`
+- **Validate command:** `slavv run -i workspace/datasets/synthetic_volume.tif -o workspace/runs/test_run`
+- **Downstream verify:** `slavv analyze -i workspace/runs/test_run/network.json` and `slavv plot -i workspace/runs/test_run/network.json`
 
 Next steps:
-- [ ] Wait for Measure 2 validation.
-- [ ] Re-run gap analysis to identify remaining root causes.
-- [ ] Align filtering order and thresholds with MATLAB.
-
-#### Boundary Conditions — NOT STARTED
-
-- [ ] Analyze discrepancies at volume edges after Measures 2 & 3 land.
-
-#### Recent Completions
-
-- [x] `trace_order_fix`: Seeded RNG for trace order shuffling (2026-05-05). Result: 149 → 404 matched pairs (+2.7x).
-- [x] `parallel_verification`: Parallel processing run on D: drive (2026-05-05). Result: confirmed 33.8% baseline.
+- [x] Verify `slavv run -i volume.tif -o output --profile paper` completes end-to-end.
+- [x] Verify `network.json` export is well-formed and versioned.
+- [x] Verify `slavv analyze` and `slavv plot` consume `network.json` correctly.
+- [x] Verify `slavv-app` (Streamlit) launches and processes a sample dataset.
+- [ ] Add integration test covering the paper-profile pipeline in the CI/CD regression gate.
 
 ---
 
 ## High Priority
 
-### [HIGH] PARITY-003: Achieve 100% Exact Parity
+### [HIGH] PARITY-002: Achieve 95% Match Rate Milestone — PAUSED
 
-Complete mathematical alignment and unlock full developer promotion gate. All
-stages (`vertices`, `edges`, `network`) must pass `prove-exact` on the
-native-first exact route.
+Close the gap from 88.7% to 95% matched MATLAB edge pairs on the native-first exact route. Currently paused to focus resources on Priority 1 product health.
 
-- **Effort:** XL (Continuous)
-- **Status:** Blocked — waiting for PARITY-002 to close `edges.connections` gap.
-- **Acceptance:** `prove-exact --stage all` passes.
+- **Proof Gate:** [EXACT_PROOF_FINDINGS.md](file:///d:/2P_Data/Aaron/slavv2python/docs/reference/core/EXACT_PROOF_FINDINGS.md)
+- **Validate command:** `python scripts/cli/parity_experiment.py capture-candidates --source-run-root <clean_run> --oracle-root workspace/oracles/180709_E_batch_190910-103039 --dest-run-root <dest_run>`
+
+#### Measure 3: Candidate Filtering Alignment — NOT STARTED
+Tighten Python acceptance criteria to match MATLAB `get_edges_by_watershed` filters.
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/candidate_generation.py)
+- [Target File](file:///d:/2P_Data/Aaron/slavv2python/slavv_python/processing/stages/edges/cleanup.py)
 
 ---
 
-### [HIGH] PAPER-001: Public Paper Workflow Health — NOT TRACKED YET
+### [HIGH] PARITY-003: Achieve 100% Exact Parity — PAUSED
 
-Ensure the public-facing `slavv run` workflow produces valid output without
-MATLAB runtime dependencies. This is independent of exact parity work.
+Complete mathematical alignment and unlock full developer promotion gate. All stages (`vertices`, `edges`, `network`) must pass `prove-exact`.
 
-Next steps:
-- [ ] Verify `slavv run -i volume.tif -o output --profile paper` completes end-to-end.
-- [ ] Verify `network.json` export is well-formed and versioned.
-- [ ] Verify `slavv analyze` and `slavv plot` consume `network.json` correctly.
-- [ ] Verify `slavv-app` (Streamlit) launches and processes a sample dataset.
-- [ ] Add integration test covering the paper-profile pipeline.
+- **Status:** Paused — waiting for PARITY-002 to resume.
 
 ---
 

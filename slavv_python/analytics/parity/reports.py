@@ -5,8 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.engine.state import atomic_write_text
-from slavv_python.engine.state import load_json_dict, stable_json_dumps
+from slavv_python.engine.state import atomic_write_text, load_json_dict, stable_json_dumps
 
 from .constants import (
     ANALYSIS_TABLES_DIR,
@@ -17,7 +16,8 @@ from .constants import (
     SUMMARY_TEXT_PATH,
 )
 from .models import RunCounts
-from .utils import (entity_id_from_path,
+from .utils import (
+    entity_id_from_path,
     normalize_value,
     now_iso,
     string_or_none,

@@ -10,10 +10,10 @@ import pytest
 
 from slavv_python.engine import SlavvPipeline
 from slavv_python.engine import energy as energy_module
+from slavv_python.engine.state import RunContext
 from slavv_python.processing.stages.energy import backends as energy_backends
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
 from slavv_python.processing.stages.energy.config import _prepare_energy_config
-from slavv_python.engine.state import RunContext
 from slavv_python.utils import get_chunking_lattice, validate_parameters
 
 # ==============================================================================

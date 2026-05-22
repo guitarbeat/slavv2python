@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from typing import Any
 
 from slavv_python.engine.constants import TRACKED_RUN_STAGES
 from slavv_python.engine.state.status import target_stage_progress
@@ -82,13 +83,15 @@ def build_dashboard_placeholder_trend() -> go.Figure:
     fig.update_layout(
         xaxis={"visible": False},
         yaxis={"visible": False},
-        annotations=[{
-            "text": "Awaiting data...",
-            "xref": "paper",
-            "yref": "paper",
-            "showarrow": False,
-            "font": {"size": 16}
-        }]
+        annotations=[
+            {
+                "text": "Awaiting data...",
+                "xref": "paper",
+                "yref": "paper",
+                "showarrow": False,
+                "font": {"size": 16},
+            }
+        ],
     )
     return fig
 
@@ -101,7 +104,7 @@ def build_dashboard_stage_frame(snapshot: Any | None, run_dir: str | None = None
         if snapshot and stage in snapshot.stages:
             progress = snapshot.stages[stage].progress
         rows.append({"Stage": stage, "Progress (%)": progress * 100})
-    
+
     if not rows:
         return pd.DataFrame(columns=["Stage", "Progress (%)"])
     return pd.DataFrame(rows)
@@ -115,7 +118,7 @@ def build_dashboard_breakdown_frame(
 ) -> pd.DataFrame:
     """Build a comprehensive breakdown of all dashboard metrics."""
     rows = []
-    
+
     # 1. Pipeline Section
     for stage in DASHBOARD_STAGE_ORDER:
         progress = 0.0
@@ -126,16 +129,18 @@ def build_dashboard_breakdown_frame(
             progress = s.progress
             status = s.status
             value = f"{int(progress * 100)}%"
-            
-        rows.append({
-            "Section": "Pipeline",
-            "Metric": f"Stage: {stage}",
-            "Progress": progress * 100,
-            "Value": value,
-            "Status": status,
-            "Source": "Run Snapshot",
-            "Notes": f"Tracked progress for {stage}."
-        })
+
+        rows.append(
+            {
+                "Section": "Pipeline",
+                "Metric": f"Stage: {stage}",
+                "Progress": progress * 100,
+                "Value": value,
+                "Status": status,
+                "Source": "Run Snapshot",
+                "Notes": f"Tracked progress for {stage}.",
+            }
+        )
 
     # 2. Network Section
     network_metrics = [
@@ -146,26 +151,32 @@ def build_dashboard_breakdown_frame(
     ]
     for label, key, unit in network_metrics:
         val = stats.get(key) if stats else None
-        rows.append({
-            "Section": "Network",
-            "Metric": label,
-            "Progress": 100 if val is not None else 0,
-            "Value": f"{val:.1f} {unit}" if isinstance(val, (int, float)) else DASHBOARD_PLACEHOLDER,
-            "Status": "ready" if val is not None else "awaiting",
-            "Source": "Network Stats",
-            "Notes": f"Extracted {label.lower()} from result graph."
-        })
+        rows.append(
+            {
+                "Section": "Network",
+                "Metric": label,
+                "Progress": 100 if val is not None else 0,
+                "Value": f"{val:.1f} {unit}"
+                if isinstance(val, (int, float))
+                else DASHBOARD_PLACEHOLDER,
+                "Status": "ready" if val is not None else "awaiting",
+                "Source": "Network Stats",
+                "Notes": f"Extracted {label.lower()} from result graph.",
+            }
+        )
 
     # 3. Activity Section
-    rows.append({
-        "Section": "Activity",
-        "Metric": "Share Reports",
-        "Progress": 0,
-        "Value": str(share_metrics.get("share_report_requested", 0)),
-        "Status": "active",
-        "Source": "Session State",
-        "Notes": "Total share reports generated in this session."
-    })
+    rows.append(
+        {
+            "Section": "Activity",
+            "Metric": "Share Reports",
+            "Progress": 0,
+            "Value": str(share_metrics.get("share_report_requested", 0)),
+            "Status": "active",
+            "Source": "Session State",
+            "Notes": "Total share reports generated in this session.",
+        }
+    )
 
     return pd.DataFrame(rows)
 
@@ -179,20 +190,20 @@ def filter_dashboard_breakdown(
     """Filter the breakdown frame based on UI focus and section selection."""
     if frame.empty:
         return frame
-    
+
     df = frame.copy()
-    
+
     if focus == "Pipeline":
         df = df[df["Section"] == "Pipeline"]
     elif focus == "Network":
         df = df[df["Section"] == "Network"]
-        
+
     if selected_sections:
         df = df[df["Section"].isin(selected_sections)]
-        
+
     if not show_placeholders:
         df = df[df["Value"] != DASHBOARD_PLACEHOLDER]
-        
+
     return df
 
 
@@ -204,21 +215,23 @@ def build_dashboard_backlog_frame(
     """Build a DataFrame for the dashboard extension backlog."""
     if not requests:
         # Return empty frame with correct columns for Streamlit column_config
-        return pd.DataFrame(columns=[
-            "Metric", "Owner", "Priority", "Tracked", "Status", "Reference", "Notes"
-        ])
-    
+        return pd.DataFrame(
+            columns=["Metric", "Owner", "Priority", "Tracked", "Status", "Reference", "Notes"]
+        )
+
     rows = []
     for req in requests:
-        rows.append({
-            "Metric": req.get("metric", "Unknown"),
-            "Owner": req.get("owner", "Pipeline"),
-            "Priority": req.get("priority", "Medium"),
-            "Tracked": False,
-            "Status": "TODO",
-            "Reference": repo_url,
-            "Notes": req.get("notes", "")
-        })
+        rows.append(
+            {
+                "Metric": req.get("metric", "Unknown"),
+                "Owner": req.get("owner", "Pipeline"),
+                "Priority": req.get("priority", "Medium"),
+                "Tracked": False,
+                "Status": "TODO",
+                "Reference": repo_url,
+                "Notes": req.get("notes", ""),
+            }
+        )
     return pd.DataFrame(rows)
 
 

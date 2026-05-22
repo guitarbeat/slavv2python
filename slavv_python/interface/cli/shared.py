@@ -1,4 +1,4 @@
-﻿"""Shared internal helpers for the SLAVV CLI."""
+"""Shared internal helpers for the SLAVV CLI."""
 
 from __future__ import annotations
 

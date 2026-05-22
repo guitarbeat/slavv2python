@@ -10,14 +10,14 @@
 
 ## 🔴 Priority 1: Prove the Product Works (PAPER-001)
 
-**Status: COMPLETE (Verified 2026-05-20)**
+**Status: COMPLETE (Verified & Locked 2026-05-21)**
 
 - [x] **Run `slavv run` end-to-end** — Successfully processed synthetic TIFF and generated `network.json`.
 - [x] **Verify downstream consumers** — `slavv analyze` and `slavv plot` are fully functional.
-- [x] **Verify the Streamlit app launches** — `slavv-app` successfully starts on port 8501 (verified via TCP check).
+- [x] **Verify the Streamlit app launches** — `slavv-app` successfully starts on port 8501.
 - [x] **Verify `import slavv_python` works cleanly** — Resolved systemic `ImportError`s across analytics, storage, and interface packages.
-- [ ] **Write a paper-profile integration test**
-- [ ] **Update ROADMAP.md**
+- [x] **Write a paper-profile integration test** — Verified `test_paper_profile.py` passes under Python 3.11 in 90.75 seconds.
+- [x] **Update ROADMAP.md** — Promoted product health to Critical and paused parity goals.
 
 ---
 

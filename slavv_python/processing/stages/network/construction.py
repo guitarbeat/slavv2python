@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 from slavv_python.utils.safe_unpickle import safe_load
+
 from .base import (
     _build_graph_state,
     _graph_state_ordered_edges,

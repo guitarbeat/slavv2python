@@ -1,17 +1,17 @@
-﻿"""Image processing page for the SLAVV Streamlit app."""
+"""Image processing page for the SLAVV Streamlit app."""
 
 from __future__ import annotations
 
 import numpy as np
 import streamlit as st
 
+from slavv_python.engine import SlavvPipeline
 from slavv_python.interface.shared_services import app as app_services
 from slavv_python.interface.shared_state.processing import (
     load_processing_snapshot,
     store_processing_session_state,
     summarize_processing_metrics,
 )
-from slavv_python.engine import SlavvPipeline
 from slavv_python.utils import validate_parameters
 from slavv_python.workflows.profiles import PIPELINE_PROFILE_CHOICES, get_pipeline_profile_defaults
 

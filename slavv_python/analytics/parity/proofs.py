@@ -1,4 +1,4 @@
-﻿"""Proof logic for native-first MATLAB-oracle parity experiments."""
+"""Proof logic for native-first MATLAB-oracle parity experiments."""
 
 from __future__ import annotations
 
@@ -204,7 +204,11 @@ def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[
 
 
 def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
-    """Load the exact-route vertex payload from MATLAB artifacts."""
+    """Load the exact-route vertex payload from MATLAB artifacts.
+
+    Prefers edges_*.mat which contains the exact vertex surface used during
+    the MATLAB watershed run (may differ from curated_vertices_*.mat count).
+    """
     from scipy.io import loadmat
 
     def _get(obj, key, default=None):
@@ -214,51 +218,36 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
             else (obj.get(key, default) if isinstance(obj, dict) else default)
         )
 
-    # Try curated vertices first
-    curated_paths = list(source_surface.matlab_batch_dir.glob("**/curated_vertices_*.mat"))
-    if curated_paths:
-        path = curated_paths[0]
+    def _load_from_mat(path: Path) -> dict[str, Any] | None:
         data = loadmat(path, squeeze_me=True, struct_as_record=False)
-
         raw_positions = _get(data, "vertex_space_subscripts")
         if raw_positions is None:
-            raise AttributeError(f"missing vertex_space_subscripts in {path}")
-
-        positions = np.atleast_2d(raw_positions).astype(np.float32)
-        # Reorder from (z, y, x) to (x, y, z) if needed?
-        # The test expects: np.array([[3.0, 4.0, 5.0]], dtype=np.float32) from [[4.0, 5.0, 6.0]]
-        # Wait, if data is [[4, 5, 6]], test expects [[3, 4, 5]]. This looks like 0-indexing adjustment.
-        positions -= 1.0
-        # Reorder: (4, 5, 6) -> (3, 4, 5) means it's still (z, y, x) -> (z, y, x) but 0-indexed.
-        # Wait, the test says: np.array([[3.0, 4.0, 5.0]]) from [[4, 5, 6]].
-        # Scales: 3.0 -> 2
+            return None
+        positions = (np.atleast_2d(raw_positions) - 1.0).astype(np.float32)
         scales = (np.atleast_1d(_get(data, "vertex_scale_subscripts", 1)) - 1).astype(np.int16)
         energies = np.atleast_1d(_get(data, "vertex_energies", 0.0)).astype(np.float32)
-        return {
-            "positions": positions,
-            "scales": scales,
-            "energies": energies,
-            "count": len(energies),
-        }
+        return {"positions": positions, "scales": scales, "energies": energies, "count": len(energies)}
 
-    # Fallback to edges.mat (which often contains vertices)
-    edge_paths = list(source_surface.matlab_batch_dir.glob("**/edges_*.mat"))
-    if edge_paths:
-        path = edge_paths[0]
-        data = loadmat(path, squeeze_me=True, struct_as_record=False)
-        raw_positions = _get(data, "vertex_space_subscripts")
-        if raw_positions is not None:
-            positions = (np.atleast_2d(raw_positions) - 1.0).astype(np.float32)
-            scales = (np.atleast_1d(_get(data, "vertex_scale_subscripts", 1)) - 1).astype(np.int16)
-            energies = np.atleast_1d(_get(data, "vertex_energies", 0.0)).astype(np.float32)
-            return {
-                "positions": positions,
-                "scales": scales,
-                "energies": energies,
-                "count": len(energies),
-            }
+    # Prefer vectors/edges_*.mat — contains the exact raw vertex surface (1367 vertices)
+    edge_paths = list(source_surface.matlab_batch_dir.glob("vectors/edges_*.mat"))
+    if not edge_paths:
+        # Fallback to any edges_*.mat
+        edge_paths = list(source_surface.matlab_batch_dir.glob("**/edges_*.mat"))
+        
+    for path in sorted(edge_paths):
+        result = _load_from_mat(path)
+        if result is not None:
+            return result
+
+    # Fallback: curated_vertices (may have fewer vertices than watershed used)
+    curated_paths = list(source_surface.matlab_batch_dir.glob("**/curated_vertices_*.mat"))
+    for path in sorted(curated_paths):
+        result = _load_from_mat(path)
+        if result is not None:
+            return result
 
     raise FileNotFoundError(f"could not find vertex artifacts in {source_surface.matlab_batch_dir}")
+
 
 
 def run_exact_preflight(
@@ -289,7 +278,8 @@ def run_candidate_capture(
     from slavv_python.processing.stages.vertices.vertices import paint_vertex_center_image
 
     from .reports import persist_recording_tables
-    from .utils import (now_iso,
+    from .utils import (
+        now_iso,
         persist_normalized_payloads,
         write_json_with_hash,
         write_text_with_hash,

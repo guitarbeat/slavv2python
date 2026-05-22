@@ -68,7 +68,7 @@ def test_energy_adjustments_size_penalty():
 
     # Scale 0 neighbor should have higher (less negative) adjusted energy than scale 2
     assert adjusted[0] < adjusted[1], "Same-scale neighbor should be preferred"
-    assert adjusted.dtype == np.float32
+    assert adjusted.dtype == np.float64
 
 
 @pytest.mark.unit
@@ -614,10 +614,10 @@ def test_reveal_unclaimed_only_claims_zero_vertex_voxels():
         valid_linear=np.array([13, 22], dtype=np.int64),  # [1,1,1] and [1,1,2]
         strel_pointer_indices=np.array([10, 11], dtype=np.uint64),
         strel_r_over_R=np.array([0.5, 0.6], dtype=np.float32) / 1.0,
-        adjusted_energies=np.array([-5.0, -10.0], dtype=np.float32),
+        adjusted_energies=np.array([-5.0, -10.0], dtype=np.float64),
         vertex_index_map_flat=vertex_index_map.ravel(order="F"),
         pointer_map_flat=pointer_map.ravel(order="F"),
-        energy_map_flat=energy_map.ravel(order="F"),
+        energy_map_flat=energy_map.ravel(order="F").astype(np.float64),
         d_over_r_map_flat=d_over_r_map.ravel(order="F"),
         size_map_flat=size_map.ravel(order="F"),
         lut_size=27,
@@ -742,8 +742,8 @@ def test_initialize_state_sets_correct_data_types():
 
     # Verify all data types match MATLAB
     assert state["vertex_locations"].dtype == np.int64
-    assert state["vertex_energies"].dtype == np.float32
-    assert state["energy_map_temp"].dtype == np.float32
+    assert state["vertex_energies"].dtype == np.float64
+    assert state["energy_map_temp"].dtype == np.float64
     assert state["branch_order_map"].dtype == np.uint8
     assert state["d_over_r_map"].dtype == np.float64
     assert state["pointer_map"].dtype == np.uint64
@@ -797,10 +797,10 @@ def test_matlab_global_watershed_reveal_unclaimed_strel_raises_for_invalid_claim
             valid_linear=np.array([1], dtype=np.int64),
             strel_pointer_indices=np.array([99], dtype=np.uint64),
             strel_r_over_R=np.array([0.25], dtype=np.float32),
-            adjusted_energies=np.array([-5.0], dtype=np.float32),
+            adjusted_energies=np.array([-5.0], dtype=np.float64),
             vertex_index_map_flat=np.zeros((8,), dtype=np.uint32),
             pointer_map_flat=np.zeros((8,), dtype=np.uint64),
-            energy_map_flat=np.zeros((8,), dtype=np.float32),
+            energy_map_flat=np.zeros((8,), dtype=np.float64),
             d_over_r_map_flat=np.zeros((8,), dtype=np.float64),
             size_map_flat=np.zeros((8,), dtype=np.int16),
             lut_size=4,
