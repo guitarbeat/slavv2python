@@ -83,7 +83,7 @@ def _matlab_global_watershed_finalize_edge_trace(
     trace = _coords_from_linear_trace(full_linear_trace, shape)
     energy_trace = np.asarray(
         _sample_volume_from_matlab_linear_trace(full_linear_trace, energy_map),
-        dtype=np.float32,
+        dtype=np.float64,
     )
     if scale_image is None:
         scale_trace = np.zeros((len(full_linear_trace),), dtype=np.int16)
@@ -420,7 +420,7 @@ def _matlab_global_watershed_insert_available_location(
         # Comparison logic: Is 'mid' worse than 'target'?
         # 'Worse' means higher energy OR (equal energy and higher index).
         is_mid_worse = (mid_energy > target_energy) or (
-            np.isclose(mid_energy, target_energy) and mid_loc > target_index
+            mid_energy == target_energy and mid_loc > target_index
         )
 
         if is_mid_worse:
@@ -506,7 +506,7 @@ def _matlab_global_watershed_tolerance_mask(
 ) -> BoolArray:
     """Mirror MATLAB's per-seed energy tolerance test on the current penalized strel energies."""
     threshold = float(current_vertex_energy) * (1.0 - float(energy_tolerance))
-    return cast("BoolArray", np.asarray(adjusted_energies, dtype=np.float32) < threshold)
+    return cast("BoolArray", np.asarray(adjusted_energies, dtype=np.float64) < threshold)
 
 
 def _matlab_global_watershed_seed_index_range(
@@ -767,6 +767,15 @@ def _generate_edge_candidates_matlab_global_watershed(
         )
         current_pointer_value = int(pointer_map_flat[current_linear])
         current_d_over_r = float(d_over_r_map_flat[current_linear])
+
+        # MEASURE 3: Tighten expansion with hard distance cutoff.
+        # MATLAB stops expansion when the accumulated normalized distance (d/R)
+        # exceeds the distance tolerance (typically 3.0).
+        if current_d_over_r > distance_tolerance:
+            if not is_current_location_clear:
+                available_locations.pop()
+                is_current_location_clear = True
+            continue
 
         current_strel = _matlab_global_watershed_current_strel(
             current_linear,

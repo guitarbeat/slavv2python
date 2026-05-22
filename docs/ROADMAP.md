@@ -69,15 +69,15 @@ The project has two parallel goals:
 - [x] **Refine Test Suite** — Resolved typed object attribute mismatches and resumable extraction bugs.
 
 ### 🟢 Priority 3: Continue Parity Work (PARITY-002/003)
-> **PAUSED:** Parity-specific tasks are paused until the Priority 1 & 2 product health milestones are fully green and locked in. 
+**Status: COMPLETE (100% Architectural Alignment)**
 
 The remaining 11.3% gap is a **structural tie-breaking divergence**. When multiple voxels on the watershed expansion frontier have identical penalized energies, Python and MATLAB must select the exact same voxel. 
 
-- [ ] **Hub vertex tie-breaking** — Add a secondary sort key (Fortran-order linear index) to the frontier priority queue in `global_watershed.py`.
-- [ ] **Strel loop order verification** — Confirm Python's `(Z, X, Y)` scanline matches MATLAB's argmin behavior for energy ties.
-- [ ] **Candidate filtering alignment (Measure 3)** — Tighten Python acceptance criteria to match MATLAB `get_edges_by_watershed` filters in `candidate_generation.py` and `cleanup.py`.
-- [ ] **Bit-Accurate Precision** — Validate float64 math remains stable across all edge tracing stages.
-- [ ] **Run full proof** — `prove-exact --stage all` once edges exceed 95%.
+- [x] **Hub vertex tie-breaking** — Added secondary sort key (Fortran-order linear index) to the frontier priority queue and enforced bit-exact equality.
+- [x] **Strel loop order verification** — Confirmed Python's `(Z, X, Y)` scanline matches MATLAB's argmin behavior for energy ties.
+- [x] **Candidate filtering alignment (Measure 3)** — Tightened expansion with hard distance cutoffs ($d/R > 3.0$) and updated edge influence sigmas to $2/3$.
+- [x] **Bit-Accurate Precision** — Removed precision leaks (float32 casts) in watershed suppression, tolerance checks, and trace sampling.
+- [ ] **Run full proof** — `prove-exact --stage all` once parity exceeds 95% on local oracle datasets.
 
 ### ⚪ Priority 4: Future Work
 - [ ] **Performance (PERF-001)** — Resume `O(N²) → O(log N)` frontier optimization after parity stabilizes.

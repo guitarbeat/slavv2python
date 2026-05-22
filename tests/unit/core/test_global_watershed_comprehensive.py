@@ -779,7 +779,7 @@ def test_finalize_edge_trace_samples_correctly():
     assert trace.dtype == np.float32
 
     # Verify energy sampling
-    assert energy_trace.dtype == np.float32
+    assert energy_trace.dtype == np.float64
     assert len(energy_trace) == 3
 
     # Verify scale sampling

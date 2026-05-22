@@ -11,7 +11,7 @@ def test_validate_parameters_defaults():
     assert validated["energy_sign"] == -1.0
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
     assert validated["sigma_per_influence_vertices"] == 1.0
-    assert validated["sigma_per_influence_edges"] == 0.5
+    assert validated["sigma_per_influence_edges"] == 2.0 / 3.0
     # Default for matlab_compat (which is the default profile if none specified)
     assert validated["comparison_exact_network_use_conflict_painting"] is False
 

@@ -62,8 +62,6 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
     """Return MATLAB's effective per-origin frontier edge budget."""
     requested_edges = int(params.get("number_of_edges_per_vertex", 4))
-    if bool(params.get("comparison_exact_network", False)):
-        return 2
     return max(1, requested_edges)
 
 
@@ -322,8 +320,7 @@ def _matlab_frontier_directional_suppression_factors(
     unit_vectors[valid] = neighbor_vectors[valid] / norms[valid, None]
     cosine_to_selected = np.sum(unit_vectors * unit_vectors[int(selected_index)], axis=1)
     suppression = (1.0 - cosine_to_selected) / 2.0
-    result: Float32Array = suppression.astype(np.float32, copy=False)
-    return cast("np.ndarray", result)
+    return cast("np.ndarray", suppression.astype(np.float64, copy=False))
 
 
 def _matlab_frontier_select_seed_moves(

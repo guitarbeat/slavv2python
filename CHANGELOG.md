@@ -24,6 +24,11 @@ For current behavior and proof status, prefer:
 
 ### Fixed
 
+- **Parity: Global Watershed Alignment**: Implemented "Measure 3" tightening by adding a hard accumulated distance ($d/R > 3.0$) expansion cutoff, matching MATLAB's `get_edges_by_watershed` behavior.
+- **Parity: Edge Influence Sigma**: Updated default `sigma_per_influence_edges` to $2/3$, aligning with MATLAB's conflict painting regions.
+- **Parity: Global Watershed Tie-Breaking**: Replaced `np.isclose` with bit-exact equality and added linear index priority to the frontier priority queue, matching MATLAB's hub vertex exploration behavior.
+- **Parity: Energy Precision**: Removed all remaining `float32` casts in watershed suppression, tolerance checks, and trace sampling, enforcing `float64` bit-accuracy across the expansion frontier.
+- **Parity: Edge Budget**: Removed the incorrect `edge_number_tolerance` override for the exact route, ensuring high-degree hubs can initiate 4 exploratory traces to match the MATLAB oracle.
 - **Test Suite: Object Attribute Access**: Resolved 20+ unit test failures by updating tests to use attributes (`.energy`, `.traces`, etc.) instead of subscripting (`["energy"]`) on the new typed `EnergyResult`, `EdgeSet`, `VertexSet`, and `NetworkResult` objects.
 - **Resumable Edge Extraction**: Fixed bugs in `resumable_edges.py` where `EnergyResult` and `EdgeSet` objects were being subscripted or incorrectly assigned, resolving critical failures when running with checkpoints.
 - **Network Construction Result**: Fixed a `TypeError` in `construct_network` where it attempted item assignment on a typed result object.
