@@ -9,11 +9,13 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, cast
 
 from slavv_python import utils
-from slavv_python.engine.executor import StageExecutor
 from slavv_python.engine.context import RunContext
-from slavv_python.engine.state.models import ProgressEvent
+from slavv_python.engine.executor import StageExecutor
 from slavv_python.engine.state.run_state import RunState
 from slavv_python.engine.state.tracker import PREPROCESS_STAGE
+
+if TYPE_CHECKING:
+    from .state.models import ProgressEvent
 from slavv_python.processing.stages import edges as edge_ops
 from slavv_python.processing.stages import energy
 from slavv_python.processing.stages import network as network_ops

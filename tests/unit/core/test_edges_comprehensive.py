@@ -40,7 +40,7 @@ from slavv_python.processing.stages.vertices.vertices import (
     extract_vertices,
     paint_vertex_center_image,
 )
-from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
+from slavv_python.schema.results import EnergyResult, VertexSet
 
 # ==============================================================================
 # Edge Cases and Lifecycle

@@ -30,7 +30,8 @@ from .tracker import (
 
 def __getattr__(name: str) -> typing.Any:
     if name in ("RunContext", "StageController"):
-        from ..context import RunContext as _RunContext, StageController as _StageController
+        from ..context import RunContext as _RunContext
+        from ..context import StageController as _StageController
         if name == "RunContext":
             return _RunContext
         return _StageController

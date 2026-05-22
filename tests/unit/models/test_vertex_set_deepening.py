@@ -1,7 +1,7 @@
-import os
 import numpy as np
-from pathlib import Path
+
 from slavv_python.schema.results import VertexSet
+
 
 def test_vertex_set_deepening(tmp_path):
     positions = np.array([[1, 2, 3], [4, 5, 6]], dtype=float)

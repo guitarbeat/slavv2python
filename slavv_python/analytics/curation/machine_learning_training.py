@@ -34,9 +34,9 @@ def load_aggregated_training_data(
     if "." not in search_pattern:
         files.extend(list(dir_path.glob(f"{search_pattern}.json")))
         files.extend(list(dir_path.glob(f"{search_pattern}.npz")))
-    
+
     # Deduplicate files
-    files = sorted(list(set(files)))
+    files = sorted(set(files))
 
     for f in files:
         try:

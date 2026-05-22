@@ -7,11 +7,11 @@ from slavv_python.processing.stages.edges.bridge_insertion import (
     add_vertices_to_edges_matlab_style,
 )
 from slavv_python.processing.stages.network import construct_network
-from slavv_python.schema.results import EdgeSet, VertexSet
 from slavv_python.processing.stages.vertices.painting import (
     paint_vertex_center_image,
     paint_vertex_image,
 )
+from slavv_python.schema.results import EdgeSet, VertexSet
 
 
 def test_add_vertices_to_edges_matlab_style_inserts_bridge_vertex_and_splits_parent():

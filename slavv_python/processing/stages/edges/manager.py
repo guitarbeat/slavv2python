@@ -3,25 +3,26 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
-from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
-from slavv_python.processing.stages.vertices.painting import paint_vertex_center_image, paint_vertex_image
 from slavv_python.processing.stages.edges.audit import (
-    _build_edge_candidate_audit,
     _normalize_candidate_origin_counts,
 )
+from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.processing.stages.edges.candidate_generation import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,
 )
 from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
-from slavv_python.processing.stages.edges.payloads import _empty_edges_result
+from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
+from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
+from slavv_python.processing.stages.vertices.painting import (
+    paint_vertex_center_image,
+    paint_vertex_image,
+)
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 if TYPE_CHECKING:
@@ -42,8 +43,7 @@ class EdgeManager:
         stage_controller: StageController,
     ) -> EdgeSet:
         """Execute the full edge extraction lifecycle with resumability."""
-        from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
-        from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
+        from slavv_python.engine.state.tracker import atomic_joblib_dump
 
         energy = energy_data.energy
         vertex_positions = vertices.positions
@@ -60,7 +60,7 @@ class EdgeManager:
         candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
         candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
         chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-        
+
         lumen_radius_pixels_axes = np.asarray(
             energy_data.extra.get(
                 "lumen_radius_pixels_axes",
@@ -111,7 +111,7 @@ class EdgeManager:
                 params,
                 microns_per_voxel,
             )
-            
+
             # Audit processing
             raw_origin_counts = _normalize_candidate_origin_counts(
                 candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts")
@@ -121,7 +121,7 @@ class EdgeManager:
             from scipy.spatial import cKDTree
             tree = cKDTree(vertex_positions * microns_per_voxel)
             vertex_image = paint_vertex_image(vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape)
-            
+
             candidates = _generate_edge_candidates(
                 energy=energy,
                 scale_indices=scale_indices,
@@ -137,7 +137,7 @@ class EdgeManager:
                 params=params,
                 energy_sign=energy_sign,
             )
-            
+
             # Simplified audit for non-frontier
             frontier_origin_counts = {} # TODO: implement if needed
 
@@ -177,7 +177,7 @@ class EdgeManager:
             microns_per_voxel=microns_per_voxel,
             size_of_image=energy.shape,
         )
-        
+
         atomic_joblib_dump(final_data, chosen_manifest_path)
         stage_controller.update(units_total=3, units_completed=3, substage="choose_edges")
 

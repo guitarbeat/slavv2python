@@ -25,7 +25,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-warnings.filterwarnings("ignore")
 from slavv_python.analytics.math import calculate_path_length
 from slavv_python.processing.stages.edges.terminal_lookup import in_bounds
 from slavv_python.schema import normalize_pipeline_result
@@ -36,6 +35,7 @@ from .machine_learning_features import compute_local_gradient, feature_importanc
 from .machine_learning_io import materialize_model_source
 from .machine_learning_training import load_aggregated_training_data
 
+warnings.filterwarnings("ignore")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

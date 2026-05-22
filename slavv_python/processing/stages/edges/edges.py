@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
 from slavv_python.processing.stages.edges import extraction_standard as _standard

@@ -6,7 +6,7 @@ import subprocess
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 import psutil
 
@@ -19,6 +19,10 @@ from .constants import (
     STATUS_FAILED,
     STATUS_RUNNING,
 )
+
+if TYPE_CHECKING:
+    from .state.models import ProgressEvent
+    import numpy as np
 from .state.io import (
     atomic_joblib_dump,
     atomic_write_json,
@@ -250,7 +254,7 @@ class RunContext:
                 },
                 event_callback=event_callback,
             )
-            
+
             # 4. Initialize Context (Resume Policy)
             context.ensure_resume_allowed(
                 input_fingerprint=input_hash,
@@ -259,7 +263,7 @@ class RunContext:
             )
             if force_rerun_from in PIPELINE_STAGES:
                 context.reset_pipeline_state_from(force_rerun_from)
-            
+
             params_path = context.metadata_dir / "validated_params.json"
             atomic_write_json(params_path, validated_params)
             context.mark_run_status(

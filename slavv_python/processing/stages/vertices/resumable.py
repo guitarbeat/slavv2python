@@ -13,9 +13,7 @@ from slavv_python.processing.stages.edges.candidate_detection import (
     matlab_vertex_candidates,
 )
 from slavv_python.processing.stages.vertices.results import (
-    build_vertices_result,
     coerce_radius_axes,
-    empty_vertices_result,
     sort_vertex_order,
 )
 from slavv_python.utils.safe_unpickle import safe_load
@@ -25,6 +23,7 @@ if TYPE_CHECKING:
 
 
 from slavv_python.schema.results import EnergyResult, VertexSet
+
 
 def extract_vertices_resumable(
     energy_data: EnergyResult,

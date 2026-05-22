@@ -233,7 +233,7 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
     if not edge_paths:
         # Fallback to any edges_*.mat
         edge_paths = list(source_surface.matlab_batch_dir.glob("**/edges_*.mat"))
-        
+
     for path in sorted(edge_paths):
         result = _load_from_mat(path)
         if result is not None:
