@@ -27,10 +27,10 @@ Read these first when working on the live implementation:
 - [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md)
   Engine design, component overview, and processing workflow.
 
-## Workflow Guides
-
 - [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
   Technical instructions and best practices for MATLAB parity alignment.
+- [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md)
+  Step-by-step instructions for running mathematical proofs against MATLAB oracles.
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
   Methodology and tools for measuring and optimizing processing speed.
 - [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md)

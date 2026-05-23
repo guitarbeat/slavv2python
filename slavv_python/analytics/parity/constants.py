@@ -141,7 +141,7 @@ MATLAB_EXACT_EDGE_SOURCE_CONSTANTS: dict[str, Any] = {
     "max_edge_energy": 0.0,
     "distance_tolerance_per_origin_radius": 3.0,
     "distance_tolerance": 3.0,
-    "edge_number_tolerance": 2,
+    "edge_number_tolerance": 4,
     "radius_tolerance": 0.5,
     "energy_tolerance": 1.0,
     "direction_tolerance": 1.0,

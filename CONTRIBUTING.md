@@ -20,20 +20,39 @@ Thank you for your interest in contributing! This guide will help you get starte
    ```
 
 
-## Making Changes
+## Development Workflow
 
-- Follow the repo's [GEMINI.md](GEMINI.md) for canonical workflows and test placement.
-- Use:
-  
-   ```powershell
-    python -m ruff check slavv_python tests --fix
-    python -m ruff format slavv_python tests
-   ```
+### 1. Quality Gate
+We maintain a strict quality gate for the `main` branch. Before submitting a PR, ensure that:
+- **Linting**: `python -m ruff check slavv_python tests` passes (or auto-fixes).
+- **Formatting**: `python -m ruff format slavv_python tests` is applied.
+- **Type Checking**: `python -m mypy` is green.
+- **Tests**: `python -m pytest` passes with 100% success rate.
 
-   for linting/formatting.
-- Add or update tests in `tests/` as appropriate.
-- If your change affects the public workflow, keep the default `paper` profile,
-  authoritative `network.json`, and related docs aligned.
+We recommend using `pre-commit` to automate these checks:
+```powershell
+pre-commit run --all-files
+```
+
+### 2. Parity Testing (Phase 3)
+If you are modifying core vascular discovery logic (e.g., in `global_watershed.py`), you **must** verify that mathematical parity with MATLAB is maintained.
+
+1.  **Run Preflight**: Prepare a parity experiment directory.
+    ```powershell
+    python scripts/cli/parity_experiment.py preflight-exact `
+      --source-run-root workspace/runs/<last_known_good> `
+      --oracle-root workspace/oracles/<dataset_id> `
+      --dest-run-root workspace/runs/my_fix_trial
+    ```
+2.  **Execute Proof**: Compare your changes against the oracle.
+    ```powershell
+    python scripts/cli/parity_experiment.py prove-exact `
+      --source-run-root workspace/runs/my_fix_trial `
+      --oracle-root workspace/oracles/<dataset_id> `
+      --dest-run-root workspace/runs/my_fix_trial `
+      --stage all
+    ```
+3.  **Verify Match Rate**: Parity must remain **>95%** for core discovery changes to be accepted.
 
 ## Submitting a Pull Request
 

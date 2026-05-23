@@ -3,10 +3,10 @@
 This file tracks active engineering tasks and mathematical alignment goals for the SLAVV Python engine.
 
 ## 🚀 Active Certification Run
-- **Run ID:** `25ccd0a00dee` (final_cert_run_v2)
+- **Run ID:** `4ec84dc04118` (final_parity_certification_v2_final)
 - **Target:** 100% Bit-Accurate Edge Parity on `180709_E.tif`
-- **Current Status:** 🟢 Energy Field Scaling (9.2%)
-- **ETA:** ~2.5 hours
+- **Current Status:** 🟡 Edges (Re-running with Sigma=0.5)
+- **Latest Milestone:** Reached **939 matched edges** (78.4%) with Sigma=0.66. Reverting to Sigma=0.5 to target >1062.
 
 ## 🔴 High Priority: Parity Certification (Phase 3)
 - [ ] **Finalize Edge Match Rate** — Reach >95% match rate on the current certification run.
@@ -26,7 +26,7 @@ This file tracks active engineering tasks and mathematical alignment goals for t
 
 ## 📖 Documentation Debt
 - [ ] **API Reference** — Generate/author detailed docstrings for the public `SlavvPipeline` surface.
-- [ ] **Contributor Guide** — Expand `CONTRIBUTING.md` with environment setup and parity testing instructions.
+- [x] **Contributor Guide** — Expanded `CONTRIBUTING.md` with quality gate and parity testing instructions.
 - [x] **Glossary Update** — Updated with bit-accurate terminology.
 - [x] **Architecture Blueprint** — Created `TECHNICAL_ARCHITECTURE.md`.
 
