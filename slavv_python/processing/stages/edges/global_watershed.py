@@ -180,6 +180,9 @@ def _initialize_matlab_global_watershed_state(
         vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(vertex_offset + 1)
         vertex_energies[vertex_offset] = np.float64(energy[coord[0], coord[1], coord[2]])
 
+    # MATLAB maintains two energy maps: energy_map_temp (static priority source)
+    # and energy_map (dynamic penalized source for trace results).
+    energy_map = np.array(energy, dtype=np.float64, order="F", copy=True)
     energy_map_temp = np.array(energy, dtype=np.float64, order="F", copy=True)
     for linear_index in vertex_locations:
         coord = _matlab_linear_index_to_coord(int(linear_index), shape)
@@ -192,6 +195,7 @@ def _initialize_matlab_global_watershed_state(
         "vertex_locations": vertex_locations,
         "border_locations": border_locations,
         "vertex_energies": vertex_energies,
+        "energy_map": energy_map,
         "energy_map_temp": energy_map_temp,
         "branch_order_map": branch_order_map,
         "d_over_r_map": d_over_r_map,
@@ -247,7 +251,7 @@ def _matlab_global_watershed_current_strel(
     lumen_radius_microns: Float32Array,
     microns_per_voxel: Float32Array,
     step_size_per_origin_radius: float,
-) -> dict[str, np.ndarray]:
+) -> dict[str, Any]:
     """Build the in-bounds MATLAB strel around one current location."""
     current_coord = _matlab_linear_index_to_coord(int(current_linear), shape)
     current_scale_index = int(
@@ -383,7 +387,7 @@ def _matlab_global_watershed_insert_available_location(
     *,
     next_location: int,
     next_energy: float,
-    energy_lookup: Float32Array,
+    energy_lookup: Float64Array,
     seed_idx: int,
     is_current_location_clear: bool,
 ) -> tuple[list[int], bool]:
@@ -396,7 +400,6 @@ def _matlab_global_watershed_insert_available_location(
 
     This implements 'Lowest Linear Index Priority' for exact MATLAB parity.
     """
-    del seed_idx  # Redundant with unique composite keys
 
     if not available_locations:
         return [int(next_location)], True
@@ -418,10 +421,18 @@ def _matlab_global_watershed_insert_available_location(
         mid_energy = float(energy_lookup[mid_loc])
 
         # Comparison logic: Is 'mid' worse than 'target'?
-        # 'Worse' means higher energy OR (equal energy and higher index).
-        is_mid_worse = (mid_energy > target_energy) or (
-            mid_energy == target_energy and mid_loc > target_index
-        )
+        if seed_idx == 1:
+            # Seed 1: Find last strictly worse (Energy > Target)
+            # Tie: Target is considered better (LIFO behavior)
+            is_mid_worse = (mid_energy > target_energy) or (
+                np.isclose(mid_energy, target_energy) and mid_loc > target_index
+            )
+        else:
+            # Seed >1: Find first strictly better (Energy < Target)
+            # Tie: Target is considered worse (FIFO behavior)
+            is_mid_worse = (mid_energy > target_energy) or (
+                np.isclose(mid_energy, target_energy) and mid_loc >= target_index
+            )
 
         if is_mid_worse:
             low = mid + 1
@@ -572,7 +583,7 @@ def _matlab_global_watershed_assemble_results(
     edge_pairs: list[tuple[int, int]],
     edge_halves: list[tuple[list[int], list[int]]],
     shape: tuple[int, int, int],
-    energy_map: Float32Array,
+    energy_map: np.ndarray,
     original_scale_image: Int16Array | None,
     vertex_positions: Float32Array,
     vertex_index_map: Int32Array,
@@ -592,7 +603,7 @@ def _matlab_global_watershed_assemble_results(
     energy_traces: list[np.ndarray] = []
     scale_traces: list[np.ndarray] = []
     origin_indices: list[int] = []
-    connection_sources: list[str] = []
+    connection_sources: list[int] = []
     diagnostics = _empty_edge_diagnostics()
 
     flat_energy_map = energy_map.ravel(order="F")
@@ -616,7 +627,7 @@ def _matlab_global_watershed_assemble_results(
         energy_traces.append(energy_trace)
         scale_traces.append(scale_trace)
         origin_indices.append(start_vertex_index - 1)
-        connection_sources.append("global_watershed")
+        connection_sources.append(1)  # Watershed
 
     diagnostics["candidate_traced_edge_count"] = len(traces)
     diagnostics["terminal_edge_count"] = len(traces)
@@ -698,6 +709,7 @@ def _generate_edge_candidates_matlab_global_watershed(
     vertex_locations = cast("Int64Array", state["vertex_locations"])
     vertex_energies = cast("Float64Array", state["vertex_energies"])
     energy_map_temp = cast("Float64Array", state["energy_map_temp"])
+    energy_map = cast("Float64Array", state["energy_map"])
     branch_order_map = cast("Int16Array", state["branch_order_map"])
     d_over_r_map = cast("Float64Array", state["d_over_r_map"])
     pointer_map = cast("Int64Array", state["pointer_map"])
@@ -711,7 +723,6 @@ def _generate_edge_candidates_matlab_global_watershed(
     vertex_adjacency_matrix = cast("Any", state["vertex_adjacency_matrix"])
     number_of_vertices = len(vertex_locations)
 
-    energy_map = np.array(energy_map_raw, dtype=np.float64, order="F", copy=True)
     size_map, original_scale_image = _matlab_global_watershed_prepare_size_map(
         shape, scale_indices, vertex_positions, vertex_scales, lumen_radius_microns
     )
@@ -728,6 +739,7 @@ def _generate_edge_candidates_matlab_global_watershed(
     )
 
     energy_map_temp_flat = energy_map_temp.ravel(order="F")
+    energy_map_flat = energy_map.ravel(order="F")
     d_over_r_map_flat = d_over_r_map.ravel(order="F")
     pointer_map_flat = pointer_map.ravel(order="F")
     vertex_index_map_flat = vertex_index_map.ravel(order="F")
@@ -787,9 +799,8 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_strel_offsets = cast("Int32Array", current_strel["offsets"])
         current_strel_pointer_indices = cast("Int64Array", current_strel["pointer_indices"])
 
-        current_strel_energies = energy_map_temp_flat[current_strel_linear].astype(
-            np.float64, copy=False
-        )
+        # Penalties are based on the static energy map (energy_map_temp)
+        current_strel_energies = energy_map_temp_flat[current_strel_linear]
         current_d_over_r = float(d_over_r_map_flat[current_linear])
         current_forward_unit: np.ndarray | None = None
         if current_pointer_value > 0:
@@ -831,7 +842,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             adjusted_energies=adjusted,
             vertex_index_map_flat=vertex_index_map_flat,
             pointer_map_flat=pointer_map_flat,
-            energy_map_flat=energy_map.ravel(order="F"),
+            energy_map_flat=energy_map_flat,
             d_over_r_map_flat=d_over_r_map_flat,
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],
@@ -843,7 +854,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             edge_number_tolerance=edge_number_tolerance,
         ):
             # MATLAB recomputes the tolerated-energy mask each seed after directional suppression
-            # mutates the current strel energies.
+            # mutates the current strel energies
             is_energy_tolerated_in_strel = _matlab_global_watershed_tolerance_mask(
                 adjusted,
                 current_vertex_energy=float(vertex_energies[current_vertex_index - 1]),
@@ -979,4 +990,3 @@ def _generate_edge_candidates_matlab_global_watershed(
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
-
