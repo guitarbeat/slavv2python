@@ -17,8 +17,7 @@
 ### 2. Path Fluidity (Competitive Claiming)
 **Date:** 2026-05-23
 **Hypothesis:** Python's "first-come-first-served" voxel claiming is too rigid. MATLAB's frontier logic allows a "better" path (lower energy or lower index tie-break) to overwrite an existing claim if it hasn't been finalized yet.
-**Metric Correlation:** 452 extra pairs / 287 missing pairs in v10 suggest "path locking" is preventing some valid connections from forming.
-**Planned Action:** Modify `reveal_unclaimed_strel` to support competitive claiming based on the same bit-accurate tie-breaking rules as the frontier.
+**Resolution:** **REJECTED.** Direct inspection of `vectorize_V200.m` reveals that the `is_energy_lower_from_Vertex_B_in_strel` competitive overwrite block is explicitly commented out in the canonical code. MATLAB enforces strict First-Come-First-Served voxel ownership. Python's current `is_without_vertex` check is correct.
 
 ### 3. Static Frontier Priority (The "Static Map" Breakthrough)
 **Date:** 2026-05-23

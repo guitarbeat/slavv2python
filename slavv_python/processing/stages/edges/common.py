@@ -159,9 +159,9 @@ def _build_matlab_local_strel_geometry(
     r_over_r_lut = distance_lut / safe_radius
     return {
         "local_subscripts": offsets_array,
-        "distance_lut": distance_lut.astype(np.float32, copy=False),
-        "unit_vectors": unit_vectors.astype(np.float32, copy=False),
-        "r_over_R": r_over_r_lut.astype(np.float32, copy=False),
+        "distance_lut": distance_lut.astype(np.float64, copy=False),
+        "unit_vectors": unit_vectors.astype(np.float64, copy=False),
+        "r_over_R": r_over_r_lut.astype(np.float64, copy=False),
     }
 
 
