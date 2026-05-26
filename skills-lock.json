@@ -24,6 +24,12 @@
       "sourceType": "github",
       "skillPath": "skills/matlab-performance-optimizer/SKILL.md",
       "computedHash": "167d462b6e8c4e5d8247c1ac559f219b6ffd06d4bc7f0214b5f52a40f604e4d1"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "7246fdd3a795fc3daff0af72044ca99bf836e4e6a46844742858786fdfb86488"
     }
   }
 }
