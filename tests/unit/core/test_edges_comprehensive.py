@@ -427,7 +427,7 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
 
 
 @pytest.mark.unit
-def test_choose_edges_prefers_shorter_duplicate_pair_when_metrics_are_equal():
+def test_choose_edges_preserves_discovery_order_when_metrics_are_equal():
     vertex_positions = np.array([[1, 1, 1], [1, 6, 1]], dtype=np.float32)
     vertex_scales = np.array([0, 0], dtype=np.int16)
     shorter_trace = np.array([[1, 1, 1], [1, 4, 1], [1, 6, 1]], dtype=np.float32)
@@ -451,7 +451,7 @@ def test_choose_edges_prefers_shorter_duplicate_pair_when_metrics_are_equal():
         (8, 8, 8),
         {"number_of_edges_per_vertex": 4},
     )
-    assert np.array_equal(chosen["traces"][0], shorter_trace)
+    assert np.array_equal(chosen["traces"][0], candidates["traces"][0])
 
 
 @pytest.mark.unit
