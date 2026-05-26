@@ -1,3 +1,7 @@
 [submodule "external/Vectorization-Public"]
 	path = external/Vectorization-Public
 	url = https://github.com/UTFOIL/Vectorization-Public.git
+
+[submodule "external/neurovasc-db"]
+	path = external/neurovasc-db
+	url = https://github.com/guitarbeat/neurovasc-db.git
