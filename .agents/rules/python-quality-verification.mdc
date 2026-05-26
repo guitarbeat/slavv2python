@@ -1,0 +1,26 @@
+---
+description: Enforce rigorous quality, formatting, testing, and file cleanup standards for Python modifications
+alwaysApply: true
+---
+
+# Python Quality & Verification Standards
+
+Ensure that all Python changes adhere to strict repository guidelines around testing, linting, dead code decommissioning, and robust mock design.
+
+## Core Rules
+
+### 1. Verification Sequence
+- **Test First**: Run `pytest` targeting the modified component or engine code before declaring success.
+- **Lint Verification**: Always run `ruff check` and `ruff format` on modified files to verify and correct formatting, imports, and unused variables/arguments.
+- **Zero-Tolerance Quality Bar**: Resolve all lint issues (including unused variables, blank-line whitespace, import placement) before completing a task.
+
+### 2. High-Fidelity Test Mocking
+- **Real Schema Instantiation**: When writing unit or integration tests for execution stages or executors, avoid superficial dummy mock structures (like raw dicts or artificial Mock objects) if they bypass `RunState` and schema assertions.
+- **Use Class Builders**: Construct realistic test inputs/outputs by instantiating the actual schema classes (e.g. `EnergyResult.create()`, `VertexSet.create()`) with simple NumPy array vectors. This guarantees full alignment with underlying type checks and data constraints.
+
+### 3. Aggressive Code Decommissioning
+- **No Dead Code**: When refactoring or consolidating logic (e.g., transitioning to centralized executors), completely delete obsolete files, nested modules, and their corresponding deprecated test files rather than leaving them in the repository.
+- **Import Integrity**: Ensure that parent `__init__.py` modules are updated to completely sever references to decommissioned modules.
+
+### 4. Git & Resource Hygiene
+- **Clean Up Temporary Work**: Remove cloned repositories or temporary directories from temp paths once assets have been copied or utilized.

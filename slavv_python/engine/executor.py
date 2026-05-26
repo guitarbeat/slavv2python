@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from slavv_python.workflows.pipeline.session import emit_progress
+from slavv_python.workflows.session import emit_progress
 
 if TYPE_CHECKING:
     from collections.abc import Callable

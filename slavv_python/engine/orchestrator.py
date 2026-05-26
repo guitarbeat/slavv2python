@@ -98,9 +98,9 @@ class SlavvPipeline:
         executor.execute(
             "vertices", "vertices", 0.6,
             compute_fn=lambda c: vertex_ops.extract_vertices_resumable(
-                run_state.energy_data, parameters, c # type: ignore
+                run_state.energy_data, parameters, c
             ),
-            fallback_fn=lambda: self.extract_vertices(run_state.energy_data, parameters), # type: ignore
+            fallback_fn=lambda: self.extract_vertices(run_state.energy_data, parameters),
             force_rerun=force_rerun["vertices"],
             schema_class=VertexSet,
         )
@@ -112,9 +112,9 @@ class SlavvPipeline:
         executor.execute(
             "edges", "edges", 0.8,
             compute_fn=lambda c: EdgeManager.run_resumable(
-                run_state.energy_data, run_state.vertices, parameters, c # type: ignore
+                run_state.energy_data, run_state.vertices, parameters, c
             ),
-            fallback_fn=lambda: self.extract_edges(run_state.energy_data, run_state.vertices, parameters), # type: ignore
+            fallback_fn=lambda: self.extract_edges(run_state.energy_data, run_state.vertices, parameters),
             force_rerun=force_rerun["edges"],
             schema_class=EdgeSet,
         )
@@ -125,9 +125,9 @@ class SlavvPipeline:
         executor.execute(
             "network", "network", 1.0,
             compute_fn=lambda c: network_ops.construct_network_resumable(
-                run_state.edges, run_state.vertices, parameters, c # type: ignore
+                run_state.edges, run_state.vertices, parameters, c
             ),
-            fallback_fn=lambda: self.build_network(run_state.edges, run_state.vertices, parameters), # type: ignore
+            fallback_fn=lambda: self.build_network(run_state.edges, run_state.vertices, parameters),
             force_rerun=force_rerun["network"],
             schema_class=NetworkResult,
         )

@@ -21,8 +21,9 @@ from .constants import (
 )
 
 if TYPE_CHECKING:
-    from .state.models import ProgressEvent
     import numpy as np
+
+    from .state.models import ProgressEvent
 from .state.io import (
     atomic_joblib_dump,
     atomic_write_json,
@@ -222,7 +223,7 @@ class RunContext:
     ) -> tuple[dict[str, Any], RunContext | None, dict[str, bool]]:
         """
         Validate inputs and prepare the run context for pipeline execution.
-        
+
         Returns:
             (validated_parameters, run_context, force_rerun_flags)
         """
