@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -35,8 +36,36 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class _NullStageController:
+    """No-op stage handle for ephemeral edge extraction."""
+
+    run_context = None
+
+    def begin(self, **_kwargs: Any) -> None:
+        return None
+
+    def update(self, **_kwargs: Any) -> None:
+        return None
+
+    def complete(self, **_kwargs: Any) -> None:
+        return None
+
+    def artifact_path(self, file_name: str) -> Path:
+        raise RuntimeError(f"artifact_path({file_name!r}) called during ephemeral edge extraction")
+
+
 class EdgeManager:
     """Consolidated manager for edge discovery, selection, and resumable persistence."""
+
+    @classmethod
+    def run(
+        cls,
+        energy_data: EnergyResult,
+        vertices: VertexSet,
+        params: dict[str, Any],
+    ) -> EdgeSet:
+        """Extract edges without run-directory checkpointing or parity audit artifacts."""
+        return cls._run_tracing(energy_data, vertices, params, stage_controller=None)
 
     @classmethod
     def run_resumable(
@@ -47,9 +76,21 @@ class EdgeManager:
         stage_controller: StageController,
     ) -> EdgeSet:
         """Execute the full edge extraction lifecycle with resumability and audit artifacts."""
-        from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
-        from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
-        from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
+        return cls._run_tracing(energy_data, vertices, params, stage_controller=stage_controller)
+
+    @classmethod
+    def _run_tracing(
+        cls,
+        energy_data: EnergyResult,
+        vertices: VertexSet,
+        params: dict[str, Any],
+        *,
+        stage_controller: StageController | None,
+    ) -> EdgeSet:
+        resumable = stage_controller is not None
+        handle: StageController | _NullStageController = (
+            stage_controller if stage_controller is not None else _NullStageController()
+        )
 
         energy = energy_data.energy
         vertex_positions = vertices.positions
@@ -60,9 +101,6 @@ class EdgeManager:
         if len(vertex_positions) == 0:
             return EdgeSet.from_dict(_empty_edges_result(vertex_positions))
 
-        candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
-        candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
-        chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
         lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
             energy_data,
             microns_per_voxel,
@@ -75,23 +113,24 @@ class EdgeManager:
         use_frontier = _use_matlab_frontier_tracer(energy_data.to_dict(), params)
         discovery = select_edge_discovery(energy_data, params)
 
-        stage_controller.begin(
-            detail=(
-                "Generating edge candidates through MATLAB-style frontier workflow"
-                if use_frontier
-                else "Generating edge candidates through maintained frontier workflow"
-            ),
-            units_total=3,
-            units_completed=0,
-            substage="generate_candidates",
-            resumed=False,
-        )
+        if resumable:
+            handle.begin(
+                detail=(
+                    "Generating edge candidates through MATLAB-style frontier workflow"
+                    if use_frontier
+                    else "Generating edge candidates through maintained frontier workflow"
+                ),
+                units_total=3,
+                units_completed=0,
+                substage="generate_candidates",
+                resumed=False,
+            )
 
         heartbeat = None
-        if use_frontier:
+        if use_frontier and resumable:
 
             def heartbeat(iteration_count: int, candidate_count: int) -> None:
-                stage_controller.update(
+                handle.update(
                     units_total=3,
                     units_completed=0,
                     substage="generate_candidates",
@@ -107,7 +146,7 @@ class EdgeManager:
                 energy_data=energy_data,
                 vertices=vertices,
                 params=params,
-                stage_controller=stage_controller,
+                stage_controller=cast("StageController", handle),
                 vertex_center_image=vertex_center_image,
                 lumen_radius_pixels_axes=lumen_radius_pixels_axes,
                 microns_per_voxel=microns_per_voxel,
@@ -116,57 +155,64 @@ class EdgeManager:
         )
         candidates = manifest.to_payload()
 
-        if use_frontier:
-            frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
-        else:
-            frontier_counts = frontier_origin_counts(manifest)
+        if resumable:
+            from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
+            from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
-        supplement_origin_counts = _normalize_candidate_origin_counts(
-            manifest.diagnostics.get("watershed_per_origin_candidate_counts")
-        )
-        candidate_audit = _build_edge_candidate_audit(
-            candidates,
-            len(vertex_positions),
-            use_frontier_tracer=use_frontier,
-            frontier_origin_counts=frontier_counts,
-            supplement_origin_counts={
-                int(origin_index): int(count)
-                for origin_index, count in (supplement_origin_counts or {}).items()
-            },
-        )
-        atomic_write_json(candidate_audit_path, candidate_audit)
+            if use_frontier:
+                frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
+            else:
+                frontier_counts = frontier_origin_counts(manifest)
 
-        stage_controller.update(
-            units_total=3,
-            units_completed=0,
-            substage="persist_candidates",
-            detail="Writing edge candidate artifacts",
-            resumed=False,
-        )
-        atomic_joblib_dump(candidates, candidate_manifest_path)
-        if use_frontier:
-            candidate_checkpoint_path = (
-                stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
+            supplement_origin_counts = _normalize_candidate_origin_counts(
+                manifest.diagnostics.get("watershed_per_origin_candidate_counts")
             )
-            atomic_joblib_dump(
-                build_candidate_snapshot_payload(candidates),
-                candidate_checkpoint_path,
+            candidate_audit = _build_edge_candidate_audit(
+                candidates,
+                len(vertex_positions),
+                use_frontier_tracer=use_frontier,
+                frontier_origin_counts=frontier_counts,
+                supplement_origin_counts={
+                    int(origin_index): int(count)
+                    for origin_index, count in (supplement_origin_counts or {}).items()
+                },
             )
-        stage_controller.update(
-            units_total=3,
-            units_completed=1,
-            substage="persist_candidates",
-            detail="Wrote edge candidate artifacts",
-            resumed=False,
-        )
+            atomic_write_json(handle.artifact_path("candidate_audit.json"), candidate_audit)
 
-        stage_controller.update(
-            units_total=3,
-            units_completed=1,
-            substage="choose_edges",
-            detail="Choosing edges",
-            resumed=False,
-        )
+            handle.update(
+                units_total=3,
+                units_completed=0,
+                substage="persist_candidates",
+                detail="Writing edge candidate artifacts",
+                resumed=False,
+            )
+            atomic_joblib_dump(candidates, handle.artifact_path("candidates.pkl"))
+            if use_frontier:
+                candidate_checkpoint_path = (
+                    stage_controller.run_context.checkpoints_dir
+                    / "checkpoint_edge_candidates.pkl"
+                )
+                atomic_joblib_dump(
+                    build_candidate_snapshot_payload(candidates),
+                    candidate_checkpoint_path,
+                )
+            handle.update(
+                units_total=3,
+                units_completed=1,
+                substage="persist_candidates",
+                detail="Wrote edge candidate artifacts",
+                resumed=False,
+            )
+
+        if resumable:
+            handle.update(
+                units_total=3,
+                units_completed=1,
+                substage="choose_edges",
+                detail="Choosing edges",
+                resumed=False,
+            )
+
         chosen = choose_edges_for_workflow(
             candidates,
             vertex_positions,
@@ -179,13 +225,14 @@ class EdgeManager:
         chosen_payload = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
 
         if use_frontier:
-            stage_controller.update(
-                units_total=3,
-                units_completed=2,
-                substage="bridge_vertices",
-                detail="Adding MATLAB-style bridge vertices",
-                resumed=False,
-            )
+            if resumable:
+                handle.update(
+                    units_total=3,
+                    units_completed=2,
+                    substage="bridge_vertices",
+                    detail="Adding MATLAB-style bridge vertices",
+                    resumed=False,
+                )
             chosen_payload = add_vertices_to_edges_matlab_style(
                 chosen_payload,
                 vertices.to_dict(),
@@ -198,13 +245,15 @@ class EdgeManager:
                 params=params,
             )
 
-        stage_controller.update(
-            units_total=3,
-            units_completed=2,
-            substage="finalize_edges",
-            detail="Finalizing edges",
-            resumed=False,
-        )
+        if resumable:
+            handle.update(
+                units_total=3,
+                units_completed=2,
+                substage="finalize_edges",
+                detail="Finalizing edges",
+                resumed=False,
+            )
+
         chosen_payload = finalize_edges_matlab_style(
             chosen_payload,
             lumen_radius_microns=lumen_radius_microns,
@@ -215,22 +264,36 @@ class EdgeManager:
         chosen_dict["lumen_radius_microns"] = np.asarray(
             lumen_radius_microns, dtype=np.float32
         ).copy()
-        if use_frontier and manifest.frontier_lifecycle_events:
-            candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
-            candidate_lifecycle = _build_frontier_candidate_lifecycle(
-                candidates,
-                chosen_dict.get("chosen_candidate_indices"),
-            )
-            atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
 
-        atomic_joblib_dump(chosen_dict, chosen_manifest_path)
-        stage_controller.update(
-            units_total=3,
-            units_completed=3,
-            substage="finalize_edges",
-            detail="Finalized edges",
-            resumed=False,
-        )
+        if resumable:
+            from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
+            from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
+
+            if use_frontier and manifest.frontier_lifecycle_events:
+                candidate_lifecycle = _build_frontier_candidate_lifecycle(
+                    candidates,
+                    chosen_dict.get("chosen_candidate_indices"),
+                )
+                atomic_write_json(
+                    handle.artifact_path("candidate_lifecycle.json"),
+                    candidate_lifecycle,
+                )
+
+            atomic_joblib_dump(chosen_dict, handle.artifact_path("chosen_edges.pkl"))
+            handle.update(
+                units_total=3,
+                units_completed=3,
+                substage="finalize_edges",
+                detail="Finalized edges",
+                resumed=False,
+            )
+        else:
+            logger.info(
+                "Extracted %d chosen edges from %d traced candidates",
+                len(chosen_dict.get("traces", [])),
+                chosen_dict.get("diagnostics", {}).get("candidate_traced_edge_count", 0),
+            )
+
         return EdgeSet.from_dict(chosen_dict)
 
     @classmethod
