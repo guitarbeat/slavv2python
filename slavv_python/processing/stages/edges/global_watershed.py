@@ -38,6 +38,7 @@ from slavv_python.processing.stages.edges.execution_tracing import (
 from slavv_python.processing.stages.edges.watershed_core import (
     FrontierQueue,
     VoxelClaimMap,
+    _matlab_global_watershed_border_locations,
 )
 from slavv_python.processing.stages.edges.payloads import (
     _edge_metric_from_energy_trace,
@@ -679,3 +680,124 @@ def _generate_edge_candidates_matlab_global_watershed(
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
+
+
+def _initialize_matlab_global_watershed_state(
+    energy: np.ndarray,
+    vertex_positions: np.ndarray,
+) -> dict[str, np.ndarray]:
+    """Compatibility shim for unit tests."""
+    claim_map = VoxelClaimMap(energy.shape, vertex_positions, energy)
+    return {
+        "vertex_locations": claim_map.vertex_locations,
+        "vertex_energies": claim_map.vertex_energies,
+        "energy_map_temp": claim_map.energy_map_temp,
+        "branch_order_map": claim_map.branch_order_map,
+        "d_over_r_map": claim_map.d_over_r_map,
+        "pointer_map": claim_map.pointer_map,
+        "vertex_index_map": claim_map.vertex_index_map,
+        "initial_locations": claim_map.initial_locations,
+    }
+
+
+def _matlab_global_watershed_reveal_unclaimed_strel(
+    *,
+    current_vertex_index: int,
+    current_scale_label: int,
+    current_d_over_r: float,
+    valid_linear: np.ndarray,
+    strel_pointer_indices: np.ndarray,
+    strel_r_over_R: np.ndarray,
+    adjusted_energies: np.ndarray,
+    vertex_index_map_flat: np.ndarray,
+    pointer_map_flat: np.ndarray,
+    energy_map_flat: np.ndarray,
+    d_over_r_map_flat: np.ndarray,
+    size_map_flat: np.ndarray,
+    lut_size: int,
+) -> dict[str, np.ndarray]:
+    """Compatibility shim for unit tests."""
+    if len(strel_pointer_indices) != len(valid_linear):
+        raise AssertionError("Strel arrays must stay aligned")
+
+    vertices_of_current_strel = np.asarray(
+        vertex_index_map_flat[valid_linear], dtype=np.uint32
+    )
+    is_without_vertex = vertices_of_current_strel == 0
+
+    if np.any(is_without_vertex):
+        claim_linear = valid_linear[is_without_vertex]
+        claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
+        if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
+            raise AssertionError("invalid claim pointers")
+
+        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
+        pointer_map_flat[claim_linear] = claim_pointers
+        energy_map_flat[claim_linear] = adjusted_energies[is_without_vertex]
+        d_over_r_map_flat[claim_linear] = (
+            np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float32) + current_d_over_r
+        )
+        size_map_flat[claim_linear] = np.int16(current_scale_label)
+
+    return {
+        "vertices_of_current_strel": vertices_of_current_strel,
+        "is_without_vertex_in_strel": is_without_vertex,
+    }
+
+
+def _matlab_global_watershed_insert_available_location(
+    available_locations: list[int],
+    next_location: int,
+    next_energy: float,
+    energy_lookup: dict | np.ndarray,
+    seed_idx: int,
+    is_current_location_clear: bool,
+) -> tuple[list[int], bool]:
+    """Compatibility shim for unit tests."""
+    is_clear = is_current_location_clear
+    updated = list(available_locations)
+    if not is_current_location_clear and seed_idx > 1:
+        if updated:
+            updated.pop()
+        is_clear = True
+
+    target_energy = float(next_energy)
+    target_index = int(next_location)
+
+    insert_at = len(updated)
+    for idx, loc in enumerate(updated):
+        mid_energy = float(energy_lookup[loc])
+        mid_loc = loc
+        if seed_idx == 1:
+            is_mid_worse = (mid_energy > target_energy) or (
+                mid_energy == target_energy and mid_loc > target_index
+            )
+        else:
+            is_mid_worse = (mid_energy > target_energy) or (
+                mid_energy == target_energy and mid_loc >= target_index
+            )
+        if not is_mid_worse:
+            insert_at = idx
+            break
+
+    updated.insert(insert_at, int(next_location))
+    return updated, is_clear
+
+
+def _matlab_global_watershed_reset_join_locations(
+    available_locations: list[int],
+    *,
+    next_vertex_locations: np.ndarray,
+    is_current_location_clear: bool,
+) -> tuple[list[int], bool]:
+    """Compatibility shim for unit tests."""
+    is_clear = is_current_location_clear
+    updated = list(available_locations)
+    if not is_clear:
+        if updated:
+            updated.pop()
+        is_clear = True
+
+    locations_to_reset = set(np.asarray(next_vertex_locations, dtype=np.int64).tolist())
+    updated = [loc for loc in updated if loc not in locations_to_reset]
+    return updated, is_clear
