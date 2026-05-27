@@ -32,7 +32,7 @@ For current behavior and proof status, prefer:
 - **Network construction**: `construct_network` / `construct_network_resumable` delegate to `NetworkManager`; orchestrator network stage uses manager directly.
 - **Typed pipeline output**: `SlavvPipeline.run()` returns `PipelineResult` (`Mapping`-compatible for legacy `results["key"]` access). `StageExecutor` persists checkpoints via schema `.save()` / `.load()` when available.
 - **Interface shared state**: `store_processing_session_state` and curation helpers prefer `AppRunState` / `PipelineResult` over immediate dict normalization.
-- **Documentation**: Updated technical architecture, naming guide, MATLAB parity mapping, GEMINI repo map, and ADRs 0001–0006.
+- **Documentation**: Updated technical architecture, naming guide, MATLAB parity mapping, GEMINI repo map, and ADRs 0001–0006 (including `AppRunState` in ADR 0001 and PYTHON_NAMING_GUIDE).
 
 ### Removed
 

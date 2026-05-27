@@ -33,6 +33,25 @@ vertices = results.vertices
 edges = results.edges
 ```
 
+### UI session envelope (`AppRunState`)
+
+Streamlit and shared-state code should hold a typed run envelope, not a plain dict:
+
+- preferred schema: `slavv_python.schema.app_run.AppRunState`
+- preferred session accessor: `slavv_python.interface.shared_state.get_app_run(session)`
+- preferred storage: `session_state["processing_results"]` as `AppRunState` (wraps `PipelineResult`)
+- defer dict serialization to export/share boundaries only (`normalize_state_results`, `exports`, `share_report`)
+
+Example:
+
+```python
+from slavv_python.interface.shared_state import get_app_run, store_processing_session_state
+
+store_processing_session_state(session_state, pipeline_result, parameters=parameters)
+app_run = get_app_run(st.session_state)
+vertices = app_run.pipeline.vertices  # typed; Mapping access also works on AppRunState
+```
+
 ## Stable Internal Names
 
 Use domain-first package names for maintained internal surfaces:
@@ -41,7 +60,8 @@ Use domain-first package names for maintained internal surfaces:
 - `slavv_python.processing.stages.energy`
 - `slavv_python.processing.stages.vertices`
 - `slavv_python.processing.stages.edges`
-- `slavv_python.engine.state`
+- `slavv_python.engine.state` (`run_ledger`, `stage_handle`)
+- `slavv_python.schema.app_run` (`AppRunState`)
 - `slavv_python.workflows.pipeline`
 - `slavv_python.workflows.pipeline_setup`
 - `slavv_python.workflows.pipeline_stages`
@@ -52,7 +72,7 @@ Use domain-first package names for maintained internal surfaces:
 Within a stage package, prefer role names such as:
 
 - `discovery` (strategy seam for edge candidate generation)
-- `manager` (stage facade for resumable edge lifecycle)
+- `manager` (stage facade: `EdgeManager`, `NetworkManager`; `run()` + `run_resumable()`)
 - `candidate_generation`
 - `tracing`
 - `selection`
