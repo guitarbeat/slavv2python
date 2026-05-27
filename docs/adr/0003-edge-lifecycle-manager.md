@@ -1,7 +1,7 @@
 # ADR 0003: Edge Lifecycle Manager
 
 ## Status
-Accepted
+Accepted (implemented 2026-05-27)
 
 ## Context
 The "Edges" stage is the most algorithmically complex part of the SLAVV pipeline, involving multiple discovery strategies (Tracing vs. Watershed), conflict-aware selection (Conflict Painting), and structural post-processing (Bridge Insertion). 
@@ -17,6 +17,12 @@ We have introduced a consolidated `EdgeManager` in `slavv_python/processing/stag
 1. **Encapsulated Lifecycle**: The manager handles the transition from candidate generation to selection and final bridging internally.
 2. **High-Level Contract**: The manager accepts and returns the "Deep" schema objects (`EnergyResult`, `VertexSet`, `EdgeSet`), abstracting away the low-level dictionary structures used by internal algorithms.
 3. **Internalized Logic**: Preparatory steps, such as painting vertex occupancy images, are now internal implementation details of the manager.
+
+## Implementation (2026-05-27)
+- `EdgeManager.run_resumable()` owns the full resumable lifecycle: candidate audit JSON, parity candidate checkpoints, frontier lifecycle artifacts, selection, bridging, and finalization.
+- `extract_edges_resumable()` delegates to `EdgeManager`; the former 14-callable `resumable.extract_edges_resumable` surface was removed.
+- Candidate generation is routed through the discovery strategy seam ([ADR 0005](0005-edge-discovery-strategy-seam.md)).
+- `resumable.py` retains only watershed per-label unit persistence.
 
 ## Consequences
 - **Reduced Surface Area**: The public interface for edge extraction is now a single, high-leverage method call.

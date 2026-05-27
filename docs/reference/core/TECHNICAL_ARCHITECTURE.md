@@ -15,6 +15,8 @@ The `SlavvPipeline` class is the primary entry point for running the extraction 
 
 - **Stateless Operation**: The pipeline itself does not hold large data in memory; it retrieves and persists stage results via the `RunContext`.
 - **Stage Encapsulation**: Each major phase (Energy, Vertices, Edges, Network) is encapsulated in its own operation module.
+- **Typed completion**: `run()` returns `PipelineResult` (mapping-compatible for legacy `results["key"]` access).
+- **StageExecutor**: Centralizes checkpoint load/save, progress, and schema wrapping for resumable stages.
 
 ### 2. Run Context & Stage Controllers
 The `RunContext` manages the filesystem layout and persistent state for a single pipeline execution.
@@ -29,6 +31,16 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - `VertexSet`: Coordinate sets, radii, and discovery scales.
 - `EdgeSet`: Traces (list of coord arrays), connectivity matrices, and endpoint energies.
 - `NetworkResult`: Final topology, strands, and bifurcations.
+- `PipelineResult`: Run envelope combining stage payloads and `parameters`.
+
+### 4. Edge stage facade (`EdgeManager` + `discovery`)
+The edges package exposes a deep module boundary:
+
+- **`EdgeManager.run_resumable()`** — resumable tracing workflow (audit artifacts, parity checkpoints, selection, bridging, finalize).
+- **`discovery.select_edge_discovery()`** — strategy seam (`MaintainedTracingDiscovery` vs `FrontierTracingDiscovery`).
+- **`resumable.py`** — watershed-only per-label unit persistence.
+
+See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
 
 ---
 
@@ -39,7 +51,7 @@ The pipeline follows a strict linear execution order to maintain MATLAB compatib
 1.  **Preprocessing**: Normalization and bandpass filtering of the input TIFF.
 2.  **Energy Field**: Multiscale Hessian enhancement (using local tiling for large volumes).
 3.  **Vertex Extraction**: Seed point discovery via local maxima suppression.
-4.  **Edge Extraction**: Vessel tracing using either watershed-guided expansion or directional seeding.
+4.  **Edge Extraction**: Candidate discovery (maintained tracing or MATLAB-parity frontier), conflict-aware selection, optional bridge insertion, then finalize.
 5.  **Network Construction**: Graph assembly, cycle breaking, and strand smoothing.
 
 ---

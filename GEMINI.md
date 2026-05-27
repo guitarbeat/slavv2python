@@ -68,6 +68,8 @@ slavv2python/
 │   │       ├── energy/                 # Hessian filtering, backends
 │   │       ├── vertices/               # Extraction, painting, selection
 │   │       ├── edges/                  # Watershed, tracing, selection, cleanup
+│   │       │   ├── discovery.py        # Edge discovery strategy seam
+│   │       │   ├── manager.py          # Resumable edge lifecycle facade
 │   │       │   └── matlab_algorithms/  # MATLAB-shaped parity shims
 │   │       └── network/               # Strand assembly, graph construction
 │   ├── analytics/                      # Analysis & metrics
@@ -127,6 +129,7 @@ Read these first when working on relevant surfaces:
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
+| ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, EdgeManager, discovery) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 
 ---

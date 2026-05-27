@@ -26,7 +26,11 @@ Example:
 from slavv_python import SlavvPipeline
 
 pipeline = SlavvPipeline()
-results = pipeline.run(image, parameters)
+results = pipeline.run(image, parameters)  # PipelineResult; mapping-compatible
+
+# Prefer typed access in new code:
+vertices = results.vertices
+edges = results.edges
 ```
 
 ## Stable Internal Names
@@ -47,6 +51,8 @@ Use domain-first package names for maintained internal surfaces:
 
 Within a stage package, prefer role names such as:
 
+- `discovery` (strategy seam for edge candidate generation)
+- `manager` (stage facade for resumable edge lifecycle)
 - `candidate_generation`
 - `tracing`
 - `selection`

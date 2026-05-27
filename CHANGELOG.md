@@ -15,6 +15,19 @@ For current behavior and proof status, prefer:
 - [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-05-27
+
+### Added
+
+- **Edge discovery strategy seam** (`discovery.py`): `CandidateManifest`, `MaintainedTracingDiscovery`, `FrontierTracingDiscovery`, and `select_edge_discovery()` for tracing vs MATLAB-parity frontier branching.
+- **ADR 0005**: Documents the edge discovery strategy seam; ADR 0003 updated with implementation notes.
+
+### Changed
+
+- **EdgeManager consolidation**: `run_resumable()` is the single resumable tracing entrypoint (audit JSON, parity candidate checkpoints, lifecycle artifacts, selection, bridging, finalize). Removed the 14-callable `resumable.extract_edges_resumable` injection surface.
+- **Typed pipeline output**: `SlavvPipeline.run()` returns `PipelineResult` (`Mapping`-compatible for legacy `results["key"]` access). `StageExecutor` persists checkpoints via schema `.save()` / `.load()` when available.
+- **Documentation**: Updated technical architecture, naming guide, MATLAB parity mapping, and ADRs 0001–0003.
+
 ## [Unreleased] - 2026-05-22
 
 ### Added

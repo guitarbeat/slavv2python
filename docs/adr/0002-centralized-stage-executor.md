@@ -17,6 +17,7 @@ We have introduced a centralized `StageExecutor` in the `Engine` to consolidate 
 1. **Lifecycle Management**: The executor is now the authoritative manager for checking checkpoints, running computation, persisting results, and handling progress/errors.
 2. **Simplified Orchestration**: The `SlavvPipeline` interface is significantly simplified; it now delegates high-level stage definitions to the executor without needing to know the implementation details of "resumability."
 3. **Unified Progress/Logging**: Execution-level metadata (timing, success/failure metrics) is now handled in one place, ensuring consistency across all stages.
+4. **Schema-native persistence**: When a stage payload exposes `.save()` / `.load()`, the executor uses those methods for checkpoints instead of ad hoc `.to_dict()` round-trips.
 
 ## Consequences
 - **Improved Locality**: All execution-related logic is concentrated in a single class, making it easier to debug or extend the engine's capabilities.
