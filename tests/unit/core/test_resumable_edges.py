@@ -4,12 +4,12 @@ import joblib
 import numpy as np
 
 from slavv_python.engine.state import RunContext
-from slavv_python.processing.stages.edges import resumable as resumable_edges
+from slavv_python.processing.stages.edges.edges import extract_edges_resumable
 from slavv_python.processing.stages.edges.manager import EdgeManager
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 
-def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
+def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, monkeypatch):
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     stage_controller = run_context.stage("edges")
 
@@ -85,33 +85,24 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
         calls["choose_args"] = args
         return chosen
 
-    result = resumable_edges.extract_edges_resumable(
-        energy_data,
-        vertices,
-        params,
-        stage_controller,
-        atomic_joblib_dump=lambda value, path: joblib.dump(value, path),
-        empty_edges_result=lambda _vertex_positions: {
-            "traces": [],
-            "connections": np.zeros((0, 2)),
-        },
-        build_edge_candidate_audit=fake_build_edge_candidate_audit,
-        build_frontier_candidate_lifecycle=lambda *_args: {"events": []},
-        finalize_matlab_parity_candidates=lambda *_args: candidates,
-        normalize_candidate_origin_counts=lambda raw: {
-            int(key): int(value) for key, value in raw.items()
-        },
-        generate_edge_candidates_matlab_frontier=lambda *_args: candidates,
-        generate_edge_candidates=fake_generate_edge_candidates,
-        choose_edges_for_workflow=fake_choose_edges_for_workflow,
-        add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
-        finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
-        paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
-        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(
-            shape, dtype=np.int32
-        ),
-        use_matlab_frontier_tracer=lambda *_args: False,
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.discovery._generate_edge_candidates",
+        fake_generate_edge_candidates,
     )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager._build_edge_candidate_audit",
+        fake_build_edge_candidate_audit,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.choose_edges_for_workflow",
+        fake_choose_edges_for_workflow,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.finalize_edges_matlab_style",
+        lambda chosen, **_kwargs: chosen.to_dict() if hasattr(chosen, "to_dict") else chosen,
+    )
+
+    result = extract_edges_resumable(energy_data, vertices, params, stage_controller)
 
     assert len(result.traces) == len(chosen.traces)
     assert np.array_equal(result.connections, chosen.connections)
@@ -119,20 +110,19 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path):
     assert "generate_args" in calls
     assert "generate_kwargs" in calls
     assert "choose_args" in calls
-    assert calls["audit"] == {
-        "candidate_payload": candidates,
-        "vertex_count": 2,
-        "use_frontier_tracer": False,
-        "frontier_origin_counts": {0: 1},
-        "supplement_origin_counts": {0: 2},
-    }
+    audit = calls["audit"]
+    assert audit["vertex_count"] == 2
+    assert audit["use_frontier_tracer"] is False
+    assert audit["frontier_origin_counts"] == {0: 1}
+    assert audit["supplement_origin_counts"] == {0: 2}
+    assert audit["candidate_payload"]["connections"].tolist() == candidates["connections"].tolist()
     assert calls["generate_kwargs"]["vertex_image"] is not None
     assert stage_controller.artifact_path("candidates.pkl").is_file()
     assert stage_controller.artifact_path("chosen_edges.pkl").is_file()
     assert stage_controller.artifact_path("candidate_audit.json").is_file()
 
 
-def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_path):
+def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_path, monkeypatch):
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
     stage_controller = run_context.stage("edges")
 
@@ -205,33 +195,30 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         calls.append("generate_fallback")
         return frontier_candidates
 
-    result = resumable_edges.extract_edges_resumable(
-        energy_data,
-        vertices,
-        params,
-        stage_controller,
-        atomic_joblib_dump=lambda value, path: joblib.dump(value, path),
-        empty_edges_result=lambda _vertex_positions: {
-            "traces": [],
-            "connections": np.zeros((0, 2)),
-        },
-        build_edge_candidate_audit=lambda *_args, **_kwargs: {"audit": True},
-        build_frontier_candidate_lifecycle=lambda *_args: {"events": [1]},
-        finalize_matlab_parity_candidates=fake_finalize,
-        normalize_candidate_origin_counts=lambda raw: {
-            int(key): int(value) for key, value in raw.items()
-        },
-        generate_edge_candidates_matlab_frontier=fake_generate_frontier,
-        generate_edge_candidates=fake_generate_fallback,
-        choose_edges_for_workflow=lambda *_args: chosen,
-        add_vertices_to_edges_matlab_style=lambda chosen, *_args, **_kwargs: chosen,
-        finalize_edges_matlab_style=lambda chosen, **_kwargs: chosen,
-        paint_vertex_center_image=lambda _positions, shape: np.zeros(shape, dtype=np.int32),
-        paint_vertex_image=lambda _positions, _scales, _radii, shape: np.zeros(
-            shape, dtype=np.int32
-        ),
-        use_matlab_frontier_tracer=lambda *_args: True,
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.discovery._generate_edge_candidates_matlab_frontier",
+        fake_generate_frontier,
     )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.discovery._finalize_matlab_parity_candidates",
+        fake_finalize,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.choose_edges_for_workflow",
+        lambda *_args: chosen,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.add_vertices_to_edges_matlab_style",
+        lambda selected, *_args, **_kwargs: (
+            selected.to_dict() if hasattr(selected, "to_dict") else selected
+        ),
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.finalize_edges_matlab_style",
+        lambda chosen, **_kwargs: chosen,
+    )
+
+    result = extract_edges_resumable(energy_data, vertices, params, stage_controller)
 
     assert len(result.traces) == len(chosen.traces)
     assert np.array_equal(result.connections, chosen.connections)
@@ -291,11 +278,11 @@ def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path,
     calls: dict[str, np.ndarray] = {}
 
     monkeypatch.setattr(
-        "slavv_python.processing.stages.edges.manager._generate_edge_candidates_matlab_frontier",
+        "slavv_python.processing.stages.edges.discovery._generate_edge_candidates_matlab_frontier",
         lambda *_args, **_kwargs: candidates,
     )
     monkeypatch.setattr(
-        "slavv_python.processing.stages.edges.manager._finalize_matlab_parity_candidates",
+        "slavv_python.processing.stages.edges.discovery._finalize_matlab_parity_candidates",
         lambda *_args, **_kwargs: candidates,
     )
 

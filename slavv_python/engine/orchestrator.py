@@ -105,10 +105,7 @@ class SlavvPipeline:
             compute_fn=lambda c: vertex_ops.extract_vertices_resumable(
                 run_state.energy_data, parameters, c
             ),
-            fallback_fn=lambda: self.extract_vertices(
-                run_state.energy_data.to_dict() if run_state.energy_data else {},
-                parameters,
-            ),
+            fallback_fn=lambda: self.extract_vertices(run_state.energy_data, parameters),
             force_rerun=force_rerun["vertices"],
             schema_class=VertexSet,
         )
@@ -126,8 +123,8 @@ class SlavvPipeline:
                 run_state.energy_data, run_state.vertices, parameters, c
             ),
             fallback_fn=lambda: self.extract_edges(
-                run_state.energy_data.to_dict() if run_state.energy_data else {},
-                run_state.vertices.to_dict() if run_state.vertices else {},
+                run_state.energy_data,
+                run_state.vertices,
                 parameters,
             ),
             force_rerun=force_rerun["edges"],
@@ -174,17 +171,36 @@ class SlavvPipeline:
         )
 
     def extract_vertices(
-        self, energy_data: dict[str, Any], params: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, energy_data: EnergyResult | dict[str, Any] | None, params: dict[str, Any]
+    ) -> VertexSet:
         """Extract vertices as local extrema. Delegates to ``vertices`` module."""
-        result = vertex_ops.extract_vertices(energy_data, params)
-        return cast("dict[str, Any]", result)
+        if energy_data is None:
+            raise ValueError("energy_data is required before vertex extraction")
+        typed_energy = (
+            energy_data
+            if isinstance(energy_data, EnergyResult)
+            else EnergyResult.from_dict(energy_data)
+        )
+        return vertex_ops.extract_vertices(typed_energy, params)
 
     def extract_edges(
-        self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-    ) -> dict[str, Any]:
+        self,
+        energy_data: EnergyResult | dict[str, Any] | None,
+        vertices: VertexSet | dict[str, Any] | None,
+        params: dict[str, Any],
+    ) -> EdgeSet:
         """Extract edges by tracing. Delegates to ``edges`` module."""
-        return cast("dict[str, Any]", edge_ops.extract_edges(energy_data, vertices, params))
+        if energy_data is None or vertices is None:
+            raise ValueError("energy_data and vertices are required before edge extraction")
+        typed_energy = (
+            energy_data
+            if isinstance(energy_data, EnergyResult)
+            else EnergyResult.from_dict(energy_data)
+        )
+        typed_vertices = (
+            vertices if isinstance(vertices, VertexSet) else VertexSet.from_dict(vertices)
+        )
+        return edge_ops.extract_edges(typed_energy, typed_vertices, params)
 
     def extract_edges_watershed(
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
@@ -195,7 +211,10 @@ class SlavvPipeline:
         )
 
     def build_network(
-        self, edges: dict[str, Any] | EdgeSet, vertices: dict[str, Any] | VertexSet, params: dict[str, Any]
+        self,
+        edges: dict[str, Any] | EdgeSet,
+        vertices: dict[str, Any] | VertexSet,
+        params: dict[str, Any],
     ) -> NetworkResult:
         """Construct the final network from traced edges and vertices."""
         typed_edges = edges if isinstance(edges, EdgeSet) else EdgeSet.from_dict(edges)

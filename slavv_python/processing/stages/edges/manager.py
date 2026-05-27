@@ -176,6 +176,7 @@ class EdgeManager:
             energy.shape,
             params,
         )
+        chosen_payload = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
 
         if use_frontier:
             stage_controller.update(
@@ -185,8 +186,8 @@ class EdgeManager:
                 detail="Adding MATLAB-style bridge vertices",
                 resumed=False,
             )
-            chosen = add_vertices_to_edges_matlab_style(
-                chosen,
+            chosen_payload = add_vertices_to_edges_matlab_style(
+                chosen_payload,
                 vertices.to_dict(),
                 energy=energy,
                 scale_indices=energy_data.scale_indices,
@@ -204,14 +205,16 @@ class EdgeManager:
             detail="Finalizing edges",
             resumed=False,
         )
-        chosen = finalize_edges_matlab_style(
-            chosen,
+        chosen_payload = finalize_edges_matlab_style(
+            chosen_payload,
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             size_of_image=energy.shape,
         )
-        chosen_dict = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
-        chosen_dict["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
+        chosen_dict = cast("dict[str, Any]", chosen_payload)
+        chosen_dict["lumen_radius_microns"] = np.asarray(
+            lumen_radius_microns, dtype=np.float32
+        ).copy()
         if use_frontier and manifest.frontier_lifecycle_events:
             candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
             candidate_lifecycle = _build_frontier_candidate_lifecycle(
@@ -241,12 +244,15 @@ class EdgeManager:
         """Delegate watershed resumable extraction (per-label units)."""
         from slavv_python.processing.stages.edges import resumable as watershed_resumable
 
-        return watershed_resumable.extract_edges_watershed_resumable(
-            energy_data,
-            vertices,
-            params,
-            stage_controller,
+        return cast(
+            "EdgeSet",
+            watershed_resumable.extract_edges_watershed_resumable(
+                energy_data,
+                vertices,
+                params,
+                stage_controller,
+            ),
         )
 
 
-__all__ = ["EdgeManager", "CandidateManifest"]
+__all__ = ["CandidateManifest", "EdgeManager"]

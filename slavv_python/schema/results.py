@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
-from collections.abc import Iterator, Mapping
 
 if TYPE_CHECKING:
     from pathlib import Path

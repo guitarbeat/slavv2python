@@ -15,16 +15,13 @@ from slavv_python.processing.stages.edges.candidate_generation import (
     _generate_edge_candidates_matlab_frontier,
 )
 from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
-from slavv_python.processing.stages.edges.common import (
-    resolve_lumen_radius_pixels_axes,
-)
 from slavv_python.processing.stages.vertices.painting import paint_vertex_image
-from slavv_python.schema.results import EnergyResult, VertexSet
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from slavv_python.engine.state import StageController
+    from slavv_python.schema.results import EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
 
@@ -60,15 +57,11 @@ class CandidateManifest:
         scale_traces = [
             np.asarray(trace, dtype=np.int16) for trace in payload_copy.pop("scale_traces", [])
         ]
-        origin_indices = np.asarray(
-            payload_copy.pop("origin_indices", []), dtype=np.int32
-        ).reshape(-1)
-        connection_sources = [
-            str(value) for value in payload_copy.pop("connection_sources", [])
-        ]
-        frontier_lifecycle_events = list(
-            payload_copy.pop("frontier_lifecycle_events", []) or []
+        origin_indices = np.asarray(payload_copy.pop("origin_indices", []), dtype=np.int32).reshape(
+            -1
         )
+        connection_sources = [str(value) for value in payload_copy.pop("connection_sources", [])]
+        frontier_lifecycle_events = list(payload_copy.pop("frontier_lifecycle_events", []) or [])
         diagnostics = dict(payload_copy.pop("diagnostics", {}) or {})
         return cls(
             traces=traces,
@@ -195,9 +188,7 @@ class FrontierTracingDiscovery:
         return CandidateManifest.from_payload(payload)
 
 
-def select_edge_discovery(
-    energy_data: EnergyResult, params: dict[str, Any]
-) -> EdgeDiscovery:
+def select_edge_discovery(energy_data: EnergyResult, params: dict[str, Any]) -> EdgeDiscovery:
     """Pick the discovery strategy for the current energy/parameters profile."""
     if _use_matlab_frontier_tracer(energy_data.to_dict(), params):
         return FrontierTracingDiscovery()
