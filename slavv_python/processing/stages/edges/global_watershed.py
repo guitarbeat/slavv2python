@@ -35,6 +35,10 @@ from slavv_python.processing.stages.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
 )
+from slavv_python.processing.stages.edges.watershed_core import (
+    FrontierQueue,
+    VoxelClaimMap,
+)
 from slavv_python.processing.stages.edges.payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
@@ -127,83 +131,6 @@ def _matlab_global_watershed_scale_pointer_map(
         1000.0 / np.maximum(strel_lengths, 1.0) * pointer_map[pointer_mask].astype(np.float32)
     )
     return cast("np.ndarray", scaled_pointer_map)
-
-
-def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> Int64Array:
-    """Return MATLAB-order linear indices for the image border at ``strel_apothem = 1``."""
-    border_mask: np.ndarray = np.zeros(shape, dtype=bool)
-    border_mask[0, :, :] = True
-    border_mask[shape[0] - 1, :, :] = True
-    border_mask[:, 0, :] = True
-    border_mask[:, shape[1] - 1, :] = True
-    border_mask[:, :, 0] = True
-    border_mask[:, :, shape[2] - 1] = True
-    return cast("Int64Array", np.flatnonzero(border_mask.ravel(order="F")).astype(np.int64))
-
-
-def _initialize_matlab_global_watershed_state(
-    energy: Float32Array,
-    vertex_positions: Float32Array,
-) -> dict[str, Any]:
-    """Build MATLAB-shaped shared maps for global watershed edge discovery."""
-    shape: tuple[int, int, int] = (
-        int(energy.shape[0]),
-        int(energy.shape[1]),
-        int(energy.shape[2]),
-    )
-    vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
-        np.int32, copy=False
-    )
-    max_coord: np.ndarray = np.asarray(shape, dtype=np.int32) - 1
-    vertex_coords = np.clip(vertex_coords, 0, max_coord)
-    vertex_locations = np.asarray(
-        [_coord_to_matlab_linear_index(coord, shape) for coord in vertex_coords],
-        dtype=np.int64,
-    )
-    number_of_vertices = len(vertex_locations)
-    border_locations = _matlab_global_watershed_border_locations(shape)
-
-    branch_order_map = np.zeros(shape, dtype=np.uint8, order="F")
-    d_over_r_map = np.zeros(shape, dtype=np.float64, order="F")
-    pointer_map = np.zeros(shape, dtype=np.uint64, order="F")
-    vertex_index_map = np.zeros(shape, dtype=np.uint32, order="F")
-
-    # Apply border labels first
-    for linear_index in border_locations:
-        coord = _matlab_linear_index_to_coord(int(linear_index), shape)
-        vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(number_of_vertices + 1)
-
-    # Vertices take precedence over border
-    vertex_energies = np.empty((number_of_vertices,), dtype=np.float64)
-    for vertex_offset, linear_index in enumerate(vertex_locations):
-        coord = _matlab_linear_index_to_coord(int(linear_index), shape)
-        vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(vertex_offset + 1)
-        vertex_energies[vertex_offset] = np.float64(energy[coord[0], coord[1], coord[2]])
-
-    # MATLAB maintains two energy maps: energy_map_temp (static priority source)
-    # and energy_map (dynamic penalized source for trace results).
-    energy_map = np.array(energy, dtype=np.float64, order="F", copy=True)
-    energy_map_temp = np.array(energy, dtype=np.float64, order="F", copy=True)
-    for linear_index in vertex_locations:
-        coord = _matlab_linear_index_to_coord(int(linear_index), shape)
-        energy_map_temp[coord[0], coord[1], coord[2]] = np.float64(-np.inf)
-
-    available_locations = vertex_locations.astype(np.int64, copy=False)[::-1]
-    vertex_adjacency_matrix = sparse.identity(number_of_vertices + 1, format="lil", dtype=bool)
-
-    return {
-        "vertex_locations": vertex_locations,
-        "border_locations": border_locations,
-        "vertex_energies": vertex_energies,
-        "energy_map": energy_map,
-        "energy_map_temp": energy_map_temp,
-        "branch_order_map": branch_order_map,
-        "d_over_r_map": d_over_r_map,
-        "pointer_map": pointer_map,
-        "vertex_index_map": vertex_index_map,
-        "available_locations": available_locations,
-        "vertex_adjacency_matrix": vertex_adjacency_matrix,
-    }
 
 
 def _matlab_global_watershed_prepare_size_map(
@@ -319,171 +246,6 @@ def _matlab_global_watershed_current_strel(
         "scale_label_clipped": current_scale_index
         + 1,  # Clipped scale for consistent pointer/size_map usage
     }
-
-
-def _matlab_global_watershed_reveal_unclaimed_strel(
-    *,
-    current_vertex_index: int,
-    current_scale_label: int,
-    current_d_over_r: float,
-    valid_linear: Int64Array,
-    strel_pointer_indices: Int64Array,
-    strel_r_over_R: Float32Array,
-    adjusted_energies: Float64Array,
-    vertex_index_map_flat: Int32Array,
-    pointer_map_flat: Int64Array,
-    energy_map_flat: Float64Array,
-    d_over_r_map_flat: Float64Array,
-    size_map_flat: Int16Array,
-    lut_size: int,
-) -> dict[str, Any]:
-    """Reveal one MATLAB strel into the shared maps, claiming only previously unowned voxels.
-
-    CRITICAL: Only write to locations that have vertex_index == 0 AND pointer_map == 0 to prevent
-    overwriting existing pointers and creating cycles.
-
-    CRITICAL: The pointer indices in strel_pointer_indices are 1-based indices into the
-    FULL LUT for current_scale_label. They must be in range [1, lut_size]. The size_map
-    is also written with current_scale_label so that during backtracking, we can reconstruct
-    the correct LUT and interpret the pointer correctly.
-
-    NOTE: This function updates the energy map with penalized energies. MATLAB uses
-    these penalized values for the final edge energy traces.
-    """
-    if len(strel_pointer_indices) != len(valid_linear):
-        raise AssertionError(
-            "Global watershed strel arrays must stay aligned: "
-            f"{len(strel_pointer_indices)} pointers for {len(valid_linear)} locations"
-        )
-
-    vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
-    is_without_vertex = vertices_of_current_strel == 0  # MATLAB: vertex_index_map( current_strel ) == 0
-    if np.any(is_without_vertex):
-        claim_linear = valid_linear[is_without_vertex]
-        claim_pointers = np.asarray(strel_pointer_indices[is_without_vertex], dtype=np.uint64)
-        if np.any(claim_pointers < 1) or np.any(claim_pointers > lut_size):
-            bad_pointers = claim_pointers[(claim_pointers < 1) | (claim_pointers > lut_size)]
-            raise AssertionError(
-                "Global watershed produced invalid claim pointers for one strel: "
-                f"scale={current_scale_label}, lut_size={lut_size}, "
-                f"sample={bad_pointers[:5].tolist()}"
-            )
-        vertex_index_map_flat[claim_linear] = np.uint32(current_vertex_index)
-        pointer_map_flat[claim_linear] = claim_pointers
-        energy_map_flat[claim_linear] = adjusted_energies[is_without_vertex]
-        d_over_r_map_flat[claim_linear] = (
-            np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float32) + current_d_over_r
-        )
-        size_map_flat[claim_linear] = np.int16(current_scale_label)
-
-    return {
-        "vertices_of_current_strel": vertices_of_current_strel,
-        "is_without_vertex_in_strel": is_without_vertex,
-    }
-
-
-def _matlab_global_watershed_insert_available_location(
-    available_locations: list[int],
-    *,
-    next_location: int,
-    next_energy: float,
-    energy_lookup: Float64Array,
-    seed_idx: int,
-    is_current_location_clear: bool,
-) -> tuple[list[int], bool]:
-    """Insert one location into MATLAB's worst-to-best available-location list.
-
-    The list is sorted primarily by energy (descending: worst to best) and
-    secondarily by linear index (descending: highest to lowest).
-    Since we pop from the end, the 'best' voxel (lowest energy, lowest index)
-    is at the very end of the list.
-
-    This implements 'Lowest Linear Index Priority' for exact MATLAB parity.
-    """
-
-    if not available_locations:
-        return [int(next_location)], True
-
-    target_energy = float(next_energy)
-    target_index = int(next_location)
-    n = len(available_locations)
-
-    # Binary search for the insertion point.
-    # available_locations is sorted 'worst to best' (High Energy -> Low Energy).
-    # Ties are broken by Linear Index (High Index -> Low Index).
-    # We want to find the first index 'i' where available_locations[i] is 'better' than next.
-    low = 0
-    high = n if is_current_location_clear else n - 1
-
-    while low < high:
-        mid = (low + high) // 2
-        mid_loc = available_locations[mid]
-        mid_energy = float(energy_lookup[mid_loc])
-
-        # Comparison logic: Is 'mid' worse than 'target'?
-        if seed_idx == 1:
-            # Seed 1: Find last strictly worse (Energy > Target)
-            # MATLAB: location_idx = 1 + find(E > target, 1, 'last')
-            # Binary search: find first index where mid_E <= target_E
-            is_mid_worse = (mid_energy > target_energy)
-        else:
-            # Seed >1: Find first strictly better (Energy < Target)
-            # MATLAB: location_idx = find(E < target, 1, 'first')
-            # Binary search: find first index where mid_E < target_E
-            is_mid_worse = (mid_energy >= target_energy)
-
-        if is_mid_worse:
-            low = mid + 1
-        else:
-            high = mid
-
-    insert_at = low
-
-    # Apply insertion and handle pop to match MATLAB splice
-    if not is_current_location_clear:
-        available_locations.pop()
-        available_locations.insert(insert_at, int(next_location))
-    else:
-        available_locations.insert(insert_at, int(next_location))
-
-    return available_locations, True
-
-
-def _matlab_global_watershed_reset_join_locations(
-    available_locations: list[int],
-    *,
-    next_vertex_locations: Int64Array,
-    is_current_location_clear: bool,
-) -> tuple[list[int], bool]:
-    """Mirror MATLAB's indexed available-location removal during watershed joins.
-
-    Returns the updated list and the current-location cleared flag.
-    """
-    if not available_locations:
-        return [], is_current_location_clear
-
-    updated_locations = list(available_locations)
-    locations_to_reset = sorted(
-        {
-            int(value) for value in np.asarray(next_vertex_locations, dtype=np.int64).tolist()
-        }.intersection(updated_locations)
-    )
-
-    if not is_current_location_clear:
-        current_location = updated_locations[-1]
-        is_current_location_clear = True
-        updated_locations = updated_locations[:-1]
-        locations_to_reset = [value for value in locations_to_reset if value != current_location]
-
-    if not locations_to_reset:
-        return updated_locations, is_current_location_clear
-
-    # MATLAB: available_locations( available_locations == location ) = [ ]
-    # This removes ALL occurrences.
-    reset_set = set(locations_to_reset)
-    updated_locations = [loc for loc in updated_locations if loc not in reset_set]
-
-    return updated_locations, is_current_location_clear
 
 
 def _matlab_global_watershed_unit_vectors(
@@ -693,33 +455,20 @@ def _generate_edge_candidates_matlab_global_watershed(
         }
 
     energy_map_raw = np.asarray(energy, dtype=np.float32)
-    print(f"Watershed Entry: Energy Range {np.min(energy_map_raw)} to {np.max(energy_map_raw)}")
     shape: tuple[int, int, int] = (
         int(energy_map_raw.shape[0]),
         int(energy_map_raw.shape[1]),
         int(energy_map_raw.shape[2]),
     )
-    state = _initialize_matlab_global_watershed_state(energy_map_raw, vertex_positions)
-    vertex_locations = cast("Int64Array", state["vertex_locations"])
-    vertex_energies = cast("Float64Array", state["vertex_energies"])
-    energy_map_temp = cast("Float64Array", state["energy_map_temp"])
-    energy_map = cast("Float64Array", state["energy_map"])
-    branch_order_map = cast("Int16Array", state["branch_order_map"])
-    d_over_r_map = cast("Float64Array", state["d_over_r_map"])
-    pointer_map = cast("Int64Array", state["pointer_map"])
-    vertex_index_map = cast("Int32Array", state["vertex_index_map"])
-    # MATLAB pops from the end of the list.
-    # To match MATLAB's vertex processing order (if it pops V_0 first),
-    # we should ensure V_0 is at the end.
-    # state["available_locations"] was initialized as vertex_locations[::-1].
-    # So V_0 is at the end.
-    available_locations = [int(value) for value in cast("Int64Array", state["available_locations"])]
-    vertex_adjacency_matrix = cast("Any", state["vertex_adjacency_matrix"])
-    number_of_vertices = len(vertex_locations)
+
+    claim_map = VoxelClaimMap(shape, vertex_positions, energy_map_raw)
+    queue = FrontierQueue(claim_map.initial_locations, claim_map.energy_temp_flat)
+    number_of_vertices = claim_map.number_of_vertices
 
     size_map, original_scale_image = _matlab_global_watershed_prepare_size_map(
         shape, scale_indices, vertex_positions, vertex_scales, lumen_radius_microns
     )
+    size_map_flat = size_map.ravel(order="F")
 
     # MATLAB parity parameters
     edge_number_tolerance = int(
@@ -732,48 +481,29 @@ def _generate_edge_candidates_matlab_global_watershed(
         params.get("distance_tolerance", params.get("distance_tolerance_per_origin_radius", 3.0))
     )
 
-    energy_map_temp_flat = energy_map_temp.ravel(order="F")
-    energy_map_flat = energy_map.ravel(order="F")
-    d_over_r_map_flat = d_over_r_map.ravel(order="F")
-    pointer_map_flat = pointer_map.ravel(order="F")
-    vertex_index_map_flat = vertex_index_map.ravel(order="F")
-    size_map_flat = size_map.ravel(order="F")
-    branch_order_map_flat = branch_order_map.ravel(order="F")
-
     edge_halves: list[tuple[list[int], list[int]]] = []
     edge_pairs: list[tuple[int, int]] = []
 
     last_heartbeat_at = time.monotonic()
-
-    # Track the raw vertex energies for resetting -inf values
-    vertex_energies_raw_flat = energy_map_raw.ravel(order="F")
-
     iteration = 0
-    while available_locations:
-        iteration += 1
-        current_linear = int(available_locations[-1])
-        is_current_location_clear = False
 
-        current_energy = float(energy_map_temp_flat[current_linear])
+    while queue:
+        iteration += 1
+        current_linear = queue.pop_best()
+
+        current_energy = claim_map.restore_vertex_energy(current_linear)
         active_tracer.on_iteration_start(iteration, current_linear, current_energy)
 
-        if float(current_energy) == float("-inf"):
-            current_energy = float(vertex_energies_raw_flat[current_linear])
-            energy_map_temp_flat[current_linear] = current_energy
-            # print(f"Iteration {iteration}: Reset -inf to {current_energy} at {current_linear}")
-
         if current_energy >= 0.0:
-            if iteration < 10:
-                print(f"Iteration {iteration}: BREAKING because energy {current_energy} >= 0.0 at {current_linear}")
             break
 
-        current_vertex_index = int(vertex_index_map_flat[current_linear])
+        current_vertex_index = int(claim_map.vertex_index_flat[current_linear])
         current_scale_label = int(size_map_flat[current_linear])
         current_scale_index = int(
             np.clip(current_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
-        current_pointer_value = int(pointer_map_flat[current_linear])
-        current_d_over_r = float(d_over_r_map_flat[current_linear])
+        current_pointer_value = int(claim_map.pointer_flat[current_linear])
+        current_d_over_r = float(claim_map.d_over_r_flat[current_linear])
 
         current_strel = _matlab_global_watershed_current_strel(
             current_linear,
@@ -783,7 +513,6 @@ def _generate_edge_candidates_matlab_global_watershed(
             microns_per_voxel=microns_per_voxel,
             step_size_per_origin_radius=step_size_per_origin_radius,
         )
-        # Extract clipped scale for consistent pointer creation and size_map writing
         current_scale_label_for_writing = current_strel.get(
             "scale_label_clipped", current_scale_label
         )
@@ -795,8 +524,8 @@ def _generate_edge_candidates_matlab_global_watershed(
         current_strel_pointer_indices = cast("Int64Array", current_strel["pointer_indices"])
 
         # Penalties are based on the static energy map (energy_map_temp)
-        current_strel_energies = energy_map_temp_flat[current_strel_linear]
-        current_d_over_r = float(d_over_r_map_flat[current_linear])
+        current_strel_energies = claim_map.energy_temp_flat[current_strel_linear]
+
         current_forward_unit: np.ndarray | None = None
         if current_pointer_value > 0:
             lut = _build_matlab_global_watershed_lut(
@@ -824,10 +553,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             distance_tolerance=distance_tolerance,
         )
 
-        # Sample ownership BEFORE claiming to determine growability/connectivity
-        vertices_of_current_strel = vertex_index_map_flat[current_strel_linear]
-
-        _matlab_global_watershed_reveal_unclaimed_strel(
+        vertices_of_current_strel, is_without_vertex = claim_map.claim_unowned_strel(
             current_vertex_index=current_vertex_index,
             current_scale_label=current_scale_label_for_writing,
             current_d_over_r=current_d_over_r,
@@ -835,24 +561,17 @@ def _generate_edge_candidates_matlab_global_watershed(
             strel_pointer_indices=current_strel_pointer_indices,
             strel_r_over_R=current_strel_r_over_R,
             adjusted_energies=adjusted,
-            vertex_index_map_flat=vertex_index_map_flat,
-            pointer_map_flat=pointer_map_flat,
-            energy_map_flat=energy_map_flat,
-            d_over_r_map_flat=d_over_r_map_flat,
             size_map_flat=size_map_flat,
             lut_size=current_strel["lut_size"],
         )
-
 
         for seed_idx in _matlab_global_watershed_seed_index_range(
             current_pointer_value=current_pointer_value,
             edge_number_tolerance=edge_number_tolerance,
         ):
-            # MATLAB recomputes the tolerated-energy mask each seed after directional suppression
-            # mutates the current strel energies
             is_energy_tolerated_in_strel = _matlab_global_watershed_tolerance_mask(
                 adjusted,
-                current_vertex_energy=float(vertex_energies[current_vertex_index - 1]),
+                current_vertex_energy=float(claim_map.vertex_energies[current_vertex_index - 1]),
                 energy_tolerance=energy_tolerance,
             )
             strel_idx = int(np.argmin(adjusted))
@@ -860,53 +579,35 @@ def _generate_edge_candidates_matlab_global_watershed(
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
             active_tracer.on_seed_selected(seed_idx, next_location, float(adjusted[strel_idx]))
 
-            if not bool(is_energy_tolerated_in_strel[strel_idx]):
-                if not is_current_location_clear:
-                    available_locations.pop()
-                    is_current_location_clear = True
-            else:
+            if bool(is_energy_tolerated_in_strel[strel_idx]):
                 if next_vertex_index == 0:
-                    branch_order = int(branch_order_map_flat[current_linear]) + seed_idx - 1
-                    branch_order_map_flat[next_location] = np.uint8(branch_order)
+                    branch_order = int(claim_map.branch_order_flat[current_linear]) + seed_idx - 1
+                    claim_map.branch_order_flat[next_location] = np.uint8(branch_order)
                     if branch_order < edge_number_tolerance:
-                        available_locations, _was_popped = (
-                            _matlab_global_watershed_insert_available_location(
-                                available_locations,
-                                next_location=next_location,
-                                next_energy=float(energy_map_temp_flat[next_location]),
-                                energy_lookup=energy_map_temp_flat,
-                                seed_idx=seed_idx,
-                                is_current_location_clear=is_current_location_clear,
-                            )
+                        queue.push(
+                            next_location,
+                            float(claim_map.energy_temp_flat[next_location]),
+                            seed_idx,
                         )
-                        if _was_popped:
-                            is_current_location_clear = True
                 else:
                     is_next_vertex_in_strel = vertices_of_current_strel == next_vertex_index
-                    (
-                        available_locations,
-                        is_current_location_clear,
-                    ) = _matlab_global_watershed_reset_join_locations(
-                        available_locations,
-                        next_vertex_locations=current_strel_linear[is_next_vertex_in_strel],
-                        is_current_location_clear=is_current_location_clear,
-                    )
+                    queue.remove_first_occurrence(current_strel_linear[is_next_vertex_in_strel])
 
                     if not bool(
-                        vertex_adjacency_matrix[next_vertex_index - 1, current_vertex_index - 1]
+                        claim_map.adjacency_matrix[next_vertex_index - 1, current_vertex_index - 1]
                     ):
-                        vertex_adjacency_matrix[
+                        claim_map.adjacency_matrix[
                             current_vertex_index - 1,
                             next_vertex_index - 1,
                         ] = True
-                        vertex_adjacency_matrix[
+                        claim_map.adjacency_matrix[
                             next_vertex_index - 1,
                             current_vertex_index - 1,
                         ] = True
 
                         half_1 = _matlab_global_watershed_trace_half(
                             current_linear,
-                            pointer_map=pointer_map,
+                            pointer_map=claim_map.pointer_map,
                             size_map=size_map,
                             shape=shape,
                             lumen_radius_microns=lumen_radius_microns,
@@ -917,7 +618,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                         other_half_start = next_location
                         if next_vertex_index != number_of_vertices + 1:
                             is_vertex_b_origin = (
-                                pointer_map[
+                                claim_map.pointer_map[
                                     current_strel_coords[:, 0],
                                     current_strel_coords[:, 1],
                                     current_strel_coords[:, 2],
@@ -929,7 +630,7 @@ def _generate_edge_candidates_matlab_global_watershed(
 
                         half_2 = _matlab_global_watershed_trace_half(
                             other_half_start,
-                            pointer_map=pointer_map,
+                            pointer_map=claim_map.pointer_map,
                             size_map=size_map,
                             shape=shape,
                             lumen_radius_microns=lumen_radius_microns,
@@ -945,9 +646,6 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_2,
                         )
 
-            # MATLAB unconditionally applies suppression to mutate the strel landscape
-            # before the next seed is selected.
-
             from slavv_python.processing.stages.edges.common import (
                 _matlab_frontier_directional_suppression_factors,
             )
@@ -959,10 +657,6 @@ def _generate_edge_candidates_matlab_global_watershed(
             )
             adjusted[~np.isfinite(adjusted)] = np.inf
 
-        if not is_current_location_clear:
-            available_locations.pop()
-            is_current_location_clear = True
-
         if heartbeat is not None:
             now = time.monotonic()
             if iteration == 1 or iteration % 512 == 0 or (now - last_heartbeat_at) >= 5.0:
@@ -973,14 +667,14 @@ def _generate_edge_candidates_matlab_global_watershed(
         edge_pairs=edge_pairs,
         edge_halves=edge_halves,
         shape=shape,
-        energy_map=energy_map,
+        energy_map=claim_map.energy_map,
         original_scale_image=original_scale_image,
         vertex_positions=vertex_positions,
-        vertex_index_map=vertex_index_map,
-        pointer_map=pointer_map,
+        vertex_index_map=claim_map.vertex_index_map,
+        pointer_map=claim_map.pointer_map,
         size_map=size_map,
-        d_over_r_map=d_over_r_map,
-        branch_order_map=branch_order_map,
+        d_over_r_map=claim_map.d_over_r_map,
+        branch_order_map=claim_map.branch_order_map,
         lumen_radius_microns=lumen_radius_microns,
         microns_per_voxel=microns_per_voxel,
         step_size_per_origin_radius=step_size_per_origin_radius,

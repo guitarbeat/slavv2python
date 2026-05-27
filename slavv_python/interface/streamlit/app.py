@@ -132,6 +132,26 @@ st.html(
             0 4px 6px rgba(0,0,0,0.05),
             0 2px 4px rgba(0,0,0,0.1);
     }
+    /* UI Polish: Tabular numbers for all tables */
+    table {
+        font-variant-numeric: tabular-nums;
+    }
+    /* UI Polish: Image outlines for depth */
+    img {
+        outline: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+        img {
+            outline: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    }
+    /* UI Polish: Scale on press for buttons */
+    .stButton button, .stDownloadButton button {
+        transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1) !important;
+    }
+    .stButton button:active, .stDownloadButton button:active {
+        transform: scale(0.96) !important;
+    }
     @media (max-width: 768px) {
         .main-header {
             font-size: 2rem;
