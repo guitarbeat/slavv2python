@@ -5,6 +5,7 @@ import numpy as np
 
 from slavv_python.engine.state import RunContext
 from slavv_python.processing.stages.edges import resumable as resumable_edges
+from slavv_python.processing.stages.edges.manager import EdgeManager
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 
@@ -230,3 +231,78 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
     candidate_checkpoint = joblib.load(candidate_checkpoint_path)
     assert candidate_checkpoint["connections"].tolist() == [[0, 1]]
     assert candidate_checkpoint["diagnostics"]["frontier_per_origin_candidate_counts"] == {"0": 1}
+
+
+def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path, monkeypatch):
+    run_context = RunContext(run_dir=tmp_path / "run", target_stage="edges")
+    stage_controller = run_context.stage("edges")
+
+    energy_data = EnergyResult.from_dict({
+        "energy": np.zeros((4, 4, 4), dtype=np.float32),
+        "scale_indices": np.zeros((4, 4, 4), dtype=np.int16),
+        "lumen_radius_microns": np.array([2.0, 4.0], dtype=np.float32),
+        "energy_sign": -1.0,
+        "energy_origin": "python_native_hessian",
+    })
+    vertices = VertexSet.from_dict({
+        "positions": np.array([[0.0, 0.0, 0.0], [2.0, 2.0, 2.0]], dtype=np.float32),
+        "scales": np.array([0, 1], dtype=np.int16),
+        "energies": np.array([-1.0, -2.0], dtype=np.float32),
+    })
+    params = {
+        "comparison_exact_network": True,
+        "microns_per_voxel": [1.0, 2.0, 4.0],
+        "number_of_edges_per_vertex": 4,
+    }
+    candidates = {
+        "traces": [np.array([[0.0, 0.0, 0.0], [2.0, 2.0, 2.0]], dtype=np.float32)],
+        "connections": np.array([[0, 1]], dtype=np.int32),
+        "metrics": np.array([-1.0], dtype=np.float32),
+        "energy_traces": [np.array([-1.0, -2.0], dtype=np.float32)],
+        "scale_traces": [np.array([0, 1], dtype=np.int16)],
+        "origin_indices": np.array([0], dtype=np.int32),
+        "connection_sources": ["frontier"],
+        "diagnostics": {"frontier_per_origin_candidate_counts": {"0": 1}},
+    }
+    chosen = {
+        "traces": candidates["traces"],
+        "connections": candidates["connections"],
+        "energies": np.array([-1.0], dtype=np.float32),
+        "energy_traces": candidates["energy_traces"],
+        "scale_traces": candidates["scale_traces"],
+        "diagnostics": {"candidate_traced_edge_count": 1},
+    }
+    calls: dict[str, np.ndarray] = {}
+
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager._generate_edge_candidates_matlab_frontier",
+        lambda *_args, **_kwargs: candidates,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager._finalize_matlab_parity_candidates",
+        lambda *_args, **_kwargs: candidates,
+    )
+
+    def fake_choose_edges_for_workflow(*args):
+        calls["lumen_radius_pixels_axes"] = args[4]
+        return chosen
+
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.choose_edges_for_workflow",
+        fake_choose_edges_for_workflow,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.add_vertices_to_edges_matlab_style",
+        lambda selected, *_args, **_kwargs: selected,
+    )
+    monkeypatch.setattr(
+        "slavv_python.processing.stages.edges.manager.finalize_edges_matlab_style",
+        lambda selected, **_kwargs: selected,
+    )
+
+    result = EdgeManager.run_resumable(energy_data, vertices, params, stage_controller)
+
+    expected_axes = np.array([[2.0, 1.0, 0.5], [4.0, 2.0, 1.0]], dtype=np.float32)
+    np.testing.assert_allclose(calls["lumen_radius_pixels_axes"], expected_axes)
+    assert len(result.traces) == 1
+    assert stage_controller.artifact_path("candidates.pkl").is_file()

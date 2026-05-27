@@ -7,16 +7,16 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.processing.stages.edges.audit import (
-    _normalize_candidate_origin_counts,
-)
 from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.processing.stages.edges.candidate_generation import (
     _finalize_matlab_parity_candidates,
     _generate_edge_candidates,
     _generate_edge_candidates_matlab_frontier,
 )
-from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
+from slavv_python.processing.stages.edges.common import (
+    _use_matlab_frontier_tracer,
+    resolve_lumen_radius_pixels_axes,
+)
 from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
 from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
 from slavv_python.processing.stages.vertices.painting import (
@@ -58,19 +58,11 @@ class EdgeManager:
 
         # 1. Setup paths and images
         candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
-        candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
         chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
 
-        lumen_radius_pixels_axes = np.asarray(
-            energy_data.extra.get(
-                "lumen_radius_pixels_axes",
-                np.repeat(
-                    np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32).reshape(-1, 1),
-                    3,
-                    axis=1,
-                ),
-            ),
-            dtype=np.float32,
+        lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
+            energy_data,
+            microns_per_voxel,
         )
 
         vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
@@ -112,11 +104,6 @@ class EdgeManager:
                 microns_per_voxel,
             )
 
-            # Audit processing
-            raw_origin_counts = _normalize_candidate_origin_counts(
-                candidates.get("diagnostics", {}).get("frontier_per_origin_candidate_counts")
-            )
-            frontier_origin_counts = {int(k): int(v) for k, v in raw_origin_counts.items()}
         else:
             from scipy.spatial import cKDTree
             tree = cKDTree(vertex_positions * microns_per_voxel)
@@ -138,14 +125,28 @@ class EdgeManager:
                 energy_sign=energy_sign,
             )
 
-            # Simplified audit for non-frontier
-            frontier_origin_counts = {} # TODO: implement if needed
-
         # 3. Persistence & Audit
+        stage_controller.update(
+            units_total=3,
+            units_completed=0,
+            substage="persist_candidates",
+            detail="Writing edge candidate artifacts",
+        )
         atomic_joblib_dump(candidates, candidate_manifest_path)
-        stage_controller.update(units_total=3, units_completed=1, substage="generate_candidates")
+        stage_controller.update(
+            units_total=3,
+            units_completed=1,
+            substage="persist_candidates",
+            detail="Wrote edge candidate artifacts",
+        )
 
         # 4. Selection (Conflict Painting)
+        stage_controller.update(
+            units_total=3,
+            units_completed=1,
+            substage="choose_edges",
+            detail="Choosing edges",
+        )
         chosen = choose_edges_for_workflow(
             candidates,
             vertex_positions,
@@ -158,6 +159,12 @@ class EdgeManager:
 
         # 5. Bridging (Structural Vertex Insertion)
         if use_frontier:
+            stage_controller.update(
+                units_total=3,
+                units_completed=2,
+                substage="bridge_vertices",
+                detail="Adding MATLAB-style bridge vertices",
+            )
             chosen = add_vertices_to_edges_matlab_style(
                 chosen,
                 vertices.to_dict(),
@@ -171,6 +178,12 @@ class EdgeManager:
             )
 
         # 6. Finalize & Build Result
+        stage_controller.update(
+            units_total=3,
+            units_completed=2,
+            substage="finalize_edges",
+            detail="Finalizing edges",
+        )
         final_data = finalize_edges_matlab_style(
             chosen,
             lumen_radius_microns=lumen_radius_microns,
@@ -179,7 +192,12 @@ class EdgeManager:
         )
 
         atomic_joblib_dump(final_data, chosen_manifest_path)
-        stage_controller.update(units_total=3, units_completed=3, substage="choose_edges")
+        stage_controller.update(
+            units_total=3,
+            units_completed=3,
+            substage="finalize_edges",
+            detail="Finalized edges",
+        )
 
         return EdgeSet.create(
             traces=final_data["traces"],

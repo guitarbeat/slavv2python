@@ -4,6 +4,7 @@ import json
 import logging
 import subprocess
 import time
+import traceback
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
@@ -465,7 +466,19 @@ class RunContext:
 
     def fail_stage(self, stage: str, error: BaseException | str) -> None:
         message = str(error)
-        fail_stage_snapshot(self.snapshot, stage=stage, message=message)
+        stage_snapshot = self.snapshot.stages.get(stage)
+        traceback_text = (
+            "".join(traceback.format_exception(type(error), error, error.__traceback__))
+            if isinstance(error, BaseException)
+            else None
+        )
+        fail_stage_snapshot(
+            self.snapshot,
+            stage=stage,
+            message=message,
+            substage=stage_snapshot.substage if stage_snapshot is not None else "",
+            traceback_text=traceback_text,
+        )
         self._refresh_stage_metrics(stage)
         self.persist()
         self.emit_event(stage, STATUS_FAILED, detail=message)

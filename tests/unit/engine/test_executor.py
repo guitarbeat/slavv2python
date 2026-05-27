@@ -267,6 +267,7 @@ def test_stage_executor_failure_propagation(tmp_path):
     )
 
     def failing_compute(controller):
+        controller.begin(detail="Choosing edges", substage="choose_edges")
         raise ValueError("Computation failed")
 
     with pytest.raises(ValueError, match="Computation failed"):
@@ -279,3 +280,6 @@ def test_stage_executor_failure_propagation(tmp_path):
 
     # Verify stage is marked failed in run context
     assert context.snapshot.stages["energy"].status == STATUS_FAILED
+    error = context.snapshot.errors[-1]
+    assert error["substage"] == "choose_edges"
+    assert "Traceback" in error["traceback"]

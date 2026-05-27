@@ -10,6 +10,7 @@ import scipy.ndimage as ndi
 from scipy.spatial import cKDTree
 from skimage.segmentation import watershed
 
+from slavv_python.processing.stages.edges.common import resolve_lumen_radius_pixels_axes
 from slavv_python.processing.stages.edges.units import _load_edge_units
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
@@ -58,22 +59,10 @@ def extract_edges_resumable(
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-    _lumen_radius_pixels_axes_raw = energy_data.extra.get("lumen_radius_pixels_axes")
-    if _lumen_radius_pixels_axes_raw is not None:
-        lumen_radius_pixels_axes = np.asarray(_lumen_radius_pixels_axes_raw, dtype=np.float32)
-    elif len(energy_data.lumen_radius_pixels) > 0:
-        # Modern checkpoint: lumen_radius_pixels (1-D mean) is stored; broadcast to per-axis.
-        lumen_radius_pixels_axes = np.repeat(
-            np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32).reshape(-1, 1),
-            3,
-            axis=1,
-        )
-    else:
-        # Legacy checkpoint (energy_origin="hessian"): only lumen_radius_microns is stored.
-        # Derive per-axis pixel radii using microns_per_voxel from params.
-        lumen_radius_pixels_axes = (
-            lumen_radius_microns[:, None] / microns_per_voxel[None, :]
-        ).astype(np.float32)
+    lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
+        energy_data,
+        microns_per_voxel,
+    )
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")
@@ -190,6 +179,13 @@ def extract_edges_resumable(
     )
     atomic_write_json(candidate_audit_path, candidate_audit)
 
+    stage_controller.update(
+        units_total=3,
+        units_completed=0,
+        substage="persist_candidates",
+        detail="Writing edge candidate artifacts",
+        resumed=False,
+    )
     atomic_joblib_dump(candidates, candidate_manifest_path)
     if use_frontier:
         candidate_checkpoint_path = (
@@ -200,8 +196,15 @@ def extract_edges_resumable(
     stage_controller.update(
         units_total=3,
         units_completed=1,
-        substage="generate_candidates",
-        detail="Generated edge candidates",
+        substage="persist_candidates",
+        detail="Wrote edge candidate artifacts",
+        resumed=False,
+    )
+    stage_controller.update(
+        units_total=3,
+        units_completed=1,
+        substage="choose_edges",
+        detail="Choosing edges",
         resumed=False,
     )
     chosen = choose_edges_for_workflow(
@@ -214,9 +217,16 @@ def extract_edges_resumable(
         params,
     )
     if use_frontier:
+        stage_controller.update(
+            units_total=3,
+            units_completed=2,
+            substage="bridge_vertices",
+            detail="Adding MATLAB-style bridge vertices",
+            resumed=False,
+        )
         chosen = add_vertices_to_edges_matlab_style(
             chosen,
-            vertices,
+            vertices.to_dict(),
             energy=energy,
             scale_indices=scale_indices,
             microns_per_voxel=microns_per_voxel,
@@ -225,6 +235,13 @@ def extract_edges_resumable(
             size_of_image=energy.shape,
             params=params,
         )
+    stage_controller.update(
+        units_total=3,
+        units_completed=2,
+        substage="finalize_edges",
+        detail="Finalizing edges",
+        resumed=False,
+    )
     chosen = finalize_edges_matlab_style(
         chosen,
         lumen_radius_microns=lumen_radius_microns,
@@ -248,8 +265,8 @@ def extract_edges_resumable(
     stage_controller.update(
         units_total=3,
         units_completed=3,
-        substage="choose_edges",
-        detail=("Selected MATLAB-style terminal edges" if use_frontier else "Selected final edges"),
+        substage="finalize_edges",
+        detail="Finalized edges",
         resumed=False,
     )
     return EdgeSet.from_dict(chosen_dict)

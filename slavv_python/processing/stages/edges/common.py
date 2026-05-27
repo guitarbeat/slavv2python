@@ -59,6 +59,26 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
     return is_exact_compatible_energy_origin(energy_data.get("energy_origin"))
 
 
+def resolve_lumen_radius_pixels_axes(
+    energy_data: Any,
+    microns_per_voxel: np.ndarray,
+) -> np.ndarray:
+    """Return per-axis pixel radii for modern and legacy Energy checkpoints."""
+    raw_axes = energy_data.extra.get("lumen_radius_pixels_axes")
+    if raw_axes is not None:
+        return np.asarray(raw_axes, dtype=np.float32)
+
+    lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32)
+    if lumen_radius_pixels.size > 0:
+        return np.repeat(lumen_radius_pixels.reshape(-1, 1), 3, axis=1)
+
+    lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=np.float32)
+    if lumen_radius_microns.size == 0:
+        return np.zeros((0, 3), dtype=np.float32)
+    voxel_size = np.asarray(microns_per_voxel, dtype=np.float32).reshape(1, 3)
+    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float32)
+
+
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
     """Return MATLAB's effective per-origin frontier edge budget."""
     requested_edges = int(params.get("number_of_edges_per_vertex", 4))

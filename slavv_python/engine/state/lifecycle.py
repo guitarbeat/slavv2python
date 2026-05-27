@@ -130,7 +130,14 @@ def complete_stage_snapshot(
     return stage_snapshot
 
 
-def fail_stage_snapshot(snapshot: RunSnapshot, *, stage: str, message: str) -> StageSnapshot:
+def fail_stage_snapshot(
+    snapshot: RunSnapshot,
+    *,
+    stage: str,
+    message: str,
+    substage: str = "",
+    traceback_text: str | None = None,
+) -> StageSnapshot:
     """Mark a stage and the run as failed."""
     stage_snapshot = snapshot.stages.setdefault(stage, StageSnapshot(name=stage))
     stage_snapshot.status = STATUS_FAILED
@@ -141,7 +148,12 @@ def fail_stage_snapshot(snapshot: RunSnapshot, *, stage: str, message: str) -> S
     snapshot.current_stage = stage
     snapshot.current_detail = message
     snapshot.last_event = message
-    snapshot.errors.append({"stage": stage, "message": message, "at": _now_iso()})
+    error_entry: dict[str, object] = {"stage": stage, "message": message, "at": _now_iso()}
+    if substage:
+        error_entry["substage"] = substage
+    if traceback_text:
+        error_entry["traceback"] = traceback_text
+    snapshot.errors.append(error_entry)
     return stage_snapshot
 
 

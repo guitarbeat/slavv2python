@@ -8,6 +8,7 @@ from typing import Any, Callable
 import numpy as np
 from scipy.spatial import cKDTree
 
+from slavv_python.processing.stages.edges.common import resolve_lumen_radius_pixels_axes
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,6 @@ def extract_edges(
     energy = energy_data.energy
     vertex_positions = vertices.positions
     vertex_scales = vertices.scales
-    lumen_radius_pixels = energy_data.lumen_radius_pixels
     lumen_radius_microns = energy_data.lumen_radius_microns
     energy_sign = energy_data.extra.get("energy_sign", -1.0)
 
@@ -48,18 +48,10 @@ def extract_edges(
         empty_dict = empty_edges_result(vertex_positions)
         return EdgeSet.from_dict(empty_dict)
 
-    _lumen_radius_pixels_axes_raw = energy_data.extra.get("lumen_radius_pixels_axes")
-    if _lumen_radius_pixels_axes_raw is not None:
-        lumen_radius_pixels_axes = np.asarray(_lumen_radius_pixels_axes_raw, dtype=np.float32)
-    elif len(lumen_radius_pixels) > 0:
-        lumen_radius_pixels_axes = np.repeat(
-            np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1), 3, axis=1
-        )
-    else:
-        # Legacy checkpoint: only lumen_radius_microns is stored; derive per-axis radii.
-        lumen_radius_pixels_axes = (
-            lumen_radius_microns[:, None] / microns_per_voxel[None, :]
-        ).astype(np.float32)
+    lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
+        energy_data,
+        microns_per_voxel,
+    )
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")
@@ -105,7 +97,7 @@ def extract_edges(
             scale_indices=scale_indices,
             vertex_positions=vertex_positions,
             vertex_scales=vertex_scales,
-            lumen_radius_pixels=lumen_radius_pixels,
+            lumen_radius_pixels=energy_data.lumen_radius_pixels,
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             vertex_center_image=vertex_center_image,
