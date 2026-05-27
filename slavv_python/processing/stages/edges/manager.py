@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -156,7 +156,9 @@ class EdgeManager:
         candidates = manifest.to_payload()
 
         if resumable:
-            from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
+            from slavv_python.analytics.parity.matlab_fail_fast import (
+                build_candidate_snapshot_payload,
+            )
             from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
             if use_frontier:
@@ -187,10 +189,9 @@ class EdgeManager:
                 resumed=False,
             )
             atomic_joblib_dump(candidates, handle.artifact_path("candidates.pkl"))
-            if use_frontier:
+            if use_frontier and stage_controller is not None:
                 candidate_checkpoint_path = (
-                    stage_controller.run_context.checkpoints_dir
-                    / "checkpoint_edge_candidates.pkl"
+                    stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
                 )
                 atomic_joblib_dump(
                     build_candidate_snapshot_payload(candidates),
@@ -222,7 +223,9 @@ class EdgeManager:
             energy.shape,
             params,
         )
-        chosen_payload = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
+        chosen_payload = (
+            chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
+        )
 
         if use_frontier:
             if resumable:

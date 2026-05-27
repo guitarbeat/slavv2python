@@ -29,12 +29,13 @@ from .tracker import (
 
 
 def __getattr__(name: str) -> typing.Any:
-    if name in ("RunContext", "StageController"):
-        from ..context import RunContext as _RunContext
-        from ..context import StageController as _StageController
+    if name == "RunContext":
+        from slavv_python.engine.state.run_ledger import RunContext as _RunContext
 
-        if name == "RunContext":
-            return _RunContext
+        return _RunContext
+    if name == "StageController":
+        from slavv_python.engine.state.stage_handle import StageController as _StageController
+
         return _StageController
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

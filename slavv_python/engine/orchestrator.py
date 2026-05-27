@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from .state.models import ProgressEvent
 from slavv_python.processing.stages import edges as edge_ops
 from slavv_python.processing.stages import energy
-from slavv_python.processing.stages import network as network_ops
 from slavv_python.processing.stages import vertices as vertex_ops
 from slavv_python.schema.results import (
     EdgeSet,
@@ -134,11 +133,13 @@ class SlavvPipeline:
             return self._finalize_run(run_context, run_state, stop_after)
 
         # 4. Network
+        from slavv_python.processing.stages.network.manager import NetworkManager
+
         executor.execute(
             "network",
             "network",
             1.0,
-            compute_fn=lambda c: network_ops.construct_network_resumable(
+            compute_fn=lambda c: NetworkManager.run_resumable(
                 run_state.edges, run_state.vertices, parameters, c
             ),
             fallback_fn=lambda: self.build_network(
@@ -217,8 +218,10 @@ class SlavvPipeline:
         params: dict[str, Any],
     ) -> NetworkResult:
         """Construct the final network from traced edges and vertices."""
+        from slavv_python.processing.stages.network.manager import NetworkManager
+
         typed_edges = edges if isinstance(edges, EdgeSet) else EdgeSet.from_dict(edges)
         typed_vertices = (
             vertices if isinstance(vertices, VertexSet) else VertexSet.from_dict(vertices)
         )
-        return network_ops.build_network(typed_edges, typed_vertices, params)
+        return NetworkManager.run(typed_edges, typed_vertices, params)

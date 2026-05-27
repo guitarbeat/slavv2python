@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .app_run import AppRunState, get_app_run
 from .results import (
     EdgeSet,
     EnergyResult,
@@ -10,10 +11,12 @@ from .results import (
 )
 
 __all__ = [
+    "AppRunState",
     "EdgeSet",
     "EnergyResult",
     "NetworkResult",
     "PipelineResult",
     "VertexSet",
+    "get_app_run",
     "normalize_pipeline_result",
 ]

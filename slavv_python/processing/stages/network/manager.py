@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.schema.results import EdgeSet, NetworkResult, VertexSet
+from slavv_python.schema.results import (  # noqa: TC001
+    EdgeSet,
+    NetworkResult,
+    VertexSet,
+)
 from slavv_python.utils.safe_unpickle import safe_load
 
 from .base import _build_graph_state, _graph_state_ordered_edges, _normalize_connections

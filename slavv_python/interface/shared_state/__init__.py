@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from slavv_python.schema import normalize_pipeline_result
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
+from slavv_python.schema.app_run import AppRunState, get_app_run
 
 
-def normalize_state_results(processing_results: Mapping[str, Any]) -> dict[str, Any]:
-    """Return a normalized dict payload for app state consumers."""
-    return normalize_pipeline_result(processing_results).to_dict()
+def normalize_state_results(processing_results: AppRunState | Any) -> dict[str, object]:
+    """Return a normalized dict payload for export boundaries only."""
+    return AppRunState.from_value(processing_results).to_dict()
 
 
-__all__ = ["normalize_state_results"]
+__all__ = ["AppRunState", "get_app_run", "normalize_state_results"]

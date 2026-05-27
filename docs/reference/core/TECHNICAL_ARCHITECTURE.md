@@ -18,10 +18,14 @@ The `SlavvPipeline` class is the primary entry point for running the extraction 
 - **Typed completion**: `run()` returns `PipelineResult` (mapping-compatible for legacy `results["key"]` access).
 - **StageExecutor**: Centralizes checkpoint load/save, progress, and schema wrapping for resumable stages.
 
-### 2. Run Context & Stage Controllers
-The `RunContext` manages the filesystem layout and persistent state for a single pipeline execution.
+### 2. Run ledger (`RunContext` + `StageController`)
+Run lifecycle lives in `slavv_python.engine.state`:
 
-- **Resumable State**: It tracks "fingerprints" of input images and parameters to determine if a cached stage result can be reused.
+- **`run_ledger.py`** — `RunContext` (fingerprints, resume policy, snapshot persistence).
+- **`stage_handle.py`** — `StageController` (checkpoint paths, `begin` / `update` / `complete`, `resume_state.json`).
+- **`engine/context.py`** — stable re-export barrel for legacy `from slavv_python.engine.context import …` imports.
+
+- **Resumable State**: Fingerprints of input images and parameters determine whether a cached stage result can be reused.
 - **StageController**: Each stage receives a controller that provides paths for artifacts (checkpoints, metrics, logs) and manages progress reporting.
 
 ### 3. Typed Result Objects (`slavv_python.schema.results`)
@@ -36,11 +40,24 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 ### 4. Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
 
+- **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
 - **`EdgeManager.run_resumable()`** — resumable tracing workflow (audit artifacts, parity checkpoints, selection, bridging, finalize).
 - **`discovery.select_edge_discovery()`** — strategy seam (`MaintainedTracingDiscovery` vs `FrontierTracingDiscovery`).
 - **`resumable.py`** — watershed-only per-label unit persistence.
 
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
+
+### 5. Network stage facade (`NetworkManager`)
+`slavv_python.processing.stages.network.manager` mirrors the edge pattern:
+
+- **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
+- **`NetworkManager.run_resumable()`** — same pipeline with `adjacency.pkl`, `hair_pruned.pkl`, `cycle_pruned.pkl`, `strands.pkl` artifacts.
+- **`construction.py`** — thin delegates preserving public `construct_network*` imports.
+
+See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
+
+### 6. Application run envelope (`AppRunState`)
+The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.
 
 ---
 

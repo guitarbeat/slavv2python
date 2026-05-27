@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 from slavv_python.schema.results import EdgeSet, NetworkResult, VertexSet
+
 from .base import (
     _graph_state_ordered_edges,
     _vertex_degrees,
@@ -19,8 +20,6 @@ from .operations import (
     _matlab_get_vessel_directions_v3,
     _matlab_network_topology,
     _matlab_smooth_edges_v2,
-    _remove_cycles,
-    _remove_short_hairs,
 )
 
 logger = logging.getLogger(__name__)

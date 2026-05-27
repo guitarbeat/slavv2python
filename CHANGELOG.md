@@ -20,13 +20,23 @@ For current behavior and proof status, prefer:
 ### Added
 
 - **Edge discovery strategy seam** (`discovery.py`): `CandidateManifest`, `MaintainedTracingDiscovery`, `FrontierTracingDiscovery`, and `select_edge_discovery()` for tracing vs MATLAB-parity frontier branching.
-- **ADR 0005**: Documents the edge discovery strategy seam; ADR 0003 updated with implementation notes.
+- **NetworkManager** (`network/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one graph-build pipeline; **ADR 0006** documents the lifecycle manager.
+- **Run ledger modules** (`engine/state/run_ledger.py`, `engine/state/stage_handle.py`): `RunContext` and `StageController` implementations moved out of `engine/context.py` (thin re-export barrel).
+- **AppRunState** (`schema/app_run.py`): Typed UI envelope holding `PipelineResult`; session stores `AppRunState` until export boundaries call `.to_dict()`.
+- **ADR 0005**: Documents the edge discovery strategy seam; ADR 0003 updated with ephemeral `run()` completion.
 
 ### Changed
 
+- **EdgeManager unify**: `EdgeManager.run()` and `run_resumable()` share `_run_tracing()`; removed duplicate `extraction_standard.py`. Orchestrator and `extract_edges()` use `EdgeManager.run()` for ephemeral runs.
 - **EdgeManager consolidation**: `run_resumable()` is the single resumable tracing entrypoint (audit JSON, parity candidate checkpoints, lifecycle artifacts, selection, bridging, finalize). Removed the 14-callable `resumable.extract_edges_resumable` injection surface.
+- **Network construction**: `construct_network` / `construct_network_resumable` delegate to `NetworkManager`; orchestrator network stage uses manager directly.
 - **Typed pipeline output**: `SlavvPipeline.run()` returns `PipelineResult` (`Mapping`-compatible for legacy `results["key"]` access). `StageExecutor` persists checkpoints via schema `.save()` / `.load()` when available.
-- **Documentation**: Updated technical architecture, naming guide, MATLAB parity mapping, and ADRs 0001–0003.
+- **Interface shared state**: `store_processing_session_state` and curation helpers prefer `AppRunState` / `PipelineResult` over immediate dict normalization.
+- **Documentation**: Updated technical architecture, naming guide, MATLAB parity mapping, GEMINI repo map, and ADRs 0001–0006.
+
+### Removed
+
+- **`extraction_standard.py`**: Ephemeral edge tracing now routes through `EdgeManager.run()`.
 
 ## [Unreleased] - 2026-05-22
 

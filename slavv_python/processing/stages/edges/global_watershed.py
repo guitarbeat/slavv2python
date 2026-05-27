@@ -43,6 +43,8 @@ from slavv_python.processing.stages.edges.watershed_core import (
     _matlab_global_watershed_border_locations,
 )
 
+__all__ = ["_matlab_global_watershed_border_locations"]
+
 
 def _coords_from_linear_trace(
     linear_trace: list[int],

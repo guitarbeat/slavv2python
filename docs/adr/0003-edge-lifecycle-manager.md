@@ -19,7 +19,9 @@ We have introduced a consolidated `EdgeManager` in `slavv_python/processing/stag
 3. **Internalized Logic**: Preparatory steps, such as painting vertex occupancy images, are now internal implementation details of the manager.
 
 ## Implementation (2026-05-27)
+- `EdgeManager.run()` and `EdgeManager.run_resumable()` share `_run_tracing()`; resumable-only audit/checkpoint steps run when a real `StageController` is provided.
 - `EdgeManager.run_resumable()` owns the full resumable lifecycle: candidate audit JSON, parity candidate checkpoints, frontier lifecycle artifacts, selection, bridging, and finalization.
+- Removed `extraction_standard.py`; ephemeral orchestration calls `EdgeManager.run()` directly.
 - `extract_edges_resumable()` delegates to `EdgeManager`; the former 14-callable `resumable.extract_edges_resumable` surface was removed.
 - Candidate generation is routed through the discovery strategy seam ([ADR 0005](0005-edge-discovery-strategy-seam.md)).
 - `resumable.py` retains only watershed per-label unit persistence.

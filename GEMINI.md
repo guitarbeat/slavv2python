@@ -61,7 +61,10 @@ Supplemental data produced by a stage for diagnostics, auditing, or visualizatio
 slavv2python/
 ├── slavv_python/                       # Main package
 │   ├── engine/                         # Pipeline orchestration & lifecycle
+│   │   ├── context.py                  # Re-export barrel (RunContext, StageController)
 │   │   └── state/                      # Run tracking, snapshots, resume
+│   │       ├── run_ledger.py           # RunContext implementation
+│   │       └── stage_handle.py         # StageController implementation
 │   ├── processing/                     # Scientific computation
 │   │   ├── image/                      # Normalization, tiling
 │   │   └── stages/                     # Pipeline stages
@@ -69,9 +72,10 @@ slavv2python/
 │   │       ├── vertices/               # Extraction, painting, selection
 │   │       ├── edges/                  # Watershed, tracing, selection, cleanup
 │   │       │   ├── discovery.py        # Edge discovery strategy seam
-│   │       │   ├── manager.py          # Resumable edge lifecycle facade
+│   │       │   ├── manager.py          # Edge lifecycle (run + run_resumable)
 │   │       │   └── matlab_algorithms/  # MATLAB-shaped parity shims
 │   │       └── network/               # Strand assembly, graph construction
+│   │           └── manager.py         # Network lifecycle (run + run_resumable)
 │   ├── analytics/                      # Analysis & metrics
 │   │   ├── parity/                     # MATLAB exact proof harness
 │   │   ├── curation/                   # Automated & ML curators
@@ -86,6 +90,7 @@ slavv2python/
 │   ├── visualization/                  # Plotting & rendering
 │   ├── workflows/                      # Pipeline orchestration helpers, profiles
 │   ├── schema/                         # Data models
+│   │   └── app_run.py                  # AppRunState (UI session envelope)
 │   └── utils/                          # Validation, math, formatting
 │
 ├── tests/                              # Test suite
