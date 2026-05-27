@@ -767,15 +767,10 @@ def _matlab_global_watershed_insert_available_location(
     insert_at = len(updated)
     for idx, loc in enumerate(updated):
         mid_energy = float(energy_lookup[loc])
-        mid_loc = loc
         if seed_idx == 1:
-            is_mid_worse = (mid_energy > target_energy) or (
-                mid_energy == target_energy and mid_loc > target_index
-            )
+            is_mid_worse = mid_energy > target_energy
         else:
-            is_mid_worse = (mid_energy > target_energy) or (
-                mid_energy == target_energy and mid_loc >= target_index
-            )
+            is_mid_worse = mid_energy >= target_energy
         if not is_mid_worse:
             insert_at = idx
             break

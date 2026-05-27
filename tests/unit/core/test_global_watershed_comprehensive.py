@@ -867,4 +867,47 @@ def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_pa
     assert finalized is candidates
 
 
+@pytest.mark.unit
+def test_available_locations_tie_breaking_equal_energy():
+    """Test that equal energy available_locations inserts chronologically:
+    - seed_idx == 1: FIFO (new element inserted at beginning of equal block)
+    - seed_idx > 1: LIFO (new element inserted at end of equal block)
+    """
+    energy_lookup = {10: -1.0, 20: -3.0, 30: -3.0, 40: -5.0}
+    
+    # 1. Primary seed: seed_idx == 1 (FIFO)
+    # Target energy = -3.0. Equal block is [20, 30]. Worst-to-best.
+    # It should be inserted at the beginning of equal block (worst side, closer to index 0).
+    # Since updated pop/best is from the end (index end), existing 20 and 30 are popped first.
+    # So new element 25 with energy -3.0 is inserted at index 1.
+    available_primary = [10, 20, 30, 40]
+    updated_primary, _ = _matlab_global_watershed_insert_available_location(
+        available_primary,
+        next_location=25,
+        next_energy=-3.0,
+        energy_lookup={**energy_lookup, 25: -3.0},
+        seed_idx=1,
+        is_current_location_clear=True,
+    )
+    # Expect: 25 inserted at index 1: [10, 25, 20, 30, 40]
+    assert updated_primary == [10, 25, 20, 30, 40]
+
+    # 2. Secondary seed: seed_idx == 2 (LIFO)
+    # Target energy = -3.0.
+    # It should be inserted at the end of equal block (best side, closer to index end).
+    # New element 25 is popped before existing equal elements.
+    # So new element 25 with energy -3.0 is inserted at index 3 (after 30).
+    available_secondary = [10, 20, 30, 40]
+    updated_secondary, _ = _matlab_global_watershed_insert_available_location(
+        available_secondary,
+        next_location=25,
+        next_energy=-3.0,
+        energy_lookup={**energy_lookup, 25: -3.0},
+        seed_idx=2,
+        is_current_location_clear=True,
+    )
+    # Expect: 25 inserted at index 3: [10, 20, 30, 25, 40]
+    assert updated_secondary == [10, 20, 30, 25, 40]
+
+
 # Made with Bob

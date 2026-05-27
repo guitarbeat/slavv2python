@@ -60,17 +60,11 @@ class FrontierQueue:
 
             # Comparison logic: Is 'mid' worse than 'target'?
             if seed_idx == 1:
-                # Seed 1: Find last strictly worse (Energy > Target)
-                # Tie: Target is considered better (LIFO behavior)
-                is_mid_worse = (mid_energy > target_energy) or (
-                    mid_energy == target_energy and mid_loc > target_index
-                )
+                # Seed 1: Find first energy <= target (FIFO chronological)
+                is_mid_worse = mid_energy > target_energy
             else:
-                # Seed >1: Find first strictly better (Energy < Target)
-                # Tie: Target is considered worse (FIFO behavior)
-                is_mid_worse = (mid_energy > target_energy) or (
-                    mid_energy == target_energy and mid_loc >= target_index
-                )
+                # Seed >1: Find first energy < target (LIFO chronological)
+                is_mid_worse = mid_energy >= target_energy
 
             if is_mid_worse:
                 low = mid + 1
