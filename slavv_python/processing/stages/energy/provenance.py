@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN = "python_native_hessian"
-EXACT_COMPATIBLE_ENERGY_ORIGINS = frozenset({CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN})
+# "hessian" is a legacy provenance label stored in older checkpoints; treat as equivalent.
+EXACT_COMPATIBLE_ENERGY_ORIGINS = frozenset({CANONICAL_NATIVE_EXACT_ENERGY_ORIGIN, "hessian"})
 
 
 def energy_origin_for_method(energy_method: str) -> str:

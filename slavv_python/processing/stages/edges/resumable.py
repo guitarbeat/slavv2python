@@ -58,17 +58,22 @@ def extract_edges_resumable(
     candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
     candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
     chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-    lumen_radius_pixels_axes = np.asarray(
-        energy_data.extra.get(
-            "lumen_radius_pixels_axes",
-            np.repeat(
-                np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32).reshape(-1, 1),
-                3,
-                axis=1,
-            ),
-        ),
-        dtype=np.float32,
-    )
+    _lumen_radius_pixels_axes_raw = energy_data.extra.get("lumen_radius_pixels_axes")
+    if _lumen_radius_pixels_axes_raw is not None:
+        lumen_radius_pixels_axes = np.asarray(_lumen_radius_pixels_axes_raw, dtype=np.float32)
+    elif len(energy_data.lumen_radius_pixels) > 0:
+        # Modern checkpoint: lumen_radius_pixels (1-D mean) is stored; broadcast to per-axis.
+        lumen_radius_pixels_axes = np.repeat(
+            np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32).reshape(-1, 1),
+            3,
+            axis=1,
+        )
+    else:
+        # Legacy checkpoint (energy_origin="hessian"): only lumen_radius_microns is stored.
+        # Derive per-axis pixel radii using microns_per_voxel from params.
+        lumen_radius_pixels_axes = (
+            lumen_radius_microns[:, None] / microns_per_voxel[None, :]
+        ).astype(np.float32)
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")

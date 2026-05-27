@@ -48,13 +48,18 @@ def extract_edges(
         empty_dict = empty_edges_result(vertex_positions)
         return EdgeSet.from_dict(empty_dict)
 
-    lumen_radius_pixels_axes = np.asarray(
-        energy_data.extra.get(
-            "lumen_radius_pixels_axes",
-            np.repeat(np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1), 3, axis=1),
-        ),
-        dtype=np.float32,
-    )
+    _lumen_radius_pixels_axes_raw = energy_data.extra.get("lumen_radius_pixels_axes")
+    if _lumen_radius_pixels_axes_raw is not None:
+        lumen_radius_pixels_axes = np.asarray(_lumen_radius_pixels_axes_raw, dtype=np.float32)
+    elif len(lumen_radius_pixels) > 0:
+        lumen_radius_pixels_axes = np.repeat(
+            np.asarray(lumen_radius_pixels, dtype=np.float32).reshape(-1, 1), 3, axis=1
+        )
+    else:
+        # Legacy checkpoint: only lumen_radius_microns is stored; derive per-axis radii.
+        lumen_radius_pixels_axes = (
+            lumen_radius_microns[:, None] / microns_per_voxel[None, :]
+        ).astype(np.float32)
     logger.info("Creating vertex center lookup image...")
     vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
     logger.info("Vertex center lookup image created")
