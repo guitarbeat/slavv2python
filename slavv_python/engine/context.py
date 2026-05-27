@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 from .state.io import (
     atomic_joblib_dump,
     atomic_write_json,
+    load_json_dict,
 )
 from .state.layout import resolve_run_layout
 from .state.lifecycle import (
@@ -229,18 +230,27 @@ class RunContext:
         """
         from slavv_python.utils import validate_parameters
 
-        # 1. Validate and Fingerprint
-        validated_params = validate_parameters(parameters)
-        input_hash = fingerprint_array(image)
-        params_hash = fingerprint_jsonable(validated_params)
-
-        # 2. Resolve Run Directory
+        # 1. Resolve Run Directory
         effective_dir = run_dir
         if effective_dir is None and event_callback is not None:
             import tempfile
             effective_dir = tempfile.mkdtemp(prefix="slavv_run_")
 
-        # 3. Create Context
+        # 2. Parameter Adoption (Resume-Aware)
+        # If we are resuming an existing run, prioritize the previously validated
+        # parameters to ensure fingerprint stability, unless forcing a full rerun.
+        if effective_dir and not force_rerun_from:
+            existing_params = load_json_dict(Path(effective_dir) / "99_Metadata" / "validated_params.json")
+            if existing_params:
+                logger.info("Adopting existing parameters from %s for resume compatibility", effective_dir)
+                parameters = existing_params
+
+        # 3. Validate and Fingerprint
+        validated_params = validate_parameters(parameters)
+        input_hash = fingerprint_array(image)
+        params_hash = fingerprint_jsonable(validated_params)
+
+        # 4. Create Context
         context = None
         if effective_dir:
             context = cls(
@@ -256,7 +266,7 @@ class RunContext:
                 event_callback=event_callback,
             )
 
-            # 4. Initialize Context (Resume Policy)
+            # 5. Initialize Context (Resume Policy)
             context.ensure_resume_allowed(
                 input_fingerprint=input_hash,
                 params_fingerprint=params_hash,

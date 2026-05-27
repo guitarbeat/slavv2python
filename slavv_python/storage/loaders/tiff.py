@@ -14,7 +14,12 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def load_tiff_volume(file: Union[str, Path, IO[bytes]], *, memory_map: bool = False) -> np.ndarray:
+def load_tiff_volume(
+    file: Union[str, Path, IO[bytes]],
+    *,
+    memory_map: bool = False,
+    transpose_to_yxz: bool = True,
+) -> np.ndarray:
     """Load a 3D grayscale TIFF volume with validation.
 
     Parameters
@@ -24,6 +29,9 @@ def load_tiff_volume(file: Union[str, Path, IO[bytes]], *, memory_map: bool = Fa
     memory_map:
         If ``True``, return a memory-mapped array instead of reading the
         entire volume into memory.  Requires ``file`` to be a path-like object.
+    transpose_to_yxz:
+        If ``True`` (default), transpose 3-D volumes from the TIFF-standard
+        ``(Z, Y, X)`` to the SLAVV-standard ``(Y, X, Z)``.
 
     Returns
     -------
@@ -47,8 +55,12 @@ def load_tiff_volume(file: Union[str, Path, IO[bytes]], *, memory_map: bool = Fa
     finally:
         tif_logger.setLevel(original_level)
 
-    if volume.ndim != 3:
-        raise ValueError("Expected a 3D volume")
+    if volume.ndim == 3 and transpose_to_yxz:
+        # Transpose from tifffile standard (Z, Y, X) to SLAVV standard (Y, X, Z)
+        volume = np.transpose(volume, (1, 2, 0))
+    elif volume.ndim != 3:
+        raise ValueError(f"Expected a 3D volume, found {volume.ndim}D")
+
     if np.iscomplexobj(volume):
         raise ValueError("Expected a real-valued grayscale TIFF volume")
     return volume if memory_map else np.asarray(volume)
@@ -165,7 +177,12 @@ def dicom_to_tiff(
     return volume
 
 
-def save_tiff_volume(file: Union[str, Path], volume: np.ndarray) -> None:
+def save_tiff_volume(
+    file: Union[str, Path],
+    volume: np.ndarray,
+    *,
+    transpose_from_yxz: bool = True,
+) -> None:
     """Save a 3D volume to a TIFF file.
 
     Parameters
@@ -174,7 +191,14 @@ def save_tiff_volume(file: Union[str, Path], volume: np.ndarray) -> None:
         Destination path.
     volume:
         3D NumPy array to save.
+    transpose_from_yxz:
+        If ``True`` (default), transpose 3-D volumes from the SLAVV-standard
+        ``(Y, X, Z)`` to the TIFF-standard ``(Z, Y, X)`` before saving.
     """
     import tifffile
+
+    if volume.ndim == 3 and transpose_from_yxz:
+        # Transpose from SLAVV standard (Y, X, Z) to TIFF standard (Z, Y, X)
+        volume = np.transpose(volume, (2, 0, 1))
 
     tifffile.imwrite(str(file), volume)
