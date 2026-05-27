@@ -37,7 +37,15 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - `NetworkResult`: Final topology, strands, and bifurcations.
 - `PipelineResult`: Run envelope combining stage payloads and `parameters`.
 
-### 4. Edge stage facade (`EdgeManager` + `discovery`)
+### 4. Vertex stage facade (`VertexManager`)
+`slavv_python.processing.stages.vertices.manager` owns the Vertex Set lifecycle:
+
+- **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
+- **`VertexManager.run_resumable()`** — same pipeline with `candidates.pkl`, `cropped_candidates.pkl`, `chosen_mask.pkl` artifacts.
+- **`vertices/detection.py`** — MATLAB-style candidate scan and selection (no longer under `edges/`).
+- **`extraction.py` / `resumable.py`** — thin delegates preserving public imports.
+
+### 5. Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
 
 - **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
@@ -47,7 +55,7 @@ The edges package exposes a deep module boundary:
 
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
 
-### 5. Network stage facade (`NetworkManager`)
+### 6. Network stage facade (`NetworkManager`)
 `slavv_python.processing.stages.network.manager` mirrors the edge pattern:
 
 - **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
@@ -56,7 +64,16 @@ See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../ad
 
 See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 
-### 6. Application run envelope (`AppRunState`)
+### 7. Exact parity coordinator (`ExactProofCoordinator`)
+`slavv_python.analytics.parity.coordinator` centralizes exact-route workflows:
+
+- **`prove()`** — compare normalized Python checkpoints to MATLAB oracle vectors.
+- **`capture_candidates()`** — edge candidate generation via `EdgeManager.discover_candidates()` (discovery strategy seam).
+- **`counts.py`** — canonical `RunCounts` extraction from reports and run directories (typed checkpoint loaders).
+
+`execution.py` and `reports.py` re-export count helpers; `proofs.py` delegates to the coordinator.
+
+### 8. Application run envelope (`AppRunState`)
 The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.
 
 ---

@@ -72,7 +72,8 @@ Use domain-first package names for maintained internal surfaces:
 Within a stage package, prefer role names such as:
 
 - `discovery` (strategy seam for edge candidate generation)
-- `manager` (stage facade: `EdgeManager`, `NetworkManager`; `run()` + `run_resumable()`)
+- `manager` (stage facade: `VertexManager`, `EdgeManager`, `NetworkManager`; `run()` + `run_resumable()`)
+- `detection` (vertex candidate scan/crop/choose)
 - `candidate_generation`
 - `tracing`
 - `selection`

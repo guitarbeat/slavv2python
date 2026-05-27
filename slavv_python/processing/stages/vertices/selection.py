@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from slavv_python.processing.stages.edges.candidate_detection import (
+from slavv_python.processing.stages.vertices.detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,
 )

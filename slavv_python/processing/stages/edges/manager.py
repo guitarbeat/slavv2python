@@ -79,6 +79,42 @@ class EdgeManager:
         return cls._run_tracing(energy_data, vertices, params, stage_controller=stage_controller)
 
     @classmethod
+    def discover_candidates(
+        cls,
+        energy_data: EnergyResult,
+        vertices: VertexSet,
+        params: dict[str, Any],
+        *,
+        heartbeat: Any | None = None,
+    ) -> CandidateManifest:
+        """Run edge discovery only (no selection/finalize) through the discovery strategy seam."""
+        if len(vertices.positions) == 0:
+            return CandidateManifest.empty()
+
+        microns_per_voxel = np.array(
+            params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+            dtype=np.float32,
+        )
+        lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
+            energy_data,
+            microns_per_voxel,
+        )
+        vertex_center_image = paint_vertex_center_image(vertices.positions, energy_data.energy.shape)
+        discovery = select_edge_discovery(energy_data, params)
+        return discovery.discover(
+            EdgeDiscoveryContext(
+                energy_data=energy_data,
+                vertices=vertices,
+                params=params,
+                stage_controller=cast("StageController", _NullStageController()),
+                vertex_center_image=vertex_center_image,
+                lumen_radius_pixels_axes=lumen_radius_pixels_axes,
+                microns_per_voxel=microns_per_voxel,
+                heartbeat=heartbeat,
+            )
+        )
+
+    @classmethod
     def _run_tracing(
         cls,
         energy_data: EnergyResult,

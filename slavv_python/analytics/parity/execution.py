@@ -49,7 +49,6 @@ from .models import (
     DatasetSurface,
     ExactProofSourceSurface,
     OracleSurface,
-    RunCounts,
     SourceRunSurface,
 )
 from .utils import (
@@ -757,57 +756,3 @@ def maybe_sync_exact_vertex_checkpoint(
         return True
     except Exception:
         return False
-
-
-def extract_matlab_counts(report_payload: dict[str, Any]) -> RunCounts:
-    """Extract RunCounts from a comparison report for the MATLAB side."""
-    # This logic was buried in the old script, let's re-implement it simply
-    # or look for it in the old script.
-    # It usually comes from report_payload['matlab_counts']
-    counts = report_payload.get("matlab_counts", {})
-    return RunCounts(
-        vertices=int(counts.get("vertices", 0)),
-        edges=int(counts.get("edges", 0)),
-        strands=int(counts.get("strands", 0)),
-    )
-
-
-def extract_source_python_counts(report_payload: dict[str, Any]) -> RunCounts:
-    """Extract RunCounts from a comparison report for the slavv_python Python side."""
-    counts = report_payload.get("python_counts", {})
-    return RunCounts(
-        vertices=int(counts.get("vertices", 0)),
-        edges=int(counts.get("edges", 0)),
-        strands=int(counts.get("strands", 0)),
-    )
-
-
-def read_python_counts_from_run(run_root: Path) -> RunCounts:
-    """Read RunCounts from the checkpoints in a run root."""
-    from slavv_python.utils.safe_unpickle import safe_load
-
-    checkpoints = run_root / CHECKPOINTS_DIR
-
-    v_path = checkpoints / "checkpoint_vertices.pkl"
-    e_path = checkpoints / "checkpoint_edges.pkl"
-    n_path = checkpoints / "checkpoint_network.pkl"
-
-    v_count = 0
-    if v_path.is_file():
-        v_payload = safe_load(v_path)
-        if isinstance(v_payload, dict):
-            v_count = len(v_payload.get("positions", []))
-
-    e_count = 0
-    if e_path.is_file():
-        e_payload = safe_load(e_path)
-        if isinstance(e_payload, dict):
-            e_count = len(e_payload.get("connections", []))
-
-    n_count = 0
-    if n_path.is_file():
-        n_payload = safe_load(n_path)
-        if isinstance(n_payload, dict):
-            n_count = len(n_payload.get("strands", []))
-
-    return RunCounts(vertices=v_count, edges=e_count, strands=n_count)

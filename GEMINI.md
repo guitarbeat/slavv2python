@@ -70,6 +70,8 @@ slavv2python/
 │   │   └── stages/                     # Pipeline stages
 │   │       ├── energy/                 # Hessian filtering, backends
 │   │       ├── vertices/               # Extraction, painting, selection
+│   │       │   ├── manager.py          # Vertex lifecycle (run + run_resumable)
+│   │       │   └── detection.py        # MATLAB-style candidate scan/choose
 │   │       ├── edges/                  # Watershed, tracing, selection, cleanup
 │   │       │   ├── discovery.py        # Edge discovery strategy seam
 │   │       │   ├── manager.py          # Edge lifecycle (run + run_resumable)
@@ -78,6 +80,8 @@ slavv2python/
 │   │           └── manager.py         # Network lifecycle (run + run_resumable)
 │   ├── analytics/                      # Analysis & metrics
 │   │   ├── parity/                     # MATLAB exact proof harness
+│   │   │   ├── coordinator.py          # ExactProofCoordinator (prove / capture)
+│   │   │   └── counts.py               # Canonical RunCounts helpers
 │   │   ├── curation/                   # Automated & ML curators
 │   │   └── metrics/                    # Intensity, topology metrics
 │   ├── storage/                        # Data I/O

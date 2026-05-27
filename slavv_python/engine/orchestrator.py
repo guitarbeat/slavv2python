@@ -97,14 +97,14 @@ class SlavvPipeline:
             return self._finalize_run(run_context, run_state, stop_after)
 
         # 2. Vertices
+        from slavv_python.processing.stages.vertices.manager import VertexManager
+
         executor.execute(
             "vertices",
             "vertices",
             0.6,
-            compute_fn=lambda c: vertex_ops.extract_vertices_resumable(
-                run_state.energy_data, parameters, c
-            ),
-            fallback_fn=lambda: self.extract_vertices(run_state.energy_data, parameters),
+            compute_fn=lambda c: VertexManager.run_resumable(run_state.energy_data, parameters, c),
+            fallback_fn=lambda: VertexManager.run(run_state.energy_data, parameters),
             force_rerun=force_rerun["vertices"],
             schema_class=VertexSet,
         )

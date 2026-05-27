@@ -19,6 +19,8 @@ For current behavior and proof status, prefer:
 
 ### Added
 
+- **ExactProofCoordinator** (`analytics/parity/coordinator.py`): Unified `prove`, `capture_candidates`, and run-count normalization; candidate capture routes through `EdgeManager.discover_candidates()`.
+- **VertexManager** (`vertices/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one Vertex Set pipeline; vertex detection moved from `edges/candidate_detection.py` to `vertices/detection.py`.
 - **Edge discovery strategy seam** (`discovery.py`): `CandidateManifest`, `MaintainedTracingDiscovery`, `FrontierTracingDiscovery`, and `select_edge_discovery()` for tracing vs MATLAB-parity frontier branching.
 - **NetworkManager** (`network/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one graph-build pipeline; **ADR 0006** documents the lifecycle manager.
 - **Run ledger modules** (`engine/state/run_ledger.py`, `engine/state/stage_handle.py`): `RunContext` and `StageController` implementations moved out of `engine/context.py` (thin re-export barrel).
@@ -29,6 +31,7 @@ For current behavior and proof status, prefer:
 
 - **EdgeManager unify**: `EdgeManager.run()` and `run_resumable()` share `_run_tracing()`; removed duplicate `extraction_standard.py`. Orchestrator and `extract_edges()` use `EdgeManager.run()` for ephemeral runs.
 - **EdgeManager consolidation**: `run_resumable()` is the single resumable tracing entrypoint (audit JSON, parity candidate checkpoints, lifecycle artifacts, selection, bridging, finalize). Removed the 14-callable `resumable.extract_edges_resumable` injection surface.
+- **Vertex extraction**: `extract_vertices` / `extract_vertices_resumable` delegate to `VertexManager`; orchestrator vertices stage uses manager directly.
 - **Network construction**: `construct_network` / `construct_network_resumable` delegate to `NetworkManager`; orchestrator network stage uses manager directly.
 - **Typed pipeline output**: `SlavvPipeline.run()` returns `PipelineResult` (`Mapping`-compatible for legacy `results["key"]` access). `StageExecutor` persists checkpoints via schema `.save()` / `.load()` when available.
 - **Interface shared state**: `store_processing_session_state` and curation helpers prefer `AppRunState` / `PipelineResult` over immediate dict normalization.
