@@ -24,6 +24,7 @@ from slavv_python.schema.results import (
     EdgeSet,
     EnergyResult,
     NetworkResult,
+    PipelineResult,
     VertexSet,
 )
 from slavv_python.workflows import (
@@ -56,7 +57,7 @@ class SlavvPipeline:
         run_dir: str | None = None,
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> PipelineResult:
         """Complete SLAVV processing pipeline."""
         if image.ndim != 3 or 0 in image.shape:
             raise ValueError("Input image must be a non-empty 3D array")
@@ -105,7 +106,8 @@ class SlavvPipeline:
                 run_state.energy_data, parameters, c
             ),
             fallback_fn=lambda: self.extract_vertices(
-                cast("dict[str, Any]", run_state.energy_data), parameters
+                run_state.energy_data.to_dict() if run_state.energy_data else {},
+                parameters,
             ),
             force_rerun=force_rerun["vertices"],
             schema_class=VertexSet,
@@ -124,8 +126,8 @@ class SlavvPipeline:
                 run_state.energy_data, run_state.vertices, parameters, c
             ),
             fallback_fn=lambda: self.extract_edges(
-                cast("dict[str, Any]", run_state.energy_data),
-                cast("dict[str, Any]", run_state.vertices),
+                run_state.energy_data.to_dict() if run_state.energy_data else {},
+                run_state.vertices.to_dict() if run_state.vertices else {},
                 parameters,
             ),
             force_rerun=force_rerun["edges"],
@@ -143,8 +145,8 @@ class SlavvPipeline:
                 run_state.edges, run_state.vertices, parameters, c
             ),
             fallback_fn=lambda: self.build_network(
-                cast("dict[str, Any]", run_state.edges),
-                cast("dict[str, Any]", run_state.vertices),
+                run_state.edges if run_state.edges is not None else {},
+                run_state.vertices if run_state.vertices is not None else {},
                 parameters,
             ),
             force_rerun=force_rerun["network"],
@@ -156,11 +158,11 @@ class SlavvPipeline:
 
     def _finalize_run(
         self, run_context: RunContext | None, run_state: RunState, stop_after: str | None
-    ) -> dict[str, Any]:
-        """Finalize state and return normalized results."""
+    ) -> PipelineResult:
+        """Finalize state and return typed pipeline results."""
         if run_context is not None:
             run_context.finalize_run(stop_after=stop_after)
-        return cast("dict[str, Any]", run_state.to_dict())
+        return run_state.to_pipeline_result()
 
     def compute_energy(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
         """Calculate the multi-scale energy field."""
@@ -193,7 +195,11 @@ class SlavvPipeline:
         )
 
     def build_network(
-        self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, edges: dict[str, Any] | EdgeSet, vertices: dict[str, Any] | VertexSet, params: dict[str, Any]
+    ) -> NetworkResult:
         """Construct the final network from traced edges and vertices."""
-        return cast("dict[str, Any]", network_ops.build_network(edges, vertices, params))
+        typed_edges = edges if isinstance(edges, EdgeSet) else EdgeSet.from_dict(edges)
+        typed_vertices = (
+            vertices if isinstance(vertices, VertexSet) else VertexSet.from_dict(vertices)
+        )
+        return network_ops.build_network(typed_edges, typed_vertices, params)

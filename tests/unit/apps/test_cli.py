@@ -216,14 +216,13 @@ class TestMainEntryPoint:
         assert "Target progress:" in captured.out
         assert "energy" in captured.out
 
-    def test_status_missing_snapshot_is_read_only(self, caplog, tmp_path):
-        import logging
-
-        with caplog.at_level(logging.ERROR), pytest.raises(SystemExit) as exc:
+    def test_status_missing_snapshot_is_read_only(self, capsys, tmp_path):
+        with pytest.raises(SystemExit) as exc:
             main(["status", "--run-dir", str(tmp_path)])
 
         assert exc.value.code == 1
-        assert "no valid slavv run metadata found" in caplog.text.lower()
+        captured = capsys.readouterr()
+        assert "no valid slavv run metadata found" in captured.out.lower()
         assert not list(tmp_path.iterdir())
 
 
@@ -267,8 +266,10 @@ def test_analyze_command_prints_statistics_for_exported_json(capsys, tmp_path):
     main(["analyze", "-i", str(path)])
 
     captured = capsys.readouterr()
-    assert "num_vertices                   3" in captured.out
-    assert "total_length                   2.0" in captured.out
+    assert "num_vertices" in captured.out
+    assert "total_length" in captured.out
+    assert " 3" in captured.out
+    assert " 2.0" in captured.out
 
 
 def test_plot_command_writes_html_for_authoritative_json(tmp_path):

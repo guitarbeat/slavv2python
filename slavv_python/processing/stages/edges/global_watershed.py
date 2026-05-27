@@ -40,6 +40,7 @@ from slavv_python.processing.stages.edges.payloads import (
 from slavv_python.processing.stages.edges.watershed_core import (
     FrontierQueue,
     VoxelClaimMap,
+    _matlab_global_watershed_border_locations,
 )
 
 

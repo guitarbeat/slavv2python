@@ -71,7 +71,7 @@ _PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
         "step_size_per_origin_radius": 1.0,
         "max_edge_length_per_origin_radius": 60.0,
         "sigma_per_influence_vertices": 1.0,
-        "sigma_per_influence_edges": 0.5,
+        "sigma_per_influence_edges": 2.0 / 3.0,
         "max_edge_energy": 0.0,
         "min_hair_length_in_microns": 0.0,
         "bandpass_window": 0.0,
@@ -79,7 +79,7 @@ _PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
         "direction_method": "hessian",
         "return_all_scales": False,
         "discrete_tracing": False,
-        "comparison_exact_network_use_conflict_painting": True,
+        "comparison_exact_network_use_conflict_painting": False,
     },
 }
 

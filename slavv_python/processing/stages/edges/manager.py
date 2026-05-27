@@ -3,26 +3,30 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.processing.stages.edges.candidate_generation import (
-    _finalize_matlab_parity_candidates,
-    _generate_edge_candidates,
-    _generate_edge_candidates_matlab_frontier,
+from slavv_python.processing.stages.edges.audit import (
+    _build_edge_candidate_audit,
+    _normalize_candidate_origin_counts,
 )
+from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
 from slavv_python.processing.stages.edges.common import (
     _use_matlab_frontier_tracer,
     resolve_lumen_radius_pixels_axes,
 )
-from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
-from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
-from slavv_python.processing.stages.vertices.painting import (
-    paint_vertex_center_image,
-    paint_vertex_image,
+from slavv_python.processing.stages.edges.discovery import (
+    CandidateManifest,
+    EdgeDiscoveryContext,
+    frontier_origin_counts,
+    frontier_origin_counts_from_diagnostics,
+    select_edge_discovery,
 )
+from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style
+from slavv_python.processing.stages.edges.payloads import _empty_edges_result
+from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
+from slavv_python.processing.stages.vertices.painting import paint_vertex_center_image
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 if TYPE_CHECKING:
@@ -32,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 class EdgeManager:
-    """Consolidated manager for the edge discovery and selection lifecycle."""
+    """Consolidated manager for edge discovery, selection, and resumable persistence."""
 
     @classmethod
     def run_resumable(
@@ -42,116 +46,126 @@ class EdgeManager:
         params: dict[str, Any],
         stage_controller: StageController,
     ) -> EdgeSet:
-        """Execute the full edge extraction lifecycle with resumability."""
-        from slavv_python.engine.state.tracker import atomic_joblib_dump
+        """Execute the full edge extraction lifecycle with resumability and audit artifacts."""
+        from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
+        from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
+        from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
         energy = energy_data.energy
         vertex_positions = vertices.positions
         vertex_scales = vertices.scales
         lumen_radius_microns = energy_data.lumen_radius_microns
-        scale_indices = energy_data.scale_indices
-        energy_sign = energy_data.extra.get("energy_sign", -1.0)
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
 
         if len(vertex_positions) == 0:
-            return EdgeSet.create(
-                [], np.empty((0, 2), dtype=np.int32), np.empty((0,), dtype=np.float32)
-            )
+            return EdgeSet.from_dict(_empty_edges_result(vertex_positions))
 
-        # 1. Setup paths and images
         candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
+        candidate_audit_path = stage_controller.artifact_path("candidate_audit.json")
         chosen_manifest_path = stage_controller.artifact_path("chosen_edges.pkl")
-
         lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
             energy_data,
             microns_per_voxel,
         )
 
+        logger.info("Creating vertex center lookup image...")
         vertex_center_image = paint_vertex_center_image(vertex_positions, energy.shape)
-        use_frontier = _use_matlab_frontier_tracer(energy_data.to_dict(), params)
+        logger.info("Vertex center lookup image created")
 
-        # 2. Candidate Generation
+        use_frontier = _use_matlab_frontier_tracer(energy_data.to_dict(), params)
+        discovery = select_edge_discovery(energy_data, params)
+
         stage_controller.begin(
-            detail="Generating edge candidates",
+            detail=(
+                "Generating edge candidates through MATLAB-style frontier workflow"
+                if use_frontier
+                else "Generating edge candidates through maintained frontier workflow"
+            ),
             units_total=3,
+            units_completed=0,
             substage="generate_candidates",
+            resumed=False,
         )
 
+        heartbeat = None
         if use_frontier:
 
-            def _heartbeat(iteration_count: int, candidate_count: int) -> None:
+            def heartbeat(iteration_count: int, candidate_count: int) -> None:
                 stage_controller.update(
                     units_total=3,
+                    units_completed=0,
                     substage="generate_candidates",
-                    detail=f"Tracing frontier (iters={iteration_count}, candidates={candidate_count})",
+                    detail=(
+                        "Generating edge candidates through MATLAB-style frontier workflow "
+                        f"(iterations={iteration_count}, candidates={candidate_count})"
+                    ),
+                    resumed=False,
                 )
 
-            candidates = _generate_edge_candidates_matlab_frontier(
-                energy,
-                scale_indices,
-                vertex_positions,
-                vertex_scales,
-                lumen_radius_microns,
-                microns_per_voxel,
-                vertex_center_image,
-                params,
-                heartbeat=_heartbeat,
-            )
-            candidates = _finalize_matlab_parity_candidates(
-                candidates,
-                energy,
-                scale_indices,
-                vertex_positions,
-                energy_sign,
-                params,
-                microns_per_voxel,
-            )
-
-        else:
-            from scipy.spatial import cKDTree
-
-            tree = cKDTree(vertex_positions * microns_per_voxel)
-            vertex_image = paint_vertex_image(
-                vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape
-            )
-
-            candidates = _generate_edge_candidates(
-                energy=energy,
-                scale_indices=scale_indices,
-                vertex_positions=vertex_positions,
-                vertex_scales=vertex_scales,
-                lumen_radius_pixels=energy_data.lumen_radius_pixels,
-                lumen_radius_microns=lumen_radius_microns,
-                microns_per_voxel=microns_per_voxel,
-                vertex_center_image=vertex_center_image,
-                vertex_image=vertex_image,
-                tree=tree,
-                max_search_radius=np.max(lumen_radius_microns) * 5.0,
+        manifest = discovery.discover(
+            EdgeDiscoveryContext(
+                energy_data=energy_data,
+                vertices=vertices,
                 params=params,
-                energy_sign=energy_sign,
+                stage_controller=stage_controller,
+                vertex_center_image=vertex_center_image,
+                lumen_radius_pixels_axes=lumen_radius_pixels_axes,
+                microns_per_voxel=microns_per_voxel,
+                heartbeat=heartbeat,
             )
+        )
+        candidates = manifest.to_payload()
 
-        # 3. Persistence & Audit
+        if use_frontier:
+            frontier_counts = frontier_origin_counts_from_diagnostics(manifest)
+        else:
+            frontier_counts = frontier_origin_counts(manifest)
+
+        supplement_origin_counts = _normalize_candidate_origin_counts(
+            manifest.diagnostics.get("watershed_per_origin_candidate_counts")
+        )
+        candidate_audit = _build_edge_candidate_audit(
+            candidates,
+            len(vertex_positions),
+            use_frontier_tracer=use_frontier,
+            frontier_origin_counts=frontier_counts,
+            supplement_origin_counts={
+                int(origin_index): int(count)
+                for origin_index, count in (supplement_origin_counts or {}).items()
+            },
+        )
+        atomic_write_json(candidate_audit_path, candidate_audit)
+
         stage_controller.update(
             units_total=3,
             units_completed=0,
             substage="persist_candidates",
             detail="Writing edge candidate artifacts",
+            resumed=False,
         )
         atomic_joblib_dump(candidates, candidate_manifest_path)
+        if use_frontier:
+            candidate_checkpoint_path = (
+                stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
+            )
+            atomic_joblib_dump(
+                build_candidate_snapshot_payload(candidates),
+                candidate_checkpoint_path,
+            )
         stage_controller.update(
             units_total=3,
             units_completed=1,
             substage="persist_candidates",
             detail="Wrote edge candidate artifacts",
+            resumed=False,
         )
 
-        # 4. Selection (Conflict Painting)
         stage_controller.update(
             units_total=3,
             units_completed=1,
             substage="choose_edges",
             detail="Choosing edges",
+            resumed=False,
         )
         chosen = choose_edges_for_workflow(
             candidates,
@@ -163,19 +177,19 @@ class EdgeManager:
             params,
         )
 
-        # 5. Bridging (Structural Vertex Insertion)
         if use_frontier:
             stage_controller.update(
                 units_total=3,
                 units_completed=2,
                 substage="bridge_vertices",
                 detail="Adding MATLAB-style bridge vertices",
+                resumed=False,
             )
             chosen = add_vertices_to_edges_matlab_style(
                 chosen,
                 vertices.to_dict(),
                 energy=energy,
-                scale_indices=scale_indices,
+                scale_indices=energy_data.scale_indices,
                 microns_per_voxel=microns_per_voxel,
                 lumen_radius_microns=lumen_radius_microns,
                 lumen_radius_pixels_axes=lumen_radius_pixels_axes,
@@ -183,35 +197,56 @@ class EdgeManager:
                 params=params,
             )
 
-        # 6. Finalize & Build Result
         stage_controller.update(
             units_total=3,
             units_completed=2,
             substage="finalize_edges",
             detail="Finalizing edges",
+            resumed=False,
         )
-        final_data = finalize_edges_matlab_style(
+        chosen = finalize_edges_matlab_style(
             chosen,
             lumen_radius_microns=lumen_radius_microns,
             microns_per_voxel=microns_per_voxel,
             size_of_image=energy.shape,
         )
+        chosen_dict = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
+        chosen_dict["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
+        if use_frontier and manifest.frontier_lifecycle_events:
+            candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
+            candidate_lifecycle = _build_frontier_candidate_lifecycle(
+                candidates,
+                chosen_dict.get("chosen_candidate_indices"),
+            )
+            atomic_write_json(candidate_lifecycle_path, candidate_lifecycle)
 
-        atomic_joblib_dump(final_data, chosen_manifest_path)
+        atomic_joblib_dump(chosen_dict, chosen_manifest_path)
         stage_controller.update(
             units_total=3,
             units_completed=3,
             substage="finalize_edges",
             detail="Finalized edges",
+            resumed=False,
+        )
+        return EdgeSet.from_dict(chosen_dict)
+
+    @classmethod
+    def run_watershed_resumable(
+        cls,
+        energy_data: EnergyResult,
+        vertices: VertexSet,
+        params: dict[str, Any],
+        stage_controller: StageController,
+    ) -> EdgeSet:
+        """Delegate watershed resumable extraction (per-label units)."""
+        from slavv_python.processing.stages.edges import resumable as watershed_resumable
+
+        return watershed_resumable.extract_edges_watershed_resumable(
+            energy_data,
+            vertices,
+            params,
+            stage_controller,
         )
 
-        return EdgeSet.create(
-            traces=final_data["traces"],
-            connections=final_data["connections"],
-            energies=final_data["energies"],
-            **{
-                k: v
-                for k, v in final_data.items()
-                if k not in ("traces", "connections", "energies")
-            },
-        )
+
+__all__ = ["EdgeManager", "CandidateManifest"]

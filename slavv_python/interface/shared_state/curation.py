@@ -47,7 +47,7 @@ def sync_curated_processing_results(
     updated_results = typed_result.to_dict()
     updated_results["vertices"] = curated_vertices
     updated_results["edges"] = curated_edges
-    updated_results["network"] = rebuilt_network
+    updated_results["network"] = rebuilt_network.to_dict()
 
     return updated_results, preserved_baseline, summarize_processing_counts(updated_results)
 

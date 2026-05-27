@@ -461,6 +461,21 @@ def _matlab_interp1_implicit_axis(values: np.ndarray, query_points: np.ndarray) 
     return cast("np.ndarray", np.asarray(result, dtype=np.float64))
 
 
+def _weighted_scale_subscript_average(
+    scale_trace: np.ndarray,
+    energy_trace: np.ndarray,
+) -> float:
+    """Energy-weighted mean scale index, falling back to an unweighted mean when weights vanish."""
+    scale = np.asarray(scale_trace, dtype=np.float64).reshape(-1)
+    energy = np.asarray(energy_trace, dtype=np.float64).reshape(-1)
+    if scale.size == 0:
+        return 1.0
+    weight_sum = float(np.sum(energy))
+    if weight_sum == 0.0 or not np.isfinite(weight_sum):
+        return float(np.mean(scale))
+    return float(np.sum(scale * energy) / weight_sum)
+
+
 def _matlab_smooth_edges_v2(
     edge_space_subscripts: list[np.ndarray],
     edge_scale_subscripts: list[np.ndarray],
@@ -509,10 +524,7 @@ def _matlab_smooth_edges_v2(
 
     scale_subscript_averages = np.asarray(
         [
-            float(
-                np.sum(scale_trace.astype(np.float64) * energy_trace.astype(np.float64))
-                / np.sum(energy_trace.astype(np.float64))
-            )
+            _weighted_scale_subscript_average(scale_trace, energy_trace)
             for scale_trace, energy_trace in zip(
                 smoothed_scale_subscripts,
                 smoothed_energies,

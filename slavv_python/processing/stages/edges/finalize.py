@@ -78,14 +78,13 @@ def _matlab_crop_edges_v200(
     ):
         if len(space_trace) == 0:
             continue
-        space_trace_matrix = np.rint(np.asarray(space_trace, dtype=np.float32)).astype(
-            np.int64,
-            copy=False,
-        )
-        scale_trace_vector = np.rint(np.asarray(scale_trace, dtype=np.float32).reshape(-1)).astype(
-            np.int64,
-            copy=False,
-        )
+        space_trace_arr = np.asarray(space_trace, dtype=np.float64)
+        scale_trace_arr = np.asarray(scale_trace, dtype=np.float64).reshape(-1)
+        if not (np.all(np.isfinite(space_trace_arr)) and np.all(np.isfinite(scale_trace_arr))):
+            excluded[edge_index] = True
+            continue
+        space_trace_matrix = np.rint(space_trace_arr).astype(np.int64, copy=False)
+        scale_trace_vector = np.rint(scale_trace_arr).astype(np.int64, copy=False)
         scale_trace_vector = np.clip(scale_trace_vector, 0, max(len(lumen_radii) - 1, 0))
         radii_in_pixels = np.rint(
             lumen_radii[scale_trace_vector][:, None] / voxel_size,

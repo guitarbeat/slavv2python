@@ -122,7 +122,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         "max_edge_length_per_origin_radius", 60.0
     )
     validated["sigma_per_influence_vertices"] = params.get("sigma_per_influence_vertices", 1.0)
-    validated["sigma_per_influence_edges"] = params.get("sigma_per_influence_edges", 0.5)
+    validated["sigma_per_influence_edges"] = params.get("sigma_per_influence_edges", 2.0 / 3.0)
     validated["max_edge_energy"] = params.get("max_edge_energy", 0.0)
     validated["min_hair_length_in_microns"] = params.get("min_hair_length_in_microns", 0.0)
     validated["bandpass_window"] = params.get("bandpass_window", 0.0)

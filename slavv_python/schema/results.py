@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from collections.abc import Iterator, Mapping
+
 if TYPE_CHECKING:
-    from collections.abc import Mapping
     from pathlib import Path
 
 
@@ -322,7 +323,7 @@ class NetworkResult:
 
 
 @dataclass
-class PipelineResult:
+class PipelineResult(Mapping[str, Any]):
     """Typed wrapper for the full pipeline result payload."""
 
     parameters: dict[str, Any]
@@ -387,6 +388,15 @@ class PipelineResult:
         if self.network is not None:
             payload["network"] = self.network.to_dict()
         return payload
+
+    def __getitem__(self, key: str) -> Any:
+        return self.to_dict()[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.to_dict())
+
+    def __len__(self) -> int:
+        return len(self.to_dict())
 
 
 def normalize_pipeline_result(processing_results: Mapping[str, Any]) -> PipelineResult:

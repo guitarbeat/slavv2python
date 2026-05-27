@@ -189,9 +189,20 @@ def trace_edge(
         elif gp_z > dim_z_minus_2:
             gp_z = dim_z_minus_2
 
-        grad_y = (energy[gp_y + 1, gp_x, gp_z] - energy[gp_y - 1, gp_x, gp_z]) * inv_mpv_2x_y
-        grad_x = (energy[gp_y, gp_x + 1, gp_z] - energy[gp_y, gp_x - 1, gp_z]) * inv_mpv_2x_x
-        grad_z = (energy[gp_y, gp_x, gp_z + 1] - energy[gp_y, gp_x, gp_z - 1]) * inv_mpv_2x_z
+        e_y_p = energy[gp_y + 1, gp_x, gp_z]
+        e_y_m = energy[gp_y - 1, gp_x, gp_z]
+        e_x_p = energy[gp_y, gp_x + 1, gp_z]
+        e_x_m = energy[gp_y, gp_x - 1, gp_z]
+        e_z_p = energy[gp_y, gp_x, gp_z + 1]
+        e_z_m = energy[gp_y, gp_x, gp_z - 1]
+        if all(math.isfinite(value) for value in (e_y_p, e_y_m, e_x_p, e_x_m, e_z_p, e_z_m)):
+            grad_y = (e_y_p - e_y_m) * inv_mpv_2x_y
+            grad_x = (e_x_p - e_x_m) * inv_mpv_2x_x
+            grad_z = (e_z_p - e_z_m) * inv_mpv_2x_z
+        else:
+            grad_y = 0.0
+            grad_x = 0.0
+            grad_z = 0.0
 
         grad_norm = math.sqrt(grad_y**2 + grad_x**2 + grad_z**2)
 
