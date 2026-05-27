@@ -377,7 +377,7 @@ def test_list_available_visualizations_includes_network_modes():
 @pytest.mark.unit
 def test_extract_visualization_export_payload_returns_normalized_components():
     processing_results = build_processing_results()
-    v, e, n, p = extract_visualization_export_payload(processing_results)
+    v, e, n, _ = extract_visualization_export_payload(processing_results)
     assert v["positions"].shape == (3, 3)
     assert e["connections"].shape == (2, 2)
     assert len(n["strands"]) == 1

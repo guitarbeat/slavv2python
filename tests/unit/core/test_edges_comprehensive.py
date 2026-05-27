@@ -89,7 +89,7 @@ def test_extract_edges_seeds_directions_with_hessian(mock_generate_directions):
     processor = SlavvPipeline()
     size = 21
     coords = np.indices((size, size, size))
-    x, y, z = coords[0] - size // 2, coords[1] - size // 2, coords[2] - size // 2
+    x, _, z = coords[0] - size // 2, coords[1] - size // 2, coords[2] - size // 2
     energy = -(x**2 + z**2).astype(float)
 
     energy_data = EnergyResult.from_dict({
@@ -310,7 +310,7 @@ def test_offset_coords_matlab_snaps_out_of_bounds():
 def test_matlab_edge_endpoint_positions_and_scales_use_trace_endpoints():
     trace = np.array([[5.0, 5.0, 5.0], [5.0, 6.0, 5.0], [5.0, 7.0, 5.0]], dtype=np.float32)
     scale_trace = np.array([1, 2, 3], dtype=np.int16)
-    start, end = _matlab_edge_endpoint_positions_and_scales(trace, scale_trace)
+    start, _ = _matlab_edge_endpoint_positions_and_scales(trace, scale_trace)
     assert np.allclose(start[0], trace[0])
     assert start[1] == 1
 
@@ -498,7 +498,7 @@ def test_snapshot_endpoint_influences_matlab_restores_overlap():
     painted_image[1, 2, 1] = 7
     painted_source_image[1, 2, 1] = 2
 
-    combined_coords, snapshot, source_snapshot = _snapshot_endpoint_influences_matlab(
+    combined_coords, snapshot, _ = _snapshot_endpoint_influences_matlab(
         [np.array([[1, 2, 1]], dtype=np.int32)],
         painted_image,
         painted_source_image,

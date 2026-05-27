@@ -147,7 +147,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
     )
     direct = SlavvPipeline().compute_energy(image, params)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
-    resumable = energy_module.calculate_energy_field_resumable(
+    _ = energy_module.calculate_energy_field_resumable(
         image, params, run_context.stage("energy"), get_chunking_lattice
     )
     npt.assert_allclose(direct.energy, resumable.energy)
@@ -169,7 +169,7 @@ def test_resumable_energy_can_store_large_arrays_in_zarr(tmp_path):
         }
     )
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
-    resumable = energy_module.calculate_energy_field_resumable(
+    _ = energy_module.calculate_energy_field_resumable(
         image, params, run_context.stage("energy"), get_chunking_lattice
     )
     assert (run_context.stage("energy").stage_dir / "energy_4d.zarr").exists()
@@ -238,7 +238,7 @@ def test_cupy_energy_method_produces_expected_shape_and_sign(monkeypatch):
 @pytest.mark.unit
 def test_matlab_projection_uses_per_voxel_minimum():
     energy_4d = np.array([[[[-1.0, -3.0, -2.0]]]], dtype=np.float32)
-    energy, scale_indices = native_hessian.project_energy_stack(
+    energy, _ = native_hessian.project_energy_stack(
         energy_4d, energy_sign=-1.0, projection_mode="matlab", spherical_to_annular_ratio=1.0
     )
     npt.assert_allclose(energy, np.array([[[-3.0]]], dtype=np.float32))
@@ -247,7 +247,7 @@ def test_matlab_projection_uses_per_voxel_minimum():
 @pytest.mark.unit
 def test_paper_projection_blends_annular_and_spherical_scale_estimates():
     energy_4d = np.array([[[[-20.0, -10.0, -19.0, -19.0]]]], dtype=np.float32)
-    paper_energy, paper_scale = native_hessian.project_energy_stack(
+    paper_energy, _ = native_hessian.project_energy_stack(
         energy_4d, energy_sign=-1.0, projection_mode="paper", spherical_to_annular_ratio=0.5
     )
     npt.assert_allclose(paper_energy, np.array([[[-10.0]]], dtype=np.float32))

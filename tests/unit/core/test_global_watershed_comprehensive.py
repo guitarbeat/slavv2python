@@ -874,7 +874,7 @@ def test_available_locations_tie_breaking_equal_energy():
     - seed_idx > 1: LIFO (new element inserted at end of equal block)
     """
     energy_lookup = {10: -1.0, 20: -3.0, 30: -3.0, 40: -5.0}
-    
+
     # 1. Primary seed: seed_idx == 1 (FIFO)
     # Target energy = -3.0. Equal block is [20, 30]. Worst-to-best.
     # It should be inserted at the beginning of equal block (worst side, closer to index 0).

@@ -6,7 +6,6 @@ import time
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
-from scipy import sparse
 
 if TYPE_CHECKING:
     from slavv_python.processing.stages.edges.common import (
@@ -27,7 +26,6 @@ else:
 
 from slavv_python.processing.stages.edges.common import (
     _build_matlab_global_watershed_lut,
-    _coord_to_matlab_linear_index,
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
 )
@@ -35,14 +33,13 @@ from slavv_python.processing.stages.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
 )
-from slavv_python.processing.stages.edges.watershed_core import (
-    FrontierQueue,
-    VoxelClaimMap,
-    _matlab_global_watershed_border_locations,
-)
 from slavv_python.processing.stages.edges.payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
+)
+from slavv_python.processing.stages.edges.watershed_core import (
+    FrontierQueue,
+    VoxelClaimMap,
 )
 
 

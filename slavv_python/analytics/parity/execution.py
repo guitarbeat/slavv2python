@@ -368,7 +368,7 @@ def load_params_file(source_surface: SourceRunSurface, params_arg: str | None) -
                 msg += f" disallowed Python-only parity keys={disallowed}"
             raise ValueError(msg)
 
-    return payload
+    return cast("dict[str, Any]", payload)
 
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:
@@ -607,7 +607,7 @@ def _reorient_exact_input_volume(
         reordered_size = (input_size[p[0]], input_size[p[1]], input_size[p[2]])
         if reordered_size == oracle_size:
             reordered_image = np.transpose(image, p)
-            return reordered_image, oracle_size, p
+            return reordered_image, oracle_size, cast("tuple[int, int, int]", p)
 
     return image, oracle_size, None
 
@@ -713,7 +713,7 @@ def maybe_sync_exact_vertex_checkpoint(
     dest_run_root: Path,
     *,
     oracle_root: Path | None = None,
-) -> str:
+) -> bool:
     """Sync the exact-route vertex checkpoint if available."""
     from slavv_python.analytics.parity.matlab_exact_proof import (
         sync_exact_vertex_checkpoint_from_matlab,
