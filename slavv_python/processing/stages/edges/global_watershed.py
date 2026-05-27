@@ -423,16 +423,14 @@ def _matlab_global_watershed_insert_available_location(
         # Comparison logic: Is 'mid' worse than 'target'?
         if seed_idx == 1:
             # Seed 1: Find last strictly worse (Energy > Target)
-            # Tie: Target is considered better (LIFO behavior)
-            is_mid_worse = (mid_energy > target_energy) or (
-                np.isclose(mid_energy, target_energy) and mid_loc > target_index
-            )
+            # MATLAB: location_idx = 1 + find(E > target, 1, 'last')
+            # Binary search: find first index where mid_E <= target_E
+            is_mid_worse = (mid_energy > target_energy)
         else:
             # Seed >1: Find first strictly better (Energy < Target)
-            # Tie: Target is considered worse (FIFO behavior)
-            is_mid_worse = (mid_energy > target_energy) or (
-                np.isclose(mid_energy, target_energy) and mid_loc >= target_index
-            )
+            # MATLAB: location_idx = find(E < target, 1, 'first')
+            # Binary search: find first index where mid_E < target_E
+            is_mid_worse = (mid_energy >= target_energy)
 
         if is_mid_worse:
             low = mid + 1
@@ -480,15 +478,10 @@ def _matlab_global_watershed_reset_join_locations(
     if not locations_to_reset:
         return updated_locations, is_current_location_clear
 
-    indices_to_remove: list[int] = []
-    for location in locations_to_reset:
-        try:
-            indices_to_remove.append(updated_locations.index(location))
-        except ValueError:
-            continue
-
-    for index in sorted(set(indices_to_remove), reverse=True):
-        del updated_locations[index]
+    # MATLAB: available_locations( available_locations == location ) = [ ]
+    # This removes ALL occurrences.
+    reset_set = set(locations_to_reset)
+    updated_locations = [loc for loc in updated_locations if loc not in reset_set]
 
     return updated_locations, is_current_location_clear
 
@@ -700,6 +693,7 @@ def _generate_edge_candidates_matlab_global_watershed(
         }
 
     energy_map_raw = np.asarray(energy, dtype=np.float32)
+    print(f"Watershed Entry: Energy Range {np.min(energy_map_raw)} to {np.max(energy_map_raw)}")
     shape: tuple[int, int, int] = (
         int(energy_map_raw.shape[0]),
         int(energy_map_raw.shape[1]),
@@ -766,10 +760,11 @@ def _generate_edge_candidates_matlab_global_watershed(
         if float(current_energy) == float("-inf"):
             current_energy = float(vertex_energies_raw_flat[current_linear])
             energy_map_temp_flat[current_linear] = current_energy
+            # print(f"Iteration {iteration}: Reset -inf to {current_energy} at {current_linear}")
 
         if current_energy >= 0.0:
-            # MATLAB: if min_available_energy >= 0, break, end
-            # Since available_locations is sorted worst-to-best, if the best is >= 0, everyone else is too.
+            if iteration < 10:
+                print(f"Iteration {iteration}: BREAKING because energy {current_energy} >= 0.0 at {current_linear}")
             break
 
         current_vertex_index = int(vertex_index_map_flat[current_linear])

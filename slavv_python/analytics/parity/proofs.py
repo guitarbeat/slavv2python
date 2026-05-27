@@ -320,6 +320,7 @@ def run_candidate_capture(
 
     def _heartbeat(iterations: int, count: int) -> None:
         nonlocal last_iterations, last_count
+        print(f"Heartbeat: iterations={iterations}, candidates={count}")
         last_iterations = iterations
         last_count = count
         progress_records.append(
