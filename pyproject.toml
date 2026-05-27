@@ -40,7 +40,6 @@ dependencies = [
     "psutil>=5.8.0",
     "py-cpuinfo>=8.0.0",
     "seaborn>=0.9.0",
-    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]

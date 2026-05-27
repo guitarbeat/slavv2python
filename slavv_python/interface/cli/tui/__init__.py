@@ -71,10 +71,10 @@ def run_tui_app(parser, args) -> None:
     params = {"profile": profile}
 
     print("\nStarting pipeline execution...")
-    
-    # Run the pipeline without the Textual dashboard for now as it causes 
+
+    # Run the pipeline without the Textual dashboard for now as it causes
     # threading complexity with standard output, or use the Textual monitor if desired.
-    # Currently, we'll just run it directly. If the textual monitor is needed, 
+    # Currently, we'll just run it directly. If the textual monitor is needed,
     # it requires a threaded approach which can be built out using Textual's worker API.
     pipeline.run(
         image,
