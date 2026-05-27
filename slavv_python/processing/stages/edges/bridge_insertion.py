@@ -135,7 +135,7 @@ def _can_place_bridge_vertex(
         np.asarray(lumen_radius_pixels_axes, dtype=np.float32),
         image_shape,
     )
-    candidate_mask = candidate_image > 0
+    candidate_mask: np.ndarray = candidate_image > 0
     if not np.any(candidate_mask):
         return False
     return not bool(np.any(existing_vertex_volume_image[candidate_mask]))

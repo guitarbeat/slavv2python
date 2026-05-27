@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 
@@ -16,7 +18,7 @@ def safe_normalize_rows(vectors: np.ndarray, *, eps: float = 0.0) -> np.ndarray:
         norms[norms == 0.0] = 1.0
     else:
         norms = np.maximum(norms, eps)
-    return vectors_arr / norms
+    return cast("np.ndarray", vectors_arr / norms)
 
 
 def angle_degrees(a: np.ndarray, b: np.ndarray) -> float:
@@ -66,7 +68,7 @@ def resample_vectors(trace: np.ndarray, step: float = 1.0) -> np.ndarray:
 
     total_len = float(cum_dists[-1])
     if total_len == 0:
-        return trace_arr[0:1].copy()
+        return cast("np.ndarray", trace_arr[0:1].copy())
 
     # Interpolation target distances
     new_dists = np.arange(0, total_len, step)

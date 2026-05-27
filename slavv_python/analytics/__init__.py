@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from .cropping import crop_edges, crop_vertices, crop_vertices_by_mask
@@ -17,7 +19,7 @@ from .trace_ops import get_edge_metric, get_edges_for_vertex
 
 def _ensure_dict(obj, default_keys, primary_key):
     # 1. Start with a clean slate of defaults
-    d = {}
+    d: dict[str, Any] = {}
     length = 0
 
     # 2. Extract and normalize the primary source
@@ -33,9 +35,7 @@ def _ensure_dict(obj, default_keys, primary_key):
         d = dict(obj)
         # Find length from any array or list in the input dictionary
         lengths = [
-            len(v)
-            for v in d.values()
-            if hasattr(v, "__len__") and not isinstance(v, (str, bytes))
+            len(v) for v in d.values() if hasattr(v, "__len__") and not isinstance(v, (str, bytes))
         ]
         length = max(lengths) if lengths else 0
 

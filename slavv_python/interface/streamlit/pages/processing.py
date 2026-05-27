@@ -90,7 +90,7 @@ def show_processing_page() -> None:
     )
 
     if uploaded_file is not None:
-        st.success(f"ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Uploaded: {uploaded_file.name}")
+        st.success(f"Uploaded: {uploaded_file.name}")
         st.json(
             {
                 "Filename": uploaded_file.name,
@@ -133,7 +133,7 @@ def show_processing_page() -> None:
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             microns_per_voxel_y = st.number_input(
-                "Y voxel size (ÃƒÅ½Ã‚Â¼m)",
+                "Y voxel size (um)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_y"]),
@@ -142,7 +142,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in Y dimension. (MATLAB: microns_per_voxel(1))",
             )
             microns_per_voxel_x = st.number_input(
-                "X voxel size (ÃƒÅ½Ã‚Â¼m)",
+                "X voxel size (um)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_x"]),
@@ -151,7 +151,7 @@ def show_processing_page() -> None:
                 help="Physical size of one voxel in X dimension. (MATLAB: microns_per_voxel(2))",
             )
             microns_per_voxel_z = st.number_input(
-                "Z voxel size (ÃƒÅ½Ã‚Â¼m)",
+                "Z voxel size (um)",
                 min_value=0.01,
                 max_value=10.0,
                 value=float(st.session_state["processing_microns_per_voxel_z"]),
@@ -177,13 +177,13 @@ def show_processing_page() -> None:
                     help="Numerical aperture of the microscope objective. (MATLAB: numerical_aperture)",
                 )
                 excitation_wavelength = st.number_input(
-                    "Excitation wavelength (ÃƒÅ½Ã‚Â¼m)",
+                    "Excitation wavelength (um)",
                     min_value=0.4,
                     max_value=3.0,
                     value=float(st.session_state["processing_excitation_wavelength"]),
                     step=0.1,
                     key="processing_excitation_wavelength",
-                    help="Laser excitation wavelength. Typical range: 0.7-3.0 ÃƒÅ½Ã‚Â¼m for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
+                    help="Laser excitation wavelength. Typical range: 0.7-3.0 um for two-photon microscopy. (MATLAB: excitation_wavelength_in_microns)",
                 )
                 if not (0.7 <= excitation_wavelength <= 3.0):
                     st.markdown('<div class="warning-box">', unsafe_allow_html=True)
@@ -206,7 +206,7 @@ def show_processing_page() -> None:
         col1, col2 = st.columns(2, gap="medium")
         with col1:
             radius_smallest = st.number_input(
-                "Smallest vessel radius (ÃƒÅ½Ã‚Â¼m)",
+                "Smallest vessel radius (um)",
                 min_value=0.1,
                 max_value=100.0,
                 value=float(st.session_state["processing_radius_smallest"]),
@@ -215,7 +215,7 @@ def show_processing_page() -> None:
                 help="Radius of the smallest vessel to be detected in microns. (MATLAB: radius_of_smallest_vessel_in_microns)",
             )
             radius_largest = st.number_input(
-                "Largest vessel radius (ÃƒÅ½Ã‚Â¼m)",
+                "Largest vessel radius (um)",
                 min_value=1.0,
                 max_value=500.0,
                 value=float(st.session_state["processing_radius_largest"]),
@@ -533,7 +533,7 @@ def show_processing_page() -> None:
                         processing_metrics["vertices"] if "vertices" in results else "N/A",
                         help="Total vertices detected in the volume",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
                 with col2:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
@@ -541,7 +541,7 @@ def show_processing_page() -> None:
                         processing_metrics["edges"] if "edges" in results else "N/A",
                         help="Number of vessel segments traced",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
                 with col3:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
@@ -549,7 +549,7 @@ def show_processing_page() -> None:
                         processing_metrics["strands"] if "network" in results else "N/A",
                         help="Connected components in the network",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
                 with col4:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
@@ -557,7 +557,7 @@ def show_processing_page() -> None:
                         processing_metrics["bifurcations"] if "network" in results else "N/A",
                         help="Detected branching points",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
             except Exception as exc:
                 st.error(f"Processing failed: {exc!s}")
     else:

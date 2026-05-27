@@ -21,7 +21,9 @@ def extract_edges(
     *,
     empty_edges_result: Callable[[np.ndarray], dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, int, int]], np.ndarray],
-    paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, int, int]], np.ndarray],
+    paint_vertex_image: Callable[
+        [np.ndarray, np.ndarray, np.ndarray, tuple[int, int, int]], np.ndarray
+    ],
     use_matlab_frontier_tracer: Callable[[EnergyResult, dict[str, Any]], bool],
     generate_edge_candidates_matlab_frontier: Callable[..., dict[str, Any]],
     finalize_matlab_parity_candidates: Callable[..., dict[str, Any]],
@@ -119,7 +121,7 @@ def extract_edges(
     if use_frontier:
         chosen = add_vertices_to_edges_matlab_style(
             chosen,
-            vertices.to_dict(), # Back to dict for legacy internal functions if needed, but let's see
+            vertices.to_dict(),  # Back to dict for legacy internal functions if needed, but let's see
             energy=energy,
             scale_indices=scale_indices,
             microns_per_voxel=microns_per_voxel,

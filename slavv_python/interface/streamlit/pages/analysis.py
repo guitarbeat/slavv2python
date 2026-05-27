@@ -54,7 +54,7 @@ def show_analysis_page() -> None:
         st.metric(
             "Total Length", f"{stats.get('total_length', 0):.1f} um", help="Sum of all edge lengths"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     with col2:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
@@ -62,7 +62,7 @@ def show_analysis_page() -> None:
             f"{stats.get('volume_fraction', 0):.3f}",
             help="Fraction of volume occupied by vessels",
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     with col3:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
@@ -70,13 +70,13 @@ def show_analysis_page() -> None:
             f"{stats.get('bifurcation_density', 0):.2f} /mm^3",
             help="Bifurcations per cubic millimeter",
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     with col4:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric(
             "Mean Radius", f"{stats.get('mean_radius', 0):.2f} um", help="Average vessel radius"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     tab1, tab2, tab3, tab4 = st.tabs(["Distributions", "Topology", "Morphometry", "Statistics"])
     visualizer = NetworkVisualizer()

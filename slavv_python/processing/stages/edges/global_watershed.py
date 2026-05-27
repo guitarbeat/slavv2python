@@ -551,7 +551,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             distance_tolerance=distance_tolerance,
         )
 
-        vertices_of_current_strel, is_without_vertex = claim_map.claim_unowned_strel(
+        vertices_of_current_strel, _is_without_vertex = claim_map.claim_unowned_strel(
             current_vertex_index=current_vertex_index,
             current_scale_label=current_scale_label_for_writing,
             current_d_over_r=current_d_over_r,
@@ -717,9 +717,7 @@ def _matlab_global_watershed_reveal_unclaimed_strel(
     if len(strel_pointer_indices) != len(valid_linear):
         raise AssertionError("Strel arrays must stay aligned")
 
-    vertices_of_current_strel = np.asarray(
-        vertex_index_map_flat[valid_linear], dtype=np.uint32
-    )
+    vertices_of_current_strel = np.asarray(vertex_index_map_flat[valid_linear], dtype=np.uint32)
     is_without_vertex = vertices_of_current_strel == 0
 
     if np.any(is_without_vertex):
@@ -759,7 +757,7 @@ def _matlab_global_watershed_insert_available_location(
         is_clear = True
 
     target_energy = float(next_energy)
-    target_index = int(next_location)
+    _target_index = int(next_location)
 
     insert_at = len(updated)
     for idx, loc in enumerate(updated):

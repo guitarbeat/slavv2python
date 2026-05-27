@@ -215,7 +215,7 @@ class MLCurator:
             ]
 
             # Distance from image center
-            center = np.array(image_shape) / 2
+            center: np.ndarray = np.array(image_shape) / 2
             dist_from_center = np.linalg.norm(pos - center) / np.linalg.norm(center)
             vertex_features.append(dist_from_center)
 

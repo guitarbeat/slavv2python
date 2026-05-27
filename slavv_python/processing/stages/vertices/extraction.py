@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slavv_python.processing.stages.edges.candidate_detection import (
     choose_vertices_matlab_style,
@@ -16,7 +16,9 @@ from slavv_python.processing.stages.vertices.results import (
     empty_vertices_result,
 )
 from slavv_python.processing.stages.vertices.selection import sort_vertex_order
-from slavv_python.schema.results import EnergyResult, VertexSet
+
+if TYPE_CHECKING:
+    from slavv_python.schema.results import EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
 

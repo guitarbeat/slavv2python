@@ -148,7 +148,7 @@ def show_ml_curation_page():
                             current_counts["Vertices"],
                             delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         )
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
                     with c2:
                         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                         st.metric(
@@ -156,7 +156,7 @@ def show_ml_curation_page():
                             current_counts["Edges"],
                             delta=current_counts["Edges"] - baseline_counts["Edges"],
                         )
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
 
     elif curation_type == "Automatic (Rule-based)":
         st.markdown("#### Automatic Curation Parameters")
@@ -171,7 +171,7 @@ def show_ml_curation_page():
                 help="Vertices with energy above this threshold will be removed.",
             )
             min_vertex_radius = st.number_input(
-                "Minimum Vertex Radius (ÃŽÂ¼m)",
+                "Minimum Vertex Radius (um)",
                 min_value=0.1,
                 max_value=10.0,
                 value=0.5,
@@ -196,7 +196,7 @@ def show_ml_curation_page():
                 help="Vertices in low-contrast regions will be removed.",
             )
             min_edge_length = st.number_input(
-                "Minimum Edge Length (ÃŽÂ¼m)",
+                "Minimum Edge Length (um)",
                 min_value=0.1,
                 max_value=20.0,
                 value=2.0,
@@ -212,7 +212,7 @@ def show_ml_curation_page():
                 help="Edges with tortuosity above this will be removed.",
             )
             max_connection_distance = st.number_input(
-                "Max Connection Distance (ÃŽÂ¼m)",
+                "Max Connection Distance (um)",
                 min_value=0.1,
                 max_value=10.0,
                 value=5.0,
@@ -285,7 +285,7 @@ def show_ml_curation_page():
                         delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         help="Change relative to the pre-curation baseline",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
                 with col2:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
@@ -294,7 +294,7 @@ def show_ml_curation_page():
                         delta=current_counts["Edges"] - baseline_counts["Edges"],
                         help="Change relative to the pre-curation baseline",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
     elif curation_type == "Machine Learning (Model-based)":
         st.markdown("#### Machine Learning Curation Parameters")
@@ -461,7 +461,7 @@ def show_ml_curation_page():
                         delta=current_counts["Vertices"] - baseline_counts["Vertices"],
                         help="Change relative to the pre-curation baseline",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
                 with col2:
                     st.markdown('<div class="metric-card">', unsafe_allow_html=True)
                     st.metric(
@@ -470,7 +470,7 @@ def show_ml_curation_page():
                         delta=current_counts["Edges"] - baseline_counts["Edges"],
                         help="Change relative to the pre-curation baseline",
                     )
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
     if st.button("[Stats] Show Curation Statistics", width=250):
         st.markdown("### [Graph] Curation Results")

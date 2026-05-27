@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from pathlib import Path
 
 
 def _copy_mapping(mapping: dict[str, Any] | None) -> dict[str, Any]:
@@ -58,12 +58,14 @@ class EnergyResult:
     def save(self, path: Path | str) -> None:
         """Persist energy data using atomic joblib dump."""
         from slavv_python.engine.state.io import atomic_joblib_dump
+
         atomic_joblib_dump(self.to_dict(), path)
 
     @classmethod
     def load(cls, path: Path | str) -> EnergyResult:
         """Load energy data from persistent storage."""
         from slavv_python.utils.safe_unpickle import safe_load
+
         payload = safe_load(path)
         return cls.from_dict(payload)
 
@@ -225,12 +227,14 @@ class EdgeSet:
     def save(self, path: Path | str) -> None:
         """Persist the edge set using atomic joblib dump."""
         from slavv_python.engine.state.io import atomic_joblib_dump
+
         atomic_joblib_dump(self.to_dict(), path)
 
     @classmethod
     def load(cls, path: Path | str) -> EdgeSet:
         """Load an edge set from persistent storage."""
         from slavv_python.utils.safe_unpickle import safe_load
+
         payload = safe_load(path)
         return cls.from_dict(payload)
 
@@ -284,12 +288,14 @@ class NetworkResult:
     def save(self, path: Path | str) -> None:
         """Persist the network result using atomic joblib dump."""
         from slavv_python.engine.state.io import atomic_joblib_dump
+
         atomic_joblib_dump(self.to_dict(), path)
 
     @classmethod
     def load(cls, path: Path | str) -> NetworkResult:
         """Load a network result from persistent storage."""
         from slavv_python.utils.safe_unpickle import safe_load
+
         payload = safe_load(path)
         return cls.from_dict(payload)
 
@@ -337,23 +343,31 @@ class PipelineResult:
         return cls(
             parameters=parameters,
             energy_data=(
-                energy_payload if isinstance(energy_payload, EnergyResult)
-                else EnergyResult.from_dict(energy_payload) if isinstance(energy_payload, dict)
+                energy_payload
+                if isinstance(energy_payload, EnergyResult)
+                else EnergyResult.from_dict(energy_payload)
+                if isinstance(energy_payload, dict)
                 else None
             ),
             vertices=(
-                vertices_payload if isinstance(vertices_payload, VertexSet)
-                else VertexSet.from_dict(vertices_payload) if isinstance(vertices_payload, dict)
+                vertices_payload
+                if isinstance(vertices_payload, VertexSet)
+                else VertexSet.from_dict(vertices_payload)
+                if isinstance(vertices_payload, dict)
                 else None
             ),
             edges=(
-                edges_payload if isinstance(edges_payload, EdgeSet)
-                else EdgeSet.from_dict(edges_payload) if isinstance(edges_payload, dict)
+                edges_payload
+                if isinstance(edges_payload, EdgeSet)
+                else EdgeSet.from_dict(edges_payload)
+                if isinstance(edges_payload, dict)
                 else None
             ),
             network=(
-                network_payload if isinstance(network_payload, NetworkResult)
-                else NetworkResult.from_dict(network_payload) if isinstance(network_payload, dict)
+                network_payload
+                if isinstance(network_payload, NetworkResult)
+                else NetworkResult.from_dict(network_payload)
+                if isinstance(network_payload, dict)
                 else None
             ),
             extra=payload_copy,

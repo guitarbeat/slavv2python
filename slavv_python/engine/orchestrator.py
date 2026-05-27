@@ -82,7 +82,9 @@ class SlavvPipeline:
 
         # 1. Energy
         executor.execute(
-            "energy", "energy_data", 0.4,
+            "energy",
+            "energy_data",
+            0.4,
             compute_fn=lambda c: energy.calculate_energy_field_resumable(
                 image, parameters, c, utils.get_chunking_lattice
             ),
@@ -96,11 +98,15 @@ class SlavvPipeline:
 
         # 2. Vertices
         executor.execute(
-            "vertices", "vertices", 0.6,
+            "vertices",
+            "vertices",
+            0.6,
             compute_fn=lambda c: vertex_ops.extract_vertices_resumable(
                 run_state.energy_data, parameters, c
             ),
-            fallback_fn=lambda: self.extract_vertices(cast("dict[str, Any]", run_state.energy_data), parameters),
+            fallback_fn=lambda: self.extract_vertices(
+                cast("dict[str, Any]", run_state.energy_data), parameters
+            ),
             force_rerun=force_rerun["vertices"],
             schema_class=VertexSet,
         )
@@ -109,12 +115,19 @@ class SlavvPipeline:
 
         # 3. Edges
         from slavv_python.processing.stages.edges.manager import EdgeManager
+
         executor.execute(
-            "edges", "edges", 0.8,
+            "edges",
+            "edges",
+            0.8,
             compute_fn=lambda c: EdgeManager.run_resumable(
                 run_state.energy_data, run_state.vertices, parameters, c
             ),
-            fallback_fn=lambda: self.extract_edges(cast("dict[str, Any]", run_state.energy_data), cast("dict[str, Any]", run_state.vertices), parameters),
+            fallback_fn=lambda: self.extract_edges(
+                cast("dict[str, Any]", run_state.energy_data),
+                cast("dict[str, Any]", run_state.vertices),
+                parameters,
+            ),
             force_rerun=force_rerun["edges"],
             schema_class=EdgeSet,
         )
@@ -123,11 +136,17 @@ class SlavvPipeline:
 
         # 4. Network
         executor.execute(
-            "network", "network", 1.0,
+            "network",
+            "network",
+            1.0,
             compute_fn=lambda c: network_ops.construct_network_resumable(
                 run_state.edges, run_state.vertices, parameters, c
             ),
-            fallback_fn=lambda: self.build_network(cast("dict[str, Any]", run_state.edges), cast("dict[str, Any]", run_state.vertices), parameters),
+            fallback_fn=lambda: self.build_network(
+                cast("dict[str, Any]", run_state.edges),
+                cast("dict[str, Any]", run_state.vertices),
+                parameters,
+            ),
             force_rerun=force_rerun["network"],
             schema_class=NetworkResult,
         )
@@ -135,7 +154,9 @@ class SlavvPipeline:
         logger.info("SLAVV processing pipeline completed")
         return self._finalize_run(run_context, run_state, stop_after)
 
-    def _finalize_run(self, run_context: RunContext | None, run_state: RunState, stop_after: str | None) -> dict[str, Any]:
+    def _finalize_run(
+        self, run_context: RunContext | None, run_state: RunState, stop_after: str | None
+    ) -> dict[str, Any]:
         """Finalize state and return normalized results."""
         if run_context is not None:
             run_context.finalize_run(stop_after=stop_after)
@@ -145,7 +166,10 @@ class SlavvPipeline:
         """Calculate the multi-scale energy field."""
         from slavv_python import utils as utils_module
 
-        return cast("dict[str, Any]", energy.compute_energy(image, params, utils_module.get_chunking_lattice))
+        return cast(
+            "dict[str, Any]",
+            energy.compute_energy(image, params, utils_module.get_chunking_lattice),
+        )
 
     def extract_vertices(
         self, energy_data: dict[str, Any], params: dict[str, Any]
@@ -164,7 +188,9 @@ class SlavvPipeline:
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
         """Extract edges by watershed. Delegates to ``edges`` module."""
-        return cast("dict[str, Any]", edge_ops.extract_edges_watershed(energy_data, vertices, params))
+        return cast(
+            "dict[str, Any]", edge_ops.extract_edges_watershed(energy_data, vertices, params)
+        )
 
     def build_network(
         self, edges: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]

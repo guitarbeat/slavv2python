@@ -30,10 +30,10 @@ from slavv_python.processing.stages.energy.gradients import (
 from slavv_python.processing.stages.energy.resumable import (
     calculate_energy_field_resumable as _calculate_energy_field_resumable,
 )
-from slavv_python.schema.results import EnergyResult
 
 if TYPE_CHECKING:
     from slavv_python.engine.state import StageController
+    from slavv_python.schema.results import EnergyResult
 
 
 def calculate_energy_field(

@@ -76,7 +76,10 @@ def resolve_lumen_radius_pixels_axes(
     if lumen_radius_microns.size == 0:
         return np.zeros((0, 3), dtype=np.float32)
     voxel_size = np.asarray(microns_per_voxel, dtype=np.float32).reshape(1, 3)
-    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float32)
+    return cast(
+        "np.ndarray",
+        (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float32),
+    )
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:
@@ -283,7 +286,7 @@ def _matlab_frontier_adjusted_neighbor_energies(
         radius_tolerance=radius_tolerance,
     )
     if neighbor_scale_indices is not None and math.isfinite(size_tolerance) and size_tolerance > 0:
-        size_index_differences = np.asarray(
+        size_index_differences: np.ndarray = np.asarray(
             neighbor_scale_indices,
             dtype=np.float64,
         ) - float(propagated_scale_index)
@@ -308,7 +311,9 @@ def _matlab_frontier_adjusted_neighbor_energies(
         forward_norm = float(np.linalg.norm(forward))
         if forward_norm > 1e-12:
             forward = forward / forward_norm
-            neighbor_vectors = np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+            neighbor_vectors: np.ndarray = (
+                np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+            )
             neighbor_norms = np.linalg.norm(neighbor_vectors, axis=1)
             directional_alignment: np.ndarray = np.zeros(
                 (len(neighbor_vectors),),
@@ -333,7 +338,9 @@ def _matlab_frontier_directional_suppression_factors(
     microns_per_voxel: np.ndarray,
 ) -> np.ndarray:
     """Return MATLAB's continuous same-direction suppression factors for a chosen seed."""
-    neighbor_vectors = np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+    neighbor_vectors: np.ndarray = (
+        np.asarray(neighbor_offsets, dtype=np.float64) * microns_per_voxel
+    )
     norms = np.linalg.norm(neighbor_vectors, axis=1)
     unit_vectors = np.zeros_like(neighbor_vectors, dtype=np.float64)
     valid = norms > 1e-12

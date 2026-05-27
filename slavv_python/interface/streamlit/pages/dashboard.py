@@ -147,19 +147,19 @@ def _render_dashboard_surface() -> None:
         with col1:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.metric("Run Progress", f"{overall_pct}%")
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
         with col2:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.metric("Target Progress", f"{target_pct}%")
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
         with col3:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.metric("Strands", strands_value)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
         with col4:
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.metric("Total Length", total_length_value)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
     st.space("small")
 

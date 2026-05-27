@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 from ..processing.stages.edges.payloads import _edge_metric_from_energy_trace, _trace_energy_series
@@ -51,4 +53,4 @@ def get_edges_for_vertex(connections: np.ndarray, vertex_idx: int) -> list[int]:
     if conn_arr.size == 0:
         return []
     mask = (conn_arr[:, 0] == vertex_idx) | (conn_arr[:, 1] == vertex_idx)
-    return np.where(mask)[0].tolist()
+    return cast("list[int]", np.where(mask)[0].tolist())

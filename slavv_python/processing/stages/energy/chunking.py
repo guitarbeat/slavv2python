@@ -137,7 +137,7 @@ def _update_best_energy(
     scale_idx: int,
     energy_sign: float,
 ) -> None:
-    mask = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
+    mask: np.ndarray = energy_scale < energy_3d if energy_sign < 0 else energy_scale > energy_3d
     energy_3d[mask] = energy_scale[mask]
     scale_indices[mask] = scale_idx
 

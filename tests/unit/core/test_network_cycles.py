@@ -8,34 +8,38 @@ from slavv_python.schema.results import EdgeSet, VertexSet
 
 def test_construct_network_prunes_cycles_and_detects_mismatched():
     processor = SlavvPipeline()
-    vertices = VertexSet.from_dict({
-        "positions": np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [2.0, 0.0, 0.0],
-                [1.0, 1.0, 0.0],
+    vertices = VertexSet.from_dict(
+        {
+            "positions": np.array(
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [2.0, 0.0, 0.0],
+                    [1.0, 1.0, 0.0],
+                ],
+                dtype=float,
+            ),
+        }
+    )
+    edges = EdgeSet.from_dict(
+        {
+            "connections": np.array(
+                [
+                    [0, 1],
+                    [1, 2],
+                    [2, 0],
+                    [1, 3],
+                ],
+                dtype=int,
+            ),
+            "traces": [
+                np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
+                np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
+                np.array([[2.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=float),
+                np.array([[1.0, 0.0, 0.0], [1.0, 1.0, 0.0]], dtype=float),
             ],
-            dtype=float,
-        ),
-    })
-    edges = EdgeSet.from_dict({
-        "connections": np.array(
-            [
-                [0, 1],
-                [1, 2],
-                [2, 0],
-                [1, 3],
-            ],
-            dtype=int,
-        ),
-        "traces": [
-            np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
-            np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
-            np.array([[2.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=float),
-            np.array([[1.0, 0.0, 0.0], [1.0, 1.0, 0.0]], dtype=float),
-        ],
-    })
+        }
+    )
 
     network = processor.build_network(edges, vertices, {"remove_cycles": True})
 
@@ -47,35 +51,39 @@ def test_construct_network_prunes_cycles_and_detects_mismatched():
 
 
 def test_construct_network_resumable_persists_standard_topology(tmp_path):
-    vertices = VertexSet.from_dict({
-        "positions": np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [2.0, 0.0, 0.0],
-                [3.0, 0.0, 0.0],
-                [2.0, 1.0, 0.0],
+    vertices = VertexSet.from_dict(
+        {
+            "positions": np.array(
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [2.0, 0.0, 0.0],
+                    [3.0, 0.0, 0.0],
+                    [2.0, 1.0, 0.0],
+                ],
+                dtype=float,
+            ),
+        }
+    )
+    edges = EdgeSet.from_dict(
+        {
+            "connections": np.array(
+                [
+                    [0, 1],
+                    [1, 2],
+                    [2, 3],
+                    [2, 4],
+                ],
+                dtype=np.int32,
+            ),
+            "traces": [
+                np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
+                np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
+                np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
+                np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
             ],
-            dtype=float,
-        ),
-    })
-    edges = EdgeSet.from_dict({
-        "connections": np.array(
-            [
-                [0, 1],
-                [1, 2],
-                [2, 3],
-                [2, 4],
-            ],
-            dtype=np.int32,
-        ),
-        "traces": [
-            np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=float),
-            np.array([[1.0, 0.0, 0.0], [2.0, 0.0, 0.0]], dtype=float),
-            np.array([[2.0, 0.0, 0.0], [3.0, 0.0, 0.0]], dtype=float),
-            np.array([[2.0, 0.0, 0.0], [2.0, 1.0, 0.0]], dtype=float),
-        ],
-    })
+        }
+    )
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="network")
 
     network = construct_network_resumable(

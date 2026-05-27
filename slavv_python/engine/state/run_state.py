@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from slavv_python.schema.results import (
     EdgeSet,
@@ -41,7 +41,7 @@ class RunState:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the living state into a legacy dictionary payload."""
-        return self.to_pipeline_result().to_dict()
+        return cast("dict[str, Any]", self.to_pipeline_result().to_dict())
 
     def set_result(self, key: str, payload: Any) -> None:
         """Set a result by key, updating the corresponding typed field if known."""

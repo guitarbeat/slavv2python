@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     import numpy as np
@@ -27,7 +27,7 @@ def get_energy_v202(
     get_chunking_lattice_func=None,
 ) -> dict[str, Any]:
     """Mirror MATLAB ``get_energy_V202`` through the maintained energy facade."""
-    return calculate_energy_field(image, params, get_chunking_lattice_func)
+    return cast("dict[str, Any]", calculate_energy_field(image, params, get_chunking_lattice_func))
 
 
 def get_vertices_v200(
@@ -35,7 +35,7 @@ def get_vertices_v200(
     params: dict[str, Any],
 ) -> dict[str, Any]:
     """Mirror MATLAB ``get_vertices_V200`` through the maintained vertex facade."""
-    return extract_vertices(energy_data, params)
+    return cast("dict[str, Any]", extract_vertices(energy_data, params))
 
 
 def get_edges_v300(
@@ -44,7 +44,7 @@ def get_edges_v300(
     params: dict[str, Any],
 ) -> dict[str, Any]:
     """Mirror MATLAB ``get_edges_V300`` through the maintained edge facade."""
-    return extract_edges(energy_data, vertices, params)
+    return cast("dict[str, Any]", extract_edges(energy_data, vertices, params))
 
 
 def choose_edges_v200(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 from joblib import Parallel, delayed
 from skimage.draw import ellipsoid
@@ -308,7 +310,7 @@ def choose_vertices_matlab_style(
             & (coords[:, 2] >= 0)
             & (coords[:, 2] < image_shape[2])
         )
-        return coords[valid]
+        return cast("np.ndarray", coords[valid])
 
     for index in np.flatnonzero(chosen_mask[:start_index]):
         coords = paint(int(index))

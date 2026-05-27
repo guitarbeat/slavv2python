@@ -491,7 +491,7 @@ def _matlab_smooth_edges_v2(
     smoothed_space_subscripts = [
         np.asarray(space_trace, dtype=np.float32).copy() for space_trace in edge_space_subscripts
     ]
-    smoothed_scale_subscripts = [
+    smoothed_scale_subscripts: list[np.ndarray] = [
         np.asarray(scale_trace, dtype=np.float32).reshape(-1).copy() + np.float32(1.0)
         for scale_trace in edge_scale_subscripts
     ]
@@ -645,17 +645,20 @@ def _matlab_get_vessel_directions_v3(
     microns_per_voxel_arr = np.asarray(microns_per_voxel, dtype=np.float32)
 
     for strand in strand_space_subscripts:
-        strand_coords = np.asarray(strand, dtype=np.float32)
+        strand_coords: np.ndarray = np.asarray(strand, dtype=np.float32)
         if len(strand_coords) == 0:
             vessel_directions.append(np.zeros((0, 3), dtype=np.float32))
             continue
 
-        strand_coords = strand_coords * microns_per_voxel_arr
-        if len(strand_coords) > 2:
-            cropped = strand_coords[2:, :] - strand_coords[:-2, :]
+        scaled_strand_coords: np.ndarray = np.asarray(
+            strand_coords * microns_per_voxel_arr,
+            dtype=np.float32,
+        )
+        if len(scaled_strand_coords) > 2:
+            cropped = scaled_strand_coords[2:, :] - scaled_strand_coords[:-2, :]
             directions = np.vstack((cropped[0:1, :], cropped, cropped[-1:, :]))
-        elif len(strand_coords) == 2:
-            cropped = strand_coords[1:2, :] - strand_coords[0:1, :]
+        elif len(scaled_strand_coords) == 2:
+            cropped = scaled_strand_coords[1:2, :] - scaled_strand_coords[0:1, :]
             directions = np.vstack((cropped, cropped))
         else:
             directions = np.zeros((1, 3), dtype=np.float32)

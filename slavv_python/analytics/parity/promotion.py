@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from shutil import copy2, copytree
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python.analytics.parity.matlab_exact_proof import (
     EXACT_STAGE_ORDER,
@@ -108,7 +108,7 @@ def materialize_dataset_record(
             "path": str(dataset_root),
             "status": "ready",
             "dataset_hash": resolved_hash,
-            "updated_at": manifest_payload["timestamps"]["updated_at"],
+            "updated_at": cast("dict[str, Any]", manifest_payload["timestamps"])["updated_at"],
         },
     )
     return resolved_hash
@@ -171,7 +171,7 @@ def materialize_oracle_root(
             "path": str(oracle_root),
             "status": "ready",
             "dataset_hash": dataset_hash,
-            "updated_at": manifest["timestamps"]["updated_at"],
+            "updated_at": cast("dict[str, Any]", manifest["timestamps"])["updated_at"],
         },
     )
 

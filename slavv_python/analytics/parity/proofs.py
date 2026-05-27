@@ -95,7 +95,7 @@ def run_exact_parity_proof(
     checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
     selected_stages = _selected_exact_stages(stage_arg)
 
-    matlab_artifacts = {stage: {} for stage in selected_stages}
+    matlab_artifacts: dict[str, dict[str, Any]] = {stage: {} for stage in selected_stages}
     if source_surface.matlab_batch_dir:
         matlab_artifacts = load_normalized_matlab_vectors(
             source_surface.matlab_batch_dir,
@@ -200,7 +200,7 @@ def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[
     path = source_surface.checkpoints_dir / "checkpoint_energy.pkl"
     if not path.is_file():
         raise FileNotFoundError(f"missing exact energy checkpoint: {path}")
-    return joblib.load(path)
+    return cast("dict[str, Any]", joblib.load(path))
 
 
 def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
@@ -211,7 +211,7 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
     """
     from scipy.io import loadmat
 
-    def _get(obj, key, default=None):
+    def _get(obj: Any, key: str, default: Any = None) -> Any:
         return (
             getattr(obj, key, default)
             if hasattr(obj, key)
@@ -223,16 +223,33 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
         raw_positions = _get(data, "vertex_space_subscripts")
         if raw_positions is None:
             return None
-        positions = (np.atleast_2d(raw_positions) - 1.0).astype(np.float32)
-        scales = (np.atleast_1d(_get(data, "vertex_scale_subscripts", 1)) - 1).astype(np.int16)
+        position_values = cast(
+            "np.ndarray",
+            np.atleast_2d(np.asarray(raw_positions, dtype=np.float64)),
+        )
+        positions = np.asarray(position_values - 1.0, dtype=np.float32)
+        raw_scales = _get(data, "vertex_scale_subscripts", 1)
+        scale_values = cast("np.ndarray", np.atleast_1d(np.asarray(raw_scales, dtype=np.float64)))
+        scales = np.asarray(scale_values - 1, dtype=np.int16)
         energies = np.atleast_1d(_get(data, "vertex_energies", 0.0)).astype(np.float32)
-        return {"positions": positions, "scales": scales, "energies": energies, "count": len(energies)}
+        return {
+            "positions": positions,
+            "scales": scales,
+            "energies": energies,
+            "count": len(energies),
+        }
+
+    matlab_batch_dir = source_surface.matlab_batch_dir
+    if matlab_batch_dir is None:
+        raise FileNotFoundError(
+            f"could not find vertex artifacts in {source_surface.run_root}: missing matlab_batch_dir"
+        )
 
     # Prefer vectors/edges_*.mat — contains the exact raw vertex surface (1367 vertices)
-    edge_paths = list(source_surface.matlab_batch_dir.glob("vectors/edges_*.mat"))
+    edge_paths = list(matlab_batch_dir.glob("vectors/edges_*.mat"))
     if not edge_paths:
         # Fallback to any edges_*.mat
-        edge_paths = list(source_surface.matlab_batch_dir.glob("**/edges_*.mat"))
+        edge_paths = list(matlab_batch_dir.glob("**/edges_*.mat"))
 
     for path in sorted(edge_paths):
         result = _load_from_mat(path)
@@ -240,14 +257,13 @@ def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dic
             return result
 
     # Fallback: curated_vertices (may have fewer vertices than watershed used)
-    curated_paths = list(source_surface.matlab_batch_dir.glob("**/curated_vertices_*.mat"))
+    curated_paths = list(matlab_batch_dir.glob("**/curated_vertices_*.mat"))
     for path in sorted(curated_paths):
         result = _load_from_mat(path)
         if result is not None:
             return result
 
-    raise FileNotFoundError(f"could not find vertex artifacts in {source_surface.matlab_batch_dir}")
-
+    raise FileNotFoundError(f"could not find vertex artifacts in {matlab_batch_dir}")
 
 
 def run_exact_preflight(
@@ -395,7 +411,7 @@ def run_candidate_capture(
             },
         )
 
-    coverage_report = build_candidate_coverage_report(matlab_edges, snapshot_payload)
+    coverage_report = build_candidate_coverage_report(matlab_edges or {}, snapshot_payload)
     coverage_report.update(
         {
             "source_run_root": str(source_surface.run_root),

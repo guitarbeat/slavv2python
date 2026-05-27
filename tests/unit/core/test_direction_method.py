@@ -24,14 +24,16 @@ def test_extract_edges_uniform_direction_method_skips_hessian(monkeypatch):
 
     vertex_pos = np.array([[10.0, 10.0, 10.0]], dtype=float)
     vertex_scales = np.array([0], dtype=int)
-    energy_data = EnergyResult.from_dict({
-        "energy": energy,
-        "scale_indices": np.zeros_like(energy, dtype=np.int16),
-        "lumen_radius_pixels": np.array([2.0], dtype=float),
-        "lumen_radius_microns": np.array([2.0], dtype=float),
-        "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
-        "energy_sign": -1.0,
-    })
+    energy_data = EnergyResult.from_dict(
+        {
+            "energy": energy,
+            "scale_indices": np.zeros_like(energy, dtype=np.int16),
+            "lumen_radius_pixels": np.array([2.0], dtype=float),
+            "lumen_radius_microns": np.array([2.0], dtype=float),
+            "lumen_radius_pixels_axes": np.array([[2.0, 2.0, 2.0]], dtype=float),
+            "energy_sign": -1.0,
+        }
+    )
     vertices = VertexSet.from_dict({"positions": vertex_pos, "scales": vertex_scales})
     params = {
         "number_of_edges_per_vertex": 2,

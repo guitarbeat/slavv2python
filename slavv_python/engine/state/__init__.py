@@ -17,7 +17,6 @@ from .tracker import (
     TRACKED_RUN_STAGES,
     atomic_joblib_dump,
     atomic_write_json,
-    atomic_write_text,
     build_status_lines,
     fingerprint_array,
     fingerprint_file,
@@ -32,6 +31,7 @@ def __getattr__(name: str) -> typing.Any:
     if name in ("RunContext", "StageController"):
         from ..context import RunContext as _RunContext
         from ..context import StageController as _StageController
+
         if name == "RunContext":
             return _RunContext
         return _StageController

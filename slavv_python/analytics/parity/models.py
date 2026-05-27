@@ -22,9 +22,9 @@ class RunCounts:
 class OracleSurface:
     """Authority surface for a preserved MATLAB truth package."""
 
-    oracle_root: Path
+    oracle_root: Path | None
     manifest_path: Path | None
-    matlab_batch_dir: Path
+    matlab_batch_dir: Path | None
     matlab_vector_paths: dict[str, Path]
     oracle_id: str | None
     matlab_source_version: str | None
@@ -60,7 +60,7 @@ class ExactProofSourceSurface:
     checkpoints_dir: Path
     validated_params_path: Path
     oracle_surface: OracleSurface
-    matlab_batch_dir: Path
+    matlab_batch_dir: Path | None
     matlab_vector_paths: dict[str, Path]
 
 

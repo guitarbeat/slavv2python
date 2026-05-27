@@ -74,7 +74,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         # Validate excitation wavelength (common range for two-photon microscopy)
         if not (0.7 <= validated["excitation_wavelength_in_microns"] <= 3.0):
             warnings.warn(
-                "Excitation wavelength outside typical range (0.7-3.0 ÃŽÂ¼m). "
+                "Excitation wavelength outside typical range (0.7-3.0 um). "
                 "This may indicate an error or unusual experimental setup.",
                 stacklevel=2,
             )

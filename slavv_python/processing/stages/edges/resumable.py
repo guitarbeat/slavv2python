@@ -38,7 +38,9 @@ def extract_edges_resumable(
     add_vertices_to_edges_matlab_style: Callable[..., dict[str, Any]],
     finalize_edges_matlab_style: Callable[..., dict[str, Any]],
     paint_vertex_center_image: Callable[[np.ndarray, tuple[int, int, int]], np.ndarray],
-    paint_vertex_image: Callable[[np.ndarray, np.ndarray, np.ndarray, tuple[int, int, int]], np.ndarray],
+    paint_vertex_image: Callable[
+        [np.ndarray, np.ndarray, np.ndarray, tuple[int, int, int]], np.ndarray
+    ],
     use_matlab_frontier_tracer: Callable[[EnergyResult, dict[str, Any]], bool],
 ) -> EdgeSet:
     """Generate edge candidates through the maintained or MATLAB-parity workflow."""
@@ -248,12 +250,8 @@ def extract_edges_resumable(
         microns_per_voxel=microns_per_voxel,
         size_of_image=energy.shape,
     )
-    chosen_dict = (
-        chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
-    )
-    chosen_dict["lumen_radius_microns"] = np.asarray(
-        lumen_radius_microns, dtype=np.float32
-    ).copy()
+    chosen_dict = chosen.to_dict() if hasattr(chosen, "to_dict") else cast("dict[str, Any]", chosen)
+    chosen_dict["lumen_radius_microns"] = np.asarray(lumen_radius_microns, dtype=np.float32).copy()
     if use_frontier and candidates.get("frontier_lifecycle_events"):
         candidate_lifecycle_path = stage_controller.artifact_path("candidate_lifecycle.json")
         candidate_lifecycle = build_frontier_candidate_lifecycle(

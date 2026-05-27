@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import numpy as np
 import pandas as pd
 from defusedxml import ElementTree as ReadET
 from scipy.io import loadmat
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
 

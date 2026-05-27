@@ -8,6 +8,8 @@ maximum branching degrees, orphan removal, and cycle breaking).
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 from scipy import sparse
 from scipy.sparse.csgraph import connected_components
@@ -55,7 +57,7 @@ def remove_excess_vertex_degrees(
         shape=(num_vertices, num_vertices),
         dtype=bool,
     )
-    degrees = (
+    degrees: np.ndarray = (
         np.asarray(binary_adjacency.sum(axis=0)).ravel()
         + np.asarray(binary_adjacency.sum(axis=1)).ravel()
     )
@@ -225,8 +227,14 @@ def _get_incident_edge_ids(v_idx: int, edge_map: sparse.csr_matrix) -> np.ndarra
     incoming = edge_map[:, v_idx].nonzero()[0]
     outgoing = edge_map[v_idx, :].nonzero()[1]
 
-    return np.concatenate(
-        [edge_map[incoming, v_idx].toarray().ravel(), edge_map[v_idx, outgoing].toarray().ravel()]
+    return cast(
+        "np.ndarray",
+        np.concatenate(
+            [
+                edge_map[incoming, v_idx].toarray().ravel(),
+                edge_map[v_idx, outgoing].toarray().ravel(),
+            ]
+        ),
     )
 
 

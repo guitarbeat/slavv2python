@@ -33,12 +33,12 @@ from slavv_python.processing.stages.edges.resumable import (
 )
 from slavv_python.processing.stages.edges.selection import choose_edges_for_workflow
 from slavv_python.processing.stages.vertices import paint_vertex_center_image, paint_vertex_image
-from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from slavv_python.engine.state import StageController
+    from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
 
 def _load_edge_units(

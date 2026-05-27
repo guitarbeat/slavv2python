@@ -42,13 +42,13 @@ class _FakeSimpleITK:
     @staticmethod
     def HessianRecursiveGaussianImageFilter():  # noqa: N802
         class _Filter:
-            def SetSigma(self, sigma):
+            def SetSigma(self, sigma):  # noqa: N802
                 self.sigma = sigma
 
-            def SetNormalizeAcrossScale(self, normalize):
+            def SetNormalizeAcrossScale(self, normalize):  # noqa: N802
                 self.normalize = normalize
 
-            def Execute(self, img):
+            def Execute(self, img):  # noqa: N802
                 res = _FakeSitkImage(img.array * (1.0 + self.sigma / 10.0))
                 res.spacing = img.spacing
                 return res
@@ -58,16 +58,16 @@ class _FakeSimpleITK:
     @staticmethod
     def ObjectnessMeasureImageFilter():  # noqa: N802
         class _Filter:
-            def SetObjectDimension(self, dim):
+            def SetObjectDimension(self, dim):  # noqa: N802
                 pass
 
-            def SetBrightObject(self, bright):
+            def SetBrightObject(self, bright):  # noqa: N802
                 pass
 
-            def SetScaleObjectnessMeasure(self, scale):
+            def SetScaleObjectnessMeasure(self, scale):  # noqa: N802
                 pass
 
-            def Execute(self, img):
+            def Execute(self, img):  # noqa: N802
                 res = _FakeSitkImage(np.abs(img.array))
                 res.spacing = img.spacing
                 return res
@@ -147,7 +147,7 @@ def test_direct_and_resumable_hessian_energy_match(tmp_path):
     )
     direct = SlavvPipeline().compute_energy(image, params)
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="energy")
-    _ = energy_module.calculate_energy_field_resumable(
+    resumable = energy_module.calculate_energy_field_resumable(
         image, params, run_context.stage("energy"), get_chunking_lattice
     )
     npt.assert_allclose(direct.energy, resumable.energy)

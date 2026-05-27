@@ -58,7 +58,7 @@ warnings.filterwarnings("ignore")
 
 st.set_page_config(
     page_title="SLAVV - Vascular Vectorization",
-    page_icon="ðŸ©¸",
+    page_icon="\U0001fac0",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -119,7 +119,7 @@ st.html(
         background-color: #ffffff;
         padding: 1.5rem;
         border-radius: 0.5rem;
-        box-shadow: 
+        box-shadow:
             0 2px 4px rgba(0,0,0,0.05),
             0 1px 2px rgba(0,0,0,0.1);
         margin: 0.5rem 0;
@@ -128,7 +128,7 @@ st.html(
     }
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 
+        box-shadow:
             0 4px 6px rgba(0,0,0,0.05),
             0 2px 4px rgba(0,0,0,0.1);
     }

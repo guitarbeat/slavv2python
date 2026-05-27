@@ -46,7 +46,7 @@ class FrontierQueue:
             return
 
         target_energy = float(energy)
-        target_index = int(location)
+        _target_index = int(location)
         n = len(self._queue)
 
         # Binary search for the insertion point.
@@ -124,7 +124,7 @@ class VoxelClaimMap:
         vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
             np.int32, copy=False
         )
-        max_coord = np.asarray(self.shape, dtype=np.int32) - 1
+        max_coord: np.ndarray = np.asarray(self.shape, dtype=np.int32) - 1
         vertex_coords = np.clip(vertex_coords, 0, max_coord)
         self.vertex_locations = np.asarray(
             [_coord_to_matlab_linear_index(coord, self.shape) for coord in vertex_coords],

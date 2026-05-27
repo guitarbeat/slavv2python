@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -25,7 +25,7 @@ def compute_local_gradient(energy_field: np.ndarray, pos: np.ndarray) -> np.ndar
 def feature_importance(model: Any) -> np.ndarray | None:
     """Extract feature importances from a supported classifier model."""
     if hasattr(model, "feature_importances_"):
-        return model.feature_importances_
+        return cast("np.ndarray", model.feature_importances_)
     return None
 
 

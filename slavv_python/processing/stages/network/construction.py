@@ -120,9 +120,7 @@ def _network_payload(
     )
 
 
-def construct_network(
-    edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]
-) -> NetworkResult:
+def construct_network(edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]) -> NetworkResult:
     """Construct network from traced edges and detected vertices."""
     logger.info("Constructing network")
 

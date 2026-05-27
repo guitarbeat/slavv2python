@@ -50,7 +50,7 @@ def reset_stage_snapshots(
     if start_stage not in PIPELINE_STAGES:
         return []
     start_index = PIPELINE_STAGES.index(start_stage)
-    affected = PIPELINE_STAGES[start_index:]
+    affected: list[str] = list(PIPELINE_STAGES[start_index:])
     for stage in affected:
         stages[stage] = StageSnapshot(name=stage)
     return affected

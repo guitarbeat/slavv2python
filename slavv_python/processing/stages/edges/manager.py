@@ -54,7 +54,9 @@ class EdgeManager:
         microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
 
         if len(vertex_positions) == 0:
-            return EdgeSet.create([], np.empty((0, 2), dtype=np.int32), np.empty((0,), dtype=np.float32))
+            return EdgeSet.create(
+                [], np.empty((0, 2), dtype=np.int32), np.empty((0,), dtype=np.float32)
+            )
 
         # 1. Setup paths and images
         candidate_manifest_path = stage_controller.artifact_path("candidates.pkl")
@@ -76,6 +78,7 @@ class EdgeManager:
         )
 
         if use_frontier:
+
             def _heartbeat(iteration_count: int, candidate_count: int) -> None:
                 stage_controller.update(
                     units_total=3,
@@ -106,8 +109,11 @@ class EdgeManager:
 
         else:
             from scipy.spatial import cKDTree
+
             tree = cKDTree(vertex_positions * microns_per_voxel)
-            vertex_image = paint_vertex_image(vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape)
+            vertex_image = paint_vertex_image(
+                vertex_positions, vertex_scales, lumen_radius_pixels_axes, energy.shape
+            )
 
             candidates = _generate_edge_candidates(
                 energy=energy,
@@ -203,5 +209,9 @@ class EdgeManager:
             traces=final_data["traces"],
             connections=final_data["connections"],
             energies=final_data["energies"],
-            **{k: v for k, v in final_data.items() if k not in ("traces", "connections", "energies")}
+            **{
+                k: v
+                for k, v in final_data.items()
+                if k not in ("traces", "connections", "energies")
+            },
         )

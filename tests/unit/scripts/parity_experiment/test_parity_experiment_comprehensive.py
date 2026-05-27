@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import importlib
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -39,6 +38,8 @@ from slavv_python.analytics.parity.reports import (
 parity_experiment = importlib.import_module("scripts.cli.parity_experiment")
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     Any = object
 
 

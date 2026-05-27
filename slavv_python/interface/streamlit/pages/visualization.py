@@ -17,8 +17,8 @@ from slavv_python.visualization import NetworkVisualizer
 EXPORT_BUTTON_SPECS = (
     {
         "format_type": "vmv",
-        "label": "Ã°Å¸â€œâ€ž Download VMV",
-        "empty_label": "Ã°Å¸â€œâ€ž Export VMV",
+        "label": "Download VMV",
+        "empty_label": "Export VMV",
         "file_name": "network.vmv",
         "mime": "text/plain",
         "help": "Export network in VessMorphoVis (VMV) format",
@@ -26,8 +26,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "casx",
-        "label": "Ã°Å¸â€œâ€ž Download CASX",
-        "empty_label": "Ã°Å¸â€œâ€ž Export CASX",
+        "label": "Download CASX",
+        "empty_label": "Export CASX",
         "file_name": "network.casx",
         "mime": "application/xml",
         "help": "Export network in CASX XML format",
@@ -35,8 +35,8 @@ EXPORT_BUTTON_SPECS = (
     },
     {
         "format_type": "csv",
-        "label": "Ã°Å¸â€œÅ  Download CSV (Zip)",
-        "empty_label": "Ã°Å¸â€œÅ  Export CSV",
+        "label": "Download CSV (Zip)",
+        "empty_label": "Export CSV",
         "file_name": "network_csv.zip",
         "mime": "application/zip",
         "help": "Export network data as Zipped CSVs (vertices & edges)",

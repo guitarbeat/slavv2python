@@ -235,15 +235,20 @@ class RunContext:
         effective_dir = run_dir
         if effective_dir is None and event_callback is not None:
             import tempfile
+
             effective_dir = tempfile.mkdtemp(prefix="slavv_run_")
 
         # 2. Parameter Adoption (Resume-Aware)
         # If we are resuming an existing run, prioritize the previously validated
         # parameters to ensure fingerprint stability, unless forcing a full rerun.
         if effective_dir and not force_rerun_from:
-            existing_params = load_json_dict(Path(effective_dir) / "99_Metadata" / "validated_params.json")
+            existing_params = load_json_dict(
+                Path(effective_dir) / "99_Metadata" / "validated_params.json"
+            )
             if existing_params:
-                logger.info("Adopting existing parameters from %s for resume compatibility", effective_dir)
+                logger.info(
+                    "Adopting existing parameters from %s for resume compatibility", effective_dir
+                )
                 parameters = existing_params
 
         # 3. Validate and Fingerprint

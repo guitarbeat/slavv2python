@@ -7,13 +7,16 @@ ensuring regression tests can run in environments without real datasets.
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import tifffile
 
 from slavv_python.engine import SlavvPipeline
 from slavv_python.storage import load_tiff_volume
 from slavv_python.utils.synthetic import generate_synthetic_vessel_volume
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_paper_profile_ci_pipeline(tmp_path: Path):

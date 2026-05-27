@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -23,7 +23,7 @@ def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.n
     points = rng.standard_normal((n_directions, 3))
     norms = np.linalg.norm(points, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
-    return (points / norms).astype(np.float64)
+    return cast("np.ndarray", (points / norms).astype(np.float64))
 
 
 def estimate_vessel_directions(
@@ -40,7 +40,7 @@ def estimate_vessel_directions(
     slices = tuple(slice(max(c - r, 0), min(c + r + 1, s)) for c, s in zip(center, energy.shape))
     patch = energy[slices]
     if patch.ndim != 3 or min(patch.shape) < 3:
-        return fallback_direction_generator(2, seed=0)
+        return fallback_direction_generator(2, 0)
 
     scale = microns_per_voxel / microns_per_voxel.min()
     if not np.allclose(scale, 1):
@@ -62,8 +62,7 @@ def estimate_vessel_directions(
             order="rc",
         )
     hessian_elems = [h * (radius**2) for h in raw_hessian]
-    patch_center_arr = np.array(patch.shape, dtype=np.int64) // 2
-    patch_center = tuple(int(value) for value in patch_center_arr.tolist())
+    patch_center = tuple(int(s // 2) for s in patch.shape)
     Hxx, Hxy, Hxz, Hyy, Hyz, Hzz = [h[patch_center] for h in hessian_elems]
     H = np.array(
         [
@@ -75,19 +74,19 @@ def estimate_vessel_directions(
     try:
         w, v = np.linalg.eigh(H)
     except np.linalg.LinAlgError:
-        return fallback_direction_generator(2, seed=0)
+        return fallback_direction_generator(2, 0)
     if not np.all(np.isfinite(w)):
-        return fallback_direction_generator(2, seed=0)
+        return fallback_direction_generator(2, 0)
 
     w_abs = np.sort(np.abs(w))
     max_eig = w_abs[-1]
     if max_eig == 0 or (w_abs[1] - w_abs[0]) < 1e-6 * max_eig:
-        return fallback_direction_generator(2, seed=0)
+        return fallback_direction_generator(2, 0)
 
     direction = v[:, np.argmin(np.abs(w))]
     norm = np.linalg.norm(direction)
     if norm == 0 or not np.isfinite(norm):
-        return fallback_direction_generator(2, seed=0)
+        return fallback_direction_generator(2, 0)
     direction = direction / norm
     return np.stack((direction, -direction))
 

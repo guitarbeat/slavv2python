@@ -48,7 +48,7 @@ def _has_local_contrast(
         local_energy = energy_field[y_min:y_max, x_min:x_max, z_min:z_max]
     except (IndexError, ValueError):
         return False
-    return local_energy.size == 0 or np.std(local_energy) >= contrast_threshold
+    return bool(local_energy.size == 0 or np.std(local_energy) >= contrast_threshold)
 
 
 def _vertex_output_radii(vertices: dict[str, Any]) -> np.ndarray:
@@ -65,7 +65,7 @@ def _path_meets_tortuosity_requirement(trace: np.ndarray, max_tortuosity: float)
         return False
     edge_length = calculate_path_length(trace)
     euclidean_distance = np.linalg.norm(trace[-1] - trace[0])
-    return euclidean_distance <= 0 or edge_length / euclidean_distance <= max_tortuosity
+    return bool(euclidean_distance <= 0 or edge_length / euclidean_distance <= max_tortuosity)
 
 
 def _build_original_to_curated_index(vertices: dict[str, Any]) -> dict[int, int]:
@@ -89,7 +89,7 @@ def _endpoint_matches_vertex(
     if vertex_index not in original_to_curated_idx:
         return False
     vertex_pos = vertex_positions[original_to_curated_idx[vertex_index]]
-    return np.linalg.norm(vertex_pos - trace_point) <= max_connection_distance
+    return bool(np.linalg.norm(vertex_pos - trace_point) <= max_connection_distance)
 
 
 class AutomaticCurator:

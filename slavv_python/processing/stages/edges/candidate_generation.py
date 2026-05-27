@@ -313,14 +313,14 @@ def _get_seed_directions(
         if len(dirs) < limit:
             extra = facade.generate_edge_directions(limit - len(dirs), seed=v_idx)
             dirs = np.vstack([dirs, extra])
-        return dirs[:limit]
+        return cast("np.ndarray", dirs[:limit])
 
-    return facade.generate_edge_directions(limit, seed=v_idx)
+    return cast("np.ndarray", facade.generate_edge_directions(limit, seed=v_idx))
 
 
 def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
     """Flattens parallel job outputs into a structured candidate dictionary."""
-    candidates = {
+    candidates: dict[str, Any] = {
         "traces": [],
         "connections": [],
         "metrics": [],
@@ -331,7 +331,7 @@ def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
         "diagnostics": _empty_edge_diagnostics(),
     }
 
-    for t, c, m, et, st, oi, cs, diag in results:
+    for t, c, m, et, st, oi, _cs, diag in results:
         candidates["traces"].extend(t)
         candidates["connections"].extend(c)
         candidates["metrics"].extend(m)

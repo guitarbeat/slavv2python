@@ -183,10 +183,10 @@ def _apply_edge_mask(chosen_edges: dict[str, Any], keep_mask: np.ndarray) -> dic
     for field_name in array_fields:
         if field_name not in chosen_edges:
             continue
-        field_values = np.asarray(chosen_edges[field_name])
-        if field_values.shape[0] != keep.size:
+        field_values_arr = np.asarray(chosen_edges[field_name])
+        if field_values_arr.shape[0] != keep.size:
             continue
-        chosen_edges[field_name] = field_values[keep]
+        chosen_edges[field_name] = field_values_arr[keep]
 
     diagnostics = chosen_edges.get("diagnostics")
     if isinstance(diagnostics, dict):

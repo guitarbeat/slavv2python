@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from scipy.ndimage import map_coordinates
@@ -119,7 +119,9 @@ def _compute_native_hessian_scale_debug(
     """Return one scale of native Hessian intermediates on the working grid."""
     resolution_factor = np.asarray(config["scale_resolution_factors"][scale_idx], dtype=np.int16)
     radius_microns = float(config["lumen_radius_microns"][scale_idx])
-    microns_per_pixel = np.asarray(config["microns_per_voxel"], dtype=float) * resolution_factor
+    microns_per_pixel: np.ndarray = (
+        np.asarray(config["microns_per_voxel"], dtype=float) * resolution_factor
+    )
     pixels_per_sigma_psf = (
         np.asarray(config["pixels_per_sigma_PSF"], dtype=float) / resolution_factor
     )
@@ -145,7 +147,7 @@ def _downsample_volume(image: np.ndarray, resolution_factor: np.ndarray) -> np.n
     factor_y, factor_x, factor_z = (int(value) for value in resolution_factor)
     if factor_y == factor_x == factor_z == 1:
         return image
-    return image[::factor_y, ::factor_x, ::factor_z]
+    return cast("np.ndarray", image[::factor_y, ::factor_x, ::factor_z])
 
 
 def _upsample_volume(
@@ -155,7 +157,7 @@ def _upsample_volume(
 ) -> np.ndarray:
     factor_y, factor_x, factor_z = (float(value) for value in resolution_factor)
     if factor_y == factor_x == factor_z == 1.0 and volume.shape == output_shape:
-        return volume.astype(np.float32, copy=False)
+        return cast("np.ndarray", volume.astype(np.float32, copy=False))
 
     coord_y = np.arange(output_shape[0], dtype=np.float32) / factor_y
     coord_x = np.arange(output_shape[1], dtype=np.float32) / factor_x
@@ -169,7 +171,7 @@ def _upsample_volume(
         mode="nearest",
         prefilter=False,
     )
-    return upsampled.astype(np.float32, copy=False)
+    return cast("np.ndarray", upsampled.astype(np.float32, copy=False))
 
 
 def _matched_hessian_energy(
@@ -294,21 +296,20 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
     ]
     if all(after == 0 for _, after in pad_width):
         return image
-    return np.pad(image, pad_width, mode="symmetric")
+    return cast("np.ndarray", np.pad(image, pad_width, mode="symmetric"))
 
 
 def _pixel_frequency_meshes(
     shape: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     pixel_frequencies = [np.fft.fftfreq(length) for length in shape]
-    return tuple(
-        np.meshgrid(
-            pixel_frequencies[0],
-            pixel_frequencies[1],
-            pixel_frequencies[2],
-            indexing="ij",
-        )
+    y_mesh, x_mesh, z_mesh = np.meshgrid(
+        pixel_frequencies[0],
+        pixel_frequencies[1],
+        pixel_frequencies[2],
+        indexing="ij",
     )
+    return y_mesh, x_mesh, z_mesh
 
 
 def _matching_kernel_dft(
@@ -325,11 +326,15 @@ def _matching_kernel_dft(
     x_micron_freq_mesh = x_pixel_freq_mesh / microns_per_pixel[1]
     z_micron_freq_mesh = z_pixel_freq_mesh / microns_per_pixel[2]
 
-    microns_per_sigma_psf = pixels_per_sigma_psf * microns_per_pixel
-    gaussian_lengths = gaussian_to_ideal_ratio * radius_of_lumen_in_microns + np.zeros(3)
-    annular_pulse_lengths_squared = (
-        1.0 - gaussian_to_ideal_ratio**2
-    ) * radius_of_lumen_in_microns**2 + microns_per_sigma_psf**2
+    microns_per_sigma_psf: np.ndarray = pixels_per_sigma_psf * microns_per_pixel
+    gaussian_lengths: np.ndarray = gaussian_to_ideal_ratio * radius_of_lumen_in_microns + np.zeros(
+        3
+    )
+    annular_pulse_lengths_squared: np.ndarray = np.asarray(
+        (1.0 - gaussian_to_ideal_ratio**2) * radius_of_lumen_in_microns**2
+        + microns_per_sigma_psf**2,
+        dtype=np.float64,
+    )
     sphere_pulse_lengths_squared = annular_pulse_lengths_squared.copy()
 
     radial_freq_mesh_gaussian = np.sqrt(
@@ -369,7 +374,7 @@ def _matching_kernel_dft(
         (1.0 - spherical_to_annular_ratio) * annular_pulse_kernel_dft
         + spherical_to_annular_ratio * spherical_pulse_kernel_dft
     )
-    derivative_weights_from_blurring = gaussian_lengths / microns_per_pixel
+    derivative_weights_from_blurring: np.ndarray = gaussian_lengths / microns_per_pixel
     return matching_kernel_dft, derivative_weights_from_blurring
 
 
@@ -391,9 +396,9 @@ def _derivative_kernels_dft(
         np.cos(2.0 * np.pi * z_pixel_freq_mesh) - 1.0
     )
 
-    yx_freq = y_pixel_freq_mesh * x_pixel_freq_mesh
-    xz_freq = x_pixel_freq_mesh * z_pixel_freq_mesh
-    zy_freq = z_pixel_freq_mesh * y_pixel_freq_mesh
+    yx_freq: np.ndarray = y_pixel_freq_mesh * x_pixel_freq_mesh
+    xz_freq: np.ndarray = x_pixel_freq_mesh * z_pixel_freq_mesh
+    zy_freq: np.ndarray = z_pixel_freq_mesh * y_pixel_freq_mesh
     curvatures_kernels_dft[3] = (
         derivative_weights[0]
         * derivative_weights[1]

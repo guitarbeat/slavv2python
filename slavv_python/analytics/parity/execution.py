@@ -344,7 +344,10 @@ def validate_exact_proof_source_surface(source_run_root: Path) -> ExactProofSour
     )
 
 
-def load_params_file(source_surface: SourceRunSurface, params_arg: str | None) -> dict[str, Any]:
+def load_params_file(
+    source_surface: SourceRunSurface | ExactProofSourceSurface,
+    params_arg: str | None,
+) -> dict[str, Any]:
     """Load the JSON parameters either from the CLI or the slavv_python run metadata."""
     if params_arg:
         path = Path(params_arg).expanduser().resolve()
@@ -480,6 +483,8 @@ def _settings_timestamp_token_from_vector_name(vector_name: str, stage: str) -> 
 
 
 def _select_oracle_settings_paths(oracle_surface: OracleSurface) -> dict[str, Path]:
+    if oracle_surface.matlab_batch_dir is None:
+        raise ValueError("oracle surface is missing matlab_batch_dir")
     settings_dir = oracle_surface.matlab_batch_dir / "settings"
     if not settings_dir.is_dir():
         raise ValueError(f"missing MATLAB settings directory: {settings_dir}")
@@ -628,6 +633,8 @@ def _copy_exact_bootstrap_refs(
 
     matlab_results_dir = dest_run_root / "01_Input" / "matlab_results"
     matlab_results_dir.mkdir(parents=True, exist_ok=True)
+    if oracle_surface.matlab_batch_dir is None:
+        raise ValueError("oracle surface is missing matlab_batch_dir")
     copytree(
         oracle_surface.matlab_batch_dir, matlab_results_dir / oracle_surface.matlab_batch_dir.name
     )
@@ -741,6 +748,8 @@ def maybe_sync_exact_vertex_checkpoint(
 
     try:
         oracle_surface = load_oracle_surface(oracle_root)
+        if oracle_surface.matlab_batch_dir is None:
+            return False
         sync_exact_vertex_checkpoint_from_matlab(
             dest_vertex,
             oracle_surface.matlab_batch_dir,
