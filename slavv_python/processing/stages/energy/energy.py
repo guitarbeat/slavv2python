@@ -5,33 +5,19 @@ Includes Hessian-based vessel enhancement (Frangi/Sato) and Numba-accelerated gr
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
-from slavv_python.processing.stages.energy.chunking import (
-    _calculate_energy_field_chunked,
-    _compute_direct_energy_outputs,
-    _compute_energy_scale,
-    _energy_lattice,
-    _energy_result_payload,
-    _open_energy_storage_array,
-    _project_scale_stack,
-    _remove_storage_path,
-    _select_energy_storage_format,
-)
-from slavv_python.processing.stages.energy.config import _prepare_energy_config
 from slavv_python.processing.stages.energy.gradients import (
     compute_gradient_fast,
     compute_gradient_impl,
     is_numba_acceleration_enabled,
     spherical_structuring_element,
 )
-from slavv_python.processing.stages.energy.resumable import (
-    calculate_energy_field_resumable as _calculate_energy_field_resumable,
-)
+from slavv_python.processing.stages.energy.manager import EnergyManager
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from slavv_python.engine.state import StageController
     from slavv_python.schema.results import EnergyResult
 
@@ -49,28 +35,7 @@ def calculate_energy_field(
     ``'sato'``, ``'simpleitk_objectness'``, or ``'cupy_hessian'`` in
     ``params`` to use explicit non-parity backends.
     """
-    image = image.astype(np.float32, copy=False)
-    config = _prepare_energy_config(image, params)
-    lattice = _energy_lattice(
-        image.shape,
-        int(config["max_voxels"]),
-        int(config["margin"]),
-        get_chunking_lattice_func,
-    )
-    if len(lattice) > 1:
-        return cast(
-            "EnergyResult",
-            _calculate_energy_field_chunked(
-                image,
-                params,
-                config,
-                lattice,
-                get_chunking_lattice_func,
-                calculate_energy_field,
-            ),
-        )
-    energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
-    return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+    return EnergyManager.run(image, params, get_chunking_lattice_func)
 
 
 def calculate_energy_field_resumable(
@@ -80,21 +45,11 @@ def calculate_energy_field_resumable(
     get_chunking_lattice_func=None,
 ) -> EnergyResult:
     """Compute energy with resumable chunk/scale units backed by memmaps."""
-    return cast(
-        "EnergyResult",
-        _calculate_energy_field_resumable(
-            image,
-            params,
-            stage_controller,
-            get_chunking_lattice_func=get_chunking_lattice_func,
-            prepare_energy_config=_prepare_energy_config,
-            select_energy_storage_format=_select_energy_storage_format,
-            energy_lattice=_energy_lattice,
-            remove_storage_path=_remove_storage_path,
-            open_energy_storage_array=_open_energy_storage_array,
-            compute_energy_scale=_compute_energy_scale,
-            project_scale_stack=_project_scale_stack,
-        ),
+    return EnergyManager.run_resumable(
+        image,
+        params,
+        stage_controller,
+        get_chunking_lattice_func=get_chunking_lattice_func,
     )
 
 

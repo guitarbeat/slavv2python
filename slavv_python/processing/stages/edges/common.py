@@ -426,6 +426,22 @@ def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np
     return cast("np.ndarray", coord)
 
 
+def _argmin_with_linear_index_tiebreak(
+    energies: np.ndarray,
+    linear_indices: np.ndarray,
+) -> int:
+    """Return strel index with minimum energy; ties break on lowest Fortran linear index."""
+    energy_values = np.asarray(energies, dtype=np.float64).reshape(-1)
+    linear_values = np.asarray(linear_indices, dtype=np.int64).reshape(-1)
+    if energy_values.size == 0:
+        raise ValueError("energies must be non-empty")
+    min_energy = float(np.min(energy_values))
+    tied = np.flatnonzero(energy_values == min_energy)
+    if tied.size == 1:
+        return int(tied[0])
+    return int(tied[np.argmin(linear_values[tied])])
+
+
 def _path_coords_from_linear_indices(
     path_linear: list[int],
     shape: tuple[int, int, int],

@@ -81,14 +81,16 @@ class SlavvPipeline:
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
 
         # 1. Energy
+        from slavv_python.processing.stages.energy.manager import EnergyManager
+
         executor.execute(
             "energy",
             "energy_data",
             0.4,
-            compute_fn=lambda c: energy.calculate_energy_field_resumable(
+            compute_fn=lambda c: EnergyManager.run_resumable(
                 image, parameters, c, utils.get_chunking_lattice
             ),
-            fallback_fn=lambda: self.compute_energy(image, parameters),
+            fallback_fn=lambda: EnergyManager.run(image, parameters, utils.get_chunking_lattice),
             force_rerun=force_rerun["energy"],
             log_label="Energy Field",
             schema_class=EnergyResult,

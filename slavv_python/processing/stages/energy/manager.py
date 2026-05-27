@@ -1,0 +1,110 @@
+"""Consolidated energy field manager."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
+import numpy as np
+
+from slavv_python.processing.stages.energy.chunking import (
+    _calculate_energy_field_chunked,
+    _compute_direct_energy_outputs,
+    _compute_energy_scale,
+    _energy_lattice,
+    _energy_result_payload,
+    _open_energy_storage_array,
+    _project_scale_stack,
+    _remove_storage_path,
+    _select_energy_storage_format,
+)
+from slavv_python.processing.stages.energy.config import _prepare_energy_config
+from slavv_python.processing.stages.energy.resumable import calculate_energy_field_resumable
+
+if TYPE_CHECKING:
+    from slavv_python.engine.state import StageController
+    from slavv_python.schema.results import EnergyResult
+
+
+class EnergyManager:
+    """Deep facade for multi-scale energy computation (ephemeral and resumable)."""
+
+    @classmethod
+    def run(
+        cls,
+        image: np.ndarray,
+        params: dict[str, Any],
+        get_chunking_lattice_func=None,
+    ) -> EnergyResult:
+        """Calculate energy without run-directory checkpointing."""
+        return cls._run(
+            image,
+            params,
+            stage_controller=None,
+            get_chunking_lattice_func=get_chunking_lattice_func,
+        )
+
+    @classmethod
+    def run_resumable(
+        cls,
+        image: np.ndarray,
+        params: dict[str, Any],
+        stage_controller: StageController,
+        get_chunking_lattice_func=None,
+    ) -> EnergyResult:
+        """Calculate energy with persisted chunk/scale units."""
+        return cls._run(
+            image,
+            params,
+            stage_controller=stage_controller,
+            get_chunking_lattice_func=get_chunking_lattice_func,
+        )
+
+    @classmethod
+    def _run(
+        cls,
+        image: np.ndarray,
+        params: dict[str, Any],
+        *,
+        stage_controller: StageController | None,
+        get_chunking_lattice_func=None,
+    ) -> EnergyResult:
+        image = image.astype(np.float32, copy=False)
+        if stage_controller is not None:
+            return calculate_energy_field_resumable(
+                image,
+                params,
+                stage_controller,
+                get_chunking_lattice_func=get_chunking_lattice_func,
+                prepare_energy_config=_prepare_energy_config,
+                select_energy_storage_format=_select_energy_storage_format,
+                energy_lattice=_energy_lattice,
+                remove_storage_path=_remove_storage_path,
+                open_energy_storage_array=_open_energy_storage_array,
+                compute_energy_scale=_compute_energy_scale,
+                project_scale_stack=_project_scale_stack,
+            )
+
+        config = _prepare_energy_config(image, params)
+        lattice = _energy_lattice(
+            image.shape,
+            int(config["max_voxels"]),
+            int(config["margin"]),
+            get_chunking_lattice_func,
+        )
+        if len(lattice) > 1:
+            return cast(
+                "EnergyResult",
+                _calculate_energy_field_chunked(
+                    image,
+                    params,
+                    config,
+                    lattice,
+                    get_chunking_lattice_func,
+                    cls.run,
+                ),
+            )
+        energy_3d, scale_indices, energy_4d = _compute_direct_energy_outputs(image, config)
+        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+
+
+__all__ = ["EnergyManager"]

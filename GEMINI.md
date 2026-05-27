@@ -68,7 +68,7 @@ slavv2python/
 │   ├── processing/                     # Scientific computation
 │   │   ├── image/                      # Normalization, tiling
 │   │   └── stages/                     # Pipeline stages
-│   │       ├── energy/                 # Hessian filtering, backends
+│   │       ├── energy/                 # EnergyManager, Hessian filtering, backends
 │   │       ├── vertices/               # Extraction, painting, selection
 │   │       │   ├── manager.py          # Vertex lifecycle (run + run_resumable)
 │   │       │   └── detection.py        # MATLAB-style candidate scan/choose
@@ -138,7 +138,7 @@ Read these first when working on relevant surfaces:
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
-| ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, EdgeManager, discovery) |
+| ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 
 ---

@@ -19,8 +19,10 @@ For current behavior and proof status, prefer:
 
 ### Added
 
+- **EnergyManager** (`energy/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one Energy Field pipeline; orchestrator energy stage uses manager directly.
 - **ExactProofCoordinator** (`analytics/parity/coordinator.py`): Unified `prove`, `capture_candidates`, and run-count normalization; candidate capture routes through `EdgeManager.discover_candidates()`.
 - **VertexManager** (`vertices/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one Vertex Set pipeline; vertex detection moved from `edges/candidate_detection.py` to `vertices/detection.py`.
+- **ADR 0007** (VertexManager) and **ADR 0008** (ExactProofCoordinator + `counts.py` seam).
 - **Edge discovery strategy seam** (`discovery.py`): `CandidateManifest`, `MaintainedTracingDiscovery`, `FrontierTracingDiscovery`, and `select_edge_discovery()` for tracing vs MATLAB-parity frontier branching.
 - **NetworkManager** (`network/manager.py`): Ephemeral `run()` and resumable `run_resumable()` share one graph-build pipeline; **ADR 0006** documents the lifecycle manager.
 - **Run ledger modules** (`engine/state/run_ledger.py`, `engine/state/stage_handle.py`): `RunContext` and `StageController` implementations moved out of `engine/context.py` (thin re-export barrel).
@@ -29,6 +31,9 @@ For current behavior and proof status, prefer:
 
 ### Changed
 
+- **Global watershed strel seed selection**: Tied adjusted energies inside the structuring element now break on lowest Fortran linear index (MATLAB parity), via `_argmin_with_linear_index_tiebreak` in `edges/common.py`.
+- **Parity CLI**: `handle_prove_exact` / `handle_capture_candidates` construct `ExactProofCoordinator` explicitly.
+- **Energy extraction**: `calculate_energy_field` / `calculate_energy_field_resumable` delegate to `EnergyManager`.
 - **EdgeManager unify**: `EdgeManager.run()` and `run_resumable()` share `_run_tracing()`; removed duplicate `extraction_standard.py`. Orchestrator and `extract_edges()` use `EdgeManager.run()` for ephemeral runs.
 - **EdgeManager consolidation**: `run_resumable()` is the single resumable tracing entrypoint (audit JSON, parity candidate checkpoints, lifecycle artifacts, selection, bridging, finalize). Removed the 14-callable `resumable.extract_edges_resumable` injection surface.
 - **Vertex extraction**: `extract_vertices` / `extract_vertices_resumable` delegate to `VertexManager`; orchestrator vertices stage uses manager directly.

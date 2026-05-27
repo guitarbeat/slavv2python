@@ -37,7 +37,14 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - `NetworkResult`: Final topology, strands, and bifurcations.
 - `PipelineResult`: Run envelope combining stage payloads and `parameters`.
 
-### 4. Vertex stage facade (`VertexManager`)
+### 4. Energy stage facade (`EnergyManager`)
+`slavv_python.processing.stages.energy.manager` owns the Energy Field lifecycle:
+
+- **`EnergyManager.run()`** — ephemeral chunked or direct multi-scale Hessian energy → `EnergyResult`.
+- **`EnergyManager.run_resumable()`** — same computation with `best_energy`, `best_scale`, and optional `energy_4d` artifacts (zarr/npy per ADR 0001).
+- **`energy.py` / `resumable.py`** — thin delegates preserving public `calculate_energy_field*` imports.
+
+### 5. Vertex stage facade (`VertexManager`)
 `slavv_python.processing.stages.vertices.manager` owns the Vertex Set lifecycle:
 
 - **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
@@ -45,7 +52,7 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - **`vertices/detection.py`** — MATLAB-style candidate scan and selection (no longer under `edges/`).
 - **`extraction.py` / `resumable.py`** — thin delegates preserving public imports.
 
-### 5. Edge stage facade (`EdgeManager` + `discovery`)
+### 6. Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
 
 - **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
@@ -55,7 +62,7 @@ The edges package exposes a deep module boundary:
 
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
 
-### 6. Network stage facade (`NetworkManager`)
+### 7. Network stage facade (`NetworkManager`)
 `slavv_python.processing.stages.network.manager` mirrors the edge pattern:
 
 - **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
@@ -64,7 +71,7 @@ See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../ad
 
 See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 
-### 7. Exact parity coordinator (`ExactProofCoordinator`)
+### 8. Exact parity coordinator (`ExactProofCoordinator`)
 `slavv_python.analytics.parity.coordinator` centralizes exact-route workflows:
 
 - **`prove()`** — compare normalized Python checkpoints to MATLAB oracle vectors.
@@ -73,7 +80,7 @@ See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 
 `execution.py` and `reports.py` re-export count helpers; `proofs.py` delegates to the coordinator.
 
-### 8. Application run envelope (`AppRunState`)
+### 9. Application run envelope (`AppRunState`)
 The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.
 
 ---

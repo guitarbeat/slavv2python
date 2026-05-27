@@ -25,6 +25,7 @@ else:
     BoolArray = np.ndarray
 
 from slavv_python.processing.stages.edges.common import (
+    _argmin_with_linear_index_tiebreak,
     _build_matlab_global_watershed_lut,
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_linear_index_to_coord,
@@ -575,7 +576,7 @@ def _generate_edge_candidates_matlab_global_watershed(
                 current_vertex_energy=float(claim_map.vertex_energies[current_vertex_index - 1]),
                 energy_tolerance=energy_tolerance,
             )
-            strel_idx = int(np.argmin(adjusted))
+            strel_idx = _argmin_with_linear_index_tiebreak(adjusted, current_strel_linear)
             next_location = int(current_strel_linear[strel_idx])
             next_vertex_index = int(vertices_of_current_strel[strel_idx])
             active_tracer.on_seed_selected(seed_idx, next_location, float(adjusted[strel_idx]))

@@ -14,6 +14,7 @@ from .constants import (
     SUMMARY_JSON_PATH,
     SUMMARY_TEXT_PATH,
 )
+from .coordinator import ExactProofCoordinator
 from .execution import (
     copy_source_surface,
     derive_exact_params_from_oracle,
@@ -33,9 +34,7 @@ from .gaps import (
 )
 from .models import ExactProofSourceSurface
 from .proofs import (
-    run_candidate_capture,
     run_edge_replay,
-    run_exact_parity_proof,
     run_exact_preflight,
     run_lut_proof,
 )
@@ -56,6 +55,24 @@ from .utils import (
 
 if TYPE_CHECKING:
     import argparse
+
+
+def _build_exact_proof_source_surface(
+    run_root: Path,
+    oracle_root: Path | None,
+) -> ExactProofSourceSurface:
+    """Resolve oracle paths and return the exact-proof source surface."""
+    if oracle_root is None and (run_root / "01_Input" / "matlab_results").is_dir():
+        oracle_root = run_root
+    oracle_surface = load_oracle_surface(oracle_root)
+    return ExactProofSourceSurface(
+        run_root=run_root,
+        checkpoints_dir=run_root / "02_Output" / "python_results" / "checkpoints",
+        validated_params_path=run_root / "99_Metadata" / "validated_params.json",
+        oracle_surface=oracle_surface,
+        matlab_batch_dir=oracle_surface.matlab_batch_dir,
+        matlab_vector_paths=oracle_surface.matlab_vector_paths,
+    )
 
 
 def handle_rerun_python(args: argparse.Namespace) -> None:
@@ -264,25 +281,11 @@ def handle_diagnose_gaps(args: argparse.Namespace) -> None:
 
 def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
-    # (Simplified resolution for now, should use ExactProofSourceSurface)
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
-    if not oracle_root and (run_root / "01_Input" / "matlab_results").is_dir():
-        oracle_root = run_root
-
-    oracle_surface = load_oracle_surface(oracle_root)
-    source_surface = ExactProofSourceSurface(
-        run_root=run_root,
-        checkpoints_dir=run_root / "02_Output" / "python_results" / "checkpoints",
-        validated_params_path=run_root / "99_Metadata" / "validated_params.json",
-        oracle_surface=oracle_surface,
-        matlab_batch_dir=oracle_surface.matlab_batch_dir,
-        matlab_vector_paths=oracle_surface.matlab_vector_paths,
-    )
-
+    source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    report, _, _ = run_exact_parity_proof(
-        source_surface,
+    report, _, _ = ExactProofCoordinator(source_surface).prove(
         dest_run_root,
         stage_arg=getattr(args, "stage", "all"),
         report_path_arg=getattr(args, "report_path", None),
@@ -325,20 +328,9 @@ def handle_capture_candidates(args: argparse.Namespace) -> None:
     """Capture candidate pairs from a Python run for parity comparison."""
     run_root = Path(args.source_run_root).expanduser().resolve()
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
-
-    oracle_surface = load_oracle_surface(oracle_root)
-    source_surface = ExactProofSourceSurface(
-        run_root=run_root,
-        checkpoints_dir=run_root / "02_Output" / "python_results" / "checkpoints",
-        validated_params_path=run_root / "99_Metadata" / "validated_params.json",
-        oracle_surface=oracle_surface,
-        matlab_batch_dir=oracle_surface.matlab_batch_dir,
-        matlab_vector_paths=oracle_surface.matlab_vector_paths,
-    )
-
+    source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
-    report, _, _ = run_candidate_capture(
-        source_surface,
+    report, _, _ = ExactProofCoordinator(source_surface).capture_candidates(
         dest_run_root,
         include_debug_maps=bool(getattr(args, "debug_maps", False)),
     )

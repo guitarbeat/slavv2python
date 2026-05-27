@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 from slavv_python.processing.stages.edges.common import (
+    _argmin_with_linear_index_tiebreak,
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
@@ -418,6 +419,17 @@ def test_directional_suppression_is_iterative():
         f"Expected index 1 to be best after suppressing index 0, got {best_idx_2}"
     )
     assert adjusted[0] == 0.0
+
+
+@pytest.mark.unit
+def test_strel_seed_argmin_breaks_on_lowest_linear_index() -> None:
+    """Tied strel energies must pick the lowest Fortran linear index, not first array slot."""
+    adjusted = np.array([-5.0, -5.0, -3.0], dtype=np.float64)
+    linear_indices = np.array([120, 42, 99], dtype=np.int64)
+    assert _argmin_with_linear_index_tiebreak(adjusted, linear_indices) == 1
+
+    unique_min = np.array([-8.0, -2.0, -1.0], dtype=np.float64)
+    assert _argmin_with_linear_index_tiebreak(unique_min, linear_indices) == 0
 
 
 # ============================================================================

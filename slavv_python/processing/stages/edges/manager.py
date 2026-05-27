@@ -99,7 +99,9 @@ class EdgeManager:
             energy_data,
             microns_per_voxel,
         )
-        vertex_center_image = paint_vertex_center_image(vertices.positions, energy_data.energy.shape)
+        vertex_center_image = paint_vertex_center_image(
+            vertices.positions, energy_data.energy.shape
+        )
         discovery = select_edge_discovery(energy_data, params)
         return discovery.discover(
             EdgeDiscoveryContext(
