@@ -11,7 +11,7 @@ from slavv_python.analytics.parity.coordinator import (
     load_exact_energy_result,
     load_exact_vertex_set,
 )
-from slavv_python.analytics.parity.matlab_exact_proof import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
 
 from .constants import (
     CHECKPOINTS_DIR,

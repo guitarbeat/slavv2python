@@ -6,14 +6,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.analytics.parity.matlab_exact_proof import (
-    EXACT_STAGE_ORDER,
-    _normalize_connection_array,
-    compare_exact_artifacts,
-    load_normalized_matlab_vectors,
-    load_normalized_python_checkpoints,
-    render_exact_proof_report,
-)
+from slavv_python.analytics.parity.array_normalization import _normalize_connection_array
+from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+from slavv_python.analytics.parity.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.python_checkpoint_loader import load_normalized_python_checkpoints
 from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_coverage_report,
     render_candidate_coverage_report,

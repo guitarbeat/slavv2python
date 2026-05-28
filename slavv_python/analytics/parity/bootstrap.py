@@ -8,10 +8,8 @@ from typing import Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from slavv_python.analytics.parity.matlab_exact_proof import (
-    find_single_matlab_batch_dir,
-    sync_exact_vertex_checkpoint_from_matlab,
-)
+from slavv_python.analytics.parity.matlab_vector_loader import find_single_matlab_batch_dir
+from slavv_python.analytics.parity.python_checkpoint_loader import sync_exact_vertex_checkpoint_from_matlab
 from slavv_python.engine.state import atomic_write_json, load_json_dict
 
 from .constants import (

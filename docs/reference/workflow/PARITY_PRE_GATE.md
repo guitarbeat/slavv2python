@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Parity Certification Guide](PARITY_CERTIFICATION_GUIDE.md) · [ADR 0009](../../adr/0009-parity-pre-gate-tiers.md)
 
-Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms are defined in `GEMINI.md` (**Parity Pre-Gate**, **Synthetic Fixture Volume**, **Crop Harness Volume**, **Canonical Volume**, **Certification**).
+Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms are defined in [AGENTS.md](../../AGENTS.md) (**Parity Pre-Gate**, **Synthetic Fixture Volume**, **Crop Harness Volume**, **Canonical Volume**, **Certification**).
 
 ---
 
@@ -23,7 +23,7 @@ Tiers 2 and 3 use the **same** success bar (zero missing / zero extra per stage)
 **Goal:** Fast regression that the pipeline runs on non-trivial topology without neurovasc-db or MATLAB.
 
 - Extend `slavv_python/utils/synthetic.py` with at least one richer geometry (e.g. Y-junction or crossing tubes) in addition to the straight tube.
-- Keep `tests/integration/test_paper_profile_ci.py` (or a sibling) as the entry point: energy → network on a small synthetic TIFF in `tmp_path`.
+- **CI entry points:** `tests/integration/test_paper_profile_ci.py` (paper profile) and `tests/integration/parity/test_parity_pre_gate_tier1.py` (matlab_compat edges smoke + watershed LUT seam).
 - Do **not** run `prove-exact` on synthetic data unless a dedicated MATLAB oracle is created for that volume (out of scope).
 
 ---
@@ -162,5 +162,4 @@ Legacy helper `scripts/cli/resume_pipeline_run.py` delegates to `resume-exact-ru
 
 ## Related plans
 
-- Phase 1 implementation plan: `docs/plans/2026-05-28-001-feat-180709-exact-route-certification-plan.md`
-- Origin requirements: `docs/brainstorms/180709-native-parity-ship-confidence-requirements.md`
+- Phase 1 spec (requirements + plan): `docs/plans/phase-1-exact-route-spec.md`

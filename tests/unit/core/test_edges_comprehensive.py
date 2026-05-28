@@ -17,7 +17,7 @@ from slavv_python.processing.stages.edges.cleanup import (
     clean_edges_cycles_python,
     clean_edges_vertex_degree_excess_python,
 )
-from slavv_python.processing.stages.edges.common import _use_matlab_frontier_tracer
+from slavv_python.processing.stages.edges.discovery import _use_matlab_frontier_tracer
 from slavv_python.processing.stages.edges.finalize import (
     _matlab_crop_edges_v200,
     _matlab_edge_endpoint_energy,

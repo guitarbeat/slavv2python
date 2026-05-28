@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from slavv_python.processing.stages.edges.common import (
+    from slavv_python.processing.stages.edges.edge_types import (
         BoolArray,
         Float32Array,
         Int16Array,
@@ -21,7 +21,7 @@ else:
     Float32Array = np.ndarray
     BoolArray = np.ndarray
 
-from slavv_python.processing.stages.edges.common import _matlab_frontier_offsets
+from slavv_python.processing.stages.edges.frontier_geometry import _matlab_frontier_offsets
 from slavv_python.processing.stages.edges.selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,

@@ -7,7 +7,7 @@ Keep tests under `tests/` organized by the owning package surface.
 - `tests/unit/<owner>/` for package behavior owned by `analysis`, `apps`, `core`, `io`, `runtime`, `utils`, `visualization`, or `workflows`
 - `tests/unit/scripts/` for maintained helper scripts under `scripts/`
 - `tests/integration/` for cross-component workflows and end-to-end pipeline behavior
-- `tests/integration/parity/` for parity-specific integration tests
+- `tests/integration/parity/` for parity pre-gate integration tests (ADR 0009 tiers 1–2)
 - `tests/ui/` for Streamlit- and visualization-facing behavior
 
 > **Note:** Test owner names (e.g., `core`, `apps`) are simplified labels for `slavv_python/processing/stages/*`, `slavv_python/interface/*`, etc. See `.agents/instructions/tests-placement.instructions.md` for the full mapping.

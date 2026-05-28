@@ -8,11 +8,11 @@ from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_snapshot_payload,
     compare_lut_fixture_payload,
 )
-from slavv_python.processing.stages.edges.common import _build_matlab_global_watershed_lut
+from slavv_python.processing.stages.edges.watershed_lut import build_matlab_global_watershed_lut
 
 
 def _lut_fixture_payload() -> dict[str, object]:
-    lut = _build_matlab_global_watershed_lut(
+    lut = build_matlab_global_watershed_lut(
         0,
         size_of_image=(5, 5, 5),
         lumen_radius_microns=np.array([1.0], dtype=np.float32),

@@ -8,7 +8,7 @@ from typing import Any, cast
 import numpy as np
 from scipy.io import loadmat
 
-from slavv_python.analytics.parity.matlab_exact_proof import (
+from slavv_python.analytics.parity.matlab_vector_loader import (
     find_matlab_vector_paths,
     find_single_matlab_batch_dir,
 )
@@ -308,12 +308,12 @@ def write_run_manifest(
 
 def oracle_energy_size_of_image(oracle_surface: OracleSurface) -> tuple[int, int, int] | None:
     """Read Z,Y,X dimensions from the oracle energy vector artifact."""
-    from slavv_python.analytics.parity.matlab_exact_proof import _is_matlab_energy_hdf5
+    from slavv_python.analytics.parity.matlab_vector_loader import is_matlab_energy_hdf5
 
     energy_path = oracle_surface.matlab_vector_paths.get("energy")
     if energy_path is None:
         return None
-    if _is_matlab_energy_hdf5(energy_path):
+    if is_matlab_energy_hdf5(energy_path):
         import h5py
 
         with h5py.File(energy_path, "r") as handle:

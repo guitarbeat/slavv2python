@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from slavv_python.analytics.parity.matlab_exact_proof import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
 
 # Directory structure constants
 ANALYSIS_DIR = Path("03_Analysis")

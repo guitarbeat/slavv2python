@@ -6,27 +6,13 @@ from typing import Any, cast
 
 import numpy as np
 
-from slavv_python.processing.stages.edges.audit import (
-    _normalize_candidate_connection_sources as _normalize_connection_sources,
+from slavv_python.processing.stages.edges.candidate_payload import (
+    normalize_candidate_connection_sources,
 )
 from slavv_python.processing.stages.edges.payloads import (
     _empty_edges_result,
     build_edge_diagnostics,
 )
-
-
-def normalize_candidate_connection_sources(
-    raw_sources: Any,
-    candidate_connection_count: int,
-    *,
-    default_source: str = "unknown",
-) -> list[str]:
-    """Return a normalized per-connection slavv_python label list."""
-    return _normalize_connection_sources(
-        raw_sources,
-        candidate_connection_count,
-        default_source=default_source,
-    )
 
 
 def empty_edge_diagnostics() -> dict[str, Any]:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from slavv_python.processing.stages.edges.common import (
+    from slavv_python.processing.stages.edges.edge_types import (
         BoolArray,
         Float32Array,
         Float64Array,
@@ -24,12 +24,15 @@ else:
     Float64Array = np.ndarray
     BoolArray = np.ndarray
 
-from slavv_python.processing.stages.edges.common import (
-    _argmin_with_linear_index_tiebreak,
-    _build_matlab_global_watershed_lut,
+from slavv_python.processing.stages.edges.frontier_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
+    _matlab_frontier_directional_suppression_factors,
+)
+from slavv_python.processing.stages.edges.matlab_indexing import (
+    _argmin_with_linear_index_tiebreak,
     _matlab_linear_index_to_coord,
 )
+from slavv_python.processing.stages.edges.watershed_lut import _build_matlab_global_watershed_lut
 from slavv_python.processing.stages.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
@@ -647,10 +650,6 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_1,
                             half_2,
                         )
-
-            from slavv_python.processing.stages.edges.common import (
-                _matlab_frontier_directional_suppression_factors,
-            )
 
             adjusted *= _matlab_frontier_directional_suppression_factors(
                 current_strel_offsets,

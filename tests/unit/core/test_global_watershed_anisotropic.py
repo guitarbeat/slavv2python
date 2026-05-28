@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from slavv_python.processing.stages.edges.common import _build_matlab_local_strel_geometry
+from slavv_python.processing.stages.edges.watershed_lut import build_matlab_local_strel_geometry
 
 
 @pytest.mark.unit
@@ -15,7 +15,7 @@ def test_strel_geometry_anisotropic_microns():
     microns_per_voxel = np.array([2.0, 1.0, 0.5], dtype=np.float32)  # dz, dx, dy (aligned order)
     step_size_per_origin_radius = 1.0
 
-    geom = _build_matlab_local_strel_geometry(
+    geom = build_matlab_local_strel_geometry(
         0,
         lumen_radius_microns,
         microns_per_voxel,
@@ -55,7 +55,7 @@ def test_strel_tie_breaking_order():
     microns_per_voxel = np.ones((3,), dtype=np.float32)
     step_size_per_origin_radius = 1.0
 
-    geom = _build_matlab_local_strel_geometry(
+    geom = build_matlab_local_strel_geometry(
         0,
         lumen_radius_microns,
         microns_per_voxel,

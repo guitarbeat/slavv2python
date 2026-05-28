@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 
 if TYPE_CHECKING:
-    from slavv_python.processing.stages.edges.common import Int32Array
+    from slavv_python.processing.stages.edges.edge_types import Int32Array
 
-from slavv_python.processing.stages.edges.common import (
+from slavv_python.processing.stages.edges.candidate_payload import (
     normalize_candidate_connection_sources as _normalize_connection_sources,
 )
 

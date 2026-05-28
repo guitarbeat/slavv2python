@@ -18,13 +18,13 @@ from slavv_python.processing.stages.edges.candidate_generation import (
 from slavv_python.processing.stages.edges.candidate_manifest import (
     _append_candidate_unit,
 )
-from slavv_python.processing.stages.edges.common import (
+from slavv_python.processing.stages.edges.discovery import _use_matlab_frontier_tracer
+from slavv_python.processing.stages.edges.matlab_indexing import (
     _coord_to_matlab_linear_index,
     _matlab_linear_index_to_coord,
     _path_coords_from_linear_indices,
     _path_max_energy_from_linear_indices,
     _trace_local_geodesic_between_vertices,
-    _use_matlab_frontier_tracer,
     _vertex_center_linear_lookup,
 )
 from slavv_python.processing.stages.edges.trace_directions import (

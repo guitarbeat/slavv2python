@@ -6,8 +6,8 @@ from pathlib import Path
 from shutil import copy2, copytree
 from typing import TYPE_CHECKING, Any, cast
 
-from slavv_python.analytics.parity.matlab_exact_proof import (
-    EXACT_STAGE_ORDER,
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.matlab_vector_loader import (
     find_matlab_vector_paths,
     load_normalized_matlab_vectors,
 )

@@ -17,11 +17,11 @@ import math
 import numpy as np
 import pytest
 
-from slavv_python.processing.stages.edges.common import (
-    _argmin_with_linear_index_tiebreak,
+from slavv_python.processing.stages.edges.frontier_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
+from slavv_python.processing.stages.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
 from slavv_python.processing.stages.edges.generate import _finalize_matlab_parity_candidates
 from slavv_python.processing.stages.edges.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,

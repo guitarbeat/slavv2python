@@ -14,15 +14,13 @@ from slavv_python.processing.stages.edges.audit import (
     _normalize_candidate_origin_counts,
 )
 from slavv_python.processing.stages.edges.bridge_insertion import add_vertices_to_edges_matlab_style
-from slavv_python.processing.stages.edges.common import (
-    _use_matlab_frontier_tracer,
-    resolve_lumen_radius_pixels_axes,
-)
 from slavv_python.processing.stages.edges.discovery import (
     CandidateManifest,
     EdgeDiscoveryContext,
+    _use_matlab_frontier_tracer,
     frontier_origin_counts,
     frontier_origin_counts_from_diagnostics,
+    resolve_lumen_radius_pixels_axes,
     select_edge_discovery,
 )
 from slavv_python.processing.stages.edges.finalize import finalize_edges_matlab_style

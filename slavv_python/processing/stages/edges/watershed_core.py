@@ -5,7 +5,7 @@ from typing import cast
 import numpy as np
 from scipy import sparse
 
-from slavv_python.processing.stages.edges.common import (
+from slavv_python.processing.stages.edges.matlab_indexing import (
     _coord_to_matlab_linear_index,
     _matlab_linear_index_to_coord,
 )

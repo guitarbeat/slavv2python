@@ -95,7 +95,7 @@ def handle_rerun_python(args: argparse.Namespace) -> None:
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()
 
     # Resolve input and params
-    repo_root = Path.cwd()  # Assume CWD is repo root as per AGENTS.md
+    repo_root = Path.cwd()  # Assume CWD is repo root as per docs/AGENTS.md
     input_file = resolve_input_file(source_surface, args.input, repo_root=repo_root)
     params = load_params_file(source_surface, args.params_file)
 
@@ -168,7 +168,7 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
 
-    from slavv_python.analytics.parity.matlab_exact_proof import load_normalized_python_checkpoints
+    from slavv_python.analytics.parity.python_checkpoint_loader import load_normalized_python_checkpoints
     from slavv_python.processing.stages.edges.execution_tracing import JsonExecutionTracer
     from slavv_python.processing.stages.edges.global_watershed import (
         _generate_edge_candidates_matlab_global_watershed,
@@ -311,7 +311,7 @@ def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
     """Run prove-exact for each stage in order; stop at the first failure."""
     from shutil import copy2
 
-    from slavv_python.analytics.parity.matlab_exact_proof import render_exact_proof_report
+    from slavv_python.analytics.parity.proof_report import render_exact_proof_report
 
     run_root = Path(args.source_run_root).expanduser().resolve()
     dest_run_root = Path(args.dest_run_root).expanduser().resolve()

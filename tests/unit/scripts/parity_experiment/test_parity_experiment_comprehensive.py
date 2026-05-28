@@ -24,9 +24,7 @@ from slavv_python.analytics.parity.execution import (
     derive_exact_params_from_oracle,
 )
 from slavv_python.analytics.parity.index import deduplicate_index_records
-from slavv_python.analytics.parity.matlab_exact_proof import (
-    find_matlab_vector_paths,
-)
+from slavv_python.analytics.parity.matlab_vector_loader import find_matlab_vector_paths
 from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
 from slavv_python.analytics.parity.proofs import (
     _run_prove_luts,

@@ -28,7 +28,7 @@ from .trace_metrics import _trace_energy_series, _trace_scale_series
 if TYPE_CHECKING:
     from scipy.spatial import cKDTree
 
-    from .common import Float32Array, Int16Array, Int32Array
+    from .edge_types import Float32Array, Int16Array, Int32Array
     from .tracing import TraceMetadata
 
 logger = logging.getLogger(__name__)
@@ -358,7 +358,7 @@ def sort_candidates_by_quality(
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
-    from slavv_python.processing.stages.edges.common import _reorder_candidate_payload
+    from slavv_python.processing.stages.edges.candidate_payload import _reorder_candidate_payload
 
     metrics = np.asarray(candidates.get("metrics", []), dtype=np.float32)
     if metrics.size > 0:

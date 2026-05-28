@@ -7,11 +7,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.io import savemat
 
-from slavv_python.analytics.parity.matlab_exact_proof import (
-    EXACT_STAGE_ORDER,
-    compare_exact_artifacts,
+from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
+from slavv_python.analytics.parity.matlab_vector_loader import (
+    find_matlab_vector_paths,
     load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
+)
+from slavv_python.analytics.parity.python_checkpoint_loader import (
     normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
 )
@@ -185,7 +188,7 @@ def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
 def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
     import h5py
 
-    from slavv_python.analytics.parity.matlab_exact_proof import (
+    from slavv_python.analytics.parity.matlab_vector_loader import (
         find_matlab_vector_paths,
         load_normalized_matlab_stage,
     )
@@ -221,7 +224,7 @@ def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
 
 
 def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
-    from slavv_python.analytics.parity.matlab_exact_proof import find_matlab_vector_paths
+    from slavv_python.analytics.parity.matlab_vector_loader import find_matlab_vector_paths
 
     vectors_dir = tmp_path / "batch" / "vectors"
     data_dir = tmp_path / "batch" / "data"
