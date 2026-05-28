@@ -1,0 +1,107 @@
+# Parity Pre-Gate
+
+[Up: Reference Docs](../README.md) · [Parity Certification Guide](PARITY_CERTIFICATION_GUIDE.md) · [ADR 0009](../../adr/0009-parity-pre-gate-tiers.md)
+
+Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms are defined in `GEMINI.md` (**Parity Pre-Gate**, **Synthetic Fixture Volume**, **Crop Harness Volume**, **Canonical Volume**, **Certification**).
+
+---
+
+## Tier overview
+
+| Tier | Volume | Oracle | `prove-exact` | Claim |
+|------|--------|--------|---------------|--------|
+| 1 — Synthetic | Python-generated TIFF | None | No | CI / harness smoke only |
+| 2 — Crop harness | `180709_E_crop_M` (64×256×256 Z×Y×X) | `workspace/oracles/180709_E_crop_M` | Yes, strict zero, sequential | Harness confidence only |
+| 3 — Canonical | Full `180709_E` | `180709_E_batch_190910-103039` | Yes, strict zero, sequential | Phase 1 exact-route **Certification** |
+
+Tiers 2 and 3 use the **same** success bar (zero missing / zero extra per stage). Only tier 3 supports the Phase 1 certification milestone.
+
+---
+
+## Tier 1 — Synthetic fixture (CI smoke)
+
+**Goal:** Fast regression that the pipeline runs on non-trivial topology without neurovasc-db or MATLAB.
+
+- Extend `slavv_python/utils/synthetic.py` with at least one richer geometry (e.g. Y-junction or crossing tubes) in addition to the straight tube.
+- Keep `tests/integration/test_paper_profile_ci.py` (or a sibling) as the entry point: energy → network on a small synthetic TIFF in `tmp_path`.
+- Do **not** run `prove-exact` on synthetic data unless a dedicated MATLAB oracle is created for that volume (out of scope).
+
+---
+
+## Tier 2 — Crop harness (`180709_E_crop_M`)
+
+### ROI definition (tier M)
+
+Source volume: promoted dataset `180709_E.tif`, shape **64 × 512 × 512** (Z × Y × X).
+
+| Axis | Full | Crop (centered) | Slice |
+|------|------|-----------------|-------|
+| Z | 64 | 64 | `[0:64)` |
+| Y | 512 | 256 | `[128:384)` |
+| X | 512 | 256 | `[128:384)` |
+
+**Crop shape:** 64 × 256 × 256.
+
+Export a TIFF with the repo script (writes ROI metadata when requested):
+
+```powershell
+python scripts/cli/export_180709_crop_m.py --write-metadata
+```
+
+Default output: `workspace/scratch/180709_E_crop_M/180709_E_crop_M.tif` plus `180709_E_crop_M.tif.roi.json`.
+
+### Oracle (MATLAB truth)
+
+1. Run MATLAB vectorization on the **crop TIFF only** (same parameter family as full `180709_E`, on that subvolume).
+2. Produce a single timestamp-matched `batch_*` tree (one artifact per stage + `settings/`).
+3. Promote:
+
+```powershell
+python scripts/cli/parity_experiment.py promote-dataset `
+  --dataset-file <path-to-180709_E_crop_M.tif> `
+  --experiment-root workspace
+
+python scripts/cli/parity_experiment.py promote-oracle `
+  --matlab-batch-dir <path-to-crop-batch> `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --dataset-file <path-to-180709_E_crop_M.tif> `
+  --oracle-id 180709_E_crop_M
+```
+
+Do **not** reuse `180709_E_batch_190910-103039` mats spatially cropped in Python — the oracle must come from MATLAB on the identical crop volume.
+
+### Exact-route run and proof
+
+```powershell
+python scripts/cli/parity_experiment.py init-exact-run `
+  --dataset-root workspace/datasets/<crop_dataset_id> `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --stop-after network `
+  --energy-storage-format npy
+```
+
+Sequential certification on that run root:
+
+`prove-exact --stage energy` → `vertices` → `edges` → `network` (or `--stage all` once energy is in `EXACT_STAGE_ORDER`).
+
+Reports: `03_Analysis/exact_proof.json`.
+
+---
+
+## Tier 3 — Canonical (Phase 1 milestone)
+
+Unchanged from [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md):
+
+- Full `180709_E`, oracle `180709_E_batch_190910-103039`
+- Native exact route, no vertex injection
+- Phase 1 claim only after all four stages pass on **that** run
+
+**Parallelism:** Crop harness work may run while a canonical run (e.g. `phase1_cert_network`) is in progress or resumed. Passing crop does not replace canonical certification.
+
+---
+
+## Related plans
+
+- Phase 1 implementation plan: `docs/plans/2026-05-28-001-feat-180709-exact-route-certification-plan.md`
+- Origin requirements: `docs/brainstorms/180709-native-parity-ship-confidence-requirements.md`

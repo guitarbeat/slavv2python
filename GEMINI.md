@@ -62,6 +62,20 @@ A disposable developer execution under `workspace/runs/` that compares Python ch
 ### Certification
 The state in which sequential exact-parity gates report zero missing and zero extra for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
 
+### Canonical Volume
+The single full imaging volume chosen for a [Certification](#certification) milestone. Phase 1 exact-route canonical volume is full `180709_E`.
+_Avoid_: Using a crop or Python-generated volume as the certification claim surface.
+
+### Parity Pre-Gate
+A faster developer loop that exercises the parity harness before [Certification](#certification) on the [Canonical Volume](#canonical-volume). Sequenced as: synthetic smoke, then real crop with its own [Oracle](#oracle), then canonical volume only for the final cert claim.
+
+### Synthetic Fixture Volume
+A Python-generated TIFF used for CI and harness smoke tests. Not paired with a preserved MATLAB [Oracle](#oracle) unless one is created explicitly for that volume.
+_Avoid_: Calling this “synthetic certification” or reusing the `180709_E` oracle against it.
+
+### Crop Harness Volume
+A real subvolume cut from the `180709` imaging lineage, paired with its own promoted [Oracle](#oracle) produced from MATLAB vectorization on that same subvolume. Used for `prove-exact` iteration, not for the Phase 1 canonical cert claim unless explicitly promoted and documented as canonical.
+
 ---
 
 ## Repository Map

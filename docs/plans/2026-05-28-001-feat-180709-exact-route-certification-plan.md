@@ -58,6 +58,7 @@ The exact parity track on edges remains near **88.7%** pair match (v29: 135 miss
 
 ### Deferred to Follow-Up Work
 
+- **Parity Pre-Gate tiers** (synthetic smoke, `180709_E_crop_M` harness, then canonical cert): documented in `docs/reference/workflow/PARITY_PRE_GATE.md` and `docs/adr/0009-parity-pre-gate-tiers.md`. Crop harness may run **in parallel** with canonical `phase1_cert_network`; passing crop does not satisfy Phase 1 certification.
 - **Phase 2 paper profile certification** (R7–R8, F2): blocked on origin OQ1 (paper volume/oracle) and OQ2 (parameter alignment); separate plan after phase 1 passes.
 - **Integration E2E parity test** replacing `tests/integration/parity/test_parity_placeholder.py` skip.
 - **`preflight-exact` hardening** beyond current stub behavior in `slavv_python/analytics/parity/proofs.py`.
@@ -80,7 +81,7 @@ The exact parity track on edges remains near **88.7%** pair match (v29: 135 miss
 - Coordinator: `slavv_python/analytics/parity/coordinator.py` (`ExactProofCoordinator.prove`)
 - Pair diagnostics: `slavv_python/analytics/parity/matlab_fail_fast.py`
 - Pipeline: `slavv_python/engine/orchestrator.py` (`stop_after`), `slavv_python/processing/stages/edges/global_watershed.py`, `slavv_python/processing/stages/edges/manager.py`
-- Operator docs: `docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md`, `docs/reference/core/EXACT_PROOF_FINDINGS.md`
+- Operator docs: `docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md`, `docs/reference/workflow/PARITY_PRE_GATE.md`, `docs/reference/core/EXACT_PROOF_FINDINGS.md`
 - ADR: `docs/adr/0008-exact-proof-coordinator.md`
 
 ### Institutional Learnings
@@ -372,4 +373,5 @@ flowchart TD
 - Related code: `slavv_python/analytics/parity/`, `slavv_python/processing/stages/edges/`
 - Findings log: `docs/reference/core/EXACT_PROOF_FINDINGS.md`
 - Investigation: `docs/investigations/phase_3_edge_closure.md`
-- ADR: `docs/adr/0008-exact-proof-coordinator.md`
+- Pre-gate workflow: `docs/reference/workflow/PARITY_PRE_GATE.md`
+- ADR: `docs/adr/0008-exact-proof-coordinator.md`, `docs/adr/0009-parity-pre-gate-tiers.md`

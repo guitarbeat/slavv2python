@@ -1,8 +1,10 @@
 # Parity Certification Guide
 
-[Up: Reference Docs](../README.md)
+[Up: Reference Docs](../README.md) · [Parity Pre-Gate](PARITY_PRE_GATE.md)
 
 This document provides step-by-step instructions for running a full mathematical parity certification between the SLAVV Python engine and a canonical MATLAB oracle.
+
+For faster iteration before (or in parallel with) full-volume certification, see **[Parity Pre-Gate](PARITY_PRE_GATE.md)** (synthetic smoke → `180709_E_crop_M` → canonical `180709_E`).
 
 ---
 
