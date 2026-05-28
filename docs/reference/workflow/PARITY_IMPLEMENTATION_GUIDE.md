@@ -47,4 +47,4 @@ Always add a regression test in `tests/unit/core/test_global_watershed_comprehen
 - `docs/reference/core/EXACT_PROOF_FINDINGS.md`: Live status of proven vs. diverging logic.
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md`: Structural map between MATLAB functions and Python modules.
 - `docs/reference/core/WATERSHED_IMPLEMENTATION_NOTES.md`: Detailed technical notes on watershed parity and divergence patterns.
-- `TODO.md`: Prioritized task list for remaining parity work.
+- [TODO.md](../../TODO.md): Prioritized task list for remaining parity work.

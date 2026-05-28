@@ -60,8 +60,6 @@ class WorkspaceAuditor:
         "pyproject.toml",
         "README.md",
         "LICENSE",
-        "CHANGELOG.md",
-        "AGENTS.md",
         ".gitignore",
         "index.jsonl",
     }

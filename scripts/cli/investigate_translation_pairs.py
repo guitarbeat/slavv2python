@@ -205,12 +205,12 @@ def investigate_baseline_discrepancy(
 
     return {
         "current_match_rate": current_match_rate,
-        "claimed_baseline": 0.558,  # 55.8% from current TODO.md
+        "claimed_baseline": 0.558,  # 55.8% from current docs/TODO.md
         "discrepancy": abs(current_match_rate - 0.558),
         "historical_experiments_found": len(experiments_with_rates),
         "recent_experiments": experiments_with_rates[:5] if experiments_with_rates else [],
         "analysis": (
-            "The 55.8% baseline claim in TODO.md reflects the newly optimized and parallelized pipeline. "
+            "The 55.8% baseline claim in docs/TODO.md reflects the newly optimized and parallelized pipeline. "
             "The historical trace_order_fix experiment previously showed 33.8%. "
         ),
     }

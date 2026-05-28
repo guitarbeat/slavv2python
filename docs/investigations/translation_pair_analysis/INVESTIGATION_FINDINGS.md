@@ -35,7 +35,7 @@ This investigation systematically analyzed the 793 missing MATLAB translation pa
 
 ### Baseline Discrepancy Resolution (PARITY-001A)
 
-The claimed 41.4% baseline in TODO.md does not match any recent experiment:
+The claimed 41.4% baseline in docs/TODO.md does not match any recent experiment:
 - **trace_order_fix:** 33.8% (current)
 - **may2026_fixes:** 12.4% (previous)
 - **Conclusion:** The 41.4% claim appears to be from an older experiment or projection. The actual baseline progression is 12.4% → 33.8% (2.7x improvement).
@@ -180,7 +180,7 @@ The claimed 41.4% baseline in TODO.md does not match any recent experiment:
 
 | Source | Match Rate | Matched Pairs | Date |
 |--------|------------|---------------|------|
-| TODO.md claim | 41.4% | 496/1,197 | Unknown |
+| docs/TODO.md claim | 41.4% | 496/1,197 | Unknown |
 | may2026_fixes | 12.4% | 149/1,197 | 2026-05-04 |
 | trace_order_fix | 33.8% | 404/1,197 | 2026-05-05 |
 
@@ -202,7 +202,7 @@ The claimed 41.4% baseline in TODO.md does not match any recent experiment:
 
 ### Recommendation
 
-Update TODO.md (which now contains the Sprint Plan) to reflect the accurate baseline:
+Update docs/TODO.md (which now contains the Sprint Plan) to reflect the accurate baseline:
 - **Previous Baseline:** 12.4% (149/1,197)
 - **Current Baseline:** 33.8% (404/1,197)
 - **Target:** 50% (598/1,197)
@@ -423,7 +423,7 @@ Python generates candidates that MATLAB filters out due to:
 **Day 5: Documentation and Promotion**
 - Update EXACT_PROOF_FINDINGS.md
 - Promote experiment report
-- Update TODO.md (which now contains the Sprint Plan)
+- Update docs/TODO.md (which now contains the Sprint Plan)
 
 ---
 

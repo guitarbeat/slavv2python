@@ -1,4 +1,4 @@
-# SLAVV Repository Guide & Instructions (GEMINI.md)
+# SLAVV Repository Guide & Instructions (AGENTS.md)
 
 Canonical instructions, domain glossary, and architecture guidelines for any AI coding agent working in the `slavv2python` repository. This file is automatically loaded into the AI's context.
 
@@ -75,6 +75,14 @@ _Avoid_: Calling this “synthetic certification” or reusing the `180709_E` or
 
 ### Crop Harness Volume
 A real subvolume cut from the `180709` imaging lineage, paired with its own promoted [Oracle](#oracle) produced from MATLAB vectorization on that same subvolume. Used for `prove-exact` iteration, not for the Phase 1 canonical cert claim unless explicitly promoted and documented as canonical.
+
+### Phase 1 Specification
+The single authoritative document for exact-route [Certification](#certification) on full `180709_E`: requirements and implementation together under `docs/plans/phase-1-exact-route-spec.md`.
+_Avoid_: Maintaining separate brainstorm and plan files for the same initiative; use `docs/brainstorms/` only before the spec exists.
+
+### Exact Proof Findings
+The live status log for exact-parity work: active runs, `prove-exact` results, blockers, champion baselines, and a curated index of parity-related compound solutions under `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
+_Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in TODO, status and parity compound index stay in findings.
 
 ---
 
@@ -159,6 +167,7 @@ Read these first when working on relevant surfaces:
 
 | Document | Path | Purpose |
 |:---------|:-----|:--------|
+| Developer Dashboard | [TODO.md](TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Project Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) | Comprehensive codebase health, active priorities & parity status |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
@@ -167,6 +176,7 @@ Read these first when working on relevant surfaces:
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
 | Parity Pre-Gate | [docs/reference/workflow/PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) | Three-tier pre-gate (synthetic → crop → canonical) |
 | Parity Certification | [docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md](docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | `prove-exact` / `prove-exact-sequence` on canonical volume |
+| Documented Solutions | [docs/solutions/](docs/solutions/) | Searchable past fixes and workflows (`module`, `tags`, `problem_type` in YAML frontmatter); relevant when debugging parity, oracle promotion, or integration issues |
 | ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 

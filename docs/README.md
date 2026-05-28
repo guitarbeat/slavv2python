@@ -13,12 +13,25 @@ executable spec.
 ## Start Here
 
 1. [Repository README](../README.md)
-2. [Tutorial](TUTORIAL.md) — Get started with your first extraction.
-3. [Roadmap](ROADMAP.md) — Project status and active milestones.
-4. [Agent and workflow guide](../GEMINI.md)
-5. [Reference index](reference/README.md)
-6. [Investigation index](investigations/README.md)
-7. [Test placement guide](../tests/README.md)
+2. [Developer dashboard (tasks & planning hub)](TODO.md) — Active checkboxes, links to plans, brainstorms, and compound solutions
+3. [Tutorial](TUTORIAL.md) — Get started with your first extraction.
+4. [Roadmap](ROADMAP.md) — Project status and milestones (less tactical than TODO.md)
+5. [Agent and workflow guide](AGENTS.md)
+6. [Contributing](CONTRIBUTING.md)
+7. [Changelog](CHANGELOG.md)
+8. [Reference index](reference/README.md)
+9. [Investigation index](investigations/README.md)
+10. [Test placement guide](../tests/README.md)
+
+## Planning & knowledge (not reference specs)
+
+| Folder | Purpose |
+|--------|---------|
+| [TODO.md](TODO.md) | **Hub** — what to do next; index of plans and solutions |
+| [plans/](plans/) | Active specs (`*-spec.md`: requirements + implementation in one file) |
+| [brainstorms/](brainstorms/) | Pre-spec ideas only; promote into `plans/` then stub the brainstorm |
+| [solutions/](solutions/) | Documented fixes and runbooks (`/ce-compound`; YAML frontmatter for search) |
+| [adr/](adr/) | Architecture decision records |
 
 ## Core Maintained References
 

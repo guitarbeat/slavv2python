@@ -4,21 +4,66 @@
 
 **Last Updated**: 2026-05-28
 
-This document serves as the **Authoritative Status Log** for aligning Python's native vectorization output perfectly with the original MATLAB mathematics (the "Exact Proof").
+**Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
+
+**Spec:** [phase-1-exact-route-spec.md](../../plans/phase-1-exact-route-spec.md)
 
 ---
 
-## 📊 Executive Status Summary
+## 📊 Executive status (stage model)
 
-The goal is 100% mathematical parity against the canonical MATLAB oracle. 
+Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `prove-exact` (energy → vertices → edges → network) on full `180709_E`—not informal match-rate thresholds.
 
-| Workflow Stage | Parity Status | Immediate Blocker |
+| Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **NATIVE ENERGY** | ✅ **COMPLETED** | None (Canonical exact-compatible) |
-| **VERTICES** | ✅ **VERIFIED** | Successfully certified downstream |
-| **EDGES** | 🟡 **IN PROGRESS** | Phase 1 cert run + parity closure (strict zero pairs) |
-| **NETWORK** | ⏳ **PENDING** | Phase 1 `init-exact-run --stop-after network` |
-| **prove-exact energy** | ✅ **HARNESS** | `EXACT_STAGE_ORDER` includes `energy` (2026-05-28) |
+| **Energy** | Native Hessian path exact-compatible | 🟡 **Blocked** on crop harness (value mismatch); canonical run in progress |
+| **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
+| **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof after upstream stages |
+| **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
+| **`prove-exact` energy stage** | ✅ In `EXACT_STAGE_ORDER` (2026-05-28) | Required for R3 gating |
+
+---
+
+## 🚦 Active Phase 1 operations
+
+| Track | Run / artifact | Status |
+|-------|----------------|--------|
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline in progress or resume — **one writer** on this dest root. Oracle: `180709_E_batch_190910-103039`. Monitor: `python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/oracle_180709_E/phase1_cert_network` |
+| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Pipeline ✅ complete. **`prove-exact-sequence` failed on energy:** same shape `[64,256,256]`, sample values MATLAB ≈ −20 vs Python ≈ −0.004 |
+
+**Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
+
+### Operator commands
+
+```powershell
+# Monitor canonical run
+python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
+
+# Resume canonical (single process)
+python scripts/cli/parity_experiment.py resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --stop-after network --skip-preflight
+
+# Re-prove crop harness after energy fix
+python scripts/cli/parity_experiment.py prove-exact-sequence `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M
+```
+
+---
+
+## 📚 Compound learnings (parity-related)
+
+Curated index of solved problems under `docs/solutions/` (from `/ce-compound`). Search all solutions via YAML frontmatter (`module`, `tags`, `problem_type`); see [docs/solutions/README.md](../../../solutions/README.md).
+
+| Topic | Doc |
+|-------|-----|
+| MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
+
+_Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._
 
 ---
 
@@ -26,9 +71,7 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 
 A major architectural breakthrough was achieved in May 2026, dramatically narrowing the discrepancy gap in edge candidate generation.
 
-**Phase 1 certification run (active)**: `workspace/runs/oracle_180709_E/phase1_cert_network` — native exact route, `npy` energy storage, oracle `180709_E_batch_190910-103039`. **Resume** (single process): `parity_experiment.py resume-exact-run` with logs under `workspace/runs/phase1_cert_network_resume.*.log`. Monitor: `python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/oracle_180709_E/phase1_cert_network`. Do not run `init-exact-run` and `resume-exact-run` on the same dest root concurrently.
-
-**Champion experiment path (edges baseline)**: `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
+_See [Active Phase 1 operations](#-active-phase-1-operations) for current run paths and status._
 
 ### The Solution: Parameter Alignment & NaN Stability
 - **Parameter Alignment (v29)**: Discovered that the MATLAB oracle was generated with `edge_number_tolerance = 4`, while Python was hardcoded to 2. Aligning this parameter allowed high-degree vertices (hubs) to initiate sufficient exploratory traces.
@@ -84,11 +127,11 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ---
 
-## 🚀 Active Blockers & Immediate Next Steps
+## 🚀 Active blockers
 
-While the 88.7% match rate is a milestone, we must close the remaining **135 missing pairs**.
+1. **Crop harness energy proof** — `prove-exact-sequence` fails at energy on `crop_M_exact` (magnitude mismatch). Blocks tier-2 pre-gate until resolved (params, sign/scale, or HDF5 plane semantics).
+2. **Canonical run completion** — Finish `phase1_cert_network` through network with a single writer; then run `prove-exact-sequence` on full `180709_E`.
+3. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
 
-1.  **Certification v2.0**: Complete the ongoing certification run on `180709_E` to verify bit-accurate tie-breaking.
-2.  **Hub Vertex Complexities**: Audit high-degree junction exploration logic where branching decisions diverge near high-density clusters.
-3.  **Run Final Proof Loop**: Once Edge closures improve beyond 95%, execute `prove-exact --stage all` to lock down full pipeline certification.
+**Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

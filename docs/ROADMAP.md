@@ -1,20 +1,22 @@
-# SLAVV Python Developer Command Center & Roadmap
+# SLAVV Python Roadmap & Status
 
-**Date:** 2026-05-20  
+**Date:** 2026-05-28  
 **Version:** 0.1.0 (Beta)  
 **Python:** ≥3.11  
 **License:** GPL-3.0
 
-This document serves as the central command center, official roadmap, engineering objectives, and project status for the **SLAVV (Strand Localization and Vessel Vectorization)** Python codebase.
+Narrative roadmap and project status for **SLAVV (Strand Localization and Vessel Vectorization)**. **Open tasks and checkboxes live only in [TODO.md](TODO.md)** — do not add new task lists here.
 
-## Navigation & Architecture
+## Navigation
 
 | Link | Purpose |
 | :--- | :--- |
-| [Live Proof Status](reference/core/EXACT_PROOF_FINDINGS.md) | Current v22 readouts and regression failures |
-| [Investigation Findings](investigations/translation_pair_analysis/INVESTIGATION_FINDINGS.md) | Deep analysis of missing/extra translation pairs |
-| [Policy & Implementation Phases](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Canonical claim boundaries and long-term roadmap |
-| [Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md) | Module-for-module structure against MATLAB |
+| **[Developer dashboard (tasks)](TODO.md)** | Active checkboxes, Phase 1 status, planning hub |
+| [Live proof status](reference/core/EXACT_PROOF_FINDINGS.md) | Per-stage exact-parity state and blockers |
+| [Phase 1 spec](plans/phase-1-exact-route-spec.md) | Requirements + implementation for exact-route certification |
+| [Investigation findings](investigations/translation_pair_analysis/INVESTIGATION_FINDINGS.md) | Historical missing/extra pair analysis |
+| [Policy & implementation phases](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries and long-term phases |
+| [Parity mapping](reference/core/MATLAB_PARITY_MAPPING.md) | Module-for-module structure against MATLAB |
 
 ### What Is This Project?
 SLAVV is a Python port of a published MATLAB algorithm for extracting 3D vascular networks from microscopy volumes. The pipeline takes a TIFF volume as input, computes multi-scale energy fields, extracts vertices and edges via a global watershed, assembles a network graph, and exports an authoritative `network.json` for downstream analysis and visualization.
@@ -37,50 +39,27 @@ The project has two parallel goals:
 |:--|:------|:------------|:---------------:|:------------:|:-------------|
 | 1 | **Energy** | Multi-scale Hessian matched filtering | ✅ Complete | ✅ Complete | Native `python_native_hessian` is bit-accurate |
 | 2 | **Vertices** | Local minima extraction & painting | ✅ Complete | ✅ Verified | Successfully certified for downstream |
-| 3 | **Edges** | Global watershed → tracing → selection | ✅ Complete | ⚠️ 88.7% | 1,062 / 1,197 pairs matched (v32 Precision Fix) |
-| 4 | **Network** | Graph assembly & strand smoothing | ✅ Complete | ⏳ Pending | Verified end-to-end; proof pending edge closure |
+| 3 | **Edges** | Global watershed → tracing → selection | ✅ Complete | 🟡 In progress | v29 baseline ~88.7% pair match; Phase 1 bar is **strict zero** via `prove-exact` |
+| 4 | **Network** | Graph assembly & strand smoothing | ✅ Complete | ⏳ Pending | End-to-end verified; sequential proof pending upstream gates |
 
-**Public Workflow Verified:** `slavv run`, `slavv analyze`, `slavv plot`, and `slavv-app` (Streamlit) are all verified end-to-end as of May 21, 2026.
+**Public workflow verified (2026-05-21):** `slavv run`, `slavv analyze`, `slavv plot`, and `slavv-app` (Streamlit).
 
-## Active Priority Queue & TODOs
+**Current parity focus:** Phase 1 exact-route [Certification](AGENTS.md#certification) on full `180709_E` — **status:** [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) · **tasks:** [TODO.md](TODO.md). Informal edge match rate is a diagnostic baseline, not the exit criterion.
 
-> **Core Strategy:** The parity track is impressive engineering (14% → 88.7%), but the public product priority must remain stable. We focus on a balanced approach: Maintain Public Workflow Stability (Critical) while pursuing Parallel Active Parity Track (High).
+## Strategy (unchanged)
 
-### 🔴 Priority 1: Prove the Product Works (PAPER-001)
-**Status: COMPLETE (Verified & Locked 2026-05-21)**
+The parity track moved from ~14% to ~88.7% pair match on edges, while the public product path stays stable. **Product-first, parity-parallel:** paper workflow remains shippable; exact route pursues MATLAB-equivalence under strict gates.
 
-- [x] **End-to-End Pipeline Execution:** Verify `slavv run` completes end-to-end and writes structured run directories.
-- [x] **Downstream Consumers:** Verify `slavv analyze` and `slavv plot` are fully functional.
-- [x] **Interactive UI:** Verify `slavv-app` successfully starts on port 8501.
-- [x] **Import Resolution:** Resolved systemic `ImportError`s across analytics, storage, and interface packages.
-- [x] **Integration Testing:** Write a paper-profile integration test (`test_paper_profile.py`).
-- [x] Add integration test covering the native `paper` profile pipeline (TIFF-to-network-to-export) in the CI/CD regression gate.
+## Completed milestones (archive)
 
-### 🟡 Priority 2: Stabilize & Document What We Have
-**Status: COMPLETE (100% Test Pass Rate)**
+| Era | ID | Outcome |
+|-----|-----|---------|
+| 2026-05-21 | PAPER-001 | End-to-end `slavv run` / analyze / plot / app; paper-profile CI integration test |
+| 2026-05-21 | Stabilization | Quality gate green (ruff, mypy, pytest); typed results migration |
+| 2026-05-22 | PARITY-002/003 | Bit-accurate tie-breaking, strel alignment, distance cutoffs, precision fixes |
 
-- [x] **Verify test suite passes** — 100% test pass rate achieved (340 unit tests, 13 integration tests passing).
-- [x] **Verify quality gate passes** — Linting (Ruff), Type Checking (Mypy), and Tests (Pytest) are all green.
-- [x] **Clean up CHANGELOG.md** — Documented stabilization work and typed object migration.
-- [x] **Confirm `pyproject.toml` entrypoints resolve**
-- [x] **CI/CD** — Added GitHub Actions workflow (`.github/workflows/regression-gate.yml`) with synthetic integration tests.
-- [x] **Documentation** — Authored comprehensive `docs/TUTORIAL.md`.
-- [x] **Restore ML Components** — Verified ML curator logic and feature extraction.
-- [x] **Refine Test Suite** — Resolved typed object attribute mismatches and resumable extraction bugs.
+Architectural alignment on edges is **done**; remaining work is **certification** (sequential `prove-exact-sequence`), tracked in [TODO.md](TODO.md).
 
-### 🟢 Priority 3: Continue Parity Work (PARITY-002/003)
-**Status: COMPLETE (100% Architectural Alignment)**
+## Deferred themes (not scheduled here)
 
-The remaining 11.3% gap is a **structural tie-breaking divergence**. When multiple voxels on the watershed expansion frontier have identical penalized energies, Python and MATLAB must select the exact same voxel. 
-
-- [x] **Hub vertex tie-breaking** — Added secondary sort key (Fortran-order linear index) to the frontier priority queue and enforced bit-exact equality.
-- [x] **Strel loop order verification** — Confirmed Python's `(Z, X, Y)` scanline matches MATLAB's argmin behavior for energy ties.
-- [x] **Candidate filtering alignment (Measure 3)** — Tightened expansion with hard distance cutoffs ($d/R > 3.0$) and updated edge influence sigmas to $2/3$.
-- [x] **Bit-Accurate Precision** — Removed precision leaks (float32 casts) in watershed suppression, tolerance checks, and trace sampling.
-- [ ] **Run full proof** — `prove-exact --stage all` once parity exceeds 95% on local oracle datasets.
-
-### ⚪ Priority 4: Future Work
-- [ ] **Performance (PERF-001)** — Resume `O(N²) → O(log N)` frontier optimization after parity stabilizes.
-- [ ] **Dataset expansion** — Retrieve full TIFF volumes via `git annex get external/` for multi-dataset stability testing.
-- [ ] **Curation Alignments** — Verify ML feature extraction and automated thresholds are perfectly aligned.
-- [ ] **Production Release** — Promote the stable vectorization engine to standard academic & research deployment with green CI/CD.
+Performance (`O(log N)` frontier), neurovasc-db dataset expansion, ML curation alignment, and production release are listed in [TODO.md](TODO.md) under “next” when Phase 1 gates close.

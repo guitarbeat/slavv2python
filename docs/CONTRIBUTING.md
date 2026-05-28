@@ -71,5 +71,5 @@ If you are modifying core vascular discovery logic (e.g., in `global_watershed.p
 
 ## Need Help?
 
-- Check [README.md](README.md) and [docs/README.md](docs/README.md) for more info.
+- Check [README.md](../README.md) and [Documentation index](README.md) for more info.
 - Open an issue for questions or suggestions.

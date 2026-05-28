@@ -1,4 +1,4 @@
-# GEMINI.md Format
+# docs/AGENTS.md glossary format
 
 ## Structure
 
@@ -34,7 +34,7 @@ _Avoid_: Client, buyer, account
 
 ## Single vs multi-context repos
 
-**Single context (most repos):** One `GEMINI.md` at the repo root.
+**Single context (this repo):** One `docs/AGENTS.md` for domain glossary and agent instructions.
 
 **Multiple contexts:** A `CONTEXT-MAP.md` at the repo root lists the contexts, where they live, and how they relate to each other:
 
@@ -57,7 +57,7 @@ _Avoid_: Client, buyer, account
 The skill infers which structure applies:
 
 - If `CONTEXT-MAP.md` exists, read it to find contexts
-- If only a root `GEMINI.md` exists, single context
-- If neither exists, create a root `GEMINI.md` lazily when the first term is resolved
+- If only `docs/AGENTS.md` exists, single context
+- If neither exists, create `docs/AGENTS.md` lazily when the first term is resolved
 
 When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.

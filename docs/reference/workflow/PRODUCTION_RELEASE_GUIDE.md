@@ -22,7 +22,7 @@ The GitHub Actions `regression-gate.yml` must pass for the `main` branch.
 - **Tests**: `pytest` (100% pass rate, including synthetic integration tests).
 
 ### 3. Documentation Alignment
-- `CHANGELOG.md` must be updated with all notable changes since the last version.
+- [CHANGELOG.md](../../CHANGELOG.md) must be updated with all notable changes since the last version.
 - `ROADMAP.md` priorities must reflect the current state.
 - `TUTORIAL.md` must be verified against the live CLI and app interface.
 
@@ -56,7 +56,7 @@ Copy-Item workspace/runs/v32_final/report.json workspace/reports/CERTIFICATION_V
 ### Step 4: Tag and Commit
 Tag the release in the git repository.
 ```powershell
-git add pyproject.toml CHANGELOG.md workspace/reports/
+git add pyproject.toml docs/CHANGELOG.md workspace/reports/
 git commit -m "Release v0.1.0: Final bit-accurate parity baseline"
 git tag -a v0.1.0 -m "Vascular vectorization engine stable beta"
 ```

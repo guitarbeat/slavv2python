@@ -48,7 +48,7 @@ This investigation systematically analyzed the discrepancy between MATLAB and Py
 
 ### Baseline Discrepancy Resolution
 
-The claimed 41.4% baseline in TODO.md was found to be inaccurate:
+The claimed 41.4% baseline in docs/TODO.md was found to be inaccurate:
 - **Actual Previous Baseline:** 12.4% (may2026_fixes)
 - **Current Baseline:** 33.8% (trace_order_fix)
 - **Conclusion:** 41.4% claim appears to be projection or older experiment
@@ -102,8 +102,8 @@ The claimed 41.4% baseline in TODO.md was found to be inaccurate:
 
 ## Related Documentation
 
-- **Sprint Plan:** `SPRINT_PLAN.md` (Merged into `TODO.md`)
-- **TODO List:** `TODO.md`
+- **Sprint Plan:** `SPRINT_PLAN.md` (Merged into `docs/TODO.md`)
+- **TODO List:** `docs/TODO.md`
 - **Exact Proof Findings:** `docs/reference/core/EXACT_PROOF_FINDINGS.md`
 - **MATLAB Parity Mapping:** `docs/reference/core/MATLAB_PARITY_MAPPING.md`
 
@@ -113,7 +113,7 @@ The claimed 41.4% baseline in TODO.md was found to be inaccurate:
 2. Run parity experiment after Measure 1 to measure improvement
 3. Proceed with Measures 2 and 3 based on results
 4. Document all findings in EXACT_PROOF_FINDINGS.md
-5. Update TODO.md with accurate baseline information
+5. Update docs/TODO.md with accurate baseline information
 
 ---
 

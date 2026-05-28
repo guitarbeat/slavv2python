@@ -10,10 +10,10 @@ they were still active.
 
 For current behavior and proof status, prefer:
 
-- [README.md](README.md)
-- [GEMINI.md](GEMINI.md)
-- [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
-- [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
+- [README.md](../README.md)
+- [AGENTS.md](AGENTS.md)
+- [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
+- [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
 ## [Unreleased] - 2026-05-27
 

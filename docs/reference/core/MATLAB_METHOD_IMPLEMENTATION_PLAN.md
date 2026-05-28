@@ -165,7 +165,7 @@ Acceptance gate:
 ## Current File-Level Gap Checklist
 
 > [!TIP]
-> The real-time checklist with exact source links and validation commands is now actively managed in the root [TODO.md Developer Dashboard](../../../TODO.md).
+> The real-time task checklist and planning hub (plans, brainstorms, compound solutions) live in the [TODO.md Developer Dashboard](../../TODO.md). Live per-stage proof status is in [EXACT_PROOF_FINDINGS.md](EXACT_PROOF_FINDINGS.md).
 
 These are the reference surfaces still under investigation:
 

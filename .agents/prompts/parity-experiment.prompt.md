@@ -46,7 +46,7 @@ Return:
 2. **Stage breakdown**: Which stages passed/failed
 3. **Gap analysis**: Top discrepant vertices/edges if applicable
 4. **Regression check**: Whether changes improved, maintained, or regressed parity
-5. **Recommended next step**: Based on ROADMAP.md priority queue
+5. **Recommended next step**: Based on docs/TODO.md checklist
 
 ## Guardrails
 - Do not modify parity code during a measurement run.

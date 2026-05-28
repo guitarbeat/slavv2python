@@ -1,6 +1,6 @@
 # SLAVV Python
 
-> 🔴 **Active Developer Priority:** [Project Roadmap & Status](docs/ROADMAP.md) (Product-first health track).
+> 🔴 **Active developer work:** [TODO.md](docs/TODO.md) (tasks & planning hub). [Roadmap & status](docs/ROADMAP.md) for narrative and milestones.
 
 Python implementation of SLAVV for 3D vascular network extraction from
 microscopy volumes. The public workflow is paper-first: run the native Python
@@ -63,7 +63,9 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 ## Documentation
 
 - [Project Roadmap & Status](docs/ROADMAP.md)
-- [AGENTS.md](GEMINI.md)
+- [Agent and workflow guide](docs/AGENTS.md)
+- [Developer dashboard (tasks)](docs/TODO.md)
+- [Contributing](docs/CONTRIBUTING.md)
 - [Documentation Index](docs/README.md)
 - [Reference Docs](docs/reference/README.md)
 - [Paper Profile Workflow](docs/reference/workflow/PAPER_PROFILE.md)
@@ -73,7 +75,7 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 - [v22 Pointer Corruption Archive](docs/investigations/v22-pointer-corruption/README.md)
 - [Test Placement Guide](tests/README.md)
-- [CHANGELOG.md](CHANGELOG.md)
+- [CHANGELOG.md](docs/CHANGELOG.md)
 
 ## Notes
 

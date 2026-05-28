@@ -16,7 +16,7 @@ Always read these before making parity changes:
 - `docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md` — Claim boundaries and phase status
 - `docs/reference/core/MATLAB_PARITY_MAPPING.md` — Function-to-function mapping
 - `docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md` — Run-root layout conventions
-- `docs/ROADMAP.md` — Active parity measures and priority queue
+- `docs/TODO.md` — Active tasks and Phase 1 status; `docs/ROADMAP.md` — narrative milestones only
 - `external/Vectorization-Public/` — Canonical MATLAB source (submodule)
 
 ## Key Module Locations
