@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from slavv_python.engine.lifecycle import (
+from slavv_python.processing.stages.edges.frontier_events import (
     _build_frontier_candidate_lifecycle,
 )
 from slavv_python.processing.stages.edges.audit import (

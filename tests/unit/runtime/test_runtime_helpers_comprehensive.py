@@ -13,7 +13,7 @@ from tests.support.run_state_builders import build_run_context
 
 from slavv_python.engine.state import RunContext
 from slavv_python.engine.state.layout import resolve_run_layout
-from slavv_python.engine.state.lifecycle import (
+from slavv_python.engine.state.snapshot_lifecycle import (
     begin_stage_snapshot,
     complete_stage_snapshot,
     fail_stage_snapshot,

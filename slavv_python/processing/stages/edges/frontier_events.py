@@ -1,4 +1,4 @@
-"""Frontier lifecycle artifact helpers."""
+"""Frontier tracing lifecycle Artifact helpers for Edge Discovery audits."""
 
 from __future__ import annotations
 

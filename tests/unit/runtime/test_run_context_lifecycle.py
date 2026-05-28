@@ -18,7 +18,7 @@ from slavv_python.engine.state.tracker import (
 def test_run_context_persists_snapshot_lifecycle(tmp_path, monkeypatch):
     run_dir = tmp_path / "run"
     monkeypatch.setattr(
-        "slavv_python.engine.context.RunContext._sample_process_memory_bytes",
+        "slavv_python.engine.state.run_ledger.RunContext._sample_process_memory_bytes",
         staticmethod(lambda: 4096),
     )
     context = build_run_context(

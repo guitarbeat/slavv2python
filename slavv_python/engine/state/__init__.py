@@ -1,7 +1,8 @@
 import typing
 
 if typing.TYPE_CHECKING:
-    from ..context import RunContext, StageController
+    from .run_ledger import RunContext
+    from .stage_handle import StageController
 
 from .models import ProgressEvent, RunSnapshot, StageSnapshot, TaskSnapshot
 from .snapshots import emit_progress_event, load_or_create_snapshot, persist_snapshot

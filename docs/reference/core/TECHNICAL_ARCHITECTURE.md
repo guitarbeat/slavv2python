@@ -23,7 +23,8 @@ Run lifecycle lives in `slavv_python.engine.state`:
 
 - **`run_ledger.py`** — `RunContext` (fingerprints, resume policy, snapshot persistence).
 - **`stage_handle.py`** — `StageController` (checkpoint paths, `begin` / `update` / `complete`, `resume_state.json`).
-- **`engine/context.py`** — stable re-export barrel for legacy `from slavv_python.engine.context import …` imports.
+- **`snapshot_lifecycle.py`** — snapshot mutation helpers (`begin_stage_snapshot`, `complete_stage_snapshot`, etc.).
+- Import `RunContext` / `StageController` from `slavv_python.engine` or `slavv_python.engine.state` (not a separate barrel module).
 
 - **Resumable State**: Fingerprints of input images and parameters determine whether a cached stage result can be reused.
 - **StageController**: Each stage receives a controller that provides paths for artifacts (checkpoints, metrics, logs) and manages progress reporting.

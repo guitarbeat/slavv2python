@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from slavv_python.engine.constants import STATUS_FAILED
-from slavv_python.engine.context import RunContext, StageController
+from slavv_python.engine.state.run_ledger import RunContext
+from slavv_python.engine.state.stage_handle import StageController
 from slavv_python.engine.executor import StageExecutor
 from slavv_python.engine.state.run_state import RunState
 from slavv_python.schema.results import EnergyResult, VertexSet

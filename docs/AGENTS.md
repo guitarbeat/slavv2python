@@ -91,11 +91,11 @@ _Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in
 ```text
 slavv2python/
 ├── slavv_python/                       # Main package
-│   ├── engine/                         # Pipeline orchestration & lifecycle
-│   │   ├── context.py                  # Re-export barrel (RunContext, StageController)
+│   ├── engine/                         # Pipeline orchestration & run ledger
 │   │   └── state/                      # Run tracking, snapshots, resume
 │   │       ├── run_ledger.py           # RunContext implementation
-│   │       └── stage_handle.py         # StageController implementation
+│   │       ├── stage_handle.py         # StageController implementation
+│   │       └── snapshot_lifecycle.py   # Snapshot begin/complete/fail helpers
 │   ├── processing/                     # Scientific computation
 │   │   ├── image/                      # Normalization, tiling
 │   │   └── stages/                     # Pipeline stages
@@ -110,6 +110,7 @@ slavv2python/
 │   │       │   ├── frontier_geometry.py # Tracing Discovery MATLAB geometry
 │   │       │   ├── matlab_indexing.py  # Lowest Linear Index Priority helpers
 │   │       │   ├── candidate_payload.py # Candidate manifest shaping
+│   │       │   ├── frontier_events.py  # Frontier tracing lifecycle artifacts
 │   │       │   ├── manager.py          # Edge lifecycle (run + run_resumable)
 │   │       │   └── matlab_algorithms/  # MATLAB-shaped parity shims
 │   │       └── network/               # Strand assembly, graph construction

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
+from slavv_python.processing.stages.edges.frontier_events import _build_frontier_candidate_lifecycle
 from slavv_python.processing.stages.edges.candidate_payload import (
     _candidate_endpoint_pair_set,
     _candidate_incident_pair_counts,

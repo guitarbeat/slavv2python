@@ -305,7 +305,9 @@ class EdgeManager:
         ).copy()
 
         if resumable:
-            from slavv_python.engine.lifecycle import _build_frontier_candidate_lifecycle
+            from slavv_python.processing.stages.edges.frontier_events import (
+                _build_frontier_candidate_lifecycle,
+            )
             from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
             if use_frontier and manifest.frontier_lifecycle_events:
