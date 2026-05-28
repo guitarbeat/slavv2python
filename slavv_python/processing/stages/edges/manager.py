@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
+from slavv_python.processing.stages.edges.artifacts import resolve_edge_candidate_persistence
 from slavv_python.processing.stages.edges.audit import (
     _build_edge_candidate_audit,
     _normalize_candidate_origin_counts,
@@ -194,9 +195,6 @@ class EdgeManager:
         candidates = manifest.to_payload()
 
         if resumable:
-            from slavv_python.analytics.parity.matlab_fail_fast import (
-                build_candidate_snapshot_payload,
-            )
             from slavv_python.engine.state.tracker import atomic_joblib_dump, atomic_write_json
 
             if use_frontier:
@@ -228,13 +226,15 @@ class EdgeManager:
             )
             atomic_joblib_dump(candidates, handle.artifact_path("candidates.pkl"))
             if use_frontier and stage_controller is not None:
-                candidate_checkpoint_path = (
-                    stage_controller.run_context.checkpoints_dir / "checkpoint_edge_candidates.pkl"
-                )
-                atomic_joblib_dump(
-                    build_candidate_snapshot_payload(candidates),
-                    candidate_checkpoint_path,
-                )
+                run_context = stage_controller.run_context
+                if run_context is not None:
+                    resolve_edge_candidate_persistence(
+                        params,
+                        use_frontier=True,
+                    ).write_candidate_checkpoint(
+                        run_context.checkpoints_dir,
+                        candidates,
+                    )
             handle.update(
                 units_total=3,
                 units_completed=1,

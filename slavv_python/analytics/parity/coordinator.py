@@ -16,17 +16,16 @@ from slavv_python.analytics.parity.matlab_exact_proof import (
 )
 from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_coverage_report,
-    build_candidate_snapshot_payload,
     render_candidate_coverage_report,
 )
 from slavv_python.engine.state import (
-    atomic_joblib_dump,
     fingerprint_file,
     load_json_dict,
 )
 from slavv_python.processing.stages.edges.manager import EdgeManager
 from slavv_python.schema.results import EnergyResult, VertexSet
 
+from .edge_artifacts import ParityEdgeCandidatePersistence
 from .constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     CANDIDATE_COVERAGE_TEXT_PATH,
@@ -43,11 +42,8 @@ from .counts import (
     extract_source_python_counts,
     read_python_counts_from_run,
 )
-from .execution import (
-    ensure_dest_run_layout,
-    persist_param_storage,
-    write_run_manifest,
-)
+from .params_audit import persist_param_storage
+from .surfaces import ensure_dest_run_layout, write_run_manifest
 from .models import ExactProofSourceSurface  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -280,10 +276,11 @@ class ExactProofCoordinator:
             }
         )
 
-        snapshot_payload = build_candidate_snapshot_payload(
-            candidates, include_debug_maps=include_debug_maps
+        snapshot_payload = ParityEdgeCandidatePersistence().write_candidate_checkpoint(
+            dest_run_root / CHECKPOINTS_DIR,
+            candidates,
+            include_debug_maps=include_debug_maps,
         )
-        atomic_joblib_dump(snapshot_payload, dest_run_root / EDGE_CANDIDATE_CHECKPOINT_PATH)
 
         matlab_edges = None
         if self.source_surface.matlab_batch_dir:

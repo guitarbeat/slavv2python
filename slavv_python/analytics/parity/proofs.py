@@ -19,7 +19,7 @@ from .constants import (
     EDGE_REPLAY_PROOF_JSON_PATH,
     LUT_PROOF_JSON_PATH,
 )
-from .execution import load_oracle_surface, write_run_manifest
+from .surfaces import load_oracle_surface, write_run_manifest
 from .models import ExactProofSourceSurface, OracleSurface
 
 if TYPE_CHECKING:
@@ -51,12 +51,44 @@ def run_exact_preflight(
     dest_run_root: Path,
     *,
     oracle_root: Path | None = None,
+    dataset_root: Path | None = None,
     memory_safety_fraction: float = 0.8,
     force: bool = False,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the exact-route preflight check."""
-    del source_run_root, dest_run_root, oracle_root, memory_safety_fraction, force
-    return {"passed": True}, None, None
+    from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
+    from .preflight import run_exact_preflight_for_surfaces
+
+    dest = dest_run_root.expanduser().resolve()
+    source = source_run_root.expanduser().resolve()
+
+    dataset_surface = (
+        load_dataset_surface(dataset_root.expanduser().resolve()) if dataset_root else None
+    )
+    oracle_surface = (
+        load_oracle_surface(oracle_root.expanduser().resolve()) if oracle_root else None
+    )
+
+    params = None
+    for root in (dest, source):
+        candidate = root / "99_Metadata" / "validated_params.json"
+        if candidate.is_file():
+            from slavv_python.engine.state import load_json_dict
+
+            params = load_json_dict(candidate)
+            if params is not None:
+                break
+
+    ensure_dest_run_layout(dest)
+    return run_exact_preflight_for_surfaces(
+        dest,
+        dataset_surface=dataset_surface,
+        oracle_surface=oracle_surface,
+        params=params,
+        memory_safety_fraction=memory_safety_fraction,
+        force=force,
+        persist=True,
+    )
 
 
 def run_candidate_capture(
@@ -128,11 +160,12 @@ def run_lut_proof(
     """Orchestrate the LUT parity proof."""
     from slavv_python.analytics.parity.matlab_fail_fast import load_builtin_lut_fixture
 
-    from . import execution as execution_module
+    from .params_audit import load_params_file
+    from .surfaces import validate_exact_proof_source_surface
     from .utils import write_json_with_hash
 
-    source_surface = execution_module.validate_exact_proof_source_surface(source_run_root)
-    params = execution_module.load_params_file(source_surface, None)
+    source_surface = validate_exact_proof_source_surface(source_run_root)
+    params = load_params_file(source_surface, None)
 
     energy_payload = _load_exact_energy_payload(source_surface)
     source_inputs = {
@@ -185,6 +218,7 @@ def build_exact_preflight_report(
     dest_run_root: Path,
     *,
     oracle_root: Path | None = None,
+    dataset_root: Path | None = None,
     memory_safety_fraction: float = 0.8,
     force: bool = False,
 ) -> dict[str, Any]:
@@ -193,6 +227,7 @@ def build_exact_preflight_report(
         source_run_root=source_run_root,
         dest_run_root=dest_run_root,
         oracle_root=oracle_root,
+        dataset_root=dataset_root,
         memory_safety_fraction=memory_safety_fraction,
         force=force,
     )[0]

@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Exact-route parity orchestration was split across `execution.py` (~800 lines), `proofs.py` (candidate capture calling frontier internals directly), and duplicate `RunCounts` helpers in `execution.py` vs `reports.py` with incompatible report key shapes.
+Exact-route parity orchestration was split across a monolithic `execution.py`, `proofs.py` (candidate capture calling frontier internals directly), and duplicate `RunCounts` helpers with incompatible report key shapes. `execution.py` is now a thin facade over `params_audit.py`, `surfaces.py`, and `bootstrap.py`.
 
 ## Decision
 1. **`ExactProofCoordinator`** (`analytics/parity/coordinator.py`) — `prove()`, `capture_candidates()`, `prepare_dest_run()`, typed loaders for exact energy/vertices.
@@ -15,4 +15,4 @@ Exact-route parity orchestration was split across `execution.py` (~800 lines), `
 ## Consequences
 - One locality for prove/capture orchestration and count normalization.
 - Parity reruns use the same Edge Discovery interface as production.
-- `run_exact_preflight` remains a stub until a later ADR defines memory-gate behavior.
+- `run_exact_preflight` enforces memory gate, params audit, and provenance checks; see `analytics/parity/preflight.py` and `resume-exact-run`.

@@ -104,14 +104,28 @@ Unchanged from [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md):
 
 **Parallelism:** Crop harness work may run while a canonical run (e.g. `phase1_cert_network`) is in progress or resumed. Passing crop does not replace canonical certification.
 
+**Preflight** before a long exact-route run (memory gate + params audit):
+
+```powershell
+python scripts/cli/parity_experiment.py preflight-exact `
+  --source-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --dataset-root workspace/datasets/<canonical_dataset_hash> `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039
+```
+
 **Resume canonical run** when `init-exact-run` reports the seed run is still active but no Python process is running:
 
 ```powershell
-python scripts/cli/resume_pipeline_run.py `
-  --run-dir workspace/runs/oracle_180709_E/phase1_cert_network `
-  --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
+python scripts/cli/parity_experiment.py resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --stop-after network
 ```
+
+Or `init-exact-run ... --resume` with the same `--dataset-root`, `--oracle-root`, and `--dest-run-root` as the original bootstrap.
+
+Legacy helper `scripts/cli/resume_pipeline_run.py` delegates to `resume-exact-run` when `99_Metadata/experiment_provenance.json` exists.
 
 ---
 

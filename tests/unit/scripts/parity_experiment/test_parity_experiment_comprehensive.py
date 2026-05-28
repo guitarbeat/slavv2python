@@ -262,11 +262,11 @@ def test_run_prove_luts_skips_when_mismatched(tmp_path, monkeypatch):
     )
 
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.execution.validate_exact_proof_source_surface",
+        "slavv_python.analytics.parity.surfaces.validate_exact_proof_source_surface",
         lambda *_args, **_kwargs: source_surface,
     )
     monkeypatch.setattr(
-        "slavv_python.analytics.parity.execution.load_params_file",
+        "slavv_python.analytics.parity.params_audit.load_params_file",
         lambda _surface, _params_arg=None: {"microns_per_voxel": [1.0, 1.0, 1.0]},
     )
     monkeypatch.setattr(

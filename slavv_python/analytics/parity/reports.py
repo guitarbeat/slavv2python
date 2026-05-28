@@ -265,11 +265,25 @@ def render_exact_preflight_report(report_payload: dict[str, Any]) -> str:
         "Exact preflight report",
         f"Status: {status}",
     ]
+    if report_payload.get("forced"):
+        lines.append("Force: memory gate override enabled")
+    memory_gate = report_payload.get("memory_gate")
+    if isinstance(memory_gate, dict):
+        required_gb = memory_gate.get("required_bytes", 0) / (1024**3)
+        budget_gb = memory_gate.get("budget_bytes", 0) / (1024**3)
+        lines.append(
+            f"Memory gate: required {required_gb:.2f} GiB <= budget {budget_gb:.2f} GiB "
+            f"({'pass' if memory_gate.get('passed') else 'fail'})"
+        )
+    for error in report_payload.get("errors", []):
+        lines.append(f"Error: {error}")
     if "error" in report_payload:
         lines.append(f"Error: {report_payload['error']}")
-    if "warnings" in report_payload:
-        for warning in report_payload["warnings"]:
-            lines.append(f"Warning: {warning}")
+    for warning in report_payload.get("warnings", []):
+        lines.append(f"Warning: {warning}")
+    snapshot_status = (report_payload.get("checks") or {}).get("run_snapshot_status")
+    if snapshot_status:
+        lines.append(f"Run snapshot status: {snapshot_status}")
     return "\n".join(lines)
 
 

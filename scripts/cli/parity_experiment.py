@@ -28,6 +28,7 @@ from slavv_python.analytics.parity.cli import (
     handle_prove_luts,
     handle_replay_edges,
     handle_rerun_python,
+    handle_resume_exact_run,
     handle_summarize,
     handle_trace_vertex,
 )
@@ -132,11 +133,28 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--source-run-root", required=True)
     preflight.add_argument("--oracle-root")
     preflight.add_argument("--dest-run-root", required=True)
+    preflight.add_argument("--dataset-root")
     preflight.add_argument(
         "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
     )
     preflight.add_argument("--force", action="store_true")
     preflight.set_defaults(handler=handle_preflight_exact)
+
+    # Resume Exact Run
+    resume_run = subparsers.add_parser(
+        "resume-exact-run",
+        help="Resume an interrupted init-exact-run after preflight checks.",
+    )
+    resume_run.add_argument("--dest-run-root", required=True)
+    resume_run.add_argument("--dataset-root")
+    resume_run.add_argument("--oracle-root")
+    resume_run.add_argument("--stop-after", default="network")
+    resume_run.add_argument(
+        "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
+    )
+    resume_run.add_argument("--force", action="store_true")
+    resume_run.add_argument("--skip-preflight", action="store_true")
+    resume_run.set_defaults(handler=handle_resume_exact_run)
 
     # Prove LUTs
     luts = subparsers.add_parser("prove-luts")
@@ -201,6 +219,16 @@ def build_parser() -> argparse.ArgumentParser:
     init_run.add_argument("--dest-run-root", required=True)
     init_run.add_argument("--stop-after", default="vertices")
     init_run.add_argument("--energy-storage-format", default="npy")
+    init_run.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume a stale running snapshot in an existing dest run root.",
+    )
+    init_run.add_argument(
+        "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
+    )
+    init_run.add_argument("--force", action="store_true")
+    init_run.add_argument("--skip-preflight", action="store_true")
     init_run.set_defaults(handler=handle_init_exact_run)
 
     # Dedupe Index

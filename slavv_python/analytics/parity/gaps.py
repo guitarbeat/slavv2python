@@ -14,7 +14,7 @@ from .constants import (
     GAP_DIAGNOSIS_JSON_PATH,
     GAP_DIAGNOSIS_TEXT_PATH,
 )
-from .execution import ensure_dest_run_layout
+from .surfaces import ensure_dest_run_layout
 from .utils import (
     now_iso,
     write_hash_sidecar,

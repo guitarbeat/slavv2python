@@ -15,15 +15,20 @@ from .constants import (
     SUMMARY_TEXT_PATH,
 )
 from .coordinator import ExactProofCoordinator
-from .execution import (
-    copy_source_surface,
+from .bootstrap import (
+    _copy_exact_bootstrap_refs,
+    _finalize_init_exact_run,
+    _reorient_exact_input_volume,
+    _resolve_existing_init_exact_run,
     derive_exact_params_from_oracle,
+    maybe_sync_exact_vertex_checkpoint,
+)
+from .params_audit import load_params_file, persist_param_storage
+from .surfaces import (
+    copy_source_surface,
     ensure_dest_run_layout,
     load_dataset_surface,
     load_oracle_surface,
-    load_params_file,
-    maybe_sync_exact_vertex_checkpoint,
-    persist_param_storage,
     resolve_input_file,
     validate_source_run_surface,
     write_run_manifest,
@@ -38,6 +43,8 @@ from .proofs import (
     run_exact_preflight,
     run_lut_proof,
 )
+from .preflight import run_exact_preflight_for_surfaces
+from .resume import resume_exact_run
 from .reports import (
     build_experiment_summary,
     extract_matlab_counts,
@@ -45,6 +52,7 @@ from .reports import (
     persist_experiment_summary,
     persist_recording_tables,
     read_python_counts_from_run,
+    render_exact_preflight_report,
     render_experiment_summary,
 )
 from .utils import (
@@ -298,17 +306,37 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
 
 def handle_preflight_exact(args: argparse.Namespace) -> None:
     """Verify that a destination run root is ready for an exact proof."""
-    report, _, _ = run_exact_preflight(
+    report, json_path, text_path = run_exact_preflight(
         source_run_root=Path(args.source_run_root),
         dest_run_root=Path(args.dest_run_root),
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+        dataset_root=Path(args.dataset_root) if getattr(args, "dataset_root", None) else None,
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
     )
+    print(render_exact_preflight_report(report))
+    if json_path is not None:
+        print(str(json_path))
+    if text_path is not None:
+        print(str(text_path))
     if not report.get("passed"):
         import sys
 
         sys.exit(1)
+
+
+def handle_resume_exact_run(args: argparse.Namespace) -> None:
+    """Resume a stale or interrupted init-exact-run directory."""
+    dest_run_root = resume_exact_run(
+        Path(args.dest_run_root),
+        dataset_root=Path(args.dataset_root) if args.dataset_root else None,
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+        stop_after=args.stop_after,
+        memory_safety_fraction=float(args.memory_safety_fraction),
+        force=bool(args.force),
+        skip_preflight=bool(getattr(args, "skip_preflight", False)),
+    )
+    print(str(dest_run_root))
 
 
 def handle_prove_luts(args: argparse.Namespace) -> None:
@@ -407,13 +435,6 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
     from slavv_python.engine import SlavvPipeline
     from slavv_python.storage import load_tiff_volume
 
-    from .execution import (
-        _copy_exact_bootstrap_refs,
-        _finalize_init_exact_run,
-        _reorient_exact_input_volume,
-        _resolve_existing_init_exact_run,
-    )
-
     dataset_surface = load_dataset_surface(Path(args.dataset_root))
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
     oracle_surface = load_oracle_surface(oracle_root)
@@ -429,17 +450,43 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
     )
     params["energy_storage_format"] = str(args.energy_storage_format).strip()
 
-    resume_finalization_only = _resolve_existing_init_exact_run(
+    init_resolution = _resolve_existing_init_exact_run(
         dest_run_root=dest_run_root,
         dataset_surface=dataset_surface,
         oracle_surface=oracle_surface,
         stop_after=args.stop_after,
+        allow_resume=bool(getattr(args, "resume", False)),
     )
+
+    if init_resolution == "resume_pipeline":
+        resume_exact_run(
+            dest_run_root,
+            dataset_root=Path(args.dataset_root) if getattr(args, "dataset_root", None) else None,
+            oracle_root=oracle_root,
+            stop_after=args.stop_after,
+            memory_safety_fraction=float(
+                getattr(args, "memory_safety_fraction", 0.8),
+            ),
+            force=bool(getattr(args, "force", False)),
+            skip_preflight=bool(getattr(args, "skip_preflight", False)),
+        )
+        _finalize_init_exact_run(
+            dest_run_root=dest_run_root,
+            dataset_surface=dataset_surface,
+            oracle_surface=oracle_surface,
+            params=params,
+            selected_settings_paths=selected_settings_paths,
+            oracle_size_of_image=None,
+            input_axis_permutation=None,
+            stop_after=args.stop_after,
+        )
+        print(str(dest_run_root / RUN_MANIFEST_PATH))
+        return
 
     oracle_size_of_image = None
     input_axis_permutation = None
 
-    if resume_finalization_only:
+    if init_resolution == "finalize_only":
         prov = load_json_dict(dest_run_root / EXPERIMENT_PROVENANCE_PATH) or {}
         raw_size = prov.get("oracle_size_of_image")
         if isinstance(raw_size, list) and len(raw_size) == 3:
@@ -447,7 +494,26 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
         raw_perm = prov.get("input_axis_permutation")
         if isinstance(raw_perm, list) and len(raw_perm) == 3:
             input_axis_permutation = cast("tuple[int, int, int]", tuple(raw_perm))
-    else:
+    elif init_resolution == "fresh":
+        if not bool(getattr(args, "skip_preflight", False)):
+            preflight_report, _, _ = run_exact_preflight_for_surfaces(
+                dest_run_root,
+                dataset_surface=dataset_surface,
+                oracle_surface=oracle_surface,
+                params=params,
+                memory_safety_fraction=float(
+                    getattr(args, "memory_safety_fraction", 0.8),
+                ),
+                force=bool(getattr(args, "force", False)),
+                persist=True,
+            )
+            if not preflight_report.get("passed"):
+                import sys
+
+                sys.exit(
+                    "preflight failed: " + ", ".join(preflight_report.get("errors", [])),
+                )
+
         image = load_tiff_volume(dataset_surface.input_file)
         image, oracle_size_of_image, input_axis_permutation = _reorient_exact_input_volume(
             image, oracle_surface

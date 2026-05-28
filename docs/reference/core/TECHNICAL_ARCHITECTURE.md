@@ -78,7 +78,7 @@ See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 - **`capture_candidates()`** — edge candidate generation via `EdgeManager.discover_candidates()` (discovery strategy seam).
 - **`counts.py`** — canonical `RunCounts` extraction from reports and run directories (typed checkpoint loaders).
 
-`execution.py` and `reports.py` re-export count helpers; `proofs.py` delegates to the coordinator.
+Parity execution helpers are split: `params_audit.py` (exact param audit/persistence), `surfaces.py` (dataset/oracle/run authority), `bootstrap.py` (init-exact-run), with `execution.py` as a compatibility facade. `reports.py` re-exports count helpers; `proofs.py` delegates to the coordinator.
 
 ### 9. Application run envelope (`AppRunState`)
 The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.

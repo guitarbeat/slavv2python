@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def _coerce_table_cell(value: Any) -> Any:
-    from .execution import _normalize_param_value
+    from .params_audit import _normalize_param_value
 
     normalized = _normalize_param_value(value)
     if isinstance(normalized, float) and normalized != normalized:
@@ -35,7 +35,7 @@ def _persist_table_records(
     if not records:
         return None
 
-    from .execution import _normalize_param_value
+    from .params_audit import _normalize_param_value
 
     normalized_records = [
         cast("dict[str, Any]", _normalize_param_value(dict(record))) for record in records
