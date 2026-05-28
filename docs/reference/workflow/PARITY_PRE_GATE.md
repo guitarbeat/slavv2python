@@ -57,6 +57,32 @@ Default output: `workspace/scratch/180709_E_crop_M/180709_E_crop_M.tif` plus `18
 
 ### Oracle (MATLAB truth)
 
+Run vectorization with the released MATLAB tree under `external/Vectorization-Public/` (submodule). The repo ships a headless driver that imports canonical `180709_E` settings and writes a new `batch_*` under `workspace/scratch/matlab_crop_batches/`:
+
+```powershell
+matlab.exe -batch "run('scripts/matlab/vectorize_180709_E_crop_M.m')"
+```
+
+Requirements:
+
+- Crop TIFF at the promoted dataset path (see **Promoted dataset** below).
+- Canonical settings mats under `workspace/oracles/180709_E_batch_190910-103039/.../batch_190910-103039_canonical/settings/`.
+- `VertexCuration` / `EdgeCuration` must be `'auto'` (not `'none'`).
+
+When `vectors/` is populated under the new `batch_<timestamp>/`, promote:
+
+```powershell
+python scripts/cli/parity_experiment.py promote-oracle `
+  --matlab-batch-dir workspace/scratch/matlab_crop_batches/batch_<timestamp> `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --dataset-file workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06/01_Input/180709_E_crop_M.tif `
+  --oracle-id 180709_E_crop_M
+```
+
+Do **not** reuse database vectorization zips or spatially crop the full `180709_E` oracle in Python — the oracle must come from MATLAB on the identical crop volume.
+
+Legacy steps (manual batch layout):
+
 1. Run MATLAB vectorization on the **crop TIFF only** (same parameter family as full `180709_E`, on that subvolume).
 2. Produce a single timestamp-matched `batch_*` tree (one artifact per stage + `settings/`).
 3. Promote:
@@ -88,9 +114,14 @@ python scripts/cli/parity_experiment.py init-exact-run `
 
 Sequential certification on that run root:
 
-`prove-exact --stage energy` → `vertices` → `edges` → `network` (or `--stage all` once energy is in `EXACT_STAGE_ORDER`).
+```powershell
+python scripts/cli/parity_experiment.py prove-exact-sequence `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M
+```
 
-Reports: `03_Analysis/exact_proof.json`.
+Reports: per-stage `03_Analysis/exact_proof_<stage>.json` and summary `03_Analysis/exact_proof.json`.
 
 ---
 

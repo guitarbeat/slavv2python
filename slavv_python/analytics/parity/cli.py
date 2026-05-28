@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python.engine.state import load_json_dict
 
 from .constants import (
+    ANALYSIS_DIR,
+    EXACT_PROOF_JSON_PATH,
     EXPERIMENT_PROVENANCE_PATH,
+    EXACT_STAGE_ORDER,
     METADATA_DIR,
     RUN_MANIFEST_PATH,
     SUMMARY_JSON_PATH,
@@ -302,6 +305,58 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
         import sys
 
         sys.exit(1)
+
+
+def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
+    """Run prove-exact for each stage in order; stop at the first failure."""
+    from shutil import copy2
+
+    from slavv_python.analytics.parity.matlab_exact_proof import render_exact_proof_report
+
+    run_root = Path(args.source_run_root).expanduser().resolve()
+    dest_run_root = Path(args.dest_run_root).expanduser().resolve()
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    source_surface = _build_exact_proof_source_surface(run_root, oracle_root)
+    coordinator = ExactProofCoordinator(source_surface)
+
+    stage_results: list[dict[str, Any]] = []
+    for stage in EXACT_STAGE_ORDER:
+        report, json_path, text_path = coordinator.prove(dest_run_root, stage_arg=stage)
+        if json_path is not None and json_path.is_file():
+            stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage}.json"
+            stage_json.parent.mkdir(parents=True, exist_ok=True)
+            copy2(json_path, stage_json)
+        passed = bool(report.get("passed"))
+        stage_results.append({"stage": stage, "passed": passed})
+        print(f"prove-exact --stage {stage}: {'PASS' if passed else 'FAIL'}")
+        if report.get("stage_summaries"):
+            print(render_exact_proof_report(report))
+        if not passed:
+            import sys
+
+            sys.exit(1)
+
+    summary = {
+        "passed": True,
+        "stages": stage_results,
+        "source_run_root": str(run_root),
+        "dest_run_root": str(dest_run_root),
+    }
+    from .utils import write_json_with_hash, write_text_with_hash
+
+    summary_json = dest_run_root / EXACT_PROOF_JSON_PATH
+    summary_text = dest_run_root / ANALYSIS_DIR / "exact_proof_sequence.txt"
+    write_json_with_hash(summary_json, summary)
+    write_text_with_hash(
+        summary_text,
+        "\n".join(
+            [
+                "Exact proof sequence (all stages passed)",
+                *(f"  {row['stage']}: PASS" for row in stage_results),
+            ]
+        ),
+    )
+    print(str(summary_json))
 
 
 def handle_preflight_exact(args: argparse.Namespace) -> None:

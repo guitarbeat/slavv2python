@@ -26,7 +26,7 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 
 A major architectural breakthrough was achieved in May 2026, dramatically narrowing the discrepancy gap in edge candidate generation.
 
-**Phase 1 certification run (active)**: `workspace/runs/oracle_180709_E/phase1_cert_network` — native `init-exact-run --stop-after network`, `npy` energy storage, oracle `180709_E_batch_190910-103039`. Log: `workspace/runs/phase1_cert_network.log`.
+**Phase 1 certification run (active)**: `workspace/runs/oracle_180709_E/phase1_cert_network` — native exact route, `npy` energy storage, oracle `180709_E_batch_190910-103039`. **Resume** (single process): `parity_experiment.py resume-exact-run` with logs under `workspace/runs/phase1_cert_network_resume.*.log`. Monitor: `python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/oracle_180709_E/phase1_cert_network`. Do not run `init-exact-run` and `resume-exact-run` on the same dest root concurrently.
 
 **Champion experiment path (edges baseline)**: `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 

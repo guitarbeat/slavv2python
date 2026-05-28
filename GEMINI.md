@@ -104,6 +104,9 @@ slavv2python/
 │   ├── analytics/                      # Analysis & metrics
 │   │   ├── parity/                     # MATLAB exact proof harness
 │   │   │   ├── coordinator.py          # ExactProofCoordinator (prove / capture)
+│   │   │   ├── preflight.py            # Memory gate + params audit before long runs
+│   │   │   ├── resume.py               # resume-exact-run (clears stale running snapshot)
+│   │   │   ├── bootstrap.py / surfaces.py / params_audit.py  # init-exact-run layout
 │   │   │   └── counts.py               # Canonical RunCounts helpers
 │   │   ├── curation/                   # Automated & ML curators
 │   │   └── metrics/                    # Intensity, topology metrics
@@ -128,7 +131,8 @@ slavv2python/
 │   └── support/                        # Shared test builders & fixtures
 │
 ├── scripts/                            # Developer scripts
-│   ├── cli/                            # Parity experiment harness
+│   ├── cli/                            # Parity experiment harness, monitor_run_progress
+│   ├── matlab/                         # Headless MATLAB drivers (crop oracle vectorization)
 │   └── diagnostics/                    # MATLAB artifact inspection
 │
 ├── docs/                               # Documentation
@@ -161,6 +165,8 @@ Read these first when working on relevant surfaces:
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
+| Parity Pre-Gate | [docs/reference/workflow/PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) | Three-tier pre-gate (synthetic → crop → canonical) |
+| Parity Certification | [docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md](docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | `prove-exact` / `prove-exact-sequence` on canonical volume |
 | ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |
 | Extraction Algorithms | [docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md](docs/reference/workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms |
 

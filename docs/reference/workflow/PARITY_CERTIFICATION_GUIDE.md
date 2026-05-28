@@ -46,7 +46,16 @@ Phase 1 certification requires **strict zero** missing/extra per stage, in order
 
 `energy` → `vertices` → `edges` → `network`
 
-Run each stage (or use `--stage all`, which compares all four in certification order):
+Run each stage, or use the sequential helper (stops on first failure and writes per-stage JSON under `03_Analysis/`):
+
+```powershell
+python scripts/cli/parity_experiment.py prove-exact-sequence `
+  --source-run-root workspace/runs/<cert_run> `
+  --dest-run-root workspace/runs/<cert_run> `
+  --oracle-root workspace/oracles/<oracle_id>
+```
+
+Alternatively run each stage manually (or use `--stage all`, which compares all four in certification order):
 
 ```powershell
 python scripts/cli/parity_experiment.py prove-exact `
@@ -59,6 +68,26 @@ python scripts/cli/parity_experiment.py prove-exact `
 ```
 
 On Windows hosts where zarr rename fails, use `--energy-storage-format npy` on `init-exact-run` (see `docs/reference/backends/ZARR_ENERGY_STORAGE.md`).
+
+### 4. Resume an interrupted run
+
+When `init-exact-run` seeded a run but the pipeline process stopped, resume with a **single** writer on the destination root:
+
+```powershell
+python scripts/cli/parity_experiment.py resume-exact-run `
+  --dest-run-root workspace/runs/<cert_run> `
+  --oracle-root workspace/oracles/<oracle_id> `
+  --stop-after network `
+  --skip-preflight
+```
+
+Or re-run `init-exact-run` with `--resume` and the same `--dataset-root`, `--oracle-root`, and `--dest-run-root`. Do not run `init-exact-run` and `resume-exact-run` concurrently on the same destination.
+
+Monitor long runs:
+
+```powershell
+python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/<cert_run>
+```
 
 ---
 

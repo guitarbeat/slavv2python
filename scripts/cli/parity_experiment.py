@@ -25,6 +25,7 @@ from slavv_python.analytics.parity.cli import (
     handle_promote_oracle,
     handle_promote_report,
     handle_prove_exact,
+    handle_prove_exact_sequence,
     handle_prove_luts,
     handle_replay_edges,
     handle_rerun_python,
@@ -127,6 +128,16 @@ def build_parser() -> argparse.ArgumentParser:
     prove.add_argument("--stage", choices=(*EXACT_STAGE_ORDER, "all"), default="all")
     prove.add_argument("--report-path")
     prove.set_defaults(handler=handle_prove_exact)
+
+    # Prove Exact Sequence (phase 1 certification gate order)
+    prove_seq = subparsers.add_parser(
+        "prove-exact-sequence",
+        help="Run prove-exact for energy, vertices, edges, network in order.",
+    )
+    prove_seq.add_argument("--source-run-root", required=True)
+    prove_seq.add_argument("--oracle-root")
+    prove_seq.add_argument("--dest-run-root", required=True)
+    prove_seq.set_defaults(handler=handle_prove_exact_sequence)
 
     # Preflight Exact
     preflight = subparsers.add_parser("preflight-exact")
