@@ -13,7 +13,10 @@ import tifffile
 
 from slavv_python.engine import SlavvPipeline
 from slavv_python.storage import load_tiff_volume
-from slavv_python.utils.synthetic import generate_synthetic_vessel_volume
+from slavv_python.utils.synthetic import (
+    generate_synthetic_vessel_volume,
+    generate_synthetic_y_junction_volume,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -78,3 +81,25 @@ def test_paper_profile_ci_pipeline(tmp_path: Path):
 
     # 7. Verify network has data
     assert len(data["network"]["strands"]) > 0
+
+
+def test_paper_profile_ci_pipeline_on_y_junction_synthetic(tmp_path: Path):
+    """Run paper profile on a non-trivial synthetic topology (parity pre-gate tier 1)."""
+    volume_path = tmp_path / "synthetic_y_junction.tif"
+    synthetic_image = generate_synthetic_y_junction_volume(
+        shape=(32, 64, 64),
+        trunk_radius=3.0,
+        branch_radius=3.0,
+    )
+    tifffile.imwrite(str(volume_path), synthetic_image)
+
+    image = load_tiff_volume(str(volume_path))
+    run_dir = tmp_path / "paper_run_y"
+    params = {
+        "pipeline_profile": "paper",
+        "radius_of_largest_vessel_in_microns": 5.0,
+        "scales_per_octave": 1.0,
+    }
+
+    results = SlavvPipeline().run(image, params, run_dir=str(run_dir))
+    assert len(results["network"]["strands"]) > 0

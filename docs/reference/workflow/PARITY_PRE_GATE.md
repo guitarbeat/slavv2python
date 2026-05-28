@@ -50,6 +50,11 @@ python scripts/cli/export_180709_crop_m.py --write-metadata
 
 Default output: `workspace/scratch/180709_E_crop_M/180709_E_crop_M.tif` plus `180709_E_crop_M.tif.roi.json`.
 
+**Promoted dataset** (content-addressed hash dir):
+
+- `workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06/01_Input/180709_E_crop_M.tif`
+- Use this path as `--dataset-root` for `init-exact-run` (the hash directory, not `180709_E_crop_M` as the folder name).
+
 ### Oracle (MATLAB truth)
 
 1. Run MATLAB vectorization on the **crop TIFF only** (same parameter family as full `180709_E`, on that subvolume).
@@ -98,6 +103,15 @@ Unchanged from [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md):
 - Phase 1 claim only after all four stages pass on **that** run
 
 **Parallelism:** Crop harness work may run while a canonical run (e.g. `phase1_cert_network`) is in progress or resumed. Passing crop does not replace canonical certification.
+
+**Resume canonical run** when `init-exact-run` reports the seed run is still active but no Python process is running:
+
+```powershell
+python scripts/cli/resume_pipeline_run.py `
+  --run-dir workspace/runs/oracle_180709_E/phase1_cert_network `
+  --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
+  --stop-after network
+```
 
 ---
 
