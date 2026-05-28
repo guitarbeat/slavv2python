@@ -182,6 +182,44 @@ def test_load_normalized_matlab_network_normalizes_empty_payloads(tmp_path):
     assert payload["vessel_directions"] == []
 
 
+def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
+    import h5py
+
+    from slavv_python.analytics.parity.matlab_exact_proof import (
+        find_matlab_vector_paths,
+        load_normalized_matlab_stage,
+    )
+
+    batch_dir = tmp_path / "batch"
+    data_dir = batch_dir / "data"
+    settings_dir = batch_dir / "settings"
+    data_dir.mkdir(parents=True)
+    settings_dir.mkdir(parents=True)
+
+    energy_stem = "energy_260527-220010_180709_E_crop_M"
+    energy = np.array([[[-1.0], [-2.0]]], dtype=np.float64)
+    scale_indices = np.array([[[0], [1]]], dtype=np.int16)
+    with h5py.File(data_dir / energy_stem, "w") as handle:
+        handle.create_dataset("d", data=np.stack([scale_indices, energy], axis=0))
+
+    _write_mat(
+        data_dir / f"{energy_stem}.mat",
+        {"size_of_image": np.array([1, 1, 2], dtype=np.int16)},
+    )
+    _write_mat(
+        settings_dir / "energy_260527-220010.mat",
+        {"lumen_radius_in_microns_range": np.array([1.0, 2.0], dtype=np.float64)},
+    )
+
+    paths = find_matlab_vector_paths(batch_dir, ("energy",))
+    assert paths["energy"].name == energy_stem
+
+    payload = load_normalized_matlab_stage(paths["energy"], "energy")
+    np.testing.assert_allclose(payload["energy"], energy.astype(np.float64))
+    np.testing.assert_array_equal(payload["scale_indices"], scale_indices.astype(np.int64))
+    np.testing.assert_array_equal(payload["lumen_radius_microns"], np.array([1.0, 2.0]))
+
+
 def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
     from slavv_python.analytics.parity.matlab_exact_proof import find_matlab_vector_paths
 

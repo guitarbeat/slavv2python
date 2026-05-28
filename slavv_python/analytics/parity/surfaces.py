@@ -308,9 +308,22 @@ def write_run_manifest(
 
 def oracle_energy_size_of_image(oracle_surface: OracleSurface) -> tuple[int, int, int] | None:
     """Read Z,Y,X dimensions from the oracle energy vector artifact."""
+    from slavv_python.analytics.parity.matlab_exact_proof import _is_matlab_energy_hdf5
+
     energy_path = oracle_surface.matlab_vector_paths.get("energy")
     if energy_path is None:
         return None
+    if _is_matlab_energy_hdf5(energy_path):
+        import h5py
+
+        with h5py.File(energy_path, "r") as handle:
+            planes = np.asarray(handle["d"])
+        if planes.ndim == 4 and planes.shape[0] >= 2:
+            return cast(
+                "tuple[int, int, int]",
+                tuple(int(value) for value in planes[1].shape),
+            )
+
     payload = loadmat(energy_path, squeeze_me=False, struct_as_record=False)
     energy = payload.get("energy")
     if energy is not None and hasattr(energy, "shape"):

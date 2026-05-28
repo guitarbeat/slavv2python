@@ -69,6 +69,68 @@ def find_single_matlab_batch_dir(run_root: Path) -> Path:
     return batch_dirs[0]
 
 
+def _is_matlab_energy_hdf5(path: Path) -> bool:
+    """Return True when ``path`` is a MATLAB energy HDF5 bundle (dataset ``d``)."""
+    import h5py
+
+    if not path.is_file():
+        return False
+    try:
+        with h5py.File(path, "r") as handle:
+            return "d" in handle
+    except OSError:
+        return False
+
+
+def _matlab_energy_hdf5_companion(mat_path: Path) -> Path | None:
+    """Return the extensionless HDF5 companion for a MATLAB energy metadata ``.mat``."""
+    candidate = mat_path.with_suffix("")
+    if _is_matlab_energy_hdf5(candidate):
+        return candidate
+    return None
+
+
+def _resolve_matlab_energy_settings_path(batch_dir: Path, energy_asset_stem: str) -> Path:
+    """Locate the workflow settings mat that matches an energy artifact stem."""
+    prefix = "energy_"
+    if not energy_asset_stem.startswith(prefix):
+        raise ValueError(f"unexpected MATLAB energy artifact stem: {energy_asset_stem}")
+    timestamp = energy_asset_stem.removeprefix(prefix).split("_", 1)[0]
+    settings_path = batch_dir / "settings" / f"energy_{timestamp}.mat"
+    if not settings_path.is_file():
+        raise ValueError(f"missing MATLAB energy settings file: {settings_path}")
+    return settings_path
+
+
+def _find_matlab_energy_path(data_dir: Path) -> Path:
+    """Resolve the authoritative MATLAB energy artifact under ``data/``."""
+    mat_candidates = sorted(path for path in data_dir.glob("energy*.mat") if path.is_file())
+    if mat_candidates:
+        if len(mat_candidates) > 1:
+            joined = ", ".join(str(path) for path in mat_candidates)
+            raise ValueError(
+                f"expected one raw MATLAB energy artifact under {data_dir}, found: {joined}"
+            )
+        h5_path = _matlab_energy_hdf5_companion(mat_candidates[0])
+        if h5_path is not None:
+            return h5_path
+        return mat_candidates[0]
+
+    h5_candidates = sorted(
+        path
+        for path in data_dir.glob("energy_*")
+        if path.is_file() and _is_matlab_energy_hdf5(path)
+    )
+    if not h5_candidates:
+        raise ValueError(f"missing raw MATLAB energy artifact under {data_dir}")
+    if len(h5_candidates) > 1:
+        joined = ", ".join(str(path) for path in h5_candidates)
+        raise ValueError(
+            f"expected one raw MATLAB energy artifact under {data_dir}, found: {joined}"
+        )
+    return h5_candidates[0]
+
+
 def find_matlab_vector_paths(
     batch_dir: Path,
     stages: tuple[str, ...] = EXACT_STAGE_ORDER,
@@ -77,13 +139,18 @@ def find_matlab_vector_paths(
     vectors_dir = batch_dir / "vectors"
     data_dir = batch_dir / "data"
     stage_locations: dict[str, tuple[Path, tuple[str, ...]]] = {
-        "energy": (data_dir, ("energy*.mat",)),
         "vertices": (vectors_dir, ("curated_vertices*.mat", "vertices*.mat")),
         "edges": (vectors_dir, ("edges*.mat", "curated_edges*.mat")),
         "network": (vectors_dir, ("network*.mat",)),
     }
     stage_paths: dict[str, Path] = {}
     for stage in stages:
+        if stage == "energy":
+            if not data_dir.is_dir():
+                raise ValueError(f"missing MATLAB energy directory: {data_dir}")
+            stage_paths[stage] = _find_matlab_energy_path(data_dir)
+            continue
+
         root_dir, patterns = stage_locations[stage]
         if not root_dir.is_dir():
             raise ValueError(f"missing MATLAB {stage} directory: {root_dir}")
@@ -122,6 +189,8 @@ def load_normalized_matlab_vectors(
 
 def load_normalized_matlab_stage(path: Path, stage: str) -> dict[str, Any]:
     """Load and normalize a single raw MATLAB vector file."""
+    if stage == "energy" and _is_matlab_energy_hdf5(path):
+        return _load_normalized_matlab_energy_from_hdf5(path)
     matlab_payload = cast(
         "dict[str, Any]",
         loadmat(path, squeeze_me=stage != "energy", struct_as_record=False),
@@ -354,6 +423,35 @@ def _normalize_matlab_vertex_fields_payload(
         "positions": _normalize_matlab_spatial_matrix(_require_key(payload, spatial_field)),
         "scales": _normalize_matlab_int_vector(_require_key(payload, scale_field)),
         "energies": _normalize_float_vector(_require_key(payload, energy_field)),
+    }
+
+
+def _load_normalized_matlab_energy_from_hdf5(path: Path) -> dict[str, Any]:
+    """Load MATLAB energy written as an HDF5 bundle (dataset ``d``) plus settings mat."""
+    import h5py
+
+    batch_dir = path.parent.parent
+    settings_path = _resolve_matlab_energy_settings_path(batch_dir, path.name)
+    settings_payload = cast(
+        "dict[str, Any]",
+        loadmat(settings_path, squeeze_me=True, struct_as_record=False),
+    )
+    with h5py.File(path, "r") as handle:
+        planes = np.asarray(handle["d"], dtype=np.float64)
+    if planes.ndim != 4 or planes.shape[0] < 2:
+        raise ValueError(f"unexpected MATLAB energy HDF5 shape for {path}: {planes.shape}")
+
+    scale_indices = planes[0]
+    energy = planes[1]
+    lumen_radius_microns = settings_payload.get("lumen_radius_in_microns_range")
+    if lumen_radius_microns is None:
+        lumen_radius_microns = settings_payload.get("lumen_radius_microns")
+
+    return {
+        "energy": _normalize_float_array(energy),
+        "scale_indices": _normalize_int_array(scale_indices, one_based=False),
+        "energy_4d": _normalize_float_array(None),
+        "lumen_radius_microns": _normalize_float_vector(lumen_radius_microns),
     }
 
 
