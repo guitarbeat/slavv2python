@@ -53,6 +53,15 @@ Internal state persisted during a stage's execution to allow a [Run](#run) to re
 ### Artifact
 Supplemental data produced by a stage for diagnostics, auditing, or visualization that is not strictly required for [Pipeline](#pipeline) progression.
 
+### Oracle
+Preserved MATLAB truth vectors and metadata for a specific dataset, stored under `workspace/oracles/`, used as the reference surface for exact parity comparison.
+
+### Parity Run
+A disposable developer execution under `workspace/runs/` that compares Python checkpoints against an [Oracle](#oracle) via the parity experiment harness.
+
+### Certification
+The state in which sequential exact-parity gates report zero missing and zero extra for every required [Pipeline](#pipeline) stage on a defined volume and workflow.
+
 ---
 
 ## Repository Map

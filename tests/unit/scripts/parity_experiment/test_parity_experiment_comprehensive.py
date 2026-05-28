@@ -196,6 +196,20 @@ def test_build_parser_commands():
     args = parser.parse_args(["fail-fast", "--source-run-root", "src", "--dest-run-root", "dst"])
     assert args.command == "fail-fast"
 
+    args = parser.parse_args(
+        [
+            "prove-exact",
+            "--source-run-root",
+            "src",
+            "--dest-run-root",
+            "dst",
+            "--stage",
+            "energy",
+        ]
+    )
+    assert args.command == "prove-exact"
+    assert args.stage == "energy"
+
 
 # ==============================================================================
 # Promotion Tests (Consolidated from test_promotion.py)

@@ -26,7 +26,7 @@ EXPERIMENT_INDEX_PATH = Path("index.jsonl")
 EXPERIMENT_ROOT_SUBDIRS = ("datasets", "oracles", "reports", "runs")
 
 # Discovery and input constants
-ORACLE_DISCOVERY_STAGES = ("energy", *EXACT_STAGE_ORDER)
+ORACLE_DISCOVERY_STAGES = EXACT_STAGE_ORDER
 DATASET_INPUT_DIR = Path("01_Input")
 
 # Report and proof paths

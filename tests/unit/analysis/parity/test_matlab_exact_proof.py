@@ -8,12 +8,14 @@ import numpy as np
 from scipy.io import savemat
 
 from slavv_python.analytics.parity.matlab_exact_proof import (
+    EXACT_STAGE_ORDER,
     compare_exact_artifacts,
     load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
     normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
 )
+from slavv_python.analytics.parity.proofs import _selected_exact_stages
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -79,6 +81,12 @@ def test_energy_stage_normalization_supports_dense_native_proof_surface(tmp_path
 
     np.testing.assert_array_equal(matlab_energy["scale_indices"], python_energy["scale_indices"])
     assert report["passed"] is True
+
+
+def test_exact_stage_order_starts_with_energy():
+    assert EXACT_STAGE_ORDER == ("energy", "vertices", "edges", "network")
+    assert _selected_exact_stages("all") == EXACT_STAGE_ORDER
+    assert _selected_exact_stages("energy") == ("energy",)
 
 
 def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):

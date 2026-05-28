@@ -15,7 +15,7 @@ from slavv_python.utils.safe_unpickle import safe_load
 if TYPE_CHECKING:
     from pathlib import Path
 
-EXACT_STAGE_ORDER: tuple[str, ...] = ("vertices", "edges", "network")
+EXACT_STAGE_ORDER: tuple[str, ...] = ("energy", "vertices", "edges", "network")
 EXACT_STAGE_FIELDS: dict[str, tuple[str, ...]] = {
     "energy": ("energy", "scale_indices", "energy_4d", "lumen_radius_microns"),
     "vertices": ("positions", "scales", "energies"),

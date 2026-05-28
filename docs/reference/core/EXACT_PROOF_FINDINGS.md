@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-05-22
+**Last Updated**: 2026-05-28
 
 This document serves as the **Authoritative Status Log** for aligning Python's native vectorization output perfectly with the original MATLAB mathematics (the "Exact Proof").
 
@@ -16,8 +16,9 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 | :--- | :--- | :--- |
 | **NATIVE ENERGY** | ✅ **COMPLETED** | None (Canonical exact-compatible) |
 | **VERTICES** | ✅ **VERIFIED** | Successfully certified downstream |
-| **EDGES** | 🟡 **IN PROGRESS** | Certification run v2 active (ETA 2.5h) |
-| **NETWORK** | ⏳ **PENDING** | Awaiting upstream Edge closure |
+| **EDGES** | 🟡 **IN PROGRESS** | Phase 1 cert run + parity closure (strict zero pairs) |
+| **NETWORK** | ⏳ **PENDING** | Phase 1 `init-exact-run --stop-after network` |
+| **prove-exact energy** | ✅ **HARNESS** | `EXACT_STAGE_ORDER` includes `energy` (2026-05-28) |
 
 ---
 
@@ -25,7 +26,9 @@ The goal is 100% mathematical parity against the canonical MATLAB oracle.
 
 A major architectural breakthrough was achieved in May 2026, dramatically narrowing the discrepancy gap in edge candidate generation.
 
-**Champion Experiment Path**: `workspace\runs\oracle_180709_E\validation_strel_fix_output_v29`
+**Phase 1 certification run (active)**: `workspace/runs/oracle_180709_E/phase1_cert_network` — native `init-exact-run --stop-after network`, `npy` energy storage, oracle `180709_E_batch_190910-103039`. Log: `workspace/runs/phase1_cert_network.log`.
+
+**Champion experiment path (edges baseline)**: `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
 ### The Solution: Parameter Alignment & NaN Stability
 - **Parameter Alignment (v29)**: Discovered that the MATLAB oracle was generated with `edge_number_tolerance = 4`, while Python was hardcoded to 2. Aligning this parameter allowed high-degree vertices (hubs) to initiate sufficient exploratory traces.

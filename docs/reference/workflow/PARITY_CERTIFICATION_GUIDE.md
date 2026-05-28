@@ -38,33 +38,44 @@ python scripts/cli/parity_experiment.py preflight-exact `
   --dest-run-root workspace/runs/cert_trial_v1
 ```
 
-### 3. Run the Exact Proof
-Execute the comparison and generate match rate metrics.
+### 3. Run the Exact Proof (sequential gates)
+
+Phase 1 certification requires **strict zero** missing/extra per stage, in order:
+
+`energy` → `vertices` → `edges` → `network`
+
+Run each stage (or use `--stage all`, which compares all four in certification order):
+
 ```powershell
 python scripts/cli/parity_experiment.py prove-exact `
   --source-run-root workspace/runs/cert_trial_v1 `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
-  --stage all
+  --stage energy
+
+# Repeat for vertices, edges, network — or use --stage all after all checkpoints exist
 ```
+
+On Windows hosts where zarr rename fails, use `--energy-storage-format npy` on `init-exact-run` (see `docs/reference/backends/ZARR_ENERGY_STORAGE.md`).
 
 ---
 
 ## 📊 Interpreting the Results
 
-The `prove-exact` command produces a summary in the console and a detailed JSON report at `workspace/runs/<run_id>/03_Analysis/comparison_report.json`.
+The authoritative report is `workspace/runs/<run_id>/03_Analysis/exact_proof.json` (and `.txt`).
 
 ### Core Metrics
-- **Matched Pairs**: Number of edge connections bit-identical between Python and MATLAB.
-- **Match Rate**: Target is **>95%** for certification.
-- **Missing Pairs**: MATLAB connections not found in Python.
-- **Extra Pairs**: Python connections not found in MATLAB (usually due to filtering differences).
+- **Stage passed**: Each compared field matches the oracle at strict equality (`passed: true` in `exact_proof.json`).
+- **Missing / extra**: For edges, pair-level missing and extra counts must be **zero** for certification (not a percentage threshold).
+- **Sequential gating**: If energy or vertices fail, do not claim downstream stages certified on that run.
+
+Legacy `comparison_report.json` may still exist for older runs; prefer `exact_proof.json` for certification decisions.
 
 ---
 
 ## 🏆 Promoting to Official Certification
 
-Once a match rate of >95% is achieved, promote the run to a versioned baseline.
+When all four stages pass with zero missing/extra, promote the run summary:
 
 ```powershell
 # Copy the report to the authoritative index
