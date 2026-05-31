@@ -124,6 +124,7 @@ def resume_exact_run(
     dataset_root: Path | None = None,
     oracle_root: Path | None = None,
     stop_after: str | None = None,
+    force_rerun_from: str | None = None,
     memory_safety_fraction: float = 0.8,
     force: bool = False,
     skip_preflight: bool = False,
@@ -184,6 +185,7 @@ def resume_exact_run(
         cast("dict[str, Any]", params),
         run_dir=str(dest_run_root),
         stop_after=effective_stop_after,
+        force_rerun_from=force_rerun_from,
     )
     return dest_run_root
 

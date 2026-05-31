@@ -28,11 +28,18 @@ def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
     """
     img = image.astype(np.float32)
 
-    # Scale intensities to [0, 1]
-    img -= img.min()
-    max_val = img.max()
-    if max_val > 0:
-        img /= max_val
+    # Exact-route parity runs must preserve raw intensity scale to match MATLAB
+    # oracle energy (see crop_M_exact prove-exact mismatch investigation).
+    if not bool(params.get("comparison_exact_network", False)):
+        # Scale intensities to [0, 1] for the native paper workflow.
+        img -= img.min()
+        max_val = img.max()
+        if max_val > 0:
+            img /= max_val
+    else:
+        limits = params.get("intensity_limits")
+        if isinstance(limits, (list, tuple)) and len(limits) == 2:
+            img = np.clip(img, float(limits[0]), float(limits[1]))
 
     # Simple axial band correction inspired by `fix_intensity_bands.m`
     band_window = params.get("bandpass_window", 0.0)

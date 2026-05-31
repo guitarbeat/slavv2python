@@ -70,6 +70,16 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
     else:
         microns_per_sigma_psf = np.zeros(3, dtype=float)
 
+    # The exact route permutes the input volume to the oracle's axis order
+    # (see _reorient_exact_input_volume). microns_per_voxel and the optical PSF
+    # (whose axial component sits at input axis 2) must follow the same permutation
+    # so per-axis downsample factors and sigmas map to the correct working axes.
+    axis_permutation = params.get("energy_axis_permutation")
+    if axis_permutation is not None and len(axis_permutation) == 3:
+        permutation = [int(value) for value in axis_permutation]
+        microns_per_voxel = microns_per_voxel[permutation]
+        microns_per_sigma_psf = microns_per_sigma_psf[permutation]
+
     pixels_per_sigma_psf = microns_per_sigma_psf / microns_per_voxel
     scale_ordinates, lumen_radius_microns = _matlab_lumen_radius_range(
         radius_smallest,

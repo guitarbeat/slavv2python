@@ -83,6 +83,25 @@ def _select_oracle_settings_paths(oracle_surface: OracleSurface) -> dict[str, Pa
     return selected_paths
 
 
+def _load_oracle_intensity_limits(oracle_surface: OracleSurface) -> list[float] | None:
+    """Load MATLAB ``intensity_limits`` from the oracle batch energy metadata mat."""
+    batch_dir = oracle_surface.matlab_batch_dir
+    if batch_dir is None:
+        return None
+    data_dir = batch_dir / "data"
+    if not data_dir.is_dir():
+        return None
+    for path in sorted(data_dir.glob("energy_*.mat")):
+        payload = loadmat(path, squeeze_me=True, struct_as_record=False)
+        limits = payload.get("intensity_limits")
+        if limits is None:
+            continue
+        arr = np.asarray(limits, dtype=np.float64).reshape(-1)
+        if arr.size >= 2:
+            return [float(arr[0]), float(arr[1])]
+    return None
+
+
 def derive_exact_params_from_oracle(
     oracle_surface: OracleSurface,
 ) -> tuple[dict[str, Any], dict[str, str], dict[str, dict[str, Any]]]:
@@ -140,6 +159,10 @@ def derive_exact_params_from_oracle(
         ),
     }
     params.update(MATLAB_EXACT_EDGE_SOURCE_CONSTANTS)
+
+    intensity_limits = _load_oracle_intensity_limits(oracle_surface)
+    if intensity_limits is not None:
+        params["intensity_limits"] = intensity_limits
 
     path_map = {stage: str(path) for stage, path in settings_paths.items()}
     normalized_payloads = {

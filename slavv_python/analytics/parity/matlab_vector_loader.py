@@ -244,7 +244,10 @@ def _load_normalized_matlab_energy_from_hdf5(path: Path) -> dict[str, Any]:
 
     return {
         "energy": _normalize_float_array(energy),
-        "scale_indices": _normalize_int_array(scale_indices, one_based=False),
+        # get_energy_V202 stores 1-based global scale subscripts in plane 0
+        # (energy_chunk_scale_min + sum of prior-octave scale counts). Invalid
+        # voxels are written as 0; keep them at 0 after the 1-based shift.
+        "scale_indices": _normalize_int_array(scale_indices, one_based=True),
         "energy_4d": _normalize_float_array(None),
         "lumen_radius_microns": _normalize_float_vector(lumen_radius_microns),
     }

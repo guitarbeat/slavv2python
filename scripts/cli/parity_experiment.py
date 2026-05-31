@@ -161,6 +161,11 @@ def build_parser() -> argparse.ArgumentParser:
     resume_run.add_argument("--oracle-root")
     resume_run.add_argument("--stop-after", default="network")
     resume_run.add_argument(
+        "--force-rerun-from",
+        choices=("energy", "vertices", "edges", "network"),
+        help="Reset pipeline state from this stage before resuming.",
+    )
+    resume_run.add_argument(
         "--memory-safety-fraction", type=float, default=DEFAULT_MEMORY_SAFETY_FRACTION
     )
     resume_run.add_argument("--force", action="store_true")

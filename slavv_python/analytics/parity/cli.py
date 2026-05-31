@@ -7,17 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python.engine.state import load_json_dict
 
-from .constants import (
-    ANALYSIS_DIR,
-    EXACT_PROOF_JSON_PATH,
-    EXPERIMENT_PROVENANCE_PATH,
-    EXACT_STAGE_ORDER,
-    METADATA_DIR,
-    RUN_MANIFEST_PATH,
-    SUMMARY_JSON_PATH,
-    SUMMARY_TEXT_PATH,
-)
-from .coordinator import ExactProofCoordinator
 from .bootstrap import (
     _copy_exact_bootstrap_refs,
     _finalize_init_exact_run,
@@ -26,28 +15,29 @@ from .bootstrap import (
     derive_exact_params_from_oracle,
     maybe_sync_exact_vertex_checkpoint,
 )
-from .params_audit import load_params_file, persist_param_storage
-from .surfaces import (
-    copy_source_surface,
-    ensure_dest_run_layout,
-    load_dataset_surface,
-    load_oracle_surface,
-    resolve_input_file,
-    validate_source_run_surface,
-    write_run_manifest,
+from .constants import (
+    ANALYSIS_DIR,
+    EXACT_PROOF_JSON_PATH,
+    EXACT_STAGE_ORDER,
+    EXPERIMENT_PROVENANCE_PATH,
+    METADATA_DIR,
+    RUN_MANIFEST_PATH,
+    SUMMARY_JSON_PATH,
+    SUMMARY_TEXT_PATH,
 )
+from .coordinator import ExactProofCoordinator
 from .gaps import (
     persist_gap_diagnosis_report,
     render_gap_diagnosis_report,
 )
 from .models import ExactProofSourceSurface
+from .params_audit import load_params_file, persist_param_storage
+from .preflight import run_exact_preflight_for_surfaces
 from .proofs import (
     run_edge_replay,
     run_exact_preflight,
     run_lut_proof,
 )
-from .preflight import run_exact_preflight_for_surfaces
-from .resume import resume_exact_run
 from .reports import (
     build_experiment_summary,
     extract_matlab_counts,
@@ -57,6 +47,16 @@ from .reports import (
     read_python_counts_from_run,
     render_exact_preflight_report,
     render_experiment_summary,
+)
+from .resume import resume_exact_run
+from .surfaces import (
+    copy_source_surface,
+    ensure_dest_run_layout,
+    load_dataset_surface,
+    load_oracle_surface,
+    resolve_input_file,
+    validate_source_run_surface,
+    write_run_manifest,
 )
 from .utils import (
     fingerprint_file,
@@ -168,7 +168,9 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     """Run discovery for a single vertex and capture execution trace."""
     import numpy as np
 
-    from slavv_python.analytics.parity.python_checkpoint_loader import load_normalized_python_checkpoints
+    from slavv_python.analytics.parity.python_checkpoint_loader import (
+        load_normalized_python_checkpoints,
+    )
     from slavv_python.processing.stages.edges.execution_tracing import JsonExecutionTracer
     from slavv_python.processing.stages.edges.global_watershed import (
         _generate_edge_candidates_matlab_global_watershed,
@@ -321,7 +323,7 @@ def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
 
     stage_results: list[dict[str, Any]] = []
     for stage in EXACT_STAGE_ORDER:
-        report, json_path, text_path = coordinator.prove(dest_run_root, stage_arg=stage)
+        report, json_path, _text_path = coordinator.prove(dest_run_root, stage_arg=stage)
         if json_path is not None and json_path.is_file():
             stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage}.json"
             stage_json.parent.mkdir(parents=True, exist_ok=True)
@@ -387,6 +389,7 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         dataset_root=Path(args.dataset_root) if args.dataset_root else None,
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         stop_after=args.stop_after,
+        force_rerun_from=getattr(args, "force_rerun_from", None),
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
         skip_preflight=bool(getattr(args, "skip_preflight", False)),
@@ -573,6 +576,10 @@ def handle_init_exact_run(args: argparse.Namespace) -> None:
         image, oracle_size_of_image, input_axis_permutation = _reorient_exact_input_volume(
             image, oracle_surface
         )
+        if input_axis_permutation is not None:
+            # Volume axes were reordered to the oracle layout; the energy stage must
+            # apply the same permutation to per-axis physical metadata (microns, PSF).
+            params["energy_axis_permutation"] = list(input_axis_permutation)
         ensure_dest_run_layout(dest_run_root)
         persist_param_storage(dest_run_root, params)
         _copy_exact_bootstrap_refs(

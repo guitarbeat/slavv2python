@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-05-28
+**Last Updated**: 2026-05-29
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 **Blocked** on crop harness (value mismatch); canonical run in progress |
+| **Energy** | Native Hessian path exact-compatible | 🟡 **Magnitude + scale now exact at sample voxel** (origin −20.3757 @ scale 91, both match). Orientation pinned: oracle `(z,x,y)` = Python `(z,y,x)` via perm `(0,2,1)`; top-5 oracle minima match to ~0.03. **Residual** ~0.83 median off-node diff isolated to MATLAB per-octave multi-chunk decomposition (per-chunk downsample phase + `interp3` offset mesh). |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
 | **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof after upstream stages |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -28,9 +28,9 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline in progress or resume — **one writer** on this dest root. Oracle: `180709_E_batch_190910-103039`. Monitor: `python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/oracle_180709_E/phase1_cert_network` |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline ✅ **complete** through network (2026-05-28). **Blocked on proof:** canonical oracle `180709_E_batch_190910-103039` has energy metadata mat only — no HDF5 energy volume in promoted oracle. Re-promote or add energy artifact before `prove-exact-sequence`. Rerun from energy on branch `fix/crop-energy-parity` before proof (old run used min-max normalized input). |
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Pipeline ✅ complete. **`prove-exact-sequence` failed on energy:** same shape `[64,256,256]`, sample values MATLAB ≈ −20 vs Python ≈ −0.004 |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Rerun from energy ✅ (2026-05-29, `fix/crop-energy-parity`). **Sample voxel now exact** (origin −20.3757 @ scale 91 = MATLAB). Orientation confirmed perm `(0,2,1)`. `prove-exact-sequence` energy gate still fails on full-array equality: residual ~0.83 median off-node diff from per-octave multi-chunk decomposition not yet replicated in Python (single whole-volume phase). |
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
@@ -46,7 +46,14 @@ python scripts/cli/parity_experiment.py resume-exact-run `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --stop-after network --skip-preflight
 
-# Re-prove crop harness after energy fix
+# Re-prove crop harness after energy fix (rerun from energy first if code changed)
+python scripts/cli/parity_experiment.py resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --force-rerun-from energy `
+  --stop-after network `
+  --skip-preflight
+
 python scripts/cli/parity_experiment.py prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
@@ -113,6 +120,11 @@ The audit system mandates these exact value bindings (derived from source-hardco
 
 The core codebase has absorbed the following permanent fixes, ensuring structural stability:
 
+*   ✅ **Exact-route intensity scale**: Skip min-max normalization when `comparison_exact_network=True`; optional `intensity_limits` clip from oracle metadata (2026-05-29).
+*   ✅ **Energy downsample stride phase**: `_downsample_volume` uses MATLAB `get_starts_and_counts_V200` last-chunk alignment `start = (size-1) mod rf` per axis (whole-volume single chunk). Verified analytically (rf=9 → start 3; rf=20 → start 15) and empirically (origin energy −20.3757) (2026-05-29).
+*   ✅ **HDF5 scale-index base**: `matlab_vector_loader` reads MATLAB global scale subscripts as 1-based (`one_based=True`), converting e.g. 91→90 for Python 0-based indexing (2026-05-29).
+*   ✅ **Energy axis permutation**: `energy_axis_permutation` param permutes `microns_per_voxel` and `pixels_per_sigma_PSF` to the working image axis order so per-axis resolution factors map to the correct dimensions; added to `EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS` (2026-05-29).
+*   ✅ **Upsample/`interp3` coordinate consistency**: `_upsample_volume` mesh `arange(n)/factor` matches MATLAB `get_energy_V202` `interp3` mesh (whole-volume chunk `offset` saturates to 0 in uint16) (2026-05-29).
 *   ✅ **Double-Precision Energy Alignment**: Forced all core watershed maps (`energy_map_temp`, `vertex_energies`) and neighborhood penalty calculations to `float64`. This prevents precision-induced tie-breaking divergences where `float32` would collapse distinct energy values into identical bits, causing different seed selections than MATLAB's `double`.
 *   ✅ **Bit-Accurate Tie-Breaking**: Replaced `np.isclose` with exact bitwise equality and added linear index priority to the frontier priority queue, matching MATLAB's hub vertex exploration behavior.
 *   ✅ **Hard Distance Cutoff**: Implemented the MATLAB-exact $d/R > 3.0$ expansion cutoff in the watershed loop.
@@ -129,9 +141,10 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop harness energy proof** — `prove-exact-sequence` fails at energy on `crop_M_exact` (magnitude mismatch). Blocks tier-2 pre-gate until resolved (params, sign/scale, or HDF5 plane semantics).
-2. **Canonical run completion** — Finish `phase1_cert_network` through network with a single writer; then run `prove-exact-sequence` on full `180709_E`.
-3. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
+1. **Crop harness energy proof — per-octave multi-chunk decomposition** — Sample voxel/origin and scale selection now **exact** (−20.3757 @ scale 91); orientation pinned to perm `(0,2,1)`. The full-array gate still fails because MATLAB splits each octave into many small chunks (evidence: `matlab_octave6_truth.mat` `original_chunk` 13×13×8 ≪ single whole-volume octave-6 read ~29³, reading start 0-based 15). Each chunk has its own downsample reading-start phase and its own `interp3` offset mesh `mod(offset, rf)/rf`; Python computes each octave on the whole volume with a single phase, matching only the origin chunk. **Next:** replicate `get_chunking_lattice_V190` + `get_starts_and_counts_V200` per-octave chunk decomposition with per-chunk phase + offset-aware `interp3` mesh, then write each chunk's writing region into the energy stack. Residual after orientation: ~0.83 median \|diff\|, but top-5 oracle minima already match to ~0.03.
+2. **Canonical oracle energy artifact** — `180709_E_batch_190910-103039` promoted oracle lacks loadable energy volume (metadata-only `.mat`). `prove-exact --stage energy` raises `missing MATLAB vector field: energy`. Re-promote from batch with HDF5 companion or legacy full mat before tier-3 proof.
+3. **Canonical run re-execution** — `phase1_cert_network` completed with pre-fix normalized input. Rerun from energy on `fix/crop-energy-parity` before any canonical proof claim.
+4. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

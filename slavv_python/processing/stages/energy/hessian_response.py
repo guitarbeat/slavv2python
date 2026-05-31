@@ -144,10 +144,30 @@ def _compute_native_hessian_scale_debug(
 
 
 def _downsample_volume(image: np.ndarray, resolution_factor: np.ndarray) -> np.ndarray:
-    factor_y, factor_x, factor_z = (int(value) for value in resolution_factor)
-    if factor_y == factor_x == factor_z == 1:
+    """Downsample with MATLAB ``get_energy_V202`` last-chunk stride alignment.
+
+    MATLAB ``get_starts_and_counts_V200`` adjusts the reading start of the last
+    chunk in each dimension so the strided ``h5read`` lands exactly on the final
+    pixel (lines 37-45): ``reading_count = 1 + rf*floor((size-1)/rf)`` and
+    ``reading_start = reading_end - reading_count + 1``. For the single chunk that
+    covers a whole working volume this makes the 0-based stride phase
+    ``(size - 1) mod rf`` per axis (not ``0`` and not ``factor - 1``). The
+    ``interp3`` upsample mesh maps the origin back to coarse index 0 because the
+    chunk ``offset`` saturates to 0 in MATLAB's ``uint16`` arithmetic, so
+    :func:`_upsample_volume` (``arange(n)/factor``) stays consistent with this phase.
+    """
+    factors = [int(value) for value in resolution_factor]
+    if factors[0] == factors[1] == factors[2] == 1:
         return image
-    return cast("np.ndarray", image[::factor_y, ::factor_x, ::factor_z])
+    starts = [(image.shape[axis] - 1) % factors[axis] for axis in range(3)]
+    return cast(
+        "np.ndarray",
+        image[
+            starts[0] :: factors[0],
+            starts[1] :: factors[1],
+            starts[2] :: factors[2],
+        ],
+    )
 
 
 def _upsample_volume(
@@ -164,14 +184,30 @@ def _upsample_volume(
     coord_z = np.arange(output_shape[2], dtype=np.float32) / factor_z
     mesh = np.meshgrid(coord_y, coord_x, coord_z, indexing="ij")
     coordinates = np.asarray(mesh, dtype=np.float32)
-    upsampled = map_coordinates(
-        volume.astype(np.float32, copy=False),
+
+    source = volume.astype(np.float32, copy=False)
+    finite_mask = np.isfinite(source)
+    filled = np.where(finite_mask, source, 0.0).astype(np.float32, copy=False)
+    weights = finite_mask.astype(np.float32, copy=False)
+
+    value_sum = map_coordinates(
+        filled,
         coordinates,
         order=1,
         mode="nearest",
         prefilter=False,
     )
-    return cast("np.ndarray", upsampled.astype(np.float32, copy=False))
+    weight_sum = map_coordinates(
+        weights,
+        coordinates,
+        order=1,
+        mode="nearest",
+        prefilter=False,
+    )
+    upsampled = np.full(output_shape, np.inf, dtype=np.float32)
+    valid = weight_sum > 0.0
+    upsampled[valid] = (value_sum[valid] / weight_sum[valid]).astype(np.float32, copy=False)
+    return cast("np.ndarray", upsampled)
 
 
 def _matched_hessian_energy(

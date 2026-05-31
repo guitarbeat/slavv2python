@@ -109,6 +109,7 @@ EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS = frozenset(
     {
         "comparison_exact_network",
         "comparison_exact_network_use_conflict_painting",
+        "energy_axis_permutation",
         "energy_storage_format",
         "return_all_scales",
     }
