@@ -394,8 +394,11 @@ def _compute_exact_parity_energy_chunked(
     """Compute energy per scale using MATLAB-exact octave-chunked downsample + offset-mesh upsampling."""
     from scipy.ndimage import map_coordinates
 
-    # Exact parity merges per-chunk writes; keep a single worker for determinism.
-    n_jobs = 1
+    n_jobs = int(config.get("n_jobs", 1))
+    if n_jobs == 1:
+        import os
+
+        n_jobs = max(1, (os.cpu_count() or 4) - 1)
     image_shape = np.asarray(image.shape, dtype=float)
 
     energy_3d = np.full(image.shape, np.inf, dtype=np.float64)
