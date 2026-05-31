@@ -12,8 +12,10 @@ from slavv_python.processing.stages.energy import hessian_response as native_hes
 from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
 from slavv_python.schema.results import EnergyResult
 from slavv_python.processing.stages.energy.chunking import (
+    _compute_exact_parity_energy_chunked,
     _compute_energy_scale as compute_energy_scale,
     _energy_lattice as energy_lattice,
+    _energy_result_payload,
     _open_energy_storage_array as open_energy_storage_array,
     _project_scale_stack as project_scale_stack,
     _remove_storage_path as remove_storage_path,
@@ -86,6 +88,54 @@ def calculate_energy_field_resumable(
         get_chunking_lattice_func = get_chunking_lattice
 
     config = prepare_energy_config(image, params)
+
+    if config.get("comparison_exact_network"):
+        total_voxels = int(np.prod(image.shape))
+        storage_format = select_energy_storage_format(config, total_voxels)
+        energy_path, scale_path, energy4d_path = _artifact_paths(
+            stage_controller,
+            storage_format=storage_format,
+        )
+        _clear_stale_artifacts(
+            stage_controller,
+            keep_paths=(energy_path, scale_path, energy4d_path),
+            remove_storage_path=remove_storage_path,
+        )
+        stage_controller.begin(
+            detail="Computing exact-route octave-chunked energy",
+            units_total=1,
+            units_completed=0,
+            substage="exact_parity_chunks",
+            resumed=False,
+        )
+        energy_3d, scale_indices, energy_4d = _compute_exact_parity_energy_chunked(image, config)
+        best_energy = open_energy_storage_array(
+            energy_path,
+            mode="w",
+            dtype=np.float32,
+            shape=tuple(image.shape),
+            fill_value=np.inf if config["energy_sign"] < 0 else -np.inf,
+            storage_format=storage_format,
+        )
+        best_scale = open_energy_storage_array(
+            scale_path,
+            mode="w",
+            dtype=np.int16,
+            shape=tuple(image.shape),
+            fill_value=0,
+            storage_format=storage_format,
+        )
+        best_energy[...] = energy_3d
+        best_scale[...] = scale_indices
+        stage_controller.remove_state()
+        stage_controller.update(
+            units_total=1,
+            units_completed=1,
+            detail="Exact-route energy field complete",
+            substage="exact_parity_chunks",
+        )
+        return _energy_result_payload(config, image.shape, energy_3d, scale_indices, energy_4d)
+
     config_hash = _config_hash(config)
 
     total_voxels = int(np.prod(image.shape))
