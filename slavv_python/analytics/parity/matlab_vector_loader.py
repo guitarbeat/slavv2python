@@ -74,7 +74,7 @@ def _resolve_matlab_energy_settings_path(batch_dir: Path, energy_asset_stem: str
     prefix = "energy_"
     if not energy_asset_stem.startswith(prefix):
         raise ValueError(f"unexpected MATLAB energy artifact stem: {energy_asset_stem}")
-    timestamp = energy_asset_stem.removeprefix(prefix).split("_", 1)[0]
+    timestamp = energy_asset_stem[len(prefix):].split("_", 1)[0]
     settings_path = batch_dir / "settings" / f"energy_{timestamp}.mat"
     if not settings_path.is_file():
         raise ValueError(f"missing MATLAB energy settings file: {settings_path}")
@@ -241,6 +241,17 @@ def _load_normalized_matlab_energy_from_hdf5(path: Path) -> dict[str, Any]:
     lumen_radius_microns = settings_payload.get("lumen_radius_in_microns_range")
     if lumen_radius_microns is None:
         lumen_radius_microns = settings_payload.get("lumen_radius_microns")
+
+    # MATLAB writes 3D volumes in Fortran (column-major) order; h5py reads them
+    # back in C order, reversing the axis indices relative to MATLAB's convention.
+    # The Python checkpoint stores energy in the reoriented frame produced by
+    # _reorient_exact_input_volume (permutation [2,0,1] on the original z,y,x
+    # input), which swaps the last two spatial axes compared to the raw HDF5
+    # layout.  Transposing with (0, 2, 1) here aligns the MATLAB oracle with the
+    # Python checkpoint so that voxel [i, j, k] refers to the same physical voxel
+    # in both arrays.
+    energy = np.ascontiguousarray(energy.transpose(0, 2, 1))
+    scale_indices = np.ascontiguousarray(scale_indices.transpose(0, 2, 1))
 
     return {
         "energy": _normalize_float_array(energy),

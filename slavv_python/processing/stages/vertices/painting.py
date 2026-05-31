@@ -28,7 +28,15 @@ def paint_vertex_image(
     vertex_image = np.zeros(image_shape, dtype=np.uint16)
 
     for i, (pos, scale) in enumerate(zip(vertex_positions, vertex_scales)):
-        radii = lumen_radius_pixels[scale]
+        if len(lumen_radius_pixels) == len(vertex_positions):
+            val = lumen_radius_pixels[i]
+        else:
+            val = lumen_radius_pixels[scale]
+
+        if np.isscalar(val) or (isinstance(val, np.ndarray) and val.ndim == 0):
+            radii = np.repeat(float(val), 3)
+        else:
+            radii = np.asarray(val)
         try:
             ellipsoid_mask = ellipsoid(radii[0], radii[1], radii[2], spacing=(1.0, 1.0, 1.0))
             coords = np.where(ellipsoid_mask)

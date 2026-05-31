@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
+from typing_extensions import Protocol, runtime_checkable
 
 
 @runtime_checkable

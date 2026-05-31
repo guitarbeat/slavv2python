@@ -75,13 +75,6 @@ class EnergyManager:
                 params,
                 stage_controller,
                 get_chunking_lattice_func=get_chunking_lattice_func,
-                prepare_energy_config=_prepare_energy_config,
-                select_energy_storage_format=_select_energy_storage_format,
-                energy_lattice=_energy_lattice,
-                remove_storage_path=_remove_storage_path,
-                open_energy_storage_array=_open_energy_storage_array,
-                compute_energy_scale=_compute_energy_scale,
-                project_scale_stack=_project_scale_stack,
             )
 
         config = _prepare_energy_config(image, params)

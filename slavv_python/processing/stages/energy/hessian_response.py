@@ -37,11 +37,43 @@ def matlab_octave_resolution_factors(
         )
         resolution_factors_by_octave[int(current_octave)] = resolution_factors
 
+    # Replicate MATLAB row consolidation unique rows last
+    initial_octave_range = np.unique(octave_at_scales)
+    initial_rf_list = [resolution_factors_by_octave[int(o)] for o in initial_octave_range]
+
+    unique_rf = []
+    ia = []
+    ic_map = {}
+    for idx in range(len(initial_rf_list) - 1, -1, -1):
+        rf = initial_rf_list[idx]
+        found = False
+        for u_idx, urf in enumerate(unique_rf):
+            if np.array_equal(urf, rf):
+                ic_map[int(initial_octave_range[idx])] = u_idx
+                found = True
+                break
+        if not found:
+            unique_rf.append(rf)
+            ia.append(initial_octave_range[idx])
+            ic_map[int(initial_octave_range[idx])] = len(unique_rf) - 1
+
+    unique_rf = unique_rf[::-1]
+    ia = ia[::-1]
+    n_unique = len(unique_rf)
+    for k in ic_map:
+        ic_map[k] = n_unique - 1 - ic_map[k]
+
+    consolidated_octave_range = np.array(ia, dtype=np.int16)
+    consolidated_octave_at_scales = np.array(
+        [consolidated_octave_range[ic_map[int(o)]] for o in octave_at_scales],
+        dtype=np.int16,
+    )
+
     scale_resolution_factors = np.stack(
-        [resolution_factors_by_octave[int(octave)] for octave in octave_at_scales],
+        [resolution_factors_by_octave[int(octave)] for octave in consolidated_octave_at_scales],
         axis=0,
     )
-    return octave_at_scales, scale_resolution_factors
+    return consolidated_octave_at_scales, scale_resolution_factors
 
 
 def required_scale_stack(config: dict[str, Any]) -> bool:

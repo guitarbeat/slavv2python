@@ -11,6 +11,15 @@ import numpy as np
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
 from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
 from slavv_python.schema.results import EnergyResult
+from slavv_python.processing.stages.energy.chunking import (
+    _compute_energy_scale as compute_energy_scale,
+    _energy_lattice as energy_lattice,
+    _open_energy_storage_array as open_energy_storage_array,
+    _project_scale_stack as project_scale_stack,
+    _remove_storage_path as remove_storage_path,
+    _select_energy_storage_format as select_energy_storage_format,
+)
+from slavv_python.processing.stages.energy.config import _prepare_energy_config as prepare_energy_config
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -69,17 +78,13 @@ def calculate_energy_field_resumable(
     image: np.ndarray,
     params: dict[str, Any],
     stage_controller: StageController,
-    *,
-    get_chunking_lattice_func,
-    prepare_energy_config,
-    select_energy_storage_format,
-    energy_lattice,
-    remove_storage_path,
-    open_energy_storage_array,
-    compute_energy_scale,
-    project_scale_stack,
+    get_chunking_lattice_func=None,
 ) -> EnergyResult:
     """Compute energy with resumable chunk/scale units backed by persistent arrays."""
+    if get_chunking_lattice_func is None:
+        from slavv_python.utils import get_chunking_lattice
+        get_chunking_lattice_func = get_chunking_lattice
+
     config = prepare_energy_config(image, params)
     config_hash = _config_hash(config)
 

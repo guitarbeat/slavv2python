@@ -17,7 +17,7 @@ from slavv_python.processing.stages.network import (
     _matlab_get_strand_objects,
     _matlab_sort_network_v180,
 )
-from slavv_python.processing.stages.vertices.vertices import extract_vertices
+from slavv_python.processing.stages.vertices import extract_vertices
 
 
 def get_energy_v202(
