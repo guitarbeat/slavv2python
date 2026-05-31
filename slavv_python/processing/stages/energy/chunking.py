@@ -394,10 +394,8 @@ def _compute_exact_parity_energy_chunked(
     """Compute energy per scale using MATLAB-exact octave-chunked downsample + offset-mesh upsampling."""
     from scipy.ndimage import map_coordinates
 
-    n_jobs = int(config.get("n_jobs", 1))
-    if n_jobs == 1:
-        import os
-        n_jobs = max(1, os.cpu_count() - 1) if os.cpu_count() else 4
+    # Exact parity merges per-chunk writes; keep a single worker for determinism.
+    n_jobs = 1
     image_shape = np.asarray(image.shape, dtype=float)
 
     energy_3d = np.full(image.shape, np.inf, dtype=np.float64)
@@ -416,14 +414,24 @@ def _compute_exact_parity_energy_chunked(
             continue
 
         rf = np.asarray(config["scale_resolution_factors"][scale_indices_at_octave[0]], dtype=float)
+        # get_starts_and_counts_V200 uses MATLAB axis order (Y, X, Z); working image is (Z, Y, X).
+        matlab_image_shape = np.array(
+            [image_shape[1], image_shape[2], image_shape[0]],
+            dtype=float,
+        )
+        rf_matlab = np.array([rf[1], rf[2], rf[0]], dtype=float)
 
         largest_scale_idx = scale_indices_at_octave[-1]
         largest_radius_microns = lumen_radius_microns[largest_scale_idx]
         largest_pixels_per_radius = largest_radius_microns / microns_per_voxel
 
-        approx_size = np.round(image_shape / rf)
+        approx_size = np.round(matlab_image_shape / rf_matlab)
         microns_per_pixel = microns_per_voxel * rf
-        voxel_aspect_ratio = 1.0 / microns_per_pixel
+        microns_per_pixel_matlab = np.array(
+            [microns_per_pixel[1], microns_per_pixel[2], microns_per_pixel[0]],
+            dtype=float,
+        )
+        voxel_aspect_ratio = 1.0 / microns_per_pixel_matlab
 
         chunk_lattice_dimensions, number_of_chunks = get_chunking_lattice_v190(
             voxel_aspect_ratio,
@@ -434,38 +442,38 @@ def _compute_exact_parity_energy_chunked(
         chunk_overlap_vector = np.ceil(
             6.0 * np.sqrt(pixels_per_sigma_PSF**2 + largest_pixels_per_radius**2)
         ).astype(np.int32)
+        chunk_overlap_matlab = chunk_overlap_vector[[1, 2, 0]]
 
         res_starts_counts = get_starts_and_counts_v200(
             chunk_lattice_dimensions,
-            chunk_overlap_vector,
-            image_shape,
-            rf,
+            chunk_overlap_matlab,
+            matlab_image_shape,
+            rf_matlab,
         )
 
-        # Coordinate mappings for Python (z, y, x)
-        z_read_starts = res_starts_counts[0]
-        y_read_starts = res_starts_counts[2]
+        y_read_starts = res_starts_counts[0]
         x_read_starts = res_starts_counts[1]
+        z_read_starts = res_starts_counts[2]
 
-        z_read_counts = res_starts_counts[3]
-        y_read_counts = res_starts_counts[5]
+        y_read_counts = res_starts_counts[3]
         x_read_counts = res_starts_counts[4]
+        z_read_counts = res_starts_counts[5]
 
-        z_write_starts = res_starts_counts[6]
-        y_write_starts = res_starts_counts[8]
+        y_write_starts = res_starts_counts[6]
         x_write_starts = res_starts_counts[7]
+        z_write_starts = res_starts_counts[8]
 
-        z_write_counts = res_starts_counts[9]
-        y_write_counts = res_starts_counts[11]
+        y_write_counts = res_starts_counts[9]
         x_write_counts = res_starts_counts[10]
+        z_write_counts = res_starts_counts[11]
 
-        z_offset = res_starts_counts[12]
-        y_offset = res_starts_counts[14]
+        y_offset = res_starts_counts[12]
         x_offset = res_starts_counts[13]
+        z_offset = res_starts_counts[14]
 
         def _process_chunk(chunk_idx: int) -> tuple[int, tuple[slice, slice, slice, np.ndarray, np.ndarray]]:
-            # Fortran unraveling matching MATLAB ind2sub
-            z_idx, y_idx, x_idx = np.unravel_index(chunk_idx, chunk_lattice_dimensions, order="F")
+            # Fortran unraveling matching MATLAB ind2sub on (Y, X, Z) lattice
+            y_idx, x_idx, z_idx = np.unravel_index(chunk_idx, chunk_lattice_dimensions, order="F")
 
             py_z_start = int(z_read_starts[z_idx]) - 1
             py_y_start = int(y_read_starts[y_idx]) - 1
@@ -517,7 +525,10 @@ def _compute_exact_parity_energy_chunked(
             mesh_coords = np.meshgrid(mesh_z, mesh_y, mesh_x, indexing="ij")
             coords_grid = np.stack(mesh_coords, axis=0)
 
-            chunk_energy_4d = np.zeros((*original_chunk.shape, len(scale_indices_at_octave)), dtype=np.float64)
+            chunk_energy_4d = np.zeros(
+                (w_count_z, w_count_y, w_count_x, len(scale_indices_at_octave)),
+                dtype=np.float64,
+            )
 
             for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
                 radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
@@ -610,13 +621,13 @@ def _compute_exact_parity_energy_chunked(
             prev_scales_count = int(np.sum(octave_at_scales < current_octave))
             chunk_scale_min = chunk_scale_min.astype(np.int16) + prev_scales_count
 
-            z_w_start = int(z_write_starts[z_idx]) - 1
-            y_w_start = int(y_write_starts[y_idx]) - 1
-            x_w_start = int(x_write_starts[x_idx]) - 1
+            py_z_w_start = int(z_write_starts[z_idx]) - 1
+            py_y_w_start = int(y_write_starts[y_idx]) - 1
+            py_x_w_start = int(x_write_starts[x_idx]) - 1
 
-            slice_z = slice(z_w_start, z_w_start + w_count_z)
-            slice_y = slice(y_w_start, y_w_start + w_count_y)
-            slice_x = slice(x_w_start, x_w_start + w_count_x)
+            slice_z = slice(py_z_w_start, py_z_w_start + w_count_z)
+            slice_y = slice(py_y_w_start, py_y_w_start + w_count_y)
+            slice_x = slice(py_x_w_start, py_x_w_start + w_count_x)
 
             return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
 

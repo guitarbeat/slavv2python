@@ -133,6 +133,7 @@ def _prepare_energy_config(image: np.ndarray, params: dict[str, Any]) -> dict[st
         "pixels_per_sigma_PSF": pixels_per_sigma_psf,
         "microns_per_sigma_PSF": microns_per_sigma_psf,
         "n_jobs": int(params.get("n_jobs", 1)),
+        "comparison_exact_network": bool(params.get("comparison_exact_network", False)),
     }
 
 
