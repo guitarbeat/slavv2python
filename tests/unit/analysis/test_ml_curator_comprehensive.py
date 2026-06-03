@@ -37,6 +37,15 @@ class _UploadedModel:
         return self._payload
 
 
+class _ReadableModel:
+    def __init__(self, name: str, payload):
+        self.name = name
+        self._payload = payload
+
+    def read(self):
+        return self._payload
+
+
 class _Malicious:
     def __reduce__(self) -> tuple:
         return (os.system, ("echo malicious code execution",))
@@ -169,6 +178,41 @@ def test_load_aggregated_training_data_returns_four_empty_arrays_for_empty_dir(t
     assert v_lab.shape == (0,)
     assert e_feat.shape == (0,)
     assert e_lab.shape == (0,)
+
+
+@pytest.mark.unit
+def test_load_aggregated_training_data_accepts_aliases_and_skips_mismatches(tmp_path: Path):
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "chunk_alias.json").write_text(
+        json.dumps(
+            {
+                "v_feat": [[1.0, 2.0], [3.0, 4.0]],
+                "v_labels": [1, 0],
+                "e_features": [[0.1, 0.2]],
+                "e_labels": [1],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "chunk_bad.json").write_text(
+        json.dumps(
+            {
+                "vertex_features": [[9.0], [10.0]],
+                "vertex_labels": [1],
+                "edge_features": [[0.9]],
+                "edge_labels": [1, 0],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    v_feat, v_lab, e_feat, e_lab = load_aggregated_training_data(tmp_path, file_pattern="chunk_*")
+
+    assert v_feat.tolist() == [[1.0, 2.0], [3.0, 4.0]]
+    assert v_lab.tolist() == [1, 0]
+    assert e_feat.tolist() == [[0.1, 0.2]]
+    assert e_lab.tolist() == [1]
 
 
 @pytest.mark.unit
@@ -389,3 +433,17 @@ def test_materialize_model_source_supports_uploaded_file_objects(tmp_path: Path)
 
     with materialize_model_source(_UploadedModel(source_path)) as materialized_path:
         assert Path(materialized_path).read_bytes() == b"model-bytes"
+
+
+@pytest.mark.unit
+def test_materialize_model_source_supports_readable_objects_and_none():
+    with materialize_model_source(None) as materialized_path:
+        assert materialized_path is None
+
+    source = _ReadableModel("model.pkl", "model-text")
+    with materialize_model_source(source) as materialized_path:
+        path = Path(materialized_path)
+        assert path.suffix == ".pkl"
+        assert path.read_bytes() == b"model-text"
+
+    assert not path.exists()

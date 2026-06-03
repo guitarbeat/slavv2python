@@ -8,25 +8,33 @@ from typing import Any
 
 
 @contextmanager
-def materialize_model_source(source: Any):
-    """
-    Context manager that ensures a model source is available as a local file path.
-    Supports Path objects, strings, and UploadedFile-like objects with getvalue().
-    """
-    if isinstance(source, (str, Path)):
+def materialize_model_source(source: Any | None):
+    """Yield a filesystem path for a model source that may be file-like."""
+    if source is None:
+        yield None
+        return
+
+    if isinstance(source, (str, os.PathLike)):
         yield str(source)
         return
 
-    # Handle UploadedFile or similar objects with getvalue()
     if hasattr(source, "getvalue"):
-        fd, temp_path = tempfile.mkstemp(suffix=".joblib")
-        try:
-            with os.fdopen(fd, "wb") as f:
-                f.write(source.getvalue())
-            yield temp_path
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-        return
+        payload = source.getvalue()
+    elif hasattr(source, "read"):
+        payload = source.read()
+    else:
+        raise TypeError(f"Unsupported model source type: {type(source)}")
 
-    raise TypeError(f"Unsupported model source type: {type(source)}")
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
+
+    source_name = getattr(source, "name", "uploaded-model.joblib")
+    suffix = Path(str(source_name)).suffix or ".joblib"
+    fd, temp_path = tempfile.mkstemp(suffix=suffix)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(payload)
+        yield temp_path
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
