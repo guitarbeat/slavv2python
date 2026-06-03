@@ -1,0 +1,4 @@
+interface:
+  display_name: "Solution Note Generator"
+  short_description: "Promote verified fixes into searchable solution notes."
+  default_prompt: "Turn this verified fix into a concise docs/solutions note with searchable metadata."

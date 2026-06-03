@@ -1,0 +1,4 @@
+interface:
+  display_name: "Self Improving Agent"
+  short_description: "Capture durable corrections and improve repo agent workflows."
+  default_prompt: "Reflect on this work and capture any durable lessons for future agents on this project."

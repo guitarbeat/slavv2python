@@ -1,0 +1,4 @@
+interface:
+  display_name: "Find Agent Skills"
+  short_description: "Discover local and external agent skills safely."
+  default_prompt: "Find a skill for the task, prioritizing this repository's project skills."
