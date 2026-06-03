@@ -22,7 +22,6 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         description="SLAVV - Segmentation-Less, Automated, Vascular Vectorization",
     )
     parser.add_argument("--version", action="store_true", help="Print version and exit")
-    parser.add_argument("--tui", action="store_true", help="Launch interactive TUI wizard/monitor")
     subparsers = parser.add_subparsers(dest="command")
 
     run_parser = subparsers.add_parser("run", help="Run the SLAVV pipeline on a TIFF volume")
@@ -228,6 +227,22 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Run directory containing run metadata",
     )
     status_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+
+    monitor_parser = subparsers.add_parser(
+        "monitor",
+        help="Open the TUI run operations console for a structured run",
+    )
+    monitor_parser.add_argument(
+        "--run-dir",
+        required=True,
+        help="Run directory containing run metadata",
+    )
+    monitor_parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Print one consolidated monitor snapshot without opening the TUI",
+    )
+    monitor_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     return parser
 
 

@@ -9,7 +9,6 @@ import pytest
 from slavv_python.interface.cli.tui import (
     is_tui_available,
     run_monitor_if_supported,
-    run_wizard_if_supported,
 )
 
 
@@ -21,21 +20,8 @@ def test_is_tui_available():
 
 @patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", False)
 def test_tui_graceful_fallbacks_when_unavailable():
-    """Verify that fallbacks work and don't raise errors when TUI is unavailable."""
-    assert run_wizard_if_supported() is None
-    # Ensure run_monitor_if_supported returns None/fails gracefully
+    """Verify monitor dependency errors do not raise when TUI is unavailable."""
     assert run_monitor_if_supported() is None
-
-
-@pytest.mark.skipif(not is_tui_available(), reason="TUI extra is not installed")
-@patch("slavv_python.interface.cli.tui._TUI_AVAILABLE", True)
-@patch("slavv_python.interface.cli.tui.wizard.run_setup_wizard")
-def test_run_wizard_if_supported_calls_implementation(mock_run):
-    """Verify run_wizard_if_supported invokes implementation when available."""
-    mock_run.return_value = {"input_path": "vol.tif", "execute_now": True}
-    res = run_wizard_if_supported()
-    assert res == {"input_path": "vol.tif", "execute_now": True}
-    mock_run.assert_called_once()
 
 
 @pytest.mark.skipif(not is_tui_available(), reason="TUI extra is not installed")

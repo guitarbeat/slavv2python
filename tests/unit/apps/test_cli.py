@@ -41,6 +41,12 @@ class TestBuildParser:
         args = parser.parse_args(["--version"])
         assert args.version is True
 
+    def test_generic_tui_flag_is_removed(self):
+        parser = _build_cli_parser()
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args(["--tui"])
+        assert exc.value.code != 0
+
     def test_run_subcommand_requires_input(self):
         parser = _build_cli_parser()
         with pytest.raises(SystemExit) as exc:
@@ -130,6 +136,13 @@ class TestBuildParser:
         args = parser.parse_args(["status", "--run-dir", "run_dir"])
         assert args.command == "status"
         assert args.run_dir == "run_dir"
+
+    def test_monitor_subcommand_once(self):
+        parser = _build_cli_parser()
+        args = parser.parse_args(["monitor", "--run-dir", "run_dir", "--once"])
+        assert args.command == "monitor"
+        assert args.run_dir == "run_dir"
+        assert args.once is True
 
 
 class TestArgsToParameters:
@@ -224,6 +237,24 @@ class TestMainEntryPoint:
         captured = capsys.readouterr()
         assert "no valid slavv run metadata found" in captured.out.lower()
         assert not list(tmp_path.iterdir())
+
+    def test_monitor_once_prints_consolidated_snapshot(self, capsys, tmp_path):
+        run_dir = tmp_path / "run"
+        context = RunContext(
+            run_dir=run_dir,
+            input_fingerprint="input-a",
+            params_fingerprint="params-a",
+            target_stage="network",
+        )
+        context.mark_preprocess_complete()
+        context.stage("energy").begin(detail="Energy running", units_total=4, units_completed=2)
+
+        main(["monitor", "--run-dir", str(run_dir), "--once"])
+
+        captured = capsys.readouterr()
+        assert "Run Monitor:" in captured.out
+        assert "Effective status:" in captured.out
+        assert "energy" in captured.out
 
 
 def test_load_exported_network_json_preserves_parameters(tmp_path):

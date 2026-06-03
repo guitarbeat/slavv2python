@@ -5,6 +5,7 @@ from __future__ import annotations
 from .commands import (
     _handle_analyze_command,
     _handle_info_command,
+    _handle_monitor_command,
     _handle_plot_command,
     _handle_run_command,
     _handle_status_command,
@@ -29,6 +30,7 @@ __all__ = [
     "_build_strands_from_edge_connections",
     "_handle_analyze_command",
     "_handle_info_command",
+    "_handle_monitor_command",
     "_handle_plot_command",
     "_handle_run_command",
     "_handle_status_command",

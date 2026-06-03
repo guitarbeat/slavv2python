@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 from .commands import (
     _handle_analyze_command,
     _handle_info_command,
+    _handle_monitor_command,
     _handle_plot_command,
     _handle_run_command,
     _handle_status_command,
@@ -22,18 +23,12 @@ CLI_COMMAND_HANDLERS: dict[str | None, Callable[..., None]] = {
     "plot": _handle_plot_command,
     "info": _handle_info_command,
     "status": _handle_status_command,
+    "monitor": _handle_monitor_command,
 }
 
 
 def dispatch_cli_command(parser, args) -> None:
     """Execute the handler for the requested CLI command."""
-    if args.tui:
-        # Launch interactive TUI wizard/monitor
-        from .tui import run_tui_app
-
-        run_tui_app(parser, args)
-        return
-
     handler = CLI_COMMAND_HANDLERS.get(args.command)
     if handler is None:
         parser.print_help()

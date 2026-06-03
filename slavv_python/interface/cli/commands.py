@@ -20,7 +20,6 @@ from .shared import (
     _require_existing_file,
     _resolve_export_artifact_paths,
 )
-from .status_service import build_run_status_lines
 
 
 class Terminal:
@@ -137,16 +136,34 @@ def _handle_analyze_command(args) -> None:
 
 def _handle_status_command(args) -> None:
     """Inspect and print the status of a resumable run."""
-    from slavv_python.engine.state import load_run_snapshot
+    from .monitor_service import load_run_monitor_view, render_monitor_lines
 
-    snapshot = load_run_snapshot(args.run_dir)
-    if snapshot is None:
+    view = load_run_monitor_view(args.run_dir)
+    if view.snapshot is None:
         print(Terminal.error(f"No valid SLAVV run metadata found under {args.run_dir}"))
         sys.exit(1)
 
     print(Terminal.header(f"Run Status: {args.run_dir}"))
-    lines = build_run_status_lines(snapshot)
+    lines = render_monitor_lines(view)
     print("\n".join(f"  {line}" for line in lines) + "\n")
+
+
+def _handle_monitor_command(args) -> None:
+    """Open or print the consolidated run operations console."""
+    from .monitor_service import load_run_monitor_view, render_monitor_lines
+
+    view = load_run_monitor_view(args.run_dir)
+    if args.once:
+        print(Terminal.header(f"Run Monitor: {args.run_dir}"))
+        print("\n".join(f"  {line}" for line in render_monitor_lines(view)) + "\n")
+        if view.snapshot is None:
+            sys.exit(1)
+        return
+
+    from .tui import run_monitor_if_supported
+
+    if run_monitor_if_supported(args.run_dir) is None:
+        sys.exit(1)
 
 
 def _handle_info_command(args) -> None:
@@ -186,4 +203,5 @@ __all__ = [
     "_handle_plot_command",
     "_handle_run_command",
     "_handle_status_command",
+    "_handle_monitor_command",
 ]
