@@ -288,14 +288,17 @@ def _matched_hessian_intermediates(
         derivative_weights,
     )
 
-    curvatures_chunk = np.fft.ifftn(
-        curvatures_kernels_dft * matching_kernel_dft[None, ...] * chunk_dft[None, ...],
-        axes=(-3, -2, -1),
-    ).real
-    gradient_chunk = np.fft.ifftn(
-        gradient_kernels_dft * matching_kernel_dft[None, ...] * chunk_dft[None, ...],
-        axes=(-3, -2, -1),
-    ).real
+    filtered_chunk_dft = matching_kernel_dft * chunk_dft
+    curvatures_chunk = np.empty((curvatures_kernels_dft.shape[0], *chunk_dft.shape), dtype=float)
+    for kernel_index, curvature_kernel_dft in enumerate(curvatures_kernels_dft):
+        curvatures_chunk[kernel_index] = _ifftn_matlab_symmetric(
+            curvature_kernel_dft * filtered_chunk_dft
+        )
+    gradient_chunk = np.empty((gradient_kernels_dft.shape[0], *chunk_dft.shape), dtype=float)
+    for kernel_index, gradient_kernel_dft in enumerate(gradient_kernels_dft):
+        gradient_chunk[kernel_index] = _ifftn_matlab_symmetric(
+            gradient_kernel_dft * filtered_chunk_dft
+        )
 
     curvatures_chunk = curvatures_chunk[
         :, : original_shape[0], : original_shape[1], : original_shape[2]
@@ -365,6 +368,22 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
     if all(after == 0 for _, after in pad_width):
         return image
     return cast("np.ndarray", np.pad(image, pad_width, mode="symmetric"))
+
+
+def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
+    """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift."""
+    spectrum_arr = np.asarray(spectrum)
+    partner_indices = np.ix_(*[(-np.arange(length)) % length for length in spectrum_arr.shape])
+    partner = spectrum_arr[partner_indices]
+    linear_indices = np.arange(spectrum_arr.size).reshape(spectrum_arr.shape, order="F")
+    partner_linear_indices = linear_indices[partner_indices]
+    keep_original = linear_indices <= partner_linear_indices
+    symmetric_spectrum = np.where(keep_original, spectrum_arr, np.conj(partner))
+    self_partner = linear_indices == partner_linear_indices
+    if np.any(self_partner):
+        symmetric_spectrum = symmetric_spectrum.copy()
+        symmetric_spectrum[self_partner] = symmetric_spectrum[self_partner].real
+    return cast("np.ndarray", np.fft.ifftn(symmetric_spectrum).real)
 
 
 def _pixel_frequency_meshes(
@@ -506,6 +525,7 @@ __all__ = [
     "_derivative_kernels_dft",
     "_downsample_volume",
     "_fourier_transform_input",
+    "_ifftn_matlab_symmetric",
     "_matched_hessian_energy",
     "_matched_hessian_intermediates",
     "_matching_kernel_dft",

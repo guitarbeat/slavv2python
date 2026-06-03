@@ -303,12 +303,18 @@ def get_chunking_lattice_v190(
     )
     target_chunk_dimensions = target_chunk_characteristic_length * unit_volume_voxel_aspect_ratio
 
-    chunk_lattice_dimensions = np.rint(
+    chunk_lattice_dimensions = _matlab_uint16_cast(
         np.maximum(size_of_image / target_chunk_dimensions, 1.0)
-    ).astype(np.uint16)
+    )
 
     number_of_chunks_in_lattice = int(np.prod(chunk_lattice_dimensions))
     return chunk_lattice_dimensions, number_of_chunks_in_lattice
+
+
+def _matlab_uint16_cast(values: np.ndarray) -> np.ndarray:
+    """Match MATLAB's positive double -> uint16 conversion."""
+    rounded = np.floor(np.asarray(values, dtype=float) + 0.5)
+    return np.clip(rounded, 0, np.iinfo(np.uint16).max).astype(np.uint16)
 
 
 def get_starts_and_counts_v200(
@@ -326,7 +332,7 @@ def get_starts_and_counts_v200(
     """Replicate MATLAB get_starts_and_counts_V200 with unsigned 16-bit saturation arithmetic."""
     def get_borders(size, lat):
         pts = np.linspace(0, float(size), int(lat) + 1)
-        return np.rint(pts).astype(np.uint16)
+        return _matlab_uint16_cast(pts)
 
     y_writing_borders = get_borders(size_of_image[0], chunk_lattice_dimensions[0])
     x_writing_borders = get_borders(size_of_image[1], chunk_lattice_dimensions[1])
@@ -387,19 +393,82 @@ def get_starts_and_counts_v200(
     )
 
 
+def _interp3_matlab_linear_inf(
+    volume: np.ndarray,
+    coords: np.ndarray,
+    *,
+    cval: float = 0.0,
+) -> np.ndarray:
+    """Linear interp3-compatible interpolation that propagates positive-weight Inf."""
+    y = coords[0]
+    x = coords[1]
+    z = coords[2]
+    y0 = np.floor(y).astype(np.int64)
+    x0 = np.floor(x).astype(np.int64)
+    z0 = np.floor(z).astype(np.int64)
+    fy = y - y0
+    fx = x - x0
+    fz = z - z0
+
+    out = np.zeros_like(y, dtype=np.float64)
+    has_inf = np.zeros_like(y, dtype=bool)
+    shape_y, shape_x, shape_z = volume.shape
+
+    for dy in (0, 1):
+        iy = y0 + dy
+        wy = fy if dy else 1.0 - fy
+        valid_y = (iy >= 0) & (iy < shape_y)
+        for dx in (0, 1):
+            ix = x0 + dx
+            wx = fx if dx else 1.0 - fx
+            valid_xy = valid_y & (ix >= 0) & (ix < shape_x)
+            for dz in (0, 1):
+                iz = z0 + dz
+                wz = fz if dz else 1.0 - fz
+                weight = wy * wx * wz
+                positive_weight = weight > 0.0
+                valid = valid_xy & (iz >= 0) & (iz < shape_z)
+
+                values = np.full(out.shape, cval, dtype=np.float64)
+                valid_positive = valid & positive_weight
+                if np.any(valid_positive):
+                    values[valid_positive] = volume[
+                        iy[valid_positive],
+                        ix[valid_positive],
+                        iz[valid_positive],
+                    ]
+                    has_inf |= valid_positive & np.isposinf(values)
+                    finite = valid_positive & np.isfinite(values)
+                    out[finite] += weight[finite] * values[finite]
+
+                invalid_positive = (~valid) & positive_weight
+                if cval and np.any(invalid_positive):
+                    out[invalid_positive] += weight[invalid_positive] * cval
+
+    out[has_inf] = np.inf
+    return out
+
+
+def _matlab_zero_based_linspace(offset: int, stride: int, count: int) -> np.ndarray:
+    """Return MATLAB ``linspace(1+offset/rf, ..., count)`` in zero-based coordinates."""
+    start = float(offset % stride) / float(stride)
+    stop = start + float(count - 1) / float(stride)
+    return np.linspace(start, stop, int(count), dtype=np.float64)
+
+
 def _compute_exact_parity_energy_chunked(
     image: np.ndarray,
     config: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """Compute energy per scale using MATLAB-exact octave-chunked downsample + offset-mesh upsampling."""
-    from scipy.ndimage import map_coordinates
 
-    # Parallel workers duplicate large FFT buffers per process; use one worker.
-    n_jobs = 1
+    # Keep modest thread parallelism; process workers trigger joblib memmap tracker
+    # failures on Windows during exact crop proof runs.
+    n_jobs = 2
     image_shape = np.asarray(image.shape, dtype=float)
 
-    energy_3d = np.full(image.shape, np.inf, dtype=np.float64)
-    scale_indices = np.zeros(image.shape, dtype=np.int16)
+    energy_3d = np.zeros(image.shape, dtype=np.float64)
+    scale_indices = np.full(image.shape, -1, dtype=np.int16)
 
     octave_at_scales = config["octave_at_scales"]
     octave_range = np.unique(octave_at_scales)
@@ -487,11 +556,12 @@ def _compute_exact_parity_energy_chunked(
             stride_y = int(rf[1])
             stride_x = int(rf[2])
 
-            original_chunk = image[
+            original_chunk_zyx = image[
                 py_z_start : py_z_start + py_z_count : stride_z,
                 py_y_start : py_y_start + py_y_count : stride_y,
                 py_x_start : py_x_start + py_x_count : stride_x,
-            ].copy()
+            ]
+            original_chunk = np.ascontiguousarray(original_chunk_zyx.transpose(1, 2, 0))
 
             padded_chunk = native_hessian._fourier_transform_input(original_chunk)
             chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
@@ -507,26 +577,26 @@ def _compute_exact_parity_energy_chunked(
 
             z_local = slice(
                 int(np.floor(off_z / stride_z)),
-                int(np.ceil((off_z + w_count_z) / stride_z))
+                1 + int(np.ceil((off_z + w_count_z - 1) / stride_z))
             )
             y_local = slice(
                 int(np.floor(off_y / stride_y)),
-                int(np.ceil((off_y + w_count_y) / stride_y))
+                1 + int(np.ceil((off_y + w_count_y - 1) / stride_y))
             )
             x_local = slice(
                 int(np.floor(off_x / stride_x)),
-                int(np.ceil((off_x + w_count_x) / stride_x))
+                1 + int(np.ceil((off_x + w_count_x - 1) / stride_x))
             )
 
-            mesh_z = (off_z % stride_z + np.arange(w_count_z, dtype=np.float64)) / stride_z
-            mesh_y = (off_y % stride_y + np.arange(w_count_y, dtype=np.float64)) / stride_y
-            mesh_x = (off_x % stride_x + np.arange(w_count_x, dtype=np.float64)) / stride_x
+            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z)
+            mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y)
+            mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x)
 
-            mesh_coords = np.meshgrid(mesh_z, mesh_y, mesh_x, indexing="ij")
+            mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij")
             coords_grid = np.stack(mesh_coords, axis=0)
 
             chunk_energy_4d = np.zeros(
-                (w_count_z, w_count_y, w_count_x, len(scale_indices_at_octave)),
+                (w_count_y, w_count_x, w_count_z, len(scale_indices_at_octave)),
                 dtype=np.float64,
             )
 
@@ -537,8 +607,8 @@ def _compute_exact_parity_energy_chunked(
                 matching_kernel_dft, derivative_weights = native_hessian._matching_kernel_dft(
                     pixel_freq_meshes,
                     radius_of_lumen_in_microns=radius_of_lumen_in_microns,
-                    microns_per_pixel=microns_per_pixel,
-                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct,
+                    microns_per_pixel=microns_per_pixel_matlab,
+                    pixels_per_sigma_psf=pixels_per_sigma_psf_at_oct[[1, 2, 0]],
                     gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
                     spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
                 )
@@ -548,17 +618,27 @@ def _compute_exact_parity_energy_chunked(
                     derivative_weights,
                 )
 
-                curvatures_chunk = np.fft.ifftn(
-                    curvatures_kernels_dft * matching_kernel_dft[None, ...] * chunk_dft[None, ...],
-                    axes=(-3, -2, -1),
-                ).real
-                gradient_chunk = np.fft.ifftn(
-                    gradient_kernels_dft * matching_kernel_dft[None, ...] * chunk_dft[None, ...],
-                    axes=(-3, -2, -1),
-                ).real
+                filtered_chunk_dft = matching_kernel_dft * chunk_dft
+                curvatures_chunk = np.empty(
+                    (curvatures_kernels_dft.shape[0], *chunk_dft.shape),
+                    dtype=np.float64,
+                )
+                for kernel_index, curvature_kernel_dft in enumerate(curvatures_kernels_dft):
+                    curvatures_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(
+                        curvature_kernel_dft * filtered_chunk_dft,
+                    )
 
-                curvatures_chunk = curvatures_chunk[:, z_local, y_local, x_local]
-                gradient_chunk = gradient_chunk[:, z_local, y_local, x_local]
+                gradient_chunk = np.empty(
+                    (gradient_kernels_dft.shape[0], *chunk_dft.shape),
+                    dtype=np.float64,
+                )
+                for kernel_index, gradient_kernel_dft in enumerate(gradient_kernels_dft):
+                    gradient_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(
+                        gradient_kernel_dft * filtered_chunk_dft,
+                    )
+
+                curvatures_chunk = curvatures_chunk[:, y_local, x_local, z_local]
+                gradient_chunk = gradient_chunk[:, y_local, x_local, z_local]
 
                 laplacian_chunk = curvatures_chunk[0] + curvatures_chunk[1] + curvatures_chunk[2]
                 valid_voxels = laplacian_chunk < 0
@@ -602,24 +682,18 @@ def _compute_exact_parity_energy_chunked(
                 coarse_energy[~np.isfinite(coarse_energy)] = np.inf
                 coarse_energy[coarse_energy >= 0] = np.inf
 
-                finite_mask = np.isfinite(coarse_energy)
-                filled = np.where(finite_mask, coarse_energy, 0.0).astype(np.float64, copy=False)
-                weights = finite_mask.astype(np.float64, copy=False)
-
-                val_sum = map_coordinates(filled, coords_grid, order=1, mode="nearest", prefilter=False)
-                w_sum = map_coordinates(weights, coords_grid, order=1, mode="nearest", prefilter=False)
-
-                upsampled = np.full((w_count_z, w_count_y, w_count_x), np.inf, dtype=np.float64)
-                valid = w_sum > 0.0
-                upsampled[valid] = val_sum[valid] / w_sum[valid]
-                upsampled[upsampled >= 0] = np.inf
+                upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
+                upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
                 chunk_energy_4d[..., s_sub_idx] = upsampled
 
-            chunk_energy_min = np.min(chunk_energy_4d, axis=3)
-            chunk_scale_min = np.argmin(chunk_energy_4d, axis=3)
+            chunk_energy_min = np.min(chunk_energy_4d, axis=3).transpose(2, 0, 1)
+            chunk_scale_min = np.argmin(chunk_energy_4d, axis=3).transpose(2, 0, 1)
+            chunk_scale_min[chunk_energy_min >= 0.0] = -1
 
             prev_scales_count = int(np.sum(octave_at_scales < current_octave))
-            chunk_scale_min = chunk_scale_min.astype(np.int16) + prev_scales_count
+            valid_scale = chunk_scale_min >= 0
+            chunk_scale_min = chunk_scale_min.astype(np.int16)
+            chunk_scale_min[valid_scale] += prev_scales_count
 
             py_z_w_start = int(z_write_starts[z_idx]) - 1
             py_y_w_start = int(y_write_starts[y_idx]) - 1
@@ -631,7 +705,7 @@ def _compute_exact_parity_energy_chunked(
 
             return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
 
-        chunk_results = Parallel(n_jobs=n_jobs)(
+        chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
             delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
         )
 
@@ -641,9 +715,10 @@ def _compute_exact_parity_energy_chunked(
             energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
             scale_indices[slice_z, slice_y, slice_x] = np.where(is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x])
 
-    energy_3d[energy_3d >= 0.0] = np.inf
-    energy_3d[~np.isfinite(energy_3d)] = np.inf
-    return energy_3d.astype(np.float32), scale_indices.astype(np.int16), None
+    energy_3d[energy_3d >= 0.0] = 0.0
+    energy_3d[~np.isfinite(energy_3d)] = 0.0
+    scale_indices[energy_3d >= 0.0] = -1
+    return energy_3d.astype(np.float64, copy=False), scale_indices.astype(np.int16), None
 
 
 __all__ = [

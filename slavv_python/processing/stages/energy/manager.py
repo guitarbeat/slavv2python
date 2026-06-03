@@ -68,7 +68,10 @@ class EnergyManager:
         stage_controller: StageController | None,
         get_chunking_lattice_func=None,
     ) -> EnergyResult:
-        image = image.astype(np.float32, copy=False)
+        if params.get("comparison_exact_network"):
+            image = image.astype(np.float64, copy=False)
+        else:
+            image = image.astype(np.float32, copy=False)
         if stage_controller is not None:
             return calculate_energy_field_resumable(
                 image,

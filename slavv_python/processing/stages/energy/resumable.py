@@ -112,7 +112,7 @@ def calculate_energy_field_resumable(
         best_energy = open_energy_storage_array(
             energy_path,
             mode="w",
-            dtype=np.float32,
+            dtype=np.float64,
             shape=tuple(image.shape),
             fill_value=np.inf if config["energy_sign"] < 0 else -np.inf,
             storage_format=storage_format,

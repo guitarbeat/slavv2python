@@ -19,6 +19,13 @@ def _coerce_array(value: Any, *, dtype: Any | None = None) -> np.ndarray:
     return np.asarray(value, dtype=dtype) if dtype is not None else np.asarray(value)
 
 
+def _coerce_energy_array(value: Any) -> np.ndarray:
+    energy = np.asarray(value)
+    if energy.dtype == np.float64:
+        return energy
+    return np.asarray(value, dtype=np.float32)
+
+
 @dataclass
 class EnergyResult:
     """Typed energy-stage payload with authoritative construction and persistence."""
@@ -41,7 +48,7 @@ class EnergyResult:
         **extra: Any,
     ) -> EnergyResult:
         """Authoritative factory with dtype coercion."""
-        energy = _coerce_array(energy, dtype=np.float32)
+        energy = _coerce_energy_array(energy)
         scale_indices = _coerce_array(scale_indices, dtype=np.int16)
         if image_shape is None:
             image_shape = energy.shape
@@ -71,7 +78,7 @@ class EnergyResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> EnergyResult:
         payload_copy = _copy_mapping(payload)
-        energy = _coerce_array(payload_copy.pop("energy", []), dtype=np.float32)
+        energy = _coerce_energy_array(payload_copy.pop("energy", []))
         scale_indices = _coerce_array(payload_copy.pop("scale_indices", []), dtype=np.int16)
         image_shape = tuple(
             payload_copy.pop("image_shape", tuple(int(value) for value in energy.shape))

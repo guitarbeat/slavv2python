@@ -25,6 +25,22 @@ def test_energy_result_roundtrip_preserves_extra_fields():
     assert restored["custom"] == "value"
 
 
+def test_energy_result_preserves_float64_energy_for_exact_route():
+    energy = np.array([[1.25, 2.5]], dtype=np.float64)
+    scales = np.zeros(energy.shape, dtype=np.int16)
+
+    result = EnergyResult.create(
+        energy=energy,
+        scale_indices=scales,
+        lumen_radius_pixels=np.array([1.0], dtype=np.float32),
+        lumen_radius_microns=np.array([1.0], dtype=np.float32),
+    )
+    restored = EnergyResult.from_dict(result.to_dict())
+
+    assert result.energy.dtype == np.float64
+    assert restored.energy.dtype == np.float64
+
+
 def test_component_models_roundtrip_processing_payloads():
     payload = build_processing_results()
 

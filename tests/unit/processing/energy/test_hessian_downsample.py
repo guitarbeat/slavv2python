@@ -4,6 +4,12 @@ import numpy as np
 import numpy.testing as npt
 
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
+from slavv_python.processing.stages.energy.chunking import (
+    _interp3_matlab_linear_inf,
+    _matlab_zero_based_linspace,
+    get_chunking_lattice_v190,
+    get_starts_and_counts_v200,
+)
 from slavv_python.processing.stages.energy.config import _prepare_energy_config
 
 
@@ -108,3 +114,56 @@ def test_energy_axis_permutation_reorders_microns_and_psf() -> None:
     assert int(permuted["scale_resolution_factors"][-1][0]) < int(
         permuted["scale_resolution_factors"][-1][1]
     )
+
+
+def test_get_chunking_lattice_uses_matlab_uint16_rounding() -> None:
+    lattice, count = get_chunking_lattice_v190(
+        np.array([1.0, 1.0, 1.0], dtype=np.float64),
+        1_000_000,
+        np.array([150.0, 250.0, 349.0], dtype=np.float64),
+    )
+
+    # MATLAB uint16 rounds positive doubles half-up: [1.5, 2.5, 3.49] -> [2, 3, 3].
+    npt.assert_array_equal(lattice, np.array([2, 3, 3], dtype=np.uint16))
+    assert count == 18
+
+
+def test_get_starts_and_counts_uses_matlab_uint16_border_rounding() -> None:
+    starts_counts = get_starts_and_counts_v200(
+        np.array([2, 3, 1], dtype=np.uint16),
+        np.array([0, 0, 0], dtype=np.uint16),
+        np.array([3, 5, 4], dtype=np.uint16),
+        np.array([1, 1, 1], dtype=np.uint16),
+    )
+
+    y_writing_starts = starts_counts[6]
+    x_writing_starts = starts_counts[7]
+    y_writing_counts = starts_counts[9]
+    x_writing_counts = starts_counts[10]
+
+    # linspace(0, 3, 3) -> [0, 1.5, 3], and MATLAB uint16(1.5) == 2.
+    npt.assert_array_equal(y_writing_starts, np.array([1.0, 3.0]))
+    npt.assert_array_equal(y_writing_counts, np.array([2.0, 1.0]))
+    # linspace(0, 5, 4) -> [0, 1.666..., 3.333..., 5].
+    npt.assert_array_equal(x_writing_starts, np.array([1.0, 3.0, 4.0]))
+    npt.assert_array_equal(x_writing_counts, np.array([2.0, 1.0, 2.0]))
+
+
+def test_exact_interp3_propagates_inf_only_for_positive_weight_neighbors() -> None:
+    volume = np.full((2, 2, 2), np.inf, dtype=np.float64)
+    volume[0, 0, 0] = -6.0
+
+    exact_corner = np.array([[[[0.0]]], [[[0.0]]], [[[0.0]]]], dtype=np.float64)
+    halfway = np.array([[[[0.5]]], [[[0.0]]], [[[0.0]]]], dtype=np.float64)
+
+    npt.assert_allclose(_interp3_matlab_linear_inf(volume, exact_corner), [[[-6.0]]])
+    assert np.isposinf(_interp3_matlab_linear_inf(volume, halfway)[0, 0, 0])
+
+
+def test_exact_mesh_uses_matlab_linspace_roundoff() -> None:
+    mesh = _matlab_zero_based_linspace(offset=0, stride=3, count=128)
+    arithmetic = np.arange(128, dtype=np.float64) / 3.0
+
+    assert mesh[27] > 9.0
+    assert arithmetic[27] == 9.0
+    npt.assert_allclose(mesh[-1], 127.0 / 3.0, rtol=0.0, atol=0.0)

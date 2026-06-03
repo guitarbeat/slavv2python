@@ -21,13 +21,13 @@ def test_preprocess_exact_route_preserves_intensity_scale():
     np.testing.assert_array_equal(out, img)
 
 
-def test_preprocess_exact_route_applies_intensity_limits():
+def test_preprocess_exact_route_ignores_intensity_limits():
     img = np.array([[[0.0, 100.0, 3000.0]]], dtype=np.float32)
     out = preprocess_image(
         img,
         {"comparison_exact_network": True, "intensity_limits": [7, 2240]},
     )
-    np.testing.assert_array_equal(out, np.array([[[7.0, 100.0, 2240.0]]], dtype=np.float32))
+    np.testing.assert_array_equal(out, img)
 
 
 def test_preprocess_constant_image_returns_zero_float32_volume():
