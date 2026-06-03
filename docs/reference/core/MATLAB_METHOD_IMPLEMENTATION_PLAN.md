@@ -5,9 +5,9 @@
 This document defines what it means to say that Python implements the released
 SLAVV method and records the remaining work to make that statement truthful.
 
-Use this file for claim boundaries, source-of-truth rules, and roadmap phases.
-Use `EXACT_PROOF_FINDINGS.md` for live proof status and current v22 watershed
-readouts.
+Use this file for claim boundaries, source-of-truth rules, and implementation phases.
+Use `EXACT_PROOF_FINDINGS.md` for live proof status and current parity
+blockers.
 
 ## Purpose
 
@@ -80,9 +80,9 @@ function boundaries while delegating into the maintained modular Python code.
 
 | Stage | Public paper-workflow claim | Exact-parity claim | Main blocker |
 | --- | --- | --- | --- |
-| Energy / size image generation | Complete on the maintained native Python path | **Artifact-proven exact** | None (Fully certified) |
-| Vertex extraction | Complete on the maintained native Python path | **Artifact-proven exact** | None (Certified downstream) |
-| Edge extraction | Complete on the maintained native Python path | Source-aligned (88.7% match) | Bit-accurate certification run underway |
+| Energy / size image generation | Complete on the maintained native Python path | Exact-compatible; certified-run proof pending | Crop rerun pending after MATLAB chunking and `interp3` `Inf`-propagation fixes |
+| Vertex extraction | Complete on the maintained native Python path | Verified on prior surfaces; certified-run proof pending | Downstream of energy proof closure |
+| Edge extraction | Complete on the maintained native Python path | Source-aligned; v29 88.7% diagnostic baseline | Downstream of energy and vertex proof closure |
 | Edge cleanup / bridge insertion | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 | Network / strand assembly | Complete on the maintained native Python path | Source-aligned | Downstream of edge proof closure |
 
@@ -154,13 +154,15 @@ Completed work:
 Status: **ACTIVE**
 
 Primary work items:
-1. Verify final match rate exceeds 95% on the bit-accurate certification run.
-2. Execute `prove-exact --stage all` to lock down full pipeline certification.
+1. Pass sequential `prove-exact-sequence` with zero missing/extra for energy,
+   vertices, edges, and network on full `180709_E`.
+2. Execute stage proofs only after the upstream stage has passed on the same run
+   root.
 3. Promote the Python engine to standard research deployment.
 
 Acceptance gate:
-- `vertices`, `edges`, and `network` all pass `prove-exact` on the native-first
-  exact route.
+- `energy`, `vertices`, `edges`, and `network` all pass `prove-exact-sequence`
+  on the native-first exact route.
 
 ## Current File-Level Gap Checklist
 
@@ -171,8 +173,8 @@ These are the reference surfaces still under investigation:
 
 1. `slavv_python/processing/stages/edges/candidate_generation.py`
    The preferred candidate-generation surface still delegates into
-   `slavv_python/processing/stages/edges/global_watershed.py`, where the remaining gap
-   against preserved MATLAB edge pairs appears to live.
+   `slavv_python/processing/stages/edges/global_watershed.py`; revisit this
+   after the certified energy and vertex gates pass.
 2. `slavv_python/processing/stages/edges/selection.py`
    Replace sequential trace iteration in the delegated
    conflict-painting implementation with
@@ -206,7 +208,7 @@ Apply these rules across parity docs:
 
 - `MATLAB_PARITY_MAPPING.md`: source-level stage map and confirmed structural
   deviations
-- `EXACT_PROOF_FINDINGS.md`: live proof status and v22 watershed readouts
+- `EXACT_PROOF_FINDINGS.md`: live proof status and current parity blockers
 - `ENERGY_METHODS.md`: maintained native energy backend surface
 - `../workflow/PAPER_PROFILE.md`: public paper-first CLI/app workflow and JSON
   export contract

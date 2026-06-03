@@ -34,7 +34,7 @@ We recommend using `pre-commit` to automate these checks:
 pre-commit run --all-files
 ```
 
-### 2. Parity Testing (Phase 3)
+### 2. Parity Testing
 If you are modifying core vascular discovery logic (e.g., in `global_watershed.py`), you **must** verify that mathematical parity with MATLAB is maintained.
 
 1.  **Run Preflight**: Prepare a parity experiment directory.
@@ -52,7 +52,7 @@ If you are modifying core vascular discovery logic (e.g., in `global_watershed.p
       --dest-run-root workspace/runs/my_fix_trial `
       --stage all
     ```
-3.  **Verify Match Rate**: Parity must remain **>95%** for core discovery changes to be accepted.
+3.  **Verify Strict Proof**: Parity-sensitive changes must preserve the strict-zero `prove-exact-sequence` bar for the affected certified route. Historical match rates are diagnostics only.
 
 ## Submitting a Pull Request
 

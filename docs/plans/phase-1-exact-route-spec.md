@@ -4,9 +4,9 @@ type: spec
 status: active
 date: 2026-05-28
 topic: 180709-native-parity-ship-confidence
-supersedes:
-  - docs/brainstorms/180709-native-parity-ship-confidence-requirements.md
-  - docs/plans/2026-05-28-001-feat-180709-exact-route-certification-plan.md
+merged_from:
+  - historical brainstorm requirements
+  - historical dated implementation plan
 ---
 
 # Phase 1 exact-route certification on 180709_E
@@ -19,7 +19,7 @@ supersedes:
 
 ## Summary
 
-Establish **program ship confidence** that both certified workflows (exact parity route, then paper profile) are **MATLAB-equivalent** on the canonical volume **180709_E**, using **native** runs (no oracle-injected vertices), **strict zero** missing/extra on every gated stage, and **sequential** certification through energy → vertices → edges → network.
+Establish **program ship confidence** by first certifying the exact parity route on canonical volume **180709_E**, then certifying the paper profile on a defined volume and oracle, using **native** runs (no oracle-injected vertices), **strict zero** missing/extra on every gated stage, and **sequential** certification through energy → vertices → edges → network.
 
 **Definitions**
 
@@ -72,7 +72,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 
 **Operational expectations**
 
-- R9. Preserved MATLAB truth lives in **`workspace/oracles/180709_E_batch_190910-103039`** (one artifact per stage in the canonical batch).
+- R9. Preserved MATLAB truth for the canonical exact-route milestone must live in **`workspace/oracles/180709_E_batch_190910-103039`** with one loadable artifact per gated stage. Current artifact readiness belongs in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md), not this spec.
 - R10. Disposable trial runs live under **`workspace/runs/`**; promoted summaries under **`workspace/reports/`** when warranted.
 - R11. Incremental fixes (e.g. `strel_tiebreak_v30`) are **edges-stage experiments** under the sequential gate—they do not alone satisfy ship confidence.
 
@@ -120,7 +120,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 
 ## Dependencies / assumptions
 
-- Oracle and dataset available locally; canonical batch has one MATLAB artifact per stage.
+- Oracle and dataset are available locally; canonical oracle artifact readiness is verified against [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) before proof.
 - Windows certification runs may use `--energy-storage-format npy` when zarr is unreliable.
 
 ## Outstanding questions
@@ -139,7 +139,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 - **Parity Pre-Gate tiers:** [PARITY_PRE_GATE.md](../reference/workflow/PARITY_PRE_GATE.md), [ADR 0009](../adr/0009-parity-pre-gate-tiers.md). Crop harness (`180709_E_crop_M`) may run in parallel with canonical `phase1_cert_network`; passing crop does not satisfy Phase 1 certification.
 - **Crop oracle:** MATLAB batch → `promote-oracle`; HDF5 energy layout — [matlab-v200-energy-hdf5-oracle-loader.md](../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md).
 
-**In-scope non-goals:** Oracle re-promotion for canonical batch (done); changing public paper defaults (phase 2).
+**In-scope non-goals:** Changing public paper defaults (phase 2).
 
 ## Context & research
 
@@ -183,8 +183,10 @@ Stop if any stage fails. Do not claim phase 1 complete until all four pass on th
 
 ### U5 — Closure loop
 
+- Crop energy passes → refresh crop vertices→network checkpoints, run crop `prove-exact-sequence`, and promote the canonical oracle energy artifact so canonical can rerun from energy.
+- Crop energy fails → inspect the first failing energy field, fix only the exact-route energy path, rerun crop from energy, then repeat the crop proof gate.
 - Vertices fail → fix discovery before edges.
-- Edges fail → `diagnose-gaps`, `capture-candidates`, `fail-fast`; see [phase_3_edge_closure.md](../investigations/phase_3_edge_closure.md).
+- Edges fail → use `diagnose-gaps`, `capture-candidates`, and `fail-fast`; record live blockers and accepted lessons in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).
 
 ## Risks
 

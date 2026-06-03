@@ -100,6 +100,24 @@ If the CLI needs richer terminal control, use `pty.fork()` or an existing PTY li
 - Memory leak: force GC if available, take a heap snapshot, perform the operation repeatedly, force GC again, and take another snapshot.
 - Hang: capture the screen, active handles/resources, and a stack/CPU sample before interrupting.
 
+## SLAVV Run Ops
+
+Use this repo-specific loop when controlling long-running `slavv2python` pipeline or parity runs:
+
+1. Read `docs/reference/core/EXACT_PROOF_FINDINGS.md` before touching active parity runs.
+2. If `workspace/scratch/crop_energy_rerun_latest.pid` exists, check whether that process is alive before starting another writer on `workspace/runs/oracle_180709_E/crop_M_exact`.
+3. Prefer the repo's monitor surfaces for structured run inspection:
+
+```powershell
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact --once
+slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+```
+
+4. If a run is alive, do not start `init-exact-run`, `resume-exact-run`, or another command that writes to the same `--dest-run-root`.
+5. If a run has exited, inspect the latest stdout/stderr logs under `workspace/scratch` when present, then prove the first relevant stage before refreshing downstream checkpoints.
+6. Record durable parity status in `EXACT_PROOF_FINDINGS.md`, concrete tasks in `docs/TODO.md`, and verified reusable fixes with `solution-note-generator`.
+
 ## Guardrails
 
 - Prefer deterministic waits over sleeps. If you must sleep, explain why.

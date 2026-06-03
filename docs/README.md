@@ -1,35 +1,44 @@
 # Documentation
 
-The documentation tree has two jobs:
+The documentation tree has several explicit owners:
 
-- `reference/` for maintained technical guidance
+- `reference/` for maintained technical guidance and live parity status
+- `TODO.md` for active task checkboxes
+- `plans/` for active specs
+- `adr/` for architecture decisions
 - `investigations/` for intentionally archival narratives that still help explain the
   current Python codebase
 
-Only `reference/` is a maintained slavv_python of truth for current behavior, public
-workflow, and parity status. Treat `investigations/` as historical context, not as an
-executable spec.
+Treat `investigations/` as historical context, not as an executable spec.
 
 ## Start Here
 
 1. [Repository README](../README.md)
 2. [Developer dashboard (tasks & planning hub)](TODO.md) — Active checkboxes, links to plans, brainstorms, and compound solutions
 3. [Tutorial](TUTORIAL.md) — Get started with your first extraction.
-4. [Roadmap](ROADMAP.md) — Project status and milestones (less tactical than TODO.md)
-5. [Agent and workflow guide](AGENTS.md)
-6. [Contributing](CONTRIBUTING.md)
-7. [Changelog](CHANGELOG.md)
-8. [Reference index](reference/README.md)
-9. [Investigation index](investigations/README.md)
-10. [Test placement guide](../tests/README.md)
+4. [Agent and workflow guide](AGENTS.md)
+5. [Contributing](CONTRIBUTING.md)
+6. [Changelog](CHANGELOG.md)
+7. [Reference index](reference/README.md)
+8. [Investigation index](investigations/README.md)
+9. [Test placement guide](../tests/README.md)
 
-## Planning & knowledge (not reference specs)
+## Parity Closure Fast Path
+
+When continuing exact MATLAB parity work:
+
+1. [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md) — live run truth, blockers, and accepted findings.
+2. [Phase 1 exact-route spec](plans/phase-1-exact-route-spec.md) — certification intent and pass/fail loop.
+3. [Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md) — crop harness commands.
+4. [Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md) — canonical promotion and proof commands.
+
+## Planning, Specs, And Knowledge
 
 | Folder | Purpose |
 |--------|---------|
 | [TODO.md](TODO.md) | **Hub** — what to do next; index of plans and solutions |
 | [plans/](plans/) | Active specs (`*-spec.md`: requirements + implementation in one file) |
-| [brainstorms/](brainstorms/) | Pre-spec ideas only; promote into `plans/` then stub the brainstorm |
+| [brainstorms/](brainstorms/) | Pre-spec ideas only; promote durable context into `plans/`, then remove the brainstorm |
 | [solutions/](solutions/) | Documented fixes and runbooks (`/ce-compound`; YAML frontmatter for search) |
 | [adr/](adr/) | Architecture decision records |
 
@@ -41,9 +50,8 @@ executable spec.
 - [Energy Computation Methods](reference/core/ENERGY_METHODS.md)
 - [Paper Profile](reference/workflow/PAPER_PROFILE.md)
 - [Python Naming Guide](reference/workflow/PYTHON_NAMING_GUIDE.md)
-- [Parity Experiment Storage](reference/workflow/PARITY_EXPERIMENT_STORAGE.md)
 
 ## Archive Entry Points
 
 - [v22 Pointer Corruption Archive](investigations/v22-pointer-corruption/README.md)
-- [Translation Pair Analysis Archive](investigations/translation_pair_analysis/README.md)
+- [Investigation index](investigations/README.md)

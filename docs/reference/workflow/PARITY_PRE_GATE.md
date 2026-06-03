@@ -16,6 +16,8 @@ Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms a
 
 Tiers 2 and 3 use the **same** success bar (zero missing / zero extra per stage). Only tier 3 supports the Phase 1 certification milestone.
 
+Check [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) before Tier 3 proof. The canonical oracle must have a loadable energy artifact before `prove-exact-sequence` can certify the full volume.
+
 ---
 
 ## Tier 1 — Synthetic fixture (CI smoke)
@@ -122,6 +124,41 @@ python scripts/cli/parity_experiment.py prove-exact-sequence `
 ```
 
 Reports: per-stage `03_Analysis/exact_proof_<stage>.json` and summary `03_Analysis/exact_proof.json`.
+
+### Active crop closure workflow
+
+Use this when a crop rerun is already active under `workspace/runs/oracle_180709_E/crop_M_exact`:
+
+```powershell
+# Watch the crop run from the consolidated operations console
+slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact
+
+# Or print one non-interactive snapshot
+slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact --once
+
+# When it exits, prove energy first
+python scripts/cli/parity_experiment.py prove-exact `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --stage energy
+
+# If energy passes after an energy-only rerun, refresh downstream checkpoints
+python scripts/cli/parity_experiment.py resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --force-rerun-from vertices `
+  --stop-after network `
+  --skip-preflight
+
+# Then run the sequential crop gate on fresh checkpoints
+python scripts/cli/parity_experiment.py prove-exact-sequence `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M
+```
+
+If the energy proof still fails, inspect the first failing field before changing code. Current diagnostics are indexed in `workspace/scratch/parity_energy_diagnostics.md`.
 
 ---
 

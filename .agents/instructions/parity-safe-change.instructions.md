@@ -33,8 +33,8 @@ applyTo: "slavv_python/{analytics/parity,engine/state}/**/*.py"
 
 ## References
 
-- [PARITY_EXPERIMENT_STORAGE.md](../../docs/reference/workflow/PARITY_EXPERIMENT_STORAGE.md)
-- [PARITY_IMPLEMENTATION_GUIDE.md](../../docs/reference/workflow/PARITY_IMPLEMENTATION_GUIDE.md)
+- [PARITY_CERTIFICATION_GUIDE.md](../../docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md)
+- [WATERSHED_IMPLEMENTATION_NOTES.md](../../docs/reference/core/WATERSHED_IMPLEMENTATION_NOTES.md)
 - [MATLAB_METHOD_IMPLEMENTATION_PLAN.md](../../docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - `slavv_python/analytics/parity/` — Proof harness modules
 - `slavv_python/engine/state/` — Run tracking and snapshot management

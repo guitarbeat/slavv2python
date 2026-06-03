@@ -72,3 +72,18 @@ Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `tests/unit/
 -   Exact pointer values match MATLAB LUT indexing.
 -   Frontier insertion order matches MATLAB's descending energy priority.
 -   Join logic correctly removes specific indices from the frontier.
+
+## Debugging Exact-Route Gaps
+
+When `edges.connections` remains red after upstream gates pass, start from the
+released MATLAB source and the maintained proof artifacts:
+
+- Measure with `scripts/cli/parity_experiment.py prove-exact` or
+  `prove-exact-sequence`; do not use informal match rates as an acceptance bar.
+- Audit against `external/Vectorization-Public/slavv_python/get_edges_by_watershed.m`.
+  Commented MATLAB code is not behavior; verify the line is active before porting
+  an idea.
+- For a specific missing pair, compare `current_strel_energies`, adjusted local
+  energies, chosen `strel_idx`, and `available_locations` insertion/removal.
+- Preserve MATLAB indexing assumptions: 1-based values at the MATLAB boundary,
+  Fortran-order linear priority, and `ravel(order="F")` for Python comparisons.

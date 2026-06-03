@@ -92,7 +92,7 @@ The harness now matches MATLAB's on-disk contract: heavy volumes in HDF5, workfl
 
 ## Known follow-up (not fixed by this change)
 
-`prove-exact-sequence` on `workspace/runs/oracle_180709_E/crop_M_exact` still **fails the energy stage** after promotion and a successful pipeline run: sample voxel energies differ sharply (MATLAB ≈ −20 vs Python ≈ −0.004 at the same shape `[64, 256, 256]`). Treat as a separate investigation (parameter alignment, energy computation scale, or plane semantics) — not a promotion/discovery bug.
+`prove-exact-sequence` on `workspace/runs/oracle_180709_E/crop_M_exact` still **failed the energy stage** after promotion and a successful pipeline run. Later diagnostics narrowed the failure beyond oracle discovery: same-scale values were effectively exact, but Python created false octave winners by finite-only interpolation where MATLAB `interp3` propagated `Inf` through invalid/nonnegative coarse-energy neighbors. The exact-route code has been patched; the next proof result depends on the active crop rerun. Treat any remaining mismatch as an energy computation issue, not a promotion/discovery bug.
 
 ```powershell
 python scripts/cli/parity_experiment.py prove-exact-sequence `

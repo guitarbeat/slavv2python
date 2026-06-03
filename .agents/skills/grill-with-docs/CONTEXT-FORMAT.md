@@ -43,9 +43,9 @@ _Avoid_: Client, buyer, account
 
 ## Contexts
 
-- [Ordering](./src/ordering/GEMINI.md) — receives and tracks customer orders
-- [Billing](./src/billing/GEMINI.md) — generates invoices and processes payments
-- [Fulfillment](./src/fulfillment/GEMINI.md) — manages warehouse picking and shipping
+- `src/ordering/GEMINI.md` — receives and tracks customer orders
+- `src/billing/GEMINI.md` — generates invoices and processes payments
+- `src/fulfillment/GEMINI.md` — manages warehouse picking and shipping
 
 ## Relationships
 

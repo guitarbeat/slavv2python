@@ -12,10 +12,38 @@ For faster iteration before (or in parallel with) full-volume certification, see
 
 Certification is a developer-only workflow that uses the `scripts/cli/parity_experiment.py` harness to compare Python's output against preserved MATLAB truth vectors.
 
+Use `slavv monitor --run-dir <run_root>` as the primary operations console while
+long parity runs are active. Deprecated watcher scripts under `scripts/` have
+been removed so stale PID vs stale snapshot interpretation has one source of
+truth.
+
 ### Key Directories
-- `workspace/oracles/`: Canonical MATLAB results (the "Ground Truth").
-- `workspace/runs/`: Workspace for trial executions.
-- `workspace/reports/`: Promoted, versioned certification reports.
+- `workspace/datasets/`: immutable input volumes plus manifests.
+- `workspace/oracles/`: preserved MATLAB truth packages only.
+- `workspace/runs/`: disposable Python reruns and developer diagnostics.
+- `workspace/reports/`: promoted, versioned certification summaries.
+
+### Run Layout
+
+Each exact run uses the structured harness layout:
+
+```text
+runs/<run_id>/
+  00_Refs/
+  01_Params/
+  02_Output/
+  03_Analysis/
+  99_Metadata/
+```
+
+- `01_Params/` owns `shared_params.json`, `python_derived_params.json`, and `param_diff.json`.
+- `02_Output/` owns Python checkpoints and stage artifacts.
+- `03_Analysis/` owns `exact_proof*.json`, text reports, normalized payloads, and hashes.
+- `99_Metadata/` owns snapshots, manifests, and command provenance.
+
+Treat `runs/` as disposable. Promote only durable proof summaries into
+`workspace/reports/`. Treat `oracles/` as preserved MATLAB truth, not scratch
+space.
 
 ---
 
@@ -29,6 +57,24 @@ python scripts/cli/parity_experiment.py init-exact-run `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
   --stop-after network
+```
+
+### 1a. Ensure the canonical oracle has energy
+
+Before proving full `180709_E`, confirm the canonical oracle has a normalized energy artifact:
+
+```powershell
+Test-Path workspace/oracles/180709_E_batch_190910-103039/03_Analysis/normalized/oracle/energy.pkl
+```
+
+If it is missing, re-promote from the canonical MATLAB batch. The current batch has an extensionless HDF5 energy volume, so this should materialize `energy.pkl` without rerunning MATLAB:
+
+```powershell
+python scripts/cli/parity_experiment.py promote-oracle `
+  --matlab-batch-dir workspace/oracles/180709_E_batch_190910-103039/01_Input/matlab_results/batch_190910-103039_canonical `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
+  --oracle-id 180709_E_batch_190910-103039
 ```
 
 ### 2. Verify Preflight
@@ -86,7 +132,7 @@ Or re-run `init-exact-run` with `--resume` and the same `--dataset-root`, `--ora
 Monitor long runs:
 
 ```powershell
-python scripts/cli/monitor_run_progress.py --run-dir workspace/runs/<cert_run>
+slavv monitor --run-dir workspace/runs/<cert_run>
 ```
 
 ---
@@ -109,11 +155,11 @@ Legacy `comparison_report.json` may still exist for older runs; prefer `exact_pr
 When all four stages pass with zero missing/extra, promote the run summary:
 
 ```powershell
-# Copy the report to the authoritative index
-Copy-Item workspace/runs/cert_trial_v1/report.json workspace/reports/CERTIFICATION_V0.1.0.json
+# Copy the exact proof summary to the authoritative index
+Copy-Item workspace/runs/cert_trial_v1/03_Analysis/exact_proof.json workspace/reports/CERTIFICATION_V0.1.0.json
 
-# Update the Roadmap
-# (Edit docs/ROADMAP.md to reflect the new High-Water Mark)
+# Update the live status log
+# (Edit docs/reference/core/EXACT_PROOF_FINDINGS.md to record the milestone)
 ```
 
 ---

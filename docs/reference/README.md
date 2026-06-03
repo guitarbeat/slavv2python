@@ -9,13 +9,13 @@ current Python product surface.
 Read these first when working on the live implementation:
 
 - [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
-  Claim boundaries, source-of-truth hierarchy, and remaining roadmap.
+  Claim boundaries, source-of-truth hierarchy, and implementation phases.
 - [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
   MATLAB-to-Python surface map and confirmed structural deviations.
 - [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md)
   Technical design, shared state management, and parity details for the discovery algorithm.
 - [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
-  Live proof status, current v22 watershed read, and breakthrough status.
+  Live proof status, current parity blockers, and historical breakthrough context.
 - [Energy Computation Methods](core/ENERGY_METHODS.md)
   Supported energy backends, projection modes, and extension points.
 - [Glossary](core/GLOSSARY.md)
@@ -27,8 +27,6 @@ Read these first when working on the live implementation:
 - [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md)
   Engine design, component overview, and processing workflow.
 
-- [Parity Implementation Guide](workflow/PARITY_IMPLEMENTATION_GUIDE.md)
-  Technical instructions and best practices for MATLAB parity alignment.
 - [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md)
   Step-by-step instructions for running mathematical proofs against MATLAB oracles.
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
@@ -36,8 +34,7 @@ Read these first when working on the live implementation:
 - [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md)
   Mandatory steps for stable research deployments and parity promotion.
 - [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
-- [Parity Experiment Storage](workflow/PARITY_EXPERIMENT_STORAGE.md)
-- [Proactive Agent Guide](workflow/PROACTIVE_AGENT_GUIDE.md)
+- [Proactive Agent Guide](workflow/external/PROACTIVE_AGENT_GUIDE.md)
   Architecture and protocols for proactive AI agent behaviors.
 
 ## Adjacent Reference Docs
@@ -55,6 +52,10 @@ for current Python behavior or exact MATLAB parity claims.
 ## Live Status And Historical Context
 
 - [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) is the maintained owner
-  for live v22 and downstream proof status.
+  for live exact-parity proof status.
+- For exact MATLAB parity closure, read in this order:
+  [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md),
+  [Parity Pre-Gate](workflow/PARITY_PRE_GATE.md),
+  [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md).
 - [v22 Pointer Corruption Archive](../investigations/v22-pointer-corruption/README.md)
   preserves the April 2026 investigation trail and archived Kiro planning.

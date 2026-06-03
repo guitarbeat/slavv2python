@@ -12,8 +12,8 @@ Before a version can be tagged or deployed, the following gates must be green:
 
 ### 1. Mathematical Parity (The Exact Proof)
 The native-first exact route must pass the maintained parity certification.
-- **Goal**: >95% match rate on `edges.connections` against the `180709_E` oracle.
-- **Audit**: `slavv prove-exact --stage all` must produce a compliant report in `workspace/reports/`.
+- **Goal**: strict zero missing/extra through sequential `prove-exact-sequence` for energy, vertices, edges, and network against the defined certification oracle.
+- **Audit**: `prove-exact-sequence` must produce compliant `exact_proof` artifacts that are promoted to `workspace/reports/`.
 
 ### 2. Quality Gate (CI/CD)
 The GitHub Actions `regression-gate.yml` must pass for the `main` branch.
@@ -23,7 +23,7 @@ The GitHub Actions `regression-gate.yml` must pass for the `main` branch.
 
 ### 3. Documentation Alignment
 - [CHANGELOG.md](../../CHANGELOG.md) must be updated with all notable changes since the last version.
-- `ROADMAP.md` priorities must reflect the current state.
+- `TODO.md`, `EXACT_PROOF_FINDINGS.md`, and the active spec must reflect the current state.
 - `TUTORIAL.md` must be verified against the live CLI and app interface.
 
 ---
@@ -49,8 +49,8 @@ python -m pytest tests/unit tests/integration/test_paper_profile_ci.py
 ### Step 3: Certification Promotion
 Promote the latest parity experiment report to the authoritative certification record.
 ```powershell
-# Example: Promotes trial v32 to the baseline report
-Copy-Item workspace/runs/v32_final/report.json workspace/reports/CERTIFICATION_V0.1.0.json
+# Example: Promotes trial v32 to the baseline proof summary
+Copy-Item workspace/runs/v32_final/03_Analysis/exact_proof.json workspace/reports/CERTIFICATION_V0.1.0.json
 ```
 
 ### Step 4: Tag and Commit

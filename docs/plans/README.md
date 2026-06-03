@@ -14,7 +14,7 @@ Scoped initiatives: **requirements and implementation in one spec file** when wo
 
 1. Explore in `docs/brainstorms/` when intent is unclear.
 2. Promote to `docs/plans/<initiative>-spec.md` (Part 1 requirements, Part 2 implementation).
-3. Stub the brainstorm with a redirect.
-4. Do not maintain separate brainstorm + plan for the same initiative.
+3. Merge durable context into the spec, then remove the brainstorm or dated draft.
+4. Do not maintain separate brainstorm + plan files for the same initiative.
 
-**Naming:** `<initiative>-spec.md` (e.g. `phase-1-exact-route-spec.md`). Dated filenames (e.g. `2026-05-28-001-...`) are legacy stubs only.
+**Naming:** `<initiative>-spec.md` (e.g. `phase-1-exact-route-spec.md`). Do not add dated active-plan filenames for initiatives that already have a spec.

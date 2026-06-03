@@ -139,12 +139,11 @@ slavv2python/
 │   └── support/                        # Shared test builders & fixtures
 │
 ├── scripts/                            # Developer scripts
-│   ├── cli/                            # Parity experiment harness, monitor_run_progress
+│   ├── cli/                            # Parity experiment harness
 │   ├── matlab/                         # Headless MATLAB drivers (crop oracle vectorization)
 │   └── diagnostics/                    # MATLAB artifact inspection
 │
 ├── docs/                               # Documentation
-│   ├── ROADMAP.md                      # Primary project status and active roadmap
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
@@ -167,11 +166,11 @@ Read these first when working on relevant surfaces:
 
 | Document | Path | Purpose |
 |:---------|:-----|:--------|
-| Developer Dashboard | [TODO.md](TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
-| Project Roadmap | [docs/ROADMAP.md](docs/ROADMAP.md) | Comprehensive codebase health, active priorities & parity status |
+| Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
+| Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results, and cold-start protocol |
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
 | Parity Pre-Gate | [docs/reference/workflow/PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) | Three-tier pre-gate (synthetic → crop → canonical) |
@@ -252,6 +251,18 @@ slavv run -i volume.tif -o slavv_output --force-rerun-from vertices
 > [!NOTE]
 > `slavv run` writes structured run metadata under `<output>\_slavv_run` when `--run-dir` is omitted. The CLI defaults to the native `paper` profile.
 
+### Run Operations Console
+```powershell
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+slavv monitor --run-dir workspace\runs\oracle_180709_E\crop_M_exact --once
+slavv status --run-dir workspace\runs\oracle_180709_E\crop_M_exact
+```
+
+`slavv monitor` is the primary run-watching surface for structured pipeline and
+parity runs. Streamlit remains the browser workflow for processing, analysis,
+curation, and visualization; do not treat Streamlit as the canonical overnight
+parity watcher.
+
 ### Streamlit App
 ```powershell
 slavv-app
@@ -270,24 +281,29 @@ python -m streamlit run slavv_python/interface/streamlit/app.py
 5. Run full suite if the change crosses module boundaries.
 
 ### Parity Experiments
+Before continuing parity work, read `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
+If a crop rerun PID exists under `workspace/scratch/crop_energy_rerun_latest.pid`,
+check that process first and never start another writer on the same `crop_M_exact`
+run root while it is alive.
+
 ```powershell
 # Promote oracle
 python scripts/cli/parity_experiment.py promote-oracle \
   --matlab-batch-dir D:\incoming\batch_260421-151654 \
-  --oracle-root workspace\oracles\v22_a \
+  --oracle-root workspace\oracles\<oracle_id> \
   --dataset-file D:\datasets\volume.tif \
-  --oracle-id v22_a
+  --oracle-id <oracle_id>
 
 # Run preflight check
 python scripts/cli/parity_experiment.py preflight-exact \
   --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\v22_a \
+  --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\my_current_code_trial
 
 # Run full exact proof comparison
 python scripts/cli/parity_experiment.py prove-exact \
   --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\v22_a \
+  --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\my_current_code_trial \
   --stage all
 ```

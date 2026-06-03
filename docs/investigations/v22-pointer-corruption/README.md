@@ -15,4 +15,3 @@ For the live status and current downstream proof boundary, start with
   and pointer-investigation notes.
 - [Kiro Spec Archive](KIRO_SPEC_ARCHIVE.md)
   Content-oriented merge of the former Kiro bugfix, design, and task docs.
-- Raw Kiro config: `kiro-spec/.config.kiro`

@@ -17,7 +17,6 @@
 | **Architecture decisions** | [adr/](adr/) | Load-bearing design choice (do not re-litigate in TODO) |
 | **Live exact-parity status** | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) | **Only place** for active run status, proof results, blockers (not TODO) |
 | **Operator workflows** | [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | How to run pre-gate / certification |
-| **Project narrative** | [ROADMAP.md](ROADMAP.md) | Milestones, codebase health, historical priorities (less tactical than this file) |
 | **Investigation archives** | [investigations/](investigations/) | Deep dives that are context, not the task list |
 
 **Do not duplicate:** Status tables and run state → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). This file = checkboxes + links only.
@@ -30,8 +29,8 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy mismatch** — Debug `prove-exact` failure on `crop_M_exact` (same shape `[64,256,256]`, different magnitudes). Check params vs MATLAB `settings/`, energy sign/scale, HDF5 plane assignment. Re-run `prove-exact-sequence` when fixed.
-- [ ] **Canonical run** — Keep single process on `phase1_cert_network` until `stop-after network`; then `prove-exact-sequence` against `180709_E_batch_190910-103039`.
+- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `31796` after the MATLAB `interp3`, `linspace` mesh, and raw-intensity exact-route fixes; prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence` and debug the first failing proof surface if any.
+- [ ] **Canonical run** — Re-promote or add the missing canonical energy artifact, rerun `phase1_cert_network` from energy on the current exact-route branch, then run `prove-exact-sequence` against `180709_E_batch_190910-103039`.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
 
@@ -44,7 +43,6 @@
 
 ## Checklist — next (after Phase 1 gates)
 
-- [ ] **Document HDF5 in storage guide** — Optional: `/ce-compound-refresh` or edit [PARITY_EXPERIMENT_STORAGE.md](reference/workflow/PARITY_EXPERIMENT_STORAGE.md) for MATLAB energy artifact layout.
 - [ ] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
 - [ ] **API reference** — Public `SlavvPipeline` docstrings.
 - [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.

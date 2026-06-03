@@ -88,6 +88,5 @@ surface.
 
 ## Archive Note
 
-The raw Kiro config remains preserved at `kiro-spec/.config.kiro`. The live
-status and roadmap now belong in the maintained reference docs rather than in
-separate Kiro planning files.
+Live status now belongs in the maintained reference docs rather than in separate
+Kiro planning files or tool metadata.
