@@ -495,8 +495,6 @@ def _compute_exact_parity_energy_chunked(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """Compute energy per scale using MATLAB-exact octave-chunked downsample + offset-mesh upsampling."""
 
-    # Keep thread parallelism; process workers trigger joblib memmap tracker failures
-    # on Windows during exact crop proof runs. Operators can tune n_jobs per run.
     n_jobs = max(1, int(config.get("n_jobs", 2)))
     image_shape = np.asarray(image.shape, dtype=float)
 

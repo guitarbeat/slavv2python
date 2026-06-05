@@ -26,12 +26,6 @@ def _repo_root_from_path(path: Path) -> Path:
     return Path.cwd()
 
 
-def _append_option(command: list[str], flag: str, value: str | int | float | None) -> None:
-    if value is None:
-        return
-    command.extend([flag, str(value)])
-
-
 def build_resume_exact_run_command(
     *,
     dest_run_root: Path,
@@ -58,12 +52,18 @@ def build_resume_exact_run_command(
         "--dest-run-root",
         str(dest_run_root),
     ]
-    _append_option(command, "--dataset-root", str(dataset_root) if dataset_root else None)
-    _append_option(command, "--oracle-root", str(oracle_root) if oracle_root else None)
-    _append_option(command, "--stop-after", stop_after)
-    _append_option(command, "--force-rerun-from", force_rerun_from)
-    _append_option(command, "--memory-safety-fraction", memory_safety_fraction)
-    _append_option(command, "--n-jobs", n_jobs)
+    if dataset_root is not None:
+        command.extend(["--dataset-root", str(dataset_root)])
+    if oracle_root is not None:
+        command.extend(["--oracle-root", str(oracle_root)])
+    if stop_after is not None:
+        command.extend(["--stop-after", stop_after])
+    if force_rerun_from is not None:
+        command.extend(["--force-rerun-from", force_rerun_from])
+    if memory_safety_fraction is not None:
+        command.extend(["--memory-safety-fraction", str(memory_safety_fraction)])
+    if n_jobs is not None:
+        command.extend(["--n-jobs", str(n_jobs)])
     if force:
         command.append("--force")
     if skip_preflight:

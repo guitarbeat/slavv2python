@@ -435,14 +435,11 @@ def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
 
     from .oracle_artifacts import ensure_oracle_artifacts
 
-    raw_stages = tuple(getattr(args, "stage", None) or ("all",))
     statuses = ensure_oracle_artifacts(
         Path(args.oracle_root),
-        stages=raw_stages,
-        matlab_batch_dir=Path(args.matlab_batch_dir)
-        if getattr(args, "matlab_batch_dir", None)
-        else None,
-        repair=not bool(getattr(args, "no_repair", False)),
+        stages=tuple(args.stage or ("all",)),
+        matlab_batch_dir=Path(args.matlab_batch_dir) if args.matlab_batch_dir else None,
+        repair=not args.no_repair,
     )
     payload = {
         "passed": all(status.ready for status in statuses.values()),
