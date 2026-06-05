@@ -183,7 +183,7 @@ Stop if any stage fails. Do not claim phase 1 complete until all four pass on th
 
 ### U5 — Closure loop
 
-- Crop energy passes → refresh crop vertices→network checkpoints, run crop `prove-exact-sequence`, and promote the canonical oracle energy artifact so canonical can rerun from energy.
+- Crop energy passes → refresh crop vertices→network checkpoints, run crop `prove-exact-sequence`, verify canonical Oracle Artifacts with `ensure-oracle-artifacts`, and rerun canonical from energy.
 - Crop energy fails → inspect the first failing energy field, fix only the exact-route energy path, rerun crop from energy, then repeat the crop proof gate.
 - Vertices fail → fix discovery before edges.
 - Edges fail → use `diagnose-gaps`, `capture-candidates`, and `fail-fast`; record live blockers and accepted lessons in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md).

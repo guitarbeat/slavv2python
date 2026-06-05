@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -83,11 +83,15 @@ def _read_json(path: Path) -> dict[str, Any] | None:
 
 def _pid_file_candidates(run_dir: Path) -> list[Path]:
     repo_root = _repo_root_from_run(run_dir)
+    metadata_dir = run_dir / "99_Metadata"
     candidates = [
         run_dir / "run.pid",
-        run_dir / "99_Metadata" / "run.pid",
+        metadata_dir / "run.pid",
+        metadata_dir / "parity_job.pid",
         repo_root / "workspace" / "scratch" / "crop_energy_rerun_latest.pid",
     ]
+    if metadata_dir.is_dir():
+        candidates.extend(sorted(metadata_dir.glob("*.pid")))
     unique: list[Path] = []
     for candidate in candidates:
         if candidate not in unique:
@@ -173,21 +177,34 @@ def _artifact_checks(run_dir: Path) -> tuple[ArtifactStatus, ...]:
 
 def _log_candidates(run_dir: Path) -> tuple[Path, ...]:
     repo_root = _repo_root_from_run(run_dir)
+    metadata_dir = run_dir / "99_Metadata"
     candidates = [
+        metadata_dir / "parity_job.err.log",
+        metadata_dir / "parity_job.out.log",
         repo_root / "workspace" / "scratch" / "crop_energy_rerun_latest.err.log",
         repo_root / "workspace" / "scratch" / "crop_energy_rerun_latest.out.log",
     ]
-    return tuple(path for path in candidates if path.is_file())
+    if metadata_dir.is_dir():
+        candidates.extend(sorted(metadata_dir.glob("*.log")))
+    unique: list[Path] = []
+    for candidate in candidates:
+        if candidate.is_file() and candidate not in unique:
+            unique.append(candidate)
+    return tuple(unique)
 
 
-def _effective_status(snapshot: RunSnapshot | None, pid_statuses: tuple[PidStatus, ...]) -> tuple[str, str]:
+def _effective_status(
+    snapshot: RunSnapshot | None, pid_statuses: tuple[PidStatus, ...]
+) -> tuple[str, str]:
     alive = [pid for pid in pid_statuses if pid.state == "alive"]
     dead = [pid for pid in pid_statuses if pid.state == "dead"]
     if snapshot is None:
         return "missing-snapshot", "No run snapshot found."
     if alive:
         return "running", f"PID {alive[0].pid} is alive."
-    if snapshot.status == "running" or any(stage.status == "running" for stage in snapshot.stages.values()):
+    if snapshot.status == "running" or any(
+        stage.status == "running" for stage in snapshot.stages.values()
+    ):
         if dead:
             return "stale-running-snapshot", f"Snapshot is running but PID {dead[0].pid} is dead."
         return "stale-running-snapshot", "Snapshot is running but no live PID was found."
@@ -241,7 +258,9 @@ def render_monitor_lines(view: RunMonitorView) -> list[str]:
         lines.append("")
         lines.append("Stages:")
         for name, stage in snapshot.stages.items():
-            units = f" units={stage.units_completed}/{stage.units_total}" if stage.units_total else ""
+            units = (
+                f" units={stage.units_completed}/{stage.units_total}" if stage.units_total else ""
+            )
             detail = f" - {stage.detail}" if stage.detail else ""
             lines.append(f"  - {name}: {stage.status} {stage.progress * 100:.1f}%{units}{detail}")
 

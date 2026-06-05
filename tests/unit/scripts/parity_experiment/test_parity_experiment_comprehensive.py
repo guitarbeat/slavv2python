@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import subprocess
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -15,6 +16,7 @@ from tests.support.run_state_builders import (
     materialize_checkpoint_surface,
 )
 
+from slavv_python.analytics.parity import jobs
 from slavv_python.analytics.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_INDEX_PATH,
@@ -24,6 +26,7 @@ from slavv_python.analytics.parity.execution import (
     derive_exact_params_from_oracle,
 )
 from slavv_python.analytics.parity.index import deduplicate_index_records
+from slavv_python.analytics.parity.jobs import launch_exact_run_job
 from slavv_python.analytics.parity.matlab_vector_loader import find_matlab_vector_paths
 from slavv_python.analytics.parity.models import ExactProofSourceSurface, OracleSurface, RunCounts
 from slavv_python.analytics.parity.proofs import (
@@ -207,6 +210,75 @@ def test_build_parser_commands():
     )
     assert args.command == "prove-exact"
     assert args.stage == "energy"
+
+    args = parser.parse_args(
+        [
+            "launch-exact-run",
+            "--dest-run-root",
+            "dst",
+            "--oracle-root",
+            "oracle",
+            "--force-rerun-from",
+            "energy",
+            "--n-jobs",
+            "4",
+        ]
+    )
+    assert args.command == "launch-exact-run"
+    assert args.n_jobs == 4
+
+    args = parser.parse_args(["status-exact-run", "--run-dir", "dst"])
+    assert args.command == "status-exact-run"
+
+    args = parser.parse_args(
+        ["ensure-oracle-artifacts", "--oracle-root", "oracle", "--stage", "energy"]
+    )
+    assert args.command == "ensure-oracle-artifacts"
+    assert args.stage == ["energy"]
+
+
+@pytest.mark.unit
+def test_launch_exact_run_job_writes_manifest_and_pid(tmp_path, monkeypatch):
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    script = tmp_path / "parity_experiment.py"
+    script.write_text("print('unused')\n", encoding="utf-8")
+    python_exe = tmp_path / "python.exe"
+    python_exe.write_text("", encoding="utf-8")
+
+    class FakePopen:
+        def __init__(self, command, **kwargs):
+            self.pid = 24680
+            self.command = command
+            self.kwargs = kwargs
+
+    launched: list[FakePopen] = []
+
+    def fake_popen(command, **kwargs):
+        process = FakePopen(command, **kwargs)
+        launched.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(jobs, "resolve_python_commit", lambda repo_root: "abc123")
+
+    manifest = launch_exact_run_job(
+        dest_run_root=run_root,
+        oracle_root=tmp_path / "oracle",
+        stop_after="energy",
+        force_rerun_from="energy",
+        skip_preflight=True,
+        n_jobs=4,
+        python_executable=python_exe,
+        script_path=script,
+    )
+
+    assert manifest["pid"] == 24680
+    assert (run_root / "99_Metadata" / "parity_job.pid").read_text(encoding="utf-8") == "24680\n"
+    assert (run_root / "99_Metadata" / "parity_job.json").is_file()
+    assert launched[0].command[:3] == [str(python_exe), str(script), "resume-exact-run"]
+    assert "--n-jobs" in launched[0].command
+    assert launched[0].kwargs["stdin"] == subprocess.DEVNULL
 
 
 # ==============================================================================

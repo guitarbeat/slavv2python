@@ -67,7 +67,23 @@ Before proving full `180709_E`, confirm the canonical oracle has a normalized en
 Test-Path workspace/oracles/180709_E_batch_190910-103039/03_Analysis/normalized/oracle/energy.pkl
 ```
 
-If it is missing, re-promote from the canonical MATLAB batch. The current batch has an extensionless HDF5 energy volume, so this should materialize `energy.pkl` without rerunning MATLAB:
+As of 2026-06-03, this artifact is present and readable:
+
+- `energy`: `(64, 512, 512)` `float64`
+- `scale_indices`: `(64, 512, 512)` `int64`
+- `energy_4d`: empty placeholder
+- `lumen_radius_microns`: `(99,)` `float64`
+- payload sidecar SHA-256: `4696f05449541b6919d514b59705607eeb10258c67d5e466c52be83f73a43a9c`
+
+If it is missing in a fresh workspace, materialize it from the canonical MATLAB batch. The current batch has an extensionless HDF5 energy volume, so this does not require rerunning MATLAB. For an existing Oracle root, use the Oracle Artifact Maintenance command to write only missing normalized artifacts and verify they are readable:
+
+```powershell
+python scripts/cli/parity_experiment.py ensure-oracle-artifacts `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --stage energy
+```
+
+For a brand-new oracle root, use the full promotion command:
 
 ```powershell
 python scripts/cli/parity_experiment.py promote-oracle `
@@ -75,6 +91,12 @@ python scripts/cli/parity_experiment.py promote-oracle `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
   --oracle-id 180709_E_batch_190910-103039
+```
+
+The prepared canonical rerun command file is:
+
+```powershell
+workspace/scratch/phase1_cert_network_rerun_from_energy.ps1
 ```
 
 ### 2. Verify Preflight

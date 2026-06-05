@@ -52,6 +52,10 @@ CANDIDATE_COVERAGE_TEXT_PATH = ANALYSIS_DIR / "candidate_coverage.txt"
 CANDIDATE_PROGRESS_JSONL_PATH = ANALYSIS_DIR / "candidate_progress.jsonl"
 CANDIDATE_PROGRESS_PLOT_PATH = ANALYSIS_DIR / "candidate_progress.png"
 RECORDING_TABLES_INDEX_PATH = ANALYSIS_DIR / "recording_tables.json"
+PARITY_JOB_MANIFEST_PATH = METADATA_DIR / "parity_job.json"
+PARITY_JOB_PID_PATH = METADATA_DIR / "parity_job.pid"
+PARITY_JOB_STDOUT_PATH = METADATA_DIR / "parity_job.out.log"
+PARITY_JOB_STDERR_PATH = METADATA_DIR / "parity_job.err.log"
 
 # Parameter paths
 SHARED_PARAMS_PATH = EXPERIMENT_PARAMS_DIR / "shared_params.json"
@@ -111,6 +115,7 @@ EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS = frozenset(
         "comparison_exact_network_use_conflict_painting",
         "energy_axis_permutation",
         "energy_storage_format",
+        "n_jobs",
         "return_all_scales",
     }
 )

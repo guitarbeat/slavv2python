@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-02
+**Last Updated**: 2026-06-05
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 Crop rerun active (PID `31796`) after isolating the first remaining crop mismatch to MATLAB `linspace` mesh roundoff plus exact-route raw-intensity preservation. Local one-voxel diagnostic now matches MATLAB; crop energy proof pending rerun completion. |
+| **Energy** | Native Hessian path exact-compatible | 🟡 Detached crop rerun active (PID `25248`, run-local `99_Metadata/parity_job.*`) after isolating the first remaining crop mismatch to MATLAB `linspace` mesh roundoff plus exact-route raw-intensity preservation. Local one-voxel diagnostic now matches MATLAB; crop energy proof pending rerun completion. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
 | **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof after upstream stages |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -28,9 +28,9 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline ✅ **complete** through network (2026-05-28). **Blocked on proof:** canonical MATLAB batch has an extensionless HDF5 energy volume, but the promoted oracle is missing normalized `03_Analysis/normalized/oracle/energy.pkl`. Re-promote the oracle before `prove-exact-sequence`. Rerun from energy on the current exact-route branch before proof (old run used pre-fix energy semantics). |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline ✅ **complete** through network (2026-05-28), but old checkpoints used pre-fix energy semantics. Canonical oracle energy is now materialized at `workspace/oracles/180709_E_batch_190910-103039/03_Analysis/normalized/oracle/energy.pkl` (2026-06-03; SHA-256 payload sidecar `4696f05449541b6919d514b59705607eeb10258c67d5e466c52be83f73a43a9c`). **Next:** rerun `phase1_cert_network` from energy on the current exact-route branch before `prove-exact-sequence`. |
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Python energy rerun active (PID `31796`, recorded in `workspace/scratch/crop_energy_rerun_latest.pid`) after exact-route fixes: MATLAB `uint16` lattice rounding, MATLAB-native Y/X/Z chunk frame, MATLAB `ifftn(...,'symmetric')` emulation, float64 energy storage, `interp3` `Inf` propagation, MATLAB `linspace` mesh roundoff, and raw exact-route intensity preservation. Proof pending rerun completion. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Detached Python energy rerun active (PID `25248`, recorded in `99_Metadata/parity_job.pid`; legacy scratch PID `31796` is dead) after exact-route fixes: MATLAB `uint16` lattice rounding, MATLAB-native Y/X/Z chunk frame, MATLAB `ifftn(...,'symmetric')` emulation, float64 energy storage, `interp3` `Inf` propagation, MATLAB `linspace` mesh roundoff, and raw exact-route intensity preservation. Proof pending rerun completion. |
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
@@ -38,11 +38,11 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 If resuming exact parity work from a fresh thread:
 
-1. Check the crop rerun PID in `workspace/scratch/crop_energy_rerun_latest.pid`.
-2. If the process is still alive, do not start another writer on `crop_M_exact`.
+1. Check the crop rerun status with `python scripts/cli/parity_experiment.py status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
+2. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
 3. If it has exited, run the crop energy proof first.
 4. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network`, then run `prove-exact-sequence`.
-5. If crop energy passes, promote the canonical oracle to materialize normalized `energy.pkl`, then rerun canonical from energy when feasible.
+5. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1`.
 6. If any proof fails, inspect the first failing field before changing code.
 
 Scratch diagnostics for the current crop energy hypothesis are indexed in `workspace/scratch/parity_energy_diagnostics.md`.
@@ -53,11 +53,13 @@ Scratch diagnostics for the current crop energy hypothesis are indexed in `works
 # Monitor canonical run
 slavv monitor --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
 
-# Resume canonical (single process)
+# Rerun canonical from energy (single process; required before proof)
 python scripts/cli/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
-  --stop-after network --skip-preflight
+  --force-rerun-from energy `
+  --stop-after network `
+  --skip-preflight
 
 # Re-prove crop harness after energy fix (rerun from energy first if code changed)
 python scripts/cli/parity_experiment.py resume-exact-run `
@@ -82,6 +84,7 @@ Curated index of solved problems under `docs/solutions/` (from `/ce-compound`). 
 | Topic | Doc |
 |-------|-----|
 | MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
+| Detached exact-route parity jobs | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._
 
@@ -156,10 +159,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop harness energy proof — current rerun pending** — The completed PID `30880` rerun reduced the crop gap to 9,095 scale mismatches; the first remaining mismatch at Python `(z=0,y=0,x=27)` was traced to two exact-route issues: arithmetic mesh coordinates missed MATLAB `linspace` roundoff, and exact-route preprocessing still clipped raw intensities with `intensity_limits`. A one-voxel MATLAB/Python diagnostic now matches the MATLAB winner (scale 54, energy `-12.028384150742127`). Fresh rerun PID `31796` is active. **Next:** when the rerun completes, run `prove-exact --stage energy` first and inspect the first failing proof surface if any.
-2. **Canonical oracle energy artifact** — `180709_E_batch_190910-103039` promoted oracle lacks normalized `energy.pkl`, but its MATLAB batch has the extensionless HDF5 energy companion (`data/energy_190910-103039_*`, shape `(2, 64, 512, 512)`). Re-run `promote-oracle` from the canonical batch before tier-3 proof.
-3. **Canonical run re-execution** — `phase1_cert_network` completed with pre-fix energy semantics. Rerun from energy on the current exact-route branch before any canonical proof claim.
-4. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
+1. **Crop harness energy proof — current rerun pending** — The completed PID `30880` rerun reduced the crop gap to 9,095 scale mismatches; the first remaining mismatch at Python `(z=0,y=0,x=27)` was traced to two exact-route issues: arithmetic mesh coordinates missed MATLAB `linspace` roundoff, and exact-route preprocessing still clipped raw intensities with `intensity_limits`. A one-voxel MATLAB/Python diagnostic now matches the MATLAB winner (scale 54, energy `-12.028384150742127`). The live rerun now runs as detached parity job PID `25248` under `workspace/runs/oracle_180709_E/crop_M_exact/99_Metadata/`. **Next:** when the rerun completes, run `prove-exact --stage energy` first and inspect the first failing proof surface if any.
+2. **Canonical run re-execution** — `phase1_cert_network` completed with pre-fix energy semantics. The canonical oracle now has readable normalized energy (`energy`: `(64, 512, 512)` `float64`; `scale_indices`: `(64, 512, 512)` `int64`; `energy_4d`: empty placeholder; `lumen_radius_microns`: `(99,)` `float64`). Rerun from energy on the current exact-route branch before any canonical proof claim. Commands are staged in `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1`.
+3. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

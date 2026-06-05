@@ -393,8 +393,67 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
         skip_preflight=bool(getattr(args, "skip_preflight", False)),
+        n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
     )
     print(str(dest_run_root))
+
+
+def handle_launch_exact_run(args: argparse.Namespace) -> None:
+    """Launch an exact-route resume as a detached parity job."""
+    from .jobs import launch_exact_run_job
+
+    manifest = launch_exact_run_job(
+        dest_run_root=Path(args.dest_run_root),
+        dataset_root=Path(args.dataset_root) if args.dataset_root else None,
+        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+        stop_after=args.stop_after,
+        force_rerun_from=getattr(args, "force_rerun_from", None),
+        memory_safety_fraction=float(args.memory_safety_fraction),
+        force=bool(args.force),
+        skip_preflight=bool(getattr(args, "skip_preflight", False)),
+        n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+    )
+    print(manifest["pid"])
+    print(manifest["stdout"])
+    print(manifest["stderr"])
+
+
+def handle_status_exact_run(args: argparse.Namespace) -> None:
+    """Print a consolidated exact-route run status."""
+    from slavv_python.interface.cli.monitor_service import (
+        load_run_monitor_view,
+        render_monitor_lines,
+    )
+
+    view = load_run_monitor_view(Path(args.run_dir))
+    print("\n".join(render_monitor_lines(view)))
+
+
+def handle_ensure_oracle_artifacts(args: argparse.Namespace) -> None:
+    """Verify and optionally repair normalized Oracle Artifacts."""
+    import json
+
+    from .oracle_artifacts import ensure_oracle_artifacts
+
+    raw_stages = tuple(getattr(args, "stage", None) or ("all",))
+    statuses = ensure_oracle_artifacts(
+        Path(args.oracle_root),
+        stages=raw_stages,
+        matlab_batch_dir=Path(args.matlab_batch_dir)
+        if getattr(args, "matlab_batch_dir", None)
+        else None,
+        repair=not bool(getattr(args, "no_repair", False)),
+    )
+    payload = {
+        "passed": all(status.ready for status in statuses.values()),
+        "oracle_root": str(Path(args.oracle_root).expanduser().resolve()),
+        "stages": {stage: status.to_dict() for stage, status in statuses.items()},
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    if not payload["passed"]:
+        import sys
+
+        sys.exit(1)
 
 
 def handle_prove_luts(args: argparse.Namespace) -> None:

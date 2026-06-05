@@ -21,9 +21,9 @@ from .constants import (
     RUN_SNAPSHOT_PATH,
     VALIDATED_PARAMS_PATH,
 )
+from .preflight import run_exact_preflight_for_surfaces
 from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
 from .utils import string_or_none
-from .preflight import run_exact_preflight_for_surfaces
 
 if TYPE_CHECKING:
     from .models import DatasetSurface
@@ -128,6 +128,7 @@ def resume_exact_run(
     memory_safety_fraction: float = 0.8,
     force: bool = False,
     skip_preflight: bool = False,
+    n_jobs: int | None = None,
 ) -> Path:
     """Resume SlavvPipeline in an init-exact-run directory after preflight checks."""
     dest_run_root = dest_run_root.expanduser().resolve()
@@ -147,17 +148,22 @@ def resume_exact_run(
         dataset_surface = None
     resolved_oracle_root = resolve_exact_run_oracle_root(dest_run_root, oracle_root)
     oracle_surface = load_oracle_surface(resolved_oracle_root)
-    if dataset_surface is not None and oracle_surface.dataset_hash:
-        if oracle_surface.dataset_hash != dataset_surface.dataset_hash:
-            raise ValueError(
-                f"dataset and oracle hashes do not match: "
-                f"{dataset_surface.dataset_hash} != {oracle_surface.dataset_hash}"
-            )
+    if (
+        dataset_surface is not None
+        and oracle_surface.dataset_hash
+        and oracle_surface.dataset_hash != dataset_surface.dataset_hash
+    ):
+        raise ValueError(
+            f"dataset and oracle hashes do not match: "
+            f"{dataset_surface.dataset_hash} != {oracle_surface.dataset_hash}"
+        )
 
     params_path = dest_run_root / VALIDATED_PARAMS_PATH
     params = load_json_dict(params_path)
     if params is None:
         raise FileNotFoundError(f"missing validated params: {params_path}")
+    if n_jobs is not None:
+        params["n_jobs"] = int(n_jobs)
 
     effective_stop_after = stop_after or str(provenance.get("stop_after") or "network")
 

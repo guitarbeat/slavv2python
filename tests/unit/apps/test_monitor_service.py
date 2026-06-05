@@ -48,6 +48,25 @@ def test_monitor_view_reports_live_pid_for_matching_command_line(tmp_path, monke
     assert view.pid_statuses[0].state == "alive"
 
 
+def test_monitor_view_discovers_parity_job_pid(tmp_path, monkeypatch):
+    run_dir = tmp_path / "run"
+    materialize_run_snapshot(run_dir, build_snapshot_dict(status="running"))
+    pid_path = run_dir / "99_Metadata" / "parity_job.pid"
+    pid_path.write_text("98765", encoding="utf-8")
+    monkeypatch.setattr(
+        monitor_service,
+        "_process_command_line",
+        lambda pid: (
+            f"python scripts/cli/parity_experiment.py resume-exact-run --dest-run-root {run_dir}"
+        ),
+    )
+
+    view = load_run_monitor_view(run_dir)
+
+    assert view.effective_status == "running"
+    assert any(status.path == pid_path for status in view.pid_statuses)
+
+
 def test_monitor_view_summarizes_parity_proof_json(tmp_path):
     run_dir = tmp_path / "run"
     materialize_run_snapshot(run_dir, build_snapshot_dict(status="completed_target"))
