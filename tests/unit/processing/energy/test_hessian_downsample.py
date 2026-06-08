@@ -162,8 +162,26 @@ def test_exact_interp3_propagates_inf_only_for_positive_weight_neighbors() -> No
 
 def test_exact_mesh_uses_matlab_linspace_roundoff() -> None:
     mesh = _matlab_zero_based_linspace(offset=0, stride=3, count=128)
-    arithmetic = np.arange(128, dtype=np.float64) / 3.0
+    np_mesh = np.linspace(0.0, 127.0 / 3.0, 128, dtype=np.float64)
 
-    assert mesh[27] > 9.0
-    assert arithmetic[27] == 9.0
+    assert mesh[27] == 9.0
+    assert np_mesh[27] > 9.0
     npt.assert_allclose(mesh[-1], 127.0 / 3.0, rtol=0.0, atol=0.0)
+
+
+def test_exact_mesh_preserves_matlab_endpoint_arithmetic_at_chunk_boundary() -> None:
+    # Crop energy parity voxel (z=0, y=6, x=96) depends on this X mesh value.
+    # np.linspace(0, 85, 256)[45] is 15.000000000000002, which gives the
+    # neighboring Inf a positive interpolation weight and suppresses MATLAB's
+    # scale-36 winner. MATLAB's 1-based formula lands exactly on 15.0 here.
+    mesh = _matlab_zero_based_linspace(offset=51, stride=3, count=51)
+    np_mesh = np.linspace(0.0, 50.0 / 3.0, 51, dtype=np.float64)
+
+    assert mesh[45] == 15.0
+    assert np_mesh[45] > 15.0
+
+    stride9_mesh = _matlab_zero_based_linspace(offset=0, stride=9, count=64)
+    stride20_mesh = _matlab_zero_based_linspace(offset=15, stride=20, count=64)
+
+    assert stride9_mesh[1] > np.linspace(0.0, 7.0, 64, dtype=np.float64)[1]
+    assert stride20_mesh[-1] > np.linspace(0.75, 3.9, 64, dtype=np.float64)[-1]
