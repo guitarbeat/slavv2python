@@ -4,13 +4,13 @@ import numpy as np
 import numpy.testing as npt
 
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
-from slavv_python.processing.stages.energy.chunking import (
+from slavv_python.processing.stages.energy.config import _prepare_energy_config
+from slavv_python.processing.stages.energy.exact_mesh import (
     _interp3_matlab_linear_inf,
     _matlab_zero_based_linspace,
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,
 )
-from slavv_python.processing.stages.energy.config import _prepare_energy_config
 
 
 def test_downsample_volume_uses_matlab_last_chunk_stride_phase() -> None:
@@ -86,7 +86,9 @@ def test_prepare_energy_config_exposes_non_unity_scale_resolution_factors() -> N
 
     config = _prepare_energy_config(image, params)
 
-    npt.assert_array_equal(config["scale_resolution_factors"][0], np.array([1, 1, 1], dtype=np.int16))
+    npt.assert_array_equal(
+        config["scale_resolution_factors"][0], np.array([1, 1, 1], dtype=np.int16)
+    )
     assert int(np.max(config["scale_resolution_factors"])) > 1
 
 

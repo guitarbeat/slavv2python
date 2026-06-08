@@ -9,19 +9,35 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from slavv_python.processing.stages.energy import hessian_response as native_hessian
-from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
-from slavv_python.schema.results import EnergyResult
 from slavv_python.processing.stages.energy.chunking import (
-    _compute_exact_parity_energy_chunked,
     _compute_energy_scale as compute_energy_scale,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _energy_lattice as energy_lattice,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _energy_result_payload,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _open_energy_storage_array as open_energy_storage_array,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _project_scale_stack as project_scale_stack,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _remove_storage_path as remove_storage_path,
+)
+from slavv_python.processing.stages.energy.chunking import (
     _select_energy_storage_format as select_energy_storage_format,
 )
-from slavv_python.processing.stages.energy.config import _prepare_energy_config as prepare_energy_config
+from slavv_python.processing.stages.energy.config import (
+    _prepare_energy_config as prepare_energy_config,
+)
+from slavv_python.processing.stages.energy.exact_mesh import (
+    compute_exact_parity_energy_chunked,
+)
+from slavv_python.processing.stages.energy.provenance import energy_origin_for_method
+from slavv_python.schema.results import EnergyResult
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -85,6 +101,7 @@ def calculate_energy_field_resumable(
     """Compute energy with resumable chunk/scale units backed by persistent arrays."""
     if get_chunking_lattice_func is None:
         from slavv_python.utils import get_chunking_lattice
+
         get_chunking_lattice_func = get_chunking_lattice
 
     config = prepare_energy_config(image, params)
@@ -108,7 +125,7 @@ def calculate_energy_field_resumable(
             substage="exact_parity_chunks",
             resumed=False,
         )
-        energy_3d, scale_indices, energy_4d = _compute_exact_parity_energy_chunked(image, config)
+        energy_3d, scale_indices, energy_4d = compute_exact_parity_energy_chunked(image, config)
         best_energy = open_energy_storage_array(
             energy_path,
             mode="w",
