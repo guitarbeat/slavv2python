@@ -41,6 +41,32 @@ def test_energy_result_preserves_float64_energy_for_exact_route():
     assert restored.energy.dtype == np.float64
 
 
+def test_energy_result_preserves_float64_radius_metadata_for_exact_route():
+    energy = np.array([[1.25, 2.5]], dtype=np.float64)
+    scales = np.zeros(energy.shape, dtype=np.int16)
+    lumen_radius_microns = np.array(
+        [1.4433357553412178, 1.5, 1.558888839047765],
+        dtype=np.float64,
+    )
+    lumen_radius_pixels = np.array(
+        [0.7221122222222222, 0.75, 0.7794444195238825],
+        dtype=np.float64,
+    )
+
+    result = EnergyResult.create(
+        energy=energy,
+        scale_indices=scales,
+        lumen_radius_pixels=lumen_radius_pixels,
+        lumen_radius_microns=lumen_radius_microns,
+    )
+    restored = EnergyResult.from_dict(result.to_dict())
+
+    assert result.lumen_radius_microns.dtype == np.float64
+    assert restored.lumen_radius_microns.dtype == np.float64
+    np.testing.assert_array_equal(restored.lumen_radius_microns, lumen_radius_microns)
+    np.testing.assert_array_equal(restored.lumen_radius_pixels, lumen_radius_pixels)
+
+
 def test_component_models_roundtrip_processing_payloads():
     payload = build_processing_results()
 

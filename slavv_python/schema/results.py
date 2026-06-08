@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
 
@@ -23,6 +25,13 @@ def _coerce_energy_array(value: Any) -> np.ndarray:
     energy = np.asarray(value)
     if energy.dtype == np.float64:
         return energy
+    return np.asarray(value, dtype=np.float32)
+
+
+def _coerce_float_metadata_array(value: Any) -> np.ndarray:
+    array = np.asarray(value)
+    if array.dtype == np.float64:
+        return array
     return np.asarray(value, dtype=np.float32)
 
 
@@ -56,8 +65,8 @@ class EnergyResult:
             energy=energy,
             scale_indices=scale_indices,
             image_shape=image_shape,
-            lumen_radius_pixels=_coerce_array(lumen_radius_pixels, dtype=np.float32),
-            lumen_radius_microns=_coerce_array(lumen_radius_microns, dtype=np.float32),
+            lumen_radius_pixels=_coerce_float_metadata_array(lumen_radius_pixels),
+            lumen_radius_microns=_coerce_float_metadata_array(lumen_radius_microns),
             extra=extra,
         )
 
@@ -83,11 +92,11 @@ class EnergyResult:
         image_shape = tuple(
             payload_copy.pop("image_shape", tuple(int(value) for value in energy.shape))
         )
-        lumen_radius_pixels = _coerce_array(
-            payload_copy.pop("lumen_radius_pixels", []), dtype=np.float32
+        lumen_radius_pixels = _coerce_float_metadata_array(
+            payload_copy.pop("lumen_radius_pixels", [])
         )
-        lumen_radius_microns = _coerce_array(
-            payload_copy.pop("lumen_radius_microns", []), dtype=np.float32
+        lumen_radius_microns = _coerce_float_metadata_array(
+            payload_copy.pop("lumen_radius_microns", [])
         )
         return cls(
             energy=energy,
@@ -328,7 +337,7 @@ class NetworkResult:
 
 
 @dataclass
-class PipelineResult(Mapping[str, Any]):
+class PipelineResult(Mapping):
     """Typed wrapper for the full pipeline result payload."""
 
     parameters: dict[str, Any]
