@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Hygiene"
+  short_description: "Keep the slavv2python worktree and scratch files organized."
+  default_prompt: "Run workspace hygiene for this repo."
