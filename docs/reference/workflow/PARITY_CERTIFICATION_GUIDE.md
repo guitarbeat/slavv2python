@@ -56,8 +56,11 @@ python scripts/cli/parity_experiment.py init-exact-run `
   --dataset-root workspace/datasets/<dataset_id> `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
-  --stop-after network
+  --stop-after network `
+  --monitor
 ```
+
+For long-running jobs, add the `--monitor` flag to enable automatic tracking and desktop notifications. See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for details.
 
 ### 1a. Ensure the canonical oracle has energy
 
@@ -146,16 +149,32 @@ python scripts/cli/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/<cert_run> `
   --oracle-root workspace/oracles/<oracle_id> `
   --stop-after network `
-  --skip-preflight
+  --skip-preflight `
+  --monitor
 ```
 
 Or re-run `init-exact-run` with `--resume` and the same `--dataset-root`, `--oracle-root`, and `--dest-run-root`. Do not run `init-exact-run` and `resume-exact-run` concurrently on the same destination.
 
-Monitor long runs:
+**Monitoring long runs:**
+
+For parity experiments that take 4+ hours, use `--monitor` to enable automatic tracking:
+- Background daemon tracks job progress
+- Desktop notifications on completion/failure
+- Prevents duplicate writers on same run directory
+- Job history persists across terminal restarts
 
 ```powershell
+# Check active monitored jobs
+slavv jobs list
+
+# View job history
+slavv jobs history --run-dir workspace/runs/<cert_run>
+
+# Interactive monitoring (real-time progress)
 slavv monitor --run-dir workspace/runs/<cert_run>
 ```
+
+See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for comprehensive monitoring documentation.
 
 ---
 

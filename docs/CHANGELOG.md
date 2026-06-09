@@ -15,6 +15,37 @@ For current behavior and proof status, prefer:
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
+## [Unreleased] - 2026-06-09
+
+### Added
+
+- **Automated Parity Job Monitoring System**: Track long-running parity experiments with automatic notifications
+  - **JobRegistry** (`analytics/parity/job_registry.py`): Persistent JSONL-based job tracking with file locking for concurrent access protection
+  - **MonitorDaemon** (`analytics/parity/monitor_daemon.py`): Background daemon monitoring jobs every 30 seconds, sends desktop notifications on completion/failure, auto-terminates after 60 minutes of idle time
+  - **Process utilities** (`analytics/parity/process_utils.py`): Process liveness checking with `psutil`, PID reuse protection via process name validation, process tree termination
+  - **`slavv jobs` CLI commands**: 
+    - `slavv jobs list` - View all active monitored jobs in table format
+    - `slavv jobs history [--run-dir PATH] [--limit N]` - Query completed jobs with optional filters
+    - `slavv jobs kill <job-id>` - Terminate running jobs by ID (accepts partial IDs)
+    - `slavv jobs daemon status` - Check daemon PID, uptime, and active job count
+    - `slavv jobs daemon restart` - Restart the monitoring daemon
+  - **`--monitor` flag** for `resume-exact-run` and `launch-exact-run`: Enable automatic job tracking and notifications for long-running experiments
+  - **`--force-kill` flag**: Terminate active writers before starting new jobs on the same run directory
+  - **Duplicate writer prevention**: Automatic detection of concurrent writes to same run directory with clear error messages and remediation options
+  - **Desktop notifications (Windows)**: Toast notifications via `win10toast` library with graceful fallback to logging when unavailable
+  - **Job history persistence**: Survives terminal restarts, IDE restarts, and system reboots via JSONL append-only storage
+  - **Cross-session monitoring**: Daemon persists across terminal closures and can monitor jobs started in different sessions
+  - **Comprehensive documentation**: [PARITY_JOB_MONITORING.md](reference/workflow/PARITY_JOB_MONITORING.md) with architecture overview, usage examples, troubleshooting guide, and best practices
+
+### Changed
+
+- **Parity experiment CLI**: `resume-exact-run` and `launch-exact-run` now support `--monitor` and `--force-kill` flags
+- **Dependencies**: Added `fasteners>=0.18.0` (file locking), `tabulate>=0.9.0` (CLI tables), `win10toast>=0.9` (Windows notifications to workspace extras)
+- **Documentation updates**:
+  - [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md): Added monitoring examples and `slavv jobs` commands for Tier 2 crop harness workflow
+  - [PARITY_CERTIFICATION_GUIDE.md](reference/workflow/PARITY_CERTIFICATION_GUIDE.md): Updated with monitoring best practices for long-running certification runs
+  - [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md): Updated cold-start protocol to include `slavv jobs list` check and `--monitor` flag recommendations
+
 ## [Unreleased] - 2026-05-27
 
 ### Added

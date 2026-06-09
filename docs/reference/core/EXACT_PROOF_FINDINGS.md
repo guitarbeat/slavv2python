@@ -38,12 +38,15 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 If resuming exact parity work from a fresh thread:
 
-1. Check the crop rerun status with `python scripts/cli/parity_experiment.py status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
-2. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
-3. If it has exited, run the crop energy proof first.
-4. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network`, then run `prove-exact-sequence`.
-5. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1`.
-6. If any proof fails, inspect the first failing field before changing code.
+1. Check active monitored jobs with `slavv jobs list` to see if any parity jobs are running.
+2. Check the crop rerun status with `python scripts/cli/parity_experiment.py status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
+3. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
+4. If it has exited, run the crop energy proof first.
+5. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
+6. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
+7. If any proof fails, inspect the first failing field before changing code.
+
+Use the `--monitor` flag on long reruns to enable automatic tracking and desktop notifications (see [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
 
 Scratch diagnostics for the current crop energy hypothesis are indexed in `workspace/scratch/parity_energy_diagnostics.md`.
 

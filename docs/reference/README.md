@@ -29,6 +29,8 @@ Read these first when working on the live implementation:
 
 - [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md)
   Step-by-step instructions for running mathematical proofs against MATLAB oracles.
+- [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md)
+  Automated tracking and notifications for long-running parity experiments.
 - [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
   Methodology and tools for measuring and optimizing processing speed.
 - [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md)
@@ -56,6 +58,7 @@ for current Python behavior or exact MATLAB parity claims.
 - For exact MATLAB parity closure, read in this order:
   [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md),
   [Parity Pre-Gate](workflow/PARITY_PRE_GATE.md),
-  [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md).
+  [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md),
+  [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md).
 - [v22 Pointer Corruption Archive](../investigations/v22-pointer-corruption/README.md)
   preserves the April 2026 investigation trail and archived Kiro planning.

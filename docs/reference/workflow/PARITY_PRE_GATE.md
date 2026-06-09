@@ -32,6 +32,39 @@ Check [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) before Tier 3 p
 
 ## Tier 2 — Crop harness (`180709_E_crop_M`)
 
+### Monitoring Long-Running Jobs
+
+For long parity experiments (especially energy stage), use the `--monitor` flag to enable automatic job tracking and desktop notifications:
+
+```powershell
+# Start monitored parity job
+python scripts/cli/parity_experiment.py launch-exact-run \
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
+  --oracle-root workspace/oracles/180709_E_crop_M \
+  --force-rerun-from energy \
+  --stop-after network \
+  --monitor
+
+# Check active jobs
+slavv jobs list
+
+# View job history
+slavv jobs history --run-dir workspace/runs/oracle_180709_E/crop_M_exact
+
+# Check daemon status
+slavv jobs daemon status
+```
+
+The monitoring daemon will:
+- Track job progress in the background
+- Send desktop notifications on completion/failure  
+- Prevent duplicate writers on the same run directory
+- Maintain job history across sessions
+
+For more details, see [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md).
+
+---
+
 ### ROI definition (tier M)
 
 Source volume: promoted dataset `180709_E.tif`, shape **64 × 512 × 512** (Z × Y × X).

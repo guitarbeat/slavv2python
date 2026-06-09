@@ -31,6 +31,7 @@ When continuing exact MATLAB parity work:
 2. [Phase 1 exact-route spec](plans/phase-1-exact-route-spec.md) — certification intent and pass/fail loop.
 3. [Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md) — crop harness commands.
 4. [Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md) — canonical promotion and proof commands.
+5. [Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md) — automated tracking for long-running experiments.
 
 ## Planning, Specs, And Knowledge
 
