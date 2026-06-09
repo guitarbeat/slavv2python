@@ -9,7 +9,7 @@ import numpy.testing as npt
 import pytest
 
 from slavv_python.engine import SlavvPipeline
-from slavv_python.engine import energy as energy_module
+from slavv_python.pipeline import energy as energy_module
 from slavv_python.engine.state import RunContext
 from slavv_python.pipeline.energy import backends as energy_backends
 from slavv_python.pipeline.energy import hessian_response as native_hessian

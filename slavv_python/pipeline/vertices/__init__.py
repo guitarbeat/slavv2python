@@ -43,15 +43,6 @@ def extract_vertices(
     return VertexManager.run(energy_data, merged_params)
 
 
-def extract_vertices_resumable(
-    energy_data: EnergyResult,
-    params: dict[str, Any],
-    stage_controller: StageController,
-) -> VertexSet:
-    """Legacy resumable entry point for backward compatibility."""
-    return VertexManager.run_resumable(energy_data, params, stage_controller)
-
-
 def paint_vertices(
     vertices: VertexSet,
     image_shape: tuple[int, int, int],
@@ -87,7 +78,6 @@ def paint_vertices(
 __all__ = [
     "VertexManager",
     "extract_vertices",
-    "extract_vertices_resumable",
     "paint_vertices",
     "paint_vertex_center_image",
     "paint_vertex_image",

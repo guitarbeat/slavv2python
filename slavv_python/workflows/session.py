@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 from slavv_python import utils
@@ -17,15 +16,6 @@ if TYPE_CHECKING:
     import numpy as np
 
     from slavv_python.engine.state import RunContext
-
-
-@dataclass(frozen=True)
-class PreparedPipelineRun:
-    """Prepared pipeline execution state before stage resolution begins."""
-
-    parameters: dict[str, Any]
-    run_context: RunContext | None
-    force_rerun: dict[str, bool]
 
 
 def validate_stage_control(stage_name: str | None, option_name: str) -> None:
@@ -68,7 +58,6 @@ def preprocess_image(
 
 
 __all__ = [
-    "PreparedPipelineRun",
     "emit_progress",
     "preprocess_image",
     "validate_stage_control",

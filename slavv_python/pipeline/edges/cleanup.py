@@ -278,11 +278,6 @@ def _find_orphan_indices(
     return orphan_edges
 
 
-# --- LEGACY PROXIES ---
-clean_edges_vertex_degree_excess_python = remove_excess_vertex_degrees
-clean_edges_orphans_python = prune_orphan_edges
-clean_edges_cycles_python = break_graph_cycles
-
 __all__ = [
     "break_graph_cycles",
     "prune_orphan_edges",

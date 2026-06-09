@@ -12,9 +12,9 @@ from scipy.spatial import cKDTree
 
 from slavv_python.pipeline.energy.provenance import is_exact_compatible_energy_origin
 from slavv_python.pipeline.edges.candidate_generation import (
-    _finalize_matlab_parity_candidates,
-    _generate_edge_candidates,
-    _generate_edge_candidates_matlab_frontier,
+    generate_directional_candidates,
+    generate_watershed_candidates,
+    sort_candidates_by_quality,
 )
 from slavv_python.pipeline.vertices.painting import paint_vertex_image
 
@@ -163,7 +163,7 @@ class MaintainedTracingDiscovery:
         max_vertex_radius = (
             float(np.max(lumen_radius_microns)) if len(lumen_radius_microns) > 0 else 0.0
         )
-        payload = _generate_edge_candidates(
+        payload = generate_directional_candidates(
             energy=energy,
             scale_indices=energy_data.scale_indices,
             vertex_positions=vertex_positions,
@@ -193,7 +193,7 @@ class FrontierTracingDiscovery:
         lumen_radius_microns = energy_data.lumen_radius_microns
         energy_sign = float(energy_data.extra.get("energy_sign", -1.0))
 
-        payload = _generate_edge_candidates_matlab_frontier(
+        payload = generate_watershed_candidates(
             energy,
             energy_data.scale_indices,
             vertex_positions,
@@ -204,7 +204,7 @@ class FrontierTracingDiscovery:
             context.params,
             heartbeat=context.heartbeat,
         )
-        payload = _finalize_matlab_parity_candidates(
+        payload = sort_candidates_by_quality(
             payload,
             energy,
             energy_data.scale_indices,

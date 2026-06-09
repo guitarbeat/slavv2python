@@ -9,7 +9,6 @@ from .profiles import (
     normalize_pipeline_profile_name,
 )
 from .session import (
-    PreparedPipelineRun,
     emit_progress,
     preprocess_image,
     validate_stage_control,
@@ -17,7 +16,6 @@ from .session import (
 
 __all__ = [
     "PIPELINE_PROFILE_CHOICES",
-    "PreparedPipelineRun",
     "apply_pipeline_profile",
     "emit_progress",
     "get_pipeline_profile_defaults",

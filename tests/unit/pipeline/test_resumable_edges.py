@@ -86,7 +86,7 @@ def test_extract_edges_resumable_uses_maintained_candidate_generator(tmp_path, m
         return chosen
 
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.discovery._generate_edge_candidates",
+        "slavv_python.pipeline.edges.discovery.generate_directional_candidates",
         fake_generate_edge_candidates,
     )
     monkeypatch.setattr(
@@ -196,11 +196,11 @@ def test_extract_edges_resumable_uses_matlab_frontier_branch_when_enabled(tmp_pa
         return frontier_candidates
 
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.discovery._generate_edge_candidates_matlab_frontier",
+        "slavv_python.pipeline.edges.discovery.generate_watershed_candidates",
         fake_generate_frontier,
     )
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.discovery._finalize_matlab_parity_candidates",
+        "slavv_python.pipeline.edges.discovery.sort_candidates_by_quality",
         fake_finalize,
     )
     monkeypatch.setattr(
@@ -278,11 +278,11 @@ def test_edge_manager_derives_pixel_axes_from_legacy_energy_checkpoint(tmp_path,
     calls: dict[str, np.ndarray] = {}
 
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.discovery._generate_edge_candidates_matlab_frontier",
+        "slavv_python.pipeline.edges.discovery.generate_watershed_candidates",
         lambda *_args, **_kwargs: candidates,
     )
     monkeypatch.setattr(
-        "slavv_python.pipeline.edges.discovery._finalize_matlab_parity_candidates",
+        "slavv_python.pipeline.edges.discovery.sort_candidates_by_quality",
         lambda *_args, **_kwargs: candidates,
     )
 

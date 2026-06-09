@@ -7,9 +7,9 @@ from typing import Any, cast
 import numpy as np
 
 from slavv_python.pipeline.edges.cleanup import (
-    clean_edges_cycles_python,
-    clean_edges_orphans_python,
-    clean_edges_vertex_degree_excess_python,
+    break_graph_cycles,
+    prune_orphan_edges,
+    remove_excess_vertex_degrees,
 )
 from slavv_python.pipeline.edges.finalize import (
     prefilter_edge_indices_for_cleanup_matlab_style,
@@ -338,7 +338,7 @@ def _choose_edges_matlab_style(
 
     chosen_connections = connections[chosen_indices]
     chosen_metrics = metrics[chosen_indices]
-    keep_degree = clean_edges_vertex_degree_excess_python(
+    keep_degree = remove_excess_vertex_degrees(
         chosen_connections,
         chosen_metrics,
         max(1, int(params.get("number_of_edges_per_vertex", 4))),
@@ -353,7 +353,7 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    keep_orphans = clean_edges_orphans_python(
+    keep_orphans = prune_orphan_edges(
         [traces[index] for index in after_degree_indices],
         image_shape,
         vertex_positions,
@@ -367,7 +367,7 @@ def _choose_edges_matlab_style(
         empty["diagnostics"] = diagnostics
         return empty
 
-    keep_cycles = clean_edges_cycles_python(connections[after_orphan_indices])
+    keep_cycles = break_graph_cycles(connections[after_orphan_indices])
     diagnostics["cycle_pruned_count"] = int(np.sum(~keep_cycles))
     final_indices = [
         index for keep, index in zip(keep_cycles.tolist(), after_orphan_indices) if keep

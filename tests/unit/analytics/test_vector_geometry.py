@@ -2,13 +2,10 @@ import numpy as np
 import pytest
 
 from slavv_python.analytics import (
-    evaluate_registration,
     get_edge_metric,
     get_edges_for_vertex,
-    register_vector_sets,
     resample_vectors,
     smooth_edge_traces,
-    transform_vector_set,
 )
 from slavv_python.analytics.math import (
     angle_degrees,
@@ -54,41 +51,6 @@ def test_smooth_edge_traces():
     assert smoothed_trace[1, 1] < 1.0
     assert smoothed_trace[3, 1] < 1.0
     assert smoothed_trace[2, 1] > 0.0
-
-
-def test_transform_vector_set_scale_translate():
-    points = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=float)
-    transformed = transform_vector_set(
-        points,
-        scale=[2.0, 2.0, 2.0],
-        translate=[1.0, 1.0, 1.0],
-    )
-
-    expected = np.array([[3, 1, 1], [1, 3, 1], [1, 1, 3]], dtype=float)
-    np.testing.assert_allclose(transformed, expected, atol=1e-6)
-
-
-def test_register_vector_sets_rigid():
-    source = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0]], dtype=float)
-    target = source + np.array([10, 0, 0])
-
-    transform, error = register_vector_sets(source, target, method="rigid", return_error=True)
-
-    source_homogeneous = np.c_[source, np.ones(4)]
-    source_registered = (source_homogeneous @ transform.T)[:, :3]
-    np.testing.assert_allclose(source_registered, target, atol=1e-6)
-    assert error < 1e-6
-
-
-def test_evaluate_registration_empty_sets_return_zero_score_and_empty_matches():
-    score, before_to_after, after_to_before = evaluate_registration(
-        np.empty((0, 3), dtype=float),
-        np.empty((0, 3), dtype=float),
-    )
-
-    assert score == 0.0
-    assert before_to_after.size == 0
-    assert after_to_before.size == 0
 
 
 def test_get_edge_metric_supports_length_and_energy_summary_methods():

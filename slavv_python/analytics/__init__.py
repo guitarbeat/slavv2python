@@ -13,7 +13,6 @@ from .metrics.topology import (
     calculate_surface_area,
     calculate_vessel_volume,
 )
-from .registration import evaluate_registration, register_vector_sets, transform_vector_set
 from .trace_ops import get_edge_metric, get_edges_for_vertex
 
 
@@ -160,12 +159,9 @@ __all__ = [
     "crop_edges",
     "crop_vertices",
     "crop_vertices_by_mask",
-    "evaluate_registration",
     "extract_uncurated_info",
     "get_edge_metric",
     "get_edges_for_vertex",
-    "register_vector_sets",
     "resample_vectors",
     "smooth_edge_traces",
-    "transform_vector_set",
 ]

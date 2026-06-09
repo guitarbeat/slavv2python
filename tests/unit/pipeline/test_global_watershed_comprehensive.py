@@ -22,7 +22,7 @@ from slavv_python.pipeline.edges.frontier_geometry import (
     _matlab_frontier_directional_suppression_factors,
 )
 from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
-from slavv_python.pipeline.edges.generate import _finalize_matlab_parity_candidates
+from slavv_python.pipeline.edges.generate import sort_candidates_by_quality
 from slavv_python.pipeline.edges.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
     _initialize_matlab_global_watershed_state,
@@ -866,7 +866,7 @@ def test_finalize_matlab_parity_candidates_is_noop_for_exact_global_watershed_pa
         "matlab_global_watershed_exact": True,
     }
 
-    finalized = _finalize_matlab_parity_candidates(
+    finalized = sort_candidates_by_quality(
         candidates,
         energy=np.zeros((3, 3, 3), dtype=np.float32),
         scale_indices=np.zeros((3, 3, 3), dtype=np.int16),

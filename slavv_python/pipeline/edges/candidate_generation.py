@@ -367,7 +367,3 @@ def sort_candidates_by_quality(
     return candidates
 
 
-# Legacy Proxies for Internal Dispatch
-_finalize_matlab_parity_candidates = sort_candidates_by_quality
-_generate_edge_candidates = generate_directional_candidates
-_generate_edge_candidates_matlab_frontier = generate_watershed_candidates

@@ -28,7 +28,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
         joined = ", ".join(legacy_parity_keys)
         raise ValueError(f"legacy parity parameters are no longer supported: {joined}")
 
-    params = apply_pipeline_profile(params, default_profile="matlab_compat")
+    params = apply_pipeline_profile(params, default_profile="paper")
 
     validated: dict[str, Any] = {}
     if "pipeline_profile" in params:
@@ -84,7 +84,7 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     validated["gaussian_to_ideal_ratio"] = params.get("gaussian_to_ideal_ratio", 1.0)
     validated["spherical_to_annular_ratio"] = params.get("spherical_to_annular_ratio", 1.0)
     validated["energy_projection_mode"] = (
-        str(params.get("energy_projection_mode", "matlab")).strip().lower()
+        str(params.get("energy_projection_mode", "paper")).strip().lower()
     )
     validated["energy_sign"] = params.get("energy_sign", -1.0)
     if validated["energy_sign"] not in (-1, 1):

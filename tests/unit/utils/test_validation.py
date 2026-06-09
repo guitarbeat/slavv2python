@@ -7,13 +7,13 @@ def test_validate_parameters_defaults():
     validated = validate_parameters({})
     assert validated["microns_per_voxel"] == [1.0, 1.0, 1.0]
     assert validated["radius_of_smallest_vessel_in_microns"] == 1.5
-    assert validated["energy_projection_mode"] == "matlab"
+    assert validated["energy_projection_mode"] == "paper"
     assert validated["energy_sign"] == -1.0
     assert validated["space_strel_apothem_edges"] == validated["space_strel_apothem"]
     assert validated["sigma_per_influence_vertices"] == 1.0
-    assert validated["sigma_per_influence_edges"] == 2.0 / 3.0
-    # Default for matlab_compat (which is the default profile if none specified)
-    assert validated["comparison_exact_network_use_conflict_painting"] is False
+    assert validated["sigma_per_influence_edges"] == 0.5
+    # Default profile is now "paper"
+    assert validated["comparison_exact_network_use_conflict_painting"] is True
 
 
 def test_validate_parameters_paper_profile_enables_conflict_painting():

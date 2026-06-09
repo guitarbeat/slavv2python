@@ -88,7 +88,7 @@ def test_extract_vertices_hybrid_with_overrides(dummy_energy_data):
 
 
 @pytest.mark.unit
-def test_extract_vertices_resumable(dummy_energy_data, tmp_path: Path):
+def test_extract_vertices_with_stage_controller(dummy_energy_data, tmp_path: Path):
     """Verify that resumable extraction correctly checkpoints and recovers."""
     run_context = RunContext(run_dir=tmp_path / "run", target_stage="vertices")
     controller = run_context.stage("vertices")

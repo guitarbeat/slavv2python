@@ -11,9 +11,9 @@ from slavv_python.pipeline.edges.audit import (
     _normalize_candidate_origin_counts,
 )
 from slavv_python.pipeline.edges.candidate_generation import (
-    _finalize_matlab_parity_candidates,
-    _generate_edge_candidates,
-    _generate_edge_candidates_matlab_frontier,
+    generate_directional_candidates,
+    generate_watershed_candidates,
+    sort_candidates_by_quality,
 )
 from slavv_python.pipeline.edges.candidate_manifest import (
     _append_candidate_unit,
@@ -38,9 +38,9 @@ __all__ = [
     "_build_edge_candidate_audit",
     "_build_frontier_candidate_lifecycle",
     "_coord_to_matlab_linear_index",
-    "_finalize_matlab_parity_candidates",
-    "_generate_edge_candidates",
-    "_generate_edge_candidates_matlab_frontier",
+    "generate_directional_candidates",
+    "generate_watershed_candidates",
+    "sort_candidates_by_quality",
     "_matlab_linear_index_to_coord",
     "_normalize_candidate_connection_sources",
     "_normalize_candidate_origin_counts",

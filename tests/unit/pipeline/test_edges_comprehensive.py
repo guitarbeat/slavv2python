@@ -14,8 +14,8 @@ from slavv_python.engine import SlavvPipeline
 from slavv_python.pipeline.edges import selection as conflict_painting_module
 from slavv_python.pipeline.edges.candidate_manifest import _append_candidate_unit
 from slavv_python.pipeline.edges.cleanup import (
-    clean_edges_cycles_python,
-    clean_edges_vertex_degree_excess_python,
+    break_graph_cycles,
+    remove_excess_vertex_degrees,
 )
 from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
 from slavv_python.pipeline.edges.finalize import (
@@ -171,10 +171,10 @@ def test_prepare_candidate_indices_for_cleanup_filters_by_energy_threshold():
 
 
 @pytest.mark.unit
-def test_clean_edges_vertex_degree_excess_python_limits_degree_by_pruning_worst_edges():
+def test_remove_excess_vertex_degrees_limits_degree_by_pruning_worst_edges():
     connections = np.array([[0, 1], [0, 2], [0, 3]], dtype=np.int32)
     metrics = np.array([-10.0, -5.0, -1.0], dtype=np.float32)
-    keep_mask = clean_edges_vertex_degree_excess_python(connections, metrics, 2)
+    keep_mask = remove_excess_vertex_degrees(connections, metrics, 2)
     assert np.array_equal(keep_mask, np.array([True, True, False]))
 
 
@@ -282,7 +282,7 @@ def test_append_candidate_unit_assigns_frontier_manifest_candidate_indices():
 @pytest.mark.unit
 def test_cycle_cleanup_removes_worst_edge_per_cycle_component():
     connections = np.array([[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3]], dtype=np.int32)
-    keep = clean_edges_cycles_python(connections)
+    keep = break_graph_cycles(connections)
     assert keep.tolist() == [True, True, False, True, True, False]
 
 
