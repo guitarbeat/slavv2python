@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import tifffile
 
-export_crop_m = importlib.import_module("scripts.cli.export_180709_crop_m")
+export_crop_m = importlib.import_module("scripts.export_180709_crop_m")
 
 
 @pytest.mark.unit

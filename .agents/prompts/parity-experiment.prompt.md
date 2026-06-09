@@ -9,7 +9,7 @@ Run the full parity experiment workflow to measure current MATLAB match rates.
 ## Prerequisites
 - Oracle vectors must be promoted under `workspace/oracles/`
 - A seed run must exist under `workspace/runs/`
-- The parity experiment CLI must be available: `scripts/cli/parity_experiment.py`
+- The parity experiment CLI must be available: `scripts/parity_experiment.py`
 
 ## Workflow
 
@@ -18,7 +18,7 @@ Read `docs/reference/core/EXACT_PROOF_FINDINGS.md` to understand the current mat
 
 ### 2. Capture Fresh Candidates
 ```powershell
-python scripts/cli/parity_experiment.py capture-candidates \
+python scripts/parity_experiment.py capture-candidates \
   --source-run-root workspace\runs\<seed_run> \
   --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\<new_trial>
@@ -26,7 +26,7 @@ python scripts/cli/parity_experiment.py capture-candidates \
 
 ### 3. Run Exact Proof
 ```powershell
-python scripts/cli/parity_experiment.py prove-exact \
+python scripts/parity_experiment.py prove-exact \
   --source-run-root workspace\runs\<seed_run> \
   --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\<new_trial> \
@@ -35,7 +35,7 @@ python scripts/cli/parity_experiment.py prove-exact \
 
 ### 4. Diagnose Gaps (if match rate regressed)
 ```powershell
-python scripts/cli/parity_experiment.py diagnose-gaps \
+python scripts/parity_experiment.py diagnose-gaps \
   --run-root workspace\runs\<new_trial>
 ```
 

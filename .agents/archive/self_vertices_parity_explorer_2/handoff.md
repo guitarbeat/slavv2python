@@ -30,5 +30,5 @@ To fix this, Python needs two distinct sorting behaviors:
 ## Verification Method
 1. Modify `VertexManager._run_resumable` and `VertexManager._run_ephemeral` to replace the `sort_vertex_order` call with a stable `argsort` on `energies`. If `energy_sign < 0`, sort ascending; if `> 0`, sort descending (using `kind='stable'`).
 2. Once the energy rerun completes (PID 25248 or a fresh run), execute:
-   `python scripts/cli/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices`
+   `python scripts/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices`
 3. The proof should report 0 missing and 0 extra vertices.

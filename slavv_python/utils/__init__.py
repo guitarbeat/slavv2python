@@ -11,10 +11,10 @@ from __future__ import annotations
 
 # 2. Analytics Utilities (Re-exported from analytics domain)
 from ..analytics.math import calculate_path_length
-from ..processing.image.normalization import preprocess_image
+from ..image.normalization import preprocess_image
 
-# 1. Image Processing Utilities (Re-exported from processing domain)
-from ..processing.image.tiling import get_chunking_lattice
+# 1. Image Processing Utilities
+from ..image.tiling import get_chunking_lattice
 
 # 3. Local Utilities
 from .formatting import format_size, format_time

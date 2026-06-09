@@ -151,27 +151,34 @@ _Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in
 
 ## Repository Map
 
+> **Confused about folder purposes?** See [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for detailed explanations of when to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`.
+
+**Four Top-Level Folders:**
+- **`slavv_python/`** — Production package code (installed via pip)
+- **`tests/`** — Automated test suite (runs in CI)
+- **`scripts/`** — Developer utility scripts (committed but not installed)
+- **`workspace/`** — Local experiment artifacts (gitignored, personal)
+
 ```text
 slavv2python/
-├── slavv_python/                       # Main package
+├── slavv_python/                       # PRODUCTION PACKAGE (pip installable)
 │   ├── engine/                         # Pipeline orchestration & lifecycle
 │   │   ├── context.py                  # Re-export barrel (RunContext, StageController)
 │   │   └── state/                      # Run tracking, snapshots, resume
 │   │       ├── run_ledger.py           # RunContext implementation
 │   │       └── stage_handle.py         # StageController implementation
-│   ├── processing/                     # Scientific computation
-│   │   ├── image/                      # Normalization, tiling
-│   │   └── stages/                     # Pipeline stages
-│   │       ├── energy/                 # EnergyManager, Hessian filtering, backends
-│   │       ├── vertices/               # Extraction, painting, selection
-│   │       │   ├── manager.py          # Vertex lifecycle (run + run_resumable)
-│   │       │   └── detection.py        # MATLAB-style candidate scan/choose
-│   │       ├── edges/                  # Watershed, tracing, selection, cleanup
-│   │       │   ├── discovery.py        # Edge discovery strategy seam
-│   │       │   ├── manager.py          # Edge lifecycle (run + run_resumable)
-│   │       │   └── matlab_algorithms/  # MATLAB-shaped parity shims
-│   │       └── network/               # Strand assembly, graph construction
-│   │           └── manager.py         # Network lifecycle (run + run_resumable)
+│   ├── pipeline/                       # Pipeline stages (Energy → Vertices → Edges → Network)
+│   │   ├── energy/                     # EnergyManager, Hessian filtering, backends
+│   │   ├── vertices/                   # Extraction, painting, selection
+│   │   │   ├── manager.py              # Vertex lifecycle (run + run_resumable)
+│   │   │   └── detection.py           # MATLAB-style candidate scan/choose
+│   │   ├── edges/                      # Watershed, tracing, selection, cleanup
+│   │   │   ├── discovery.py            # Edge discovery strategy seam
+│   │   │   ├── manager.py              # Edge lifecycle (run + run_resumable)
+│   │   │   └── matlab_algorithms/      # MATLAB-shaped parity shims
+│   │   └── network/                    # Strand assembly, graph construction
+│   │       └── manager.py              # Network lifecycle (run + run_resumable)
+│   ├── image/                          # Image normalization, tiling
 │   ├── analytics/                      # Analysis & metrics
 │   │   ├── parity/                     # MATLAB exact proof harness
 │   │   │   ├── coordinator.py          # ExactProofCoordinator (prove / capture)
@@ -194,15 +201,25 @@ slavv2python/
 │   │   └── app_run.py                  # AppRunState (UI session envelope)
 │   └── utils/                          # Validation, math, formatting
 │
-├── tests/                              # Test suite
-│   ├── unit/                           # By-owner unit tests
+├── tests/                              # TEST SUITE (CI + local verification)
+│   ├── unit/                           # By-owner unit tests (mirrors slavv_python/ structure)
+│   │   ├── pipeline/                   # Tests for slavv_python/pipeline/
+│   │   ├── analytics/                  # Tests for slavv_python/analytics/
+│   │   ├── engine/                     # Tests for slavv_python/engine/
+│   │   ├── interface/                  # Tests for slavv_python/interface/
+│   │   ├── storage/                    # Tests for slavv_python/storage/
+│   │   ├── schema/                     # Tests for slavv_python/schema/
+│   │   ├── utils/                      # Tests for slavv_python/utils/
+│   │   ├── visualization/              # Tests for slavv_python/visualization/
+│   │   ├── workflows/                  # Tests for slavv_python/workflows/
+│   │   ├── scripts/                    # Tests for scripts/
 │   ├── integration/                    # End-to-end & parity tests
 │   ├── ui/                             # Streamlit & visualization tests
 │   ├── runtime/                        # Run-state management tests
 │   └── support/                        # Shared test builders & fixtures
 │
-├── scripts/                            # Developer scripts
-│   ├── cli/                            # Parity experiment harness
+├── scripts/                            # DEVELOPER TOOLS (committed but not installed)
+│   ├── cli/                            # Parity experiment harness, debug tools
 │   ├── matlab/                         # Headless MATLAB drivers (crop oracle vectorization)
 │   └── diagnostics/                    # MATLAB artifact inspection
 │
@@ -210,7 +227,7 @@ slavv2python/
 │   ├── reference/                      # Maintained technical references
 │   └── investigations/                 # Archival investigation narratives
 │
-├── workspace/                          # Developer experiment workspace
+├── workspace/                          # LOCAL EXPERIMENT DATA (gitignored)
 │   ├── oracles/                        # Preserved MATLAB oracle vectors
 │   ├── runs/                           # Experiment trial runs
 │   ├── reports/                        # Promoted proof summaries
@@ -231,6 +248,7 @@ Read these first when working on relevant surfaces:
 |:---------|:-----|:--------|
 | Developer Dashboard | [docs/TODO.md](docs/TODO.md) | Active tasks, planning hub (plans, brainstorms, solutions index) |
 | Doc Index | [docs/README.md](docs/README.md) | Index for all maintained reference docs |
+| Folder Purpose Guide | [docs/reference/core/FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) | When to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/` |
 | MATLAB Parity Plan | [docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md](docs/reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, remaining work |
 | MATLAB-to-Python Map | [docs/reference/core/MATLAB_PARITY_MAPPING.md](docs/reference/core/MATLAB_PARITY_MAPPING.md) | Function-to-function mapping for exact parity |
 | Exact Proof Findings | [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) | Live parity status, active blockers, proof results, and cold-start protocol |
@@ -355,20 +373,20 @@ This section provides common development patterns. See [docs/README.md](docs/REA
 
 ```powershell
 # Promote oracle
-python scripts/cli/parity_experiment.py promote-oracle \
+python scripts/parity_experiment.py promote-oracle \
   --matlab-batch-dir D:\incoming\batch_260421-151654 \
   --oracle-root workspace\oracles\<oracle_id> \
   --dataset-file D:\datasets\volume.tif \
   --oracle-id <oracle_id>
 
 # Run preflight check
-python scripts/cli/parity_experiment.py preflight-exact \
+python scripts/parity_experiment.py preflight-exact \
   --source-run-root workspace\runs\seed_run \
   --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\my_current_code_trial
 
 # Run full exact proof comparison
-python scripts/cli/parity_experiment.py prove-exact \
+python scripts/parity_experiment.py prove-exact \
   --source-run-root workspace\runs\seed_run \
   --oracle-root workspace\oracles\<oracle_id> \
   --dest-run-root workspace\runs\my_current_code_trial \

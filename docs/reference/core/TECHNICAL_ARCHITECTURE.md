@@ -39,14 +39,14 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - `PipelineResult`: Run envelope combining stage payloads and `parameters`.
 
 ### 4. Energy stage facade (`EnergyManager`)
-`slavv_python.processing.stages.energy.manager` owns the Energy Field lifecycle:
+`slavv_python.pipeline.energy.manager` owns the Energy Field lifecycle:
 
 - **`EnergyManager.run()`** — ephemeral chunked or direct multi-scale Hessian energy → `EnergyResult`.
 - **`EnergyManager.run_resumable()`** — same computation with `best_energy`, `best_scale`, and optional `energy_4d` artifacts (zarr/npy per ADR 0001).
 - **`energy.py` / `resumable.py`** — thin delegates preserving public `calculate_energy_field*` imports.
 
 ### 5. Vertex stage facade (`VertexManager`)
-`slavv_python.processing.stages.vertices.manager` owns the Vertex Set lifecycle:
+`slavv_python.pipeline.vertices.manager` owns the Vertex Set lifecycle:
 
 - **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
 - **`VertexManager.run_resumable()`** — same pipeline with `candidates.pkl`, `cropped_candidates.pkl`, `chosen_mask.pkl` artifacts.
@@ -64,7 +64,7 @@ The edges package exposes a deep module boundary:
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
 
 ### 7. Network stage facade (`NetworkManager`)
-`slavv_python.processing.stages.network.manager` mirrors the edge pattern:
+`slavv_python.pipeline.network.manager` mirrors the edge pattern:
 
 - **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
 - **`NetworkManager.run_resumable()`** — same pipeline with `adjacency.pkl`, `hair_pruned.pkl`, `cycle_pruned.pkl`, `strands.pkl` artifacts.
@@ -115,6 +115,6 @@ Following the **May 2026 breakthrough**, all core watershed and energy calculati
 
 ## 📈 Extension Points
 
-- **Energy Backends**: New enhancement algorithms can be added to `slavv_python.processing.stages.energy.backends`.
+- **Energy Backends**: New enhancement algorithms can be added to `slavv_python.pipeline.energy.backends`.
 - **Curation Layers**: Automated or ML-based refinement logic lives in `slavv_python.analytics.curation`.
 - **Export Formats**: Support for new research formats can be added to `slavv_python.storage.exporters`.

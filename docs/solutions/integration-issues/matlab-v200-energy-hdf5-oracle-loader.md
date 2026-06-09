@@ -30,7 +30,7 @@ MATLAB `vectorize_V200` crop batches store energy in a **split layout**: a metad
 
 ## Symptoms
 
-- `python scripts/cli/parity_experiment.py promote-oracle ...` raises `ValueError: missing MATLAB vector field: energy`.
+- `python scripts/parity_experiment.py promote-oracle ...` raises `ValueError: missing MATLAB vector field: energy`.
 - `data/energy_<timestamp>_<name>.mat` contains only `size_of_image`, `energy_runtime_in_seconds`, and `intensity_limits` — no `energy` or `scale_indices` arrays.
 - Crop harness oracle promotion (`180709_E_crop_M`) blocked after MATLAB vectorization completed successfully.
 
@@ -67,7 +67,7 @@ Teach `slavv_python/analytics/parity/matlab_exact_proof.py` to detect and load M
 **Verify promotion:**
 
 ```powershell
-python scripts/cli/parity_experiment.py promote-oracle `
+python scripts/parity_experiment.py promote-oracle `
   --matlab-batch-dir workspace/scratch/matlab_crop_batches/batch_260527-220010 `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --dataset-file workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06/01_Input/180709_E_crop_M.tif `
@@ -95,7 +95,7 @@ The harness now matches MATLAB's on-disk contract: heavy volumes in HDF5, workfl
 `prove-exact-sequence` on `workspace/runs/oracle_180709_E/crop_M_exact` still **failed the energy stage** after promotion and a successful pipeline run. Later diagnostics narrowed the failure beyond oracle discovery: same-scale values were effectively exact, but Python created false octave winners by finite-only interpolation where MATLAB `interp3` propagated `Inf` through invalid/nonnegative coarse-energy neighbors. The exact-route code has been patched; the next proof result depends on the active crop rerun. Treat any remaining mismatch as an energy computation issue, not a promotion/discovery bug.
 
 ```powershell
-python scripts/cli/parity_experiment.py prove-exact-sequence `
+python scripts/parity_experiment.py prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M

@@ -22,7 +22,7 @@ Use these core metrics when evaluating changes to the pipeline:
 ### 1. CPU Profiling (cProfile)
 Identify bottlenecks in the watershed loop or energy calculations.
 ```powershell
-python -m cProfile -s cumulative scripts/cli/parity_experiment.py ... > profile.txt
+python -m cProfile -s cumulative scripts/parity_experiment.py ... > profile.txt
 ```
 
 ### 2. Memory Profiling

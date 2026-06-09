@@ -14,7 +14,7 @@ import tifffile
 
 from slavv_python.analytics.parity.matlab_fail_fast import compare_lut_fixture_payload
 from slavv_python.engine import SlavvPipeline
-from slavv_python.processing.stages.edges.watershed_lut import build_matlab_global_watershed_lut
+from slavv_python.pipeline.edges.watershed_lut import build_matlab_global_watershed_lut
 from slavv_python.storage import load_tiff_volume
 from slavv_python.utils.synthetic import generate_synthetic_y_junction_volume
 

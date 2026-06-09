@@ -56,10 +56,10 @@ vertices = app_run.pipeline.vertices  # typed; Mapping access also works on AppR
 
 Use domain-first package names for maintained internal surfaces:
 
-- `slavv_python.processing.stages.network`
-- `slavv_python.processing.stages.energy`
-- `slavv_python.processing.stages.vertices`
-- `slavv_python.processing.stages.edges`
+- `slavv_python.pipeline.network`
+- `slavv_python.pipeline.energy`
+- `slavv_python.pipeline.vertices`
+- `slavv_python.pipeline.edges`
 - `slavv_python.engine.state` (`run_ledger`, `stage_handle`)
 - `slavv_python.schema.app_run` (`AppRunState`)
 - `slavv_python.workflows.pipeline`
@@ -96,7 +96,7 @@ fully retired.
 - `run()`
 - `compute_energy()`
 - `build_network()`
-- `slavv_python.processing.stages.network`
+- `slavv_python.pipeline.network`
 
 ## Naming Rules
 

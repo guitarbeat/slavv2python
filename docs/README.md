@@ -144,6 +144,7 @@ When resuming parity work from a fresh thread:
 
 ## Core Maintained References
 
+- [Folder Purpose Guide](reference/core/FOLDER_PURPOSE_GUIDE.md) — When to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)

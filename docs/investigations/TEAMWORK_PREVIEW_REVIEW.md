@@ -131,7 +131,7 @@ else:
 
 ⏳ **Empirical Parity Test** (Blocked on energy checkpoint completion)
 ```powershell
-python scripts/cli/parity_experiment.py prove-exact `
+python scripts/parity_experiment.py prove-exact `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `

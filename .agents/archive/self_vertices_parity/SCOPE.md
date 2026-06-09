@@ -14,5 +14,5 @@
 - Must strictly follow the MATLAB 1:1 structure and use exact bitwise equality instead of `np.isclose`.
 
 ## Testing Command
-`python scripts/cli/parity_experiment.py prove-exact-sequence --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M`
+`python scripts/parity_experiment.py prove-exact-sequence --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M`
 (Note: Only check the vertices stage output. If you need to test just the vertices stage, you may be able to use `prove-exact` targeting just vertices if it's faster for iteration, but the final acceptance is via sequence).

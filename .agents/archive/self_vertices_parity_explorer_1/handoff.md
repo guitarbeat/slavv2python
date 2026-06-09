@@ -33,5 +33,5 @@ The exact parity failure in the `vertices` stage stems from a mismatched chunk t
 ## Verification Method
 1. Implement the loop reordering in `slavv_python/processing/stages/vertices/detection.py`.
 2. Run the exact parity harness for the vertices stage:
-   `python scripts/cli/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices`
+   `python scripts/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices`
 3. The harness should report 0 missing and 0 extra vertices.

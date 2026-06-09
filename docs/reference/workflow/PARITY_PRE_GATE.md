@@ -38,7 +38,7 @@ For long parity experiments (especially energy stage), use the `--monitor` flag 
 
 ```powershell
 # Start monitored parity job
-python scripts/cli/parity_experiment.py launch-exact-run \
+python scripts/parity_experiment.py launch-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -80,7 +80,7 @@ Source volume: promoted dataset `180709_E.tif`, shape **64 × 512 × 512** (Z ×
 Export a TIFF with the repo script (writes ROI metadata when requested):
 
 ```powershell
-python scripts/cli/export_180709_crop_m.py --write-metadata
+python scripts/export_180709_crop_m.py --write-metadata
 ```
 
 Default output: `workspace/scratch/180709_E_crop_M/180709_E_crop_M.tif` plus `180709_E_crop_M.tif.roi.json`.
@@ -107,7 +107,7 @@ Requirements:
 When `vectors/` is populated under the new `batch_<timestamp>/`, promote:
 
 ```powershell
-python scripts/cli/parity_experiment.py promote-oracle `
+python scripts/parity_experiment.py promote-oracle `
   --matlab-batch-dir workspace/scratch/matlab_crop_batches/batch_<timestamp> `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --dataset-file workspace/datasets/0cdf88e930482e9eb818963da22846c43b53b531582bf3aed83678b549863d06/01_Input/180709_E_crop_M.tif `
@@ -123,11 +123,11 @@ Legacy steps (manual batch layout):
 3. Promote:
 
 ```powershell
-python scripts/cli/parity_experiment.py promote-dataset `
+python scripts/parity_experiment.py promote-dataset `
   --dataset-file <path-to-180709_E_crop_M.tif> `
   --experiment-root workspace
 
-python scripts/cli/parity_experiment.py promote-oracle `
+python scripts/parity_experiment.py promote-oracle `
   --matlab-batch-dir <path-to-crop-batch> `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --dataset-file <path-to-180709_E_crop_M.tif> `
@@ -139,7 +139,7 @@ Do **not** reuse `180709_E_batch_190910-103039` mats spatially cropped in Python
 ### Exact-route run and proof
 
 ```powershell
-python scripts/cli/parity_experiment.py init-exact-run `
+python scripts/parity_experiment.py init-exact-run `
   --dataset-root workspace/datasets/<crop_dataset_id> `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
@@ -150,7 +150,7 @@ python scripts/cli/parity_experiment.py init-exact-run `
 Sequential certification on that run root:
 
 ```powershell
-python scripts/cli/parity_experiment.py prove-exact-sequence `
+python scripts/parity_experiment.py prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M
@@ -170,14 +170,14 @@ slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact
 slavv monitor --run-dir workspace/runs/oracle_180709_E/crop_M_exact --once
 
 # When it exits, prove energy first
-python scripts/cli/parity_experiment.py prove-exact `
+python scripts/parity_experiment.py prove-exact `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --stage energy
 
 # If energy passes after an energy-only rerun, refresh downstream checkpoints
-python scripts/cli/parity_experiment.py resume-exact-run `
+python scripts/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --force-rerun-from vertices `
@@ -185,7 +185,7 @@ python scripts/cli/parity_experiment.py resume-exact-run `
   --skip-preflight
 
 # Then run the sequential crop gate on fresh checkpoints
-python scripts/cli/parity_experiment.py prove-exact-sequence `
+python scripts/parity_experiment.py prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M
@@ -208,7 +208,7 @@ Unchanged from [PARITY_CERTIFICATION_GUIDE.md](PARITY_CERTIFICATION_GUIDE.md):
 **Preflight** before a long exact-route run (memory gate + params audit):
 
 ```powershell
-python scripts/cli/parity_experiment.py preflight-exact `
+python scripts/parity_experiment.py preflight-exact `
   --source-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
   --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
   --dataset-root workspace/datasets/<canonical_dataset_hash> `
@@ -218,7 +218,7 @@ python scripts/cli/parity_experiment.py preflight-exact `
 **Resume canonical run** when `init-exact-run` reports the seed run is still active but no Python process is running:
 
 ```powershell
-python scripts/cli/parity_experiment.py resume-exact-run `
+python scripts/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --stop-after network
@@ -226,7 +226,7 @@ python scripts/cli/parity_experiment.py resume-exact-run `
 
 Or `init-exact-run ... --resume` with the same `--dataset-root`, `--oracle-root`, and `--dest-run-root` as the original bootstrap.
 
-Legacy helper `scripts/cli/resume_pipeline_run.py` delegates to `resume-exact-run` when `99_Metadata/experiment_provenance.json` exists.
+Legacy helper `scripts/resume_pipeline_run.py` delegates to `resume-exact-run` when `99_Metadata/experiment_provenance.json` exists.
 
 ---
 

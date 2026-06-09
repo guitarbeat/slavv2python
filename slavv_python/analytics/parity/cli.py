@@ -172,8 +172,8 @@ def handle_trace_vertex(args: argparse.Namespace) -> None:
     from slavv_python.analytics.parity.python_checkpoint_loader import (
         load_normalized_python_checkpoints,
     )
-    from slavv_python.processing.stages.edges.execution_tracing import JsonExecutionTracer
-    from slavv_python.processing.stages.edges.global_watershed import (
+    from slavv_python.pipeline.edges.execution_tracing import JsonExecutionTracer
+    from slavv_python.pipeline.edges.global_watershed import (
         _generate_edge_candidates_matlab_global_watershed,
     )
 

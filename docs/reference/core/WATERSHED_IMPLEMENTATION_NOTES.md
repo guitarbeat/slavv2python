@@ -78,7 +78,7 @@ Exact parity is verified using 3x3x3 and 5x5x5 synthetic volumes in `tests/unit/
 When `edges.connections` remains red after upstream gates pass, start from the
 released MATLAB source and the maintained proof artifacts:
 
-- Measure with `scripts/cli/parity_experiment.py prove-exact` or
+- Measure with `scripts/parity_experiment.py prove-exact` or
   `prove-exact-sequence`; do not use informal match rates as an acceptance bar.
 - Audit against `external/Vectorization-Public/slavv_python/get_edges_by_watershed.m`.
   Commented MATLAB code is not behavior; verify the line is active before porting

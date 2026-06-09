@@ -4,7 +4,7 @@ from typing import cast
 
 import numpy as np
 
-from ..processing.stages.edges.payloads import _edge_metric_from_energy_trace, _trace_energy_series
+from ..pipeline.edges.payloads import _edge_metric_from_energy_trace, _trace_energy_series
 
 
 def get_edge_metric(

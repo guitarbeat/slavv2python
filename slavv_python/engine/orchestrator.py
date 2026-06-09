@@ -16,9 +16,9 @@ from slavv_python.engine.state.tracker import PREPROCESS_STAGE
 
 if TYPE_CHECKING:
     from .state.models import ProgressEvent
-from slavv_python.processing.stages import edges as edge_ops
-from slavv_python.processing.stages import energy
-from slavv_python.processing.stages import vertices as vertex_ops
+from slavv_python.pipeline import edges as edge_ops
+from slavv_python.pipeline import energy
+from slavv_python.pipeline import vertices as vertex_ops
 from slavv_python.schema.results import (
     EdgeSet,
     EnergyResult,
@@ -81,7 +81,7 @@ class SlavvPipeline:
         emit_progress(progress_callback, 0.2, PREPROCESS_STAGE)
 
         # 1. Energy
-        from slavv_python.processing.stages.energy.manager import EnergyManager
+        from slavv_python.pipeline.energy.manager import EnergyManager
 
         executor.execute(
             "energy",
@@ -99,7 +99,7 @@ class SlavvPipeline:
             return self._finalize_run(run_context, run_state, stop_after)
 
         # 2. Vertices
-        from slavv_python.processing.stages.vertices.manager import VertexManager
+        from slavv_python.pipeline.vertices.manager import VertexManager
 
         executor.execute(
             "vertices",
@@ -114,7 +114,7 @@ class SlavvPipeline:
             return self._finalize_run(run_context, run_state, stop_after)
 
         # 3. Edges
-        from slavv_python.processing.stages.edges.manager import EdgeManager
+        from slavv_python.pipeline.edges.manager import EdgeManager
 
         executor.execute(
             "edges",
@@ -135,7 +135,7 @@ class SlavvPipeline:
             return self._finalize_run(run_context, run_state, stop_after)
 
         # 4. Network
-        from slavv_python.processing.stages.network.manager import NetworkManager
+        from slavv_python.pipeline.network.manager import NetworkManager
 
         executor.execute(
             "network",
@@ -220,7 +220,7 @@ class SlavvPipeline:
         params: dict[str, Any],
     ) -> NetworkResult:
         """Construct the final network from traced edges and vertices."""
-        from slavv_python.processing.stages.network.manager import NetworkManager
+        from slavv_python.pipeline.network.manager import NetworkManager
 
         typed_edges = edges if isinstance(edges, EdgeSet) else EdgeSet.from_dict(edges)
         typed_vertices = (

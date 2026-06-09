@@ -19,4 +19,4 @@
 The code implements the vertices algorithm exactly as specified without using cheating mechanisms or shortcuts. I declare the work product CLEAN. You may proceed with generating the checkpoints and performing exact proof sequence tests.
 
 ### Verification Method
-Run `python scripts/cli/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices` once `resume-exact-run` completes for vertices.
+Run `python scripts/parity_experiment.py prove-exact --source-run-root workspace/runs/oracle_180709_E/crop_M_exact --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact --oracle-root workspace/oracles/180709_E_crop_M --stage vertices` once `resume-exact-run` completes for vertices.

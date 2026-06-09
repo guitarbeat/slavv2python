@@ -4,18 +4,29 @@ Keep tests under `tests/` organized by the owning package surface.
 
 ## Placement Rules
 
-- `tests/unit/<owner>/` for package behavior owned by `analysis`, `apps`, `core`, `io`, `runtime`, `utils`, `visualization`, or `workflows`
-- `tests/unit/scripts/` for maintained helper scripts under `scripts/`
+Tests mirror `slavv_python/` exactly — same folder name, same depth:
+
+| Source module | Test location |
+|:--------------|:--------------|
+| `slavv_python/pipeline/` | `tests/unit/pipeline/` |
+| `slavv_python/analytics/` | `tests/unit/analytics/` |
+| `slavv_python/engine/` | `tests/unit/engine/` |
+| `slavv_python/interface/` | `tests/unit/interface/` |
+| `slavv_python/storage/` | `tests/unit/storage/` |
+| `slavv_python/schema/` | `tests/unit/schema/` |
+| `slavv_python/utils/` | `tests/unit/utils/` |
+| `slavv_python/visualization/` | `tests/unit/visualization/` |
+| `slavv_python/workflows/` | `tests/unit/workflows/` |
+| `scripts/` | `tests/unit/scripts/` |
+
 - `tests/integration/` for cross-component workflows and end-to-end pipeline behavior
 - `tests/integration/parity/` for parity pre-gate integration tests (ADR 0009 tiers 1–2)
 - `tests/ui/` for Streamlit- and visualization-facing behavior
-
-> **Note:** Test owner names (e.g., `core`, `apps`) are simplified labels for `slavv_python/processing/stages/*`, `slavv_python/interface/*`, etc. See `.agents/instructions/tests-placement.instructions.md` for the full mapping.
 
 ## Notes
 
 - Prefer moving a misfiled test into the matching owner directory instead of reshaping production code around the old location.
 - Keep regression intent in test names, markers, and assertions.
 - Reuse the shared builders under `tests/support/` when a test needs synthetic payloads, run snapshots, checkpoints, or reusable network fixtures.
-- Keep exact-route parity tests under the owning package surface, or under `tests/unit/scripts/` for maintained developer runners such as `scripts/cli/parity_experiment.py`.
+- Keep exact-route parity tests under the owning package surface, or under `tests/unit/scripts/` for maintained developer runners such as `scripts/parity_experiment.py`.
 - Do not create new task-history or workstream-specific test directories; place tests by owner surface, not by the temporary project that introduced them.

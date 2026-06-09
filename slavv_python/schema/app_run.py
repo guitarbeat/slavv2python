@@ -77,7 +77,7 @@ def rebuild_network_for_curation(
     curated_edges: Mapping[str, Any],
 ) -> AppRunState:
     """Rebuild the network after curation while preserving typed stage payloads."""
-    from slavv_python.processing.stages.network.manager import NetworkManager
+    from slavv_python.pipeline.network.manager import NetworkManager
 
     typed_vertices = VertexSet.from_dict(dict(curated_vertices))
     typed_edges = EdgeSet.from_dict(dict(curated_edges))

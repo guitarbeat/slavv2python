@@ -26,7 +26,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 from slavv_python.analytics.math import calculate_path_length
-from slavv_python.processing.stages.edges.terminal_lookup import in_bounds
+from slavv_python.pipeline.edges.terminal_lookup import in_bounds
 from slavv_python.schema import normalize_pipeline_result
 from slavv_python.utils.safe_unpickle import safe_load
 

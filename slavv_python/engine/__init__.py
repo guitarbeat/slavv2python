@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..processing.stages import energy
+from ..pipeline import energy
 from .state.run_ledger import RunContext
 from .state.stage_handle import StageController
 from .environment import find_experiment_root, find_repo_root

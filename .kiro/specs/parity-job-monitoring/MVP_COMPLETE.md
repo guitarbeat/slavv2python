@@ -100,7 +100,7 @@ pip install -e ".[workspace]"
 ### 2. Start a Monitored Job
 
 ```powershell
-python scripts/cli/parity_experiment.py launch-exact-run \
+python scripts/parity_experiment.py launch-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -268,7 +268,7 @@ a3f2-41  12345  2026-06-09 08:30  energy  0     4h 12m    completed
 
 1. **Always use `--monitor` for long jobs**:
    ```powershell
-   python scripts/cli/parity_experiment.py launch-exact-run ... --monitor
+   python scripts/parity_experiment.py launch-exact-run ... --monitor
    ```
 
 2. **Check jobs before leaving**:

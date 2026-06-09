@@ -70,10 +70,13 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## What Is In This Repo
 
-- `slavv_python/`: engine, processing stages, analytics, storage, visualization, interface, and workflow code
-- `tests/`: unit, integration, and UI coverage
-- `scripts/`: maintained helper scripts and benchmarks
-- `docs/`: maintained reference docs plus archival investigation notes
+> **New to the codebase?** See [FOLDER_PURPOSE_GUIDE.md](docs/reference/core/FOLDER_PURPOSE_GUIDE.md) for a detailed explanation of when to use `slavv_python/` vs `tests/` vs `scripts/` vs `workspace/`.
+
+- `slavv_python/`: Production package code (installed via pip)
+- `tests/`: Automated test suite (runs in CI)
+- `scripts/`: Developer utility scripts (committed but not installed) — [README](scripts/README.md)
+- `workspace/`: Local experiment data (gitignored, personal) — [README](workspace/README.md)
+- `docs/`: Maintained reference docs plus archival investigation notes
 
 ## Documentation
 
@@ -128,6 +131,6 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - The legacy rich parity and MATLAB comparison harness has been removed from the
   public CLI surface.
 - A developer-only parity runner is available at
-  `scripts/cli/parity_experiment.py` for rerunning Python `edges` or
+  `scripts/parity_experiment.py` for rerunning Python `edges` or
   `network` against reusable staged comparison roots and for exact artifact
   proof against preserved MATLAB vectors.

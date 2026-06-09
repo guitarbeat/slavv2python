@@ -39,7 +39,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 If resuming exact parity work from a fresh thread:
 
 1. Check active monitored jobs with `slavv jobs list` to see if any parity jobs are running.
-2. Check the crop rerun status with `python scripts/cli/parity_experiment.py status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
+2. Check the crop rerun status with `python scripts/parity_experiment.py status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
 3. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
 4. If it has exited, run the crop energy proof first.
 5. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
@@ -57,7 +57,7 @@ Scratch diagnostics for the current crop energy hypothesis are indexed in `works
 slavv monitor --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
 
 # Rerun canonical from energy (single process; required before proof)
-python scripts/cli/parity_experiment.py resume-exact-run `
+python scripts/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --force-rerun-from energy `
@@ -65,14 +65,14 @@ python scripts/cli/parity_experiment.py resume-exact-run `
   --skip-preflight
 
 # Re-prove crop harness after energy fix (rerun from energy first if code changed)
-python scripts/cli/parity_experiment.py resume-exact-run `
+python scripts/parity_experiment.py resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --force-rerun-from energy `
   --stop-after network `
   --skip-preflight
 
-python scripts/cli/parity_experiment.py prove-exact-sequence `
+python scripts/parity_experiment.py prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M

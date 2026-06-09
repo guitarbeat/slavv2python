@@ -20,7 +20,7 @@ from slavv_python.engine.state import (
     fingerprint_file,
     load_json_dict,
 )
-from slavv_python.processing.stages.edges.manager import EdgeManager
+from slavv_python.pipeline.edges.manager import EdgeManager
 from slavv_python.schema.results import EnergyResult, VertexSet
 
 from .edge_artifacts import ParityEdgeCandidatePersistence
@@ -153,7 +153,7 @@ class ExactProofCoordinator:
                 raise
 
         report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
-        from slavv_python.processing.stages.energy.provenance import exact_route_gate_description
+        from slavv_python.pipeline.energy.provenance import exact_route_gate_description
 
         report_payload["report_scope"] = report_scope
         report_payload["exact_route_gate"] = exact_route_gate_description()
