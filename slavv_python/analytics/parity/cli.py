@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -384,8 +385,36 @@ def handle_preflight_exact(args: argparse.Namespace) -> None:
 
 def handle_resume_exact_run(args: argparse.Namespace) -> None:
     """Resume a stale or interrupted init-exact-run directory."""
+    from slavv_python.analytics.parity.job_registry import JobRegistry
+    from slavv_python.analytics.parity.process_utils import (
+        ensure_monitor_daemon_running,
+        is_process_alive,
+        is_python_process,
+        kill_process_tree,
+    )
+
+    dest_run_root = Path(args.dest_run_root)
+    monitor = bool(getattr(args, "monitor", False))
+    force_kill = bool(getattr(args, "force_kill", False))
+
+    # Check for active writer if monitoring enabled
+    if monitor:
+        registry = JobRegistry()
+        active_job = registry.get_job_by_run_dir(dest_run_root)
+        if active_job and is_process_alive(active_job.pid) and is_python_process(active_job.pid):
+            if not force_kill:
+                raise RuntimeError(
+                    f"Run directory has active writer (PID {active_job.pid}).\n"
+                    f"Job started: {active_job.started_at}\n"
+                    f"Use --force-kill to terminate, or wait for completion.\n"
+                    f"Check status: slavv jobs list"
+                )
+            print(f"Terminating active writer PID {active_job.pid}...")
+            kill_process_tree(active_job.pid)
+            registry.update_job(active_job.job_id, status="killed")
+
     dest_run_root = resume_exact_run(
-        Path(args.dest_run_root),
+        dest_run_root,
         dataset_root=Path(args.dataset_root) if args.dataset_root else None,
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         stop_after=args.stop_after,
@@ -395,15 +424,65 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         skip_preflight=bool(getattr(args, "skip_preflight", False)),
         n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
     )
+
+    # Register job if monitoring enabled
+    if monitor:
+        import os
+
+        registry = JobRegistry()
+        oracle_root_str = str(Path(args.oracle_root)) if args.oracle_root else "unknown"
+        stage = getattr(args, "force_rerun_from", None) or "all"
+
+        job_id = registry.register_job(
+            pid=os.getpid(),
+            run_dir=dest_run_root,
+            oracle_root=Path(oracle_root_str),
+            stage=stage,
+            command=" ".join(sys.argv),
+            metadata={
+                "stop_after": args.stop_after,
+                "force_rerun_from": getattr(args, "force_rerun_from", None),
+            },
+        )
+        ensure_monitor_daemon_running()
+        print(f"Job registered for monitoring (ID: {job_id})")
+
     print(str(dest_run_root))
 
 
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
     from .jobs import launch_exact_run_job
+    from slavv_python.analytics.parity.job_registry import JobRegistry
+    from slavv_python.analytics.parity.process_utils import (
+        ensure_monitor_daemon_running,
+        is_process_alive,
+        is_python_process,
+        kill_process_tree,
+    )
+
+    dest_run_root = Path(args.dest_run_root)
+    monitor = bool(getattr(args, "monitor", False))
+    force_kill = bool(getattr(args, "force_kill", False))
+
+    # Check for active writer if monitoring enabled
+    if monitor:
+        registry = JobRegistry()
+        active_job = registry.get_job_by_run_dir(dest_run_root)
+        if active_job and is_process_alive(active_job.pid) and is_python_process(active_job.pid):
+            if not force_kill:
+                raise RuntimeError(
+                    f"Run directory has active writer (PID {active_job.pid}).\n"
+                    f"Job started: {active_job.started_at}\n"
+                    f"Use --force-kill to terminate, or wait for completion.\n"
+                    f"Check status: slavv jobs list"
+                )
+            print(f"Terminating active writer PID {active_job.pid}...")
+            kill_process_tree(active_job.pid)
+            registry.update_job(active_job.job_id, status="killed")
 
     manifest = launch_exact_run_job(
-        dest_run_root=Path(args.dest_run_root),
+        dest_run_root=dest_run_root,
         dataset_root=Path(args.dataset_root) if args.dataset_root else None,
         oracle_root=Path(args.oracle_root) if args.oracle_root else None,
         stop_after=args.stop_after,
@@ -413,6 +492,27 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
         skip_preflight=bool(getattr(args, "skip_preflight", False)),
         n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
     )
+
+    # Register job if monitoring enabled
+    if monitor:
+        registry = JobRegistry()
+        oracle_root_str = str(manifest.get("oracle_root", "unknown"))
+        stage = getattr(args, "force_rerun_from", None) or "all"
+
+        job_id = registry.register_job(
+            pid=manifest["pid"],
+            run_dir=dest_run_root,
+            oracle_root=Path(oracle_root_str),
+            stage=stage,
+            command=" ".join(manifest["command"]),
+            metadata={
+                "stop_after": args.stop_after,
+                "manifest_path": manifest.get("pid_file"),
+            },
+        )
+        ensure_monitor_daemon_running()
+        print(f"Job registered for monitoring (ID: {job_id})")
+
     print(manifest["pid"])
     print(manifest["stdout"])
     print(manifest["stderr"])

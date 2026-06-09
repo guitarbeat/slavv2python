@@ -243,6 +243,14 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Print one consolidated monitor snapshot without opening the TUI",
     )
     monitor_parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+
+    jobs_parser = subparsers.add_parser(
+        "jobs",
+        help="Manage and monitor parity jobs",
+    )
+    # The jobs subcommand has its own subparsers, handled in jobs.py
+    # We just register it here so it appears in the main CLI
+
     return parser
 
 
