@@ -40,7 +40,6 @@ Operator guides and contributor references:
 | [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md) | Methodology and tools for measuring and optimizing processing speed | — |
 | [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md) | Mandatory steps for stable research deployments and parity promotion | — |
 | [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
-| [Proactive Agent Guide](workflow/external/PROACTIVE_AGENT_GUIDE.md) | Architecture and protocols for proactive AI agent behaviors | — |
 
 ## Adjacent Reference Docs
 

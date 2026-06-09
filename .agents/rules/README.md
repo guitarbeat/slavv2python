@@ -81,9 +81,9 @@ def process():
 - Prefer explicit over implicit
 
 ### TypeScript Exhaustive Switch
-**File**: `typescript-exhaustive-switch.mdc`  
-**Scene**: Always (TypeScript files)  
-**Purpose**: Ensure switch statements handle all cases
+> **Removed** — This rule was for TypeScript projects. It has been deleted from this Python-only repository.
+
+
 
 **Pattern**:
 ```typescript
@@ -299,7 +299,6 @@ When rules conflict (rare), priority order:
 ### Code Quality
 - `python-quality-verification.mdc` - General quality
 - `no-inline-imports.mdc` - Import discipline
-- `typescript-exhaustive-switch.mdc` - TS completeness
 
 ### Process
 - `git-commit-message.md` - Commit format

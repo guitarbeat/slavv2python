@@ -70,7 +70,6 @@ Repository Root
 ├── docs/
 │   ├── README.md ← Documentation index (navigation hub)
 │   ├── DOCUMENTATION_MAP.md ← This file (visual structure)
-│   ├── DOCUMENTATION_AUDIT.md ← Audit findings and improvement plan
 │   ├── TODO.md ← Active tasks ONLY (no status, no specs)
 │   ├── TUTORIAL.md ← New user onboarding
 │   ├── CONTRIBUTING.md ← Contributor workflow
@@ -120,7 +119,8 @@ Repository Root
 │   │   └── 0009-parity-pre-gate-tiers.md
 │   │
 │   └── investigations/ ← Archival deep dives (context, not current tasks)
-│       └── v22-pointer-corruption/ ← Historical investigation
+│       ├── v22-pointer-corruption/ ← Historical investigation
+│       └── MATLAB_PYTHON_TRANSLATION_PAPER.md ← Exact parity methodology retrospective
 │
 ├── tests/
 │   └── README.md ← Test placement rules
@@ -242,7 +242,7 @@ TECHNICAL_ARCHITECTURE.md (system design)
 | **Decisions** | adr/ | Why we made choices | ADR 0001-0009 |
 | **Solutions** | solutions/ | Documented fixes | Compound docs with YAML |
 | **History** | investigations/ | Archival deep dives | v22-pointer-corruption/ |
-| **Meta** | docs/ | About documentation | DOCUMENTATION_MAP.md, DOCUMENTATION_AUDIT.md |
+| **Meta** | docs/ | About documentation | DOCUMENTATION_MAP.md |
 
 ---
 
@@ -316,4 +316,4 @@ Proposal → Discussion → adr/ (decision) → Implementation → TECHNICAL_ARC
 ---
 
 **Last Updated**: 2026-06-09  
-**Related**: [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md), [README.md](README.md)
+**Related**: [README.md](README.md)

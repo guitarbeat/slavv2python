@@ -7,6 +7,7 @@ Keep investigation docs here only when they explain historical decisions that st
 Current archival bundle:
 
 - [v22 Pointer Corruption](v22-pointer-corruption/README.md)
+- [MATLAB to Python Translation Paper](MATLAB_PYTHON_TRANSLATION_PAPER.md) — draft retrospective on exact parity methodology, floating-point alignment, and architectural translation decisions
 
 Retired parity investigations have been collapsed into the maintained parity
 docs:
