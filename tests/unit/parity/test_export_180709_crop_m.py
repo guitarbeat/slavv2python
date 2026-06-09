@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 
 import numpy as np
 import pytest
 import tifffile
 
-export_crop_m = importlib.import_module("scripts.export_180709_crop_m")
+from slavv_python.analytics.parity.crop_export import export_crop_m, write_roi_metadata
 
 
 @pytest.mark.unit
@@ -19,7 +18,7 @@ def test_export_crop_m_writes_expected_shape(tmp_path):
     tifffile.imwrite(source, full)
 
     output = tmp_path / "180709_E_crop_M.tif"
-    cropped = export_crop_m.export_crop_m(source, output)
+    cropped = export_crop_m(source, output)
 
     assert cropped.shape == (64, 256, 256)
     assert output.is_file()
@@ -32,7 +31,7 @@ def test_export_crop_m_writes_expected_shape(tmp_path):
 def test_write_roi_metadata(tmp_path):
     output = tmp_path / "180709_E_crop_M.tif"
     output.write_bytes(b"placeholder")
-    meta_path = export_crop_m.write_roi_metadata(output)
+    meta_path = write_roi_metadata(output)
     payload = json.loads(meta_path.read_text(encoding="utf-8"))
     assert payload["tier"] == "M"
     assert payload["dataset_id"] == "180709_E_crop_M"

@@ -4,7 +4,6 @@ Consolidated from multiple small test files to reduce overhead and improve maint
 
 from __future__ import annotations
 
-import importlib
 import json
 import subprocess
 from typing import TYPE_CHECKING
@@ -17,6 +16,7 @@ from tests.support.run_state_builders import (
 )
 
 from slavv_python.analytics.parity import jobs
+from slavv_python.analytics.parity.commands import build_parity_parser
 from slavv_python.analytics.parity.constants import (
     CHECKPOINTS_DIR,
     EXPERIMENT_INDEX_PATH,
@@ -35,8 +35,7 @@ from slavv_python.analytics.parity.proofs import (
 from slavv_python.analytics.parity.reports import (
     build_experiment_summary,
 )
-
-parity_experiment = importlib.import_module("scripts.parity_experiment")
+from slavv_python.interface.cli.parity import main as parity_main
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -178,7 +177,7 @@ def test_cli_dedupe_command(tmp_path, monkeypatch, capsys):
     ]
     index_path.write_text("\n".join(json.dumps(r) for r in records) + "\n", encoding="utf-8")
 
-    parity_experiment.main(["dedupe"])
+    parity_main(["dedupe"])
     captured = capsys.readouterr()
     assert "Successfully cleaned up" in captured.out
 
@@ -190,7 +189,7 @@ def test_cli_dedupe_command(tmp_path, monkeypatch, capsys):
 
 @pytest.mark.unit
 def test_build_parser_commands():
-    parser = parity_experiment.build_parser()
+    parser = build_parity_parser()
     args = parser.parse_args(["rerun-python", "--source-run-root", "src", "--dest-run-root", "dst"])
     assert args.command == "rerun-python"
 

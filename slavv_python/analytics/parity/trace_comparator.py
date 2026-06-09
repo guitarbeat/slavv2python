@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Automated comparison tool for SLAVV execution traces (JSONL)."""
 
 from __future__ import annotations
@@ -23,6 +22,7 @@ class Divergence:
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Load a JSONL execution trace file into a list of event dicts."""
     events = []
     with path.open("r") as f:
         for line in f:
@@ -32,15 +32,15 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return events
 
 
-def compare_traces(path1: Path, path2: Path, energy_tol: float = 1e-5) -> list[Divergence]:
+def compare_traces(
+    path1: Path, path2: Path, energy_tol: float = 1e-5
+) -> list[Divergence]:
+    """Compare two SLAVV JSONL execution traces and return a list of divergences."""
     trace1 = load_jsonl(path1)
     trace2 = load_jsonl(path2)
 
-    divergences = []
-
-    # Simple alignment by index for now (assuming events are emitted in same order)
+    divergences: list[Divergence] = []
     max_len = min(len(trace1), len(trace2))
-
     current_iteration = 0
 
     for i in range(max_len):
@@ -111,9 +111,11 @@ def compare_traces(path1: Path, path2: Path, energy_tol: float = 1e-5) -> list[D
                 )
                 return divergences
 
-            # Numerical energy check
             if not math.isclose(
-                e1["selected_energy"], e2["selected_energy"], rel_tol=energy_tol, abs_tol=energy_tol
+                e1["selected_energy"],
+                e2["selected_energy"],
+                rel_tol=energy_tol,
+                abs_tol=energy_tol,
             ):
                 divergences.append(
                     Divergence(
@@ -122,12 +124,18 @@ def compare_traces(path1: Path, path2: Path, energy_tol: float = 1e-5) -> list[D
                         "selected_energy",
                         e1["selected_energy"],
                         e2["selected_energy"],
-                        f"Selected seed energy mismatch (delta={abs(e1['selected_energy'] - e2['selected_energy']):.2e})",
+                        (
+                            f"Selected seed energy mismatch "
+                            f"(delta={abs(e1['selected_energy'] - e2['selected_energy']):.2e})"
+                        ),
                     )
                 )
 
         elif e1["event"] == "join":
-            if {e1["start_vertex"], e1["end_vertex"]} != {e2["start_vertex"], e2["end_vertex"]}:
+            if {e1["start_vertex"], e1["end_vertex"]} != {
+                e2["start_vertex"],
+                e2["end_vertex"],
+            }:
                 divergences.append(
                     Divergence(
                         current_iteration,
@@ -141,25 +149,33 @@ def compare_traces(path1: Path, path2: Path, energy_tol: float = 1e-5) -> list[D
                 return divergences
 
     if len(trace1) != len(trace2):
-        print(f"WARNING: Traces have different lengths ({len(trace1)} vs {len(trace2)})")
+        print(
+            f"WARNING: Traces have different lengths ({len(trace1)} vs {len(trace2)})",
+            file=sys.stderr,
+        )
 
     return divergences
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Compare two SLAVV execution traces.")
+def build_compare_traces_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for compare-traces."""
+    parser = argparse.ArgumentParser(description="Compare two SLAVV execution traces (JSONL).")
     parser.add_argument("trace1", type=Path, help="First trace file (JSONL)")
     parser.add_argument("trace2", type=Path, help="Second trace file (JSONL)")
     parser.add_argument("--energy-tol", type=float, default=1e-5, help="Energy tolerance")
+    return parser
 
-    args = parser.parse_args()
+
+def main(argv: list[str] | None = None) -> int:
+    """Entrypoint for the compare-traces command."""
+    args = build_compare_traces_parser().parse_args(argv)
 
     if not args.trace1.is_file():
-        print(f"Error: {args.trace1} not found")
-        sys.exit(1)
+        print(f"Error: {args.trace1} not found", file=sys.stderr)
+        return 1
     if not args.trace2.is_file():
-        print(f"Error: {args.trace2} not found")
-        sys.exit(1)
+        print(f"Error: {args.trace2} not found", file=sys.stderr)
+        return 1
 
     print(f"Comparing traces:\n  1: {args.trace1}\n  2: {args.trace2}\n")
 
@@ -167,31 +183,29 @@ def main():
 
     if not divergences:
         print("✅ No divergences found. Traces match perfectly.")
-    else:
-        print(f"❌ Found {len(divergences)} divergence(s).\n")
+        return 0
 
-        # Divergence summary
-        summary = {}
-        for d in divergences:
-            key = f"{d.event_type}.{d.key}"
-            summary[key] = summary.get(key, 0) + 1
+    print(f"❌ Found {len(divergences)} divergence(s).\n")
 
-        print("Divergence Summary:")
-        for key, count in sorted(summary.items(), key=lambda item: item[1], reverse=True):
-            print(f"  - {key}: {count}")
-        print()
+    summary: dict[str, int] = {}
+    for d in divergences:
+        key = f"{d.event_type}.{d.key}"
+        summary[key] = summary.get(key, 0) + 1
 
-        # Show first divergence in detail
-        first = divergences[0]
-        print(f"FIRST DIVERGENCE at Iteration {first.iteration}:")
-        print(f"  Event: {first.event_type}")
-        print(f"  Key:   {first.key}")
-        print(f"  Trace 1: {first.val1}")
-        print(f"  Trace 2: {first.val2}")
-        print(f"  Message: {first.message}")
+    print("Divergence Summary:")
+    for key, count in sorted(summary.items(), key=lambda item: item[1], reverse=True):
+        print(f"  - {key}: {count}")
+    print()
 
-        sys.exit(1)
+    first = divergences[0]
+    print(f"FIRST DIVERGENCE at Iteration {first.iteration}:")
+    print(f"  Event: {first.event_type}")
+    print(f"  Key:   {first.key}")
+    print(f"  Trace 1: {first.val1}")
+    print(f"  Trace 2: {first.val2}")
+    print(f"  Message: {first.message}")
+
+    return 1
 
 
-if __name__ == "__main__":
-    main()
+__all__ = ["Divergence", "compare_traces", "load_jsonl", "build_compare_traces_parser", "main"]
