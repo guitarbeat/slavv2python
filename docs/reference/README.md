@@ -1,43 +1,46 @@
 # Reference Docs
 
-Use this folder for current, maintained technical references.
-These docs outrank archival chapters and paper prose when they describe the
-current Python product surface.
+[Up: Documentation Index](../README.md) · [AI Agent Guide](../../AGENTS.md) · [Glossary](core/GLOSSARY.md) · [Quick Reference](../QUICK_REFERENCE.md)
+
+Use this folder for current, maintained technical references. These docs outrank archival chapters and paper prose when they describe the current Python product surface.
+
+**⭐ Start Here:**
+- **New to parity work?** [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md) → [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md)
+- **New to repository?** [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) → [GLOSSARY.md](core/GLOSSARY.md)
+- **Contributing code?** [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) → [tests/README.md](../../tests/README.md)
+- **Need quick answers?** [QUICK_REFERENCE.md](../QUICK_REFERENCE.md) ⚡
+
+---
 
 ## Core Docs
 
 Read these first when working on the live implementation:
 
-- [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
-  Claim boundaries, source-of-truth hierarchy, and implementation phases.
-- [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md)
-  MATLAB-to-Python surface map and confirmed structural deviations.
-- [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md)
-  Technical design, shared state management, and parity details for the discovery algorithm.
-- [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md)
-  Live proof status, current parity blockers, and historical breakthrough context.
-- [Energy Computation Methods](core/ENERGY_METHODS.md)
-  Supported energy backends, projection modes, and extension points.
-- [Glossary](core/GLOSSARY.md)
-  Shared parity and pipeline terminology.
-- [Paper Profile](workflow/PAPER_PROFILE.md)
-  Public paper-first CLI/app workflow and authoritative JSON export contract.
-- [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md)
-  Preferred Python names, package groupings, and compatibility policy.
-- [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md)
-  Engine design, component overview, and processing workflow.
+| Document | Purpose | Related Docs |
+|----------|---------|--------------|
+| [MATLAB Method Implementation Plan](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) | Claim boundaries, source-of-truth hierarchy, and implementation phases | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
+| [MATLAB Parity Mapping](core/MATLAB_PARITY_MAPPING.md) | MATLAB-to-Python surface map and confirmed structural deviations | [MATLAB_METHOD_IMPLEMENTATION_PLAN.md](core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md) |
+| [Exact Proof Findings](core/EXACT_PROOF_FINDINGS.md) ⭐ | Live proof status, current parity blockers, and historical breakthrough context | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Global Watershed Implementation Notes](core/WATERSHED_IMPLEMENTATION_NOTES.md) | Technical design, shared state management, and parity details for the discovery algorithm | [MATLAB_PARITY_MAPPING.md](core/MATLAB_PARITY_MAPPING.md) |
+| [Energy Computation Methods](core/ENERGY_METHODS.md) | Supported energy backends, projection modes, and extension points | [ZARR_ENERGY_STORAGE.md](backends/ZARR_ENERGY_STORAGE.md) |
+| [Glossary](core/GLOSSARY.md) | Shared parity and pipeline terminology | [AGENTS.md § Domain Glossary](../../AGENTS.md#domain-glossary) |
+| [Technical Architecture](core/TECHNICAL_ARCHITECTURE.md) | Engine design, component overview, and processing workflow | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
 
-- [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md)
-  Step-by-step instructions for running mathematical proofs against MATLAB oracles.
-- [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md)
-  Automated tracking and notifications for long-running parity experiments.
-- [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md)
-  Methodology and tools for measuring and optimizing processing speed.
-- [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md)
-  Mandatory steps for stable research deployments and parity promotion.
-- [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md)
-- [Proactive Agent Guide](workflow/external/PROACTIVE_AGENT_GUIDE.md)
-  Architecture and protocols for proactive AI agent behaviors.
+## Workflow Docs
+
+Operator guides and contributor references:
+
+| Document | Purpose | Related Docs |
+|----------|---------|--------------|
+| [Parity Pre-Gate](workflow/PARITY_PRE_GATE.md) | Three-tier parity testing (synthetic → crop → canonical) | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md) | Step-by-step instructions for running mathematical proofs against MATLAB oracles | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_JOB_MONITORING.md](workflow/PARITY_JOB_MONITORING.md) |
+| [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md) | Automated tracking and notifications for long-running parity experiments | [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Paper Profile](workflow/PAPER_PROFILE.md) | Public paper-first CLI/app workflow and authoritative JSON export contract | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
+| [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md) | Preferred Python names, package groupings, and compatibility policy | [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) |
+| [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md) | Methodology and tools for measuring and optimizing processing speed | — |
+| [Production Release Guide](workflow/PRODUCTION_RELEASE_GUIDE.md) | Mandatory steps for stable research deployments and parity promotion | — |
+| [Adding Extraction Algorithms](workflow/ADDING_EXTRACTION_ALGORITHMS.md) | Contributor guide for new algorithms | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
+| [Proactive Agent Guide](workflow/external/PROACTIVE_AGENT_GUIDE.md) | Architecture and protocols for proactive AI agent behaviors | — |
 
 ## Adjacent Reference Docs
 
