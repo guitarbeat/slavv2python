@@ -1,6 +1,67 @@
 # SLAVV Repository Guide & Instructions (AGENTS.md)
 
+**For AI Agents:** This file is your primary navigation guide. Start with the [🧭 Work Decision Tree](#-work-decision-tree) below to find what to read.
+
 Canonical instructions, domain glossary, and architecture guidelines for any AI coding agent working in the `slavv2python` repository. This file is automatically loaded into the AI's context.
+
+**Quick Navigation:**
+- **[🧭 Work Decision Tree](#-work-decision-tree)** ⭐ — **START HERE:** Find what to read based on your task
+- **[Domain Glossary](#domain-glossary)** — All terminology definitions
+- **[Repository Map](#repository-map)** — Directory structure
+- **[Key Reference Documents](#key-reference-documents)** — Essential docs table
+- **[Workflows](#workflows)** — Common development patterns
+
+**Complete Table of Contents:**
+- [Work Decision Tree](#-work-decision-tree) ← Start here to find what to read
+- [Scope & Core Principles](#scope--core-principles)
+- [Domain Glossary](#domain-glossary) ← All terminology definitions
+- [Repository Map](#repository-map) ← Directory structure
+- [Key Reference Documents](#key-reference-documents) ← Essential docs table
+- [Setup & Installation](#setup--installation)
+- [Quality Commands](#quality-commands)
+- [CLI & Application Workflows](#cli--application-workflows)
+- [Workflows](#workflows) ← Development patterns
+- [Exact MATLAB Parity Rule](#exact-matlab-parity-rule)
+- [Guardrails & Constraints](#guardrails--constraints)
+
+> **Quick Navigation:**
+> - [Work Decision Tree](#-work-decision-tree) — What to read based on your task
+> - [Domain Glossary](#domain-glossary) — All domain terms
+> - [Repository Map](#repository-map) — Directory structure
+> - [Key Reference Documents](#key-reference-documents) — Essential docs
+> - [Workflows](#workflows) — Common development patterns
+
+---
+
+## 🧭 Work Decision Tree
+
+**Choose your path based on what you're working on:**
+
+### I'm working on MATLAB parity
+1. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) FIRST** — Live status, active runs, blockers
+2. Check if a rerun is active: `slavv jobs list` or check `workspace/scratch/crop_energy_rerun_latest.pid`
+3. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
+4. Review [PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) for commands
+5. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
+6. See [Parity Experiments](#parity-experiments) workflow below
+
+### I'm fixing a bug or adding a feature
+1. Read impacted module(s) and nearest tests
+2. Check [PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) for conventions
+3. Verify test placement with [tests/README.md](tests/README.md)
+4. Follow [Small Code Changes](#small-code-changes) workflow
+5. If touching parity-sensitive code (energy, vertices, edges, network), also see parity workflow above
+
+### I'm exploring the codebase
+1. Start with [Repository Map](#repository-map) below
+2. Review [TECHNICAL_ARCHITECTURE.md](docs/reference/core/TECHNICAL_ARCHITECTURE.md)
+3. Check [Domain Glossary](#domain-glossary) for unfamiliar terms
+4. See [Key Reference Documents](#key-reference-documents) table
+
+### I'm setting up the environment
+1. Follow [Setup & Installation](#setup--installation) below
+2. Run [Quality Commands](#quality-commands) to verify setup
+3. Try the [CLI workflows](#cli--application-workflows)
 
 ---
 
@@ -13,6 +74,8 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 ---
 
 ## Domain Glossary
+
+> **Note:** This glossary is the **canonical source** for domain terminology. It is automatically loaded into AI agent context. The supplementary file [reference/core/GLOSSARY.md](docs/reference/core/GLOSSARY.md) may contain additional technical details.
 
 ### Lowest Linear Index Priority
 The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized.
@@ -271,7 +334,9 @@ python -m streamlit run slavv_python/interface/streamlit/app.py
 
 ---
 
-## Developer Workflows
+## Workflows
+
+This section provides common development patterns. See [docs/README.md](docs/README.md) for the full documentation map.
 
 ### Small Code Changes
 1. Read the impacted module and its nearest tests.
@@ -281,10 +346,12 @@ python -m streamlit run slavv_python/interface/streamlit/app.py
 5. Run full suite if the change crosses module boundaries.
 
 ### Parity Experiments
-Before continuing parity work, read `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
-If a crop rerun PID exists under `workspace/scratch/crop_energy_rerun_latest.pid`,
-check that process first and never start another writer on the same `crop_M_exact`
-run root while it is alive.
+
+**Prerequisites:** Read [docs/reference/core/EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) BEFORE continuing parity work.
+
+**Duplicate writer check:** If a crop rerun PID exists under `workspace/scratch/crop_energy_rerun_latest.pid`, check that process first. Use `slavv jobs list` to see active monitored jobs. Never start another writer on the same `crop_M_exact` run root while a writer is alive.
+
+**Workflow:**
 
 ```powershell
 # Promote oracle
