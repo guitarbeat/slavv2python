@@ -17,7 +17,6 @@ from slavv_python.processing.stages.vertices.results import (
     build_vertices_result,
     coerce_radius_axes,
     empty_vertices_result,
-    sort_vertex_order,
 )
 from slavv_python.schema.results import EnergyResult, VertexSet
 from slavv_python.utils.safe_unpickle import safe_load
@@ -111,12 +110,10 @@ class VertexManager:
             logger.info("Extracted 0 vertices")
             return empty_vertices_result()
 
-        sort_indices = sort_vertex_order(
-            vertex_positions,
-            vertex_energies,
-            context["image_shape"],
-            context["energy_sign"],
-        )
+        if context["energy_sign"] < 0:
+            sort_indices = np.argsort(vertex_energies, kind="stable")
+        else:
+            sort_indices = np.argsort(-vertex_energies, kind="stable")
         vertex_positions = vertex_positions[sort_indices]
         vertex_scales = vertex_scales[sort_indices]
         vertex_energies = vertex_energies[sort_indices]
@@ -188,12 +185,10 @@ class VertexManager:
                 context["lumen_radius_pixels_axes"],
                 context["length_dilation_ratio"],
             )
-            sort_indices = sort_vertex_order(
-                positions,
-                energies,
-                context["image_shape"],
-                context["energy_sign"],
-            )
+            if context["energy_sign"] < 0:
+                sort_indices = np.argsort(energies, kind="stable")
+            else:
+                sort_indices = np.argsort(-energies, kind="stable")
             atomic_joblib_dump(
                 {
                     "positions": positions[sort_indices],
