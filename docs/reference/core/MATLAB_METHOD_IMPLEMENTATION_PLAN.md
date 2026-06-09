@@ -189,7 +189,7 @@ These are the reference surfaces still under investigation:
    Audit strand ordering and network assembly only after the upstream edge proof
    surfaces are materially closer; the current preferred surface delegates into
    `slavv_python/processing/stages/network/`.
-6. `scripts/parity_experiment.py` and `slavv_python/analytics/parity/matlab_exact_proof.py`
+6. `slavv parity` and `slavv_python/analytics/parity/matlab_exact_proof.py`
    Preserve the proof harness as the acceptance gate for native-first exact
    reruns, with disposable trial runs under `workspace/runs/`, preserved MATLAB truth
    under `workspace/oracles/`, and promoted summaries under `workspace/reports/`.

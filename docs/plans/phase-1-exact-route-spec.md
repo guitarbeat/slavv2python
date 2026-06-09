@@ -143,7 +143,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 
 ## Context & research
 
-- Parity CLI: `scripts/parity_experiment.py`, `slavv_python/analytics/parity/cli.py`
+- Parity CLI: `slavv parity`, `slavv_python/analytics/parity/cli.py`
 - Proof core: `slavv_python/analytics/parity/matlab_exact_proof.py`, `coordinator.py`
 - Pipeline: `slavv_python/engine/orchestrator.py`, `processing/stages/edges/`
 - v29 baseline: **1062/1197** pairs, **135 missing**, **371 extra**
@@ -173,7 +173,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 ### U4 — Sequential certification (operator)
 
 ```powershell
-python scripts/parity_experiment.py prove-exact-sequence `
+slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/<run> `
   --dest-run-root workspace/runs/oracle_180709_E/<run> `
   --oracle-root workspace/oracles/<oracle_id>

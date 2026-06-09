@@ -26,6 +26,14 @@ def _handle_jobs_command(args) -> None:
     jobs_main(sys.argv[2:])  # Skip 'slavv jobs'
 
 
+def _handle_parity_command(args) -> None:
+    """Delegate to parity subcommand handler."""
+    from .parity import main as parity_main
+
+    # Re-parse with parity-specific parser
+    parity_main(sys.argv[2:])  # Skip 'slavv parity'
+
+
 CLI_COMMAND_HANDLERS: dict[str | None, Callable[..., None]] = {
     "run": _handle_run_command,
     "analyze": _handle_analyze_command,
@@ -34,6 +42,7 @@ CLI_COMMAND_HANDLERS: dict[str | None, Callable[..., None]] = {
     "status": _handle_status_command,
     "monitor": _handle_monitor_command,
     "jobs": _handle_jobs_command,
+    "parity": _handle_parity_command,
 }
 
 

@@ -39,14 +39,14 @@ If you are modifying core vascular discovery logic (e.g., in `global_watershed.p
 
 1.  **Run Preflight**: Prepare a parity experiment directory.
     ```powershell
-    python scripts/parity_experiment.py preflight-exact `
+    slavv parity preflight-exact `
       --source-run-root workspace/runs/<last_known_good> `
       --oracle-root workspace/oracles/<dataset_id> `
       --dest-run-root workspace/runs/my_fix_trial
     ```
 2.  **Execute Proof**: Compare your changes against the oracle.
     ```powershell
-    python scripts/parity_experiment.py prove-exact `
+    slavv parity prove-exact `
       --source-run-root workspace/runs/my_fix_trial `
       --oracle-root workspace/oracles/<dataset_id> `
       --dest-run-root workspace/runs/my_fix_trial `

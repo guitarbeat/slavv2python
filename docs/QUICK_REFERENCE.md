@@ -54,7 +54,7 @@ slavv jobs list
 # Read: docs/reference/core/EXACT_PROOF_FINDINGS.md
 
 # 2. Start monitored run
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -67,7 +67,7 @@ slavv jobs list
 slavv monitor --run-dir workspace/runs/crop_M_exact --once
 
 # 4. When complete, run proof
-python scripts/parity_experiment.py prove-exact \
+slavv parity prove-exact \
   --source-run-root workspace/runs/crop_M_exact \
   --dest-run-root workspace/runs/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \

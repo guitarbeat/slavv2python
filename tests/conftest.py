@@ -53,8 +53,12 @@ def pytest_collection_modifyitems(items):
 
 @pytest.fixture
 def tmp_path():
-    """Provide a writable temp directory without relying on pytest's lock-based tmpdir."""
-    dev_tmp_root = repo_root / "tmp_tests"
+    """Provide a writable temp directory without relying on pytest's lock-based tmpdir.
+
+    Artifacts land under ``workspace/scratch/tmp_tests/`` (gitignored) rather
+    than a top-level ``tmp_tests/`` directory, keeping the repo root clean.
+    """
+    dev_tmp_root = repo_root / "workspace" / "scratch" / "tmp_tests"
     dev_tmp_root.mkdir(parents=True, exist_ok=True)
     path = dev_tmp_root / f"run-{uuid4().hex}"
     path.mkdir(parents=True, exist_ok=False)

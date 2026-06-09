@@ -21,7 +21,7 @@ The operating system did not own a durable parity job record under the run root.
 Launch long exact-route reruns with `launch-exact-run` so the process is detached and all operator artifacts live under `99_Metadata/`:
 
 ```powershell
-python scripts/parity_experiment.py launch-exact-run `
+slavv parity launch-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --force-rerun-from energy `
@@ -33,7 +33,7 @@ python scripts/parity_experiment.py launch-exact-run `
 Monitor from any later shell or agent session:
 
 ```powershell
-python scripts/parity_experiment.py status-exact-run `
+slavv parity status-exact-run `
   --run-dir workspace/runs/oracle_180709_E/crop_M_exact
 ```
 
@@ -43,7 +43,7 @@ Use run-local artifacts first: `99_Metadata/parity_job.json`, `parity_job.pid`, 
 Unit coverage passed for the detached launcher and monitor discovery:
 
 ```powershell
-python -m pytest tests/unit/apps/test_monitor_service.py tests/unit/scripts/parity_experiment/test_parity_experiment_comprehensive.py -q
+python -m pytest tests/unit/apps/test_monitor_service.py tests/unit/parity/parity_experiment/test_parity_experiment_comprehensive.py -q
 ```
 
 Result: `13 passed`.

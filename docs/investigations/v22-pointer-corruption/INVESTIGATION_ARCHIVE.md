@@ -129,19 +129,19 @@ penalty reviews came back aligned.
 These were the core investigation commands used during the April 2026 funnel:
 
 ```powershell
-python scripts/parity_experiment.py preflight-exact `
+slavv parity preflight-exact `
     --source-run-root workspace\runs\20260421_accepted_budget_trial `
     --dest-run-root workspace\runs\my_current_code_trial
 
-python scripts/parity_experiment.py prove-luts `
+slavv parity prove-luts `
     --source-run-root workspace\runs\20260421_accepted_budget_trial `
     --dest-run-root workspace\runs\my_current_code_trial
 
-python scripts/parity_experiment.py capture-candidates `
+slavv parity capture-candidates `
     --source-run-root workspace\runs\20260421_accepted_budget_trial `
     --dest-run-root workspace\runs\my_current_code_trial
 
-python scripts/parity_experiment.py summarize `
+slavv parity summarize `
     --run-root workspace\runs\my_current_code_trial
 ```
 

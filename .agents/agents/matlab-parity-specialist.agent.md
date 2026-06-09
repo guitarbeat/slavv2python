@@ -30,7 +30,7 @@ Always read these before making parity changes:
 | Network assembly | `slavv_python/processing/stages/network/` |
 | Proof harness | `slavv_python/analytics/parity/` |
 | Run state | `slavv_python/engine/state/` |
-| Parity experiment CLI | `scripts/parity_experiment.py` |
+| Parity experiment CLI | `slavv parity` |
 
 ## Constraints
 - Focus only on parity/comparison/import scope unless explicitly asked to broaden.

@@ -45,7 +45,7 @@ This creates inefficiency and increases the risk of workflow errors.
 
 ### Story 1: Start monitored job
 ```powershell
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -68,7 +68,7 @@ slavv jobs list
 
 ### Story 4: Prevent duplicate writer
 ```powershell
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   ...
 ```

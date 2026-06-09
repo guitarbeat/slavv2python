@@ -196,7 +196,7 @@ norecursedirs = [
     "external/Vectorization-Public",
     "experiments",
     ".pytest_tmp",
-    "workspace/tmp_tests",
+    "workspace",
     "tmp_fixture",
 ]
 python_files = "test_*.py"

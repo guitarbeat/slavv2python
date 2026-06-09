@@ -33,7 +33,7 @@ Tests mirror `slavv_python/` exactly — same folder name, same depth.
 ## Temp Paths And Artifacts
 
 - Use the repo-local `tmp_path` fixture from `tests/conftest.py`.
-- Temporary test artifacts must stay under `tmp_tests/`, not system temp directories.
+- Temporary test artifacts must stay under `workspace/scratch/tmp_tests/`, not system temp directories.
 - Write repository-managed text fixtures/artifacts with explicit encodings, typically `encoding="utf-8"`.
 
 ## Keep In Sync

@@ -88,7 +88,7 @@ Add the `--monitor` flag to any `resume-exact-run` or `launch-exact-run` command
 
 ```powershell
 # Start monitored parity job
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -195,13 +195,13 @@ The monitoring system prevents concurrent writes to the same run directory:
 
 ```powershell
 # First job starts successfully
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --monitor
 
 # Second attempt fails with clear error
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --monitor
@@ -222,7 +222,7 @@ python scripts/parity_experiment.py resume-exact-run \
 If you need to replace an active job:
 
 ```powershell
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-kill \
@@ -349,7 +349,7 @@ Get-Content workspace/scratch/monitor_daemon.log -Tail 50
 **Solution:** System validates process name contains 'python'. If validation fails, job is marked stale. Use `--force-kill` to clear:
 
 ```powershell
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-kill \
@@ -469,7 +469,7 @@ Updated protocol from [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md)
 
 2. **Check run-local metadata:**
    ```powershell
-   python scripts/parity_experiment.py status-exact-run \
+   slavv parity status-exact-run \
      --run-dir workspace/runs/oracle_180709_E/crop_M_exact
    ```
 
@@ -477,7 +477,7 @@ Updated protocol from [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md)
 
 4. **If job completed, run proof:**
    ```powershell
-   python scripts/parity_experiment.py prove-exact \
+   slavv parity prove-exact \
      --source-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --oracle-root workspace/oracles/180709_E_crop_M \
@@ -486,7 +486,7 @@ Updated protocol from [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md)
 
 5. **If proof passes, refresh downstream:**
    ```powershell
-   python scripts/parity_experiment.py resume-exact-run \
+   slavv parity resume-exact-run \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --oracle-root workspace/oracles/180709_E_crop_M \
      --force-rerun-from vertices \
@@ -501,7 +501,7 @@ The system supports multiple concurrent monitored jobs:
 
 ```powershell
 # Start crop harness (energy only)
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
   --oracle-root workspace/oracles/180709_E_crop_M \
   --force-rerun-from energy \
@@ -510,7 +510,7 @@ python scripts/parity_experiment.py resume-exact-run \
   --monitor
 
 # Start canonical run (full pipeline) in parallel
-python scripts/parity_experiment.py resume-exact-run \
+slavv parity resume-exact-run \
   --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network \
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 \
   --force-rerun-from energy \

@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
 from slavv_python.analytics.parity.cli import (
     handle_capture_candidates,
+    handle_compare_traces,
     handle_dedupe,
     handle_diagnose_gaps,
     handle_ensure_oracle_artifacts,
+    handle_export_crop,
     handle_fail_fast,
     handle_init_exact_run,
     handle_launch_exact_run,
@@ -256,6 +259,36 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
         "dedupe",
         handle_dedupe,
         (arg("--dry-run", action="store_true", help="Preview deletions without modifying files."),),
+    ),
+    CommandSpec(
+        "compare-traces",
+        handle_compare_traces,
+        (
+            arg("trace1", type=Path, help="First trace file (JSONL)"),
+            arg("trace2", type=Path, help="Second trace file (JSONL)"),
+            arg("--energy-tol", type=float, default=1e-5, help="Energy tolerance"),
+        ),
+        help="Compare two SLAVV JSONL execution traces for divergences.",
+    ),
+    CommandSpec(
+        "export-crop",
+        handle_export_crop,
+        (
+            arg(
+                "--source",
+                type=Path,
+                default=None,
+                help="Full 180709_E.tif (Z x Y x X). Uses default workspace path if omitted.",
+            ),
+            arg(
+                "--output",
+                type=Path,
+                default=None,
+                help="Output TIFF path. Uses workspace/scratch default if omitted.",
+            ),
+            arg("--write-metadata", action="store_true", help="Write .roi.json sidecar file."),
+        ),
+        help="Export the 180709_E tier-M center crop TIFF for parity pre-gate.",
     ),
 )
 

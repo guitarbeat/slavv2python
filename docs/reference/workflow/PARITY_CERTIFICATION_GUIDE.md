@@ -10,7 +10,7 @@ For faster iteration before (or in parallel with) full-volume certification, see
 
 ## 🏗️ Certification Infrastructure
 
-Certification is a developer-only workflow that uses the `scripts/parity_experiment.py` harness to compare Python's output against preserved MATLAB truth vectors.
+Certification is a developer-only workflow that uses the `slavv parity` harness to compare Python's output against preserved MATLAB truth vectors.
 
 Use `slavv monitor --run-dir <run_root>` as the primary operations console while
 long parity runs are active. Deprecated watcher scripts under `scripts/` have
@@ -52,7 +52,7 @@ space.
 ### 1. Initialize a Parity Run
 Create a structured run directory from a real dataset and a MATLAB oracle.
 ```powershell
-python scripts/parity_experiment.py init-exact-run `
+slavv parity init-exact-run `
   --dataset-root workspace/datasets/<dataset_id> `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
@@ -81,7 +81,7 @@ As of 2026-06-03, this artifact is present and readable:
 If it is missing in a fresh workspace, materialize it from the canonical MATLAB batch. The current batch has an extensionless HDF5 energy volume, so this does not require rerunning MATLAB. For an existing Oracle root, use the Oracle Artifact Maintenance command to write only missing normalized artifacts and verify they are readable:
 
 ```powershell
-python scripts/parity_experiment.py ensure-oracle-artifacts `
+slavv parity ensure-oracle-artifacts `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --stage energy
 ```
@@ -89,7 +89,7 @@ python scripts/parity_experiment.py ensure-oracle-artifacts `
 For a brand-new oracle root, use the full promotion command:
 
 ```powershell
-python scripts/parity_experiment.py promote-oracle `
+slavv parity promote-oracle `
   --matlab-batch-dir workspace/oracles/180709_E_batch_190910-103039/01_Input/matlab_results/batch_190910-103039_canonical `
   --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
   --dataset-file workspace/datasets/771eb62fd1322cf59e24f056aff2692b3375b94ce6dc9b25744428d4dbf1e353/01_Input/180709_E.tif `
@@ -105,7 +105,7 @@ workspace/scratch/phase1_cert_network_rerun_from_energy.ps1
 ### 2. Verify Preflight
 Ensure the destination is correctly populated with oracle references and parameters.
 ```powershell
-python scripts/parity_experiment.py preflight-exact `
+slavv parity preflight-exact `
   --source-run-root workspace/runs/cert_trial_v1 `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1
@@ -120,7 +120,7 @@ Phase 1 certification requires **strict zero** missing/extra per stage, in order
 Run each stage, or use the sequential helper (stops on first failure and writes per-stage JSON under `03_Analysis/`):
 
 ```powershell
-python scripts/parity_experiment.py prove-exact-sequence `
+slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/<cert_run> `
   --dest-run-root workspace/runs/<cert_run> `
   --oracle-root workspace/oracles/<oracle_id>
@@ -129,7 +129,7 @@ python scripts/parity_experiment.py prove-exact-sequence `
 Alternatively run each stage manually (or use `--stage all`, which compares all four in certification order):
 
 ```powershell
-python scripts/parity_experiment.py prove-exact `
+slavv parity prove-exact `
   --source-run-root workspace/runs/cert_trial_v1 `
   --oracle-root workspace/oracles/<oracle_id> `
   --dest-run-root workspace/runs/cert_trial_v1 `
@@ -145,7 +145,7 @@ On Windows hosts where zarr rename fails, use `--energy-storage-format npy` on `
 When `init-exact-run` seeded a run but the pipeline process stopped, resume with a **single** writer on the destination root:
 
 ```powershell
-python scripts/parity_experiment.py resume-exact-run `
+slavv parity resume-exact-run `
   --dest-run-root workspace/runs/<cert_run> `
   --oracle-root workspace/oracles/<oracle_id> `
   --stop-after network `

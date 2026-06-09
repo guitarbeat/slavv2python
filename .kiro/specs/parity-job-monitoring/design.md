@@ -112,7 +112,7 @@ FOR EACH active_job IN registry:
 
 ### 3. CLI Integration
 
-**Location**: `scripts/parity_experiment.py`
+**Location**: `slavv parity`
 
 **New Flag**: `--monitor` (optional, default: False)
 

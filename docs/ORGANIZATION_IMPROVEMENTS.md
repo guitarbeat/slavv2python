@@ -83,7 +83,7 @@ Is it part of the public product?
 **A:** 
 - Pre-gate integration tests → `tests/integration/parity/`
 - Parity harness production code → `slavv_python/analytics/parity/`
-- Parity experiment CLI tool → `scripts/parity_experiment.py`
+- Parity experiment CLI tool → `slavv parity`
 - Oracle vectors and run outputs → `workspace/oracles/` and `workspace/runs/`
 
 ### Q: Where do one-off exploration scripts go?

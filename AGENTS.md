@@ -156,7 +156,6 @@ _Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in
 **Four Top-Level Folders:**
 - **`slavv_python/`** — Production package code (installed via pip)
 - **`tests/`** — Automated test suite (runs in CI)
-- **`scripts/`** — Developer utility scripts (committed but not installed)
 - **`workspace/`** — Local experiment artifacts (gitignored, personal)
 
 ```text
@@ -185,7 +184,9 @@ slavv2python/
 │   │   │   ├── preflight.py            # Memory gate + params audit before long runs
 │   │   │   ├── resume.py               # resume-exact-run (clears stale running snapshot)
 │   │   │   ├── bootstrap.py / surfaces.py / params_audit.py  # init-exact-run layout
-│   │   │   └── counts.py               # Canonical RunCounts helpers
+│   │   │   ├── counts.py               # Canonical RunCounts helpers
+│   │   │   ├── crop_export.py          # Export 180709_E tier-M crop (slavv parity export-crop)
+│   │   │   └── trace_comparator.py     # JSONL execution trace differ (slavv parity compare-traces)
 │   │   ├── curation/                   # Automated & ML curators
 │   │   └── metrics/                    # Intensity, topology metrics
 │   ├── storage/                        # Data I/O
@@ -193,6 +194,7 @@ slavv2python/
 │   │   └── exporters/                  # JSON v1 exporter
 │   ├── interface/                      # User-facing surfaces
 │   │   ├── cli/                        # argparse CLI
+│   │   │   └── parity.py               # slavv parity <subcommand> entry point
 │   │   ├── streamlit/                  # Streamlit web app
 │   │   └── shared_services/            # Cross-UI service layer
 │   ├── visualization/                  # Plotting & rendering
@@ -205,23 +207,18 @@ slavv2python/
 │   ├── unit/                           # By-owner unit tests (mirrors slavv_python/ structure)
 │   │   ├── pipeline/                   # Tests for slavv_python/pipeline/
 │   │   ├── analytics/                  # Tests for slavv_python/analytics/
+│   │   ├── parity/                     # Tests for slavv_python/analytics/parity/
 │   │   ├── engine/                     # Tests for slavv_python/engine/
 │   │   ├── interface/                  # Tests for slavv_python/interface/
 │   │   ├── storage/                    # Tests for slavv_python/storage/
 │   │   ├── schema/                     # Tests for slavv_python/schema/
 │   │   ├── utils/                      # Tests for slavv_python/utils/
 │   │   ├── visualization/              # Tests for slavv_python/visualization/
-│   │   ├── workflows/                  # Tests for slavv_python/workflows/
-│   │   ├── scripts/                    # Tests for scripts/
+│   │   └── workflows/                  # Tests for slavv_python/workflows/
 │   ├── integration/                    # End-to-end & parity tests
 │   ├── ui/                             # Streamlit & visualization tests
 │   ├── runtime/                        # Run-state management tests
 │   └── support/                        # Shared test builders & fixtures
-│
-├── scripts/                            # DEVELOPER TOOLS (committed but not installed)
-│   ├── cli/                            # Parity experiment harness, debug tools
-│   ├── matlab/                         # Headless MATLAB drivers (crop oracle vectorization)
-│   └── diagnostics/                    # MATLAB artifact inspection
 │
 ├── docs/                               # Documentation
 │   ├── reference/                      # Maintained technical references
@@ -233,6 +230,7 @@ slavv2python/
 │   ├── reports/                        # Promoted proof summaries
 │   ├── datasets/                       # Test datasets
 │   └── scratch/                        # Temporary scratch files
+│       └── matlab/                     # MATLAB driver scripts (local use only)
 │
 └── external/                           # Vendored dependencies
     └── Vectorization-Public/           # Canonical MATLAB source (submodule)
@@ -373,27 +371,25 @@ This section provides common development patterns. See [docs/README.md](docs/REA
 
 ```powershell
 # Promote oracle
-python scripts/parity_experiment.py promote-oracle \
-  --matlab-batch-dir D:\incoming\batch_260421-151654 \
-  --oracle-root workspace\oracles\<oracle_id> \
-  --dataset-file D:\datasets\volume.tif \
+slavv parity promote-oracle `
+  --matlab-batch-dir D:\incoming\batch_260421-151654 `
+  --oracle-root workspace\oracles\<oracle_id> `
+  --dataset-file D:\datasets\volume.tif `
   --oracle-id <oracle_id>
 
 # Run preflight check
-python scripts/parity_experiment.py preflight-exact \
-  --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\<oracle_id> \
+slavv parity preflight-exact `
+  --source-run-root workspace\runs\seed_run `
+  --oracle-root workspace\oracles\<oracle_id> `
   --dest-run-root workspace\runs\my_current_code_trial
 
 # Run full exact proof comparison
-python scripts/parity_experiment.py prove-exact \
-  --source-run-root workspace\runs\seed_run \
-  --oracle-root workspace\oracles\<oracle_id> \
-  --dest-run-root workspace\runs\my_current_code_trial \
+slavv parity prove-exact `
+  --source-run-root workspace\runs\seed_run `
+  --oracle-root workspace\oracles\<oracle_id> `
+  --dest-run-root workspace\runs\my_current_code_trial `
   --stage all
 ```
-
----
 
 ## Exact MATLAB Parity Rule
 
@@ -415,11 +411,11 @@ For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages
 |:-----|:-------|
 | **Package Layout** | All package code under `slavv_python/`. Use surfaces from `PYTHON_NAMING_GUIDE.md`. |
 | **Test Placement** | Tests under `tests/` per `tests/README.md`. Files with `regression` in the name get the `regression` marker automatically. |
-| **Temporary Files** | Use the repo-local `tmp_path` fixture from `tests/conftest.py`. Test artifacts go in `tmp_tests/`. |
+| **Temporary Files** | Use the repo-local `tmp_path` fixture from `tests/conftest.py`. Test artifacts go in `workspace/scratch/tmp_tests/`. |
 | **Logging** | Use `logging` in library code, not `print()`. CLI may print user-facing summaries. |
 | **Path Handling** | Prefer `pathlib.Path`. Use explicit `encoding="utf-8"` for text files. |
 | **Type Annotations** | Prefer `from __future__ import annotations` in all modules. |
 | **CLI Framework** | Keep CLI under `slavv_python/interface/cli/` (argparse). No new CLI frameworks. |
 | **Resumability** | Only the structured `run_dir` surface; no legacy checkpoint compatibility. |
-| **Search Exclusions** | Exclude `tmp_tests/`, `external/blender_resources/`, and cache directories when searching. |
+| **Search Exclusions** | Exclude `workspace/scratch/tmp_tests/`, `external/blender_resources/`, and cache directories when searching. |
 | **Scratch Files** | One-off scripts, logs, and experiment artifacts go in `workspace/scratch/`, not the repo root. |

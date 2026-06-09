@@ -8,7 +8,6 @@
 |:-------|:-----------------|:------------|:-----------------|
 | **`slavv_python/`** | Production package code | End users + developers | ✅ Yes |
 | **`tests/`** | Automated test suite | Developers + CI | ✅ Yes |
-| **`scripts/`** | Developer utility scripts | Developers only | ✅ Yes |
 | **`workspace/`** | Experiment artifacts | Developer locally | ❌ No (.gitignore) |
 
 ---
@@ -64,26 +63,11 @@ python -m pytest -m "unit or integration"
 
 ## scripts/ — Developer Utilities
 
-**Purpose:** One-off tools and experimental harnesses used **during development** but not part of the public product.
-
-**Contains:**
-- `cli/parity_experiment.py` — MATLAB oracle promotion and exact-proof runner
-- `cli/compare_execution_traces.py` — Debug helper for trace analysis
-- `diagnostics/` — MATLAB artifact inspection tools
-- `matlab/` — Headless MATLAB drivers for oracle vectorization
-
-**Key Trait:** These are **maintained utilities** for developers, not production code. They're committed to Git because they're reusable, but they're not installed when users `pip install slavv`.
-
-**When to Add Here:**
-- Parity experiment harnesses (e.g., `parity_experiment.py`)
-- MATLAB oracle promotion workflows
-- Diagnostic tools for investigating specific issues
-- Benchmarking scripts
-
-**When NOT to Add Here:**
-- Production CLI commands (put in `slavv_python/interface/cli/`)
-- Throwaway one-time exploration scripts (put in `workspace/scratch/`)
-- Test fixtures (put in `tests/support/`)
+> **Note:** The `scripts/` directory has been removed. All developer tools have been absorbed into the package.
+> - Parity experiment runner → `slavv parity <subcommand>` (backed by `slavv_python/analytics/parity/`)
+> - Trace comparator → `slavv parity compare-traces`
+> - Crop export → `slavv parity export-crop`
+> - One-off diagnostics → `workspace/scratch/`
 
 ---
 
@@ -161,8 +145,8 @@ python -m pytest -m "unit or integration"
 **Why:** It verifies production code behavior.
 
 ### Example 3: Script to Compare Two Algorithms
-**Location:** `scripts/compare_edge_algorithms.py`  
-**Why:** Reusable developer tool, not part of public product.
+**Location:** `workspace/scratch/compare_edge_algorithms.py`  
+**Why:** One-off developer comparison; not maintained or reusable by other developers.
 
 ### Example 4: Quick One-Off Investigation
 **Location:** `workspace/scratch/debug_edge_issue.py`  
@@ -181,7 +165,7 @@ python -m pytest -m "unit or integration"
 ## Common Confusion Points
 
 ### "Should parity_experiment.py be in slavv_python/?"
-**No.** It's a developer-only tool for MATLAB parity work, not part of the public product. It stays in `scripts/` and is tested via `tests/unit/scripts/`.
+**It's already there.** The parity tooling lives in `slavv_python/analytics/parity/` and is invoked via `slavv parity <subcommand>`. There is no longer a separate `scripts/` directory.
 
 ### "Should I commit my workspace/ folder?"
 **No.** It's in `.gitignore` because it contains large datasets, personal experiment runs, and temporary files that differ for every developer.
@@ -192,8 +176,8 @@ python -m pytest -m "unit or integration"
 ### "Where do MATLAB parity tests go?"
 - **Pre-gate integration tests:** `tests/integration/parity/`
 - **Parity harness utilities:** `slavv_python/analytics/parity/` (production code)
-- **Parity experiment runner:** `scripts/parity_experiment.py` (developer tool)
-- **Oracle promotion:** `scripts/matlab/` (MATLAB driver) + `scripts/parity_experiment.py promote-oracle`
+- **Parity experiment runner:** `slavv parity <subcommand>` (backed by `slavv_python/analytics/parity/`)
+- **Oracle promotion:** `workspace/scratch/matlab/` (MATLAB driver) + `slavv parity promote-oracle`
 
 ### "Where do one-off exploration scripts go?"
 **`workspace/scratch/`** — These are throwaway scripts you write to investigate something specific. They're not committed and not maintained.
@@ -206,7 +190,6 @@ python -m pytest -m "unit or integration"
 |:-------|:--------|:----------|:----------|
 | `slavv_python/` | Production package | ✅ Yes | ✅ Yes |
 | `tests/` | Test suite | ✅ Yes | ❌ No |
-| `scripts/` | Developer tools | ✅ Yes | ❌ No |
 | `workspace/` | Experiment data | ❌ No | ❌ No |
 
 The key insight: **Every folder has a different lifecycle and audience.**

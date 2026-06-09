@@ -45,7 +45,6 @@ class WorkspaceAuditor:
         "external",
         ".github",
         ".git",
-        "scripts",
         "tests",
         "ui",
         "datasets",
@@ -53,7 +52,7 @@ class WorkspaceAuditor:
         "runs",
         "reports",
         "scratch",
-        "tmp_tests",
+        "workspace",
     }
 
     CANONICAL_ROOT_FILES: ClassVar[set[str]] = {

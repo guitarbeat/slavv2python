@@ -812,3 +812,35 @@ def handle_dedupe(args: argparse.Namespace) -> None:
             print("\nDry run completed. Run without --dry-run to apply these changes.")
     else:
         print("\nWorkspace index is already perfectly canonical and clean!")
+
+
+def handle_compare_traces(args: argparse.Namespace) -> None:
+    """Compare two SLAVV JSONL execution traces for divergences."""
+    from .trace_comparator import main as compare_traces_main
+
+    result = compare_traces_main(
+        [str(args.trace1), str(args.trace2), "--energy-tol", str(args.energy_tol)]
+    )
+    if result:
+        import sys
+
+        sys.exit(result)
+
+
+def handle_export_crop(args: argparse.Namespace) -> None:
+    """Export the 180709_E tier-M center crop TIFF for parity pre-gate."""
+    from .crop_export import DEFAULT_OUTPUT_NAME, DEFAULT_SOURCE, main as export_crop_main
+    from pathlib import Path as _Path
+
+    source = args.source or DEFAULT_SOURCE
+    output = args.output or (
+        _Path("workspace/scratch/180709_E_crop_M") / DEFAULT_OUTPUT_NAME
+    )
+    argv = ["--source", str(source), "--output", str(output)]
+    if getattr(args, "write_metadata", False):
+        argv.append("--write-metadata")
+    result = export_crop_main(argv)
+    if result:
+        import sys
+
+        sys.exit(result)

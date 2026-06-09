@@ -131,6 +131,6 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 - The legacy rich parity and MATLAB comparison harness has been removed from the
   public CLI surface.
 - A developer-only parity runner is available at
-  `scripts/parity_experiment.py` for rerunning Python `edges` or
+  `slavv parity` for rerunning Python `edges` or
   `network` against reusable staged comparison roots and for exact artifact
   proof against preserved MATLAB vectors.

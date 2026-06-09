@@ -90,7 +90,7 @@ The monitoring system is now functional! Users can:
 
 1. **Start monitored jobs**:
    ```powershell
-   python scripts/parity_experiment.py resume-exact-run \
+   slavv parity resume-exact-run \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --oracle-root workspace/oracles/180709_E_crop_M \
      --force-rerun-from energy \
@@ -193,7 +193,7 @@ The monitoring system is now functional! Users can:
 
 2. **Start a monitored parity job**:
    ```powershell
-   python scripts/parity_experiment.py launch-exact-run \
+   slavv parity launch-exact-run \
      --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact \
      --oracle-root workspace/oracles/180709_E_crop_M \
      --force-rerun-from energy \
