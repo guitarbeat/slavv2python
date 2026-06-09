@@ -1,6 +1,6 @@
 # Folder Purpose Guide
 
-**Why do we have four top-level folders?** This guide clarifies the distinct purposes of `slavv_python/`, `tests/`, `scripts/`, and `workspace/`.
+**Why do we have separate top-level folders?** This guide clarifies the distinct purposes of `slavv_python/`, `tests/`, and `workspace/`.
 
 ## Quick Reference
 
@@ -18,7 +18,7 @@
 
 **Contains:**
 - `engine/` — Pipeline orchestration and run lifecycle
-- `processing/` — Scientific computation (energy, vertices, edges, network)
+- `pipeline/` — Scientific computation (energy, vertices, edges, network)
 - `analytics/` — Analysis tools and parity proof harness
 - `storage/` — Data I/O (TIFF loading, JSON export)
 - `interface/` — User-facing surfaces (CLI, Streamlit app)
@@ -63,8 +63,8 @@ python -m pytest -m "unit or integration"
 
 ## scripts/ — Developer Utilities
 
-> **Note:** The `scripts/` directory has been removed. All developer tools have been absorbed into the package.
-> - Parity experiment runner → `slavv parity <subcommand>` (backed by `slavv_python/analytics/parity/`)
+> **Note:** `scripts/` has been removed. Developer tools are now CLI subcommands:
+> - Parity runner → `slavv parity <subcommand>`
 > - Trace comparator → `slavv parity compare-traces`
 > - Crop export → `slavv parity export-crop`
 > - One-off diagnostics → `workspace/scratch/`
@@ -120,12 +120,6 @@ python -m pytest -m "unit or integration"
               │ NO
               ▼
      ┌────────────────────┐
-     │ Is it a reusable   │ YES ──▶ scripts/
-     │ developer tool?    │
-     └────────┬───────────┘
-              │ NO
-              ▼
-     ┌────────────────────┐
      │ It's a one-off     │
      │ experiment or      │ ──────▶ workspace/scratch/
      │ temporary file     │
@@ -137,20 +131,20 @@ python -m pytest -m "unit or integration"
 ## Examples
 
 ### Example 1: New Edge Detection Algorithm
-**Location:** `slavv_python/processing/stages/edges/my_new_algorithm.py`  
-**Why:** It's part of the production pipeline that end users can select.
+**Location:** `slavv_python/pipeline/edges/my_new_algorithm.py`  
+**Why:** Part of the production pipeline that end users can select.
 
 ### Example 2: Test for New Algorithm
-**Location:** `tests/unit/core/test_my_new_algorithm.py`  
-**Why:** It verifies production code behavior.
+**Location:** `tests/unit/pipeline/edges/test_my_new_algorithm.py`  
+**Why:** Verifies production code behavior.
 
 ### Example 3: Script to Compare Two Algorithms
 **Location:** `workspace/scratch/compare_edge_algorithms.py`  
-**Why:** One-off developer comparison; not maintained or reusable by other developers.
+**Why:** One-off comparison; not maintained or reusable.
 
 ### Example 4: Quick One-Off Investigation
 **Location:** `workspace/scratch/debug_edge_issue.py`  
-**Why:** Temporary exploration, not intended for reuse.
+**Why:** Temporary exploration.
 
 ### Example 5: Pipeline Run Output
 **Location:** `workspace/runs/crop_M_exact/`  
@@ -171,7 +165,7 @@ python -m pytest -m "unit or integration"
 **No.** It's in `.gitignore` because it contains large datasets, personal experiment runs, and temporary files that differ for every developer.
 
 ### "Can scripts/ import from slavv_python/?"
-**Yes.** Scripts are allowed to import the production package. But `slavv_python/` should **never** import from `scripts/`.
+**Not applicable** — `scripts/` no longer exists. All tooling is in `slavv_python/analytics/parity/` and invoked via `slavv parity <subcommand>`.
 
 ### "Where do MATLAB parity tests go?"
 - **Pre-gate integration tests:** `tests/integration/parity/`
@@ -180,21 +174,4 @@ python -m pytest -m "unit or integration"
 - **Oracle promotion:** `workspace/scratch/matlab/` (MATLAB driver) + `slavv parity promote-oracle`
 
 ### "Where do one-off exploration scripts go?"
-**`workspace/scratch/`** — These are throwaway scripts you write to investigate something specific. They're not committed and not maintained.
-
----
-
-## Summary
-
-| Folder | Purpose | Committed | Installed |
-|:-------|:--------|:----------|:----------|
-| `slavv_python/` | Production package | ✅ Yes | ✅ Yes |
-| `tests/` | Test suite | ✅ Yes | ❌ No |
-| `workspace/` | Experiment data | ❌ No | ❌ No |
-
-The key insight: **Every folder has a different lifecycle and audience.**
-
-- End users only see `slavv_python/`.
-- Developers use all four folders.
-- Git only tracks `slavv_python/`, `tests/`, and `scripts/`.
-- `workspace/` is your personal experiment space.
+**`workspace/scratch/`** — throwaway scripts, not committed, not maintained.

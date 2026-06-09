@@ -6,7 +6,7 @@ Visual guide to how all documentation files in the slavv2python repository relat
 
 ---
 
-## 🎨 Visual Overview
+## Mermaid Overview
 
 ```mermaid
 graph TD
@@ -110,11 +110,13 @@ Repository Root
 │   ├── brainstorms/ ← Pre-spec ideas (promote to plans/ when ready)
 │   ├── solutions/ ← Documented fixes and runbooks (/ce-compound)
 │   ├── adr/ ← Architecture Decision Records
-│   │   ├── 0001-typed-pipeline-results.md
-│   │   ├── 0003-manager-lifecycle-pattern.md
+│   │   ├── 0001-deep-schema-result-objects.md
+│   │   ├── 0002-centralized-stage-executor.md
+│   │   ├── 0003-edge-lifecycle-manager.md
+│   │   ├── 0004-deep-modules-for-watershed.md
 │   │   ├── 0005-edge-discovery-strategy-seam.md
-│   │   ├── 0006-network-manager.md
-│   │   ├── 0007-vertex-manager.md
+│   │   ├── 0006-network-lifecycle-manager.md
+│   │   ├── 0007-vertex-lifecycle-manager.md
 │   │   ├── 0008-exact-proof-coordinator.md
 │   │   └── 0009-parity-pre-gate-tiers.md
 │   │
@@ -182,8 +184,10 @@ TECHNICAL_ARCHITECTURE.md (system design)
     ├─→ PYTHON_NAMING_GUIDE.md (conventions)
     │
     ├─→ adr/ (design decisions)
-    │   ├─→ 0001-typed-pipeline-results.md
-    │   ├─→ 0003-manager-lifecycle-pattern.md
+    │   ├─→ 0001-deep-schema-result-objects.md
+    │   ├─→ 0002-centralized-stage-executor.md
+    │   ├─→ 0003-edge-lifecycle-manager.md
+    │   ├─→ 0004-deep-modules-for-watershed.md
     │   └─→ 0008-exact-proof-coordinator.md
     │
     ├─→ WATERSHED_IMPLEMENTATION_NOTES.md (algorithm details)
@@ -294,24 +298,6 @@ Issue found → investigations/ (deep dive) → Solution → solutions/ (compoun
 ```
 Proposal → Discussion → adr/ (decision) → Implementation → TECHNICAL_ARCHITECTURE.md update
 ```
-
----
-
-## 📈 Metrics
-
-### Current State
-- **Total docs**: ~50 files
-- **Entry points**: 4 (README.md, AGENTS.md, docs/README.md, reference/README.md)
-- **Parity docs**: 6 core + supporting
-- **Cross-references**: Comprehensive
-- **Redundancy**: <5% (after Phase 1-2 improvements)
-
-### Quality Indicators
-✅ Clear ownership for each content type  
-✅ Single source of truth for live status  
-✅ Glossary sync strategy documented  
-✅ Navigation time <30 seconds for common tasks  
-✅ Anti-patterns documented to prevent duplication
 
 ---
 

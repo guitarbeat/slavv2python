@@ -2,15 +2,13 @@
 
 [Up: Reference Docs](../README.md)
 
-This document provides a high-level overview of the SLAVV Python engine's architecture, design patterns, and internal state management.
-
 ---
 
-## 🏗️ Core Engine Components
+## Core Engine Components
 
-The Python implementation is built around a centralized, resumable processing engine located in `slavv_python.engine`.
+The Python implementation is built around a centralized, resumable processing engine in `slavv_python.engine`.
 
-### 1. The Orchestrator (`SlavvPipeline`)
+### The Orchestrator (`SlavvPipeline`)
 The `SlavvPipeline` class is the primary entry point for running the extraction workflow. It manages the transition between stages and handles the delegation to specialized operation modules.
 
 - **Stateless Operation**: The pipeline itself does not hold large data in memory; it retrieves and persists stage results via the `RunContext`.
@@ -18,7 +16,7 @@ The `SlavvPipeline` class is the primary entry point for running the extraction 
 - **Typed completion**: `run()` returns `PipelineResult` (mapping-compatible for legacy `results["key"]` access).
 - **StageExecutor**: Centralizes checkpoint load/save, progress, and schema wrapping for resumable stages.
 
-### 2. Run ledger (`RunContext` + `StageController`)
+### Run ledger (`RunContext` + `StageController`)
 Run lifecycle lives in `slavv_python.engine.state`:
 
 - **`run_ledger.py`** — `RunContext` (fingerprints, resume policy, snapshot persistence).
@@ -29,7 +27,7 @@ Run lifecycle lives in `slavv_python.engine.state`:
 - **Resumable State**: Fingerprints of input images and parameters determine whether a cached stage result can be reused.
 - **StageController**: Each stage receives a controller that provides paths for artifacts (checkpoints, metrics, logs) and manages progress reporting.
 
-### 3. Typed Result Objects (`slavv_python.schema.results`)
+### Typed Result Objects (`slavv_python.schema.results`)
 All data passed between stages is wrapped in validated, bit-accurate dataclass models:
 
 - `EnergyResult`: Multiscale energy volumes and metadata.
@@ -38,14 +36,14 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - `NetworkResult`: Final topology, strands, and bifurcations.
 - `PipelineResult`: Run envelope combining stage payloads and `parameters`.
 
-### 4. Energy stage facade (`EnergyManager`)
+### Energy stage facade (`EnergyManager`)
 `slavv_python.pipeline.energy.manager` owns the Energy Field lifecycle:
 
 - **`EnergyManager.run()`** — ephemeral chunked or direct multi-scale Hessian energy → `EnergyResult`.
 - **`EnergyManager.run_resumable()`** — same computation with `best_energy`, `best_scale`, and optional `energy_4d` artifacts (zarr/npy per ADR 0001).
 - **`energy.py` / `resumable.py`** — thin delegates preserving public `calculate_energy_field*` imports.
 
-### 5. Vertex stage facade (`VertexManager`)
+### Vertex stage facade (`VertexManager`)
 `slavv_python.pipeline.vertices.manager` owns the Vertex Set lifecycle:
 
 - **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
@@ -53,7 +51,7 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 - **`vertices/detection.py`** — MATLAB-style candidate scan and selection (no longer under `edges/`).
 - **`extraction.py` / `resumable.py`** — thin delegates preserving public imports.
 
-### 6. Edge stage facade (`EdgeManager` + `discovery`)
+### Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
 
 - **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
@@ -63,7 +61,7 @@ The edges package exposes a deep module boundary:
 
 See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../adr/0005-edge-discovery-strategy-seam.md).
 
-### 7. Network stage facade (`NetworkManager`)
+### Network stage facade (`NetworkManager`)
 `slavv_python.pipeline.network.manager` mirrors the edge pattern:
 
 - **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
@@ -72,7 +70,7 @@ See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../ad
 
 See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 
-### 8. Exact parity coordinator (`ExactProofCoordinator`)
+### Exact parity coordinator (`ExactProofCoordinator`)
 `slavv_python.analytics.parity.coordinator` centralizes exact-route workflows:
 
 - **`prove()`** — compare normalized Python checkpoints to MATLAB oracle vectors.
@@ -81,12 +79,12 @@ See [ADR 0006](../../adr/0006-network-lifecycle-manager.md).
 
 Parity execution helpers are split: `params_audit.py` (exact param audit/persistence), `surfaces.py` (dataset/oracle/run authority), `bootstrap.py` (init-exact-run), with `execution.py` as a compatibility facade. `reports.py` re-exports count helpers; `proofs.py` delegates to the coordinator.
 
-### 9. Application run envelope (`AppRunState`)
+### Application run envelope (`AppRunState`)
 The Streamlit / shared-state layer stores **`AppRunState`** (`schema/app_run.py`) in session: a typed wrapper around `PipelineResult`, parameters, and run metadata. Dict serialization is deferred to export and share helpers only.
 
 ---
 
-## 🔄 Processing Workflow
+## Processing Workflow
 
 The pipeline follows a strict linear execution order to maintain MATLAB compatibility:
 
@@ -98,7 +96,7 @@ The pipeline follows a strict linear execution order to maintain MATLAB compatib
 
 ---
 
-## 🛡️ Design Principles
+## Design Principles
 
 ### Parity-First Architecture
 The engine is designed to allow "surgical" parity alignments. Logic that must match MATLAB exactly is isolated in `matlab_algorithms/` subdirectories, while the maintained Python workflow reuses these primitives.
@@ -113,7 +111,7 @@ Following the **May 2026 breakthrough**, all core watershed and energy calculati
 
 ---
 
-## 📈 Extension Points
+## Extension Points
 
 - **Energy Backends**: New enhancement algorithms can be added to `slavv_python.pipeline.energy.backends`.
 - **Curation Layers**: Automated or ML-based refinement logic lives in `slavv_python.analytics.curation`.

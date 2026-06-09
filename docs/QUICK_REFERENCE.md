@@ -2,8 +2,6 @@
 
 [Up: Documentation Index](README.md)
 
-**One-page cheat sheet for common tasks in the slavv2python repository.**
-
 ---
 
 ## 🚀 Quick Start
@@ -193,25 +191,6 @@ What are you working on?
 
 ❌ Don't use "close enough" for parity  
 ✅ Strict zero missing/extra required
-
----
-
-## 🔗 External Resources
-
-- **MATLAB Source:** `external/Vectorization-Public/` (submodule)
-- **Datasets:** `workspace/datasets/` (content-addressed)
-- **Oracles:** `workspace/oracles/` (MATLAB truth)
-- **Runs:** `workspace/runs/` (disposable Python runs)
-- **Scratch:** `workspace/scratch/` (temporary files)
-
----
-
-## 📞 Getting Help
-
-1. **Check documentation:** Start with [AGENTS.md](../AGENTS.md) or [docs/README.md](README.md)
-2. **Search solutions:** [docs/solutions/](solutions/) (YAML frontmatter for search)
-3. **Read investigations:** [docs/investigations/](investigations/) (historical context)
-4. **Check ADRs:** [docs/adr/](adr/) (design decisions)
 
 ---
 

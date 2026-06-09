@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md) · [Parity Certification Guide](PARITY_CERTIFICATION_GUIDE.md) · [ADR 0009](../../adr/0009-parity-pre-gate-tiers.md)
 
-Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms are defined in [AGENTS.md](../../AGENTS.md) (**Parity Pre-Gate**, **Synthetic Fixture Volume**, **Crop Harness Volume**, **Canonical Volume**, **Certification**).
+Operator workflow for the three-tier parity pre-gate agreed in ADR 0009. Terms are defined in [AGENTS.md](../../../AGENTS.md) (**Parity Pre-Gate**, **Synthetic Fixture Volume**, **Crop Harness Volume**, **Canonical Volume**, **Certification**).
 
 ---
 

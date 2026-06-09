@@ -79,9 +79,9 @@ When resuming parity work from a fresh thread:
 
 ---
 
-## 🗺️ Documentation Structure
+## Documentation Structure
 
-**Need to understand how docs relate?** See [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) for the complete hierarchy and navigation guide.
+See [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) for the complete hierarchy.
 
 ### Quick Navigation Rules
 
@@ -110,7 +110,7 @@ When resuming parity work from a fresh thread:
 | Historical context | [investigations/](investigations/) | Deep dives, not current tasks |
 | Domain terms | [AGENTS.md](../AGENTS.md) + [GLOSSARY.md](reference/core/GLOSSARY.md) | Synced definitions |
 
-### Anti-Patterns (Don't Do This)
+### Anti-Patterns
 
 ❌ **Don't duplicate status** between TODO.md and EXACT_PROOF_FINDINGS.md  
 ✅ Tasks → TODO.md, Status/blockers → EXACT_PROOF_FINDINGS.md
@@ -126,9 +126,7 @@ When resuming parity work from a fresh thread:
 
 ---
 
----
-
-## 📁 Folder Structure & Ownership
+## Folder Structure & Ownership
 
 | Folder | Purpose | Notes |
 |--------|---------|-------|

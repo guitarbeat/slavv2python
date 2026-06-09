@@ -11,7 +11,7 @@ they were still active.
 For current behavior and proof status, prefer:
 
 - [README.md](../README.md)
-- [AGENTS.md](AGENTS.md)
+- [AGENTS.md](../AGENTS.md)
 - [MATLAB Method Implementation Plan](reference/core/MATLAB_METHOD_IMPLEMENTATION_PLAN.md)
 - [Exact Proof Findings](reference/core/EXACT_PROOF_FINDINGS.md)
 
