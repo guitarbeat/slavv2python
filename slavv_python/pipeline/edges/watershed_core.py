@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import heapq
+import itertools
 from typing import cast
 
 import numpy as np
@@ -24,70 +26,77 @@ def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np
 
 
 class FrontierQueue:
-    """Encapsulates MATLAB's exact priority and tie-breaking rules for the watershed frontier."""
+    """Encapsulates MATLAB's exact priority and tie-breaking rules for the watershed frontier.
+    Optimized for O(log N) operations using heapq."""
 
     def __init__(self, initial_locations: list[int], energy_lookup: np.ndarray):
-        self._queue = initial_locations
         self._energy_lookup = energy_lookup
+        self._heap: list[list] = []
+        self._entry_finder: dict[int, list] = {}
+        self._counter = itertools.count(1)
+
+        # Populate initial queue
+        # Elements at the end of `initial_locations` must pop first (mimicking list.pop()).
+        # We assign smaller (more negative) tie-breakers to elements at the end.
+        for i, loc in enumerate(initial_locations):
+            count = -(i + 1)
+            entry = [float(self._energy_lookup[loc]), count, int(loc), False]
+            self._entry_finder[int(loc)] = entry
+            self._heap.append(entry)
+
+        heapq.heapify(self._heap)
+
+        # Mutate the initial_locations list to maintain exact backward compatibility
+        # in case any caller is relying on the side effect of `self._queue = initial_locations`
+        # emptying the list.
+        initial_locations.clear()
 
     def __bool__(self) -> bool:
-        return bool(self._queue)
+        while self._heap and self._heap[0][3]:
+            heapq.heappop(self._heap)
+        return bool(self._heap)
 
     def peek_best(self) -> int:
-        return self._queue[-1]
+        while self._heap:
+            entry = self._heap[0]
+            if not entry[3]:
+                return cast(int, entry[2])
+            heapq.heappop(self._heap)
+        raise KeyError("peek from an empty priority queue")
 
     def pop_best(self) -> int:
-        return self._queue.pop()
+        while self._heap:
+            _energy, _tie, loc, removed = heapq.heappop(self._heap)
+            if not removed:
+                del self._entry_finder[loc]
+                return cast(int, loc)
+        raise KeyError("pop from an empty priority queue")
 
     def push(self, location: int, energy: float, seed_idx: int) -> None:
         """Inserts a location into the frontier using MATLAB's exact priority rules."""
-        if not self._queue:
-            self._queue.append(int(location))
-            return
-
         target_energy = float(energy)
         _target_index = int(location)
-        n = len(self._queue)
+        count = next(self._counter)
 
-        # Binary search for the insertion point.
-        # queue is sorted 'worst to best' (High Energy -> Low Energy).
-        low = 0
-        high = n
+        if seed_idx == 1:
+            # Seed 1: FIFO chronological. Older pops first -> smaller tie_breaker.
+            tie_breaker = count
+        else:
+            # Seed >1: LIFO chronological. Newer pops first -> smaller tie_breaker.
+            tie_breaker = -count
 
-        while low < high:
-            mid = (low + high) // 2
-            mid_loc = self._queue[mid]
-            mid_energy = float(self._energy_lookup[mid_loc])
-
-            # Comparison logic: Is 'mid' worse than 'target'?
-            if seed_idx == 1:
-                # Seed 1: Find first energy <= target (FIFO chronological)
-                is_mid_worse = mid_energy > target_energy
-            else:
-                # Seed >1: Find first energy < target (LIFO chronological)
-                is_mid_worse = mid_energy >= target_energy
-
-            if is_mid_worse:
-                low = mid + 1
-            else:
-                high = mid
-
-        self._queue.insert(low, int(location))
+        entry = [target_energy, tie_breaker, _target_index, False]
+        self._entry_finder[_target_index] = entry
+        heapq.heappush(self._heap, entry)
 
     def remove_first_occurrence(self, locations: list[int] | np.ndarray) -> None:
-        """Removes the first occurrence of each specified location to handle watershed joins."""
-        locations_to_reset = sorted(
-            {int(value) for value in np.asarray(locations, dtype=np.int64).tolist()}.intersection(
-                self._queue
-            )
-        )
-        if not locations_to_reset:
-            return
-
-        indices_to_remove = [self._queue.index(loc) for loc in locations_to_reset]
-
-        for index in sorted(indices_to_remove, reverse=True):
-            del self._queue[index]
+        """Removes the specified locations to handle watershed joins."""
+        locations_to_reset = set(np.asarray(locations, dtype=np.int64).tolist())
+        for loc in locations_to_reset:
+            entry = self._entry_finder.get(loc)
+            if entry is not None:
+                entry[3] = True
+                del self._entry_finder[loc]
 
 
 class VoxelClaimMap:

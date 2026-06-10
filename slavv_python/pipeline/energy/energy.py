@@ -25,15 +25,19 @@ if TYPE_CHECKING:
 def calculate_energy_field(
     image: np.ndarray, params: dict[str, Any], get_chunking_lattice_func=None
 ) -> EnergyResult:
-    """
-    Calculate multi-scale energy field using MATLAB-faithful matched filtering.
+    """Calculate the multi-scale energy field for vessel enhancement.
 
-    The default ``energy_method='hessian'`` path implements the released
-    ``get_energy_V202`` / ``energy_filter_V200`` style matched-filter energy
-    stage, including MATLAB-style octave downsampling and a configurable
-    projection mode over the scale dimension. Set ``energy_method='frangi'``,
-    ``'sato'``, ``'simpleitk_objectness'``, or ``'cupy_hessian'`` in
-    ``params`` to use explicit non-parity backends.
+    This function implements MATLAB-faithful matched filtering. The default
+    `energy_method='hessian'` path mirrors the `get_energy_V202` logic,
+    including octave downsampling and projection.
+
+    Args:
+        image: The 3D input volume (TIFF data).
+        params: Authoritative configuration dictionary.
+        get_chunking_lattice_func: Optional override for chunk lattice calculation.
+
+    Returns:
+        An EnergyResult object containing the 3D energy map and scale indices.
     """
     return EnergyManager.run(image, params, get_chunking_lattice_func)
 
@@ -44,7 +48,20 @@ def calculate_energy_field_resumable(
     stage_controller: StageController,
     get_chunking_lattice_func=None,
 ) -> EnergyResult:
-    """Compute energy with resumable chunk/scale units backed by memmaps."""
+    """Compute the multi-scale energy field with resumable checkpointing.
+
+    This version persists intermediate chunk/scale units to disk (typically
+    using memmaps) to allow recovery after interruption.
+
+    Args:
+        image: The 3D input volume.
+        params: Authoritative configuration dictionary.
+        stage_controller: Controller for resumable checkpointing.
+        get_chunking_lattice_func: Optional override for chunk lattice calculation.
+
+    Returns:
+        An EnergyResult object containing the 3D energy map and scale indices.
+    """
     return EnergyManager.run_resumable(
         image,
         params,

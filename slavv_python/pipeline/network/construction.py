@@ -116,7 +116,16 @@ def _network_payload(
 
 
 def construct_network(edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]) -> NetworkResult:
-    """Construct network from traced edges and detected vertices."""
+    """Construct the final vascular graph from traced edges and detected vertices.
+
+    Args:
+        edges: The EdgeSet domain object containing traced segments.
+        vertices: The VertexSet domain object containing accepted coordinates.
+        params: Authoritative configuration dictionary.
+
+    Returns:
+        A NetworkResult object containing the graph topology and strand metrics.
+    """
     from slavv_python.pipeline.network.manager import NetworkManager
 
     return NetworkManager.run(edges, vertices, params)
@@ -128,7 +137,17 @@ def construct_network_resumable(
     params: dict[str, Any],
     stage_controller: StageController,
 ) -> NetworkResult:
-    """Construct a network while persisting stage-level substeps."""
+    """Construct a network while persisting stage-level substeps.
+
+    Args:
+        edges: The EdgeSet domain object.
+        vertices: The VertexSet domain object.
+        params: Authoritative configuration dictionary.
+        stage_controller: Controller for resumable checkpointing.
+
+    Returns:
+        A NetworkResult object containing the graph topology and strand metrics.
+    """
     from slavv_python.pipeline.network.manager import NetworkManager
 
     return NetworkManager.run_resumable(edges, vertices, params, stage_controller)

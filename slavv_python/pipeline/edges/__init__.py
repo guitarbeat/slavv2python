@@ -1,4 +1,8 @@
-"""Edge extraction subpackage."""
+"""Vascular edge extraction subpackage.
+
+This package provides methods for tracing centerlines between detected vertices
+and performing global watershed-based segmentation.
+"""
 
 from __future__ import annotations
 

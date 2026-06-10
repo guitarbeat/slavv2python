@@ -24,13 +24,25 @@ def extract_vertices(
     stage_controller: StageController | None = None,
     **kwargs: Any,
 ) -> VertexSet:
-    """
-    Extract a localized set of vertices from the 3D vascular energy volume.
-    
-    Supports:
-      1. Pipeline execution: extract_vertices(energy, params)
-      2. Direct default call: extract_vertices(energy)
-      3. Clean overrides: extract_vertices(energy, space_strel_apothem=2)
+    """Extract candidate vertices from the multi-scale energy field.
+
+    This function identifies local energy extrema (minima or maxima depending on
+    energy sign) and filters them using space-suppression kernels. It supports
+    resumable execution via an optional StageController.
+
+    Args:
+        energy_data: The EnergyResult domain object from the energy stage.
+        params: Authoritative configuration dictionary.
+        stage_controller: Optional controller for resumable checkpointing.
+        **kwargs: Parameter overrides that take precedence over `params`.
+
+    Returns:
+        A VertexSet containing the accepted coordinate positions and their scales.
+
+    Note:
+        The extraction logic typically uses a greedy paint-and-check algorithm
+        (MATLAB-style) to ensure a minimum physical distance between vertices
+        based on the detected local vessel radius.
     """
     # Build a consolidated parameters dictionary
     merged_params = {}
@@ -49,15 +61,21 @@ def paint_vertices(
     *,
     mode: Literal["body", "center"] = "body",
 ) -> np.ndarray:
-    """
-    Paint the extracted Vertex Set into a 3D volume mask for down-stream analysis.
-    
+    """Rasterize the Vertex Set into a 3D volume mask.
+
     Args:
         vertices: The VertexSet domain object.
-        image_shape: The target 3D volume shape.
-        mode: The painting strategy:
-            - "body": ellipsoid regions matching scales/lumen radii.
-            - "center": single-voxel coordinate spikes.
+        image_shape: The target 3D volume shape (Z, Y, X).
+        mode: The painting strategy to employ:
+            - "body": Renders ellipsoid regions matching the vertex scale and
+              physical lumen radius.
+            - "center": Renders single-voxel spikes at each vertex coordinate.
+
+    Returns:
+        A 3D numpy array (uint16 or bool) representing the vertex mask.
+
+    Raises:
+        ValueError: If an unknown painting mode is requested.
     """
     if mode == "body":
         return paint_vertex_image(

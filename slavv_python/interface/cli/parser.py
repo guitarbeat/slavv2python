@@ -248,13 +248,15 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         "jobs",
         help="Manage and monitor parity jobs",
     )
+    jobs_parser.add_argument("args", nargs=argparse.REMAINDER)
     # The jobs subcommand has its own subparsers, handled in jobs.py
     # We just register it here so it appears in the main CLI
 
-    subparsers.add_parser(
+    parity_parser = subparsers.add_parser(
         "parity",
         help="Developer parity experiment tools (oracle promotion, prove-exact, etc.)",
     )
+    parity_parser.add_argument("args", nargs=argparse.REMAINDER)
     # The parity subcommand has its own subparsers, handled in parity.py
     # We just register it here so it appears in the main CLI
 

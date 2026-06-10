@@ -353,10 +353,11 @@ def compute_exact_parity_energy_chunked(
             mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij")
             coords_grid = np.stack(mesh_coords, axis=0)
 
-            chunk_energy_4d = np.zeros(
-                (w_count_y, w_count_x, w_count_z, len(scale_indices_at_octave)),
-                dtype=np.float64,
-            )
+            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(chunk_dft.shape)
+            base_kernels = native_hessian._precompute_base_derivative_kernels_dft(pixel_freq_meshes)
+
+            chunk_best_energy = np.full((w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64)
+            chunk_best_scale_sub_idx = np.full((w_count_y, w_count_x, w_count_z), -1, dtype=np.int16)
 
             for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
                 radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
@@ -375,6 +376,7 @@ def compute_exact_parity_energy_chunked(
                     native_hessian._derivative_kernels_dft(
                         pixel_freq_meshes,
                         derivative_weights,
+                        base_kernels=base_kernels,
                     )
                 )
 
@@ -397,33 +399,41 @@ def compute_exact_parity_energy_chunked(
                         gradient_kernel_dft * filtered_chunk_dft,
                     )
 
-                curvatures_chunk = curvatures_chunk[:, y_local, x_local, z_local]
-                gradient_chunk = gradient_chunk[:, y_local, x_local, z_local]
+                # Explicitly delete DFT products
+                del filtered_chunk_dft
 
-                laplacian_chunk = curvatures_chunk[0] + curvatures_chunk[1] + curvatures_chunk[2]
+                # Crop to local mesh bounds (these are the smaller working arrays)
+                curvatures_local = curvatures_chunk[:, y_local, x_local, z_local].copy()
+                gradient_local = gradient_chunk[:, y_local, x_local, z_local].copy()
+
+                # Free large FFT results
+                del curvatures_chunk
+                del gradient_chunk
+
+                laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
                 valid_voxels = laplacian_chunk < 0
-                coarse_shape = curvatures_chunk.shape[1:4]
+                coarse_shape = curvatures_local.shape[1:4]
                 coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
 
                 if np.any(valid_voxels):
                     grad_valid = np.stack(
                         [
-                            gradient_chunk[0][valid_voxels],
-                            gradient_chunk[1][valid_voxels],
-                            gradient_chunk[2][valid_voxels],
+                            gradient_local[0][valid_voxels],
+                            gradient_local[1][valid_voxels],
+                            gradient_local[2][valid_voxels],
                         ],
                         axis=1,
                     )
                     hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
-                    hessian_valid[:, 0, 0] = curvatures_chunk[0][valid_voxels]
-                    hessian_valid[:, 0, 1] = curvatures_chunk[3][valid_voxels]
-                    hessian_valid[:, 0, 2] = curvatures_chunk[5][valid_voxels]
-                    hessian_valid[:, 1, 0] = curvatures_chunk[3][valid_voxels]
-                    hessian_valid[:, 1, 1] = curvatures_chunk[1][valid_voxels]
-                    hessian_valid[:, 1, 2] = curvatures_chunk[4][valid_voxels]
-                    hessian_valid[:, 2, 0] = curvatures_chunk[5][valid_voxels]
-                    hessian_valid[:, 2, 1] = curvatures_chunk[4][valid_voxels]
-                    hessian_valid[:, 2, 2] = curvatures_chunk[2][valid_voxels]
+                    hessian_valid[:, 0, 0] = curvatures_local[0][valid_voxels]
+                    hessian_valid[:, 0, 1] = curvatures_local[3][valid_voxels]
+                    hessian_valid[:, 0, 2] = curvatures_local[5][valid_voxels]
+                    hessian_valid[:, 1, 0] = curvatures_local[3][valid_voxels]
+                    hessian_valid[:, 1, 1] = curvatures_local[1][valid_voxels]
+                    hessian_valid[:, 1, 2] = curvatures_local[4][valid_voxels]
+                    hessian_valid[:, 2, 0] = curvatures_local[5][valid_voxels]
+                    hessian_valid[:, 2, 1] = curvatures_local[4][valid_voxels]
+                    hessian_valid[:, 2, 2] = curvatures_local[2][valid_voxels]
 
                     principal_curvature_values, principal_curvature_vectors = np.linalg.eigh(
                         hessian_valid
@@ -441,16 +451,34 @@ def compute_exact_parity_energy_chunked(
                     energy_valid = np.sum(principal_energy_values, axis=1)
                     coarse_energy[valid_voxels] = energy_valid
 
+                # Free local cropped arrays
+                del curvatures_local
+                del gradient_local
+
                 coarse_energy[~np.isfinite(coarse_energy)] = np.inf
                 coarse_energy[coarse_energy >= 0] = np.inf
 
                 upsampled = _interp3_matlab_linear_inf(coarse_energy, coords_grid)
+                del coarse_energy
                 upsampled[(~np.isfinite(upsampled)) | (upsampled >= 0)] = 0.0
-                chunk_energy_4d[..., s_sub_idx] = upsampled
 
-            chunk_energy_min = np.min(chunk_energy_4d, axis=3).transpose(2, 0, 1)
-            chunk_scale_min = np.argmin(chunk_energy_4d, axis=3).transpose(2, 0, 1)
+                if s_sub_idx == 0:
+                    chunk_best_energy = upsampled
+                    chunk_best_scale_sub_idx = np.zeros_like(chunk_best_scale_sub_idx)
+                else:
+                    is_better = upsampled < chunk_best_energy
+                    chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
+                    chunk_best_scale_sub_idx[is_better] = s_sub_idx
+                
+                del upsampled
+
+            chunk_energy_min = chunk_best_energy.transpose(2, 0, 1)
+            chunk_scale_min = chunk_best_scale_sub_idx.transpose(2, 0, 1)
             chunk_scale_min[chunk_energy_min >= 0.0] = -1
+
+            import gc
+
+            gc.collect()
 
             prev_scales_count = int(np.sum(octave_at_scales < current_octave))
             valid_scale = chunk_scale_min >= 0

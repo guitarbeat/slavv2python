@@ -32,7 +32,15 @@ class VertexManager:
 
     @classmethod
     def run(cls, energy_data: EnergyResult, params: dict[str, Any]) -> VertexSet:
-        """Extract vertices without run-directory checkpointing."""
+        """Extract vertices without run-directory checkpointing.
+
+        Args:
+            energy_data: Result from the energy stage containing energy map and scale indices.
+            params: Pipeline parameters including energy_upper_bound, space_strel_apothem, etc.
+
+        Returns:
+            VertexSet: The extracted and filtered vertices.
+        """
         return cls._run(energy_data, params, stage_controller=None)
 
     @classmethod
@@ -42,7 +50,16 @@ class VertexManager:
         params: dict[str, Any],
         stage_controller: StageController,
     ) -> VertexSet:
-        """Extract vertices with persisted scan, crop, and choose state."""
+        """Extract vertices with persisted scan, crop, and choose state.
+
+        Args:
+            energy_data: Result from the energy stage.
+            params: Pipeline parameters.
+            stage_controller: Controller for managing stage state and artifacts.
+
+        Returns:
+            VertexSet: The extracted and filtered vertices.
+        """
         return cls._run(energy_data, params, stage_controller=stage_controller)
 
     @classmethod
@@ -53,6 +70,16 @@ class VertexManager:
         *,
         stage_controller: StageController | None,
     ) -> VertexSet:
+        """Internal dispatcher for vertex extraction.
+
+        Args:
+            energy_data: Result from the energy stage.
+            params: Pipeline parameters.
+            stage_controller: Optional stage controller for resumable execution.
+
+        Returns:
+            VertexSet: The extracted and filtered vertices.
+        """
         resumable = stage_controller is not None
         context = cls._build_context(energy_data, params)
 
@@ -63,6 +90,15 @@ class VertexManager:
 
     @classmethod
     def _build_context(cls, energy_data: EnergyResult, params: dict[str, Any]) -> dict[str, Any]:
+        """Consolidate energy data and parameters into a flat context dictionary.
+
+        Args:
+            energy_data: Result from the energy stage.
+            params: Pipeline parameters.
+
+        Returns:
+            dict[str, Any]: A dictionary containing all necessary data for extraction.
+        """
         lumen_radius_pixels = energy_data.lumen_radius_pixels
         return {
             "energy": energy_data.energy,
@@ -85,6 +121,14 @@ class VertexManager:
 
     @classmethod
     def _run_ephemeral(cls, context: dict[str, Any]) -> VertexSet:
+        """Execute vertex extraction in-memory without persistence.
+
+        Args:
+            context: Consolidated extraction context.
+
+        Returns:
+            VertexSet: The extracted and filtered vertices.
+        """
         logger.info("Extracting vertices")
 
         vertex_positions, vertex_scales, vertex_energies = matlab_vertex_candidates(
@@ -142,6 +186,15 @@ class VertexManager:
     def _run_resumable(
         cls, context: dict[str, Any], stage_controller: StageController
     ) -> VertexSet:
+        """Execute vertex extraction with checkpointing to disk.
+
+        Args:
+            context: Consolidated extraction context.
+            stage_controller: Controller for managing stage state and artifacts.
+
+        Returns:
+            VertexSet: The extracted and filtered vertices.
+        """
         candidate_path = stage_controller.artifact_path("candidates.pkl")
         cropped_path = stage_controller.artifact_path("cropped_candidates.pkl")
         chosen_mask_path = stage_controller.artifact_path("chosen_mask.pkl")
@@ -264,6 +317,14 @@ class VertexManager:
 
     @staticmethod
     def _empty_vertex_set(context: dict[str, Any]) -> VertexSet:
+        """Create an empty VertexSet with consistent spatial parameters.
+
+        Args:
+            context: Consolidated extraction context.
+
+        Returns:
+            VertexSet: An empty vertex set result.
+        """
         return VertexSet.create(
             np.empty((0, 3), dtype=np.float32),
             np.empty((0,), dtype=np.int16),

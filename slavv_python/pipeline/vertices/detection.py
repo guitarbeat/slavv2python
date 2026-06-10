@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import numpy as np
 from joblib import Parallel, delayed
 from skimage.draw import ellipsoid
 from typing_extensions import TypeAlias
+
+try:
+    from numba import njit
+except ImportError:
+    njit = None
 
 from slavv_python.pipeline.vertices.results import sort_vertex_order
 
@@ -268,6 +271,63 @@ def ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
     return offsets
 
 
+def _choose_vertices_loop_python(
+    painted_image: np.ndarray,
+    vertex_positions: np.ndarray,
+    vertex_scales: np.ndarray,
+    all_offsets: np.ndarray,
+    template_starts: np.ndarray,
+    template_ends: np.ndarray,
+    chosen_mask: np.ndarray,
+    start_index: int,
+    end_index: int,
+    image_shape: tuple[int, int, int],
+) -> None:
+    """Pure-Python fallback for vertex selection loop."""
+    for i in range(start_index, end_index):
+        scale = vertex_scales[i]
+        pos = vertex_positions[i]
+        cy = round(pos[0])
+        cx = round(pos[1])
+        cz = round(pos[2])
+
+        t_start = template_starts[scale]
+        t_end = template_ends[scale]
+
+        occupied = False
+        for j in range(t_start, t_end):
+            y = cy + all_offsets[j, 0]
+            x = cx + all_offsets[j, 1]
+            z = cz + all_offsets[j, 2]
+
+            if (
+                0 <= y < image_shape[0]
+                and 0 <= x < image_shape[1]
+                and 0 <= z < image_shape[2]
+                and painted_image[y, x, z]
+            ):
+                occupied = True
+                break
+
+        if not occupied:
+            chosen_mask[i] = True
+            for j in range(t_start, t_end):
+                y = cy + all_offsets[j, 0]
+                x = cx + all_offsets[j, 1]
+                z = cz + all_offsets[j, 2]
+
+                if 0 <= y < image_shape[0] and 0 <= x < image_shape[1] and 0 <= z < image_shape[2]:
+                    painted_image[y, x, z] = True
+        else:
+            chosen_mask[i] = False
+
+
+if njit is not None:
+    _choose_vertices_loop_numba = njit(cache=False)(_choose_vertices_loop_python)
+else:
+    _choose_vertices_loop_numba = None
+
+
 def choose_vertices_matlab_style(
     vertex_positions: np.ndarray,
     vertex_scales: np.ndarray,
@@ -293,38 +353,58 @@ def choose_vertices_matlab_style(
         length_dilation_ratio * lumen_radius_pixels_axes,
         dtype=np.float32,
     )
-    template_cache = {
-        int(scale_index): ellipsoid_offsets(scaled_radii[scale_index])
-        for scale_index in np.unique(scale_indices)
-    }
+
+    # Prepare templates for the optimized loop
+    unique_scales = np.unique(scale_indices)
+    max_scale = int(np.max(unique_scales)) if unique_scales.size > 0 else -1
+    template_starts = np.zeros(max_scale + 1, dtype=np.int32)
+    template_ends = np.zeros(max_scale + 1, dtype=np.int32)
+
+    all_offsets_list = []
+    current_offset = 0
+    for scale_index in unique_scales:
+        offsets = ellipsoid_offsets(scaled_radii[scale_index])
+        all_offsets_list.append(offsets)
+        template_starts[scale_index] = current_offset
+        current_offset += len(offsets)
+        template_ends[scale_index] = current_offset
+
+    if all_offsets_list:
+        all_offsets = np.vstack(all_offsets_list).astype(np.int16)
+    else:
+        all_offsets = np.empty((0, 3), dtype=np.int16)
+
     painted_image: np.ndarray = np.zeros(image_shape, dtype=bool)
 
-    def paint(index: int) -> np.ndarray:
-        center = np.rint(vertex_positions[index]).astype(np.int64)
-        coords = template_cache[int(scale_indices[index])].astype(np.int64) + center
-        valid = (
-            (coords[:, 0] >= 0)
-            & (coords[:, 0] < image_shape[0])
-            & (coords[:, 1] >= 0)
-            & (coords[:, 1] < image_shape[1])
-            & (coords[:, 2] >= 0)
-            & (coords[:, 2] < image_shape[2])
-        )
-        return cast("np.ndarray", coords[valid])
-
+    # Handle pre-chosen vertices
     for index in np.flatnonzero(chosen_mask[:start_index]):
-        coords = paint(int(index))
-        painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = True
+        scale = scale_indices[index]
+        pos = vertex_positions[index]
+        cy, cx, cz = round(pos[0]), round(pos[1]), round(pos[2])
 
-    for index in range(start_index, min(end_index, n_vertices)):
-        coords = paint(index)
-        if coords.size == 0:
-            chosen_mask[index] = False
-            continue
-        occupied = painted_image[coords[:, 0], coords[:, 1], coords[:, 2]].any()
-        chosen_mask[index] = not occupied
-        if chosen_mask[index]:
-            painted_image[coords[:, 0], coords[:, 1], coords[:, 2]] = True
+        t_start = template_starts[scale]
+        t_end = template_ends[scale]
+        for j in range(t_start, t_end):
+            y = cy + all_offsets[j, 0]
+            x = cx + all_offsets[j, 1]
+            z = cz + all_offsets[j, 2]
+            if 0 <= y < image_shape[0] and 0 <= x < image_shape[1] and 0 <= z < image_shape[2]:
+                painted_image[y, x, z] = True
+
+    # Run optimized loop
+    loop_impl = _choose_vertices_loop_numba or _choose_vertices_loop_python
+    loop_impl(
+        painted_image,
+        vertex_positions.astype(np.float32),
+        scale_indices.astype(np.int32),
+        all_offsets,
+        template_starts,
+        template_ends,
+        chosen_mask,
+        start_index,
+        min(end_index, n_vertices),
+        image_shape,
+    )
 
     return chosen_mask
 

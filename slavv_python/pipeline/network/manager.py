@@ -45,6 +45,16 @@ class NetworkManager:
     def _inputs_from_stages(
         cls, edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]
     ) -> _GraphBuildInputs:
+        """Consolidate edge and vertex results into a standardized input structure.
+
+        Args:
+            edges: Result from the edges stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+
+        Returns:
+            _GraphBuildInputs: A structured object containing all inputs for construction.
+        """
         edge_traces = edges.traces
         edge_scale_traces = edges.extra.get(
             "scale_traces",
@@ -84,7 +94,16 @@ class NetworkManager:
 
     @classmethod
     def run(cls, edges: EdgeSet, vertices: VertexSet, params: dict[str, Any]) -> NetworkResult:
-        """Construct network from traced edges and detected vertices."""
+        """Construct network from traced edges and detected vertices.
+
+        Args:
+            edges: Result from the edges stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+
+        Returns:
+            NetworkResult: The final constructed network graph and metadata.
+        """
         logger.info("Constructing network")
         inputs = cls._inputs_from_stages(edges, vertices, params)
 
@@ -138,7 +157,17 @@ class NetworkManager:
         params: dict[str, Any],
         stage_controller: StageController,
     ) -> NetworkResult:
-        """Construct a network while persisting stage-level substeps."""
+        """Construct a network while persisting stage-level substeps.
+
+        Args:
+            edges: Result from the edges stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+            stage_controller: Controller for managing stage state and artifacts.
+
+        Returns:
+            NetworkResult: The final constructed network graph and metadata.
+        """
         from slavv_python.engine.state.tracker import atomic_joblib_dump
 
         inputs = cls._inputs_from_stages(edges, vertices, params)

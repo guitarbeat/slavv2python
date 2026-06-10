@@ -63,7 +63,16 @@ class EdgeManager:
         vertices: VertexSet,
         params: dict[str, Any],
     ) -> EdgeSet:
-        """Extract edges without run-directory checkpointing or parity audit artifacts."""
+        """Extract edges without run-directory checkpointing or parity audit artifacts.
+
+        Args:
+            energy_data: Result from the energy stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+
+        Returns:
+            EdgeSet: The extracted and filtered edges.
+        """
         return cls._run_tracing(energy_data, vertices, params, stage_controller=None)
 
     @classmethod
@@ -74,7 +83,17 @@ class EdgeManager:
         params: dict[str, Any],
         stage_controller: StageController,
     ) -> EdgeSet:
-        """Execute the full edge extraction lifecycle with resumability and audit artifacts."""
+        """Execute the full edge extraction lifecycle with resumability and audit artifacts.
+
+        Args:
+            energy_data: Result from the energy stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+            stage_controller: Controller for managing stage state and artifacts.
+
+        Returns:
+            EdgeSet: The extracted and filtered edges.
+        """
         return cls._run_tracing(energy_data, vertices, params, stage_controller=stage_controller)
 
     @classmethod
@@ -86,7 +105,17 @@ class EdgeManager:
         *,
         heartbeat: Any | None = None,
     ) -> CandidateManifest:
-        """Run edge discovery only (no selection/finalize) through the discovery strategy seam."""
+        """Run edge discovery only (no selection/finalize) through the discovery strategy seam.
+
+        Args:
+            energy_data: Result from the energy stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+            heartbeat: Optional callback for progress reporting.
+
+        Returns:
+            CandidateManifest: The manifest of discovered edge candidates.
+        """
         if len(vertices.positions) == 0:
             return CandidateManifest.empty()
 
@@ -124,6 +153,17 @@ class EdgeManager:
         *,
         stage_controller: StageController | None,
     ) -> EdgeSet:
+        """Internal dispatcher for edge tracing and finalization.
+
+        Args:
+            energy_data: Result from the energy stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+            stage_controller: Optional stage controller for resumable execution.
+
+        Returns:
+            EdgeSet: The extracted and filtered edges.
+        """
         resumable = stage_controller is not None
         handle: StageController | _NullStageController = (
             stage_controller if stage_controller is not None else _NullStageController()
@@ -345,7 +385,17 @@ class EdgeManager:
         params: dict[str, Any],
         stage_controller: StageController,
     ) -> EdgeSet:
-        """Delegate watershed resumable extraction (per-label units)."""
+        """Delegate watershed resumable extraction (per-label units).
+
+        Args:
+            energy_data: Result from the energy stage.
+            vertices: Result from the vertices stage.
+            params: Pipeline parameters.
+            stage_controller: Controller for managing stage state and artifacts.
+
+        Returns:
+            EdgeSet: The extracted edges using watershed logic.
+        """
         from slavv_python.pipeline.edges import resumable as watershed_resumable
 
         return cast(

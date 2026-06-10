@@ -29,7 +29,7 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `31796` after the MATLAB `interp3`, `linspace` mesh, and raw-intensity exact-route fixes; prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence` and debug the first failing proof surface if any.
+- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `28952` after the MATLAB `interp3`, `linspace` mesh, and raw-intensity exact-route fixes; prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence` and debug the first failing proof surface if any.
 - [ ] **Canonical run** — Verify canonical Oracle Artifacts with `ensure-oracle-artifacts`, rerun `phase1_cert_network` from energy on the current exact-route branch, then run `prove-exact-sequence` against `180709_E_batch_190910-103039`.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
@@ -43,8 +43,8 @@
 
 ## Checklist — next (after Phase 1 gates)
 
-- [ ] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
-- [ ] **API reference** — Public `SlavvPipeline` docstrings.
+- [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
+- [x] **API reference** — Public `SlavvPipeline` and internal `Manager` class docstrings.
 - [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.
 
 ---

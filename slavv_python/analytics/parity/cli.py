@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -413,19 +414,8 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
             kill_process_tree(active_job.pid)
             registry.update_job(active_job.job_id, status="killed")
 
-    dest_run_root = resume_exact_run(
-        dest_run_root,
-        dataset_root=Path(args.dataset_root) if args.dataset_root else None,
-        oracle_root=Path(args.oracle_root) if args.oracle_root else None,
-        stop_after=args.stop_after,
-        force_rerun_from=getattr(args, "force_rerun_from", None),
-        memory_safety_fraction=float(args.memory_safety_fraction),
-        force=bool(args.force),
-        skip_preflight=bool(getattr(args, "skip_preflight", False)),
-        n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
-    )
-
     # Register job if monitoring enabled
+    job_id = None
     if monitor:
         import os
 
@@ -446,6 +436,27 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         )
         ensure_monitor_daemon_running()
         print(f"Job registered for monitoring (ID: {job_id})")
+
+    try:
+        dest_run_root = resume_exact_run(
+            dest_run_root,
+            dataset_root=Path(args.dataset_root) if args.dataset_root else None,
+            oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+            stop_after=args.stop_after,
+            force_rerun_from=getattr(args, "force_rerun_from", None),
+            memory_safety_fraction=float(args.memory_safety_fraction),
+            force=bool(args.force),
+            skip_preflight=bool(getattr(args, "skip_preflight", False)),
+            n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+        )
+        if monitor and job_id:
+            registry.update_job(job_id, status="completed", completed_at=datetime.now().isoformat())
+    except Exception as e:
+        if monitor and job_id:
+            registry.update_job(
+                job_id, status="failed", completed_at=datetime.now().isoformat(), metadata={"error": str(e)}
+            )
+        raise
 
     print(str(dest_run_root))
 

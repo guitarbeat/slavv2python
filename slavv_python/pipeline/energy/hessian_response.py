@@ -374,16 +374,28 @@ def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift."""
     spectrum_arr = np.asarray(spectrum)
     partner_indices = np.ix_(*[(-np.arange(length)) % length for length in spectrum_arr.shape])
-    partner = spectrum_arr[partner_indices]
     linear_indices = np.arange(spectrum_arr.size).reshape(spectrum_arr.shape, order="F")
     partner_linear_indices = linear_indices[partner_indices]
     keep_original = linear_indices <= partner_linear_indices
-    symmetric_spectrum = np.where(keep_original, spectrum_arr, np.conj(partner))
+
+    symmetric_spectrum = spectrum_arr.copy()
+    mask = ~keep_original
+    if np.any(mask):
+        partner = spectrum_arr[partner_indices]
+        symmetric_spectrum[mask] = np.conj(partner[mask])
+        del partner
+
     self_partner = linear_indices == partner_linear_indices
     if np.any(self_partner):
-        symmetric_spectrum = symmetric_spectrum.copy()
         symmetric_spectrum[self_partner] = symmetric_spectrum[self_partner].real
-    return cast("np.ndarray", np.fft.ifftn(symmetric_spectrum).real)
+
+    del linear_indices
+    del partner_linear_indices
+    del keep_original
+
+    result = np.fft.ifftn(symmetric_spectrum).real
+    del symmetric_spectrum
+    return cast("np.ndarray", result)
 
 
 def _pixel_frequency_meshes(
@@ -465,10 +477,85 @@ def _matching_kernel_dft(
     return matching_kernel_dft, derivative_weights_from_blurring
 
 
+def _precompute_base_derivative_kernels_dft(
+    pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Pre-compute scale-independent parts of the derivative kernels.
+
+    Args:
+        pixel_freq_meshes: tuple of (y, x, z) pixel frequency meshes.
+
+    Returns:
+        tuple of (base_curvatures, base_gradients)
+    """
+    y_pixel_freq_mesh, x_pixel_freq_mesh, z_pixel_freq_mesh = pixel_freq_meshes
+    base_curvatures = np.zeros((6, *y_pixel_freq_mesh.shape), dtype=np.float64)
+    base_gradients = np.zeros((3, *y_pixel_freq_mesh.shape), dtype=np.complex128)
+
+    base_curvatures[0] = np.cos(2.0 * np.pi * y_pixel_freq_mesh) - 1.0
+    base_curvatures[1] = np.cos(2.0 * np.pi * x_pixel_freq_mesh) - 1.0
+    base_curvatures[2] = np.cos(2.0 * np.pi * z_pixel_freq_mesh) - 1.0
+
+    yx_freq: np.ndarray = y_pixel_freq_mesh * x_pixel_freq_mesh
+    xz_freq: np.ndarray = x_pixel_freq_mesh * z_pixel_freq_mesh
+    zy_freq: np.ndarray = z_pixel_freq_mesh * y_pixel_freq_mesh
+
+    base_curvatures[3] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0) * np.sign(
+        yx_freq
+    ) / 4.0
+    base_curvatures[4] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0) * np.sign(
+        xz_freq
+    ) / 4.0
+    base_curvatures[5] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0) * np.sign(
+        zy_freq
+    ) / 4.0
+
+    base_gradients[0] = 1j * np.sin(2.0 * np.pi * y_pixel_freq_mesh) / 2.0
+    base_gradients[1] = 1j * np.sin(2.0 * np.pi * x_pixel_freq_mesh) / 2.0
+    base_gradients[2] = 1j * np.sin(2.0 * np.pi * z_pixel_freq_mesh) / 2.0
+
+    return base_curvatures, base_gradients
+
+
 def _derivative_kernels_dft(
     pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
     derivative_weights: np.ndarray,
+    base_kernels: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Compute scale-dependent derivative kernels.
+
+    Args:
+        pixel_freq_meshes: tuple of (y, x, z) pixel frequency meshes.
+        derivative_weights: (3,) array of weights for y, x, z derivatives.
+        base_kernels: Optional pre-computed base kernels from _precompute_base_derivative_kernels_dft.
+
+    Returns:
+        tuple of (curvatures_kernels_dft, gradient_kernels_dft)
+    """
+    if base_kernels is not None:
+        base_curvatures, base_gradients = base_kernels
+        curvatures_kernels_dft = np.empty_like(base_curvatures)
+        curvatures_kernels_dft[0] = (derivative_weights[0] ** 2) * base_curvatures[0]
+        curvatures_kernels_dft[1] = (derivative_weights[1] ** 2) * base_curvatures[1]
+        curvatures_kernels_dft[2] = (derivative_weights[2] ** 2) * base_curvatures[2]
+        curvatures_kernels_dft[3] = (
+            derivative_weights[0] * derivative_weights[1] * base_curvatures[3]
+        )
+        curvatures_kernels_dft[4] = (
+            derivative_weights[1] * derivative_weights[2] * base_curvatures[4]
+        )
+        curvatures_kernels_dft[5] = (
+            derivative_weights[2] * derivative_weights[0] * base_curvatures[5]
+        )
+
+        gradient_kernels_dft = np.empty_like(base_gradients)
+        gradient_kernels_dft[0] = derivative_weights[0] * base_gradients[0]
+        gradient_kernels_dft[1] = derivative_weights[1] * base_gradients[1]
+        gradient_kernels_dft[2] = derivative_weights[2] * base_gradients[2]
+
+        return curvatures_kernels_dft, gradient_kernels_dft
+
+    # Fallback to full computation
     y_pixel_freq_mesh, x_pixel_freq_mesh, z_pixel_freq_mesh = pixel_freq_meshes
     curvatures_kernels_dft = np.zeros((6, *y_pixel_freq_mesh.shape), dtype=np.float64)
     gradient_kernels_dft = np.zeros((3, *y_pixel_freq_mesh.shape), dtype=np.complex128)

@@ -30,7 +30,20 @@ def _load_edge_units(
 def extract_edges_watershed(
     energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
 ) -> EdgeSet:
-    """Extract edges using watershed segmentation seeded at vertices."""
+    """Extract vascular edges using a global watershed expansion strategy.
+
+    This method seeds a watershed from detected vertices and expands until
+    vessels meet or energy bounds are exceeded. It is typically used for
+    exact MATLAB parity runs.
+
+    Args:
+        energy_data: The multi-scale energy field result.
+        vertices: The set of accepted vertices to use as seeds.
+        params: Authoritative configuration dictionary.
+
+    Returns:
+        An EdgeSet object containing segments and intensities.
+    """
     return cast(
         "EdgeSet",
         _watershed.extract_edges_watershed(energy_data, vertices, params),
@@ -40,7 +53,16 @@ def extract_edges_watershed(
 def extract_edges(
     energy_data: EnergyResult, vertices: VertexSet, params: dict[str, Any]
 ) -> EdgeSet:
-    """Extract edges by tracing from vertices through energy field."""
+    """Extract vascular edges by tracing local minima between vertices.
+
+    Args:
+        energy_data: The multi-scale energy field result.
+        vertices: The set of accepted vertices to use as seeds.
+        params: Authoritative configuration dictionary.
+
+    Returns:
+        An EdgeSet object containing traced centerlines and intensities.
+    """
     return EdgeManager.run(energy_data, vertices, params)
 
 
@@ -50,7 +72,17 @@ def extract_edges_resumable(
     params: dict[str, Any],
     stage_controller: StageController,
 ) -> EdgeSet:
-    """Trace edges with checkpointed candidate generation and selection."""
+    """Extract edges with checkpointed candidate generation and selection.
+
+    Args:
+        energy_data: The multi-scale energy field result.
+        vertices: The set of accepted vertices to use as seeds.
+        params: Authoritative configuration dictionary.
+        stage_controller: Controller for resumable checkpointing.
+
+    Returns:
+        An EdgeSet object containing segments and intensities.
+    """
     return EdgeManager.run_resumable(energy_data, vertices, params, stage_controller)
 
 
@@ -60,5 +92,15 @@ def extract_edges_watershed_resumable(
     params: dict[str, Any],
     stage_controller: StageController,
 ) -> EdgeSet:
-    """Extract watershed edges with per-label persisted units."""
+    """Extract watershed edges with per-label persisted units.
+
+    Args:
+        energy_data: The multi-scale energy field result.
+        vertices: The set of accepted vertices to use as seeds.
+        params: Authoritative configuration dictionary.
+        stage_controller: Controller for resumable checkpointing.
+
+    Returns:
+        An EdgeSet object containing segments and intensities.
+    """
     return EdgeManager.run_watershed_resumable(energy_data, vertices, params, stage_controller)

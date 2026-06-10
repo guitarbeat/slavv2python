@@ -26,6 +26,13 @@ class StageExecutor:
         progress_callback: Callable[[float, str], None] | None = None,
         run_state: RunState | None = None,
     ):
+        """Initialize StageExecutor.
+
+        Args:
+            run_context: Context for the current run, managing stages and controllers.
+            progress_callback: Optional callback for reporting progress fractions.
+            run_state: Optional object to store results of each stage.
+        """
         self.run_context = run_context
         self.progress_callback = progress_callback
         self.run_state = run_state
@@ -41,8 +48,7 @@ class StageExecutor:
         log_label: str | None = None,
         schema_class: type[Any] | None = None,
     ) -> Any:
-        """
-        Execute a pipeline stage with checkpointing, logging, and progress tracking.
+        """Execute a pipeline stage with checkpointing, logging, and progress tracking.
 
         Args:
             stage_name: Internal name of the stage (e.g. 'energy', 'vertices')
@@ -53,6 +59,9 @@ class StageExecutor:
             force_rerun: If True, ignore existing checkpoints
             log_label: Friendly label for logging
             schema_class: Optional typed schema class to wrap the result
+
+        Returns:
+            Any: The resulting payload of the stage, potentially wrapped in schema_class.
         """
         label = log_label or stage_name.capitalize()
 
@@ -102,13 +111,32 @@ class StageExecutor:
     def _finalize_step(
         self, result_key: str, payload: Any, stage_name: str, progress_fraction: float
     ) -> Any:
-        """Record result, emit progress, and return payload."""
+        """Record result, emit progress, and return payload.
+
+        Args:
+            result_key: Key to store the result under.
+            payload: Result payload to store.
+            stage_name: Name of the stage.
+            progress_fraction: Current progress fraction.
+
+        Returns:
+            Any: The original payload.
+        """
         if self.run_state is not None:
             self.run_state.set_result(result_key, payload)
         emit_progress(self.progress_callback, progress_fraction, stage_name)
         return payload
 
     def _load_checkpoint(self, controller: StageController, schema_class: type[Any] | None) -> Any:
+        """Load stage result from checkpoint.
+
+        Args:
+            controller: Stage controller.
+            schema_class: Optional class for deserialization.
+
+        Returns:
+            Any: The loaded result.
+        """
         if schema_class is not None and hasattr(schema_class, "load"):
             return schema_class.load(controller.checkpoint_path)
         payload = controller.load_checkpoint()
@@ -121,6 +149,12 @@ class StageExecutor:
         return payload
 
     def _save_checkpoint(self, controller: StageController, payload: Any) -> None:
+        """Save stage result to checkpoint.
+
+        Args:
+            controller: Stage controller.
+            payload: Result payload to save.
+        """
         if hasattr(payload, "save"):
             payload.save(controller.checkpoint_path)
             return
@@ -130,7 +164,14 @@ class StageExecutor:
         controller.save_checkpoint(payload)
 
     def _get_artifacts(self, controller: StageController) -> dict[str, str]:
-        """Collect artifacts from stage directory."""
+        """Collect artifacts from stage directory.
+
+        Args:
+            controller: Stage controller.
+
+        Returns:
+            dict[str, str]: Dictionary mapping artifact names to their paths.
+        """
         from pathlib import Path
 
         artifacts: dict[str, str] = {}

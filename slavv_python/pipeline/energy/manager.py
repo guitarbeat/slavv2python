@@ -35,7 +35,16 @@ class EnergyManager:
         params: dict[str, Any],
         get_chunking_lattice_func=None,
     ) -> EnergyResult:
-        """Calculate energy without run-directory checkpointing."""
+        """Calculate energy without run-directory checkpointing.
+
+        Args:
+            image: Input 3D image array.
+            params: Pipeline parameters containing scales and thresholds.
+            get_chunking_lattice_func: Optional function to override lattice generation.
+
+        Returns:
+            EnergyResult: The computed energy field and associated metadata.
+        """
         return cls._run(
             image,
             params,
@@ -51,7 +60,17 @@ class EnergyManager:
         stage_controller: StageController,
         get_chunking_lattice_func=None,
     ) -> EnergyResult:
-        """Calculate energy with persisted chunk/scale units."""
+        """Calculate energy with persisted chunk/scale units.
+
+        Args:
+            image: Input 3D image array.
+            params: Pipeline parameters.
+            stage_controller: Controller for managing stage state and artifacts.
+            get_chunking_lattice_func: Optional function to override lattice generation.
+
+        Returns:
+            EnergyResult: The computed energy field and associated metadata.
+        """
         return cls._run(
             image,
             params,
@@ -68,6 +87,17 @@ class EnergyManager:
         stage_controller: StageController | None,
         get_chunking_lattice_func=None,
     ) -> EnergyResult:
+        """Internal dispatcher for energy calculation.
+
+        Args:
+            image: Input 3D image array.
+            params: Pipeline parameters.
+            stage_controller: Optional stage controller for resumable execution.
+            get_chunking_lattice_func: Optional function to override lattice generation.
+
+        Returns:
+            EnergyResult: The computed energy field and associated metadata.
+        """
         if params.get("comparison_exact_network"):
             image = image.astype(np.float64, copy=False)
         else:

@@ -177,6 +177,10 @@ class JobRegistry:
                 logger.warning(f"Job {job_id} not found in registry")
                 return
 
+            # Always update last_seen_at unless explicitly provided
+            if "last_seen_at" not in updates:
+                updates["last_seen_at"] = datetime.now().isoformat()
+
             # Create updated record
             record_dict = target_record.to_dict()
             record_dict.update(updates)
@@ -209,7 +213,7 @@ class JobRegistry:
             for record in records:
                 if (
                     record.job_id not in job_map
-                    or record.last_seen_at > job_map[record.job_id].last_seen_at
+                    or record.last_seen_at >= job_map[record.job_id].last_seen_at
                 ):
                     job_map[record.job_id] = record
 

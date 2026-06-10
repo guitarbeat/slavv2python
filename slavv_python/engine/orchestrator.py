@@ -39,7 +39,19 @@ logger = logging.getLogger(__name__)
 
 
 class SlavvPipeline:
-    """Main class for SLAVV vectorization processing."""
+    """Main class for SLAVV vectorization processing.
+
+    This class coordinates the end-to-end vascular vectorization pipeline,
+    including energy field computation, vertex extraction, edge tracing,
+    and network construction. It supports both one-shot execution and
+    resumable runs via a structured run directory.
+
+    Attributes:
+        energy_data (EnergyResult | None): Cached results from the energy stage.
+        vertices (VertexSet | None): Cached results from the vertex stage.
+        edges (EdgeSet | None): Cached results from the edge stage.
+        network (NetworkResult | None): Cached results from the network stage.
+    """
 
     def __init__(self):
         self.energy_data = None
@@ -57,7 +69,23 @@ class SlavvPipeline:
         stop_after: str | None = None,
         force_rerun_from: str | None = None,
     ) -> PipelineResult:
-        """Complete SLAVV processing pipeline."""
+        """Execute the complete SLAVV processing pipeline.
+
+        Args:
+            image: The 3D input volume to process (TIFF data).
+            parameters: Configuration dictionary for the pipeline stages.
+            progress_callback: Optional function to receive (fraction, stage_name) updates.
+            event_callback: Optional function to receive detailed ProgressEvent objects.
+            run_dir: Optional path to a structured run directory for resumable state.
+            stop_after: Optional stage name to stop execution after ("energy", "vertices", "edges").
+            force_rerun_from: Optional stage name to ignore checkpoints and restart from.
+
+        Returns:
+            A PipelineResult object containing all extracted data and provenance.
+
+        Raises:
+            ValueError: If the input image is invalid or stage control parameters are malformed.
+        """
         if image.ndim != 3 or 0 in image.shape:
             raise ValueError("Input image must be a non-empty 3D array")
         validate_stage_control(stop_after, "stop_after")
@@ -165,7 +193,15 @@ class SlavvPipeline:
         return run_state.to_pipeline_result()
 
     def compute_energy(self, image: np.ndarray, params: dict[str, Any]) -> dict[str, Any]:
-        """Calculate the multi-scale energy field."""
+        """Calculate the multi-scale energy field.
+
+        Args:
+            image: The 3D input volume.
+            params: Configuration dictionary.
+
+        Returns:
+            Dictionary containing the 3D energy map and scale indices.
+        """
         from slavv_python import utils as utils_module
 
         return cast(
@@ -176,7 +212,15 @@ class SlavvPipeline:
     def extract_vertices(
         self, energy_data: EnergyResult | dict[str, Any] | None, params: dict[str, Any]
     ) -> VertexSet:
-        """Extract vertices as local extrema. Delegates to ``vertices`` module."""
+        """Extract candidate vertices as local energy extrema.
+
+        Args:
+            energy_data: The energy field results from the previous stage.
+            params: Configuration dictionary.
+
+        Returns:
+            A VertexSet object containing accepted coordinate positions and scales.
+        """
         if energy_data is None:
             raise ValueError("energy_data is required before vertex extraction")
         typed_energy = (
@@ -192,7 +236,16 @@ class SlavvPipeline:
         vertices: VertexSet | dict[str, Any] | None,
         params: dict[str, Any],
     ) -> EdgeSet:
-        """Extract edges by tracing. Delegates to ``edges`` module."""
+        """Extract vascular edges by tracing local minima between vertices.
+
+        Args:
+            energy_data: The energy field results.
+            vertices: The set of accepted vertices to use as seeds.
+            params: Configuration dictionary.
+
+        Returns:
+            An EdgeSet object containing traced centerlines and intensities.
+        """
         if energy_data is None or vertices is None:
             raise ValueError("energy_data and vertices are required before edge extraction")
         typed_energy = (
@@ -208,7 +261,16 @@ class SlavvPipeline:
     def extract_edges_watershed(
         self, energy_data: dict[str, Any], vertices: dict[str, Any], params: dict[str, Any]
     ) -> dict[str, Any]:
-        """Extract edges by watershed. Delegates to ``edges`` module."""
+        """Extract vascular edges using the global watershed expansion strategy.
+
+        Args:
+            energy_data: The energy field dictionary.
+            vertices: The set of candidate vertices.
+            params: Configuration dictionary.
+
+        Returns:
+            Dictionary containing watershed segments and their metrics.
+        """
         return cast(
             "dict[str, Any]", edge_ops.extract_edges_watershed(energy_data, vertices, params)
         )
@@ -219,7 +281,16 @@ class SlavvPipeline:
         vertices: dict[str, Any] | VertexSet,
         params: dict[str, Any],
     ) -> NetworkResult:
-        """Construct the final network from traced edges and vertices."""
+        """Construct the final vascular graph from traced edges and vertices.
+
+        Args:
+            edges: The set of extracted edges.
+            vertices: The set of accepted vertices.
+            params: Configuration dictionary.
+
+        Returns:
+            A NetworkResult object containing the graph topology and strand metrics.
+        """
         from slavv_python.pipeline.network.manager import NetworkManager
 
         typed_edges = edges if isinstance(edges, EdgeSet) else EdgeSet.from_dict(edges)

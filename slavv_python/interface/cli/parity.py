@@ -18,4 +18,8 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(0)
 
 
+if __name__ == "__main__":
+    main()
+
+
 __all__ = ["main"]
