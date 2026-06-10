@@ -29,13 +29,14 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `28952` after the MATLAB `interp3`, `linspace` mesh, and raw-intensity exact-route fixes; prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence` and debug the first failing proof surface if any.
-- [ ] **Canonical run** — Verify canonical Oracle Artifacts with `ensure-oracle-artifacts`, rerun `phase1_cert_network` from energy on the current exact-route branch, then run `prove-exact-sequence` against `180709_E_batch_190910-103039`.
+- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `29364` (Registry ID `c76f3900`) using optimized memory-safe engine (no 4D arrays, base-kernel pre-computation); prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence`.
+- [ ] **Canonical run** — Rerun `phase1_cert_network` (Registry ID `299d6e5b`) from energy with `n_jobs=1` for stability; verify canonical Oracle Artifacts with `ensure-oracle-artifacts` after passing energy proof.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
 
 ### Harness & ops
 
+- [x] **Energy memory safety** — Removed large 4D chunk arrays in `exact_mesh.py` in favor of incremental best-scale selection; pre-compute scale-independent kernels; explicit `gc.collect()`.
 - [ ] **Preflight before long runs** — `parity_experiment.py preflight-exact` on dest + dataset + oracle.
 - [ ] **No duplicate writers** — Never concurrent `init-exact-run` / `resume-exact-run` on the same `--dest-run-root`.
 

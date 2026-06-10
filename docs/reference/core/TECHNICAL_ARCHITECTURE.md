@@ -39,6 +39,8 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 ### Energy stage facade (`EnergyManager`)
 `slavv_python.pipeline.energy.manager` owns the Energy Field lifecycle:
 
+- **Unified API**: Provides `run()` (ephemeral) and `run_resumable()` (persisted) entry points, abstracting multi-scale dispatch and chunking.
+- **Incremental scale selection**: To prevent OOM on large volumes, the exact-route engine computes best energy and scale indices per voxel incrementally, avoiding large 4D buffers.
 - **`EnergyManager.run()`** — ephemeral chunked or direct multi-scale Hessian energy → `EnergyResult`.
 - **`EnergyManager.run_resumable()`** — same computation with `best_energy`, `best_scale`, and optional `energy_4d` artifacts (zarr/npy per ADR 0001).
 - **`energy.py` / `resumable.py`** — thin delegates preserving public `calculate_energy_field*` imports.
@@ -46,6 +48,7 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 ### Vertex stage facade (`VertexManager`)
 `slavv_python.pipeline.vertices.manager` owns the Vertex Set lifecycle:
 
+- **Unified API**: Standardized `run()` and `run_resumable()` methods for in-memory or disk-backed extraction.
 - **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
 - **`VertexManager.run_resumable()`** — same pipeline with `candidates.pkl`, `cropped_candidates.pkl`, `chosen_mask.pkl` artifacts.
 - **`vertices/detection.py`** — MATLAB-style candidate scan and selection (no longer under `edges/`).
@@ -54,6 +57,7 @@ All data passed between stages is wrapped in validated, bit-accurate dataclass m
 ### Edge stage facade (`EdgeManager` + `discovery`)
 The edges package exposes a deep module boundary:
 
+- **Unified API**: Exposes `run()`, `run_resumable()`, and `discover_candidates()` to support full pipeline and audit workflows.
 - **`EdgeManager.run()`** — ephemeral tracing (shared `_run_tracing()` core with resumable path).
 - **`EdgeManager.run_resumable()`** — resumable tracing workflow (audit artifacts, parity checkpoints, selection, bridging, finalize).
 - **`discovery.select_edge_discovery()`** — strategy seam (`MaintainedTracingDiscovery` vs `FrontierTracingDiscovery`).
@@ -64,6 +68,7 @@ See [ADR 0003](../../adr/0003-edge-lifecycle-manager.md) and [ADR 0005](../../ad
 ### Network stage facade (`NetworkManager`)
 `slavv_python.pipeline.network.manager` mirrors the edge pattern:
 
+- **Unified API**: standard `run()` and `run_resumable()` methods for graph assembly and pruning.
 - **`NetworkManager.run()`** — ephemeral adjacency → prune → strand trace → `NetworkResult`.
 - **`NetworkManager.run_resumable()`** — same pipeline with `adjacency.pkl`, `hair_pruned.pkl`, `cycle_pruned.pkl`, `strands.pkl` artifacts.
 - **`construction.py`** — thin delegates preserving public `construct_network*` imports.
@@ -102,17 +107,11 @@ The pipeline follows a strict linear execution order to maintain MATLAB compatib
 The engine is designed to allow "surgical" parity alignments. Logic that must match MATLAB exactly is isolated in `matlab_algorithms/` subdirectories, while the maintained Python workflow reuses these primitives.
 
 ### Memory Safety
-For large 2-photon volumes, the engine uses:
+For large 2-photon volumes (e.g. 512x512x64), the engine uses:
 - **Tiled Processing**: Energy computation and vertex discovery are performed in overlapping chunks.
+- **Incremental Aggregation**: Exact energy computation avoids large 4D buffers by updating best energy/scale per voxel during the multi-scale loop.
+- **Kernel Pre-computation**: Scale-independent derivative kernels are computed once per chunk to reduce allocation overhead.
 - **Disk-Backed Storage**: Large 4D energy stacks can be stored in `Zarr` format to avoid OOM (Out-of-Memory) errors.
 
 ### Bit-Accurate Precision
-Following the **May 2026 breakthrough**, all core watershed and energy calculations are forced to `float64` to prevent tie-breaking divergences caused by lower-precision accumulation.
-
----
-
-## Extension Points
-
-- **Energy Backends**: New enhancement algorithms can be added to `slavv_python.pipeline.energy.backends`.
-- **Curation Layers**: Automated or ML-based refinement logic lives in `slavv_python.analytics.curation`.
-- **Export Formats**: Support for new research formats can be added to `slavv_python.storage.exporters`.
+Following the **May 2026 breakthrough**, all core watershed and energy calculations are forced to `float64` to prevent tie-breaking divergences caused by lower-precision accumulation. Exact-route meshes preserve MATLAB `linspace` roundoff drift to ensure bit-perfect interpolation at octave boundaries.

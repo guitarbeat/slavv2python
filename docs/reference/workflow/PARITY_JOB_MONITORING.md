@@ -56,14 +56,15 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
          │  - Active jobs   │                  │  - Toast popups │
          │  - Job history   │                  │  - Tray icon    │
          └─────────────────┘                  └─────────────────┘
-```
+**Last Updated:** 2026-06-10
 
-### Core Components
+---
 
 #### JobRegistry (`analytics/parity/job_registry.py`)
 - Persistent JSONL storage at `workspace/scratch/job_registry.jsonl`
 - File-based locking via `fasteners.InterProcessLock`
 - CRUD operations for job records
+- **Timestamp Refresh**: `update_job` always refreshes `last_seen_at` to ensure the most recent record is correctly identified by the monitor daemon.
 - Query interface for active jobs and history
 
 #### MonitorDaemon (`analytics/parity/monitor_daemon.py`)

@@ -495,17 +495,27 @@ def compute_exact_parity_energy_chunked(
 
             return chunk_idx, (slice_z, slice_y, slice_x, chunk_energy_min, chunk_scale_min)
 
-        chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
-            delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
-        )
-
-        for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
-            master_energy = energy_3d[slice_z, slice_y, slice_x]
-            is_better = chunk_energy < master_energy
-            energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
-            scale_indices[slice_z, slice_y, slice_x] = np.where(
-                is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
+        if n_jobs == 1:
+            for c_idx in range(number_of_chunks):
+                _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) = _process_chunk(c_idx)
+                master_energy = energy_3d[slice_z, slice_y, slice_x]
+                is_better = chunk_energy < master_energy
+                energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
+                scale_indices[slice_z, slice_y, slice_x] = np.where(
+                    is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
+                )
+        else:
+            chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
+                delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
             )
+
+            for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
+                master_energy = energy_3d[slice_z, slice_y, slice_x]
+                is_better = chunk_energy < master_energy
+                energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
+                scale_indices[slice_z, slice_y, slice_x] = np.where(
+                    is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
+                )
 
     energy_3d[energy_3d >= 0.0] = 0.0
     energy_3d[~np.isfinite(energy_3d)] = 0.0
