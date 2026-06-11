@@ -39,9 +39,9 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 
 ### I'm working on MATLAB parity
 1. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) FIRST** — Live status, active runs, blockers
-2. Check if a rerun is active: `slavv jobs list` or check `workspace/scratch/crop_energy_rerun_latest.pid`
-3. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
-4. Review [PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) for commands
+2. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
+3. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
+4. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
 5. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
 6. See [Parity Experiments](#parity-experiments) workflow below
 

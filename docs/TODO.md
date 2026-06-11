@@ -29,15 +29,17 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy mismatch** — Wait for active Python rerun PID `29364` (Registry ID `c76f3900`) using optimized memory-safe engine (no 4D arrays, base-kernel pre-computation); prove energy first, refresh downstream checkpoints only if energy passes, then run `prove-exact-sequence`.
-- [ ] **Canonical run** — Rerun `phase1_cert_network` (Registry ID `299d6e5b`) from energy with `n_jobs=1` for stability; verify canonical Oracle Artifacts with `ensure-oracle-artifacts` after passing energy proof.
+- [ ] **Crop energy proof** — Wait for active Python rerun PID `18556`. Verify bit-perfect parity with `linspace` roundoff and raw intensity preservation.
+- [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `26832`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
 
 ### Harness & ops
 
-- [x] **Energy memory safety** — Removed large 4D chunk arrays in `exact_mesh.py` in favor of incremental best-scale selection; pre-compute scale-independent kernels; explicit `gc.collect()`.
-- [ ] **Preflight before long runs** — `parity_experiment.py preflight-exact` on dest + dataset + oracle.
+- [x] **Energy memory safety** — Removed large 4D chunk arrays in `exact_mesh.py`; peak memory reduced 30x.
+- [x] **Internal Grid Alignment** — Anchored pipeline to **[Y, X, Z]** with Fortran (F) memory order to match MATLAB tie-breaking.
+- [x] **Watershed Robustness** — Resolved `KeyError` in `FrontierQueue` and restored directional suppression parity.
+- [ ] **Preflight before long runs** — `slavv parity preflight-exact` on dest + dataset + oracle.
 - [ ] **No duplicate writers** — Never concurrent `init-exact-run` / `resume-exact-run` on the same `--dest-run-root`.
 
 ---

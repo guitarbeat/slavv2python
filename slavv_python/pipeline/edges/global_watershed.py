@@ -651,6 +651,9 @@ def _generate_edge_candidates_matlab_global_watershed(
                             half_2,
                         )
 
+            # Penalize this seed so it is not picked again for the same origin
+            adjusted[strel_idx] = np.inf
+
             adjusted *= _matlab_frontier_directional_suppression_factors(
                 current_strel_offsets,
                 selected_index=strel_idx,

@@ -26,6 +26,14 @@ To maintain readability, the 800+ line discovery logic is decomposed into specia
 
 The algorithm relies on five primary 3D spatial maps, all using **Fortran-order (F)** layout to match MATLAB linear indexing.
 
+### Internal Grid Alignment
+To achieve bit-perfect MATLAB parity, the engine realigns the physical volume (Standard: [Z, Y, X]) to an internal **[Y, X, Z]** grid. 
+
+- **Rationale**: MATLAB's column-major memory layout prioritizes the first dimension (Y). By aligning the Python internal grid so that Y is the first index and using Fortran contiguity, we ensure that:
+    1.  **Linear Indexing**: `ravel(order="F")` linear indices physically match MATLAB's `find()` results.
+    2.  **Tie-Breaking**: Bit-accurate `argmin` on linear indices correctly prioritizes the Y-axis, then X, then Z, mirroring MATLAB's exact deterministic discovery order.
+    3.  **Rounding Consistency**: FFT and interpolation traversal match MATLAB's loop nesting, minimizing floating-point drift.
+
 | Map | Type | Description |
 | :--- | :--- | :--- |
 | `vertex_index_map` | `uint32` | Stores 1-based vertex IDs (0 = unclaimed). |

@@ -34,7 +34,27 @@ While Phase 1 preserved mathematical structure, the software architecture had to
 - **From Global Workspace to Run States:** MATLAB relies heavily on unstructured workspace injection. The Python implementation introduces structured `RunContext`, `StageController`, and explicit parameter validation to prevent silent mutations.
 - **Dependency Isolation:** Complex pass-through facades were systematically mapped, highlighting areas where Phase 2 can simplify interfaces while preserving pipeline depth.
 
-## 5. Phase 2 Ideation
+## 5. Scaling & Performance Breakthroughs
+
+Translating a pipeline for bit-perfect parity often requires preserving memory-intensive intermediate structures. However, scaling to full canonical volumes (512x512x64 and beyond) exposed a critical bottleneck in the Energy Field stage.
+
+### 5.1 The Memory-Safe Canonical Engine (June 2026)
+
+In early Phase 1 iterations, the Python energy stage attempted to match MATLAB's batch-style processing by building large 4D intermediate arrays (Z x Y x X x Scales) for each image octave. For canonical volumes, this led to `ArrayMemoryError` crashes as the system attempted to allocate multi-gigabyte blocks in parallel threads.
+
+The breakthrough involved a fundamental refactor of the `exact_mesh.py` engine:
+- **In-Place Scale Comparison:** Instead of stacking energy results across all scales and then computing the "best" energy, the engine was refactored to perform in-place comparisons within the octave chunk loop. 
+- **4D Array Elimination:** By processing scales sequentially per chunk and updating the "best energy" and "best scale" accumulators immediately, the 4D stack was entirely eliminated.
+- **Results:** Peak memory usage dropped from **~300 MiB/thread to ~10 MiB/thread**, a 30x reduction. This transformation enabled the pipeline to handle full canonical volumes on standard developer workstations (16GB RAM) without compromising the bit-perfect parity requirement.
+
+### 5.2 The Exact Priority Queue & Directional Suppression (June 2026)
+
+Edge discovery via global watershed represents one of the most sensitive logic blocks in the pipeline. Achieving bit-perfect parity required addressing two subtle divergences in the frontier exploration:
+
+- **Robust Frontier Management:** MATLAB's priority queue behavior during seed expansion allows for redundant pushes if multiple paths reach the same voxel with the same energy. Our initial Python implementation used a standard `heapq` pattern that assumed unique entries. This led to `KeyError` crashes when orphaned heap entries were popped. The solution involved refactoring the `FrontierQueue` to verify the "active" status of each entry against a central registry during the pop operation.
+- **Directional Suppression Parity:** When a vertex acts as an origin, MATLAB emits multiple seeds (typically 4). Each seed must suppress neighbors in its own direction to ensure the frontier expands into different quadrants. A logical omission in the initial translation caused the same best neighbor to be picked repeatedly. Restoring the iterative suppression logic—where each picked seed penalizes its local neighborhood before the next seed is selected—was essential for matching MATLAB's hub-and-spoke expansion pattern.
+
+## 6. Phase 2 Ideation
 
 With exact parity proven, the codebase becomes a secure testbed for improvements:
 - *Potential optimizations here...*

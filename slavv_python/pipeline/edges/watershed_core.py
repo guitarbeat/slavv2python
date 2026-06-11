@@ -52,24 +52,29 @@ class FrontierQueue:
         initial_locations.clear()
 
     def __bool__(self) -> bool:
-        while self._heap and self._heap[0][3]:
+        while self._heap:
+            entry = self._heap[0]
+            if not entry[3] and self._entry_finder.get(entry[2]) is entry:
+                return True
             heapq.heappop(self._heap)
-        return bool(self._heap)
+        return False
 
     def peek_best(self) -> int:
         while self._heap:
             entry = self._heap[0]
-            if not entry[3]:
+            if not entry[3] and self._entry_finder.get(entry[2]) is entry:
                 return cast(int, entry[2])
             heapq.heappop(self._heap)
         raise KeyError("peek from an empty priority queue")
 
     def pop_best(self) -> int:
         while self._heap:
-            _energy, _tie, loc, removed = heapq.heappop(self._heap)
+            entry = heapq.heappop(self._heap)
+            _energy, _tie, loc, removed = entry
             if not removed:
-                del self._entry_finder[loc]
-                return cast(int, loc)
+                if self._entry_finder.get(loc) is entry:
+                    del self._entry_finder[loc]
+                    return cast(int, loc)
         raise KeyError("pop from an empty priority queue")
 
     def push(self, location: int, energy: float, seed_idx: int) -> None:

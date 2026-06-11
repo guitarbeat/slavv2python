@@ -29,9 +29,11 @@ def build_matlab_local_strel_geometry(
     rounded_radii = np.rint(radii_pixels).astype(np.int32, copy=False)
     offsets: list[list[int]] = []
 
-    for d0 in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):
-        for d1 in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):
-            for d2 in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):
+    # Preserve MATLAB's logical tie-breaking (smallest Y changes fastest) by making the Y dimension
+    # (index 0) the innermost loop. The internal grid is now [Y, X, Z].
+    for d2 in range(-int(rounded_radii[2]), int(rounded_radii[2]) + 1):  # Z
+        for d1 in range(-int(rounded_radii[1]), int(rounded_radii[1]) + 1):  # X
+            for d0 in range(-int(rounded_radii[0]), int(rounded_radii[0]) + 1):  # Y
                 linf_distance = max(abs(d0), abs(d1), abs(d2))
                 radial_l2_distance_squared = (
                     (float(d0) / float(radii_pixels[0])) ** 2

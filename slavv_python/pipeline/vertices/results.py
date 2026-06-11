@@ -82,10 +82,17 @@ def sort_vertex_order(
 
 
 def matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
-    """Return MATLAB-style column-major linear indices for 0-based coordinates."""
+    """Return MATLAB-style column-major linear indices for 0-based coordinates.
+    
+    Coordinates are assumed to be in physical [Z, Y, X] order (index 0, 1, 2).
+    MATLAB column-major order prioritizes Y, then X, then Z.
+    """
     coords = np.asarray(coords, dtype=np.int64)
+    # Physical indices: Z=0, Y=1, X=2
+    # MATLAB Order: Y (inner), X (middle), Z (outer)
+    # shape: (Z_size, Y_size, X_size)
     linear_indices: Int64Array = (
-        coords[:, 0] + coords[:, 1] * shape[0] + coords[:, 2] * shape[0] * shape[1]
+        coords[:, 1] + coords[:, 2] * shape[1] + coords[:, 0] * shape[1] * shape[2]
     )
     return cast("np.ndarray", linear_indices)
 

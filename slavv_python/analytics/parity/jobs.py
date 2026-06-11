@@ -38,16 +38,14 @@ def build_resume_exact_run_command(
     skip_preflight: bool = False,
     n_jobs: int | None = None,
     python_executable: Path | None = None,
-    script_path: Path | None = None,
 ) -> list[str]:
     """Build the command used by detached exact-route resume jobs."""
-    repo_root = _repo_root_from_path(dest_run_root.resolve())
     resolved_python = python_executable or Path(sys.executable)
-    resolved_script = script_path or repo_root / "scripts" / "cli" / "parity_experiment.py"
 
     command = [
         str(resolved_python),
-        str(resolved_script),
+        "-m",
+        "slavv_python.interface.cli.parity",
         "resume-exact-run",
         "--dest-run-root",
         str(dest_run_root),
@@ -83,7 +81,6 @@ def launch_exact_run_job(
     skip_preflight: bool = False,
     n_jobs: int | None = None,
     python_executable: Path | None = None,
-    script_path: Path | None = None,
 ) -> dict[str, Any]:
     """Start a long exact-route resume in an OS-owned background process."""
     root = dest_run_root.expanduser().resolve()
@@ -106,7 +103,6 @@ def launch_exact_run_job(
         skip_preflight=skip_preflight,
         n_jobs=n_jobs,
         python_executable=python_executable,
-        script_path=script_path,
     )
 
     creationflags = 0

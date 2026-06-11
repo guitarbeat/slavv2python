@@ -319,10 +319,13 @@ def compute_exact_parity_energy_chunked(
                 py_y_start : py_y_start + py_y_count : stride_y,
                 py_x_start : py_x_start + py_x_count : stride_x,
             ]
-            original_chunk = np.ascontiguousarray(original_chunk_zyx.transpose(1, 2, 0))
+            # Transpose to [Y, X, Z] and use Fortran order to match MATLAB's memory layout
+            original_chunk = np.transpose(original_chunk_zyx, (1, 2, 0)).copy(order="F")
 
             padded_chunk = native_hessian._fourier_transform_input(original_chunk)
             chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
+            # native_hessian._pixel_frequency_meshes uses meshgrid(indexing="ij")
+            # For [Y, X, Z] input, it returns [Y_freq, X_freq, Z_freq] meshes.
             pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
 
             w_count_z = int(z_write_counts[z_idx])
@@ -333,10 +336,7 @@ def compute_exact_parity_energy_chunked(
             off_y = int(y_offset[y_idx])
             off_x = int(x_offset[x_idx])
 
-            z_local = slice(
-                int(np.floor(off_z / stride_z)),
-                1 + int(np.ceil((off_z + w_count_z - 1) / stride_z)),
-            )
+            # Local slices in [Y, X, Z] order
             y_local = slice(
                 int(np.floor(off_y / stride_y)),
                 1 + int(np.ceil((off_y + w_count_y - 1) / stride_y)),
@@ -345,19 +345,29 @@ def compute_exact_parity_energy_chunked(
                 int(np.floor(off_x / stride_x)),
                 1 + int(np.ceil((off_x + w_count_x - 1) / stride_x)),
             )
+            z_local = slice(
+                int(np.floor(off_z / stride_z)),
+                1 + int(np.ceil((off_z + w_count_z - 1) / stride_z)),
+            )
 
-            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z)
             mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y)
             mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x)
+            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z)
 
+            # [Y, X, Z] mesh for interpolation
             mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij")
             coords_grid = np.stack(mesh_coords, axis=0)
 
             pixel_freq_meshes = native_hessian._pixel_frequency_meshes(chunk_dft.shape)
             base_kernels = native_hessian._precompute_base_derivative_kernels_dft(pixel_freq_meshes)
 
-            chunk_best_energy = np.full((w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64)
-            chunk_best_scale_sub_idx = np.full((w_count_y, w_count_x, w_count_z), -1, dtype=np.int16)
+            # Accumulators in [Y, X, Z] order with Fortran contiguity
+            chunk_best_energy = np.full(
+                (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
+            )
+            chunk_best_scale_sub_idx = np.full(
+                (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
+            )
 
             for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
                 radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
@@ -381,9 +391,11 @@ def compute_exact_parity_energy_chunked(
                 )
 
                 filtered_chunk_dft = matching_kernel_dft * chunk_dft
+                # All intermediates are [Y, X, Z] with Fortran order
                 curvatures_chunk = np.empty(
                     (curvatures_kernels_dft.shape[0], *chunk_dft.shape),
                     dtype=np.float64,
+                    order="F",
                 )
                 for kernel_index, curvature_kernel_dft in enumerate(curvatures_kernels_dft):
                     curvatures_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(
@@ -393,6 +405,7 @@ def compute_exact_parity_energy_chunked(
                 gradient_chunk = np.empty(
                     (gradient_kernels_dft.shape[0], *chunk_dft.shape),
                     dtype=np.float64,
+                    order="F",
                 )
                 for kernel_index, gradient_kernel_dft in enumerate(gradient_kernels_dft):
                     gradient_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(

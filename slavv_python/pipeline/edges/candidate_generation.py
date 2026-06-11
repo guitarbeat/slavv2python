@@ -40,39 +40,42 @@ def _align_to_internal_grid(
     volume: np.ndarray | None, positions: np.ndarray | None = None
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
     """
-    Realigns physical volumes and coordinates to the internal [Z, X, Y] grid.
+    Realigns physical volumes and coordinates to the internal [Y, X, Z] grid.
 
-    Rationale: Scientific oracles often store axes inverted relative to solver
-    traversal. This ensures the engine operates in a coherent spatial universe.
+    Rationale: MATLAB uses [Y, X, Z] order with Fortran-style memory layout 
+    (Y changing fastest). To match bit-perfect tie-breaking, we must align
+    the Python internal grid to this layout.
     """
     aligned_vol = None
     if volume is not None:
-        # Transpose [Y, X, Z] to [Z, X, Y] with Fortran-order copy for MATLAB parity
-        aligned_vol = np.transpose(volume, (2, 1, 0)).copy(order="F")
+        # Transpose [Z, Y, X] to [Y, X, Z] with Fortran-order copy for MATLAB parity
+        # Permutation (1, 2, 0) matches Y(1), X(2), Z(0)
+        aligned_vol = np.transpose(volume, (1, 2, 0)).copy(order="F")
 
     aligned_pos = None
     if positions is not None:
         # Copy to avoid corrupting the caller's vertex data (needed for standard trace)
         aligned_pos = positions.copy()
-        # Swap physical [Y, X, Z] coordinate columns into internal [Z, X, Y]
-        # Y=0, X=1, Z=2  =>  Z=0, X=1, Y=2
-        tmp = aligned_pos[:, 0].copy()
-        aligned_pos[:, 0] = aligned_pos[:, 2]
-        aligned_pos[:, 2] = tmp
+        # Permute physical [Z, Y, X] coordinate columns into internal [Y, X, Z]
+        # Z=0, Y=1, X=2 => Y=0, X=1, Z=2
+        # Use explicit indexing to match the transposition
+        aligned_pos = aligned_pos[:, [1, 2, 0]]
 
     return aligned_vol, aligned_pos
 
 
 def _restore_to_physical_grid(traces: list[np.ndarray]) -> None:
-    """Restores generated traces from internal [Z, X, Y] back to physical [Y, X, Z]."""
+    """Restores generated traces from internal [Y, X, Z] back to physical [Z, Y, X]."""
     for i, trace_arr in enumerate(traces):
         if isinstance(trace_arr, np.ndarray) and trace_arr.ndim == 2 and trace_arr.shape[1] >= 3:
             # Make explicit copies to support memory layout changes downstream
             fixed_trace = trace_arr.copy()
-            tmp_t = fixed_trace[:, 0].copy()
-            fixed_trace[:, 0] = fixed_trace[:, 2]
-            fixed_trace[:, 2] = tmp_t
-            traces[i] = fixed_trace
+            # Internal [Y, X, Z] => Physical [Z, Y, X]
+            # 0:Y, 1:X, 2:Z => 0:Z, 1:Y, 2:X
+            # new col 0 is old col 2 (Z)
+            # new col 1 is old col 0 (Y)
+            # new col 2 is old col 1 (X)
+            traces[i] = fixed_trace[:, [2, 0, 1]]
 
 
 # --- CORE GENERATION STRATEGIES ---
@@ -103,14 +106,14 @@ def generate_watershed_candidates(
     # Scale field needs the same transposition if it exists
     scales_zxy = None
     if scale_indices is not None:
-        scales_zxy = np.transpose(scale_indices, (2, 1, 0)).copy(order="F")
+        # Transpose [Z, Y, X] to [Y, X, Z] with Fortran-order copy
+        scales_zxy = np.transpose(scale_indices, (1, 2, 0)).copy(order="F")
 
-    # Explicit copy for mpv and swap Y/Z
+    # Explicit copy for mpv and permute to [dy, dx, dz]
+    # Physical [dz, dy, dx] => Internal [dy, dx, dz]
     mpv_zxy = microns_per_voxel.copy().astype(np.float64)
     if len(mpv_zxy) >= 3:
-        tmp_m = mpv_zxy[0]
-        mpv_zxy[0] = mpv_zxy[2]
-        mpv_zxy[2] = tmp_m
+        mpv_zxy = mpv_zxy[[1, 2, 0]]
 
     # 2. Execute Watershed Engine
     candidates = execute_watershed_engine(

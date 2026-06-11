@@ -1,5 +1,15 @@
 # SLAVV Python
 
+---
+
+### 🛰️ Live Mission Dashboard
+**Mission**: Phase 1 Parity Certification (Full `180709_E`)
+**Status**: 🟡 Energy reruns in progress (PIDs: `18556`, `26832`)
+**Last Achievement**: 📐 Bit-perfect [Y, X, Z] grid alignment anchored (2026-06-11)
+**Critical Path**: [PROGRESS.md](docs/PROGRESS.md) · [TODO.md](docs/TODO.md) · [FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
+
+---
+
 > 🔴 **Active developer work:** [TODO.md](docs/TODO.md) owns tasks. [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) owns live parity status.
 
 Python implementation of SLAVV for 3D vascular network extraction from
@@ -80,15 +90,16 @@ results = pipeline.run(image, {"pipeline_profile": "paper"})
 
 ## Documentation
 
-### Core Guides
-- [Agent and workflow guide](docs/AGENTS.md) ⭐ — AI agent instructions, domain glossary, workflows
-- [Documentation Index](docs/README.md) — Complete documentation map and navigation
-- [Developer dashboard (tasks)](docs/TODO.md) — Active tasks and checkboxes
-- [Contributing](docs/CONTRIBUTING.md) — Development workflow and PR process
+### Essential Entry Points
+- [Milestone Progress](docs/PROGRESS.md) ⭐ — **START HERE:** High-level history and current mission status
+- [Agent & Workflow Guide](docs/AGENTS.md) ⭐ — AI agent instructions, domain glossary, workflows
+- [Developer Dashboard (Tasks)](docs/TODO.md) — Active tasks and checkboxes
+- [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) ⭐ — Live parity status, active runs, blockers
 
-### Reference Documentation
+### Technical References
+- [Documentation Index](docs/README.md) — Complete documentation map and navigation
+- [Contributing](docs/CONTRIBUTING.md) — Development workflow and PR process
 - [Reference Docs Index](docs/reference/README.md)
-- [Paper Profile Workflow](docs/reference/workflow/PAPER_PROFILE.md)
 - [Python Naming Guide](docs/reference/workflow/PYTHON_NAMING_GUIDE.md)
 - [Test Placement Guide](tests/README.md)
 

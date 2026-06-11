@@ -16,9 +16,9 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 Detached crop rerun active (PID `25248`, run-local `99_Metadata/parity_job.*`) after isolating the first remaining crop mismatch to MATLAB `linspace` mesh roundoff plus exact-route raw-intensity preservation. Local one-voxel diagnostic now matches MATLAB; crop energy proof pending rerun completion. |
+| **Energy** | Native Hessian path exact-compatible | 🟡 Active reruns for both crop (PID `18556`) and canonical (PID `26832`) after discovering stale vertex checkpoints. These runs enforce the new **[Y, X, Z]** internal grid and Fortran-order linear indexing required for bit-perfect parity. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
-| **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof after upstream stages |
+| **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof. **Fixed**: Resolved `KeyError` in `FrontierQueue` and restored iterative directional suppression for origin seeds. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
 | **`prove-exact` energy stage** | ✅ In `EXACT_STAGE_ORDER` (2026-05-28) | Required for R3 gating |
 
@@ -28,9 +28,9 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | Pipeline ✅ **complete** through network (2026-05-28), but old checkpoints used pre-fix energy semantics. Canonical oracle energy is now materialized at `workspace/oracles/180709_E_batch_190910-103039/03_Analysis/normalized/oracle/energy.pkl` (2026-06-03; SHA-256 payload sidecar `4696f05449541b6919d514b59705607eeb10258c67d5e466c52be83f73a43a9c`). **Next:** rerun `phase1_cert_network` from energy on the current exact-route branch before `prove-exact-sequence`. |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | 🟡 Rerunning from Energy (PID `26832`). Previous run (PID `10532`) was based on stale vertex checkpoints that diverged significantly from the oracle. This rerun establishes a bit-perfect foundation using standard [Y, X, Z] alignment. |
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Detached Python energy rerun active (PID `29364`, registry ID `c76f3900`) with extensive memory optimizations: removal of large 4D chunk arrays, pre-computation of scale-independent derivative kernels, explicit array deletions, and `gc.collect()`. Rerunning with `n_jobs=1` for stability. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Active Energy rerun (PID `18556`). Incorporates bit-perfect `linspace` roundoff and raw intensity preservation. |
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 

@@ -269,13 +269,17 @@ def test_launch_exact_run_job_writes_manifest_and_pid(tmp_path, monkeypatch):
         skip_preflight=True,
         n_jobs=4,
         python_executable=python_exe,
-        script_path=script,
     )
 
     assert manifest["pid"] == 24680
     assert (run_root / "99_Metadata" / "parity_job.pid").read_text(encoding="utf-8") == "24680\n"
     assert (run_root / "99_Metadata" / "parity_job.json").is_file()
-    assert launched[0].command[:3] == [str(python_exe), str(script), "resume-exact-run"]
+    assert launched[0].command[:4] == [
+        str(python_exe),
+        "-m",
+        "slavv_python.interface.cli.parity",
+        "resume-exact-run",
+    ]
     assert "--n-jobs" in launched[0].command
     assert launched[0].kwargs["stdin"] == subprocess.DEVNULL
 
