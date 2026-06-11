@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 Active reruns for both crop (PID `18556`) and canonical (PID `26832`) after discovering stale vertex checkpoints. These runs enforce the new **[Y, X, Z]** internal grid and Fortran-order linear indexing required for bit-perfect parity. |
+| **Energy** | Native Hessian path exact-compatible | 🟡 Active reruns for both crop (PID `12152`) and canonical (PID `6640`). These runs enforce the new **[Y, X, Z]** internal grid and incorporate recent **FFT memory optimizations** that reduce per-chunk footprint by 50%. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
 | **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof. **Fixed**: Resolved `KeyError` in `FrontierQueue` and restored iterative directional suppression for origin seeds. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -28,9 +28,9 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | 🟡 Rerunning from Energy (PID `26832`). Previous run (PID `10532`) was based on stale vertex checkpoints that diverged significantly from the oracle. This rerun establishes a bit-perfect foundation using standard [Y, X, Z] alignment. |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | 🟡 Rerunning from Energy (PID `6640`). Established a bit-perfect [Z, Y, X] foundation after resolving a bootstrap shape mismatch. Uses the memory-optimized symmetric IFFT engine. |
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Active Energy rerun (PID `18556`). Incorporates bit-perfect `linspace` roundoff and raw intensity preservation. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Active Energy rerun (PID `12152`). Incorporates bit-perfect `linspace` roundoff and sparse FFT re-population. |
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 

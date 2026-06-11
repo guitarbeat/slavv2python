@@ -4,7 +4,7 @@
 
 ### 🛰️ Live Mission Dashboard
 **Mission**: Phase 1 Parity Certification (Full `180709_E`)
-**Status**: 🟡 Energy reruns in progress (PIDs: `18556`, `26832`)
+**Status**: 🟡 Energy reruns in progress (PIDs: `12152`, `6640`)
 **Last Achievement**: 📐 Bit-perfect [Y, X, Z] grid alignment anchored (2026-06-11)
 **Critical Path**: [PROGRESS.md](docs/PROGRESS.md) · [TODO.md](docs/TODO.md) · [FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)
 

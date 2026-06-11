@@ -373,17 +373,28 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
 def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift."""
     spectrum_arr = np.asarray(spectrum)
-    partner_indices = np.ix_(*[(-np.arange(length)) % length for length in spectrum_arr.shape])
+    # Fortran order to match MATLAB linear indexing
     linear_indices = np.arange(spectrum_arr.size).reshape(spectrum_arr.shape, order="F")
-    partner_linear_indices = linear_indices[partner_indices]
+    
+    # Partner indices for cyclic flip: partner(i) = (N-i) % N
+    # np.ix_ creates a mesh of indices
+    p_idx_y = (-np.arange(spectrum_arr.shape[0])) % spectrum_arr.shape[0]
+    p_idx_x = (-np.arange(spectrum_arr.shape[1])) % spectrum_arr.shape[1]
+    p_idx_z = (-np.arange(spectrum_arr.shape[2])) % spectrum_arr.shape[2]
+    
+    # Calculate partner linear indices without meshgrid if possible
+    # But for simplicity and correctness, we use meshgrid here but delete it quickly
+    py_m, px_m, pz_m = np.meshgrid(p_idx_y, p_idx_x, p_idx_z, indexing="ij")
+    partner_linear_indices = linear_indices[py_m, px_m, pz_m]
+    
     keep_original = linear_indices <= partner_linear_indices
-
-    symmetric_spectrum = spectrum_arr.copy()
     mask = ~keep_original
+    
+    symmetric_spectrum = spectrum_arr.copy()
     if np.any(mask):
-        partner = spectrum_arr[partner_indices]
-        symmetric_spectrum[mask] = np.conj(partner[mask])
-        del partner
+        # Avoid full flipped copy 'partner = spectrum_arr[py_m, px_m, pz_m]'
+        # Just grab the conjugated partner values for the mask voxels.
+        symmetric_spectrum[mask] = np.conj(spectrum_arr[py_m[mask], px_m[mask], pz_m[mask]])
 
     self_partner = linear_indices == partner_linear_indices
     if np.any(self_partner):
@@ -392,6 +403,11 @@ def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     del linear_indices
     del partner_linear_indices
     del keep_original
+    del py_m
+    del px_m
+    del pz_m
+    del mask
+    del self_partner
 
     result = np.fft.ifftn(symmetric_spectrum).real
     del symmetric_spectrum

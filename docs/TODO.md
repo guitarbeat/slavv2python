@@ -29,8 +29,8 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy proof** — Wait for active Python rerun PID `18556`. Verify bit-perfect parity with `linspace` roundoff and raw intensity preservation.
-- [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `26832`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
+- [ ] **Crop energy proof** — Wait for active Python rerun PID `12152`. Verify bit-perfect parity with `linspace` roundoff and raw intensity preservation.
+- [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `6640`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
 

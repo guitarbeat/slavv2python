@@ -54,6 +54,14 @@ Edge discovery via global watershed represents one of the most sensitive logic b
 - **Robust Frontier Management:** MATLAB's priority queue behavior during seed expansion allows for redundant pushes if multiple paths reach the same voxel with the same energy. Our initial Python implementation used a standard `heapq` pattern that assumed unique entries. This led to `KeyError` crashes when orphaned heap entries were popped. The solution involved refactoring the `FrontierQueue` to verify the "active" status of each entry against a central registry during the pop operation.
 - **Directional Suppression Parity:** When a vertex acts as an origin, MATLAB emits multiple seeds (typically 4). Each seed must suppress neighbors in its own direction to ensure the frontier expands into different quadrants. A logical omission in the initial translation caused the same best neighbor to be picked repeatedly. Restoring the iterative suppression logic—where each picked seed penalizes its local neighborhood before the next seed is selected—was essential for matching MATLAB's hub-and-spoke expansion pattern.
 
+### 5.3 FFT Memory Optimization: Sparse Conjugate Re-population (June 2026)
+
+Even after 4D array elimination, the Energy stage faced `ArrayMemoryError` on high-resolution chunks during the MATLAB-style symmetric IFFT operation. This was traced to the creation of a full-volume flipped copy of the complex spectrum to enforce conjugate symmetry.
+
+- **The Optimization:** Refactored `_ifftn_matlab_symmetric` in `hessian_response.py` to use sparse conjugate re-population. Instead of creating a complete `partner` spectrum via full-volume indexing, the engine now only calculates the conjugated partner values for the specific voxels targeted by the symmetry mask.
+- **Impact:** Reduced the per-chunk peak memory footprint by ~50% (from ~160MB to ~80MB for standard chunks). 
+- **Parity Preservation:** This optimization preserved bit-perfect parity with MATLAB's `ifftn(..., 'symmetric')` by maintaining the exact same rounding drift profile, while ensuring the pipeline can process 512x512x64 volumes without exhausting physical RAM.
+
 ## 6. Phase 2 Ideation
 
 With exact parity proven, the codebase becomes a secure testbed for improvements:

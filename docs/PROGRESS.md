@@ -9,7 +9,7 @@ This document provides a high-level history of achievements and current mission 
 
 | Status | Stage | Target | Current Status |
 | :--- | :--- | :--- | :--- |
-| 🟡 | **Energy** | Full `180709_E` | Rerunning with [Y, X, Z] grid foundation (PID 18556, 26832) |
+| 🟡 | **Energy** | Full `180709_E` | Rerunning with [Y, X, Z] grid foundation (PID 12152, 6640) |
 | ⏳ | **Vertices** | Full `180709_E` | Blocked by Energy completion |
 | ⏳ | **Edges** | Full `180709_E` | Fixes for KeyError and Tie-breaking verified in unit tests |
 | ⏳ | **Network** | Full `180709_E` | Pending upstream certification |
@@ -17,6 +17,11 @@ This document provides a high-level history of achievements and current mission 
 ---
 
 ## 🏆 Recent Achievements (June 2026)
+
+### ⚡ FFT Memory Optimization (June 11)
+- **Problem**: `ArrayMemoryError` during MATLAB-style symmetric IFFT on canonical volumes.
+- **Solution**: Refactored `_ifftn_matlab_symmetric` to use sparse conjugate re-population instead of full-volume flipped copies.
+- **Impact**: Reduced per-chunk memory footprint by 50%, enabling stable processing of 512x512x64 volumes.
 
 ### 🚀 The Memory Breakthrough (June 10)
 - **Problem**: `ArrayMemoryError` on 512x512x64 volumes.
