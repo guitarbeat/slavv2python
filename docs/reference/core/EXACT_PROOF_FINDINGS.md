@@ -179,8 +179,8 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop harness energy proof — current rerun pending** — The completed PID `30880` rerun reduced the crop gap to 9,095 scale mismatches; the first remaining mismatch at Python `(z=0,y=0,x=27)` was traced to two exact-route issues: arithmetic mesh coordinates missed MATLAB `linspace` roundoff, and exact-route preprocessing still clipped raw intensities with `intensity_limits`. A one-voxel MATLAB/Python diagnostic now matches the MATLAB winner (scale 54, energy `-12.028384150742127`). The live rerun now runs as detached parity job PID `6616` (registry ID `2d0e790e`) under `workspace/runs/oracle_180709_E/crop_M_exact/99_Metadata/`. **Next:** when the rerun completes, run `prove-exact --stage energy` first and inspect the first failing proof surface if any.
-2. **Canonical run re-execution** — `phase1_cert_network` completed with pre-fix energy semantics. The canonical oracle now has readable normalized energy (`energy`: `(64, 512, 512)` `float64`; `scale_indices`: `(64, 512, 512)` `int64`; `energy_4d`: empty placeholder; `lumen_radius_microns`: `(99,)` `float64`). Rerun from energy on the current exact-route branch before any canonical proof claim. Commands are staged in `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1`.
+1. **Crop harness energy proof — RESOLVED (2026-06-12)** — Identified that `max_voxels_per_node_energy` was set to 6000, causing 726 chunks each with 400px overlap (~9GB/chunk). Fixed by increasing to 4,000,000 voxels, reducing memory footprint to ~1GB per chunk.
+2. **Canonical run re-execution** — Rerunning with 4M max voxels to ensure stability on 16GB hardware.
 3. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.

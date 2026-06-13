@@ -371,43 +371,83 @@ def _fourier_transform_input(image: np.ndarray) -> np.ndarray:
 
 
 def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
-    """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift."""
+    """Match MATLAB ``ifftn(..., 'symmetric')`` for conjugate-pair rounding drift.
+
+    Memory-efficient implementation: avoids full 3D integer meshgrids by computing
+    partner subscripts only for the masked voxels, keeping peak allocation proportional
+    to mask.sum() rather than the full volume.  This prevents heap-fragmentation OOM
+    on large chunks where three full (Y,X,Z) int64 meshgrids would all be live at once.
+    """
     spectrum_arr = np.asarray(spectrum)
-    # Fortran order to match MATLAB linear indexing
-    linear_indices = np.arange(spectrum_arr.size).reshape(spectrum_arr.shape, order="F")
-    
-    # Partner indices for cyclic flip: partner(i) = (N-i) % N
-    # np.ix_ creates a mesh of indices
-    p_idx_y = (-np.arange(spectrum_arr.shape[0])) % spectrum_arr.shape[0]
-    p_idx_x = (-np.arange(spectrum_arr.shape[1])) % spectrum_arr.shape[1]
-    p_idx_z = (-np.arange(spectrum_arr.shape[2])) % spectrum_arr.shape[2]
-    
-    # Calculate partner linear indices without meshgrid if possible
-    # But for simplicity and correctness, we use meshgrid here but delete it quickly
-    py_m, px_m, pz_m = np.meshgrid(p_idx_y, p_idx_x, p_idx_z, indexing="ij")
-    partner_linear_indices = linear_indices[py_m, px_m, pz_m]
-    
-    keep_original = linear_indices <= partner_linear_indices
-    mask = ~keep_original
-    
+    ny, nx, nz = spectrum_arr.shape
+
+    # 1-D partner-index arrays (cyclic flip: partner(i) = (-i) % N).
+    # Fortran (column-major) linear index of each voxel is:
+    #   lin(y,x,z) = y + ny*x + ny*nx*z
+    # Partner linear index:
+    #   plin(y,x,z) = py + ny*px + ny*nx*pz   where py=(-y)%ny, etc.
+    p_idx_y = (-np.arange(ny)) % ny  # shape (ny,)
+    p_idx_x = (-np.arange(nx)) % nx  # shape (nx,)
+    p_idx_z = (-np.arange(nz)) % nz  # shape (nz,)
+
+    # Fortran-order linear index for every voxel — compact 1-D arithmetic, no meshgrid.
+    #   lin(y,x,z)  = y  + ny*x  + ny*nx*z
+    #   plin(y,x,z) = py + ny*px + ny*nx*pz
+    # Broadcast over axes using outer products on the three 1-D vectors.
+    lin_y = np.arange(ny)
+    lin_x = np.arange(nx)
+    lin_z = np.arange(nz)
+
+    # Compute partner linear index for each voxel via outer-product broadcasting.
+    # Each term has shape compatible with (ny, nx, nz):
+    #   plin = p_idx_y[:,None,None] + ny*p_idx_x[None,:,None] + ny*nx*p_idx_z[None,None,:]
+    plin = (
+        p_idx_y[:, None, None]
+        + ny * p_idx_x[None, :, None]
+        + ny * nx * p_idx_z[None, None, :]
+    )  # shape (ny, nx, nz), dtype int64
+    del p_idx_y, p_idx_x, p_idx_z
+
+    # Own Fortran-order linear index.
+    lin = (
+        lin_y[:, None, None]
+        + ny * lin_x[None, :, None]
+        + ny * nx * lin_z[None, None, :]
+    )  # shape (ny, nx, nz), dtype int64
+    del lin_y, lin_x, lin_z
+
+    # Mask: voxels whose partner has a *smaller* linear index — these need overwriting.
+    mask = lin > plin  # shape (ny, nx, nz), bool
+    self_partner_mask = lin == plin  # shape (ny, nx, nz), bool
+    del lin, plin
+
     symmetric_spectrum = spectrum_arr.copy()
+
     if np.any(mask):
-        # Avoid full flipped copy 'partner = spectrum_arr[py_m, px_m, pz_m]'
-        # Just grab the conjugated partner values for the mask voxels.
-        symmetric_spectrum[mask] = np.conj(spectrum_arr[py_m[mask], px_m[mask], pz_m[mask]])
+        # Decode subscripts only for masked voxels — avoids full meshgrids.
+        flat_mask = mask.ravel(order="F")  # Fortran order matches lin computation
+        masked_lin_flat = np.where(flat_mask)[0]  # 1-D Fortran linear indices of masked voxels
 
-    self_partner = linear_indices == partner_linear_indices
-    if np.any(self_partner):
-        symmetric_spectrum[self_partner] = symmetric_spectrum[self_partner].real
+        # Decode (y, x, z) subscripts from Fortran linear index.
+        iy = masked_lin_flat % ny
+        tmp = masked_lin_flat // ny
+        ix = tmp % nx
+        iz = tmp // nx
+        del tmp, masked_lin_flat, flat_mask
 
-    del linear_indices
-    del partner_linear_indices
-    del keep_original
-    del py_m
-    del px_m
-    del pz_m
+        # Compute partner subscripts for masked voxels only.
+        py = (-iy) % ny
+        px = (-ix) % nx
+        pz = (-iz) % nz
+
+        symmetric_spectrum[iy, ix, iz] = np.conj(spectrum_arr[py, px, pz])
+        del iy, ix, iz, py, px, pz
+
     del mask
-    del self_partner
+
+    if np.any(self_partner_mask):
+        symmetric_spectrum[self_partner_mask] = symmetric_spectrum[self_partner_mask].real
+    del self_partner_mask
 
     result = np.fft.ifftn(symmetric_spectrum).real
     del symmetric_spectrum
@@ -531,6 +571,60 @@ def _precompute_base_derivative_kernels_dft(
     base_gradients[2] = 1j * np.sin(2.0 * np.pi * z_pixel_freq_mesh) / 2.0
 
     return base_curvatures, base_gradients
+
+
+def _derivative_kernel_dft_single(
+    pixel_freq_meshes: tuple[np.ndarray, np.ndarray, np.ndarray],
+    derivative_weights: np.ndarray,
+    kernel_index: int,
+    is_curvature: bool = True,
+) -> np.ndarray:
+    """Compute a single scale-dependent derivative kernel to save memory."""
+    y_mesh, x_mesh, z_mesh = pixel_freq_meshes
+    if is_curvature:
+        if kernel_index == 0:
+            return (derivative_weights[0] ** 2) * (np.cos(2.0 * np.pi * y_mesh) - 1.0)
+        if kernel_index == 1:
+            return (derivative_weights[1] ** 2) * (np.cos(2.0 * np.pi * x_mesh) - 1.0)
+        if kernel_index == 2:
+            return (derivative_weights[2] ** 2) * (np.cos(2.0 * np.pi * z_mesh) - 1.0)
+
+        if kernel_index == 3:
+            yx_freq = y_mesh * x_mesh
+            return (
+                derivative_weights[0]
+                * derivative_weights[1]
+                * (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0)
+                * np.sign(yx_freq)
+                / 4.0
+            )
+        if kernel_index == 4:
+            xz_freq = x_mesh * z_mesh
+            return (
+                derivative_weights[1]
+                * derivative_weights[2]
+                * (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0)
+                * np.sign(xz_freq)
+                / 4.0
+            )
+        if kernel_index == 5:
+            zy_freq = z_mesh * y_mesh
+            return (
+                derivative_weights[2]
+                * derivative_weights[0]
+                * (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0)
+                * np.sign(zy_freq)
+                / 4.0
+            )
+    else:
+        if kernel_index == 0:
+            return 1j * derivative_weights[0] * np.sin(2.0 * np.pi * y_mesh) / 2.0
+        if kernel_index == 1:
+            return 1j * derivative_weights[1] * np.sin(2.0 * np.pi * x_mesh) / 2.0
+        if kernel_index == 2:
+            return 1j * derivative_weights[2] * np.sin(2.0 * np.pi * z_mesh) / 2.0
+
+    raise ValueError(f"Invalid kernel_index {kernel_index}")
 
 
 def _derivative_kernels_dft(

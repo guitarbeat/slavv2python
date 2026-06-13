@@ -359,7 +359,9 @@ def compute_exact_parity_energy_chunked(
             coords_grid = np.stack(mesh_coords, axis=0)
 
             pixel_freq_meshes = native_hessian._pixel_frequency_meshes(chunk_dft.shape)
-            base_kernels = native_hessian._precompute_base_derivative_kernels_dft(pixel_freq_meshes)
+            # Pre-compute pixel frequency meshes for the padded chunk
+            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
+
 
             # Accumulators in [Y, X, Z] order with Fortran contiguity
             chunk_best_energy = np.full(

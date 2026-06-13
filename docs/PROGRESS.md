@@ -18,6 +18,12 @@ This document provides a high-level history of achievements and current mission 
 
 ## 🏆 Recent Achievements (June 2026)
 
+### 🧩 Chunking Memory Fix (June 12)
+- **Problem**: `ArrayMemoryError` during exact-route energy calculation despite recent optimizations. 
+- **Discovery**: `max_voxels_per_node_energy` was set too low (6000), causing a 726-chunk lattice where each chunk ballooned to ~9 GiB due to massive 400-pixel overlaps.
+- **Solution**: Increased `max_voxels_per_node_energy` to 4M, reducing the lattice to [1, 1, 2] (2 chunks) and per-chunk memory to ~1 GiB.
+- **Impact**: Stable execution on 16GB hardware with limited free RAM; resolved persistent Energy stage blockers.
+
 ### ⚡ FFT Memory Optimization (June 11)
 - **Problem**: `ArrayMemoryError` during MATLAB-style symmetric IFFT on canonical volumes.
 - **Solution**: Refactored `_ifftn_matlab_symmetric` to use sparse conjugate re-population instead of full-volume flipped copies.
