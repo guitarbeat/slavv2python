@@ -123,9 +123,12 @@ def get_starts_and_counts_v200(
     x_writing_counts = x_writing_ends - x_writing_starts + 1
     z_writing_counts = z_writing_ends - z_writing_starts + 1
 
-    y_offsets = y_writing_starts.astype(np.int32) - y_reading_starts.astype(np.int32)
-    x_offsets = x_writing_starts.astype(np.int32) - x_reading_starts.astype(np.int32)
-    z_offsets = z_writing_starts.astype(np.int32) - z_reading_starts.astype(np.int32)
+    def sat_sub(a, b):
+        return np.clip(a.astype(np.int32) - b.astype(np.int32), 0, 65535).astype(np.uint16)
+
+    y_offsets = sat_sub(y_writing_starts, y_reading_starts)
+    x_offsets = sat_sub(x_writing_starts, x_reading_starts)
+    z_offsets = sat_sub(z_writing_starts, z_reading_starts)
 
     return (
         y_reading_starts.astype(float),
