@@ -141,12 +141,7 @@ class ExactProofCoordinator:
                         "extra_pair_count": 0,
                     }
 
-                    def mock_compare(*args: Any, **kwargs: Any) -> dict[str, Any]:
-                        res = compare_exact_artifacts(*args, **kwargs)
-                        res["passed"] = True
-                        return res
-
-                    compare_func = mock_compare
+                    raise
                 else:
                     raise
             else:

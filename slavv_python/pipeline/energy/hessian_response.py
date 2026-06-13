@@ -289,69 +289,92 @@ def _matched_hessian_intermediates(
     )
 
     filtered_chunk_dft = matching_kernel_dft * chunk_dft
-    curvatures_chunk = np.empty((curvatures_kernels_dft.shape[0], *chunk_dft.shape), dtype=float)
-    for kernel_index, curvature_kernel_dft in enumerate(curvatures_kernels_dft):
-        curvatures_chunk[kernel_index] = _ifftn_matlab_symmetric(
-            curvature_kernel_dft * filtered_chunk_dft
-        )
-    gradient_chunk = np.empty((gradient_kernels_dft.shape[0], *chunk_dft.shape), dtype=float)
-    for kernel_index, gradient_kernel_dft in enumerate(gradient_kernels_dft):
-        gradient_chunk[kernel_index] = _ifftn_matlab_symmetric(
-            gradient_kernel_dft * filtered_chunk_dft
-        )
+    del matching_kernel_dft
 
-    curvatures_chunk = curvatures_chunk[
-        :, : original_shape[0], : original_shape[1], : original_shape[2]
-    ]
-    gradient_chunk = gradient_chunk[
-        :, : original_shape[0], : original_shape[1], : original_shape[2]
-    ]
+    # Compute curvature components one-by-one to avoid 4D stacks
+    # We need the first three to determine valid voxels (Laplacian < 0)
+    c0 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+        pixel_freq_meshes, derivative_weights, 0, is_curvature=True
+    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    
+    c1 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+        pixel_freq_meshes, derivative_weights, 1, is_curvature=True
+    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    
+    c2 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+        pixel_freq_meshes, derivative_weights, 2, is_curvature=True
+    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
 
-    laplacian_chunk = curvatures_chunk[0] + curvatures_chunk[1] + curvatures_chunk[2]
+    laplacian_chunk = c0 + c1 + c2
     valid_voxels = laplacian_chunk < 0
     energy_chunk = np.full(image.shape, np.inf, dtype=np.float32)
+    
     if not np.any(valid_voxels):
+        del c0, c1, c2, filtered_chunk_dft
         return {
             "laplacian": laplacian_chunk.astype(np.float32, copy=False),
             "valid_voxels": valid_voxels,
             "energy": energy_chunk,
         }
 
-    grad_valid = np.stack(
-        [
-            gradient_chunk[0][valid_voxels],
-            gradient_chunk[1][valid_voxels],
-            gradient_chunk[2][valid_voxels],
-        ],
-        axis=1,
-    )
-    hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
-    hessian_valid[:, 0, 0] = curvatures_chunk[0][valid_voxels]
-    hessian_valid[:, 0, 1] = curvatures_chunk[3][valid_voxels]
-    hessian_valid[:, 0, 2] = curvatures_chunk[5][valid_voxels]
-    hessian_valid[:, 1, 0] = curvatures_chunk[3][valid_voxels]
-    hessian_valid[:, 1, 1] = curvatures_chunk[1][valid_voxels]
-    hessian_valid[:, 1, 2] = curvatures_chunk[4][valid_voxels]
-    hessian_valid[:, 2, 0] = curvatures_chunk[5][valid_voxels]
-    hessian_valid[:, 2, 1] = curvatures_chunk[4][valid_voxels]
-    hessian_valid[:, 2, 2] = curvatures_chunk[2][valid_voxels]
+    # Extract valid components for Hessian
+    num_valid = np.count_nonzero(valid_voxels)
+    hessian_valid = np.empty((num_valid, 3, 3), dtype=np.float64)
+    hessian_valid[:, 0, 0] = c0[valid_voxels]
+    hessian_valid[:, 1, 1] = c1[valid_voxels]
+    hessian_valid[:, 2, 2] = c2[valid_voxels]
+    del c0, c1, c2
 
-    principal_curvature_values, principal_curvature_vectors = np.linalg.eigh(hessian_valid)
-    principal_projections = np.einsum(
-        "ni,nij->nj",
-        grad_valid,
-        principal_curvature_vectors,
-    )
-    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-        principal_energy_values = principal_curvature_values * np.exp(
-            -((principal_projections / principal_curvature_values) ** 2) / 2.0
-        )
-    principal_energy_values[:, 2] = np.minimum(principal_energy_values[:, 2], 0.0)
+    # Rest of curvatures
+    for i, (r, c) in enumerate([(0, 1), (1, 2), (0, 2)], start=3):
+        val = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+            pixel_freq_meshes, derivative_weights, i, is_curvature=True
+        ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels]
+        hessian_valid[:, r, c] = val
+        hessian_valid[:, c, r] = val
+        del val
+
+    # Gradient components
+    grad_valid = np.empty((num_valid, 3), dtype=np.float64)
+    for i in range(3):
+        grad_valid[:, i] = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+            pixel_freq_meshes, derivative_weights, i, is_curvature=False
+        ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels]
+
+    del filtered_chunk_dft
+    import gc
+    gc.collect()
+
+    # Batch EIGH to prevent large contiguous allocations on a fragmented heap
+    batch_size = 256 * 1024
+    principal_energy_values = np.empty((num_valid, 3), dtype=np.float64)
+
+    for start_idx in range(0, num_valid, batch_size):
+        end_idx = min(start_idx + batch_size, num_valid)
+        h_batch = hessian_valid[start_idx:end_idx]
+        g_batch = grad_valid[start_idx:end_idx]
+
+        w_batch, v_batch = np.linalg.eigh(h_batch)
+        p_batch = np.einsum("ni,nij->nj", g_batch, v_batch)
+
+        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+            e_batch = w_batch * np.exp(-((p_batch / w_batch) ** 2) / 2.0)
+        
+        e_batch[:, 2] = np.minimum(e_batch[:, 2], 0.0)
+        principal_energy_values[start_idx:end_idx] = e_batch
+        
+        del h_batch, g_batch, w_batch, v_batch, p_batch, e_batch
+
+    del grad_valid, hessian_valid
+
     energy_valid = np.sum(principal_energy_values, axis=1)
+    del principal_energy_values
 
     energy_chunk[valid_voxels] = energy_valid.astype(np.float32, copy=False)
+    del energy_valid
     energy_chunk[~np.isfinite(energy_chunk)] = np.inf
     energy_chunk[energy_chunk >= 0] = np.inf
+    
     return {
         "laplacian": laplacian_chunk.astype(np.float32, copy=False),
         "valid_voxels": valid_voxels,
@@ -463,6 +486,7 @@ def _pixel_frequency_meshes(
         pixel_frequencies[1],
         pixel_frequencies[2],
         indexing="ij",
+        sparse=True,
     )
     return y_mesh, x_mesh, z_mesh
 

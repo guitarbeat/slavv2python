@@ -14,21 +14,16 @@ from slavv_python.pipeline.vertices.results import (
 )
 
 
+from slavv_python.utils.matlab_order import matlab_linear_index_to_yxz, yxz_to_matlab_linear_indices
+
 def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]) -> int:
     """Convert a 0-based ``(y, x, z)`` coordinate into MATLAB linear order."""
-    y, x, z = (int(value) for value in coord[:3])
-    return int(y + x * shape[0] + z * shape[0] * shape[1])
+    return int(yxz_to_matlab_linear_indices(coord[None, :3], shape)[0])
 
 
 def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np.ndarray:
     """Convert a 0-based MATLAB linear index into a ``(y, x, z)`` coordinate."""
-    xy_plane = shape[0] * shape[1]
-    z = index // xy_plane
-    pos_xy = index - z * xy_plane
-    x = pos_xy // shape[0]
-    y = pos_xy - x * shape[0]
-    coord: Int32Array = np.array([y, x, z], dtype=np.int32)
-    return cast("np.ndarray", coord)
+    return matlab_linear_index_to_yxz(index, shape)
 
 
 def _argmin_with_linear_index_tiebreak(

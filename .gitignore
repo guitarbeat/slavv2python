@@ -158,6 +158,9 @@ bfg.jar
 # Volatile workspace data (runs, oracles, datasets, scratch, reports)
 workspace/
 
+# Agent state and temporary files
+.agents/orchestrations/active/
+
 # Comparison and run outputs (legacy paths kept for safety)
 comparison_output/
 comparison_output_*/

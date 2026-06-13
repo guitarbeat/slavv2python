@@ -29,7 +29,7 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-- [ ] **Crop energy proof** — Wait for active Python rerun PID `12152`. Verify bit-perfect parity with `linspace` roundoff and raw intensity preservation.
+- [ ] **Crop energy proof** — Wait for active Python rerun PID `27764`. Verify bit-perfect parity with mesh phase alignment, `linspace` roundoff and raw intensity preservation.
 - [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `6640`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
@@ -48,6 +48,7 @@
 
 - [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
 - [x] **API reference** — Public `SlavvPipeline` and internal `Manager` class docstrings.
+- [ ] **Sparse Meshgrids** — Refactor `_interp3_matlab_linear_inf` to accept sparse coordinate meshes, saving >400MB for canonical volumes.
 - [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.
 
 ---

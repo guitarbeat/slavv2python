@@ -238,6 +238,8 @@ def _get_incident_edge_ids(v_idx: int, edge_map: sparse.csr_matrix) -> np.ndarra
     )
 
 
+from slavv_python.utils.matlab_order import yxz_to_matlab_linear_indices
+
 def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) -> set[int]:
     """Converts (N, 3) coordinates to a set of 1D linear voxel indices."""
     coords = np.rint(positions).astype(np.int32)
@@ -245,13 +247,13 @@ def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) ->
     coords[:, 1] = np.clip(coords[:, 1], 0, shape[1] - 1)
     coords[:, 2] = np.clip(coords[:, 2], 0, shape[2] - 1)
 
-    return {int(y + x * shape[0] + z * shape[0] * shape[1]) for y, x, z in coords.tolist()}
+    return set(yxz_to_matlab_linear_indices(coords, shape).tolist())
 
 
 def _get_linear_trace_voxels(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Maps a trace path to linear voxel indices."""
     c = _clip_trace_indices(np.asarray(trace, dtype=np.float32), shape)
-    return np.asarray(c[:, 0] + c[:, 1] * shape[0] + c[:, 2] * shape[0] * shape[1], dtype=np.int64)
+    return yxz_to_matlab_linear_indices(c, shape)
 
 
 def _find_orphan_indices(

@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import gc
 from typing import Any
 
 import numpy as np
@@ -122,9 +123,9 @@ def get_starts_and_counts_v200(
     x_writing_counts = x_writing_ends - x_writing_starts + 1
     z_writing_counts = z_writing_ends - z_writing_starts + 1
 
-    y_offsets = sat_sub(y_writing_starts, y_reading_starts)
-    x_offsets = sat_sub(x_writing_starts, x_reading_starts)
-    z_offsets = sat_sub(z_writing_starts, z_reading_starts)
+    y_offsets = y_writing_starts.astype(np.int32) - y_reading_starts.astype(np.int32)
+    x_offsets = x_writing_starts.astype(np.int32) - x_reading_starts.astype(np.int32)
+    z_offsets = z_writing_starts.astype(np.int32) - z_reading_starts.astype(np.int32)
 
     return (
         y_reading_starts.astype(float),
@@ -194,18 +195,19 @@ def _interp3_matlab_linear_inf(
                     out[finite] += weight[finite] * values[finite]
 
                 invalid_positive = (~valid) & positive_weight
-                if cval and np.any(invalid_positive):
+                if cval is not None and np.any(invalid_positive):
                     out[invalid_positive] += weight[invalid_positive] * cval
 
     out[has_inf] = np.inf
     return out
 
 
-def _matlab_zero_based_linspace(offset: int, stride: int, count: int) -> np.ndarray:
-    """Return MATLAB ``linspace(1+offset/rf, ..., count)`` in zero-based coordinates."""
+def _matlab_zero_based_linspace(offset: int, stride: int, count: int, local_start: int) -> np.ndarray:
+    """Return MATLAB ``linspace(1 + offset/rf - local_start, ..., count)`` in zero-based coordinates."""
     if count <= 0:
         return np.empty(0, dtype=np.float64)
-    x1 = 1.0 + float(offset % stride) / float(stride)
+    # Coordinate of first writing pixel (j=0) relative to full_ifft[local_start] is offset/stride - local_start
+    x1 = 1.0 + float(offset) / float(stride) - float(local_start)
     x2 = x1 + float(count - 1) / float(stride)
     if count == 1:
         return np.array([x2 - 1.0], dtype=np.float64)
@@ -324,8 +326,8 @@ def compute_exact_parity_energy_chunked(
 
             padded_chunk = native_hessian._fourier_transform_input(original_chunk)
             chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
-            # native_hessian._pixel_frequency_meshes uses meshgrid(indexing="ij")
-            # For [Y, X, Z] input, it returns [Y_freq, X_freq, Z_freq] meshes.
+
+            # Pre-compute pixel frequency meshes for the padded chunk once
             pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
 
             w_count_z = int(z_write_counts[z_idx])
@@ -336,32 +338,32 @@ def compute_exact_parity_energy_chunked(
             off_y = int(y_offset[y_idx])
             off_x = int(x_offset[x_idx])
 
-            # Local slices in [Y, X, Z] order
+            # Local starts in coarse grid, clamped to 0 since reading covers writing
+            l_start_y = max(0, int(np.floor(off_y / stride_y)))
+            l_start_x = max(0, int(np.floor(off_x / stride_x)))
+            l_start_z = max(0, int(np.floor(off_z / stride_z)))
+
+            # Local slices in [Y, X, Z] order for the coarse grid needed for interpolation
             y_local = slice(
-                int(np.floor(off_y / stride_y)),
+                l_start_y,
                 1 + int(np.ceil((off_y + w_count_y - 1) / stride_y)),
             )
             x_local = slice(
-                int(np.floor(off_x / stride_x)),
+                l_start_x,
                 1 + int(np.ceil((off_x + w_count_x - 1) / stride_x)),
             )
             z_local = slice(
-                int(np.floor(off_z / stride_z)),
+                l_start_z,
                 1 + int(np.ceil((off_z + w_count_z - 1) / stride_z)),
             )
 
-            mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y)
-            mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x)
-            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z)
+            mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
+            mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
+            mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
 
             # [Y, X, Z] mesh for interpolation
             mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij")
             coords_grid = np.stack(mesh_coords, axis=0)
-
-            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(chunk_dft.shape)
-            # Pre-compute pixel frequency meshes for the padded chunk
-            pixel_freq_meshes = native_hessian._pixel_frequency_meshes(padded_chunk.shape)
-
 
             # Accumulators in [Y, X, Z] order with Fortran contiguity
             chunk_best_energy = np.full(
@@ -372,6 +374,7 @@ def compute_exact_parity_energy_chunked(
             )
 
             for s_sub_idx, s_idx in enumerate(scale_indices_at_octave):
+                gc.collect()
                 radius_of_lumen_in_microns = lumen_radius_microns[s_idx]
                 pixels_per_sigma_psf_at_oct = pixels_per_sigma_PSF / rf
 
@@ -384,50 +387,40 @@ def compute_exact_parity_energy_chunked(
                     spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
                 )
 
-                curvatures_kernels_dft, gradient_kernels_dft = (
-                    native_hessian._derivative_kernels_dft(
-                        pixel_freq_meshes,
-                        derivative_weights,
-                        base_kernels=base_kernels,
-                    )
-                )
-
                 filtered_chunk_dft = matching_kernel_dft * chunk_dft
-                # All intermediates are [Y, X, Z] with Fortran order
-                curvatures_chunk = np.empty(
-                    (curvatures_kernels_dft.shape[0], *chunk_dft.shape),
-                    dtype=np.float64,
-                    order="F",
-                )
-                for kernel_index, curvature_kernel_dft in enumerate(curvatures_kernels_dft):
-                    curvatures_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(
-                        curvature_kernel_dft * filtered_chunk_dft,
-                    )
+                del matching_kernel_dft
 
-                gradient_chunk = np.empty(
-                    (gradient_kernels_dft.shape[0], *chunk_dft.shape),
-                    dtype=np.float64,
-                    order="F",
+                coarse_shape = (
+                    y_local.stop - y_local.start,
+                    x_local.stop - x_local.start,
+                    z_local.stop - z_local.start,
                 )
-                for kernel_index, gradient_kernel_dft in enumerate(gradient_kernels_dft):
-                    gradient_chunk[kernel_index] = native_hessian._ifftn_matlab_symmetric(
-                        gradient_kernel_dft * filtered_chunk_dft,
+
+                # All intermediates are [Y, X, Z] with Fortran order
+                # Compute derivative kernels one-by-one to minimize peak memory
+                curvatures_local = np.empty((6, *coarse_shape), dtype=np.float64, order="F")
+                for k_idx in range(6):
+                    k_dft = native_hessian._derivative_kernel_dft_single(
+                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=True
                     )
+                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                    curvatures_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                    del k_dft, full_ifft
+
+                gradient_local = np.empty((3, *coarse_shape), dtype=np.float64, order="F")
+                for k_idx in range(3):
+                    k_dft = native_hessian._derivative_kernel_dft_single(
+                        pixel_freq_meshes, derivative_weights, k_idx, is_curvature=False
+                    )
+                    full_ifft = native_hessian._ifftn_matlab_symmetric(k_dft * filtered_chunk_dft)
+                    gradient_local[k_idx] = full_ifft[y_local, x_local, z_local]
+                    del k_dft, full_ifft
 
                 # Explicitly delete DFT products
                 del filtered_chunk_dft
 
-                # Crop to local mesh bounds (these are the smaller working arrays)
-                curvatures_local = curvatures_chunk[:, y_local, x_local, z_local].copy()
-                gradient_local = gradient_chunk[:, y_local, x_local, z_local].copy()
-
-                # Free large FFT results
-                del curvatures_chunk
-                del gradient_chunk
-
                 laplacian_chunk = curvatures_local[0] + curvatures_local[1] + curvatures_local[2]
                 valid_voxels = laplacian_chunk < 0
-                coarse_shape = curvatures_local.shape[1:4]
                 coarse_energy = np.full(coarse_shape, np.inf, dtype=np.float64)
 
                 if np.any(valid_voxels):
@@ -450,25 +443,34 @@ def compute_exact_parity_energy_chunked(
                     hessian_valid[:, 2, 1] = curvatures_local[4][valid_voxels]
                     hessian_valid[:, 2, 2] = curvatures_local[2][valid_voxels]
 
-                    principal_curvature_values, principal_curvature_vectors = np.linalg.eigh(
-                        hessian_valid
-                    )
-                    principal_projections = np.einsum(
-                        "ni,nij->nj",
-                        grad_valid,
-                        principal_curvature_vectors,
-                    )
-                    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-                        principal_energy_values = principal_curvature_values * np.exp(
-                            -((principal_projections / principal_curvature_values) ** 2) / 2.0
-                        )
-                    principal_energy_values[:, 2] = np.minimum(principal_energy_values[:, 2], 0.0)
+                    # Batch EIGH to prevent large contiguous allocations on a fragmented heap
+                    batch_size = 256 * 1024
+                    num_valid = grad_valid.shape[0]
+                    principal_energy_values = np.empty((num_valid, 3), dtype=np.float64)
+
+                    for start_idx in range(0, num_valid, batch_size):
+                        end_idx = min(start_idx + batch_size, num_valid)
+                        h_batch = hessian_valid[start_idx:end_idx]
+                        g_batch = grad_valid[start_idx:end_idx]
+
+                        w_batch, v_batch = np.linalg.eigh(h_batch)
+                        p_batch = np.einsum("ni,nij->nj", g_batch, v_batch)
+
+                        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+                            e_batch = w_batch * np.exp(-((p_batch / w_batch) ** 2) / 2.0)
+
+                        e_batch[:, 2] = np.minimum(e_batch[:, 2], 0.0)
+                        principal_energy_values[start_idx:end_idx] = e_batch
+
+                        del h_batch, g_batch, w_batch, v_batch, p_batch, e_batch
+
                     energy_valid = np.sum(principal_energy_values, axis=1)
                     coarse_energy[valid_voxels] = energy_valid
 
+                    del grad_valid, hessian_valid, principal_energy_values
+                    del energy_valid
                 # Free local cropped arrays
-                del curvatures_local
-                del gradient_local
+                del curvatures_local, gradient_local
 
                 coarse_energy[~np.isfinite(coarse_energy)] = np.inf
                 coarse_energy[coarse_energy >= 0] = np.inf
@@ -484,16 +486,12 @@ def compute_exact_parity_energy_chunked(
                     is_better = upsampled < chunk_best_energy
                     chunk_best_energy = np.where(is_better, upsampled, chunk_best_energy)
                     chunk_best_scale_sub_idx[is_better] = s_sub_idx
-                
+
                 del upsampled
 
             chunk_energy_min = chunk_best_energy.transpose(2, 0, 1)
             chunk_scale_min = chunk_best_scale_sub_idx.transpose(2, 0, 1)
             chunk_scale_min[chunk_energy_min >= 0.0] = -1
-
-            import gc
-
-            gc.collect()
 
             prev_scales_count = int(np.sum(octave_at_scales < current_octave))
             valid_scale = chunk_scale_min >= 0

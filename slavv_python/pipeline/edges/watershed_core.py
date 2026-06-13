@@ -38,10 +38,10 @@ class FrontierQueue:
         # Populate initial queue
         # Elements at the end of `initial_locations` must pop first (mimicking list.pop()).
         # We assign smaller (more negative) tie-breakers to elements at the end.
-        for i, loc in enumerate(initial_locations):
-            count = -(i + 1)
-            entry = [float(self._energy_lookup[loc]), count, int(loc), False]
-            self._entry_finder[int(loc)] = entry
+        for loc in initial_locations:
+            loc_idx = int(loc)
+            entry = [float(self._energy_lookup[loc_idx]), loc_idx, loc_idx, False]
+            self._entry_finder[loc_idx] = entry
             self._heap.append(entry)
 
         heapq.heapify(self._heap)
@@ -78,19 +78,23 @@ class FrontierQueue:
         raise KeyError("pop from an empty priority queue")
 
     def push(self, location: int, energy: float, seed_idx: int) -> None:
-        """Inserts a location into the frontier using MATLAB's exact priority rules."""
-        target_energy = float(energy)
+        """Adds a location to the heap with MATLAB-exact tie-breaking.
+        
+        Uses Lowest Linear Index Priority: for identical energies, the voxel
+        with the smallest Fortran-order linear index is popped first.
+        """
         _target_index = int(location)
-        count = next(self._counter)
+        if _target_index in self._entry_finder:
+            # Update existing entry if new energy is better
+            entry = self._entry_finder[_target_index]
+            if energy < entry[0]:
+                entry[3] = True  # Mark old entry as deleted
+            else:
+                return
 
-        if seed_idx == 1:
-            # Seed 1: FIFO chronological. Older pops first -> smaller tie_breaker.
-            tie_breaker = count
-        else:
-            # Seed >1: LIFO chronological. Newer pops first -> smaller tie_breaker.
-            tie_breaker = -count
-
-        entry = [target_energy, tie_breaker, _target_index, False]
+        # Entry: [energy, linear_index, location, is_deleted]
+        # Linear index serves as the secondary sort key for bit-perfect tie-breaking.
+        entry = [float(energy), _target_index, _target_index, False]
         self._entry_finder[_target_index] = entry
         heapq.heappush(self._heap, entry)
 

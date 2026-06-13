@@ -9,7 +9,7 @@ This document provides a high-level history of achievements and current mission 
 
 | Status | Stage | Target | Current Status |
 | :--- | :--- | :--- | :--- |
-| 🟡 | **Energy** | Full `180709_E` | Rerunning with [Y, X, Z] grid foundation (PID 12152, 6640) |
+| 🟡 | **Energy** | Full `180709_E` | Rerunning with bit-perfect phase alignment (Active PID: 27764) |
 | ⏳ | **Vertices** | Full `180709_E` | Blocked by Energy completion |
 | ⏳ | **Edges** | Full `180709_E` | Fixes for KeyError and Tie-breaking verified in unit tests |
 | ⏳ | **Network** | Full `180709_E` | Pending upstream certification |
@@ -17,6 +17,12 @@ This document provides a high-level history of achievements and current mission 
 ---
 
 ## 🏆 Recent Achievements (June 2026)
+
+### 📐 Mesh Phase Alignment (June 13)
+- **Problem**: 3-pixel coordinate shift in energy interpolation causing failure at the 4th element.
+- **Discovery**: Saturated subtraction was clipping negative offsets, and `linspace` meshes were failing to account for the downsampling starting phase.
+- **Solution**: Removed saturated offsets and implemented phase-aware `_matlab_zero_based_linspace`.
+- **Impact**: Bit-perfect coordinate mapping verified in new unit tests; resolved the final mathematical blocker for Energy parity.
 
 ### 🧩 Chunking Memory Fix (June 12)
 - **Problem**: `ArrayMemoryError` during exact-route energy calculation despite recent optimizations. 
@@ -46,11 +52,11 @@ This document provides a high-level history of achievements and current mission 
 
 ---
 
-## 🗓️ 3-Day History (June 8 - June 11)
+## 🗓️ 3-Day History (June 8 - June 13)
 
+- **June 13**: Fixed 3-pixel coordinate shift in Energy mesh interpolation. Verified with bit-perfect linspace unit test.
+- **June 12**: Resolved Energy `ArrayMemoryError` by increasing chunk size to 4M voxels.
 - **June 11**: Implemented [Y, X, Z] grid alignment repository-wide. Fixed KeyError in watershed frontier. Restarted certification reruns from Energy stage.
-- **June 10**: Achieved 30x memory optimization in Energy engine. Implemented Parity Job Monitoring MVP (`slavv jobs`).
-- **June 09**: Completed massive documentation audit and consolidation. Authoring initial MATLAB-to-Python Translation Paper.
 
 ---
 
@@ -64,4 +70,4 @@ This document provides a high-level history of achievements and current mission 
 | **[README.md](../README.md)** | **General Info**: Project overview, setup, and public CLI. |
 
 ---
-*Last Updated: 2026-06-11*
+*Last Updated: 2026-06-13*

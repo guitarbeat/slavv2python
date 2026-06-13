@@ -61,7 +61,7 @@ def iter_overlapping_chunks(
     """Yield padded 3D chunk slices using MATLAB-like lattice borders."""
     overlap_arr: Int64Array = np.asarray(overlap, dtype=np.int64)
     borders = [
-        np.rint(np.linspace(0, image_shape[axis], lattice_dims[axis] + 1)).astype(np.int64)
+        np.floor(np.linspace(0, float(image_shape[axis]), int(lattice_dims[axis]) + 1) + 0.5).astype(np.int64)
         for axis in range(3)
     ]
 
