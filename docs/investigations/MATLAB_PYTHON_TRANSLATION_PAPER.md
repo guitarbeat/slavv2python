@@ -68,5 +68,29 @@ With exact parity proven, the codebase becomes a secure testbed for improvements
 - *Potential optimizations here...*
 - *Parallelization strategies here...*
 
+## 7. The Unexpected Consequences of Exact Parity
+
+Enforcing 100% bit-perfect exact parity between Python and MATLAB moves the project from "translating logic" to "building a MATLAB emulator in Python". This strategy guarantees absolute mathematical confidence, which is invaluable for scientific certification, but introduces profound architectural consequences:
+
+### 7.1 The Memory Paradigm Clash (Fortran vs. C-Order)
+MATLAB is fundamentally column-major (Fortran order) and thinks in `[Y, X, Z]`. Python's NumPy is row-major (C order) and natively thinks in `[Z, Y, X]`.
+* **The Consequence:** To ensure that when two voxels have the exact same energy, Python picks the exact same "lowest linear index" that MATLAB would, the Python code has to transpose inputs to `[Y, X, Z]`, process them in Fortran-contiguous blocks, and transpose them back.
+* **The Cost:** This significantly increases memory overhead and cache-misses in Python, requiring manual memory management (like explicit GC and Batched EIGH) to prevent memory crashes.
+
+### 7.2 The Rejection of the Python Data Science Ecosystem
+Usually, porting to Python means utilizing optimized libraries like `scipy.ndimage` or `scikit-image`.
+* **The Consequence:** Standard Python behaviors differ from MATLAB. For example, `scipy.interpolate.interpn` doesn't match MATLAB's `interp3` edge-case handling for `Inf` values, Python's `round()` uses "round-to-even" instead of MATLAB's "round-half-up", and NumPy's `linspace` has floating-point drift compared to MATLAB's.
+* **The Cost:** The project required writing bespoke, mathematically rigid shims (e.g., `_interp3_matlab_linear_inf`, `_matlab_zero_based_linspace`, `_matlab_round`) just to replicate proprietary MATLAB behaviors and rounding drift.
+
+### 7.3 "Bug-for-Bug" Compatibility
+To achieve strict zero missing/extra edges, Python must reproduce MATLAB's mathematical quirks, instabilities, and edge cases.
+* **The Consequence:** If MATLAB handles a condition in a mathematically "unsafe" way, Python *must* match it. For instance, Python had to be aligned to MATLAB's double-precision (`float64`) behavior because `float32` collapsed bits, causing tie-breaking divergences in the priority queue.
+* **The Cost:** The Python codebase inherits MATLAB's technical debt. Future Python developers will encounter highly counter-intuitive logic that exists solely to appease the legacy MATLAB oracle.
+
+### 7.4 The Massive Overhead of the Proof Harness
+Because standard unit tests cannot guarantee bit-perfect parity across billions of voxels, the testing infrastructure has become as complex as the pipeline itself.
+* **The Consequence:** The project required building a complex exact-proof harness, a "Parameter Diffusion Matrix" to hash configurations, and specialized workflow rules.
+* **The Cost:** The development loop is extremely heavy. A single code change requires running multi-hour, GB-heavy tracking jobs just to verify that a decimal didn't shift by $10^{-14}$.
+
 ---
 *End of Draft. To be expanded as parity milestones are cleared.*
