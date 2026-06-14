@@ -51,3 +51,16 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 
 ---
 *Last Updated: 2026-06-13*
+
+## 10. The Coordinate Grid Expansion Trap
+*   **The Loop**: Addressing ArrayMemoryError issues in xact_mesh.py by attempting to optimize chunking (get_chunking_lattice_v190), while preserving the legacy MATLAB shim for _interp3_matlab_linear_inf which demanded a full 4D dense coordinate array (3, Y, X, Z).
+*   **The Reality**: For canonical chunks, expanding three 1D linspace arrays into a dense (3, 512, 512, 64) block consumes >400MB of overhead per chunk, driving constant OOM crashes regardless of other kernel optimizations.
+*   **Guidance**: Never expand 
+p.meshgrid fully in memory when working with large volumes. Use sparse=True and broadcast dynamically (
+p.broadcast_to()) at the point of evaluation.
+
+## 11. The Emulation vs. Acceleration Dilemma
+*   **The Loop**: To achieve Phase 1 bit-perfect parity, the Python codebase was warped to emulate MATLAB's memory layout (Fortran order), bespoke rounding (_matlab_round), and edge cases.
+*   **The Reality**: This "Bug-for-Bug" compatibility guarantees exactness but severely punishes Python performance and blocks the adoption of C-backed ecosystem tools (e.g., scipy.ndimage, 
+umba).
+*   **Guidance**: Exact parity is a milestone, not a permanent architecture. Once the exact proof gate is passed, immediately branch to Phase 2 to unwind the emulation layers and restore native C-order [Z, Y, X] processing, accepting topological isomorphism over bit-perfect equivalence.
