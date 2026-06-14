@@ -257,9 +257,16 @@ def crop_vertices_matlab_style(
     )
 
 
+def _matlab_round(x: float | np.ndarray) -> Any:
+    """Replicate MATLAB round() which uses round-half-away-from-zero."""
+    if isinstance(x, np.ndarray):
+        return np.floor(x + 0.5).astype(np.int64)
+    return int(np.floor(float(x) + 0.5))
+
+
 def ellipsoid_offsets(radii_pixels: np.ndarray) -> np.ndarray:
     """Construct centered voxel offsets for a scale-specific ellipsoid."""
-    radii = np.maximum(np.rint(radii_pixels).astype(int), 0)
+    radii = np.maximum(_matlab_round(radii_pixels), 0)
     if np.all(radii == 0):
         empty_offsets: np.ndarray = np.zeros((1, 3), dtype=np.int16)
         return empty_offsets
@@ -287,13 +294,12 @@ def _choose_vertices_loop_python(
     for i in range(start_index, end_index):
         scale = vertex_scales[i]
         pos = vertex_positions[i]
-        cy = round(pos[0])
-        cx = round(pos[1])
-        cz = round(pos[2])
+        cy = int(np.floor(pos[0] + 0.5))
+        cx = int(np.floor(pos[1] + 0.5))
+        cz = int(np.floor(pos[2] + 0.5))
 
         t_start = template_starts[scale]
         t_end = template_ends[scale]
-
         occupied = False
         for j in range(t_start, t_end):
             y = cy + all_offsets[j, 0]
@@ -380,7 +386,7 @@ def choose_vertices_matlab_style(
     for index in np.flatnonzero(chosen_mask[:start_index]):
         scale = scale_indices[index]
         pos = vertex_positions[index]
-        cy, cx, cz = round(pos[0]), round(pos[1]), round(pos[2])
+        cy, cx, cz = _matlab_round(pos[0]), _matlab_round(pos[1]), _matlab_round(pos[2])
 
         t_start = template_starts[scale]
         t_end = template_ends[scale]

@@ -139,39 +139,35 @@ class VoxelClaimMap:
         self.energy_temp_flat = self.energy_map_temp.ravel(order="F")
 
     def _initialize_vertices(self, vertex_positions: np.ndarray):
-        vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(
-            np.int32, copy=False
-        )
-        max_coord: np.ndarray = np.asarray(self.shape, dtype=np.int32) - 1
-        vertex_coords = np.clip(vertex_coords, 0, max_coord)
-        self.vertex_locations = np.asarray(
-            [_coord_to_matlab_linear_index(coord, self.shape) for coord in vertex_coords],
-            dtype=np.int64,
-        )
+        # vertex_positions are in physical ZYX order.
+        # We need MATLAB linear indices [Y, X, Z].
+        # The input shape to zyx_to_matlab_linear_indices must be the physical [Z, Y, X] shape.
+        # We derive it from our internal [Y, X, Z] shape.
+        from slavv_python.utils.matlab_order import zyx_to_matlab_linear_indices
+        physical_shape = (self.shape[2], self.shape[0], self.shape[1])
+        self.vertex_locations = zyx_to_matlab_linear_indices(vertex_positions, physical_shape)
         self.number_of_vertices = len(self.vertex_locations)
 
         border_locations = _matlab_global_watershed_border_locations(self.shape)
+        # Use flat views to initialize values at MATLAB linear indices
+        v_index_flat = self.vertex_index_map.ravel(order="F")
+        temp_flat = self.energy_map_temp.ravel(order="F")
+
         for linear_index in border_locations:
-            coord = _matlab_linear_index_to_coord(int(linear_index), self.shape)
-            self.vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(
-                self.number_of_vertices + 1
-            )
+            v_index_flat[int(linear_index)] = np.uint32(self.number_of_vertices + 1)
 
         self.vertex_energies = np.empty((self.number_of_vertices,), dtype=np.float64)
         for vertex_offset, linear_index in enumerate(self.vertex_locations):
-            coord = _matlab_linear_index_to_coord(int(linear_index), self.shape)
-            self.vertex_index_map[coord[0], coord[1], coord[2]] = np.uint32(vertex_offset + 1)
-            self.vertex_energies[vertex_offset] = np.float64(
-                self.energy_map[coord[0], coord[1], coord[2]]
-            )
+            idx = int(linear_index)
+            v_index_flat[idx] = np.uint32(vertex_offset + 1)
+            self.vertex_energies[vertex_offset] = self.vertex_energies_raw_flat[idx]
             # vertex energies are encoded as -Inf to ensure their priority selection
-            self.energy_map_temp[coord[0], coord[1], coord[2]] = np.float64(-np.inf)
+            temp_flat[idx] = np.float64(-np.inf)
 
-        self.initial_locations = self.vertex_locations.astype(np.int64, copy=False)[::-1].tolist()
+        self.initial_locations = [int(loc) for loc in self.vertex_locations[::-1]]
         self.adjacency_matrix = sparse.identity(
             self.number_of_vertices + 1, format="lil", dtype=bool
         )
-
     def restore_vertex_energy(self, linear_index: int) -> float:
         """Restores a vertex's true energy if it was marked as -Inf."""
         current_energy = float(self.energy_temp_flat[linear_index])

@@ -44,5 +44,10 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **The Reality**: MATLAB tie-breaking for sorting and `min()` is almost always based on **lowest linear index** (column-major). Any other tie-breaker is a divergence.
 *   **Guidance**: Use **Lowest Linear Index Priority** as the secondary sort key in all priority queues (Frontier, Vertex candidates).
 
+## 9. The Intensity Scaling Mirage
+*   **The Loop**: Assuming `intensity_limits` are used for clipping before energy calculation because they are present in the Oracle settings.
+*   **The Reality**: MATLAB Oracle preserves raw TIFF intensities for Energy formation; `intensity_limits` are metadata for visualization only. Clipping in Python causes massive value mismatches.
+*   **Guidance**: Skip all image normalization/clipping when `comparison_exact_network=True`. Preserving the raw physical sensor values is the only way to match the LoG filtered intensities.
+
 ---
 *Last Updated: 2026-06-13*

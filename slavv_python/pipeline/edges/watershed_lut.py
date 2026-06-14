@@ -26,7 +26,8 @@ def build_matlab_local_strel_geometry(
         np.asarray(lumen_radius_microns, dtype=np.float64).reshape(-1)[int(scale_index)]
     ) * float(step_size_per_origin_radius)
     radii_pixels = np.maximum(radii_microns / np.asarray(microns_per_voxel, dtype=np.float64), 1.0)
-    rounded_radii = np.rint(radii_pixels).astype(np.int32, copy=False)
+    # Replicate MATLAB round() which uses round-half-up
+    rounded_radii = np.floor(radii_pixels + 0.5).astype(np.int32, copy=False)
     offsets: list[list[int]] = []
 
     # Preserve MATLAB's logical tie-breaking (smallest Y changes fastest) by making the Y dimension

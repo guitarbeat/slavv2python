@@ -18,6 +18,17 @@ This document provides a high-level history of achievements and current mission 
 
 ## 🏆 Recent Achievements (June 2026)
 
+### 🔄 Watershed Orientation Alignment (June 13)
+- **Problem**: Systemic indexing mismatch in global watershed due to physical [Z, Y, X] vs MATLAB [Y, X, Z] orientation.
+- **Discovery**: microns_per_voxel was axis-flipped, and energy maps were being read with the wrong strides.
+- **Solution**: Implemented global reorientation of watershed inputs to [Y, X, Z] and transposed results back to physical [Z, Y, X].
+- **Impact**: Guaranteed bit-perfect voxel extraction and connectivity order; resolved the primary blocker for Edge parity.
+
+### 🎨 Vertex Painting Rounding (June 13)
+- **Problem**: Greedy selection divergence due to Python's round-to-even behavior.
+- **Solution**: Implemented MATLAB-exact round-half-up logic in `vertices/detection.py` and aligned all tie-breaking to Lowest Linear Index Priority.
+- **Impact**: Bit-perfect painting exclusion zones verified.
+
 ### 📐 Mesh Phase Alignment (June 13)
 - **Problem**: 3-pixel coordinate shift in energy interpolation causing failure at the 4th element.
 - **Discovery**: Saturated subtraction was clipping negative offsets, and `linspace` meshes were failing to account for the downsampling starting phase.
