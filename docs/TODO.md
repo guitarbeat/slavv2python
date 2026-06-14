@@ -57,7 +57,7 @@
 
 - [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
 - [x] **API reference** — Public `SlavvPipeline` and internal `Manager` class docstrings.
-- [ ] **Sparse Meshgrids** — Refactor `_interp3_matlab_linear_inf` to accept sparse coordinate meshes, saving >400MB for canonical volumes.
+- [x] **Sparse Meshgrids** — Refactor `_interp3_matlab_linear_inf` to accept sparse coordinate meshes, saving >400MB for canonical volumes.
 - [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.
 
 ---

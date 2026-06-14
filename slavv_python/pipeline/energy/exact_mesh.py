@@ -148,14 +148,17 @@ def get_starts_and_counts_v200(
 
 def _interp3_matlab_linear_inf(
     volume: np.ndarray,
-    coords: np.ndarray,
+    coords: np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray],
     *,
     cval: float = 0.0,
 ) -> np.ndarray:
-    """Linear interp3-compatible interpolation that propagates positive-weight Inf."""
+    """Linear interp3-compatible interpolation that propagates positive-weight Inf. Supports sparse coords."""
     y = coords[0]
     x = coords[1]
     z = coords[2]
+    
+    out_shape = np.broadcast(y, x, z).shape
+    
     y0 = np.floor(y).astype(np.int64)
     x0 = np.floor(x).astype(np.int64)
     z0 = np.floor(z).astype(np.int64)
@@ -163,8 +166,8 @@ def _interp3_matlab_linear_inf(
     fx = x - x0
     fz = z - z0
 
-    out = np.zeros_like(y, dtype=np.float64)
-    has_inf = np.zeros_like(y, dtype=bool)
+    out = np.zeros(out_shape, dtype=np.float64)
+    has_inf = np.zeros(out_shape, dtype=bool)
     shape_y, shape_x, shape_z = volume.shape
 
     for dy in (0, 1):
@@ -181,22 +184,28 @@ def _interp3_matlab_linear_inf(
                 weight = wy * wx * wz
                 positive_weight = weight > 0.0
                 valid = valid_xy & (iz >= 0) & (iz < shape_z)
-
-                values = np.full(out.shape, cval, dtype=np.float64)
                 valid_positive = valid & positive_weight
+
                 if np.any(valid_positive):
-                    values[valid_positive] = volume[
-                        iy[valid_positive],
-                        ix[valid_positive],
-                        iz[valid_positive],
-                    ]
-                    has_inf |= valid_positive & np.isposinf(values)
-                    finite = valid_positive & np.isfinite(values)
-                    out[finite] += weight[finite] * values[finite]
+                    iy_b = np.broadcast_to(iy, out_shape)[valid_positive]
+                    ix_b = np.broadcast_to(ix, out_shape)[valid_positive]
+                    iz_b = np.broadcast_to(iz, out_shape)[valid_positive]
+                    w_b = np.broadcast_to(weight, out_shape)[valid_positive]
+                    
+                    vals = volume[iy_b, ix_b, iz_b]
+                    has_inf_mask = np.isposinf(vals)
+                    has_inf[valid_positive] |= has_inf_mask
+                    finite_mask = np.isfinite(vals)
+                    
+                    update_mask = valid_positive.copy()
+                    update_mask[valid_positive] = finite_mask
+                    
+                    out[update_mask] += w_b[finite_mask] * vals[finite_mask]
 
                 invalid_positive = (~valid) & positive_weight
                 if cval is not None and np.any(invalid_positive):
-                    out[invalid_positive] += weight[invalid_positive] * cval
+                    w_inv = np.broadcast_to(weight, out_shape)[invalid_positive]
+                    out[invalid_positive] += w_inv * cval
 
     out[has_inf] = np.inf
     return out
@@ -361,9 +370,9 @@ def compute_exact_parity_energy_chunked(
             mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
             mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
 
-            # [Y, X, Z] mesh for interpolation
-            mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij")
-            coords_grid = np.stack(mesh_coords, axis=0)
+            # [Y, X, Z] mesh for interpolation (sparse to save memory)
+            mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True)
+            coords_grid = tuple(mesh_coords)
 
             # Accumulators in [Y, X, Z] order with Fortran contiguity
             chunk_best_energy = np.full(
