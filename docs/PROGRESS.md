@@ -25,15 +25,15 @@ This document provides a high-level history of achievements and current mission 
 - **Impact**: Guaranteed bit-perfect voxel extraction and connectivity order; resolved the primary blocker for Edge parity.
 
 ### 🎨 Vertex Painting Rounding (June 13)
-- **Problem**: Greedy selection divergence due to Python's round-to-even behavior.
-- **Solution**: Implemented MATLAB-exact round-half-up logic in `vertices/detection.py` and aligned all tie-breaking to Lowest Linear Index Priority.
-- **Impact**: Bit-perfect painting exclusion zones verified.
+- **Problem**: Greedy selection divergence caused by Python's "round-to-even" behavior.
+- **Solution**: Implemented MATLAB-exact "round-half-up" logic in `vertices/detection.py` and aligned all tie-breaking to Lowest Linear Index Priority.
+- **Impact**: Verified bit-perfect painting of exclusion zones.
 
 ### 📐 Mesh Phase Alignment (June 13)
-- **Problem**: 3-pixel coordinate shift in energy interpolation causing failure at the 4th element.
-- **Discovery**: Saturated subtraction was clipping negative offsets, and `linspace` meshes were failing to account for the downsampling starting phase.
+- **Problem**: A 3-pixel coordinate shift in energy interpolation caused failures starting at the 4th element.
+- **Discovery**: Saturated subtraction was clipping negative offsets, and `linspace` meshes failed to account for the downsampling start phase.
 - **Solution**: Removed saturated offsets and implemented phase-aware `_matlab_zero_based_linspace`.
-- **Impact**: Bit-perfect coordinate mapping verified in new unit tests; resolved the final mathematical blocker for Energy parity.
+- **Impact**: Verified bit-perfect coordinate mapping in new unit tests; resolved the final mathematical blocker for Energy parity.
 
 ### 🧩 Chunking Memory Fix (June 12)
 - **Problem**: `ArrayMemoryError` during exact-route energy calculation despite recent optimizations. 

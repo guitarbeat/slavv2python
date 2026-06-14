@@ -10,7 +10,7 @@
 
 Phase 1 established a cryptographic-level trust guarantee by enforcing 100% bit-perfect parity between Python SLAVV and the legacy MATLAB oracle. To achieve this, the Python codebase was intentionally warped to emulate MATLAB's internal memory layouts (Fortran order), rounding errors, and idiosyncratic edge-case handling. 
 
-**Phase 2 represents the transition from emulation to optimization.** With mathematical correctness securely anchored by the exact-proof harness, Phase 2 will aggressively unwind the "Bug-for-Bug" MATLAB constraints. The goal is to return SLAVV to idiomatic, performant Python (C-order) and leverage the full power of modern data science ecosystems (e.g., SciPy, Numba, PyTorch, CuPy) to achieve 10x-100x speedups.
+**Phase 2 represents the transition from emulation to optimization.** With mathematical correctness securely anchored by the exact-proof harness, Phase 2 will aggressively unwind the "bug-for-bug" MATLAB constraints. The goal is to return SLAVV to idiomatic, performant Python (C-order) and leverage the full power of modern data science ecosystems (e.g., SciPy, Numba, PyTorch, and CuPy) to achieve 10x-100x speedups.
 
 ## 2. Core Objectives
 
