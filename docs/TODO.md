@@ -38,7 +38,7 @@
 
 ## 🛠️ Hardening & Infrastructure
 - [x] **Centralized Indexing** — Use `slavv_python/utils/matlab_order.py` for all stage transformations.
-- [ ] **Numba Painting Fix** — Port round-half-up logic to `_choose_vertices_loop_numba`.
+- [x] **Numba Painting Fix** — Port round-half-up logic to `_choose_vertices_loop_numba`.
 - [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `6640`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
