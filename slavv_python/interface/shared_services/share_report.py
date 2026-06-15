@@ -187,6 +187,8 @@ def build_share_report_html(
   <title>{dataset_title} - SLAVV Share Report</title>
   <style>
     :root {{
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       color-scheme: light;
       --bg: #f5f8fc;
       --panel: #ffffff;
@@ -231,11 +233,13 @@ def build_share_report_html(
       margin: 14px 0 10px;
       font-size: 2.1rem;
       line-height: 1.15;
+      text-wrap: balance;
     }}
     p {{
       margin: 0;
       color: var(--muted);
       line-height: 1.6;
+      text-wrap: pretty;
     }}
     .grid {{
       display: grid;
@@ -258,6 +262,7 @@ def build_share_report_html(
       font-size: 1.5rem;
       font-weight: 700;
       color: var(--ink);
+      font-variant-numeric: tabular-nums;
     }}
     section {{
       margin-top: 24px;
@@ -265,6 +270,7 @@ def build_share_report_html(
     h2 {{
       font-size: 1.2rem;
       margin: 0 0 12px;
+      text-wrap: balance;
     }}
     .panel {{
       background: var(--panel);
@@ -281,6 +287,7 @@ def build_share_report_html(
     table {{
       width: 100%;
       border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
     }}
     td {{
       padding: 10px 0;

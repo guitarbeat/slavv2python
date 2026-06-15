@@ -47,7 +47,7 @@ def trace_edge(
     """Trace an edge through the energy field with adaptive step sizing."""
     min_step_size = _MIN_DISCRETE_STEP_SIZE if discrete_steps else _MIN_CONTINUOUS_STEP_SIZE
 
-    trace: list[np.ndarray] = [np.asarray(start_pos, dtype=np.float32).copy()]
+    trace: list[np.ndarray] = [np.asarray(start_pos, dtype=np.float64).copy()]
     stop_reason: str = "max_steps"
     direct_terminal_vertex: int | None = None
 
@@ -162,7 +162,7 @@ def trace_edge(
             break
 
         current_pos_y, current_pos_x, current_pos_z = next_pos_y, next_pos_x, next_pos_z
-        current_pos_arr = np.array([current_pos_y, current_pos_x, current_pos_z], dtype=np.float32)
+        current_pos_arr = np.array([current_pos_y, current_pos_x, current_pos_z], dtype=np.float64)
         trace.append(current_pos_arr)
 
         prev_energy = current_energy

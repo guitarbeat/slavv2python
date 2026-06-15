@@ -28,7 +28,7 @@ def _empty_stop_reason_counts() -> dict[str, int]:
 
 def _edge_metric_from_energy_trace(energy_trace: np.ndarray) -> float:
     """Match MATLAB's current edge quality metric: minimum max-energy is best."""
-    arr = np.asarray(energy_trace, dtype=np.float32)
+    arr = np.asarray(energy_trace, dtype=np.float64)
     if arr.size == 0:
         return 0.0
     value = float(np.nanmax(arr))
@@ -60,7 +60,7 @@ def _record_trace_diagnostics(
 
 def _clip_trace_indices(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Convert a trace to clipped integer voxel indices."""
-    clipped_coords = np.floor(np.asarray(trace, dtype=np.float32)[:, :3]).astype(
+    clipped_coords = np.floor(np.asarray(trace, dtype=np.float64)[:, :3]).astype(
         np.int32,
         copy=False,
     )
@@ -85,7 +85,7 @@ def _trace_energy_series(edge_trace: np.ndarray, energy: np.ndarray) -> np.ndarr
     """Sample projected energy values along an edge trace."""
     idx = _clip_trace_indices(edge_trace, energy.shape)
     energy_trace = energy[idx[:, 0], idx[:, 1], idx[:, 2]].astype(
-        np.float32,
+        np.float64,
         copy=False,
     )
     return cast("np.ndarray", energy_trace)
@@ -159,16 +159,16 @@ def _merge_edge_diagnostics(target: dict[str, Any], source: dict[str, Any]) -> N
 def _empty_edges_result(vertex_positions: np.ndarray | None = None) -> dict[str, Any]:
     """Return the canonical empty edge payload."""
     positions = (
-        np.asarray(vertex_positions, dtype=np.float32)
+        np.asarray(vertex_positions, dtype=np.float64)
         if vertex_positions is not None
-        else np.empty((0, 3), dtype=np.float32)
+        else np.empty((0, 3), dtype=np.float64)
     )
     return cast(
         "dict[str, Any]",
         {
             "traces": [],
             "connections": np.zeros((0, 2), dtype=np.int32),
-            "energies": np.zeros((0,), dtype=np.float32),
+            "energies": np.zeros((0,), dtype=np.float64),
             "energy_traces": [],
             "scale_traces": [],
             "connection_sources": [],

@@ -88,7 +88,7 @@ def extract_edges_watershed_resumable(
             coords = np.argwhere(boundary)
             if coords.size == 0:
                 continue
-            coords = coords.astype(np.float32)
+            coords = coords.astype(np.float64)
             idx = np.floor(coords).astype(int)
             energies = energy[idx[:, 0], idx[:, 1], idx[:, 2]]
             unit_traces.append(coords)
@@ -103,7 +103,7 @@ def extract_edges_watershed_resumable(
             "connections": unit_connections,
             "metrics": unit_energies,
             "energy_traces": [
-                np.asarray([energy_value], dtype=np.float32) for energy_value in unit_energies
+                np.asarray([energy_value], dtype=np.float64) for energy_value in unit_energies
             ],
             "scale_traces": [np.zeros((len(trace),), dtype=np.int16) for trace in unit_traces],
             "origin_indices": [origin_index] * len(unit_traces),
@@ -126,8 +126,8 @@ def extract_edges_watershed_resumable(
     return EdgeSet.create(
         traces=edges,
         connections=np.asarray(connections, dtype=np.int32).reshape(-1, 2),
-        energies=np.asarray(edge_energies, dtype=np.float32),
-        vertex_positions=vertex_positions.astype(np.float32),
+        energies=np.asarray(edge_energies, dtype=np.float64),
+        vertex_positions=vertex_positions.astype(np.float64),
     )
 
 

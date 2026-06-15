@@ -208,7 +208,7 @@ class VoxelClaimMap:
             self.pointer_flat[claim_linear] = claim_pointers
             self.energy_flat[claim_linear] = adjusted_energies[is_without_vertex]
             self.d_over_r_flat[claim_linear] = (
-                np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float32) + current_d_over_r
+                np.asarray(strel_r_over_R[is_without_vertex], dtype=np.float64) + current_d_over_r
             )
             size_map_flat[claim_linear] = np.int16(current_scale_label)
 

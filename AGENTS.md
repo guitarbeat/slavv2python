@@ -418,4 +418,6 @@ For any MATLAB-parity-sensitive surface (especially `edges` and `network` stages
 | **CLI Framework** | Keep CLI under `slavv_python/interface/cli/` (argparse). No new CLI frameworks. |
 | **Resumability** | Only the structured `run_dir` surface; no legacy checkpoint compatibility. |
 | **Search Exclusions** | Exclude `workspace/scratch/tmp_tests/`, `external/blender_resources/`, and cache directories when searching. |
+| **Precision** | **Mandatory float64**: All pipeline stages (Energy, Vertices, Edges) must use `float64` for coordinates, energies, and distance penalties to ensure bit-perfect MATLAB parity. |
+| **Optimization** | **Bessel Sum Chunking**: Large kernel generations must use chunked summation (see `hessian_response.py`) to prevent heap fragmentation OOM on 16GB systems. |
 | **Scratch Files** | One-off scripts, logs, and experiment artifacts go in `workspace/scratch/`, not the repo root. |

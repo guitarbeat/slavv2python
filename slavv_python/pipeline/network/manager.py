@@ -58,21 +58,21 @@ class NetworkManager:
         edge_traces = edges.traces
         edge_scale_traces = edges.extra.get(
             "scale_traces",
-            [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
+            [np.zeros((len(np.asarray(trace)),), dtype=np.float64) for trace in edge_traces],
         )
         edge_energy_traces = edges.extra.get(
             "energy_traces",
-            [np.zeros((len(np.asarray(trace)),), dtype=np.float32) for trace in edge_traces],
+            [np.zeros((len(np.asarray(trace)),), dtype=np.float64) for trace in edge_traces],
         )
         edge_connections = _normalize_connections(edges.connections)
-        vertex_positions = np.asarray(vertices.positions, dtype=np.float32)
+        vertex_positions = np.asarray(vertices.positions, dtype=np.float64)
         bridge_vertex_positions = np.asarray(
-            edges.extra.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float32)),
-            dtype=np.float32,
+            edges.extra.get("bridge_vertex_positions", np.empty((0, 3), dtype=np.float64)),
+            dtype=np.float64,
         ).reshape(-1, 3)
         if bridge_vertex_positions.size:
             vertex_positions = np.vstack([vertex_positions, bridge_vertex_positions]).astype(
-                np.float32,
+                np.float64,
                 copy=False,
             )
         return _GraphBuildInputs(
@@ -86,7 +86,7 @@ class NetworkManager:
             ),
             lumen_radius_microns=np.asarray(
                 edges.extra.get("lumen_radius_microns", params.get("lumen_radius_microns", [])),
-                dtype=np.float32,
+                dtype=np.float64,
             ).reshape(-1),
             min_hair_length=float(params.get("min_hair_length_in_microns", 0.0)),
             remove_cycles=bool(params.get("remove_cycles", False)),

@@ -121,7 +121,7 @@ class EdgeManager:
 
         microns_per_voxel = np.array(
             params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-            dtype=np.float32,
+            dtype=np.float64,
         )
         lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
             energy_data,
@@ -341,7 +341,7 @@ class EdgeManager:
         )
         chosen_dict = cast("dict[str, Any]", chosen_payload)
         chosen_dict["lumen_radius_microns"] = np.asarray(
-            lumen_radius_microns, dtype=np.float32
+            lumen_radius_microns, dtype=np.float64
         ).copy()
 
         if resumable:

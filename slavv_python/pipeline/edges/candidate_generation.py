@@ -269,7 +269,7 @@ def _trace_vertex_unit(
         if len(edge_trace) <= 1:
             continue
 
-        edge_arr = np.asarray(edge_trace, dtype=np.float32)
+        edge_arr = np.asarray(edge_trace, dtype=np.float64)
         terminal_vertex = trace_metadata["terminal_vertex"]
 
         e_series = _trace_energy_series(edge_arr, energy)
@@ -344,7 +344,7 @@ def _assemble_parallel_results(results: list[tuple]) -> dict[str, Any]:
         _merge_edge_diagnostics(candidates["diagnostics"], diag)
 
     candidates["connections"] = np.asarray(candidates["connections"], dtype=np.int32).reshape(-1, 2)
-    candidates["metrics"] = np.asarray(candidates["metrics"], dtype=np.float32)
+    candidates["metrics"] = np.asarray(candidates["metrics"], dtype=np.float64)
     candidates["origin_indices"] = np.asarray(candidates["origin_indices"], dtype=np.int32)
 
     return candidates
@@ -363,7 +363,7 @@ def sort_candidates_by_quality(
     """Ranks candidates by energy metric (ascending) to align with MATLAB priority."""
     from slavv_python.pipeline.edges.candidate_payload import _reorder_candidate_payload
 
-    metrics = np.asarray(candidates.get("metrics", []), dtype=np.float32)
+    metrics = np.asarray(candidates.get("metrics", []), dtype=np.float64)
     if metrics.size > 0:
         candidates = _reorder_candidate_payload(candidates, np.argsort(metrics, kind="stable"))
 

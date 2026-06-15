@@ -331,9 +331,9 @@ class VertexManager:
             VertexSet: An empty vertex set result.
         """
         return VertexSet.create(
-            np.empty((0, 3), dtype=np.float32),
+            np.empty((0, 3), dtype=np.float64),
             np.empty((0,), dtype=np.int16),
-            np.empty((0,), dtype=np.float32),
+            np.empty((0,), dtype=np.float64),
             context["lumen_radius_pixels"],
             context["lumen_radius_microns"],
         )

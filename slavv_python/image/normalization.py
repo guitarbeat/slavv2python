@@ -26,11 +26,16 @@ def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
     np.ndarray
         Preprocessed image with intensities scaled to ``[0, 1]``.
     """
-    img = image.astype(np.float32)
+    is_exact = bool(params.get("comparison_exact_network", False))
+    
+    if is_exact:
+        img = image.astype(np.float64)
+    else:
+        img = image.astype(np.float32)
 
     # Exact-route parity runs must preserve raw intensity scale to match MATLAB
     # oracle energy (see crop_M_exact prove-exact mismatch investigation).
-    if not bool(params.get("comparison_exact_network", False)):
+    if not is_exact:
         # Scale intensities to [0, 1] for the native paper workflow.
         img -= img.min()
         max_val = img.max()

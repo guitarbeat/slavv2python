@@ -10,7 +10,7 @@ from slavv_python.pipeline.edges.candidate_payload import (
 from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
 from slavv_python.pipeline.edges.edge_types import (
     BoolArray,
-    Float32Array,
+    Float64Array,
     Float64Array,
     Int16Array,
     Int32Array,
@@ -34,7 +34,7 @@ from slavv_python.pipeline.edges.matlab_indexing import (
 
 __all__ = [
     "BoolArray",
-    "Float32Array",
+    "Float64Array",
     "Float64Array",
     "Int16Array",
     "Int32Array",

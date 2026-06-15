@@ -8,7 +8,7 @@ from typing import cast
 import numpy as np
 from skimage.graph import route_through_array
 
-from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
+from slavv_python.pipeline.edges.edge_types import Float64Array, Int32Array
 from slavv_python.pipeline.vertices.results import (
     matlab_linear_indices as _matlab_linear_indices,
 )
@@ -48,7 +48,7 @@ def _path_coords_from_linear_indices(
 ) -> np.ndarray:
     """Convert a linear-index path into origin-to-terminal spatial coordinates."""
     coords = [_matlab_linear_index_to_coord(index, shape) for index in reversed(path_linear)]
-    coord_array: Float32Array = np.asarray(coords, dtype=np.float32)
+    coord_array: Float64Array = np.asarray(coords, dtype=np.float64)
     return cast("np.ndarray", coord_array)
 
 
@@ -74,7 +74,7 @@ def _vertex_center_linear_lookup(
     """Map rounded vertex centers to their vertex indices."""
     if len(vertex_positions) == 0:
         return {}
-    coords = np.rint(np.asarray(vertex_positions, dtype=np.float32)).astype(np.int32, copy=False)
+    coords = np.rint(np.asarray(vertex_positions, dtype=np.float64)).astype(np.int32, copy=False)
     max_coord: Int32Array = np.asarray(image_shape, dtype=np.int32) - 1
     coords = np.clip(coords, 0, max_coord)
     linear_indices = _matlab_linear_indices(coords, image_shape)
@@ -96,12 +96,12 @@ def _trace_local_geodesic_between_vertices(
     image_shape = energy.shape
     max_coord: Int32Array = np.asarray(image_shape, dtype=np.int32) - 1
     start_coord = np.clip(
-        np.rint(np.asarray(start, dtype=np.float32)[:3]).astype(np.int32, copy=False),
+        np.rint(np.asarray(start, dtype=np.float64)[:3]).astype(np.int32, copy=False),
         0,
         max_coord,
     )
     end_coord = np.clip(
-        np.rint(np.asarray(end, dtype=np.float32)[:3]).astype(np.int32, copy=False),
+        np.rint(np.asarray(end, dtype=np.float64)[:3]).astype(np.int32, copy=False),
         0,
         max_coord,
     )
@@ -154,5 +154,5 @@ def _trace_local_geodesic_between_vertices(
             deduped.append(coord)
     if len(deduped) <= 1:
         return None
-    trace_coords: Float32Array = np.asarray(deduped, dtype=np.float32)
+    trace_coords: Float64Array = np.asarray(deduped, dtype=np.float64)
     return cast("np.ndarray", trace_coords)

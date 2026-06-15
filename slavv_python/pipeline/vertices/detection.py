@@ -18,6 +18,8 @@ Int16Array: TypeAlias = "np.ndarray"
 Int32Array: TypeAlias = "np.ndarray"
 Int64Array: TypeAlias = "np.ndarray"
 Float32Array: TypeAlias = "np.ndarray"
+Float64Array: TypeAlias = "np.ndarray"
+BoolArray: TypeAlias = "np.ndarray"
 
 
 def vertex_window_apothem(space_strel_apothem: int) -> int:
@@ -111,7 +113,7 @@ def matlab_vertex_candidates_in_chunk(
         return (
             np.empty((0, 3), dtype=np.int32),
             np.empty((0,), dtype=np.int16),
-            np.empty((0,), dtype=np.float32),
+            np.empty((0,), dtype=np.float64),
         )
 
     candidate_energies = energy[active_mask]
@@ -146,7 +148,7 @@ def matlab_vertex_candidates_in_chunk(
     return (
         np.asarray(accepted_positions, dtype=np.int32).reshape(-1, 3),
         np.asarray(accepted_scales, dtype=np.int16),
-        np.asarray(accepted_energies, dtype=np.float32),
+        np.asarray(accepted_energies, dtype=np.float64),
     )
 
 
@@ -203,13 +205,13 @@ def matlab_vertex_candidates(
         return (
             np.empty((0, 3), dtype=np.int32),
             np.empty((0,), dtype=np.int16),
-            np.empty((0,), dtype=np.float32),
+            np.empty((0,), dtype=np.float64),
         )
 
     return (
         np.vstack(accepted_positions).astype(np.int32, copy=False),
         np.concatenate(accepted_scales).astype(np.int16, copy=False),
-        np.concatenate(accepted_energies).astype(np.float32, copy=False),
+        np.concatenate(accepted_energies).astype(np.float64, copy=False),
     )
 
 
@@ -226,7 +228,7 @@ def crop_vertices_matlab_style(
         return (
             np.empty((0, 3), dtype=np.int32),
             np.empty((0,), dtype=np.int16),
-            np.empty((0,), dtype=np.float32),
+            np.empty((0,), dtype=np.float64),
         )
 
     scale_indices = np.rint(vertex_scales).astype(np.int64)
@@ -253,7 +255,7 @@ def crop_vertices_matlab_style(
     return (
         vertex_positions[keep].astype(np.int32, copy=False),
         vertex_scales[keep].astype(np.int16, copy=False),
-        vertex_energies[keep].astype(np.float32, copy=False),
+        vertex_energies[keep].astype(np.float64, copy=False),
     )
 
 
@@ -355,9 +357,9 @@ def choose_vertices_matlab_style(
         end_index = n_vertices
 
     scale_indices = np.rint(vertex_scales).astype(np.int64)
-    scaled_radii: Float32Array = np.asarray(
+    scaled_radii: Float64Array = np.asarray(
         length_dilation_ratio * lumen_radius_pixels_axes,
-        dtype=np.float32,
+        dtype=np.float64,
     )
 
     # Prepare templates for the optimized loop
@@ -401,7 +403,7 @@ def choose_vertices_matlab_style(
     loop_impl = _choose_vertices_loop_numba or _choose_vertices_loop_python
     loop_impl(
         painted_image,
-        vertex_positions.astype(np.float32),
+        vertex_positions.astype(np.float64),
         scale_indices.astype(np.int32),
         all_offsets,
         template_starts,

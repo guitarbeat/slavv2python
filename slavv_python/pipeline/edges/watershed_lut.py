@@ -82,8 +82,8 @@ def _build_matlab_global_watershed_lut_cached(
     """Internal cached implementation of LUT generation."""
     local_geometry = build_matlab_local_strel_geometry(
         scale_index,
-        np.asarray(lumen_radius_microns_tuple, dtype=np.float32),
-        np.asarray(microns_per_voxel_tuple, dtype=np.float32),
+        np.asarray(lumen_radius_microns_tuple, dtype=np.float64),
+        np.asarray(microns_per_voxel_tuple, dtype=np.float64),
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
     local_subscripts = np.asarray(local_geometry["local_subscripts"], dtype=np.int32)
@@ -99,9 +99,9 @@ def _build_matlab_global_watershed_lut_cached(
         "linear_offsets": linear_offsets.astype(np.int64, copy=False),
         "local_subscripts": local_subscripts,
         "pointer_indices": pointer_indices,
-        "distance_lut": np.asarray(local_geometry["distance_lut"], dtype=np.float32),
-        "r_over_R": np.asarray(local_geometry["r_over_R"], dtype=np.float32),
-        "unit_vectors": np.asarray(local_geometry["unit_vectors"], dtype=np.float32),
+        "distance_lut": np.asarray(local_geometry["distance_lut"], dtype=np.float64),
+        "r_over_R": np.asarray(local_geometry["r_over_R"], dtype=np.float64),
+        "unit_vectors": np.asarray(local_geometry["unit_vectors"], dtype=np.float64),
     }
 
 
@@ -118,9 +118,9 @@ def build_matlab_global_watershed_lut(
         int(scale_index),
         size_of_image=size_of_image,
         lumen_radius_microns_tuple=tuple(
-            np.asarray(lumen_radius_microns, dtype=np.float32).tolist()
+            np.asarray(lumen_radius_microns, dtype=np.float64).tolist()
         ),
-        microns_per_voxel_tuple=tuple(np.asarray(microns_per_voxel, dtype=np.float32).tolist()),
+        microns_per_voxel_tuple=tuple(np.asarray(microns_per_voxel, dtype=np.float64).tolist()),
         step_size_per_origin_radius=float(step_size_per_origin_radius),
     )
 

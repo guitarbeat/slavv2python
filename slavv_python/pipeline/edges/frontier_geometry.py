@@ -30,7 +30,7 @@ def _matlab_frontier_offsets(
     relative_distances = offsets.astype(np.float64) * microns_per_voxel
     distances = np.sqrt(np.sum(relative_distances**2, axis=1))
     return cast("Int32Array", offsets), cast(
-        "Float32Array", distances.astype(np.float32, copy=False)
+        "Float32Array", distances.astype(np.float64, copy=False)
     )
 
 
@@ -50,7 +50,7 @@ def _matlab_frontier_scale_offsets(
     )
     return (
         np.asarray(local_geometry["local_subscripts"], dtype=np.int32),
-        np.asarray(local_geometry["distance_lut"], dtype=np.float32),
+        np.asarray(local_geometry["distance_lut"], dtype=np.float64),
     )
 
 

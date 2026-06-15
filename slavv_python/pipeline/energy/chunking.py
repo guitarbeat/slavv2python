@@ -112,9 +112,9 @@ def _best_energy_outputs(
     return_all_scales: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     fill_value = np.inf if energy_sign < 0 else -np.inf
-    energy_3d = np.full(image_shape, fill_value, dtype=np.float32)
+    energy_3d = np.full(image_shape, fill_value, dtype=np.float64)
     scale_indices: np.ndarray = np.zeros(image_shape, dtype=np.int16)
-    energy_4d = np.zeros((*image_shape, n_scales), dtype=np.float32) if return_all_scales else None
+    energy_4d = np.zeros((*image_shape, n_scales), dtype=np.float64) if return_all_scales else None
     return energy_3d, scale_indices, energy_4d
 
 
@@ -151,7 +151,7 @@ def _update_best_energy(
 
 def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: int) -> np.ndarray:
     """Compute a single-scale energy response for a chunk."""
-    image = image.astype(np.float32, copy=False)
+    image = image.astype(np.float64, copy=False)
     energy_method = config["energy_method"]
     energy_sign = config["energy_sign"]
     if energy_method == "hessian":
@@ -172,7 +172,7 @@ def _compute_energy_scale(image: np.ndarray, config: dict[str, Any], scale_idx: 
             vesselness = backends.frangi(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
         else:
             vesselness = backends.sato(image, sigmas=[sigma], black_ridges=(energy_sign > 0))
-        return energy_sign * vesselness.astype(np.float32)  # type: ignore[no-any-return]
+        return energy_sign * vesselness.astype(np.float64)  # type: ignore[no-any-return]
 
     if energy_method == "simpleitk_objectness":
         return backends._simpleitk_objectness_energy(
@@ -217,7 +217,7 @@ def _compute_direct_energy_outputs(
     )
 
     if native_hessian.required_scale_stack(config):
-        energy_4d = np.stack(results, axis=3).astype(np.float32)
+        energy_4d = np.stack(results, axis=3).astype(np.float64)
         return _project_scale_stack(config, energy_4d)
 
     energy_3d, scale_indices, energy_4d = _best_energy_outputs(
@@ -260,7 +260,7 @@ def _calculate_energy_field_chunked(
 
     if native_hessian.required_scale_stack(config):
         n_scales = len(config["lumen_radius_microns"])
-        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float32)
+        energy_4d = np.zeros((*image.shape, n_scales), dtype=np.float64)
 
         results = Parallel(n_jobs=n_jobs)(
             delayed(_worker)(chunk_slice, out_slice, inner_slice, True)
@@ -281,7 +281,7 @@ def _calculate_energy_field_chunked(
             returned_energy_4d,
         )
 
-    energy_3d = np.empty(image.shape, dtype=np.float32)
+    energy_3d = np.empty(image.shape, dtype=np.float64)
     scale_indices = np.empty(image.shape, dtype=np.int16)
 
     results = Parallel(n_jobs=n_jobs)(

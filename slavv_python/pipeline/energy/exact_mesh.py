@@ -7,12 +7,22 @@
 from __future__ import annotations
 
 import gc
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from joblib import Parallel, delayed
 
+try:
+    from numba import njit, prange
+except ImportError:
+    njit = None
+    prange = range
+
 from slavv_python.pipeline.energy import hessian_response as native_hessian
+
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def get_chunking_lattice_v190(

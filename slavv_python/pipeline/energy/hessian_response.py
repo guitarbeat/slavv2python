@@ -92,12 +92,12 @@ def project_energy_stack(
     if energy_sign >= 0:
         energy_3d = np.max(energy_4d, axis=3)
         scale_indices = np.argmax(energy_4d, axis=3).astype(np.int16)
-        return energy_3d.astype(np.float32, copy=False), scale_indices
+        return energy_3d.astype(np.float64, copy=False), scale_indices
 
     if projection_mode == "matlab":
         energy_3d = np.min(energy_4d, axis=3)
         scale_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
-        return energy_3d.astype(np.float32, copy=False), scale_indices
+        return energy_3d.astype(np.float64, copy=False), scale_indices
 
     annular_indices = np.argmin(energy_4d, axis=3).astype(np.int16)
     annular_energy = np.take_along_axis(
@@ -107,19 +107,19 @@ def project_energy_stack(
     )[..., 0]
 
     negative_weights = np.where(np.isfinite(energy_4d) & (energy_4d < 0), -energy_4d, 0.0)
-    scale_axis = np.arange(energy_4d.shape[3], dtype=np.float32)
+    scale_axis = np.arange(energy_4d.shape[3], dtype=np.float64)
     weighted_sum = np.sum(negative_weights * scale_axis.reshape((1, 1, 1, -1)), axis=3)
     total_weight = np.sum(negative_weights, axis=3)
 
     spherical_indices = np.divide(
         weighted_sum,
         total_weight,
-        out=annular_indices.astype(np.float32),
+        out=annular_indices.astype(np.float64),
         where=total_weight > 0,
     )
     blended_indices = spherical_to_annular_ratio * spherical_indices + (
         1.0 - spherical_to_annular_ratio
-    ) * annular_indices.astype(np.float32)
+    ) * annular_indices.astype(np.float64)
     sampled_indices = np.clip(np.rint(blended_indices), 0, energy_4d.shape[3] - 1).astype(np.int16)
     sampled_energy = np.take_along_axis(energy_4d, sampled_indices[..., None], axis=3)[..., 0]
 
@@ -130,7 +130,7 @@ def project_energy_stack(
         sampled_energy[fallback_mask] = annular_energy[fallback_mask]
         sampled_indices[fallback_mask] = annular_indices[fallback_mask]
 
-    return sampled_energy.astype(np.float32, copy=False), sampled_indices
+    return sampled_energy.astype(np.float64, copy=False), sampled_indices
 
 
 def compute_native_hessian_energy(
@@ -160,7 +160,7 @@ def _compute_native_hessian_scale_debug(
 
     working_image = _downsample_volume(image, resolution_factor)
     debug_outputs = _matched_hessian_intermediates(
-        working_image.astype(np.float32, copy=False),
+        working_image.astype(np.float64, copy=False),
         radius_of_lumen_in_microns=radius_microns,
         microns_per_pixel=microns_per_pixel,
         pixels_per_sigma_psf=pixels_per_sigma_psf,
@@ -209,18 +209,18 @@ def _upsample_volume(
 ) -> np.ndarray:
     factor_y, factor_x, factor_z = (float(value) for value in resolution_factor)
     if factor_y == factor_x == factor_z == 1.0 and volume.shape == output_shape:
-        return cast("np.ndarray", volume.astype(np.float32, copy=False))
+        return cast("np.ndarray", volume.astype(np.float64, copy=False))
 
-    coord_y = np.arange(output_shape[0], dtype=np.float32) / factor_y
-    coord_x = np.arange(output_shape[1], dtype=np.float32) / factor_x
-    coord_z = np.arange(output_shape[2], dtype=np.float32) / factor_z
+    coord_y = np.arange(output_shape[0], dtype=np.float64) / factor_y
+    coord_x = np.arange(output_shape[1], dtype=np.float64) / factor_x
+    coord_z = np.arange(output_shape[2], dtype=np.float64) / factor_z
     mesh = np.meshgrid(coord_y, coord_x, coord_z, indexing="ij")
-    coordinates = np.asarray(mesh, dtype=np.float32)
+    coordinates = np.asarray(mesh, dtype=np.float64)
 
-    source = volume.astype(np.float32, copy=False)
+    source = volume.astype(np.float64, copy=False)
     finite_mask = np.isfinite(source)
-    filled = np.where(finite_mask, source, 0.0).astype(np.float32, copy=False)
-    weights = finite_mask.astype(np.float32, copy=False)
+    filled = np.where(finite_mask, source, 0.0).astype(np.float64, copy=False)
+    weights = finite_mask.astype(np.float64, copy=False)
 
     value_sum = map_coordinates(
         filled,
@@ -236,9 +236,9 @@ def _upsample_volume(
         mode="nearest",
         prefilter=False,
     )
-    upsampled = np.full(output_shape, np.inf, dtype=np.float32)
+    upsampled = np.full(output_shape, np.inf, dtype=np.float64)
     valid = weight_sum > 0.0
-    upsampled[valid] = (value_sum[valid] / weight_sum[valid]).astype(np.float32, copy=False)
+    upsampled[valid] = (value_sum[valid] / weight_sum[valid]).astype(np.float64, copy=False)
     return cast("np.ndarray", upsampled)
 
 
@@ -270,7 +270,7 @@ def _matched_hessian_intermediates(
     gaussian_to_ideal_ratio: float,
     spherical_to_annular_ratio: float,
 ) -> dict[str, np.ndarray]:
-    image = image.astype(np.float32, copy=False)
+    image = image.astype(np.float64, copy=False)
     original_shape = image.shape
     padded_image = _fourier_transform_input(image)
     chunk_dft = np.fft.fftn(padded_image.astype(np.float64, copy=False))
@@ -307,12 +307,12 @@ def _matched_hessian_intermediates(
 
     laplacian_chunk = c0 + c1 + c2
     valid_voxels = laplacian_chunk < 0
-    energy_chunk = np.full(image.shape, np.inf, dtype=np.float32)
+    energy_chunk = np.full(image.shape, np.inf, dtype=np.float64)
     
     if not np.any(valid_voxels):
         del c0, c1, c2, filtered_chunk_dft
         return {
-            "laplacian": laplacian_chunk.astype(np.float32, copy=False),
+            "laplacian": laplacian_chunk.astype(np.float64, copy=False),
             "valid_voxels": valid_voxels,
             "energy": energy_chunk,
         }
@@ -370,13 +370,13 @@ def _matched_hessian_intermediates(
     energy_valid = np.sum(principal_energy_values, axis=1)
     del principal_energy_values
 
-    energy_chunk[valid_voxels] = energy_valid.astype(np.float32, copy=False)
+    energy_chunk[valid_voxels] = energy_valid.astype(np.float64, copy=False)
     del energy_valid
     energy_chunk[~np.isfinite(energy_chunk)] = np.inf
     energy_chunk[energy_chunk >= 0] = np.inf
     
     return {
-        "laplacian": laplacian_chunk.astype(np.float32, copy=False),
+        "laplacian": laplacian_chunk.astype(np.float64, copy=False),
         "valid_voxels": valid_voxels,
         "energy": energy_chunk,
     }
@@ -535,9 +535,19 @@ def _matching_kernel_dft(
     spherical_pulse_kernel_dft = np.ones_like(radial_angular_freq_mesh_sphere, dtype=np.float64)
     nonzero_sphere = radial_angular_freq_mesh_sphere != 0
     sphere_argument = radial_angular_freq_mesh_sphere[nonzero_sphere]
-    spherical_pulse_kernel_dft[nonzero_sphere] = np.sqrt(np.pi / 2.0 / sphere_argument) * (
-        jv(2.5, sphere_argument) + jv(0.5, sphere_argument)
-    )
+    
+    # Compute Bessel sum in chunks to keep peak memory footprint minimal
+    res = np.empty_like(sphere_argument)
+    chunk_size = 1000000
+    for i in range(0, len(sphere_argument), chunk_size):
+        s = slice(i, i + chunk_size)
+        c = sphere_argument[s]
+        res[s] = jv(2.5, c)
+        res[s] += jv(0.5, c)
+        res[s] *= np.sqrt(np.pi / 2.0 / c)
+    
+    spherical_pulse_kernel_dft[nonzero_sphere] = res
+    del res, sphere_argument
 
     radial_angular_freq_mesh_annular = (
         2.0

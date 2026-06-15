@@ -41,17 +41,17 @@ def resolve_lumen_radius_pixels_axes(
     """Return per-axis pixel radii for modern and legacy Energy checkpoints."""
     raw_axes = energy_data.extra.get("lumen_radius_pixels_axes")
     if raw_axes is not None:
-        return np.asarray(raw_axes, dtype=np.float32)
+        return np.asarray(raw_axes, dtype=np.float64)
 
-    lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=np.float32)
+    lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=np.float64)
     if lumen_radius_pixels.size > 0:
         return np.repeat(lumen_radius_pixels.reshape(-1, 1), 3, axis=1)
 
-    lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=np.float32)
+    lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=np.float64)
     if lumen_radius_microns.size == 0:
-        return np.zeros((0, 3), dtype=np.float32)
-    voxel_size = np.asarray(microns_per_voxel, dtype=np.float32).reshape(1, 3)
-    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float32)
+        return np.zeros((0, 3), dtype=np.float64)
+    voxel_size = np.asarray(microns_per_voxel, dtype=np.float64).reshape(1, 3)
+    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float64)
 
 
 @dataclass
@@ -60,7 +60,7 @@ class CandidateManifest:
 
     traces: list[np.ndarray] = field(default_factory=list)
     connections: np.ndarray = field(default_factory=lambda: np.zeros((0, 2), dtype=np.int32))
-    metrics: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float32))
+    metrics: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.float64))
     energy_traces: list[np.ndarray] = field(default_factory=list)
     scale_traces: list[np.ndarray] = field(default_factory=list)
     origin_indices: np.ndarray = field(default_factory=lambda: np.zeros((0,), dtype=np.int32))
@@ -76,11 +76,11 @@ class CandidateManifest:
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> CandidateManifest:
         payload_copy = dict(payload)
-        traces = [np.asarray(trace, dtype=np.float32) for trace in payload_copy.pop("traces", [])]
+        traces = [np.asarray(trace, dtype=np.float64) for trace in payload_copy.pop("traces", [])]
         connections = np.asarray(payload_copy.pop("connections", []), dtype=np.int32).reshape(-1, 2)
-        metrics = np.asarray(payload_copy.pop("metrics", []), dtype=np.float32).reshape(-1)
+        metrics = np.asarray(payload_copy.pop("metrics", []), dtype=np.float64).reshape(-1)
         energy_traces = [
-            np.asarray(trace, dtype=np.float32) for trace in payload_copy.pop("energy_traces", [])
+            np.asarray(trace, dtype=np.float64) for trace in payload_copy.pop("energy_traces", [])
         ]
         scale_traces = [
             np.asarray(trace, dtype=np.int16) for trace in payload_copy.pop("scale_traces", [])
