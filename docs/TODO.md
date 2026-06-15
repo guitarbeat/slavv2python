@@ -30,7 +30,7 @@
 ### Phase 1 exact route (canonical + crop)
 
 ## 🎯 Phase 1 Certification Gates
-- [ ] **Crop Energy Proof** — Wait for PID `15716`. Verify bit-perfect energy map with mesh phase alignment.
+- [x] **Crop Energy Proof** — Verified bit-perfect energy map after enforcing float64 and resolving axis shift.
 - [ ] **Crop Vertices Proof** — Verify bit-perfect vertex set with new round-half-up painting and linear index tie-breaking.
 - [ ] **Crop Edges Proof** — Verify bit-perfect connectivity with reoriented [Y, X, Z] watershed.
 - [ ] **Canonical Energy Proof** — Resume `phase1_cert_network` with batched EIGH and sparse meshgrids.
@@ -39,6 +39,8 @@
 ## 🛠️ Hardening & Infrastructure
 - [x] **Centralized Indexing** — Use `slavv_python/utils/matlab_order.py` for all stage transformations.
 - [x] **Numba Painting Fix** — Port round-half-up logic to `_choose_vertices_loop_numba`.
+- [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 to ensure MATLAB bit-parity.
+- [x] **Bessel Sum Chunking** — Implemented chunked kernel generation to prevent memory spikes.
 - [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `6640`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
 - [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).

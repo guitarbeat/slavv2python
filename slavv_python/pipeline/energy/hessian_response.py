@@ -579,8 +579,14 @@ def _precompute_base_derivative_kernels_dft(
         tuple of (base_curvatures, base_gradients)
     """
     y_pixel_freq_mesh, x_pixel_freq_mesh, z_pixel_freq_mesh = pixel_freq_meshes
-    base_curvatures = np.zeros((6, *y_pixel_freq_mesh.shape), dtype=np.float64)
-    base_gradients = np.zeros((3, *y_pixel_freq_mesh.shape), dtype=np.complex128)
+    # Determine full shape from sparse meshes for pre-allocation
+    shape = np.broadcast_shapes(
+        y_pixel_freq_mesh.shape, x_pixel_freq_mesh.shape, z_pixel_freq_mesh.shape
+    )
+    
+    # Base derivative kernels (unweighted)
+    base_curvatures = np.zeros((6, *shape), dtype=np.float64)
+    base_gradients = np.zeros((3, *shape), dtype=np.complex128)
 
     base_curvatures[0] = np.cos(2.0 * np.pi * y_pixel_freq_mesh) - 1.0
     base_curvatures[1] = np.cos(2.0 * np.pi * x_pixel_freq_mesh) - 1.0

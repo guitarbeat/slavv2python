@@ -29,6 +29,9 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 │   ├── */SKILL.md                     # Skill definitions
 │   └── README.md                      # Skills catalog
 │
+├── specs/                             # Task and project specifications
+│   └── <project>/                     # Project-specific specs
+│
 ├── orchestrations/                    # Orchestration work artifacts
 │   ├── active/                        # Current orchestrations
 │   ├── completed/                     # Archived successful orchestrations

@@ -146,6 +146,18 @@ Archives in `archive/` and `orchestrations/completed/`:
 
 ---
 
+## 📑 Specs
+
+Project and task specifications.
+
+| Spec | Location |
+|------|----------|
+| **Parity Job Monitoring** | `specs/parity-job-monitoring/` |
+
+**Location**: `specs/`
+
+---
+
 ## 📊 Statistics
 
 - **Total Agents**: 5
