@@ -13,7 +13,6 @@ from slavv_python.pipeline.energy.exact_mesh import (
 )
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
-
 EXACT_ENERGY_POLICY = EnergyPolicy(
     precision=np.dtype(np.float64),
     intensity_scaling=False,
@@ -107,8 +106,9 @@ def test_prepare_energy_config_exposes_non_unity_scale_resolution_factors() -> N
     assert int(np.max(config["scale_resolution_factors"])) > 1
 
 
-def test_exact_crop_chunk_slices_stay_inside_padded_fft_grid() -> None:
-    image_shape = (256, 64, 256)
+def _assert_exact_crop_chunk_slices_stay_inside_padded_fft_grid(
+    image_shape: tuple[int, int, int],
+) -> None:
     params = {
         "radius_of_smallest_vessel_in_microns": 1.5,
         "radius_of_largest_vessel_in_microns": 60.0,
@@ -206,6 +206,14 @@ def test_exact_crop_chunk_slices_stay_inside_padded_fft_grid() -> None:
 
             assert all(stop <= padded for stop, padded in zip(local_stops, padded_shape))
             assert all(stop >= start for start, stop in zip(local_starts, local_stops))
+
+
+def test_exact_crop_chunk_slices_stay_inside_padded_fft_grid() -> None:
+    _assert_exact_crop_chunk_slices_stay_inside_padded_fft_grid((256, 64, 256))
+
+
+def test_exact_crop_unpermuted_resume_shape_avoids_coarse_slice_overrun() -> None:
+    _assert_exact_crop_chunk_slices_stay_inside_padded_fft_grid((64, 256, 256))
 
 
 def test_energy_axis_permutation_reorders_microns_and_psf() -> None:

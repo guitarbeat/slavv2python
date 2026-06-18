@@ -28,6 +28,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
+| **Oracle artifact readiness** | `workspace/oracles/180709_E_crop_M`, `workspace/oracles/180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes; manifest reconciliation now records readable normalized artifacts. |
 | **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Energy artifacts missing after failed rerun. Failure triaged; rerun from Energy is the next writer action. |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Paused until crop Energy proves strict-zero. |
 
@@ -35,9 +36,10 @@ Current crop failure:
 
 - Snapshot status: `failed`.
 - Failure: `could not broadcast input array from shape (64,27,8) into shape (65,27,8)` inside `exact_mesh._process_chunk`.
+- Root cause: unbounded coarse-grid slice geometry on crop resume shape `(64,256,256)`; octave 4 / chunk 0 requested `(65,27,8)` while the padded FFT slice could only provide `(64,27,8)`.
 - Artifacts missing: `02_Energy/best_energy.npy`, `02_Energy/best_scale.npy`.
 - Job registry may show stale running entries; verify live PIDs with Windows process state before treating a job as active.
-- Current worktree has regression coverage for the coarse-slice guard: `tests/unit/pipeline/energy/test_hessian_downsample.py::test_exact_crop_chunk_slices_stay_inside_padded_fft_grid`.
+- Current worktree has regression coverage for the coarse-slice guard, including the failed resume shape: `tests/unit/pipeline/energy/test_hessian_downsample.py::test_exact_crop_unpermuted_resume_shape_avoids_coarse_slice_overrun`.
 
 ### 🟡 2026-06-17: Energy Parity Discoveries (Crop Harness)
 
@@ -57,11 +59,12 @@ If resuming exact parity work from a fresh thread:
 1. Check active monitored jobs with `slavv jobs list` to see if any parity jobs are running.
 2. Check the crop rerun status with `slavv parity status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
 3. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
-4. If no writer is alive and Energy artifacts are missing, rerun crop Energy before attempting proof.
-5. If Energy artifacts exist, run the crop energy proof first.
-6. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
-7. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
-8. If any proof fails, inspect the first failing field before changing code.
+4. Verify oracle surfaces with `slavv parity ensure-oracle-artifacts --oracle-root <oracle> --stage all --no-repair` if there is any doubt about artifact readiness.
+5. If no writer is alive and Energy artifacts are missing, rerun crop Energy before attempting proof.
+6. If Energy artifacts exist, run the crop energy proof first.
+7. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
+8. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
+9. If any proof fails, inspect the first failing field before changing code.
 
 Use the `--monitor` flag on long reruns to enable automatic tracking and desktop notifications (see [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
 

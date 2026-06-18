@@ -8,6 +8,7 @@ import numpy as np
 from scipy.io import savemat
 
 from slavv_python.analytics.parity.oracle_artifacts import ensure_oracle_artifacts
+from slavv_python.engine.state import load_json_dict
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -67,3 +68,22 @@ def test_ensure_oracle_artifacts_reports_missing_without_repair(tmp_path: Path) 
 
     assert statuses["energy"].ready is False
     assert statuses["energy"].error == "missing normalized Oracle Artifact"
+
+
+def test_ensure_oracle_artifacts_reconciles_manifest_entries(tmp_path: Path) -> None:
+    oracle_root = tmp_path / "oracle"
+    _write_energy_batch(oracle_root)
+    manifest_path = oracle_root / "99_Metadata" / "oracle_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        '{"manifest_version": 1, "kind": "matlab_oracle", "normalized_artifacts": {}}',
+        encoding="utf-8",
+    )
+
+    statuses = ensure_oracle_artifacts(oracle_root, stages=("energy",))
+
+    manifest = load_json_dict(manifest_path)
+    assert statuses["energy"].ready is True
+    assert manifest is not None
+    assert manifest["normalized_artifacts"]["energy"] == str(statuses["energy"].path)
+    assert manifest["timestamps"]["updated_at"]

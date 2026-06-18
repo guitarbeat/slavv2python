@@ -40,6 +40,7 @@
 - [x] **PipelinePolicy Architecture** — Implemented declarative Baseline vs Innovation control for Energy, Vertices, and Edges.
 - [x] **Unified Math Kernel** — Centralized bit-perfect EIGH math in `energy/math.py`.
 - [x] **Unified Lattice Logic** — Created `utils/lattice.py` to prevent rounding errors in 3D chunking.
+- [x] **Oracle artifact manifest sync** — `ensure-oracle-artifacts` now reconciles readable normalized artifacts back into `oracle_manifest.json`.
 - [x] **Exact crop coarse-slice guard** — Added regression coverage so local derivative slices stay inside the padded FFT grid.
 - [x] **Numba Painting Fix** — Ported round-half-up logic to `_choose_vertices_loop_numba`.
 - [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.

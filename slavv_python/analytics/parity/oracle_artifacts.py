@@ -15,7 +15,10 @@ from slavv_python.analytics.parity.matlab_vector_loader import (
     load_normalized_matlab_vectors,
 )
 from slavv_python.analytics.parity.utils import persist_normalized_payloads
-from slavv_python.engine.state import fingerprint_file
+from slavv_python.engine.state import fingerprint_file, load_json_dict
+
+from .constants import ORACLE_MANIFEST_PATH
+from .utils import now_iso, write_json_with_hash
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -79,7 +82,7 @@ def ensure_oracle_artifacts(
         persist_normalized_payloads(resolved_root, group_name="oracle", payloads=payloads)
         repaired_stages.update(missing)
 
-    return {
+    statuses = {
         stage: inspect_oracle_artifact(
             resolved_root,
             stage,
@@ -87,6 +90,9 @@ def ensure_oracle_artifacts(
         )
         for stage in requested_stages
     }
+    if repair:
+        _sync_manifest_normalized_artifacts(resolved_root, statuses)
+    return statuses
 
 
 def inspect_oracle_artifact(
@@ -138,6 +144,40 @@ def inspect_oracle_artifact(
 
 def _artifact_path(oracle_root: Path, stage: str) -> Path:
     return oracle_root / NORMALIZED_DIR / "oracle" / f"{stage}.pkl"
+
+
+def _sync_manifest_normalized_artifacts(
+    oracle_root: Path,
+    statuses: dict[str, OracleArtifactStatus],
+) -> None:
+    manifest_path = oracle_root / ORACLE_MANIFEST_PATH
+    manifest = load_json_dict(manifest_path)
+    if manifest is None:
+        return
+
+    normalized_artifacts = manifest.setdefault("normalized_artifacts", {})
+    if not isinstance(normalized_artifacts, dict):
+        normalized_artifacts = {}
+        manifest["normalized_artifacts"] = normalized_artifacts
+
+    changed = False
+    for stage, status in statuses.items():
+        if not status.ready:
+            continue
+        path_text = str(status.path)
+        if normalized_artifacts.get(stage) != path_text:
+            normalized_artifacts[stage] = path_text
+            changed = True
+
+    if not changed:
+        return
+
+    timestamps = manifest.setdefault("timestamps", {})
+    if isinstance(timestamps, dict):
+        timestamps["updated_at"] = now_iso()
+    else:
+        manifest["timestamps"] = {"updated_at": now_iso()}
+    write_json_with_hash(manifest_path, manifest)
 
 
 def _normalize_stages(stages: tuple[str, ...]) -> tuple[str, ...]:
