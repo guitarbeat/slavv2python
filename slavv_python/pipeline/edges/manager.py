@@ -26,6 +26,7 @@ from slavv_python.pipeline.edges.discovery import (
 from slavv_python.pipeline.edges.finalize import finalize_edges_matlab_style
 from slavv_python.pipeline.edges.payloads import _empty_edges_result
 from slavv_python.pipeline.edges.selection import choose_edges_for_workflow
+from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.painting import paint_vertex_center_image
 from slavv_python.schema.results import EdgeSet, EnergyResult, VertexSet
 
@@ -105,27 +106,19 @@ class EdgeManager:
         *,
         heartbeat: Any | None = None,
     ) -> CandidateManifest:
-        """Run edge discovery only (no selection/finalize) through the discovery strategy seam.
-
-        Args:
-            energy_data: Result from the energy stage.
-            vertices: Result from the vertices stage.
-            params: Pipeline parameters.
-            heartbeat: Optional callback for progress reporting.
-
-        Returns:
-            CandidateManifest: The manifest of discovered edge candidates.
-        """
+        """Run edge discovery only (no selection/finalize) through the discovery strategy seam."""
         if len(vertices.positions) == 0:
             return CandidateManifest.empty()
 
+        policy = PipelinePolicy.from_params(params)
         microns_per_voxel = np.array(
             params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
-            dtype=np.float64,
+            dtype=policy.precision,
         )
         lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
             energy_data,
             microns_per_voxel,
+            policy=policy,
         )
         vertex_center_image = paint_vertex_center_image(
             vertices.positions, energy_data.energy.shape
@@ -153,27 +146,20 @@ class EdgeManager:
         *,
         stage_controller: StageController | None,
     ) -> EdgeSet:
-        """Internal dispatcher for edge tracing and finalization.
-
-        Args:
-            energy_data: Result from the energy stage.
-            vertices: Result from the vertices stage.
-            params: Pipeline parameters.
-            stage_controller: Optional stage controller for resumable execution.
-
-        Returns:
-            EdgeSet: The extracted and filtered edges.
-        """
         resumable = stage_controller is not None
         handle: StageController | _NullStageController = (
             stage_controller if stage_controller is not None else _NullStageController()
         )
 
+        policy = PipelinePolicy.from_params(params)
         energy = energy_data.energy
         vertex_positions = vertices.positions
         vertex_scales = vertices.scales
         lumen_radius_microns = energy_data.lumen_radius_microns
-        microns_per_voxel = np.array(params.get("microns_per_voxel", [1.0, 1.0, 1.0]), dtype=float)
+        microns_per_voxel = np.array(
+            params.get("microns_per_voxel", [1.0, 1.0, 1.0]),
+            dtype=policy.precision,
+        )
 
         if len(vertex_positions) == 0:
             return EdgeSet.from_dict(_empty_edges_result(vertex_positions))
@@ -181,6 +167,7 @@ class EdgeManager:
         lumen_radius_pixels_axes = resolve_lumen_radius_pixels_axes(
             energy_data,
             microns_per_voxel,
+            policy=policy,
         )
 
         logger.info("Creating vertex center lookup image...")

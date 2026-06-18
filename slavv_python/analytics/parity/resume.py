@@ -183,7 +183,7 @@ def resume_exact_run(
 
     clear_stale_running_snapshot(dest_run_root)
 
-    image = load_tiff_volume(str(input_file))
+    image = load_tiff_volume(str(input_file), transpose_to_yxz=False)
     image = _reorient_volume_from_provenance(image, dest_run_root)
 
     SlavvPipeline().run(

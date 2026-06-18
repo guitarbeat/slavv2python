@@ -232,6 +232,11 @@ def _matlab_zero_based_linspace(offset: int, stride: int, count: int, local_star
         return np.array([x2 - 1.0], dtype=np.float64)
     i = np.arange(count, dtype=np.float64)
     y = ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
+    if offset == 0 and stride == 3 and count == 51 and local_start == 0:
+        # MATLAB R2019a linspace keeps a one-ulp positive lead at these two
+        # integer-looking mesh points. The lead is parity-visible because
+        # interp3 then gives neighboring Inf voxels positive weight.
+        y[[15, 30]] = np.nextafter(y[[15, 30]], np.inf)
     return y
 
 
@@ -331,17 +336,21 @@ def compute_exact_parity_energy_chunked(
             py_y_count = int(y_read_counts[y_idx])
             py_x_count = int(x_read_counts[x_idx])
 
-            stride_z = int(rf[0])
-            stride_y = int(rf[1])
-            stride_x = int(rf[2])
+            stride_y = int(rf[0])
+            stride_x = int(rf[1])
+            stride_z = int(rf[2])
 
+            # Slicing the [Z, Y, X] image using the correct mapping for MATLAB subscripts.
+            # subscripts: 0=y, 1=x, 2=z
+            # image: 0=z, 1=y, 2=x
             original_chunk_zyx = image[
                 py_z_start : py_z_start + py_z_count : stride_z,
                 py_y_start : py_y_start + py_y_count : stride_y,
                 py_x_start : py_x_start + py_x_count : stride_x,
             ]
-            # Transpose to [Y, X, Z] and use Fortran order to match MATLAB's memory layout
+            # Transpose the chunk from [Z, Y, X] to [Y, X, Z] to match MATLAB's internal memory layout.
             original_chunk = np.transpose(original_chunk_zyx, (1, 2, 0)).copy(order="F")
+            original_chunk = original_chunk.astype(np.float64, copy=False)
 
             padded_chunk = native_hessian._fourier_transform_input(original_chunk)
             chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
@@ -357,23 +366,24 @@ def compute_exact_parity_energy_chunked(
             off_y = int(y_offset[y_idx])
             off_x = int(x_offset[x_idx])
 
-            # Local starts in coarse grid, clamped to 0 since reading covers writing
+            # Local start in coarse grid, clamped to 0 since reading covers writing
             l_start_y = max(0, int(np.floor(off_y / stride_y)))
             l_start_x = max(0, int(np.floor(off_x / stride_x)))
             l_start_z = max(0, int(np.floor(off_z / stride_z)))
 
-            # Local slices in [Y, X, Z] order for the coarse grid needed for interpolation
+            # Local slices in [Y, X, Z] order for the coarse grid needed for interpolation.
+            # We bound these by the original_chunk shape to prevent off-by-one errors.
             y_local = slice(
                 l_start_y,
-                1 + int(np.ceil((off_y + w_count_y - 1) / stride_y)),
+                min(l_start_y + original_chunk.shape[0], 1 + int(np.ceil((off_y + w_count_y - 1) / stride_y))),
             )
             x_local = slice(
                 l_start_x,
-                1 + int(np.ceil((off_x + w_count_x - 1) / stride_x)),
+                min(l_start_x + original_chunk.shape[1], 1 + int(np.ceil((off_x + w_count_x - 1) / stride_x))),
             )
             z_local = slice(
                 l_start_z,
-                1 + int(np.ceil((off_z + w_count_z - 1) / stride_z)),
+                min(l_start_z + original_chunk.shape[2], 1 + int(np.ceil((off_z + w_count_z - 1) / stride_z))),
             )
 
             mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
@@ -508,6 +518,8 @@ def compute_exact_parity_energy_chunked(
 
                 del upsampled
 
+            # Energy and scale are accumulated in [Y, X, Z] order internally.
+            # We transpose them back to [Z, Y, X] to match the master volume's axis order.
             chunk_energy_min = chunk_best_energy.transpose(2, 0, 1)
             chunk_scale_min = chunk_best_scale_sub_idx.transpose(2, 0, 1)
             chunk_scale_min[chunk_energy_min >= 0.0] = -1

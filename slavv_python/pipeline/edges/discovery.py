@@ -27,9 +27,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+from slavv_python.pipeline.policy import PipelinePolicy
+
+
 def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, Any]) -> bool:
     """Enable the MATLAB-style frontier tracer for exact-compatible energy reruns."""
-    if not bool(params.get("comparison_exact_network", False)):
+    policy = PipelinePolicy.from_params(params)
+    if policy.internal_grid_alignment != "matlab":
         return False
     return is_exact_compatible_energy_origin(energy_data.get("energy_origin"))
 
@@ -37,21 +41,23 @@ def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, A
 def resolve_lumen_radius_pixels_axes(
     energy_data: Any,
     microns_per_voxel: np.ndarray,
+    policy: PipelinePolicy | None = None,
 ) -> np.ndarray:
     """Return per-axis pixel radii for modern and legacy Energy checkpoints."""
+    dtype = policy.precision if policy else np.float64
     raw_axes = energy_data.extra.get("lumen_radius_pixels_axes")
     if raw_axes is not None:
-        return np.asarray(raw_axes, dtype=np.float64)
+        return np.asarray(raw_axes, dtype=dtype)
 
-    lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=np.float64)
+    lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=dtype)
     if lumen_radius_pixels.size > 0:
         return np.repeat(lumen_radius_pixels.reshape(-1, 1), 3, axis=1)
 
-    lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=np.float64)
+    lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=dtype)
     if lumen_radius_microns.size == 0:
-        return np.zeros((0, 3), dtype=np.float64)
-    voxel_size = np.asarray(microns_per_voxel, dtype=np.float64).reshape(1, 3)
-    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(np.float64)
+        return np.zeros((0, 3), dtype=dtype)
+    voxel_size = np.asarray(microns_per_voxel, dtype=dtype).reshape(1, 3)
+    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(dtype)
 
 
 @dataclass

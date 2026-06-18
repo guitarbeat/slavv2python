@@ -80,6 +80,12 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 ### Lowest Linear Index Priority
 The secondary tie-breaking rule for [Vertex](#vertex) and [Edge Discovery](#edge-discovery). When two voxels have identical energy values, the one with the lower Fortran-order linear index is prioritized.
 
+### Paper Path
+The baseline production [Pipeline](#pipeline) workflow. Optimized for multi-core scale-level parallelism, it utilizes `float32` precision and standard stride alignment. While fast on small volumes, it requires a significant memory footprint for the 4D scale stack.
+
+### Exact Route (Innovation)
+A memory-safe, bit-perfect [Pipeline](#pipeline) workflow that improves upon the original MATLAB architecture. It utilizes an **Incremental Octave-Chunked Engine** and `float64` precision to achieve [Certification](#certification) on massive volumes with minimal memory overhead.
+
 ### Pipeline
 The authoritative sequence of computational stages (Energy → Vertices → Edges → Network) required to transform a 3D vascular volume into a vectorized graph representation.
 

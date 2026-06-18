@@ -171,6 +171,14 @@ def validate_parameters(params: dict[str, Any]) -> dict[str, Any]:
     if validated["bandpass_window"] < 0:
         raise ValueError("bandpass_window must be non-negative; set 0 to disable")
     validated["discrete_tracing"] = params.get("discrete_tracing", False)
+    validated["comparison_exact_network"] = bool(params.get("comparison_exact_network", False))
+    validated["comparison_exact_network_use_conflict_painting"] = bool(
+        params.get("comparison_exact_network_use_conflict_painting", True)
+    )
+    validated["energy_axis_permutation"] = params.get("energy_axis_permutation", None)
+    validated["energy_storage_format"] = params.get("energy_storage_format", "auto")
+    validated["return_all_scales"] = bool(params.get("return_all_scales", False))
+    validated["n_jobs"] = int(params.get("n_jobs", 1))
 
     for key in (
         "max_voxels_per_node_energy",

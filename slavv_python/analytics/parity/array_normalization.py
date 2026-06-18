@@ -186,6 +186,8 @@ def _normalize_spatial_matrix(value: Any, *, one_based: bool = False) -> np.ndar
         return normalized
     if one_based:
         normalized = normalized - 1.0
+    # MATLAB spatial is [Y, X, Z]. We want Python [Z, Y, X].
+    normalized = normalized[:, [2, 0, 1]]
     return cast("np.ndarray", normalized.astype(np.float64, copy=False))
 
 
@@ -235,6 +237,8 @@ def _normalize_spatial_scale_matrix_list(
         reordered = normalized
         if one_based:
             reordered = reordered - 1.0
+        # MATLAB spatial is [Y, X, Z, S]. We want Python [Z, Y, X, S].
+        reordered = reordered[:, [2, 0, 1, 3]]
         matrices.append(reordered.astype(np.float64, copy=False))
     return matrices
 

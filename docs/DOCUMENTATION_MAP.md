@@ -181,6 +181,8 @@ EXACT_PROOF_FINDINGS.md (live status)
 ```
 TECHNICAL_ARCHITECTURE.md (system design)
     ↓
+    ├─→ PipelinePolicy (Paper Path vs Exact Route)
+    │
     ├─→ PYTHON_NAMING_GUIDE.md (conventions)
     │
     ├─→ adr/ (design decisions)
@@ -301,5 +303,5 @@ Proposal → Discussion → adr/ (decision) → Implementation → TECHNICAL_ARC
 
 ---
 
-**Last Updated**: 2026-06-09  
+**Last Updated**: 2026-06-16  
 **Related**: [README.md](README.md)

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 from slavv_python.engine.state.tracker import atomic_joblib_dump
+from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.detection import (
     choose_vertices_matlab_style,
     crop_vertices_matlab_style,
@@ -91,17 +92,11 @@ class VertexManager:
 
     @classmethod
     def _build_context(cls, energy_data: EnergyResult, params: dict[str, Any]) -> dict[str, Any]:
-        """Consolidate energy data and parameters into a flat context dictionary.
-
-        Args:
-            energy_data: Result from the energy stage.
-            params: Pipeline parameters.
-
-        Returns:
-            dict[str, Any]: A dictionary containing all necessary data for extraction.
-        """
+        """Consolidate energy data and parameters into a flat context dictionary."""
         lumen_radius_pixels = energy_data.lumen_radius_pixels
+        policy = PipelinePolicy.from_params(params)
         return {
+            "policy": policy,
             "energy": energy_data.energy,
             "scale_indices": energy_data.scale_indices,
             "lumen_radius_pixels": lumen_radius_pixels,
@@ -122,15 +117,9 @@ class VertexManager:
 
     @classmethod
     def _run_ephemeral(cls, context: dict[str, Any]) -> VertexSet:
-        """Execute vertex extraction in-memory without persistence.
-
-        Args:
-            context: Consolidated extraction context.
-
-        Returns:
-            VertexSet: The extracted and filtered vertices.
-        """
+        """Execute vertex extraction in-memory without persistence."""
         logger.info("Extracting vertices")
+        policy = context["policy"]
 
         vertex_positions, vertex_scales, vertex_energies = matlab_vertex_candidates(
             context["energy"],
@@ -140,6 +129,7 @@ class VertexManager:
             context["space_strel_apothem"],
             context["lumen_radius_pixels_axes"][0],
             context["max_voxels_per_node"],
+            policy=policy,
         )
 
         vertex_positions, vertex_scales, vertex_energies = crop_vertices_matlab_style(
@@ -149,6 +139,7 @@ class VertexManager:
             context["image_shape"],
             context["lumen_radius_pixels_axes"],
             context["length_dilation_ratio"],
+            policy=policy,
         )
 
         if len(vertex_positions) == 0:
@@ -171,6 +162,7 @@ class VertexManager:
             context["image_shape"],
             context["lumen_radius_pixels_axes"],
             context["length_dilation_ratio"],
+            policy=policy,
         )
         vertex_positions = vertex_positions[chosen_mask]
         vertex_scales = vertex_scales[chosen_mask]
@@ -204,10 +196,11 @@ class VertexManager:
         choose_state = stage_controller.load_state()
 
         stage_controller.begin(
-            detail="Scanning MATLAB-style vertex candidates",
+            detail="Scanning vertex candidates",
             units_total=3,
             substage="candidate_scan",
         )
+        policy = context["policy"]
         if not candidate_path.exists():
             positions, scales, energies = matlab_vertex_candidates(
                 context["energy"],
@@ -218,6 +211,7 @@ class VertexManager:
                 context["lumen_radius_pixels_axes"][0],
                 context["max_voxels_per_node"],
                 n_jobs=context["n_jobs"],
+                policy=policy,
             )
             atomic_joblib_dump(
                 {"positions": positions, "scales": scales, "energies": energies},
@@ -240,6 +234,7 @@ class VertexManager:
                 context["image_shape"],
                 context["lumen_radius_pixels_axes"],
                 context["length_dilation_ratio"],
+                policy=policy,
             )
             sort_indices = sort_vertex_order(
                 positions,
@@ -292,6 +287,7 @@ class VertexManager:
                 start_index=block_start,
                 end_index=block_end,
                 chosen_mask=chosen_mask,
+                policy=policy,
             )
             atomic_joblib_dump(chosen_mask, chosen_mask_path)
             stage_controller.save_state({"next_index": block_end, "block_size": block_size})

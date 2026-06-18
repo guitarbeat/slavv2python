@@ -30,20 +30,22 @@
 ### Phase 1 exact route (canonical + crop)
 
 ## 🎯 Phase 1 Certification Gates
-- [x] **Crop Energy Proof** — Verified bit-perfect energy map after enforcing float64 and resolving axis shift.
-- [ ] **Crop Vertices Proof** — Verify bit-perfect vertex set with new round-half-up painting and linear index tie-breaking.
-- [ ] **Crop Edges Proof** — Verify bit-perfect connectivity with reoriented [Y, X, Z] watershed.
-- [ ] **Canonical Energy Proof** — Resume `phase1_cert_network` with batched EIGH and sparse meshgrids.
+- [ ] **Crop Energy Proof** — Rerun `crop_M_exact` from Energy after the coarse-slice guard, then run strict-zero `prove-exact --stage energy`.
+- [ ] **Crop Vertices Proof** — Verify bit-perfect vertex set with new round-half-up painting and PipelinePolicy integration.
+- [ ] **Crop Edges Proof** — Verify bit-perfect connectivity with standardized watershed orientation via PipelinePolicy.
+- [ ] **Canonical Energy Proof** — Resume `phase1_cert_network` only after crop Energy is proven strict-zero.
 - [ ] **Canonical Sequence** — Execute full proof sequence on 512x512x64 volume to close Phase 1.
 
 ## 🛠️ Hardening & Infrastructure
-- [x] **Centralized Indexing** — Use `slavv_python/utils/matlab_order.py` for all stage transformations.
-- [x] **Numba Painting Fix** — Port round-half-up logic to `_choose_vertices_loop_numba`.
-- [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 to ensure MATLAB bit-parity.
-- [x] **Bessel Sum Chunking** — Implemented chunked kernel generation to prevent memory spikes.
-- [ ] **Canonical run** — Rerun `phase1_cert_network` (PID `6640`) from energy to establish a bit-perfect foundation following discovery of stale vertex checkpoints.
-- [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M` (harness only, not canonical claim).
-- [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`; record milestone in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md).
+- [x] **PipelinePolicy Architecture** — Implemented declarative Baseline vs Innovation control for Energy, Vertices, and Edges.
+- [x] **Unified Math Kernel** — Centralized bit-perfect EIGH math in `energy/math.py`.
+- [x] **Unified Lattice Logic** — Created `utils/lattice.py` to prevent rounding errors in 3D chunking.
+- [x] **Exact crop coarse-slice guard** — Added regression coverage so local derivative slices stay inside the padded FFT grid.
+- [x] **Numba Painting Fix** — Ported round-half-up logic to `_choose_vertices_loop_numba`.
+- [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.
+- [ ] **Canonical run** — Rerun `phase1_cert_network` from energy foundations established in crop harness after crop Energy proof.
+- [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M`.
+- [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`.
 
 ### Harness & ops
 

@@ -10,6 +10,9 @@ import numpy as np
 import scipy.ndimage as ndi
 
 
+from slavv_python.pipeline.energy.policy import EnergyPolicy
+
+
 def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
     """Normalize intensities and optionally correct axial banding.
 
@@ -21,21 +24,16 @@ def preprocess_image(image: np.ndarray, params: dict[str, Any]) -> np.ndarray:
         Processing parameters. Uses ``bandpass_window`` to control the
         axial Gaussian smoothing window for band removal.
 
-    Returns
+    Returns:
     -------
     np.ndarray
-        Preprocessed image with intensities scaled to ``[0, 1]``.
+        Preprocessed image with intensities potentially scaled to ``[0, 1]``.
     """
-    is_exact = bool(params.get("comparison_exact_network", False))
-    
-    if is_exact:
-        img = image.astype(np.float64)
-    else:
-        img = image.astype(np.float32)
+    policy = EnergyPolicy.from_params(params)
+    img = image.astype(policy.precision)
 
-    # Exact-route parity runs must preserve raw intensity scale to match MATLAB
-    # oracle energy (see crop_M_exact prove-exact mismatch investigation).
-    if not is_exact:
+    # Policy controls whether raw intensity scale is preserved (Exact) or normalized (Paper).
+    if policy.intensity_scaling:
         # Scale intensities to [0, 1] for the native paper workflow.
         img -= img.min()
         max_val = img.max()

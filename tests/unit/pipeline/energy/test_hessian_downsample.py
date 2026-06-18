@@ -11,6 +11,17 @@ from slavv_python.pipeline.energy.exact_mesh import (
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,
 )
+from slavv_python.pipeline.energy.policy import EnergyPolicy
+
+
+EXACT_ENERGY_POLICY = EnergyPolicy(
+    precision=np.dtype(np.float64),
+    intensity_scaling=False,
+    downsample_alignment="matlab",
+    mesh_strategy="linspace",
+    interpolation_mode="matlab_inf_prop",
+    exact_sign_clipping=True,
+)
 
 
 def test_downsample_volume_uses_matlab_last_chunk_stride_phase() -> None:
@@ -19,7 +30,9 @@ def test_downsample_volume_uses_matlab_last_chunk_stride_phase() -> None:
     image = np.arange(64 * 64 * 64, dtype=np.float32).reshape(64, 64, 64)
     resolution_factor = np.array([4, 4, 4], dtype=np.int16)
 
-    downsampled = native_hessian._downsample_volume(image, resolution_factor)
+    downsampled = native_hessian._downsample_volume(
+        image, resolution_factor, policy=EXACT_ENERGY_POLICY
+    )
 
     # (64 - 1) % 4 == 3
     npt.assert_array_equal(downsampled, image[3::4, 3::4, 3::4])
@@ -31,7 +44,9 @@ def test_downsample_volume_anisotropic_phase_lands_on_last_pixel() -> None:
     image = np.arange(64 * 256 * 256, dtype=np.float32).reshape(64, 256, 256)
     resolution_factor = np.array([9, 20, 20], dtype=np.int16)
 
-    downsampled = native_hessian._downsample_volume(image, resolution_factor)
+    downsampled = native_hessian._downsample_volume(
+        image, resolution_factor, policy=EXACT_ENERGY_POLICY
+    )
 
     # (64 - 1) % 9 == 0 ; (256 - 1) % 20 == 15
     npt.assert_array_equal(downsampled, image[0::9, 15::20, 15::20])
@@ -90,6 +105,107 @@ def test_prepare_energy_config_exposes_non_unity_scale_resolution_factors() -> N
         config["scale_resolution_factors"][0], np.array([1, 1, 1], dtype=np.int16)
     )
     assert int(np.max(config["scale_resolution_factors"])) > 1
+
+
+def test_exact_crop_chunk_slices_stay_inside_padded_fft_grid() -> None:
+    image_shape = (256, 64, 256)
+    params = {
+        "radius_of_smallest_vessel_in_microns": 1.5,
+        "radius_of_largest_vessel_in_microns": 60.0,
+        "scales_per_octave": 6.0,
+        "approximating_PSF": True,
+        "numerical_aperture": 0.95,
+        "excitation_wavelength_in_microns": 0.95,
+        "sample_index_of_refraction": 1.33,
+        "gaussian_to_ideal_ratio": 0.5,
+        "spherical_to_annular_ratio": 0.5,
+        "energy_projection_mode": "matlab",
+        "max_voxels_per_node_energy": 1_000_000,
+        "energy_axis_permutation": [2, 0, 1],
+        "microns_per_voxel": [0.916, 0.916, 1.99688],
+    }
+    config = _prepare_energy_config(np.zeros(image_shape, dtype=np.float64), params)
+    matlab_image_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
+    microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
+    pixels_per_sigma_psf = np.asarray(config["pixels_per_sigma_PSF"], dtype=float)
+    octave_at_scales = config["octave_at_scales"]
+    lumen_radius_microns = np.asarray(config["lumen_radius_microns"], dtype=float)
+
+    for current_octave in np.unique(octave_at_scales):
+        scale_indices = np.where(octave_at_scales == current_octave)[0]
+        rf = np.asarray(config["scale_resolution_factors"][scale_indices[0]], dtype=float)
+        rf_matlab = np.array([rf[1], rf[2], rf[0]], dtype=float)
+        largest_radius = lumen_radius_microns[scale_indices[-1]]
+        largest_pixels_per_radius = largest_radius / microns_per_voxel
+        approx_size = np.round(matlab_image_shape / rf_matlab)
+        microns_per_pixel = microns_per_voxel * rf
+        microns_per_pixel_matlab = np.array(
+            [microns_per_pixel[1], microns_per_pixel[2], microns_per_pixel[0]],
+            dtype=float,
+        )
+        lattice_dims, number_of_chunks = get_chunking_lattice_v190(
+            1.0 / microns_per_pixel_matlab,
+            float(config["max_voxels"]),
+            approx_size,
+        )
+        chunk_overlap = np.ceil(
+            6.0 * np.sqrt(pixels_per_sigma_psf**2 + largest_pixels_per_radius**2)
+        ).astype(np.int32)[[1, 2, 0]]
+        starts_counts = get_starts_and_counts_v200(
+            lattice_dims,
+            chunk_overlap,
+            matlab_image_shape,
+            rf_matlab,
+        )
+
+        stride_y, stride_x, stride_z = (int(rf[0]), int(rf[1]), int(rf[2]))
+        for chunk_idx in range(int(number_of_chunks)):
+            y_idx, x_idx, z_idx = np.unravel_index(chunk_idx, lattice_dims, order="F")
+            read_counts_yxz = (
+                int(starts_counts[3][y_idx]),
+                int(starts_counts[4][x_idx]),
+                int(starts_counts[5][z_idx]),
+            )
+            original_chunk_shape = (
+                len(range(0, read_counts_yxz[0], stride_y)),
+                len(range(0, read_counts_yxz[1], stride_x)),
+                len(range(0, read_counts_yxz[2], stride_z)),
+            )
+            padded_shape = native_hessian._fourier_transform_input(
+                np.zeros(original_chunk_shape, dtype=np.float64)
+            ).shape
+            write_counts = (
+                int(starts_counts[9][y_idx]),
+                int(starts_counts[10][x_idx]),
+                int(starts_counts[11][z_idx]),
+            )
+            offsets = (
+                int(starts_counts[12][y_idx]),
+                int(starts_counts[13][x_idx]),
+                int(starts_counts[14][z_idx]),
+            )
+            local_starts = (
+                max(0, int(np.floor(offsets[0] / stride_y))),
+                max(0, int(np.floor(offsets[1] / stride_x))),
+                max(0, int(np.floor(offsets[2] / stride_z))),
+            )
+            local_stops = (
+                min(
+                    local_starts[0] + original_chunk_shape[0],
+                    1 + int(np.ceil((offsets[0] + write_counts[0] - 1) / stride_y)),
+                ),
+                min(
+                    local_starts[1] + original_chunk_shape[1],
+                    1 + int(np.ceil((offsets[1] + write_counts[1] - 1) / stride_x)),
+                ),
+                min(
+                    local_starts[2] + original_chunk_shape[2],
+                    1 + int(np.ceil((offsets[2] + write_counts[2] - 1) / stride_z)),
+                ),
+            )
+
+            assert all(stop <= padded for stop, padded in zip(local_stops, padded_shape))
+            assert all(stop >= start for start, stop in zip(local_starts, local_stops))
 
 
 def test_energy_axis_permutation_reorders_microns_and_psf() -> None:
@@ -169,6 +285,15 @@ def test_exact_mesh_uses_matlab_linspace_roundoff() -> None:
     assert mesh[27] == 9.0
     assert np_mesh[27] > 9.0
     npt.assert_allclose(mesh[-1], 127.0 / 3.0, rtol=0.0, atol=0.0)
+
+
+def test_exact_mesh_preserves_matlab_linspace_positive_lead_for_crop_scale54() -> None:
+    mesh = _matlab_zero_based_linspace(offset=0, stride=3, count=51, local_start=0)
+
+    assert mesh[15] == np.nextafter(5.0, np.inf)
+    assert mesh[30] == np.nextafter(10.0, np.inf)
+    assert mesh[33] == 11.0
+    assert mesh[42] == 14.0
 
 
 def test_exact_mesh_preserves_matlab_endpoint_arithmetic_at_chunk_boundary() -> None:

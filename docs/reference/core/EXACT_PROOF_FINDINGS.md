@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-05
+**Last Updated**: 2026-06-18
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,11 +16,10 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 Active reruns for both crop (PID `12152`) and canonical (PID `6640`). These runs enforce the new **[Y, X, Z]** internal grid and incorporate recent **FFT memory optimizations** that reduce per-chunk footprint by 50%. |
-| **Vertices** | Verified on prior surfaces | ⏳ Pending passing proof on certified run |
-| **Edges** | v29 ~88.7% pair match (diagnostic baseline) | ⏳ Pending sequential proof. **Fixed**: Resolved `KeyError` in `FrontierQueue` and restored iterative directional suppression for origin seeds. |
+| **Energy** | Native Hessian path exact-compatible | 🟡 Crop rerun failed before artifacts on a local coarse-slice shape mismatch; current worktree has the guard/regression. Next: rerun crop Energy, then `prove-exact --stage energy`. |
+| **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
+| **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
-| **`prove-exact` energy stage** | ✅ In `EXACT_STAGE_ORDER` (2026-05-28) | Required for R3 gating |
 
 ---
 
@@ -28,9 +27,26 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | 🟡 Rerunning from Energy (PID `6640`). Established a bit-perfect [Z, Y, X] foundation after resolving a bootstrap shape mismatch. Uses the memory-optimized symmetric IFFT engine. |
-| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted ([HDF5 energy loader](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md)) |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Active Energy rerun (PID `12152`). Incorporates bit-perfect `linspace` roundoff and sparse FFT re-population. |
+| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Energy artifacts missing after failed rerun. Failure triaged; rerun from Energy is the next writer action. |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Paused until crop Energy proves strict-zero. |
+
+Current crop failure:
+
+- Snapshot status: `failed`.
+- Failure: `could not broadcast input array from shape (64,27,8) into shape (65,27,8)` inside `exact_mesh._process_chunk`.
+- Artifacts missing: `02_Energy/best_energy.npy`, `02_Energy/best_scale.npy`.
+- Job registry may show stale running entries; verify live PIDs with Windows process state before treating a job as active.
+- Current worktree has regression coverage for the coarse-slice guard: `tests/unit/pipeline/energy/test_hessian_downsample.py::test_exact_crop_chunk_slices_stay_inside_padded_fft_grid`.
+
+### 🟡 2026-06-17: Energy Parity Discoveries (Crop Harness)
+
+- **Eigenvalue Sorting**: MATLAB's vesselness engine sorts eigenvalues by **magnitude descending** (`|L1| >= |L2| >= |L3|`) before computing weights. Standard `np.linalg.eigh` returns them in ascending order. Fixed in `math.py` to match MATLAB's axis identification.
+- **Resolution Factors**: MATLAB uses `floor(L / (v * 2.5))` for downsampling factors. Python was using `rint`. This caused a divergence in scale-specific image grids. Fixed in `hessian_response.py`.
+- **Validation Whitelist**: Identified that `validate_parameters` in `validation.py` was stripping `comparison_exact_network` and other orchestration keys during the `RunContext.prepare` phase, causing the pipeline to fall back to the standard "Paper" route. Whitelisted these keys to ensure the "Innovation" path is correctly triggered.
+- **FFT Symmetry**: Verified that `_ifftn_matlab_symmetric` manual enforcement matches `np.fft.ifftn().real` and correctly handles Fortran-order raveling for conjugate-pair matching.
+
+*Status*: Incorporated into the current worktree, but not yet certified. The subsequent crop rerun failed before Energy artifacts were written; see [Active Phase 1 operations](#-active-phase-1-operations).
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
@@ -41,10 +57,11 @@ If resuming exact parity work from a fresh thread:
 1. Check active monitored jobs with `slavv jobs list` to see if any parity jobs are running.
 2. Check the crop rerun status with `slavv parity status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
 3. Prefer run-local `99_Metadata/parity_job.pid` / `parity_job.json` over legacy scratch PID files. If a matching process is still alive, do not start another writer on `crop_M_exact`.
-4. If it has exited, run the crop energy proof first.
-5. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
-6. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
-7. If any proof fails, inspect the first failing field before changing code.
+4. If no writer is alive and Energy artifacts are missing, rerun crop Energy before attempting proof.
+5. If Energy artifacts exist, run the crop energy proof first.
+6. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
+7. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
+8. If any proof fails, inspect the first failing field before changing code.
 
 Use the `--monitor` flag on long reruns to enable automatic tracking and desktop notifications (see [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
 
@@ -53,22 +70,25 @@ Scratch diagnostics for the current crop energy hypothesis are indexed in `works
 ### Operator commands
 
 ```powershell
-# Monitor canonical run
-slavv monitor --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
-
-# Rerun canonical from energy (single process; required before proof)
-slavv parity resume-exact-run `
-  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
-  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
-  --force-rerun-from energy `
-  --stop-after network `
-  --skip-preflight
-
-# Re-prove crop harness after energy fix (rerun from energy first if code changed)
+# Rerun crop Energy first; do not start canonical while this is pending.
 slavv parity resume-exact-run `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M `
   --force-rerun-from energy `
+  --stop-after energy `
+  --skip-preflight
+
+slavv parity prove-exact `
+  --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --stage energy
+
+# Only after crop Energy passes, refresh downstream crop checkpoints.
+slavv parity resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
+  --oracle-root workspace/oracles/180709_E_crop_M `
+  --force-rerun-from vertices `
   --stop-after network `
   --skip-preflight
 
@@ -76,6 +96,16 @@ slavv parity prove-exact-sequence `
   --source-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --dest-run-root workspace/runs/oracle_180709_E/crop_M_exact `
   --oracle-root workspace/oracles/180709_E_crop_M
+
+# After crop sequence passes, rerun canonical from Energy.
+slavv parity resume-exact-run `
+  --dest-run-root workspace/runs/oracle_180709_E/phase1_cert_network `
+  --oracle-root workspace/oracles/180709_E_batch_190910-103039 `
+  --force-rerun-from energy `
+  --stop-after network `
+  --skip-preflight
+
+slavv monitor --run-dir workspace/runs/oracle_180709_E/phase1_cert_network
 ```
 
 ---
@@ -87,8 +117,9 @@ Curated index of solved problems under `docs/solutions/` (from `/ce-compound`). 
 | Topic | Doc |
 |-------|-----|
 | MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
-| Detached exact-route parity jobs | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
+| Detached exact-run jobs | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
 | Sparse Meshgrid Memory Optimization | [sparse-meshgrid-memory-optimization.md](../../solutions/parity/sparse-meshgrid-memory-optimization.md) |
+| MATLAB Stride Phase Lead | [matlab-stride-phase-lead.md](../../solutions/parity/matlab-stride-phase-lead.md) |
 
 _Add rows here when a new compound doc is parity-relevant; do not duplicate full write-ups in this file._
 
@@ -190,9 +221,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop harness energy proof — RESOLVED (2026-06-12)** — Identified that `max_voxels_per_node_energy` was set to 6000, causing 726 chunks each with 400px overlap (~9GB/chunk). Fixed by increasing to 4,000,000 voxels, reducing memory footprint to ~1GB per chunk.
-2. **Canonical run re-execution** — Rerunning with 4M max voxels to ensure stability on 16GB hardware.
-3. **Sequential strict-zero closure** — After energy passes on a run, prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
+1. **Crop Energy rerun required** — The latest `crop_M_exact` Energy attempt failed before writing `best_energy.npy` / `best_scale.npy`. Current code has a coarse-slice guard and regression; rerun Energy, then prove strict zero.
+2. **Sequential strict-zero closure** — After crop Energy passes, refresh and prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
+3. **Canonical run re-execution** — Keep canonical `phase1_cert_network` paused until crop Energy is proven; then rerun canonical from Energy with the memory-safe path.
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

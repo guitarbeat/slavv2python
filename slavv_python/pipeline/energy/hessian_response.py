@@ -1,14 +1,18 @@
 """Preferred internal name for the native Hessian response backend."""
 
-from __future__ import annotations
-
+import gc
+import logging
 from typing import Any, cast
 
 import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.special import jv
 
+from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy.policy import EnergyPolicy
+
 _WORST_RESOLUTION_TO_DOWNSAMPLE = 1.0 / 2.5
+logger = logging.getLogger(__name__)
 
 
 def matlab_octave_resolution_factors(
@@ -32,47 +36,28 @@ def matlab_octave_resolution_factors(
             np.full(3, _WORST_RESOLUTION_TO_DOWNSAMPLE, dtype=float),
         )
         resolution_factors = np.maximum(
-            np.rint(_WORST_RESOLUTION_TO_DOWNSAMPLE / resolutions_at_octave).astype(np.int16),
+            np.floor(_WORST_RESOLUTION_TO_DOWNSAMPLE / resolutions_at_octave).astype(np.int16),
             1,
         )
+        logger.info(f"Octave {current_octave} resolution factors: {resolution_factors}")
         resolution_factors_by_octave[int(current_octave)] = resolution_factors
 
-    # Replicate MATLAB row consolidation unique rows last
+    # Replicate MATLAB unique(rf_list, 'rows') which sorts lexicographically
     initial_octave_range = np.unique(octave_at_scales)
-    initial_rf_list = [resolution_factors_by_octave[int(o)] for o in initial_octave_range]
+    initial_rf_list = np.stack(
+        [resolution_factors_by_octave[int(o)] for o in initial_octave_range], axis=0
+    )
 
-    unique_rf = []
-    ia = []
-    ic_map = {}
-    for idx in range(len(initial_rf_list) - 1, -1, -1):
-        rf = initial_rf_list[idx]
-        found = False
-        for u_idx, urf in enumerate(unique_rf):
-            if np.array_equal(urf, rf):
-                ic_map[int(initial_octave_range[idx])] = u_idx
-                found = True
-                break
-        if not found:
-            unique_rf.append(rf)
-            ia.append(initial_octave_range[idx])
-            ic_map[int(initial_octave_range[idx])] = len(unique_rf) - 1
-
-    unique_rf = unique_rf[::-1]
-    ia = ia[::-1]
-    n_unique = len(unique_rf)
-    for k in ic_map:
-        ic_map[k] = n_unique - 1 - ic_map[k]
-
-    consolidated_octave_range = np.array(ia, dtype=np.int16)
+    unique_rf, ic = np.unique(initial_rf_list, axis=0, return_inverse=True)
+    
+    # Map original octaves to the consolidated unique octave IDs
     consolidated_octave_at_scales = np.array(
-        [consolidated_octave_range[ic_map[int(o)]] for o in octave_at_scales],
+        [ic[int(octave_at_scales[i]) - 1] + 1 for i in range(number_of_scales)],
         dtype=np.int16,
     )
-
-    scale_resolution_factors = np.stack(
-        [resolution_factors_by_octave[int(octave)] for octave in consolidated_octave_at_scales],
-        axis=0,
-    )
+    
+    scale_resolution_factors = unique_rf[ic[octave_at_scales - 1]]
+    
     return consolidated_octave_at_scales, scale_resolution_factors
 
 
@@ -139,7 +124,8 @@ def compute_native_hessian_energy(
     scale_idx: int,
 ) -> np.ndarray:
     """Compute one scale of the MATLAB-style matched-filter Hessian energy."""
-    debug_outputs = _compute_native_hessian_scale_debug(image, config, scale_idx)
+    policy = EnergyPolicy.from_params(config)
+    debug_outputs = _compute_native_hessian_scale_debug(image, config, scale_idx, policy=policy)
     return debug_outputs["energy"]
 
 
@@ -147,8 +133,10 @@ def _compute_native_hessian_scale_debug(
     image: np.ndarray,
     config: dict[str, Any],
     scale_idx: int,
+    policy: EnergyPolicy | None = None,
 ) -> dict[str, np.ndarray]:
     """Return one scale of native Hessian intermediates on the working grid."""
+    policy = policy or EnergyPolicy.from_params(config)
     resolution_factor = np.asarray(config["scale_resolution_factors"][scale_idx], dtype=np.int16)
     radius_microns = float(config["lumen_radius_microns"][scale_idx])
     microns_per_pixel: np.ndarray = (
@@ -158,14 +146,15 @@ def _compute_native_hessian_scale_debug(
         np.asarray(config["pixels_per_sigma_PSF"], dtype=float) / resolution_factor
     )
 
-    working_image = _downsample_volume(image, resolution_factor)
+    working_image = _downsample_volume(image, resolution_factor, policy=policy)
     debug_outputs = _matched_hessian_intermediates(
-        working_image.astype(np.float64, copy=False),
+        working_image.astype(policy.precision, copy=False),
         radius_of_lumen_in_microns=radius_microns,
         microns_per_pixel=microns_per_pixel,
         pixels_per_sigma_psf=pixels_per_sigma_psf,
         gaussian_to_ideal_ratio=float(config["gaussian_to_ideal_ratio"]),
         spherical_to_annular_ratio=float(config["spherical_to_annular_ratio"]),
+        policy=policy,
     )
     return {
         "resolution_factor": resolution_factor,
@@ -175,23 +164,23 @@ def _compute_native_hessian_scale_debug(
     }
 
 
-def _downsample_volume(image: np.ndarray, resolution_factor: np.ndarray) -> np.ndarray:
-    """Downsample with MATLAB ``get_energy_V202`` last-chunk stride alignment.
-
-    MATLAB ``get_starts_and_counts_V200`` adjusts the reading start of the last
-    chunk in each dimension so the strided ``h5read`` lands exactly on the final
-    pixel (lines 37-45): ``reading_count = 1 + rf*floor((size-1)/rf)`` and
-    ``reading_start = reading_end - reading_count + 1``. For the single chunk that
-    covers a whole working volume this makes the 0-based stride phase
-    ``(size - 1) mod rf`` per axis (not ``0`` and not ``factor - 1``). The
-    ``interp3`` upsample mesh maps the origin back to coarse index 0 because the
-    chunk ``offset`` saturates to 0 in MATLAB's ``uint16`` arithmetic, so
-    :func:`_upsample_volume` (``arange(n)/factor``) stays consistent with this phase.
-    """
+def _downsample_volume(
+    image: np.ndarray,
+    resolution_factor: np.ndarray,
+    policy: EnergyPolicy | None = None,
+) -> np.ndarray:
+    """Downsample with configurable stride phase alignment."""
     factors = [int(value) for value in resolution_factor]
     if factors[0] == factors[1] == factors[2] == 1:
         return image
-    starts = [(image.shape[axis] - 1) % factors[axis] for axis in range(3)]
+
+    alignment = policy.downsample_alignment if policy else "paper"
+    if alignment == "matlab":
+        # MATLAB ``get_starts_and_counts_V200`` adjusts phase per axis.
+        starts = [(image.shape[axis] - 1) % factors[axis] for axis in range(3)]
+    else:
+        starts = [0, 0, 0]
+
     return cast(
         "np.ndarray",
         image[
@@ -250,6 +239,7 @@ def _matched_hessian_energy(
     pixels_per_sigma_psf: np.ndarray,
     gaussian_to_ideal_ratio: float,
     spherical_to_annular_ratio: float,
+    policy: EnergyPolicy | None = None,
 ) -> np.ndarray:
     return _matched_hessian_intermediates(
         image,
@@ -258,6 +248,7 @@ def _matched_hessian_energy(
         pixels_per_sigma_psf=pixels_per_sigma_psf,
         gaussian_to_ideal_ratio=gaussian_to_ideal_ratio,
         spherical_to_annular_ratio=spherical_to_annular_ratio,
+        policy=policy,
     )["energy"]
 
 
@@ -269,11 +260,14 @@ def _matched_hessian_intermediates(
     pixels_per_sigma_psf: np.ndarray,
     gaussian_to_ideal_ratio: float,
     spherical_to_annular_ratio: float,
+    energy_sign: float = -1.0,
+    policy: EnergyPolicy | None = None,
 ) -> dict[str, np.ndarray]:
-    image = image.astype(np.float64, copy=False)
+    dtype = policy.precision if policy else np.float64
+    image = image.astype(dtype, copy=False)
     original_shape = image.shape
     padded_image = _fourier_transform_input(image)
-    chunk_dft = np.fft.fftn(padded_image.astype(np.float64, copy=False))
+    chunk_dft = np.fft.fftn(padded_image.astype(dtype, copy=False))
     pixel_freq_meshes = _pixel_frequency_meshes(padded_image.shape)
     matching_kernel_dft, derivative_weights = _matching_kernel_dft(
         pixel_freq_meshes,
@@ -283,100 +277,68 @@ def _matched_hessian_intermediates(
         gaussian_to_ideal_ratio=gaussian_to_ideal_ratio,
         spherical_to_annular_ratio=spherical_to_annular_ratio,
     )
-    curvatures_kernels_dft, gradient_kernels_dft = _derivative_kernels_dft(
-        pixel_freq_meshes,
-        derivative_weights,
-    )
 
-    filtered_chunk_dft = matching_kernel_dft * chunk_dft
+    filtered_chunk_dft = (matching_kernel_dft * chunk_dft).astype(np.complex128, copy=False)
     del matching_kernel_dft
 
-    # Compute curvature components one-by-one to avoid 4D stacks
-    # We need the first three to determine valid voxels (Laplacian < 0)
+    # Compute curvature components one-by-one to avoid 4D stacks.
     c0 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
         pixel_freq_meshes, derivative_weights, 0, is_curvature=True
-    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
     
     c1 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
         pixel_freq_meshes, derivative_weights, 1, is_curvature=True
-    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
     
     c2 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
         pixel_freq_meshes, derivative_weights, 2, is_curvature=True
-    ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
 
     laplacian_chunk = c0 + c1 + c2
-    valid_voxels = laplacian_chunk < 0
-    energy_chunk = np.full(image.shape, np.inf, dtype=np.float64)
+    valid_voxels = (laplacian_chunk < 0) if energy_sign < 0 else (laplacian_chunk > 0)
+    energy_chunk = np.full(image.shape, np.inf if energy_sign < 0 else -np.inf, dtype=dtype)
     
     if not np.any(valid_voxels):
         del c0, c1, c2, filtered_chunk_dft
         return {
-            "laplacian": laplacian_chunk.astype(np.float64, copy=False),
+            "laplacian": laplacian_chunk.astype(dtype, copy=False),
             "valid_voxels": valid_voxels,
             "energy": energy_chunk,
         }
 
-    # Extract valid components for Hessian
     num_valid = np.count_nonzero(valid_voxels)
-    hessian_valid = np.empty((num_valid, 3, 3), dtype=np.float64)
-    hessian_valid[:, 0, 0] = c0[valid_voxels]
-    hessian_valid[:, 1, 1] = c1[valid_voxels]
-    hessian_valid[:, 2, 2] = c2[valid_voxels]
+    curvatures_valid = np.empty((num_valid, 6), dtype=dtype)
+    curvatures_valid[:, 0] = c0[valid_voxels].astype(dtype, copy=False)
+    curvatures_valid[:, 1] = c1[valid_voxels].astype(dtype, copy=False)
+    curvatures_valid[:, 2] = c2[valid_voxels].astype(dtype, copy=False)
     del c0, c1, c2
 
-    # Rest of curvatures
-    for i, (r, c) in enumerate([(0, 1), (1, 2), (0, 2)], start=3):
-        val = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
+    for i, col_idx in enumerate([3, 4, 5], start=3):
+        curvatures_valid[:, col_idx] = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
             pixel_freq_meshes, derivative_weights, i, is_curvature=True
-        ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels]
-        hessian_valid[:, r, c] = val
-        hessian_valid[:, c, r] = val
-        del val
+        ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels].astype(dtype, copy=False)
 
-    # Gradient components
-    grad_valid = np.empty((num_valid, 3), dtype=np.float64)
+    grad_valid = np.empty((num_valid, 3), dtype=dtype)
     for i in range(3):
         grad_valid[:, i] = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
             pixel_freq_meshes, derivative_weights, i, is_curvature=False
-        ) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels]
+        ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels].astype(dtype, copy=False)
 
     del filtered_chunk_dft
-    import gc
     gc.collect()
 
-    # Batch EIGH to prevent large contiguous allocations on a fragmented heap
-    batch_size = 256 * 1024
-    principal_energy_values = np.empty((num_valid, 3), dtype=np.float64)
-
-    for start_idx in range(0, num_valid, batch_size):
-        end_idx = min(start_idx + batch_size, num_valid)
-        h_batch = hessian_valid[start_idx:end_idx]
-        g_batch = grad_valid[start_idx:end_idx]
-
-        w_batch, v_batch = np.linalg.eigh(h_batch)
-        p_batch = np.einsum("ni,nij->nj", g_batch, v_batch)
-
-        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-            e_batch = w_batch * np.exp(-((p_batch / w_batch) ** 2) / 2.0)
-        
-        e_batch[:, 2] = np.minimum(e_batch[:, 2], 0.0)
-        principal_energy_values[start_idx:end_idx] = e_batch
-        
-        del h_batch, g_batch, w_batch, v_batch, p_batch, e_batch
-
-    del grad_valid, hessian_valid
-
-    energy_valid = np.sum(principal_energy_values, axis=1)
-    del principal_energy_values
-
-    energy_chunk[valid_voxels] = energy_valid.astype(np.float64, copy=False)
-    del energy_valid
-    energy_chunk[~np.isfinite(energy_chunk)] = np.inf
-    energy_chunk[energy_chunk >= 0] = np.inf
+    energy_valid = compute_principal_energy(
+        grad_valid,
+        curvatures_valid,
+        energy_sign=energy_sign,
+        dtype=dtype
+    )
+    
+    del grad_valid, curvatures_valid
+    energy_chunk[valid_voxels] = energy_valid
     
     return {
-        "laplacian": laplacian_chunk.astype(np.float64, copy=False),
+        "laplacian": laplacian_chunk.astype(dtype, copy=False),
         "valid_voxels": valid_voxels,
         "energy": energy_chunk,
     }
