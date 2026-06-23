@@ -25,6 +25,7 @@ Keep the repo root clean, preserve valuable experiment state, and verify the fin
    - Never use `git reset --hard`; prefer `git restore` for tracked paths and targeted `git clean -fd -- <paths>` for known untracked junk.
 4. Route clutter:
    - One-off scripts, logs, prompts, diffs, and diagnostic artifacts belong in `workspace/scratch`, not the repo root.
+   - Ephemeral agent harness output (`agent-tools/`, `terminals/`) must not live at the repo root; move to `workspace/scratch/agent-tools/` or delete.
    - Test artifacts belong in `workspace/scratch/tmp_tests/` through the repo-local test fixtures.
    - Durable fixes or runbooks belong in `docs/solutions`; live parity status belongs in `docs/reference/core/EXACT_PROOF_FINDINGS.md`; active tasks belong in `docs/TODO.md`.
 5. Clean deliberately:

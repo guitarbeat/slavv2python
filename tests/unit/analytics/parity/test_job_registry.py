@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import multiprocessing
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -90,7 +89,7 @@ class TestJobRegistry:
         assert len(job_id) == 36  # UUID format
 
         # Verify job was written to file
-        with open(temp_registry.registry_path, "r") as f:
+        with open(temp_registry.registry_path) as f:
             lines = f.readlines()
             assert len(lines) == 1
             data = json.loads(lines[0])
@@ -135,9 +134,7 @@ class TestJobRegistry:
 
         assert job is not None
         assert job.job_id == job_id
-        assert str(Path(job.run_dir).resolve()) == str(
-            Path(sample_job_data["run_dir"]).resolve()
-        )
+        assert str(Path(job.run_dir).resolve()) == str(Path(sample_job_data["run_dir"]).resolve())
 
     def test_get_job_by_run_dir_returns_latest(self, temp_registry, sample_job_data):
         """Test that get_job_by_run_dir returns the most recent job."""
@@ -156,7 +153,7 @@ class TestJobRegistry:
         temp_registry.update_job(job_id1, status="completed")
 
         sample_job_data["run_dir"] = Path("/tmp/different_run")
-        job_id2 = temp_registry.register_job(**sample_job_data)
+        temp_registry.register_job(**sample_job_data)
 
         history = temp_registry.get_job_history()
         assert len(history) == 2

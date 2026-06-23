@@ -26,6 +26,9 @@ Check [EXACT_PROOF_FINDINGS.md](../core/EXACT_PROOF_FINDINGS.md) before Tier 3 p
 
 - Extend `slavv_python/utils/synthetic.py` with at least one richer geometry (e.g. Y-junction or crossing tubes) in addition to the straight tube.
 - **CI entry points:** `tests/integration/test_paper_profile_ci.py` (paper profile) and `tests/integration/parity/test_parity_pre_gate_tier1.py` (matlab_compat edges smoke + watershed LUT seam).
+- **Component parity (CI):** `tests/unit/pipeline/energy/test_matlab_linspace_table.py` (checked-in MATLAB mesh table), `tests/unit/parity/test_parity_harness.py`, `tests/unit/parity/test_random_component_parity.py`.
+- **Random component differential (self-hosted):** [`tests/support/random_component_parity.py`](../../../tests/support/random_component_parity.py) — see [PARITY_RANDOM_COMPONENT_SUITE.md](PARITY_RANDOM_COMPONENT_SUITE.md) and [ADR 0010](../../adr/0010-random-component-parity-suite.md). Structural gate on linspace, `interp3`, and Energy shape/valid/coordinates; Hessian float ULP is advisory only.
+- **Crop voxel probes (local):** `tests/unit/pipeline/energy/test_voxel_probe_regression.py` via [`tests/support/parity_harness.py`](../../../tests/support/parity_harness.py) — see [tests/README.md](../../../tests/README.md#matlabpython-bit-parity-testing).
 - Do **not** run `prove-exact` on synthetic data unless a dedicated MATLAB oracle is created for that volume (out of scope).
 
 ---

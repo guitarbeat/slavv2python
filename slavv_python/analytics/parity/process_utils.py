@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Optional
 
 try:
     import psutil
@@ -41,7 +41,7 @@ def is_process_alive(pid: int) -> bool:
         return False
 
 
-def get_process_info(pid: int) -> Optional[Dict[str, any]]:
+def get_process_info(pid: int) -> dict[str, any] | None:
     """
     Get information about a process.
 
@@ -114,23 +114,19 @@ def kill_process_tree(pid: int, timeout: int = 5) -> bool:
 
         # Terminate children first
         for child in children:
-            try:
+            with contextlib.suppress(psutil.NoSuchProcess):
                 child.terminate()
-            except psutil.NoSuchProcess:
-                pass
 
         # Terminate parent
         parent.terminate()
 
         # Wait for termination
-        gone, alive = psutil.wait_procs([parent] + children, timeout=timeout)
+        _gone, alive = psutil.wait_procs([parent, *children], timeout=timeout)
 
         # Force kill any remaining processes
         for proc in alive:
-            try:
+            with contextlib.suppress(psutil.NoSuchProcess):
                 proc.kill()
-            except psutil.NoSuchProcess:
-                pass
 
         logger.info(f"Terminated process tree rooted at PID {pid}")
         return True
@@ -188,7 +184,7 @@ def get_daemon_pid_file() -> Path:
     return workspace / "monitor_daemon.pid"
 
 
-def read_daemon_pid() -> Optional[int]:
+def read_daemon_pid() -> int | None:
     """
     Read daemon PID from file.
 

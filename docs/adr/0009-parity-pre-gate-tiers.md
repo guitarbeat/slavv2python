@@ -24,3 +24,4 @@ Full canonical runs may proceed in parallel with crop harness work; crop is for 
 - One-time MATLAB vectorization cost per crop definition (`180709_E_crop_M`).
 - Workflow and ROI bounds live in `docs/reference/workflow/PARITY_PRE_GATE.md`.
 - Glossary terms in [AGENTS.md](../../AGENTS.md): Parity Pre-Gate, Synthetic Fixture Volume, Crop Harness Volume, Canonical Volume.
+- Complementary fast component loop (no cert claim): [ADR 0010](0010-random-component-parity-suite.md), [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).

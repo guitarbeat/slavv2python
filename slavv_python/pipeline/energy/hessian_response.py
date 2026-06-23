@@ -36,7 +36,9 @@ def matlab_octave_resolution_factors(
             np.full(3, _WORST_RESOLUTION_TO_DOWNSAMPLE, dtype=float),
         )
         resolution_factors = np.maximum(
-            np.floor(_WORST_RESOLUTION_TO_DOWNSAMPLE / resolutions_at_octave).astype(np.int16),
+            np.floor(_WORST_RESOLUTION_TO_DOWNSAMPLE / resolutions_at_octave + 0.5).astype(
+                np.int16
+            ),
             1,
         )
         logger.info(f"Octave {current_octave} resolution factors: {resolution_factors}")
@@ -49,15 +51,15 @@ def matlab_octave_resolution_factors(
     )
 
     unique_rf, ic = np.unique(initial_rf_list, axis=0, return_inverse=True)
-    
+
     # Map original octaves to the consolidated unique octave IDs
     consolidated_octave_at_scales = np.array(
         [ic[int(octave_at_scales[i]) - 1] + 1 for i in range(number_of_scales)],
         dtype=np.int16,
     )
-    
+
     scale_resolution_factors = unique_rf[ic[octave_at_scales - 1]]
-    
+
     return consolidated_octave_at_scales, scale_resolution_factors
 
 
@@ -282,22 +284,31 @@ def _matched_hessian_intermediates(
     del matching_kernel_dft
 
     # Compute curvature components one-by-one to avoid 4D stacks.
-    c0 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
-        pixel_freq_meshes, derivative_weights, 0, is_curvature=True
-    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
-    
-    c1 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
-        pixel_freq_meshes, derivative_weights, 1, is_curvature=True
-    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
-    
-    c2 = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
-        pixel_freq_meshes, derivative_weights, 2, is_curvature=True
-    ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]]
+    c0 = _ifftn_matlab_symmetric(
+        _derivative_kernel_dft_single(
+            pixel_freq_meshes, derivative_weights, 0, is_curvature=True
+        ).astype(np.float64, copy=False)
+        * filtered_chunk_dft
+    )[: original_shape[0], : original_shape[1], : original_shape[2]]
+
+    c1 = _ifftn_matlab_symmetric(
+        _derivative_kernel_dft_single(
+            pixel_freq_meshes, derivative_weights, 1, is_curvature=True
+        ).astype(np.float64, copy=False)
+        * filtered_chunk_dft
+    )[: original_shape[0], : original_shape[1], : original_shape[2]]
+
+    c2 = _ifftn_matlab_symmetric(
+        _derivative_kernel_dft_single(
+            pixel_freq_meshes, derivative_weights, 2, is_curvature=True
+        ).astype(np.float64, copy=False)
+        * filtered_chunk_dft
+    )[: original_shape[0], : original_shape[1], : original_shape[2]]
 
     laplacian_chunk = c0 + c1 + c2
     valid_voxels = (laplacian_chunk < 0) if energy_sign < 0 else (laplacian_chunk > 0)
     energy_chunk = np.full(image.shape, np.inf if energy_sign < 0 else -np.inf, dtype=dtype)
-    
+
     if not np.any(valid_voxels):
         del c0, c1, c2, filtered_chunk_dft
         return {
@@ -314,29 +325,36 @@ def _matched_hessian_intermediates(
     del c0, c1, c2
 
     for i, col_idx in enumerate([3, 4, 5], start=3):
-        curvatures_valid[:, col_idx] = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
-            pixel_freq_meshes, derivative_weights, i, is_curvature=True
-        ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels].astype(dtype, copy=False)
+        curvatures_valid[:, col_idx] = _ifftn_matlab_symmetric(
+            _derivative_kernel_dft_single(
+                pixel_freq_meshes, derivative_weights, i, is_curvature=True
+            ).astype(np.float64, copy=False)
+            * filtered_chunk_dft
+        )[: original_shape[0], : original_shape[1], : original_shape[2]][valid_voxels].astype(
+            dtype, copy=False
+        )
 
     grad_valid = np.empty((num_valid, 3), dtype=dtype)
     for i in range(3):
-        grad_valid[:, i] = _ifftn_matlab_symmetric(_derivative_kernel_dft_single(
-            pixel_freq_meshes, derivative_weights, i, is_curvature=False
-        ).astype(np.float64, copy=False) * filtered_chunk_dft)[:original_shape[0], :original_shape[1], :original_shape[2]][valid_voxels].astype(dtype, copy=False)
+        grad_valid[:, i] = _ifftn_matlab_symmetric(
+            _derivative_kernel_dft_single(
+                pixel_freq_meshes, derivative_weights, i, is_curvature=False
+            ).astype(np.float64, copy=False)
+            * filtered_chunk_dft
+        )[: original_shape[0], : original_shape[1], : original_shape[2]][valid_voxels].astype(
+            dtype, copy=False
+        )
 
     del filtered_chunk_dft
     gc.collect()
 
     energy_valid = compute_principal_energy(
-        grad_valid,
-        curvatures_valid,
-        energy_sign=energy_sign,
-        dtype=dtype
+        grad_valid, curvatures_valid, energy_sign=energy_sign, dtype=dtype
     )
-    
+
     del grad_valid, curvatures_valid
     energy_chunk[valid_voxels] = energy_valid
-    
+
     return {
         "laplacian": laplacian_chunk.astype(dtype, copy=False),
         "valid_voxels": valid_voxels,
@@ -387,17 +405,13 @@ def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     # Each term has shape compatible with (ny, nx, nz):
     #   plin = p_idx_y[:,None,None] + ny*p_idx_x[None,:,None] + ny*nx*p_idx_z[None,None,:]
     plin = (
-        p_idx_y[:, None, None]
-        + ny * p_idx_x[None, :, None]
-        + ny * nx * p_idx_z[None, None, :]
+        p_idx_y[:, None, None] + ny * p_idx_x[None, :, None] + ny * nx * p_idx_z[None, None, :]
     )  # shape (ny, nx, nz), dtype int64
     del p_idx_y, p_idx_x, p_idx_z
 
     # Own Fortran-order linear index.
     lin = (
-        lin_y[:, None, None]
-        + ny * lin_x[None, :, None]
-        + ny * nx * lin_z[None, None, :]
+        lin_y[:, None, None] + ny * lin_x[None, :, None] + ny * nx * lin_z[None, None, :]
     )  # shape (ny, nx, nz), dtype int64
     del lin_y, lin_x, lin_z
 
@@ -497,17 +511,17 @@ def _matching_kernel_dft(
     spherical_pulse_kernel_dft = np.ones_like(radial_angular_freq_mesh_sphere, dtype=np.float64)
     nonzero_sphere = radial_angular_freq_mesh_sphere != 0
     sphere_argument = radial_angular_freq_mesh_sphere[nonzero_sphere]
-    
+
     # Compute Bessel sum in chunks to keep peak memory footprint minimal
     res = np.empty_like(sphere_argument)
     chunk_size = 1000000
     for i in range(0, len(sphere_argument), chunk_size):
         s = slice(i, i + chunk_size)
         c = sphere_argument[s]
-        res[s] = jv(2.5, c)
-        res[s] += jv(0.5, c)
-        res[s] *= np.sqrt(np.pi / 2.0 / c)
-    
+        # Match MATLAB ``energy_filter_V200`` evaluation order:
+        # (pi/2./radial).^0.5 .* (besselj(2.5,radial)+besselj(0.5,radial))
+        res[s] = np.sqrt(np.pi / 2.0 / c) * (jv(2.5, c) + jv(0.5, c))
+
     spherical_pulse_kernel_dft[nonzero_sphere] = res
     del res, sphere_argument
 
@@ -545,7 +559,7 @@ def _precompute_base_derivative_kernels_dft(
     shape = np.broadcast_shapes(
         y_pixel_freq_mesh.shape, x_pixel_freq_mesh.shape, z_pixel_freq_mesh.shape
     )
-    
+
     # Base derivative kernels (unweighted)
     base_curvatures = np.zeros((6, *shape), dtype=np.float64)
     base_gradients = np.zeros((3, *shape), dtype=np.complex128)
@@ -558,15 +572,15 @@ def _precompute_base_derivative_kernels_dft(
     xz_freq: np.ndarray = x_pixel_freq_mesh * z_pixel_freq_mesh
     zy_freq: np.ndarray = z_pixel_freq_mesh * y_pixel_freq_mesh
 
-    base_curvatures[3] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0) * np.sign(
-        yx_freq
-    ) / 4.0
-    base_curvatures[4] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0) * np.sign(
-        xz_freq
-    ) / 4.0
-    base_curvatures[5] = (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0) * np.sign(
-        zy_freq
-    ) / 4.0
+    base_curvatures[3] = (
+        (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0) * np.sign(yx_freq) / 4.0
+    )
+    base_curvatures[4] = (
+        (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0) * np.sign(xz_freq) / 4.0
+    )
+    base_curvatures[5] = (
+        (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0) * np.sign(zy_freq) / 4.0
+    )
 
     base_gradients[0] = 1j * np.sin(2.0 * np.pi * y_pixel_freq_mesh) / 2.0
     base_gradients[1] = 1j * np.sin(2.0 * np.pi * x_pixel_freq_mesh) / 2.0

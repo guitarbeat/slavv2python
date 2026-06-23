@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
-
-import numpy as np
-import pytest
 
 from slavv_python.analytics.parity.constants import (
     EXACT_REQUIRED_PARAMETER_VALUES,
@@ -23,6 +20,9 @@ from slavv_python.analytics.parity.resume import (
 )
 from slavv_python.engine.constants import STATUS_PENDING, STATUS_RUNNING
 from slavv_python.engine.state import RunContext, atomic_write_json, load_json_dict
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _write_validated_params(dest: Path) -> None:

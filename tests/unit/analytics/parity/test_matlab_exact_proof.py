@@ -14,11 +14,11 @@ from slavv_python.analytics.parity.matlab_vector_loader import (
     load_normalized_matlab_edge_input_vertices,
     load_normalized_matlab_stage,
 )
+from slavv_python.analytics.parity.proofs import _selected_exact_stages
 from slavv_python.analytics.parity.python_checkpoint_loader import (
     normalize_python_stage_payload,
     sync_exact_vertex_checkpoint_from_matlab,
 )
-from slavv_python.analytics.parity.proofs import _selected_exact_stages
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -189,7 +189,6 @@ def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
     import h5py
 
     from slavv_python.analytics.parity.matlab_vector_loader import (
-        find_matlab_vector_paths,
         load_normalized_matlab_stage,
     )
 
@@ -224,7 +223,6 @@ def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
 
 
 def test_find_matlab_vector_paths_prefers_curated_vertices(tmp_path):
-    from slavv_python.analytics.parity.matlab_vector_loader import find_matlab_vector_paths
 
     vectors_dir = tmp_path / "batch" / "vectors"
     data_dir = tmp_path / "batch" / "data"

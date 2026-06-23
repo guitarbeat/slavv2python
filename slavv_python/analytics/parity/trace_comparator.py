@@ -32,9 +32,7 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return events
 
 
-def compare_traces(
-    path1: Path, path2: Path, energy_tol: float = 1e-5
-) -> list[Divergence]:
+def compare_traces(path1: Path, path2: Path, energy_tol: float = 1e-5) -> list[Divergence]:
     """Compare two SLAVV JSONL execution traces and return a list of divergences."""
     trace1 = load_jsonl(path1)
     trace2 = load_jsonl(path2)
@@ -208,4 +206,4 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
-__all__ = ["Divergence", "compare_traces", "load_jsonl", "build_compare_traces_parser", "main"]
+__all__ = ["Divergence", "build_compare_traces_parser", "compare_traces", "load_jsonl", "main"]

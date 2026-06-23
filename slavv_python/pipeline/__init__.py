@@ -1,5 +1,5 @@
 from __future__ import annotations
 
-from slavv_python.pipeline import energy, edges, vertices, network
+from slavv_python.pipeline import edges, energy, network, vertices
 
-__all__ = ["energy", "edges", "vertices", "network"]
+__all__ = ["edges", "energy", "network", "vertices"]

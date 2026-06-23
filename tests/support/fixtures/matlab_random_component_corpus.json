@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "linspace_context_count": 128,
+  "linspace_seed": 2026062201,
+  "query_seed": 2026062202,
+  "energy": {
+    "radius_microns": 2.0,
+    "pixels_per_sigma_psf_yxz": [1.0, 1.0, 1.0],
+    "gaussian_to_ideal_ratio": 0.5,
+    "spherical_to_annular_ratio": 0.5,
+    "scales_per_octave": 1.0
+  },
+  "cases": [
+    {"id": "noise_iso_01", "seed": 1001, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [1.0, 1.0, 1.0]},
+    {"id": "noise_iso_02", "seed": 1002, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [1.0, 1.0, 1.0]},
+    {"id": "noise_iso_03", "seed": 1003, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [1.0, 1.0, 1.0]},
+    {"id": "noise_aniso_01", "seed": 2001, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [2.0, 1.0, 1.0]},
+    {"id": "noise_aniso_02", "seed": 2002, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [2.0, 1.0, 1.0]},
+    {"id": "noise_aniso_03", "seed": 2003, "shape_zyx": [16, 32, 32], "microns_per_voxel_zyx": [2.0, 1.0, 1.0]}
+  ]
+}

@@ -24,6 +24,10 @@ else:
     Float64Array = np.ndarray
     BoolArray = np.ndarray
 
+from slavv_python.pipeline.edges.execution_tracing import (
+    ExecutionTracer,
+    NullExecutionTracer,
+)
 from slavv_python.pipeline.edges.frontier_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
@@ -31,11 +35,6 @@ from slavv_python.pipeline.edges.frontier_geometry import (
 from slavv_python.pipeline.edges.matlab_indexing import (
     _argmin_with_linear_index_tiebreak,
     _matlab_linear_index_to_coord,
-)
-from slavv_python.pipeline.edges.watershed_lut import _build_matlab_global_watershed_lut
-from slavv_python.pipeline.edges.execution_tracing import (
-    ExecutionTracer,
-    NullExecutionTracer,
 )
 from slavv_python.pipeline.edges.payloads import (
     _edge_metric_from_energy_trace,
@@ -46,6 +45,7 @@ from slavv_python.pipeline.edges.watershed_core import (
     VoxelClaimMap,
     _matlab_global_watershed_border_locations,
 )
+from slavv_python.pipeline.edges.watershed_lut import _build_matlab_global_watershed_lut
 
 __all__ = ["_matlab_global_watershed_border_locations"]
 
@@ -64,9 +64,9 @@ def _coords_from_linear_trace(
     )
     # Reorient [y, x, z] -> [z, y, x]
     coords_zyx = np.zeros_like(coords_yxz)
-    coords_zyx[:, 0] = coords_yxz[:, 2] # Z
-    coords_zyx[:, 1] = coords_yxz[:, 0] # Y
-    coords_zyx[:, 2] = coords_yxz[:, 1] # X
+    coords_zyx[:, 0] = coords_yxz[:, 2]  # Z
+    coords_zyx[:, 1] = coords_yxz[:, 0]  # Y
+    coords_zyx[:, 2] = coords_yxz[:, 1]  # X
     return cast("np.ndarray", coords_zyx)
 
 
@@ -169,7 +169,7 @@ def _matlab_global_watershed_prepare_size_map(
     vertex_coords = np.rint(np.asarray(vertex_positions, dtype=np.float64)).astype(
         np.int32, copy=False
     )
-    
+
     # Standard clipping
     vertex_coords[:, 0] = np.clip(vertex_coords[:, 0], 0, shape[0] - 1)
     vertex_coords[:, 1] = np.clip(vertex_coords[:, 1], 0, shape[1] - 1)
@@ -378,7 +378,9 @@ def _matlab_global_watershed_assemble_results(
     # Inputs are already in MATLAB [Y, X, Z] order
     flat_energy_map = energy_map_matlab.ravel(order="F")
     flat_scale_image = (
-        original_scale_image_matlab.ravel(order="F") if original_scale_image_matlab is not None else None
+        original_scale_image_matlab.ravel(order="F")
+        if original_scale_image_matlab is not None
+        else None
     )
 
     for (start_vertex_index, end_vertex_index), (half_1, half_2) in zip(edge_pairs, edge_halves):
@@ -478,9 +480,12 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     scale_indices_matlab: np.ndarray | None = None
     if scale_indices is not None:
-        scale_indices_matlab = np.transpose(np.asarray(scale_indices, dtype=np.int16), (1, 2, 0)).copy(order="F")
+        scale_indices_matlab = np.transpose(
+            np.asarray(scale_indices, dtype=np.int16), (1, 2, 0)
+        ).copy(order="F")
 
     from slavv_python.utils.matlab_order import zyx_to_matlab_linear_indices
+
     vertex_locations = zyx_to_matlab_linear_indices(vertex_positions, energy.shape)
 
     shape: tuple[int, int, int] = (
@@ -491,14 +496,14 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     claim_map = VoxelClaimMap(shape, vertex_positions, energy_matlab)
     claim_map.initial_locations = [int(loc) for loc in vertex_locations[::-1]]
-    
+
     queue = FrontierQueue(claim_map.initial_locations, claim_map.energy_temp_flat)
     number_of_vertices = claim_map.number_of_vertices
 
     vertex_coords_yxz = np.zeros_like(vertex_positions, dtype=np.float64)
-    vertex_coords_yxz[:, 0] = vertex_positions[:, 1] # Y
-    vertex_coords_yxz[:, 1] = vertex_positions[:, 2] # X
-    vertex_coords_yxz[:, 2] = vertex_positions[:, 0] # Z
+    vertex_coords_yxz[:, 0] = vertex_positions[:, 1]  # Y
+    vertex_coords_yxz[:, 1] = vertex_positions[:, 2]  # X
+    vertex_coords_yxz[:, 2] = vertex_positions[:, 0]  # Z
 
     mpv_matlab = np.asarray(microns_per_voxel, dtype=np.float64)[[1, 2, 0]]
 

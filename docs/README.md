@@ -65,8 +65,10 @@ Treat `investigations/` as historical context, not as an executable spec.
 2. **[Parity Pre-Gate](reference/workflow/PARITY_PRE_GATE.md)** — Three-tier testing (synthetic → crop → canonical)
 3. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow
 4. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
-5. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
-6. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
+5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
+6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP
+7. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
+8. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
 
 ### Cold-Start Protocol
 

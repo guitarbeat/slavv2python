@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import numpy as np
 
+
 def _normalize_python_bridge_payload(raw_payload: Any) -> dict[str, Any]:
     if not isinstance(raw_payload, dict):
         return {
@@ -270,4 +271,3 @@ def _optional_field(payload: dict[str, Any], *field_names: str) -> Any:
         if field_name in payload:
             return payload[field_name]
     return None
-

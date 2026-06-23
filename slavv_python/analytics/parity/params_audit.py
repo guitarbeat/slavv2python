@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -18,8 +18,10 @@ from .constants import (
     SHARED_PARAMS_PATH,
     VALIDATED_PARAMS_PATH,
 )
-from .models import ExactProofSourceSurface, SourceRunSurface
 from .utils import write_json_with_hash
+
+if TYPE_CHECKING:
+    from .models import ExactProofSourceSurface, SourceRunSurface
 
 
 def normalize_param_value(value: Any) -> Any:
@@ -98,9 +100,7 @@ def persist_param_storage(dest_run_root: Path, params: dict[str, Any]) -> dict[s
         if key in EXACT_ALLOWED_ORCHESTRATION_PARAMETER_KEYS
     }
     python_only_params = {
-        key: normalize_param_value(params[key])
-        for key in derived_keys
-        if key.startswith("parity_")
+        key: normalize_param_value(params[key]) for key in derived_keys if key.startswith("parity_")
     }
     unclassified_params = {
         key: normalize_param_value(params[key])

@@ -9,7 +9,6 @@ from typing import Any
 import numpy as np
 import scipy.ndimage as ndi
 
-
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
 

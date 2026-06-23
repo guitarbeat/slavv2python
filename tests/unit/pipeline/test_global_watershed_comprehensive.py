@@ -21,7 +21,6 @@ from slavv_python.pipeline.edges.frontier_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
-from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
 from slavv_python.pipeline.edges.generate import sort_candidates_by_quality
 from slavv_python.pipeline.edges.global_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
@@ -37,6 +36,7 @@ from slavv_python.pipeline.edges.global_watershed import (
     _matlab_global_watershed_tolerance_mask,
     _matlab_global_watershed_trace_half,
 )
+from slavv_python.pipeline.edges.matlab_indexing import _argmin_with_linear_index_tiebreak
 
 # ============================================================================
 # Energy Map Processing Tests

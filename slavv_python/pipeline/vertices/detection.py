@@ -197,9 +197,9 @@ def crop_vertices_matlab_style(
         )
 
     scale_indices = policy.round(vertex_scales).astype(np.int64)
-    scaled_radii = policy.round(length_dilation_ratio * lumen_radius_pixels_axes[scale_indices]).astype(
-        np.int64
-    )
+    scaled_radii = policy.round(
+        length_dilation_ratio * lumen_radius_pixels_axes[scale_indices]
+    ).astype(np.int64)
     positions = policy.round(vertex_positions).astype(np.int64)
 
     mins = positions - scaled_radii
@@ -254,7 +254,7 @@ def _choose_vertices_loop_python(
     for i in range(start_index, end_index):
         scale = vertex_scales[i]
         pos = vertex_positions[i]
-        
+
         if rounding_mode == "half-up":
             cy = int(np.floor(pos[0] + 0.5))
             cx = int(np.floor(pos[1] + 0.5))

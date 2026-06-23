@@ -5,17 +5,18 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
-from typing_extensions import Protocol
 
 import numpy as np
 from scipy.spatial import cKDTree
+from typing_extensions import Protocol
 
-from slavv_python.pipeline.energy.provenance import is_exact_compatible_energy_origin
 from slavv_python.pipeline.edges.candidate_generation import (
     generate_directional_candidates,
     generate_watershed_candidates,
     sort_candidates_by_quality,
 )
+from slavv_python.pipeline.energy.provenance import is_exact_compatible_energy_origin
+from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.painting import paint_vertex_image
 
 if TYPE_CHECKING:
@@ -25,9 +26,6 @@ if TYPE_CHECKING:
     from slavv_python.schema.results import EnergyResult, VertexSet
 
 logger = logging.getLogger(__name__)
-
-
-from slavv_python.pipeline.policy import PipelinePolicy
 
 
 def _use_matlab_frontier_tracer(energy_data: dict[str, Any], params: dict[str, Any]) -> bool:

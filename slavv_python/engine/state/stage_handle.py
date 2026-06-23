@@ -151,6 +151,19 @@ class StageController:
             substage: Updated internal substage name.
             resumed: Updated resumption status.
         """
+        state = self.load_state()
+        cursor = dict(state.get("progress_cursor", {}))
+        if units_total is not None:
+            cursor["units_total"] = units_total
+        if units_completed is not None:
+            cursor["units_completed"] = units_completed
+        if progress is not None:
+            cursor["progress"] = progress
+        if substage is not None:
+            cursor["substage"] = substage
+        state["progress_cursor"] = cursor
+        state["heartbeat_at"] = _now_iso()
+        self.save_state(state)
         self.run_context.update_stage(
             self.name,
             detail=detail,

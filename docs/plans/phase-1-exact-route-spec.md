@@ -137,6 +137,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 ## Harness & pre-gate (parallel work)
 
 - **Parity Pre-Gate tiers:** [PARITY_PRE_GATE.md](../reference/workflow/PARITY_PRE_GATE.md), [ADR 0009](../adr/0009-parity-pre-gate-tiers.md). Crop harness (`180709_E_crop_M`) may run in parallel with canonical `phase1_cert_network`; passing crop does not satisfy Phase 1 certification.
+- **Random component suite (diagnostic):** [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md), [ADR 0010](../adr/0010-random-component-parity-suite.md). Fast MATLAB/Python differential on seeded noise; does not replace crop or canonical `prove-exact`.
 - **Crop oracle:** MATLAB batch → `promote-oracle`; HDF5 energy layout — [matlab-v200-energy-hdf5-oracle-loader.md](../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md).
 
 **In-scope non-goals:** Changing public paper defaults (phase 2).
@@ -201,4 +202,4 @@ Stop if any stage fails. Do not claim phase 1 complete until all four pass on th
 
 - [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md)
 - [PARITY_CERTIFICATION_GUIDE.md](../reference/workflow/PARITY_CERTIFICATION_GUIDE.md)
-- ADRs: [0008](../adr/0008-exact-proof-coordinator.md), [0009](../adr/0009-parity-pre-gate-tiers.md)
+- ADRs: [0008](../adr/0008-exact-proof-coordinator.md), [0009](../adr/0009-parity-pre-gate-tiers.md), [0010](../adr/0010-random-component-parity-suite.md)

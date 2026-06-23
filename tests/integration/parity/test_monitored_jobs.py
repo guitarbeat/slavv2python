@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
 
 import pytest
@@ -11,7 +10,6 @@ from slavv_python.analytics.parity.job_registry import JobRegistry
 from slavv_python.analytics.parity.monitor_daemon import MonitorDaemon
 from slavv_python.analytics.parity.process_utils import (
     ensure_monitor_daemon_running,
-    is_process_alive,
 )
 
 

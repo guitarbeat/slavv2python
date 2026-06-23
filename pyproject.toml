@@ -24,7 +24,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "numpy>=2.0.0",
+    "numpy>=2.0.0,<2.5",
     "scipy>=1.10.0",
     "scikit-image>=0.21.0",
     "scikit-learn>=1.2.0",
@@ -114,6 +114,9 @@ license-files = ["LICENSE"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["slavv_python", "slavv_python.*"]
+
+[tool.setuptools.package-data]
+"slavv_python.pipeline.energy" = ["matlab_linspace_overrides.json"]
 
 # â”€â”€ Ruff (linter + formatter) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 [tool.ruff]

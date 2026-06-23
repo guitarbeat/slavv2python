@@ -13,15 +13,6 @@ from tests.support.run_state_builders import build_run_context
 
 from slavv_python.engine.state import RunContext
 from slavv_python.engine.state.layout import resolve_run_layout
-from slavv_python.engine.state.snapshot_lifecycle import (
-    begin_stage_snapshot,
-    complete_stage_snapshot,
-    fail_stage_snapshot,
-    finalize_run_snapshot,
-    mark_preprocess_complete_snapshot,
-    update_optional_task_snapshot,
-    update_stage_snapshot,
-)
 from slavv_python.engine.state.models import RunSnapshot, StageSnapshot
 from slavv_python.engine.state.progress import (
     calculate_overall_progress,
@@ -34,6 +25,15 @@ from slavv_python.engine.state.reset import (
     clear_stage_runtime_artifacts,
     remove_stage_dir_contents,
     reset_stage_snapshots,
+)
+from slavv_python.engine.state.snapshot_lifecycle import (
+    begin_stage_snapshot,
+    complete_stage_snapshot,
+    fail_stage_snapshot,
+    finalize_run_snapshot,
+    mark_preprocess_complete_snapshot,
+    update_optional_task_snapshot,
+    update_stage_snapshot,
 )
 from slavv_python.engine.state.status import build_status_lines
 

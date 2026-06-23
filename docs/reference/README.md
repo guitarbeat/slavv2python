@@ -33,8 +33,10 @@ Operator guides and contributor references:
 | Document | Purpose | Related Docs |
 |----------|---------|--------------|
 | [Parity Pre-Gate](workflow/PARITY_PRE_GATE.md) | Three-tier parity testing (synthetic → crop → canonical) | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Random Component Parity Suite](workflow/PARITY_RANDOM_COMPONENT_SUITE.md) | Fast MATLAB/Python differential on seeded noise (linspace, interp3, Energy structure) | [ADR 0010](../adr/0010-random-component-parity-suite.md), [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md) |
 | [Parity Certification Guide](workflow/PARITY_CERTIFICATION_GUIDE.md) | Step-by-step instructions for running mathematical proofs against MATLAB oracles | [PARITY_PRE_GATE.md](workflow/PARITY_PRE_GATE.md), [PARITY_JOB_MONITORING.md](workflow/PARITY_JOB_MONITORING.md) |
 | [Parity Job Monitoring](workflow/PARITY_JOB_MONITORING.md) | Automated tracking and notifications for long-running parity experiments | [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
+| [Parity Run Evidence](workflow/PARITY_RUN_EVIDENCE.md) | Copy-paste template after writers and `prove-exact` attempts | [EXACT_PROOF_FINDINGS.md](core/EXACT_PROOF_FINDINGS.md), [PARITY_CERTIFICATION_GUIDE.md](workflow/PARITY_CERTIFICATION_GUIDE.md) |
 | [Paper Profile](workflow/PAPER_PROFILE.md) | Public paper-first CLI/app workflow and authoritative JSON export contract | [PYTHON_NAMING_GUIDE.md](workflow/PYTHON_NAMING_GUIDE.md) |
 | [Python Naming Guide](workflow/PYTHON_NAMING_GUIDE.md) | Preferred Python names, package groupings, and compatibility policy | [TECHNICAL_ARCHITECTURE.md](core/TECHNICAL_ARCHITECTURE.md) |
 | [Performance Benchmarking Guide](workflow/PERFORMANCE_BENCHMARKING_GUIDE.md) | Methodology and tools for measuring and optimizing processing speed | — |

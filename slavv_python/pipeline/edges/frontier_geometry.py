@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import math
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
 from slavv_python.pipeline.edges.watershed_lut import build_matlab_local_strel_geometry
+
+if TYPE_CHECKING:
+    from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array
 
 
 def _matlab_frontier_edge_budget(params: dict[str, Any]) -> int:

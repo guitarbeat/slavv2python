@@ -200,8 +200,8 @@ def _handle_plot_command(args) -> None:
 __all__ = [
     "_handle_analyze_command",
     "_handle_info_command",
+    "_handle_monitor_command",
     "_handle_plot_command",
     "_handle_run_command",
     "_handle_status_command",
-    "_handle_monitor_command",
 ]

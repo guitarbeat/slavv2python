@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-18
+**Last Updated**: 2026-06-23 (crop Energy evidence stale after failed rerun)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🟡 Crop rerun failed before artifacts on a local coarse-slice shape mismatch; current worktree has the guard/regression. Next: rerun crop Energy, then `prove-exact --stage energy`. |
+| **Energy** | Native Hessian path exact-compatible | 🔴 Crop evidence is currently **stale** after the latest failed Energy rerun: `checkpoint_energy.pkl` is missing and historical proof reports are invalid for new triage. Run `inspect-energy-evidence` before any probe/proof work. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
 | **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -29,26 +29,63 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
 | **Oracle artifact readiness** | `workspace/oracles/180709_E_crop_M`, `workspace/oracles/180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes; manifest reconciliation now records readable normalized artifacts. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | 🟡 Energy artifacts missing after failed rerun. Failure triaged; rerun from Energy is the next writer action. |
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Paused until crop Energy proves strict-zero. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Latest Energy attempt failed and removed/staled the current proof surface: no current `checkpoint_energy.pkl`. Historical `exact_proof*.json`, `exact_mismatch*.json`, and `energy_probe_requests.json` are diagnostic history only until Energy completes again. **Do not** refresh downstream stages until proof passes. |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop Energy strict-zero (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 
-Current crop failure:
+Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
-- Snapshot status: `failed`.
-- Failure: `could not broadcast input array from shape (64,27,8) into shape (65,27,8)` inside `exact_mesh._process_chunk`.
-- Root cause: unbounded coarse-grid slice geometry on crop resume shape `(64,256,256)`; octave 4 / chunk 0 requested `(65,27,8)` while the padded FFT slice could only provide `(64,27,8)`.
-- Artifacts missing: `02_Energy/best_energy.npy`, `02_Energy/best_scale.npy`.
-- Job registry may show stale running entries; verify live PIDs with Windows process state before treating a job as active.
-- Current worktree has regression coverage for the coarse-slice guard, including the failed resume shape: `tests/unit/pipeline/energy/test_hessian_downsample.py::test_exact_crop_unpermuted_resume_shape_avoids_coarse_slice_overrun`.
+### Current crop Energy evidence guard (2026-06-23)
+
+- **Freshness command:** `slavv parity inspect-energy-evidence --run-root workspace/runs/oracle_180709_E/crop_M_exact`
+- **Current result:** invalid/stale because `02_Output/python_results/checkpoints/checkpoint_energy.pkl` is missing and the latest `99_Metadata/run_snapshot.json` records Energy as failed.
+- **Operational rule:** `prove-exact --stage energy`, `prove-exact --stage all`, `diagnose-energy`, and batch mismatch probe exports must fail before loading historical artifacts while this guard is invalid.
+- **Next valid action:** produce or restore a completed crop Energy checkpoint, then rerun `inspect-energy-evidence` and only resume cross-octave final-reduction/state/path triage if the guard reports valid.
+
+### Latest crop Energy proof (2026-06-22)
+
+- **Writer:** `resume-exact-run --force-rerun-from energy --stop-after energy --skip-preflight --n-jobs 1`; `max_voxels_per_node_energy: 6000` (lattice `[3,3,2]`, 821 chunks).
+- **Proof:** `prove-exact --stage energy` → **FAIL** (`03_Analysis/exact_proof_energy.json`).
+- **First failure:** `energy.energy` @ `(0,0,0)` — scales agree (90); energy differs at ULP (~10⁻¹⁴) under strict `np.equal`.
+- **Mismatch counts** (`exact_mismatch_energy.json`):
+  - `energy`: **3,823,893** (max |Δ|≈26.4) — ~3,804,481 voxels have **matching scale** but fail bit-identical float compare (median |Δ|≈1.4×10⁻¹⁴).
+  - `scale_indices`: **19,412** (0.46% of volume; max |Δ|=72) — first @ `(61,81,0)` MATLAB 44 vs Python 46.
+  - `lumen_radius_microns`: **8** (machine epsilon).
+- **Probe note:** One-voxel probe at `(12,0,0)` passes at `atol=1e-10` but fails strict `np.equal` on full volume — certification bar is bit-identical, not probe tolerance.
+- **Adaptive probes:** `03_Analysis/energy_probe_requests.json` (3650 mismatch groups).
+- **Next:** Triage scale-winner disagreements first; then float64 bit-identical path for scale-agreeing voxels. No downstream crop refresh.
+
+Historical crop Energy evidence (2026-06-21, superseded writer state):
+
+- **Coarse-source / interpolation-mesh contract**: MATLAB `get_energy_V202` local ranges use `1 + floor(offset/rf) : 1 + ceil((offset + write_count - 1)/rf)` on the **padded FFT grid** (`fourier_transform_V2` output), not the strided read shape. Python had been clamping to `original_chunk.shape`, dropping one padded row on crop octaves 3–5 (e.g. octave 4 chunk 0: requested `(27,27,14)` vs retained `(26,26,13)`). Fixed via `_matlab_coarse_local_slices` in `exact_mesh.py`.
+- **Resolution-factor rounding (authoritative)**: MATLAB `get_energy_V202` line 116 uses `round(worst_resolution_to_downsample ./ resolutions_at_octave)` (positive half-up). Not `floor(L/(v*2.5))`.
+- **Manual source audit (2026-06-22)**: MATLAB V202 and the Python exact route agree on octave consolidation, chunk geometry, symmetric even FFT padding, padded-grid local ranges, interpolation mesh construction, negative-only Energy handling, and first-winner min projection. V200's active principal-Energy code clips a positive third component and then uses an **unweighted** sum; the `[1.5, 1, 0.5]` weighted expression is commented out. Do not claim magnitude-descending eigenvalue sorting: MATLAB calls `eig`, while Python calls `eigh`; their ordering remains an empirical crop-probe and strict-proof check.
+- **Coarse-range invariant**: Python now raises if a MATLAB-requested local range exceeds the padded FFT extent rather than silently shortening the interpolation source. The crop boundary regression covers the MATLAB-requested `(27,27,14)` support from raw `(26,26,13)` input.
+- **Probe artifacts**: Python `workspace/scratch/crop_coarse_slice_probe_python.json`; MATLAB companion `workspace/scratch/matlab/probe_coarse_slice.m`.
+- **Regression coverage**: `tests/unit/pipeline/energy/test_hessian_downsample.py::{test_exact_crop_coarse_slice_retains_padded_fft_support_not_strided_read,test_exact_crop_coarse_slice_octave4_chunk0_matches_matlab_local_ranges}`.
+- **Prior proof (1M-chunk run, 2026-06-21)**: `prove-exact --stage energy` **FAIL** — 4,010,103 voxel diffs, max |Δ|≈135.4. First scale mismatch: `(12,0,0)` scale 54 / −13.52 (MATLAB) vs 61 / −16.45 (Python), octave `rf=[2,5,5]`.
+- **Chunk-lattice root cause (2026-06-21)**: `max_voxels_per_node_energy` was `1_000_000` (lattice `[1,1,1]`, 1 chunk) vs MATLAB oracle `6_000` (lattice `[3,3,2]`, 18 chunks). Run-local `validated_params.json` restored to `6000`. With `6000`, one-voxel probe at `(12,0,0)` matches oracle: scale 54, energy −13.52067537392248.
+- **Probe artifacts (voxel)**: `workspace/scratch/crop_voxel_12_0_0_probe_python.json`, `workspace/scratch/crop_voxel_12_0_0_probe_matlab.json`; helper `slavv_python/pipeline/energy/voxel_probe.py`.
+- **Regression coverage (voxel + lattice)**: `tests/unit/pipeline/energy/test_voxel_probe.py` (3 tests, incl. lattice `[3,3,2]` and oracle match at `(12,0,0)`).
+- **Ruled out for crop**: octave `unique(...,'last')` consolidation (scale groupings identical); coarse-slice truncation alone (fix did not move winner on 1M-chunk run).
+- **Stale broadcast failure resolved**: earlier `(64,27,8)` into `(65,27,8)` crash came from unbounded slices; padded-bound slices stay inside the FFT grid on `(64,256,256)`.
 
 ### 🟡 2026-06-17: Energy Parity Discoveries (Crop Harness)
 
-- **Eigenvalue Sorting**: MATLAB's vesselness engine sorts eigenvalues by **magnitude descending** (`|L1| >= |L2| >= |L3|`) before computing weights. Standard `np.linalg.eigh` returns them in ascending order. Fixed in `math.py` to match MATLAB's axis identification.
-- **Resolution Factors**: MATLAB uses `floor(L / (v * 2.5))` for downsampling factors. Python was using `rint`. This caused a divergence in scale-specific image grids. Fixed in `hessian_response.py`.
+- **Eigenvalue Ordering**: The active V200 source calls `eig` and applies its special third-component clip in returned order; it does not sort eigenvalues by magnitude. Python uses `np.linalg.eigh` in the same returned-component role. Ordering is not certified by source inspection alone and remains covered by the crop one-voxel probe and strict Energy proof.
+- **Resolution Factors**: MATLAB `get_energy_V202` uses `round(1/2.5 ./ resolutions_at_octave)` (positive half-up). Python now uses `floor(x+0.5)` in `hessian_response.py`.
 - **Validation Whitelist**: Identified that `validate_parameters` in `validation.py` was stripping `comparison_exact_network` and other orchestration keys during the `RunContext.prepare` phase, causing the pipeline to fall back to the standard "Paper" route. Whitelisted these keys to ensure the "Innovation" path is correctly triggered.
 - **FFT Symmetry**: Verified that `_ifftn_matlab_symmetric` manual enforcement matches `np.fft.ifftn().real` and correctly handles Fortran-order raveling for conjugate-pair matching.
 
-*Status*: Incorporated into the current worktree, but not yet certified. The subsequent crop rerun failed before Energy artifacts were written; see [Active Phase 1 operations](#-active-phase-1-operations).
+### Random component parity (2026-06-22)
+
+Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-component-parity-suite.md), [PARITY_RANDOM_COMPONENT_SUITE.md](../workflow/PARITY_RANDOM_COMPONENT_SUITE.md)):
+
+- **Structural gate (green):** 128 linspace contexts; 16 lattice/boundary `interp3` queries per case; Energy `padded_shape_yxz`, sample coordinates, and `valid`.
+- **IFFT floor:** With a **byte-identical** MATLAB complex spectrum loaded in Python, `_ifftn_matlab_symmetric` vs MATLAB `ifftn(...,'symmetric')` differs by **1 ULP** at sample voxels — NumPy vs MKL FFT, not the symmetry mask.
+- **Matching kernel:** `scipy.special.jv` vs MATLAB `besselj` drifts without the promoted `matlab_random_matching_reference.json` fixture on the Python runner.
+- **Hessian floats:** Reported as advisory `hessian_diagnostics` (max ULP per case); they do **not** gate CI. Crop/canonical `prove-exact` remains the strict Energy certification surface.
+
+*Status*: Incorporated into the current worktree, but not yet certified. See [Latest crop Energy proof (2026-06-22)](#latest-crop-energy-proof-2026-06-22).
 
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
@@ -64,11 +101,12 @@ If resuming exact parity work from a fresh thread:
 6. If Energy artifacts exist, run the crop energy proof first.
 7. If energy passes, refresh crop downstream checkpoints with `--force-rerun-from vertices --stop-after network --monitor`, then run `prove-exact-sequence`.
 8. If crop energy passes, rerun canonical `phase1_cert_network` from energy using `workspace/scratch/phase1_cert_network_rerun_from_energy.ps1` with `--monitor`.
-9. If any proof fails, inspect the first failing field before changing code.
+9. If any proof fails, capture evidence per [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) and inspect the first failing field before changing code.
+10. If `status-exact-run` reports `interrupted` (dead PID), reconcile is automatic; rerun foreground diagnostic before detaching another writer.
 
 Use the `--monitor` flag on long reruns to enable automatic tracking and desktop notifications (see [PARITY_JOB_MONITORING.md](../../reference/workflow/PARITY_JOB_MONITORING.md)).
 
-Scratch diagnostics for the current crop energy hypothesis are indexed in `workspace/scratch/parity_energy_diagnostics.md`.
+Scratch diagnostics: `workspace/scratch/crop_coarse_slice_probe_python.json`, `workspace/scratch/matlab/probe_coarse_slice.m`, `workspace/scratch/crop_voxel_12_0_0_probe_{python,matlab}.json`.
 
 ### Operator commands
 
@@ -121,6 +159,7 @@ Curated index of solved problems under `docs/solutions/` (from `/ce-compound`). 
 |-------|-----|
 | MATLAB energy HDF5 + `promote-oracle` | [matlab-v200-energy-hdf5-oracle-loader.md](../../solutions/integration-issues/matlab-v200-energy-hdf5-oracle-loader.md) |
 | Detached exact-run jobs | [detached-exact-run-jobs.md](../../solutions/parity/detached-exact-run-jobs.md) |
+| Run/proof evidence template | [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md) |
 | Sparse Meshgrid Memory Optimization | [sparse-meshgrid-memory-optimization.md](../../solutions/parity/sparse-meshgrid-memory-optimization.md) |
 | MATLAB Stride Phase Lead | [matlab-stride-phase-lead.md](../../solutions/parity/matlab-stride-phase-lead.md) |
 
@@ -224,9 +263,9 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop Energy rerun required** — The latest `crop_M_exact` Energy attempt failed before writing `best_energy.npy` / `best_scale.npy`. Current code has a coarse-slice guard and regression; rerun Energy, then prove strict zero.
-2. **Sequential strict-zero closure** — After crop Energy passes, refresh and prove vertices → edges → network in order. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
-3. **Canonical run re-execution** — Keep canonical `phase1_cert_network` paused until crop Energy is proven; then rerun canonical from Energy with the memory-safe path.
+1. **Crop Energy evidence freshness** — Current `crop_M_exact` Energy evidence is stale after the latest failed rerun: `checkpoint_energy.pkl` is missing. Historical scale-winner mismatch reports are diagnostic history only until a completed Energy checkpoint exists and `inspect-energy-evidence` reports valid.
+2. **Sequential strict-zero closure** — Blocked on crop Energy proof. After pass: refresh vertices → network on `crop_M_exact`, then `prove-exact-sequence`. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
+3. **Canonical run re-execution** — Phase 1 **cert claim** stays on full `180709_E` only. Crop is the fast iteration gate (ADR 0009). Rerun canonical from Energy after crop Energy passes, or in parallel when preflight shows safe memory headroom (one long Energy writer at a time on 16GB).
 
 **Superseded guidance:** “>95% match” or “prove-exact once parity exceeds 95%” is not the Phase 1 bar. Use strict zero per stage only.
 

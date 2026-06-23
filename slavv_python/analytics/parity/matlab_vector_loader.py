@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.io import loadmat
@@ -25,6 +24,9 @@ from slavv_python.analytics.parity.array_normalization import (
     _require_key,
 )
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def find_single_matlab_batch_dir(run_root: Path) -> Path:
@@ -74,7 +76,7 @@ def _resolve_matlab_energy_settings_path(batch_dir: Path, energy_asset_stem: str
     prefix = "energy_"
     if not energy_asset_stem.startswith(prefix):
         raise ValueError(f"unexpected MATLAB energy artifact stem: {energy_asset_stem}")
-    timestamp = energy_asset_stem[len(prefix):].split("_", 1)[0]
+    timestamp = energy_asset_stem[len(prefix) :].split("_", 1)[0]
     settings_path = batch_dir / "settings" / f"energy_{timestamp}.mat"
     if not settings_path.is_file():
         raise ValueError(f"missing MATLAB energy settings file: {settings_path}")
@@ -202,6 +204,7 @@ def load_normalized_matlab_edge_input_vertices(batch_dir: Path) -> dict[str, Any
     if not all(field_name in matlab_payload for field_name in required_fields):
         return None
     return _normalize_matlab_vertex_fields_payload(matlab_payload)
+
 
 def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return _normalize_matlab_vertex_fields_payload(payload)
@@ -371,6 +374,7 @@ def _normalize_matlab_bridge_payload(payload: dict[str, Any]) -> dict[str, Any]:
             )
         ),
     }
+
 
 def _normalize_matlab_strands(value: Any) -> list[np.ndarray]:
     connections = _normalize_matlab_connections(value)

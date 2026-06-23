@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from slavv_python.pipeline.edges.frontier_events import (
-    _build_frontier_candidate_lifecycle,
-)
 from slavv_python.pipeline.edges.audit import (
     _build_edge_candidate_audit,
     _normalize_candidate_connection_sources,
@@ -19,6 +16,9 @@ from slavv_python.pipeline.edges.candidate_manifest import (
     _append_candidate_unit,
 )
 from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
+from slavv_python.pipeline.edges.frontier_events import (
+    _build_frontier_candidate_lifecycle,
+)
 from slavv_python.pipeline.edges.matlab_indexing import (
     _coord_to_matlab_linear_index,
     _matlab_linear_index_to_coord,
@@ -38,9 +38,6 @@ __all__ = [
     "_build_edge_candidate_audit",
     "_build_frontier_candidate_lifecycle",
     "_coord_to_matlab_linear_index",
-    "generate_directional_candidates",
-    "generate_watershed_candidates",
-    "sort_candidates_by_quality",
     "_matlab_linear_index_to_coord",
     "_normalize_candidate_connection_sources",
     "_normalize_candidate_origin_counts",
@@ -50,6 +47,9 @@ __all__ = [
     "_use_matlab_frontier_tracer",
     "_vertex_center_linear_lookup",
     "estimate_vessel_directions",
+    "generate_directional_candidates",
     "generate_edge_directions",
+    "generate_watershed_candidates",
+    "sort_candidates_by_quality",
     "trace_edge",
 ]

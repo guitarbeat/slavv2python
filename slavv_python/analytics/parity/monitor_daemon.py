@@ -11,7 +11,6 @@ import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +91,7 @@ class MonitorDaemon:
 
         # Start detached process
         python_exe = sys.executable
-        script_path = Path(__file__).resolve()
+        Path(__file__).resolve()
 
         # Build command to run daemon
         cmd = [python_exe, "-m", "slavv_python.analytics.parity.monitor_daemon"]
@@ -127,9 +126,8 @@ class MonitorDaemon:
             if is_process_alive(proc.pid):
                 logger.info(f"Daemon started with PID {proc.pid}")
                 return True
-            else:
-                logger.error("Daemon process died immediately after start")
-                return False
+            logger.error("Daemon process died immediately after start")
+            return False
 
         except Exception as e:
             logger.error(f"Failed to start daemon: {e}")
@@ -168,8 +166,6 @@ class MonitorDaemon:
         """
         from slavv_python.analytics.parity.job_registry import JobRegistry
         from slavv_python.analytics.parity.process_utils import (
-            is_process_alive,
-            is_python_process,
             write_daemon_pid,
         )
 
@@ -207,9 +203,7 @@ class MonitorDaemon:
                     # Check for idle timeout
                     idle_duration = datetime.now() - last_active_time
                     if idle_duration > self.idle_timeout:
-                        logger.info(
-                            f"No active jobs for {idle_duration}, shutting down"
-                        )
+                        logger.info(f"No active jobs for {idle_duration}, shutting down")
                         break
 
                 # Sleep until next poll
@@ -241,20 +235,42 @@ class MonitorDaemon:
 
         # Try to determine exit code from run-local metadata
         exit_code = self._get_exit_code(job)
-        status = "completed" if exit_code == 0 else "failed"
+        if exit_code is None:
+            status = "interrupted"
+        elif exit_code == 0:
+            status = "completed"
+        else:
+            status = "failed"
 
-        # Update registry
+        reason = ""
+        if status == "interrupted":
+            reason = f"Writer PID {job.pid} is no longer alive."
+            try:
+                from slavv_python.analytics.parity.parity_job_lifecycle import (
+                    reconcile_interrupted_run,
+                )
+
+                reconcile_interrupted_run(Path(job.run_dir), reason=reason)
+            except (OSError, ValueError) as exc:
+                logger.warning(
+                    "Failed to reconcile interrupted parity job for %s: %s",
+                    job.run_dir,
+                    exc,
+                )
+
+        registry_status = "succeeded" if status == "completed" else status
         registry.update_job(
             job.job_id,
-            status=status,
+            status=registry_status,
             completed_at=datetime.now().isoformat(),
             exit_code=exit_code,
+            metadata={"reason": reason} if reason else None,
         )
 
         # Send notification
         self._send_notification(job, status, exit_code)
 
-    def _get_exit_code(self, job) -> Optional[int]:
+    def _get_exit_code(self, job) -> int | None:
         """Try to get exit code from job metadata."""
         try:
             metadata_file = Path(job.run_dir) / "99_Metadata" / "parity_job.json"
@@ -266,7 +282,7 @@ class MonitorDaemon:
 
         return None
 
-    def _send_notification(self, job, status: str, exit_code: Optional[int]) -> None:
+    def _send_notification(self, job, status: str, exit_code: int | None) -> None:
         """Send desktop notification for job completion."""
         # Calculate duration
         started = datetime.fromisoformat(job.started_at)
@@ -274,9 +290,7 @@ class MonitorDaemon:
         duration_str = self._format_duration(duration)
 
         # Build notification message
-        title = (
-            f"Parity Job {'Completed' if status == 'completed' else 'Failed'}"
-        )
+        title = f"Parity Job {'Completed' if status == 'completed' else 'Failed'}"
         message = (
             f"Stage: {job.stage}\n"
             f"Duration: {duration_str}\n"
@@ -307,8 +321,7 @@ class MonitorDaemon:
 
         if hours > 0:
             return f"{hours}h {minutes}m"
-        else:
-            return f"{minutes}m"
+        return f"{minutes}m"
 
     def _write_heartbeat(self) -> None:
         """Write heartbeat file with current timestamp."""
@@ -325,9 +338,7 @@ class MonitorDaemon:
         """Configure logging to file."""
         file_handler = logging.FileHandler(self.log_file)
         file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
 
         # Get root logger
@@ -350,7 +361,6 @@ class MonitorDaemon:
 
 def main():
     """Entry point for daemon process."""
-    import os
 
     daemon = MonitorDaemon()
     daemon.run()

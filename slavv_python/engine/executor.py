@@ -10,8 +10,8 @@ from slavv_python.workflows.session import emit_progress
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from slavv_python.engine.state.run_ledger import RunContext
     from slavv_python.engine.state import StageController
+    from slavv_python.engine.state.run_ledger import RunContext
     from slavv_python.engine.state.run_state import RunState
 
 logger = logging.getLogger(__name__)

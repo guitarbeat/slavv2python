@@ -83,6 +83,10 @@ The Parity Job Monitoring System automates the tracking of long-running parity e
 
 ## Usage
 
+> On Windows, activate `.venv` before using these commands. For direct Python
+> invocations use `./.venv/Scripts/python.exe`; the ambient `python` executable
+> is not a supported parity-test runner.
+
 ### Starting a Monitored Job
 
 Add the `--monitor` flag to any `resume-exact-run` or `launch-exact-run` command:

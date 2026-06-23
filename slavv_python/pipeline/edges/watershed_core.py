@@ -7,11 +7,6 @@ from typing import cast
 import numpy as np
 from scipy import sparse
 
-from slavv_python.pipeline.edges.matlab_indexing import (
-    _coord_to_matlab_linear_index,
-    _matlab_linear_index_to_coord,
-)
-
 
 def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-order linear indices for the image border at ``strel_apothem = 1``."""
@@ -63,7 +58,7 @@ class FrontierQueue:
         while self._heap:
             entry = self._heap[0]
             if not entry[3] and self._entry_finder.get(entry[2]) is entry:
-                return cast(int, entry[2])
+                return cast("int", entry[2])
             heapq.heappop(self._heap)
         raise KeyError("peek from an empty priority queue")
 
@@ -71,15 +66,14 @@ class FrontierQueue:
         while self._heap:
             entry = heapq.heappop(self._heap)
             _energy, _tie, loc, removed = entry
-            if not removed:
-                if self._entry_finder.get(loc) is entry:
-                    del self._entry_finder[loc]
-                    return cast(int, loc)
+            if not removed and self._entry_finder.get(loc) is entry:
+                del self._entry_finder[loc]
+                return cast("int", loc)
         raise KeyError("pop from an empty priority queue")
 
     def push(self, location: int, energy: float, seed_idx: int) -> None:
         """Adds a location to the heap with MATLAB-exact tie-breaking.
-        
+
         Uses Lowest Linear Index Priority: for identical energies, the voxel
         with the smallest Fortran-order linear index is popped first.
         """
@@ -144,6 +138,7 @@ class VoxelClaimMap:
         # The input shape to zyx_to_matlab_linear_indices must be the physical [Z, Y, X] shape.
         # We derive it from our internal [Y, X, Z] shape.
         from slavv_python.utils.matlab_order import zyx_to_matlab_linear_indices
+
         physical_shape = (self.shape[2], self.shape[0], self.shape[1])
         self.vertex_locations = zyx_to_matlab_linear_indices(vertex_positions, physical_shape)
         self.number_of_vertices = len(self.vertex_locations)
@@ -168,6 +163,7 @@ class VoxelClaimMap:
         self.adjacency_matrix = sparse.identity(
             self.number_of_vertices + 1, format="lil", dtype=bool
         )
+
     def restore_vertex_energy(self, linear_index: int) -> float:
         """Restores a vertex's true energy if it was marked as -Inf."""
         current_energy = float(self.energy_temp_flat[linear_index])

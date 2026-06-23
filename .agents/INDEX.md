@@ -2,7 +2,24 @@
 
 Quick reference catalog of all agents, instructions, rules, skills, and orchestrations.
 
-**Last Updated**: 2026-06-09
+**Last Updated**: 2026-06-23
+
+## 📌 Current Handoff
+
+| Brief | Location | Purpose |
+|-------|----------|---------|
+| **Phase 1 Parity Handoff** | [HANDOFF.md](HANDOFF.md) | Successor brief: decision point, operating sequence, canonical record links |
+
+Ephemeral agent harness output belongs in `workspace/scratch/agent-tools/`, not the repo root (`agent-tools/`, `terminals/` are gitignored).
+
+---
+
+## 🌙 Active Orchestrations
+
+No active orchestration artifacts are retained. The completed overnight
+crop-Energy attempt was consolidated into [HANDOFF.md](HANDOFF.md),
+[docs/TODO.md](../docs/TODO.md), and
+[EXACT_PROOF_FINDINGS.md](../docs/reference/core/EXACT_PROOF_FINDINGS.md).
 
 ---
 
@@ -128,10 +145,9 @@ Reusable skills library organized by category.
 ## 🎭 Orchestrations
 
 ### Active Orchestrations
-| Name | Status | Purpose |
-|------|--------|---------|
-| **orchestrator** | Active | Main project orchestration |
-| **sub_orch_vertices_1** | Active | Vertices parity sub-orchestration |
+
+None. Use the repository-level planning and status documents for Phase 1
+coordination rather than creating a second task ledger under `.agents/`.
 
 **Location**: `orchestrations/active/`
 
@@ -165,7 +181,7 @@ Project and task specifications.
 - **Rules**: 4
 - **Prompts**: 3
 - **Skills**: 28
-- **Active Orchestrations**: 2
+- **Active Orchestrations**: 0
 - **Archived Orchestrations**: 11
 
 ---

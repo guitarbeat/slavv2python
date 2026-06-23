@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from slavv_python.pipeline.edges.frontier_events import _build_frontier_candidate_lifecycle
 from slavv_python.pipeline.edges.candidate_payload import (
     _candidate_endpoint_pair_set,
     _candidate_incident_pair_counts,
@@ -11,11 +10,11 @@ from slavv_python.pipeline.edges.discovery import _use_matlab_frontier_tracer
 from slavv_python.pipeline.edges.edge_types import (
     BoolArray,
     Float64Array,
-    Float64Array,
     Int16Array,
     Int32Array,
     Int64Array,
 )
+from slavv_python.pipeline.edges.frontier_events import _build_frontier_candidate_lifecycle
 from slavv_python.pipeline.edges.frontier_geometry import (
     _matlab_frontier_edge_budget,
     _matlab_frontier_offsets,

@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 from typing_extensions import Literal
-import numpy as np
 
 from .manager import VertexManager
 from .painting import paint_vertex_center_image, paint_vertex_image
 
 if TYPE_CHECKING:
+    import numpy as np
+
     from slavv_python.engine.state import StageController
     from slavv_python.schema.results import EnergyResult, VertexSet
 
@@ -84,19 +86,18 @@ def paint_vertices(
             vertices.radii_pixels,
             image_shape,
         )
-    elif mode == "center":
+    if mode == "center":
         return paint_vertex_center_image(
             vertices.positions,
             image_shape,
         )
-    else:
-        raise ValueError(f"Unknown painting mode: {mode}")
+    raise ValueError(f"Unknown painting mode: {mode}")
 
 
 __all__ = [
     "VertexManager",
     "extract_vertices",
-    "paint_vertices",
     "paint_vertex_center_image",
     "paint_vertex_image",
+    "paint_vertices",
 ]

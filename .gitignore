@@ -160,6 +160,8 @@ workspace/
 
 # Agent state and temporary files
 .agents/orchestrations/active/
+agent-tools/
+terminals/
 
 # Comparison and run outputs (legacy paths kept for safety)
 comparison_output/

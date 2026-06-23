@@ -58,7 +58,9 @@ Context: <your context>
 | **Instructions** | `instructions/*.instructions.md` |
 | **Rules** | `rules/*.md` or `rules/*.mdc` |
 | **Prompt templates** | `prompts/*.prompt.md` |
+| **Current handoff brief** | `HANDOFF.md` |
 | **Complete catalog** | `INDEX.md` |
+| **Ephemeral agent output** | `workspace/scratch/agent-tools/` (not repo root) |
 
 ---
 
@@ -197,7 +199,7 @@ Skills:          <skill-name>/SKILL.md
 - **Rules**: 4 global rules
 - **Prompts**: 3 workflow templates
 - **Skills**: 28 reusable skills
-- **Active Orchestrations**: 2
+- **Active Orchestrations**: 0
 - **Archived**: 11 historical items
 
 ---
@@ -258,5 +260,5 @@ Skills:          <skill-name>/SKILL.md
 
 ---
 
-**Last Updated**: 2026-06-09  
-**Version**: 1.0
+**Last Updated**: 2026-06-23  
+**Version**: 1.1

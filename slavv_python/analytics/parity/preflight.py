@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-import numpy as np
 import psutil
 
 from slavv_python.analytics.parity.coordinator import ExactProofCoordinator
@@ -14,7 +13,6 @@ from slavv_python.engine.state import load_json_dict
 
 from .constants import (
     EXPERIMENT_PROVENANCE_PATH,
-    EXPERIMENT_REFS_DIR,
     PREFLIGHT_EXACT_JSON_PATH,
     PREFLIGHT_EXACT_TEXT_PATH,
     RUN_SNAPSHOT_PATH,

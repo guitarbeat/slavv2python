@@ -10,6 +10,7 @@ import numpy as np
 
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_FIELDS
 
+
 def compare_exact_artifacts(
     matlab_artifacts: dict[str, dict[str, Any]],
     python_artifacts: dict[str, dict[str, Any]],
@@ -46,6 +47,8 @@ def compare_exact_artifacts(
         else None,
         "first_failure": first_failure,
     }
+
+
 def _compare_dict(
     matlab_payload: dict[str, Any],
     python_payload: dict[str, Any],

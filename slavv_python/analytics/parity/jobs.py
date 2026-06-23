@@ -17,6 +17,7 @@ from .constants import (
     PARITY_JOB_STDOUT_PATH,
 )
 from .utils import now_iso, resolve_python_commit, write_json_with_hash
+from .writer_lease import write_writer_lease
 
 
 def _repo_root_from_path(path: Path) -> Path:
@@ -35,6 +36,7 @@ def build_resume_exact_run_command(
     force_rerun_from: str | None = None,
     memory_safety_fraction: float | None = None,
     force: bool = False,
+    force_kill: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
     python_executable: Path | None = None,
@@ -64,6 +66,8 @@ def build_resume_exact_run_command(
         command.extend(["--n-jobs", str(n_jobs)])
     if force:
         command.append("--force")
+    if force_kill:
+        command.append("--force-kill")
     if skip_preflight:
         command.append("--skip-preflight")
     return command
@@ -78,9 +82,11 @@ def launch_exact_run_job(
     force_rerun_from: str | None = None,
     memory_safety_fraction: float | None = None,
     force: bool = False,
+    force_kill: bool = False,
     skip_preflight: bool = False,
     n_jobs: int | None = None,
     python_executable: Path | None = None,
+    command_override: list[str] | None = None,
 ) -> dict[str, Any]:
     """Start a long exact-route resume in an OS-owned background process."""
     root = dest_run_root.expanduser().resolve()
@@ -92,7 +98,7 @@ def launch_exact_run_job(
     manifest_path = root / PARITY_JOB_MANIFEST_PATH
     repo_root = _repo_root_from_path(root)
 
-    command = build_resume_exact_run_command(
+    command = command_override or build_resume_exact_run_command(
         dest_run_root=root,
         oracle_root=oracle_root.expanduser().resolve() if oracle_root else None,
         dataset_root=dataset_root.expanduser().resolve() if dataset_root else None,
@@ -100,6 +106,7 @@ def launch_exact_run_job(
         force_rerun_from=force_rerun_from,
         memory_safety_fraction=memory_safety_fraction,
         force=force,
+        force_kill=force_kill,
         skip_preflight=skip_preflight,
         n_jobs=n_jobs,
         python_executable=python_executable,
@@ -121,9 +128,10 @@ def launch_exact_run_job(
         )
 
     atomic_write_text(pid_path, f"{process.pid}\n")
+    started_at = now_iso()
     manifest: dict[str, Any] = {
         "kind": "parity_exact_run_job",
-        "status": "launched",
+        "status": "running",
         "pid": process.pid,
         "command": command,
         "cwd": str(repo_root),
@@ -137,9 +145,20 @@ def launch_exact_run_job(
         "stderr": str(stderr_path),
         "pid_file": str(pid_path),
         "python_commit": resolve_python_commit(repo_root),
-        "launched_at": now_iso(),
+        "started_at": started_at,
+        "launched_at": started_at,
+        "ended_at": None,
+        "exit_code": None,
     }
     write_json_with_hash(manifest_path, manifest)
+    write_writer_lease(
+        root,
+        pid=process.pid,
+        command=" ".join(command),
+        stage=force_rerun_from or "all",
+        status="running",
+        source_commit=manifest["python_commit"],
+    )
     return manifest
 
 

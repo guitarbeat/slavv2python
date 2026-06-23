@@ -120,12 +120,38 @@ def calculate_energy_field_resumable(
         )
         stage_controller.begin(
             detail="Computing exact-route octave-chunked energy",
-            units_total=1,
+            units_total=0,
             units_completed=0,
             substage="exact_parity_chunks",
             resumed=False,
         )
-        energy_3d, scale_indices, energy_4d = compute_exact_parity_energy_chunked(image, config)
+
+        final_exact_total = 0
+
+        def _exact_progress(completed: int, total: int, octave: int, chunk_idx: int) -> None:
+            nonlocal final_exact_total
+            final_exact_total = total
+            detail = f"Exact Energy octave {octave}, chunk {chunk_idx + 1}"
+            stage_controller.save_state(
+                {
+                    "kind": "exact_parity_progress",
+                    "completed_units": completed,
+                    "units_total": total,
+                    "octave": octave,
+                    "chunk_idx": chunk_idx,
+                    "resumable": False,
+                }
+            )
+            stage_controller.update(
+                units_total=total,
+                units_completed=completed,
+                detail=detail,
+                substage="exact_parity_chunks",
+            )
+
+        energy_3d, scale_indices, energy_4d = compute_exact_parity_energy_chunked(
+            image, config, progress_callback=_exact_progress
+        )
         best_energy = open_energy_storage_array(
             energy_path,
             mode="w",
@@ -146,8 +172,8 @@ def calculate_energy_field_resumable(
         best_scale[...] = scale_indices
         stage_controller.remove_state()
         stage_controller.update(
-            units_total=1,
-            units_completed=1,
+            units_total=final_exact_total or 1,
+            units_completed=final_exact_total or 1,
             detail="Exact-route energy field complete",
             substage="exact_parity_chunks",
         )

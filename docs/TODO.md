@@ -16,7 +16,7 @@
 | **Solved problems & runbooks** | [solutions/](solutions/) | `/ce-compound` writes here; parity index in [findings](reference/core/EXACT_PROOF_FINDINGS.md#-compound-learnings-parity-related) |
 | **Architecture decisions** | [adr/](adr/) | Load-bearing design choice (do not re-litigate in TODO) |
 | **Live exact-parity status** | [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md) | **Only place** for active run status, proof results, blockers (not TODO) |
-| **Operator workflows** | [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | How to run pre-gate / certification |
+| **Operator workflows** | [PARITY_PRE_GATE.md](reference/workflow/PARITY_PRE_GATE.md), [PARITY_CERTIFICATION_GUIDE.md](reference/workflow/PARITY_CERTIFICATION_GUIDE.md), [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md) | How to run pre-gate / certification; evidence template after writers/proofs |
 | **Investigation archives** | [investigations/](investigations/) | Deep dives that are context, not the task list |
 
 **Do not duplicate:** Status tables and run state → [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md). This file = checkboxes + links only.
@@ -29,23 +29,27 @@
 
 ### Phase 1 exact route (canonical + crop)
 
-## 🎯 Phase 1 Certification Gates
-- [ ] **Crop Energy Proof** — Rerun `crop_M_exact` from Energy after the coarse-slice guard, then run strict-zero `prove-exact --stage energy`.
-- [ ] **Crop Vertices Proof** — Verify bit-perfect vertex set with new round-half-up painting and PipelinePolicy integration.
-- [ ] **Crop Edges Proof** — Verify bit-perfect connectivity with standardized watershed orientation via PipelinePolicy.
-- [ ] **Canonical Energy Proof** — Resume `phase1_cert_network` only after crop Energy is proven strict-zero.
-- [ ] **Canonical Sequence** — Execute full proof sequence on 512x512x64 volume to close Phase 1.
+### 🎯 Phase 1 Certification Gates
 
-## 🛠️ Hardening & Infrastructure
+- [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22` (~7h 44m); `best_energy.npy` + `best_scale.npy` present. Evidence: [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+- [ ] **Crop Energy proof** — `prove-exact --stage energy` **FAIL**: 19,412 scale mismatches + strict float drift. Status: [findings § latest proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-2026-06-22).
+- [ ] **Diagnose Energy scale winners** — Reproduce representative mismatch groups against MATLAB, identify the first causal divergence, and add a regression only after a MATLAB-backed explanation. See [findings](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-2026-06-22).
+- [ ] **Diagnose Energy float64 drift** — After scale winners are aligned, isolate the strict `np.equal` differences for matching-scale voxels without weakening proof criteria.
+- [ ] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering before the Energy gate opens; record commands and evidence requirements in the maintained parity workflow docs.
+- [ ] **Crop Vertices Proof** — Blocked on crop Energy strict-zero proof (not writer).
+- [ ] **Crop Edges Proof** — Blocked on crop Vertices strict-zero.
+- [ ] **Canonical Energy Proof** — Cert claim gate: after crop Energy proof passes; may run in parallel per ADR 0009 when memory allows ([findings](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations)).
+- [ ] **Canonical Sequence** — Full `prove-exact-sequence` on `180709_E` after crop tier-2 gate passes.
+
+### 🛠️ Hardening & Infrastructure
 - [x] **PipelinePolicy Architecture** — Implemented declarative Baseline vs Innovation control for Energy, Vertices, and Edges.
 - [x] **Unified Math Kernel** — Centralized bit-perfect EIGH math in `energy/math.py`.
 - [x] **Unified Lattice Logic** — Created `utils/lattice.py` to prevent rounding errors in 3D chunking.
 - [x] **Oracle artifact manifest sync** — `ensure-oracle-artifacts` now reconciles readable normalized artifacts back into `oracle_manifest.json`.
-- [x] **Exact crop coarse-slice guard** — Added regression coverage so local derivative slices stay inside the padded FFT grid.
+- [x] **Padded-FFT coarse-slice contract** — `_matlab_coarse_local_slices` + regression; Energy proof still open (see findings).
 - [x] **Numba Painting Fix** — Ported round-half-up logic to `_choose_vertices_loop_numba`.
 - [x] **Systemic float64 Enforcement** — Upgraded all pipeline intermediates to float64 for Innovation path.
-- [ ] **Canonical run** — Rerun `phase1_cert_network` from energy foundations established in crop harness after crop Energy proof.
-- [ ] **Crop tier-2 gate** — After crop energy passes, confirm all four stages zero missing/extra on `180709_E_crop_M`.
+- [ ] **Crop tier-2 gate** — After crop Energy passes, `prove-exact-sequence` on `180709_E_crop_M` (all four stages strict-zero).
 - [ ] **Canonical tier-3 gate** — All four stages pass on full `180709_E`; promote summary to `workspace/reports/`.
 
 ### Harness & ops
@@ -53,8 +57,10 @@
 - [x] **Energy memory safety** — Removed large 4D chunk arrays in `exact_mesh.py`; peak memory reduced 30x.
 - [x] **Internal Grid Alignment** — Anchored pipeline to **[Y, X, Z]** with Fortran (F) memory order to match MATLAB tie-breaking.
 - [x] **Watershed Robustness** — Resolved `KeyError` in `FrontierQueue` and restored directional suppression parity.
-- [ ] **Preflight before long runs** — `slavv parity preflight-exact` on dest + dataset + oracle.
-- [ ] **No duplicate writers** — Never concurrent `init-exact-run` / `resume-exact-run` on the same `--dest-run-root`.
+- [x] **Parity job lifecycle reconciliation** — Dead-PID + running snapshot → persisted `interrupted`; terminal `parity_job.json` metadata. Tests: `tests/unit/parity/test_parity_job_lifecycle.py`.
+- [ ] **Parity change verification** — For each tested diagnosis, run the focused parity tests and Ruff checks before a long rerun; record the exact proof result using [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
+
+**Operational guardrails:** run `preflight-exact` before a recovery launch and never start concurrent writers for one `--dest-run-root`.
 
 ---
 
@@ -76,6 +82,7 @@ Older dashboard text referred to **v10 / 76% match** and **>95% edge match rate*
 ## Maintenance
 
 - [x] Contributor guide — `CONTRIBUTING.md`
+- [x] Parity run evidence template — [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md)
 - [x] Glossary / architecture — `GLOSSARY.md`, `TECHNICAL_ARCHITECTURE.md`
 - [x] Parity pre-gate & certification guides — `PARITY_PRE_GATE.md`, `PARITY_CERTIFICATION_GUIDE.md`
 - [x] Planning hub — this file; status + compound index in [EXACT_PROOF_FINDINGS.md](reference/core/EXACT_PROOF_FINDINGS.md)

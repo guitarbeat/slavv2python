@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from argparse import Namespace
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
 import pytest
 
 from slavv_python.analytics.parity.cli import handle_prove_exact_sequence
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.unit

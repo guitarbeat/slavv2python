@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.pipeline.edges.edge_types import Int32Array
+if TYPE_CHECKING:
+    from slavv_python.pipeline.edges.edge_types import Int32Array
 
 
 def normalize_candidate_connection_sources(

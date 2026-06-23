@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
 from typing_extensions import Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @runtime_checkable
@@ -49,8 +52,8 @@ def resolve_edge_candidate_persistence(
 
 
 __all__ = [
-    "EdgeCandidatePersistence",
     "NO_OP_EDGE_CANDIDATE_PERSISTENCE",
+    "EdgeCandidatePersistence",
     "NoOpEdgeCandidatePersistence",
     "resolve_edge_candidate_persistence",
 ]

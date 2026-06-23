@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+
+import numpy as np
 
 from slavv_python.engine.state import load_json_dict
 
@@ -294,6 +298,86 @@ def handle_diagnose_gaps(args: argparse.Namespace) -> None:
     print(render_gap_diagnosis_report(report_payload))
 
 
+def handle_diagnose_energy(args: argparse.Namespace) -> None:
+    """Create deterministic adaptive Energy probe requests from current checkpoints."""
+    from .adaptive_probes import build_energy_probe_payload, persist_energy_probe_payload
+    from .energy_proof_evidence import require_energy_proof_evidence
+    from .matlab_vector_loader import load_normalized_matlab_vectors
+    from .python_checkpoint_loader import load_normalized_python_checkpoints
+    from .utils import payload_hash
+
+    run_root = Path(args.run_root).expanduser().resolve()
+    require_energy_proof_evidence(run_root)
+    oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
+    source = _build_exact_proof_source_surface(run_root, oracle_root)
+    matlab = load_normalized_matlab_vectors(source.matlab_batch_dir, ("energy",))["energy"]
+    python = load_normalized_python_checkpoints(source.checkpoints_dir, ("energy",))["energy"]
+    params = load_json_dict(source.validated_params_path) or {}
+    payload = build_energy_probe_payload(
+        np.asarray(matlab["energy"]),
+        np.asarray(python["energy"]),
+        np.asarray(matlab["scale_indices"]),
+        np.asarray(python["scale_indices"]),
+        provenance={
+            "run_root": str(run_root),
+            "oracle_id": source.oracle_surface.oracle_id,
+            "params_fingerprint": payload_hash(params),
+        },
+    )
+    path = persist_energy_probe_payload(run_root, payload)
+    print(path)
+
+
+def handle_inspect_energy_evidence(args: argparse.Namespace) -> None:
+    """Persist a read-only freshness report for Energy proof evidence."""
+    from .constants import ENERGY_PROOF_EVIDENCE_JSON_PATH
+    from .energy_proof_evidence import build_energy_proof_evidence
+
+    run_root = Path(args.run_root).expanduser().resolve()
+    report = build_energy_proof_evidence(run_root)
+    output = (
+        Path(args.output).expanduser().resolve()
+        if args.output
+        else run_root / ENERGY_PROOF_EVIDENCE_JSON_PATH
+    )
+    write_json_with_hash(output, report)
+    print(output)
+    if not report["valid"]:
+        print("Energy proof evidence is stale: " + ", ".join(report["failures"]), file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_compare_energy_probes(args: argparse.Namespace) -> None:
+    """Compare normalized MATLAB and Python adaptive probe JSONL records."""
+    from .adaptive_probes import compare_probe_jsonl
+    from .utils import write_json_with_hash, write_text_with_hash
+
+    report = compare_probe_jsonl(Path(args.matlab_jsonl), Path(args.python_jsonl))
+    output = Path(args.output).expanduser().resolve()
+    write_json_with_hash(output, report)
+    write_text_with_hash(output.with_suffix(".txt"), json.dumps(report, indent=2, sort_keys=True))
+    print(output)
+    if not report["passed"]:
+        sys.exit(1)
+
+
+def handle_record_parity_hypothesis(args: argparse.Namespace) -> None:
+    """Record one isolated parity hypothesis and enforce the circuit breaker."""
+    from .adaptive_probes import record_hypothesis
+
+    record = record_hypothesis(
+        Path(args.run_root).expanduser().resolve(),
+        proof_report=Path(args.proof_report).expanduser().resolve(),
+        first_failing_field=args.first_failing_field,
+        probe_request_id=args.probe_request_id,
+        hypothesis=args.hypothesis,
+        expected_field=args.expected_field,
+        kind=args.kind,
+        design_review=bool(args.design_review),
+    )
+    print(json.dumps(record, indent=2, sort_keys=True))
+
+
 def handle_prove_exact(args: argparse.Namespace) -> None:
     """Orchestrate a full-artifact exact proof."""
     run_root = Path(args.source_run_root).expanduser().resolve()
@@ -386,6 +470,7 @@ def handle_preflight_exact(args: argparse.Namespace) -> None:
 
 def handle_resume_exact_run(args: argparse.Namespace) -> None:
     """Resume a stale or interrupted init-exact-run directory."""
+    from slavv_python.analytics.parity.adaptive_probes import ensure_rerun_allowed
     from slavv_python.analytics.parity.job_registry import JobRegistry
     from slavv_python.analytics.parity.process_utils import (
         ensure_monitor_daemon_running,
@@ -393,10 +478,47 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         is_python_process,
         kill_process_tree,
     )
+    from slavv_python.analytics.parity.writer_lease import (
+        claim_writer_lease,
+        finalize_writer_lease,
+        load_writer_lease,
+    )
 
     dest_run_root = Path(args.dest_run_root)
     monitor = bool(getattr(args, "monitor", False))
     force_kill = bool(getattr(args, "force_kill", False))
+    rerun_stage = getattr(args, "force_rerun_from", None)
+    if rerun_stage:
+        ensure_rerun_allowed(dest_run_root, stage=rerun_stage)
+
+    from slavv_python.analytics.parity.parity_job_lifecycle import (
+        finalize_parity_job,
+        mark_parity_job_running,
+    )
+
+    existing_lease = load_writer_lease(dest_run_root)
+    if existing_lease and existing_lease.get("status") == "running":
+        lease_pid = int(existing_lease.get("pid", -1))
+        if lease_pid != os.getpid() and not is_process_alive(lease_pid):
+            finalize_writer_lease(dest_run_root, status="interrupted")
+            finalize_parity_job(
+                dest_run_root,
+                status="interrupted",
+                exit_code=None,
+                reason=f"Writer lease PID {lease_pid} is no longer alive.",
+            )
+        elif (
+            lease_pid != os.getpid()
+            and is_process_alive(lease_pid)
+            and is_python_process(lease_pid)
+        ):
+            if not force_kill:
+                raise RuntimeError(
+                    f"Run directory has active writer lease (PID {lease_pid}). "
+                    "Use --force-kill to replace it."
+                )
+            print(f"Terminating writer-lease PID {lease_pid}...")
+            kill_process_tree(lease_pid)
 
     # Check for active writer if monitoring enabled
     if monitor:
@@ -417,8 +539,6 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
     # Register job if monitoring enabled
     job_id = None
     if monitor:
-        import os
-
         registry = JobRegistry()
         oracle_root_str = str(Path(args.oracle_root)) if args.oracle_root else "unknown"
         stage = getattr(args, "force_rerun_from", None) or "all"
@@ -437,6 +557,19 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
         ensure_monitor_daemon_running()
         print(f"Job registered for monitoring (ID: {job_id})")
 
+    rerun_stage = getattr(args, "force_rerun_from", None) or "all"
+    claim_writer_lease(
+        dest_run_root,
+        command=" ".join(sys.argv),
+        stage=rerun_stage,
+    )
+    mark_parity_job_running(
+        dest_run_root,
+        pid=os.getpid(),
+        command=sys.argv,
+        stage=rerun_stage,
+    )
+
     try:
         dest_run_root = resume_exact_run(
             dest_run_root,
@@ -450,12 +583,30 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
             n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
         )
         if monitor and job_id:
-            registry.update_job(job_id, status="completed", completed_at=datetime.now().isoformat())
+            registry.update_job(
+                job_id,
+                status="succeeded",
+                completed_at=datetime.now().isoformat(),
+                exit_code=0,
+            )
+        finalize_writer_lease(dest_run_root, status="completed", stage=args.stop_after or "all")
+        finalize_parity_job(dest_run_root, status="succeeded", exit_code=0)
     except Exception as e:
         if monitor and job_id:
             registry.update_job(
-                job_id, status="failed", completed_at=datetime.now().isoformat(), metadata={"error": str(e)}
+                job_id,
+                status="failed",
+                completed_at=datetime.now().isoformat(),
+                exit_code=1,
+                metadata={"error": str(e)},
             )
+        finalize_writer_lease(dest_run_root, status="failed")
+        finalize_parity_job(
+            dest_run_root,
+            status="failed",
+            exit_code=1,
+            reason=str(e),
+        )
         raise
 
     print(str(dest_run_root))
@@ -463,34 +614,41 @@ def handle_resume_exact_run(args: argparse.Namespace) -> None:
 
 def handle_launch_exact_run(args: argparse.Namespace) -> None:
     """Launch an exact-route resume as a detached parity job."""
-    from .jobs import launch_exact_run_job
     from slavv_python.analytics.parity.job_registry import JobRegistry
-    from slavv_python.analytics.parity.process_utils import (
-        ensure_monitor_daemon_running,
-        is_process_alive,
-        is_python_process,
-        kill_process_tree,
+    from slavv_python.analytics.parity.launch_prepare import (
+        LaunchPreparationError,
+        assert_no_conflicting_registry_writer,
+        prepare_detached_exact_run_launch,
     )
+    from slavv_python.analytics.parity.process_utils import ensure_monitor_daemon_running
+
+    from .jobs import launch_exact_run_job
 
     dest_run_root = Path(args.dest_run_root)
     monitor = bool(getattr(args, "monitor", False))
     force_kill = bool(getattr(args, "force_kill", False))
 
-    # Check for active writer if monitoring enabled
-    if monitor:
-        registry = JobRegistry()
-        active_job = registry.get_job_by_run_dir(dest_run_root)
-        if active_job and is_process_alive(active_job.pid) and is_python_process(active_job.pid):
-            if not force_kill:
-                raise RuntimeError(
-                    f"Run directory has active writer (PID {active_job.pid}).\n"
-                    f"Job started: {active_job.started_at}\n"
-                    f"Use --force-kill to terminate, or wait for completion.\n"
-                    f"Check status: slavv jobs list"
-                )
-            print(f"Terminating active writer PID {active_job.pid}...")
-            kill_process_tree(active_job.pid)
-            registry.update_job(active_job.job_id, status="killed")
+    try:
+        assert_no_conflicting_registry_writer(dest_run_root, force_kill=force_kill)
+        detached_command, foreground_command = prepare_detached_exact_run_launch(
+            dest_run_root=dest_run_root,
+            oracle_root=Path(args.oracle_root) if args.oracle_root else None,
+            dataset_root=Path(args.dataset_root) if args.dataset_root else None,
+            stop_after=args.stop_after,
+            force_rerun_from=getattr(args, "force_rerun_from", None),
+            memory_safety_fraction=float(args.memory_safety_fraction),
+            force=bool(args.force),
+            skip_preflight=bool(getattr(args, "skip_preflight", False)),
+            skip_foreground_probe=bool(getattr(args, "skip_foreground_probe", False)),
+            n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+        )
+    except LaunchPreparationError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    print("Foreground probe command:")
+    print(" ".join(foreground_command))
+    print("Detached writer command:")
+    print(" ".join(detached_command))
 
     manifest = launch_exact_run_job(
         dest_run_root=dest_run_root,
@@ -500,8 +658,9 @@ def handle_launch_exact_run(args: argparse.Namespace) -> None:
         force_rerun_from=getattr(args, "force_rerun_from", None),
         memory_safety_fraction=float(args.memory_safety_fraction),
         force=bool(args.force),
-        skip_preflight=bool(getattr(args, "skip_preflight", False)),
+        skip_preflight=True,
         n_jobs=int(args.n_jobs) if getattr(args, "n_jobs", None) is not None else None,
+        command_override=detached_command,
     )
 
     # Register job if monitoring enabled
@@ -840,13 +999,13 @@ def handle_compare_traces(args: argparse.Namespace) -> None:
 
 def handle_export_crop(args: argparse.Namespace) -> None:
     """Export the 180709_E tier-M center crop TIFF for parity pre-gate."""
-    from .crop_export import DEFAULT_OUTPUT_NAME, DEFAULT_SOURCE, main as export_crop_main
     from pathlib import Path as _Path
 
+    from .crop_export import DEFAULT_OUTPUT_NAME, DEFAULT_SOURCE
+    from .crop_export import main as export_crop_main
+
     source = args.source or DEFAULT_SOURCE
-    output = args.output or (
-        _Path("workspace/scratch/180709_E_crop_M") / DEFAULT_OUTPUT_NAME
-    )
+    output = args.output or (_Path("workspace/scratch/180709_E_crop_M") / DEFAULT_OUTPUT_NAME)
     argv = ["--source", str(source), "--output", str(output)]
     if getattr(args, "write_metadata", False):
         argv.append("--write-metadata")

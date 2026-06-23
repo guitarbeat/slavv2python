@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from slavv_python.utils.synthetic import (
@@ -21,7 +20,7 @@ def test_y_junction_has_branch_voxels_beyond_trunk_cross_section():
 
     assert junction.shape == shape
     assert junction.sum() > trunk.sum()
-    cy, cx = shape[1] // 2, shape[2] // 2
+    cy, _cx = shape[1] // 2, shape[2] // 2
     z_mid = shape[0] // 2
     assert junction[z_mid, cy, -1] == pytest.approx(1.0)
     assert trunk[z_mid, cy, -1] == pytest.approx(0.0)

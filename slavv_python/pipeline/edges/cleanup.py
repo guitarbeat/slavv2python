@@ -15,6 +15,7 @@ from scipy import sparse
 from scipy.sparse.csgraph import connected_components
 
 from slavv_python.pipeline.edges.payloads import _clip_trace_indices
+from slavv_python.utils.matlab_order import yxz_to_matlab_linear_indices
 
 # --- TOPOLOGY FILTERS ---
 
@@ -237,8 +238,6 @@ def _get_incident_edge_ids(v_idx: int, edge_map: sparse.csr_matrix) -> np.ndarra
         ),
     )
 
-
-from slavv_python.utils.matlab_order import yxz_to_matlab_linear_indices
 
 def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) -> set[int]:
     """Converts (N, 3) coordinates to a set of 1D linear voxel indices."""

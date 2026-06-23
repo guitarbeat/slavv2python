@@ -145,7 +145,9 @@ class SLAVVPipelineApp(App[None]):
             if proof.passed is True:
                 lines.append("Proof: passed")
             elif proof.passed is False:
-                lines.append(f"Proof: failed {proof.first_failing_stage}.{proof.first_failing_field}")
+                lines.append(
+                    f"Proof: failed {proof.first_failing_stage}.{proof.first_failing_field}"
+                )
         return "\n".join(lines)
 
 

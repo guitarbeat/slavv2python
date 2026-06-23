@@ -38,12 +38,13 @@ Canonical instructions, domain glossary, and architecture guidelines for any AI 
 **Choose your path based on what you're working on:**
 
 ### I'm working on MATLAB parity
-1. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md) FIRST** — Live status, active runs, blockers
-2. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
-3. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
-4. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
-5. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
-6. See [Parity Experiments](#parity-experiments) workflow below
+1. **Read [HANDOFF.md](.agents/HANDOFF.md)** — Current decision point and operating sequence
+2. **Read [EXACT_PROOF_FINDINGS.md](docs/reference/core/EXACT_PROOF_FINDINGS.md)** — Live status, active runs, blockers
+3. Check if a rerun is active: `slavv status-exact-run --run-dir <dir>` or check the `99_Metadata/parity_job.pid` file.
+4. **Mandate**: All exact-route processing must use the **[Y, X, Z]** internal grid alignment with Fortran (F) memory order to match MATLAB's column-major tie-breaking.
+5. Follow the cold-start protocol in EXACT_PROOF_FINDINGS.md
+6. Use `--monitor` flag for long runs (see [PARITY_JOB_MONITORING.md](docs/reference/workflow/PARITY_JOB_MONITORING.md))
+7. See [Parity Experiments](#parity-experiments) workflow below
 
 ### I'm fixing a bug or adding a feature
 1. Read impacted module(s) and nearest tests
@@ -153,6 +154,10 @@ _Avoid_: Maintaining separate brainstorm and plan files for the same initiative;
 The live status log for exact-parity work: active runs, `prove-exact` results, blockers, champion baselines, and a curated index of parity-related compound solutions under `docs/reference/core/EXACT_PROOF_FINDINGS.md`.
 _Avoid_: Duplicating run status or solutions indexes in `TODO.md`; tasks stay in TODO, status and parity compound index stay in findings.
 
+### Random Component Parity Suite
+A seeded white-noise MATLAB R2019a/Python differential loop for fast Energy building-block checks (linspace, `interp3`, padded shape, valid flags). Structural fields gate CI; Hessian float ULP is advisory only. Not a [Certification](#certification) claim.
+_Avoid_: Treating a green random-component run as crop or canonical `prove-exact` success.
+
 ---
 
 ## Repository Map
@@ -259,6 +264,7 @@ Read these first when working on relevant surfaces:
 | Naming Guide | [docs/reference/workflow/PYTHON_NAMING_GUIDE.md](docs/reference/workflow/PYTHON_NAMING_GUIDE.md) | Python naming conventions and package surfaces |
 | Testing Guide | [tests/README.md](tests/README.md) | Rules for test placement and markers |
 | Parity Pre-Gate | [docs/reference/workflow/PARITY_PRE_GATE.md](docs/reference/workflow/PARITY_PRE_GATE.md) | Three-tier pre-gate (synthetic → crop → canonical) |
+| Random Component Parity | [docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md](docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md) | Fast seeded noise differential ([ADR 0010](docs/adr/0010-random-component-parity-suite.md)) |
 | Parity Certification | [docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md](docs/reference/workflow/PARITY_CERTIFICATION_GUIDE.md) | `prove-exact` / `prove-exact-sequence` on canonical volume |
 | Documented Solutions | [docs/solutions/](docs/solutions/) | Searchable past fixes and workflows (`module`, `tags`, `problem_type` in YAML frontmatter); relevant when debugging parity, oracle promotion, or integration issues |
 | ADRs | [docs/adr/](docs/adr/) | Architecture decisions (schema, executor, stage managers, parity coordinator) |

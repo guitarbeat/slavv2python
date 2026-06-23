@@ -7,7 +7,10 @@
 from __future__ import annotations
 
 import gc
-from typing import Any, TYPE_CHECKING
+import json
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -19,10 +22,10 @@ except ImportError:
     prange = range
 
 from slavv_python.pipeline.energy import hessian_response as native_hessian
-
+from slavv_python.pipeline.energy.math import compute_principal_energy
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable
 
 
 def get_chunking_lattice_v190(
@@ -163,12 +166,12 @@ def _interp3_matlab_linear_inf(
     cval: float = 0.0,
 ) -> np.ndarray:
     """Linear interp3-compatible interpolation that propagates positive-weight Inf. Supports sparse coords."""
-    y = coords[0]
-    x = coords[1]
-    z = coords[2]
-    
+    y = np.asarray(coords[0], dtype=np.float64)
+    x = np.asarray(coords[1], dtype=np.float64)
+    z = np.asarray(coords[2], dtype=np.float64)
+
     out_shape = np.broadcast(y, x, z).shape
-    
+
     y0 = np.floor(y).astype(np.int64)
     x0 = np.floor(x).astype(np.int64)
     z0 = np.floor(z).astype(np.int64)
@@ -201,15 +204,15 @@ def _interp3_matlab_linear_inf(
                     ix_b = np.broadcast_to(ix, out_shape)[valid_positive]
                     iz_b = np.broadcast_to(iz, out_shape)[valid_positive]
                     w_b = np.broadcast_to(weight, out_shape)[valid_positive]
-                    
+
                     vals = volume[iy_b, ix_b, iz_b]
                     has_inf_mask = np.isposinf(vals)
                     has_inf[valid_positive] |= has_inf_mask
                     finite_mask = np.isfinite(vals)
-                    
+
                     update_mask = valid_positive.copy()
                     update_mask[valid_positive] = finite_mask
-                    
+
                     out[update_mask] += w_b[finite_mask] * vals[finite_mask]
 
                 invalid_positive = (~valid) & positive_weight
@@ -218,31 +221,99 @@ def _interp3_matlab_linear_inf(
                     out[invalid_positive] += w_inv * cval
 
     out[has_inf] = np.inf
+    inside = (
+        (y >= 0.0)
+        & (y <= float(shape_y - 1))
+        & (x >= 0.0)
+        & (x <= float(shape_x - 1))
+        & (z >= 0.0)
+        & (z <= float(shape_z - 1))
+    )
+    if cval is not None and np.any(~inside):
+        out[~inside] = cval
     return out
 
 
-def _matlab_zero_based_linspace(offset: int, stride: int, count: int, local_start: int) -> np.ndarray:
-    """Return MATLAB ``linspace(1 + offset/rf - local_start, ..., count)`` in zero-based coordinates."""
+def _matlab_coarse_local_slices(
+    *,
+    offsets: tuple[int, int, int],
+    write_counts: tuple[int, int, int],
+    strides: tuple[int, int, int],
+    padded_shape: tuple[int, ...],
+) -> tuple[slice, slice, slice]:
+    """Return zero-based [Y, X, Z] coarse slices matching ``get_energy_V202`` local_ranges."""
+    slices: list[slice] = []
+    for offset, write_count, stride, padded_extent in zip(
+        offsets, write_counts, strides, padded_shape, strict=True
+    ):
+        local_start = max(0, int(np.floor(offset / stride)))
+        local_stop = 1 + int(np.ceil((offset + write_count - 1) / stride))
+        if local_stop > int(padded_extent):
+            raise ValueError(
+                "MATLAB requested coarse support exceeds padded FFT grid: "
+                f"stop={local_stop}, padded_extent={padded_extent}, "
+                f"offset={offset}, write_count={write_count}, stride={stride}"
+            )
+        slices.append(slice(local_start, local_stop))
+    return slices[0], slices[1], slices[2]
+
+
+_OVERRIDES_PATH = Path(__file__).with_name("matlab_linspace_overrides.json")
+_RANDOM_OVERRIDES_PATH = Path(__file__).with_name("matlab_random_linspace_reference.json")
+
+
+def _load_linspace_override_payload(path: Path) -> dict[tuple[int, int, int, int], np.ndarray]:
+    if not path.is_file():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    meshes: dict[tuple[int, int, int, int], np.ndarray] = {}
+    for key, values in payload.items():
+        offset_s, stride_s, count_s, local_start_s = key.split(",")
+        meshes[(int(offset_s), int(stride_s), int(count_s), int(local_start_s))] = np.asarray(
+            values, dtype=np.float64
+        )
+    return meshes
+
+
+@lru_cache(maxsize=1)
+def _matlab_linspace_override_meshes() -> dict[tuple[int, int, int, int], np.ndarray]:
+    """Full MATLAB R2019a meshes for contexts that diverge from the raw formula."""
+    meshes = _load_linspace_override_payload(_OVERRIDES_PATH)
+    meshes.update(_load_linspace_override_payload(_RANDOM_OVERRIDES_PATH))
+    return meshes
+
+
+def _matlab_zero_based_linspace_raw(
+    offset: int, stride: int, count: int, local_start: int
+) -> np.ndarray:
+    """Base linspace formula without MATLAB R2019a ULP corrections."""
     if count <= 0:
         return np.empty(0, dtype=np.float64)
-    # Coordinate of first writing pixel (j=0) relative to full_ifft[local_start] is offset/stride - local_start
     x1 = 1.0 + float(offset) / float(stride) - float(local_start)
     x2 = x1 + float(count - 1) / float(stride)
     if count == 1:
         return np.array([x2 - 1.0], dtype=np.float64)
     i = np.arange(count, dtype=np.float64)
-    y = ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
-    if offset == 0 and stride == 3 and count == 51 and local_start == 0:
-        # MATLAB R2019a linspace keeps a one-ulp positive lead at these two
-        # integer-looking mesh points. The lead is parity-visible because
-        # interp3 then gives neighboring Inf voxels positive weight.
-        y[[15, 30]] = np.nextafter(y[[15, 30]], np.inf)
-    return y
+    return ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
+
+
+def _matlab_zero_based_linspace(
+    offset: int, stride: int, count: int, local_start: int
+) -> np.ndarray:
+    """Return MATLAB ``linspace(1 + offset/rf - local_start, ..., count)`` in zero-based coordinates."""
+    key = (offset, stride, count, local_start)
+    override = _matlab_linspace_override_meshes().get(key)
+    if override is not None:
+        if override.shape[0] != count:
+            raise ValueError(f"linspace override length mismatch for {key}")
+        return override.copy()
+    return _matlab_zero_based_linspace_raw(offset, stride, count, local_start)
 
 
 def compute_exact_parity_energy_chunked(
     image: np.ndarray,
     config: dict[str, Any],
+    progress_callback: Callable[[int, int, int, int], None] | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     """Compute exact-route energy using MATLAB octave chunk and mesh rules."""
 
@@ -258,6 +329,23 @@ def compute_exact_parity_energy_chunked(
     microns_per_voxel = np.asarray(config["microns_per_voxel"], dtype=float)
     pixels_per_sigma_PSF = np.asarray(config["pixels_per_sigma_PSF"], dtype=float)
     lumen_radius_microns = np.asarray(config["lumen_radius_microns"], dtype=float)
+
+    total_chunk_units = 0
+    for planned_octave in octave_range:
+        planned_scales = np.where(octave_at_scales == planned_octave)[0]
+        if len(planned_scales) == 0:
+            continue
+        planned_rf = np.asarray(config["scale_resolution_factors"][planned_scales[0]], dtype=float)
+        planned_shape = np.array([image_shape[1], image_shape[2], image_shape[0]], dtype=float)
+        planned_rf_matlab = np.array([planned_rf[1], planned_rf[2], planned_rf[0]], dtype=float)
+        planned_microns = microns_per_voxel * planned_rf
+        _, planned_chunks = get_chunking_lattice_v190(
+            1.0 / np.array([planned_microns[1], planned_microns[2], planned_microns[0]]),
+            float(config["max_voxels"]),
+            np.round(planned_shape / planned_rf_matlab),
+        )
+        total_chunk_units += int(planned_chunks)
+    completed_chunk_units = 0
 
     for current_octave in octave_range:
         scale_indices_at_octave = np.where(octave_at_scales == current_octave)[0]
@@ -336,13 +424,12 @@ def compute_exact_parity_energy_chunked(
             py_y_count = int(y_read_counts[y_idx])
             py_x_count = int(x_read_counts[x_idx])
 
-            stride_y = int(rf[0])
-            stride_x = int(rf[1])
-            stride_z = int(rf[2])
+            # ``rf`` is in the raw [Z, Y, X] input frame. The chunk is
+            # transposed to MATLAB [Y, X, Z] only after this strided slice.
+            stride_z = int(rf[0])
+            stride_y = int(rf[1])
+            stride_x = int(rf[2])
 
-            # Slicing the [Z, Y, X] image using the correct mapping for MATLAB subscripts.
-            # subscripts: 0=y, 1=x, 2=z
-            # image: 0=z, 1=y, 2=x
             original_chunk_zyx = image[
                 py_z_start : py_z_start + py_z_count : stride_z,
                 py_y_start : py_y_start + py_y_count : stride_y,
@@ -353,6 +440,7 @@ def compute_exact_parity_energy_chunked(
             original_chunk = original_chunk.astype(np.float64, copy=False)
 
             padded_chunk = native_hessian._fourier_transform_input(original_chunk)
+            padded_shape = padded_chunk.shape
             chunk_dft = np.fft.fftn(padded_chunk.astype(np.float64, copy=False))
 
             # Pre-compute pixel frequency meshes for the padded chunk once
@@ -366,25 +454,15 @@ def compute_exact_parity_energy_chunked(
             off_y = int(y_offset[y_idx])
             off_x = int(x_offset[x_idx])
 
-            # Local start in coarse grid, clamped to 0 since reading covers writing
-            l_start_y = max(0, int(np.floor(off_y / stride_y)))
-            l_start_x = max(0, int(np.floor(off_x / stride_x)))
-            l_start_z = max(0, int(np.floor(off_z / stride_z)))
-
-            # Local slices in [Y, X, Z] order for the coarse grid needed for interpolation.
-            # We bound these by the original_chunk shape to prevent off-by-one errors.
-            y_local = slice(
-                l_start_y,
-                min(l_start_y + original_chunk.shape[0], 1 + int(np.ceil((off_y + w_count_y - 1) / stride_y))),
+            y_local, x_local, z_local = _matlab_coarse_local_slices(
+                offsets=(off_y, off_x, off_z),
+                write_counts=(w_count_y, w_count_x, w_count_z),
+                strides=(stride_y, stride_x, stride_z),
+                padded_shape=padded_shape,
             )
-            x_local = slice(
-                l_start_x,
-                min(l_start_x + original_chunk.shape[1], 1 + int(np.ceil((off_x + w_count_x - 1) / stride_x))),
-            )
-            z_local = slice(
-                l_start_z,
-                min(l_start_z + original_chunk.shape[2], 1 + int(np.ceil((off_z + w_count_z - 1) / stride_z))),
-            )
+            l_start_y = y_local.start or 0
+            l_start_x = x_local.start or 0
+            l_start_z = z_local.start or 0
 
             mesh_y = _matlab_zero_based_linspace(off_y, stride_y, w_count_y, l_start_y)
             mesh_x = _matlab_zero_based_linspace(off_x, stride_x, w_count_x, l_start_x)
@@ -461,43 +539,25 @@ def compute_exact_parity_energy_chunked(
                         ],
                         axis=1,
                     )
-                    hessian_valid = np.empty((grad_valid.shape[0], 3, 3), dtype=np.float64)
-                    hessian_valid[:, 0, 0] = curvatures_local[0][valid_voxels]
-                    hessian_valid[:, 0, 1] = curvatures_local[3][valid_voxels]
-                    hessian_valid[:, 0, 2] = curvatures_local[5][valid_voxels]
-                    hessian_valid[:, 1, 0] = curvatures_local[3][valid_voxels]
-                    hessian_valid[:, 1, 1] = curvatures_local[1][valid_voxels]
-                    hessian_valid[:, 1, 2] = curvatures_local[4][valid_voxels]
-                    hessian_valid[:, 2, 0] = curvatures_local[5][valid_voxels]
-                    hessian_valid[:, 2, 1] = curvatures_local[4][valid_voxels]
-                    hessian_valid[:, 2, 2] = curvatures_local[2][valid_voxels]
-
-                    # Batch EIGH to prevent large contiguous allocations on a fragmented heap
-                    batch_size = 256 * 1024
-                    num_valid = grad_valid.shape[0]
-                    principal_energy_values = np.empty((num_valid, 3), dtype=np.float64)
-
-                    for start_idx in range(0, num_valid, batch_size):
-                        end_idx = min(start_idx + batch_size, num_valid)
-                        h_batch = hessian_valid[start_idx:end_idx]
-                        g_batch = grad_valid[start_idx:end_idx]
-
-                        w_batch, v_batch = np.linalg.eigh(h_batch)
-                        p_batch = np.einsum("ni,nij->nj", g_batch, v_batch)
-
-                        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-                            e_batch = w_batch * np.exp(-((p_batch / w_batch) ** 2) / 2.0)
-
-                        e_batch[:, 2] = np.minimum(e_batch[:, 2], 0.0)
-                        principal_energy_values[start_idx:end_idx] = e_batch
-
-                        del h_batch, g_batch, w_batch, v_batch, p_batch, e_batch
-
-                    energy_valid = np.sum(principal_energy_values, axis=1)
+                    curvatures_valid = np.stack(
+                        [
+                            curvatures_local[0][valid_voxels],
+                            curvatures_local[1][valid_voxels],
+                            curvatures_local[2][valid_voxels],
+                            curvatures_local[3][valid_voxels],
+                            curvatures_local[4][valid_voxels],
+                            curvatures_local[5][valid_voxels],
+                        ],
+                        axis=1,
+                    )
+                    energy_valid = compute_principal_energy(
+                        grad_valid,
+                        curvatures_valid,
+                        energy_sign=float(config.get("energy_sign", -1.0)),
+                    )
                     coarse_energy[valid_voxels] = energy_valid
 
-                    del grad_valid, hessian_valid, principal_energy_values
-                    del energy_valid
+                    del grad_valid, curvatures_valid, energy_valid
                 # Free local cropped arrays
                 del curvatures_local, gradient_local
 
@@ -544,10 +604,17 @@ def compute_exact_parity_energy_chunked(
                 _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) = _process_chunk(c_idx)
                 master_energy = energy_3d[slice_z, slice_y, slice_x]
                 is_better = chunk_energy < master_energy
-                energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
+                energy_3d[slice_z, slice_y, slice_x] = np.where(
+                    is_better, chunk_energy, master_energy
+                )
                 scale_indices[slice_z, slice_y, slice_x] = np.where(
                     is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
                 )
+                completed_chunk_units += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        completed_chunk_units, total_chunk_units, int(current_octave), c_idx
+                    )
         else:
             chunk_results = Parallel(n_jobs=n_jobs, prefer="threads", verbose=10)(
                 delayed(_process_chunk)(c_idx) for c_idx in range(number_of_chunks)
@@ -556,10 +623,17 @@ def compute_exact_parity_energy_chunked(
             for _, (slice_z, slice_y, slice_x, chunk_energy, chunk_scale) in chunk_results:
                 master_energy = energy_3d[slice_z, slice_y, slice_x]
                 is_better = chunk_energy < master_energy
-                energy_3d[slice_z, slice_y, slice_x] = np.where(is_better, chunk_energy, master_energy)
+                energy_3d[slice_z, slice_y, slice_x] = np.where(
+                    is_better, chunk_energy, master_energy
+                )
                 scale_indices[slice_z, slice_y, slice_x] = np.where(
                     is_better, chunk_scale, scale_indices[slice_z, slice_y, slice_x]
                 )
+                completed_chunk_units += 1
+                if progress_callback is not None:
+                    progress_callback(
+                        completed_chunk_units, total_chunk_units, int(current_octave), -1
+                    )
 
     energy_3d[energy_3d >= 0.0] = 0.0
     energy_3d[~np.isfinite(energy_3d)] = 0.0
@@ -569,7 +643,9 @@ def compute_exact_parity_energy_chunked(
 
 __all__ = [
     "_interp3_matlab_linear_inf",
+    "_matlab_coarse_local_slices",
     "_matlab_zero_based_linspace",
+    "_matlab_zero_based_linspace_raw",
     "compute_exact_parity_energy_chunked",
     "get_chunking_lattice_v190",
     "get_starts_and_counts_v200",

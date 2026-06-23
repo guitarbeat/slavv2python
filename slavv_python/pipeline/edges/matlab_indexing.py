@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import math
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from skimage.graph import route_through_array
 
-from slavv_python.pipeline.edges.edge_types import Float64Array, Int32Array
 from slavv_python.pipeline.vertices.results import (
     matlab_linear_indices as _matlab_linear_indices,
 )
-
-
 from slavv_python.utils.matlab_order import matlab_linear_index_to_yxz, yxz_to_matlab_linear_indices
+
+if TYPE_CHECKING:
+    from slavv_python.pipeline.edges.edge_types import Float64Array, Int32Array
+
 
 def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]) -> int:
     """Convert a 0-based ``(y, x, z)`` coordinate into MATLAB linear order."""

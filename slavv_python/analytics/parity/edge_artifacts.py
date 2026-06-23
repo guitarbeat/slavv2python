@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slavv_python.analytics.parity.constants import EDGE_CANDIDATE_CHECKPOINT_PATH
 from slavv_python.analytics.parity.matlab_fail_fast import build_candidate_snapshot_payload
 from slavv_python.engine.state.tracker import atomic_joblib_dump
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class ParityEdgeCandidatePersistence:

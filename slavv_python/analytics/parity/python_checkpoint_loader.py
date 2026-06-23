@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
-
-from slavv_python.engine.state import atomic_joblib_dump
-from slavv_python.utils.safe_unpickle import safe_load
 
 from slavv_python.analytics.parity.array_normalization import (
     _normalize_connection_array,
@@ -21,10 +17,14 @@ from slavv_python.analytics.parity.array_normalization import (
     _normalize_int_vector,
     _normalize_python_bridge_payload,
     _normalize_python_strands,
-    _normalize_spatial_matrix_list,
 )
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
 from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+from slavv_python.engine.state import atomic_joblib_dump
+from slavv_python.utils.safe_unpickle import safe_load
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def load_normalized_python_checkpoints(

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import functools
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from slavv_python.pipeline.edges.edge_types import Int32Array
+if TYPE_CHECKING:
+    from slavv_python.pipeline.edges.edge_types import Int32Array
 
 
 def build_matlab_local_strel_geometry(

@@ -11,17 +11,17 @@ import numpy as np
 @dataclass(frozen=True)
 class PipelinePolicy:
     """Encapsulates the structural and mathematical differences between paths."""
-    
+
     precision: np.dtype
     internal_grid_alignment: str  # "matlab" | "paper"
-    rounding_mode: str            # "half-up" | "even"
-    energy_engine: str            # "incremental" | "parallel"
+    rounding_mode: str  # "half-up" | "even"
+    energy_engine: str  # "incremental" | "parallel"
 
     @classmethod
     def from_params(cls, params: dict[str, Any]) -> PipelinePolicy:
         """Create a policy from pipeline parameters."""
         is_exact = bool(params.get("comparison_exact_network", False))
-        
+
         if is_exact:
             # Exact Route (Innovation Path)
             return cls(
@@ -30,7 +30,7 @@ class PipelinePolicy:
                 rounding_mode="half-up",
                 energy_engine="incremental",
             )
-        
+
         # Paper Path (Baseline Path)
         return cls(
             precision=np.dtype(np.float32),

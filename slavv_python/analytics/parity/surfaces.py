@@ -14,6 +14,7 @@ from slavv_python.analytics.parity.matlab_vector_loader import (
 )
 from slavv_python.engine.state import fingerprint_file, load_json_dict
 
+from . import params_audit
 from .constants import (
     ANALYSIS_DIR,
     ANALYSIS_TABLES_DIR,
@@ -46,8 +47,6 @@ from .utils import (
     string_or_none,
     write_json_with_hash,
 )
-
-from . import params_audit
 
 
 def ensure_dest_run_layout(dest_run_root: Path) -> None:

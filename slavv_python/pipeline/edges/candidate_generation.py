@@ -42,7 +42,7 @@ def _align_to_internal_grid(
     """
     Realigns physical volumes and coordinates to the internal [Y, X, Z] grid.
 
-    Rationale: MATLAB uses [Y, X, Z] order with Fortran-style memory layout 
+    Rationale: MATLAB uses [Y, X, Z] order with Fortran-style memory layout
     (Y changing fastest). To match bit-perfect tie-breaking, we must align
     the Python internal grid to this layout.
     """
@@ -368,5 +368,3 @@ def sort_candidates_by_quality(
         candidates = _reorder_candidate_payload(candidates, np.argsort(metrics, kind="stable"))
 
     return candidates
-
-

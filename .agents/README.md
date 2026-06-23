@@ -8,6 +8,7 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 .agents/
 ├── README.md                          # This file
 ├── INDEX.md                           # Quick reference catalog
+├── HANDOFF.md                         # Current parity successor brief
 │
 ├── agents/                            # Active agent definitions
 │   ├── *.agent.md                     # Agent definition files
@@ -45,7 +46,9 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 
 ### For AI Agents
 1. **Read**: Repository guidance in root `/AGENTS.md` (automatically loaded)
-2. **Check**: Active orchestrations in `orchestrations/active/`
+2. **Check**: [HANDOFF.md](HANDOFF.md), then the canonical task and status
+   documents it links; `orchestrations/active/` is empty unless a genuinely
+   active multi-agent effort has been started.
 3. **Use**: Skills from `skills/` library as needed
 4. **Follow**: Rules in `rules/` (always applied)
 
@@ -58,6 +61,7 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 ## 📖 Documentation
 
 ### Core Files
+- **HANDOFF.md** - Current parity decision point and operating sequence
 - **INDEX.md** - Catalog of all agents, instructions, rules, prompts
 - **agents/README.md** - How to create and use agent definitions
 - **skills/README.md** - Skills library and contribution guide
@@ -75,8 +79,11 @@ This directory contains AI agent definitions, instructions, skills, and orchestr
 
 ### Active Work
 - Agent definitions go in `agents/`
-- Active orchestrations go in `orchestrations/active/`
-- Keep `BRIEFING.md` and `progress.md` updated during work
+- Active orchestrations go in `orchestrations/active/` only while they are
+  genuinely active.
+- Repository work state belongs in `docs/TODO.md` and
+  `docs/reference/core/EXACT_PROOF_FINDINGS.md`; do not duplicate it in agent
+  briefings or progress files.
 
 ### Completion
 - Move successful orchestrations to `orchestrations/completed/`

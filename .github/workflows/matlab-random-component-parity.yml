@@ -1,0 +1,75 @@
+name: MATLAB Random Component Parity (Advisory)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "slavv_python/pipeline/energy/**"
+      - "slavv_python/pipeline/energy/matlab_random_linspace_reference.json"
+      - "slavv_python/analytics/parity/**"
+      - "tests/support/random_component_parity.py"
+      - "tests/support/matlab/random_component_reference.m"
+      - "tests/support/fixtures/matlab_random_component_corpus.json"
+      - "tests/support/fixtures/matlab_random_linspace_reference.json"
+      - "tests/support/fixtures/matlab_random_matching_reference.json"
+      - "tests/unit/parity/test_random_component_parity.py"
+      - "pyproject.toml"
+      - "external/Vectorization-Public"
+      - ".github/workflows/matlab-random-component-parity.yml"
+
+concurrency:
+  group: matlab-r2019a-random-component-parity
+  cancel-in-progress: false
+
+jobs:
+  random-component-parity:
+    name: R2019a random component parity (advisory)
+    runs-on: [self-hosted, windows, matlab-r2019a]
+    timeout-minutes: 10
+    # Keep this advisory until the corpus has a confirmed green baseline; branch
+    # protection must also leave this check out of required checks.
+    continue-on-error: true
+    env:
+      MATLAB_EXE: ${{ vars.MATLAB_EXE || 'C:\Program Files\MATLAB\R2019a\bin\matlab.exe' }}
+      PARITY_OUTPUT: ${{ github.workspace }}\workspace\scratch\ci_random_component_parity
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[workspace]"
+      - name: Verify MATLAB R2019a and vectorization source
+        shell: pwsh
+        run: |
+          if (!(Test-Path $env:MATLAB_EXE)) { throw "MATLAB_EXE is unavailable: $env:MATLAB_EXE" }
+          if (!(Test-Path external\Vectorization-Public)) { throw "external/Vectorization-Public is unavailable" }
+      - name: Run randomized component differential suite
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force $env:PARITY_OUTPUT -ErrorAction SilentlyContinue
+          python -m tests.support.random_component_parity --output-dir $env:PARITY_OUTPUT --matlab-exe $env:MATLAB_EXE
+      - name: Print Hessian ULP diagnostics (advisory)
+        if: always()
+        shell: pwsh
+        run: |
+          $reportPath = Join-Path $env:PARITY_OUTPUT 'random_component_parity_report.json'
+          if (!(Test-Path $reportPath)) {
+            Write-Warning "Parity report missing; skipping Hessian advisory summary."
+            exit 0
+          }
+          python -m tests.support.random_component_parity --print-hessian-summary $reportPath
+      - name: Upload differential artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matlab-random-component-parity-${{ github.run_id }}
+          path: ${{ env.PARITY_OUTPUT }}
+          if-no-files-found: warn

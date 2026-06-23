@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "description": "Crop harness Energy voxel probes checked against promoted MATLAB oracle 180709_E_crop_M.",
+  "cases": [
+    {
+      "id": "corner_12_0_0",
+      "voxel_zyx": [12, 0, 0],
+      "oracle_scale": 54,
+      "oracle_energy": -13.52067537392248,
+      "note": "Known-good corner voxel; chunk lattice regression anchor"
+    },
+    {
+      "id": "first_scale_mismatch_0_43_104",
+      "voxel_zyx": [0, 43, 104],
+      "oracle_scale": 47,
+      "oracle_energy": -14.561063976954049,
+      "note": "First scale-winner mismatch before linspace table fix"
+    },
+    {
+      "id": "origin_0_0_0",
+      "voxel_zyx": [0, 0, 0],
+      "oracle_scale": 90,
+      "note": "Volume origin; scale agreement with ULP energy drift in stored proof"
+    },
+    {
+      "id": "first_proof_scale_mismatch_61_81_0",
+      "voxel_zyx": [61, 81, 0],
+      "oracle_scale": 44,
+      "note": "First scale_indices mismatch in 2026-06-22 prove-exact energy report"
+    }
+  ]
+}

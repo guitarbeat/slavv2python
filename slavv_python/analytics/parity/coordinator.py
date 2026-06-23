@@ -9,12 +9,14 @@ import numpy as np
 from slavv_python.analytics.parity.array_normalization import _normalize_connection_array
 from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
-from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
-from slavv_python.analytics.parity.proof_report import render_exact_proof_report
-from slavv_python.analytics.parity.python_checkpoint_loader import load_normalized_python_checkpoints
 from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_coverage_report,
     render_candidate_coverage_report,
+)
+from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
+from slavv_python.analytics.parity.proof_report import render_exact_proof_report
+from slavv_python.analytics.parity.python_checkpoint_loader import (
+    load_normalized_python_checkpoints,
 )
 from slavv_python.engine.state import (
     fingerprint_file,
@@ -23,7 +25,7 @@ from slavv_python.engine.state import (
 from slavv_python.pipeline.edges.manager import EdgeManager
 from slavv_python.schema.results import EnergyResult, VertexSet
 
-from .edge_artifacts import ParityEdgeCandidatePersistence
+from .adaptive_probes import build_energy_probe_payload, persist_energy_probe_payload
 from .constants import (
     CANDIDATE_COVERAGE_JSON_PATH,
     CANDIDATE_COVERAGE_TEXT_PATH,
@@ -40,9 +42,11 @@ from .counts import (
     extract_source_python_counts,
     read_python_counts_from_run,
 )
+from .edge_artifacts import ParityEdgeCandidatePersistence
+from .mismatch_diagnostics import persist_mismatch_diagnostics
+from .models import ExactProofSourceSurface  # noqa: TC001
 from .params_audit import persist_param_storage
 from .surfaces import ensure_dest_run_layout, write_run_manifest
-from .models import ExactProofSourceSurface  # noqa: TC001
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -103,6 +107,10 @@ class ExactProofCoordinator:
 
         checkpoints_dir = dest_run_root / CHECKPOINTS_DIR
         selected_stages = _selected_exact_stages(stage_arg)
+        if "energy" in selected_stages:
+            from .energy_proof_evidence import require_energy_proof_evidence
+
+            require_energy_proof_evidence(dest_run_root)
 
         matlab_artifacts: dict[str, dict[str, Any]] = {stage: {} for stage in selected_stages}
         if self.source_surface.matlab_batch_dir:
@@ -142,10 +150,8 @@ class ExactProofCoordinator:
                     }
 
                     raise
-                else:
-                    raise
-            else:
                 raise
+            raise
 
         report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
         from slavv_python.pipeline.energy.provenance import exact_route_gate_description
@@ -171,10 +177,36 @@ class ExactProofCoordinator:
         json_path = dest_run_root / EXACT_PROOF_JSON_PATH
         text_path = dest_run_root / EXACT_PROOF_TEXT_PATH
 
-        from .utils import write_json_with_hash, write_text_with_hash
+        from .utils import payload_hash, write_json_with_hash, write_text_with_hash
 
         write_json_with_hash(json_path, report_payload)
         write_text_with_hash(text_path, render_exact_proof_report(report_payload))
+
+        mismatch_paths = persist_mismatch_diagnostics(
+            dest_run_root,
+            report=report_payload,
+            matlab_artifacts=matlab_artifacts,
+            python_artifacts=python_artifacts,
+            params=params,
+        )
+        if mismatch_paths[0] is not None:
+            report_payload["mismatch_diagnosis"] = str(mismatch_paths[0])
+            write_json_with_hash(json_path, report_payload)
+        if not report_payload.get("passed") and selected_stages == ("energy",):
+            energy_probe_payload = build_energy_probe_payload(
+                np.asarray(matlab_artifacts["energy"]["energy"]),
+                np.asarray(python_artifacts["energy"]["energy"]),
+                np.asarray(matlab_artifacts["energy"]["scale_indices"]),
+                np.asarray(python_artifacts["energy"]["scale_indices"]),
+                provenance={
+                    "proof_report": str(json_path),
+                    "params_fingerprint": payload_hash(params),
+                    "oracle_id": self.source_surface.oracle_surface.oracle_id,
+                },
+            )
+            probe_path = persist_energy_probe_payload(dest_run_root, energy_probe_payload)
+            report_payload["adaptive_probe_requests"] = str(probe_path)
+            write_json_with_hash(json_path, report_payload)
 
         dataset_path = self.source_surface.run_root / "01_Input" / "volume.tif"
         dataset_hash = fingerprint_file(dataset_path) if dataset_path.is_file() else "test-hash"
@@ -190,7 +222,49 @@ class ExactProofCoordinator:
             extra={"exact_report": str(json_path), "stage": stage_arg},
         )
 
+        self._write_release_evidence(dest_run_root, report_payload, params)
+
         return report_payload, json_path, text_path
+
+    def _write_release_evidence(
+        self,
+        dest_run_root: Path,
+        report_payload: dict[str, Any],
+        params: dict[str, Any],
+    ) -> None:
+        """Persist the immutable inputs and outputs used by this proof attempt."""
+        from .constants import RELEASE_EVIDENCE_PATH, RUN_MANIFEST_PATH
+        from .utils import payload_hash, resolve_python_commit, write_json_with_hash
+
+        run_manifest = dest_run_root / RUN_MANIFEST_PATH
+        oracle_manifest = self.source_surface.oracle_surface.manifest_path
+        evidence = {
+            "schema_version": 1,
+            "proof_passed": bool(report_payload.get("passed")),
+            "proof_report_hash": payload_hash(report_payload),
+            "run_manifest_hash": fingerprint_file(run_manifest) if run_manifest.is_file() else None,
+            "params_fingerprint": payload_hash(params),
+            "oracle_id": self.source_surface.oracle_surface.oracle_id,
+            "oracle_manifest_hash": (
+                fingerprint_file(oracle_manifest)
+                if oracle_manifest and oracle_manifest.is_file()
+                else None
+            ),
+            "input_fingerprint": fingerprint_file(
+                self.source_surface.run_root / "01_Input" / "volume.tif"
+            )
+            if (self.source_surface.run_root / "01_Input" / "volume.tif").is_file()
+            else None,
+            "source_commit": resolve_python_commit(dest_run_root),
+            "artifact_hashes": {
+                stage: fingerprint_file(path)
+                for stage in ("energy", "vertices", "edges", "network")
+                if (
+                    path := self.source_surface.checkpoints_dir / f"checkpoint_{stage}.pkl"
+                ).is_file()
+            },
+        }
+        write_json_with_hash(dest_run_root / RELEASE_EVIDENCE_PATH, evidence)
 
     def capture_candidates(
         self,

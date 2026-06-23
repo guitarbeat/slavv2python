@@ -19,8 +19,8 @@ from .constants import (
     EDGE_REPLAY_PROOF_JSON_PATH,
     LUT_PROOF_JSON_PATH,
 )
-from .surfaces import load_oracle_surface, write_run_manifest
 from .models import ExactProofSourceSurface, OracleSurface
+from .surfaces import load_oracle_surface, write_run_manifest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -56,8 +56,8 @@ def run_exact_preflight(
     force: bool = False,
 ) -> tuple[dict[str, Any], Path | None, Path | None]:
     """Orchestrate the exact-route preflight check."""
-    from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
     from .preflight import run_exact_preflight_for_surfaces
+    from .surfaces import ensure_dest_run_layout, load_dataset_surface, load_oracle_surface
 
     dest = dest_run_root.expanduser().resolve()
     source = source_run_root.expanduser().resolve()

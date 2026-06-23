@@ -11,7 +11,6 @@ from slavv_python.analytics.parity.job_registry import JobRegistry
 from slavv_python.analytics.parity.monitor_daemon import MonitorDaemon
 from slavv_python.analytics.parity.process_utils import (
     is_process_alive,
-    is_python_process,
     kill_process_tree,
     read_daemon_pid,
 )
@@ -25,8 +24,7 @@ def format_duration(duration: timedelta) -> str:
 
     if hours > 0:
         return f"{hours}h {minutes}m"
-    else:
-        return f"{minutes}m"
+    return f"{minutes}m"
 
 
 def truncate_path(path_str: str, max_len: int = 30) -> str:
@@ -185,7 +183,7 @@ def cmd_kill(args: argparse.Namespace) -> None:
 
 def cmd_daemon_status(args: argparse.Namespace) -> None:
     """Show daemon status."""
-    daemon = MonitorDaemon()
+    MonitorDaemon()
 
     pid = read_daemon_pid()
     if pid is None:

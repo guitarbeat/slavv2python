@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -38,15 +37,12 @@ def export_crop_m(source: Path, output: Path) -> np.ndarray:
     volume = tifffile.imread(source)
     if volume.shape != EXPECTED_FULL_SHAPE:
         raise ValueError(
-            f"expected full shape {EXPECTED_FULL_SHAPE} (Z,Y,X), "
-            f"got {volume.shape} from {source}"
+            f"expected full shape {EXPECTED_FULL_SHAPE} (Z,Y,X), got {volume.shape} from {source}"
         )
 
     cropped = np.ascontiguousarray(volume[CROP_Z_SLICE, CROP_Y_SLICE, CROP_X_SLICE])
     if cropped.shape != CROP_SHAPE:
-        raise ValueError(
-            f"crop shape mismatch: expected {CROP_SHAPE}, got {cropped.shape}"
-        )
+        raise ValueError(f"crop shape mismatch: expected {CROP_SHAPE}, got {cropped.shape}")
 
     output.parent.mkdir(parents=True, exist_ok=True)
     tifffile.imwrite(output, cropped)

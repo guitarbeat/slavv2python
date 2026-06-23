@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -22,10 +22,10 @@ def compute_chunking_lattice(
     strel = np.asarray(strel_size_pixels, dtype=np.float64)
     aspect_ratio = strel / max(np.prod(strel) ** (1.0 / 3.0), 1e-12)
     target_dims = np.maximum(target_char_len * aspect_ratio, 1.0)
-    
+
     exact_lattice = np.asarray(image_shape, dtype=np.float64) / target_dims
     lattice_dims = policy.round(np.maximum(exact_lattice, 1.0)).astype(np.int32)
-    
+
     return lattice_dims, int(np.prod(lattice_dims))
 
 
@@ -37,9 +37,11 @@ def iter_chunk_slices(
 ):
     """Yield overlapped 3D chunk slices."""
     overlap_arr = np.asarray(overlap, dtype=np.int64)
-    
+
     borders = [
-        policy.round(np.linspace(0, float(image_shape[axis]), int(lattice_dims[axis]) + 1)).astype(np.int64)
+        policy.round(np.linspace(0, float(image_shape[axis]), int(lattice_dims[axis]) + 1)).astype(
+            np.int64
+        )
         for axis in range(3)
     ]
 

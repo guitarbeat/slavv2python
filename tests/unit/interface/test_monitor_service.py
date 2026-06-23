@@ -27,7 +27,7 @@ def test_monitor_view_reports_stale_running_snapshot_when_pid_is_dead(tmp_path, 
 
     view = load_run_monitor_view(run_dir)
 
-    assert view.effective_status == "stale-running-snapshot"
+    assert view.effective_status == "interrupted"
     assert view.pid_statuses[0].state == "dead"
 
 
@@ -65,6 +65,29 @@ def test_monitor_view_discovers_parity_job_pid(tmp_path, monkeypatch):
 
     assert view.effective_status == "running"
     assert any(status.path == pid_path for status in view.pid_statuses)
+
+
+def test_monitor_view_reports_conflicting_live_lease_and_registry(tmp_path, monkeypatch):
+    run_dir = tmp_path / "run"
+    materialize_run_snapshot(run_dir, build_snapshot_dict(status="running"))
+    lease_path = run_dir / "99_Metadata" / "writer_lease.json"
+    lease_path.write_text(json.dumps({"pid": 12345}), encoding="utf-8")
+
+    class Record:
+        pid = 98765
+        status = "running"
+        command = "python parity"
+
+    class Registry:
+        def get_job_by_run_dir(self, _run_dir):
+            return Record()
+
+    monkeypatch.setattr(monitor_service, "_process_command_line", lambda _pid: "python parity")
+    monkeypatch.setattr("slavv_python.analytics.parity.job_registry.JobRegistry", Registry)
+
+    view = load_run_monitor_view(run_dir)
+
+    assert view.effective_status == "conflicting-writers"
 
 
 def test_monitor_view_summarizes_parity_proof_json(tmp_path):

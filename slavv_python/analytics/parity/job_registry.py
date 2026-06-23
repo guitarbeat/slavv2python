@@ -8,7 +8,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 try:
     import fasteners
@@ -30,17 +30,17 @@ class ParityJobRecord:
     command: str
     started_at: str  # ISO format datetime string
     last_seen_at: str  # ISO format datetime string
-    completed_at: Optional[str] = None
-    exit_code: Optional[int] = None
+    completed_at: str | None = None
+    exit_code: int | None = None
     status: str = "running"  # 'running', 'completed', 'failed', 'killed'
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert record to dictionary."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> ParityJobRecord:
+    def from_dict(cls, data: dict[str, Any]) -> ParityJobRecord:
         """Create record from dictionary."""
         return cls(**data)
 
@@ -48,7 +48,7 @@ class ParityJobRecord:
 class JobRegistry:
     """Persistent JSONL-based storage for parity job records."""
 
-    def __init__(self, registry_path: Optional[Path] = None):
+    def __init__(self, registry_path: Path | None = None):
         """
         Initialize job registry.
 
@@ -77,10 +77,10 @@ class JobRegistry:
             return None
         return fasteners.InterProcessLock(str(self.lock_path))
 
-    def _read_all_records(self) -> List[ParityJobRecord]:
+    def _read_all_records(self) -> list[ParityJobRecord]:
         """Read all records from registry file."""
         records = []
-        with open(self.registry_path, "r", encoding="utf-8") as f:
+        with open(self.registry_path, encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -89,9 +89,7 @@ class JobRegistry:
                     data = json.loads(line)
                     records.append(ParityJobRecord.from_dict(data))
                 except (json.JSONDecodeError, TypeError, KeyError) as e:
-                    logger.warning(
-                        f"Skipping corrupted line {line_num} in registry: {e}"
-                    )
+                    logger.warning(f"Skipping corrupted line {line_num} in registry: {e}")
                     continue
         return records
 
@@ -107,7 +105,7 @@ class JobRegistry:
         oracle_root: Path,
         stage: str,
         command: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> str:
         """
         Register a new parity job.
@@ -194,7 +192,7 @@ class JobRegistry:
             if lock:
                 lock.release()
 
-    def get_active_jobs(self) -> List[ParityJobRecord]:
+    def get_active_jobs(self) -> list[ParityJobRecord]:
         """
         Get all active (running) jobs.
 
@@ -209,7 +207,7 @@ class JobRegistry:
             records = self._read_all_records()
 
             # Build map of job_id -> latest record
-            job_map: Dict[str, ParityJobRecord] = {}
+            job_map: dict[str, ParityJobRecord] = {}
             for record in records:
                 if (
                     record.job_id not in job_map
@@ -225,7 +223,7 @@ class JobRegistry:
             if lock:
                 lock.release()
 
-    def get_job_by_run_dir(self, run_dir: Path) -> Optional[ParityJobRecord]:
+    def get_job_by_run_dir(self, run_dir: Path) -> ParityJobRecord | None:
         """
         Get the latest job for a specific run directory.
 
@@ -252,7 +250,7 @@ class JobRegistry:
                 return None
 
             # Build map of job_id -> latest record
-            job_map: Dict[str, ParityJobRecord] = {}
+            job_map: dict[str, ParityJobRecord] = {}
             for record in matching_records:
                 if (
                     record.job_id not in job_map
@@ -273,8 +271,8 @@ class JobRegistry:
                 lock.release()
 
     def get_job_history(
-        self, run_dir: Optional[Path] = None, limit: Optional[int] = None
-    ) -> List[ParityJobRecord]:
+        self, run_dir: Path | None = None, limit: int | None = None
+    ) -> list[ParityJobRecord]:
         """
         Get job history, optionally filtered by run directory.
 
@@ -295,14 +293,10 @@ class JobRegistry:
             # Filter by run_dir if specified
             if run_dir is not None:
                 run_dir_str = str(Path(run_dir).resolve())
-                records = [
-                    r
-                    for r in records
-                    if Path(r.run_dir).resolve() == Path(run_dir_str)
-                ]
+                records = [r for r in records if Path(r.run_dir).resolve() == Path(run_dir_str)]
 
             # Build map of job_id -> latest record
-            job_map: Dict[str, ParityJobRecord] = {}
+            job_map: dict[str, ParityJobRecord] = {}
             for record in records:
                 if (
                     record.job_id not in job_map
@@ -341,7 +335,7 @@ class JobRegistry:
             archived_count = 0
 
             # Build map of job_id -> latest record
-            job_map: Dict[str, ParityJobRecord] = {}
+            job_map: dict[str, ParityJobRecord] = {}
             for record in records:
                 if (
                     record.job_id not in job_map
@@ -367,7 +361,7 @@ class JobRegistry:
             if lock:
                 lock.release()
 
-    def get_job_by_id(self, job_id: str) -> Optional[ParityJobRecord]:
+    def get_job_by_id(self, job_id: str) -> ParityJobRecord | None:
         """
         Get latest record for a specific job ID.
 

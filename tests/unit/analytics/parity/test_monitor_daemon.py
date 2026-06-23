@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import json
-import time
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -23,9 +22,10 @@ def mock_registry():
 @pytest.fixture
 def mock_process_utils():
     """Mock process utilities."""
-    with patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive") as alive_mock, patch(
-        "slavv_python.analytics.parity.monitor_daemon.is_python_process"
-    ) as python_mock:
+    with (
+        patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive") as alive_mock,
+        patch("slavv_python.analytics.parity.monitor_daemon.is_python_process") as python_mock,
+    ):
         yield {"is_alive": alive_mock, "is_python": python_mock}
 
 
@@ -34,15 +34,15 @@ def temp_workspace(tmp_path):
     """Create temporary workspace directory."""
     workspace = tmp_path / "workspace" / "scratch"
     workspace.mkdir(parents=True)
-    
+
     # Patch Path to use temp workspace
     original_path = Path
-    
+
     def mock_path_new(path_str):
         if path_str == "workspace/scratch":
             return workspace
         return original_path(path_str)
-    
+
     with patch("slavv_python.analytics.parity.monitor_daemon.Path", side_effect=mock_path_new):
         yield workspace
 
@@ -259,6 +259,32 @@ class TestMonitorDaemon:
 
         exit_code = daemon._get_exit_code(mock_job)
         assert exit_code is None
+
+    def test_handle_completed_job_marks_interrupted_without_exit_code(self, tmp_path):
+        """Dead jobs without exit metadata should reconcile as interrupted."""
+        daemon = MonitorDaemon()
+        mock_registry = Mock()
+        mock_job = Mock()
+        mock_job.job_id = "job-1"
+        mock_job.run_dir = str(tmp_path)
+        mock_job.started_at = datetime.now().isoformat()
+        mock_job.stage = "energy"
+        mock_job.pid = 12345
+
+        with (
+            patch.object(daemon, "_get_exit_code", return_value=None),
+            patch.object(daemon, "_send_notification"),
+            patch(
+                "slavv_python.analytics.parity.parity_job_lifecycle.reconcile_interrupted_run"
+            ) as reconcile,
+        ):
+            daemon._handle_completed_job(mock_job, mock_registry)
+            reconcile.assert_called_once()
+
+        mock_registry.update_job.assert_called_once()
+        updates = mock_registry.update_job.call_args.kwargs
+        assert updates["status"] == "interrupted"
+        assert updates["exit_code"] is None
 
 
 @pytest.mark.unit

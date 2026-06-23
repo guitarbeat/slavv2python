@@ -19,15 +19,6 @@ from slavv_python.engine.constants import (
 )
 from slavv_python.engine.state.io import atomic_write_json, load_json_dict
 from slavv_python.engine.state.layout import resolve_run_layout
-from slavv_python.engine.state.snapshot_lifecycle import (
-    begin_stage_snapshot,
-    complete_stage_snapshot,
-    fail_stage_snapshot,
-    finalize_run_snapshot,
-    mark_preprocess_complete_snapshot,
-    update_optional_task_snapshot,
-    update_stage_snapshot,
-)
 from slavv_python.engine.state.models import (  # noqa: TC001
     ProgressEvent,
     RunSnapshot,
@@ -46,6 +37,15 @@ from slavv_python.engine.state.resume_policy import (
     apply_resume_reset,
     fingerprint_mismatches,
     update_snapshot_fingerprints,
+)
+from slavv_python.engine.state.snapshot_lifecycle import (
+    begin_stage_snapshot,
+    complete_stage_snapshot,
+    fail_stage_snapshot,
+    finalize_run_snapshot,
+    mark_preprocess_complete_snapshot,
+    update_optional_task_snapshot,
+    update_stage_snapshot,
 )
 from slavv_python.engine.state.snapshots import (
     emit_progress_event,

@@ -11,9 +11,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pytest
 from scipy.io import savemat
-from tests.support.run_state_builders import (
-    materialize_checkpoint_surface,
-)
 
 from slavv_python.analytics.parity import jobs
 from slavv_python.analytics.parity.commands import build_parity_parser
@@ -36,6 +33,9 @@ from slavv_python.analytics.parity.reports import (
     build_experiment_summary,
 )
 from slavv_python.interface.cli.parity import main as parity_main
+from tests.support.run_state_builders import (
+    materialize_checkpoint_surface,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path

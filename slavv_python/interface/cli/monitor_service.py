@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,8 @@ import psutil
 
 from slavv_python.engine.state import RunSnapshot, load_run_snapshot
 from slavv_python.engine.state.status import target_stage_progress
+
+UNRESPONSIVE_AFTER_SECONDS = 15 * 60
 
 
 @dataclass(frozen=True)
@@ -21,6 +24,7 @@ class PidStatus:
     pid: int | None
     state: str
     command_line: str = ""
+    source: str = "legacy"
 
 
 @dataclass(frozen=True)
@@ -114,21 +118,57 @@ def _inspect_pid_file(path: Path, run_dir: Path) -> PidStatus | None:
     try:
         pid = int(raw_pid)
     except ValueError:
-        return PidStatus(path=path, pid=None, state="invalid")
+        return PidStatus(path=path, pid=None, state="invalid", source="legacy")
 
     command_line = _process_command_line(pid)
     if command_line is None:
-        return PidStatus(path=path, pid=pid, state="dead")
+        return PidStatus(path=path, pid=pid, state="dead", source="legacy")
 
     normalized_run = str(run_dir.resolve()).lower()
     command_lower = command_line.lower()
     if normalized_run in command_lower or run_dir.name.lower() in command_lower:
-        return PidStatus(path=path, pid=pid, state="alive", command_line=command_line)
-    return PidStatus(path=path, pid=pid, state="unrelated", command_line=command_line)
+        return PidStatus(
+            path=path, pid=pid, state="alive", command_line=command_line, source="legacy"
+        )
+    return PidStatus(
+        path=path, pid=pid, state="unrelated", command_line=command_line, source="legacy"
+    )
 
 
 def _load_pid_statuses(run_dir: Path) -> tuple[PidStatus, ...]:
-    statuses = []
+    statuses: list[PidStatus] = []
+    metadata_dir = run_dir / "99_Metadata"
+    lease_path = metadata_dir / "writer_lease.json"
+    lease = _read_json(lease_path)
+    if lease is not None:
+        try:
+            lease_pid = int(lease["pid"])
+        except (KeyError, TypeError, ValueError):
+            statuses.append(PidStatus(lease_path, None, "invalid", source="lease"))
+        else:
+            command_line = _process_command_line(lease_pid)
+            state = "alive" if command_line is not None else "dead"
+            statuses.append(
+                PidStatus(lease_path, lease_pid, state, command_line or "", source="lease")
+            )
+
+    try:
+        from slavv_python.analytics.parity.job_registry import JobRegistry
+
+        record = JobRegistry().get_job_by_run_dir(run_dir)
+    except (OSError, ValueError):
+        record = None
+    if record is not None and record.status == "running":
+        command_line = _process_command_line(record.pid)
+        statuses.append(
+            PidStatus(
+                metadata_dir / "job_registry.jsonl",
+                record.pid,
+                "alive" if command_line is not None else "dead",
+                command_line or record.command,
+                source="registry",
+            )
+        )
     for candidate in _pid_file_candidates(run_dir):
         status = _inspect_pid_file(candidate, run_dir)
         if status is not None:
@@ -193,15 +233,57 @@ def _log_candidates(run_dir: Path) -> tuple[Path, ...]:
     return tuple(unique)
 
 
+def _parity_job_terminal_status(run_dir: Path) -> tuple[str, str] | None:
+    try:
+        from slavv_python.analytics.parity.parity_job_lifecycle import (
+            TERMINAL_STATUSES,
+            load_parity_job_manifest,
+        )
+    except ImportError:
+        return None
+    manifest = load_parity_job_manifest(run_dir)
+    if manifest is None:
+        return None
+    status = str(manifest.get("status") or "")
+    if status not in TERMINAL_STATUSES:
+        return None
+    reason = str(manifest.get("reason") or f"Parity job ended with status {status}.")
+    exit_code = manifest.get("exit_code")
+    if exit_code is not None:
+        reason = f"{reason} exit_code={exit_code}"
+    return status, reason
+
+
 def _effective_status(
-    snapshot: RunSnapshot | None, pid_statuses: tuple[PidStatus, ...]
+    snapshot: RunSnapshot | None,
+    pid_statuses: tuple[PidStatus, ...],
+    *,
+    run_dir: Path | None = None,
 ) -> tuple[str, str]:
+    if run_dir is not None:
+        terminal = _parity_job_terminal_status(run_dir)
+        if terminal is not None:
+            return terminal
+
     alive = [pid for pid in pid_statuses if pid.state == "alive"]
     dead = [pid for pid in pid_statuses if pid.state == "dead"]
     if snapshot is None:
         return "missing-snapshot", "No run snapshot found."
+    live_lease = [pid for pid in alive if pid.source == "lease"]
+    live_registry = [pid for pid in alive if pid.source == "registry"]
+    if live_lease and live_registry and live_lease[0].pid != live_registry[0].pid:
+        return (
+            "conflicting-writers",
+            f"Lease PID {live_lease[0].pid} conflicts with registry PID {live_registry[0].pid}.",
+        )
     if alive:
-        return "running", f"PID {alive[0].pid} is alive."
+        owner = next((pid for pid in alive if pid.source == "lease"), alive[0])
+        if snapshot is not None and _snapshot_is_stale(snapshot):
+            return (
+                "unresponsive",
+                f"{owner.source} PID {owner.pid} is alive but snapshot progress is stale.",
+            )
+        return "running", f"{owner.source} PID {owner.pid} is alive."
     if snapshot.status == "running" or any(
         stage.status == "running" for stage in snapshot.stages.values()
     ):
@@ -211,13 +293,34 @@ def _effective_status(
     return snapshot.status, "Snapshot status."
 
 
+def _snapshot_is_stale(snapshot: RunSnapshot) -> bool:
+    """Return whether a live writer has stopped updating durable stage progress."""
+    updated_at = snapshot.updated_at
+    if not updated_at:
+        return False
+    try:
+        timestamp = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - timestamp).total_seconds() > UNRESPONSIVE_AFTER_SECONDS
+
+
 def load_run_monitor_view(run_dir: str | Path) -> RunMonitorView:
     """Load a consolidated monitoring view for a structured run directory."""
     root = Path(run_dir).expanduser().resolve()
     snapshot_path = snapshot_path_for_run(root)
     snapshot = load_run_snapshot(root)
     pid_statuses = _load_pid_statuses(root)
-    status, reason = _effective_status(snapshot, pid_statuses)
+    status, reason = _effective_status(snapshot, pid_statuses, run_dir=root)
+    if status == "stale-running-snapshot":
+        from slavv_python.analytics.parity.parity_job_lifecycle import (
+            reconcile_interrupted_run,
+        )
+
+        reconcile_interrupted_run(root, reason=reason)
+        status, reason = _effective_status(snapshot, pid_statuses, run_dir=root)
     errors: list[str] = []
     if snapshot is None:
         errors.append(f"Missing snapshot: {snapshot_path}")
@@ -268,7 +371,7 @@ def render_monitor_lines(view: RunMonitorView) -> list[str]:
         lines.extend(("", "PID files:"))
         for pid in view.pid_statuses:
             pid_text = "unknown" if pid.pid is None else str(pid.pid)
-            lines.append(f"  - {pid.path}: pid={pid_text} state={pid.state}")
+            lines.append(f"  - {pid.path}: pid={pid_text} state={pid.state} source={pid.source}")
 
     if view.proof_statuses:
         lines.extend(("", "Proofs:"))

@@ -25,7 +25,7 @@ def run_monitor_if_supported(run_dir: str | None = None) -> bool | None:
         logger.warning("TUI dependencies are not installed. Run 'pip install -e .[tui]' to enable.")
         print("Error: TUI dependency 'textual' is not installed.")
         print('Please run: pip install -e ".[tui]"')
-        return
+        return None
     from .runner_app import SLAVVPipelineApp
 
     app = SLAVVPipelineApp(run_dir=run_dir)

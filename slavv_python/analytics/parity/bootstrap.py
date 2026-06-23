@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.io import loadmat
 
 from slavv_python.analytics.parity.matlab_vector_loader import find_single_matlab_batch_dir
-from slavv_python.analytics.parity.python_checkpoint_loader import sync_exact_vertex_checkpoint_from_matlab
+from slavv_python.analytics.parity.python_checkpoint_loader import (
+    sync_exact_vertex_checkpoint_from_matlab,
+)
 from slavv_python.engine.state import atomic_write_json, load_json_dict
 
 from .constants import (
@@ -20,13 +22,15 @@ from .constants import (
     ORACLE_MANIFEST_PATH,
     RUN_SNAPSHOT_PATH,
 )
-from .models import DatasetSurface, OracleSurface
 from .params_audit import normalize_param_value
 from .surfaces import (
     load_oracle_surface,
     oracle_energy_size_of_image,
     write_run_manifest,
 )
+
+if TYPE_CHECKING:
+    from .models import DatasetSurface, OracleSurface
 
 __all__ = [
     "_copy_exact_bootstrap_refs",
@@ -139,7 +143,9 @@ def derive_exact_params_from_oracle(
         "max_voxels_per_node_energy": normalize_param_value(
             energy_settings["max_voxels_per_node_energy"]
         ),
-        "gaussian_to_ideal_ratio": normalize_param_value(energy_settings["gaussian_to_ideal_ratio"]),
+        "gaussian_to_ideal_ratio": normalize_param_value(
+            energy_settings["gaussian_to_ideal_ratio"]
+        ),
         "spherical_to_annular_ratio": normalize_param_value(
             energy_settings["spherical_to_annular_ratio"]
         ),

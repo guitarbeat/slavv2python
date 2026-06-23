@@ -1,7 +1,7 @@
 # Tasks: Automated Parity Job Monitoring System
 
-**Last Updated**: 2026-06-09  
-**Status**: MVP Complete ✅ | Documentation Complete ✅ | Testing Pending ⏳
+**Last Updated**: 2026-06-22  
+**Status**: MVP Complete ✅ | Documentation Complete ✅ | Unit tests largely complete ✅ | Integration/manual pending ⏳
 
 ---
 
@@ -165,23 +165,23 @@
 
 ---
 
-## Phase 2: Testing ⏳ PENDING
+## Phase 2: Testing ⏳ PARTIAL
 
-### Task 7: Unit Tests for JobRegistry
+### Task 7: Unit Tests for JobRegistry ✅ LARGELY COMPLETE
 **File**: `tests/unit/analytics/parity/test_job_registry.py`  
 **Dependencies**: Task 1  
 **Estimated Effort**: 2 hours  
-**Status**: Not Started
+**Status**: Complete (2026-06-22 audit)
 
-- [ ] Test job registration creates correct record
-- [ ] Test job updates append correctly
-- [ ] Test active jobs query returns only running jobs
-- [ ] Test run-dir query returns latest job for that directory
-- [ ] Test history query returns all jobs, filtered correctly
-- [ ] Test archive functionality marks old jobs
+- [x] Test job registration creates correct record
+- [x] Test job updates append correctly
+- [x] Test active jobs query returns only running jobs
+- [x] Test run-dir query returns latest job for that directory
+- [x] Test history query returns all jobs, filtered correctly
+- [x] Test archive functionality marks old jobs
 - [ ] Test concurrent writes don't corrupt file (multi-process test)
-- [ ] Test corrupted JSONL lines are handled gracefully
-- [ ] Test file locking prevents race conditions
+- [x] Test corrupted JSONL lines are handled gracefully
+- [ ] Test file locking prevents race conditions (partial — depends on `fasteners`)
 
 **Acceptance Criteria**:
 - All tests pass
@@ -189,19 +189,19 @@
 
 ---
 
-### Task 8: Unit Tests for MonitorDaemon
+### Task 8: Unit Tests for MonitorDaemon ✅ LARGELY COMPLETE
 **File**: `tests/unit/analytics/parity/test_monitor_daemon.py`  
 **Dependencies**: Task 2  
 **Estimated Effort**: 2 hours  
-**Status**: Not Started
+**Status**: Complete (2026-06-22 audit)
 
-- [ ] Test daemon starts and writes PID file
-- [ ] Test daemon detects completed jobs
-- [ ] Test daemon updates last_seen_at for running jobs
-- [ ] Test daemon terminates when idle (mock time.sleep)
-- [ ] Test notification dispatch (mock win10toast)
-- [ ] Test heartbeat updates
-- [ ] Test graceful shutdown on SIGTERM
+- [x] Test daemon starts and writes PID file
+- [x] Test daemon detects completed jobs (incl. `interrupted` when exit code unknown)
+- [x] Test daemon updates last_seen_at for running jobs
+- [x] Test daemon terminates when idle (mock time.sleep)
+- [x] Test notification dispatch (mock win10toast)
+- [x] Test heartbeat updates
+- [x] Test graceful shutdown on SIGTERM
 
 **Acceptance Criteria**:
 - All tests pass
@@ -211,10 +211,10 @@
 ---
 
 ### Task 9: Integration Tests
-**File**: `tests/integration/parity/test_monitored_parity_run.py`  
+**File**: `tests/integration/parity/test_monitored_jobs.py` (partial; no full `test_monitored_parity_run.py` yet)  
 **Dependencies**: Tasks 1-6  
 **Estimated Effort**: 3 hours  
-**Status**: Not Started
+**Status**: Partial
 
 - [ ] Test end-to-end monitored job lifecycle
   - [ ] Start synthetic parity run with `--monitor`
@@ -370,10 +370,10 @@
 | Phase | Tasks | Status | Hours Complete | Hours Remaining |
 |-------|-------|--------|----------------|-----------------|
 | Phase 1: Core Infrastructure | 6 tasks | ✅ COMPLETE | 14.5h | 0h |
-| Phase 2: Testing | 4 tasks | ⏳ Pending | 0h | 8h |
+| Phase 2: Testing | 4 tasks | ⏳ Partial | ~5h | ~3h |
 | Phase 3: Documentation | 2 tasks | ✅ COMPLETE | 2.25h | 0h |
 | Phase 4: Deployment | 2 tasks | ✅ 1 Complete | 0.25h | 1h |
-| **TOTAL** | **14 tasks** | **64% Complete** | **17h** | **9h** |
+| **TOTAL** | **14 tasks** | **~79% Complete** | **~22h** | **~4h** |
 
 ### Critical Path Completed ✅
 

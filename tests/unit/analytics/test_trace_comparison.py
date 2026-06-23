@@ -1,6 +1,6 @@
 import json
 
-from scripts.compare_execution_traces import compare_traces
+from slavv_python.analytics.parity.trace_comparator import compare_traces
 
 
 def test_compare_traces_perfect_match(tmp_path):
