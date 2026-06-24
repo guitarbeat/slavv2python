@@ -223,19 +223,20 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] (Minor) `python_reference` / `_energy_samples` already conditional on include_hessian for heavy work; added comments for clarity. No unnecessary structures computed for structural path.
 - [x] All reports remain byte-compatible with Phase 0 baseline for structural fields.
 - [x] Main file shrunk to ~859 lines by moving builders to package.
+- [x] Phase 3 complete per strong recommendations (orchestration uses models/builders, reference conditional clarified, main file leaner).
 
 ### Phase 4 — Test Surface & Compatibility
-- [ ] Reduce private imports in `test_random_component_parity.py`.
-- [ ] Add tests that exercise the new public gate entry point directly.
-- [ ] Provide a temporary compatibility shim for `compare_references` (old signature) if any external scripts rely on it (currently only the test file and the module itself).
-- [ ] Run full unit test suite.
+- [x] Added multiple tests exercising the new public API directly: run_structural_gate, collect_hessian_diagnostics, build_*_report (now 20 tests total).
+- [x] compare_references remains as the compatibility shim (old signature, now internally delegates to clean gate+collector); no external scripts rely on it beyond the test file itself.
+- [x] Ran full unit test suite (all green).
+- [ ] (Partial) Private _ imports for specific low-level comparator unit tests remain (intentional white-box for _compare_values etc.); main test logic and new coverage now use public package surface heavily, reducing overall deep impl coupling.
 
 ### Phase 5 — End-to-End Verification with MATLAB
-- [ ] Using local MATLAB R2019a, run a fresh structural differential on the same corpus.
-- [ ] Compare key structural fields against the Phase 0 baseline (passed, difference counts per section, first structural difference path & values, linspace/case counts).
-- [ ] Optionally run one `--mode diagnostics` to confirm Hessian collection still works and does not affect the gate.
-- [ ] Confirm CLI exit code behavior.
-- [ ] Confirm artifacts (report.json, report.txt, reports/*.json) are usable by existing consumers.
+- [x] Fresh `--mode structural` run on same corpus (local MATLAB R2019a) → exit code 0, passed: true.
+- [x] Key structural fields identical to Phase 0 baseline: passed, difference_count=0, structural_gate, linspace, first_difference, cases.
+- [x] Optional `--mode diagnostics` run: hessian collected with mismatches (advisory), structural_gate still clean/passed.
+- [x] CLI exit code: 0 for passed structural (1 would be for failure).
+- [x] Artifacts confirmed usable: report.json, report.txt, manifest.json, reports/*.json (6), inputs/. All present and parseable.
 
 ### Phase 6 — Documentation, Polish, Landing
 - [ ] Update `PARITY_RANDOM_COMPONENT_SUITE.md` with any new internal structure notes or "how to hack on the suite" guidance.
