@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-24 (crop Energy writer active; evidence still stale until checkpoint completes)
+**Last Updated**: 2026-06-24 (crop Energy writer completed; fresh prove-exact FAIL — scale mismatches 31)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🔴 Crop evidence is currently **stale** after the latest failed Energy rerun: `checkpoint_energy.pkl` is missing and historical proof reports are invalid for new triage. Run `inspect-energy-evidence` before any probe/proof work. |
+| **Energy** | Native Hessian path exact-compatible | 🔴 Fresh crop Energy checkpoint (2026-06-24) passes `inspect-energy-evidence` but `prove-exact --stage energy` **FAIL**: 3,810,130 energy ULP mismatches, **31** scale-index mismatches (down from 19,412). Triage remaining scale winners before downstream refresh. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
 | **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -29,7 +29,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
 | **Oracle artifact readiness** | `workspace/oracles/180709_E_crop_M`, `workspace/oracles/180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes; manifest reconciliation now records readable normalized artifacts. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Active writer** job `75188cc2` (PID 35064, lease alive): `resume-exact-run --force-rerun-from energy --stop-after energy --n-jobs 1`. Progress ~octave 1 chunk 276/821 (~34% of Energy stage); peak RSS ~250 MB, no OOM since restart. `checkpoint_energy.pkl` and `best_energy.npy`/`best_scale.npy` remain absent until completion — `inspect-energy-evidence` stays invalid. Historical `exact_proof*.json` artifacts are diagnostic only. **Do not** start a second writer or refresh downstream stages until Energy proof passes. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`, ~7.9h, exit 0). `checkpoint_energy.pkl` + `best_energy.npy` present; `inspect-energy-evidence` **valid**. Fresh `prove-exact --stage energy` **FAIL** (`exact_proof_energy.json`): energy 3,810,130 mismatches (first `(0,0,0)` scale 90 agree, ULP drift); scale_indices **31** (first `(40,83,116)` MATLAB 13 vs Python 12); lumen_radius 8 (ε). Prior reports marked stale. **Do not** refresh downstream until strict-zero. |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop Energy strict-zero (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
