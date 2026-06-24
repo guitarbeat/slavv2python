@@ -29,8 +29,12 @@ Treat `investigations/` as historical context, not as an executable spec.
 2. [Developer Dashboard (TODO.md)](TODO.md) — Active tasks and checkboxes
 3. [Glossary](reference/core/GLOSSARY.md) — Extended domain terminology
 
-### 🔬 Parity Work
-**See [Parity Closure Fast Path](#-parity-closure-fast-path) below for complete workflow.**
+### 🔬 Parity Work & Full SLAVV Python Port
+- **Full Python SLAVV** (equivalent of MATLAB source in `external/Vectorization-Public/source/`): `slavv_python/pipeline/slavv_vectorize.py` — `vectorize_python(image, params)` is the Python version of `vectorize_V200.m`. Includes direct ports of `get_energy_v202_python`, `get_vertices_v200_python`, etc.
+  - Use stage managers (`EnergyManager.run`, `VertexManager.run`, etc.) or the high-level wrapper.
+  - Exact parity route available via policy + random component suite.
+- **See [Parity Closure Fast Path](#-parity-closure-fast-path) below for complete workflow.**
+- Random Component Parity Suite for fast building-block validation (linspace, interp3, energy samples).
 
 ### 💻 Contributors
 1. [Contributing Guide](CONTRIBUTING.md) — Development workflow and PR process
@@ -66,10 +70,11 @@ Treat `investigations/` as historical context, not as an executable spec.
 3. **[Parity Certification Guide](reference/workflow/PARITY_CERTIFICATION_GUIDE.md)** — Full certification workflow
 4. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
 5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
-6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP
-7. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Proposed): strict scales vs bounded ULP on `energy.energy`
-7. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
-8. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
+6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP. See also full SLAVV port.
+7. **[Full Python SLAVV Port](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md#internal-structure-post-hardening-refactor)** — `slavv_vectorize.py` + stage managers matching MATLAB `vectorize_V200` + core functions.
+8. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Proposed): strict scales vs bounded ULP on `energy.energy`
+9. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
+10. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
 
 ### Cold-Start Protocol
 

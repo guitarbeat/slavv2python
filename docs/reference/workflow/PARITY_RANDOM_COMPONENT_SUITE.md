@@ -111,24 +111,34 @@ python -m tests.support.export_random_matching_reference `
 
 ## Internal structure (post-hardening refactor)
 
-The implementation was refactored (see [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md)) for maintainability while preserving exact structural gate behavior:
+The Random Component Parity Suite and full SLAVV pipeline were refactored (see [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md) and the architecture deepening plan) for maintainability, depth, and exact MATLAB parity while preserving behavior.
 
-- **Public API** (preferred for new code): `run_structural_gate`, `collect_hessian_diagnostics`, `build_structural_report`, `build_diagnostics_report`, `StructuralGateResult`, `Mismatch`.
-- **Structural gate** (`random_component/gate.py`): pure, zero knowledge of energy/Hessian. Always used.
+- **Full SLAVV Python port of MATLAB source**: See `slavv_python/pipeline/slavv_vectorize.py` for `vectorize_python` (Python equivalent of MATLAB `vectorize_V200.m`) and direct ports of core functions: `get_energy_v202_python`, `get_vertices_v200_python`, `get_edges_by_watershed_python`, etc. This provides a complete Python version of the SLAVV source in `external/Vectorization-Public/source/`.
+  - Delegates to stage managers for production use (`EnergyManager`, `VertexManager`, etc.).
+  - Supports both Paper Path and Exact Route (via `PipelinePolicy`).
+
+- **Public API for Random Component Parity Suite** (preferred for new code/tests): `run_structural_gate`, `collect_hessian_diagnostics`, `build_structural_report`, `build_diagnostics_report`, `StructuralGateResult`, `Mismatch` (exported from `tests/support/random_component/`).
+
+- **Structural gate** (`random_component/gate.py`): pure, zero knowledge of energy/Hessian. Always used for the structural gate.
 - **Diagnostics** (`random_component/diagnostics.py`): separate, only for `--mode diagnostics`.
 - **Builders** (`random_component/reports.py`): produce the legacy report dict shapes for compatibility.
-- **Main module** (`random_component_parity.py`): thin orchestration, reference computation, MATLAB driver, and `compare_references` (compat shim only).
+- **Main orchestration** (`random_component_parity.py`): thin (CLI, MATLAB driver, report writing, `compare_references` as compat shim). Reference computation logic is being further deepened (see references deepening plan).
 
-### How to hack on the suite
+### How to hack on the suite / full SLAVV Python
 
-- For new structural checks or gate logic → edit `gate.py` + models.
-- For Hessian ULP changes → `diagnostics.py`.
-- Report shape changes → `reports.py` (keep legacy compat where possible).
-- Reference computation (linspace, interp3, energy) → stays in main for now (depends on energy shims).
+- For the full SLAVV pipeline (Energy → Vertices → Edges → Network matching MATLAB): Use `slavv_python/pipeline/slavv_vectorize.vectorize_python(...)` or the individual stage managers. See docstrings for MATLAB function mappings.
+- For new structural checks or gate logic in the Random Component Suite → edit `gate.py` + `models.py`.
+- For Hessian ULP / diagnostics changes → `diagnostics.py`.
+- Report shape changes → `reports.py` (keep legacy compat).
+- Reference computation (linspace, `interp3`, energy samples, full `get_energy_V202` style) → `slavv_energy_filter.py` (clean Python port) + `matlab_get_energy_v202_chunked.py` (exact/chunked) or production `energy/` modules. Future: dedicated deep `references.py` module per architecture plan.
+- Full pipeline orchestration / MATLAB source ports → `slavv_vectorize.py` (high-level) + submodules in `pipeline/{energy,vertices,edges,network}/`.
 - Add public helpers to `random_component/__init__.py`.
-- Keep the main file lean (<1000 lines); extract to package.
-- `compare_references` is the old entry for tests/compat — prefer the new builders in fresh code.
+- Keep the main file lean (<1000 lines); extract to package (ongoing per architecture review).
+- `compare_references` is the old entry for tests/compat — prefer the new public builders/gate in fresh code.
 - Always verify structural gate against the Phase 0 baseline after changes (see Phase 5 in the spec).
+- For exact parity work: Use the random component suite + `prove-exact` before/after long runs. See pre-gate tiers.
+
+The Python SLAVV is the direct equivalent of the MATLAB source in `external/Vectorization-Public/source/`, with the same stages, chunking, Fourier-domain filtering, principal energy, watershed/tracing, etc. (see `slavv_vectorize.py` for mappings).
 
 ---
 

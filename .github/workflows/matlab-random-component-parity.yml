@@ -2,6 +2,15 @@ name: MATLAB Random Component Parity (Advisory)
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Random component suite mode"
+        required: false
+        default: structural
+        type: choice
+        options:
+          - structural
+          - diagnostics
   pull_request:
     branches: [main]
     paths:
@@ -33,6 +42,7 @@ jobs:
     env:
       MATLAB_EXE: ${{ vars.MATLAB_EXE || 'C:\Program Files\MATLAB\R2019a\bin\matlab.exe' }}
       PARITY_OUTPUT: ${{ github.workspace }}\workspace\scratch\ci_random_component_parity
+      RANDOM_COMPONENT_MODE: ${{ github.event.inputs.mode || 'structural' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,11 +61,15 @@ jobs:
         run: |
           if (!(Test-Path $env:MATLAB_EXE)) { throw "MATLAB_EXE is unavailable: $env:MATLAB_EXE" }
           if (!(Test-Path external\Vectorization-Public)) { throw "external/Vectorization-Public is unavailable" }
+      - name: Run random component unit tests
+        shell: pwsh
+        run: |
+          python -m pytest tests/unit/parity/test_random_component_parity.py -q
       - name: Run randomized component differential suite
         shell: pwsh
         run: |
           Remove-Item -Recurse -Force $env:PARITY_OUTPUT -ErrorAction SilentlyContinue
-          python -m tests.support.random_component_parity --output-dir $env:PARITY_OUTPUT --matlab-exe $env:MATLAB_EXE
+          python -m tests.support.random_component_parity --output-dir $env:PARITY_OUTPUT --matlab-exe $env:MATLAB_EXE --mode $env:RANDOM_COMPONENT_MODE
       - name: Print Hessian ULP diagnostics (advisory)
         if: always()
         shell: pwsh

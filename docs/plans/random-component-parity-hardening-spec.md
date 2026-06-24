@@ -11,7 +11,9 @@ related:
 
 # Random Component Parity Suite — Implementation Hardening Spec
 
-**Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite. Tasks live in this spec during active work; status and live runs live in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) under the random component section. The user-facing workflow stays in [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).
+**Authoritative plan** for refactoring the implementation of the fast seeded MATLAB R2019a / Python random-component differential suite + full SLAVV Python port of the MATLAB source (`vectorize_V200.m` and core functions). All phases complete (strong separation, public API in `random_component/` package, `slavv_vectorize.py` as full Python equivalent, main file lean at ~859 lines, full verification passed).
+
+Tasks live in this spec during active work (now complete); status and live runs live in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) under the random component section. The user-facing workflow stays in [PARITY_RANDOM_COMPONENT_SUITE.md](../reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md).
 
 ---
 
@@ -224,6 +226,8 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] All reports remain byte-compatible with Phase 0 baseline for structural fields.
 - [x] Main file shrunk to ~859 lines by moving builders to package.
 - [x] Phase 3 complete per strong recommendations (orchestration uses models/builders, reference conditional clarified, main file leaner).
+- [x] Full Python port of MATLAB SLAVV source created in `slavv_python/pipeline/slavv_vectorize.py` (see `vectorize_python` + direct ports of `get_energy_v202`, `get_vertices_v200`, etc., matching `vectorize_V200.m` and core functions in `external/Vectorization-Public/source/`). Delegates to stage managers.
+- [ ] Follow-up architecture deepening: see new plan `docs/plans/random-component-references-deepening-plan.md` (top recommendation from improve-codebase-architecture review). Extract dedicated deep "RandomComponentReferences" module to eliminate remaining circularity and concentrate reference math.
 
 ### Phase 4 — Test Surface & Compatibility
 - [x] Added multiple tests exercising the new public API directly: run_structural_gate, collect_hessian_diagnostics, build_*_report (now 20 tests total).
@@ -239,11 +243,13 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Artifacts confirmed usable: report.json, report.txt, manifest.json, reports/*.json (6), inputs/. All present and parseable.
 
 ### Phase 6 — Documentation, Polish, Landing
-- [x] Updated `PARITY_RANDOM_COMPONENT_SUITE.md` with "Internal structure" section + "How to hack on the suite" guidance.
+- [x] Updated `PARITY_RANDOM_COMPONENT_SUITE.md` with "Internal structure" section + "How to hack on the suite" guidance + full SLAVV Python port docs (`slavv_vectorize.py` as Python version of MATLAB `vectorize_V200` + core functions).
 - [x] Improved module docstrings (main + package), added implementation notes.
 - [x] schema_version kept at 2 (output shape unchanged; added comments).
 - [x] Ran ruff (format + check), mypy (clean on package), full parity tests (20 passed).
-- [x] Changes landed. Spec marked complete. (Residual: future extraction of more compare helpers noted in plan.)
+- [x] `slavv_python/pipeline/slavv_vectorize.py` added as the complete Python port of the SLAVV MATLAB source (`vectorize_python` + direct ports of core `get_*_V*` functions).
+- [x] Docs updated across README.md, docs/README.md, PROGRESS.md, this spec, and PARITY_RANDOM_COMPONENT_SUITE.md to document the full Python SLAVV port and internal structure.
+- [x] Changes landed. Spec marked complete. (Residual: future extraction of more compare helpers noted in plan; see references deepening plan.)
 
 ---
 

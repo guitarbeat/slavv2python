@@ -13,10 +13,15 @@
 > 🔴 **Active developer work:** [TODO.md](docs/TODO.md) owns tasks. [Exact Proof Findings](docs/reference/core/EXACT_PROOF_FINDINGS.md) owns live parity status.
 
 Python implementation of SLAVV for 3D vascular network extraction from
-microscopy volumes. The public workflow is paper-first: run the native Python
-pipeline with the default `paper` profile, export an authoritative
-`network.json`, and use the developer-only parity tooling separately when you
-need exact MATLAB artifact proof.
+microscopy volumes — a direct port of the MATLAB source in
+`external/Vectorization-Public/source/` (see `slavv_python/pipeline/slavv_vectorize.py`
+for `vectorize_python`, the equivalent of `vectorize_V200.m`, plus ports of
+`get_energy_V202`, `get_vertices_V200`, etc.).
+
+The public workflow is paper-first: run the native Python pipeline with the
+default `paper` profile, export an authoritative `network.json`, and use the
+developer-only parity tooling separately when you need exact MATLAB artifact
+proof. Full stage managers and exact-parity route available.
 
 ## Quick Start
 

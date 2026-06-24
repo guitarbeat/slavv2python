@@ -29,6 +29,7 @@ Energy → Vertices → Edges → Network. The crop harness is the required pre-
 - The current proof exposed that a successful writer and local probes do not
   establish certification: full-vector `np.equal` and exact scale winners are
   the gate.
+- Full Python port of the SLAVV MATLAB source created (`slavv_python/pipeline/slavv_vectorize.py` + stage managers) providing `vectorize_python` (equivalent of `vectorize_V200.m`) and direct ports of core functions (`get_energy_v202`, `get_vertices_v200`, etc.). See `PARITY_RANDOM_COMPONENT_SUITE.md` for details.
 
 ## Navigation
 
