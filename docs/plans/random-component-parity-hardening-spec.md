@@ -176,14 +176,21 @@ report = assemble_report(gate, hess, mode=mode)
 ## Implementation Phases
 
 ### Phase 0 — Foundations (this spec + baseline)
-- [x] Write and land this spec.
-- [x] Captured known-good structural baseline (2026-06-24):
+- [x] Write and land this spec (commit `b9ddfe47`).
+- [x] Captured known-good structural baseline (2026-06-24, on local MATLAB R2019a):
   - Command: `python -m tests.support.random_component_parity --output-dir workspace\scratch\random_component_baseline --matlab-exe "C:\Program Files\MATLAB\R2019a\bin\matlab.exe" --mode structural`
-  - Result: `passed: true`, `difference_count: 0`, all structural sections clean (linspace 128, 6 cases, 16 queries each).
-  - Artifacts: `random_component_parity_report.json`, `random_component_parity_report.txt`, `manifest.json` under the output dir.
+  - Result: `passed: true`, `difference_count: 0`, `structural_gate.passed: true`.
+  - All structural sections clean: 128 linspace contexts, 6 cases, 16 queries each (integer + half-integer + boundary/OOB).
+  - Artifacts present:
+    - `manifest.json`
+    - `matlab_reference.mat`
+    - `random_component_parity_report.json` + `.txt`
+    - `reports/<case_id>.json` (6 files)
+    - `inputs/*.tif` (6 materialized volumes)
   - This baseline will be used for equivalence verification after refactoring.
-- [ ] Add a link from `PARITY_RANDOM_COMPONENT_SUITE.md` (and optionally `EXACT_PROOF_FINDINGS.md`) to this plan.
-- [ ] Ensure current unit tests are green.
+- [x] Added link from `PARITY_RANDOM_COMPONENT_SUITE.md` to this plan.
+- [x] Ensured current unit tests are green: `pytest -m "unit and parity"` → 17 passed (see test run 2026-06-24).
+- [x] (Optional) Reference added to EXACT_PROOF_FINDINGS.md.
 
 ### Phase 1 — Models & Structural Gate Extraction
 - [ ] Introduce the core dataclasses / result types.

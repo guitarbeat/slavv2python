@@ -138,6 +138,8 @@ Seeded white-noise differential suite ([ADR 0010](../../adr/0010-random-componen
 
 *Status*: Incorporated into the current worktree, but not yet certified. See [Latest crop Energy proof (2026-06-22)](#latest-crop-energy-proof-2026-06-22).
 
+**Implementation hardening:** Active plan at [random-component-parity-hardening-spec.md](../plans/random-component-parity-hardening-spec.md) (Phase 0 complete: spec landed + baseline captured + unit tests green). Future changes to the suite (decomposition, models, separation of structural gate from advisory) should follow that spec. Baseline artifacts in `workspace/scratch/random_component_baseline/`.
+
 **Champion edges baseline (informal, not cert bar):** `workspace/runs/oracle_180709_E/validation_strel_fix_output_v29`
 
 ### Cold-start protocol
@@ -314,7 +316,7 @@ The core codebase has absorbed the following permanent fixes, ensuring structura
 
 ## 🚀 Active blockers
 
-1. **Crop Energy evidence freshness** — Current `crop_M_exact` Energy evidence is stale after the latest failed rerun: `checkpoint_energy.pkl` is missing. Historical scale-winner mismatch reports are diagnostic history only until a completed Energy checkpoint exists and `inspect-energy-evidence` reports valid.
+1. **Crop Energy strict-zero proof** — Current `crop_M_exact` Energy evidence is valid after the 2026-06-24 Energy writer. Scale winners now agree (`scale_indices` 0 mismatches); the active blocker is strict float64 Energy drift (~3.81M ULP-level mismatches) plus the epsilon-radius tail. Use `exact_proof_energy_ulp.json` / `exact_mismatch_energy.json` as the current diagnostic surface, not stale `exact_proof_energy.json`.
 2. **Sequential strict-zero closure** — Blocked on crop Energy proof. After pass: refresh vertices → network on `crop_M_exact`, then `prove-exact-sequence`. v29 **135 missing / 371 extra** pairs remain the informal edges baseline until `prove-exact --stage edges` reports zero.
 3. **Canonical run re-execution** — Phase 1 **cert claim** stays on full `180709_E` only. Crop is the fast iteration gate (ADR 0009). Rerun canonical from Energy after crop Energy passes, or in parallel when preflight shows safe memory headroom (one long Energy writer at a time on 16GB).
 
