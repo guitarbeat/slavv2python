@@ -625,144 +625,53 @@ def _compare_case_section(
     return differences
 
 
-def _hessian_diagnostics_for_case(
-    python_case: dict[str, Any],
-    matlab_record: Any,
-) -> dict[str, Any]:
-    """Summarize Hessian float drift without affecting the structural compare gate."""
-    matlab_samples = _as_list(matlab_record.samples)
-    python_samples = python_case["energy"]["samples"]
-    worst: dict[str, Any] | None = None
-    mismatch_count = 0
-    for sample_index, (python_sample, matlab_sample) in enumerate(
-        zip(python_samples, matlab_samples, strict=True)
-    ):
-        coordinate = [int(value) for value in python_sample["coordinate_yxz"]]
-        for field in ("curvatures", "gradient", "laplacian", "energy"):
-            python_value = python_sample[field]
-            matlab_value = getattr(matlab_sample, field)
-            if field in ("curvatures", "gradient"):
-                for value_index, (left, right) in enumerate(
-                    zip(python_value, np.asarray(matlab_value).reshape(-1), strict=True)
-                ):
-                    diff = _compare_values(
-                        f"cases[{python_case['case_id']}].energy.samples[{sample_index}]."
-                        f"{field}[{value_index}]",
-                        left,
-                        float(right),
-                    )
-                    if diff is None:
-                        continue
-                    mismatch_count += 1
-                    if worst is None or diff["ulp_distance"] > worst["ulp_distance"]:
-                        worst = {
-                            **diff,
-                            "component": f"energy.{field}",
-                            "coordinate_yxz": coordinate,
-                        }
-            else:
-                diff = _compare_values(
-                    f"cases[{python_case['case_id']}].energy.samples[{sample_index}].{field}",
-                    python_value,
-                    float(matlab_value),
-                )
-                if diff is None:
-                    continue
-                mismatch_count += 1
-                if worst is None or diff["ulp_distance"] > worst["ulp_distance"]:
-                    worst = {
-                        **diff,
-                        "component": f"energy.{field}",
-                        "coordinate_yxz": coordinate,
-                    }
-    return {
-        "mismatch_count": mismatch_count,
-        "max_ulp_distance": 0 if worst is None else int(worst["ulp_distance"]),
-        "worst_mismatch": worst,
-    }
-
-
 def compare_references(
     python: dict[str, Any],
     matlab: dict[str, Any],
     *,
     manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Return strict component mismatches with per-case and aggregate summaries."""
-    seed_by_case = {
-        str(case["id"]): int(case["seed"]) for case in (manifest or {}).get("cases", [])
-    }
-    linspace_differences = _compare_linspace_section(python, matlab)
-    case_reports: list[dict[str, Any]] = []
-    case_differences: list[dict[str, Any]] = []
-    hessian_diagnostics: list[dict[str, Any]] = []
-    if len(python["cases"]) != len(matlab["cases"]):
-        case_differences.append(
-            {
-                "path": "cases",
-                "python_size": len(python["cases"]),
-                "matlab_size": len(matlab["cases"]),
-                "component": "case_count",
-            }
-        )
-    for index, record in enumerate(matlab["cases"]):
-        if index >= len(python["cases"]):
-            break
-        python_case = python["cases"][index]
-        case_id = python_case["case_id"]
-        seed = seed_by_case.get(case_id, -1)
-        differences = _compare_case_section(python_case, record, seed=seed)
-        diagnostics = _hessian_diagnostics_for_case(python_case, record)
-        hessian_diagnostics.append({"case_id": case_id, "seed": seed, **diagnostics})
-        case_reports.append(
-            {
-                "case_id": case_id,
-                "seed": seed,
-                "passed": not differences,
-                "difference_count": len(differences),
-                "first_difference": differences[0] if differences else None,
-                "hessian_diagnostics": diagnostics,
-            }
-        )
-        case_differences.extend(differences)
-    differences = linspace_differences + case_differences
-    aggregate_worst = max(
-        hessian_diagnostics,
-        key=lambda entry: int(entry["max_ulp_distance"]),
-        default=None,
+    """Return strict component mismatches with per-case and aggregate summaries.
+
+    During transition, this now delegates to the pure structural gate +
+    separate hessian collector for cleaner separation.
+    """
+    from tests.support.random_component.diagnostics import collect_hessian_diagnostics
+    from tests.support.random_component.gate import run_structural_gate
+
+    gate = run_structural_gate(python, matlab, manifest=manifest)
+    hess = collect_hessian_diagnostics(python, matlab)
+
+    # Build legacy shape for compatibility with existing tests and callers.
+    # Merge hessian into the case data from gate.
+    hess_by_id = {h["case_id"]: h for h in hess.get("cases", [])}
+    merged_cases = []
+    for c in gate.cases:
+        cc = dict(c)
+        cc["hessian_diagnostics"] = hess_by_id.get(c["case_id"], {})
+        merged_cases.append(cc)
+
+    first = gate.first_difference or {}
+    has_hess_mismatches = any(
+        h.get("mismatch_count", 0) for h in hess.get("cases", [])
     )
     return {
-        "passed": not differences,
+        "passed": gate.passed,
         "schema_version": 2,
-        "mode": "diagnostics"
-        if any(entry["mismatch_count"] for entry in hessian_diagnostics)
-        else "structural",
-        "structural_gate": {
-            "passed": not differences,
-            "linspace_context_count": len(python.get("linspace", [])),
-            "case_count": len(python.get("cases", [])),
-            "query_count_per_case": QUERY_COUNT_PER_CASE,
-        },
-        "difference_count": len(differences),
-        "first_difference": differences[0] if differences else None,
-        "linspace": {
-            "passed": not linspace_differences,
-            "difference_count": len(linspace_differences),
-            "first_difference": linspace_differences[0] if linspace_differences else None,
-        },
+        "mode": "diagnostics" if has_hess_mismatches else "structural",
+        "structural_gate": gate.to_report_dict(),
+        "difference_count": gate.difference_count,
+        "first_difference": first or None,
+        "linspace": gate.linspace,
         "hessian_diagnostics": {
             "collected": True,
-            "cases": hessian_diagnostics,
-            "max_ulp_distance": 0
-            if aggregate_worst is None
-            else int(aggregate_worst["max_ulp_distance"]),
-            "worst_case_id": None if aggregate_worst is None else aggregate_worst["case_id"],
-            "worst_mismatch": None
-            if aggregate_worst is None
-            else aggregate_worst["worst_mismatch"],
+            "cases": hess.get("cases", []),
+            "max_ulp_distance": hess.get("max_ulp_distance", 0),
+            "worst_case_id": hess.get("worst_case_id"),
+            "worst_mismatch": hess.get("worst_mismatch"),
         },
-        "cases": case_reports,
-        "differences": differences,
+        "cases": merged_cases,
+        "differences": [],  # structural info is in first_difference + per-case
     }
 
 
@@ -910,10 +819,15 @@ def run_differential(
         gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
         report = _build_structural_report(gate, manifest=manifest)
     else:
-        # Full path (still uses the old compare_references for now during transition).
-        report = compare_references(py_ref, matlab_ref, manifest=manifest)
+        # Diagnostics: use pure structural gate + separate hessian collection.
+        from tests.support.random_component.diagnostics import (
+            collect_hessian_diagnostics,
+        )
+
+        gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
+        hess = collect_hessian_diagnostics(py_ref, matlab_ref)
+        report = _build_diagnostics_report(gate, hess, manifest=manifest)
         report["mode"] = mode
-        report.setdefault("hessian_diagnostics", {})["collected"] = True
 
     write_case_reports(output_dir, report)
     report_path = output_dir / "random_component_parity_report.json"
@@ -952,6 +866,43 @@ def _build_structural_report(
         },
         "cases": gate.cases,
         "differences": [],  # For structural we rely on first_difference + counts
+    }
+
+
+def _build_diagnostics_report(
+    gate: StructuralGateResult,
+    hess: dict[str, Any],
+    *,
+    manifest: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build full report for diagnostics mode using clean gate + separate hessian."""
+    # Attach hessian to each case from the gate's case data
+    hess_by_case = {h["case_id"]: h for h in hess.get("cases", [])}
+    merged_cases = []
+    for case in gate.cases:
+        cid = case["case_id"]
+        merged = dict(case)  # copy structural info
+        merged["hessian_diagnostics"] = hess_by_case.get(cid, {})
+        merged_cases.append(merged)
+
+    first = gate.first_difference or {}
+    return {
+        "passed": gate.passed,
+        "schema_version": 2,
+        "mode": "diagnostics",
+        "structural_gate": gate.to_report_dict(),
+        "difference_count": gate.difference_count,
+        "first_difference": first or None,
+        "linspace": gate.linspace,
+        "hessian_diagnostics": {
+            "collected": True,
+            "cases": hess.get("cases", []),
+            "max_ulp_distance": hess.get("max_ulp_distance", 0),
+            "worst_case_id": hess.get("worst_case_id"),
+            "worst_mismatch": hess.get("worst_mismatch"),
+        },
+        "cases": merged_cases,
+        "differences": [],  # structural differences drive the gate
     }
 
 

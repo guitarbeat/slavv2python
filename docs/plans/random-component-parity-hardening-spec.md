@@ -205,13 +205,16 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Added focused test `test_run_structural_gate_produces_clean_result...` that asserts on `StructuralGateResult` and the clean report shape.
 - [x] Full unit suite (now 18 tests) green.
 - [x] Verified end-to-end with local MATLAB: structural gate matches baseline exactly (passed, diff_count=0, gate dicts, case results).
+- [x] Refactored `compare_references` itself to delegate to clean gate + separate collector.
+- [x] Removed dead `_hessian_diagnostics_for_case` (now unused after separation); main file back under 950 lines.
 - [ ] (Future) Move low-level `_compare_*` helpers into the package; further shrink main file.
 
 ### Phase 2 — Hessian Collection & Advisory Path
-- [ ] Implement `collect_hessian_diagnostics(python_ref, matlab_ref) -> HessianDiagnostics` as a completely separate function that is **never** imported or called from the structural gate.
-- [ ] Only invoke it from the diagnostics branch in `run_differential`.
-- [ ] Remove the `collected` sentinel and all post-mutation of `hessian_diagnostics` from the structural code path entirely.
-- [ ] `format_hessian_advisory_summary` becomes a pure formatter over the diagnostics object (no need to explain "not collected" because it is simply not present on structural reports).
+- [x] Implemented `collect_hessian_diagnostics(...)` as completely separate module (`diagnostics.py`).
+- [x] `run_differential` and `compare_references` now use gate + separate collector; hessian never called for structural.
+- [x] Removed `collected` sentinel usage from structural path (structural reports set it false cleanly).
+- [x] `format_hessian_advisory_summary` works with the collected data; structural path produces reports without hessian computation.
+- [x] Even the legacy `compare_references` now uses clean separated components.
 
 ### Phase 3 — Reference Computation & Orchestration
 - [ ] Clean up `python_reference` / `_energy_samples` / `_python_case_reference` so `include_hessian` only affects work performed (no wasted structures).
