@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[app,workspace]"
+        pip install -e ".[app,workspace,zarr]"
         
     - name: Format Check (Ruff)
       run: python -m ruff format --check slavv_python tests
