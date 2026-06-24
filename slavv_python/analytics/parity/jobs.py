@@ -114,9 +114,8 @@ def launch_exact_run_job(
 
     creationflags = 0
     if os.name == "nt":
-        creationflags = (
-            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-            | getattr(subprocess, "DETACHED_PROCESS", 0)
+        creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(
+            subprocess, "DETACHED_PROCESS", 0
         )
 
     with stdout_path.open("ab") as stdout_handle, stderr_path.open("ab") as stderr_handle:
