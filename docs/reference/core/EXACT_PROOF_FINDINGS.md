@@ -78,6 +78,20 @@ All three classify as **`matlab_oracle_state_path`**: promoted oracle plane is *
 
 **Revised implication:** the 31 `scale_indices` strict-zero failures may be dominated by **oracle vector indexing / promotion drift** (±1 vs live `get_energy_V202` replay), not Python cross-octave math. Next: audit oracle `scale_indices` plane convention vs `matlab_vector_loader` one-based shift and crop batch vintage before another Energy writer rerun.
 
+### Oracle HDF5 scale-plane trace (top 3 voxels, 2026-06-24)
+
+Source: `batch_260527-220010` HDF5 plane 0 (`get_energy_V202` writes `energy_chunk_scale_min + sum(octave_at_scales < current_octave)` — **1-based global** per `external/Vectorization-Public/source/get_energy_V202.m`).
+
+| Voxel (Z,Y,X) | Raw HDF5 plane0 | After loader `−1` | Python stored | MATLAB live replay |
+| --- | --- | --- | --- | --- |
+| (33,80,133) | 15 | 14 | 13 | 13 |
+| (40,83,116) | 14 | 13 | 12 | 12 |
+| (33,83,131) | 14 | 13 | 12 | 12 |
+
+**Loader is not double-subtracting:** `matlab_vector_loader` applies exactly one `one_based` shift. Identity: `raw_hdf5 − 2 == python_stored == matlab_live_replay` (0-based global); `raw_hdf5 − 1 == prove-exact oracle surface`.
+
+**Conclusion:** promoted oracle `scale_indices` reflects the **May 27 full-volume MATLAB batch** (pre–lattice-6000 / pre–IFFT-fix crop writer), which is **+1 (0-based)** vs current Python and fresh MATLAB batch replay on the same voxels. Remediation path: **promote a fresh crop oracle** from a lattice-`6000` MATLAB run (or accept probe-surface proof) before chasing Python reduction code.
+
 Historical crop Energy evidence (2026-06-21, superseded writer state):
 
 - **Coarse-source / interpolation-mesh contract**: MATLAB `get_energy_V202` local ranges use `1 + floor(offset/rf) : 1 + ceil((offset + write_count - 1)/rf)` on the **padded FFT grid** (`fourier_transform_V2` output), not the strided read shape. Python had been clamping to `original_chunk.shape`, dropping one padded row on crop octaves 3–5 (e.g. octave 4 chunk 0: requested `(27,27,14)` vs retained `(26,26,13)`). Fixed via `_matlab_coarse_local_slices` in `matlab_get_energy_v202_chunked.py`.
