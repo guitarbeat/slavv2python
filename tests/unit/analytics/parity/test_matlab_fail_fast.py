@@ -27,8 +27,8 @@ def _lut_fixture_payload() -> dict[str, object]:
             "0": {
                 "linear_offsets": np.asarray(lut["linear_offsets"], dtype=np.int64).tolist(),
                 "local_subscripts": np.asarray(lut["local_subscripts"], dtype=np.int32).tolist(),
-                "r_over_R": np.asarray(lut["r_over_R"], dtype=np.float32).tolist(),
-                "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float32).tolist(),
+                "r_over_R": np.asarray(lut["r_over_R"], dtype=np.float64).tolist(),
+                "unit_vectors": np.asarray(lut["unit_vectors"], dtype=np.float64).tolist(),
             }
         },
     }

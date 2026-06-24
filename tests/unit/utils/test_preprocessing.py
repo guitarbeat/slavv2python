@@ -17,7 +17,7 @@ def test_preprocess_normalizes_to_unit_range():
 def test_preprocess_exact_route_preserves_intensity_scale():
     img = np.array([[[0.0, 100.0, 4324.0]]], dtype=np.float32)
     out = preprocess_image(img, {"comparison_exact_network": True})
-    assert out.dtype == np.float32
+    assert out.dtype == np.float64
     np.testing.assert_array_equal(out, img)
 
 

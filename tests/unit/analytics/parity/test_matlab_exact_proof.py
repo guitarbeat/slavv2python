@@ -51,7 +51,7 @@ def test_load_normalized_matlab_vertices_converts_one_based_indices(tmp_path):
 
     np.testing.assert_array_equal(
         payload["positions"],
-        np.array([[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]], dtype=np.float64),
+        np.array([[2.0, 0.0, 1.0], [5.0, 3.0, 4.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(payload["scales"], np.array([1, 3], dtype=np.int64))
     np.testing.assert_array_equal(payload["energies"], np.array([-3.5, -1.25], dtype=np.float64))
@@ -137,7 +137,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     np.testing.assert_array_equal(payload["connections"], np.array([[0, 1]], dtype=np.int64))
     np.testing.assert_array_equal(
         payload["traces"][0],
-        np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]], dtype=np.float64),
+        np.array([[3.0, 1.0, 2.0], [4.0, 2.0, 3.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(
         payload["scale_traces"][0],
@@ -145,7 +145,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     )
     np.testing.assert_array_equal(
         payload["bridge_vertex_positions"],
-        np.array([[3.0, 4.0, 5.0]], dtype=np.float64),
+        np.array([[5.0, 3.0, 4.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(payload["bridge_vertex_scales"], np.array([2], dtype=np.int64))
     np.testing.assert_array_equal(
@@ -154,7 +154,7 @@ def test_load_normalized_matlab_edges_normalizes_bridge_payloads(tmp_path):
     )
     np.testing.assert_array_equal(
         payload["bridge_edges"]["traces"][0],
-        np.array([[3.0, 4.0, 5.0], [4.0, 5.0, 6.0]], dtype=np.float64),
+        np.array([[5.0, 3.0, 4.0], [6.0, 4.0, 5.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(
         payload["bridge_edges"]["energies"],
@@ -200,7 +200,7 @@ def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
 
     energy_stem = "energy_260527-220010_180709_E_crop_M"
     energy = np.array([[[-1.0], [-2.0]]], dtype=np.float64)
-    scale_indices = np.array([[[0], [1]]], dtype=np.int16)
+    scale_indices = np.array([[[1], [2]]], dtype=np.int16)
     with h5py.File(data_dir / energy_stem, "w") as handle:
         handle.create_dataset("d", data=np.stack([scale_indices, energy], axis=0))
 
@@ -217,8 +217,12 @@ def test_find_matlab_vector_paths_prefers_hdf5_energy_companion(tmp_path):
     assert paths["energy"].name == energy_stem
 
     payload = load_normalized_matlab_stage(paths["energy"], "energy")
-    np.testing.assert_allclose(payload["energy"], energy.astype(np.float64))
-    np.testing.assert_array_equal(payload["scale_indices"], scale_indices.astype(np.int64))
+    expected_energy = np.ascontiguousarray(energy.transpose(0, 2, 1)).astype(np.float64)
+    expected_scale_indices = np.ascontiguousarray((scale_indices - 1).transpose(0, 2, 1)).astype(
+        np.int64
+    )
+    np.testing.assert_allclose(payload["energy"], expected_energy)
+    np.testing.assert_array_equal(payload["scale_indices"], expected_scale_indices)
     np.testing.assert_array_equal(payload["lumen_radius_microns"], np.array([1.0, 2.0]))
 
 
@@ -325,7 +329,7 @@ def test_load_normalized_matlab_edge_input_vertices_prefers_embedded_edge_surfac
     assert payload is not None
     np.testing.assert_array_equal(
         payload["positions"],
-        np.array([[10.0, 20.0, 2.0], [30.0, 40.0, 4.0]], dtype=np.float64),
+        np.array([[2.0, 10.0, 20.0], [4.0, 30.0, 40.0]], dtype=np.float64),
     )
     np.testing.assert_array_equal(payload["scales"], np.array([2, 3], dtype=np.int64))
     np.testing.assert_array_equal(payload["energies"], np.array([-3.0, -5.0], dtype=np.float64))
@@ -384,7 +388,7 @@ def test_sync_exact_vertex_checkpoint_from_matlab_overwrites_parity_fields(tmp_p
     updated = sync_exact_vertex_checkpoint_from_matlab(checkpoint_path, batch_dir)
     reloaded = load(checkpoint_path)
 
-    expected_positions = np.array([[3.0, 4.0, 5.0], [6.0, 7.0, 8.0]], dtype=np.float32)
+    expected_positions = np.array([[5.0, 3.0, 4.0], [8.0, 6.0, 7.0]], dtype=np.float32)
     expected_scales = np.array([2, 4], dtype=np.int16)
     expected_energies = np.array([-9.0, -7.0], dtype=np.float32)
 

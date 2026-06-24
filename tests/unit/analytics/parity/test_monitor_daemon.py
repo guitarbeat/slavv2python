@@ -3,19 +3,25 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from slavv_python.analytics.parity.monitor_daemon import MonitorDaemon
 
+PROCESS_UTILS = "slavv_python.analytics.parity.process_utils"
+JOB_REGISTRY = "slavv_python.analytics.parity.job_registry"
+WIN10TOAST = "win10toast"
+MONITOR_DAEMON = "slavv_python.analytics.parity.monitor_daemon"
+
 
 @pytest.fixture
 def mock_registry():
     """Mock JobRegistry for testing."""
-    with patch("slavv_python.analytics.parity.monitor_daemon.JobRegistry") as mock:
+    with patch(f"{JOB_REGISTRY}.JobRegistry") as mock:
         yield mock.return_value
 
 
@@ -23,8 +29,8 @@ def mock_registry():
 def mock_process_utils():
     """Mock process utilities."""
     with (
-        patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive") as alive_mock,
-        patch("slavv_python.analytics.parity.monitor_daemon.is_python_process") as python_mock,
+        patch(f"{PROCESS_UTILS}.is_process_alive") as alive_mock,
+        patch(f"{PROCESS_UTILS}.is_python_process") as python_mock,
     ):
         yield {"is_alive": alive_mock, "is_python": python_mock}
 
@@ -43,7 +49,7 @@ def temp_workspace(tmp_path):
             return workspace
         return original_path(path_str)
 
-    with patch("slavv_python.analytics.parity.monitor_daemon.Path", side_effect=mock_path_new):
+    with patch(f"{MONITOR_DAEMON}.Path", side_effect=mock_path_new):
         yield workspace
 
 
@@ -58,16 +64,24 @@ class TestMonitorDaemon:
 
     def test_init_notifier_success(self):
         """Test notification library initialization."""
-        with patch("slavv_python.analytics.parity.monitor_daemon.ToastNotifier"):
+        mock_module = MagicMock()
+        mock_module.ToastNotifier.return_value = Mock()
+        with patch.dict(sys.modules, {"win10toast": mock_module}):
             daemon = MonitorDaemon(notification_enabled=True)
             assert daemon.notifier is not None
 
     def test_init_notifier_import_error(self):
         """Test graceful handling when notification library unavailable."""
-        with patch(
-            "slavv_python.analytics.parity.monitor_daemon.ToastNotifier",
-            side_effect=ImportError,
-        ):
+        import builtins
+
+        real_import = builtins.__import__
+
+        def import_without_win10toast(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "win10toast":
+                raise ImportError("No module named 'win10toast'")
+            return real_import(name, globals, locals, fromlist, level)
+
+        with patch("builtins.__import__", side_effect=import_without_win10toast):
             daemon = MonitorDaemon(notification_enabled=True)
             assert daemon.notifier is None
 
@@ -76,8 +90,8 @@ class TestMonitorDaemon:
         daemon = MonitorDaemon(notification_enabled=False)
         assert daemon.notifier is None
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive")
-    @patch("slavv_python.analytics.parity.monitor_daemon.read_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.is_process_alive")
+    @patch(f"{PROCESS_UTILS}.read_daemon_pid")
     def test_is_running_when_daemon_alive(self, mock_read_pid, mock_is_alive):
         """Test is_running returns True when daemon process exists."""
         mock_read_pid.return_value = 12345
@@ -86,8 +100,8 @@ class TestMonitorDaemon:
         daemon = MonitorDaemon()
         assert daemon.is_running() is True
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive")
-    @patch("slavv_python.analytics.parity.monitor_daemon.read_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.is_process_alive")
+    @patch(f"{PROCESS_UTILS}.read_daemon_pid")
     def test_is_running_when_no_pid_file(self, mock_read_pid, mock_is_alive):
         """Test is_running returns False when no PID file."""
         mock_read_pid.return_value = None
@@ -95,8 +109,8 @@ class TestMonitorDaemon:
         daemon = MonitorDaemon()
         assert daemon.is_running() is False
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive")
-    @patch("slavv_python.analytics.parity.monitor_daemon.read_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.is_process_alive")
+    @patch(f"{PROCESS_UTILS}.read_daemon_pid")
     def test_is_running_when_daemon_dead(self, mock_read_pid, mock_is_alive):
         """Test is_running returns False when daemon process is dead."""
         mock_read_pid.return_value = 12345
@@ -105,10 +119,10 @@ class TestMonitorDaemon:
         daemon = MonitorDaemon()
         assert daemon.is_running() is False
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.subprocess.Popen")
-    @patch("slavv_python.analytics.parity.monitor_daemon.sys")
-    @patch("slavv_python.analytics.parity.monitor_daemon.time.sleep")
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive")
+    @patch(f"{MONITOR_DAEMON}.subprocess.Popen")
+    @patch(f"{MONITOR_DAEMON}.sys")
+    @patch(f"{MONITOR_DAEMON}.time.sleep")
+    @patch(f"{PROCESS_UTILS}.is_process_alive")
     def test_start_daemon_success(self, mock_is_alive, mock_sleep, mock_sys, mock_popen):
         """Test successful daemon start."""
         mock_sys.executable = "/usr/bin/python"
@@ -125,7 +139,7 @@ class TestMonitorDaemon:
         assert result is True
         mock_popen.assert_called_once()
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.subprocess.Popen")
+    @patch(f"{MONITOR_DAEMON}.subprocess.Popen")
     def test_start_daemon_already_running(self, mock_popen):
         """Test start when daemon already running."""
         daemon = MonitorDaemon()
@@ -135,9 +149,9 @@ class TestMonitorDaemon:
         assert result is True
         mock_popen.assert_not_called()
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.kill_process_tree")
-    @patch("slavv_python.analytics.parity.monitor_daemon.clear_daemon_pid")
-    @patch("slavv_python.analytics.parity.monitor_daemon.read_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.kill_process_tree")
+    @patch(f"{PROCESS_UTILS}.clear_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.read_daemon_pid")
     def test_stop_daemon(self, mock_read_pid, mock_clear_pid, mock_kill):
         """Test stopping daemon."""
         mock_read_pid.return_value = 12345
@@ -150,7 +164,7 @@ class TestMonitorDaemon:
         mock_kill.assert_called_once_with(12345)
         mock_clear_pid.assert_called_once()
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.read_daemon_pid")
+    @patch(f"{PROCESS_UTILS}.read_daemon_pid")
     def test_stop_daemon_not_running(self, mock_read_pid):
         """Test stop when daemon not running."""
         mock_read_pid.return_value = None
@@ -291,13 +305,13 @@ class TestMonitorDaemon:
 class TestMonitorDaemonRunLoop:
     """Test the daemon run loop logic."""
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.time.sleep")
-    @patch("slavv_python.analytics.parity.monitor_daemon.signal")
-    @patch("slavv_python.analytics.parity.monitor_daemon.os.getpid")
-    @patch("slavv_python.analytics.parity.monitor_daemon.write_daemon_pid")
-    @patch("slavv_python.analytics.parity.monitor_daemon.JobRegistry")
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_process_alive")
-    @patch("slavv_python.analytics.parity.monitor_daemon.is_python_process")
+    @patch(f"{MONITOR_DAEMON}.time.sleep")
+    @patch(f"{MONITOR_DAEMON}.signal")
+    @patch(f"{MONITOR_DAEMON}.os.getpid")
+    @patch(f"{PROCESS_UTILS}.write_daemon_pid")
+    @patch(f"{JOB_REGISTRY}.JobRegistry")
+    @patch(f"{PROCESS_UTILS}.is_process_alive")
+    @patch(f"{PROCESS_UTILS}.is_python_process")
     def test_run_loop_with_active_jobs(
         self,
         mock_is_python,
@@ -336,11 +350,11 @@ class TestMonitorDaemonRunLoop:
         # Verify job was checked
         assert mock_registry.update_job.called
 
-    @patch("slavv_python.analytics.parity.monitor_daemon.time.sleep")
-    @patch("slavv_python.analytics.parity.monitor_daemon.signal")
-    @patch("slavv_python.analytics.parity.monitor_daemon.os.getpid")
-    @patch("slavv_python.analytics.parity.monitor_daemon.write_daemon_pid")
-    @patch("slavv_python.analytics.parity.monitor_daemon.JobRegistry")
+    @patch(f"{MONITOR_DAEMON}.time.sleep")
+    @patch(f"{MONITOR_DAEMON}.signal")
+    @patch(f"{MONITOR_DAEMON}.os.getpid")
+    @patch(f"{PROCESS_UTILS}.write_daemon_pid")
+    @patch(f"{JOB_REGISTRY}.JobRegistry")
     def test_run_loop_idle_shutdown(
         self, mock_registry_class, mock_write_pid, mock_getpid, mock_signal, mock_sleep, tmp_path
     ):

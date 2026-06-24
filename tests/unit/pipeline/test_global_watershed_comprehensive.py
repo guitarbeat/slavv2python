@@ -170,9 +170,9 @@ def test_strel_geometry_matches_matlab_lut():
     assert strel["offsets"].dtype == np.int32
     assert strel["linear_indices"].dtype == np.int64
     assert strel["pointer_indices"].dtype == np.uint64
-    assert strel["r_over_R"].dtype == np.float32
-    assert strel["distance_microns"].dtype == np.float32
-    assert strel["unit_vectors"].dtype == np.float32
+    assert strel["r_over_R"].dtype == np.float64
+    assert strel["distance_microns"].dtype == np.float64
+    assert strel["unit_vectors"].dtype == np.float64
 
     # Verify all coords are in bounds
     assert np.all(strel["coords"] >= 0)
@@ -719,7 +719,7 @@ def test_pointer_map_scaling_matches_matlab_formula():
     )
 
     # Verify scaling formula
-    assert scaled.dtype == np.float32
+    assert scaled.dtype == np.float64
     assert scaled[1, 1, 1] > 0
     assert scaled[1, 1, 2] > scaled[1, 1, 1]  # Higher pointer -> higher scaled value
 
@@ -788,7 +788,7 @@ def test_finalize_edge_trace_samples_correctly():
 
     # Verify trace coordinates
     assert trace.shape == (3, 3)
-    assert trace.dtype == np.float32
+    assert trace.dtype == np.float64
 
     # Verify energy sampling
     assert energy_trace.dtype == np.float64

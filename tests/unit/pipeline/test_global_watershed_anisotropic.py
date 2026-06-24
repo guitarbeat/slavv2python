@@ -64,20 +64,26 @@ def test_strel_tie_breaking_order():
 
     offsets = geom["local_subscripts"]
 
-    # Find two offsets that differ only in Y (index 2)
+    # Find two offsets that differ only in Y (index 0 in [Y, X, Z] layout)
     found_y_step = False
+    y_only_transitions = 0
     for i in range(len(offsets) - 1):
-        if offsets[i][0] == offsets[i + 1][0] and offsets[i][1] == offsets[i + 1][1]:
-            assert offsets[i][2] < offsets[i + 1][2]
-            found_y_step = True
-            break
+        if (
+            offsets[i][1] == offsets[i + 1][1]
+            and offsets[i][2] == offsets[i + 1][2]
+            and offsets[i][0] != offsets[i + 1][0]
+        ):
+            y_only_transitions += 1
+            if not found_y_step:
+                assert offsets[i][0] < offsets[i + 1][0]
+                found_y_step = True
     assert found_y_step, "Could not find two adjacent offsets differing only in Y"
 
-    # Also verify that X changes slower than Y but faster than Z
-    found_x_step = False
+    # X changes slower than Y: adjacent transitions with fixed Z include X steps,
+    # but Y-only steps should dominate because Y is the innermost loop.
+    x_step_transitions = 0
     for i in range(len(offsets) - 1):
-        if offsets[i][0] == offsets[i + 1][0] and offsets[i][1] != offsets[i + 1][1]:
-            assert offsets[i][1] < offsets[i + 1][1]
-            found_x_step = True
-            break
-    assert found_x_step, "Could not find two adjacent offsets differing in X"
+        if offsets[i][2] == offsets[i + 1][2] and offsets[i][1] != offsets[i + 1][1]:
+            x_step_transitions += 1
+    assert x_step_transitions > 0, "Expected X transitions with fixed Z"
+    assert y_only_transitions > x_step_transitions

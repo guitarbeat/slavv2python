@@ -288,8 +288,8 @@ def _normalize_lut_fixture_entry(payload: dict[str, Any]) -> dict[str, np.ndarra
         "local_subscripts": np.asarray(payload.get("local_subscripts", []), dtype=np.int32).reshape(
             -1, 3
         ),
-        "r_over_R": np.asarray(payload.get("r_over_R", []), dtype=np.float32).reshape(-1),
-        "unit_vectors": np.asarray(payload.get("unit_vectors", []), dtype=np.float32).reshape(
+        "r_over_R": np.asarray(payload.get("r_over_R", []), dtype=np.float64).reshape(-1),
+        "unit_vectors": np.asarray(payload.get("unit_vectors", []), dtype=np.float64).reshape(
             -1, 3
         ),
     }
