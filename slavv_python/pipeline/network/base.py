@@ -119,7 +119,7 @@ def _matlab_network_lookup_tables(
     normalized = np.asarray(edge_connections, dtype=np.int32).reshape(-1, 2)
     rows = normalized[:, 0].astype(np.int32, copy=False)
     cols = normalized[:, 1].astype(np.int32, copy=False)
-    edge_ids = np.arange(1, len(normalized) + 1, dtype=np.int32)
+    edge_ids: np.ndarray = np.arange(1, len(normalized) + 1, dtype=np.int32)
     edge_lookup_table = sparse.csr_matrix(
         (edge_ids, (rows, cols)),
         shape=(n_vertices, n_vertices),

@@ -10,7 +10,7 @@ from scipy import sparse
 
 def _matlab_global_watershed_border_locations(shape: tuple[int, int, int]) -> np.ndarray:
     """Return MATLAB-order linear indices for the image border at ``strel_apothem = 1``."""
-    border_mask = np.zeros(shape, dtype=bool)
+    border_mask: np.ndarray = np.zeros(shape, dtype=bool)
     border_mask[0, :, :] = True
     border_mask[shape[0] - 1, :, :] = True
     border_mask[:, 0, :] = True
@@ -109,10 +109,10 @@ class VoxelClaimMap:
         self, shape: tuple[int, int, int], vertex_positions: np.ndarray, energy_map_raw: np.ndarray
     ):
         self.shape = shape
-        self.vertex_index_map = np.zeros(shape, dtype=np.uint32, order="F")
-        self.pointer_map = np.zeros(shape, dtype=np.uint64, order="F")
-        self.branch_order_map = np.zeros(shape, dtype=np.uint8, order="F")
-        self.d_over_r_map = np.zeros(shape, dtype=np.float64, order="F")
+        self.vertex_index_map: np.ndarray = np.zeros(shape, dtype=np.uint32, order="F")
+        self.pointer_map: np.ndarray = np.zeros(shape, dtype=np.uint64, order="F")
+        self.branch_order_map: np.ndarray = np.zeros(shape, dtype=np.uint8, order="F")
+        self.d_over_r_map: np.ndarray = np.zeros(shape, dtype=np.float64, order="F")
 
         # MATLAB maintains two energy maps: energy_map_temp (static priority source)
         # and energy_map (dynamic penalized source for trace results).
@@ -151,7 +151,7 @@ class VoxelClaimMap:
         for linear_index in border_locations:
             v_index_flat[int(linear_index)] = np.uint32(self.number_of_vertices + 1)
 
-        self.vertex_energies = np.empty((self.number_of_vertices,), dtype=np.float64)
+        self.vertex_energies: np.ndarray = np.empty((self.number_of_vertices,), dtype=np.float64)
         for vertex_offset, linear_index in enumerate(self.vertex_locations):
             idx = int(linear_index)
             v_index_flat[idx] = np.uint32(vertex_offset + 1)

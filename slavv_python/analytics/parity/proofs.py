@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
@@ -108,7 +108,7 @@ def run_candidate_capture(
 
 def _load_exact_energy_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:
     """Backward-compatible dict payload for exact-route energy."""
-    return load_exact_energy_result(source_surface).to_dict()
+    return cast("dict[str, Any]", load_exact_energy_result(source_surface).to_dict())
 
 
 def _load_exact_vertices_payload(source_surface: ExactProofSourceSurface) -> dict[str, Any]:

@@ -202,7 +202,7 @@ def _network_graph_components(
             pos1 = scaled_positions(vertex_positions_arr[start_idx], scale)
             pos2 = scaled_positions(vertex_positions_arr[end_idx], scale)
             seg_length = np.linalg.norm(pos2 - pos1)
-            strand_length += seg_length
+            strand_length += float(seg_length)
             edge_lengths.append(float(seg_length))
             edge_radii.append(float((radii_arr[start_idx] + radii_arr[end_idx]) / 2.0))
             graph_obj.add_edge(start_idx, end_idx, weight=seg_length)

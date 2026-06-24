@@ -24,7 +24,7 @@ def _matlab_frontier_offsets(
     microns_per_voxel: Float32Array,
 ) -> tuple[Int32Array, Float32Array]:
     """Construct MATLAB-style cube-neighborhood offsets with Y-fastest ordering."""
-    local_range = np.arange(-strel_apothem, strel_apothem + 1, dtype=np.int32)
+    local_range: np.ndarray = np.arange(-strel_apothem, strel_apothem + 1, dtype=np.int32)
     offsets = np.array(
         [[d0, d1, d2] for d0 in local_range for d1 in local_range for d2 in local_range],
         dtype=np.int32,

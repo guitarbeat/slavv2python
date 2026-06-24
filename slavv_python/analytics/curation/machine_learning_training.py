@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -17,16 +17,16 @@ def _to_2d_array(value: Any, dtype: Any = float) -> np.ndarray | None:
         return None
     arr = np.asarray(value, dtype=dtype)
     if arr.size == 0:
-        return np.empty((0, 0), dtype=dtype)
+        return cast("np.ndarray", np.empty((0, 0), dtype=dtype))
     if arr.ndim == 1:
         arr = arr.reshape(-1, 1)
-    return arr
+    return cast("np.ndarray", arr)
 
 
 def _to_1d_array(value: Any, dtype: Any = int) -> np.ndarray | None:
     if value is None:
         return None
-    return np.asarray(value, dtype=dtype).reshape(-1)
+    return cast("np.ndarray", np.asarray(value, dtype=dtype).reshape(-1))
 
 
 def _pick(data: dict[str, Any], keys: list[str]) -> Any:

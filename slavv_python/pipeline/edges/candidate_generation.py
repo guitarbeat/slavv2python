@@ -111,7 +111,7 @@ def generate_watershed_candidates(
 
     # Explicit copy for mpv and permute to [dy, dx, dz]
     # Physical [dz, dy, dx] => Internal [dy, dx, dz]
-    mpv_zxy = microns_per_voxel.copy().astype(np.float64)
+    mpv_zxy: np.ndarray = microns_per_voxel.copy().astype(np.float64)
     if len(mpv_zxy) >= 3:
         mpv_zxy = mpv_zxy[[1, 2, 0]]
 

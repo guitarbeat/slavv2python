@@ -89,7 +89,7 @@ def _build_matlab_global_watershed_lut_cached(
         step_size_per_origin_radius=step_size_per_origin_radius,
     )
     local_subscripts = np.asarray(local_geometry["local_subscripts"], dtype=np.int32)
-    pointer_indices = np.arange(1, len(local_subscripts) + 1, dtype=np.uint64)
+    pointer_indices: np.ndarray = np.arange(1, len(local_subscripts) + 1, dtype=np.uint64)
 
     cum_prod_image_dims = np.cumprod(np.asarray(size_of_image, dtype=np.int64))
     linear_offsets = (

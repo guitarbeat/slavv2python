@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import pickle
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import joblib
 import numpy as np
@@ -237,8 +237,8 @@ class MLCurator:
                 if local_energy.size > 0:
                     local_mean = np.mean(local_energy)
                     local_std = np.std(local_energy)
-                    local_min = np.min(local_energy)
-                    local_max = np.max(local_energy)
+                    local_min: float = float(np.min(local_energy))
+                    local_max: float = float(np.max(local_energy))
                     local_median = np.median(local_energy)
                     energy_ratio = energy / (local_mean + 1e-10)
                     vertex_features.extend(
@@ -276,7 +276,7 @@ class MLCurator:
             return vertex_features
 
         features = Parallel(n_jobs=n_jobs)(delayed(_worker)(i) for i in range(n_vertices))
-        return np.array(features)
+        return cast("np.ndarray", np.array(features))
 
     def extract_edge_features(
         self,
@@ -339,7 +339,7 @@ class MLCurator:
         results = Parallel(n_jobs=n_jobs)(delayed(_worker)(i) for i in range(len(edge_traces)))
         features = [res for res in results if res is not None]
 
-        return np.array(features)
+        return cast("np.ndarray", np.array(features))
 
     def train_vertex_classifier(
         self, features: np.ndarray, labels: np.ndarray, method: str = "single_hidden_layer_mlp"

@@ -310,6 +310,8 @@ def handle_diagnose_energy(args: argparse.Namespace) -> None:
     require_energy_proof_evidence(run_root)
     oracle_root = Path(args.oracle_root).expanduser().resolve() if args.oracle_root else None
     source = _build_exact_proof_source_surface(run_root, oracle_root)
+    if source.matlab_batch_dir is None:
+        raise RuntimeError("Exact proof source is missing MATLAB batch directory")
     matlab = load_normalized_matlab_vectors(source.matlab_batch_dir, ("energy",))["energy"]
     python = load_normalized_python_checkpoints(source.checkpoints_dir, ("energy",))["energy"]
     params = load_json_dict(source.validated_params_path) or {}

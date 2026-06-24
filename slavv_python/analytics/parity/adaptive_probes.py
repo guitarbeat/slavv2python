@@ -6,7 +6,7 @@ import json
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -72,8 +72,11 @@ def build_energy_probe_payload(
     for linear_index, is_mismatch in enumerate(mismatch.ravel(order="F")):
         if not is_mismatch:
             continue
-        coordinate = tuple(
-            int(value) for value in np.unravel_index(linear_index, mismatch.shape, order="F")
+        coordinate = cast(
+            "tuple[int, int, int]",
+            tuple(
+                int(value) for value in np.unravel_index(linear_index, mismatch.shape, order="F")
+            ),
         )
         key = (
             int(matlab_scales[coordinate]),
@@ -95,11 +98,18 @@ def build_energy_probe_payload(
     for key in sorted(groups):
         group = groups[key]
         first_linear = int(group["first_linear"])
-        first_coordinate = tuple(
-            int(value) for value in np.unravel_index(first_linear, mismatch.shape, order="F")
+        first_coordinate = cast(
+            "tuple[int, int, int]",
+            tuple(
+                int(value) for value in np.unravel_index(first_linear, mismatch.shape, order="F")
+            ),
         )
-        max_coordinate = tuple(
-            int(value) for value in np.unravel_index(group["max_linear"], mismatch.shape, order="F")
+        max_coordinate = cast(
+            "tuple[int, int, int]",
+            tuple(
+                int(value)
+                for value in np.unravel_index(group["max_linear"], mismatch.shape, order="F")
+            ),
         )
         summary = MismatchGroup(
             matlab_scale=key[0],
@@ -212,7 +222,7 @@ def compare_probe_jsonl(matlab_path: Path, python_path: Path) -> dict[str, Any]:
     matlab = _load_jsonl(matlab_path)
     python = _load_jsonl(python_path)
     ids = sorted(set(matlab) | set(python))
-    differences = []
+    differences: list[dict[str, Any]] = []
     for request_id in ids:
         if request_id not in matlab or request_id not in python:
             differences.append({"request_id": request_id, "kind": "missing_record"})

@@ -86,7 +86,7 @@ def _reorient_volume_from_provenance(
     if not isinstance(raw_perm, list) or len(raw_perm) != 3:
         return image
     permutation = cast("tuple[int, int, int]", tuple(int(value) for value in raw_perm))
-    return np.transpose(image, permutation)
+    return cast("np.ndarray", np.transpose(image, permutation))
 
 
 def resolve_exact_run_oracle_root(

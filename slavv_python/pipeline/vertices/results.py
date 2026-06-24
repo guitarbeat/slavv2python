@@ -88,7 +88,7 @@ def matlab_linear_indices(coords: np.ndarray, shape: tuple[int, int, int]) -> np
     Coordinates are assumed to be in physical [Z, Y, X] order (index 0, 1, 2).
     MATLAB column-major order prioritizes Y, then X, then Z.
     """
-    return zyx_to_matlab_linear_indices(coords, shape)
+    return cast("np.ndarray", zyx_to_matlab_linear_indices(coords, shape))
 
 
 __all__ = [

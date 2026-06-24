@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import tifffile
@@ -46,7 +47,7 @@ def export_crop_m(source: Path, output: Path) -> np.ndarray:
 
     output.parent.mkdir(parents=True, exist_ok=True)
     tifffile.imwrite(output, cropped)
-    return cropped
+    return cast("np.ndarray", cropped)
 
 
 def write_roi_metadata(output: Path) -> Path:

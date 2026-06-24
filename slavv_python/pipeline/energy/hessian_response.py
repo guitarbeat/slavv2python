@@ -22,7 +22,7 @@ def matlab_octave_resolution_factors(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return MATLAB-style octave ids and per-scale integer downsampling factors."""
     number_of_scales = len(lumen_radius_microns)
-    scale_subscripts = np.arange(1, number_of_scales + 1, dtype=float)
+    scale_subscripts: np.ndarray = np.arange(1, number_of_scales + 1, dtype=float)
     octave_at_scales = np.ceil(scale_subscripts / scales_per_octave / 3.0).astype(np.int16)
 
     resolution_factors_by_octave: dict[int, np.ndarray] = {}
@@ -205,10 +205,12 @@ def _upsample_volume(
     coord_y = np.arange(output_shape[0], dtype=np.float64) / factor_y
     coord_x = np.arange(output_shape[1], dtype=np.float64) / factor_x
     coord_z = np.arange(output_shape[2], dtype=np.float64) / factor_z
-    mesh = np.meshgrid(coord_y, coord_x, coord_z, indexing="ij")
+    mesh: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
+        coord_y, coord_x, coord_z, indexing="ij"
+    )
     coordinates = np.asarray(mesh, dtype=np.float64)
 
-    source = volume.astype(np.float64, copy=False)
+    source: np.ndarray = volume.astype(np.float64, copy=False)
     finite_mask = np.isfinite(source)
     filled = np.where(finite_mask, source, 0.0).astype(np.float64, copy=False)
     weights = finite_mask.astype(np.float64, copy=False)
@@ -227,7 +229,7 @@ def _upsample_volume(
         mode="nearest",
         prefilter=False,
     )
-    upsampled = np.full(output_shape, np.inf, dtype=np.float64)
+    upsampled: np.ndarray = np.full(output_shape, np.inf, dtype=np.float64)
     valid = weight_sum > 0.0
     upsampled[valid] = (value_sum[valid] / weight_sum[valid]).astype(np.float64, copy=False)
     return cast("np.ndarray", upsampled)
@@ -318,7 +320,7 @@ def _matched_hessian_intermediates(
         }
 
     num_valid = np.count_nonzero(valid_voxels)
-    curvatures_valid = np.empty((num_valid, 6), dtype=dtype)
+    curvatures_valid: np.ndarray = np.empty((num_valid, 6), dtype=dtype)
     curvatures_valid[:, 0] = c0[valid_voxels].astype(dtype, copy=False)
     curvatures_valid[:, 1] = c1[valid_voxels].astype(dtype, copy=False)
     curvatures_valid[:, 2] = c2[valid_voxels].astype(dtype, copy=False)
@@ -334,7 +336,7 @@ def _matched_hessian_intermediates(
             dtype, copy=False
         )
 
-    grad_valid = np.empty((num_valid, 3), dtype=dtype)
+    grad_valid: np.ndarray = np.empty((num_valid, 3), dtype=dtype)
     for i in range(3):
         grad_valid[:, i] = _ifftn_matlab_symmetric(
             _derivative_kernel_dft_single(
@@ -457,6 +459,9 @@ def _pixel_frequency_meshes(
     shape: tuple[int, int, int],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     pixel_frequencies = [np.fft.fftfreq(length) for length in shape]
+    y_mesh: np.ndarray
+    x_mesh: np.ndarray
+    z_mesh: np.ndarray
     y_mesh, x_mesh, z_mesh = np.meshgrid(
         pixel_frequencies[0],
         pixel_frequencies[1],
@@ -599,46 +604,67 @@ def _derivative_kernel_dft_single(
     y_mesh, x_mesh, z_mesh = pixel_freq_meshes
     if is_curvature:
         if kernel_index == 0:
-            return (derivative_weights[0] ** 2) * (np.cos(2.0 * np.pi * y_mesh) - 1.0)
+            return cast(
+                "np.ndarray",
+                (derivative_weights[0] ** 2) * (np.cos(2.0 * np.pi * y_mesh) - 1.0),
+            )
         if kernel_index == 1:
-            return (derivative_weights[1] ** 2) * (np.cos(2.0 * np.pi * x_mesh) - 1.0)
+            return cast(
+                "np.ndarray",
+                (derivative_weights[1] ** 2) * (np.cos(2.0 * np.pi * x_mesh) - 1.0),
+            )
         if kernel_index == 2:
-            return (derivative_weights[2] ** 2) * (np.cos(2.0 * np.pi * z_mesh) - 1.0)
+            return cast(
+                "np.ndarray",
+                (derivative_weights[2] ** 2) * (np.cos(2.0 * np.pi * z_mesh) - 1.0),
+            )
 
         if kernel_index == 3:
             yx_freq = y_mesh * x_mesh
-            return (
+            return cast(
+                "np.ndarray",
                 derivative_weights[0]
                 * derivative_weights[1]
                 * (np.cos(2.0 * np.pi * np.sqrt(np.abs(yx_freq))) - 1.0)
                 * np.sign(yx_freq)
-                / 4.0
+                / 4.0,
             )
         if kernel_index == 4:
             xz_freq = x_mesh * z_mesh
-            return (
+            return cast(
+                "np.ndarray",
                 derivative_weights[1]
                 * derivative_weights[2]
                 * (np.cos(2.0 * np.pi * np.sqrt(np.abs(xz_freq))) - 1.0)
                 * np.sign(xz_freq)
-                / 4.0
+                / 4.0,
             )
         if kernel_index == 5:
             zy_freq = z_mesh * y_mesh
-            return (
+            return cast(
+                "np.ndarray",
                 derivative_weights[2]
                 * derivative_weights[0]
                 * (np.cos(2.0 * np.pi * np.sqrt(np.abs(zy_freq))) - 1.0)
                 * np.sign(zy_freq)
-                / 4.0
+                / 4.0,
             )
     else:
         if kernel_index == 0:
-            return 1j * derivative_weights[0] * np.sin(2.0 * np.pi * y_mesh) / 2.0
+            return cast(
+                "np.ndarray",
+                1j * derivative_weights[0] * np.sin(2.0 * np.pi * y_mesh) / 2.0,
+            )
         if kernel_index == 1:
-            return 1j * derivative_weights[1] * np.sin(2.0 * np.pi * x_mesh) / 2.0
+            return cast(
+                "np.ndarray",
+                1j * derivative_weights[1] * np.sin(2.0 * np.pi * x_mesh) / 2.0,
+            )
         if kernel_index == 2:
-            return 1j * derivative_weights[2] * np.sin(2.0 * np.pi * z_mesh) / 2.0
+            return cast(
+                "np.ndarray",
+                1j * derivative_weights[2] * np.sin(2.0 * np.pi * z_mesh) / 2.0,
+            )
 
     raise ValueError(f"Invalid kernel_index {kernel_index}")
 

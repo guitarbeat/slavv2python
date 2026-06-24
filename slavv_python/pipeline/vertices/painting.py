@@ -25,7 +25,7 @@ def paint_vertex_image(
     This paints ellipsoidal occupancy regions around each vertex for overlap-aware edge logic,
     including maintained-path terminal detection that should treat entering a vertex body as a hit.
     """
-    vertex_image = np.zeros(image_shape, dtype=np.uint16)
+    vertex_image: np.ndarray = np.zeros(image_shape, dtype=np.uint16)
 
     for i, (pos, scale) in enumerate(zip(vertex_positions, vertex_scales)):
         if len(lumen_radius_pixels) == len(vertex_positions):
@@ -34,7 +34,7 @@ def paint_vertex_image(
             val = lumen_radius_pixels[scale]
 
         if np.isscalar(val) or (isinstance(val, np.ndarray) and val.ndim == 0):
-            radii = np.repeat(float(val), 3)
+            radii: np.ndarray = np.repeat(float(np.asarray(val).item()), 3)
         else:
             radii = np.asarray(val)
         try:

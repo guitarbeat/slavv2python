@@ -18,7 +18,7 @@ class EdgeCandidatePersistence(Protocol):
         self,
         checkpoints_dir: Path,
         candidates: dict[str, Any],
-    ) -> None:
+    ) -> dict[str, Any] | None:
         """Persist a slim candidate snapshot for exact-route replay and fail-fast."""
 
 
@@ -29,8 +29,9 @@ class NoOpEdgeCandidatePersistence:
         self,
         checkpoints_dir: Path,
         candidates: dict[str, Any],
-    ) -> None:
+    ) -> dict[str, Any] | None:
         del checkpoints_dir, candidates
+        return None
 
 
 NO_OP_EDGE_CANDIDATE_PERSISTENCE = NoOpEdgeCandidatePersistence()

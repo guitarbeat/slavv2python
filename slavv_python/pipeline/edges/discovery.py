@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -45,17 +45,17 @@ def resolve_lumen_radius_pixels_axes(
     dtype = policy.precision if policy else np.float64
     raw_axes = energy_data.extra.get("lumen_radius_pixels_axes")
     if raw_axes is not None:
-        return np.asarray(raw_axes, dtype=dtype)
+        return cast("np.ndarray", np.asarray(raw_axes, dtype=dtype))
 
     lumen_radius_pixels = np.asarray(energy_data.lumen_radius_pixels, dtype=dtype)
     if lumen_radius_pixels.size > 0:
-        return np.repeat(lumen_radius_pixels.reshape(-1, 1), 3, axis=1)
+        return cast("np.ndarray", np.repeat(lumen_radius_pixels.reshape(-1, 1), 3, axis=1))
 
     lumen_radius_microns = np.asarray(energy_data.lumen_radius_microns, dtype=dtype)
     if lumen_radius_microns.size == 0:
         return np.zeros((0, 3), dtype=dtype)
     voxel_size = np.asarray(microns_per_voxel, dtype=dtype).reshape(1, 3)
-    return (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(dtype)
+    return cast("np.ndarray", (lumen_radius_microns.reshape(-1, 1) / voxel_size).astype(dtype))
 
 
 @dataclass

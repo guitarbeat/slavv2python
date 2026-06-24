@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -20,7 +20,7 @@ def _merge_parameters(defaults: dict[str, Any], overrides: dict[str, Any] | None
 def _within_boundary_mask(
     positions: np.ndarray, image_shape: tuple[int, int, int], boundary_margin: float
 ) -> np.ndarray:
-    keep_mask = np.ones(len(positions), dtype=bool)
+    keep_mask: np.ndarray = np.ones(len(positions), dtype=bool)
     if boundary_margin <= 0:
         return keep_mask
     for dim in range(3):
@@ -53,7 +53,7 @@ def _has_local_contrast(
 
 def _vertex_output_radii(vertices: dict[str, Any]) -> np.ndarray:
     radii = vertices.get("radii_microns", vertices.get("radii_pixels", vertices.get("radii", [])))
-    return np.asarray(radii, dtype=float)
+    return cast("np.ndarray", np.asarray(radii, dtype=float))
 
 
 def _path_meets_length_requirement(trace: np.ndarray, min_length: float) -> bool:
@@ -161,7 +161,7 @@ class AutomaticCurator:
         edge_traces = edges["traces"]
         edge_connections = edges["connections"]
         params = _merge_parameters(self.edge_parameters, parameters)
-        keep_mask = np.ones(len(edge_traces), dtype=bool)
+        keep_mask: np.ndarray = np.ones(len(edge_traces), dtype=bool)
 
         min_length = params.get("min_edge_length", 2.0)
         for i, trace in enumerate(edge_traces):

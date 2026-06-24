@@ -7,11 +7,12 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 try:
     import psutil
 except ImportError:
-    psutil = None  # type: ignore
+    psutil = None
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,12 @@ def is_process_alive(pid: int) -> bool:
 
     try:
         proc = psutil.Process(pid)
-        return proc.is_running()
+        return bool(proc.is_running())
     except (psutil.NoSuchProcess, psutil.AccessDenied):
         return False
 
 
-def get_process_info(pid: int) -> dict[str, any] | None:
+def get_process_info(pid: int) -> dict[str, Any] | None:
     """
     Get information about a process.
 
@@ -84,7 +85,7 @@ def is_python_process(pid: int) -> bool:
     if info is None:
         return False
 
-    name = info.get("name", "").lower()
+    name = str(info.get("name", "")).lower()
     return "python" in name
 
 

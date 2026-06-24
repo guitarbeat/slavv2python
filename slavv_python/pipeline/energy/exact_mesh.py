@@ -10,7 +10,7 @@ import gc
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -53,7 +53,7 @@ def get_chunking_lattice_v190(
 def _matlab_uint16_cast(values: np.ndarray) -> np.ndarray:
     """Match MATLAB's positive double -> uint16 conversion."""
     rounded = np.floor(np.asarray(values, dtype=float) + 0.5)
-    return np.clip(rounded, 0, np.iinfo(np.uint16).max).astype(np.uint16)
+    return cast("np.ndarray", np.clip(rounded, 0, np.iinfo(np.uint16).max).astype(np.uint16))
 
 
 def get_starts_and_counts_v200(
@@ -231,7 +231,7 @@ def _interp3_matlab_linear_inf(
     )
     if cval is not None and np.any(~inside):
         out[~inside] = cval
-    return out
+    return cast("np.ndarray", out)
 
 
 def _matlab_coarse_local_slices(
@@ -292,9 +292,9 @@ def _matlab_zero_based_linspace_raw(
     x1 = 1.0 + float(offset) / float(stride) - float(local_start)
     x2 = x1 + float(count - 1) / float(stride)
     if count == 1:
-        return np.array([x2 - 1.0], dtype=np.float64)
-    i = np.arange(count, dtype=np.float64)
-    return ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0
+        return cast("np.ndarray", np.array([x2 - 1.0], dtype=np.float64))
+    i: np.ndarray = np.arange(count, dtype=np.float64)
+    return cast("np.ndarray", ((count - 1 - i) * x1 + i * x2) / (count - 1) - 1.0)
 
 
 def _matlab_zero_based_linspace(
@@ -469,14 +469,16 @@ def compute_exact_parity_energy_chunked(
             mesh_z = _matlab_zero_based_linspace(off_z, stride_z, w_count_z, l_start_z)
 
             # [Y, X, Z] mesh for interpolation (sparse to save memory)
-            mesh_coords = np.meshgrid(mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True)
-            coords_grid = tuple(mesh_coords)
+            mesh_coords: tuple[np.ndarray, np.ndarray, np.ndarray] = np.meshgrid(
+                mesh_y, mesh_x, mesh_z, indexing="ij", sparse=True
+            )
+            coords_grid = mesh_coords
 
             # Accumulators in [Y, X, Z] order with Fortran contiguity
-            chunk_best_energy = np.full(
+            chunk_best_energy: np.ndarray = np.full(
                 (w_count_y, w_count_x, w_count_z), 0.0, dtype=np.float64, order="F"
             )
-            chunk_best_scale_sub_idx = np.full(
+            chunk_best_scale_sub_idx: np.ndarray = np.full(
                 (w_count_y, w_count_x, w_count_z), -1, dtype=np.int16, order="F"
             )
 

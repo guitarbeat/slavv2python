@@ -24,7 +24,7 @@ def _coord_to_matlab_linear_index(coord: np.ndarray, shape: tuple[int, int, int]
 
 def _matlab_linear_index_to_coord(index: int, shape: tuple[int, int, int]) -> np.ndarray:
     """Convert a 0-based MATLAB linear index into a ``(y, x, z)`` coordinate."""
-    return matlab_linear_index_to_yxz(index, shape)
+    return cast("np.ndarray", matlab_linear_index_to_yxz(index, shape))
 
 
 def _argmin_with_linear_index_tiebreak(

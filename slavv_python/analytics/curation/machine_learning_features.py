@@ -19,7 +19,7 @@ def compute_local_gradient(energy_field: np.ndarray, pos: np.ndarray) -> np.ndar
         coords_minus[axis] = max(val - 1, 0)
         return (energy_field[tuple(coords_plus)] - energy_field[tuple(coords_minus)]) / 2.0
 
-    return np.array([_diff(0, y), _diff(1, x), _diff(2, z)])
+    return cast("np.ndarray", np.array([_diff(0, y), _diff(1, x), _diff(2, z)]))
 
 
 def feature_importance(model: Any) -> np.ndarray | None:

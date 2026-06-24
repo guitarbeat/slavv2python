@@ -697,7 +697,7 @@ def add_vertices_to_edges_matlab_style(
             if bridge_vertex_scales
             else vertex_scales
         )
-        vertex_volume_image = paint_vertex_image(
+        vertex_volume_image: np.ndarray = paint_vertex_image(
             all_vertex_positions,
             all_vertex_scales,
             np.asarray(lumen_radius_pixels_axes, dtype=np.float64),

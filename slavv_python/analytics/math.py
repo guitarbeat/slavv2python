@@ -52,14 +52,14 @@ def scaled_positions(positions: np.ndarray, scale: list[float] | np.ndarray) -> 
         raise ValueError("positions must be at least 1D")
     if positions_arr.shape[-1] != scale_arr.shape[0]:
         raise ValueError("scale length must match positions coordinate dimension")
-    return positions_arr * scale_arr
+    return cast("np.ndarray", positions_arr * scale_arr)
 
 
 def resample_vectors(trace: np.ndarray, step: float = 1.0) -> np.ndarray:
     """Linearly resample a polyline path at regular intervals."""
     trace_arr = np.asarray(trace, dtype=float)
     if len(trace_arr) < 2:
-        return trace_arr
+        return cast("np.ndarray", trace_arr)
 
     # Cumulative distance along the path
     diffs = np.diff(trace_arr, axis=0)
@@ -80,7 +80,7 @@ def resample_vectors(trace: np.ndarray, step: float = 1.0) -> np.ndarray:
     for i in range(trace_arr.shape[1]):
         resampled[:, i] = np.interp(new_dists, cum_dists, trace_arr[:, i])
 
-    return resampled
+    return cast("np.ndarray", resampled)
 
 
 def smooth_edge_traces(traces: list[np.ndarray], sigma: float = 1.0) -> list[np.ndarray]:

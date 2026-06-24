@@ -17,7 +17,7 @@ def generate_edge_directions(n_directions: int, seed: int | None = None) -> np.n
     if n_directions <= 0:
         return np.empty((0, 3), dtype=np.float64)
     if n_directions == 1:
-        return np.array([[0, 0, 1]], dtype=np.float64)
+        return cast("np.ndarray", np.array([[0, 0, 1]], dtype=np.float64))
 
     rng = np.random.default_rng(seed)
     points = rng.standard_normal((n_directions, 3))
@@ -88,7 +88,7 @@ def estimate_vessel_directions(
     if norm == 0 or not np.isfinite(norm):
         return fallback_direction_generator(2, 0)
     direction = direction / norm
-    return np.stack((direction, -direction))
+    return cast("np.ndarray", np.stack((direction, -direction)))
 
 
 __all__ = [

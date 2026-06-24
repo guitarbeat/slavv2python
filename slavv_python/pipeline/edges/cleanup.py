@@ -36,7 +36,7 @@ def remove_excess_vertex_degrees(
         return np.ones((len(connections),), dtype=bool)
 
     edge_connections = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    keep_mask = np.ones((len(edge_connections),), dtype=bool)
+    keep_mask: np.ndarray = np.ones((len(edge_connections),), dtype=bool)
 
     num_vertices = int(np.max(edge_connections)) + 1 if edge_connections.size else 0
     if num_vertices <= 0:
@@ -45,7 +45,7 @@ def remove_excess_vertex_degrees(
     # 2. Build Adjacency Structures
     # Use Sparse matrices for efficient degree lookup and edge mapping
     rows, cols = edge_connections[:, 0], edge_connections[:, 1]
-    edge_indices = np.arange(1, len(edge_connections) + 1, dtype=np.int32)
+    edge_indices: np.ndarray = np.arange(1, len(edge_connections) + 1, dtype=np.int32)
 
     # Map (u, v) -> edge_id (1-based for sparse matrix representation)
     edge_map = sparse.csr_matrix(
@@ -109,7 +109,7 @@ def prune_orphan_edges(
     # 2. Map Edges to Linear Index Space
     edge_voxels = [_get_linear_trace_voxels(trace, volume_shape) for trace in traces]
 
-    keep_mask = np.ones((len(edge_voxels),), dtype=bool)
+    keep_mask: np.ndarray = np.ones((len(edge_voxels),), dtype=bool)
     original_indices = list(range(len(edge_voxels)))
     active_pool = list(edge_voxels)
 
@@ -144,11 +144,11 @@ def break_graph_cycles(connections: np.ndarray) -> np.ndarray:
 
     # 1. Build Interaction Graph
     edges = np.asarray(connections, dtype=np.int32).reshape(-1, 2)
-    keep_mask = np.ones((len(edges),), dtype=bool)
+    keep_mask: np.ndarray = np.ones((len(edges),), dtype=bool)
 
     num_vertices = int(np.max(edges)) + 1
     rows, cols = edges[:, 0], edges[:, 1]
-    edge_ids = np.arange(1, len(edges) + 1, dtype=np.int32)
+    edge_ids: np.ndarray = np.arange(1, len(edges) + 1, dtype=np.int32)
 
     # Undirected adjacency for cycle detection
     edge_lookup = sparse.csr_matrix((edge_ids, (rows, cols)), shape=(num_vertices, num_vertices))
@@ -252,7 +252,7 @@ def _get_linear_voxel_set(positions: np.ndarray, shape: tuple[int, int, int]) ->
 def _get_linear_trace_voxels(trace: np.ndarray, shape: tuple[int, int, int]) -> np.ndarray:
     """Maps a trace path to linear voxel indices."""
     c = _clip_trace_indices(np.asarray(trace, dtype=np.float32), shape)
-    return yxz_to_matlab_linear_indices(c, shape)
+    return cast("np.ndarray", yxz_to_matlab_linear_indices(c, shape))
 
 
 def _find_orphan_indices(

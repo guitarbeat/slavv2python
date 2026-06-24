@@ -276,7 +276,8 @@ class MonitorDaemon:
             metadata_file = Path(job.run_dir) / "99_Metadata" / "parity_job.json"
             if metadata_file.exists():
                 data = json.loads(metadata_file.read_text())
-                return data.get("exit_code")
+                exit_code = data.get("exit_code")
+                return int(exit_code) if exit_code is not None else None
         except Exception as e:
             logger.debug(f"Could not read exit code for job {job.job_id}: {e}")
 

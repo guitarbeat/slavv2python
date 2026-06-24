@@ -166,7 +166,7 @@ class RunContext:
                 validated_params = validate_parameters(existing_params)
             else:
                 validated_params = validated_incoming
-            if force_rerun_from in PIPELINE_STAGES:
+            if force_rerun_from is not None and force_rerun_from in PIPELINE_STAGES:
                 context.reset_pipeline_state_from(force_rerun_from)
 
             params_path = context.metadata_dir / "validated_params.json"
@@ -398,7 +398,7 @@ class RunContext:
         self.persist()
 
     def finalize_run(self, *, stop_after: str | None = None) -> None:
-        if stop_after in PIPELINE_STAGES:
+        if stop_after is not None and stop_after in PIPELINE_STAGES:
             self._refresh_stage_metrics(stop_after)
         elif self.snapshot.current_stage in PIPELINE_STAGES:
             self._refresh_stage_metrics(self.snapshot.current_stage)

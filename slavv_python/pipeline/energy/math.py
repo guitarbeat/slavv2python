@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
@@ -21,7 +21,7 @@ def compute_principal_energy(
     """Calculate principal energy from Hessian and gradient components."""
     num_voxels = gradients.shape[0]
     if num_voxels == 0:
-        return np.empty(0, dtype=dtype)
+        return cast("np.ndarray", np.empty(0, dtype=dtype))
 
     principal_energies = np.empty((num_voxels, 3), dtype=dtype)
     g_full = gradients.astype(dtype, copy=False)
@@ -67,7 +67,7 @@ def compute_principal_energy(
         energy_sum[~np.isfinite(energy_sum)] = -np.inf
         energy_sum[energy_sum <= 0] = -np.inf
 
-    return energy_sum
+    return cast("np.ndarray", energy_sum)
 
 
 __all__ = ["compute_principal_energy"]

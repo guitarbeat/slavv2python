@@ -13,7 +13,7 @@ from typing import Any
 try:
     import fasteners
 except ImportError:
-    fasteners = None  # type: ignore
+    fasteners = None
 
 logger = logging.getLogger(__name__)
 

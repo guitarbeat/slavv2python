@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from slavv_python.analytics.parity.process_utils import (
     is_process_alive,
@@ -30,7 +30,7 @@ def reconcile_run_before_launch(run_dir: Path) -> str:
         raise LaunchPreparationError(
             f"Run directory already has an active writer ({view.status_reason}; PID {pid_text})."
         )
-    return view.effective_status
+    return cast("str", view.effective_status)
 
 
 def run_launch_preflight(

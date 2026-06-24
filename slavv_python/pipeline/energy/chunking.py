@@ -112,9 +112,11 @@ def _best_energy_outputs(
     return_all_scales: bool,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
     fill_value = np.inf if energy_sign < 0 else -np.inf
-    energy_3d = np.full(image_shape, fill_value, dtype=np.float64)
+    energy_3d: np.ndarray = np.full(image_shape, fill_value, dtype=np.float64)
     scale_indices: np.ndarray = np.zeros(image_shape, dtype=np.int16)
-    energy_4d = np.zeros((*image_shape, n_scales), dtype=np.float64) if return_all_scales else None
+    energy_4d: np.ndarray | None = (
+        np.zeros((*image_shape, n_scales), dtype=np.float64) if return_all_scales else None
+    )
     return energy_3d, scale_indices, energy_4d
 
 

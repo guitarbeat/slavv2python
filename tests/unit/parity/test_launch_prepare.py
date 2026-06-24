@@ -30,10 +30,13 @@ def test_reconcile_run_before_launch_rejects_active_writer(tmp_path):
         },
     )()
 
-    with patch(
-        "slavv_python.interface.cli.monitor_service.load_run_monitor_view",
-        return_value=fake_view,
-    ), pytest.raises(LaunchPreparationError, match="active writer"):
+    with (
+        patch(
+            "slavv_python.interface.cli.monitor_service.load_run_monitor_view",
+            return_value=fake_view,
+        ),
+        pytest.raises(LaunchPreparationError, match="active writer"),
+    ):
         reconcile_run_before_launch(run_dir)
 
 

@@ -145,8 +145,10 @@ def _matlab_get_network_v190(
     vertex_is_interior = degrees == 2
     vertex_is_bifurcation = degrees >= 3
 
-    bifurcation_vertices = np.flatnonzero(vertex_is_bifurcation).astype(np.int32, copy=False)
-    interior_vertices = np.flatnonzero(vertex_is_interior).astype(np.int32, copy=False)
+    bifurcation_vertices: np.ndarray = np.flatnonzero(vertex_is_bifurcation).astype(
+        np.int32, copy=False
+    )
+    interior_vertices: np.ndarray = np.flatnonzero(vertex_is_interior).astype(np.int32, copy=False)
 
     vertices_in_strands: list[np.ndarray] = []
     edge_indices_in_strands: list[np.ndarray] = []
@@ -197,7 +199,9 @@ def _matlab_get_network_v190(
                         np.int32
                     )
 
-            end_vertices = np.flatnonzero(exterior_neighbor_counts > 0).astype(np.int32, copy=False)
+            end_vertices: np.ndarray = np.flatnonzero(exterior_neighbor_counts > 0).astype(
+                np.int32, copy=False
+            )
             adjacency_interior = adjacency_matrix[current_interior][:, current_interior].toarray()
             interior_rows, interior_cols = _matlab_find_nonzero_matrix_entries(adjacency_interior)
             interior_edge_ids = _matlab_lookup_edge_ids(
@@ -244,7 +248,9 @@ def _matlab_get_network_v190(
             edge_indices_in_strands.append(strand_edge_ids.astype(np.int32, copy=False))
             end_vertices_in_strands.append(end_vertices.astype(np.int32, copy=False))
 
-    non_interior_vertices = np.flatnonzero(~vertex_is_interior).astype(np.int32, copy=False)
+    non_interior_vertices: np.ndarray = np.flatnonzero(~vertex_is_interior).astype(
+        np.int32, copy=False
+    )
     if non_interior_vertices.size:
         adjacency_without_interiors = adjacency_matrix.toarray().astype(bool)
         adjacency_without_interiors[vertex_is_interior, :] = False
@@ -449,7 +455,7 @@ def _matlab_network_topology(
 
 def _matlab_interp1_implicit_axis(values: np.ndarray, query_points: np.ndarray) -> np.ndarray:
     """Mirror MATLAB ``interp1(values, xq)`` where the x-axis is ``1:numel(values)``."""
-    ordinate_axis = np.arange(1, len(values) + 1, dtype=np.float64)
+    ordinate_axis: np.ndarray = np.arange(1, len(values) + 1, dtype=np.float64)
     queries = np.asarray(query_points, dtype=np.float64)
     result = np.interp(
         queries,

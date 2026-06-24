@@ -73,7 +73,7 @@ def _matlab_edge_endpoint_positions_and_scales(
     trace_array = np.asarray(trace, dtype=np.float32).reshape(-1, 3)
     scale_array = np.asarray(scale_trace, dtype=np.int16).reshape(-1)
     if trace_array.shape[0] == 0:
-        empty_position = np.zeros((3,), dtype=np.float32)
+        empty_position: np.ndarray = np.zeros((3,), dtype=np.float32)
         return (empty_position, 0), (empty_position, 0)
 
     start_scale = int(scale_array[0]) if scale_array.size else 0

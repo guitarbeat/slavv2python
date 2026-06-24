@@ -76,7 +76,7 @@ def _sample_volume_from_matlab_linear_trace(
 ) -> np.ndarray:
     """Sample one volume exactly at normalized MATLAB-order linear indices."""
     if not linear_trace:
-        return np.zeros((0,), dtype=np.asarray(volume).dtype)
+        return cast("np.ndarray", np.zeros((0,), dtype=np.asarray(volume).dtype))
     if np.asarray(volume).ndim == 1:
         flat_volume = np.asarray(volume)
     else:
@@ -101,7 +101,7 @@ def _matlab_global_watershed_finalize_edge_trace(
         dtype=np.float64,
     )
     if scale_image is None:
-        scale_trace = np.zeros((len(full_linear_trace),), dtype=np.int16)
+        scale_trace: np.ndarray = np.zeros((len(full_linear_trace),), dtype=np.int16)
     else:
         scale_trace = np.asarray(
             _sample_volume_from_matlab_linear_trace(full_linear_trace, scale_image),
@@ -126,7 +126,7 @@ def _matlab_global_watershed_scale_pointer_map(
 
     scale_labels = size_map[pointer_mask].astype(np.int64, copy=False)
     scale_indices = np.clip(scale_labels - 1, 0, len(lumen_radius_microns) - 1)
-    unique_lengths = np.zeros(len(lumen_radius_microns), dtype=np.float64)
+    unique_lengths: np.ndarray = np.zeros(len(lumen_radius_microns), dtype=np.float64)
     for i in range(len(lumen_radius_microns)):
         unique_lengths[i] = len(
             _build_matlab_global_watershed_lut(
@@ -154,7 +154,7 @@ def _matlab_global_watershed_prepare_size_map(
     """Build the scale-aware size_map and original_scale_image."""
     original_scale_image: Int16Array
     if scale_indices is None:
-        size_map = np.ones(shape, dtype=np.int16, order="F")
+        size_map: np.ndarray = np.ones(shape, dtype=np.int16, order="F")
         original_scale_image = np.zeros(shape, dtype=np.int16, order="F")
     else:
         original_scale_image = np.asarray(scale_indices, dtype=np.int16, order="F")

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 from joblib import Parallel, delayed
 from skimage.draw import ellipsoid
@@ -10,6 +12,10 @@ from typing_extensions import TypeAlias
 from slavv_python.pipeline.policy import PipelinePolicy
 from slavv_python.pipeline.vertices.results import sort_vertex_order
 from slavv_python.utils.lattice import compute_chunking_lattice, iter_chunk_slices
+
+# Backward-compatible aliases for edge-stage re-exports.
+chunk_lattice_dimensions = compute_chunking_lattice
+iter_overlapping_chunks = iter_chunk_slices
 
 try:
     from numba import njit
@@ -92,10 +98,10 @@ def matlab_vertex_candidates_in_chunk(
         slices = vertex_neighborhood_slices(pos, apothem, energy.shape)
         window = energy[slices]
         if energy_sign < 0:
-            window_extreme = np.nanmin(window)
+            window_extreme: float = float(np.nanmin(window))
             is_vertex = np.isfinite(window_extreme) and energy[y, x, z] <= window_extreme
         else:
-            window_extreme = np.nanmax(window)
+            window_extreme = float(np.nanmax(window))
             is_vertex = np.isfinite(window_extreme) and energy[y, x, z] >= window_extreme
 
         if is_vertex:
@@ -234,7 +240,7 @@ def ellipsoid_offsets(radii_pixels: np.ndarray, policy: PipelinePolicy | None = 
     mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
     coords = np.column_stack(np.where(mask))
     center = np.asarray(mask.shape, dtype=np.int64) // 2
-    return (coords - center).astype(np.int16, copy=False)
+    return cast("np.ndarray", (coords - center).astype(np.int16, copy=False))
 
 
 def _choose_vertices_loop_python(
@@ -268,9 +274,9 @@ def _choose_vertices_loop_python(
         t_end = template_ends[scale]
         occupied = False
         for j in range(t_start, t_end):
-            y = cy + all_offsets[j, 0]
-            x = cx + all_offsets[j, 1]
-            z = cz + all_offsets[j, 2]
+            y: int = int(cy + all_offsets[j, 0])
+            x: int = int(cx + all_offsets[j, 1])
+            z: int = int(cz + all_offsets[j, 2])
 
             if (
                 0 <= y < image_shape[0]
@@ -284,9 +290,9 @@ def _choose_vertices_loop_python(
         if not occupied:
             chosen_mask[i] = True
             for j in range(t_start, t_end):
-                y = cy + all_offsets[j, 0]
-                x = cx + all_offsets[j, 1]
-                z = cz + all_offsets[j, 2]
+                y = int(cy + all_offsets[j, 0])
+                x = int(cx + all_offsets[j, 1])
+                z = int(cz + all_offsets[j, 2])
 
                 if 0 <= y < image_shape[0] and 0 <= x < image_shape[1] and 0 <= z < image_shape[2]:
                     painted_image[y, x, z] = True
@@ -327,8 +333,8 @@ def choose_vertices_matlab_style(
     # Prepare templates
     unique_scales = np.unique(scale_indices)
     max_scale = int(np.max(unique_scales)) if unique_scales.size > 0 else -1
-    template_starts = np.zeros(max_scale + 1, dtype=np.int32)
-    template_ends = np.zeros(max_scale + 1, dtype=np.int32)
+    template_starts: np.ndarray = np.zeros(max_scale + 1, dtype=np.int32)
+    template_ends: np.ndarray = np.zeros(max_scale + 1, dtype=np.int32)
 
     all_offsets_list = []
     current_offset = 0
@@ -344,7 +350,7 @@ def choose_vertices_matlab_style(
     else:
         all_offsets = np.empty((0, 3), dtype=np.int16)
 
-    painted_image = np.zeros(image_shape, dtype=bool)
+    painted_image: np.ndarray = np.zeros(image_shape, dtype=bool)
 
     # Pre-chosen vertices
     for index in np.flatnonzero(chosen_mask[:start_index]):
