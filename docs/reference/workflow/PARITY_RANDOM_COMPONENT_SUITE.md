@@ -53,6 +53,7 @@ Outputs under `<output-dir>`:
 - `manifest.json` — resolved corpus with TIFF paths and queries
 - `matlab_reference.mat` — MATLAB v7 results
 - `random_component_parity_report.json` — aggregate report
+- `random_component_parity_report.txt` — compact structural + advisory summary for logs/artifacts
 - `reports/<case_id>.json` — per-case report (includes `hessian_diagnostics`)
 
 Print advisory Hessian summary from a saved report:
@@ -76,7 +77,9 @@ Workflow: `.github/workflows/matlab-random-component-parity.yml`
 
 - Trigger: `pull_request` on Energy/parity paths and `workflow_dispatch`
 - Runner: `[self-hosted, windows, matlab-r2019a]`
+- Fast precheck: `tests/unit/parity/test_random_component_parity.py`
 - Structural gate: differential suite exit code (`--mode structural`)
+- Manual diagnostics: `workflow_dispatch` exposes `mode=diagnostics` to collect Hessian samples without changing the certification claim
 - Advisory step: prints `hessian_diagnostics.max_ulp_distance` to logs and `GITHUB_STEP_SUMMARY` without failing the job
 
 The workflow is intentionally non-blocking while the corpus establishes its
@@ -122,3 +125,4 @@ Bit-identical Hessian certification remains on crop/canonical `prove-exact` orac
 - [tests/README.md](../../../tests/README.md) — test pyramid placement
 - [PARITY_PRE_GATE.md](PARITY_PRE_GATE.md) — tier 1 component entry points
 - [ADR 0010](../../adr/0010-random-component-parity-suite.md) — decision record
+- [Implementation Hardening Spec](../../plans/random-component-parity-hardening-spec.md) — active plan for refactoring the suite for maintainability while preserving the structural gate (created 2026-06-24)
