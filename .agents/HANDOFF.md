@@ -42,8 +42,10 @@ Phase 1 remains blocked at the crop-harness Energy gate.
 3,810,130 energy ULP mismatches; **31** scale-index mismatches (was 19,412).
 First scale gap: `(40,83,116)` MATLAB 13 vs Python 12.
 
-Next: triage the 31 scale winners (`energy_probe_requests.json` refreshed) →
-fix root cause → rerun Energy only if needed → strict-zero before downstream.
+Scale triage done (31/31 `cross_octave_reduction`, replay matches stored Python,
+not MATLAB; mostly ±1 scale deltas). Next: MATLAB-backed probe on 2–3 sample
+voxels + fix cross-octave reduction/tie-break (invalid octave candidates show
+`scale=-1`, energy `0.0`) → targeted Energy rerun → strict-zero before downstream.
 
 ## Operating sequence
 

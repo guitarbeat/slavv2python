@@ -54,6 +54,16 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 - **Adaptive probes:** `03_Analysis/energy_probe_requests.json` (3650 mismatch groups).
 - **Next:** Triage scale-winner disagreements first; then float64 bit-identical path for scale-agreeing voxels. No downstream crop refresh.
 
+### Fresh scale-winner triage (2026-06-24, post-writer)
+
+Cross-octave Python replay on all **31** `scale_indices` mismatches (`workspace/scratch/fresh_scale_mismatch_triage.json`):
+
+- **31/31** `cross_octave_reduction` — replayed Python winner matches **stored** `best_scale.npy` (not stale checkpoint drift).
+- **0/31** replay matches MATLAB oracle winner.
+- Scale delta histogram vs MATLAB: **14** at −1, **13** at +1 (remaining outliers at −5, −2, +7, +26).
+- Example `(33,80,133)`: MATLAB 14, Python stored/replay **13**; octave-1 candidate wins replay (−20.15) over octave-5 scale 92 (−18.25).
+- **Implication:** remaining scale gaps are live cross-octave winner math vs MATLAB, not writer persistence. Next fix surface: reduction/tie-break + invalid-octave candidate handling (probe shows `global_scale=-1`, energy `0.0` on octaves 3–4).
+
 Historical crop Energy evidence (2026-06-21, superseded writer state):
 
 - **Coarse-source / interpolation-mesh contract**: MATLAB `get_energy_V202` local ranges use `1 + floor(offset/rf) : 1 + ceil((offset + write_count - 1)/rf)` on the **padded FFT grid** (`fourier_transform_V2` output), not the strided read shape. Python had been clamping to `original_chunk.shape`, dropping one padded row on crop octaves 3–5 (e.g. octave 4 chunk 0: requested `(27,27,14)` vs retained `(26,26,13)`). Fixed via `_matlab_coarse_local_slices` in `matlab_get_energy_v202_chunked.py`.
