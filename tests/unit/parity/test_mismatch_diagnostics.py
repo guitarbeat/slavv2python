@@ -38,3 +38,25 @@ def test_numeric_diagnostic_uses_fortran_order_and_scale_context(tmp_path):
     assert paths[0].is_file()
     assert paths[1] is not None
     assert paths[1].is_file()
+
+
+def test_energy_diagnostic_includes_ulp_stats_for_scale_agreeing_drift() -> None:
+    matlab_energy = np.array([-20.37433178324523], dtype=np.float64)
+    python_energy = np.array([-20.374331783245218], dtype=np.float64)
+    matlab = {
+        "energy": matlab_energy.reshape(1, 1, 1),
+        "scale_indices": np.array([90], dtype=np.int16).reshape(1, 1, 1),
+    }
+    python = {
+        "energy": python_energy.reshape(1, 1, 1),
+        "scale_indices": np.array([90], dtype=np.int16).reshape(1, 1, 1),
+    }
+
+    diagnosis = build_mismatch_diagnostics("energy", matlab, python, {})
+    energy_field = next(field for field in diagnosis["fields"] if field["field"] == "energy")
+
+    assert energy_field["max_ulp"] == 3
+    assert energy_field["ulp_histogram"]["3"] == 1
+    assert diagnosis["energy_context"]["winner_scale_disagrees"] is False
+    assert diagnosis["energy_scale_agreeing_mismatch"]["mismatch_count"] == 1
+    assert diagnosis["energy_scale_agreeing_mismatch"]["max_ulp"] == 3

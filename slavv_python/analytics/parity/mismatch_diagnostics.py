@@ -74,24 +74,86 @@ def build_mismatch_diagnostics(
         coordinate = list(np.unravel_index(first_linear, matlab_array.shape, order="F"))
         finite = np.isfinite(matlab_array) & np.isfinite(python_array)
         delta = np.abs(matlab_array[finite] - python_array[finite])
-        fields.append(
-            {
-                "field": field,
-                "kind": "numeric_mismatch",
-                "mismatch_count": int(indices.size),
-                "first_fortran_linear_index": first_linear,
-                "first_coordinate": coordinate,
-                "matlab_value": _json_scalar(matlab_array[tuple(coordinate)]),
-                "python_value": _json_scalar(python_array[tuple(coordinate)]),
-                "max_abs_delta": float(np.max(delta)) if delta.size else None,
-            }
+        mismatch_mask = ~equal
+        ulp_stats = _ulp_mismatch_stats(
+            matlab_array[mismatch_mask],
+            python_array[mismatch_mask],
         )
+        entry: dict[str, Any] = {
+            "field": field,
+            "kind": "numeric_mismatch",
+            "mismatch_count": int(indices.size),
+            "first_fortran_linear_index": first_linear,
+            "first_coordinate": coordinate,
+            "matlab_value": _json_scalar(matlab_array[tuple(coordinate)]),
+            "python_value": _json_scalar(python_array[tuple(coordinate)]),
+            "max_abs_delta": float(np.max(delta)) if delta.size else None,
+        }
+        entry.update(ulp_stats)
+        fields.append(entry)
     diagnosis: dict[str, Any] = {"stage": stage, "fields": fields}
     if stage == "energy":
         diagnosis["energy_context"] = _energy_context(
             matlab_payload, python_payload, fields, params
         )
+        diagnosis["energy_scale_agreeing_mismatch"] = _energy_scale_agreeing_mismatch(
+            matlab_payload, python_payload
+        )
     return diagnosis
+
+
+def _ordered_float64_bits(values: np.ndarray) -> np.ndarray:
+    bits = np.asarray(values, dtype=np.float64).view(np.uint64)
+    sign = bits >> np.uint64(63)
+    return np.where(sign, np.uint64(0xFFFFFFFFFFFFFFFF) - bits, bits)
+
+
+def _ulp_mismatch_stats(matlab_values: np.ndarray, python_values: np.ndarray) -> dict[str, Any]:
+    matlab_f = np.asarray(matlab_values, dtype=np.float64)
+    python_f = np.asarray(python_values, dtype=np.float64)
+    equal = matlab_f == python_f
+    ordered = _ordered_float64_bits(matlab_f).astype(np.int64)
+    ordered_py = _ordered_float64_bits(python_f).astype(np.int64)
+    ulp = np.abs(ordered - ordered_py)
+    ulp[equal] = 0
+    histogram: dict[str, int] = {}
+    for bucket in range(9):
+        histogram[str(bucket)] = int(np.count_nonzero(ulp == bucket))
+    histogram["9_plus"] = int(np.count_nonzero(ulp > 8))
+    return {
+        "max_ulp": int(ulp.max()) if ulp.size else 0,
+        "ulp_histogram": histogram,
+        "ulp_p50": float(np.percentile(ulp, 50)) if ulp.size else 0.0,
+        "ulp_p90": float(np.percentile(ulp, 90)) if ulp.size else 0.0,
+    }
+
+
+def _energy_scale_agreeing_mismatch(
+    matlab_payload: dict[str, Any],
+    python_payload: dict[str, Any],
+) -> dict[str, Any]:
+    matlab_energy = matlab_payload.get("energy")
+    python_energy = python_payload.get("energy")
+    matlab_scales = matlab_payload.get("scale_indices")
+    python_scales = python_payload.get("scale_indices")
+    if matlab_energy is None or python_energy is None:
+        return {}
+    matlab_energy_a = np.asarray(matlab_energy, dtype=np.float64)
+    python_energy_a = np.asarray(python_energy, dtype=np.float64)
+    if matlab_scales is None or python_scales is None:
+        return {}
+    scale_equal = np.asarray(matlab_scales) == np.asarray(python_scales)
+    energy_mismatch = matlab_energy_a != python_energy_a
+    mask = scale_equal & energy_mismatch
+    count = int(np.count_nonzero(mask))
+    if count == 0:
+        return {"mismatch_count": 0}
+    stats = _ulp_mismatch_stats(matlab_energy_a[mask], python_energy_a[mask])
+    finite = np.isfinite(matlab_energy_a[mask]) & np.isfinite(python_energy_a[mask])
+    delta = np.abs(matlab_energy_a[mask][finite] - python_energy_a[mask][finite])
+    stats["mismatch_count"] = count
+    stats["max_abs_delta"] = float(np.max(delta)) if delta.size else 0.0
+    return stats
 
 
 def _energy_context(
@@ -129,9 +191,12 @@ def render_mismatch_diagnostics(diagnosis: dict[str, Any]) -> str:
     for field in diagnosis.get("fields", []):
         lines.append(f"- {field['field']}: {field['kind']}")
         if "mismatch_count" in field:
+            ulp_note = ""
+            if "max_ulp" in field:
+                ulp_note = f" max_ulp={field['max_ulp']}"
             lines.append(
                 f"  count={field['mismatch_count']} first={field['first_coordinate']} "
-                f"matlab={field['matlab_value']} python={field['python_value']}"
+                f"matlab={field['matlab_value']} python={field['python_value']}{ulp_note}"
             )
     context = diagnosis.get("energy_context")
     if isinstance(context, dict) and context:

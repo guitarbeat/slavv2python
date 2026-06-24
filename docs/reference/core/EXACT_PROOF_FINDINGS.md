@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-24 (crop Energy writer completed; fresh prove-exact FAIL — scale mismatches 31)
+**Last Updated**: 2026-06-24 (oracle v2 promoted; scale strict-zero; Energy float drift blocker)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🔴 Fresh crop Energy checkpoint (2026-06-24) passes `inspect-energy-evidence` but `prove-exact --stage energy` **FAIL**: 3,810,130 energy ULP mismatches, **31** scale-index mismatches (down from 19,412). Triage remaining scale winners before downstream refresh. |
+| **Energy** | Native Hessian path exact-compatible | 🔴 Crop checkpoint valid; `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **FAIL** on `energy.energy` only: **3,810,126** strict `np.equal` mismatches (scale_indices **0**). Blocker is cross-library float drift (median 4 ULP, max \|Δ\|≈2×10⁻¹¹), not scale winners or writer persistence. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
 | **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -27,19 +27,29 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Track | Run / artifact | Status |
 |-------|----------------|--------|
-| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
-| **Oracle artifact readiness** | `workspace/oracles/180709_E_crop_M`, `workspace/oracles/180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes; manifest reconciliation now records readable normalized artifacts. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`, ~7.9h, exit 0). `checkpoint_energy.pkl` + `best_energy.npy` present; `inspect-energy-evidence` **valid**. Fresh `prove-exact --stage energy` **FAIL** (`exact_proof_energy.json`): energy 3,810,130 mismatches (first `(0,0,0)` scale 90 agree, ULP drift); scale_indices **31** (first `(40,83,116)` MATLAB 13 vs Python 12); lumen_radius 8 (ε). Prior reports marked stale. **Do not** refresh downstream until strict-zero. |
+| **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. v1 (`180709_E_crop_M`) stale on scale plane. |
+| **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`). `inspect-energy-evidence` **valid**. `prove-exact --stage energy` vs v2: **scale_indices 0**; **energy 3,810,126** ULP strict failures; lumen_radius 8 (ε). **Do not** refresh downstream until Energy strict-zero. |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop Energy strict-zero (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
-### Current crop Energy evidence guard (2026-06-23)
+### Current crop Energy evidence guard (2026-06-24)
 
 - **Freshness command:** `slavv parity inspect-energy-evidence --run-root workspace/runs/oracle_180709_E/crop_M_exact`
-- **Current result:** invalid/stale because `02_Output/python_results/checkpoints/checkpoint_energy.pkl` is missing and the latest `99_Metadata/run_snapshot.json` records Energy as failed.
-- **Operational rule:** `prove-exact --stage energy`, `prove-exact --stage all`, `diagnose-energy`, and batch mismatch probe exports must fail before loading historical artifacts while this guard is invalid.
-- **Next valid action:** produce or restore a completed crop Energy checkpoint, then rerun `inspect-energy-evidence` and only resume cross-octave final-reduction/state/path triage if the guard reports valid.
+- **Current result:** **valid** (checkpoint at `02_Output/python_results/checkpoints/checkpoint_energy.pkl`; parity `stage_metrics.energy` completed).
+- **Proof oracle:** `workspace/oracles/180709_E_crop_M_v2` (`batch_260624-105705`).
+
+### Latest crop Energy proof vs oracle v2 (2026-06-24)
+
+- **MATLAB vectorization:** `batch_260624-105705` (~3h, lattice-6000) → promoted `180709_E_crop_M_v2`.
+- **Proof:** `prove-exact --stage energy --oracle-root workspace/oracles/180709_E_crop_M_v2` → **FAIL** (`exact_proof_energy.json`).
+- **`scale_indices`:** **0** mismatches (strict-zero vs v2).
+- **`energy`:** **3,810,126** mismatches under strict `np.equal`; first `(0,0,0)` scale 90 agree; \|Δ\|≈1.1×10⁻¹⁴ (3 ULP).
+- **ULP triage** (`workspace/scratch/energy_ulp_triage_v2.json`): on scale-agreeing mismatches — median **4 ULP**, p90 **13 ULP**, max \|Δ\| **1.99×10⁻¹¹**; **384,178** voxels bit-identical. Stored `best_energy.npy` matches single-octave Python replay on sampled mismatches (writer persistence ruled out).
+- **Voxel probes vs v2:** `(0,0,0)` ≤8 ULP pass; `(40,83,116)` 47 ULP fail (stored==replay); `(12,0,0)` stored vs replay 8 ULP but both disagree with MATLAB.
+- **Classification:** accumulated **NumPy vs MATLAB MKL** float drift at matching scales ([ADR 0010](../../adr/0010-random-component-parity-suite.md) documents ≥1 ULP IFFT floor; crop volume shows median 4 ULP). **No localized Python fix identified** without weakening `prove-exact`. Gate remains strict `np.equal`.
+- **Next:** Phase 1 policy decision on bit-identical Energy certification vs documented cross-library tolerance; do not refresh Vertices/Edges/Network until resolved.
 
 ### Latest crop Energy proof (2026-06-22)
 

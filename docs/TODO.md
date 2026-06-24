@@ -32,9 +32,10 @@
 ### 🎯 Phase 1 Certification Gates
 
 - [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22` (~7h 44m); `best_energy.npy` + `best_scale.npy` present. Evidence: [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
-- [ ] **Crop Energy proof** — `prove-exact --stage energy` **FAIL**: 19,412 scale mismatches + strict float drift. Status: [findings § latest proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-2026-06-22).
-- [ ] **Diagnose Energy scale winners** — Reproduce representative mismatch groups against MATLAB, identify the first causal divergence, and add a regression only after a MATLAB-backed explanation. See [findings](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-2026-06-22).
-- [ ] **Diagnose Energy float64 drift** — After scale winners are aligned, isolate the strict `np.equal` differences for matching-scale voxels without weakening proof criteria.
+- [ ] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **scale_indices 0**, **energy 3,810,126** strict ULP failures (median 4 ULP, max \|Δ\|≈2×10⁻¹¹). Status: [findings § v2 proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-vs-oracle-v2-2026-06-24).
+- [x] **Diagnose Energy scale winners** — Resolved via fresh MATLAB `batch_260624-105705` → oracle v2; 0 scale mismatches.
+- [x] **Diagnose Energy float64 drift** — Triage complete (`workspace/scratch/energy_ulp_triage_v2.json`): cross-library NumPy/MKL drift at matching scales; no localized Python fix without gate change.
+- [ ] **Energy certification policy** — Decide strict `np.equal` vs documented ULP tolerance for Phase 1 claim ([ADR 0010](adr/0010-random-component-parity-suite.md) advisory precedent only).
 - [ ] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering before the Energy gate opens; record commands and evidence requirements in the maintained parity workflow docs.
 - [ ] **Crop Vertices Proof** — Blocked on crop Energy strict-zero proof (not writer).
 - [ ] **Crop Edges Proof** — Blocked on crop Vertices strict-zero.
