@@ -51,7 +51,8 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 - **Classification:** accumulated **NumPy vs MATLAB MKL** float drift at matching scales ([ADR 0010](../../adr/0010-random-component-parity-suite.md) documents ≥1 ULP IFFT floor; crop volume shows median 4 ULP). **No localized Python fix identified** without weakening `prove-exact`. Gate remains strict `np.equal`.
 - **Advisory ULP gate** (`slavv parity prove-energy-ulp --max-ulps N`): strict `scale_indices`, bounded float ULP — **not** certification. Crop vs v2 @ `max_ulps=8`: **FAIL** (~755k voxels >8 ULP). @ `max_ulps=48`: **99.11%** pass rate (37,174 failures — denormal/near-zero energies with large bit-space ULP, \|Δ\| still ≤2×10⁻¹¹).
 - **Downstream oracle v2:** `ensure-oracle-artifacts --stage all` passes (vertices 13,706; edges 15,511; network 10,722 strands).
-- **Next:** Phase 1 policy decision on bit-identical Energy certification vs documented cross-library tolerance; do not refresh Vertices/Edges/Network until strict `prove-exact` passes.
+- **Policy draft:** [ADR 0011](../../adr/0011-energy-float-certification-policy.md) (Proposed) — Options A–D for `energy.energy` certification; recommends Option B (strict scales + ULP ≤48).
+- **Next:** Accept/reject ADR 0011; do not refresh Vertices/Edges/Network until Energy certification policy is resolved and gated.
 
 ### Latest crop Energy proof (2026-06-22)
 

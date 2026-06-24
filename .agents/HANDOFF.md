@@ -25,7 +25,7 @@ Phase 1 remains blocked at the crop-harness **strict** Energy gate (`prove-exact
 - **Strict proof:** `prove-exact --stage energy` vs v2 → **FAIL** on `energy.energy` only (`scale_indices` **0**).
 - **ULP triage:** 3,810,126 scale-agreeing strict mismatches; median **4 ULP**, p90 **13 ULP**, max \|Δ\| **≈2×10⁻¹¹**; writer persistence ruled out. Cross-library NumPy/MKL drift ([ADR 0010](../docs/adr/0010-random-component-parity-suite.md)).
 - **Advisory loop:** `slavv parity prove-energy-ulp` (strict scales + `--max-ulps`, default 8) — **not** certification.
-- **Policy open:** [TODO § Energy certification policy](../docs/TODO.md) — strict `np.equal` vs documented ULP tolerance for Phase 1 claim.
+- **Policy draft:** [ADR 0011](../docs/adr/0011-energy-float-certification-policy.md) (Proposed) — recommends strict scales + `energy.energy` ULP ≤48; default remains strict `np.equal` until Accepted.
 - **Downstream frozen:** Vertices → Edges → Network until strict Energy passes.
 
 ## Operating sequence

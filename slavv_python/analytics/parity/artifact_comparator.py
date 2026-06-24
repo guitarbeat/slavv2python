@@ -8,6 +8,10 @@ from typing import Any
 
 import numpy as np
 
+from slavv_python.analytics.parity.energy_ulp_proof import (
+    EnergyFloatGateOptions,
+    evaluate_energy_float_gate,
+)
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_FIELDS
 
 
@@ -15,19 +19,29 @@ def compare_exact_artifacts(
     matlab_artifacts: dict[str, dict[str, Any]],
     python_artifacts: dict[str, dict[str, Any]],
     stages: tuple[str, ...],
+    *,
+    energy_float_options: EnergyFloatGateOptions | None = None,
 ) -> dict[str, Any]:
     """Compare normalized MATLAB and Python artifacts stage by stage."""
     stage_summaries: dict[str, dict[str, Any]] = {}
     first_failure: dict[str, Any] | None = None
 
+    energy_float_gate: dict[str, Any] | None = None
     for stage in stages:
         matlab_payload = matlab_artifacts[stage]
         python_payload = python_artifacts[stage]
-        mismatch = _compare_dict(
-            matlab_payload,
-            python_payload,
-            path=stage,
-        )
+        if stage == "energy" and energy_float_options is not None:
+            mismatch, energy_float_gate = _compare_energy_stage(
+                matlab_payload,
+                python_payload,
+                energy_float_options,
+            )
+        else:
+            mismatch = _compare_dict(
+                matlab_payload,
+                python_payload,
+                path=stage,
+            )
         stage_summaries[stage] = {
             "passed": mismatch is None,
             "field_count": len(EXACT_STAGE_FIELDS[stage]),
@@ -37,7 +51,7 @@ def compare_exact_artifacts(
             if first_failure is None:
                 first_failure = mismatch
 
-    return {
+    result: dict[str, Any] = {
         "passed": first_failure is None,
         "stages": list(stages),
         "stage_summaries": stage_summaries,
@@ -47,6 +61,58 @@ def compare_exact_artifacts(
         else None,
         "first_failure": first_failure,
     }
+    if energy_float_gate is not None:
+        result["energy_float_gate"] = energy_float_gate
+    return result
+
+
+def _compare_energy_stage(
+    matlab_payload: dict[str, Any],
+    python_payload: dict[str, Any],
+    energy_float_options: EnergyFloatGateOptions,
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    """Compare Energy stage with ADR 0011 float policy on energy.energy only."""
+    gate_summary = evaluate_energy_float_gate(
+        np.asarray(matlab_payload["energy"]),
+        np.asarray(python_payload["energy"]),
+        np.asarray(matlab_payload["scale_indices"]),
+        np.asarray(python_payload["scale_indices"]),
+        options=energy_float_options,
+    )
+    for key in EXACT_STAGE_FIELDS["energy"]:
+        if key == "energy":
+            if gate_summary["scale_mismatch_count"]:
+                mismatch = _compare_value(
+                    matlab_payload["scale_indices"],
+                    python_payload["scale_indices"],
+                    path="energy",
+                    field_path="energy.scale_indices",
+                )
+                if mismatch is not None:
+                    return mismatch, gate_summary
+            if not gate_summary["passed"]:
+                return (
+                    _mismatch(
+                        "energy",
+                        "energy.energy",
+                        "energy float gate",
+                        matlab_payload["energy"],
+                        python_payload["energy"],
+                    ),
+                    gate_summary,
+                )
+            continue
+        if key == "scale_indices":
+            continue
+        mismatch = _compare_value(
+            matlab_payload[key],
+            python_payload[key],
+            path="energy",
+            field_path=f"energy.{key}",
+        )
+        if mismatch is not None:
+            return mismatch, gate_summary
+    return None, gate_summary
 
 
 def _compare_dict(

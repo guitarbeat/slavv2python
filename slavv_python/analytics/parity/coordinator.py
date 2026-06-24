@@ -99,6 +99,8 @@ class ExactProofCoordinator:
         *,
         stage_arg: str,
         report_path_arg: str | None = None,
+        strict_floats: bool = False,
+        max_ulps: int | None = None,
     ) -> tuple[dict[str, Any], Path | None, Path | None]:
         """Compare normalized Python checkpoints against MATLAB oracle vectors."""
         del report_path_arg
@@ -122,7 +124,17 @@ class ExactProofCoordinator:
         python_artifacts: dict[str, dict[str, Any]] = {}
         report_scope = "exact route"
         candidate_surface = None
-        compare_func = compare_exact_artifacts
+        from slavv_python.analytics.parity.energy_ulp_proof import (
+            CERTIFICATION_MAX_ULPS,
+            EnergyFloatGateOptions,
+        )
+
+        energy_float_options: EnergyFloatGateOptions | None = None
+        if "energy" in selected_stages:
+            energy_float_options = EnergyFloatGateOptions(
+                strict_floats=strict_floats,
+                max_ulps=max_ulps if max_ulps is not None else CERTIFICATION_MAX_ULPS,
+            )
 
         try:
             python_artifacts = load_normalized_python_checkpoints(checkpoints_dir, selected_stages)
@@ -153,7 +165,12 @@ class ExactProofCoordinator:
                 raise
             raise
 
-        report_payload = compare_func(matlab_artifacts, python_artifacts, selected_stages)
+        report_payload = compare_exact_artifacts(
+            matlab_artifacts,
+            python_artifacts,
+            selected_stages,
+            energy_float_options=energy_float_options,
+        )
         from slavv_python.pipeline.energy.provenance import exact_route_gate_description
 
         report_payload["report_scope"] = report_scope

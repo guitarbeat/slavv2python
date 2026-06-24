@@ -430,6 +430,8 @@ def handle_prove_exact(args: argparse.Namespace) -> None:
         dest_run_root,
         stage_arg=getattr(args, "stage", "all"),
         report_path_arg=getattr(args, "report_path", None),
+        strict_floats=bool(getattr(args, "strict_floats", False)),
+        max_ulps=getattr(args, "max_ulps", None),
     )
     if not report.get("passed"):
         import sys
@@ -451,7 +453,12 @@ def handle_prove_exact_sequence(args: argparse.Namespace) -> None:
 
     stage_results: list[dict[str, Any]] = []
     for stage in EXACT_STAGE_ORDER:
-        report, json_path, _text_path = coordinator.prove(dest_run_root, stage_arg=stage)
+        report, json_path, _text_path = coordinator.prove(
+            dest_run_root,
+            stage_arg=stage,
+            strict_floats=bool(getattr(args, "strict_floats", False)),
+            max_ulps=getattr(args, "max_ulps", None),
+        )
         if json_path is not None and json_path.is_file():
             stage_json = dest_run_root / ANALYSIS_DIR / f"exact_proof_{stage}.json"
             stage_json.parent.mkdir(parents=True, exist_ok=True)

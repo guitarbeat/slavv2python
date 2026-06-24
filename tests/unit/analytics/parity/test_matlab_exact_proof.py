@@ -8,6 +8,7 @@ import numpy as np
 from scipy.io import savemat
 
 from slavv_python.analytics.parity.artifact_comparator import compare_exact_artifacts
+from slavv_python.analytics.parity.energy_ulp_proof import EnergyFloatGateOptions
 from slavv_python.analytics.parity.exact_proof_contract import EXACT_STAGE_ORDER
 from slavv_python.analytics.parity.matlab_vector_loader import (
     find_matlab_vector_paths,
@@ -397,6 +398,34 @@ def test_sync_exact_vertex_checkpoint_from_matlab_overwrites_parity_fields(tmp_p
     np.testing.assert_array_equal(updated["energies"], expected_energies)
     np.testing.assert_array_equal(reloaded["positions"], expected_positions)
     np.testing.assert_array_equal(reloaded["radii_microns"], np.array([1.0, 2.0], dtype=np.float32))
+
+
+def test_compare_exact_artifacts_passes_energy_with_ulp_gate_when_strict_floats_fail():
+    matlab_energy = np.array([[[-20.37433178324523]]], dtype=np.float64)
+    python_energy = np.array([[[-20.374331783245218]]], dtype=np.float64)
+    scales = np.array([[[90]]], dtype=np.int64)
+    payload = {
+        "energy": matlab_energy,
+        "scale_indices": scales,
+        "energy_4d": np.empty((0, 0, 0, 0), dtype=np.float64),
+        "lumen_radius_microns": np.array([1.0, 2.0], dtype=np.float64),
+    }
+
+    strict_report = compare_exact_artifacts(
+        {"energy": payload},
+        {"energy": {**payload, "energy": python_energy}},
+        ("energy",),
+    )
+    ulp_report = compare_exact_artifacts(
+        {"energy": payload},
+        {"energy": {**payload, "energy": python_energy}},
+        ("energy",),
+        energy_float_options=EnergyFloatGateOptions(max_ulps=48),
+    )
+
+    assert strict_report["passed"] is False
+    assert ulp_report["passed"] is True
+    assert ulp_report["energy_float_gate"]["passed"] is True
 
 
 def test_compare_exact_artifacts_passes_on_exact_match():

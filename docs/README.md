@@ -67,6 +67,7 @@ Treat `investigations/` as historical context, not as an executable spec.
 4. **[Parity Job Monitoring](reference/workflow/PARITY_JOB_MONITORING.md)** — `slavv jobs` commands and `--monitor` flag
 5. **[Parity Run Evidence](reference/workflow/PARITY_RUN_EVIDENCE.md)** — Template for reporting writer completion vs proof pass/fail
 6. **[Random Component Parity Suite](reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md)** — Fast seeded noise differential (ADR 0010); advisory Hessian ULP
+7. **[Energy float certification policy](adr/0011-energy-float-certification-policy.md)** — ADR 0011 (Proposed): strict scales vs bounded ULP on `energy.energy`
 7. **[Phase 1 Spec](plans/phase-1-exact-route-spec.md)** — Certification requirements
 8. **[MATLAB Parity Mapping](reference/core/MATLAB_PARITY_MAPPING.md)** — Function-to-function mappings
 

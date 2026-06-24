@@ -166,6 +166,17 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--oracle-root"),
             arg("--stage", choices=(*EXACT_STAGE_ORDER, "all"), default="all"),
             arg("--report-path"),
+            arg(
+                "--strict-floats",
+                action="store_true",
+                help="Use strict np.equal on energy.energy (regression; ADR 0011 default is ULP gate).",
+            ),
+            arg(
+                "--max-ulps",
+                type=int,
+                default=None,
+                help="Energy float ULP tolerance (default 48 per ADR 0011).",
+            ),
         ),
     ),
     CommandSpec(
@@ -176,12 +187,26 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--oracle-root"),
             arg("--max-ulps", type=int, default=8),
         ),
-        help="Advisory Energy proof: strict scale_indices, energy ULP tolerance (not certification).",
+        help="Standalone Energy ULP report (prove-exact uses the same policy by default).",
     ),
     CommandSpec(
         "prove-exact-sequence",
         handle_prove_exact_sequence,
-        (*_RUN_ROOT_PAIR, arg("--oracle-root")),
+        (
+            *_RUN_ROOT_PAIR,
+            arg("--oracle-root"),
+            arg(
+                "--strict-floats",
+                action="store_true",
+                help="Use strict np.equal on energy.energy (regression).",
+            ),
+            arg(
+                "--max-ulps",
+                type=int,
+                default=None,
+                help="Energy float ULP tolerance (default 48 per ADR 0011).",
+            ),
+        ),
         help="Run prove-exact for energy, vertices, edges, network in order.",
     ),
     CommandSpec(

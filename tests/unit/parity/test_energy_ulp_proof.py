@@ -41,6 +41,23 @@ def test_energy_ulp_proof_fails_on_scale_mismatch() -> None:
     assert report["scale_mismatch_count"] == 1
 
 
+def test_energy_ulp_proof_denorm_escape_allows_high_ulp_when_delta_is_tiny() -> None:
+    matlab_energy = np.array([1e-20], dtype=np.float64)
+    python_energy = np.array([2e-20], dtype=np.float64)
+    scales = np.array([1], dtype=np.int16)
+
+    report = build_energy_ulp_proof_report(
+        matlab_energy,
+        python_energy,
+        scales,
+        scales,
+        max_ulps=8,
+    )
+
+    assert report["passed"] is True
+    assert report["scale_agree_denorm_escape_count"] == 1
+
+
 def test_energy_ulp_proof_fails_when_energy_exceeds_max_ulps() -> None:
     matlab_energy = np.array([-7.305582611971218], dtype=np.float64)
     python_energy = np.array([-7.305582611971176], dtype=np.float64)

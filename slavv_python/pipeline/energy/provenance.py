@@ -21,7 +21,10 @@ def is_exact_compatible_energy_origin(origin: object) -> bool:
 
 def exact_route_gate_description() -> str:
     """Return the maintained summary of the exact-route gate."""
-    return "comparison_exact_network + python_native_hessian energy provenance"
+    return (
+        "comparison_exact_network + python_native_hessian; "
+        "energy.energy ULP≤48 + strict scale_indices (ADR 0011)"
+    )
 
 
 def exact_compatible_energy_origins_text() -> str:
