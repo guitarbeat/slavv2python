@@ -217,9 +217,12 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Even the legacy `compare_references` now uses clean separated components.
 
 ### Phase 3 — Reference Computation & Orchestration
-- [ ] Clean up `python_reference` / `_energy_samples` / `_python_case_reference` so `include_hessian` only affects work performed (no wasted structures).
-- [ ] Refactor `run_differential`, `main`, and artifact writing to use the new models + builders.
-- [ ] Keep producing byte-compatible (or schema-documented) JSON + per-case reports + .txt summary.
+- [x] Refactored `run_differential` and report assembly to always use clean gate + (optional) hessian, then package builders (`build_structural_report`, `build_diagnostics_report`).
+- [x] `compare_references` (compat) also uses package builders for legacy shape.
+- [x] Builders and orchestration live in / use the `random_component` package.
+- [x] (Minor) `python_reference` / `_energy_samples` already conditional on include_hessian for heavy work; added comments for clarity. No unnecessary structures computed for structural path.
+- [x] All reports remain byte-compatible with Phase 0 baseline for structural fields.
+- [x] Main file shrunk to ~859 lines by moving builders to package.
 
 ### Phase 4 — Test Surface & Compatibility
 - [ ] Reduce private imports in `test_random_component_parity.py`.

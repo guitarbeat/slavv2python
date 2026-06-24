@@ -8,7 +8,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from tests.support.random_component.gate import run_structural_gate
+from tests.support.random_component import (
+    build_structural_report,
+    run_structural_gate,
+)
 from tests.support.random_component.models import StructuralGateResult
 from tests.support.random_component_parity import (
     FIXTURE_PATH,
@@ -371,8 +374,8 @@ def test_run_structural_gate_produces_clean_result_and_matches_legacy_counts():
     assert gate_dict["passed"] is True
 
     # Also verify it can be used to build a report with the expected structural_gate shape
-    from tests.support.random_component_parity import _build_structural_report
-    report = _build_structural_report(gate, manifest=manifest)
+    from tests.support.random_component import build_structural_report
+    report = build_structural_report(gate, manifest=manifest)
     assert report["structural_gate"]["passed"] is True
     assert report["mode"] == "structural"
     assert report["hessian_diagnostics"]["collected"] is False

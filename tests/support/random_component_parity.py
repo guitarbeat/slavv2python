@@ -16,10 +16,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from tests.support.random_component.models import StructuralGateResult
+from typing import Any
 
 import numpy as np
 import scipy.io
@@ -226,9 +223,15 @@ def _energy_samples(
     *,
     include_hessian: bool,
 ) -> dict[str, Any]:
+    """Compute energy/padded data.
+
+    include_hessian=False (structural) skips all heavy FFT/derivative/IFFT work.
+    Only the padded shape (needed for structural comparison) is returned.
+    """
     spacing_yxz = np.asarray(case["microns_per_voxel_zyx"], dtype=np.float64)[[1, 2, 0]]
     padded = _fourier_transform_input(image_yxz)
     if not include_hessian:
+        # No wasted heavy computation for the fast/CI structural path.
         return {"padded_shape_yxz": list(padded.shape), "samples": []}
     chunk_dft = np.fft.fftn(padded)
     meshes = _pixel_frequency_meshes(padded.shape)
@@ -636,43 +639,22 @@ def compare_references(
     During transition, this now delegates to the pure structural gate +
     separate hessian collector for cleaner separation.
     """
-    from tests.support.random_component.diagnostics import collect_hessian_diagnostics
-    from tests.support.random_component.gate import run_structural_gate
+    from tests.support.random_component import (
+        build_diagnostics_report,
+        build_structural_report,
+        collect_hessian_diagnostics,
+        run_structural_gate,
+    )
 
     gate = run_structural_gate(python, matlab, manifest=manifest)
     hess = collect_hessian_diagnostics(python, matlab)
 
-    # Build legacy shape for compatibility with existing tests and callers.
-    # Merge hessian into the case data from gate.
-    hess_by_id = {h["case_id"]: h for h in hess.get("cases", [])}
-    merged_cases = []
-    for c in gate.cases:
-        cc = dict(c)
-        cc["hessian_diagnostics"] = hess_by_id.get(c["case_id"], {})
-        merged_cases.append(cc)
-
-    first = gate.first_difference or {}
     has_hess_mismatches = any(
         h.get("mismatch_count", 0) for h in hess.get("cases", [])
     )
-    return {
-        "passed": gate.passed,
-        "schema_version": 2,
-        "mode": "diagnostics" if has_hess_mismatches else "structural",
-        "structural_gate": gate.to_report_dict(),
-        "difference_count": gate.difference_count,
-        "first_difference": first or None,
-        "linspace": gate.linspace,
-        "hessian_diagnostics": {
-            "collected": True,
-            "cases": hess.get("cases", []),
-            "max_ulp_distance": hess.get("max_ulp_distance", 0),
-            "worst_case_id": hess.get("worst_case_id"),
-            "worst_mismatch": hess.get("worst_mismatch"),
-        },
-        "cases": merged_cases,
-        "differences": [],  # structural info is in first_difference + per-case
-    }
+    if has_hess_mismatches:
+        return build_diagnostics_report(gate, hess, manifest=manifest)
+    return build_structural_report(gate, manifest=manifest)
 
 
 def write_case_reports(output_dir: Path, report: dict[str, Any]) -> None:
@@ -814,19 +796,24 @@ def run_differential(
 
     if mode == "structural":
         # Pure structural path - zero knowledge of hessian or energy samples.
-        from tests.support.random_component.gate import run_structural_gate
+        from tests.support.random_component import (
+            build_structural_report,
+            run_structural_gate,
+        )
 
         gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
-        report = _build_structural_report(gate, manifest=manifest)
+        report = build_structural_report(gate, manifest=manifest)
     else:
         # Diagnostics: use pure structural gate + separate hessian collection.
-        from tests.support.random_component.diagnostics import (
+        from tests.support.random_component import (
+            build_diagnostics_report,
             collect_hessian_diagnostics,
+            run_structural_gate,
         )
 
         gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
         hess = collect_hessian_diagnostics(py_ref, matlab_ref)
-        report = _build_diagnostics_report(gate, hess, manifest=manifest)
+        report = build_diagnostics_report(gate, hess, manifest=manifest)
         report["mode"] = mode
 
     write_case_reports(output_dir, report)
@@ -838,72 +825,6 @@ def run_differential(
         encoding="utf-8",
     )
     return report
-
-
-def _build_structural_report(
-    gate: StructuralGateResult, *, manifest: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    """Build the legacy report shape from a pure StructuralGateResult.
-
-    This is the only place that knows about the old report dict shape
-    for the structural (fast/CI) path.
-    """
-    first = gate.first_difference or {}
-    return {
-        "passed": gate.passed,
-        "schema_version": 2,
-        "mode": "structural",
-        "structural_gate": gate.to_report_dict(),
-        "difference_count": gate.difference_count,
-        "first_difference": first or None,
-        "linspace": gate.linspace,
-        "hessian_diagnostics": {
-            "collected": False,
-            "cases": [],
-            "max_ulp_distance": 0,
-            "worst_case_id": None,
-            "worst_mismatch": None,
-        },
-        "cases": gate.cases,
-        "differences": [],  # For structural we rely on first_difference + counts
-    }
-
-
-def _build_diagnostics_report(
-    gate: StructuralGateResult,
-    hess: dict[str, Any],
-    *,
-    manifest: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Build full report for diagnostics mode using clean gate + separate hessian."""
-    # Attach hessian to each case from the gate's case data
-    hess_by_case = {h["case_id"]: h for h in hess.get("cases", [])}
-    merged_cases = []
-    for case in gate.cases:
-        cid = case["case_id"]
-        merged = dict(case)  # copy structural info
-        merged["hessian_diagnostics"] = hess_by_case.get(cid, {})
-        merged_cases.append(merged)
-
-    first = gate.first_difference or {}
-    return {
-        "passed": gate.passed,
-        "schema_version": 2,
-        "mode": "diagnostics",
-        "structural_gate": gate.to_report_dict(),
-        "difference_count": gate.difference_count,
-        "first_difference": first or None,
-        "linspace": gate.linspace,
-        "hessian_diagnostics": {
-            "collected": True,
-            "cases": hess.get("cases", []),
-            "max_ulp_distance": hess.get("max_ulp_distance", 0),
-            "worst_case_id": hess.get("worst_case_id"),
-            "worst_mismatch": hess.get("worst_mismatch"),
-        },
-        "cases": merged_cases,
-        "differences": [],  # structural differences drive the gate
-    }
 
 
 def main(argv: list[str] | None = None) -> int:
