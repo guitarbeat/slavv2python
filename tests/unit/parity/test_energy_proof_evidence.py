@@ -65,6 +65,42 @@ def _source_surface(run_root):
     )
 
 
+def test_evidence_accepts_completed_energy_from_stage_metrics_when_stages_empty(tmp_path):
+    started = datetime(2026, 6, 24, 1, 33, 9, tzinfo=timezone.utc)
+    _write_json(
+        tmp_path / "99_Metadata" / "run_snapshot.json",
+        {
+            "status": "failed",
+            "stages": {},
+            "stage_metrics": {
+                "energy": {
+                    "status": "completed",
+                    "completed_at": "2026-06-24T09:25:23Z",
+                    "elapsed_seconds": 28332.0,
+                    "peak_memory_bytes": 302534656,
+                }
+            },
+        },
+    )
+    _write_json(
+        tmp_path / "99_Metadata" / "writer_lease.json",
+        {
+            "stage": "energy",
+            "status": "completed",
+            "started_at": "2026-06-24T01:33:09Z",
+            "updated_at": "2026-06-24T09:25:23Z",
+        },
+    )
+    _energy_checkpoint(tmp_path, started + timedelta(hours=8))
+
+    report = build_energy_proof_evidence(tmp_path)
+
+    assert report["valid"] is True
+    assert report["failures"] == []
+    assert report["run_snapshot"]["energy_status"] == "completed"
+    assert report["run_snapshot"]["energy_started_at"] == "2026-06-24T01:33:09Z"
+
+
 def test_evidence_accepts_completed_energy_checkpoint_newer_than_latest_start(tmp_path):
     started = datetime(2026, 6, 23, 1, 0, tzinfo=timezone.utc)
     _write_json(

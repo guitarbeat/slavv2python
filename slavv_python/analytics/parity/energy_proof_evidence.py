@@ -15,6 +15,8 @@ from .constants import (
     WRITER_LEASE_PATH,
 )
 
+_ENERGY_STAGE_NAME = "energy"
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -41,10 +43,7 @@ def build_energy_proof_evidence(run_root: Path) -> dict[str, Any]:
         failures.append("missing_run_snapshot")
         energy_stage: dict[str, Any] = {}
     else:
-        stages = snapshot.get("stages")
-        energy_stage = stages.get("energy", {}) if isinstance(stages, dict) else {}
-        if not isinstance(energy_stage, dict):
-            energy_stage = {}
+        energy_stage = _resolve_energy_stage(snapshot, root)
         status = energy_stage.get("status")
         if status != "completed":
             failures.append(
@@ -98,6 +97,47 @@ def require_energy_proof_evidence(run_root: Path) -> dict[str, Any]:
             f"before proving parity ({reasons})."
         )
     return report
+
+
+def _resolve_energy_stage(snapshot: dict[str, Any], run_root: Path) -> dict[str, Any]:
+    """Return the Energy stage record from snapshot stages or parity stage_metrics."""
+    stages = snapshot.get("stages")
+    energy_stage = stages.get(_ENERGY_STAGE_NAME, {}) if isinstance(stages, dict) else {}
+    if not isinstance(energy_stage, dict):
+        energy_stage = {}
+
+    if energy_stage.get("status") == "completed":
+        return energy_stage
+
+    stage_metrics = snapshot.get("stage_metrics")
+    metrics = (
+        stage_metrics.get(_ENERGY_STAGE_NAME, {})
+        if isinstance(stage_metrics, dict)
+        else {}
+    )
+    if not isinstance(metrics, dict) or metrics.get("status") != "completed":
+        return energy_stage
+
+    lease = load_json_dict(run_root / WRITER_LEASE_PATH)
+    started_at = energy_stage.get("started_at")
+    if not isinstance(started_at, str) or not started_at:
+        if isinstance(lease, dict) and isinstance(lease.get("started_at"), str):
+            started_at = lease["started_at"]
+
+    updated_at = energy_stage.get("updated_at")
+    if not isinstance(updated_at, str) or not updated_at:
+        completed_at = metrics.get("completed_at")
+        if isinstance(completed_at, str) and completed_at:
+            updated_at = completed_at
+        elif isinstance(lease, dict) and isinstance(lease.get("updated_at"), str):
+            updated_at = lease["updated_at"]
+
+    return {
+        "status": metrics.get("status"),
+        "started_at": started_at,
+        "updated_at": updated_at,
+        "completed_at": metrics.get("completed_at"),
+    }
 
 
 def _operational_record(path: Path) -> dict[str, Any]:
