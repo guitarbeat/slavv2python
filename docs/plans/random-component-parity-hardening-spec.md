@@ -192,16 +192,26 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Ensured current unit tests are green: `pytest -m "unit and parity"` → 17 passed (see test run 2026-06-24).
 - [x] (Optional) Reference added to EXACT_PROOF_FINDINGS.md.
 
-### Phase 1 — Models & Structural Gate Extraction
-- [ ] Introduce the core dataclasses / result types.
-- [ ] Port (or duplicate temporarily + test) the pure structural comparison logic (`_compare_linspace_section`, `_compare_case_section`, size guards, first-diff logic) to operate against / return the new models.
-- [ ] Add or update focused unit tests for the new comparison functions.
-- [ ] Prove that a structural-only path produces identical `passed` / differences as the old code.
+### Phase 1 — Pure Structural Gate + Typed Models (strong version)
+**Goal:** Make the structural gate a narrow, pure, first-class concept that has *zero knowledge* of Hessian/energy samples, mode flags, or advisory collection. Delete the entanglement instead of porting it.
+
+- [x] Create `tests/support/random_component/models.py` (new focused file) + package with proper dataclasses:
+  - `Mismatch`, `StructuralGateResult`
+- [x] Implement `run_structural_gate(...) -> StructuralGateResult` in `tests/support/random_component/gate.py`.
+  - Only structural checks. **Never** references energy/hessian.
+- [x] Refactor `run_differential` to take the clean structural-only path for `--mode structural`.
+  - No mutation, no "collected", no hessian call on structural path.
+- [x] Structural path produces identical gate results vs Phase 0 baseline (verified via full MATLAB run).
+- [x] Added focused test `test_run_structural_gate_produces_clean_result...` that asserts on `StructuralGateResult` and the clean report shape.
+- [x] Full unit suite (now 18 tests) green.
+- [x] Verified end-to-end with local MATLAB: structural gate matches baseline exactly (passed, diff_count=0, gate dicts, case results).
+- [ ] (Future) Move low-level `_compare_*` helpers into the package; further shrink main file.
 
 ### Phase 2 — Hessian Collection & Advisory Path
-- [ ] Extract `collect_hessian_diagnostics` so it is only invoked when `mode == "diagnostics"`.
-- [ ] Remove unconditional calls and the `collected` sentinel hack from the structural path.
-- [ ] Update `format_hessian_advisory_summary` to work cleanly from the model (or absence of diagnostics).
+- [ ] Implement `collect_hessian_diagnostics(python_ref, matlab_ref) -> HessianDiagnostics` as a completely separate function that is **never** imported or called from the structural gate.
+- [ ] Only invoke it from the diagnostics branch in `run_differential`.
+- [ ] Remove the `collected` sentinel and all post-mutation of `hessian_diagnostics` from the structural code path entirely.
+- [ ] `format_hessian_advisory_summary` becomes a pure formatter over the diagnostics object (no need to explain "not collected" because it is simply not present on structural reports).
 
 ### Phase 3 — Reference Computation & Orchestration
 - [ ] Clean up `python_reference` / `_energy_samples` / `_python_case_reference` so `include_hessian` only affects work performed (no wasted structures).

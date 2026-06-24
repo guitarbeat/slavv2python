@@ -8,6 +8,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from tests.support.random_component.gate import run_structural_gate
+from tests.support.random_component.models import StructuralGateResult
 from tests.support.random_component_parity import (
     FIXTURE_PATH,
     CorpusCase,
@@ -16,6 +18,7 @@ from tests.support.random_component_parity import (
     _query_coordinates,
     compare_references,
     format_hessian_advisory_summary,
+    format_structural_summary,
     load_manifest,
     load_matching_reference,
     load_matlab_reference,
@@ -169,6 +172,34 @@ def test_case_reports_include_seed_and_component_context(tmp_path):
     assert case_report["passed"] is False
     assert case_report["first_difference"]["component"] == "interp3"
     assert case_report["first_difference"]["operands"]["query_yxz"] == [0.0, 0.0, 0.0]
+    assert case_report["first_difference"]["operands"]["query_kind"] == "integer_lattice"
+
+
+def test_compare_references_rejects_truncated_case_lists():
+    python = {
+        "linspace": [{"offset": 0, "stride": 1, "count": 1, "local_start": 0, "values": [0.0]}]
+        * 128,
+        "cases": [],
+    }
+    matlab = {
+        "linspace": [SimpleNamespace(offset=0, stride=1, count=1, local_start=0, values=[0.0])]
+        * 128,
+        "cases": [
+            SimpleNamespace(
+                case_id="noise_iso_01",
+                interpolation=[],
+                padded_shape_yxz=[34, 34, 18],
+                samples=[],
+            )
+        ],
+    }
+
+    report = compare_references(python, matlab, manifest=load_manifest(FIXTURE_PATH))
+
+    assert report["passed"] is False
+    assert report["first_difference"]["component"] == "case_count"
+    assert report["first_difference"]["python_size"] == 0
+    assert report["first_difference"]["matlab_size"] == 1
 
 
 def test_compare_references_include_hessian_diagnostics_without_failing_gate():
@@ -244,6 +275,41 @@ def test_format_hessian_advisory_summary_includes_case_rows():
     assert "case noise_iso_01: mismatches=3 max_ulp=12" in summary
 
 
+def test_structural_summary_surfaces_first_difference_context():
+    report = {
+        "passed": False,
+        "difference_count": 1,
+        "structural_gate": {
+            "linspace_context_count": 128,
+            "case_count": 6,
+            "query_count_per_case": 16,
+        },
+        "first_difference": {
+            "component": "interp3",
+            "path": "cases[noise_iso_01].interpolation[0]",
+            "case_id": "noise_iso_01",
+            "seed": 1001,
+            "operands": {"query_kind": "integer_lattice", "query_yxz": [0.0, 0.0, 0.0]},
+            "ulp_distance": 1,
+        },
+    }
+
+    summary = format_structural_summary(report)
+
+    assert "first_component: interp3" in summary
+    assert "first_case_id: noise_iso_01" in summary
+    assert '"query_kind": "integer_lattice"' in summary
+
+
+def test_hessian_summary_explains_structural_mode_has_no_diagnostics():
+    summary = format_hessian_advisory_summary(
+        {"hessian_diagnostics": {"collected": False, "cases": []}}
+    )
+
+    assert "not collected" in summary
+    assert "--mode diagnostics" in summary
+
+
 def test_print_hessian_advisory_summary_reads_saved_report(tmp_path):
     report_path = tmp_path / "random_component_parity_report.json"
     report_path.write_text(
@@ -261,3 +327,52 @@ def test_print_hessian_advisory_summary_reads_saved_report(tmp_path):
         encoding="utf-8",
     )
     print_hessian_advisory_summary(report_path)
+
+
+def test_run_structural_gate_produces_clean_result_and_matches_legacy_counts():
+    """Phase 1: the pure structural gate must be narrow and produce correct results."""
+    manifest = load_manifest(FIXTURE_PATH)
+    # Use the same data shape the old path uses
+    py_ref = {
+        "linspace": [{"offset": 0, "stride": 1, "count": 1, "local_start": 0, "values": [0.0]}] * 128,
+        "cases": [
+            {
+                "case_id": c["id"],
+                "query_yxz": [[0.0, 0.0, 0.0]],
+                "interpolation": [0.0],
+                "energy": {"padded_shape_yxz": [34, 34, 18], "samples": []},
+            }
+            for c in manifest["cases"]
+        ],
+    }
+    # Minimal matlab-like objects (the gate only looks at structural fields)
+    from types import SimpleNamespace
+    matlab_ref = {
+        "linspace": [SimpleNamespace(offset=0, stride=1, count=1, local_start=0, values=[0.0])] * 128,
+        "cases": [
+            SimpleNamespace(
+                case_id=c["id"],
+                interpolation=[0.0],
+                padded_shape_yxz=[34, 34, 18],
+                samples=[],
+            )
+            for c in manifest["cases"]
+        ],
+    }
+
+    gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
+
+    assert isinstance(gate, StructuralGateResult)
+    assert gate.passed is True
+    assert gate.difference_count == 0
+    assert gate.linspace_context_count == 128
+    assert gate.case_count == 6
+    gate_dict = gate.to_report_dict()
+    assert gate_dict["passed"] is True
+
+    # Also verify it can be used to build a report with the expected structural_gate shape
+    from tests.support.random_component_parity import _build_structural_report
+    report = _build_structural_report(gate, manifest=manifest)
+    assert report["structural_gate"]["passed"] is True
+    assert report["mode"] == "structural"
+    assert report["hessian_diagnostics"]["collected"] is False

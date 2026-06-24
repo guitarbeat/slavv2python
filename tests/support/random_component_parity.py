@@ -16,21 +16,24 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from tests.support.random_component.models import StructuralGateResult
 
 import numpy as np
 import scipy.io
 import tifffile
 
-from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
-    _interp3_matlab_linear_inf,
-    _matlab_zero_based_linspace,
-)
 from slavv_python.pipeline.energy.matlab_energy_filter_v200 import (
     _derivative_kernel_dft_single,
     _fourier_transform_input,
     _ifftn_matlab_symmetric,
     _pixel_frequency_meshes,
+)
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
+    _interp3_matlab_linear_inf,
+    _matlab_zero_based_linspace,
 )
 from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
@@ -39,6 +42,8 @@ MATCHING_REFERENCE_PATH = (
     Path(__file__).with_name("fixtures") / "matlab_random_matching_reference.json"
 )
 MATLAB_DRIVER_PATH = Path(__file__).with_name("matlab") / "random_component_reference.m"
+QUERY_COUNT_PER_CASE = 16
+LINSPACE_CONTEXT_COUNT = 128
 
 
 @dataclass(frozen=True)
@@ -54,8 +59,10 @@ def load_manifest(path: Path = FIXTURE_PATH) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("version") != 1:
         raise ValueError("random component corpus must declare version 1")
-    if int(payload.get("linspace_context_count", 0)) != 128:
-        raise ValueError("random component corpus must contain 128 linspace contexts")
+    if int(payload.get("linspace_context_count", 0)) != LINSPACE_CONTEXT_COUNT:
+        raise ValueError(
+            f"random component corpus must contain {LINSPACE_CONTEXT_COUNT} linspace contexts"
+        )
     raw_cases = payload.get("cases")
     if not isinstance(raw_cases, list) or len(raw_cases) != 6:
         raise ValueError("random component corpus must define exactly six cases")
@@ -166,6 +173,17 @@ def _query_coordinates(case: CorpusCase, seed: int) -> list[list[float]]:
         dtype=float,
     )
     return np.vstack((integer_queries, half_integer_queries, boundaries)).tolist()
+
+
+def _query_kind(index: int) -> str:
+    """Return the deterministic query category for failure reports."""
+    if 0 <= index < 8:
+        return "integer_lattice"
+    if 8 <= index < 12:
+        return "half_integer_lattice"
+    if 12 <= index < QUERY_COUNT_PER_CASE:
+        return "boundary_or_oob"
+    return "unknown"
 
 
 def materialize_corpus(output_dir: Path, manifest_path: Path = FIXTURE_PATH) -> Path:
@@ -329,7 +347,7 @@ def load_matlab_reference(path: Path) -> dict[str, Any]:
         case_records = _as_list(results.case_records)
     except (KeyError, OSError, ValueError, AttributeError, IndexError, TypeError) as exc:
         raise ValueError(f"malformed MATLAB random-component reference: {path}") from exc
-    if len(linspace_records) != 128 or len(case_records) != 6:
+    if len(linspace_records) != LINSPACE_CONTEXT_COUNT or len(case_records) != 6:
         raise ValueError("MATLAB reference does not contain the expected corpus records")
     return {"linspace": linspace_records, "cases": case_records}
 
@@ -440,6 +458,15 @@ def _compare_linspace_section(
     python: dict[str, Any], matlab: dict[str, Any]
 ) -> list[dict[str, Any]]:
     differences: list[dict[str, Any]] = []
+    if len(python["linspace"]) != len(matlab["linspace"]):
+        return [
+            {
+                "path": "linspace",
+                "python_size": len(python["linspace"]),
+                "matlab_size": len(matlab["linspace"]),
+                "component": "linspace",
+            }
+        ]
     for index, record in enumerate(matlab["linspace"]):
         context = python["linspace"][index]
         for field in ("offset", "stride", "count", "local_start"):
@@ -515,7 +542,14 @@ def _compare_case_section(
             ]
             differences.append(
                 _annotate_difference(
-                    {**diff, "operands": {"query_yxz": query, "value_index": value_index}},
+                    {
+                        **diff,
+                        "operands": {
+                            "query_yxz": query,
+                            "query_kind": _query_kind(value_index),
+                            "value_index": value_index,
+                        },
+                    },
                     component="interp3",
                     case_id=case_id,
                     seed=seed,
@@ -662,7 +696,18 @@ def compare_references(
     case_reports: list[dict[str, Any]] = []
     case_differences: list[dict[str, Any]] = []
     hessian_diagnostics: list[dict[str, Any]] = []
+    if len(python["cases"]) != len(matlab["cases"]):
+        case_differences.append(
+            {
+                "path": "cases",
+                "python_size": len(python["cases"]),
+                "matlab_size": len(matlab["cases"]),
+                "component": "case_count",
+            }
+        )
     for index, record in enumerate(matlab["cases"]):
+        if index >= len(python["cases"]):
+            break
         python_case = python["cases"][index]
         case_id = python_case["case_id"]
         seed = seed_by_case.get(case_id, -1)
@@ -688,6 +733,16 @@ def compare_references(
     )
     return {
         "passed": not differences,
+        "schema_version": 2,
+        "mode": "diagnostics"
+        if any(entry["mismatch_count"] for entry in hessian_diagnostics)
+        else "structural",
+        "structural_gate": {
+            "passed": not differences,
+            "linspace_context_count": len(python.get("linspace", [])),
+            "case_count": len(python.get("cases", [])),
+            "query_count_per_case": QUERY_COUNT_PER_CASE,
+        },
         "difference_count": len(differences),
         "first_difference": differences[0] if differences else None,
         "linspace": {
@@ -696,6 +751,7 @@ def compare_references(
             "first_difference": linspace_differences[0] if linspace_differences else None,
         },
         "hessian_diagnostics": {
+            "collected": True,
             "cases": hessian_diagnostics,
             "max_ulp_distance": 0
             if aggregate_worst is None
@@ -719,6 +775,35 @@ def write_case_reports(output_dir: Path, report: dict[str, Any]) -> None:
         case_path.write_text(
             json.dumps(case_report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
+
+
+def format_structural_summary(report: dict[str, Any]) -> str:
+    """Return a compact structural-gate summary for CI logs and saved artifacts."""
+    first = report.get("first_difference") or {}
+    gate = report.get("structural_gate") or {}
+    lines = [
+        "Random component structural gate",
+        f"  passed: {report.get('passed')}",
+        f"  difference_count: {report.get('difference_count', 0)}",
+        f"  linspace_context_count: {gate.get('linspace_context_count')}",
+        f"  case_count: {gate.get('case_count')}",
+        f"  query_count_per_case: {gate.get('query_count_per_case')}",
+    ]
+    if first:
+        lines.extend(
+            [
+                f"  first_component: {first.get('component')}",
+                f"  first_path: {first.get('path')}",
+                f"  first_case_id: {first.get('case_id')}",
+                f"  first_seed: {first.get('seed')}",
+            ]
+        )
+        operands = first.get("operands") or {}
+        if operands:
+            lines.append(f"  first_operands: {json.dumps(operands, sort_keys=True)}")
+        if "ulp_distance" in first:
+            lines.append(f"  first_ulp_distance: {first['ulp_distance']}")
+    return "\n".join(lines) + "\n"
 
 
 def run_matlab_driver(
@@ -753,6 +838,11 @@ def run_matlab_driver(
 def format_hessian_advisory_summary(report: dict[str, Any]) -> str:
     """Return a concise Hessian ULP summary for logs and CI step output."""
     hessian = report.get("hessian_diagnostics", {})
+    if hessian.get("collected") is False:
+        return (
+            "Hessian diagnostics (advisory; does not gate CI)\n"
+            "  not collected in this report; rerun with --mode diagnostics\n"
+        )
     lines = [
         "Hessian diagnostics (advisory; does not gate CI)",
         f"  structural_passed: {report.get('passed')}",
@@ -809,15 +899,60 @@ def run_differential(
     matlab_output = output_dir / "matlab_reference.mat"
     include_hessian = mode == "diagnostics"
     run_matlab_driver(manifest_path, matlab_output, matlab_exe, mode=mode)
-    report = compare_references(
-        python_reference(manifest_path, include_hessian=include_hessian),
-        load_matlab_reference(matlab_output),
-        manifest=manifest,
-    )
+
+    py_ref = python_reference(manifest_path, include_hessian=include_hessian)
+    matlab_ref = load_matlab_reference(matlab_output)
+
+    if mode == "structural":
+        # Pure structural path - zero knowledge of hessian or energy samples.
+        from tests.support.random_component.gate import run_structural_gate
+
+        gate = run_structural_gate(py_ref, matlab_ref, manifest=manifest)
+        report = _build_structural_report(gate, manifest=manifest)
+    else:
+        # Full path (still uses the old compare_references for now during transition).
+        report = compare_references(py_ref, matlab_ref, manifest=manifest)
+        report["mode"] = mode
+        report.setdefault("hessian_diagnostics", {})["collected"] = True
+
     write_case_reports(output_dir, report)
     report_path = output_dir / "random_component_parity_report.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path = output_dir / "random_component_parity_report.txt"
+    summary_path.write_text(
+        format_structural_summary(report) + "\n" + format_hessian_advisory_summary(report),
+        encoding="utf-8",
+    )
     return report
+
+
+def _build_structural_report(
+    gate: StructuralGateResult, *, manifest: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Build the legacy report shape from a pure StructuralGateResult.
+
+    This is the only place that knows about the old report dict shape
+    for the structural (fast/CI) path.
+    """
+    first = gate.first_difference or {}
+    return {
+        "passed": gate.passed,
+        "schema_version": 2,
+        "mode": "structural",
+        "structural_gate": gate.to_report_dict(),
+        "difference_count": gate.difference_count,
+        "first_difference": first or None,
+        "linspace": gate.linspace,
+        "hessian_diagnostics": {
+            "collected": False,
+            "cases": [],
+            "max_ulp_distance": 0,
+            "worst_case_id": None,
+            "worst_mismatch": None,
+        },
+        "cases": gate.cases,
+        "differences": [],  # For structural we rely on first_difference + counts
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -843,6 +978,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--output-dir is required unless --print-hessian-summary is provided")
     report = run_differential(args.output_dir, args.matlab_exe, mode=args.mode)
     print(json.dumps(report, indent=2, sort_keys=True))
+    print(format_structural_summary(report), end="")
     print(format_hessian_advisory_summary(report), end="")
     return 0 if report["passed"] else 1
 
