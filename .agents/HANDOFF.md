@@ -18,52 +18,26 @@ status.
 
 ## Current decision point
 
-Phase 1 remains blocked at the crop-harness Energy gate.
+Phase 1 remains blocked at the crop-harness **strict** Energy gate (`prove-exact`).
 
-- **Current evidence is stale.** `inspect-energy-evidence` reports
-  `checkpoint_energy.pkl` missing and `energy_status=failed` on
-  `crop_M_exact`. Historical `exact_proof*.json` artifacts are diagnostic
-  history only until a completed Energy checkpoint exists again.
-- The last Energy attempt (`2026-06-23`) died with heap-fragmentation OOM while
-  allocating small `complex128` buffers inside `_ifftn_matlab_symmetric` after
-  ~5h of preprocessing/chunk work. Do not trust pre-2026-06-23 proof counts
-  until a fresh writer completes.
-- Prior strict proof (when checkpoint existed) reported 19,412 scale-winner
-  mismatches and 3,823,893 float64 value mismatches. Probe triage now
-  distinguishes `winner_scale_disagreement` from `matching_winner_ulp_drift`;
-  cross-octave reduction implicates `python_stored_state_path` for at least
-  some voxels where per-octave probes agree with MATLAB but stored winners do
-  not.
-- Crop Vertices, Edges, and Network must not be refreshed until Energy proof is
-  strict-zero. Canonical `180709_E` remains paused.
-
-**Energy writer completed (2026-06-24):** job `75188cc2`, 821/821 chunks,
-`inspect-energy-evidence` valid. Fresh `prove-exact --stage energy` **FAIL**:
-3,810,130 energy ULP mismatches; **31** scale-index mismatches (was 19,412).
-First scale gap: `(40,83,116)` MATLAB 13 vs Python 12.
-
-Scale triage + MATLAB batch on top 3 voxels: Python replay == MATLAB live replay
-(all agree); promoted oracle `scale_indices` is **+1** vs both on every sample
-(`matlab_oracle_state_path`). Next: audit oracle scale plane / loader one-based
-convention and crop batch vintage — not a Python reduction fix until oracle
-alignment is ruled out.
+- **Oracle:** use `workspace/oracles/180709_E_crop_M_v2` (`batch_260624-105705`, lattice-6000). v1 is stale on `scale_indices`.
+- **Writer:** job `75188cc2` completed; `inspect-energy-evidence` **valid** on `crop_M_exact`.
+- **Strict proof:** `prove-exact --stage energy` vs v2 → **FAIL** on `energy.energy` only (`scale_indices` **0**).
+- **ULP triage:** 3,810,126 scale-agreeing strict mismatches; median **4 ULP**, p90 **13 ULP**, max \|Δ\| **≈2×10⁻¹¹**; writer persistence ruled out. Cross-library NumPy/MKL drift ([ADR 0010](../docs/adr/0010-random-component-parity-suite.md)).
+- **Advisory loop:** `slavv parity prove-energy-ulp` (strict scales + `--max-ulps`, default 8) — **not** certification.
+- **Policy open:** [TODO § Energy certification policy](../docs/TODO.md) — strict `np.equal` vs documented ULP tolerance for Phase 1 claim.
+- **Downstream frozen:** Vertices → Edges → Network until strict Energy passes.
 
 ## Operating sequence
 
-1. Before any writer action, check `slavv jobs list` and
-   `slavv parity status-exact-run --run-dir workspace/runs/oracle_180709_E/crop_M_exact`.
-   Never introduce a second writer on that root.
-2. Make a MATLAB-backed diagnosis for a scale-winner mismatch and add the
-   minimal regression only after the discrepancy is reproduced.
-3. Rerun crop Energy only for a specific, tested hypothesis; capture proof
-   evidence with `prove-exact --stage energy`.
-4. After crop Energy is strict-zero, refresh Crop Vertices → Edges → Network and
-   run `prove-exact-sequence`.
-5. Only after the crop sequence passes, resume the full canonical sequence.
+1. Before any writer action, check `slavv jobs list` and run status on `crop_M_exact`.
+2. Strict gate: `prove-exact --stage energy --oracle-root workspace/oracles/180709_E_crop_M_v2`.
+3. Advisory ULP gate: `prove-energy-ulp --max-ulps 8` (same roots) for developer signal only.
+4. After strict Energy strict-zero, refresh Crop Vertices → Edges → Network; `prove-exact-sequence` vs v2.
+5. Only after crop sequence passes, resume full canonical `180709_E` sequence.
 
 ## Retired coordination material
 
 The one-off `overnight_phase1_runs`, crop-rerun worker briefs, and
 `TODO_GPT55_PARALLEL_WORK.md` were consolidated here and into the canonical
-records above. Their historical outcome is preserved: an earlier job died, the
-replacement Energy writer completed, and the strict Energy proof failed.
+records above.

@@ -25,6 +25,7 @@ from slavv_python.analytics.parity.cli import (
     handle_promote_dataset,
     handle_promote_oracle,
     handle_promote_report,
+    handle_prove_energy_ulp,
     handle_prove_exact,
     handle_prove_exact_sequence,
     handle_prove_luts,
@@ -166,6 +167,16 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg("--stage", choices=(*EXACT_STAGE_ORDER, "all"), default="all"),
             arg("--report-path"),
         ),
+    ),
+    CommandSpec(
+        "prove-energy-ulp",
+        handle_prove_energy_ulp,
+        (
+            *_RUN_ROOT_PAIR,
+            arg("--oracle-root"),
+            arg("--max-ulps", type=int, default=8),
+        ),
+        help="Advisory Energy proof: strict scale_indices, energy ULP tolerance (not certification).",
     ),
     CommandSpec(
         "prove-exact-sequence",

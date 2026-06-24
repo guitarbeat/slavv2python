@@ -49,7 +49,9 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 - **ULP triage** (`workspace/scratch/energy_ulp_triage_v2.json`): on scale-agreeing mismatches — median **4 ULP**, p90 **13 ULP**, max \|Δ\| **1.99×10⁻¹¹**; **384,178** voxels bit-identical. Stored `best_energy.npy` matches single-octave Python replay on sampled mismatches (writer persistence ruled out).
 - **Voxel probes vs v2:** `(0,0,0)` ≤8 ULP pass; `(40,83,116)` 47 ULP fail (stored==replay); `(12,0,0)` stored vs replay 8 ULP but both disagree with MATLAB.
 - **Classification:** accumulated **NumPy vs MATLAB MKL** float drift at matching scales ([ADR 0010](../../adr/0010-random-component-parity-suite.md) documents ≥1 ULP IFFT floor; crop volume shows median 4 ULP). **No localized Python fix identified** without weakening `prove-exact`. Gate remains strict `np.equal`.
-- **Next:** Phase 1 policy decision on bit-identical Energy certification vs documented cross-library tolerance; do not refresh Vertices/Edges/Network until resolved.
+- **Advisory ULP gate** (`slavv parity prove-energy-ulp --max-ulps N`): strict `scale_indices`, bounded float ULP — **not** certification. Crop vs v2 @ `max_ulps=8`: **FAIL** (~755k voxels >8 ULP). @ `max_ulps=48`: **99.11%** pass rate (37,174 failures — denormal/near-zero energies with large bit-space ULP, \|Δ\| still ≤2×10⁻¹¹).
+- **Downstream oracle v2:** `ensure-oracle-artifacts --stage all` passes (vertices 13,706; edges 15,511; network 10,722 strands).
+- **Next:** Phase 1 policy decision on bit-identical Energy certification vs documented cross-library tolerance; do not refresh Vertices/Edges/Network until strict `prove-exact` passes.
 
 ### Latest crop Energy proof (2026-06-22)
 
