@@ -12,7 +12,7 @@ from slavv_python.engine import SlavvPipeline
 from slavv_python.engine.state import RunContext
 from slavv_python.pipeline import energy as energy_module
 from slavv_python.pipeline.energy import backends as energy_backends
-from slavv_python.pipeline.energy import hessian_response as native_hessian
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.config import _prepare_energy_config
 from slavv_python.utils import get_chunking_lattice, validate_parameters
 

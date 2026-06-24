@@ -22,17 +22,17 @@ import numpy as np
 import scipy.io
 import tifffile
 
-from slavv_python.pipeline.energy.exact_mesh import (
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _interp3_matlab_linear_inf,
     _matlab_zero_based_linspace,
 )
-from slavv_python.pipeline.energy.hessian_response import (
+from slavv_python.pipeline.energy.matlab_energy_filter_v200 import (
     _derivative_kernel_dft_single,
     _fourier_transform_input,
     _ifftn_matlab_symmetric,
     _pixel_frequency_meshes,
 )
-from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
 FIXTURE_PATH = Path(__file__).with_name("fixtures") / "matlab_random_component_corpus.json"
 MATCHING_REFERENCE_PATH = (

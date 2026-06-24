@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 
 from slavv_python.pipeline.energy import backends as backends
-from slavv_python.pipeline.energy.hessian_response import matlab_octave_resolution_factors
+from slavv_python.pipeline.energy.matlab_energy_filter_v200 import matlab_octave_resolution_factors
 
 logger = logging.getLogger(__name__)
 

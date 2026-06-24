@@ -8,7 +8,9 @@ from slavv_python.analytics.parity.matlab_fail_fast import (
     build_candidate_snapshot_payload,
     compare_lut_fixture_payload,
 )
-from slavv_python.pipeline.edges.watershed_lut import build_matlab_global_watershed_lut
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+    build_matlab_global_watershed_lut,
+)
 
 
 def _lut_fixture_payload() -> dict[str, object]:

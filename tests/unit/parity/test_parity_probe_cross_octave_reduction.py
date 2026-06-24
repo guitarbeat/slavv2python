@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from tests.support.cross_octave_reduction_probe import (
+from tests.support.parity_probe_cross_octave_reduction import (
     build_cross_octave_requests,
     compare_cross_octave_reports,
 )
@@ -47,7 +47,7 @@ def test_build_cross_octave_requests_expands_unique_voxels(tmp_path, monkeypatch
         encoding="utf-8",
     )
     monkeypatch.setattr(
-        "tests.support.cross_octave_reduction_probe.load_crop_image_and_config",
+        "tests.support.parity_probe_cross_octave_reduction.load_crop_image_and_config",
         lambda: (
             None,
             {

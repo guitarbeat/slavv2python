@@ -1,4 +1,8 @@
-"""Mathematical kernels for Energy stage computation."""
+"""MATLAB port: principal-energy eigen step inside ``energy_filter_V200.m``.
+
+Role: ``eig``-ordered principal curvature energy from gradient/Hessian stacks.
+MATLAB source: ``external/Vectorization-Public/source/energy_filter_V200.m``
+"""
 
 from __future__ import annotations
 

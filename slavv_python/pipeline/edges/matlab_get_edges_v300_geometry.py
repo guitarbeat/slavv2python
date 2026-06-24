@@ -1,4 +1,4 @@
-"""MATLAB-shaped frontier geometry for Tracing Discovery."""
+"""MATLAB port: frontier geometry helpers for ``get_edges_V300.m`` (Tracing Discovery)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
-from slavv_python.pipeline.edges.watershed_lut import build_matlab_local_strel_geometry
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+    build_matlab_local_strel_geometry,
+)
 
 if TYPE_CHECKING:
     from slavv_python.pipeline.edges.edge_types import Float32Array, Int32Array

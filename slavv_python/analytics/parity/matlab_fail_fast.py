@@ -12,7 +12,7 @@ import numpy as np
 from slavv_python.pipeline.edges.candidate_payload import (
     _candidate_endpoint_pair_set,
 )
-from slavv_python.pipeline.edges.watershed_lut import (
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
     build_matlab_global_watershed_lut as _build_matlab_global_watershed_lut,
 )
 

@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from slavv_python.pipeline.edges.watershed_lut import build_matlab_local_strel_geometry
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+    build_matlab_local_strel_geometry,
+)
 
 
 @pytest.mark.unit

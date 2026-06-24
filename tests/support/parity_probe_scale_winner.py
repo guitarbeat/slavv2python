@@ -1,4 +1,8 @@
-"""Cross-language crop-Energy scale-winner probe orchestration and comparison."""
+"""Parity probe: batch scale-winner comparison for crop Energy mismatches.
+
+Role: orchestrate Python/MATLAB one-voxel probes and classify failures.
+Not a MATLAB port. Output artifact: ``scale_winner_triage.json``.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from slavv_python.pipeline.energy.voxel_probe import (
+from slavv_python.pipeline.energy.parity_energy_voxel_probe import (
     probe_exact_energy_voxel_at_octave,
     resolve_write_chunk_idx_for_voxel,
 )

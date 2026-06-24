@@ -1,4 +1,4 @@
-"""Watershed Discovery LUT geometry shared by production and parity adapters."""
+"""MATLAB port: ``calculate_linear_strel_range.m`` strel LUT for Watershed Discovery."""
 
 from __future__ import annotations
 

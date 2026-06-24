@@ -1,6 +1,6 @@
 import numpy as np
 
-from slavv_python.pipeline.energy.exact_mesh import _matlab_zero_based_linspace
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import _matlab_zero_based_linspace
 
 
 def test_linspace_phase_alignment():

@@ -8,9 +8,9 @@ import numpy as np
 from joblib import Parallel, delayed
 
 from slavv_python.pipeline.energy import backends as backends
-from slavv_python.pipeline.energy import hessian_response as native_hessian
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy import storage as _energy_storage
-from slavv_python.pipeline.energy.exact_mesh import (
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _interp3_matlab_linear_inf,
     _matlab_zero_based_linspace,
     compute_exact_parity_energy_chunked,

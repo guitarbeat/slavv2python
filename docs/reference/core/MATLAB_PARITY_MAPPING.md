@@ -12,7 +12,8 @@ Use `MATLAB_METHOD_IMPLEMENTATION_PLAN.md` for claim boundaries and
 ## Scope
 
 - Canonical MATLAB slavv_python lives under `external/Vectorization-Public/slavv_python/`.
-- The parity-facing Python shim now lives under `slavv_python/processing/stages/edges/matlab_algorithms/`.
+- MATLAB ports live beside their stage package under `slavv_python/pipeline/`
+  with `matlab_*` filenames (see [PYTHON_NAMING_GUIDE.md](../workflow/PYTHON_NAMING_GUIDE.md#matlab-parity-filename-convention)).
 - The canonical exact route is `comparison_exact_network=True` with
   exact-compatible energy provenance; `python_native_hessian` is the only
   accepted exact-route energy provenance.
@@ -53,15 +54,20 @@ The active MATLAB sources for the native-first exact target are:
 
 | MATLAB surface | Live Python surface | Status | Notes |
 | --- | --- | --- | --- |
-| `vectorize_V200.m` | `slavv_python/processing/stages/edges/matlab_algorithms/vectorize_v200.py`, `slavv_python/engine/orchestrator.py` | Source-aligned orchestration surface | The compat layer mirrors MATLAB stage order while delegating into the maintained modular pipeline. |
-| `get_energy_V202.m` and `energy_filter_V200.m` | `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/energy/energy.py`, `slavv_python/processing/stages/energy/hessian_response.py`, `slavv_python/processing/stages/energy/provenance.py` | Native exact-compatible surface | Native matched filtering is the canonical exact-route energy implementation. |
-| `get_vertices_V200.m` | `slavv_python/processing/stages/vertices/manager.py`, `slavv_python/processing/stages/vertices/detection.py`, `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/vertices/vertices.py` | Source-aligned | Resumable and ephemeral vertex extraction flow through `VertexManager`; MATLAB-shaped scan/choose lives in `vertices/detection.py`. |
-| `get_edges_V300.m` and `get_edges_by_watershed.m` | `slavv_python/processing/stages/edges/manager.py`, `slavv_python/processing/stages/edges/discovery.py`, `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/edges/edges.py`, `slavv_python/processing/stages/edges/candidate_generation.py`, `slavv_python/processing/stages/edges/matlab_frontier.py`, `slavv_python/processing/stages/edges/tracing.py`, `slavv_python/processing/stages/edges/resumable.py` (watershed units only) | Source-aligned with known control-flow deviations | Resumable tracing flows through `EdgeManager` and `discovery`; exact-route frontier logic remains in `matlab_frontier` / `global_watershed`. |
-| `get_edge_metric.m` | `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/network/` | Source-aligned | The compat layer exposes a MATLAB-named wrapper while the maintained trace helpers stay modular. |
-| `choose_edges_V200.m` | `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/edges/selection.py` | Ported; proof pending | Pre-paint filtering and chooser structure are aligned; certified-run proof remains downstream of the current energy and vertex gates. |
-| `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, `clean_edges_cycles.m` | `slavv_python/processing/stages/edges/cleanup.py` | Source-aligned | The preferred cleanup surface delegates into the historical cleanup implementation, which is no longer the first suspected mismatch surface. |
-| `add_vertices_to_edges.m` | `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/edges/bridge_insertion.py`, `slavv_python/processing/stages/edges/manager.py`, `slavv_python/processing/stages/edges/resumable.py` (watershed units only) | Ported; proof pending | Bridge insertion remains downstream of the unresolved edge mismatch. |
-| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `slavv_python/processing/stages/edges/matlab_algorithms/stages.py`, `slavv_python/processing/stages/network/` | Ported; proof pending | `slavv_python/processing/stages/network/` is the preferred network surface; strand assembly remains downstream of edge proof. |
+| `vectorize_V200.m` | `slavv_python/engine/orchestrator.py`, `slavv_python/workflows/pipeline_stages.py` | Source-aligned orchestration | Stage order mirrors MATLAB; stage facades live under `slavv_python/pipeline/`. |
+| `get_energy_V202.m` | `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py`, `slavv_python/pipeline/energy/chunking.py` | Native exact-compatible surface | Chunk lattice, octave merge, `interp3` mesh. Helpers: `get_chunking_lattice_V190.m`, `get_starts_and_counts_V200.m`. |
+| `energy_filter_V200.m` | `slavv_python/pipeline/energy/matlab_energy_filter_v200.py`, `slavv_python/pipeline/energy/matlab_principal_energy.py` | Native exact-compatible surface | Matched-filter FFT path and principal-energy eigen step. |
+| `get_energy_V202.m` (orchestration) | `slavv_python/pipeline/energy/energy.py`, `slavv_python/pipeline/energy/manager.py`, `slavv_python/pipeline/energy/resumable.py`, `slavv_python/pipeline/energy/provenance.py` | Native exact-compatible surface | Stage facade and resumable writer; not a line-for-line `.m` port. |
+| Parity voxel probes (no `.m`) | `slavv_python/pipeline/energy/parity_energy_voxel_probe.py`, `tests/support/parity_probe_*.py` | Diagnostic | Replay chunk math for oracle comparison; batch drivers under `tests/support/`. |
+| `get_vertices_V200.m` | `slavv_python/pipeline/vertices/manager.py`, `slavv_python/pipeline/vertices/detection.py` | Source-aligned | `VertexManager` facade; MATLAB-shaped scan/choose in `detection.py`. |
+| `get_edges_by_watershed.m` | `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`, `slavv_python/pipeline/edges/matlab_watershed_heap.py`, `slavv_python/pipeline/edges/matlab_calculate_linear_strel_range.py` | Source-aligned with known control-flow deviations | Global watershed maps and frontier queue. Strel LUT from `calculate_linear_strel_range.m`. |
+| `get_edges_V300.m` | `slavv_python/pipeline/edges/matlab_get_edges_v300_frontier.py`, `slavv_python/pipeline/edges/matlab_get_edges_v300_geometry.py`, `slavv_python/pipeline/edges/discovery.py`, `slavv_python/pipeline/edges/candidate_generation.py` | Source-aligned with known control-flow deviations | Frontier tracer selection and neighbor-energy penalties. |
+| `get_edges_V300.m` (facade) | `slavv_python/pipeline/edges/manager.py`, `slavv_python/pipeline/edges/tracing.py`, `slavv_python/pipeline/edges/resumable.py` | Source-aligned | `EdgeManager` and resumable units; watershed-only resumable path. |
+| `get_edge_metric.m` | `slavv_python/pipeline/edges/payloads.py`, `slavv_python/pipeline/network/` | Source-aligned | Trace metric helpers on candidate payloads. |
+| `choose_edges_V200.m` | `slavv_python/pipeline/edges/selection.py` | Ported; proof pending | Pre-paint filtering and chooser structure aligned. |
+| `clean_edges_vertex_degree_excess.m`, `clean_edges_orphans.m`, `clean_edges_cycles.m` | `slavv_python/pipeline/edges/cleanup.py` | Source-aligned | Degree/orphan/cycle cleanup ordering aligned. |
+| `add_vertices_to_edges.m` | `slavv_python/pipeline/edges/bridge_insertion.py`, `slavv_python/pipeline/edges/manager.py` | Ported; proof pending | Bridge insertion downstream of edge mismatch work. |
+| `get_network_V190.m`, `sort_network_V180.m`, `get_strand_objects.m` | `slavv_python/pipeline/network/manager.py`, `slavv_python/pipeline/network/construction.py`, `slavv_python/pipeline/network/operations.py` | Ported; proof pending | Strand assembly remains downstream of edge proof. |
 
 ## Confirmed Structural Deviations Still Worth Tracking
 

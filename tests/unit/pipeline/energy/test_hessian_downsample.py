@@ -6,9 +6,9 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from slavv_python.pipeline.energy import hessian_response as native_hessian
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.config import _prepare_energy_config
-from slavv_python.pipeline.energy.exact_mesh import (
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _interp3_matlab_linear_inf,
     _matlab_coarse_local_slices,
     _matlab_zero_based_linspace,
@@ -16,7 +16,7 @@ from slavv_python.pipeline.energy.exact_mesh import (
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,
 )
-from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
 EXACT_ENERGY_POLICY = EnergyPolicy(

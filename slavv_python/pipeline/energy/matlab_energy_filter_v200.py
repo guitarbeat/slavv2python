@@ -1,4 +1,11 @@
-"""Preferred internal name for the native Hessian response backend."""
+"""MATLAB port: ``energy_filter_V200.m`` — matched-filter Hessian scale response.
+
+Role: per-scale FFT Hessian filtering, kernel DFTs, and upsampled energy on the
+working grid. Used by the exact-route chunk engine and parity voxel probes.
+
+MATLAB source: ``external/Vectorization-Public/source/energy_filter_V200.m``
+Pair with: ``matlab_get_energy_v202_chunked.py`` (multi-scale mesh orchestration)
+"""
 
 import gc
 import logging
@@ -8,7 +15,7 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from scipy.special import jv
 
-from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 from slavv_python.pipeline.energy.policy import EnergyPolicy
 
 _WORST_RESOLUTION_TO_DOWNSAMPLE = 1.0 / 2.5

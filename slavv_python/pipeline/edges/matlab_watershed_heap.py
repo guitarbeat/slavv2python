@@ -1,3 +1,9 @@
+"""MATLAB support: frontier heap and voxel-claim maps for watershed discovery.
+
+Role: ``FrontierQueue`` / ``VoxelClaimMap`` used by ``matlab_get_edges_by_watershed.py``.
+MATLAB lineage: ``get_edges_by_watershed.m`` shared-state helpers.
+"""
+
 from __future__ import annotations
 
 import heapq

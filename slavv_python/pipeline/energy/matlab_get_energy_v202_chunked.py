@@ -1,4 +1,12 @@
-"""MATLAB-exact energy mesh and octave chunk execution."""
+"""MATLAB port: ``get_energy_V202.m`` — octave-chunked exact energy field.
+
+Role: chunk lattice traversal, per-octave scale winner reduction, ``interp3``
+upsampling, and cross-chunk master merge. Also hosts ``get_chunking_lattice_V190``
+and ``get_starts_and_counts_V200`` helpers from the same MATLAB lineage.
+
+MATLAB source: ``external/Vectorization-Public/source/get_energy_V202.m``
+Uses: ``matlab_energy_filter_v200.py`` for per-scale filter math
+"""
 
 # The per-octave Joblib worker is intentionally defined inside the octave loop so
 # each worker captures the current MATLAB mesh context.
@@ -21,8 +29,8 @@ except ImportError:
     njit = None
     prange = range
 
-from slavv_python.pipeline.energy import hessian_response as native_hessian
-from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
+from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
 if TYPE_CHECKING:
     from collections.abc import Callable

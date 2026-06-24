@@ -7,7 +7,7 @@ import json
 import pytest
 
 from tests.support.parity_harness import select_mismatch_group_requests
-from tests.support.scale_winner_triage import _probe_difference, compare_batch_reports, main
+from tests.support.parity_probe_scale_winner import _probe_difference, compare_batch_reports, main
 
 pytestmark = [pytest.mark.unit, pytest.mark.parity]
 
@@ -140,9 +140,9 @@ def test_cli_can_reuse_existing_python_report(tmp_path, monkeypatch):
     def fail_if_recomputed(_requests_path):
         raise AssertionError("python probes should have been reused")
 
-    monkeypatch.setattr("tests.support.scale_winner_triage.run_matlab_batch", fake_run_matlab_batch)
+    monkeypatch.setattr("tests.support.parity_probe_scale_winner.run_matlab_batch", fake_run_matlab_batch)
     monkeypatch.setattr(
-        "tests.support.scale_winner_triage.build_python_batch_report", fail_if_recomputed
+        "tests.support.parity_probe_scale_winner.build_python_batch_report", fail_if_recomputed
     )
 
     exit_code = main(

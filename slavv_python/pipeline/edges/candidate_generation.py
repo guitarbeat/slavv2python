@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 from joblib import Parallel, delayed
 
-from .global_watershed import (
+from .matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed as execute_watershed_engine,
 )
 from .payloads import (

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from slavv_python.pipeline.energy import hessian_response as native_hessian
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.chunking import (
     _compute_energy_scale as compute_energy_scale,
 )
@@ -33,7 +33,7 @@ from slavv_python.pipeline.energy.chunking import (
 from slavv_python.pipeline.energy.config import (
     _prepare_energy_config as prepare_energy_config,
 )
-from slavv_python.pipeline.energy.exact_mesh import (
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     compute_exact_parity_energy_chunked,
 )
 from slavv_python.pipeline.energy.provenance import energy_origin_for_method

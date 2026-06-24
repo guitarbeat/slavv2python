@@ -21,7 +21,9 @@ else:
     Float64Array = np.ndarray
     BoolArray = np.ndarray
 
-from slavv_python.pipeline.edges.frontier_geometry import _matlab_frontier_offsets
+from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
+    _matlab_frontier_offsets,
+)
 from slavv_python.pipeline.edges.selection_payloads import (
     build_selected_edges_result,
     normalize_candidate_connection_sources,

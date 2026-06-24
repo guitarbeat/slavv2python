@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 
 from slavv_python.engine import SlavvPipeline
-from slavv_python.pipeline.energy import hessian_response as native_hessian
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
 from slavv_python.pipeline.energy.config import _prepare_energy_config
 
 

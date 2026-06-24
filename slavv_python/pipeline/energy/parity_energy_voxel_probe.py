@@ -1,4 +1,8 @@
-"""One-voxel exact-route Energy probes for MATLAB parity isolation."""
+"""Parity diagnostic: one-voxel exact-route Energy probes (not a MATLAB port).
+
+Role: replay ``get_energy_V202`` chunk math at a single ``(Z,Y,X)`` voxel for
+MATLAB oracle comparison. Uses the same helpers as ``matlab_get_energy_v202_chunked``.
+"""
 
 from __future__ import annotations
 
@@ -6,15 +10,15 @@ from typing import Any
 
 import numpy as np
 
-from slavv_python.pipeline.energy import hessian_response as native_hessian
-from slavv_python.pipeline.energy.exact_mesh import (
+from slavv_python.pipeline.energy import matlab_energy_filter_v200 as native_hessian
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import (
     _interp3_matlab_linear_inf,
     _matlab_coarse_local_slices,
     _matlab_zero_based_linspace,
     get_chunking_lattice_v190,
     get_starts_and_counts_v200,
 )
-from slavv_python.pipeline.energy.math import compute_principal_energy
+from slavv_python.pipeline.energy.matlab_principal_energy import compute_principal_energy
 
 
 def resolve_write_chunk_idx_for_voxel(

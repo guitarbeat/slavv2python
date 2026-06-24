@@ -15,7 +15,7 @@ from slavv_python.analytics.parity.adaptive_probes import ProbeResult, compare_p
 from slavv_python.analytics.parity.matlab_vector_loader import load_normalized_matlab_vectors
 from slavv_python.analytics.parity.surfaces import load_oracle_surface
 from slavv_python.pipeline.energy.config import _prepare_energy_config
-from slavv_python.pipeline.energy.voxel_probe import (
+from slavv_python.pipeline.energy.parity_energy_voxel_probe import (
     probe_exact_energy_voxel_at_octave,
     resolve_write_chunk_idx_for_voxel,
 )

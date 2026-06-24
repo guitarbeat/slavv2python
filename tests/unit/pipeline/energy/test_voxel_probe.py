@@ -14,8 +14,8 @@ from tests.support.parity_harness import (
     probe_voxel,
 )
 
-from slavv_python.pipeline.energy.exact_mesh import get_chunking_lattice_v190
-from slavv_python.pipeline.energy.voxel_probe import resolve_write_chunk_idx_for_voxel
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import get_chunking_lattice_v190
+from slavv_python.pipeline.energy.parity_energy_voxel_probe import resolve_write_chunk_idx_for_voxel
 
 TARGET_VOXEL_ZYX = (12, 0, 0)
 TARGET_RF_ZYX = (2, 5, 5)

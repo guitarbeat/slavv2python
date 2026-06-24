@@ -1,4 +1,9 @@
-"""Replay crop Energy final cross-octave reduction for selected mismatch voxels."""
+"""Parity probe: replay cross-octave scale-winner reduction for mismatch voxels.
+
+Role: expand mismatch voxels into per-octave probes and classify stored-state
+vs replayed reduction (e.g. ``python_stored_state_path``).
+Not a MATLAB port.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,7 @@ from typing import Any
 import numpy as np
 
 from tests.support.parity_harness import load_crop_image_and_config
-from tests.support.scale_winner_triage import (
+from tests.support.parity_probe_scale_winner import (
     build_python_batch_report,
     run_matlab_batch,
 )

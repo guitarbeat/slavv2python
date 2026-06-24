@@ -10,7 +10,7 @@ import pytest
 from tests.support.parity_harness import linspace_table_path
 
 import slavv_python.pipeline.energy as energy_pkg
-from slavv_python.pipeline.energy.exact_mesh import _matlab_zero_based_linspace
+from slavv_python.pipeline.energy.matlab_get_energy_v202_chunked import _matlab_zero_based_linspace
 
 OVERRIDES_PATH = Path(energy_pkg.__file__).resolve().parent / "matlab_linspace_overrides.json"
 

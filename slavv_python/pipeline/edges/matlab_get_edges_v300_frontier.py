@@ -1,4 +1,10 @@
-"""Preferred internal name for MATLAB-style frontier tracing."""
+"""MATLAB port barrel: ``get_edges_V300.m`` frontier tracing entry surface.
+
+Role: re-exports watershed discovery and frontier geometry helpers used when the
+exact-route selects the MATLAB frontier tracer.
+
+MATLAB source: ``external/Vectorization-Public/source/get_edges_V300.m``
+"""
 
 from __future__ import annotations
 
@@ -15,11 +21,11 @@ from slavv_python.pipeline.edges.edge_types import (
     Int64Array,
 )
 from slavv_python.pipeline.edges.frontier_events import _build_frontier_candidate_lifecycle
-from slavv_python.pipeline.edges.frontier_geometry import (
+from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_edge_budget,
     _matlab_frontier_offsets,
 )
-from slavv_python.pipeline.edges.global_watershed import (
+from slavv_python.pipeline.edges.matlab_get_edges_by_watershed import (
     _generate_edge_candidates_matlab_global_watershed,
 )
 from slavv_python.pipeline.edges.matlab_indexing import (

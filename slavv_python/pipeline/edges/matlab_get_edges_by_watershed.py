@@ -1,4 +1,9 @@
-"""Exact-MATLAB shared-state helpers for the global watershed discovery route."""
+"""MATLAB port: ``get_edges_by_watershed.m`` — global watershed edge discovery.
+
+Role: shared spatial maps, strel propagation, frontier queue, and candidate assembly.
+MATLAB source: ``external/Vectorization-Public/source/get_edges_by_watershed.m``
+Uses: ``matlab_watershed_heap.py`` (heap/claim structures), ``matlab_get_edges_v300_geometry.py``
+"""
 
 from __future__ import annotations
 
@@ -28,7 +33,7 @@ from slavv_python.pipeline.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
 )
-from slavv_python.pipeline.edges.frontier_geometry import (
+from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
 )
@@ -36,16 +41,18 @@ from slavv_python.pipeline.edges.matlab_indexing import (
     _argmin_with_linear_index_tiebreak,
     _matlab_linear_index_to_coord,
 )
-from slavv_python.pipeline.edges.payloads import (
-    _edge_metric_from_energy_trace,
-    _empty_edge_diagnostics,
-)
-from slavv_python.pipeline.edges.watershed_core import (
+from slavv_python.pipeline.edges.matlab_watershed_heap import (
     FrontierQueue,
     VoxelClaimMap,
     _matlab_global_watershed_border_locations,
 )
-from slavv_python.pipeline.edges.watershed_lut import _build_matlab_global_watershed_lut
+from slavv_python.pipeline.edges.payloads import (
+    _edge_metric_from_energy_trace,
+    _empty_edge_diagnostics,
+)
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+    _build_matlab_global_watershed_lut,
+)
 
 __all__ = ["_matlab_global_watershed_border_locations"]
 
