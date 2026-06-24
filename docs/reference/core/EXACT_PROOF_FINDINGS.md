@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-23 (crop Energy evidence stale after failed rerun)
+**Last Updated**: 2026-06-24 (crop Energy writer active; evidence still stale until checkpoint completes)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -29,7 +29,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M` | ✅ Promoted and usable for strict proof. |
 | **Oracle artifact readiness** | `workspace/oracles/180709_E_crop_M`, `workspace/oracles/180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes; manifest reconciliation now records readable normalized artifacts. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | Latest Energy attempt failed and removed/staled the current proof surface: no current `checkpoint_energy.pkl`. Historical `exact_proof*.json`, `exact_mismatch*.json`, and `energy_probe_requests.json` are diagnostic history only until Energy completes again. **Do not** refresh downstream stages until proof passes. |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Active writer** job `75188cc2` (PID 35064, lease alive): `resume-exact-run --force-rerun-from energy --stop-after energy --n-jobs 1`. Progress ~octave 1 chunk 276/821 (~34% of Energy stage); peak RSS ~250 MB, no OOM since restart. `checkpoint_energy.pkl` and `best_energy.npy`/`best_scale.npy` remain absent until completion — `inspect-energy-evidence` stays invalid. Historical `exact_proof*.json` artifacts are diagnostic only. **Do not** start a second writer or refresh downstream stages until Energy proof passes. |
 | **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop Energy strict-zero (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)

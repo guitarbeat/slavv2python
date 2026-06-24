@@ -37,9 +37,13 @@ Phase 1 remains blocked at the crop-harness Energy gate.
 - Crop Vertices, Edges, and Network must not be refreshed until Energy proof is
   strict-zero. Canonical `180709_E` remains paused.
 
-Next work: land the IFFT allocation-order fix, rerun crop Energy with lattice
-`6000` / `n_jobs=1`, then resume MATLAB-backed scale-winner diagnosis before any
-downstream refresh.
+**Active writer (2026-06-24):** job `75188cc2`, PID 35064 on `crop_M_exact`.
+Energy octave 1 ~276/821 chunks (~34%); ~250 MB RSS, no OOM. IFFT fix is in
+the running build. Do not start a second writer.
+
+Next work after Energy completes: `inspect-energy-evidence` → `prove-exact
+--stage energy` → scale-winner + cross-octave probes on fresh checkpoint →
+downstream refresh only if strict-zero.
 
 ## Operating sequence
 
