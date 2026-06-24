@@ -55,7 +55,20 @@ def test_batch_comparator_reports_missing_matlab_response():
         {"records": []},
     )
     assert comparison["failed"] == 1
-    assert comparison["results"][0]["stage"] == "missing_matlab_response"
+    assert comparison["results"][0]["failure_class"] == "missing_matlab_response"
+
+
+def test_batch_comparator_classifies_matching_winner_ulp_drift():
+    python_probe = _probe()
+    matlab_probe = _probe()
+    matlab_probe["per_scale"][0]["upsampled_energy"] = -2.0 + 1e-12
+    comparison = compare_batch_reports(
+        {"records": [{"request_id": "r1", "probe": python_probe}]},
+        {"records": [{"request_id": "r1", "probe": matlab_probe}]},
+    )
+    assert comparison["failed"] == 1
+    assert comparison["classifications"]["matching_winner_ulp_drift"] == 1
+    assert comparison["results"][0]["failure_class"] == "matching_winner_ulp_drift"
 
 
 def test_request_selection_is_sorted_and_excludes_invalid_scales(tmp_path, monkeypatch):

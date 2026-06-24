@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -163,6 +164,30 @@ def _probe_difference(
     return None
 
 
+def _failure_class(
+    difference: dict[str, Any] | None,
+    *,
+    python_probe: dict[str, Any],
+    matlab_probe: dict[str, Any],
+) -> str:
+    if difference is None:
+        return "bit_identical"
+    stage = difference.get("stage")
+    if stage == "missing_matlab_response":
+        return "missing_matlab_response"
+    if stage == "winner_tiebreak":
+        return "winner_scale_disagreement"
+    if stage == "scale_enumeration":
+        return "scale_enumeration"
+    if stage == "per_scale_energy":
+        python_winner = python_probe.get("octave_winner", {})
+        matlab_winner = matlab_probe.get("octave_winner", {})
+        if python_winner.get("global_scale") == matlab_winner.get("global_scale"):
+            return "matching_winner_ulp_drift"
+        return "winner_scale_disagreement"
+    return "structural"
+
+
 def compare_batch_reports(
     python_report: dict[str, Any], matlab_report: dict[str, Any]
 ) -> dict[str, Any]:
@@ -170,14 +195,26 @@ def compare_batch_reports(
     python_records = {record["request_id"]: record["probe"] for record in python_report["records"]}
     matlab_records = {record["request_id"]: record["probe"] for record in matlab_report["records"]}
     results: list[dict[str, Any]] = []
+    classification_counts: Counter[str] = Counter()
     for request_id, python_probe in python_records.items():
         matlab_probe = matlab_records.get(request_id)
         if matlab_probe is None:
-            results.append(
-                {"request_id": request_id, "passed": False, "stage": "missing_matlab_response"}
-            )
+            result = {
+                "request_id": request_id,
+                "passed": False,
+                "stage": "missing_matlab_response",
+                "failure_class": "missing_matlab_response",
+            }
+            classification_counts["missing_matlab_response"] += 1
+            results.append(result)
             continue
         difference = _probe_difference(python_probe, matlab_probe)
+        failure_class = _failure_class(
+            difference,
+            python_probe=python_probe,
+            matlab_probe=matlab_probe,
+        )
+        classification_counts[failure_class] += 1
         results.append(
             {
                 "request_id": request_id,
@@ -185,6 +222,7 @@ def compare_batch_reports(
                 "python_winner": python_probe.get("octave_winner"),
                 "matlab_winner": matlab_probe.get("octave_winner"),
                 "passed": difference is None,
+                "failure_class": failure_class,
                 "first_difference": difference,
             }
         )
@@ -194,6 +232,7 @@ def compare_batch_reports(
         "probed": len(results),
         "passed": passed,
         "failed": len(results) - passed,
+        "classifications": dict(classification_counts),
         "results": results,
     }
 

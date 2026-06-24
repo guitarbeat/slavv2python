@@ -1,6 +1,6 @@
 # Phase 1 parity handoff and synthesis
 
-**Last synthesized:** 2026-06-22
+**Last synthesized:** 2026-06-24
 
 This is the single successor brief for the current exact-route effort. Do not use
 dated agent passovers, PID snapshots, or parallel-work checklists as current
@@ -20,18 +20,26 @@ status.
 
 Phase 1 remains blocked at the crop-harness Energy gate.
 
-- The `crop_M_exact` Energy writer completed on 2026-06-22 using lattice
-  `6000`, `n_jobs=1`; `best_energy.npy` and `best_scale.npy` exist.
-- The subsequent strict `prove-exact --stage energy` failed. The verified report
-  has 19,412 scale-winner mismatches and 3,823,893 Energy-value mismatches.
-- Crop Vertices, Edges, and Network must not be refreshed until the Energy proof
-  is strict-zero. The canonical `180709_E` certification run remains paused for
-  the same reason.
+- **Current evidence is stale.** `inspect-energy-evidence` reports
+  `checkpoint_energy.pkl` missing and `energy_status=failed` on
+  `crop_M_exact`. Historical `exact_proof*.json` artifacts are diagnostic
+  history only until a completed Energy checkpoint exists again.
+- The last Energy attempt (`2026-06-23`) died with heap-fragmentation OOM while
+  allocating small `complex128` buffers inside `_ifftn_matlab_symmetric` after
+  ~5h of preprocessing/chunk work. Do not trust pre-2026-06-23 proof counts
+  until a fresh writer completes.
+- Prior strict proof (when checkpoint existed) reported 19,412 scale-winner
+  mismatches and 3,823,893 float64 value mismatches. Probe triage now
+  distinguishes `winner_scale_disagreement` from `matching_winner_ulp_drift`;
+  cross-octave reduction implicates `python_stored_state_path` for at least
+  some voxels where per-octave probes agree with MATLAB but stored winners do
+  not.
+- Crop Vertices, Edges, and Network must not be refreshed until Energy proof is
+  strict-zero. Canonical `180709_E` remains paused.
 
-The first work is not another blind rerun. Reproduce and explain representative
-scale-winner disagreements, then isolate bit-identical float64 drift for voxels
-whose winning scale already agrees. The evidence and probe ledger are recorded
-in the findings document.
+Next work: land the IFFT allocation-order fix, rerun crop Energy with lattice
+`6000` / `n_jobs=1`, then resume MATLAB-backed scale-winner diagnosis before any
+downstream refresh.
 
 ## Operating sequence
 
@@ -45,13 +53,6 @@ in the findings document.
 4. After crop Energy is strict-zero, refresh Crop Vertices → Edges → Network and
    run `prove-exact-sequence`.
 5. Only after the crop sequence passes, resume the full canonical sequence.
-
-## Relevant uncommitted scope
-
-The worktree includes uncommitted parity lifecycle, probe/harness, linspace
-mesh, Energy, test, and documentation changes. Review `git status` and the
-targeted tests before committing; do not assume all local changes belong to one
-atomic fix.
 
 ## Retired coordination material
 

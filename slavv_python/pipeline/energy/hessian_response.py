@@ -385,6 +385,9 @@ def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     """
     spectrum_arr = np.asarray(spectrum)
     ny, nx, nz = spectrum_arr.shape
+    # Copy before building mask temporaries so a fragmented heap is not asked for both
+    # the spectrum duplicate and several full-volume index arrays at once.
+    symmetric_spectrum = np.array(spectrum_arr, copy=True)
 
     # 1-D partner-index arrays (cyclic flip: partner(i) = (-i) % N).
     # Fortran (column-major) linear index of each voxel is:
@@ -421,8 +424,6 @@ def _ifftn_matlab_symmetric(spectrum: np.ndarray) -> np.ndarray:
     mask = lin > plin  # shape (ny, nx, nz), bool
     self_partner_mask = lin == plin  # shape (ny, nx, nz), bool
     del lin, plin
-
-    symmetric_spectrum = spectrum_arr.copy()
 
     if np.any(mask):
         # Decode subscripts only for masked voxels — avoids full meshgrids.
