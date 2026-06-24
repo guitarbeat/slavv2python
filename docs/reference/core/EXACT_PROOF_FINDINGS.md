@@ -64,6 +64,20 @@ Cross-octave Python replay on all **31** `scale_indices` mismatches (`workspace/
 - Example `(33,80,133)`: MATLAB 14, Python stored/replay **13**; octave-1 candidate wins replay (−20.15) over octave-5 scale 92 (−18.25).
 - **Implication:** remaining scale gaps are live cross-octave winner math vs MATLAB, not writer persistence. Next fix surface: reduction/tie-break + invalid-octave candidate handling (probe shows `global_scale=-1`, energy `0.0` on octaves 3–4).
 
+### MATLAB-backed cross-octave probe (top 3 voxels, 2026-06-24)
+
+Batch replay: `workspace/scratch/cross_octave_top3/cross_octave_reduction.json` (R2019a, 15 per-octave probes).
+
+| Voxel (Z,Y,X) | Oracle `scale_indices` | Python stored/replay | MATLAB live replay | Python↔MATLAB replay |
+| --- | --- | --- | --- | --- |
+| (33,80,133) | **14** | 13 | 13 | **agree** |
+| (40,83,116) | **13** | 12 | 12 | **agree** |
+| (33,83,131) | **13** | 12 | 12 | **agree** |
+
+All three classify as **`matlab_oracle_state_path`**: promoted oracle plane is **exactly +1** vs fresh MATLAB batch replay on the same crop config; Python stored `best_scale.npy` matches live MATLAB replay on every sample.
+
+**Revised implication:** the 31 `scale_indices` strict-zero failures may be dominated by **oracle vector indexing / promotion drift** (±1 vs live `get_energy_V202` replay), not Python cross-octave math. Next: audit oracle `scale_indices` plane convention vs `matlab_vector_loader` one-based shift and crop batch vintage before another Energy writer rerun.
+
 Historical crop Energy evidence (2026-06-21, superseded writer state):
 
 - **Coarse-source / interpolation-mesh contract**: MATLAB `get_energy_V202` local ranges use `1 + floor(offset/rf) : 1 + ceil((offset + write_count - 1)/rf)` on the **padded FFT grid** (`fourier_transform_V2` output), not the strided read shape. Python had been clamping to `original_chunk.shape`, dropping one padded row on crop octaves 3–5 (e.g. octave 4 chunk 0: requested `(27,27,14)` vs retained `(26,26,13)`). Fixed via `_matlab_coarse_local_slices` in `matlab_get_energy_v202_chunked.py`.
