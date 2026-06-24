@@ -12,6 +12,26 @@ import pytest
 from slavv_python.analytics.parity.job_registry import JobRegistry, ParityJobRecord
 
 
+def _concurrent_write_job_worker(
+    registry_path: str,
+    pid: int,
+    oracle_root: str,
+    stage: str,
+    command: str,
+    metadata: dict[str, object],
+) -> None:
+    """Module-level worker for Windows spawn pickling in concurrent write tests."""
+    registry = JobRegistry(Path(registry_path))
+    registry.register_job(
+        pid=pid,
+        run_dir=Path(f"/tmp/test_{pid}"),
+        oracle_root=Path(oracle_root),
+        stage=stage,
+        command=command,
+        metadata=metadata,
+    )
+
+
 @pytest.fixture
 def temp_registry(tmp_path):
     """Create a temporary registry for testing."""
@@ -233,20 +253,21 @@ class TestJobRegistry:
 
     def test_concurrent_writes(self, tmp_path, sample_job_data):
         """Test that concurrent writes don't corrupt the registry."""
-
-        def write_job(registry_path, pid):
-            registry = JobRegistry(registry_path)
-            data = sample_job_data.copy()
-            data["pid"] = pid
-            data["run_dir"] = Path(f"/tmp/test_{pid}")
-            registry.register_job(**data)
-
         registry_path = tmp_path / "concurrent_test.jsonl"
+        worker_args = (
+            str(sample_job_data["oracle_root"]),
+            sample_job_data["stage"],
+            sample_job_data["command"],
+            sample_job_data["metadata"],
+        )
 
         # Spawn multiple processes writing simultaneously
         processes = []
         for i in range(5):
-            p = multiprocessing.Process(target=write_job, args=(registry_path, 1000 + i))
+            p = multiprocessing.Process(
+                target=_concurrent_write_job_worker,
+                args=(str(registry_path), 1000 + i, *worker_args),
+            )
             p.start()
             processes.append(p)
 

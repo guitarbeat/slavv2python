@@ -344,14 +344,17 @@ class JobRegistry:
                     job_map[record.job_id] = record
 
             before_iso = before.isoformat()
-            for job_id, record in job_map.items():
+            now = datetime.now().isoformat()
+            for _job_id, record in job_map.items():
                 if (
                     record.status in ("completed", "failed")
                     and record.completed_at
                     and record.completed_at < before_iso
                 ):
-                    # Update status to archived
-                    self.update_job(job_id, status="archived")
+                    # Append under the held lock; do not call update_job (re-entrant deadlock).
+                    record_dict = record.to_dict()
+                    record_dict.update({"status": "archived", "last_seen_at": now})
+                    self._append_record(ParityJobRecord.from_dict(record_dict))
                     archived_count += 1
 
             logger.info(f"Archived {archived_count} jobs completed before {before}")
