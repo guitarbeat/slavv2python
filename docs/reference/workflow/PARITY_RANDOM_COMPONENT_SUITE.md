@@ -109,6 +109,29 @@ python -m tests.support.export_random_matching_reference `
 
 ---
 
+## Internal structure (post-hardening refactor)
+
+The implementation was refactored (see [random-component-parity-hardening-spec.md](../../plans/random-component-parity-hardening-spec.md)) for maintainability while preserving exact structural gate behavior:
+
+- **Public API** (preferred for new code): `run_structural_gate`, `collect_hessian_diagnostics`, `build_structural_report`, `build_diagnostics_report`, `StructuralGateResult`, `Mismatch`.
+- **Structural gate** (`random_component/gate.py`): pure, zero knowledge of energy/Hessian. Always used.
+- **Diagnostics** (`random_component/diagnostics.py`): separate, only for `--mode diagnostics`.
+- **Builders** (`random_component/reports.py`): produce the legacy report dict shapes for compatibility.
+- **Main module** (`random_component_parity.py`): thin orchestration, reference computation, MATLAB driver, and `compare_references` (compat shim only).
+
+### How to hack on the suite
+
+- For new structural checks or gate logic → edit `gate.py` + models.
+- For Hessian ULP changes → `diagnostics.py`.
+- Report shape changes → `reports.py` (keep legacy compat where possible).
+- Reference computation (linspace, interp3, energy) → stays in main for now (depends on energy shims).
+- Add public helpers to `random_component/__init__.py`.
+- Keep the main file lean (<1000 lines); extract to package.
+- `compare_references` is the old entry for tests/compat — prefer the new builders in fresh code.
+- Always verify structural gate against the Phase 0 baseline after changes (see Phase 5 in the spec).
+
+---
+
 ## Why Hessian floats are advisory only
 
 Live strict compare on IFFT-derived Hessian samples fails cross-language even when the complex spectrum is byte-identical:

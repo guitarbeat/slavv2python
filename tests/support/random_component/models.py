@@ -14,6 +14,7 @@ from typing import Any
 @dataclass(frozen=True)
 class Mismatch:
     """A single structured difference (structural gate only)."""
+
     component: str
     path: str
     python: Any
@@ -30,6 +31,7 @@ class StructuralGateResult:
     It contains only the information needed to decide "did the structural
     fields match?" and to produce the legacy report shape at the boundary.
     """
+
     passed: bool
     difference_count: int
     first_difference: dict[str, Any] | None = None

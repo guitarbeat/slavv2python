@@ -9,7 +9,9 @@ import numpy as np
 import pytest
 
 from tests.support.random_component import (
+    build_diagnostics_report,
     build_structural_report,
+    collect_hessian_diagnostics,
     run_structural_gate,
 )
 from tests.support.random_component.models import StructuralGateResult
@@ -337,7 +339,8 @@ def test_run_structural_gate_produces_clean_result_and_matches_legacy_counts():
     manifest = load_manifest(FIXTURE_PATH)
     # Use the same data shape the old path uses
     py_ref = {
-        "linspace": [{"offset": 0, "stride": 1, "count": 1, "local_start": 0, "values": [0.0]}] * 128,
+        "linspace": [{"offset": 0, "stride": 1, "count": 1, "local_start": 0, "values": [0.0]}]
+        * 128,
         "cases": [
             {
                 "case_id": c["id"],
@@ -350,8 +353,10 @@ def test_run_structural_gate_produces_clean_result_and_matches_legacy_counts():
     }
     # Minimal matlab-like objects (the gate only looks at structural fields)
     from types import SimpleNamespace
+
     matlab_ref = {
-        "linspace": [SimpleNamespace(offset=0, stride=1, count=1, local_start=0, values=[0.0])] * 128,
+        "linspace": [SimpleNamespace(offset=0, stride=1, count=1, local_start=0, values=[0.0])]
+        * 128,
         "cases": [
             SimpleNamespace(
                 case_id=c["id"],
@@ -375,7 +380,132 @@ def test_run_structural_gate_produces_clean_result_and_matches_legacy_counts():
 
     # Also verify it can be used to build a report with the expected structural_gate shape
     from tests.support.random_component import build_structural_report
+
     report = build_structural_report(gate, manifest=manifest)
     assert report["structural_gate"]["passed"] is True
     assert report["mode"] == "structural"
     assert report["hessian_diagnostics"]["collected"] is False
+
+
+def test_collect_hessian_diagnostics_is_separate_and_advisory():
+    """Phase 4: public collector for hessian only, separate from gate."""
+    # Fake data with hessian samples (curvatures etc differ)
+    py_case = {
+        "case_id": "noise_iso_01",
+        "energy": {
+            "padded_shape_yxz": [34, 34, 18],
+            "samples": [
+                {
+                    "coordinate_yxz": [0, 0, 0],
+                    "curvatures": [1.0] * 6,
+                    "gradient": [0.0] * 3,
+                    "laplacian": 1.0,
+                    "valid": False,
+                    "energy": float("inf"),
+                }
+            ],
+        },
+    }
+    mat_case = SimpleNamespace(
+        case_id="noise_iso_01",
+        samples=[
+            SimpleNamespace(
+                coordinate_yxz=[0, 0, 0],
+                curvatures=[2.0] * 6,
+                gradient=[0.0] * 3,
+                laplacian=2.0,
+                valid=False,
+                energy=float("inf"),
+            )
+        ],
+    )
+    py_ref = {"cases": [py_case]}
+    mat_ref = {"cases": [mat_case]}
+    hess = collect_hessian_diagnostics(py_ref, mat_ref)
+    assert hess["collected"] is True
+    assert hess["max_ulp_distance"] > 0
+    assert len(hess["cases"]) == 1
+    assert hess["cases"][0]["mismatch_count"] > 0
+
+
+def test_public_builders_and_gate_entry_points():
+    """Phase 4: exercise the new public surface directly."""
+    manifest = load_manifest(FIXTURE_PATH)
+    # minimal equal data for structural pass
+    py = {
+        "linspace": [{"offset": 0, "stride": 1, "count": 1, "local_start": 0, "values": [0.0]}]
+        * 128,
+        "cases": [
+            {
+                "case_id": c["id"],
+                "query_yxz": [[0.0, 0.0, 0.0]],
+                "interpolation": [0.0],
+                "energy": {"padded_shape_yxz": [34, 34, 18], "samples": []},
+            }
+            for c in manifest["cases"]
+        ],
+    }
+    mat = {
+        "linspace": [SimpleNamespace(offset=0, stride=1, count=1, local_start=0, values=[0.0])]
+        * 128,
+        "cases": [
+            SimpleNamespace(
+                case_id=c["id"], interpolation=[0.0], padded_shape_yxz=[34, 34, 18], samples=[]
+            )
+            for c in manifest["cases"]
+        ],
+    }
+    gate = run_structural_gate(py, mat, manifest=manifest)
+    assert gate.passed
+    struct_report = build_structural_report(gate)
+    assert struct_report["mode"] == "structural"
+    assert struct_report["structural_gate"]["passed"]
+
+    # diagnostics with some hess diff (use simple data)
+    py_h = {
+        "linspace": py["linspace"],
+        "cases": [
+            {
+                "case_id": manifest["cases"][0]["id"],
+                "query_yxz": [[0.0, 0.0, 0.0]],
+                "interpolation": [0.0],
+                "energy": {
+                    "padded_shape_yxz": [34, 34, 18],
+                    "samples": [
+                        {
+                            "coordinate_yxz": [0, 0, 0],
+                            "curvatures": [1.0] * 6,
+                            "gradient": [0.0] * 3,
+                            "laplacian": 1.0,
+                            "valid": False,
+                            "energy": float("inf"),
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+    mat_h = {
+        "linspace": mat["linspace"],
+        "cases": [
+            SimpleNamespace(
+                case_id=manifest["cases"][0]["id"],
+                interpolation=[0.0],
+                padded_shape_yxz=[34, 34, 18],
+                samples=[
+                    SimpleNamespace(
+                        coordinate_yxz=[0, 0, 0],
+                        curvatures=[1.1] * 6,
+                        gradient=[0.0] * 3,
+                        laplacian=1.1,
+                        valid=False,
+                        energy=float("inf"),
+                    )
+                ],
+            )
+        ],
+    }
+    hess = collect_hessian_diagnostics(py_h, mat_h)
+    diag_report = build_diagnostics_report(gate, hess)
+    assert diag_report["mode"] == "diagnostics"
+    assert diag_report["hessian_diagnostics"]["collected"]

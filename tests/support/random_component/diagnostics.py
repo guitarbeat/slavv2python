@@ -1,7 +1,9 @@
 """Hessian / advisory diagnostics collection.
 
-This is completely separate from the structural gate.
-It is only used when --mode diagnostics.
+Completely separate from the structural gate.
+Only invoked for --mode diagnostics.
+
+Public entry: collect_hessian_diagnostics()
 """
 
 from __future__ import annotations
@@ -29,7 +31,9 @@ def collect_hessian_diagnostics(
 
     py_cases = python.get("cases", [])
     mat_cases = matlab.get("cases", [])
-    for py_case, mat_case in zip(py_cases, mat_cases):  # tolerate length mismatch (structural gate reports it)
+    for py_case, mat_case in zip(
+        py_cases, mat_cases
+    ):  # tolerate length mismatch (structural gate reports it)
         case_id = py_case["case_id"]
         hess = _hessian_for_case(py_case, mat_case)
         hessian_cases.append({"case_id": case_id, **hess})
@@ -76,7 +80,9 @@ def _hessian_for_case(
                     if diff is None:
                         continue
                     mismatch_count += 1
-                    if worst is None or diff.get("ulp_distance", 0) > (worst.get("ulp_distance") or 0):
+                    if worst is None or diff.get("ulp_distance", 0) > (
+                        worst.get("ulp_distance") or 0
+                    ):
                         worst = {
                             **diff,
                             "component": f"energy.{field}",

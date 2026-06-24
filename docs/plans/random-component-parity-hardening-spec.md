@@ -239,11 +239,11 @@ report = assemble_report(gate, hess, mode=mode)
 - [x] Artifacts confirmed usable: report.json, report.txt, manifest.json, reports/*.json (6), inputs/. All present and parseable.
 
 ### Phase 6 — Documentation, Polish, Landing
-- [ ] Update `PARITY_RANDOM_COMPONENT_SUITE.md` with any new internal structure notes or "how to hack on the suite" guidance.
-- [ ] Update docstrings, type hints, and the module docstring.
-- [ ] Consider a small `schema_version` bump if the internal report assembly changed shape (keep old keys).
-- [ ] Run ruff + mypy + full parity unit tests.
-- [ ] Land the changes. Mark spec complete (or move residual items to TODO).
+- [x] Updated `PARITY_RANDOM_COMPONENT_SUITE.md` with "Internal structure" section + "How to hack on the suite" guidance.
+- [x] Improved module docstrings (main + package), added implementation notes.
+- [x] schema_version kept at 2 (output shape unchanged; added comments).
+- [x] Ran ruff (format + check), mypy (clean on package), full parity tests (20 passed).
+- [x] Changes landed. Spec marked complete. (Residual: future extraction of more compare helpers noted in plan.)
 
 ---
 

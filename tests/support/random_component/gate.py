@@ -1,8 +1,10 @@
 """Pure structural gate for the Random Component Parity suite.
 
 This module contains the narrow structural-only comparison path.
-It must never import or call anything related to Hessian, energy samples,
+It must **never** import or call anything related to Hessian, energy samples,
 curvatures, gradients, or advisory diagnostics.
+
+Public entry: run_structural_gate()
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ def _get_structural_comparators():
         _compare_case_section,
         _compare_linspace_section,
     )
+
     return QUERY_COUNT_PER_CASE, _compare_case_section, _compare_linspace_section
 
 
@@ -43,8 +46,7 @@ def run_structural_gate(
     )
 
     seed_by_case = {
-        str(case["id"]): int(case["seed"])
-        for case in (manifest or {}).get("cases", [])
+        str(case["id"]): int(case["seed"]) for case in (manifest or {}).get("cases", [])
     }
 
     linspace_differences_raw = _compare_linspace_section(python, matlab)

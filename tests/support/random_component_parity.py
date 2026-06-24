@@ -4,6 +4,15 @@ The corpus is deliberately small and random only at input generation time.  The
 manifest fixes every seed and query, so each report is reproducible.  This is a
 developer and self-hosted-CI diagnostic; exact-route certification still uses
 the promoted crop and canonical MATLAB oracles.
+
+Implementation note (post-Phase 3 refactor):
+- Structural gate logic lives in tests/support/random_component/gate.py
+  (pure, zero knowledge of Hessian/energy).
+- Hessian diagnostics in diagnostics.py (only for --mode diagnostics).
+- Report builders in reports.py (produce legacy shapes for compat).
+- Use the public package API (run_structural_gate, collect_hessian_diagnostics,
+  build_*_report) for new code. compare_references remains as compat shim.
+- See docs/reference/workflow/PARITY_RANDOM_COMPONENT_SUITE.md for hacking guide.
 """
 
 from __future__ import annotations
@@ -649,9 +658,7 @@ def compare_references(
     gate = run_structural_gate(python, matlab, manifest=manifest)
     hess = collect_hessian_diagnostics(python, matlab)
 
-    has_hess_mismatches = any(
-        h.get("mismatch_count", 0) for h in hess.get("cases", [])
-    )
+    has_hess_mismatches = any(h.get("mismatch_count", 0) for h in hess.get("cases", []))
     if has_hess_mismatches:
         return build_diagnostics_report(gate, hess, manifest=manifest)
     return build_structural_report(gate, manifest=manifest)

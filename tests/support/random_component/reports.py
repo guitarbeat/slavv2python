@@ -1,9 +1,10 @@
 """Report builders for Random Component Parity.
 
-These produce the legacy dict shapes for JSON/CLI compatibility
+Produce the legacy dict shapes for JSON/CLI compatibility
 while taking clean typed inputs (StructuralGateResult + hessian dicts).
 
-This keeps orchestration simple and the main module smaller.
+This keeps the main module smaller and orchestration simple.
+Use via the package __init__.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ def build_structural_report(
     first = gate.first_difference or {}
     return {
         "passed": gate.passed,
-        "schema_version": 2,
+        "schema_version": 2,  # unchanged; internal refactor only (see hardening spec)
         "mode": "structural",
         "structural_gate": gate.to_report_dict(),
         "difference_count": gate.difference_count,
@@ -59,7 +60,7 @@ def build_diagnostics_report(
     first = gate.first_difference or {}
     return {
         "passed": gate.passed,
-        "schema_version": 2,
+        "schema_version": 2,  # unchanged; internal refactor only (see hardening spec)
         "mode": "diagnostics",
         "structural_gate": gate.to_report_dict(),
         "difference_count": gate.difference_count,
