@@ -19,8 +19,8 @@ Always check these before making changes:
 
 | Surface | Package Path | Test Path |
 |:--------|:------------|:----------|
-| Pipeline engine | `slavv_python/engine/` | `tests/unit/core/` |
-| Processing stages | `slavv_python/processing/stages/` | `tests/unit/core/` |
+| Pipeline engine | `slavv_python/engine/` | `tests/unit/engine/` |
+| Pipeline stages | `slavv_python/pipeline/` | `tests/unit/pipeline/` |
 | Analytics & parity | `slavv_python/analytics/` | `tests/unit/analysis/` |
 | Storage (I/O) | `slavv_python/storage/` | `tests/unit/io/` |
 | CLI & Streamlit | `slavv_python/interface/` | `tests/unit/apps/` |

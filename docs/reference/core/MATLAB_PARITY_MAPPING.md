@@ -110,7 +110,7 @@ The live Python watershed path has absorbed the major pointer-lifecycle, trace-s
 
 **MATLAB** uses `randperm` over the per-edge trace positions before painting.
 
-**Python** now uses a seeded `np.random.default_rng(seed).permutation()` in `slavv_python/processing/stages/edges/selection.py` to match this behavior while maintaining determinism for parity testing.
+**Python** now uses a seeded `np.random.default_rng(seed).permutation()` in `slavv_python/pipeline/edges/selection.py` to match this behavior while maintaining determinism for parity testing.
 
 Why it matters:
 - ensures literal chooser parity by matching the conflict detection sequence
@@ -133,7 +133,7 @@ For native-first exact parity, the highest-value remaining work is:
 
 1. close `edges.connections` on the native-first route before spending time on
    downstream network polish
-2. keep `slavv_python/processing/stages/edges/matlab_algorithms/` aligned with the released MATLAB stage and
+2. keep `slavv_python/pipeline/edges/matlab_*.py` ports aligned with the released MATLAB
    function boundaries so proof docs have a stable audit surface
 3. use `EXACT_PROOF_FINDINGS.md` for live status and keep this file focused on
    structural mapping and deviations

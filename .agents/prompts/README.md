@@ -184,7 +184,7 @@ Failure handling:
 ```
 /use prompt: implement-python-change
 Context: Fix vertex energy calculation bug
-Files: slavv_python/processing/stages/vertices/detection.py
+Files: slavv_python/pipeline/vertices/detection.py
 ```
 
 ### From Agent

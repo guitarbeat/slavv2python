@@ -22,7 +22,7 @@ MATLAB's `get_starts_and_counts_V200` utility, used in the vesselness engine, em
 For a single-chunk volume (like a small crop volume at a high resolution factor `rf`), this results in a lead offset of `(size - 1) % rf`. For `rf=9` and `size=256`, the lead is `255 % 9 = 3`. For `rf=20`, the lead is `255 % 20 = 15`.
 
 ## Solution
-Updated `_downsample_volume` in `hessian_response.py` to calculate and apply this stride phase lead when `comparison_exact_network` is enabled.
+Updated `_downsample_volume` in `matlab_energy_filter_v200.py` to calculate and apply this stride phase lead when `comparison_exact_network` is enabled.
 
 ```python
 if alignment == "matlab":

@@ -7,7 +7,7 @@ Accepted
 Vertex extraction interleaved MATLAB-style scan, crop/sort, and choose/paint across `extraction.py` and `resumable.py`. Vertex detection logic lived under `edges/candidate_detection.py`, inverting the package dependency (Vertex Set stage importing from Edge Discovery).
 
 ## Decision
-Introduce `VertexManager` in `slavv_python/processing/stages/vertices/manager.py`:
+Introduce `VertexManager` in `slavv_python/pipeline/vertices/manager.py`:
 
 1. **`VertexManager.run()`** — ephemeral scan → crop/sort → choose/paint → `VertexSet`.
 2. **`VertexManager.run_resumable()`** — same pipeline with `candidates.pkl`, `cropped_candidates.pkl`, `chosen_mask.pkl` artifacts.

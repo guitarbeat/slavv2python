@@ -42,7 +42,7 @@ What to return...
 **File**: `matlab-parity-specialist.agent.md`  
 **Keywords**: parity, MATLAB, comparison, edges, watershed, exact proof  
 **Purpose**: Preserve and improve MATLAB-to-Python parity behavior  
-**Key Modules**: `processing/stages/edges/`, `analytics/parity/`
+**Key Modules**: `pipeline/edges/`, `analytics/parity/`
 
 **When to use**:
 - Changing parity/comparison workflows

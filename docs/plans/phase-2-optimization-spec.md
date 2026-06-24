@@ -27,18 +27,18 @@ Phase 1 established a cryptographic-level trust guarantee by enforcing 100% bit-
 *   **Validation:** Use the Phase 1 canonical outputs as a "fuzzy" baseline. Phase 2 outputs will no longer be bit-perfect with MATLAB due to tie-breaking, but they must be topologically isomorphic.
 
 ### 3.2 Standard Library Re-Integration
-*   **Action:** Systematically audit and remove `matlab_algorithms/` shims. 
+*   **Action:** Systematically audit and replace `matlab_*.py` parity ports with native equivalents where topological tolerance allows. 
     *   Replace exact mesh generation with native `np.meshgrid` and standard `np.linspace`.
     *   Replace `_matlab_round` with native `np.rint` or standard `round`.
 *   **Risk:** Edge cases near volume boundaries may generate slightly different candidate sets. We will need a "Topological Tolerance" gate to replace the Phase 1 "Exact Parity" gate.
 
 ### 3.3 GPU-Accelerated Hessian Filtering
 *   **Problem:** The Energy stage relies on CPU-bound FFTs and a batched `np.linalg.eigh` loop that takes over an hour for canonical volumes.
-*   **Action:** Implement a `torch` or `cupy` backend for `hessian_response.py`. Move the entire multi-scale filtering loop (FFT -> Derivative Kernels -> Hessian Eigh) to the GPU.
+*   **Action:** Implement a `torch` or `cupy` backend for `matlab_energy_filter_v200.py`. Move the entire multi-scale filtering loop (FFT -> Derivative Kernels -> Hessian Eigh) to the GPU.
 *   **Target:** Reduce Energy stage execution time from 90+ minutes to < 5 minutes.
 
 ### 3.4 Distributed Edge Discovery
-*   **Problem:** The global watershed algorithm (`global_watershed.py`) is locked to a single thread because it relies on a shared, global `FrontierQueue` and deterministic tie-breaking.
+*   **Problem:** The global watershed algorithm (`matlab_get_edges_by_watershed.py`) is locked to a single thread because it relies on a shared, global `FrontierQueue` and deterministic tie-breaking.
 *   **Action:** Investigate chunk-based local watershed discovery with a map-reduce style border-stitching phase, or port the frontier expansion to a compiled Numba/Cython kernel that releases the GIL.
 
 ## 4. Phase 2 Gating Criteria

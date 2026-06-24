@@ -12,7 +12,7 @@ resolution_type: code_fix
 During the exact-route Energy stage processing, canonical volumes (512x512x64) were experiencing severe memory overhead when computing `_interp3_matlab_linear_inf`. The pipeline was generating fully dense 4D arrays `(3, Y, X, Z)` for the coordinate grid to pass into interpolation, which consumed >400MB of RAM per chunk and risked `ArrayMemoryError` on constrained developer machines.
 
 ## Evidence
-Memory profilers showed massive allocations occurring at the `np.meshgrid(..., indexing="ij")` and `np.stack` step within the chunk octave loop in `slavv_python/pipeline/energy/exact_mesh.py`.
+Memory profilers showed massive allocations occurring at the `np.meshgrid(..., indexing="ij")` and `np.stack` step within the chunk octave loop in `slavv_python/pipeline/energy/matlab_get_energy_v202_chunked.py`.
 
 ## Root Cause
 The legacy MATLAB-compatible `_interp3_matlab_linear_inf` shim was originally written to expect dense coordinate grids because it computed fractional offsets for all coordinates simultaneously before iterating over the interpolation corners. This eagerness was unnecessary since the interpolation logic itself can operate on broadcasted vectors.

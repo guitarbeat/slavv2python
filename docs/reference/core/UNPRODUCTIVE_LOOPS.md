@@ -30,7 +30,7 @@ This document serves as a "Wall of Shame" and a strategic guide to prevent recur
 *   **Guidance**: **Remove fallbacks.** A proof is binary: it is either bit-perfect zero-divergence or it is a failure.
 
 ## 6. Surgical Edit Fragmentation
-*   **The Loop**: Using the `replace` tool on small snippets of a large file (`exact_mesh.py`) without verifying the surrounding context.
+*   **The Loop**: Using the `replace` tool on small snippets of a large file (`matlab_get_energy_v202_chunked.py`) without verifying the surrounding context.
 *   **The Reality**: Led to duplicate variable definitions (`pixel_freq_meshes`) and broken references to removed variables (`base_kernels`).
 *   **Guidance**: Always read 50 lines before and after an edit. If a file is in a "transitional" state, do not commit until it is unified and runnable.
 

@@ -73,8 +73,8 @@ The maintained exact route is native-first.
 - Preserved MATLAB vectors remain the proof oracle for `prove-exact`.
 
 The parity-facing orchestration surface for this work now lives under
-`slavv_python/processing/stages/edges/matlab_algorithms/`, which mirrors the released MATLAB stage and
-function boundaries while delegating into the maintained modular Python code.
+`slavv_python/pipeline/edges/matlab_*.py` modules, which mirror the released MATLAB function
+boundaries while delegating into the maintained modular Python code.
 
 ## Current Stage Status
 
@@ -136,7 +136,7 @@ Completed work:
 2. `python_native_hessian` is the canonical exact-compatible provenance.
 3. The exact-route gate and proof tooling no longer accept imported MATLAB
    energy provenance.
-4. `slavv_python/processing/stages/edges/matlab_algorithms/` now provides MATLAB-shaped orchestration and
+4. `slavv_python/pipeline/edges/matlab_*.py` now provides MATLAB-shaped ports and
    function wrappers for audits and proof routing.
 
 ### Phase 2: Close Downstream Native Exact Parity
@@ -171,24 +171,24 @@ Acceptance gate:
 
 These are the reference surfaces still under investigation:
 
-1. `slavv_python/processing/stages/edges/candidate_generation.py`
+1. `slavv_python/pipeline/edges/candidate_generation.py`
    The preferred candidate-generation surface still delegates into
-   `slavv_python/processing/stages/edges/global_watershed.py`; revisit this
+   `slavv_python/pipeline/edges/matlab_get_edges_by_watershed.py`; revisit this
    after the certified energy and vertex gates pass.
-2. `slavv_python/processing/stages/edges/selection.py`
+2. `slavv_python/pipeline/edges/selection.py`
    Replace sequential trace iteration in the delegated
    conflict-painting implementation with
    MATLAB-matching randomized trace order if the exact route is going to claim
    literal chooser parity.
-3. `slavv_python/processing/stages/edges/cleanup.py`
+3. `slavv_python/pipeline/edges/cleanup.py`
    Re-check crop, degree, orphan, and cycle cleanup whenever
    `edges.connections` improves but remains red.
-4. `slavv_python/processing/stages/edges/bridge_insertion.py`
+4. `slavv_python/pipeline/edges/bridge_insertion.py`
    Keep the bridge path in sync with the exact-route proof surface.
-5. `slavv_python/processing/stages/network/`
+5. `slavv_python/pipeline/network/`
    Audit strand ordering and network assembly only after the upstream edge proof
    surfaces are materially closer; the current preferred surface delegates into
-   `slavv_python/processing/stages/network/`.
+   `slavv_python/pipeline/network/`.
 6. `slavv parity` and `slavv_python/analytics/parity/matlab_exact_proof.py`
    Preserve the proof harness as the acceptance gate for native-first exact
    reruns, with disposable trial runs under `workspace/runs/`, preserved MATLAB truth

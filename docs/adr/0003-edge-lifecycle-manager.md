@@ -12,7 +12,7 @@ Prior to this decision, the orchestration of these steps was leaked into the cor
 3. **Fragile Coupling**: Changes to the internal lifecycle of edge discovery often required coordinated changes in the orchestration layer.
 
 ## Decision
-We have introduced a consolidated `EdgeManager` in `slavv_python/processing/stages/edges/manager.py` to act as a deep facade for the entire edge lifecycle.
+We have introduced a consolidated `EdgeManager` in `slavv_python/pipeline/edges/manager.py` to act as a deep facade for the entire edge lifecycle.
 
 1. **Encapsulated Lifecycle**: The manager handles the transition from candidate generation to selection and final bridging internally.
 2. **High-Level Contract**: The manager accepts and returns the "Deep" schema objects (`EnergyResult`, `VertexSet`, `EdgeSet`), abstracting away the low-level dictionary structures used by internal algorithms.

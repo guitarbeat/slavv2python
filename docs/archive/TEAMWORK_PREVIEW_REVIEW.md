@@ -82,7 +82,7 @@ This divergence cascaded through the conflict resolution logic (`choose_vertices
 
 ### Solution Implemented
 
-**Modified file**: `slavv_python/processing/stages/vertices/manager.py`
+**Modified file**: `slavv_python/pipeline/vertices/manager.py`
 
 **Changes**:
 ```python
@@ -200,7 +200,7 @@ Per PROJECT.md:
 - `.agents/self_vertices_parity_*/` - All specialist agent work products
 
 ### Code Changes
-- `slavv_python/processing/stages/vertices/manager.py` (modified, staged)
+- `slavv_python/pipeline/vertices/manager.py` (modified, staged)
 
 ### Reference Materials
 - `PROJECT.md` - Overall scope and milestone tracking

@@ -202,7 +202,7 @@ Skills may reinforce instructions:
 ### File Pattern Instruction
 ```yaml
 ---
-applyTo: "slavv_python/processing/stages/**/*.py"
+applyTo: "slavv_python/pipeline/**/*.py"
 ---
 When changing pipeline stages, run stage-specific tests first.
 ```

@@ -207,7 +207,7 @@ Copy-Item workspace/runs/cert_trial_v1/03_Analysis/exact_proof.json workspace/re
 
 ## 🛡️ Parity Guardrails
 
-To maintain certification, every change to `global_watershed.py` or `common.py` must:
+To maintain certification, every change to `matlab_get_edges_by_watershed.py` or `matlab_indexing.py` must:
 1.  **Maintain float64 precision**: No downcasting to `float32` in the critical path.
 2.  **Use exact tie-breaking**: Compare energies with `==`, never `np.isclose`.
 3.  **Preserve scanline order**: Ensure local strel indices follow the Fortran-order linear index priority.

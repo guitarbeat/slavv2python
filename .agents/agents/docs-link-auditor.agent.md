@@ -15,7 +15,8 @@ The codebase recently underwent a major package reorganization. Documentation dr
 | Package Surface | Actual Path |
 |:----------------|:------------|
 | Pipeline engine | `slavv_python/engine/` |
-| Processing stages | `slavv_python/processing/stages/{energy,vertices,edges,network}/` |
+| Pipeline stages | `slavv_python/pipeline/{energy,vertices,edges,network}/` |
+| MATLAB parity ports | `slavv_python/pipeline/{energy,edges}/matlab_*.py` |
 | Analytics & parity | `slavv_python/analytics/` |
 | Storage (I/O) | `slavv_python/storage/` |
 | CLI & Streamlit | `slavv_python/interface/` |

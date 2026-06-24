@@ -62,7 +62,7 @@ For current behavior and proof status, prefer:
 
 ### Changed
 
-- **Global watershed strel seed selection**: Tied adjusted energies inside the structuring element now break on lowest Fortran linear index (MATLAB parity), via `_argmin_with_linear_index_tiebreak` in `edges/common.py`.
+- **Global watershed strel seed selection**: Tied adjusted energies inside the structuring element now break on lowest Fortran linear index (MATLAB parity), via `_argmin_with_linear_index_tiebreak` in `edges/matlab_indexing.py`.
 - **Parity CLI**: `handle_prove_exact` / `handle_capture_candidates` construct `ExactProofCoordinator` explicitly.
 - **Energy extraction**: `calculate_energy_field` / `calculate_energy_field_resumable` delegate to `EnergyManager`.
 - **EdgeManager unify**: `EdgeManager.run()` and `run_resumable()` share `_run_tracing()`; removed duplicate `extraction_standard.py`. Orchestrator and `extract_edges()` use `EdgeManager.run()` for ephemeral runs.

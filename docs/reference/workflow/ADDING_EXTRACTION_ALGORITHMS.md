@@ -28,15 +28,15 @@ Most new extraction algorithms need coordinated changes in these files:
 | --- | --- |
 | `slavv_python/utils/validation.py` | Validates new parameter values and sets defaults. |
 | `slavv_python/interface/cli/parser.py` and `slavv_python/interface/cli/shared.py` | Expose the new option on `slavv run`. |
-| `slavv_python/processing/stages/` and `slavv_python/workflows/` | Hold the implementation and the current pipeline orchestration. |
+| `slavv_python/pipeline/` and `slavv_python/workflows/` | Hold the implementation and the current pipeline orchestration. |
 | `slavv_python/engine/state/` and stage manifests | Keep resumable artifacts inspectable if the new method adds files or optional tasks. |
-| `tests/unit/core/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
+| `tests/unit/pipeline/` and related owner-aligned tests | Lock behavior with deterministic coverage in direct and resumable modes. |
 
 For edge extraction specifically, the maintained split today is:
 
-- `slavv_python/processing/stages/edges/edges.py` for stage orchestration and resumable helpers
-- `slavv_python/processing/stages/edges/candidate_generation.py` and related helpers for candidate generation
-- `slavv_python/processing/stages/edges/selection.py` and `cleanup.py` for choice and cleanup logic
+- `slavv_python/pipeline/edges/edges.py` for stage orchestration and resumable helpers
+- `slavv_python/pipeline/edges/candidate_generation.py` and related helpers for candidate generation
+- `slavv_python/pipeline/edges/selection.py` and `cleanup.py` for choice and cleanup logic
 
 ## Recommended Workflow
 
@@ -55,7 +55,7 @@ For edge extraction specifically, the maintained split today is:
    If the algorithm adds durable artifacts or optional sub-steps, make sure
    run-state and stage-manifest surfaces can describe and rediscover them.
 6. Add tests in the owner-aligned location.
-   For core pipeline work, that usually means `tests/unit/core/`.
+   For core pipeline work, that usually means `tests/unit/pipeline/`.
 7. Update docs.
    Add or refresh a focused reference note instead of leaving behavior only in
    code comments or TODO files.
@@ -69,7 +69,7 @@ For example, the experimental `simpleitk_objectness` mode is integrated by:
 
 - extending validation in `slavv_python/utils/validation.py`
 - extending `slavv run --energy-method` choices in the CLI parser surfaces
-- routing both direct and resumable execution through `slavv_python/processing/stages/energy/energy.py`
+- routing both direct and resumable execution through `slavv_python/pipeline/energy/energy.py`
 - keeping the default `hessian` path unchanged unless the new backend is
   explicitly selected
 - documenting parameter differences when the backend cannot or should not
@@ -87,8 +87,8 @@ Its durable outcomes are now:
 
 ### Already adopted in the codebase
 
-- `SimpleITK` as an optional exploratory energy backend in `slavv_python/processing/stages/energy/energy.py`
-- `CuPy` as an optional experimental GPU energy backend in `slavv_python/processing/stages/energy/energy.py`
+- `SimpleITK` as an optional exploratory energy backend in `slavv_python/pipeline/energy/energy.py`
+- `CuPy` as an optional experimental GPU energy backend in `slavv_python/pipeline/energy/energy.py`
 - `Zarr` for resumable energy storage and staged persistence
 - `napari` as an optional curator surface in `slavv_python/visualization/napari_curator.py`
 - `numba` as an optional acceleration path where the maintained code uses it

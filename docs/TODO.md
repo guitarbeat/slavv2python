@@ -54,7 +54,7 @@
 
 ### Harness & ops
 
-- [x] **Energy memory safety** — Removed large 4D chunk arrays in `exact_mesh.py`; peak memory reduced 30x.
+- [x] **Energy memory safety** — Removed large 4D chunk arrays in `matlab_get_energy_v202_chunked.py`; peak memory reduced 30x.
 - [x] **Internal Grid Alignment** — Anchored pipeline to **[Y, X, Z]** with Fortran (F) memory order to match MATLAB tie-breaking.
 - [x] **Watershed Robustness** — Resolved `KeyError` in `FrontierQueue` and restored directional suppression parity.
 - [x] **Parity job lifecycle reconciliation** — Dead-PID + running snapshot → persisted `interrupted`; terminal `parity_job.json` metadata. Tests: `tests/unit/parity/test_parity_job_lifecycle.py`.
@@ -66,7 +66,7 @@
 
 ## Checklist — next (after Phase 1 gates)
 
-- [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `global_watershed.py` (performance, not cert blocker).
+- [x] **O(log N) frontier** — `heapq` / `SortedList` for `available_locations` in `matlab_get_edges_by_watershed.py` (performance, not cert blocker).
 - [x] **API reference** — Public `SlavvPipeline` and internal `Manager` class docstrings.
 - [x] **Sparse Meshgrids** — Refactor `_interp3_matlab_linear_inf` to accept sparse coordinate meshes, saving >400MB for canonical volumes.
 - [ ] **neurovasc-db** — Import and verify additional volumes when Phase 1 is closed.

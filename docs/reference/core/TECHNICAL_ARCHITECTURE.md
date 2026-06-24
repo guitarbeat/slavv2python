@@ -104,7 +104,7 @@ The pipeline follows a strict linear execution order to maintain MATLAB compatib
 ## Design Principles
 
 ### Parity-First Architecture
-The engine is designed to allow "surgical" parity alignments. Logic that must match MATLAB exactly is isolated in `matlab_algorithms/` subdirectories, while the maintained Python workflow reuses these primitives.
+The engine is designed to allow "surgical" parity alignments. Logic that must match MATLAB exactly is isolated in `matlab_*.py` ports under each stage package (see [PYTHON_NAMING_GUIDE.md](../workflow/PYTHON_NAMING_GUIDE.md#matlab-parity-filename-convention)), while the maintained Python workflow reuses these primitives via role-named facades (`manager.py`, `discovery.py`).
 
 ### Memory Safety
 For large 2-photon volumes (e.g. 512x512x64), the engine uses:

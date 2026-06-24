@@ -23,11 +23,12 @@ Always read these before making parity changes:
 
 | Surface | Location |
 |:--------|:---------|
-| Edge processing | `slavv_python/processing/stages/edges/` |
-| MATLAB parity shims | `slavv_python/processing/stages/edges/matlab_algorithms/` |
-| Energy computation | `slavv_python/processing/stages/energy/` |
-| Vertex extraction | `slavv_python/processing/stages/vertices/` |
-| Network assembly | `slavv_python/processing/stages/network/` |
+| Edge processing | `slavv_python/pipeline/edges/` |
+| MATLAB parity ports | `slavv_python/pipeline/edges/matlab_*.py` (e.g. `matlab_get_edges_by_watershed.py`) |
+| Energy computation | `slavv_python/pipeline/energy/` |
+| Energy MATLAB ports | `matlab_get_energy_v202_chunked.py`, `matlab_energy_filter_v200.py` |
+| Vertex extraction | `slavv_python/pipeline/vertices/` |
+| Network assembly | `slavv_python/pipeline/network/` |
 | Proof harness | `slavv_python/analytics/parity/` |
 | Run state | `slavv_python/engine/state/` |
 | Parity experiment CLI | `slavv parity` |

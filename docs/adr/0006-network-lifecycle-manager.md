@@ -7,7 +7,7 @@ Accepted
 The network stage interleaved graph construction, hair pruning, cycle removal, strand topology, and smoothing across `construction.py` and `operations.py`. Resumable checkpoint I/O lived in a long procedural function parallel to the ephemeral `construct_network()` path.
 
 ## Decision
-Introduce `NetworkManager` in `slavv_python/processing/stages/network/manager.py`:
+Introduce `NetworkManager` in `slavv_python/pipeline/network/manager.py`:
 
 1. **`NetworkManager.run()`** — ephemeral graph build and final `NetworkResult`.
 2. **`NetworkManager.run_resumable()`** — same pipeline with adjacency / hair / cycle / strand artifacts.

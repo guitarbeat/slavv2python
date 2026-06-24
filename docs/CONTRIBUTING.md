@@ -34,7 +34,7 @@ pre-commit run --all-files
 ```
 
 ### Parity Testing
-When modifying core vascular discovery logic (e.g. `global_watershed.py`), verify MATLAB parity is maintained.
+When modifying core vascular discovery logic (e.g. `matlab_get_edges_by_watershed.py`), verify MATLAB parity is maintained.
 
 1.  **Preflight**: Prepare a parity experiment directory.
     ```powershell

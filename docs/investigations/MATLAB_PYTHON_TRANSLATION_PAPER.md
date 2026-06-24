@@ -42,7 +42,7 @@ Translating a pipeline for bit-perfect parity often requires preserving memory-i
 
 In early Phase 1 iterations, the Python energy stage attempted to match MATLAB's batch-style processing by building large 4D intermediate arrays (Z x Y x X x Scales) for each image octave. For canonical volumes, this led to `ArrayMemoryError` crashes as the system attempted to allocate multi-gigabyte blocks in parallel threads.
 
-The breakthrough involved a fundamental refactor of the `exact_mesh.py` engine:
+The breakthrough involved a fundamental refactor of the `matlab_get_energy_v202_chunked.py` engine:
 - **In-Place Scale Comparison:** Instead of stacking energy results across all scales and then computing the "best" energy, the engine was refactored to perform in-place comparisons within the octave chunk loop. 
 - **4D Array Elimination:** By processing scales sequentially per chunk and updating the "best energy" and "best scale" accumulators immediately, the 4D stack was entirely eliminated.
 - **Results:** Peak memory usage dropped from **~300 MiB/thread to ~10 MiB/thread**, a 30x reduction. This transformation enabled the pipeline to handle full canonical volumes on standard developer workstations (16GB RAM) without compromising the bit-perfect parity requirement.
@@ -58,7 +58,7 @@ Edge discovery via global watershed represents one of the most sensitive logic b
 
 Even after 4D array elimination, the Energy stage faced `ArrayMemoryError` on high-resolution chunks during the MATLAB-style symmetric IFFT operation. This was traced to the creation of a full-volume flipped copy of the complex spectrum to enforce conjugate symmetry.
 
-- **The Optimization:** Refactored `_ifftn_matlab_symmetric` in `hessian_response.py` to use sparse conjugate re-population. Instead of creating a complete `partner` spectrum via full-volume indexing, the engine now only calculates the conjugated partner values for the specific voxels targeted by the symmetry mask.
+- **The Optimization:** Refactored `_ifftn_matlab_symmetric` in `matlab_energy_filter_v200.py` to use sparse conjugate re-population. Instead of creating a complete `partner` spectrum via full-volume indexing, the engine now only calculates the conjugated partner values for the specific voxels targeted by the symmetry mask.
 - **Impact:** Reduced the per-chunk peak memory footprint by ~50% (from ~160MB to ~80MB for standard chunks). 
 - **Parity Preservation:** This optimization preserved bit-perfect parity with MATLAB's `ifftn(..., 'symmetric')` by maintaining the exact same rounding drift profile, while ensuring the pipeline can process 512x512x64 volumes without exhausting physical RAM.
 
