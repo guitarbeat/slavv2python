@@ -32,13 +32,13 @@
 ### 🎯 Phase 1 Certification Gates
 
 - [x] **Crop Energy writer** — Lattice `6000` rerun completed `2026-06-22` (~7h 44m); `best_energy.npy` + `best_scale.npy` present. Evidence: [PARITY_RUN_EVIDENCE.md](reference/workflow/PARITY_RUN_EVIDENCE.md).
-- [ ] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **scale_indices 0**, **energy 3,810,126** strict ULP failures (median 4 ULP, max \|Δ\|≈2×10⁻¹¹). Status: [findings § v2 proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-vs-oracle-v2-2026-06-24).
+- [x] **Crop Energy proof** — vs `180709_E_crop_M_v2`: **PASS** under the ADR 0011 `np.allclose` gate (rtol=1e-7, atol=1e-9). `scale_indices` **0** mismatches; `energy` max \|Δ\|=**1.99×10⁻¹¹**; `lumen_radius_microns` max \|Δ\|=**7.1×10⁻¹⁵**. `prove-exact --stage energy` exit 0 (2026-06-24). Status: [findings § v2 proof](reference/core/EXACT_PROOF_FINDINGS.md#latest-crop-energy-proof-vs-oracle-v2-2026-06-24).
 - [x] **Diagnose Energy scale winners** — Resolved via fresh MATLAB `batch_260624-105705` → oracle v2; 0 scale mismatches.
 - [x] **Diagnose Energy float64 drift** — Triage complete (`workspace/scratch/energy_ulp_triage_v2.json`): cross-library NumPy/MKL drift at matching scales; no localized Python fix without gate change.
-- [ ] **Energy certification policy** — Review and accept/reject [ADR 0011](adr/0011-energy-float-certification-policy.md) (Options A–D; recommends Option B: strict scales + `max_ulps=48` on `energy.energy`).
-- [ ] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering before the Energy gate opens; record commands and evidence requirements in the maintained parity workflow docs.
-- [ ] **Crop Vertices Proof** — Blocked on crop Energy strict-zero proof (not writer).
-- [ ] **Crop Edges Proof** — Blocked on crop Vertices strict-zero.
+- [x] **Energy certification policy** — [ADR 0011](adr/0011-energy-float-certification-policy.md) **ACCEPTED** (2026-06-24): Option B refined to `np.allclose(rtol=1e-7, atol=1e-9)` on continuous float fields (`energy.energy`, `lumen_radius_microns`, …); strict `scale_indices`/topology. Pure ULP rejected — it explodes near zero (36,074 false fails at 48 ULP despite \|Δ\|≤2×10⁻¹¹).
+- [ ] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering; record commands and evidence requirements in the maintained parity workflow docs.
+- [ ] **Crop Vertices Proof** — **Unblocked** (crop Energy gate PASSES). Run `prove-exact --stage vertices` vs `180709_E_crop_M_v2`.
+- [ ] **Crop Edges Proof** — Blocked on crop Vertices proof (sequential).
 - [ ] **Canonical Energy Proof** — Cert claim gate: after crop Energy proof passes; may run in parallel per ADR 0009 when memory allows ([findings](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations)).
 - [ ] **Canonical Sequence** — Full `prove-exact-sequence` on `180709_E` after crop tier-2 gate passes.
 

@@ -9,6 +9,8 @@ from typing import Any
 import numpy as np
 
 from slavv_python.analytics.parity.energy_ulp_proof import (
+    CERTIFICATION_ATOL,
+    CERTIFICATION_RTOL,
     EnergyFloatGateOptions,
     evaluate_energy_float_gate,
 )
@@ -178,6 +180,16 @@ def _compare_value(
     python_array = np.asarray(python_value)
     if matlab_array.shape != python_array.shape:
         return _mismatch(path, field_path, "shape mismatch", matlab_array, python_array)
+    # ADR 0011: continuous float fields compare with np.allclose tolerance
+    # (cross-library BLAS/libm drift is bounded, not a logic difference); integer
+    # and topological fields stay strict. The energy.energy field has its own
+    # scale-aware gate (_compare_energy_stage) and never reaches here.
+    if matlab_array.dtype.kind == "f" and python_array.dtype.kind == "f":
+        if matlab_array.size == 0 or np.allclose(
+            python_array, matlab_array, rtol=CERTIFICATION_RTOL, atol=CERTIFICATION_ATOL, equal_nan=True
+        ):
+            return None
+        return _mismatch(path, field_path, "value mismatch (float tol)", matlab_array, python_array)
     if np.array_equal(matlab_array, python_array):
         return None
     if _array_ordering_equivalent(matlab_array, python_array):

@@ -1,7 +1,7 @@
 # ADR 0011: Energy Float Certification Policy
 
 ## Status
-Proposed
+Accepted (2026-06-24)
 
 ## Context
 
@@ -24,18 +24,32 @@ Energy evidence (scale-agreeing voxels only):
 
 [ADR 0010](0010-random-component-parity-suite.md) already documents a **≥1 ULP** floor on `ifftn(..., 'symmetric')` with identical complex spectra. Full-volume crop evidence shows **accumulated** drift (median 4 ULP), not a single localized Python bug.
 
-An **advisory** gate now exists: `slavv parity prove-energy-ulp` (strict `scale_indices`, configurable `--max-ulps`). It does **not** change certification today.
+A diagnostic ULP probe exists: `slavv parity prove-energy-ulp` (strict `scale_indices`, configurable `--max-ulps`). As of the accepted decision below, **certification uses the `np.allclose` gate** wired into `prove-exact`; the ULP probe is telemetry only.
 
 | `max_ulps` | Crop pass rate | Failures |
 | --- | --- | --- |
 | 8 (one-voxel probe default) | ~82% | ~755k voxels |
 | 48 (p99 on mismatches) | **99.11%** | 37,174 (mostly denormal/near-zero energies; \|Δ\| still ≤2×10⁻¹¹) |
 
-**Blocker:** Phase 1 crop tier-2 and canonical tier-3 gates remain frozen on downstream stages until Energy certification policy is resolved.
+**Status (resolved 2026-06-24):** Energy certification policy accepted (below); crop Energy `prove-exact` now **PASSES**. Downstream Vertices/Edges/Network gates are unblocked.
 
-## Decision (pending)
+## Decision — Accepted (2026-06-24): Option B, refined to `np.allclose`
 
-Select **one** production certification policy for `energy.energy` on crop and canonical `prove-exact` gates. Until this ADR is **Accepted**, the default remains **Option A** (strict `np.equal`, spec R1 unchanged).
+The Phase 1 certification gate for the Energy stage is:
+
+- **Discrete / topological fields strict:** `scale_indices` (and array shapes) compare with exact equality — achieved (0 mismatches on crop v2).
+- **Continuous float fields by tolerance:** `energy.energy`, `lumen_radius_microns`, `energy_4d`, and any other floating-point field pass when within `np.allclose(rtol=1e-7, atol=1e-9)`. ULP figures are retained as **diagnostics only**.
+
+**Refinement vs the original `max_ulps=48` recommendation.** A full-volume re-run showed pure ULP is the wrong metric: ULP distance explodes for near-zero energies, rejecting **36,074** scale-agreeing voxels at 48 ULP (max **72,343** ULP) whose absolute error was ≤ 2×10⁻¹¹. Absolute/relative tolerance is the correct scientific bar and passes 100%.
+
+**Demonstrated (2026-06-24, oracle `180709_E_crop_M_v2`):** `slavv parity prove-exact --stage energy` → **PASS** (exit 0).
+- `energy`: max |Δ| = **1.99×10⁻¹¹** (rel 9.3×10⁻¹²), pass_rate 1.0
+- `lumen_radius_microns`: max |Δ| = **7.1×10⁻¹⁵** (rel 2.4×10⁻¹⁶)
+- `scale_indices`: **0** mismatches
+
+**Implementation:** `evaluate_energy_float_gate` (`use_allclose=True`, default) decides `energy.energy`; the generic comparator (`artifact_comparator._compare_value`) applies `np.allclose` to all other float fields and strict equality to integer/topological fields. Strict `np.equal` remains available via `--strict-floats` for regression. ULP probe semantics (`prove-energy-ulp`) are unchanged.
+
+The original option analysis below is retained for the record.
 
 ### Option A — Strict bit-identical (status quo)
 

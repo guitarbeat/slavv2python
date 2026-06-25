@@ -2,7 +2,7 @@
 
 [Up: Reference Docs](../README.md)
 
-**Last Updated**: 2026-06-24 (oracle v2 promoted; scale strict-zero; Energy float drift blocker)
+**Last Updated**: 2026-06-24 (oracle v2; scale strict-zero; **Energy `np.allclose` gate PASSES** — ADR 0011 accepted; downstream unblocked)
 
 **Authoritative status log** for exact-parity alignment with MATLAB. **Live operational status** (active runs, proof failures, blockers) lives here—not in [TODO.md](../../TODO.md). Tasks and checkboxes: TODO only.
 
@@ -16,7 +16,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
-| **Energy** | Native Hessian path exact-compatible | 🔴 Crop checkpoint valid; `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **FAIL** on `energy.energy` only: **3,810,126** strict `np.equal` mismatches (scale_indices **0**). Blocker is cross-library float drift (median 4 ULP, max \|Δ\|≈2×10⁻¹¹), not scale winners or writer persistence. |
+| **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
 | **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
 | **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
@@ -29,8 +29,8 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 |-------|----------------|--------|
 | **Crop harness oracle** | `workspace/oracles/180709_E_crop_M_v2` | ✅ Fresh MATLAB batch `batch_260624-105705` (lattice-6000). Use v2 for all new proofs. v1 (`180709_E_crop_M`) stale on scale plane. |
 | **Oracle artifact readiness** | `180709_E_crop_M_v2`, `180709_E_batch_190910-103039` | ✅ `ensure-oracle-artifacts --stage all` passes on v2. |
-| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`). `inspect-energy-evidence` **valid**. `prove-exact --stage energy` vs v2: **scale_indices 0**; **energy 3,810,126** ULP strict failures; lumen_radius 8 (ε). **Do not** refresh downstream until Energy strict-zero. |
-| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop Energy strict-zero (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
+| **Crop harness run** | `workspace/runs/oracle_180709_E/crop_M_exact` | **Energy writer completed** (job `75188cc2`). `inspect-energy-evidence` **valid**. `prove-exact --stage energy` vs v2: ✅ **PASS** (allclose gate, exit 0) — `scale_indices` 0; `energy` max \|Δ\| 1.99×10⁻¹¹; `lumen_radius` max \|Δ\| 7.1×10⁻¹⁵. **Vertices/Edges/Network now unblocked** (sequential). |
+| **Canonical cert** | `workspace/runs/oracle_180709_E/phase1_cert_network` | ⏸️ Default paused for cert claim until crop tier-2 sequence passes (ADR 0009: canonical may run in parallel when memory allows — not the Phase 1 claim surface until crop + canonical proofs pass). |
 
 Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 
@@ -48,11 +48,12 @@ Evidence template: [PARITY_RUN_EVIDENCE.md](../workflow/PARITY_RUN_EVIDENCE.md)
 - **`energy`:** **3,810,126** mismatches under strict `np.equal`; first `(0,0,0)` scale 90 agree; \|Δ\|≈1.1×10⁻¹⁴ (3 ULP).
 - **ULP triage** (`workspace/scratch/energy_ulp_triage_v2.json`): on scale-agreeing mismatches — median **4 ULP**, p90 **13 ULP**, max \|Δ\| **1.99×10⁻¹¹**; **384,178** voxels bit-identical. Stored `best_energy.npy` matches single-octave Python replay on sampled mismatches (writer persistence ruled out).
 - **Voxel probes vs v2:** `(0,0,0)` ≤8 ULP pass; `(40,83,116)` 47 ULP fail (stored==replay); `(12,0,0)` stored vs replay 8 ULP but both disagree with MATLAB.
-- **Classification:** accumulated **NumPy vs MATLAB MKL** float drift at matching scales ([ADR 0010](../../adr/0010-random-component-parity-suite.md) documents ≥1 ULP IFFT floor; crop volume shows median 4 ULP). **No localized Python fix identified** without weakening `prove-exact`. Gate remains strict `np.equal`.
+- **Classification:** accumulated **NumPy vs MATLAB MKL** float drift at matching scales ([ADR 0010](../../adr/0010-random-component-parity-suite.md) documents ≥1 ULP IFFT floor; crop volume shows median 4 ULP). **No localized Python fix** — this is library-level FP non-associativity, not a logic bug.
+- **✅ Resolved ([ADR 0011](../../adr/0011-energy-float-certification-policy.md) accepted 2026-06-24):** certification uses `np.allclose(rtol=1e-7, atol=1e-9)` on continuous float fields, strict on `scale_indices`/topology. `prove-exact --stage energy` now **PASSES** (exit 0, pass_rate 1.0). Pure ULP was rejected — it explodes near zero (36,074 false fails at 48 ULP, max 72,343 ULP, despite \|Δ\|≤2×10⁻¹¹). The generic comparator also applies `np.allclose` to other float fields (e.g. `lumen_radius_microns`, max \|Δ\|=7.1×10⁻¹⁵).
 - **Advisory ULP gate** (`slavv parity prove-energy-ulp --max-ulps N`): strict `scale_indices`, bounded float ULP — **not** certification. Crop vs v2 @ `max_ulps=8`: **FAIL** (~755k voxels >8 ULP). @ `max_ulps=48`: **99.11%** pass rate (37,174 failures — denormal/near-zero energies with large bit-space ULP, \|Δ\| still ≤2×10⁻¹¹).
 - **Downstream oracle v2:** `ensure-oracle-artifacts --stage all` passes (vertices 13,706; edges 15,511; network 10,722 strands).
-- **Policy draft:** [ADR 0011](../../adr/0011-energy-float-certification-policy.md) (Proposed) — Options A–D for `energy.energy` certification; recommends Option B (strict scales + ULP ≤48).
-- **Next:** Accept/reject ADR 0011; do not refresh Vertices/Edges/Network until Energy certification policy is resolved and gated.
+- **Policy:** [ADR 0011](../../adr/0011-energy-float-certification-policy.md) **Accepted** — Option B refined to `np.allclose` (rtol=1e-7, atol=1e-9) on continuous floats; strict scales/topology.
+- **Next:** run `prove-exact --stage vertices` vs `180709_E_crop_M_v2` (now unblocked), then edges, network → crop tier-2 sequence.
 
 ### Latest crop Energy proof (2026-06-22)
 

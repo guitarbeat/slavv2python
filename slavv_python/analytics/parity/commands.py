@@ -169,13 +169,13 @@ PARITY_COMMAND_SPECS: tuple[CommandSpec, ...] = (
             arg(
                 "--strict-floats",
                 action="store_true",
-                help="Use strict np.equal on energy.energy (regression; ADR 0011 default is ULP gate).",
+                help="Force strict np.equal on float fields (regression; ADR 0011 default is the np.allclose gate).",
             ),
             arg(
                 "--max-ulps",
                 type=int,
                 default=None,
-                help="Energy float ULP tolerance (default 48 per ADR 0011).",
+                help="Energy ULP diagnostic tolerance (default 48); certification uses np.allclose per ADR 0011.",
             ),
         ),
     ),

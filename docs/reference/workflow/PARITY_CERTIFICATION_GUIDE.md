@@ -182,7 +182,7 @@ See [PARITY_JOB_MONITORING.md](PARITY_JOB_MONITORING.md) for comprehensive monit
 The authoritative report is `workspace/runs/<run_id>/03_Analysis/exact_proof.json` (and `.txt`).
 
 ### Core Metrics
-- **Stage passed**: Each compared field matches the oracle at strict equality (`passed: true` in `exact_proof.json`).
+- **Stage passed**: Each compared field matches the oracle — **strict equality** for discrete/topological fields, **`np.allclose(rtol=1e-7, atol=1e-9)`** for continuous float fields (energy, radii) per [ADR 0011](../../adr/0011-energy-float-certification-policy.md) — yielding `passed: true` in `exact_proof.json`. Use `--strict-floats` to force bit-identical float comparison (regression only).
 - **Missing / extra**: For edges, pair-level missing and extra counts must be **zero** for certification (not a percentage threshold).
 - **Sequential gating**: If energy or vertices fail, do not claim downstream stages certified on that run.
 

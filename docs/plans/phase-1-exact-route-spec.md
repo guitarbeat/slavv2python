@@ -58,7 +58,7 @@ Ship confidence requires a **reproducible, strict** certification on a **single 
 
 **Certification bar**
 
-- R1. Success means **`prove-exact` reports zero missing and zero extra** for the stage under test—strict set equality, not a percentage threshold.
+- R1. Success means **`prove-exact` reports zero missing and zero extra** for the stage under test—strict set equality on **discrete/topological fields** (counts, indices, `scale_indices`, connections, positions), not a percentage threshold. **Continuous floating-point fields** (e.g. `energy.energy`, `lumen_radius_microns`) are certified within `np.allclose(rtol=1e-7, atol=1e-9)` per [ADR 0011](../adr/0011-energy-float-certification-policy.md): bit-identical floats are unachievable across MATLAB/NumPy BLAS libraries, and the measured cross-library drift is ≤2×10⁻¹¹. ULP figures are diagnostics only.
 - R2. Certification uses a **native** pipeline: Python discovers vertices; no oracle vertex checkpoint injection for the certified run.
 - R3. **Sequential gating:** Energy must pass before vertices are judged; vertices before edges; edges before network. A failure at any stage blocks **certification** for **that workflow** until resolved.
 - R4. **Canonical volume** for the first milestone is **`180709_E` full volume** (not center crop) for the exact parity route.

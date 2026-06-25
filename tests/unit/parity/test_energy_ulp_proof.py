@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from slavv_python.analytics.parity.energy_ulp_proof import build_energy_ulp_proof_report
+from slavv_python.analytics.parity.energy_ulp_proof import (
+    EnergyFloatGateOptions,
+    build_energy_ulp_proof_report,
+    evaluate_energy_float_gate,
+)
 
 
 def test_energy_ulp_proof_passes_when_scales_match_and_energy_within_max_ulps() -> None:
@@ -73,3 +77,48 @@ def test_energy_ulp_proof_fails_when_energy_exceeds_max_ulps() -> None:
 
     assert report["passed"] is False
     assert report["scale_agree_energy_ulp_over_max_count"] == 1
+
+
+def test_certification_gate_passes_near_zero_high_ulp_within_allclose() -> None:
+    # A near-zero energy where ULP distance is huge but |Delta| is trivial.
+    matlab_energy = np.array([1e-3], dtype=np.float64)
+    python_energy = np.array([1e-3 + 2e-11], dtype=np.float64)
+    scales = np.array([5], dtype=np.int16)
+
+    gate = evaluate_energy_float_gate(
+        matlab_energy, python_energy, scales, scales, options=EnergyFloatGateOptions()
+    )
+
+    assert gate["use_allclose"] is True
+    assert gate["passed"] is True
+    assert gate["scale_agree_tol_over_max_count"] == 0
+    # ULP is still reported as a diagnostic and is large here.
+    assert gate["scale_agree_energy_ulp_over_max_count"] >= 1
+
+
+def test_certification_gate_fails_when_delta_exceeds_allclose_tol() -> None:
+    matlab_energy = np.array([1.0], dtype=np.float64)
+    python_energy = np.array([1.0 + 1e-6], dtype=np.float64)
+    scales = np.array([5], dtype=np.int16)
+
+    gate = evaluate_energy_float_gate(
+        matlab_energy, python_energy, scales, scales, options=EnergyFloatGateOptions()
+    )
+
+    assert gate["passed"] is False
+    assert gate["scale_agree_tol_over_max_count"] == 1
+
+
+def test_certification_gate_strict_scales() -> None:
+    matlab_energy = np.zeros((2,), dtype=np.float64)
+    python_energy = np.zeros((2,), dtype=np.float64)
+    matlab_scales = np.array([1, 2], dtype=np.int16)
+    python_scales = np.array([1, 3], dtype=np.int16)
+
+    gate = evaluate_energy_float_gate(
+        matlab_energy, python_energy, matlab_scales, python_scales,
+        options=EnergyFloatGateOptions(),
+    )
+
+    assert gate["passed"] is False
+    assert gate["scale_mismatch_count"] == 1

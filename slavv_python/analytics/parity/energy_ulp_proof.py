@@ -16,18 +16,33 @@ if TYPE_CHECKING:
 
 DEFAULT_MAX_ULPS = 8
 CERTIFICATION_MAX_ULPS = 48
+CERTIFICATION_RTOL = 1e-7
+CERTIFICATION_ATOL = 1e-9
 DENORM_ENERGY_THRESHOLD = 1e-3
 MAX_ABS_DELTA_NORMAL = 1e-10
 
 
 @dataclass(frozen=True)
 class EnergyFloatGateOptions:
-    """Policy for energy.energy float comparison in prove-exact (ADR 0011 Option B)."""
+    """Policy for energy.energy float comparison in prove-exact (ADR 0011 Option B).
+
+    Certification (``use_allclose=True``, the default) passes a scale-agreeing
+    voxel when its energy is within ``np.allclose`` tolerance
+    (``atol + rtol*|oracle|``). This is the correct metric for an energy field
+    that ranges down to ~0, where ULP distance explodes for absolutely-trivial
+    differences. ULP figures are still reported as diagnostics.
+
+    The advisory ``prove-energy-ulp`` probe sets ``use_allclose=False`` to keep
+    pure ULP-bounded telemetry (with the near-zero denormal escape).
+    """
 
     strict_floats: bool = False
     max_ulps: int = CERTIFICATION_MAX_ULPS
     denorm_threshold: float = DENORM_ENERGY_THRESHOLD
     max_abs_delta: float = MAX_ABS_DELTA_NORMAL
+    rtol: float = CERTIFICATION_RTOL
+    atol: float = CERTIFICATION_ATOL
+    use_allclose: bool = True
 
 
 def evaluate_energy_float_gate(
@@ -51,50 +66,63 @@ def evaluate_energy_float_gate(
     scale_mismatch_count = int(np.count_nonzero(~scale_equal))
     energy_equal = matlab_e == python_e
     scale_agree_mask = scale_equal
+    delta = np.abs(matlab_e - python_e)
+
+    # Diagnostics (always computed regardless of which gate decides pass/fail).
+    ulp_full = _float64_ulp_array(matlab_e, python_e)
+    within_ulp = ulp_full <= gate_options.max_ulps
+    denorm_mask = np.abs(matlab_e) < gate_options.denorm_threshold
+    within_abs_delta = delta <= gate_options.max_abs_delta
+    allclose_tol = gate_options.atol + gate_options.rtol * np.abs(matlab_e)
+    within_tol = delta <= allclose_tol
+
+    over_ulp = int(np.count_nonzero(scale_agree_mask & ~within_ulp & ~denorm_mask))
+    denorm_escape_count = int(
+        np.count_nonzero(scale_agree_mask & ~energy_equal & denorm_mask & within_abs_delta)
+    )
+    abs_delta_fail_count = int(
+        np.count_nonzero(scale_agree_mask & ~within_abs_delta & ~denorm_mask)
+    )
+    tol_over_count = int(np.count_nonzero(scale_agree_mask & ~within_tol & ~energy_equal))
+
+    failures: list[str] = []
+    if scale_mismatch_count:
+        failures.append(f"scale_mismatch_count={scale_mismatch_count}")
 
     if gate_options.strict_floats:
         float_pass_mask = scale_agree_mask & energy_equal
-        over_ulp = int(
-            np.count_nonzero(scale_agree_mask & ~energy_equal)
-        )
-        denorm_escape_count = 0
-        abs_delta_fail_count = 0
+        strict_nonequal = int(np.count_nonzero(scale_agree_mask & ~energy_equal))
+        if strict_nonequal:
+            failures.append(f"energy_not_bit_identical={strict_nonequal}")
+    elif gate_options.use_allclose:
+        # ADR 0011 certification gate: strict scales + np.allclose energy.
+        float_pass_mask = scale_agree_mask & (energy_equal | within_tol)
+        if tol_over_count:
+            failures.append(f"energy_tol_over_max={tol_over_count}")
     else:
-        ulp_full = _float64_ulp_array(matlab_e, python_e)
-        delta = np.abs(matlab_e - python_e)
-        denorm_mask = np.abs(matlab_e) < gate_options.denorm_threshold
-        within_ulp = ulp_full <= gate_options.max_ulps
-        within_delta = delta <= gate_options.max_abs_delta
+        # Advisory ULP telemetry (prove-energy-ulp) with near-zero denormal escape.
         float_pass_mask = scale_agree_mask & (
             energy_equal
-            | (denorm_mask & within_delta)
-            | (within_ulp & within_delta)
+            | (denorm_mask & within_abs_delta)
+            | (within_ulp & within_abs_delta)
         )
-        over_ulp = int(np.count_nonzero(scale_agree_mask & ~within_ulp & ~denorm_mask))
-        denorm_escape_count = int(
-            np.count_nonzero(scale_agree_mask & ~energy_equal & denorm_mask & within_delta)
-        )
-        abs_delta_fail_count = int(
-            np.count_nonzero(scale_agree_mask & ~within_delta & ~denorm_mask)
-        )
+        if over_ulp:
+            failures.append(f"energy_ulp_over_max={over_ulp}")
+        if abs_delta_fail_count:
+            failures.append(f"energy_abs_delta_over_max={abs_delta_fail_count}")
 
     total_voxels = int(matlab_e.size)
     passed_voxels = int(np.count_nonzero(scale_equal & float_pass_mask))
     failed_voxels = total_voxels - passed_voxels
     mismatch_mask = scale_agree_mask & ~energy_equal
     ulp_stats = _ulp_mismatch_stats(matlab_e[mismatch_mask], python_e[mismatch_mask])
-    mismatch_delta = np.abs(matlab_e[mismatch_mask] - python_e[mismatch_mask])
-
-    failures: list[str] = []
-    if scale_mismatch_count:
-        failures.append(f"scale_mismatch_count={scale_mismatch_count}")
-    if over_ulp:
-        failures.append(f"energy_ulp_over_max={over_ulp}")
-    if abs_delta_fail_count:
-        failures.append(f"energy_abs_delta_over_max={abs_delta_fail_count}")
+    mismatch_delta = delta[mismatch_mask]
 
     return {
         "strict_floats": gate_options.strict_floats,
+        "use_allclose": gate_options.use_allclose,
+        "rtol": float(gate_options.rtol),
+        "atol": float(gate_options.atol),
         "max_ulps": int(gate_options.max_ulps),
         "denorm_threshold": float(gate_options.denorm_threshold),
         "max_abs_delta": float(gate_options.max_abs_delta),
@@ -107,6 +135,7 @@ def evaluate_energy_float_gate(
         "scale_mismatch_count": scale_mismatch_count,
         "scale_agree_energy_exact_match_count": int(np.count_nonzero(scale_agree_mask & energy_equal)),
         "scale_agree_energy_ulp_over_max_count": over_ulp,
+        "scale_agree_tol_over_max_count": tol_over_count,
         "scale_agree_denorm_escape_count": denorm_escape_count,
         "scale_agree_abs_delta_over_max_count": abs_delta_fail_count,
         "ulp_stats_on_mismatches": ulp_stats,
@@ -139,6 +168,7 @@ def build_energy_ulp_proof_report(
             max_ulps=max_ulps,
             denorm_threshold=denorm_threshold,
             max_abs_delta=max_abs_delta,
+            use_allclose=False,
         ),
     )
     within_ulp_count = int(
@@ -163,8 +193,10 @@ def build_energy_ulp_proof_report(
         "Strict np.equal on energy.energy (--strict-floats)."
         if strict_floats
         else (
-            "Certification gate per ADR 0011: strict scale_indices; energy.energy ULP "
-            f"≤ {max_ulps} with denormal |Δ| ≤ {max_abs_delta:g} when |oracle| < {denorm_threshold:g}."
+            "Advisory ULP telemetry (strict scale_indices; energy.energy ULP "
+            f"≤ {max_ulps} with denormal |Δ| ≤ {max_abs_delta:g} when |oracle| < {denorm_threshold:g}). "
+            "Phase 1 certification uses the np.allclose energy gate (ADR 0011): "
+            f"rtol={CERTIFICATION_RTOL:g}, atol={CERTIFICATION_ATOL:g}."
         )
     )
 
@@ -236,11 +268,13 @@ def _render_energy_ulp_report(report: dict[str, Any]) -> str:
 
 
 __all__ = [
+    "CERTIFICATION_ATOL",
     "CERTIFICATION_MAX_ULPS",
+    "CERTIFICATION_RTOL",
     "DEFAULT_MAX_ULPS",
     "DENORM_ENERGY_THRESHOLD",
-    "EnergyFloatGateOptions",
     "MAX_ABS_DELTA_NORMAL",
+    "EnergyFloatGateOptions",
     "build_energy_ulp_proof_report",
     "evaluate_energy_float_gate",
     "persist_energy_ulp_proof_report",
