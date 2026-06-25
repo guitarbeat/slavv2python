@@ -17,7 +17,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | Stage | Harness / prior work | Phase 1 certification (strict zero) |
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
-| **Vertices** | Verified on prior surfaces | ⏳ Pending sequential proof. **Fixed**: Re-integrated PipelinePolicy rounding (round-half-up) and coordinate alignment. |
+| **Vertices** | Verified on prior surfaces | 🟢 **Structural parity** vs `180709_E_crop_M_v2`: positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix (`ellipsoid_offsets` ports MATLAB `construct_structuring_element.m` float-radius membership). `energies` field still fails the gate only because the loader reads `curated_vertices.mat` (energies = curation **rank ramp**); Python matches the **raw** `vertices.mat` energies exactly. Pending: choose energies-source (see TODO). |
 | **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
 

@@ -37,8 +37,9 @@
 - [x] **Diagnose Energy float64 drift** — Triage complete (`workspace/scratch/energy_ulp_triage_v2.json`): cross-library NumPy/MKL drift at matching scales; no localized Python fix without gate change.
 - [x] **Energy certification policy** — [ADR 0011](adr/0011-energy-float-certification-policy.md) **ACCEPTED** (2026-06-24): Option B refined to `np.allclose(rtol=1e-7, atol=1e-9)` on continuous float fields (`energy.energy`, `lumen_radius_microns`, …); strict `scale_indices`/topology. Pure ULP rejected — it explodes near zero (36,074 false fails at 48 ULP despite \|Δ\|≤2×10⁻¹¹).
 - [ ] **Audit downstream proof surfaces** — Verify crop Vertex, Edge, and Network oracle/checkpoint fields and ordering; record commands and evidence requirements in the maintained parity workflow docs.
-- [ ] **Crop Vertices Proof** — **Unblocked** (crop Energy gate PASSES). Run `prove-exact --stage vertices` vs `180709_E_crop_M_v2`.
-- [ ] **Crop Edges Proof** — Blocked on crop Vertices proof (sequential).
+- [ ] **Crop Vertices Proof** — **Structural parity ACHIEVED** vs `180709_E_crop_M_v2`: positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing, 0 extra) after the SE fix (`ellipsoid_offsets` now ports `construct_structuring_element.m` float-radius membership). Remaining: `energies` field fails only because the loader compares against `curated_vertices.mat`, whose energies are a curation **rank ramp** (`-65532…` evenly spaced); Python's energies match the **raw** `vertices.mat` `vertex_energies` exactly. Not a parity bug. → see follow-up below.
+- [ ] **Decide vertex `energies` certification source** — Curated MATLAB artifact remaps vertex energies to a rank ramp. Either (A) source energies from raw `vertices.mat` matched by position, or (B) drop `energies` from the vertex gate (positions + scales are the structural truth). Then the vertices stage gate passes.
+- [ ] **Crop Edges Proof** — Blocked on crop Vertices `energies` decision (sequential).
 - [ ] **Canonical Energy Proof** — Cert claim gate: after crop Energy proof passes; may run in parallel per ADR 0009 when memory allows ([findings](reference/core/EXACT_PROOF_FINDINGS.md#-active-phase-1-operations)).
 - [ ] **Canonical Sequence** — Full `prove-exact-sequence` on `180709_E` after crop tier-2 gate passes.
 

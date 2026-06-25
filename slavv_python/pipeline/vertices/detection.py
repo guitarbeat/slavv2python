@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import numpy as np
 from joblib import Parallel, delayed
-from skimage.draw import ellipsoid
 from typing_extensions import TypeAlias
 
 from slavv_python.pipeline.policy import PipelinePolicy
@@ -231,16 +228,38 @@ def crop_vertices_matlab_style(
 
 
 def ellipsoid_offsets(radii_pixels: np.ndarray, policy: PipelinePolicy | None = None) -> np.ndarray:
-    """Construct centered voxel offsets for a scale-specific ellipsoid."""
+    """Construct centered voxel offsets for a scale-specific ellipsoid.
+
+    Faithful port of MATLAB ``construct_structuring_element.m``: the template grid
+    dimensions and center use ``round(radii)``, but the ellipsoid membership test
+    uses the **unrounded float radii** in the denominators —
+    ``(dy/r0)^2 + (dx/r1)^2 + (dz/r2)^2 <= 1``. The previous implementation rounded
+    the radii to integers before calling ``skimage.draw.ellipsoid``, which changed
+    the suppression volume (sometimes larger, sometimes smaller) and caused vertex
+    over- and under-suppression vs MATLAB in ``choose_vertices`` (ADR 0011 era).
+    """
     policy = policy or PipelinePolicy(np.float64, "matlab", "half-up", "incremental")
-    radii = np.maximum(policy.round(radii_pixels).astype(np.int16), 0)
-    if np.all(radii == 0):
+    radii = np.asarray(radii_pixels, dtype=np.float64)
+    r_round = np.maximum(policy.round(radii).astype(np.int64), 0)
+    if np.all(r_round == 0):
         return np.zeros((1, 3), dtype=np.int16)
 
-    mask = ellipsoid(float(radii[0]), float(radii[1]), float(radii[2]), spacing=(1.0, 1.0, 1.0))
-    coords = np.column_stack(np.where(mask))
-    center = np.asarray(mask.shape, dtype=np.int64) // 2
-    return cast("np.ndarray", (coords - center).astype(np.int16, copy=False))
+    # Where an axis radius rounds to 0 the only grid offset is 0 (numerator 0), so
+    # the substituted denominator is irrelevant; this just avoids 0/0 -> NaN.
+    safe_radii = np.where(radii > 0.0, radii, 1.0)
+    yy, xx, zz = np.meshgrid(
+        np.arange(2 * r_round[0] + 1),
+        np.arange(2 * r_round[1] + 1),
+        np.arange(2 * r_round[2] + 1),
+        indexing="ij",
+    )
+    radial_distances_squared = (
+        ((yy - r_round[0]) / safe_radii[0]) ** 2
+        + ((xx - r_round[1]) / safe_radii[1]) ** 2
+        + ((zz - r_round[2]) / safe_radii[2]) ** 2
+    )
+    coords = np.column_stack(np.where(radial_distances_squared <= 1.0))
+    return (coords - r_round).astype(np.int16, copy=False)
 
 
 def _choose_vertices_loop_python(

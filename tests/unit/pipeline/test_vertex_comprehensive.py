@@ -14,6 +14,7 @@ from slavv_python.pipeline.vertices import (
     extract_vertices,
     paint_vertices,
 )
+from slavv_python.pipeline.vertices.detection import ellipsoid_offsets
 from slavv_python.schema.results import EnergyResult, VertexSet
 
 if TYPE_CHECKING:
@@ -131,3 +132,33 @@ def test_paint_vertices_invalid_mode(dummy_energy_data):
     vertices = extract_vertices(dummy_energy_data)
     with pytest.raises(ValueError, match="Unknown painting mode"):
         paint_vertices(vertices, (10, 10, 10), mode="invalid_mode")  # type: ignore
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("radii", "expected_voxels"),
+    [
+        # Anisotropic, fractional radii: voxel counts from MATLAB
+        # construct_structuring_element.m (float radii in the membership test).
+        ((1.2, 1.2, 3.0), 19),
+        ((1.7, 1.7, 4.2), 57),
+        ((2.3, 2.3, 5.8), 135),
+        ((2.8, 2.8, 7.0), 227),
+        ((3.4, 3.4, 8.5), 429),
+        # Isotropic integer radii.
+        ((1.0, 1.0, 1.0), 7),
+        ((2.0, 2.0, 2.0), 33),
+        ((3.0, 3.0, 3.0), 123),
+    ],
+)
+def test_ellipsoid_offsets_matches_matlab_structuring_element(radii, expected_voxels):
+    """ellipsoid_offsets must reproduce MATLAB construct_structuring_element.
+
+    Regression for the vertex over/under-suppression divergence: the membership
+    test uses unrounded float radii while grid dims/center use round(radii).
+    """
+    offsets = ellipsoid_offsets(np.asarray(radii, dtype=np.float64))
+    assert len(offsets) == expected_voxels
+    # Always includes the center, and offsets are unique.
+    assert (offsets == 0).all(axis=1).any()
+    assert len({tuple(o) for o in offsets.tolist()}) == len(offsets)
