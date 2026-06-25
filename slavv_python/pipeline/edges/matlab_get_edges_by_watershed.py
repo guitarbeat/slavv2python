@@ -551,6 +551,13 @@ def _generate_edge_candidates_matlab_global_watershed(
 
         current_vertex_index = int(claim_map.vertex_index_flat[current_linear])
         current_scale_label = int(size_map_flat[current_linear])
+        # MATLAB get_edges_by_watershed.m:243 references the ORIGIN VERTEX's scale
+        # (size_map(vertex_locations(current_strel_vertex_index))) for the size penalty —
+        # constant across the whole watershed — NOT the current voxel's propagated/clipped
+        # scale. Using the current voxel's scale lets clipped propagation drift on long
+        # traces, inflating the size Gaussian penalty and terminating long edges early.
+        origin_vertex_location = int(claim_map.vertex_locations[current_vertex_index - 1])
+        origin_scale_label = int(size_map_flat[origin_vertex_location])
         current_scale_index = int(
             np.clip(current_scale_label - 1, 0, len(lumen_radius_microns) - 1)
         )
@@ -594,7 +601,7 @@ def _generate_edge_candidates_matlab_global_watershed(
             neighbor_offsets=current_strel_offsets,
             neighbor_r_over_R=current_strel_r_over_R,
             neighbor_scale_indices=size_map_flat[current_strel_linear],
-            propagated_scale_index=current_scale_label,
+            propagated_scale_index=origin_scale_label,
             current_d_over_r=current_d_over_r,
             origin_radius_microns=max(float(lumen_radius_microns[current_scale_index]), 1e-6),
             current_forward_unit=current_forward_unit,
