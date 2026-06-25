@@ -219,8 +219,13 @@ def _choose_edges_matlab_style(
             edge_offset_cache[scale] = _construct_structuring_element_offsets_matlab(radii)
         return edge_offset_cache[scale]
 
-    # Determine if conflict painting should be performed
-    use_conflict_painting = bool(params.get("comparison_exact_network_use_conflict_painting", True))
+    # Determine if conflict painting should be performed. MATLAB's exact route comments
+    # out choose_edges_V200 (vectorize_V200.m:3633-3643), so the exact network comparison
+    # performs NO conflict painting. Honor the param for non-exact (innovation) runs, but
+    # force it off on the exact route to match MATLAB.
+    use_conflict_painting = bool(params.get("comparison_exact_network_use_conflict_painting", False))
+    if bool(params.get("comparison_exact_network", False)):
+        use_conflict_painting = False
 
     chosen_indices: list[int] = []
     for index in filtered_indices:

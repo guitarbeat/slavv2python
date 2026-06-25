@@ -33,6 +33,9 @@ from slavv_python.pipeline.edges.execution_tracing import (
     ExecutionTracer,
     NullExecutionTracer,
 )
+from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
+    _build_matlab_global_watershed_lut,
+)
 from slavv_python.pipeline.edges.matlab_get_edges_v300_geometry import (
     _matlab_frontier_adjusted_neighbor_energies,
     _matlab_frontier_directional_suppression_factors,
@@ -49,9 +52,6 @@ from slavv_python.pipeline.edges.matlab_watershed_heap import (
 from slavv_python.pipeline.edges.payloads import (
     _edge_metric_from_energy_trace,
     _empty_edge_diagnostics,
-)
-from slavv_python.pipeline.edges.matlab_calculate_linear_strel_range import (
-    _build_matlab_global_watershed_lut,
 )
 
 __all__ = ["_matlab_global_watershed_border_locations"]
@@ -520,9 +520,12 @@ def _generate_edge_candidates_matlab_global_watershed(
 
     size_map_flat = size_map.ravel(order="F")
 
-    edge_number_tolerance = int(
-        params.get("edge_number_tolerance", params.get("number_of_edges_per_vertex", 4))
-    )
+    # MATLAB get_edges_V300.m (line 100) hard-codes edge_number_tolerance = 2 for the
+    # watershed seed count, overriding the deprecated number_of_edges_per_vertex input.
+    # (number_of_edges_per_vertex = 4 is used later only for degree-excess cleanup, not
+    # for seeding.) Honoring the param here (=4) doubled the seeds per vertex and shifted
+    # the entire watershed, diverging from MATLAB.
+    edge_number_tolerance = 2
     energy_tolerance = float(params.get("energy_tolerance", 1.0))
     radius_tolerance = float(params.get("radius_tolerance", 0.5))
     step_size_per_origin_radius = float(params.get("step_size_per_origin_radius", 1.0))

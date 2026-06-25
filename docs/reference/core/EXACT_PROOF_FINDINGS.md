@@ -18,7 +18,7 @@ Phase 1 exit criterion: **strict zero** missing/extra per stage via sequential `
 | :--- | :--- | :--- |
 | **Energy** | Native Hessian path exact-compatible | 🟢 `prove-exact --stage energy` vs **`180709_E_crop_M_v2`** **PASS** (ADR 0011 `np.allclose` gate, rtol=1e-7/atol=1e-9). `scale_indices` **0**; `energy` max \|Δ\|=1.99×10⁻¹¹; `lumen_radius_microns` max \|Δ\|=7.1×10⁻¹⁵. Cross-library float drift is bounded, not a logic difference. Strict `np.equal` available via `--strict-floats`. |
 | **Vertices** | Verified on prior surfaces | 🟢 **PASS** vs `180709_E_crop_M_v2` (`prove-exact --stage vertices` exit 0): positions + scales match MATLAB **exactly** (13,706 = 13,706; 0 missing/extra) after the SE fix (`ellipsoid_offsets` ports MATLAB `construct_structuring_element.m` float-radius membership); `energies` certify under the ADR 0011 `np.allclose` policy after the loader recovers true energies from the raw `vertices.mat` (curated artifact stored a rank ramp). |
-| **Edges** | v29 ~88.7% pair match (baseline) | ⏳ Pending sequential proof. **Fixed**: Standardized watershed orientation and lattice generation via PipelinePolicy. |
+| **Edges** | v29 ~88.7% pair match (baseline) | 🟡 In progress. First proof: MATLAB 15,511 vs Python 9,429 (5,109 shared). Two MATLAB-faithful parity bugs fixed — `edge_number_tolerance` 4→**2** (MATLAB `get_edges_V300.m:100` hard-codes 2) and exact-route **conflict painting disabled** (MATLAB comments out `choose_edges_V200`). Re-running edges to quantify; residual expected from frontier heap tie-break (insertion-order vs linear-index). |
 | **Network** | End-to-end pipeline runs | ⏳ Pending sequential proof |
 
 ---

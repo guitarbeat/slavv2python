@@ -429,7 +429,7 @@ def test_choose_edges_tracks_conflict_provenance_by_source():
         np.array([0.5], dtype=np.float32),
         np.array([[0.5, 0.5, 0.5]], dtype=np.float32),
         (8, 8, 8),
-        {"number_of_edges_per_vertex": 4},
+        {"number_of_edges_per_vertex": 4, "comparison_exact_network_use_conflict_painting": True},
     )
     assert chosen["connections"].tolist() == [[0, 1]]
     assert chosen["connection_sources"] == ["frontier"]
