@@ -177,7 +177,14 @@ def load_normalized_matlab_stage(path: Path, stage: str) -> dict[str, Any]:
         loadmat(path, squeeze_me=stage != "energy", struct_as_record=False),
     )
     if stage == "vertices":
-        return _normalize_matlab_vertices_payload(matlab_payload)
+        normalized = _normalize_matlab_vertices_payload(matlab_payload)
+        if path.name.startswith("curated_vertices"):
+            # MATLAB curation overwrites vertex_energies with a normalized rank
+            # ramp. Recover the true physical energies from the raw vertices*.mat
+            # (matched by exact integer voxel position) so the gate certifies the
+            # energy Python actually computes, not a display artifact.
+            normalized["energies"] = _true_vertex_energies_from_raw(path, matlab_payload)
+        return normalized
     if stage == "energy":
         return _normalize_matlab_energy_payload(matlab_payload)
     if stage == "edges":
@@ -208,6 +215,51 @@ def load_normalized_matlab_edge_input_vertices(batch_dir: Path) -> dict[str, Any
 
 def _normalize_matlab_vertices_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return _normalize_matlab_vertex_fields_payload(payload)
+
+
+def _find_raw_vertices_sibling(curated_path: Path) -> Path | None:
+    """Locate the raw (uncurated) vertices*.mat beside a curated_vertices*.mat."""
+    for candidate in sorted(curated_path.parent.glob("vertices*.mat")):
+        if candidate.is_file() and not candidate.name.startswith("curated"):
+            return candidate
+    return None
+
+
+def _true_vertex_energies_from_raw(
+    curated_path: Path, curated_payload: dict[str, Any]
+) -> np.ndarray:
+    """Return true vertex energies for the curated set, sourced from raw vertices.mat.
+
+    The curated artifact's ``vertex_energies`` are a curation rank-ramp; the raw
+    ``vertices*.mat`` keeps the physical energies. Match each curated vertex to its
+    raw counterpart by exact integer voxel subscript (no rounding) and return the
+    raw energy in curated row order. Falls back to the curated energies if the raw
+    sibling is absent or any curated vertex is missing from it.
+    """
+    raw_path = _find_raw_vertices_sibling(curated_path)
+    curated_positions = np.asarray(_require_key(curated_payload, "vertex_space_subscripts"))
+    if raw_path is None:
+        return _normalize_float_vector(_require_key(curated_payload, "vertex_energies"))
+
+    raw_payload = cast(
+        "dict[str, Any]",
+        loadmat(raw_path, squeeze_me=True, struct_as_record=False),
+    )
+    raw_positions = np.asarray(_require_key(raw_payload, "vertex_space_subscripts"))
+    raw_energies = np.asarray(_require_key(raw_payload, "vertex_energies"), dtype=np.float64).ravel()
+    energy_by_position = {
+        tuple(int(value) for value in raw_positions[index]): float(raw_energies[index])
+        for index in range(raw_positions.shape[0])
+    }
+    true_energies = np.empty(curated_positions.shape[0], dtype=np.float64)
+    for row in range(curated_positions.shape[0]):
+        key = tuple(int(value) for value in curated_positions[row])
+        if key not in energy_by_position:
+            # A curated vertex absent from raw would be unexpected; keep the
+            # curated value rather than fabricate, so the gate surfaces it.
+            return _normalize_float_vector(_require_key(curated_payload, "vertex_energies"))
+        true_energies[row] = energy_by_position[key]
+    return _normalize_float_vector(true_energies)
 
 
 def _normalize_matlab_vertex_fields_payload(

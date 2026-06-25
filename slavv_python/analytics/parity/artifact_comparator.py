@@ -9,8 +9,6 @@ from typing import Any
 import numpy as np
 
 from slavv_python.analytics.parity.energy_ulp_proof import (
-    CERTIFICATION_ATOL,
-    CERTIFICATION_RTOL,
     EnergyFloatGateOptions,
     evaluate_energy_float_gate,
 )
@@ -23,8 +21,15 @@ def compare_exact_artifacts(
     stages: tuple[str, ...],
     *,
     energy_float_options: EnergyFloatGateOptions | None = None,
+    float_tol: tuple[float, float] | None = None,
 ) -> dict[str, Any]:
-    """Compare normalized MATLAB and Python artifacts stage by stage."""
+    """Compare normalized MATLAB and Python artifacts stage by stage.
+
+    ``float_tol`` is an optional ``(rtol, atol)`` applied to continuous
+    floating-point fields (ADR 0011); ``None`` means strict bit-identical
+    comparison everywhere (regression / ``--strict-floats``). The ``energy.energy``
+    field has its own scale-aware gate via ``energy_float_options``.
+    """
     stage_summaries: dict[str, dict[str, Any]] = {}
     first_failure: dict[str, Any] | None = None
 
@@ -37,12 +42,14 @@ def compare_exact_artifacts(
                 matlab_payload,
                 python_payload,
                 energy_float_options,
+                float_tol=float_tol,
             )
         else:
             mismatch = _compare_dict(
                 matlab_payload,
                 python_payload,
                 path=stage,
+                float_tol=float_tol,
             )
         stage_summaries[stage] = {
             "passed": mismatch is None,
@@ -72,6 +79,8 @@ def _compare_energy_stage(
     matlab_payload: dict[str, Any],
     python_payload: dict[str, Any],
     energy_float_options: EnergyFloatGateOptions,
+    *,
+    float_tol: tuple[float, float] | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """Compare Energy stage with ADR 0011 float policy on energy.energy only."""
     gate_summary = evaluate_energy_float_gate(
@@ -89,6 +98,7 @@ def _compare_energy_stage(
                     python_payload["scale_indices"],
                     path="energy",
                     field_path="energy.scale_indices",
+                    float_tol=float_tol,
                 )
                 if mismatch is not None:
                     return mismatch, gate_summary
@@ -111,6 +121,7 @@ def _compare_energy_stage(
             python_payload[key],
             path="energy",
             field_path=f"energy.{key}",
+            float_tol=float_tol,
         )
         if mismatch is not None:
             return mismatch, gate_summary
@@ -122,6 +133,7 @@ def _compare_dict(
     python_payload: dict[str, Any],
     *,
     path: str,
+    float_tol: tuple[float, float] | None = None,
 ) -> dict[str, Any] | None:
     for key, matlab_value in matlab_payload.items():
         field_path = f"{path}.{key}"
@@ -138,6 +150,7 @@ def _compare_dict(
             python_payload[key],
             path=path,
             field_path=field_path,
+            float_tol=float_tol,
         )
         if mismatch is not None:
             return mismatch
@@ -150,11 +163,12 @@ def _compare_value(
     *,
     path: str,
     field_path: str,
+    float_tol: tuple[float, float] | None = None,
 ) -> dict[str, Any] | None:
     if isinstance(matlab_value, dict):
         if not isinstance(python_value, dict):
             return _mismatch(path, field_path, "value mismatch", matlab_value, python_value)
-        return _compare_dict(matlab_value, python_value, path=field_path)
+        return _compare_dict(matlab_value, python_value, path=field_path, float_tol=float_tol)
 
     if isinstance(matlab_value, list):
         if not isinstance(python_value, list):
@@ -171,6 +185,7 @@ def _compare_value(
                 python_item,
                 path=path,
                 field_path=f"{field_path}[{index}]",
+                float_tol=float_tol,
             )
             if mismatch is not None:
                 return mismatch
@@ -180,13 +195,19 @@ def _compare_value(
     python_array = np.asarray(python_value)
     if matlab_array.shape != python_array.shape:
         return _mismatch(path, field_path, "shape mismatch", matlab_array, python_array)
-    # ADR 0011: continuous float fields compare with np.allclose tolerance
-    # (cross-library BLAS/libm drift is bounded, not a logic difference); integer
-    # and topological fields stay strict. The energy.energy field has its own
-    # scale-aware gate (_compare_energy_stage) and never reaches here.
-    if matlab_array.dtype.kind == "f" and python_array.dtype.kind == "f":
+    # ADR 0011: when float_tol is set, continuous float fields compare with
+    # np.allclose (cross-library BLAS/libm drift is bounded, not a logic
+    # difference); integer/topological fields stay strict. float_tol=None forces
+    # strict bit-identical comparison everywhere (--strict-floats / regression).
+    # The energy.energy field has its own scale-aware gate and never reaches here.
+    if (
+        float_tol is not None
+        and matlab_array.dtype.kind == "f"
+        and python_array.dtype.kind == "f"
+    ):
+        rtol, atol = float_tol
         if matlab_array.size == 0 or np.allclose(
-            python_array, matlab_array, rtol=CERTIFICATION_RTOL, atol=CERTIFICATION_ATOL, equal_nan=True
+            python_array, matlab_array, rtol=rtol, atol=atol, equal_nan=True
         ):
             return None
         return _mismatch(path, field_path, "value mismatch (float tol)", matlab_array, python_array)

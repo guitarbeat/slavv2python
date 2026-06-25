@@ -125,7 +125,9 @@ class ExactProofCoordinator:
         report_scope = "exact route"
         candidate_surface = None
         from slavv_python.analytics.parity.energy_ulp_proof import (
+            CERTIFICATION_ATOL,
             CERTIFICATION_MAX_ULPS,
+            CERTIFICATION_RTOL,
             EnergyFloatGateOptions,
         )
 
@@ -135,6 +137,12 @@ class ExactProofCoordinator:
                 strict_floats=strict_floats,
                 max_ulps=max_ulps if max_ulps is not None else CERTIFICATION_MAX_ULPS,
             )
+        # ADR 0011: continuous float fields (lumen radii, vertex/edge energies, …)
+        # compare within np.allclose tolerance; --strict-floats forces strict
+        # bit-identity everywhere for regression.
+        float_tol: tuple[float, float] | None = (
+            None if strict_floats else (CERTIFICATION_RTOL, CERTIFICATION_ATOL)
+        )
 
         try:
             python_artifacts = load_normalized_python_checkpoints(checkpoints_dir, selected_stages)
@@ -170,6 +178,7 @@ class ExactProofCoordinator:
             python_artifacts,
             selected_stages,
             energy_float_options=energy_float_options,
+            float_tol=float_tol,
         )
         from slavv_python.pipeline.energy.provenance import exact_route_gate_description
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 def test_prove_exact_sequence_stops_on_first_failure(tmp_path: Path, monkeypatch):
     calls: list[str] = []
 
-    def fake_prove(_dest: Path, *, stage_arg: str, report_path_arg: str | None = None):
+    def fake_prove(_dest: Path, *, stage_arg: str, report_path_arg: str | None = None, **_kwargs):
         del report_path_arg
         calls.append(stage_arg)
         passed = stage_arg != "vertices"
@@ -54,7 +54,7 @@ def test_prove_exact_sequence_stops_on_first_failure(tmp_path: Path, monkeypatch
 
 @pytest.mark.unit
 def test_prove_exact_sequence_passes_all_stages(tmp_path: Path, monkeypatch):
-    def fake_prove(_dest: Path, *, stage_arg: str, report_path_arg: str | None = None):
+    def fake_prove(_dest: Path, *, stage_arg: str, report_path_arg: str | None = None, **_kwargs):
         del report_path_arg
         json_path = tmp_path / "run" / "03_Analysis" / "exact_proof.json"
         json_path.parent.mkdir(parents=True, exist_ok=True)

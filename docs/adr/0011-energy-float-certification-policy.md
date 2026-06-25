@@ -109,7 +109,8 @@ If Option B is rejected, **explicitly Accept Option A** and record Phase 1 Energ
 - Update [PARITY_CERTIFICATION_GUIDE.md](../reference/workflow/PARITY_CERTIFICATION_GUIDE.md) and [PARITY_PRE_GATE.md](../reference/workflow/PARITY_PRE_GATE.md) with the Energy float rule.
 - Wire chosen gate into `ExactProofCoordinator` / `artifact_comparator` or sequence orchestration (Option B).
 - Record evidence baselines in [EXACT_PROOF_FINDINGS.md](../reference/core/EXACT_PROOF_FINDINGS.md) (`energy_ulp_triage_v2.json`, `exact_proof_energy_ulp.json`).
-- **Vertices / Edges / Network** remain strict `prove-exact`; this ADR addresses **`energy.energy` only**.
+- **Tolerance generalizes to all continuous float fields.** Implemented as a comparator `float_tol` `(rtol=1e-7, atol=1e-9)`: every floating-point field (e.g. `lumen_radius_microns`, vertex/edge `energies`) certifies within `np.allclose`, while integer/topological fields (`scale_indices`, `positions`, `connections`) stay strict. `energy.energy` keeps its dedicated scale-aware gate. `--strict-floats` sets `float_tol=None` to force bit-identical comparison everywhere (regression).
+- **Vertex energies are sourced from the raw `vertices.mat`** (true physical energy), since MATLAB curation overwrites `curated_vertices.mat` energies with a rank ramp. Positions + scales still come from the curated (post-choose) artifact.
 
 ## Evidence references
 
